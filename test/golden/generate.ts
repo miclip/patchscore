@@ -38,7 +38,7 @@ export function serialise(result: ResolveResult): string {
       song: result.song,
       score: result.score,
       search: result.search,
-      clockMaster: result.clockMaster ?? null,
+      clockSource: result.clockSource ?? null,
       assignments: result.assignments.map((a) => ({
         requestId: a.requestId,
         role: a.role,

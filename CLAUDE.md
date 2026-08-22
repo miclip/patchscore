@@ -46,6 +46,14 @@ update `DESIGN.md` in the same commit.
 6. Same inputs + same seed + same resolver version → byte-identical guide, **on any platform**.
 7. Hints are jogs (under ~8 words), not documentation.
 
+### Terminology
+
+Clock roles are **`canSendClock` / `canReceiveClock`**, and the guide says **clock source** and
+**sync to it**. Never master/slave — not in identifiers, not in prose, not in comments.
+
+"Master FX" and "master bus" stay. That is the master-copy sense, universal in music production
+and not half of a pair.
+
 ### Two rules that are easy to break silently
 
 - **No locale-dependent comparison or formatting.** No `localeCompare`, no `toLocaleString`, no

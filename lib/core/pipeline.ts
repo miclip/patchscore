@@ -54,13 +54,13 @@ import { chooseHook, chooseKey, type HookChoice } from './harmony'
  */
 
 // ---------------------------------------------------------------------------
-// §7.4 Clock master
+// §7.4 Clock source
 // ---------------------------------------------------------------------------
 
 /** §7.4, in order. Anything a device declares beyond these ranks below both. */
 export const TRANSPORT_PREFERENCE = ['midi-din', 'usb'] as const
 
-export type ClockMaster = {
+export type ClockSource = {
   deviceId: DeviceId
   deviceName: string
   /** The most-preferred transport this device actually declares. */
@@ -78,20 +78,20 @@ function transportRank(device: Device): number {
 }
 
 /**
- * §7.4. `canMaster`, then occupied-assignable count descending (§12.4), then transport
+ * §7.4. `canSendClock`, then occupied-assignable count descending (§12.4), then transport
  * preference (`midi-din` > `usb`), then `deviceId` ascending by UTF-16 code unit (§7.2).
  *
  * **No seed.** Rerolling a pattern should not re-cable the rig, so this must be stable across
  * rerolls in a way that the assignment deliberately is not.
  *
- * Returns `undefined` when nothing in the rig can master — a real rig, and a fact the guide has
+ * Returns `undefined` when nothing in the rig can send clock — a real rig, and a fact the guide has
  * to state rather than paper over by nominating a device that cannot do it.
  */
-export function selectClockMaster(
+export function selectClockSource(
   devices: readonly Device[],
   occupied: Map<DeviceId, number>,
-): ClockMaster | undefined {
-  const capable = devices.filter((d) => d.clock.canMaster)
+): ClockSource | undefined {
+  const capable = devices.filter((d) => d.clock.canSendClock)
   if (capable.length === 0) return undefined
 
   const ranked = [...capable].sort((a, b) => {
@@ -223,8 +223,8 @@ export type ResolveResult = {
   occupancy: Occupancy
   score: Score
   search: SearchReport
-  /** `undefined` when nothing in the rig can master (§7.4). */
-  clockMaster: ClockMaster | undefined
+  /** `undefined` when nothing in the rig can send clock (§7.4). */
+  clockSource: ClockSource | undefined
   /**
    * §7 step 5's output for **every** request, including the ones that became gaps. Pattern
    * selection depends only on template + mood, so it is meaningful whether or not the rig
@@ -313,7 +313,7 @@ export function resolve(input: ResolveInput): ResolveResult {
     occupancy: allocation.occupancy,
     score: allocation.score,
     search: allocation.search,
-    clockMaster: selectClockMaster(devices, occupiedCounts(assignments)),
+    clockSource: selectClockSource(devices, occupiedCounts(assignments)),
     patterns,
   }
 }

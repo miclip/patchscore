@@ -34,7 +34,7 @@ const cascade: Device = {
   name: 'Golden Cascade',
   maker: 'Fixture',
   kind: 'semi-modular',
-  clock: { canMaster: false, canSlave: true, transport: ['usb'] },
+  clock: { canSendClock: false, canReceiveClock: true, transport: ['usb'] },
   io: { main: 'stereo', individualOuts: 1, audioIn: true, usbAudio: false },
   voices: [{ kind: 'fixed', id: 'voice', label: 'Voice', roles: ['bass-mid', 'lead'], polyphony: 1 }],
   comfortableVoices: 1,
@@ -77,7 +77,7 @@ const tracker: Device = {
   name: 'Golden Tracker',
   maker: 'Fixture',
   kind: 'groovebox',
-  clock: { canMaster: true, canSlave: true, transport: ['midi-din', 'usb'] },
+  clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
   io: { main: 'stereo', individualOuts: 0, audioIn: false, usbAudio: true },
   voices: [
     { kind: 'pool', id: 'track', label: 'Track', count: 4, roles: ['pad', 'sub', 'texture'], polyphony: 4 },
@@ -147,7 +147,7 @@ const drum: Device = {
   name: 'Golden Drum',
   maker: 'Fixture',
   kind: 'drum-machine',
-  clock: { canMaster: true, canSlave: true, transport: ['midi-din', 'usb'] },
+  clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
   io: { main: 'stereo', individualOuts: 8, audioIn: false, usbAudio: true },
   voices: [
     { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 },

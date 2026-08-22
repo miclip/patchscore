@@ -163,11 +163,11 @@ export const DeviceKindSchema = z.enum(DEVICE_KINDS)
 export type ClockTransport = string
 export const ClockTransportSchema = z.string().min(1)
 
-export type ClockSpec = { canMaster: boolean; canSlave: boolean; transport: ClockTransport[] }
+export type ClockSpec = { canSendClock: boolean; canReceiveClock: boolean; transport: ClockTransport[] }
 
 export const ClockSpecSchema = z.strictObject({
-  canMaster: z.boolean(),
-  canSlave: z.boolean(),
+  canSendClock: z.boolean(),
+  canReceiveClock: z.boolean(),
   transport: z.array(ClockTransportSchema).min(1),
 })
 

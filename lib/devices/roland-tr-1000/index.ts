@@ -224,8 +224,8 @@ export const device: Device = {
   // MIDI IN/OUT1/OUT2-THRU, both OUT connectors switchable to DIN SYNC; USB clock; CLK OUT
   // mini-jack; TRG IN usable as a clock source (p.11-12, p.30, p.33 sync settings).
   clock: {
-    canMaster: true,
-    canSlave: true,
+    canSendClock: true,
+    canReceiveClock: true,
     transport: ['midi-din', 'din-sync', 'usb', 'analog-clock', 'trigger'],
   },
 

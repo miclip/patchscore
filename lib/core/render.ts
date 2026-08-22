@@ -357,16 +357,16 @@ function mixerText(device: Device, parts: number): string {
 
 function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[] {
   const out: Line[] = []
-  const master = result.clockMaster
+  const source = result.clockSource
 
-  if (master === undefined) {
+  if (source === undefined) {
     // §7.4: a real rig, and a fact to state rather than paper over.
-    out.push('**Clock** — nothing in this rig can master. Every box here is a slave, so the')
-    out.push('clock has to come from something outside it.')
+    out.push('**Clock** — nothing in this rig can send clock. Every box here has to receive one,')
+    out.push('so the clock has to come from something outside it.')
   } else {
     out.push(
-      `**Clock master** — ${master.deviceName} over \`${master.transport}\`, ` +
-        `carrying ${count(master.occupiedAssignables, 'part')}. Slave everything else to it.`,
+      `**Clock source** — ${source.deviceName} over \`${source.transport}\`, ` +
+        `carrying ${count(source.occupiedAssignables, 'part')}. Sync everything else to it.`,
     )
   }
   out.push('')
@@ -377,7 +377,7 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
   for (const device of result.devices) {
     const parts = occupied.get(device.id) ?? 0
     const clock = [
-      device.clock.canMaster ? 'can master' : 'slave only',
+      device.clock.canSendClock ? 'sends clock' : 'receives clock only',
       device.clock.transport.join('/'),
     ].join(' · ')
 

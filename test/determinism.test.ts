@@ -136,19 +136,19 @@ describe('the golden fixture discriminates on collation', () => {
     // §7.4's tail: two devices can master, both carry three parts, both speak midi-din. Only
     // the code-unit comparison separates them, and the golden pins which one wins.
     const golden = JSON.parse(readFileSync(GOLDEN_FILE, 'utf8')) as {
-      clockMaster: { deviceId: string; occupiedAssignables: number }
+      clockSource: { deviceId: string; occupiedAssignables: number }
       assignments: { deviceId: string }[]
     }
     const loads = new Map<string, number>()
     for (const a of golden.assignments) loads.set(a.deviceId, (loads.get(a.deviceId) ?? 0) + 1)
-    const masters = GOLDEN_DEVICES.filter((d) => d.clock.canMaster).map((d) => d.id)
+    const masters = GOLDEN_DEVICES.filter((d) => d.clock.canSendClock).map((d) => d.id)
     expect(masters.length).toBeGreaterThan(1)
     // Every candidate master carries the same load, so load cannot be what decided it.
     expect(new Set(masters.map((id) => loads.get(id))).size).toBe(1)
-    expect(golden.clockMaster.deviceId).toBe(
+    expect(golden.clockSource.deviceId).toBe(
       [...masters].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[0],
     )
     // ...and ICU would have chosen the other one.
-    expect(golden.clockMaster.deviceId).not.toBe([...masters].sort((a, b) => a.localeCompare(b))[0])
+    expect(golden.clockSource.deviceId).not.toBe([...masters].sort((a, b) => a.localeCompare(b))[0])
   })
 })

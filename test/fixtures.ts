@@ -55,7 +55,7 @@ export function device(over: Partial<Device> = {}): Device {
     name: 'Fixture Drum',
     maker: 'Fixture',
     kind: 'drum-machine',
-    clock: { canMaster: true, canSlave: true, transport: ['midi-din', 'usb'] },
+    clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
     io: { main: 'stereo', individualOuts: 8, audioIn: false, usbAudio: true },
     voices: [
       { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 },

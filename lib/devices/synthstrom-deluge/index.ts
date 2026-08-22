@@ -540,8 +540,8 @@ export const device: Device = {
 
   // Rear panel, p.6: MIDI In/Out on 5-pin DIN, USB-B carrying USB MIDI, a Clock In jack, and four
   // Gate/Trigger outs whose trigger clock has an "adjustable PPQN out / 192 PPQN out". So it
-  // masters or slaves over any of the three.
-  clock: { canMaster: true, canSlave: true, transport: ['midi-din', 'usb', 'analog-clock'] },
+  // sends or receives clock over any of the three.
+  clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb', 'analog-clock'] },
 
   // Two 1/4" main outs, "Right" and "Left / Mono" (p.6, p.8), plus a headphone out; line in and
   // mic in; the two CV outs and four gate/trigger outs are control voltage, not audio, so

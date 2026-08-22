@@ -115,7 +115,7 @@
     "capped": false,
     "method": "exhaustive"
   },
-  "clockMaster": {
+  "clockSource": {
     "deviceId": "B-tracker",
     "deviceName": "Golden Tracker",
     "transport": "midi-din",
