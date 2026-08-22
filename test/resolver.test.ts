@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
+import { DEVICES } from '../lib/devices/registry.generated'
 import {
   MAX_SUBSTITUTION_DISTANCE_SQ,
   MoodStateSchema,
@@ -853,5 +854,115 @@ describe('resolveParams (§7 step 9)', () => {
     ])
     // Invariant 4: every rendered value carries provenance, with no exceptions to check for.
     for (const param of resolved) expect(param.provenance).toBeDefined()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #29 — the bounds survive resolution
+// ---------------------------------------------------------------------------
+
+describe('resolved ranges (#29, §8)', () => {
+  const bounded = (over: Record<string, unknown> = {}) =>
+    numericParam({
+      name: 'DECAY',
+      value: 38,
+      range: { min: 0, max: 100, verified: MANUAL },
+      ...over,
+    })
+
+  it('carries the bounds onto the resolved param, so §8 can print them', () => {
+    expect(resolveParam(bounded(), MANUAL, moodState()).range).toEqual({
+      min: 0,
+      max: 100,
+      verified: MANUAL,
+    })
+  })
+
+  it('resolves the range citation once here, never leaving inheritance for the renderer', () => {
+    // Range with no `verified` of its own inherits the recipe's, exactly as the point does.
+    const inherited = bounded({ range: { min: 0, max: 100 } })
+    expect(resolveParam(inherited, OBSERVED, moodState()).range?.verified).toEqual(OBSERVED)
+    // And an unverified range resolves to `false`, not to `undefined` — "unverified" is a
+    // decided answer, and the renderer must not have to tell it apart from "not yet asked".
+    const unverified = bounded({ range: { min: 0, max: 100, verified: false } })
+    expect(resolveParam(unverified, MANUAL, moodState()).range?.verified).toBe(false)
+  })
+
+  it('gives an enum no range, because its legality gate is `options` (§3.2)', () => {
+    const enumParam = {
+      kind: 'enum' as const,
+      name: 'MODE',
+      value: 'poly',
+      options: { values: ['poly', 'mono'], verified: MANUAL },
+    }
+    expect(resolveParam(enumParam, MANUAL, moodState()).range).toBeUndefined()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// §6.1 — a centred knob changes nothing, rounding included
+// ---------------------------------------------------------------------------
+
+describe('neutral mood is inert (§6.1, NEUTRAL_MOOD)', () => {
+  const secs = (over: Record<string, unknown> = {}) =>
+    numericParam({
+      name: 'ENV DECAY',
+      value: 0.28,
+      unit: 'Sec',
+      range: { min: 0, max: 10, verified: MANUAL },
+      mood: [{ axis: 'density', amount: -0.09 }],
+      ...over,
+    })
+
+  it('leaves an authored value off the default grid exactly as authored', () => {
+    // The bug this pins: with no `step`, the grid defaults to 1, and rounding ran even when
+    // mood had moved nothing — so a cited 0.28 was rendered as 0 under a neutral mood.
+    const resolved = resolveParam(secs(), MANUAL, NEUTRAL_MOOD)
+    expect(resolved.value).toBe(0.28)
+    expect(resolved.provenance).toEqual({ state: 'authored', cite: MANUAL })
+  })
+
+  it('holds for a provisional point too, where the badge would have hidden the change', () => {
+    const resolved = resolveParam(secs({ verified: false }), MANUAL, NEUTRAL_MOOD)
+    expect(resolved.value).toBe(0.28)
+    expect(resolved.provenance).toEqual({ state: 'provisional' })
+  })
+
+  it('leaves the value alone when two declared axes cancel exactly', () => {
+    // Both axes contribute, so `axes` is non-empty — but the net move is zero, and zero move
+    // must mean zero change. This is why the guard tests the offset, not the axis list.
+    const param = numericParam({
+      value: 0.5,
+      range: { min: 0, max: 10, verified: MANUAL },
+      mood: [
+        { axis: 'grit', amount: 4 },
+        { axis: 'density', amount: -4 },
+      ],
+    })
+    const resolved = resolveParam(param, MANUAL, moodState({ grit: 100, density: 100 }))
+    expect(resolved.value).toBe(0.5)
+    expect(resolved.provenance).toEqual({ state: 'authored', cite: MANUAL })
+  })
+
+  it('still rounds once mood actually moves the value', () => {
+    // The grid is for landing a *moved* value where the instrument can sit; it is not
+    // suspended, only skipped when there is nothing to land.
+    const moved = resolveParam(secs({ step: 0.01 }), MANUAL, moodState({ density: 100 }))
+    expect(moved.value).toBe(0.19)
+    expect(moved.provenance).toMatchObject({ state: 'derived', from: 0.28 })
+  })
+
+  it('holds across the whole authored library, which is where it was caught', () => {
+    for (const device of DEVICES) {
+      for (const recipe of device.recipes) {
+        const resolved = resolveParams(recipe, NEUTRAL_MOOD)
+        recipe.params.forEach((authored, i) => {
+          const got = resolved[i] as (typeof resolved)[number]
+          expect(got.value, `${device.id} / ${recipe.id} / ${authored.name}`).toBe(authored.value)
+          expect(got.provenance.state, `${device.id} / ${recipe.id} / ${authored.name}`)
+            .not.toBe('derived')
+        })
+      }
+    }
   })
 })

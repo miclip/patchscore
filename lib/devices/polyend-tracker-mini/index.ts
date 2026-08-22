@@ -103,6 +103,25 @@ function num(
 }
 
 /**
+ * A time in seconds. Identical to `num` but for the step, which is a hundredth.
+ *
+ * The manual prints these bounds to two decimals — `0.00-10 Sec`, p.126 — so a hundredth is the
+ * grid the box itself works on, and the default step of 1 is simply the wrong instrument for
+ * them: it would round every mood offset here to a whole second, turning a 0.09 Sec nudge into
+ * either nothing or a tenfold change. Declared once rather than at sixteen call sites, because
+ * the next `Sec` parameter someone authors needs it too and would not think to add it.
+ */
+function secs(
+  name: string,
+  value: number,
+  bounds: { min: number; max: number },
+  page: number,
+  extra: Partial<AuthoredNumericParam> = {},
+): AuthoredNumericParam {
+  return num(name, value, bounds, page, { unit: 'Sec', step: 0.01, ...extra })
+}
+
+/**
  * An enum, with its two claims kept apart exactly as `num` keeps a range and a point apart
  * (§3.2). The option *set* is legality and is cited: "Pingpong loop" either appears in the Play
  * Mode table on p.127 or it does not. The *value* is which one this recipe reaches for, and that
@@ -241,7 +260,7 @@ const SYNTH_RECIPES: Recipe[] = [
         mood: [{ axis: 'darkness', amount: -260 }],
       }),
       num('FILTER RESONANCE', 18, PCT, 156, { unit: '%' }),
-      num('AMP ENV RELEASE', 0.35, SECONDS_10, 156, { unit: 'Sec' }),
+      secs('AMP ENV RELEASE', 0.35, SECONDS_10, 156),
     ],
     articulation: [{ slot: 'downbeat', set: { glide: 35 }, hint: 'pick-fx' }],
     verified: false,
@@ -263,8 +282,8 @@ const SYNTH_RECIPES: Recipe[] = [
         unit: 'Hz',
         mood: [{ axis: 'darkness', amount: -900 }],
       }),
-      num('AMP ENV ATTACK', 1.2, SECONDS_10, 159, { unit: 'Sec' }),
-      num('AMP ENV RELEASE', 2.4, SECONDS_10, 159, { unit: 'Sec' }),
+      secs('AMP ENV ATTACK', 1.2, SECONDS_10, 159),
+      secs('AMP ENV RELEASE', 2.4, SECONDS_10, 159),
       num('VOICE VOLUME', 86, VOICE_VOL, 161, { unit: '%' }),
     ],
     articulation: [{ slot: 'first-hit', set: { 'gate-length': 95 } }],
@@ -287,7 +306,7 @@ const SYNTH_RECIPES: Recipe[] = [
         mood: [{ axis: 'darkness', amount: -1800 }],
       }),
       num('FILTER NOTE TRACK', 65, NOTE_TRACK, 158, { unit: '%' }),
-      num('GLIDE TIME', 0.06, SECONDS_3, 161, { unit: 'Sec' }),
+      secs('GLIDE TIME', 0.06, SECONDS_3, 161),
     ],
     articulation: [{ slot: 'accent', set: { volume: 100 }, hint: 'pick-fx' }],
     verified: false,
@@ -320,10 +339,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('TUNE', -3, SEMITONES_24, 116, { unit: 'St' }),
       num('CUTOFF', 74, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -16 }] }),
       num('OVERDRIVE', 18, PCT, 120, { unit: '%', mood: [{ axis: 'grit', amount: 22 }] }),
-      num('ENV DECAY', 0.28, SECONDS_10, 126, {
-        unit: 'Sec',
-        mood: [{ axis: 'density', amount: -0.09 }],
-      }),
+      secs('ENV DECAY', 0.28, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.09 }] }),
     ],
     articulation: [{ slot: 'accent', set: { volume: 100 }, hint: 'pick-fx' }],
     verified: false,
@@ -342,7 +358,7 @@ const SAMPLE_RECIPES: Recipe[] = [
         mood: [{ axis: 'darkness', amount: -3 }],
       }),
       num('CUTOFF', 46, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -14 }] }),
-      num('ENV DECAY', 0.62, SECONDS_10, 126, { unit: 'Sec' }),
+      secs('ENV DECAY', 0.62, SECONDS_10, 126),
       num('REVERB SEND', 8, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 18 }] }),
     ],
     articulation: [{ slot: 'downbeat', set: { volume: 92 } }],
@@ -359,10 +375,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('FILTER TYPE', 'High-pass', FILTER_TYPES, 117),
       num('CUTOFF', 22, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: 12 }] }),
       num('TUNE', 2, SEMITONES_24, 116, { unit: 'St' }),
-      num('ENV DECAY', 0.3, SECONDS_10, 126, {
-        unit: 'Sec',
-        mood: [{ axis: 'density', amount: -0.1 }],
-      }),
+      secs('ENV DECAY', 0.3, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.1 }] }),
       num('DELAY SEND', 12, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 24 }] }),
     ],
     articulation: [
@@ -382,7 +395,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('PANNING', 6, PAN, 116),
       num('FINETUNE', 22, FINE_CENTS, 116, { unit: 'c' }),
       num('REVERB SEND', 26, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 26 }] }),
-      num('ENV RELEASE', 0.4, SECONDS_10, 126, { unit: 'Sec' }),
+      secs('ENV RELEASE', 0.4, SECONDS_10, 126),
     ],
     articulation: [{ slot: 'backbeat', set: { panning: 8 } }],
     verified: false,
@@ -397,10 +410,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'High-pass', FILTER_TYPES, 117),
       num('CUTOFF', 34, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: 10 }] }),
-      num('ENV DECAY', 0.09, SECONDS_10, 126, {
-        unit: 'Sec',
-        mood: [{ axis: 'density', amount: -0.03 }],
-      }),
+      secs('ENV DECAY', 0.09, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.03 }] }),
       num('PANNING', -12, PAN, 116),
     ],
     articulation: [
@@ -419,7 +429,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
       num('CUTOFF', 58, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -18 }] }),
-      num('ENV RELEASE', 0.24, SECONDS_10, 126, { unit: 'Sec' }),
+      secs('ENV RELEASE', 0.24, SECONDS_10, 126),
       num('BIT DEPTH', 12, BITS, 120, { unit: 'Bits', mood: [{ axis: 'grit', amount: -4 }] }),
     ],
     articulation: [{ slot: 'offbeat', set: { 'gate-length': 45 } }],
@@ -435,7 +445,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       num('TUNE', 4, SEMITONES_24, 116, { unit: 'St' }),
       num('PANNING', 18, PAN, 116),
-      num('ENV DECAY', 0.11, SECONDS_10, 126, { unit: 'Sec' }),
+      secs('ENV DECAY', 0.11, SECONDS_10, 126),
     ],
     articulation: [{ slot: 'ghost', set: { chance: 65 }, hint: 'pick-fx' }],
     verified: false,
@@ -450,7 +460,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Band-pass', FILTER_TYPES, 117),
       num('CUTOFF', 62, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -12 }] }),
-      num('ENV RELEASE', 0.9, SECONDS_10, 126, { unit: 'Sec' }),
+      secs('ENV RELEASE', 0.9, SECONDS_10, 126),
       num('REVERB SEND', 16, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 20 }] }),
     ],
     articulation: [{ slot: 'accent', set: { 'random-volume': 12 } }],
@@ -467,7 +477,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
       num('TUNE', -5, SEMITONES_24, 116, { unit: 'St' }),
       num('CUTOFF', 52, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -15 }] }),
-      num('ENV DECAY', 0.44, SECONDS_10, 126, { unit: 'Sec' }),
+      secs('ENV DECAY', 0.44, SECONDS_10, 126),
     ],
     articulation: [{ slot: 'fill', set: { roll: 2 }, hint: 'pick-fx' }],
     verified: false,
@@ -482,10 +492,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       num('PANNING', -22, PAN, 116),
       num('FINETUNE', -14, FINE_CENTS, 116, { unit: 'c' }),
-      num('ENV DECAY', 0.07, SECONDS_10, 126, {
-        unit: 'Sec',
-        mood: [{ axis: 'density', amount: 0.04 }],
-      }),
+      secs('ENV DECAY', 0.07, SECONDS_10, 126, { mood: [{ axis: 'density', amount: 0.04 }] }),
     ],
     articulation: [
       { slot: 'ghost', set: { volume: 30 } },
@@ -523,7 +530,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('LENGTH', 640, { min: 1, max: 1000 }, 142, { unit: 'ms' }),
       num('CUTOFF', 48, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -20 }] }),
       num('REVERB SEND', 42, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 30 }] }),
-      num('ENV ATTACK', 1.8, SECONDS_10, 126, { unit: 'Sec' }),
+      secs('ENV ATTACK', 1.8, SECONDS_10, 126),
     ],
     articulation: [{ slot: 'first-hit', set: { 'low-pass': 55 } }],
     verified: false,

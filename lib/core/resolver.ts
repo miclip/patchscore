@@ -578,6 +578,10 @@ function moodContribution(
  *  - **The point is the authority gate.** It decides `authored` vs `provisional`, and
  *    nothing else.
  *
+ * The range has a third job that is neither gate: it is *rendered* (#29). `DECAY 38 (0-100)`
+ * tells a reader at the machine which screen they should be looking at, where a bare `38` does
+ * not — so the bounds are carried onto the `ResolvedParam` rather than being consumed here.
+ *
  * **`provisional` dominates `derived`.** Moving an unverified point inside a verified range
  * is legal, but inherits no authority the starting point never had: the badge stays, and
  * `from`/`axes` still record the move. Refusing to apply mood to provisional params would
@@ -612,8 +616,22 @@ export function resolveParam(
   if (moodAllowed) {
     const contribution = moodContribution(param, state)
     axes = contribution.axes
-    const raw = clamp(param.value + contribution.offset, param.range.min, param.range.max)
-    value = roundToStep(raw, param.step ?? 1, param.range.min, param.range.max)
+    // **A zero net offset leaves the authored value exactly as authored.** `NEUTRAL_MOOD`
+    // promises that centred knobs change nothing, and rounding is not exempt from that: with
+    // no `step` declared the grid defaults to 1, so an authored `0.28 Sec` was being rounded
+    // to `0` by a mood that had not moved it at all — the value the guide printed was one the
+    // author never wrote and no citation covered.
+    //
+    // The grid exists to land a *moved* value where the instrument can actually sit. An
+    // unmoved value is already where its author put it, and snapping a cited point onto a
+    // step we defaulted to is inventing, not quantising (invariant 5).
+    //
+    // Tested on the *offset*, not on `axes`: two authored entries that cancel exactly have
+    // both axes contributing and a net move of zero, and zero move must mean zero change.
+    if (contribution.offset !== 0) {
+      const raw = clamp(param.value + contribution.offset, param.range.min, param.range.max)
+      value = roundToStep(raw, param.step ?? 1, param.range.min, param.range.max)
+    }
   }
 
   // "Moved" is measured on the *result*, not on the offset. A push that rounding or clamping
@@ -640,6 +658,9 @@ export function resolveParam(
     name: param.name,
     value,
     ...(param.unit === undefined ? {} : { unit: param.unit }),
+    // #29/§8: the bounds travel with the value, carrying the range's own claim already
+    // resolved — the renderer must never have to re-run §3.1's inheritance to print them.
+    range: { min: param.range.min, max: param.range.max, verified: rangeCite },
     provenance,
     ...(param.hint === undefined ? {} : { hint: param.hint }),
     ...(param.note === undefined ? {} : { note: param.note }),

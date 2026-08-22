@@ -16,7 +16,8 @@
     "audit": "tsx scripts/audit-verified.ts",
     "bench:search": "tsx scripts/bench-search.ts",
     "verify": "npm run typecheck && npm run test",
-    "gen:golden": "tsx test/golden/generate.ts --write"
+    "gen:golden": "tsx test/golden/generate.ts --write",
+    "gen:guides": "tsx test/golden/guides.ts --write"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",

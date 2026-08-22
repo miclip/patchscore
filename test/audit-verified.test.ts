@@ -10,7 +10,7 @@ import {
   totalCounts,
   type AuditCounts,
 } from '../scripts/audit-verified'
-import { device, enumParam, numericParam, recipe } from './fixtures'
+import { device, enumParam, numericParam, recipe, textParam } from './fixtures'
 
 /**
  * §3.2 requires three debts kept apart. The point of these tests is that one debt cannot be
@@ -25,7 +25,7 @@ import { device, enumParam, numericParam, recipe } from './fixtures'
 const CITE = { kind: 'manual', source: 'fixture manual p.7' } as const
 const OBSERVED = { kind: 'observed', source: 'fixture unit, firmware 1.11' } as const
 
-/** Spelling out nine zeroes at every call site would bury the one number each test is about. */
+/** Spelling out ten zeroes at every call site would bury the one number each test is about. */
 function counts(over: Partial<AuditCounts>): AuditCounts {
   return { ...ZERO_COUNTS, ...over }
 }
@@ -302,6 +302,78 @@ describe('totals', () => {
   })
 })
 
+// ---------------------------------------------------------------------------
+// #29 — unitless numerics: watched, never a finding
+// ---------------------------------------------------------------------------
+
+describe('unitless numerics (#29)', () => {
+  it('counts numerics with no unit, as a subset of the numerics', () => {
+    const d = validDevice({
+      recipes: [
+        recipe({
+          verified: CITE,
+          params: [
+            numericParam({ name: 'DECAY', unit: undefined }),
+            numericParam({ name: 'PITCH', unit: 'St' }),
+            // Enums and text have no unit to be missing; they must not land in this count.
+            enumParam(),
+            textParam(),
+          ],
+        }),
+      ],
+    })
+    expect(auditDevice(d).counts).toEqual(
+      counts({
+        params: 4,
+        manualPoints: 4,
+        numerics: 2,
+        manualRanges: 2,
+        unitlessNumerics: 1,
+      }),
+    )
+  })
+
+  it('produces no finding, because unitless is often correct rather than a debt', () => {
+    const d = validDevice({
+      recipes: [
+        recipe({ verified: CITE, params: [numericParam({ name: 'AMOUNT', unit: undefined })] }),
+      ],
+    })
+    const audit = auditDevice(d)
+    expect(audit.counts.unitlessNumerics).toBe(1)
+    // A 0-100 "amount" with no physical dimension has no unit to give, and inventing `%` for
+    // it would be worse than leaving it bare. So there is nothing here to fix, and no finding.
+    expect(audit.findings).toEqual([])
+  })
+
+  it('is orthogonal to every verification count', () => {
+    // A unit says nothing about whether anyone checked the value, and the reverse.
+    const cited = validDevice({
+      id: 'aa',
+      recipes: [recipe({ verified: CITE, params: [numericParam({ unit: undefined })] })],
+    })
+    const uncited = validDevice({
+      id: 'bb',
+      recipes: [
+        recipe({
+          verified: false,
+          params: [numericParam({ unit: '%', range: { min: 0, max: 1 }, value: 1 })],
+        }),
+      ],
+    })
+    expect(auditDevice(cited).counts.unitlessNumerics).toBe(1)
+    expect(auditDevice(uncited).counts.unitlessNumerics).toBe(0)
+    expect(auditDevice(uncited).counts.provisionalPoints).toBe(1)
+  })
+
+  it('adds across devices like every other count', () => {
+    const bare = [numericParam({ unit: undefined })]
+    const a = validDevice({ id: 'aa', recipes: [recipe({ verified: CITE, params: bare })] })
+    const b = validDevice({ id: 'bb', recipes: [recipe({ verified: CITE, params: bare })] })
+    expect(totalCounts([auditDevice(a), auditDevice(b)]).unitlessNumerics).toBe(2)
+  })
+})
+
 describe('the report names both kinds (§9)', () => {
   it('shows manual and observed on their own columns, points and ranges apart', () => {
     const d = validDevice({
@@ -318,6 +390,25 @@ describe('the report names both kinds (§9)', () => {
     expect(out).toMatch(/points\s+1 total\s+0 manual\s+1 observed\s+0 provisional/)
     expect(out).toMatch(/ranges\s+1 total\s+0 manual\s+0 observed\s+1 unverified\s+0 mood-inert/)
     expect(out).toContain('TOTAL')
+  })
+
+  it('reports the unit count on its own line, worded as a number to watch (#29)', () => {
+    const d = validDevice({
+      id: 'fixture-drum',
+      recipes: [
+        recipe({
+          verified: CITE,
+          params: [
+            numericParam({ name: 'DECAY', unit: undefined }),
+            numericParam({ name: 'PITCH', unit: 'St' }),
+          ],
+        }),
+      ],
+    })
+    const out = formatAudit([auditDevice(d)], false)
+    expect(out).toContain('units      1 of 2 numerics carry no unit (watched, not a target)')
+    // Never on the ranges line: a number sitting in the debt table reads as a debt.
+    expect(out).toMatch(/ranges\s+2 total\s+2 manual\s+0 observed\s+0 unverified\s+0 mood-inert/)
   })
 
   it('lists the findings behind the numbers under --verbose', () => {
