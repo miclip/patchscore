@@ -251,7 +251,11 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   not find in the manual and did not check on the unit gets
   `range: { min, max, verified: false }`, which is a different and quieter debt: it does not make
   the point provisional, it just makes that param deaf to mood (§3.2).
-- One recipe per `(role, character, device)`. Roughly 15–20 recipes covers a device well.
+- One recipe per `(role, character, voice)`, where `voice` is the recipe's target — the
+  `poolId ?? voiceId` the lookup keys on (§2.2). The key was written `(role, character, device)`
+  before any device had two pools, and it did not match the lookup: it rejected authoring
+  `tom + dark` for both LT and MT, and rejected a tonal recipe appearing on each pool of a
+  two-pool device. Roughly 15–20 recipes covers a device well.
 - A recipe never authors hits, step counts or bar structure. If you catch yourself writing
   `hits: [1, 5, 9, 13]` inside a device folder, that pattern belongs to a template (§4.3) —
   four-on-the-floor is a property of the genre, not of the TR-1000.
