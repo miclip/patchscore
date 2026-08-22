@@ -21,22 +21,43 @@ opened.
 | `TR-1000_reference_eng02_W.pdf` | **Reference Manual, v1.13+.** Parameter tables with ranges. The one that matters for values. | [direct](https://static.roland.com/assets/media/pdf/TR-1000_reference_eng02_W.pdf) · [support](https://www.roland.com/global/support/by_product/tr-1000/owners_manuals/) |
 | `TR1000_GEN_INST_List_eng02_W.pdf` | Preset GEN/INST list. ~1,700 generators with names and categories (`BD_E`, `SD_E`, `HIHAT_E`…). | Roland; exact URL unconfirmed — see [support](https://www.roland.com/global/support/by_product/tr-1000/owners_manuals/) |
 | `MC-101_eng02_W.pdf` | Owner's Manual. Defers to a Reference Manual **not yet downloaded**. | [direct](https://static.roland.com/assets/media/pdf/MC-101_eng02_W.pdf) · [support](https://www.roland.com/global/support/by_product/mc-101/owners_manuals/) |
-| `Deluge-Guidebook-4p0-edits-only.pdf` | Community guidebook, 42pp. **Suspect:** "edits-only" suggests a diff against a prior edition, not the whole book. | [product](https://synthstrom.com/product/deluge/) |
+| ~~`Deluge-Guidebook-4p0-edits-only.pdf`~~ | **Excerpt — do not author from this.** 42pp / 53k chars / 7 ranges. Confirmed a partial: the real guidebook is 284pp. Kept only so nobody re-downloads it by mistake. | — |
+| `Deluge-Guidebook-4p1-OLED.pdf` | **Official Guidebook, OS 4.1, OLED edition.** 390k chars, 75 ranges. The parameter source for the Deluge. | [direct](https://synthstrom-audible-deluge.s3.us-east-2.amazonaws.com/Deluge-Guidebook-4p1-OLED.pdf) |
+| `Deluge-Guidebook-4p0.pdf` | Official Guidebook, OS 4.0, numeric display. 391k chars, 82 ranges. Kept for cases the OLED edition words differently. | [direct](https://synthstrom-audible-deluge.s3.us-east-2.amazonaws.com/Deluge-Guidebook-4p0.pdf) |
+| `deluge-community/` | **Community firmware docs, pinned to `release_1_2_1` (Chopin).** 23 menu docs + 10 feature docs, 222k chars. See below. | [repo](https://github.com/SynthstromAudible/DelugeFirmware) |
 | `Polyend-Tracker-Mini-Manual-2v2v1b.pdf` | Manual, 344pp. Appears complete. | polyend.com (downloads page blocks automated fetch) |
 | `cascadia_manual_v1.1_2023.04.18.pdf` | Manual v1.1, 2023-04-18. | intellijel.com |
 | `model-2400_om_e_vc.pdf` | Owner's Manual. | [docs](https://tascam.com/us/product/model_2400/docs) |
 | `ZEBU_Manual_Rrev2_Web_ENG.pdf` | ZOIA Euroburo manual, rev2. | empresseffects.com |
 
+## The Deluge runs community firmware
+
+The user's Deluge is on **community firmware, not stock**. Author it that way. Community adds whole views and synth engines that do not exist on stock — Performance View, Automation View, the DX synth, the chord keyboard — so a guide written against stock would tell this user to use features their box does not have, and vice versa.
+
+Three sources, and they do different jobs:
+
+| Source | Answers | Cite as |
+|---|---|---|
+| `Deluge-Guidebook-4p1-OLED.pdf` | parameter ranges | `manual` |
+| `deluge-community/` @ `release_1_2_1` | which features exist and how they are reached | `manual`, with the tag in the source string |
+| the unit | anything community adds that nothing ranges | `observed`, with the firmware version |
+
+The community docs are a **moving target**, unlike a PDF — `manuals/deluge-community/VERSION` records the tag and fetch date, and a citation to them must name the tag or it means nothing. Note also that the `menus/` docs are prose about what a parameter *does* and still carry `TODO` markers; they state no numeric ranges. That is exactly the gap `observed` citations exist for (§3.1).
+
 ## Known gaps
 
 - **MC-101 Reference Manual** — the Owner's Manual points at one, and it is not here. Download it
   before authoring the MC-101, or its values will be as unverifiable as the TR-1000's were. See #18.
-- **Deluge guidebook** — confirm the 42-page "edits-only" file is the full reference before
-  starting #5. That step exists to prove the engine needs no changes, and it cannot do that
-  honestly on a partial document.
+- ~~**Deluge guidebook**~~ — resolved. It was an excerpt; the full 284pp guidebook and the
+  community firmware docs are both here now.
 
 ## Notes for whoever refreshes these
 
+- **A file named like a manual may be an excerpt.** The Deluge "guidebook" here was 42pp of a
+  284pp book and would have produced a device authored from a fraction of its documentation.
+  Cheap check before trusting one: `pdftotext` it and compare character count and range-expression
+  count against a manual you trust. The TR-1000 Reference Manual is 203k chars / 313 ranges; the
+  Deluge excerpt was 53k / 7.
 - Roland returns **403, not 404**, for a PDF that does not exist. A 403 means the filename or
   edition is wrong, not that access was denied.
 - Direct PDF URLs carry the edition (`eng01`, `eng02`) and change when the document is revised.
