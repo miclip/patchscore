@@ -50,6 +50,7 @@
         "id": "g-hook-1",
         "forRole": "lead",
         "bars": 2,
+        "baseOctave": 4,
         "notes": [
           {
             "step": 1,

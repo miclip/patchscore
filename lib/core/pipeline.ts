@@ -43,9 +43,10 @@ import { assign, type Gap, type SearchReport } from './search'
  *  8. Bind each recipe's articulation to the selected pattern's slots (§4.3) — here
  *  9. Resolve inherited citations, apply mood, stamp provenance (§3.1, §3.2) — here
  *
- * Steps 10 (harmony and hooks) and 11 (render) are not this module's: they are build steps 5.5
- * and 6 respectively, and adding stubs for them here would invent shapes against no real
- * template.
+ * Step 10 (harmony and hooks) has a pure resolver of its own in `harmony.ts` — `resolveHook`
+ * turns authored degrees into concrete notes (§4.1) — but it is deliberately not called from
+ * here. Wiring it in means *choosing* a key from `template.keys` by seed, and that choice is
+ * build step 5.5's, not this module's. Step 11 (render) is build step 6 and has no shape yet.
  */
 
 // ---------------------------------------------------------------------------

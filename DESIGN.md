@@ -613,6 +613,41 @@ no generation. The seed picks among multiple authored hooks.
 **If no hook is authored for the assigned role, the guide omits the hook section rather than
 inventing one.** This is invariant 5 applied to melody.
 
+#### Middle C is C4
+
+Scientific pitch notation, stated rather than implied: **middle C is C4**, C4 is MIDI 60, and the
+octave number changes at C rather than at the tonic. So in F minor the fifth above F4 is C5, and a
+resolver that numbered octaves from the tonic would print C4 and be wrong on the page.
+
+Every hook carries a required `baseOctave` in that notation, and `HookNote.octave` is an offset
+from it — `degree: 5, octave: 0` on a hook with `baseOctave: 2` is a fifth in octave 2, and
+`octave: 1` is the same degree an octave up.
+
+**The origin is per hook, not one global constant.** A bass hook and a lead hook in the same genre
+sit two or three octaves apart, so a single constant would be wrong for one of them, and the
+person authoring the hook is the one who knows which it is. It is a purely musical fact and names
+no device, so it does not touch invariant 3.
+
+**Resolution emits concrete notes, not pitch classes plus offsets.** The guide is read standing at
+the machine. `degree 5, octave offset 0` is something to work out; `G2` is something to play, and
+§8 exists to be actionable at the box.
+
+#### The convention is not universal on hardware, and we are not fixing that here
+
+Scientific pitch notation is a convention, not a fact about instruments. Roland and most makers put
+middle C at C4; Yamaha puts it at C3; some boxes display note *numbers* and no names at all. A guide
+that says `G2` can therefore read an octave off on some hardware.
+
+Fixing that needs per-device note-naming data, which this design does not model — and bolting it on
+carelessly is device knowledge leaking toward the template, which is what invariant 3 exists to
+stop. So: the convention is named here, the risk is recorded here, and `Device` gains no
+note-naming field.
+
+**Resolution never clamps or transposes to fit what a voice can reach.** `Assignable` carries no
+note range, and inventing one at the template layer would be the same leak. A hook states musical
+intent; a voice that cannot reach it is a limitation to surface later, never something to silently
+move the notes for.
+
 ### 4.2 Section scoping, and who owns occupancy
 
 `riser`, `impact` and `sweep` are transitional events that exist for four bars, not parts

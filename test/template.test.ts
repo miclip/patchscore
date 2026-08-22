@@ -197,7 +197,13 @@ describe('Harmony and hooks (§4.1)', () => {
   })
 
   it('authors hooks as scale degrees against the key, never concrete notes', () => {
-    const hook = { id: 'h1', forRole: 'lead', bars: 2, notes: [{ step: 1, degree: 5, octave: 0, len: 2 }] }
+    const hook = {
+      id: 'h1',
+      forRole: 'lead',
+      bars: 2,
+      baseOctave: 4,
+      notes: [{ step: 1, degree: 5, octave: 0, len: 2 }],
+    }
     expect(HookSchema.safeParse(hook).success).toBe(true)
     // A pitch name is not authorable here - degrees resolve against the chosen key (§4.1).
     expect(HookSchema.safeParse({ ...hook, notes: [{ step: 1, degree: 'C4', octave: 0, len: 2 }] }).success).toBe(
@@ -211,6 +217,27 @@ describe('Harmony and hooks (§4.1)', () => {
       false,
     )
     expect(HookSchema.safeParse({ ...hook, forRole: 'melody' }).success).toBe(false)
+  })
+
+  it('requires a baseOctave, because an offset with no origin is not a note (§4.1)', () => {
+    const { baseOctave: _base, ...withoutOrigin } = {
+      id: 'h1',
+      forRole: 'lead' as const,
+      bars: 2,
+      baseOctave: 4,
+      notes: [{ step: 1, degree: 5, octave: 0, len: 2 }],
+    }
+    expect(HookSchema.safeParse(withoutOrigin).success).toBe(false)
+
+    // Scientific pitch notation, middle C = C4 (§4.1), and no range policy at this layer:
+    // the notation is not bounded by MIDI, and §4.1 keeps clamping out of the template entirely.
+    for (const baseOctave of [-4, -1, 0, 4, 9, 12]) {
+      expect(HookSchema.safeParse({ ...withoutOrigin, baseOctave }).success).toBe(true)
+    }
+    // A whole number is still the whole requirement - half an octave names nothing.
+    for (const baseOctave of [4.5, '4']) {
+      expect(HookSchema.safeParse({ ...withoutOrigin, baseOctave }).success).toBe(false)
+    }
   })
 })
 

@@ -110,6 +110,7 @@ export function template(over: Partial<Template> = {}): Template {
         id: 'fx-hook-1',
         forRole: 'lead',
         bars: 2,
+        baseOctave: 4,
         notes: [{ step: 1, degree: 5, octave: 0, len: 2 }],
       },
     ],
