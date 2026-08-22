@@ -495,6 +495,11 @@ const scored = recipesForRole
 `unvoiced` and "your rig cannot do this" are different failures and the UI must distinguish
 them, because they imply different actions from the user.
 
+**`unvoiced` is a gap reason, not an assignment.** It does not fill the request and does not
+occupy the assignable — it surfaces as the `no-recipe` gap of §7.3, which names the voice that
+could have carried the part. The distinction this section draws is a *reporting* distinction and
+is recovered there, never in the objective.
+
 ---
 
 ## 4. Layer 3 — Templates
@@ -667,6 +672,14 @@ Additive modifiers, not separate genres. An inspiration patches a template.
 }
 ```
 
+> **Illustrative only. This example predates the design review — do not author against it.** Its
+> added role request lacks `id` and `sustain`, both of which §4 requires, and
+> `roles.modify.kick.pattern` assumes the obsolete pattern ownership, which §4.3 moved to
+> templates as authored variants selected per request and per section. The real shape of
+> `Inspiration.patch` is settled at build step 7
+> ([#9](https://github.com/miclip/patchscore/issues/9)), against a template proven end to end.
+> Until then there is deliberately no `Inspiration` type in the codebase.
+
 This is what makes "industrial techno with a reggae influence" coherent rather than two
 genres stapled together. Inspirations must compose; cap at two.
 
@@ -752,32 +765,48 @@ moving edge would make invariant 6 depend on a config file.
 Pure functions, fully unit-testable, no React.
 
 ```
-input:  { devices: DeviceId[], template: TemplateId, inspirations: InspirationId[],
-          mood: MoodState, seed: number }
+input:  { devices: Device[], template: Template, mood: MoodState, seed: number }
 output: { assignments: Assignment[], gaps: Gap[], guide: GuideDocument }
 ```
 
+**The resolver takes effective objects, never ids and never patch instructions.** A `Device`
+reaching it is the shared definition already composed with the user's rig overlay (#16); a
+`Template` reaching it is the base template already composed with its inspiration patches. The
+caller does both compositions, so anything that exists only at runtime — a user-authored device, a
+row from a database — resolves without a redeploy.
+
+Applying inspirations is therefore a **pre-step performed by the caller**, not a pipeline stage:
+
+```ts
+applyInspirations(template: Template, inspirations: Inspiration[]): Template   // §5, step 7
+```
+
+A separate pure function, specified in §5 and built at build step 7. It is deliberately not
+defined yet: §11 puts inspirations after a template is proven end to end because they multiply the
+test surface across every template, and designing a patch language against zero real templates is
+the mistake the review caught in step 1, where shapes settled in the abstract turned out wrong
+once there was something concrete to check them against.
+
 Pipeline:
 
- 1. Apply inspiration patches to the template
- 2. Emit role requests, sorted by **ascending** priority (§4.4)
- 3. Expand all selected devices to `Assignable[]` — pure and cacheable (§2.2, §4.2)
- 4. Resolve character per request (§6.2)
- 5. Select a pattern variant per request and section from the density band (§6.3) — **before**
+ 1. Emit role requests, sorted by **ascending** priority (§4.4)
+ 2. Expand all selected devices to `Assignable[]` — pure and cacheable (§2.2, §4.2)
+ 3. Resolve character per request (§6.2)
+ 4. Select a pattern variant per request and section from the density band (§6.3) — **before**
     assignment, because a variant's length and slot mix are part of what a recipe has to
     articulate
- 6. Search assignments against the lexicographic objective (§7.1), producing `Occupancy`
- 7. Resolve recipes, with fallback (§3.5)
- 8. Bind each recipe's `articulation` to the selected pattern's slots (§4.3). A slot the variant
+ 5. Search assignments against the lexicographic objective (§7.1), producing `Occupancy`
+ 6. Resolve recipes, with fallback (§3.5)
+ 7. Bind each recipe's `articulation` to the selected pattern's slots (§4.3). A slot the variant
     does not contain is dropped silently — not a gap, the device simply had nothing to say about a
     slot with no hits in it
- 9. Resolve inherited `verified` citations, apply mood offsets (§6.1), and emit
+ 8. Resolve inherited `verified` citations, apply mood offsets (§6.1), and emit
     `ResolvedParam`s with provenance stamped (§3.1, §3.2). This is the only place an
     `AuthoredParam` becomes a `ResolvedParam`
-10. Resolve harmony and hooks against the key (§4.1)
-11. Render the guide
+ 9. Resolve harmony and hooks against the key (§4.1)
+10. Render the guide
 
-Steps 5 and 8 are the pipeline consequence of moving patterns out of recipes. Note that step 5
+Steps 4 and 7 are the pipeline consequence of moving patterns out of recipes. Note that step 4
 depends only on template + mood, so **pattern selection is independent of the rig**: two users
 with different boxes and the same inputs get the same rhythms. That is the correct behaviour and
 a cheap test to write.
@@ -869,9 +898,65 @@ Determinism has three axes and the tests must cover all three:
 
 ### 7.3 Gaps
 
-Unfilled roles surface honestly as "nothing in your rig covers this", with a suggestion of
-what would. Distinct from `unvoiced` (§3.5), which means "your rig covers this but Patchscore
-has no recipe authored yet".
+Unfilled roles surface honestly, with a suggestion of what would fill them. Every gap carries a
+**reason**, computed after the search, because the three are different failures and collapsing
+them tells the user to do the wrong thing:
+
+| reason | meaning | the action |
+|---|---|---|
+| `no-capable-voice` | nothing in the rig declares this role | buy something. Say what capability is missing |
+| `no-recipe` | a capable assignable exists, nothing authored within character distance 2 | nothing to buy; we owe you authoring. Name the voice that could carry it |
+| `no-room` | capable and voiceable, but the objective ranked some other allocation higher | your rig cannot carry this arrangement as configured. Say what gave way |
+
+**Three, because there are exactly three actions.** The reasons exist to tell the user what to
+*do*. A fourth top-level reason would split the third action into cases that all resolve the same
+way, which is why `no-room`'s sub-cause is a field rather than a sibling:
+
+```ts
+because: 'contended' | 'crowding' | 'distinct'   // plus a sentence naming the specific thing
+```
+
+| because | the sentence says |
+|---|---|
+| `contended` | "the LT is carrying sub" |
+| `crowding` | "your Tracker Mini is already at 8 of 8 comfortable voices" |
+| `distinct` | "the second tom needs a different device and you only have one that can" |
+
+`no-room` is the name rather than `rig-too-small` deliberately: crowding is often fixed by raising
+`comfortableVoices` rather than by buying anything, and the name must not prejudge which.
+
+A `no-recipe` gap **must name the assignable that could have carried it** — "nothing authored for
+a soft kick; your TR-1000 BD can do it, dial it by ear". That hands the user the voice assignment
+without pretending a recipe exists.
+
+Reasons are computed **from the winning allocation**, not from what was reachable before the
+search: the question a gap answers is "why did this part not get made", which is a fact about the
+assignment that won. The sub-cause order falls out of the objective rather than taste — a
+candidate free and `distinct`-legal in the finished allocation could have been taken without
+displacing anyone, so the only key that can have argued against it is `crowdOverflow`; failing
+that, a free but `distinct`-blocked candidate means §12.6 is binding; failing that, everything is
+carrying something else.
+
+**The three are exhaustive.** There is no fourth case where the objective declines a capable,
+voiceable, uncrowded request for no reason: filling a free, `distinct`-legal candidate that adds
+no crowding strictly improves the vector — `missesByPriority` for a required request,
+`optionalMisses` for an optional one — with every higher key unchanged, so the search always takes
+it. Note the corollary: because required misses outrank `crowdOverflow`, **`crowding` can never
+explain a required miss.** A rig that falsifies either claim is a finding about §7.1's key order,
+not a fourth gap reason.
+
+**An `unvoiced` request neither fills nor occupies.** It counts as a miss in `missesByPriority`
+(or in `optionalMisses` if the request is `optional`), it reserves nothing in `Occupancy`, and it
+is never scored inside `recipeDistance`. Occupancy exists to stop two parts colliding on one
+voice, and an unvoiced request produces no part at all — so letting it hold a voice is strictly
+harmful. Consider an LT serving `sub`, `bass-mid` and `tom` where `sub` is unvoiced and
+`bass-mid` is authored: if unvoiced filled, `sub` would take the LT and `bass-mid` would become
+the miss, which is plainly the worse guide. Scoring it as a large finite `recipeDistance` fails
+for a second reason — that key ranks below crowding and `optionalMisses`, so the search would
+prefer a voice it cannot describe over one it can.
+
+No new `Score` key for any of this. Inserting into a lexicographic tuple silently reorders every
+key beneath it, which is exactly why §12.6 chose a flag on the request over a `Score` insertion.
 
 ### 7.4 Clock master
 

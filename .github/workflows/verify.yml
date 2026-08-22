@@ -1,0 +1,61 @@
+name: verify
+
+# Invariant 6 is a claim about bytes **on any platform**, so the gate runs on more than one.
+# DESIGN-REVIEW.md §5 obligation 1: "Run the golden-file test on Linux and macOS in CI, with
+# `LANG` deliberately set to something other than `C` in one job."
+#
+# The non-C job is not decoration. `localeCompare`, `toLocaleString` and `Intl` read ICU
+# collation data that varies with the ambient locale, so a tie broken with one of them orders
+# differently here than on a developer's machine — identical inputs, identical seed, different
+# bytes, and no error anywhere. That is the one failure mode §7.2 exists to catch, and it is
+# invisible unless a job actually runs under a hostile locale.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: ${{ matrix.os }} / LANG=${{ matrix.lang }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Never stop the other jobs on one failure: which platform/locale combinations fail is
+      # exactly the information a cross-platform determinism bug is made of.
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            lang: C.UTF-8
+          # Turkish is the classic ICU trap: dotless i, and a collation that orders case
+          # differently from UTF-16 code units. The golden fixture's device ids are chosen so
+          # this job disagrees with the committed bytes if anything reaches for a locale API.
+          - os: ubuntu-latest
+            lang: tr_TR.UTF-8
+          - os: macos-latest
+            lang: tr_TR.UTF-8
+
+    env:
+      LANG: ${{ matrix.lang }}
+      LC_ALL: ${{ matrix.lang }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Confirm the job really is in this locale
+        # A locale the runtime silently ignored would make the non-C job a duplicate of the
+        # first one, passing while testing nothing.
+        run: node -e "console.log(process.env.LANG, Intl.DateTimeFormat().resolvedOptions().locale)"
+
+      - run: npm ci
+
+      - run: npm run verify
+
+      - name: Registry is not stale (§9, invariant 2)
+        run: npm run check:registry
