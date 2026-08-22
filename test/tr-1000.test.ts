@@ -45,7 +45,9 @@ describe('TR-1000 manifest', () => {
     expect(device.voices.every((v) => v.polyphony === 1)).toBe(true)
   })
 
-  it('carries 15-20 recipes on distinct (role, character) pairs', () => {
+  // §3's key is (role, character, voice); this device happens to satisfy the stricter
+  // per-device form, which is a fact about its content, not the rule.
+  it('carries 15-20 recipes, no two of them sharing a (role, character)', () => {
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
     expect(device.recipes.length).toBeLessThanOrEqual(20)
 

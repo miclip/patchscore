@@ -97,8 +97,19 @@ recipes. They know nothing about genres, templates, or other devices.
 ### 2.1 Two authored shapes
 
 Some devices have fixed, named voices (TR-1000: BD, SD, LT...). Others have fungible
-capacity (Tracker Mini: 8 tracks that can each be anything; Deluge: effectively unlimited
-synth/kit tracks). Modelling only the first shape does not survive contact with the second.
+capacity (Tracker Mini: 16 tracks in two pools — 1-8 sample, synth or MIDI, 9-16 synth or MIDI
+only; Deluge: as many synth and kit tracks as CPU allows). Modelling only the first shape does not
+survive contact with the second. A device may declare *several* pools of differing capability;
+that needed no change here, because a pool is a voice like any other.
+
+**`count` bounds what the resolver may consider, not what the hardware has.** The two are
+different numbers and must not be conflated. The resolver can never occupy more assignables than
+the template has role requests, and templates ask for roughly five to fifteen. `expand()`
+materialises `count` assignables and the §7.1 search ranges over all of them, so a device with no
+hard track limit takes a *finite* number with headroom above any template's demand: above that
+headroom the extra members are unreachable, and no guide exists that a larger count could produce
+and a smaller one could not. Whether the box is *happy* at a given load is a separate question and
+belongs to `comfortableVoices` (§12.4) — the crowding key, not the capacity one.
 
 ```ts
 type VoiceSpec =

@@ -26,8 +26,10 @@ import {
 
 /**
  * Some devices have fixed, named voices (TR-1000: BD, SD, LT...). Others have fungible
- * capacity (Tracker Mini: 8 tracks that can each be anything). Modelling only the first does
- * not survive contact with the second.
+ * capacity (Tracker Mini: 16 tracks, as *two* pools — 1-8 take samples, synths or MIDI, 9-16
+ * take synths or MIDI only). Modelling only the first does not survive contact with the second,
+ * and a device declaring more than one pool needs nothing further: a pool is a voice like any
+ * other.
  *
  * `polyphony` means *notes*, never roles (§12.4): how many simultaneous notes one assignable
  * can sound while serving one role.
