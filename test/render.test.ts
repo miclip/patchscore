@@ -43,7 +43,10 @@ function phaseBody(doc: string, phase: number): string[] {
   return end === -1 ? rest : rest.slice(0, end)
 }
 
-const PROVENANCE = ['authored', 'derived by', '⚠ provisional']
+// `provisional` is the common state and renders as a bare mark rather than a sentence (#35):
+// a warning on nine lines in ten tells the reader nothing and pushes the values apart. The
+// invariant is still "exactly one state per line", so the marker set just gets shorter.
+const PROVENANCE = ['authored', 'derived by', '⚠']
 
 function provenanceMarkers(line: string): string[] {
   return PROVENANCE.filter((state) => line.includes(state))
@@ -117,12 +120,14 @@ describe('provenance (invariant 4, §3.2)', () => {
     expect(tune).toContain('derived by darkness')
   })
 
-  it('badges a provisional value and gives it no citation to borrow authority from', () => {
+  it('marks a provisional value compactly and gives it no citation to borrow authority from', () => {
     const doc = renderGuide(golden())
     const body = phaseBody(doc, 6)
     const mode = body.findIndex((l) => l.startsWith('- **MODE**'))
     expect(mode).toBeGreaterThan(-1)
-    expect(body[mode]).toContain('⚠ provisional')
+    expect(body[mode]).toContain('⚠')
+    // Compact, not absent: the mark must be there, the sentence must not (#35).
+    expect(body[mode]).not.toContain('nobody has checked')
     // The next line must not be a citation for a value nobody checked.
     expect(body[mode + 1] ?? '').not.toContain(`${SUBORDINATE.cite} value`)
   })
