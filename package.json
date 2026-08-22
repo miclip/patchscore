@@ -1,0 +1,22 @@
+{
+  "name": "patchnote",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deterministic hardware-rig production guide generator",
+  "type": "module",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "verify": "npm run typecheck && npm run test"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
+}
