@@ -130,9 +130,19 @@ function valueText(param: ResolvedParam): string {
 }
 
 /**
- * The visible three-state badge. `provisional` gets a warning mark and words rather than a
- * quieter tag: §3.2 calls it a badge, and the whole point of the state is that a reader must
- * not mistake an unchecked value for a cited one while glancing at a phone.
+ * The visible three-state badge, deliberately asymmetric in length.
+ *
+ * `provisional` is the overwhelmingly common state — almost every point value in this project
+ * is taste, by design — so it gets a bare `⚠` and the legend carries the explanation once.
+ * Restating "nobody has checked this value" on nine lines in ten was 14% of the guide by
+ * character count, and a warning that appears on everything tells the reader nothing while
+ * pushing the values it annotates apart. On a phone, at a machine, that is a real cost.
+ *
+ * The rare states stay wordy, because they are the surprising ones and the eye should catch
+ * them: `authored` means somebody checked this exact value, `derived` means mood moved it.
+ * §3.2's requirement is that a reader must not mistake an unchecked value for a cited one —
+ * a mark on every unchecked value satisfies that; a sentence on every unchecked value does not
+ * satisfy it any harder.
  */
 function provenanceText(provenance: Provenance): string {
   if (provenance.state === 'authored') return 'authored'
@@ -141,7 +151,7 @@ function provenanceText(provenance: Provenance): string {
     provenance.axes !== undefined && provenance.axes.length > 0
       ? ` · moved by ${provenance.axes.join(', ')}`
       : ''
-  return `⚠ provisional — nobody has checked this value${moved}`
+  return `⚠${moved}`
 }
 
 /**
@@ -796,11 +806,12 @@ function occupiedCounts(result: ResolveResult): Map<DeviceId, number> {
  * because §8.1's toggle must not move anything else on the page.
  */
 const LEGEND = [
-  'Every value below says where it came from. `authored` was read off a manual or a unit;',
-  '`derived` shows the move mood made (`52 → 45`) and which knob made it; `⚠ provisional` means',
-  'nobody has checked that value and you should trust your ears over this page. Numbers carry',
-  'their range — `38 (0…100)` — so you can tell at a glance whether the screen in front of you',
-  'is the one this line is about.',
+  'Most values here are **⚠** — a starting point nobody has checked, so trust your ears over',
+  'this page. The ones that are marked differently are the exceptions worth noticing:',
+  '`authored` means somebody verified that exact value against a manual or a unit, and',
+  '`derived` shows a move mood made (`52 → 45`) and which knob made it. Ranges are cited',
+  'either way. Numbers carry their range — `38 (0…100)` — so you can tell at a glance whether',
+  'the screen in front of you is the one this line is about.',
 ]
 
 /**
