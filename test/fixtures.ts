@@ -12,7 +12,7 @@ export function numericParam(over: Record<string, unknown> = {}): AuthoredParam 
     kind: 'numeric',
     name: 'TUNE',
     value: 52,
-    range: { min: 0, max: 100, verified: { source: 'fixture manual p.1' } },
+    range: { min: 0, max: 100, verified: { kind: 'manual', source: 'fixture manual p.1' } },
     ...over,
   } as AuthoredParam
 }
@@ -40,7 +40,7 @@ export function recipe(over: Partial<Recipe> = {}): Recipe {
     title: 'Short, hard, forward kick',
     params: [numericParam()],
     articulation: [{ slot: 'accent', set: { velocity: 110 }, hint: 'apply-cycle' }],
-    verified: { source: 'fixture manual p.42' },
+    verified: { kind: 'manual', source: 'fixture manual p.42' },
     ...over,
   }
 }

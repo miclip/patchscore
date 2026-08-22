@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   AuthoredParamSchema,
+  CITE_KINDS,
+  CiteSchema,
   NumericRangeSchema,
   ProvenanceSchema,
   ResolvedParamSchema,
@@ -12,13 +14,39 @@ import { enumParam, numericParam, textParam } from './fixtures'
 
 describe('Verified (§3.1)', () => {
   it('is a citation or an explicit false, and nothing else', () => {
-    expect(VerifiedSchema.safeParse({ source: 'TR-1000 manual p.42' }).success).toBe(true)
+    expect(VerifiedSchema.safeParse({ kind: 'manual', source: 'TR-1000 manual p.42' }).success).toBe(
+      true,
+    )
     expect(VerifiedSchema.safeParse(false).success).toBe(true)
     // `true` would claim verification without naming a source - the whole point is the source.
     expect(VerifiedSchema.safeParse(true).success).toBe(false)
-    expect(VerifiedSchema.safeParse({ source: '' }).success).toBe(false)
+    expect(VerifiedSchema.safeParse({ kind: 'manual', source: '' }).success).toBe(false)
     expect(VerifiedSchema.safeParse({}).success).toBe(false)
     expect(VerifiedSchema.safeParse(undefined).success).toBe(false)
+  })
+})
+
+describe('Cite kind (§3.1)', () => {
+  it('carries how the value was checked, and admits exactly two kinds', () => {
+    expect(CiteSchema.safeParse({ kind: 'manual', source: 'p.42' }).success).toBe(true)
+    expect(CiteSchema.safeParse({ kind: 'observed', source: 'unit, firmware 1.11' }).success).toBe(
+      true,
+    )
+    expect(CiteSchema.safeParse({ kind: 'ear', source: 'sounds right' }).success).toBe(false)
+    expect(CITE_KINDS).toEqual(['manual', 'observed'])
+  })
+
+  it('will not take a source without saying how it was checked', () => {
+    // The whole point of #19: an unlabelled citation is exactly what we are removing, so the
+    // old free-text shape has to stop parsing rather than default to 'manual'.
+    expect(CiteSchema.safeParse({ source: 'TR-1000 manual p.42' }).success).toBe(false)
+    expect(VerifiedSchema.safeParse({ source: 'TR-1000 manual p.42' }).success).toBe(false)
+  })
+
+  it('does not let a kind smuggle extra fields past the schema', () => {
+    expect(
+      CiteSchema.safeParse({ kind: 'observed', source: 'my unit', firmware: '1.11' }).success,
+    ).toBe(false)
   })
 })
 
@@ -33,7 +61,19 @@ describe('NumericRange (§3.1)', () => {
     // The range is the legality gate; the point is the authority gate (§3.2).
     expect(NumericRangeSchema.safeParse({ min: 0, max: 100, verified: false }).success).toBe(true)
     expect(
-      NumericRangeSchema.safeParse({ min: 0, max: 100, verified: { source: 'p.42' } }).success,
+      NumericRangeSchema.safeParse({
+        min: 0,
+        max: 100,
+        verified: { kind: 'manual', source: 'p.42' },
+      }).success,
+    ).toBe(true)
+    // An observed range is a first-class legality claim: mood may move a point inside it.
+    expect(
+      NumericRangeSchema.safeParse({
+        min: 0,
+        max: 100,
+        verified: { kind: 'observed', source: 'TR-1000 unit, firmware 1.11' },
+      }).success,
     ).toBe(true)
   })
 })
@@ -94,42 +134,73 @@ describe('AuthoredParam union (§3.1)', () => {
   })
 })
 
+const MANUAL = { kind: 'manual', source: 'p.42' } as const
+const OBSERVED = { kind: 'observed', source: 'TR-1000 unit, firmware 1.11' } as const
+
 describe('Provenance (§3.2)', () => {
   it('accepts the three states and nothing else', () => {
-    expect(ProvenanceSchema.safeParse({ state: 'authored', source: 'p.42' }).success).toBe(true)
+    expect(ProvenanceSchema.safeParse({ state: 'authored', cite: MANUAL }).success).toBe(true)
     expect(
       ProvenanceSchema.safeParse({
         state: 'derived',
-        source: 'p.42',
-        rangeSource: 'p.40',
+        cite: MANUAL,
+        rangeCite: { kind: 'manual', source: 'p.40' },
         from: 52,
         axes: ['darkness'],
       }).success,
     ).toBe(true)
     expect(ProvenanceSchema.safeParse({ state: 'provisional' }).success).toBe(true)
-    expect(ProvenanceSchema.safeParse({ state: 'verified', source: 'p.42' }).success).toBe(false)
+    expect(ProvenanceSchema.safeParse({ state: 'verified', cite: MANUAL }).success).toBe(false)
+  })
+
+  it('carries the cite kind through to the rendered value (§3.1)', () => {
+    // §8 renders a manual citation and an observation differently. It can only do that if the
+    // resolver stamped which one it was, so a bare source string must not parse.
+    expect(ProvenanceSchema.safeParse({ state: 'authored', cite: OBSERVED }).success).toBe(true)
+    expect(ProvenanceSchema.safeParse({ state: 'authored', source: 'p.42' }).success).toBe(false)
+    expect(ProvenanceSchema.safeParse({ state: 'authored', cite: { source: 'p.42' } }).success).toBe(
+      false,
+    )
+
+    const parsed = ProvenanceSchema.parse({ state: 'authored', cite: OBSERVED })
+    expect(parsed).toEqual({ state: 'authored', cite: OBSERVED })
+  })
+
+  it('lets a derived value mix the two kinds', () => {
+    // The point and the range are independent claims (§3.2), so nothing requires them to have
+    // been checked the same way: a documented range with a point taken off the unit, or the
+    // reverse. Both are citations, and the renderer needs to be able to say which is which.
+    expect(
+      ProvenanceSchema.safeParse({
+        state: 'derived',
+        cite: MANUAL,
+        rangeCite: OBSERVED,
+        from: 52,
+        axes: ['darkness'],
+      }).success,
+    ).toBe(true)
   })
 
   it('makes derived carry both citations and the move that produced it', () => {
-    // `derived` means mood moved a verified point inside a verified range: two sources, and
+    // `derived` means mood moved a verified point inside a verified range: two citations, and
     // the `from` value the guide renders as `52 -> 45`.
     expect(
-      ProvenanceSchema.safeParse({ state: 'derived', source: 'p.42', from: 52, axes: ['darkness'] })
+      ProvenanceSchema.safeParse({ state: 'derived', cite: MANUAL, from: 52, axes: ['darkness'] })
         .success,
     ).toBe(false)
     expect(
       ProvenanceSchema.safeParse({
         state: 'derived',
-        source: 'p.42',
-        rangeSource: 'p.40',
+        cite: MANUAL,
+        rangeCite: { kind: 'manual', source: 'p.40' },
         axes: ['darkness'],
       }).success,
     ).toBe(false)
     expect(
       ProvenanceSchema.safeParse({
         state: 'derived',
-        source: 'p.42',
-        rangeSource: 'p.40',
+        cite: MANUAL,
+        rangeCite: { kind: 'manual', source: 'p.40' },
         from: 52,
         axes: [],
       }).success,
@@ -144,9 +215,12 @@ describe('Provenance (§3.2)', () => {
     ).toBe(true)
   })
 
-  it('does not let provisional claim a source', () => {
-    // A provisional value has no citation by definition; a stray `source` here would let the
-    // renderer show authority the point never had.
+  it('does not let provisional claim a citation of either kind', () => {
+    // A provisional value has no citation by definition; a stray cite here would let the
+    // renderer show authority the point never had. `observed` is not a softer provisional -
+    // it is a citation, so it cannot ride along on this state either.
+    expect(ProvenanceSchema.safeParse({ state: 'provisional', cite: MANUAL }).success).toBe(false)
+    expect(ProvenanceSchema.safeParse({ state: 'provisional', cite: OBSERVED }).success).toBe(false)
     expect(ProvenanceSchema.safeParse({ state: 'provisional', source: 'p.42' }).success).toBe(false)
   })
 })
@@ -165,8 +239,8 @@ describe('ResolvedParam (§3.1, invariant 4)', () => {
       value: 45,
       provenance: {
         state: 'derived',
-        source: 'p.42',
-        rangeSource: 'p.40',
+        cite: MANUAL,
+        rangeCite: { kind: 'manual', source: 'p.40' },
         from: 52,
         axes: ['darkness'],
       },
