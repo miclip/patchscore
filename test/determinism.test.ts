@@ -33,7 +33,16 @@ const HOSTILE_LOCALE = 'tr_TR.UTF-8'
 // The locale and randomness ban (§7.2)
 // ---------------------------------------------------------------------------
 
-const IMPLEMENTATION = ['resolver.ts', 'search.ts', 'pipeline.ts', 'harmony.ts']
+const IMPLEMENTATION = [
+  'resolver.ts',
+  'search.ts',
+  'pipeline.ts',
+  'harmony.ts',
+  'seed.ts',
+  // §8's renderer is where a locale-aware formatter is most tempting — thousands separators on
+  // a step number, a "nicely" formatted range — so it is scanned like the rest of the engine.
+  'render.ts',
+]
 const BANNED = ['localeCompare', 'toLocaleString', 'toLocaleDateString', 'Intl.', 'Math.random']
 
 describe('no locale-dependent or random API in the resolver (§7.2)', () => {

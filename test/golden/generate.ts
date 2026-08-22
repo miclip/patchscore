@@ -32,6 +32,10 @@ export function serialise(result: ResolveResult): string {
         harmony: result.template.harmony,
         hooks: result.template.hooks,
       },
+      // §7 step 10's seeded choices. Listed because the key and the hook are decisions the
+      // seed makes, and an undetected drift in either is exactly the invariant-6 failure this
+      // file exists to catch.
+      song: result.song,
       score: result.score,
       search: result.search,
       clockMaster: result.clockMaster ?? null,

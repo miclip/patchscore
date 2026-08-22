@@ -19,6 +19,7 @@ import {
   type ResolvedPatchEntry,
 } from './resolver'
 import { assign, type Gap, type SearchReport } from './search'
+import { chooseHook, chooseKey, type HookChoice } from './harmony'
 
 /**
  * §7. The resolver, composed end to end. Pure functions, no React, and nothing imported from
@@ -43,10 +44,13 @@ import { assign, type Gap, type SearchReport } from './search'
  *  8. Bind each recipe's articulation to the selected pattern's slots (§4.3) — here
  *  9. Resolve inherited citations, apply mood, stamp provenance (§3.1, §3.2) — here
  *
- * Step 10 (harmony and hooks) has a pure resolver of its own in `harmony.ts` — `resolveHook`
- * turns authored degrees into concrete notes (§4.1) — but it is deliberately not called from
- * here. Wiring it in means *choosing* a key from `template.keys` by seed, and that choice is
- * build step 5.5's, not this module's. Step 11 (render) is build step 6 and has no shape yet.
+ * 10. Choose the key and one hook per role by seed, and resolve degrees to notes (§4.1) — here
+ *
+ * Step 10 was deferred at build step 5.5, which built `harmony.ts`'s arithmetic but left the
+ * *choice* — which of `template.keys`, which of several authored hooks — unwired. It lands here
+ * rather than in the renderer because it is a musical decision driven by the seed, and a
+ * decision made during rendering would mean two renderers of one result could disagree about
+ * what key the track is in. The renderer (§8, build step 6) renders; it decides nothing.
  */
 
 // ---------------------------------------------------------------------------
@@ -178,9 +182,42 @@ export type ResolveInput = {
   seed: number
 }
 
+/**
+ * §7 step 10 / §4.1, and §8's opening phase. What the seed settled about the song itself,
+ * before any of it reaches a device.
+ */
+export type ResolvedSong = {
+  /** `bpm.default`. Nothing in the design gives the seed a tempo to pick, so it does not. */
+  bpm: number
+  /**
+   * The key everything else resolved against. `undefined` only for a template authoring no
+   * keys at all, which validation forbids and an effective template could still reach (§5) —
+   * reported rather than guessed (invariant 5).
+   */
+  key: string | undefined
+  /** Every key the template offers, so the alternatives a reroll could reach are visible. */
+  keys: readonly string[]
+  /**
+   * One entry per role the template authors a hook for, by role in UTF-16 code unit order
+   * (§7.2). A role with no authored hook has no entry — §4.1's rule that the guide omits the
+   * hook rather than inventing one — and whether the role was *assigned* is a separate question
+   * the renderer answers from `assignments`.
+   */
+  hooks: HookChoice[]
+}
+
 export type ResolveResult = {
   /** The effective template, passed through so §8 has structure, harmony and hooks to hand. */
   template: Template
+  /**
+   * The effective devices, passed through for the same reason the template is: §8's rig
+   * integration phase needs clock, io and each device's `hints` table, and re-deriving that
+   * from a separately held device list is how a guide comes to describe a rig it did not
+   * resolve against.
+   */
+  devices: readonly Device[]
+  /** §7 step 10. */
+  song: ResolvedSong
   assignments: ResolvedAssignment[]
   gaps: Gap[]
   occupancy: Occupancy
@@ -258,8 +295,19 @@ export function resolve(input: ResolveInput): ResolveResult {
     }
   })
 
+  // Step 10. After assignment only because nothing above depends on it; the key is a function
+  // of template and seed alone, so a rig change never moves it.
+  const key = chooseKey(template.id, template.keys, seed)
+  const hookRoles = [...new Set(template.hooks.map((h) => h.forRole))].sort(compareCodeUnits)
+  const hooks =
+    key === undefined
+      ? []
+      : hookRoles.flatMap((role) => chooseHook(template.hooks, role, key, seed) ?? [])
+
   return {
     template,
+    devices,
+    song: { bpm: template.bpm.default, key, keys: template.keys, hooks },
     assignments,
     gaps: allocation.gaps,
     occupancy: allocation.occupancy,

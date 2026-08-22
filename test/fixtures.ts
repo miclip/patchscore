@@ -12,6 +12,10 @@ export function numericParam(over: Record<string, unknown> = {}): AuthoredParam 
     kind: 'numeric',
     name: 'TUNE',
     value: 52,
+    // A unit by default, because a numeric that carries one is the ordinary case. #29's audit
+    // counts the unitless ones, and its tests build those explicitly with `unit: undefined` —
+    // so every other test here keeps asserting only the thing it is about.
+    unit: '%',
     range: { min: 0, max: 100, verified: { kind: 'manual', source: 'fixture manual p.1' } },
     ...over,
   } as AuthoredParam

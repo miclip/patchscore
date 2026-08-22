@@ -13,6 +13,8 @@ import {
   sectionsFor,
   type MoodState,
 } from './resolver'
+// §7.2's one seeded stream, shared with §4.1's hook and key choice. See `seed.ts`.
+import { hash32, seededShuffle } from './seed'
 
 /**
  * §7.1. Assignment is a bounded search over a lexicographic objective.
@@ -144,57 +146,6 @@ export function compareScore(a: Score, b: Score): number {
  */
 export function quantiseDistance(distanceSq: number): number {
   return Math.round(Math.sqrt(distanceSq) * 1000)
-}
-
-// ---------------------------------------------------------------------------
-// §7.2 Seeding
-// ---------------------------------------------------------------------------
-
-/** FNV-1a over UTF-16 code units. No locale, no platform-dependent hashing. */
-function hash32(text: string): number {
-  let hash = 0x811c9dc5
-  for (let i = 0; i < text.length; i++) {
-    hash ^= text.charCodeAt(i)
-    hash = Math.imul(hash, 0x01000193) >>> 0
-  }
-  return hash >>> 0
-}
-
-/**
- * xorshift32, entirely in uint32 arithmetic. No float anywhere in the stream and no
- * `Math.random` (§7.2): a numeric seed drives every tie-break, and "reroll" changes the seed.
- */
-function nextUint32(state: number): number {
-  let x = state >>> 0
-  x ^= x << 13
-  x >>>= 0
-  x ^= x >>> 17
-  x ^= x << 5
-  return x >>> 0
-}
-
-/**
- * §7.2: "The seed only permutes among *exactly equal* scores." Everything else has already
- * been ordered deterministically before this runs, so this permutes within a tied group only.
- *
- * The stream is seeded from the request id rather than from traversal history, so a node's
- * permutation does not depend on which branch reached it — the same seed gives the same
- * ordering whether it is reached by the exhaustive search or by the greedy fallback.
- */
-function seededShuffle<T>(items: T[], seed: number): T[] {
-  if (items.length < 2) return items
-  // xorshift32 has a fixed point at zero, so a seed that mixes to zero is nudged off it.
-  let state = (seed >>> 0) === 0 ? 0x9e3779b9 : seed >>> 0
-  const out = [...items]
-  for (let i = out.length - 1; i > 0; i--) {
-    state = nextUint32(state)
-    const j = state % (i + 1)
-    const a = out[i] as T
-    const b = out[j] as T
-    out[i] = b
-    out[j] = a
-  }
-  return out
 }
 
 // ---------------------------------------------------------------------------

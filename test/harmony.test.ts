@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { MODES, parseKey, resolveHook, resolveHooksForRole, type Hook } from '../lib/core/index'
+import {
+  MODES,
+  chooseHook,
+  chooseKey,
+  enharmonicAlternative,
+  parseKey,
+  resolveHook,
+  resolveHooksForRole,
+  sharpSpelling,
+  type Hook,
+} from '../lib/core/index'
 import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 
 /**
@@ -235,5 +245,105 @@ describe('industrial-techno hooks resolve (§4.1)', () => {
     expect(resolveHooksForRole(industrialTechno.hooks, 'pad', 'F minor')).toHaveLength(1)
     // Invariant 5 applied to melody: no hook authored, no hook invented.
     expect(resolveHooksForRole(industrialTechno.hooks, 'kick', 'F minor')).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #32 — the two representations a box may disagree with
+// ---------------------------------------------------------------------------
+
+describe('MIDI numbers and enharmonics (#32)', () => {
+  it('numbers notes so that middle C is 60, matching §4.1s convention', () => {
+    const middleC = hook({ baseOctave: 4, notes: [{ step: 1, degree: 1, octave: 0, len: 1 }] })
+    const resolved = resolveHook(middleC, 'C major')
+    expect(resolved.outcome === 'resolved' && resolved.hook.notes[0]).toMatchObject({
+      note: 'C4',
+      midi: 60,
+    })
+  })
+
+  it('gives the same number to both spellings of one pitch', () => {
+    // The issue's own example: Eb2 in F minor and D#2 in E major are both MIDI 39.
+    const eFlat = hook({ baseOctave: 2, notes: [{ step: 1, degree: 7, octave: -1, len: 1 }] })
+    const resolved = resolveHook(eFlat, 'F minor')
+    expect(resolved.outcome === 'resolved' && resolved.hook.notes[0]).toMatchObject({
+      note: 'Eb2',
+      midi: 39,
+    })
+    expect(sharpSpelling(39)).toBe('D#2')
+  })
+
+  it('offers the sharps-only reading only where it differs', () => {
+    const flat = { step: 1, len: 1, note: 'Eb2', midi: 39, degree: 7, octave: 0 }
+    const natural = { step: 1, len: 1, note: 'F2', midi: 41, degree: 1, octave: 0 }
+    expect(enharmonicAlternative(flat)).toBe('D#2')
+    expect(enharmonicAlternative(natural)).toBeUndefined()
+  })
+
+  it('numbers below middle C without an off-by-one at the octave boundary', () => {
+    expect(sharpSpelling(0)).toBe('C-1')
+    expect(sharpSpelling(11)).toBe('B-1')
+    expect(sharpSpelling(12)).toBe('C0')
+    // §4.1 never clamps, so a hook written under the MIDI floor still resolves to a number.
+    expect(sharpSpelling(-1)).toBe('B-2')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// §4.1 — what the seed chooses
+// ---------------------------------------------------------------------------
+
+describe('seeded key and hook choice (§4.1)', () => {
+  const keys = ['F minor', 'A minor', 'C minor']
+
+  it('is a pure function of template id, list and seed', () => {
+    for (let seed = 0; seed < 20; seed++) {
+      expect(chooseKey('t', keys, seed)).toBe(chooseKey('t', keys, seed))
+    }
+  })
+
+  it('reaches every authored key across seeds, rather than pinning one', () => {
+    const seen = new Set<string>()
+    for (let seed = 0; seed < 200; seed++) {
+      const key = chooseKey('industrial-techno', keys, seed)
+      if (key !== undefined) seen.add(key)
+    }
+    expect([...seen].sort()).toEqual([...keys].sort())
+  })
+
+  it('does not move the key and the hook in lockstep on a reroll', () => {
+    // Both lists have three entries here, which is exactly when an unsalted seed would make
+    // one choice track the other for every seed.
+    const hooks: Hook[] = ['a', 'b', 'c'].map((id) => ({ ...hook(), id }))
+    const pairs = new Set<string>()
+    for (let seed = 0; seed < 60; seed++) {
+      const key = chooseKey('t', keys, seed)
+      const picked = chooseHook(hooks, 'lead', 'F minor', seed)
+      pairs.add(`${key ?? ''}/${picked?.chosenId ?? ''}`)
+    }
+    expect(pairs.size).toBeGreaterThan(3)
+  })
+
+  it('reports no choice where no hook is authored, and never invents one', () => {
+    expect(chooseHook(industrialTechno.hooks, 'kick', 'F minor', 1)).toBeUndefined()
+  })
+
+  it('exposes the candidates it chose among, by id in code unit order', () => {
+    const picked = chooseHook(industrialTechno.hooks, 'bass-mid', 'F minor', 3)
+    expect(picked?.candidates).toEqual(['it-hook-bass-1', 'it-hook-bass-2'])
+    expect(picked?.candidates).toContain(picked?.chosenId)
+  })
+
+  it('picks independently of where in the file an author put the hook (§7.2)', () => {
+    const forward: Hook[] = [
+      { ...hook(), id: 'h-a' },
+      { ...hook(), id: 'h-b' },
+    ]
+    const reversed = [...forward].reverse()
+    for (let seed = 0; seed < 20; seed++) {
+      expect(chooseHook(forward, 'lead', 'F minor', seed)?.chosenId).toBe(
+        chooseHook(reversed, 'lead', 'F minor', seed)?.chosenId,
+      )
+    }
   })
 })

@@ -226,13 +226,42 @@ export const ProvenanceSchema = z.discriminatedUnion('state', [
 ])
 
 /**
+ * §8/#29. The bounds, carried through to the renderer with the range's own claim already
+ * resolved against the recipe's (§3.1) — `verified` here is never `undefined`, because
+ * inheritance is settled once, in the resolver, and never re-read downstream.
+ *
+ * The guide prints the range beside the value (`DECAY 38 (0–100)`) because the range is what
+ * disambiguates at the machine: 35% of authored numerics carry no unit and the unit spellings
+ * drift between devices, so a bare `38` gives a reader standing at the box nothing to check the
+ * screen against, while `0–100` against a display reading milliseconds is an obvious mismatch.
+ *
+ * `step` is deliberately not carried: it is arithmetic the resolver has already performed, and
+ * a reader turning a knob does not need to be told the knob's granularity.
+ */
+export type ResolvedRange = { min: number; max: number; verified: Verified }
+
+export const ResolvedRangeSchema = z.strictObject({
+  min: z.number().finite(),
+  max: z.number().finite(),
+  verified: VerifiedSchema,
+})
+
+/**
  * `provenance` is required, not optional — this is the invariant-4 repair. It is a type error
  * to render a value whose provenance nobody decided.
+ *
+ * `range` is present exactly when `value` is a number: only numerics have one, and an enum's
+ * legality gate is its `options` rather than a range (§3.2). It is optional on the type rather
+ * than split into two resolved shapes, because every consumer downstream treats params as one
+ * ordered list and a discriminated union would buy exhaustiveness nobody needs at the cost of a
+ * narrowing at every rendering site.
  */
 export type ResolvedParam = {
   name: string
   value: number | string
   unit?: string
+  /** Numerics only, with the range's inherited citation already resolved. */
+  range?: ResolvedRange
   provenance: Provenance
   hint?: string
   note?: string
@@ -242,6 +271,7 @@ export const ResolvedParamSchema = z.strictObject({
   name: z.string().min(1),
   value: z.union([z.number().finite(), z.string()]),
   unit: z.string().min(1).optional(),
+  range: ResolvedRangeSchema.optional(),
   provenance: ProvenanceSchema,
   hint: z.string().min(1).optional(),
   note: z.string().min(1).optional(),

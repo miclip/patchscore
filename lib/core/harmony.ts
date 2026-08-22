@@ -1,6 +1,8 @@
-import type { HookId } from './ids'
+import type { HookId, TemplateId } from './ids'
 import type { Hook, HookNote } from './template'
 import type { Role } from './vocabulary'
+import { compareCodeUnits } from './resolver'
+import { saltSeed, seededPick } from './seed'
 
 /**
  * §4.1. Scale degrees resolved against a key produce concrete notes. Deterministic, authored,
@@ -100,6 +102,16 @@ export type ResolvedNote = {
   len: number
   /** Scientific pitch notation, middle C = C4. 'Ab2', 'F4', 'G##5'. */
   note: string
+  /**
+   * #32. The one representation with no convention drift in it. `Eb2`, `D#2` and — on a box
+   * that puts middle C at C3 — `Eb1` are all MIDI 39, so the number is what a reader can check
+   * against hardware that spells or numbers octaves differently from this guide.
+   *
+   * Unclamped, exactly as the spelling is: §4.1 puts range policy outside this layer, so a hook
+   * written above or below the MIDI range resolves to a number outside 0-127 rather than being
+   * quietly moved. It is a fact about the note, not a promise that a device can play it.
+   */
+  midi: number
   /** The authored degree this came from, 1-based and unwrapped: a ninth is still 9. */
   degree: number
   /** The authored offset from the hook's `baseOctave`. */
@@ -146,7 +158,7 @@ function spell(
   key: ParsedKey,
   baseOctave: number,
   note: HookNote,
-): { note: string } | { unspellable: string } {
+): { note: string; midi: number } | { unspellable: string } {
   const steps = MODE_STEPS[key.mode]
   const tonicLetterIndex = LETTERS.indexOf(key.letter as (typeof LETTERS)[number])
   const stepsAboveTonic = note.degree - 1
@@ -174,7 +186,8 @@ function spell(
 
   const octave = (semitone - natural - accidental) / 12 - 1
   const marks = accidental >= 0 ? '#'.repeat(accidental) : 'b'.repeat(-accidental)
-  return { note: `${letter}${marks}${octave}` }
+  // `semitone` is already the MIDI number: `absoluteSemitone` counts from C-1, which is MIDI 0.
+  return { note: `${letter}${marks}${octave}`, midi: semitone }
 }
 
 /**
@@ -204,6 +217,7 @@ export function resolveHook(hook: Hook, key: string): HookResolution {
       step: note.step,
       len: note.len,
       note: spelt.note,
+      midi: spelt.midi,
       degree: note.degree,
       octave: note.octave,
     })
@@ -227,4 +241,104 @@ export function resolveHooksForRole(
   key: string,
 ): HookResolution[] {
   return hooks.filter((h) => h.forRole === role).map((h) => resolveHook(h, key))
+}
+
+// ---------------------------------------------------------------------------
+// #32 — the two representations the box may disagree with
+// ---------------------------------------------------------------------------
+
+/**
+ * Sharps only, which is what a great many boxes display and what nothing here ever *decides*.
+ * The key-correct spelling is decided in `spell` and must not change (writing D# in F minor is
+ * wrong even though the pitch is right); this is a second reading of the same pitch, offered
+ * so a reader can recognise `Eb2` on a screen that calls it `D#2`.
+ */
+const SHARP_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const
+
+/**
+ * The sharps-only name for a MIDI number, in scientific pitch notation. Total over every
+ * integer, including the negatives an unclamped hook can reach (§4.1) — `mod` and a floored
+ * division rather than `%` and a truncating one, which would put -1 in octave -1 twice.
+ */
+export function sharpSpelling(midi: number): string {
+  const name = SHARP_NAMES[mod(midi, 12)] as string
+  return `${name}${Math.floor(midi / 12) - 1}`
+}
+
+/**
+ * #32. The sharps-only reading, **only when it differs** from the key-correct one. `undefined`
+ * for `F4` or `C#3`, which spell the same either way — printing `F4 · F4` would be noise, and
+ * noise on every natural note is most of them.
+ *
+ * Double accidentals have no sharps-only equivalent that is any clearer (`G##5` reads as `A5`),
+ * and that is exactly the case where showing the alternative earns its space.
+ */
+export function enharmonicAlternative(note: ResolvedNote): string | undefined {
+  const sharp = sharpSpelling(note.midi)
+  return sharp === note.note ? undefined : sharp
+}
+
+// ---------------------------------------------------------------------------
+// §4.1 — what the seed chooses
+// ---------------------------------------------------------------------------
+
+/**
+ * §4.1: "The seed picks among multiple authored hooks." The same reasoning covers `keys`, which
+ * §4 authors as a list and §8 renders as one key — the guide states the key you are working in,
+ * not a menu to choose from at the machine.
+ *
+ * Salted with the template id so two templates that happen to author the same number of keys do
+ * not move in lockstep on every reroll, and so the key does not track the hook choice.
+ *
+ * `undefined` only for an empty list. `TemplateSchema` requires at least one key, so that is
+ * unreachable through validated data — but the caller receives an *effective* template (§5), so
+ * this reports rather than throws, exactly as `parseKey` does.
+ */
+export function chooseKey(
+  templateId: TemplateId,
+  keys: readonly string[],
+  seed: number,
+): string | undefined {
+  return seededPick(keys, saltSeed(seed, `key:${templateId}`))
+}
+
+/**
+ * One role's hook, chosen and resolved. `candidates` is every hook authored for the role, so a
+ * reader — and a later reroll UI — can see that the choice was among several rather than the
+ * only one there was. It mirrors `PatternSelection.candidates` for the same reason.
+ */
+export type HookChoice = {
+  forRole: Role
+  chosen: HookResolution
+  /** The chosen hook's id, available even when `chosen` did not resolve. */
+  chosenId: HookId
+  /** Every hook authored for this role, by id in UTF-16 code unit order (§7.2). */
+  candidates: readonly HookId[]
+}
+
+/**
+ * §4.1, for one role. `undefined` when the template authors no hook for it — the guide omits
+ * the hook rather than inventing one, which is invariant 5 applied to melody.
+ *
+ * Candidates are ordered by id rather than by authored order, so which hook a given seed picks
+ * does not depend on where in the file an author happened to put it (§7.2). The pick is salted
+ * per role, so adding a bass hook does not reroll the pad.
+ */
+export function chooseHook(
+  hooks: readonly Hook[],
+  role: Role,
+  key: string,
+  seed: number,
+): HookChoice | undefined {
+  const forRole = hooks
+    .filter((h) => h.forRole === role)
+    .sort((a, b) => compareCodeUnits(a.id, b.id))
+  const picked = seededPick(forRole, saltSeed(seed, `hook:${role}`))
+  if (picked === undefined) return undefined
+  return {
+    forRole: role,
+    chosen: resolveHook(picked, key),
+    chosenId: picked.id,
+    candidates: Object.freeze(forRole.map((h) => h.id)),
+  }
 }

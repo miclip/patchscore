@@ -62,6 +62,42 @@
       }
     ]
   },
+  "song": {
+    "bpm": 134,
+    "key": "F minor",
+    "keys": [
+      "F minor",
+      "A minor"
+    ],
+    "hooks": [
+      {
+        "forRole": "lead",
+        "chosen": {
+          "outcome": "resolved",
+          "hook": {
+            "hookId": "g-hook-1",
+            "forRole": "lead",
+            "bars": 2,
+            "key": "F minor",
+            "notes": [
+              {
+                "step": 1,
+                "len": 2,
+                "note": "C5",
+                "midi": 72,
+                "degree": 5,
+                "octave": 0
+              }
+            ]
+          }
+        },
+        "chosenId": "g-hook-1",
+        "candidates": [
+          "g-hook-1"
+        ]
+      }
+    ]
+  },
   "score": [
     0,
     0,
@@ -114,6 +150,14 @@
         {
           "name": "TUNE",
           "value": 45,
+          "range": {
+            "min": 0,
+            "max": 100,
+            "verified": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            }
+          },
           "provenance": {
             "state": "derived",
             "cite": {
@@ -463,6 +507,14 @@
         {
           "name": "DRIVE",
           "value": 30,
+          "range": {
+            "min": 0,
+            "max": 100,
+            "verified": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            }
+          },
           "provenance": {
             "state": "derived",
             "cite": {
@@ -623,6 +675,14 @@
           "name": "CUTOFF",
           "value": 46,
           "unit": "Hz",
+          "range": {
+            "min": 0,
+            "max": 127,
+            "verified": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            }
+          },
           "provenance": {
             "state": "derived",
             "cite": {
@@ -643,6 +703,14 @@
         {
           "name": "RESONANCE",
           "value": 32,
+          "range": {
+            "min": 0,
+            "max": 127,
+            "verified": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            }
+          },
           "provenance": {
             "state": "derived",
             "cite": {
@@ -733,6 +801,14 @@
         {
           "name": "DECAY",
           "value": 26,
+          "range": {
+            "min": 0,
+            "max": 127,
+            "verified": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            }
+          },
           "provenance": {
             "state": "derived",
             "cite": {
@@ -961,6 +1037,11 @@
         {
           "name": "ATTACK",
           "value": 40,
+          "range": {
+            "min": 0,
+            "max": 127,
+            "verified": false
+          },
           "provenance": {
             "state": "authored",
             "cite": {
@@ -1173,6 +1254,11 @@
         {
           "name": "ATTACK",
           "value": 40,
+          "range": {
+            "min": 0,
+            "max": 127,
+            "verified": false
+          },
           "provenance": {
             "state": "authored",
             "cite": {

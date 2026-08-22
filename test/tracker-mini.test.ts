@@ -4,6 +4,8 @@ import {
   DeviceSchema,
   ROLES,
   expand,
+  moodState,
+  resolveParams,
   resolveRecipe,
   type AuthoredParam,
   type Recipe,
@@ -221,7 +223,11 @@ describe('Tracker Mini manifest', () => {
           kind: 'manual',
           source: expect.stringContaining(CITE_PREFIX),
         })
-        expect(param.step, where).toBeUndefined()
+        // A step is a *granularity*, not a claim, so it needs no citation — but it must not
+        // appear on a parameter whose grid nobody has a reason to believe. Seconds are the
+        // one case here: the manual prints their bounds to two decimals (p.126).
+        if (param.unit === 'Sec') expect(param.step, where).toBe(0.01)
+        else expect(param.step, where).toBeUndefined()
       }
 
       for (const param of recipe.params as AuthoredParam[]) {
@@ -315,9 +321,13 @@ describe('Tracker Mini manifest', () => {
   })
 
   it('addresses steps only by PatternSlot, and uses every per-step feature it declares', () => {
-    const source = JSON.stringify(device)
-    expect(source).not.toContain('"step"')
-    expect(source).not.toContain('"hits"')
+    // Narrowed to the articulation, which is the only place an absolute index could appear:
+    // `AuthoredNumericParam.step` is a knob's *granularity* and has nothing to do with a
+    // sequencer step, so scanning the whole manifest for the word caught the wrong thing.
+    const articulation = JSON.stringify(device.recipes.map((r) => r.articulation ?? []))
+    expect(articulation).not.toContain('"step"')
+    expect(articulation).not.toContain('"hits"')
+    expect(JSON.stringify(device)).not.toContain('"hits"')
 
     const perStep = device.features?.perStep ?? []
     const used = new Set(
@@ -345,5 +355,49 @@ describe('Tracker Mini manifest', () => {
       ),
     )
     expect([...axes].sort()).toEqual(['darkness', 'density', 'grit', 'space'])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Seconds are authored and moved in hundredths
+// ---------------------------------------------------------------------------
+
+describe('time parameters (§6.1)', () => {
+  function numerics(): AuthoredParam[] {
+    return device.recipes
+      .flatMap((r) => r.params as AuthoredParam[])
+      .filter((p) => p.kind === 'numeric')
+  }
+
+  it('declares a hundredth step on every parameter measured in seconds', () => {
+    const seconds = numerics().filter((p) => p.kind === 'numeric' && p.unit === 'Sec')
+    expect(seconds.length).toBeGreaterThan(0)
+    for (const p of seconds) {
+      // The manual prints these bounds to two decimals (p.126), so a hundredth is the grid the
+      // box works on. Without it §6.1 rounds to the default step of 1 — whole seconds.
+      expect(p.kind === 'numeric' && p.step, p.name).toBe(0.01)
+    }
+  })
+
+  it('moves a decay by hundredths rather than rounding it to a whole second', () => {
+    const kick = device.recipes.find((r) => r.id === 'tm-kick-hard') as Recipe
+    const at = (density: number) =>
+      resolveParams(kick, moodState({ density })).find((p) => p.name === 'ENV DECAY')?.value
+
+    // Authored 0.28, moved -0.09 at full density. A step of 1 would give 0 at every setting.
+    expect(at(0)).toBe(0.37)
+    expect(at(50)).toBe(0.28)
+    expect(at(100)).toBe(0.19)
+  })
+
+  it('leaves no authored value unreachable on its own declared grid', () => {
+    // A step the authored point does not sit on means the value cannot be dialled in as
+    // written, which is an authoring error rather than a resolver one.
+    for (const p of numerics()) {
+      if (p.kind !== 'numeric' || p.step === undefined) continue
+      const steps = p.value / p.step
+      expect(Math.abs(steps - Math.round(steps)), `${p.name} ${p.value} on step ${p.step}`)
+        .toBeLessThan(1e-9)
+    }
   })
 })
