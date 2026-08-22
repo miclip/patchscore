@@ -14,7 +14,8 @@
     "check:registry": "tsx scripts/gen-registry.ts --check",
     "prebuild": "tsx scripts/gen-registry.ts",
     "audit": "tsx scripts/audit-verified.ts",
-    "verify": "npm run typecheck && npm run test"
+    "verify": "npm run typecheck && npm run test",
+    "gen:golden": "tsx test/golden/generate.ts --write"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",

@@ -1,0 +1,2427 @@
+{
+  "template": {
+    "id": "golden-techno",
+    "name": "Golden Techno",
+    "bpm": {
+      "min": 130,
+      "max": 142,
+      "default": 134
+    },
+    "keys": [
+      "F minor",
+      "A minor"
+    ],
+    "structure": [
+      {
+        "name": "Intro",
+        "bars": 16,
+        "energy": 0.2
+      },
+      {
+        "name": "Build",
+        "bars": 16,
+        "energy": 0.5
+      },
+      {
+        "name": "Drop",
+        "bars": 32,
+        "energy": 0.9
+      }
+    ],
+    "harmony": {
+      "cycleBars": 8,
+      "progression": [
+        {
+          "degree": "i",
+          "bars": 4
+        },
+        {
+          "degree": "VI",
+          "bars": 2
+        },
+        {
+          "degree": "VII",
+          "bars": 2
+        }
+      ]
+    },
+    "hooks": [
+      {
+        "id": "g-hook-1",
+        "forRole": "lead",
+        "bars": 2,
+        "notes": [
+          {
+            "step": 1,
+            "degree": 5,
+            "octave": 0,
+            "len": 2
+          }
+        ]
+      }
+    ]
+  },
+  "score": [
+    0,
+    0,
+    2,
+    0,
+    0,
+    2,
+    4242,
+    1,
+    0
+  ],
+  "search": {
+    "nodes": 364,
+    "nodeCap": 50000,
+    "capped": false,
+    "method": "exhaustive"
+  },
+  "clockMaster": {
+    "deviceId": "B-tracker",
+    "deviceName": "Golden Tracker",
+    "transport": "midi-din",
+    "occupiedAssignables": 3
+  },
+  "assignments": [
+    {
+      "requestId": "r-kick",
+      "role": "kick",
+      "character": "hard",
+      "priority": 1,
+      "optional": false,
+      "deviceId": "a-drum",
+      "deviceName": "Golden Drum",
+      "assignable": {
+        "deviceId": "a-drum",
+        "voiceId": "bd",
+        "label": "BD",
+        "roles": [
+          "kick"
+        ],
+        "polyphony": 1
+      },
+      "recipe": {
+        "id": "drum-kick-hard",
+        "title": "hard kick",
+        "character": "hard",
+        "outcome": "exact",
+        "routing": "Keep out of the analog FX path"
+      },
+      "params": [
+        {
+          "name": "TUNE",
+          "value": 45,
+          "provenance": {
+            "state": "derived",
+            "cite": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            },
+            "rangeCite": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            },
+            "from": 52,
+            "axes": [
+              "darkness"
+            ]
+          }
+        },
+        {
+          "name": "NOTE",
+          "value": "sits under the sub",
+          "provenance": {
+            "state": "provisional"
+          }
+        }
+      ],
+      "patch": [],
+      "sections": [
+        "Intro",
+        "Build",
+        "Drop"
+      ],
+      "patterns": [
+        {
+          "section": "Intro",
+          "selection": {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-kick-b2",
+              "forRole": "kick",
+              "band": 2,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                },
+                {
+                  "step": 5,
+                  "slot": "accent",
+                  "velocity": 110
+                },
+                {
+                  "step": 9,
+                  "slot": "downbeat"
+                },
+                {
+                  "step": 13,
+                  "slot": "last-hit"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-kick-b2",
+                "forRole": "kick",
+                "band": 2,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  },
+                  {
+                    "step": 5,
+                    "slot": "accent",
+                    "velocity": 110
+                  },
+                  {
+                    "step": 9,
+                    "slot": "downbeat"
+                  },
+                  {
+                    "step": 13,
+                    "slot": "last-hit"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": [
+            {
+              "slot": "accent",
+              "set": {
+                "velocity": 110
+              },
+              "steps": [
+                5
+              ],
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            },
+            {
+              "slot": "last-hit",
+              "set": {
+                "cycle": 2
+              },
+              "steps": [
+                13
+              ],
+              "hint": "apply-cycle",
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "section": "Build",
+          "selection": {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-kick-b2",
+              "forRole": "kick",
+              "band": 2,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                },
+                {
+                  "step": 5,
+                  "slot": "accent",
+                  "velocity": 110
+                },
+                {
+                  "step": 9,
+                  "slot": "downbeat"
+                },
+                {
+                  "step": 13,
+                  "slot": "last-hit"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-kick-b2",
+                "forRole": "kick",
+                "band": 2,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  },
+                  {
+                    "step": 5,
+                    "slot": "accent",
+                    "velocity": 110
+                  },
+                  {
+                    "step": 9,
+                    "slot": "downbeat"
+                  },
+                  {
+                    "step": 13,
+                    "slot": "last-hit"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": [
+            {
+              "slot": "accent",
+              "set": {
+                "velocity": 110
+              },
+              "steps": [
+                5
+              ],
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            },
+            {
+              "slot": "last-hit",
+              "set": {
+                "cycle": 2
+              },
+              "steps": [
+                13
+              ],
+              "hint": "apply-cycle",
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "section": "Drop",
+          "selection": {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-kick-b2",
+              "forRole": "kick",
+              "band": 2,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                },
+                {
+                  "step": 5,
+                  "slot": "accent",
+                  "velocity": 110
+                },
+                {
+                  "step": 9,
+                  "slot": "downbeat"
+                },
+                {
+                  "step": 13,
+                  "slot": "last-hit"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-kick-b2",
+                "forRole": "kick",
+                "band": 2,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  },
+                  {
+                    "step": 5,
+                    "slot": "accent",
+                    "velocity": 110
+                  },
+                  {
+                    "step": 9,
+                    "slot": "downbeat"
+                  },
+                  {
+                    "step": 13,
+                    "slot": "last-hit"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": [
+            {
+              "slot": "accent",
+              "set": {
+                "velocity": 110
+              },
+              "steps": [
+                5
+              ],
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            },
+            {
+              "slot": "last-hit",
+              "set": {
+                "cycle": 2
+              },
+              "steps": [
+                13
+              ],
+              "hint": "apply-cycle",
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requestId": "r-sub",
+      "role": "sub",
+      "character": "dark",
+      "priority": 1,
+      "optional": false,
+      "deviceId": "B-tracker",
+      "deviceName": "Golden Tracker",
+      "assignable": {
+        "deviceId": "B-tracker",
+        "voiceId": "track-3",
+        "poolId": "track",
+        "label": "Track 3",
+        "ordinal": 3,
+        "roles": [
+          "pad",
+          "sub",
+          "texture"
+        ],
+        "polyphony": 4
+      },
+      "recipe": {
+        "id": "tracker-sub-dirty",
+        "title": "dirty sub",
+        "character": "dirty",
+        "outcome": "substituted"
+      },
+      "params": [
+        {
+          "name": "DRIVE",
+          "value": 30,
+          "provenance": {
+            "state": "derived",
+            "cite": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            },
+            "rangeCite": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            },
+            "from": 10,
+            "axes": [
+              "grit"
+            ]
+          }
+        }
+      ],
+      "patch": [],
+      "sections": [
+        "Intro",
+        "Build",
+        "Drop"
+      ],
+      "patterns": [
+        {
+          "section": "Intro",
+          "selection": {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-sub-b2",
+              "forRole": "sub",
+              "band": 2,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-sub-b2",
+                "forRole": "sub",
+                "band": 2,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": []
+        },
+        {
+          "section": "Build",
+          "selection": {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-sub-b2",
+              "forRole": "sub",
+              "band": 2,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-sub-b2",
+                "forRole": "sub",
+                "band": 2,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": []
+        },
+        {
+          "section": "Drop",
+          "selection": {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-sub-b2",
+              "forRole": "sub",
+              "band": 2,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-sub-b2",
+                "forRole": "sub",
+                "band": 2,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": []
+        }
+      ]
+    },
+    {
+      "requestId": "r-bassmid",
+      "role": "bass-mid",
+      "character": "dark",
+      "priority": 2,
+      "optional": false,
+      "deviceId": "A-cascade",
+      "deviceName": "Golden Cascade",
+      "assignable": {
+        "deviceId": "A-cascade",
+        "voiceId": "voice",
+        "label": "Voice",
+        "roles": [
+          "bass-mid",
+          "lead"
+        ],
+        "polyphony": 1
+      },
+      "recipe": {
+        "id": "cascade-bassmid-dark",
+        "title": "dark bass-mid",
+        "character": "dark",
+        "outcome": "exact"
+      },
+      "params": [
+        {
+          "name": "CUTOFF",
+          "value": 46,
+          "unit": "Hz",
+          "provenance": {
+            "state": "derived",
+            "cite": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            },
+            "rangeCite": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            },
+            "from": 64,
+            "axes": [
+              "darkness"
+            ]
+          },
+          "hint": "fine-adjust"
+        },
+        {
+          "name": "RESONANCE",
+          "value": 32,
+          "provenance": {
+            "state": "derived",
+            "cite": {
+              "kind": "observed",
+              "source": "golden unit, firmware 1.11"
+            },
+            "rangeCite": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            },
+            "from": 20,
+            "axes": [
+              "grit"
+            ]
+          }
+        }
+      ],
+      "patch": [
+        {
+          "from": "OSC1 SUB",
+          "to": "FILTER IN",
+          "note": "short cable",
+          "provenance": {
+            "state": "authored",
+            "cite": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            }
+          }
+        }
+      ],
+      "sections": [
+        "Intro",
+        "Build",
+        "Drop"
+      ],
+      "patterns": [
+        {
+          "section": "Intro",
+          "selection": {
+            "outcome": "none",
+            "band": 2
+          },
+          "articulation": []
+        },
+        {
+          "section": "Build",
+          "selection": {
+            "outcome": "none",
+            "band": 2
+          },
+          "articulation": []
+        },
+        {
+          "section": "Drop",
+          "selection": {
+            "outcome": "none",
+            "band": 2
+          },
+          "articulation": []
+        }
+      ]
+    },
+    {
+      "requestId": "r-hat",
+      "role": "closed-hat",
+      "character": "dirty",
+      "priority": 2,
+      "optional": false,
+      "deviceId": "a-drum",
+      "deviceName": "Golden Drum",
+      "assignable": {
+        "deviceId": "a-drum",
+        "voiceId": "ch",
+        "label": "CH",
+        "roles": [
+          "closed-hat"
+        ],
+        "polyphony": 1
+      },
+      "recipe": {
+        "id": "drum-hat-dirty",
+        "title": "dirty closed-hat",
+        "character": "dirty",
+        "outcome": "exact"
+      },
+      "params": [
+        {
+          "name": "DECAY",
+          "value": 26,
+          "provenance": {
+            "state": "derived",
+            "cite": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            },
+            "rangeCite": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            },
+            "from": 24,
+            "axes": [
+              "density"
+            ]
+          }
+        }
+      ],
+      "patch": [],
+      "sections": [
+        "Intro",
+        "Build",
+        "Drop"
+      ],
+      "patterns": [
+        {
+          "section": "Intro",
+          "selection": {
+            "outcome": "fallback",
+            "band": 2,
+            "usedBand": 1,
+            "pattern": {
+              "id": "p-hat-b1",
+              "forRole": "closed-hat",
+              "band": 1,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 3,
+                  "slot": "offbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-hat-b1",
+                "forRole": "closed-hat",
+                "band": 1,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 3,
+                    "slot": "offbeat"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": [
+            {
+              "slot": "offbeat",
+              "set": {
+                "velocity": 80
+              },
+              "steps": [
+                3
+              ],
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "section": "Build",
+          "selection": {
+            "outcome": "fallback",
+            "band": 2,
+            "usedBand": 1,
+            "pattern": {
+              "id": "p-hat-b1",
+              "forRole": "closed-hat",
+              "band": 1,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 3,
+                  "slot": "offbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-hat-b1",
+                "forRole": "closed-hat",
+                "band": 1,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 3,
+                    "slot": "offbeat"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": [
+            {
+              "slot": "offbeat",
+              "set": {
+                "velocity": 80
+              },
+              "steps": [
+                3
+              ],
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "section": "Drop",
+          "selection": {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-hat-b2-drop",
+              "forRole": "closed-hat",
+              "band": 2,
+              "sections": [
+                "Drop"
+              ],
+              "length": 16,
+              "hits": [
+                {
+                  "step": 3,
+                  "slot": "offbeat"
+                },
+                {
+                  "step": 7,
+                  "slot": "offbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-hat-b2-drop",
+                "forRole": "closed-hat",
+                "band": 2,
+                "sections": [
+                  "Drop"
+                ],
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 3,
+                    "slot": "offbeat"
+                  },
+                  {
+                    "step": 7,
+                    "slot": "offbeat"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": [
+            {
+              "slot": "offbeat",
+              "set": {
+                "velocity": 80
+              },
+              "steps": [
+                3,
+                7
+              ],
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requestId": "r-pad-2",
+      "role": "pad",
+      "character": "dark",
+      "priority": 2,
+      "optional": false,
+      "deviceId": "B-tracker",
+      "deviceName": "Golden Tracker",
+      "assignable": {
+        "deviceId": "B-tracker",
+        "voiceId": "track-2",
+        "poolId": "track",
+        "label": "Track 2",
+        "ordinal": 2,
+        "roles": [
+          "pad",
+          "sub",
+          "texture"
+        ],
+        "polyphony": 4
+      },
+      "recipe": {
+        "id": "tracker-pad-ice",
+        "title": "dirty pad",
+        "character": "dirty",
+        "outcome": "substituted"
+      },
+      "params": [
+        {
+          "name": "ATTACK",
+          "value": 40,
+          "provenance": {
+            "state": "authored",
+            "cite": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            }
+          }
+        },
+        {
+          "name": "MODE",
+          "value": "poly",
+          "provenance": {
+            "state": "provisional"
+          }
+        }
+      ],
+      "patch": [],
+      "sections": [
+        "Intro",
+        "Build",
+        "Drop"
+      ],
+      "patterns": [
+        {
+          "section": "Intro",
+          "selection": {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-pad-b2",
+              "forRole": "pad",
+              "band": 2,
+              "length": 32,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-pad-b2",
+                "forRole": "pad",
+                "band": 2,
+                "length": 32,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": [
+            {
+              "slot": "downbeat",
+              "set": {
+                "velocity": 96
+              },
+              "steps": [
+                1
+              ],
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "section": "Build",
+          "selection": {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-pad-b2",
+              "forRole": "pad",
+              "band": 2,
+              "length": 32,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-pad-b2",
+                "forRole": "pad",
+                "band": 2,
+                "length": 32,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": [
+            {
+              "slot": "downbeat",
+              "set": {
+                "velocity": 96
+              },
+              "steps": [
+                1
+              ],
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "section": "Drop",
+          "selection": {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-pad-b2",
+              "forRole": "pad",
+              "band": 2,
+              "length": 32,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-pad-b2",
+                "forRole": "pad",
+                "band": 2,
+                "length": 32,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": [
+            {
+              "slot": "downbeat",
+              "set": {
+                "velocity": 96
+              },
+              "steps": [
+                1
+              ],
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requestId": "r-pad",
+      "role": "pad",
+      "character": "dark",
+      "priority": 3,
+      "optional": false,
+      "deviceId": "B-tracker",
+      "deviceName": "Golden Tracker",
+      "assignable": {
+        "deviceId": "B-tracker",
+        "voiceId": "track-1",
+        "poolId": "track",
+        "label": "Track 1",
+        "ordinal": 1,
+        "roles": [
+          "pad",
+          "sub",
+          "texture"
+        ],
+        "polyphony": 4
+      },
+      "recipe": {
+        "id": "tracker-pad-ice",
+        "title": "dirty pad",
+        "character": "dirty",
+        "outcome": "substituted"
+      },
+      "params": [
+        {
+          "name": "ATTACK",
+          "value": 40,
+          "provenance": {
+            "state": "authored",
+            "cite": {
+              "kind": "manual",
+              "source": "Golden Manual p.12"
+            }
+          }
+        },
+        {
+          "name": "MODE",
+          "value": "poly",
+          "provenance": {
+            "state": "provisional"
+          }
+        }
+      ],
+      "patch": [],
+      "sections": [
+        "Intro",
+        "Build",
+        "Drop"
+      ],
+      "patterns": [
+        {
+          "section": "Intro",
+          "selection": {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-pad-b2",
+              "forRole": "pad",
+              "band": 2,
+              "length": 32,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-pad-b2",
+                "forRole": "pad",
+                "band": 2,
+                "length": 32,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": [
+            {
+              "slot": "downbeat",
+              "set": {
+                "velocity": 96
+              },
+              "steps": [
+                1
+              ],
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "section": "Build",
+          "selection": {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-pad-b2",
+              "forRole": "pad",
+              "band": 2,
+              "length": 32,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-pad-b2",
+                "forRole": "pad",
+                "band": 2,
+                "length": 32,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": [
+            {
+              "slot": "downbeat",
+              "set": {
+                "velocity": 96
+              },
+              "steps": [
+                1
+              ],
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "section": "Drop",
+          "selection": {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-pad-b2",
+              "forRole": "pad",
+              "band": 2,
+              "length": 32,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-pad-b2",
+                "forRole": "pad",
+                "band": 2,
+                "length": 32,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          },
+          "articulation": [
+            {
+              "slot": "downbeat",
+              "set": {
+                "velocity": 96
+              },
+              "steps": [
+                1
+              ],
+              "provenance": {
+                "state": "authored",
+                "cite": {
+                  "kind": "manual",
+                  "source": "Golden Manual p.12"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requestId": "r-tom-1",
+      "role": "tom",
+      "character": "hard",
+      "priority": 3,
+      "optional": false,
+      "deviceId": "a-drum",
+      "deviceName": "Golden Drum",
+      "assignable": {
+        "deviceId": "a-drum",
+        "voiceId": "lt",
+        "label": "LT",
+        "roles": [
+          "tom",
+          "sub"
+        ],
+        "polyphony": 1
+      },
+      "recipe": {
+        "id": "drum-tom-hard",
+        "title": "hard tom",
+        "character": "hard",
+        "outcome": "exact"
+      },
+      "params": [],
+      "patch": [],
+      "sections": [
+        "Intro",
+        "Build",
+        "Drop"
+      ],
+      "patterns": [
+        {
+          "section": "Intro",
+          "selection": {
+            "outcome": "none",
+            "band": 2
+          },
+          "articulation": []
+        },
+        {
+          "section": "Build",
+          "selection": {
+            "outcome": "none",
+            "band": 2
+          },
+          "articulation": []
+        },
+        {
+          "section": "Drop",
+          "selection": {
+            "outcome": "none",
+            "band": 2
+          },
+          "articulation": []
+        }
+      ]
+    }
+  ],
+  "gaps": [
+    {
+      "requestId": "r-snare",
+      "role": "snare",
+      "character": "hard",
+      "priority": 3,
+      "optional": false,
+      "reason": "no-recipe",
+      "because": null,
+      "detail": null,
+      "capable": [
+        {
+          "deviceId": "a-drum",
+          "voiceId": "sd",
+          "label": "SD",
+          "roles": [
+            "snare"
+          ],
+          "polyphony": 1
+        }
+      ]
+    },
+    {
+      "requestId": "r-tom-2",
+      "role": "tom",
+      "character": "hard",
+      "priority": 3,
+      "optional": false,
+      "reason": "no-room",
+      "because": "contended",
+      "detail": "the Golden Drum LT is carrying tom",
+      "capable": [
+        {
+          "deviceId": "a-drum",
+          "voiceId": "lt",
+          "label": "LT",
+          "roles": [
+            "tom",
+            "sub"
+          ],
+          "polyphony": 1
+        }
+      ]
+    },
+    {
+      "requestId": "r-acid",
+      "role": "acid",
+      "character": "dirty",
+      "priority": 4,
+      "optional": true,
+      "reason": "no-capable-voice",
+      "because": null,
+      "detail": null,
+      "capable": []
+    },
+    {
+      "requestId": "r-tex",
+      "role": "texture",
+      "character": "dark",
+      "priority": 4,
+      "optional": true,
+      "reason": "no-recipe",
+      "because": null,
+      "detail": null,
+      "capable": [
+        {
+          "deviceId": "B-tracker",
+          "voiceId": "track-1",
+          "poolId": "track",
+          "label": "Track 1",
+          "ordinal": 1,
+          "roles": [
+            "pad",
+            "sub",
+            "texture"
+          ],
+          "polyphony": 4
+        },
+        {
+          "deviceId": "B-tracker",
+          "voiceId": "track-2",
+          "poolId": "track",
+          "label": "Track 2",
+          "ordinal": 2,
+          "roles": [
+            "pad",
+            "sub",
+            "texture"
+          ],
+          "polyphony": 4
+        },
+        {
+          "deviceId": "B-tracker",
+          "voiceId": "track-3",
+          "poolId": "track",
+          "label": "Track 3",
+          "ordinal": 3,
+          "roles": [
+            "pad",
+            "sub",
+            "texture"
+          ],
+          "polyphony": 4
+        },
+        {
+          "deviceId": "B-tracker",
+          "voiceId": "track-4",
+          "poolId": "track",
+          "label": "Track 4",
+          "ordinal": 4,
+          "roles": [
+            "pad",
+            "sub",
+            "texture"
+          ],
+          "polyphony": 4
+        }
+      ]
+    }
+  ],
+  "occupancy": [
+    [
+      "a-drum/bd",
+      [
+        [
+          "Intro",
+          "r-kick"
+        ],
+        [
+          "Build",
+          "r-kick"
+        ],
+        [
+          "Drop",
+          "r-kick"
+        ]
+      ]
+    ],
+    [
+      "B-tracker/track-3",
+      [
+        [
+          "Intro",
+          "r-sub"
+        ],
+        [
+          "Build",
+          "r-sub"
+        ],
+        [
+          "Drop",
+          "r-sub"
+        ]
+      ]
+    ],
+    [
+      "A-cascade/voice",
+      [
+        [
+          "Intro",
+          "r-bassmid"
+        ],
+        [
+          "Build",
+          "r-bassmid"
+        ],
+        [
+          "Drop",
+          "r-bassmid"
+        ]
+      ]
+    ],
+    [
+      "a-drum/ch",
+      [
+        [
+          "Intro",
+          "r-hat"
+        ],
+        [
+          "Build",
+          "r-hat"
+        ],
+        [
+          "Drop",
+          "r-hat"
+        ]
+      ]
+    ],
+    [
+      "B-tracker/track-2",
+      [
+        [
+          "Intro",
+          "r-pad-2"
+        ],
+        [
+          "Build",
+          "r-pad-2"
+        ],
+        [
+          "Drop",
+          "r-pad-2"
+        ]
+      ]
+    ],
+    [
+      "B-tracker/track-1",
+      [
+        [
+          "Intro",
+          "r-pad"
+        ],
+        [
+          "Build",
+          "r-pad"
+        ],
+        [
+          "Drop",
+          "r-pad"
+        ]
+      ]
+    ],
+    [
+      "a-drum/lt",
+      [
+        [
+          "Intro",
+          "r-tom-1"
+        ],
+        [
+          "Build",
+          "r-tom-1"
+        ],
+        [
+          "Drop",
+          "r-tom-1"
+        ]
+      ]
+    ]
+  ],
+  "patterns": [
+    [
+      "r-kick",
+      [
+        [
+          "Intro",
+          {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-kick-b2",
+              "forRole": "kick",
+              "band": 2,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                },
+                {
+                  "step": 5,
+                  "slot": "accent",
+                  "velocity": 110
+                },
+                {
+                  "step": 9,
+                  "slot": "downbeat"
+                },
+                {
+                  "step": 13,
+                  "slot": "last-hit"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-kick-b2",
+                "forRole": "kick",
+                "band": 2,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  },
+                  {
+                    "step": 5,
+                    "slot": "accent",
+                    "velocity": 110
+                  },
+                  {
+                    "step": 9,
+                    "slot": "downbeat"
+                  },
+                  {
+                    "step": 13,
+                    "slot": "last-hit"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        [
+          "Build",
+          {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-kick-b2",
+              "forRole": "kick",
+              "band": 2,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                },
+                {
+                  "step": 5,
+                  "slot": "accent",
+                  "velocity": 110
+                },
+                {
+                  "step": 9,
+                  "slot": "downbeat"
+                },
+                {
+                  "step": 13,
+                  "slot": "last-hit"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-kick-b2",
+                "forRole": "kick",
+                "band": 2,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  },
+                  {
+                    "step": 5,
+                    "slot": "accent",
+                    "velocity": 110
+                  },
+                  {
+                    "step": 9,
+                    "slot": "downbeat"
+                  },
+                  {
+                    "step": 13,
+                    "slot": "last-hit"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        [
+          "Drop",
+          {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-kick-b2",
+              "forRole": "kick",
+              "band": 2,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                },
+                {
+                  "step": 5,
+                  "slot": "accent",
+                  "velocity": 110
+                },
+                {
+                  "step": 9,
+                  "slot": "downbeat"
+                },
+                {
+                  "step": 13,
+                  "slot": "last-hit"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-kick-b2",
+                "forRole": "kick",
+                "band": 2,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  },
+                  {
+                    "step": 5,
+                    "slot": "accent",
+                    "velocity": 110
+                  },
+                  {
+                    "step": 9,
+                    "slot": "downbeat"
+                  },
+                  {
+                    "step": 13,
+                    "slot": "last-hit"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      ]
+    ],
+    [
+      "r-sub",
+      [
+        [
+          "Intro",
+          {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-sub-b2",
+              "forRole": "sub",
+              "band": 2,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-sub-b2",
+                "forRole": "sub",
+                "band": 2,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        [
+          "Build",
+          {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-sub-b2",
+              "forRole": "sub",
+              "band": 2,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-sub-b2",
+                "forRole": "sub",
+                "band": 2,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        [
+          "Drop",
+          {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-sub-b2",
+              "forRole": "sub",
+              "band": 2,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-sub-b2",
+                "forRole": "sub",
+                "band": 2,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      ]
+    ],
+    [
+      "r-hat",
+      [
+        [
+          "Intro",
+          {
+            "outcome": "fallback",
+            "band": 2,
+            "usedBand": 1,
+            "pattern": {
+              "id": "p-hat-b1",
+              "forRole": "closed-hat",
+              "band": 1,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 3,
+                  "slot": "offbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-hat-b1",
+                "forRole": "closed-hat",
+                "band": 1,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 3,
+                    "slot": "offbeat"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        [
+          "Build",
+          {
+            "outcome": "fallback",
+            "band": 2,
+            "usedBand": 1,
+            "pattern": {
+              "id": "p-hat-b1",
+              "forRole": "closed-hat",
+              "band": 1,
+              "length": 16,
+              "hits": [
+                {
+                  "step": 3,
+                  "slot": "offbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-hat-b1",
+                "forRole": "closed-hat",
+                "band": 1,
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 3,
+                    "slot": "offbeat"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        [
+          "Drop",
+          {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-hat-b2-drop",
+              "forRole": "closed-hat",
+              "band": 2,
+              "sections": [
+                "Drop"
+              ],
+              "length": 16,
+              "hits": [
+                {
+                  "step": 3,
+                  "slot": "offbeat"
+                },
+                {
+                  "step": 7,
+                  "slot": "offbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-hat-b2-drop",
+                "forRole": "closed-hat",
+                "band": 2,
+                "sections": [
+                  "Drop"
+                ],
+                "length": 16,
+                "hits": [
+                  {
+                    "step": 3,
+                    "slot": "offbeat"
+                  },
+                  {
+                    "step": 7,
+                    "slot": "offbeat"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      ]
+    ],
+    [
+      "r-bassmid",
+      [
+        [
+          "Intro",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ],
+        [
+          "Build",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ],
+        [
+          "Drop",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ]
+      ]
+    ],
+    [
+      "r-pad",
+      [
+        [
+          "Intro",
+          {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-pad-b2",
+              "forRole": "pad",
+              "band": 2,
+              "length": 32,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-pad-b2",
+                "forRole": "pad",
+                "band": 2,
+                "length": 32,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        [
+          "Build",
+          {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-pad-b2",
+              "forRole": "pad",
+              "band": 2,
+              "length": 32,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-pad-b2",
+                "forRole": "pad",
+                "band": 2,
+                "length": 32,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        [
+          "Drop",
+          {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-pad-b2",
+              "forRole": "pad",
+              "band": 2,
+              "length": 32,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-pad-b2",
+                "forRole": "pad",
+                "band": 2,
+                "length": 32,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      ]
+    ],
+    [
+      "r-pad-2",
+      [
+        [
+          "Intro",
+          {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-pad-b2",
+              "forRole": "pad",
+              "band": 2,
+              "length": 32,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-pad-b2",
+                "forRole": "pad",
+                "band": 2,
+                "length": 32,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        [
+          "Build",
+          {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-pad-b2",
+              "forRole": "pad",
+              "band": 2,
+              "length": 32,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-pad-b2",
+                "forRole": "pad",
+                "band": 2,
+                "length": 32,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        [
+          "Drop",
+          {
+            "outcome": "exact",
+            "band": 2,
+            "usedBand": 2,
+            "pattern": {
+              "id": "p-pad-b2",
+              "forRole": "pad",
+              "band": 2,
+              "length": 32,
+              "hits": [
+                {
+                  "step": 1,
+                  "slot": "downbeat"
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "id": "p-pad-b2",
+                "forRole": "pad",
+                "band": 2,
+                "length": 32,
+                "hits": [
+                  {
+                    "step": 1,
+                    "slot": "downbeat"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      ]
+    ],
+    [
+      "r-tom-1",
+      [
+        [
+          "Intro",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ],
+        [
+          "Build",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ],
+        [
+          "Drop",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ]
+      ]
+    ],
+    [
+      "r-tom-2",
+      [
+        [
+          "Intro",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ],
+        [
+          "Build",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ],
+        [
+          "Drop",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ]
+      ]
+    ],
+    [
+      "r-acid",
+      [
+        [
+          "Intro",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ],
+        [
+          "Build",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ],
+        [
+          "Drop",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ]
+      ]
+    ],
+    [
+      "r-tex",
+      [
+        [
+          "Intro",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ],
+        [
+          "Build",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ],
+        [
+          "Drop",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ]
+      ]
+    ],
+    [
+      "r-snare",
+      [
+        [
+          "Build",
+          {
+            "outcome": "none",
+            "band": 2
+          }
+        ]
+      ]
+    ]
+  ]
+}
