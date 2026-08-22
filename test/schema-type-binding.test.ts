@@ -2,6 +2,7 @@ import { describe, expectTypeOf, it } from 'vitest'
 import type { z } from 'zod'
 import {
   AuthoredParamSchema,
+  CiteSchema,
   DeviceSchema,
   HarmonySchema,
   HookSchema,
@@ -15,6 +16,7 @@ import {
   VerifiedSchema,
   VoiceSpecSchema,
   type AuthoredParam,
+  type Cite,
   type Device,
   type Harmony,
   type Hook,
@@ -36,6 +38,9 @@ import {
  */
 describe('schemas and types stay in step', () => {
   it('binds every authored shape to its schema', () => {
+    expectTypeOf<Cite>().toExtend<z.infer<typeof CiteSchema>>()
+    expectTypeOf<z.infer<typeof CiteSchema>>().toExtend<Cite>()
+
     expectTypeOf<Verified>().toExtend<z.infer<typeof VerifiedSchema>>()
     expectTypeOf<z.infer<typeof VerifiedSchema>>().toExtend<Verified>()
 

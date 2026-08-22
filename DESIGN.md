@@ -234,16 +234,21 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   // that does not carry its own `verified` (§3.1). It is not itself a provenance state: the
   // recipe is not the thing rendered, individual values are. `false` here means everything
   // that does not override it is provisional.
-  verified: { source: 'TR-1000 manual p.42' },
+  verified: { kind: 'manual', source: 'TR-1000 manual p.42' },
 }
 ```
 
 **Authoring rules**
 
 - Actual values only. "Short decay" is not acceptable — `DECAY 38` is.
-- Every value verifiable against the device manual. If unsure, `verified: false` — on the single
-  param if only that one is a guess, on the recipe if none of it is checked — and the UI surfaces
-  those values as provisional. A range you could not find in the manual gets
+- Every value verifiable against the device manual, or against the hardware. A citation names
+  which: `{ kind: 'manual', source: 'TR-1000 Reference Manual p.42' }` for a document,
+  `{ kind: 'observed', source: 'TR-1000 unit, firmware 1.11' }` for a reading taken off the
+  instrument (§3.1). An observation is a real citation, not a hedge — but it must never be
+  written as `manual`.
+- If unsure, `verified: false` — on the single param if only that one is a guess, on the recipe
+  if none of it is checked — and the UI surfaces those values as provisional. A range you could
+  not find in the manual and did not check on the unit gets
   `range: { min, max, verified: false }`, which is a different and quieter debt: it does not make
   the point provisional, it just makes that param deaf to mood (§3.2).
 - One recipe per `(role, character, device)`. Roughly 15–20 recipes covers a device well.
@@ -267,6 +272,10 @@ it:
   it sits in.** §3.2 requires these independently. A single `verified` flag — at recipe level or
   at param level — cannot express "the manual gives the legal range but this point value is my
   ear, not the manual", which is the common case for anything a recipe tunes by taste.
+- **A claim about *how* it was checked.** A manual page and a reading taken off a unit are both
+  citations, but they are not the same claim: the first is re-checkable by anyone holding the
+  document, the second only by whoever has that instrument. Left as free text they are
+  indistinguishable to the type system, the audit and the UI.
 - **A distinction between the authored form and the resolved form.** Provenance is a property of a
   *rendered* value, not of a manifest entry: `derived` does not exist until §7 step 9 has run, and
   a manifest cannot author it. Collapsing both into one `Param` forces the field to be optional
@@ -274,13 +283,35 @@ it:
   value carries provenance" is precisely the invariant-4 repair.
 
 ```ts
-type Cite     = { source: string }    // 'TR-1000 manual p.42'
-type Verified = Cite | false          // false = authored, nothing checked against
+type Cite =
+  | { kind: 'manual';   source: string }   // 'TR-1000 Reference Manual p.42'
+  | { kind: 'observed'; source: string }   // 'TR-1000 unit, firmware 1.11'
+
+type Verified = Cite | false               // false = authored, nothing checked against
 
 // Bounds are their own claim. A range can be verified while the point inside it is not, and
 // a point can be read off the manual for a parameter whose limits the manual never states.
 type NumericRange = { min: number; max: number; verified?: Verified }
 ```
+
+**Neither `Cite` kind is second-class, and `observed` is not a softer `provisional`.** An
+observed value is often the *better* evidence — it is the actual instrument, not a document
+describing one. `provisional` means nobody checked; `observed` means somebody did, on hardware.
+The kinds are separated for a different reason: they are re-checkable by different people. The
+audit (§9) counts them apart so "how much of this device rests on one person's ear" is
+answerable, §8 renders them differently, and community recipe sharing (§13) needs the
+distinction most of all — a shared recipe citing a manual is verifiable by the recipient, one
+citing someone's unit is not.
+
+Two shapes rather than one `kind` field on one shape, so the kinds can diverge later — an
+observation eventually wants firmware and unit identity; a manual page wants an edition — without
+a second migration across every recipe in the library.
+
+This is not hypothetical. Manuals are incomplete in ways that only show up once you are authoring
+against one: a parameter the tables omit, a range stated for one mode and left implicit for
+another, behaviour that changed with a firmware revision the document predates. Those values are
+worth having and are properly checked — on the instrument. What they must not be is
+indistinguishable from the ones read off a page.
 
 **Authored** — what a device folder contains, and the only shape an author ever writes:
 
@@ -302,8 +333,8 @@ type AuthoredParam =
 
 ```ts
 type Provenance =
-  | { state: 'authored';    source: string }
-  | { state: 'derived';     source: string; rangeSource: string
+  | { state: 'authored';    cite: Cite }
+  | { state: 'derived';     cite: Cite; rangeCite: Cite
       from: number; axes: MoodAxis[] }          // 52 → 45, and which knobs did it
   | { state: 'provisional'; from?: number; axes?: MoodAxis[] }
 
@@ -318,7 +349,12 @@ type ResolvedParam = {
 
 `ResolvedParam.provenance` being non-optional is the whole point of the split. It is a type error
 to render a value whose provenance nobody decided, so invariant 4 is enforced by the compiler
-rather than by remembering.
+rather than by remembering. A cited state carries the whole `Cite` and not a bare source string,
+for the same reason: the resolver cannot stamp a source without also saying how it was checked,
+and §8 cannot render a manual page differently from an observation if the kind was dropped on the
+way through. A `derived` value carries two citations that may be of different kinds — a documented
+range with a point checked on the unit, or the reverse — because the point and the range are two
+independent claims (§3.2) and nothing requires them to have been checked the same way.
 
 **Inheritance.** `verified` omitted on a param means "inherit the recipe's `verified`"; the same
 for `range.verified`. A citation written on the param overrides an inherited one, and an explicit
@@ -349,9 +385,13 @@ So provenance is three-state, and always rendered:
 
 | provenance | means | rendered |
 |---|---|---|
-| `authored` | the point value was read off the manual or the hardware | `TUNE 52` |
+| `authored` | the point value was read off the manual or the hardware, and `cite.kind` says which | `TUNE 52` |
 | `derived` | mood moved a verified point inside its verified range | `TUNE 52 → 45` |
 | `provisional` | the point is unverified (`verified: false`, inherited or explicit) | `TUNE 52` + provisional badge |
+
+`cite.kind` is orthogonal to the three states. It does not add a fourth: an observed point is
+`authored`, exactly like a manual one, and carries the same authority in the resolver. What it
+changes is what §8 can say about the value, and what the audit can count.
 
 `verified` therefore attaches to two things independently, which is why §3.1 gives the range its
 own `verified` rather than one flag per param:
@@ -385,6 +425,13 @@ cannot arise there.
 The audit script (§9) counts three things separately, because they are different debts:
 provisional points, unverified ranges, and **mood-inert params** — those that declare a `mood`
 entry but sit in an unverified range, so the axis they advertise does nothing.
+
+It then splits the *cited* remainder by `cite.kind`, reporting manual and observed counts on
+their own columns for points and for ranges. Those are not debts and are never findings; they
+answer a different question, which is how much of a device is documented versus how much rests
+on one person's unit. Each half is total — every param is exactly one of manual / observed /
+provisional on its point, and every numeric exactly one of manual / observed / unverified on its
+range — so a case that stops adding up is a case that was added without a home.
 
 ### 3.3 Semi-modular recipes
 
@@ -911,7 +958,8 @@ Three guards:
 - Zod validation over every manifest, run inside the codegen so a bad manifest fails the
   **build**, not a request
 - a `verified` audit script reporting provisional points, unverified ranges and mood-inert
-  params separately (§3.2), so none of the three quietly accumulates
+  params separately (§3.2), so none of the three quietly accumulates, and splitting the cited
+  remainder into manual and observed so neither is read as the other
 
 Authoring stays one folder; deployment stays static.
 

@@ -1,50 +1,214 @@
 import type { Device } from '../../core/device'
-import type { AuthoredNumericParam } from '../../core/params'
+import type { AuthoredEnumParam, AuthoredNumericParam, Cite } from '../../core/params'
 
 /**
  * Roland TR-1000 (§2.3). Ten instrument tracks, four of them layer tracks.
  *
- * **Everything sound-design here is provisional, deliberately.** The owner's manual
- * (TR-1000_eng02_W.pdf) documents the *panel* — which knob does what, which screen a
- * parameter lives on, which gesture enters a step — and explicitly defers parameter values
- * to the separate Reference Manual / Parameter Guide ("For details on the parameter's value,
- * refer to the Reference Manual", p.17). So:
+ * **Every point value here is provisional; every bound around it is cited.** Two documents do
+ * the work. The owner's manual (TR-1000_eng02_W.pdf) documents the *panel* — which knob does
+ * what, which screen a parameter lives on, which gesture enters a step — and defers parameter
+ * values to the Reference Manual ("For details on the parameter's value, refer to the
+ * 'Reference Manual' (Roland website)", p.17). The Reference Manual
+ * (TR-1000_reference_eng02_W.pdf) carries the Parameter list, which states the bounds. So:
  *
  *  - the capability data below (tracks, jacks, clock, per-step features, gestures) is read
- *    off the manual and is the reason this file can be written at all;
- *  - every recipe carries `verified: false`, and every range carries its own `verified: false`,
- *    because a page citation for "the TUNE knob adjusts tuning" is not a citation for
- *    "TUNE sits at 44 for a hard kick". Citing the page for an invented setting would be
- *    exactly the fraud invariant 4 exists to prevent.
+ *    off the owner's manual and is the reason this file can be written at all. Those page
+ *    references stay in comments: invariant 4 is scoped to parameter values, and a wrong
+ *    `individualOuts` is visible to anyone holding the box in a way a wrong DECAY is not;
+ *  - every recipe carries `verified: false`, and so does every numeric *point*, because a
+ *    documented range for TUNE is not a citation for "TUNE sits at 44 for a hard kick".
+ *    Citing the page for a taste judgement would be exactly the fraud invariant 4 prevents.
  *
- * Points *and* ranges stay explicitly `false` rather than inheriting the recipe's citation.
- * The redundancy is the point: if someone later cites one recipe from the Parameter Guide,
- * nothing in it is promoted to `authored` until a human writes the citation on that exact
- * claim. Inheritance would flip 85 values at once, and bounds are their own claim (§3.1).
+ * The `GEN` enums are the exception, and they are cited. A generator *name* is not a taste
+ * judgement — `909 Bass Drum` either exists in the Preset GEN/INST List under BD_E or it does
+ * not — so it is checkable in the way a knob position is not. Which generator a recipe reaches
+ * for is still taste, and the citation does not claim otherwise: it claims the name and the
+ * category, nothing about the choice. See the `gen()` helper below.
  *
- * **Values are knob positions**, as a percentage of travel, because that is what the manual
- * lets anyone verify by looking at the box. `unit: '% travel'` says so on every rendered value.
+ * Points stay explicitly `false` at every site rather than inheriting the recipe's citation.
+ * The redundancy is the point: nothing is promoted to `authored` until a human writes the
+ * citation on that exact claim. Inheritance would flip 65 values at once, and bounds are their
+ * own claim (§3.1) - which is why the *ranges* are cited and the points inside them are not.
+ *
+ * **Every parameter here is one the Reference Manual's Parameter list exposes for that
+ * generator**, with the manual's own bounds and units, cited to the page carrying its table.
+ * The old `% travel` knob positions are gone: they were panel estimates dressed as values, and
+ * a range nobody documented is a range mood must not move (§3.2). Generators differ in what
+ * they expose, so recipes differ in which parameters they set - `808 Snare Drum` has no DECAY
+ * and `909 Bass Drum` calls its tuning PITCH, with TUNE meaning the pitch envelope instead.
+ * No recipe *selects* a generator whose table is "Global parameters only" — `808 Rim Shot`,
+ * `909 Rim Shot` and `808 Closed HiHat` expose nothing but PHASE and DELAY, and a recipe with
+ * nothing to set is not a recipe. They are still *offered* in the option arrays, along with
+ * several 707/727 and CR78 entries that reach only their Common block: the options are what
+ * the list documents for the role, and narrowing them to what happens to be authored today
+ * would hide the rest of the box from anyone reading the guide.
  */
 
-/** Knob position, 0-100 % of travel. Point and bounds both provisional: see the note above. */
-function knob(
+/**
+ * Ranges, exactly as the Reference Manual's Value column prints them (§3.1). These are the
+ * *bounds*, and they are the cited claim; the point value inside them is taste and stays
+ * `verified: false`.
+ */
+const PCT = { min: 0, max: 100 } //        0.0%-100.0%
+const BIPOLAR = { min: -100, max: 100 } // -100.0%-0.0%-100.0%
+const SEMITONES = { min: -12, max: 12 } // -12St-0-12St
+const SEMITONES_24 = { min: -24, max: 24 } // -24St-24St
+
+/**
+ * A range citation. The page is the Parameter list page carrying the table for that generator:
+ * p.59 ANALOG, p.60-62 ACB, p.63 FM. `Global`, `606 Common`, `CR78 Common` and `707/727 Common`
+ * are their own blocks on those pages, and a generator gets its common block *plus* its own.
+ */
+function cite(page: number): Cite {
+  return { kind: 'manual', source: `TR-1000 Reference Manual (eng02) v1.13+, p.${page}` }
+}
+
+/**
+ * One GEN parameter. `unit` is the manual's own ('%' or 'St'), never "% travel" - these are
+ * screen values with printed bounds, not knob positions estimated off the panel.
+ *
+ * No `step`: the tables print `0.0%` and `-12St`, which implies a resolution but never states
+ * one, and inferring 0.1 from a decimal point would be an invented claim (invariant 5).
+ */
+function num(
   name: string,
   value: number,
+  bounds: { min: number; max: number },
+  unit: string,
+  page: number,
   extra: Partial<AuthoredNumericParam> = {},
 ): AuthoredNumericParam {
   return {
     kind: 'numeric',
     name,
     value,
-    range: { min: 0, max: 100, verified: false },
-    unit: '% travel',
+    range: { ...bounds, verified: cite(page) },
+    unit,
     verified: false,
     ...extra,
   }
 }
 
-/** Generator types the manual lists by name (p.14). Which one a recipe picks is taste. */
-const GEN_TYPES = ['Analog', 'ACB', 'FM', 'PCM', 'Sample']
+/**
+ * Generators, by name, from the Preset GEN/INST List.
+ *
+ * `GEN` used to hold one of `Analog / ACB / FM / PCM / Sample`. Those five are real — both
+ * manuals name them on p.14 — but they are *folders*, and SELECT GEN is three knobs, not one:
+ * [C4] picks the category, [C5] the folder, [C6/VALUE] the generator (Reference Manual p.37).
+ * Naming only the folder never gets anyone to a sound, which fails the point of the guide.
+ * So `GEN` now holds what the [C6] knob lands on, and the options are drawn from the list's own
+ * Category column for the role.
+ *
+ * Each option below is a verbatim Name from GEN list p.1, and its category is the one the list
+ * prints beside it. p.1 carries the whole classic set (808/909/8X/9X/707/727/606/CR78 and the
+ * FM models), so one page covers every role this device has a recipe for and the citation is
+ * one page rather than a scatter.
+ *
+ * The option sets are a curated subset, not the whole category — p.1 lists these, and the list
+ * runs to 25 pages of them. The citation claims exactly that each named generator appears on
+ * p.1 under that category. It claims nothing about the choice, which is taste.
+ */
+const GEN_CITE = {
+  kind: 'manual',
+  source: 'TR-1000 Preset GEN/INST List (eng02) v1.20, GEN list p.1',
+} as const
+
+const BD_GENS = [
+  '808 Bass Drum',
+  '909 Bass Drum',
+  '8X Bass Drum',
+  '9X Bass Drum',
+  '707 Bass 1-2',
+  '606 Bass Drum',
+  'CR78 Bass Drum',
+  'FM Kick Model1',
+  'FM Kick Model2',
+]
+
+const SD_GENS = [
+  '808 Snare Drum',
+  '909 Snare Drum',
+  '8X Snare Drum',
+  '9X Snare Drum',
+  '707 Snare 1-2',
+  '606 Snare Drum',
+  'CR78 Snare Drum',
+  'FM Snare Model',
+]
+
+const TOM_GENS = [
+  '808 Low Tom',
+  '808 High Tom',
+  '909 Low Tom',
+  '909 High Tom',
+  '8X Tom',
+  '9X Tom',
+  '707 Tom',
+  '606 Tom',
+  'FM Tom Model',
+]
+
+const STICK_GENS = ['808 Rim Shot', '909 Rim Shot', '8X Rim Shot', '9X Rim Shot', 'CR78 Rim Shot-CL']
+
+const CLAP_GENS = [
+  '808 Hand Clap',
+  '909 Hand Clap',
+  '8X Hand Clap',
+  '9X Hand Clap',
+  '707 Clap-Tamb',
+  'FM Clap Model',
+]
+
+/**
+ * HIHAT_E splits by name, not by a column: the list gives Closed and Open as separate
+ * generators, so a closed-hat recipe must not be offered the open ones. `CR78 HiHat` is the one
+ * HIHAT_E entry on p.1 with no Closed/Open pair, and it sits with the closed set because that is
+ * what a CR-78 hat is.
+ */
+const CLOSED_HAT_GENS = [
+  '808 Closed HiHat',
+  '8X Closed HiHat',
+  '9X Closed HiHat',
+  '707 Closed HiHat',
+  '606 Closed HiHat',
+  'CR78 HiHat',
+]
+
+const OPEN_HAT_GENS = [
+  '808 Open HiHat',
+  '8X Open HiHat',
+  '9X Open HiHat',
+  '707 Open HiHat',
+  '606 Open HiHat',
+]
+
+const CRASH_GENS = [
+  '808 Cymbal',
+  '8X Crash Cymbal',
+  '9X Crash Cymbal',
+  '707 Crash Cymbal',
+  '606 Crash Cymbal',
+  'CR78 Cymbal',
+  'FM Cymbal Model',
+]
+
+const RIDE_GENS = ['9X Ride Cymbal', '707 Ride Cymbal', 'CR78 Metallic']
+
+/**
+ * BD-HT sound layers A and B together, so those tracks have two GEN slots and the recipe's
+ * `MIX` balances them. What is authored here is layer A; layer B is not authored at all rather
+ * than guessed (invariant 5).
+ */
+function gen(value: string, options: string[]): AuthoredEnumParam {
+  return {
+    kind: 'enum',
+    name: 'GEN',
+    value,
+    options,
+    verified: GEN_CITE,
+    hint: 'Hold [SHIFT]+[GEN], select with [C6]',
+  }
+}
 
 export const device: Device = {
   id: 'roland-tr-1000',
@@ -137,11 +301,11 @@ export const device: Device = {
       voice: 'bd',
       title: 'Tight forward kick, fast tail',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false, hint: 'Hold [SHIFT], press [GEN]' },
-        knob('TUNE', 44, { mood: [{ axis: 'darkness', amount: -10 }] }),
-        knob('DECAY', 32),
-        knob('MIX', 55, { hint: 'Layer A/B balance' }),
-        knob('LEVEL', 82),
+        gen('909 Bass Drum', BD_GENS),
+        num('PITCH', -12, BIPOLAR, '%', 59, { mood: [{ axis: 'darkness', amount: -18 }], hint: 'Tuning; TUNE is the pitch envelope' }),
+        num('DECAY', 32, PCT, '%', 59),
+        num('TUNE', 30, BIPOLAR, '%', 59, { hint: 'Pitch-envelope intensity, not tuning' }),
+        num('ATTACK', 74, PCT, '%', 59),
       ],
       articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
       routing: 'INDIVIDUAL OUT BD — effects are bypassed on that jack',
@@ -154,11 +318,10 @@ export const device: Device = {
       voice: 'bd',
       title: 'Low long kick that owns the bottom',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false },
-        knob('TUNE', 28, { mood: [{ axis: 'darkness', amount: -8 }] }),
-        knob('DECAY', 68, { mood: [{ axis: 'density', amount: -12 }] }),
-        knob('MIX', 40, { hint: 'Layer A/B balance' }),
-        knob('LEVEL', 84),
+        gen('808 Bass Drum', BD_GENS),
+        num('TUNE', -45, BIPOLAR, '%', 59, { mood: [{ axis: 'darkness', amount: -20 }] }),
+        num('TONE', -20, BIPOLAR, '%', 59),
+        num('DECAY', 78, PCT, '%', 59, { mood: [{ axis: 'density', amount: -20 }] }),
       ],
       articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -170,11 +333,12 @@ export const device: Device = {
       voice: 'bd',
       title: 'Saturated kick with an audible click',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'Analog', options: GEN_TYPES, verified: false },
-        knob('TUNE', 46, { mood: [{ axis: 'darkness', amount: -10 }] }),
-        knob('DECAY', 40),
-        knob('MIX', 70, { hint: 'Push layer B for the click' }),
-        knob('LEVEL', 80),
+        gen('8X Bass Drum', BD_GENS),
+        num('TUNE', -8, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -18 }] }),
+        num('DECAY', 44, PCT, '%', 60),
+        num('ATTACK', 76, PCT, '%', 60, { hint: 'This is the click' }),
+        num('EXCITE', 62, PCT, '%', 60, { mood: [{ axis: 'grit', amount: 30 }], hint: 'Odd-harmonic distortion' }),
+        num('BODY DEP', 40, PCT, '%', 60),
       ],
       articulation: [
         { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
@@ -189,11 +353,12 @@ export const device: Device = {
       voice: 'bd',
       title: 'Kick tuned down into a sustained sub',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false },
-        knob('TUNE', 12, { mood: [{ axis: 'darkness', amount: -6 }] }),
-        knob('DECAY', 88, { mood: [{ axis: 'density', amount: -16 }] }),
-        knob('MIX', 30, { hint: 'Layer A only, no click' }),
-        knob('LEVEL', 76),
+        gen('9X Bass Drum', BD_GENS),
+        num('COARSE', -12, SEMITONES, 'St', 61, { hint: 'An octave down, in semitones' }),
+        num('TUNE', -70, BIPOLAR, '%', 61, { mood: [{ axis: 'darkness', amount: -20 }] }),
+        num('DECAY', 92, PCT, '%', 61, { mood: [{ axis: 'density', amount: -25 }] }),
+        num('P. AMOUNT', 12, PCT, '%', 61, { hint: 'Near-flat pitch envelope' }),
+        num('DRIVE', 18, PCT, '%', 61),
       ],
       routing: 'INDIVIDUAL OUT BD so the sub stays out of the bus effects',
       verified: false,
@@ -207,11 +372,10 @@ export const device: Device = {
       voice: 'sd',
       title: 'Cracking snare, short and centred',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false },
-        knob('TUNE', 58, { mood: [{ axis: 'darkness', amount: -8 }] }),
-        knob('DECAY', 36),
-        knob('MIX', 62, { hint: 'Layer A/B balance' }),
-        knob('LEVEL', 78),
+        gen('909 Snare Drum', SD_GENS),
+        num('TUNE', 16, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -20 }] }),
+        num('TONE', 62, PCT, '%', 60),
+        num('SNAPPY', 70, PCT, '%', 60),
       ],
       articulation: [
         { slot: 'backbeat', set: { accent: true }, hint: 'accent-step' },
@@ -227,11 +391,10 @@ export const device: Device = {
       voice: 'sd',
       title: 'Thin high snare that cuts over a busy top',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false },
-        knob('TUNE', 72, { mood: [{ axis: 'darkness', amount: -14 }] }),
-        knob('DECAY', 30),
-        knob('MIX', 74, { hint: 'Layer A/B balance' }),
-        knob('LEVEL', 76),
+        gen('606 Snare Drum', SD_GENS),
+        num('TUNE', 45, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -25 }] }),
+        num('DECAY', 30, PCT, '%', 62),
+        num('SNAPPY', 55, BIPOLAR, '%', 62),
       ],
       articulation: [{ slot: 'backbeat', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -243,11 +406,12 @@ export const device: Device = {
       voice: 'sd',
       title: 'Ragged snare with an FM edge',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'FM', options: GEN_TYPES, verified: false },
-        knob('TUNE', 54, { mood: [{ axis: 'darkness', amount: -8 }] }),
-        knob('DECAY', 44),
-        knob('MIX', 58, { hint: 'Layer A/B balance' }),
-        knob('LEVEL', 77),
+        gen('FM Snare Model', SD_GENS),
+        num('TUNE', 10, BIPOLAR, '%', 63, { mood: [{ axis: 'darkness', amount: -20 }] }),
+        num('DECAY', 34, PCT, '%', 63),
+        num('FM DEPTH', 68, PCT, '%', 63, { mood: [{ axis: 'grit', amount: 25 }] }),
+        num('NOISE', 45, PCT, '%', 63),
+        num('COARSE', 0, SEMITONES_24, 'St', 63),
       ],
       articulation: [
         { slot: 'backbeat', set: { accent: true }, hint: 'accent-step' },
@@ -264,11 +428,10 @@ export const device: Device = {
       voice: 'lt',
       title: 'Low tom with a slow fall',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false },
-        knob('TUNE', 26, { mood: [{ axis: 'darkness', amount: -6 }] }),
-        knob('DECAY', 62, { mood: [{ axis: 'density', amount: -10 }] }),
-        knob('MIX', 45, { hint: 'Layer A/B balance' }),
-        knob('LEVEL', 70),
+        gen('909 Low Tom', TOM_GENS),
+        num('TUNE', -55, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -18 }] }),
+        num('COLOR', 35, PCT, '%', 60, { hint: 'Ambience, i.e. noise amount' }),
+        num('DECAY', 72, PCT, '%', 60, { mood: [{ axis: 'density', amount: -18 }] }),
       ],
       articulation: [{ slot: 'fill', set: { substep: '1/3' }, hint: 'sub-step' }],
       verified: false,
@@ -280,11 +443,10 @@ export const device: Device = {
       voice: 'ht',
       title: 'High tom, tight enough to sit in a fill',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false },
-        knob('TUNE', 68, { mood: [{ axis: 'darkness', amount: -12 }] }),
-        knob('DECAY', 44),
-        knob('MIX', 60, { hint: 'Layer A/B balance' }),
-        knob('LEVEL', 70),
+        gen('909 High Tom', TOM_GENS),
+        num('TUNE', 40, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -22 }] }),
+        num('COLOR', 25, PCT, '%', 60),
+        num('DECAY', 40, PCT, '%', 60, { mood: [{ axis: 'density', amount: -12 }] }),
       ],
       articulation: [
         { slot: 'fill', set: { substep: '1/3' }, hint: 'sub-step' },
@@ -301,10 +463,11 @@ export const device: Device = {
       voice: 'rs',
       title: 'Dry rim, no tail at all',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false },
-        knob('TUNE', 62),
-        knob('DECAY', 18),
-        knob('LEVEL', 66),
+        gen('8X Rim Shot', STICK_GENS),
+        num('TUNE', 20, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -18 }] }),
+        num('TONE', 30, BIPOLAR, '%', 60),
+        num('DECAY', 8, PCT, '%', 60, { hint: 'Floor it; the tail is the enemy' }),
+        num('BODY', 25, PCT, '%', 60),
       ],
       articulation: [{ slot: 'offbeat', set: { 'alt-inst': true }, hint: 'alt-inst' }],
       verified: false,
@@ -316,10 +479,11 @@ export const device: Device = {
       voice: 'rs',
       title: 'Barely-there rim under the backbeat',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false },
-        knob('TUNE', 58),
-        knob('DECAY', 14),
-        knob('LEVEL', 52),
+        gen('9X Rim Shot', STICK_GENS),
+        num('TUNE', -10, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -14 }] }),
+        num('DECAY', 12, PCT, '%', 62),
+        num('COARSE', -3, SEMITONES, 'St', 62),
+        num('FREQ MOD', 20, PCT, '%', 62),
       ],
       articulation: [
         { slot: 'ghost', set: { weak: true }, hint: 'weak-step' },
@@ -336,10 +500,12 @@ export const device: Device = {
       voice: 'hc',
       title: 'Wide clap sitting on top of the snare',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false },
-        knob('TUNE', 66, { mood: [{ axis: 'darkness', amount: -10 }] }),
-        knob('DECAY', 34),
-        knob('LEVEL', 74),
+        gen('9X Hand Clap', CLAP_GENS),
+        num('FILTER', 35, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -30 }], hint: 'Clap brightness' }),
+        num('CLAPS', 70, PCT, '%', 62),
+        num('SPEED', 55, PCT, '%', 62),
+        num('MIX', 20, BIPOLAR, '%', 62, { hint: 'Clap against tail, not layers' }),
+        num('TAIL DCY', 62, PCT, '%', 62, { mood: [{ axis: 'density', amount: -18 }] }),
       ],
       articulation: [{ slot: 'backbeat', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -351,10 +517,9 @@ export const device: Device = {
       voice: 'hc',
       title: 'Soft clap layered behind, not in front',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false },
-        knob('TUNE', 60),
-        knob('DECAY', 40, { mood: [{ axis: 'density', amount: -8 }] }),
-        knob('LEVEL', 62),
+        gen('808 Hand Clap', CLAP_GENS),
+        num('CLP SIZE', -25, BIPOLAR, '%', 59, { mood: [{ axis: 'darkness', amount: -20 }], hint: 'Thickness of the sound' }),
+        num('TAIL LVL', 38, PCT, '%', 59, { mood: [{ axis: 'density', amount: -12 }] }),
       ],
       articulation: [{ slot: 'ghost', set: { weak: true }, hint: 'weak-step' }],
       verified: false,
@@ -368,10 +533,10 @@ export const device: Device = {
       voice: 'ch',
       title: 'Clipped closed hat, straight sixteenths',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false },
-        knob('TUNE', 60),
-        knob('DECAY', 16, { mood: [{ axis: 'density', amount: -6 }] }),
-        knob('LEVEL', 64),
+        gen('9X Closed HiHat', CLOSED_HAT_GENS),
+        num('TUNE', 10, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -22 }] }),
+        num('DECAY', 14, PCT, '%', 62, { mood: [{ axis: 'density', amount: -6 }] }),
+        num('ERROR', 8, PCT, '%', 62, { hint: 'Noise into the DA converter' }),
       ],
       articulation: [
         { slot: 'offbeat', set: { weak: true }, hint: 'weak-step' },
@@ -384,12 +549,12 @@ export const device: Device = {
       role: 'closed-hat',
       character: 'dirty',
       voice: 'ch',
-      title: 'Grainy FM hat with a metallic edge',
+      title: 'Grainy CR-78 hat with a metallic edge',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'FM', options: GEN_TYPES, verified: false },
-        knob('TUNE', 66),
-        knob('DECAY', 22, { mood: [{ axis: 'density', amount: -8 }] }),
-        knob('LEVEL', 66),
+        gen('CR78 HiHat', CLOSED_HAT_GENS),
+        num('TUNE', -5, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -20 }] }),
+        num('DECAY', 20, PCT, '%', 62, { mood: [{ axis: 'density', amount: -8 }] }),
+        num('METALLIC', 72, PCT, '%', 62, { mood: [{ axis: 'grit', amount: 20 }], hint: 'Metal-like overtone level' }),
       ],
       articulation: [
         { slot: 'offbeat', set: { weak: true }, hint: 'weak-step' },
@@ -406,10 +571,10 @@ export const device: Device = {
       voice: 'oh',
       title: 'Open hat that rings into the next downbeat',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false },
-        knob('TUNE', 64, { mood: [{ axis: 'darkness', amount: -12 }] }),
-        knob('DECAY', 54, { mood: [{ axis: 'density', amount: -14 }] }),
-        knob('LEVEL', 68),
+        gen('9X Open HiHat', OPEN_HAT_GENS),
+        num('TUNE', 28, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -26 }] }),
+        num('DECAY', 58, PCT, '%', 62, { mood: [{ axis: 'density', amount: -16 }] }),
+        num('ERROR', 10, PCT, '%', 62),
       ],
       articulation: [{ slot: 'offbeat', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -421,10 +586,10 @@ export const device: Device = {
       voice: 'oh',
       title: 'Dull open hat, more air than sizzle',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false },
-        knob('TUNE', 42, { mood: [{ axis: 'darkness', amount: -8 }] }),
-        knob('DECAY', 62, { mood: [{ axis: 'density', amount: -14 }] }),
-        knob('LEVEL', 66),
+        gen('606 Open HiHat', OPEN_HAT_GENS),
+        num('TUNE', -18, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -20 }] }),
+        num('DECAY', 64, PCT, '%', 62, { mood: [{ axis: 'density', amount: -16 }] }),
+        num('TONE', -35, BIPOLAR, '%', 62, { hint: 'Brightness of the cymbal' }),
       ],
       articulation: [{ slot: 'offbeat', set: { weak: true }, hint: 'weak-step' }],
       verified: false,
@@ -438,10 +603,9 @@ export const device: Device = {
       voice: 'cc',
       title: 'Crash marking the top of a section',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'PCM', options: GEN_TYPES, verified: false },
-        knob('TUNE', 55),
-        knob('DECAY', 80, { mood: [{ axis: 'density', amount: -18 }] }),
-        knob('LEVEL', 72),
+        gen('9X Crash Cymbal', CRASH_GENS),
+        num('TUNE', 0, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -20 }] }),
+        num('DECAY', 84, PCT, '%', 62, { mood: [{ axis: 'density', amount: -20 }] }),
       ],
       articulation: [{ slot: 'first-hit', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -453,10 +617,9 @@ export const device: Device = {
       voice: 'rc',
       title: 'Even ride holding the top of the bar',
       params: [
-        { kind: 'enum', name: 'GEN', value: 'ACB', options: GEN_TYPES, verified: false },
-        knob('TUNE', 58),
-        knob('DECAY', 70, { mood: [{ axis: 'density', amount: -12 }] }),
-        knob('LEVEL', 62),
+        gen('9X Ride Cymbal', RIDE_GENS),
+        num('TUNE', 12, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -16 }] }),
+        num('DECAY', 74, PCT, '%', 62, { mood: [{ axis: 'density', amount: -14 }] }),
       ],
       articulation: [
         { slot: 'offbeat', set: { 'alt-inst': true }, hint: 'alt-inst' },

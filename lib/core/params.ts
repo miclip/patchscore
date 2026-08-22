@@ -9,15 +9,40 @@ import { MoodAxisSchema, type MoodAxis } from './vocabulary'
  *  - `verified` on a *range* decides whether mood may move the point at all (the legality gate)
  */
 
-/** A citation, e.g. 'TR-1000 manual p.42'. */
-export type Cite = { source: string }
+/**
+ * §3.1. How a value was checked. Neither kind is second-class, and `observed` is not a softer
+ * `provisional`: `provisional` means nobody checked, `observed` means somebody did, on hardware.
+ * They are kept apart because they are checkable by different people — a manual page can be
+ * re-read by anyone holding the document, a unit reading can only be re-taken on that unit.
+ */
+export const CITE_KINDS = ['manual', 'observed'] as const
+
+export type CiteKind = (typeof CITE_KINDS)[number]
+
+/**
+ * A citation, discriminated on how it was obtained. Two shapes rather than one field so the
+ * kinds can diverge later (an observation wants firmware; a manual page does not) without
+ * another migration across every recipe.
+ */
+export type Cite =
+  /** 'TR-1000 Reference Manual p.42' */
+  | { kind: 'manual'; source: string }
+  /** 'TR-1000 unit, firmware 1.11' */
+  | { kind: 'observed'; source: string }
 
 /** `false` = authored, nothing checked against. */
 export type Verified = Cite | false
 
-export const CiteSchema = z.strictObject({
-  source: z.string().min(1, 'a citation needs a source'),
-})
+export const CiteSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('manual'),
+    source: z.string().min(1, 'a citation needs a source'),
+  }),
+  z.strictObject({
+    kind: z.literal('observed'),
+    source: z.string().min(1, 'a citation needs a source'),
+  }),
+])
 
 export const VerifiedSchema = z.union([CiteSchema, z.literal(false)])
 
@@ -140,13 +165,20 @@ export const AuthoredParamSchema = z.discriminatedUnion('kind', [
 // construct one of these, and nothing downstream of the resolver sees an AuthoredParam.
 // ---------------------------------------------------------------------------
 
-/** §3.2. Three-state, and always rendered. `provisional` dominates `derived`. */
+/**
+ * §3.2. Three-state, and always rendered. `provisional` dominates `derived`.
+ *
+ * A cited state carries the whole `Cite`, not a bare source string, so the resolver cannot stamp
+ * a source without saying how it was checked — the same compiler-enforced discipline as
+ * `provenance` itself being non-optional. §8 renders a manual citation and an observation
+ * differently, and cannot do that from a string.
+ */
 export type Provenance =
-  | { state: 'authored'; source: string }
+  | { state: 'authored'; cite: Cite }
   | {
       state: 'derived'
-      source: string
-      rangeSource: string
+      cite: Cite
+      rangeCite: Cite
       /** 52 → 45, and which knobs did it. */
       from: number
       axes: MoodAxis[]
@@ -154,11 +186,11 @@ export type Provenance =
   | { state: 'provisional'; from?: number; axes?: MoodAxis[] }
 
 export const ProvenanceSchema = z.discriminatedUnion('state', [
-  z.strictObject({ state: z.literal('authored'), source: z.string().min(1) }),
+  z.strictObject({ state: z.literal('authored'), cite: CiteSchema }),
   z.strictObject({
     state: z.literal('derived'),
-    source: z.string().min(1),
-    rangeSource: z.string().min(1),
+    cite: CiteSchema,
+    rangeCite: CiteSchema,
     from: z.number().finite(),
     axes: z.array(MoodAxisSchema).min(1),
   }),

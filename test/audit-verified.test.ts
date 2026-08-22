@@ -1,15 +1,34 @@
 import { describe, expect, it } from 'vitest'
 import { DeviceSchema } from '../lib/core/index'
-import { auditDevice, effectiveVerified, isCited, totalCounts } from '../scripts/audit-verified'
+import {
+  ZERO_COUNTS,
+  auditDevice,
+  citeKind,
+  effectiveVerified,
+  formatAudit,
+  isCited,
+  totalCounts,
+  type AuditCounts,
+} from '../scripts/audit-verified'
 import { device, enumParam, numericParam, recipe } from './fixtures'
 
 /**
- * §3.2 requires three counts kept apart. The point of these tests is that one debt cannot be
+ * §3.2 requires three debts kept apart. The point of these tests is that one debt cannot be
  * read off another: a param can be a provisional point with a verified range, an unverified
  * range with a cited point, and mood-inert is a strict subset of the second.
+ *
+ * On top of that, §3.1's `Cite.kind` splits the *cited* half — a manual page anyone can re-read
+ * versus a reading off one person's unit. Neither is a debt, and neither may be silently folded
+ * into the other.
  */
 
-const CITE = { source: 'fixture manual p.7' }
+const CITE = { kind: 'manual', source: 'fixture manual p.7' } as const
+const OBSERVED = { kind: 'observed', source: 'fixture unit, firmware 1.11' } as const
+
+/** Spelling out nine zeroes at every call site would bury the one number each test is about. */
+function counts(over: Partial<AuditCounts>): AuditCounts {
+  return { ...ZERO_COUNTS, ...over }
+}
 
 /** Guards the fixtures themselves: an audit over data that would not build proves nothing. */
 function validDevice(over: Parameters<typeof device>[0]) {
@@ -30,12 +49,21 @@ describe('inheritance (§3.1)', () => {
     expect(isCited(effectiveVerified(undefined, undefined))).toBe(false)
   })
 
+  it('carries the kind through inheritance, not just the fact of a citation', () => {
+    // An observed recipe citation must not be inherited as if it were a manual one.
+    expect(citeKind(effectiveVerified(undefined, OBSERVED))).toBe('observed')
+    expect(citeKind(effectiveVerified(CITE, OBSERVED))).toBe('manual')
+  })
+
   it('does not treat false as a citation', () => {
     // params.ts: `false` = authored, nothing checked against. Provenance.authored needs a
-    // source to render, so an uncited point is provisional however deliberate it was.
+    // citation to render, so an uncited point is provisional however deliberate it was.
     expect(isCited(false)).toBe(false)
     expect(isCited(undefined)).toBe(false)
     expect(isCited(CITE)).toBe(true)
+    expect(isCited(OBSERVED)).toBe(true)
+    expect(citeKind(false)).toBeUndefined()
+    expect(citeKind(undefined)).toBeUndefined()
   })
 })
 
@@ -50,12 +78,9 @@ describe('the three counts are separate debts (§3.2, §9)', () => {
       ],
     })
     const a = auditDevice(d)
-    expect(a.counts).toEqual({
-      params: 1,
-      provisionalPoints: 1,
-      unverifiedRanges: 0,
-      moodInert: 0,
-    })
+    expect(a.counts).toEqual(
+      counts({ params: 1, provisionalPoints: 1, numerics: 1, manualRanges: 1 }),
+    )
   })
 
   it('counts an unverified range whose point is cited', () => {
@@ -68,12 +93,9 @@ describe('the three counts are separate debts (§3.2, §9)', () => {
       ],
     })
     const a = auditDevice(d)
-    expect(a.counts).toEqual({
-      params: 1,
-      provisionalPoints: 0,
-      unverifiedRanges: 1,
-      moodInert: 0,
-    })
+    expect(a.counts).toEqual(
+      counts({ params: 1, manualPoints: 1, numerics: 1, unverifiedRanges: 1 }),
+    )
   })
 
   it('counts mood-inert only when a declared mood sits in an unverified range', () => {
@@ -90,12 +112,15 @@ describe('the three counts are separate debts (§3.2, §9)', () => {
         }),
       ],
     })
-    expect(auditDevice(inert).counts).toEqual({
-      params: 1,
-      provisionalPoints: 0,
-      unverifiedRanges: 1,
-      moodInert: 1,
-    })
+    expect(auditDevice(inert).counts).toEqual(
+      counts({
+        params: 1,
+        manualPoints: 1,
+        numerics: 1,
+        unverifiedRanges: 1,
+        moodInert: 1,
+      }),
+    )
 
     const live = validDevice({
       recipes: [
@@ -114,22 +139,14 @@ describe('the three counts are separate debts (§3.2, §9)', () => {
       recipes: [recipe({ verified: undefined, params: [enumParam()] })],
     })
     const a = auditDevice(d)
-    expect(a.counts).toEqual({
-      params: 1,
-      provisionalPoints: 1,
-      unverifiedRanges: 0,
-      moodInert: 0,
-    })
+    expect(a.counts).toEqual(counts({ params: 1, provisionalPoints: 1 }))
   })
 
   it('keeps a fully cited param out of all three counts', () => {
     const d = validDevice({ recipes: [recipe({ verified: CITE, params: [numericParam()] })] })
-    expect(auditDevice(d).counts).toEqual({
-      params: 1,
-      provisionalPoints: 0,
-      unverifiedRanges: 0,
-      moodInert: 0,
-    })
+    expect(auditDevice(d).counts).toEqual(
+      counts({ params: 1, manualPoints: 1, numerics: 1, manualRanges: 1 }),
+    )
   })
 
   it('reports one finding per debt, so a param can appear in more than one', () => {
@@ -147,18 +164,107 @@ describe('the three counts are separate debts (§3.2, §9)', () => {
       ],
     })
     const a = auditDevice(d)
-    expect(a.counts).toEqual({
-      params: 1,
-      provisionalPoints: 1,
-      unverifiedRanges: 1,
-      moodInert: 1,
-    })
+    expect(a.counts).toEqual(
+      counts({
+        params: 1,
+        provisionalPoints: 1,
+        numerics: 1,
+        unverifiedRanges: 1,
+        moodInert: 1,
+      }),
+    )
     expect(a.findings.map((f) => f.kind)).toEqual([
       'provisional-point',
       'unverified-range',
       'mood-inert',
     ])
     expect(new Set(a.findings.map((f) => f.paramName))).toEqual(new Set(['TUNE']))
+  })
+})
+
+describe('manual and observed are counted apart (§3.1)', () => {
+  it('splits cited points by kind rather than lumping them together', () => {
+    const d = validDevice({
+      recipes: [
+        recipe({
+          verified: false,
+          params: [
+            numericParam({ verified: CITE, range: { min: 0, max: 100, verified: CITE } }),
+            numericParam({
+              name: 'DECAY',
+              verified: OBSERVED,
+              range: { min: 0, max: 100, verified: OBSERVED },
+            }),
+          ],
+        }),
+      ],
+    })
+    expect(auditDevice(d).counts).toEqual(
+      counts({
+        params: 2,
+        manualPoints: 1,
+        observedPoints: 1,
+        numerics: 2,
+        manualRanges: 1,
+        observedRanges: 1,
+      }),
+    )
+  })
+
+  it('does not treat an observation as a debt', () => {
+    // `observed` means somebody checked, on hardware. It is not a softer `provisional`, so it
+    // produces no finding at all.
+    const d = validDevice({
+      recipes: [
+        recipe({
+          verified: OBSERVED,
+          params: [numericParam({ mood: [{ axis: 'darkness', amount: 12 }] })],
+        }),
+      ],
+    })
+    const a = auditDevice(d)
+    expect(a.findings).toEqual([])
+    expect(a.counts.provisionalPoints).toBe(0)
+    expect(a.counts.unverifiedRanges).toBe(0)
+    expect(a.counts.moodInert).toBe(0)
+  })
+
+  it('splits the two claims independently: an observed range under a manual point', () => {
+    // The two gates are orthogonal in kind as well as in verdict — a point read off a page can
+    // sit in bounds nobody documented, and the audit has to count each on its own column.
+    const d = validDevice({
+      recipes: [
+        recipe({
+          verified: CITE,
+          params: [numericParam({ range: { min: 0, max: 100, verified: OBSERVED } })],
+        }),
+      ],
+    })
+    expect(auditDevice(d).counts).toEqual(
+      counts({ params: 1, manualPoints: 1, numerics: 1, observedRanges: 1 }),
+    )
+  })
+
+  it('keeps both halves total, so no case can go uncounted', () => {
+    const d = validDevice({
+      recipes: [
+        recipe({
+          verified: false,
+          params: [
+            numericParam({ verified: CITE }),
+            numericParam({ name: 'DECAY', verified: OBSERVED }),
+            numericParam({ name: 'SNAP', range: { min: 0, max: 100, verified: OBSERVED } }),
+            enumParam({ verified: CITE }),
+            enumParam({ name: 'FILT' }),
+          ],
+        }),
+      ],
+    })
+    const c = auditDevice(d).counts
+    expect(c.manualPoints + c.observedPoints + c.provisionalPoints).toBe(c.params)
+    expect(c.manualRanges + c.observedRanges + c.unverifiedRanges).toBe(c.numerics)
+    expect(c.params).toBe(5)
+    expect(c.numerics).toBe(3)
   })
 })
 
@@ -172,12 +278,54 @@ describe('totals', () => {
       id: 'bb',
       recipes: [recipe({ verified: CITE, params: [numericParam(), enumParam({ verified: CITE })] })],
     })
-
-    expect(totalCounts([auditDevice(provisional), auditDevice(clean)])).toEqual({
-      params: 3,
-      provisionalPoints: 1,
-      unverifiedRanges: 1,
-      moodInert: 0,
+    const observed = validDevice({
+      id: 'cc',
+      recipes: [recipe({ verified: OBSERVED, params: [numericParam({ range: { min: 0, max: 1 }, value: 1 })] })],
     })
+
+    expect(totalCounts([auditDevice(provisional), auditDevice(clean), auditDevice(observed)])).toEqual(
+      counts({
+        params: 4,
+        manualPoints: 2,
+        observedPoints: 1,
+        provisionalPoints: 1,
+        numerics: 3,
+        manualRanges: 1,
+        observedRanges: 1,
+        unverifiedRanges: 1,
+      }),
+    )
+  })
+
+  it('reports zero of everything when there is nothing to audit', () => {
+    expect(totalCounts([])).toEqual(ZERO_COUNTS)
+  })
+})
+
+describe('the report names both kinds (§9)', () => {
+  it('shows manual and observed on their own columns, points and ranges apart', () => {
+    const d = validDevice({
+      id: 'fixture-drum',
+      recipes: [
+        recipe({
+          verified: OBSERVED,
+          params: [numericParam({ range: { min: 0, max: 100, verified: false } })],
+        }),
+      ],
+    })
+    const out = formatAudit([auditDevice(d)], false)
+    expect(out).toContain('fixture-drum')
+    expect(out).toMatch(/points\s+1 total\s+0 manual\s+1 observed\s+0 provisional/)
+    expect(out).toMatch(/ranges\s+1 total\s+0 manual\s+0 observed\s+1 unverified\s+0 mood-inert/)
+    expect(out).toContain('TOTAL')
+  })
+
+  it('lists the findings behind the numbers under --verbose', () => {
+    const d = validDevice({
+      recipes: [recipe({ verified: false, params: [numericParam({ range: { min: 0, max: 100 } })] })],
+    })
+    const audits = [auditDevice(d)]
+    expect(formatAudit(audits, true)).toContain('provisional-point: fx-kick-hard / TUNE')
+    expect(formatAudit(audits, false)).not.toContain('provisional-point:')
   })
 })
