@@ -952,45 +952,40 @@ Quality floor, unannounced: responsive to mobile, visible keyboard focus,
 
 ## 11. Build order
 
-Separate commits. Do not start the UI before step 3 passes tests.
+**Status lives in GitHub issues, not here.** Each step below is one issue labelled `build-step`
+under the `v1` milestone, carrying its own detail, watch-outs and done-when. This section is the
+*sequence and the reasoning for it*; the issues are the tracker.
 
-| # | Step | Includes |
+| # | Step | Issue |
 |---|---|---|
-| 1 | Types, schemas, vocabulary | `Role`, `Character`, `MoodAxis`, `PatternSlot`; `AuthoredParam` / `ResolvedParam` split with `Verified`, `NumericRange` and three-state `Provenance`; `CHAR` vectors; `VoiceSpec`; `Assignable` (pure); `Occupancy`; `Pattern` + density bands; request `id` and `polyphony`; the `Score` vector; harmony types; Zod schemas |
-| 2 | Registry + TR-1000 | Codegen, staleness test, Zod-in-build, `verified` audit script, fully populated TR-1000 manifest |
-| 3 | Resolver + unit tests | Character resolution, recipe fallback, cost search, mood application, gaps, seeding determinism |
-| 4 | Tracker Mini + Deluge | **Proves no engine changes were needed.** This is where §2.1 pays or fails |
-| 5 | Templates | One genre end-to-end |
-| 5.5 | Harmony and hooks | Degree → note resolution against key |
-| 6 | Guide renderer → Markdown | |
-| 7 | Inspirations | Against the proven template |
-| 8 | UI: device picker, genre picker, mood controls | |
-| 9 | UI: the rack and patch cables | |
-| 10 | Export, permalink, localStorage | |
-| 11 | Deploy | |
+| 1 | Types, schemas, vocabulary | [#2](https://github.com/miclip/patchscore/issues/2) |
+| 2 | Registry codegen + TR-1000 manifest | [#3](https://github.com/miclip/patchscore/issues/3) |
+| 3 | Resolver + unit tests | [#4](https://github.com/miclip/patchscore/issues/4) |
+| 4 | Tracker Mini + Deluge | [#5](https://github.com/miclip/patchscore/issues/5) |
+| 5 | Templates | [#6](https://github.com/miclip/patchscore/issues/6) |
+| 5.5 | Harmony and hooks | [#7](https://github.com/miclip/patchscore/issues/7) |
+| 6 | Guide renderer → Markdown | [#8](https://github.com/miclip/patchscore/issues/8) |
+| 7 | Inspirations | [#9](https://github.com/miclip/patchscore/issues/9) |
+| 8 | UI: pickers and mood controls | [#10](https://github.com/miclip/patchscore/issues/10) |
+| 9 | UI: the rack and patch cables | [#11](https://github.com/miclip/patchscore/issues/11) |
+| 10 | Export, permalink, localStorage | [#12](https://github.com/miclip/patchscore/issues/12) |
+| 11 | Deploy | [#13](https://github.com/miclip/patchscore/issues/13) |
 
-**Step 1 was `NO-GO`; it is now cleared.** It returned NO-GO in this document's pre-revision
-form, because the type-level corrections since made — occupancy ownership, patterns out of
-recipes, three-state provenance and the `AuthoredParam`/`ResolvedParam` split, the `Score` vector,
-request identity — all change the shape of the very types step 1 exists to freeze. Freezing the
-old shapes would have forced a rewrite of steps 2–5 at exactly the point where step 4 is supposed
-to prove that no engine changes were needed. Those corrections are incorporated here.
+### Why this order
 
-Applying them did not by itself clear the verdict: two questions remained that were undecided
-*type shapes* rather than deferred features. Both are now decided, and recorded as §12.5 and
-§12.6:
+Separate commits, and **do not start the UI before the resolver passes its tests.**
 
-- **Section-transition patterns → fills are out of v1.** `Pattern` stays flat; one variant per
-  request per section. §12.5.
-- **Two requests, one role, one device → `distinct: true` on the role request.** Not a `Score`
-  insertion. §12.6.
+Step 1 freezes the type surface steps 2–5 are written against, which is why its two undecided
+type shapes (§12.5, §12.6) had to be settled before it could start rather than after: a type-level
+error found at step 1 costs an hour, and the same error found at step 4 invalidates the one
+experiment the ordering exists to run.
 
-The type surface has no open members. §12 still-open 1 and 2 do not block — one is a value inside
-an existing field, the other is a question about test authority.
+**Step 4 is that experiment.** Adding Tracker Mini and Deluge exists to prove no engine changes
+were needed — it is where §2.1's two-authored-shapes decision pays or fails. If adding a device
+requires touching the engine, the abstraction is wrong and the fix belongs before step 4.
 
-`DESIGN-REVIEW.md` has the detail; the re-verdict is the reviewer's call.
-
----
+Step 7 (inspirations) is deliberately after a template is proven end to end, because inspirations
+multiply the test surface across every template that exists.
 
 ## 12. Open questions
 
@@ -1037,7 +1032,10 @@ collapsed. Default is `false`, so templates that do not care are unaffected.
 ### Still open
 
 Neither item blocks build step 1: item 1 is a value inside an existing field and item 2 is a
-question about test authority. Neither moves a type.
+question about test authority. Neither moves a type. Both are tracked as issues
+([#14](https://github.com/miclip/patchscore/issues/14),
+[#15](https://github.com/miclip/patchscore/issues/15)) — the rationale stays here, the status
+does not.
 
 1. **`comfortableVoices` for large pools.** The Deluge's real limit is CPU, not voice count — so
    what number does it declare? Currently unmodelled, and it will distort `crowdOverflow`, the

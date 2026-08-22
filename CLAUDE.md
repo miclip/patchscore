@@ -87,8 +87,15 @@ Layers with a strict contract between them. Roles are the join.
 
 ## Build order
 
-`DESIGN.md §11` is the sequence and it is deliberate. **Step 1 (types, schemas, vocabulary) is
-complete and merged.** Step 2 is the registry codegen plus a fully-populated TR-1000 manifest.
+`DESIGN.md §11` is the sequence and the reasoning for it. **Status lives in GitHub issues, not
+in the repo** — each step is one issue labelled `build-step` under the `v1` milestone, carrying
+its own detail, watch-outs and done-when. Do not add progress markers to `DESIGN.md` or here;
+check and close the issue instead.
+
+```bash
+gh issue list --label build-step --milestone v1        # what is left, in order
+gh issue view <n>                                      # detail and done-when for one step
+```
 
 Step 4 (adding Tracker Mini and Deluge) exists to *prove no engine changes were needed*. That is
 the experiment the whole ordering is built around — if adding a device requires touching the
