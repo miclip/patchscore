@@ -525,6 +525,11 @@ that own a voice for a whole track. Burning a voice on one is a bad use of a sma
 Continuous requests occupy every section; transient requests occupy only their listed ones.
 Conflict = same section, same assignable.
 
+A transient request **must** list its sections, and a continuous request **must not**. The second
+half is not symmetry for its own sake: a continuous request occupies everything by definition, so
+a `sections` list on one is silently discarded, and an author who writes it has written something
+that does nothing. Schema-level rejection, not tolerance.
+
 **Occupancy is resolver output and lives there.** The original design hung a
 `Map<sectionName, roleId>` on each `Assignable`. That is wrong twice over. `Assignable` is derived
 purely from device data (§2.2) and is identical for every guide ever resolved, so per-guide state

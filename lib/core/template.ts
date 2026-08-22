@@ -85,6 +85,16 @@ export const RoleRequestSchema = z
         path: ['sections'],
       })
     }
+    // The other half of the same rule. A continuous request occupies every section by
+    // definition, so `sections` on one is silently ignored — an author would be writing
+    // something that does nothing, and the resolver would have to guess which reading wins.
+    if (r.sustain === 'continuous' && r.sections !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'a continuous request occupies every section and must not list any (§4.2)',
+        path: ['sections'],
+      })
+    }
   })
 
 // ---------------------------------------------------------------------------
@@ -111,7 +121,8 @@ export type PatternHit = { step: number; slot: PatternSlot; velocity?: number }
 export const PatternHitSchema = z.strictObject({
   step: z.int().min(1),
   slot: PatternSlotSchema,
-  velocity: z.int().optional(),
+  /** MIDI velocity. 0 is a rest, not a hit, so a hit that carries one starts at 1. */
+  velocity: z.int().min(1).max(127).optional(),
 })
 
 /**
@@ -177,12 +188,16 @@ export const HarmonySchema = z.strictObject({
   progression: z.array(ProgressionStepSchema),
 })
 
-/** A scale degree within the key, plus an octave offset. Steps are 1-based. */
+/**
+ * A scale degree within the key, plus an octave offset. Steps are 1-based, and so is `degree`:
+ * 1 is the tonic and 5 is the fifth. The upper bound is left open because a hook may reach an
+ * extension (a ninth is degree 9) rather than being confined to one octave of the scale.
+ */
 export type HookNote = { step: number; degree: number; octave: number; len: number }
 
 export const HookNoteSchema = z.strictObject({
   step: z.int().min(1),
-  degree: z.int(),
+  degree: z.int().min(1),
   octave: z.int(),
   len: z.int().min(1),
 })
@@ -238,8 +253,11 @@ export const TemplateSchema = z
     id: z.string().min(1),
     name: z.string().min(1),
     bpm: BpmSpecSchema,
-    keys: z.array(MusicalKeySchema),
-    structure: z.array(SectionSchema),
+    // Both are load-bearing rather than decorative: Occupancy keys on section names (§4.2)
+    // and harmony resolution needs a key to resolve degrees against (§4.1). A template with
+    // neither parses but cannot produce a guide, and validation exists to fail the build.
+    keys: z.array(MusicalKeySchema).min(1),
+    structure: z.array(SectionSchema).min(1),
     harmony: HarmonySchema,
     hooks: z.array(HookSchema),
     roles: z.array(RoleRequestSchema),

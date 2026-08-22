@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   HarmonySchema,
+  HookNoteSchema,
   HookSchema,
+  PatternHitSchema,
   PatternSchema,
   RoleRequestSchema,
   TemplateSchema,
@@ -78,9 +80,9 @@ describe('RoleRequest (§4)', () => {
     expect(RoleRequestSchema.safeParse(request({ role: 'riser', sustain: 'transient' })).success).toBe(
       false,
     )
-    // A continuous request occupies every section anyway, so listing some is redundant
-    // rather than illegal - DESIGN.md states no rule against it.
-    expect(RoleRequestSchema.safeParse(request({ sections: ['Drop'] })).success).toBe(true)
+    // A continuous request occupies every section by definition, so `sections` on one would
+    // be silently ignored. Rejected rather than tolerated: see the review note in §4.2.
+    expect(RoleRequestSchema.safeParse(request({ sections: ['Drop'] })).success).toBe(false)
   })
 
   it('rejects a sustain outside the union', () => {
@@ -280,5 +282,63 @@ describe('Template (§4)', () => {
   it('accepts a template with no patterns and no hooks', () => {
     // §4.1 and §6.3: the guide omits what nobody authored rather than inventing it.
     expect(TemplateSchema.safeParse(template({ patterns: [], hooks: [] })).success).toBe(true)
+  })
+})
+
+// --- Review findings: validation the schemas promised but did not enforce ---
+
+describe('review: rules the comments claimed and the schema did not check', () => {
+  it('rejects sections on a continuous request', () => {
+    const r = RoleRequestSchema.safeParse({
+      id: 'r1',
+      role: 'kick',
+      priority: 1,
+      character: 'hard',
+      sustain: 'continuous',
+      sections: ['Build'],
+    })
+    expect(r.success).toBe(false)
+  })
+
+  it('still accepts a continuous request without sections', () => {
+    const r = RoleRequestSchema.safeParse({
+      id: 'r1',
+      role: 'kick',
+      priority: 1,
+      character: 'hard',
+      sustain: 'continuous',
+    })
+    expect(r.success).toBe(true)
+  })
+
+  it('rejects a template with no sections', () => {
+    const t = TemplateSchema.safeParse({
+      ...template(),
+      structure: [],
+    })
+    expect(t.success).toBe(false)
+  })
+
+  it('rejects a template with no keys', () => {
+    const t = TemplateSchema.safeParse({
+      ...template(),
+      keys: [],
+    })
+    expect(t.success).toBe(false)
+  })
+
+  it('bounds pattern-hit velocity to 1..127', () => {
+    const base = { step: 1, slot: 'accent' as const }
+    expect(PatternHitSchema.safeParse({ ...base, velocity: -5 }).success).toBe(false)
+    expect(PatternHitSchema.safeParse({ ...base, velocity: 0 }).success).toBe(false)
+    expect(PatternHitSchema.safeParse({ ...base, velocity: 9999 }).success).toBe(false)
+    expect(PatternHitSchema.safeParse({ ...base, velocity: 110 }).success).toBe(true)
+  })
+
+  it('treats hook degrees as 1-based', () => {
+    expect(HookNoteSchema.safeParse({ step: 1, degree: 0, octave: 0, len: 1 }).success).toBe(false)
+    expect(HookNoteSchema.safeParse({ step: 1, degree: 1, octave: 0, len: 1 }).success).toBe(true)
+    // Extensions stay legal: a ninth is degree 9.
+    expect(HookNoteSchema.safeParse({ step: 1, degree: 9, octave: 0, len: 1 }).success).toBe(true)
   })
 })
