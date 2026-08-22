@@ -22,44 +22,19 @@ import {
   type Score,
   type Template,
 } from '../lib/core/index'
-import { template } from './fixtures'
+import {
+  box,
+  bruteForceBest,
+  keys,
+  makeRecipe,
+  placement,
+  request,
+  withRoles,
+} from './rigs'
 
 // ---------------------------------------------------------------------------
 // Rig fixtures — hand-authored boxes with known properties (§7.1)
 // ---------------------------------------------------------------------------
-
-function makeRecipe(id: string, role: Role, character: Character, voice: string): Recipe {
-  return {
-    id,
-    role,
-    character,
-    voice,
-    title: `${character} ${role}`,
-    params: [
-      {
-        kind: 'numeric',
-        name: 'TUNE',
-        value: 52,
-        range: { min: 0, max: 100, verified: { kind: 'manual', source: 'fixture p.1' } },
-      },
-    ],
-    verified: { kind: 'manual', source: 'fixture p.1' },
-  }
-}
-
-function box(id: string, over: Partial<Device>): Device {
-  return {
-    id,
-    name: id,
-    maker: 'Fixture',
-    kind: 'drum-machine',
-    clock: { canMaster: true, canSlave: true, transport: ['midi-din'] },
-    io: { main: 'stereo', individualOuts: 2, audioIn: false, usbAudio: false },
-    voices: [],
-    recipes: [],
-    ...over,
-  }
-}
 
 /** Fixed voices, one recipe each. The TR-1000 shape. */
 const drumBox = box('a-drum', {
@@ -99,20 +74,6 @@ const tracker = box('b-tracker', {
     makeRecipe('track-texture-dark', 'texture', 'dark', 'track'),
   ],
 })
-
-function request(over: Partial<RoleRequest> & Pick<RoleRequest, 'id' | 'role'>): RoleRequest {
-  return {
-    priority: 1,
-    character: 'hard',
-    sustain: 'continuous',
-    ...over,
-  }
-}
-
-/** A template with the given requests and a three-section structure. */
-function withRoles(roles: RoleRequest[], over: Partial<Template> = {}): Template {
-  return template({ roles, patterns: [], hooks: [], ...over })
-}
 
 // ---------------------------------------------------------------------------
 // The rig x template matrix, shared by the optimality and completeness tests
@@ -195,23 +156,6 @@ const templates: [string, Template][] = [
 // Reading a Score without hard-coding the miss-prefix length
 // ---------------------------------------------------------------------------
 
-function keys(score: Score) {
-  const v = score as unknown as number[]
-  const tail = v.length - 5
-  return {
-    misses: v.slice(0, tail),
-    crowdOverflow: v[tail] as number,
-    optionalMisses: v[tail + 1] as number,
-    recipeDistance: v[tail + 2] as number,
-    roleFitPenalty: v[tail + 3] as number,
-    idleDevices: v[tail + 4] as number,
-  }
-}
-
-function placement(result: AssignmentResult, requestId: string): string | undefined {
-  const found = result.assignments.find((a) => a.requestId === requestId)
-  return found === undefined ? undefined : assignableKey(found.assignable)
-}
 
 function gapFor(result: AssignmentResult, requestId: string) {
   return result.gaps.find((g) => g.requestId === requestId)
@@ -616,13 +560,33 @@ describe('distinct (§12.6)', () => {
 // §7.2 Seeding
 // ---------------------------------------------------------------------------
 
+/**
+ * Two *fixed* voices that tie in every key of the vector: same roles at the same index, the
+ * same authored character, one device, so `roleFit`, `recipeDistance`, `crowdOverflow` and
+ * `idleDevices` are all identical whichever one is taken.
+ *
+ * Fixed rather than pooled on purpose. Pool ordinals used to be where this property was
+ * demonstrated, and §7.1's symmetry breaking has since made them canonical - the seed may
+ * still permute among equal scores, but two members of one pool are no longer two choices for
+ * it to permute between. A tie has to be built out of things the search can still tell apart.
+ */
+const twins = box('a-twins', {
+  voices: [
+    { kind: 'fixed', id: 'v1', label: 'V1', roles: ['pad'], polyphony: 4 },
+    { kind: 'fixed', id: 'v2', label: 'V2', roles: ['pad'], polyphony: 4 },
+  ],
+  comfortableVoices: 2,
+  recipes: [
+    makeRecipe('twins-pad-dark-1', 'pad', 'dark', 'v1'),
+    makeRecipe('twins-pad-dark-2', 'pad', 'dark', 'v2'),
+  ],
+})
+
 describe('seeding (§7.2)', () => {
-  // Eight interchangeable tracks on one device: every candidate scores exactly equal, which is
-  // the only situation the seed is allowed to touch.
   const t = withRoles([request({ id: 'r-pad', role: 'pad', character: 'dark', polyphony: 3 })])
 
   function run(seed: number) {
-    return assign({ devices: [tracker], template: t, mood: moodState(), seed })
+    return assign({ devices: [twins], template: t, mood: moodState(), seed })
   }
 
   it('is reproducible: the same seed gives the same answer', () => {
@@ -633,11 +597,21 @@ describe('seeding (§7.2)', () => {
   it('permutes among exactly equal scores, and only there', () => {
     const seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     const chosen = new Set(seeds.map((s) => placement(run(s), 'r-pad')))
-    // Different seeds reach different tracks...
+    // Different seeds reach different voices...
     expect(chosen.size).toBeGreaterThan(1)
     // ...and every one of them costs exactly the same, which is why the seed was free to move.
     const scores = new Set(seeds.map((s) => JSON.stringify(run(s).score)))
     expect(scores.size).toBe(1)
+  })
+
+  it('leaves pool ordinals canonical: no seed moves a part off the lowest free track (§7.1)', () => {
+    const pooled = withRoles([request({ id: 'r-pad', role: 'pad', character: 'dark', polyphony: 3 })])
+    const seen = new Set(
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((seed) =>
+        placement(assign({ devices: [tracker], template: pooled, mood: moodState(), seed }), 'r-pad'),
+      ),
+    )
+    expect([...seen]).toEqual(['b-tracker/track-1'])
   })
 
   it('does not permute where a real difference exists', () => {
@@ -656,117 +630,6 @@ describe('seeding (§7.2)', () => {
 // ---------------------------------------------------------------------------
 // §7.1 Optimality — brute force as the oracle
 // ---------------------------------------------------------------------------
-
-/**
- * An independent, deliberately naive enumeration of every legal assignment, scored by a
- * second implementation of §7.1's vector. It shares no code path with the search beyond the
- * public helpers, so a mistake in the bound cannot hide in both.
- */
-function bruteForceBest(devices: Device[], t: Template, seedlessMood = moodState()): Score {
-  const owners = devices.flatMap((d) => expand(d).map((a) => ({ a, d })))
-  const requests = [...t.roles].sort(
-    (x, y) => x.priority - y.priority || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0),
-  )
-  const maxPriority = requests.reduce((m, r) => Math.max(m, r.priority), 0)
-
-  type Cand = { a: Assignable; distance: number; fit: number }
-  const cands: Cand[][] = []
-  const sections: string[][] = []
-  for (const r of requests) {
-    const want = resolveCharacter(r.character, seedlessMood)
-    sections.push(sectionsFor(r, t))
-    const list: Cand[] = []
-    for (const { a, d } of owners) {
-      if (!a.roles.includes(r.role)) continue
-      if (a.polyphony < (r.polyphony ?? 1)) continue
-      const res = resolveRecipe(d, a, r.role, want)
-      if (res.outcome === 'unvoiced') continue
-      list.push({ a, distance: quantiseDistance(res.distanceSq), fit: a.roles.indexOf(r.role) })
-    }
-    cands.push(list)
-  }
-
-  const chosen: (Cand | null)[] = new Array(requests.length).fill(null)
-  const occupied = new Map<string, Set<string>>()
-  let best: Score | undefined
-
-  function score(): Score {
-    const misses = new Array(maxPriority).fill(0)
-    let optionalMisses = 0
-    let recipeDistance = 0
-    let roleFitPenalty = 0
-    const byDevice = new Map<string, Set<string>>()
-    requests.forEach((r, i) => {
-      const c = chosen[i]
-      if (c === null || c === undefined) {
-        if (r.optional === true) optionalMisses++
-        else misses[r.priority - 1]++
-        return
-      }
-      recipeDistance += c.distance
-      roleFitPenalty += c.fit
-      const set = byDevice.get(c.a.deviceId) ?? new Set<string>()
-      set.add(assignableKey(c.a))
-      byDevice.set(c.a.deviceId, set)
-    })
-    let crowdOverflow = 0
-    let idleDevices = 0
-    for (const d of devices) {
-      const total = expand(d).length
-      const n = byDevice.get(d.id)?.size ?? 0
-      crowdOverflow += Math.max(0, n - (d.comfortableVoices ?? total))
-      // Every selected device, a voiceless one included (§7.1).
-      if (n === 0) idleDevices++
-    }
-    return [
-      ...misses,
-      crowdOverflow,
-      optionalMisses,
-      recipeDistance,
-      roleFitPenalty,
-      idleDevices,
-    ] as unknown as Score
-  }
-
-  function rec(i: number): void {
-    if (i === requests.length) {
-      const s = score()
-      if (best === undefined || compareScore(s, best) < 0) best = s
-      return
-    }
-    const r = requests[i] as RoleRequest
-    for (const c of cands[i] ?? []) {
-      const key = assignableKey(c.a)
-      const used = occupied.get(key) ?? new Set<string>()
-      if ((sections[i] ?? []).some((s) => used.has(s))) continue
-      if (
-        r.distinct === true &&
-        requests.some(
-          (other, j) =>
-            j < i &&
-            other.distinct === true &&
-            other.role === r.role &&
-            chosen[j]?.a.deviceId === c.a.deviceId,
-        )
-      ) {
-        continue
-      }
-      const added = (sections[i] ?? []).filter((s) => !used.has(s))
-      for (const s of added) used.add(s)
-      occupied.set(key, used)
-      chosen[i] = c
-      rec(i + 1)
-      chosen[i] = null
-      for (const s of added) used.delete(s)
-      if (used.size === 0) occupied.delete(key)
-    }
-    chosen[i] = null
-    rec(i + 1)
-  }
-
-  rec(0)
-  return best as Score
-}
 
 describe('branch-and-bound optimality (§7.1, obligation 3)', () => {
   for (const [rigName, devices] of rigs) {

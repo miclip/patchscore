@@ -73,7 +73,7 @@
     0
   ],
   "search": {
-    "nodes": 364,
+    "nodes": 27,
     "nodeCap": 50000,
     "capped": false,
     "method": "exhaustive"
@@ -441,10 +441,10 @@
       "deviceName": "Golden Tracker",
       "assignable": {
         "deviceId": "B-tracker",
-        "voiceId": "track-3",
+        "voiceId": "track-1",
         "poolId": "track",
-        "label": "Track 3",
-        "ordinal": 3,
+        "label": "Track 1",
+        "ordinal": 1,
         "roles": [
           "pad",
           "sub",
@@ -1151,10 +1151,10 @@
       "deviceName": "Golden Tracker",
       "assignable": {
         "deviceId": "B-tracker",
-        "voiceId": "track-1",
+        "voiceId": "track-3",
         "poolId": "track",
-        "label": "Track 1",
-        "ordinal": 1,
+        "label": "Track 3",
+        "ordinal": 3,
         "roles": [
           "pad",
           "sub",
@@ -1551,7 +1551,7 @@
       ]
     ],
     [
-      "B-tracker/track-3",
+      "B-tracker/track-1",
       [
         [
           "Intro",
@@ -1619,7 +1619,7 @@
       ]
     ],
     [
-      "B-tracker/track-1",
+      "B-tracker/track-3",
       [
         [
           "Intro",
