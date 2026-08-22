@@ -33,7 +33,7 @@ const HOSTILE_LOCALE = 'tr_TR.UTF-8'
 // The locale and randomness ban (§7.2)
 // ---------------------------------------------------------------------------
 
-const IMPLEMENTATION = ['resolver.ts', 'search.ts', 'pipeline.ts']
+const IMPLEMENTATION = ['resolver.ts', 'search.ts', 'pipeline.ts', 'harmony.ts']
 const BANNED = ['localeCompare', 'toLocaleString', 'toLocaleDateString', 'Intl.', 'Math.random']
 
 describe('no locale-dependent or random API in the resolver (§7.2)', () => {
@@ -49,7 +49,7 @@ describe('no locale-dependent or random API in the resolver (§7.2)', () => {
   }
 
   it('covers every module the resolver is actually made of', () => {
-    // If a fourth module appears, this fails until it is added to the ban list above.
+    // If another module appears, this fails until it is added to the ban list above.
     const index = readFileSync(join(REPO_ROOT, 'lib', 'core', 'index.ts'), 'utf8')
     const exported = [...index.matchAll(/export \* from '\.\/([\w-]+)'/g)].map((m) => `${m[1]}.ts`)
     const engine = exported.filter(

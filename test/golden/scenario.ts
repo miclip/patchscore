@@ -220,7 +220,15 @@ export const GOLDEN_TEMPLATE: Template = {
       { degree: 'VII', bars: 2 },
     ],
   },
-  hooks: [{ id: 'g-hook-1', forRole: 'lead', bars: 2, notes: [{ step: 1, degree: 5, octave: 0, len: 2 }] }],
+  hooks: [
+    {
+      id: 'g-hook-1',
+      forRole: 'lead',
+      bars: 2,
+      baseOctave: 4,
+      notes: [{ step: 1, degree: 5, octave: 0, len: 2 }],
+    },
+  ],
   roles: [
     { id: 'r-kick', role: 'kick', priority: 1, character: 'hard', sustain: 'continuous' },
     { id: 'r-sub', role: 'sub', priority: 1, character: 'dark', sustain: 'continuous' },

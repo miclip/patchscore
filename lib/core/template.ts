@@ -205,13 +205,34 @@ export const HookNoteSchema = z.strictObject({
 /**
  * §4.1. Authored, never generated. If no hook is authored for the assigned role, the guide
  * omits the hook section rather than inventing one (invariant 5 applied to melody).
+ *
+ * `baseOctave` is the origin `HookNote.octave` is an offset *from*, in scientific pitch
+ * notation with middle C at C4 (§4.1). It is required, because an offset with no origin is not
+ * a note: `degree 5, octave 0` is something to work out, `C3` is something to play, and only
+ * the second belongs in a guide read standing at the machine (§8).
+ *
+ * It lives on the hook rather than being one global constant because a bass hook and a lead
+ * hook in the same genre sit two or three octaves apart, and one constant would be wrong for
+ * one of them. The person authoring the hook is the one who knows which it is. It is a purely
+ * musical fact, so it names no device and does not touch invariant 3.
  */
-export type Hook = { id: HookId; forRole: Role; bars: number; notes: HookNote[] }
+export type Hook = {
+  id: HookId
+  forRole: Role
+  bars: number
+  /** Scientific pitch notation, middle C = C4. See §4.1. */
+  baseOctave: number
+  notes: HookNote[]
+}
 
 export const HookSchema = z.strictObject({
   id: z.string().min(1),
   forRole: RoleSchema,
   bars: z.int().min(1),
+  // A whole number and nothing more. Scientific pitch notation is not bounded by MIDI, and
+  // §4.1 puts range policy outside this layer entirely - so the origin is unbounded for the
+  // same reason `HookNote.octave` is, and resolution never clamps or transposes either one.
+  baseOctave: z.int(),
   notes: z.array(HookNoteSchema),
 })
 
