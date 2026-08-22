@@ -157,7 +157,7 @@ export const device: Device = {
   kind: 'drum-machine',   // | 'groovebox' | 'sampler' | 'synth' | 'semi-modular'
                           // | 'mixer-recorder' | 'fx-processor'
 
-  clock: { canMaster: true, canSlave: true, transport: ['midi-din', 'usb'] },
+  clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
 
   io: { main: 'stereo', individualOuts: 8, audioIn: false, usbAudio: true },
 
@@ -1122,9 +1122,9 @@ prefer a voice it cannot describe over one it can.
 No new `Score` key for any of this. Inserting into a lexicographic tuple silently reorders every
 key beneath it, which is exactly why §12.6 chose a flag on the request over a `Score` insertion.
 
-### 7.4 Clock master
+### 7.4 Clock source
 
-`canMaster`, then occupied-assignable count descending (§12.4), then transport preference
+`canSendClock`, then occupied-assignable count descending (§12.4), then transport preference
 (`midi-din` > `usb`), then `deviceId` ascending by UTF-16 code unit (§7.2). **No seed** — this should be stable across
 rerolls, since rerolling a pattern should not re-cable the rig.
 
@@ -1137,7 +1137,7 @@ Do not reorder.
 
 1. **Song** — BPM, key, hook, harmonic cycle, bar-count energy map
 2. **Voice assignment** — which role lives on which device and voice, and why
-3. **Rig integration** — clock master, MIDI routing, audio outs, mixer channels
+3. **Rig integration** — clock source, MIDI routing, audio outs, mixer channels
 4. **Hook** — written before sound design
 5. **Step programming** — the selected template pattern per part (§4.3), rendered per device with
    that device's slot articulation bound to it (§7 step 8)
@@ -1145,6 +1145,10 @@ Do not reorder.
    per §3.2's table (`52`, `52 → 45`, or a provisional badge). `ResolvedParam.provenance` is
    non-optional, so there is no unmarked case for this phase to fall through to
 7. **Finishing** — sidechain, master FX, arrangement variations
+
+**Terminology.** Clock roles are `canSendClock` / `canReceiveClock` and the guide says *clock
+source* and *sync to it*. Never master/slave. "Master FX" and "master bus" stay — that is the
+master-copy sense, universal in music production, and not half of a pair.
 
 Export as Markdown, plus a print stylesheet for PDF. A real PDF pipeline is disproportionate
 work for v1.

@@ -4,7 +4,7 @@ import {
   assignableKey,
   moodState,
   resolve,
-  selectClockMaster,
+  selectClockSource,
   type Device,
   type MoodState,
   type Pattern,
@@ -29,7 +29,7 @@ function box(id: string, over: Partial<Device>): Device {
     name: `Box ${id}`,
     maker: 'Fixture',
     kind: 'drum-machine',
-    clock: { canMaster: true, canSlave: true, transport: ['midi-din'] },
+    clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din'] },
     io: { main: 'stereo', individualOuts: 2, audioIn: false, usbAudio: false },
     voices: [],
     recipes: [],
@@ -248,7 +248,7 @@ describe('pipeline ordering (§7)', () => {
         assignments: r.assignments,
         gaps: r.gaps,
         score: r.score,
-        clockMaster: r.clockMaster,
+        clockSource: r.clockSource,
       })
     expect(shape(run({ seed: 42 }))).toBe(shape(run({ seed: 42 })))
   })
@@ -429,55 +429,55 @@ describe('gaps reach the result (§7.3)', () => {
 })
 
 // ---------------------------------------------------------------------------
-// §7.4 Clock master
+// §7.4 Clock source
 // ---------------------------------------------------------------------------
 
-describe('clock master (§7.4)', () => {
-  const din = (id: string, canMaster = true): Device =>
-    box(id, { clock: { canMaster, canSlave: true, transport: ['midi-din'] } })
-  const usb = (id: string, canMaster = true): Device =>
-    box(id, { clock: { canMaster, canSlave: true, transport: ['usb'] } })
+describe('clock source (§7.4)', () => {
+  const din = (id: string, canSendClock = true): Device =>
+    box(id, { clock: { canSendClock, canReceiveClock: true, transport: ['midi-din'] } })
+  const usb = (id: string, canSendClock = true): Device =>
+    box(id, { clock: { canSendClock, canReceiveClock: true, transport: ['usb'] } })
 
   it('prefers midi-din over usb, in that order', () => {
     expect(TRANSPORT_PREFERENCE).toEqual(['midi-din', 'usb'])
   })
 
   it('returns nothing when nothing in the rig can master', () => {
-    expect(selectClockMaster([din('a', false), usb('b', false)], new Map())).toBeUndefined()
+    expect(selectClockSource([din('a', false), usb('b', false)], new Map())).toBeUndefined()
   })
 
   it('considers only devices that can master', () => {
     // 'a' sorts first and carries more parts, but cannot master.
-    const chosen = selectClockMaster([din('a', false), usb('b')], new Map([['a', 5], ['b', 1]]))
+    const chosen = selectClockSource([din('a', false), usb('b')], new Map([['a', 5], ['b', 1]]))
     expect(chosen?.deviceId).toBe('b')
   })
 
   it('takes occupied-assignable count descending first (§12.4)', () => {
     // 'z' loses every later tie-break and still wins on load.
-    const chosen = selectClockMaster([din('a'), din('z')], new Map([['a', 1], ['z', 4]]))
+    const chosen = selectClockSource([din('a'), din('z')], new Map([['a', 1], ['z', 4]]))
     expect(chosen).toMatchObject({ deviceId: 'z', occupiedAssignables: 4 })
   })
 
   it('breaks a load tie on transport, midi-din over usb', () => {
     // 'a-usb' sorts first by id and still loses to the din box.
-    const chosen = selectClockMaster([usb('a-usb'), din('z-din')], new Map([['a-usb', 2], ['z-din', 2]]))
+    const chosen = selectClockSource([usb('a-usb'), din('z-din')], new Map([['a-usb', 2], ['z-din', 2]]))
     expect(chosen).toMatchObject({ deviceId: 'z-din', transport: 'midi-din' })
   })
 
   it('breaks a transport tie on device id, by UTF-16 code unit', () => {
-    const chosen = selectClockMaster([din('B'), din('a'), din('A')], new Map())
+    const chosen = selectClockSource([din('B'), din('a'), din('A')], new Map())
     // 'A' < 'B' < 'a' by code unit; ICU collation would put 'a' first.
     expect(chosen?.deviceId).toBe('A')
   })
 
   it('ranks a transport it has never heard of below both', () => {
     const exotic = box('a-exotic', {
-      clock: { canMaster: true, canSlave: true, transport: ['analog-clock'] },
+      clock: { canSendClock: true, canReceiveClock: true, transport: ['analog-clock'] },
     })
-    const chosen = selectClockMaster([exotic, usb('z-usb')], new Map())
+    const chosen = selectClockSource([exotic, usb('z-usb')], new Map())
     expect(chosen).toMatchObject({ deviceId: 'z-usb', transport: 'usb' })
     // ...and if it is the only one that can master, it is still named honestly.
-    expect(selectClockMaster([exotic], new Map())).toMatchObject({
+    expect(selectClockSource([exotic], new Map())).toMatchObject({
       deviceId: 'a-exotic',
       transport: 'analog-clock',
     })
@@ -485,7 +485,7 @@ describe('clock master (§7.4)', () => {
 
   it('takes no seed - rerolling a pattern must not re-cable the rig', () => {
     const seeds = [1, 2, 3, 4, 5, 99]
-    const chosen = new Set(seeds.map((seed) => run({ seed })).map((r) => r.clockMaster?.deviceId))
+    const chosen = new Set(seeds.map((seed) => run({ seed })).map((r) => r.clockSource?.deviceId))
     expect([...chosen]).toEqual(['a-drum'])
   })
 
@@ -499,7 +499,7 @@ describe('clock master (§7.4)', () => {
     const result = run({ devices: [drumBox, tracker], template: t })
     // The kick is on the drum box, the sub on the tracker: one occupied assignable each, so
     // the tie falls to transport and then to id.
-    expect(result.clockMaster).toMatchObject({ occupiedAssignables: 1 })
-    expect(result.clockMaster?.deviceId).toBe('a-drum')
+    expect(result.clockSource).toMatchObject({ occupiedAssignables: 1 })
+    expect(result.clockSource?.deviceId).toBe('a-drum')
   })
 })

@@ -259,11 +259,11 @@ describe('Device manifest (§2.3)', () => {
     // unanticipated transport still parses; only an empty name is refused.
     expect(
       DeviceSchema.safeParse(
-        device({ clock: { canMaster: true, canSlave: true, transport: ['bluetooth'] } }),
+        device({ clock: { canSendClock: true, canReceiveClock: true, transport: ['bluetooth'] } }),
       ).success,
     ).toBe(true)
     expect(
-      DeviceSchema.safeParse(device({ clock: { canMaster: true, canSlave: true, transport: [''] } }))
+      DeviceSchema.safeParse(device({ clock: { canSendClock: true, canReceiveClock: true, transport: [''] } }))
         .success,
     ).toBe(false)
     expect(

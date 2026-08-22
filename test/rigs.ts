@@ -56,7 +56,7 @@ export function box(id: string, over: Partial<Device>): Device {
     name: id,
     maker: 'Fixture',
     kind: 'drum-machine',
-    clock: { canMaster: true, canSlave: true, transport: ['midi-din'] },
+    clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din'] },
     io: { main: 'stereo', individualOuts: 2, audioIn: false, usbAudio: false },
     voices: [],
     recipes: [],

@@ -383,8 +383,8 @@ describe('Deluge manifest', () => {
     })
 
     // MIDI DIN in/out, USB MIDI, and a trigger clock in plus PPQN clock out on gate 4 (p.6, p.268).
-    expect(device.clock.canMaster).toBe(true)
-    expect(device.clock.canSlave).toBe(true)
+    expect(device.clock.canSendClock).toBe(true)
+    expect(device.clock.canReceiveClock).toBe(true)
     expect(device.clock.transport).toEqual(['midi-din', 'usb', 'analog-clock'])
   })
 

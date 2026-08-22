@@ -547,7 +547,7 @@ export const device: Device = {
   // transport are routable Off / USB / MIDI jack / USB+MIDI in both directions (Config: MIDI
   // Clock In, MIDI Clock Out, Transport In, Transport Out, p.54). `midi-din` is declared because
   // the supplied adapter is what the jack is for; the TRS detail lives here.
-  clock: { canMaster: true, canSlave: true, transport: ['midi-din', 'usb'] },
+  clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
 
   // One stereo Line Out on a 3.5mm jack, doubling as headphone out; stereo Line In; USB-C audio
   // in/out, enabled in Config -> USB -> Audio (p.13, p.54). No individual outs.

@@ -62,18 +62,18 @@ These parts are **not** in the guide below. Nothing was invented to fill them.
 
 ## 3. Rig integration
 
-**Clock master** — Deluge over `midi-din`, carrying 6 parts. Slave everything else to it.
+**Clock source** — Deluge over `midi-din`, carrying 6 parts. Sync everything else to it.
 
 - **Tracker Mini** — groovebox · 1 part
-  - clock: can master · midi-din/usb
+  - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio · audio in
   - mixer: 1 part, no individual outs: one stereo channel for all
 - **TR-1000** — drum-machine · 4 parts
-  - clock: can master · midi-din/din-sync/usb/analog-clock/trigger
+  - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
   - mixer: 4 parts, 10 individual outs: one channel each
 - **Deluge** — groovebox · 6 parts
-  - clock: can master · midi-din/usb/analog-clock
+  - clock: sends clock · midi-din/usb/analog-clock
   - audio: stereo main out · audio in
   - mixer: 6 parts, no individual outs: one stereo channel for all
 

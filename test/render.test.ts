@@ -72,7 +72,7 @@ describe('phases (§8)', () => {
     // Invariant 5: the phases that have nothing say so.
     expect(doc).toContain('nothing to program')
     expect(doc).toContain('nothing to dial in')
-    expect(doc).toContain('nothing in this rig can master')
+    expect(doc).toContain('nothing in this rig can send clock')
   })
 
   it('is deterministic — the same result renders the same bytes', () => {
@@ -419,27 +419,27 @@ describe('gaps (invariant 5, §7.3)', () => {
 // ---------------------------------------------------------------------------
 
 describe('rig integration (§7.4)', () => {
-  it('names the clock master, its transport and what it carries', () => {
+  it('names the clock source, its transport and what it carries', () => {
     const body = phaseBody(renderGuide(golden()), 3).join('\n')
-    expect(body).toContain('Clock master')
+    expect(body).toContain('Clock source')
     expect(body).toContain('Golden Tracker')
     expect(body).toContain('midi-din')
   })
 
-  it('says so when nothing in the rig can master, rather than nominating a slave', () => {
-    const slaves = GOLDEN_DEVICES.map((d) => ({
+  it('says so when nothing in the rig can send clock, rather than nominating one that cannot', () => {
+    const receiversOnly = GOLDEN_DEVICES.map((d) => ({
       ...d,
-      clock: { ...d.clock, canMaster: false },
+      clock: { ...d.clock, canSendClock: false },
     }))
     const doc = renderGuide(
       resolve({
-        devices: slaves,
+        devices: receiversOnly,
         template: GOLDEN_TEMPLATE,
         mood: GOLDEN_MOOD,
         seed: GOLDEN_SEED,
       }),
     )
-    expect(phaseBody(doc, 3).join('\n')).toContain('nothing in this rig can master')
+    expect(phaseBody(doc, 3).join('\n')).toContain('nothing in this rig can send clock')
   })
 
   it('derives mixer channels from declared outs alone', () => {
@@ -455,7 +455,7 @@ describe('rig integration (§7.4)', () => {
     expect(body.slice(start, start + 4).join('\n')).toBe(
       [
         '- **Golden Drum** — drum-machine · 3 parts',
-        '  - clock: can master · midi-din/usb',
+        '  - clock: sends clock · midi-din/usb',
         '  - audio: stereo main out · 8 individual outs · USB audio',
         '  - mixer: 3 parts, 8 individual outs: one channel each',
       ].join('\n'),

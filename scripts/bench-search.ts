@@ -68,7 +68,7 @@ function poolDevice(count: number): Device {
     name: `Bench Tracker (${count})`,
     maker: 'Bench',
     kind: 'groovebox',
-    clock: { canMaster: true, canSlave: true, transport: ['midi-din'] },
+    clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din'] },
     io: { main: 'stereo', individualOuts: 0, audioIn: false, usbAudio: true },
     voices: [
       { kind: 'pool', id: 'track', label: 'Track', count, roles: POOL_ROLES, polyphony: 4 },
