@@ -517,6 +517,106 @@ function isFree(ctx: Ctx, state: State, index: number, candidate: Candidate): bo
   return true
 }
 
+// ---------------------------------------------------------------------------
+// §7.1 Symmetry breaking over pool ordinals
+// ---------------------------------------------------------------------------
+
+/**
+ * Whether this assignable is carrying *anything* in the partial assignment, in any section.
+ *
+ * Distinct from `isFree`, which asks the narrower question "is it free in the sections *this*
+ * request needs". A voice that is busy in Intro and free in Drop is `isFree` for a Drop-only
+ * request and is emphatically not never-occupied: it already carries a part, and which part
+ * that is makes it different from its idle siblings.
+ */
+function isOccupiedAnywhere(state: State, key: AssignableKey): boolean {
+  const bySection = state.occupancy.get(key)
+  return bySection !== undefined && bySection.size > 0
+}
+
+/**
+ * Ordering within one pool: the ordinal numerically, then `voiceId` by code unit as the
+ * tie-break. Numerically, because code units alone would rank `track-10` below `track-2` and
+ * "lowest ordinal" would stop meaning what it says at count >= 10 — the Deluge has 24 tracks.
+ * No `localeCompare` anywhere (invariant 6).
+ */
+function comparePoolMembers(a: Assignable, b: Assignable): number {
+  const ordinalA = a.ordinal ?? 0
+  const ordinalB = b.ordinal ?? 0
+  if (ordinalA !== ordinalB) return ordinalA < ordinalB ? -1 : 1
+  return compareCodeUnits(a.voiceId, b.voiceId)
+}
+
+/**
+ * A NUL separator, so the two halves cannot run together however an id is spelled:
+ * `a` + `b-c` and `a-b` + `c` are different groups and must produce different keys.
+ */
+function poolGroupKey(assignable: Assignable, poolId: string): string {
+  return `${assignable.deviceId}\u0000${poolId}`
+}
+
+/**
+ * §7.1. Pool members are interchangeable, and searching them as if they were not is what
+ * drove realistic rigs with full-size pool devices into the node cap: with 8 idle Tracker
+ * tracks, the
+ * eight branches that put the kick on track-1..track-8 are the same assignment eight times
+ * over, differing only in a name, and each of them re-explores the same subtree below.
+ *
+ * So: among the *never-occupied* members of one `(deviceId, poolId)`, keep only the lowest.
+ * Every already-occupied member survives untouched.
+ *
+ * **Why this cannot change the optimum.** Take any solution extending the current partial
+ * state that gives this request a never-occupied member `m`, and let `m*` be the lowest such
+ * member. Swapping the two names throughout the remaining suffix produces another legal
+ * solution — legal because both are idle in the current state, so neither swap can collide
+ * with anything already assigned — and an identically scored one, because nothing the
+ * objective or the constraints look at can tell the two apart:
+ *
+ *  - recipes key on `poolId ?? voiceId` (§2.2), so `distance` and `outcome` are per-pool;
+ *  - `roles` is copied from the one authored pool voice, so `roleFit` is per-pool;
+ *  - `polyphony` likewise, so legality for this and every later request is per-pool;
+ *  - `crowdOverflow` and `idleDevices` count assignables and devices, never which ordinal;
+ *  - `distinct` (§12.6) compares `deviceId`, so it cannot separate two members of one device.
+ *
+ * The swap is an involution, so it stays correct when the suffix uses both members. What the
+ * prune does change is *which* concrete member the winner names — always the lowest free
+ * ordinal now, never a seed-permuted one. That is a canonicalisation, not a loss: §7.2's seed
+ * is meant to permute among meaningfully equal choices, and "Track 5 rather than Track 2" is
+ * a difference in a label and nothing else.
+ */
+function breakPoolSymmetry(state: State, candidates: Candidate[]): Candidate[] {
+  let hasPool = false
+  for (const candidate of candidates) {
+    if (candidate.assignable.poolId !== undefined) {
+      hasPool = true
+      break
+    }
+  }
+  if (!hasPool) return candidates
+
+  const representative = new Map<string, Candidate>()
+  for (const candidate of candidates) {
+    const poolId = candidate.assignable.poolId
+    if (poolId === undefined) continue
+    if (isOccupiedAnywhere(state, candidate.key)) continue
+    const group = poolGroupKey(candidate.assignable, poolId)
+    const current = representative.get(group)
+    if (
+      current === undefined ||
+      comparePoolMembers(candidate.assignable, current.assignable) < 0
+    ) {
+      representative.set(group, candidate)
+    }
+  }
+
+  return candidates.filter((candidate) => {
+    const poolId = candidate.assignable.poolId
+    if (poolId === undefined) return true
+    if (isOccupiedAnywhere(state, candidate.key)) return true
+    return representative.get(poolGroupKey(candidate.assignable, poolId)) === candidate
+  })
+}
+
 /**
  * §7.2: "Candidates sort by `(score, deviceId, voiceId)`, with `score` compared
  * lexicographically — fully deterministic. The seed only permutes among exactly equal scores."
@@ -526,9 +626,12 @@ function isFree(ctx: Ctx, state: State, index: number, candidate: Candidate): bo
  * that differ: crowding first, then recipe quality, then role fit, then idleness.
  */
 function orderedCandidates(ctx: Ctx, state: State, index: number): Candidate[] {
-  const legal = (ctx.voiceable[index] ?? []).filter(
+  const free = (ctx.voiceable[index] ?? []).filter(
     (c) => isFree(ctx, state, index, c) && !violatesDistinct(ctx, state, index, c),
   )
+  // Symmetry breaking runs on the legal set, not on the whole pool: a member excluded here by
+  // occupancy or by `distinct` is not a candidate to be represented by anything.
+  const legal = breakPoolSymmetry(state, free)
   if (legal.length < 2) return legal
 
   const scored = legal.map((candidate) => {

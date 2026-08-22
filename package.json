@@ -14,6 +14,7 @@
     "check:registry": "tsx scripts/gen-registry.ts --check",
     "prebuild": "tsx scripts/gen-registry.ts",
     "audit": "tsx scripts/audit-verified.ts",
+    "bench:search": "tsx scripts/bench-search.ts",
     "verify": "npm run typecheck && npm run test",
     "gen:golden": "tsx test/golden/generate.ts --write"
   },

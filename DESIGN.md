@@ -919,10 +919,95 @@ admissible lower bound is the number of devices that no remaining unassigned req
 legally reach — not the current idle count. Using the current count prunes the optimum. Worth a
 dedicated test with a rig whose best answer looks bad halfway down the tree.
 
+**Pool ordinals are searched once, not `count` times.** A pool (§2.2) expands into `count`
+assignables that differ in nothing the objective or the constraints can see: recipes key on
+`poolId`, `roles` and `polyphony` come from the one authored voice, `crowdOverflow` and
+`idleDevices` count assignables and devices rather than names, and `distinct` (§12.6) compares
+`deviceId`. Putting the kick on Track 1 and putting it on Track 5 are therefore the same
+assignment written two ways — and the search was exploring both, and re-exploring the whole
+subtree under each. With the Deluge's 24 tracks and the Tracker Mini's 8 + 8, the factorial
+blow-up meant **realistic rigs containing full-size pool devices hit the node cap and fell back
+to greedy** — reported in `SearchReport`, per the no-silent-truncation rule above, but visible
+and wrong is still wrong. The greedy answer is precisely the "pile everything onto the TR-1000"
+failure this section exists to avoid.
+
+Not *every* pooled rig: a two-track pool with eight parts finished in 116 nodes, and a TR-1000
+plus a Tracker Mini still resolved exhaustively at eight. That is what made it hard to see. The
+failure scaled with the thing that was growing — pool size and part count — so it was absent from
+every small fixture and total on every real rig.
+
+So the search breaks the symmetry: at each node, among the *never-occupied* members of one
+`(deviceId, poolId)`, only the lowest survives as a candidate — lowest by ordinal numerically,
+then `voiceId` by code unit (§7.2), because code units alone rank `track-10` below `track-2`.
+Every member that already carries a part stays a candidate, because which part it carries is
+exactly what makes it different from its idle siblings — and dropping it would take
+section-disjoint sharing (§4.2) off the table.
+
+This cannot change the optimum. Any solution giving a request a never-occupied member `m` has a
+counterpart that gives it the lowest such member `m*`, obtained by swapping the two names
+throughout the rest of the assignment: legal, because both are idle at this node and neither swap
+can collide with anything already placed, and identically scored, because nothing in the vector
+distinguishes them. What it does change is *which* member the winner names — always the lowest
+free ordinal, so a pool fills from 1 upwards. **This argument is a premise about device data, not
+a theorem.** A device shape that gave pool members their own roles, their own recipes or their own
+polyphony would invalidate it, and the tests state the premise directly for that reason.
+
+Measured by `scripts/bench-search.ts` — the real TR-1000 plus one synthetic pool device whose
+member count is the only variable, against a template whose part count is the only other.
+
+Both columns come from the same harness and the same shipping search. **There is no flag to turn
+the pruning off**, and there must not be: a switch on `AssignInput` whose only purpose is to
+re-enable a known-wrong search is an invitation for a caller to find it. The "before" column
+instead rewrites each pool into `count` individually-named *fixed* voices carrying the same roles
+and polyphony, with the pool's recipes duplicated per member. A fixed voice has no `poolId`, so
+there is no symmetry to break and every ordinal is explored as its own candidate — which is
+exactly what the search did before this section existed. The rewrite lives in `test/rigs.ts` and
+is round-tripped against the pooled device before it is trusted to judge anything.
+
+```
+                 4 roles   6 roles   8 roles          4 roles   6 roles   8 roles
+                 --- pools as fixed voices ---        --------- §7.1 ----------
+TR only                9        11        14                9        11        14
++ pool(1)             22        26        30               22        26        30
++ pool(2)             45       102       116               26        55        65
++ pool(4)            209     1,017     1,464               21        69       103
++ pool(8)          3,357    CAPPED    CAPPED               21        33        41
++ pool(16)        CAPPED    CAPPED    CAPPED               21        33        41
+```
+
+Three things to read out of it. The fixed-voice TR-1000 column never moves, because it never had
+the symmetry. `pool(8)` and `pool(16)` become *identical* — once the pruning is in, members beyond
+the number of parts contribute nothing to search, which is the symmetry being fully collapsed
+rather than merely reduced. And the pruned column is not monotone in pool size: `pool(4)` at eight
+roles costs more than `pool(8)`, because four members and eight parts forces real crowding
+trade-offs (§4.4) that eight members do not. That is the objective doing its job, not a residue of
+the pruning.
+
+The same script measures the rig somebody actually owns, at the part counts §11's templates
+reach — before and after, on the real manifests:
+
+```
+                         6 roles         8 roles        10 roles        12 roles
+TR-1000                  11 | 11         14 | 14         18 | 18         20 | 20
++ Tracker Mini        2,475 | 32      9,588 | 43     CAPPED | 71    CAPPED | 123
++ Deluge             CAPPED | 48     CAPPED | 63     CAPPED | 76     CAPPED | 94
+all three           CAPPED | 167    CAPPED | 306    CAPPED | 845  CAPPED | 1,880
+```
+
+The TR-1000 row is unchanged, as it must be — it has no pool. Everything else was capped or
+heading there and now finishes in the low hundreds. The node cap is a backstop against pathology
+again rather than the normal outcome.
+
 ### 7.2 Seeding discipline, and no locale anywhere
 
 Candidates sort by `(score, deviceId, voiceId)`, with `score` compared lexicographically (§7.1) —
 fully deterministic. The seed only permutes among *exactly equal* scores, via a seeded shuffle.
+
+**Two members of one pool are no longer two candidates.** §7.1's symmetry breaking canonicalises
+pool ordinals before the shuffle ever sees them, so no seed moves a part from Track 2 to Track 5.
+That is deliberate and is not a loss of variety: the seed exists to choose between options that
+differ, and those two differ in a label. A tie the seed may still break is a tie between different
+voices — two boxes that both fit, or two voices on one box.
 
 **All string ordering is by UTF-16 code unit, never `localeCompare`.** §3.5's
 `a.r.id.localeCompare(b.r.id)` and §6.2's "tie-break alphabetical" were both locale-dependent:
