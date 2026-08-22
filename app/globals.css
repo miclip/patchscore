@@ -1,0 +1,1131 @@
+/*
+ * §10. Flat, quiet, highly legible. The rack is the only skeuomorphic surface in the design
+ * and it does not exist yet (#11), so nothing here has a bevel, a screw or an LED.
+ *
+ * Two faces, kept visually distinct on purpose: a sans for prose and labels, a monospace for
+ * every numeric value. §10 forbids using one face for both.
+ */
+
+:root {
+  /* Anodized black through raw aluminium. */
+  --panel-0: #101113;
+  --panel-1: #17191c;
+  --panel-2: #1e2125;
+  --edge: #2b2f34;
+  --edge-strong: #3d434a;
+  --silkscreen: #e6e9ec;
+  --ink: #c3c8ce;
+  --ink-dim: #878e97;
+  /* One saturated accent for live signal. Not acid green. */
+  --accent: #ff6a3d;
+  --accent-dim: #7d3520;
+
+  --font-label: ui-sans-serif, "Inter", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-value: ui-monospace, "SF Mono", "JetBrains Mono", "Roboto Mono", Menlo, monospace;
+
+  --radius: 3px;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  max-width: 100%;
+  background: var(--panel-0);
+  color: var(--ink);
+  font-family: var(--font-label);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+}
+
+/*
+ * Not `overflow-x: hidden`: that hides a broken layout instead of reporting it. Every wide
+ * child is given `min-width: 0` in its own rule so nothing needs to be clipped here.
+ */
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ layout */
+
+.shell {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--edge);
+}
+
+.masthead h1 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--silkscreen);
+}
+
+.masthead p {
+  margin: 0;
+  color: var(--ink-dim);
+  font-size: 13px;
+  min-width: 0;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 20px;
+}
+
+@media (min-width: 900px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .columns > .span-2 {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ------------------------------------------------------------------- panel */
+
+.panel {
+  min-width: 0;
+  background: var(--panel-1);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  padding: 14px 16px 16px;
+}
+
+.panel > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 12px;
+}
+
+.panel h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--silkscreen);
+}
+
+.panel .note {
+  margin: 0;
+  color: var(--ink-dim);
+  font-size: 12px;
+  min-width: 0;
+}
+
+.mono {
+  font-family: var(--font-value);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ picker */
+
+.picker-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.picker-list legend {
+  padding: 0;
+}
+
+.pick {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 4px 10px;
+  padding: 10px 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  cursor: pointer;
+  min-width: 0;
+}
+
+.pick:hover {
+  border-color: var(--edge-strong);
+}
+
+.pick:has(input:checked) {
+  border-color: var(--accent-dim);
+}
+
+.pick:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pick input {
+  margin: 3px 0 0;
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+}
+
+.pick .name {
+  color: var(--silkscreen);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pick .sub {
+  grid-column: 2;
+  color: var(--ink-dim);
+  font-size: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* -------------------------------------------------------------------- seed */
+
+.seed-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+input[type='number'],
+input[type='text'] {
+  font-family: var(--font-value);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  color: var(--silkscreen);
+  background: var(--panel-0);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+  min-width: 0;
+}
+
+input[type='number']:invalid,
+input[type='text']:invalid,
+input.out-of-range {
+  border-color: var(--accent);
+}
+
+.seed-input {
+  flex: 1 1 8ch;
+  min-width: 8ch;
+}
+
+button {
+  font-family: var(--font-label);
+  font-size: 13px;
+  color: var(--silkscreen);
+  background: var(--panel-2);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent-dim);
+}
+
+button:active {
+  background: var(--panel-0);
+}
+
+/* -------------------------------------------------------------------- mood */
+
+/* Flex rather than grid: the four knobs should share the row evenly and wrap as a unit,
+ * which auto-fit columns do not do once the panel is wider than four knobs. */
+.mood-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 14px;
+  min-width: 0;
+}
+
+.knob {
+  flex: 1 1 124px;
+  min-width: 124px;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 6px;
+}
+
+.knob-label {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--silkscreen);
+}
+
+/*
+ * `touch-action: none` is scoped to the dial itself — never to the page or a panel. A drag
+ * that starts on the dial must not scroll the page; a drag that starts one pixel outside it
+ * must still scroll normally, which is why this is not on a wrapper.
+ */
+.knob-dial {
+  touch-action: none;
+  cursor: ns-resize;
+  display: block;
+  border-radius: 50%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.knob-dial:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.knob-track {
+  fill: none;
+  stroke: var(--edge-strong);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.knob-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.knob-body {
+  fill: var(--panel-2);
+  stroke: var(--edge-strong);
+  stroke-width: 1;
+}
+
+.knob-pointer {
+  stroke: var(--silkscreen);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.knob-input {
+  width: 7ch;
+  text-align: center;
+  padding: 4px 6px;
+}
+
+.knob-hint {
+  font-size: 11px;
+  color: var(--ink-dim);
+  text-align: center;
+  min-width: 0;
+}
+
+.detents .knob-hint {
+  text-align: left;
+  max-width: 62ch;
+}
+
+/* ----------------------------------------------------------------- density */
+
+/*
+ * Density takes the whole row rather than sitting in a knob-sized cell. Four detents plus their
+ * labels do not fit a knob's footprint, and the difference in shape is the point: this axis is
+ * quantised and the other four are not (§6.3).
+ */
+.detents {
+  flex: 1 1 100%;
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 0 0;
+  border: 0;
+  border-top: 1px solid var(--edge);
+  min-width: 0;
+}
+
+.detent-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  max-width: 460px;
+  min-width: 0;
+}
+
+.detent {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 9px 4px;
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: center;
+  min-width: 0;
+}
+
+.detent:hover {
+  border-color: var(--edge-strong);
+}
+
+.detent input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.detent:has(input:checked) {
+  border-color: var(--accent);
+  background: #241a16;
+}
+
+.detent:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.detent .band {
+  font-family: var(--font-value);
+  font-size: 15px;
+  color: var(--silkscreen);
+}
+
+.detent .word {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.detent:has(input:checked) .word {
+  color: var(--accent);
+}
+
+/* -------------------------------------------------------------------- rack */
+
+.rack-placeholder {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  min-height: 132px;
+  padding: 24px 16px;
+  border: 1px dashed var(--edge-strong);
+  border-radius: var(--radius);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--panel-1),
+    var(--panel-1) 10px,
+    var(--panel-2) 10px,
+    var(--panel-2) 20px
+  );
+  text-align: center;
+  min-width: 0;
+}
+
+.rack-placeholder .headline {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--silkscreen);
+}
+
+.rack-placeholder .detail {
+  font-size: 12px;
+  color: var(--ink-dim);
+  max-width: 46ch;
+  min-width: 0;
+}
+
+/* ----------------------------------------------------------------- readout */
+
+.readout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.stat {
+  min-width: 0;
+  padding: 8px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+}
+
+.stat dt {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.stat dd {
+  margin: 2px 0 0;
+  font-family: var(--font-value);
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  color: var(--silkscreen);
+  overflow-wrap: anywhere;
+}
+
+.gap-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.gap-list li {
+  font-size: 12px;
+  color: var(--ink);
+  padding: 6px 8px;
+  background: var(--panel-2);
+  border-left: 2px solid var(--accent-dim);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.gap-list .role {
+  font-family: var(--font-value);
+  color: var(--silkscreen);
+}
+
+.empty {
+  color: var(--ink-dim);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Quality floor: the cable animation is #11's problem, but nothing should move for someone
+ * who asked for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==================================================================== guide */
+/*
+ * #33. The guide as a page, not as converted Markdown. Three of these rules are the reason
+ * that distinction exists: the reserved hint column, the provenance marks, and tables that
+ * scroll inside themselves.
+ */
+
+.guide {
+  min-width: 0;
+}
+
+.guide-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--edge);
+}
+
+.guide-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--silkscreen);
+}
+
+.hints-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.hints-toggle input {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+}
+
+.legend {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-dim);
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-left: 2px solid var(--accent-dim);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.phase {
+  margin-top: 28px;
+  min-width: 0;
+}
+
+.phase > h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 10px;
+  padding-bottom: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--silkscreen);
+  border-bottom: 1px solid var(--edge);
+}
+
+.phase-number {
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.guide h4 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 20px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--silkscreen);
+  min-width: 0;
+}
+
+.guide h5 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 14px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.guide h6 {
+  margin: 12px 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.guide p {
+  margin: 8px 0;
+}
+
+.quiet {
+  color: var(--ink-dim);
+  font-size: 12.5px;
+}
+
+.callout {
+  margin: 10px 0;
+  padding: 9px 12px;
+  font-size: 13.5px;
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-left: 2px solid var(--accent-dim);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.convention {
+  line-height: 1.6;
+}
+
+/* ------------------------------------------------- §8.1 the reserved column */
+/*
+ * "Toggling must not reflow the page." The hint column exists whether or not a hint does, and
+ * the toggle changes `visibility` alone — never `display`, never the DOM. A reserved-but-empty
+ * cell is the thing Markdown cannot express, which is why this view is not converted Markdown.
+ */
+.instruction {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 14rem);
+  align-items: baseline;
+  column-gap: 16px;
+  padding: 3px 0;
+  min-width: 0;
+}
+
+.instruction-main {
+  min-width: 0;
+}
+
+.instruction-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px 8px;
+  min-width: 0;
+}
+
+.hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ink-dim);
+  overflow-wrap: anywhere;
+  min-width: 0;
+  visibility: hidden;
+}
+
+[data-hints='on'] .hint {
+  visibility: visible;
+}
+
+.subordinate {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: var(--ink-dim);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.subordinate.cite::before,
+.subordinate.note::before {
+  display: inline-block;
+  margin-right: 6px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--edge-strong);
+}
+
+.subordinate.cite::before {
+  content: 'cite';
+}
+
+.subordinate.note::before {
+  content: 'note';
+}
+
+/* ------------------------------------------------------ §3.2 provenance */
+
+.prov {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-radius: 2px;
+  padding: 1px 6px;
+}
+
+/* Somebody checked this exact value. The rarest state, and the loudest. */
+.prov-authored {
+  color: var(--panel-0);
+  background: var(--silkscreen);
+}
+
+/* Mood moved it, and the axes are named. */
+.prov-derived {
+  color: var(--accent);
+  background: #241a16;
+  border: 1px solid var(--accent-dim);
+}
+
+/*
+ * The common case, so it is a mark rather than a sentence — the legend carries the explanation
+ * once. Deliberately not a warning colour: nine values in ten are this, and a page of red is a
+ * page that reads as broken rather than as honest.
+ */
+.prov-provisional {
+  padding: 0 2px;
+  font-size: 12px;
+  letter-spacing: 0;
+  color: var(--ink-dim);
+  background: none;
+  border: 0;
+  cursor: help;
+}
+
+/* ----------------------------------------------------------- §10 values */
+
+.value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+}
+
+.value-now {
+  padding: 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--silkscreen);
+  background: var(--panel-0);
+  border: 1px solid var(--edge);
+  border-radius: 2px;
+}
+
+.value-from {
+  color: var(--ink-dim);
+  text-decoration: line-through;
+  font-size: 12.5px;
+}
+
+.value-arrow {
+  color: var(--accent);
+}
+
+.value-unit {
+  color: var(--ink);
+  font-size: 12.5px;
+}
+
+.value-range {
+  color: var(--ink-dim);
+  font-size: 11.5px;
+}
+
+.param-name {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--silkscreen);
+}
+
+.role {
+  color: var(--accent);
+  font-size: 12.5px;
+}
+
+.slot {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.arrow {
+  color: var(--edge-strong);
+}
+
+.recipe-title {
+  color: var(--ink);
+  font-size: 12.5px;
+  font-style: italic;
+}
+
+/* ------------------------------------------------------- lists and facts */
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+  min-width: 0;
+}
+
+.facts > div {
+  padding: 8px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+
+.facts dt {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.facts dd {
+  margin: 3px 0 0;
+  font-size: 14px;
+  color: var(--silkscreen);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.parts,
+.advice,
+.boxes,
+.slots,
+.notes,
+.articulation,
+.patch {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.parts > li,
+.advice > li,
+.boxes > li {
+  padding: 8px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+
+.boxes.flat > li {
+  background: none;
+  border: 0;
+  border-left: 1px solid var(--edge);
+  border-radius: 0;
+  padding: 2px 0 2px 10px;
+  font-size: 13px;
+}
+
+.part-head,
+.box-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+  min-width: 0;
+}
+
+.box-facts {
+  margin: 6px 0 0;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.box-facts > div {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.box-facts dt {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.box-facts dd {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/*
+ * §7.3 as advice, not as failure (#33). Same panel as everything else, no warning colour: a
+ * `no-recipe` gap naming the voice that could carry the part is useful, and rendering it red
+ * would be discouraging and wrong.
+ */
+.advice > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  border-left: 2px solid var(--edge-strong);
+}
+
+.advice-text {
+  font-size: 12.5px;
+  color: var(--ink);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.notes > li,
+.slots > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  padding: 3px 0;
+  font-size: 12.5px;
+  min-width: 0;
+}
+
+.note-name {
+  color: var(--silkscreen);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.set {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.block-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  min-width: 0;
+}
+
+/* §6.3's fallback is reported, never silent. */
+.band-fallback {
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* ---------------------------------------------- #21 wide things scroll alone */
+/*
+ * The container scrolls, never the page. A step grid is sixteen fixed cells wide and a phone
+ * is not, and a grid that reflows is a grid whose step numbers stop lining up with the box.
+ */
+.table-scroll {
+  max-width: 100%;
+  margin: 8px 0 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.guide table {
+  border-collapse: collapse;
+  min-width: max-content;
+  font-size: 13px;
+}
+
+.guide th,
+.guide td {
+  padding: 5px 16px 5px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--edge);
+  white-space: nowrap;
+}
+
+.guide th {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.guide td.numeric,
+.guide th.numeric {
+  text-align: right;
+}
+
+.meter {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.meter-cell {
+  width: 6px;
+  height: 10px;
+  background: var(--edge);
+  border-radius: 1px;
+}
+
+.meter-cell.on {
+  background: var(--accent);
+}
+
+.step-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: max-content;
+  padding: 4px 0;
+}
+
+.step-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.step-index {
+  width: 3ch;
+  margin-right: 6px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+.step {
+  width: 15px;
+  height: 15px;
+  background: var(--panel-0);
+  border: 1px solid var(--edge);
+  border-radius: 2px;
+}
+
+.step.beat {
+  border-color: var(--edge-strong);
+}
+
+.step.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* --------------------------------------------------------- narrow screens */
+/*
+ * §8.1: "On mobile the hint becomes a reserved second grid row with a fixed min-height."
+ * Reserved whether or not there is a hint, and whether or not hints are on — so the toggle
+ * still changes nothing but `visibility`.
+ */
+@media (max-width: 700px) {
+  .instruction {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+
+  .hint {
+    grid-column: 1;
+    min-height: 1.15rem;
+  }
+}

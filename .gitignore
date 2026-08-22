@@ -1,3 +1,21 @@
 manuals/*
 !manuals/README.md
 node_modules/
+
+# next.js
+.next/
+out/
+
+# typescript
+*.tsbuildinfo
+
+# vercel
+.vercel/
+
+# next-env.d.ts is deliberately NOT ignored, unlike create-next-app default. CI runs
+# `npm ci && npm run verify` and never `next build`, so nothing regenerates it there;
+# ignoring it would make `tsc --noEmit` fail on a clean checkout the moment any file
+# imports CSS or next/* types.
+
+# local env
+.env*.local
