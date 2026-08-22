@@ -108,7 +108,7 @@ const tracker: Device = {
           range: { min: 0, max: 127, verified: false },
           mood: [{ axis: 'space', amount: 20 }],
         },
-        { kind: 'enum', name: 'MODE', value: 'poly', options: ['poly', 'mono'], verified: false },
+        { kind: 'enum', name: 'MODE', value: 'poly', options: { values: ['poly', 'mono'] }, verified: false },
       ],
       articulation: [{ slot: 'downbeat', set: { velocity: 96 } }],
     }),
@@ -118,7 +118,7 @@ const tracker: Device = {
       character: 'clean',
       voice: 'track',
       params: [
-        { kind: 'enum', name: 'MODE', value: 'mono', options: ['poly', 'mono'], verified: false },
+        { kind: 'enum', name: 'MODE', value: 'mono', options: { values: ['poly', 'mono'] }, verified: false },
       ],
       articulation: [{ slot: 'downbeat', set: { velocity: 64 } }],
     }),

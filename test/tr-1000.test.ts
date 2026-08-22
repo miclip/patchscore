@@ -76,7 +76,7 @@ describe('TR-1000 manifest', () => {
     }
   })
 
-  it('cites every range and no point (§3.2)', () => {
+  it('cites every range and option set, and no point (§3.2)', () => {
     // The two gates come apart here exactly as §3.2 says they should. The Reference Manual
     // states the *bounds* for each generator's parameters, so every range is cited and mood is
     // free to move inside it. It states nothing about which value suits a hard kick, so every
@@ -95,11 +95,13 @@ describe('TR-1000 manifest', () => {
     }
 
     const counts = auditDevice(device).counts
-    expect(counts.provisionalPoints).toBe(counts.numerics)
+    // Every point on this device is now provisional, GEN included: nothing here is a value a
+    // human checked, and the audit says so.
+    expect(counts.provisionalPoints).toBe(counts.params)
+    expect(counts.manualPoints).toBe(0)
     expect(counts.unverifiedRanges).toBe(0)
     expect(counts.moodInert).toBe(0)
     expect(counts.manualRanges).toBe(counts.numerics)
-    expect(counts.manualPoints).toBe(counts.params - counts.numerics)
   })
 
   it("sets only parameters the cited page exposes, in the manual's own units", () => {
@@ -190,15 +192,19 @@ describe('TR-1000 manifest', () => {
 
     for (const { id, param } of gens) {
       expect(param.kind, id).toBe('enum')
-      expect(param.verified, id).toEqual({
+      if (param.kind !== 'enum') throw new Error('GEN should be an enum')
+      // The citation belongs to the *option set*: "909 Bass Drum appears in the list under
+      // BD_E" is checkable, while "reach for it for a hard kick" is taste. The two claims are
+      // asserted apart, because collapsing them is exactly the overclaim this test used to pin.
+      expect(param.options.verified, id).toEqual({
         kind: 'manual',
         source: 'TR-1000 Preset GEN/INST List (eng02) v1.20, GEN list p.1',
       })
-      if (param.kind !== 'enum') throw new Error('GEN should be an enum')
+      expect(param.verified, id).toBe(false)
       // The value has to be one of the offered generators, and the offer has to be a real
       // choice - a one-element option list is a value pretending to be a decision.
-      expect(param.options, id).toContain(param.value)
-      expect(param.options.length, id).toBeGreaterThan(2)
+      expect(param.options.values, id).toContain(param.value)
+      expect(param.options.values.length, id).toBeGreaterThan(2)
       // The old enum held a folder ('ACB'), which never named a sound. None may come back.
       expect(['Analog', 'ACB', 'FM', 'PCM', 'Sample'], id).not.toContain(param.value)
     }
@@ -215,10 +221,10 @@ describe('TR-1000 manifest', () => {
       const p = (recipe.params as AuthoredParam[]).find((x) => x.name === 'GEN')
       if (p === undefined || p.kind !== 'enum') continue
       if (recipe.role === 'closed-hat') {
-        expect(p.options.some((o) => o.includes('Open')), recipe.id).toBe(false)
+        expect(p.options.values.some((o) => o.includes('Open')), recipe.id).toBe(false)
       }
       if (recipe.role === 'open-hat') {
-        expect(p.options.every((o) => o.includes('Open')), recipe.id).toBe(true)
+        expect(p.options.values.every((o) => o.includes('Open')), recipe.id).toBe(true)
       }
     }
   })
@@ -230,7 +236,7 @@ describe('TR-1000 manifest', () => {
     for (const recipe of device.recipes) {
       const p = (recipe.params as AuthoredParam[]).find((x) => x.name === 'GEN')
       if (p === undefined || p.kind !== 'enum') continue
-      for (const o of p.options) seen.add(o)
+      for (const o of p.options.values) seen.add(o)
     }
     // Names on p.1 are '<machine> <voice>': 808/909/8X/9X/707/606/CR78, or an FM model.
     for (const name of seen) {

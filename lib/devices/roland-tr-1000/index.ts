@@ -19,16 +19,19 @@ import type { AuthoredEnumParam, AuthoredNumericParam, Cite } from '../../core/p
  *    documented range for TUNE is not a citation for "TUNE sits at 44 for a hard kick".
  *    Citing the page for a taste judgement would be exactly the fraud invariant 4 prevents.
  *
- * The `GEN` enums are the exception, and they are cited. A generator *name* is not a taste
- * judgement — `909 Bass Drum` either exists in the Preset GEN/INST List under BD_E or it does
- * not — so it is checkable in the way a knob position is not. Which generator a recipe reaches
- * for is still taste, and the citation does not claim otherwise: it claims the name and the
- * category, nothing about the choice. See the `gen()` helper below.
+ * `GEN` used to be the exception: its citation sat on the param, on the argument that a
+ * generator *name* is checkable where a knob position is not. The name is indeed checkable —
+ * `909 Bass Drum` either exists in the Preset GEN/INST List under BD_E or it does not — but
+ * `verified` on a param is a claim about the *selected value*, and which generator suits a hard
+ * kick is taste. The citation now sits on the option set, which is what it was always about, and
+ * every `GEN` point is provisional like every other point here. See `EnumOptions` in
+ * `lib/core/params.ts` and the `gen()` helper below.
  *
  * Points stay explicitly `false` at every site rather than inheriting the recipe's citation.
  * The redundancy is the point: nothing is promoted to `authored` until a human writes the
- * citation on that exact claim. Inheritance would flip 65 values at once, and bounds are their
- * own claim (§3.1) - which is why the *ranges* are cited and the points inside them are not.
+ * citation on that exact claim. Inheritance would flip 84 values at once, and legality is its
+ * own claim (§3.1) - which is why the *ranges* and *option sets* are cited and the points inside
+ * them are not.
  *
  * **Every parameter here is one the Reference Manual's Parameter list exposes for that
  * generator**, with the manual's own bounds and units, cited to the page carrying its table.
@@ -204,8 +207,10 @@ function gen(value: string, options: string[]): AuthoredEnumParam {
     kind: 'enum',
     name: 'GEN',
     value,
-    options,
-    verified: GEN_CITE,
+    // The list is the legality claim and is cited; which generator this recipe reaches for is
+    // taste, and stays provisional exactly as a numeric point does (§3.2).
+    options: { values: options, verified: GEN_CITE },
+    verified: false,
     hint: 'Hold [SHIFT]+[GEN], select with [C6]',
   }
 }

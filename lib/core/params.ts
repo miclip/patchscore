@@ -63,6 +63,28 @@ export const NumericRangeSchema = z
     path: ['min'],
   })
 
+/**
+ * §3.2. An enum's option set is its own claim, exactly as a numeric range is — and for exactly
+ * the same reason.
+ *
+ *     numeric:  range   decides legality (cited)  |  value decides authority (taste)
+ *     enum:     options decides legality (cited)  |  value decides authority (taste)
+ *
+ * "`909 Bass Drum` appears in the GEN list under BD_E" is an *options* claim, checkable by
+ * anyone holding the document. "This recipe reaches for it for a hard kick" is a *value* claim,
+ * and it is taste in precisely the way `TUNE 44` is taste. `options` was a bare `string[]` with
+ * nowhere to hang a citation, so the citation went to the only slot available — the param —
+ * where it made the second claim while intending only the first. This is the same defect the
+ * design review caught for numerics in step 1, when `range` was a bare tuple; it was repaired
+ * there and missed here.
+ */
+export type EnumOptions = { values: string[]; verified?: Verified }
+
+export const EnumOptionsSchema = z.strictObject({
+  values: z.array(z.string().min(1)).min(1),
+  verified: VerifiedSchema.optional(),
+})
+
 /** §6.1. `amount` is authored in device units: "at full darkness this moves 12". */
 export type MoodOffset = { axis: MoodAxis; amount: number }
 
@@ -93,7 +115,9 @@ export type AuthoredEnumParam = {
   kind: 'enum'
   name: string
   value: string
-  options: string[]
+  /** The legality gate. Cited independently of the point, exactly as `range` is. */
+  options: EnumOptions
+  /** The *selected option*. Omitted → inherit the recipe's `verified`. */
   verified?: Verified
   hint?: string
   note?: string
@@ -140,11 +164,11 @@ export const AuthoredEnumParamSchema = z
   .strictObject({
     kind: z.literal('enum'),
     value: z.string().min(1),
-    options: z.array(z.string().min(1)).min(1),
+    options: EnumOptionsSchema,
     ...paramCommon,
   })
-  .refine((p) => p.options.includes(p.value), {
-    message: 'value must be one of options',
+  .refine((p) => p.options.values.includes(p.value), {
+    message: 'value must be one of options.values',
     path: ['value'],
   })
 

@@ -22,7 +22,7 @@ export function enumParam(over: Record<string, unknown> = {}): AuthoredParam {
     kind: 'enum',
     name: 'MODE',
     value: 'analog',
-    options: ['analog', 'digital'],
+    options: { values: ['analog', 'digital'] },
     ...over,
   } as AuthoredParam
 }

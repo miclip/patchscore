@@ -811,7 +811,7 @@ describe('non-numeric params (§3.1, §6.1)', () => {
       kind: 'enum',
       name: 'MODE',
       value: 'analog',
-      options: ['analog', 'digital'],
+      options: { values: ['analog', 'digital'] },
     }
     const loud = moodState({ darkness: 100, grit: 100 })
     expect(resolveParam(param, MANUAL, loud)).toEqual({
