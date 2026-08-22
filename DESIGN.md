@@ -1,4 +1,4 @@
-# Patchnote — Design
+# Patchscore — Design
 
 A deterministic (no LLM) web app that turns *the gear you own* + *a musical direction*
 into a phased, at-the-machine production guide with real parameter values.
@@ -823,7 +823,7 @@ Determinism has three axes and the tests must cover all three:
 ### 7.3 Gaps
 
 Unfilled roles surface honestly as "nothing in your rig covers this", with a suggestion of
-what would. Distinct from `unvoiced` (§3.5), which means "your rig covers this but Patchnote
+what would. Distinct from `unvoiced` (§3.5), which means "your rig covers this but Patchscore
 has no recipe authored yet".
 
 ### 7.4 Clock master

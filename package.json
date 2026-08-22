@@ -1,5 +1,5 @@
 {
-  "name": "patchnote",
+  "name": "patchscore",
   "version": "0.1.0",
   "private": true,
   "description": "Deterministic hardware-rig production guide generator",

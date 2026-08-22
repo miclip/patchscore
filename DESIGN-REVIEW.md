@@ -1,4 +1,4 @@
-# Patchnote — Design Review
+# Patchscore — Design Review
 
 Subject: `DESIGN.md`, 639-line pre-revision form (untracked working tree, 2026-08-22).
 Scope: type-level soundness ahead of build step 1. No implementation was written or reviewed —
