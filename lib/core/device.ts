@@ -26,8 +26,10 @@ import {
 
 /**
  * Some devices have fixed, named voices (TR-1000: BD, SD, LT...). Others have fungible
- * capacity (Tracker Mini: 8 tracks that can each be anything). Modelling only the first does
- * not survive contact with the second.
+ * capacity (Tracker Mini: 16 tracks, as *two* pools — 1-8 take samples, synths or MIDI, 9-16
+ * take synths or MIDI only). Modelling only the first does not survive contact with the second,
+ * and a device declaring more than one pool needs nothing further: a pool is a voice like any
+ * other.
  *
  * `polyphony` means *notes*, never roles (§12.4): how many simultaneous notes one assignable
  * can sound while serving one role.
@@ -273,12 +275,15 @@ export const DeviceSchema = z
       })
     }
 
-    // §3's authoring rule, as written: one recipe per (role, character, device).
-    const slots = device.recipes.map((r) => `${r.role} ${r.character}`)
+    // §3's authoring rule: one recipe per (role, character, voice). Uniqueness must match the
+    // lookup key (`poolId ?? voiceId`, §2.2), and the older device-wide key did not: it rejected
+    // two toms of one flavour on a drum machine, and every tonal recipe a two-pool device needs
+    // on both of its pools.
+    const slots = device.recipes.map((r) => `${r.role}\u0000${r.character}\u0000${r.voice}`)
     if (new Set(slots).size !== slots.length) {
       ctx.addIssue({
         code: 'custom',
-        message: 'at most one recipe per (role, character) in a device (§3)',
+        message: 'at most one recipe per (role, character, voice) in a device (§3)',
         path: ['recipes'],
       })
     }

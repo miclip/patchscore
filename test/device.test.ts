@@ -160,7 +160,7 @@ describe('Device manifest (§2.3)', () => {
     expect(DeviceSchema.safeParse(device({ recipes: [recipe(), recipe()] })).success).toBe(false)
   })
 
-  it('allows one recipe per (role, character) and no more (§3)', () => {
+  it('allows one recipe per (role, character, voice) and no more (§3)', () => {
     const twoCharacters = device({
       recipes: [recipe(), recipe({ id: 'fx-kick-dirty', character: 'dirty' })],
     })
@@ -172,9 +172,10 @@ describe('Device manifest (§2.3)', () => {
     expect(DeviceSchema.safeParse(collision).success).toBe(false)
   })
 
-  it('counts (role, character) across the whole device, not per voice', () => {
-    // §3's rule as written is per device. The consequence, worth seeing: a device cannot
-    // author the same (role, character) for two of its own voices.
+  it('counts (role, character) per voice, not across the whole device (§3)', () => {
+    // The uniqueness key must match the lookup key (`poolId ?? voiceId`, §2.2). Two voices of
+    // one flavour — LT and MT both taking tom+dark, or a tonal recipe a two-pool device needs
+    // on each pool — is legal authoring, and the old device-wide key rejected it.
     const twoVoicesOneFlavour = device({
       voices: [
         { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 },
@@ -182,7 +183,45 @@ describe('Device manifest (§2.3)', () => {
       ],
       recipes: [recipe(), recipe({ id: 'fx-kick-hard-2', voice: 'bd2' })],
     })
-    expect(DeviceSchema.safeParse(twoVoicesOneFlavour).success).toBe(false)
+    expect(DeviceSchema.safeParse(twoVoicesOneFlavour).success).toBe(true)
+  })
+
+  it('still rejects the same (role, character) twice on one voice (§3)', () => {
+    // Narrowed, not removed: within a single voice the rule is unchanged, so a lookup can
+    // never face two equally-exact candidates.
+    const sameVoiceTwice = device({
+      voices: [
+        { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 },
+        { kind: 'fixed', id: 'bd2', label: 'BD2', roles: ['kick'], polyphony: 1 },
+      ],
+      recipes: [recipe(), recipe({ id: 'fx-kick-hard-2' })],
+    })
+    expect(DeviceSchema.safeParse(sameVoiceTwice).success).toBe(false)
+  })
+
+  it('applies the same key to a pool, whose recipes address the pool id (§2.2)', () => {
+    // Two pools on one device may each carry the same (role, character); one pool may not
+    // carry it twice.
+    const twoPools = device({
+      voices: [
+        { kind: 'pool', id: 'p-a', label: 'A', count: 2, roles: ['kick'], polyphony: 1 },
+        { kind: 'pool', id: 'p-b', label: 'B', count: 2, roles: ['kick'], polyphony: 1 },
+      ],
+      recipes: [
+        recipe({ id: 'fx-kick-hard-a', voice: 'p-a' }),
+        recipe({ id: 'fx-kick-hard-b', voice: 'p-b' }),
+      ],
+    })
+    expect(DeviceSchema.safeParse(twoPools).success).toBe(true)
+
+    const onePoolTwice = device({
+      voices: [{ kind: 'pool', id: 'p-a', label: 'A', count: 2, roles: ['kick'], polyphony: 1 }],
+      recipes: [
+        recipe({ id: 'fx-kick-hard-a', voice: 'p-a' }),
+        recipe({ id: 'fx-kick-hard-a2', voice: 'p-a' }),
+      ],
+    })
+    expect(DeviceSchema.safeParse(onePoolTwice).success).toBe(false)
   })
 
   it('rejects a recipe pointing at a voice the device does not declare', () => {

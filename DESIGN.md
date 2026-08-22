@@ -97,8 +97,19 @@ recipes. They know nothing about genres, templates, or other devices.
 ### 2.1 Two authored shapes
 
 Some devices have fixed, named voices (TR-1000: BD, SD, LT...). Others have fungible
-capacity (Tracker Mini: 8 tracks that can each be anything; Deluge: effectively unlimited
-synth/kit tracks). Modelling only the first shape does not survive contact with the second.
+capacity (Tracker Mini: 16 tracks in two pools — 1-8 sample, synth or MIDI, 9-16 synth or MIDI
+only; Deluge: as many synth and kit tracks as CPU allows). Modelling only the first shape does not
+survive contact with the second. A device may declare *several* pools of differing capability;
+that needed no change here, because a pool is a voice like any other.
+
+**`count` bounds what the resolver may consider, not what the hardware has.** The two are
+different numbers and must not be conflated. The resolver can never occupy more assignables than
+the template has role requests, and templates ask for roughly five to fifteen. `expand()`
+materialises `count` assignables and the §7.1 search ranges over all of them, so a device with no
+hard track limit takes a *finite* number with headroom above any template's demand: above that
+headroom the extra members are unreachable, and no guide exists that a larger count could produce
+and a smaller one could not. Whether the box is *happy* at a given load is a separate question and
+belongs to `comfortableVoices` (§12.4) — the crowding key, not the capacity one.
 
 ```ts
 type VoiceSpec =
@@ -251,7 +262,11 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   not find in the manual and did not check on the unit gets
   `range: { min, max, verified: false }`, which is a different and quieter debt: it does not make
   the point provisional, it just makes that param deaf to mood (§3.2).
-- One recipe per `(role, character, device)`. Roughly 15–20 recipes covers a device well.
+- One recipe per `(role, character, voice)`, where `voice` is the recipe's target — the
+  `poolId ?? voiceId` the lookup keys on (§2.2). The key was written `(role, character, device)`
+  before any device had two pools, and it did not match the lookup: it rejected authoring
+  `tom + dark` for both LT and MT, and rejected a tonal recipe appearing on each pool of a
+  two-pool device. Roughly 15–20 recipes covers a device well.
 - A recipe never authors hits, step counts or bar structure. If you catch yourself writing
   `hits: [1, 5, 9, 13]` inside a device folder, that pattern belongs to a template (§4.3) —
   four-on-the-floor is a property of the genre, not of the TR-1000.
@@ -322,8 +337,9 @@ type AuthoredParam =
       mood?: { axis: MoodAxis; amount: number }[]
       verified?: Verified            // the *point value*; omitted → inherit the recipe's
       hint?: string; note?: string }
-  | { kind: 'enum'; name: string; value: string; options: string[]
-      verified?: Verified; hint?: string; note?: string }
+  | { kind: 'enum'; name: string; value: string; options: EnumOptions
+      verified?: Verified            // the *selected option*; omitted → inherit the recipe's
+      hint?: string; note?: string }
   | { kind: 'text'; name: string; value: string
       verified?: Verified; hint?: string; note?: string }
 ```
@@ -368,9 +384,21 @@ Only `numeric` params respond to mood, and only those that declare a `mood` entr
 **A device declines a mood axis by simply having no param that declares it.** No capability
 check, no special-casing. A device with no drive stage ignores Grit for free.
 
+`NumericRange` and `EnumOptions` are the same shape in different clothes: each carries the set of
+values the point may legally take, plus its own `verified`. An enum's option set is a claim about
+the *box* — "`909 Bass Drum` appears in the GEN list under BD_E" — and is checkable by anyone
+holding the document; the selected option is a claim about *this recipe*, and is taste. They are
+separate fields because they are separate claims.
+
+```ts
+type NumericRange = { min: number; max: number; verified?: Verified }
+type EnumOptions  = { values: string[];         verified?: Verified }
+```
+
 Zod checks in the codegen (§9): `range.min < range.max`, `range.min <= value <= range.max` for
-numerics, and `options.includes(value)` for enums. A param whose authored point sits outside its
-own declared range fails the build — that is an authoring typo, not a provenance question.
+numerics, and `options.values.includes(value)` for enums. A param whose authored point sits
+outside its own declared range fails the build — that is an authoring typo, not a provenance
+question.
 
 ### 3.2 Provenance is three-state, because a legal value is not a verified value
 
@@ -401,6 +429,22 @@ own `verified` rather than one flag per param:
   rather than generating inside bounds nobody checked. This holds even when the point itself is
   impeccably cited.
 - **The point is the authority gate.** It decides `authored` vs `provisional`, and nothing else.
+
+**The same split governs enums, and `options` is where their legality claim lives.** An option set
+read off the manual says what the box offers; it says nothing about which option suits this sound,
+so a cited `options` leaves the selected value provisional unless someone checked *that*. The
+parallel is exact:
+
+| | legality gate (cited independently) | authority gate (provisional when it is taste) |
+|---|---|---|
+| numeric | `range` | `value` |
+| enum | `options` | `value` |
+
+This was got wrong once. `options` was a bare `string[]` with nowhere to hang a citation, so
+citations for option sets landed on the param — asserting that the *choice* was manual-verified
+while intending only that the option exists. That is the identical defect the step 1 review found
+in numerics, where `range` was a bare tuple and the legality gate had no representation at all.
+Repairing it for numerics and not for enums is what let it recur.
 
 The two gates are orthogonal, so all four combinations occur and the state function is total:
 

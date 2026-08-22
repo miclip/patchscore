@@ -102,7 +102,20 @@ describe('AuthoredParam union (§3.1)', () => {
 
   it('requires an enum value to be one of its options', () => {
     expect(AuthoredParamSchema.safeParse(enumParam({ value: 'hybrid' })).success).toBe(false)
-    expect(AuthoredParamSchema.safeParse(enumParam({ options: [] })).success).toBe(false)
+    expect(AuthoredParamSchema.safeParse(enumParam({ options: { values: [] } })).success).toBe(false)
+    // The option set is a shape with its own citation slot, never a bare array (§3.2).
+    expect(AuthoredParamSchema.safeParse(enumParam({ options: ['analog'] })).success).toBe(false)
+  })
+
+  it('lets an enum cite its option set while its selected value stays provisional (§3.2)', () => {
+    // The legality/authority split, on an enum. Both claims are independent: an option set read
+    // off the manual does not make the pick a manual-backed decision.
+    const cited = enumParam({
+      options: { values: ['analog', 'digital'], verified: { kind: 'manual', source: 'p.1' } },
+      verified: false,
+    })
+    const parsed = AuthoredParamSchema.safeParse(cited)
+    expect(parsed.success ? [] : parsed.error.issues).toEqual([])
   })
 
   it('only lets numeric params declare mood, and only on known axes', () => {
