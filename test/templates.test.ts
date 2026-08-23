@@ -107,6 +107,12 @@ function deviceVocabulary(devices: readonly Device[]): Set<string> {
       // them ('PW 1', 'SHAPE 2', 'eng02', '2.2.1b'), and treating '1' as a device word would
       // forbid a template from numbering its own hooks.
       if (/^[0-9]+$/.test(token)) continue
+      // A single letter identifies nothing either, and for the same reason. Cascadia's panel
+      // names its sections `VCO A` / `VCO B`, `VCA A` / `VCA B`, `ENVELOPE A` / `ENVELOPE B`:
+      // the letter is a disambiguator between two copies of one section, not a word. Treating
+      // 'a' as a device word forbids a template from naming the key of A minor, which is what
+      // it did the day this device landed.
+      if (token.length === 1) continue
       if (!SHARED_VOCABULARY.has(token)) out.add(token)
     }
   }
@@ -359,7 +365,7 @@ describe('industrial-techno resolves (§7)', () => {
     }
   }
 
-  it('fills eleven of twelve on the full rig, and says exactly what is missing', () => {
+  it('fills all twelve on the full rig, with no gap left to explain', () => {
     expect(report(DEVICES)).toEqual({
       method: 'exhaustive',
       capped: false,
@@ -369,6 +375,7 @@ describe('industrial-techno resolves (§7)', () => {
         'r-closed-hat',
         'r-impact',
         'r-kick',
+        'r-metallic',
         'r-noise',
         'r-open-hat',
         'r-pad',
@@ -376,9 +383,11 @@ describe('industrial-techno resolves (§7)', () => {
         'r-stab',
         'r-sub',
       ],
-      // The one hole in three devices' worth of content, and it is an authoring hole rather
-      // than a rig one: three boxes declare `metallic` on a voice and none authors a recipe.
-      gaps: { 'r-metallic': 'no-recipe' },
+      // `r-metallic` was the one hole in three devices' worth of content, and it was an
+      // authoring hole rather than a rig one: three boxes declared `metallic` on a voice and
+      // none authored a recipe. The fourth box closes it — a ring modulator normalled onto a
+      // mixer channel is what that role has been asking for.
+      gaps: {},
     })
   })
 

@@ -19,8 +19,8 @@ import { industrialTechno } from '../../lib/templates/index'
  *
  * Two rigs, chosen to differ in the thing §8 is worst at:
  *
- *  - **full-rig** — all three registry devices, the rig that fills most parts and exercises
- *    pool voices, merged section blocks and a resolved hook.
+ *  - **full-rig** — every registry device, the rig that fills most parts and exercises pool
+ *    voices, merged section blocks, a resolved hook and — since #49 — a real patch list.
  *  - **tr-1000** — one drum machine, which cannot carry a tonal part at all. Most of the
  *    template becomes gaps, so this is the fixture that proves invariant 5 renders honestly at
  *    scale rather than only in the one-gap case.

@@ -1,6 +1,7 @@
 import { describe, expectTypeOf, it } from 'vitest'
 import type { z } from 'zod'
 import {
+  ArticulationEntrySchema,
   AuthoredParamSchema,
   CiteSchema,
   DeviceSchema,
@@ -9,6 +10,7 @@ import {
   NumericRangeSchema,
   PanelFeatureSchema,
   PanelLayoutSchema,
+  PatchEntrySchema,
   PatternSchema,
   PhysicalSpecSchema,
   ProvenanceSchema,
@@ -18,6 +20,7 @@ import {
   TemplateSchema,
   VerifiedSchema,
   VoiceSpecSchema,
+  type ArticulationEntry,
   type AuthoredParam,
   type Cite,
   type Device,
@@ -26,6 +29,7 @@ import {
   type NumericRange,
   type PanelFeature,
   type PanelLayout,
+  type PatchEntry,
   type Pattern,
   type PhysicalSpec,
   type Provenance,
@@ -67,6 +71,15 @@ describe('schemas and types stay in step', () => {
 
     expectTypeOf<PanelLayout>().toExtend<z.infer<typeof PanelLayoutSchema>>()
     expectTypeOf<z.infer<typeof PanelLayoutSchema>>().toExtend<PanelLayout>()
+
+    // The two entry shapes are bound explicitly rather than only through `Recipe`. Both gained
+    // `verified` in #49 and both had gone years without it while §3 claimed otherwise; a nested
+    // binding would have compiled just as happily with the field missing from one side.
+    expectTypeOf<PatchEntry>().toExtend<z.infer<typeof PatchEntrySchema>>()
+    expectTypeOf<z.infer<typeof PatchEntrySchema>>().toExtend<PatchEntry>()
+
+    expectTypeOf<ArticulationEntry>().toExtend<z.infer<typeof ArticulationEntrySchema>>()
+    expectTypeOf<z.infer<typeof ArticulationEntrySchema>>().toExtend<ArticulationEntry>()
 
     expectTypeOf<Recipe>().toExtend<z.infer<typeof RecipeSchema>>()
     expectTypeOf<z.infer<typeof RecipeSchema>>().toExtend<Recipe>()

@@ -97,8 +97,8 @@ describe('rack geometry (§10)', () => {
     const model = rackModel(real)
     const rails = new Set(model.panels.map((p) => p.topMm + p.riseMm))
     expect(rails.size).toBe(1)
-    // Not vacuous: these three boxes are genuinely different depths.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(3)
+    // Not vacuous: these four boxes are genuinely different depths.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(4)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
   })
 
@@ -457,9 +457,27 @@ describe('panel layouts', () => {
 // ---------------------------------------------------------------------------
 
 describe('patch entries (§3.3)', () => {
-  it('carries none, because no authored recipe declares any', () => {
+  it('carries the real ones the library now authors, on the panel that owns them', () => {
+    // This assertion used to read "carries none, because no authored recipe declares any", and
+    // it was true of three devices. #49 added the fourth, which is a semi-modular whose recipes
+    // *are* patch lists (§3.3), so the honest version of the test is that the entries arrive and
+    // land on the right box — the path is exercised by real data rather than only by the fixture
+    // below it.
     const model = rackModel(real)
-    expect(model.panels.every((p) => p.internalPatch.length === 0)).toBe(true)
+    const patched = model.panels.filter((p) => p.internalPatch.length > 0)
+    expect(patched.length).toBeGreaterThan(0)
+    for (const panel of patched) {
+      // Every entry belongs to an assignment on that same panel. A patch point is inside one box.
+      const mine = real.assignments.filter((a) => a.deviceId === panel.deviceId)
+      expect(panel.internalPatch.length).toBe(mine.reduce((n, a) => n + a.patch.length, 0))
+      for (const entry of panel.internalPatch) {
+        expect(entry.from.length).toBeGreaterThan(0)
+        expect(entry.to.length).toBeGreaterThan(0)
+      }
+    }
+    // And still not drawn: no cable in the model begins and ends on one device. Intra-panel
+    // routing is listed in the guide, not drawn, because a layout carries no jack positions.
+    expect(model.cables.every((c) => c.fromDeviceId !== c.toDeviceId)).toBe(true)
   })
 
   it('carries what a recipe does declare, on the right panel', () => {
@@ -552,16 +570,18 @@ describe('rack view', () => {
 
     // Every kind in the vocabulary is exercised by the three authored boxes, so a renderer arm
     // that stopped working would show up here rather than only in Chrome.
-    expect(count('rack-screen')).toBe(3) // TR-1000, Tracker Mini, Deluge
+    expect(count('rack-screen')).toBe(3) // TR-1000, Tracker Mini, Deluge — the Cascadia has none
     expect(count('rack-group')).toBeGreaterThan(3)
-    expect(count('rack-fader')).toBe(11) // the TR-1000's eleven instrument faders
-    expect(count('rack-key')).toBe(16) // and its sixteen step keys
+    // The TR-1000's eleven instrument faders, plus the Cascadia's thirty-four: that box is set
+    // with sliders almost exclusively, which is why its panel is mostly this one shape.
+    expect(count('rack-fader')).toBe(45)
+    expect(count('rack-key')).toBe(16) // and the TR-1000's sixteen step keys
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(3)
+    expect(fields).toHaveLength(4)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

@@ -635,6 +635,46 @@ describe('bindArticulation (§7 step 8, §4.3)', () => {
     }
   })
 
+  it('lets each articulation override the recipe, in both directions (§3.1)', () => {
+    // The same repair as `resolvePatch`, applied in the same pass. §3 names params, patch
+    // entries *and* articulation entries as inheriting the recipe citation; only params could,
+    // and this shape had the identical defect without a device having found it yet.
+    const bound = bindArticulation(
+      recipe({
+        verified: MANUAL,
+        articulation: [
+          { slot: 'downbeat', set: { probability: 100 } },
+          { slot: 'accent', set: { velocity: 110 }, verified: OBSERVED },
+        ],
+      }),
+      pattern,
+    )
+    expect(bound.map((a) => a.provenance)).toEqual([
+      { state: 'authored', cite: MANUAL },
+      { state: 'authored', cite: OBSERVED },
+    ])
+
+    // An explicit `false` on the entry beats an inherited citation, and a citation on the entry
+    // survives an uncited recipe. Provenance is resolved per entry, never hoisted for the list.
+    const mixed = bindArticulation(
+      recipe({
+        verified: MANUAL,
+        articulation: [{ slot: 'accent', set: { velocity: 110 }, verified: false }],
+      }),
+      pattern,
+    )
+    expect(mixed[0]?.provenance).toEqual({ state: 'provisional' })
+
+    const lifted = bindArticulation(
+      recipe({
+        verified: false,
+        articulation: [{ slot: 'accent', set: { velocity: 110 }, verified: MANUAL }],
+      }),
+      pattern,
+    )
+    expect(lifted[0]?.provenance).toEqual({ state: 'authored', cite: MANUAL })
+  })
+
   it('binds nothing when the recipe authors no articulation', () => {
     expect(bindArticulation(recipe({ articulation: undefined }), pattern)).toEqual([])
   })
@@ -648,6 +688,37 @@ describe('resolvePatch (§3.3, invariant 4)', () => {
     ])
     expect(resolvePatch(recipe({ verified: false, patch: [{ from: 'A', to: 'B', note: 'n' }] })))
       .toEqual([{ from: 'A', to: 'B', note: 'n', provenance: { state: 'provisional' } }])
+  })
+
+  it('lets each cable override the recipe, in both directions (§3.1)', () => {
+    // The repair #49 produced. A patch entry's `verified` claims that *this connection* is the
+    // right choice — the jacks' own existence is cited once each on the device (§3.3) — so one
+    // recipe can hold a cable the manual instructs beside two somebody patched by ear. Three
+    // entries, three different claims, resolved per entry rather than hoisted for the list.
+    const resolved = resolvePatch(
+      recipe({
+        verified: MANUAL,
+        patch: [
+          { from: 'A', to: 'B' },
+          { from: 'C', to: 'D', verified: OBSERVED },
+          { from: 'E', to: 'F', verified: false },
+        ],
+      }),
+    )
+    expect(resolved.map((e) => e.provenance)).toEqual([
+      { state: 'authored', cite: MANUAL },
+      { state: 'authored', cite: OBSERVED },
+      // The direction `||` gets wrong: an explicit `false` on the entry beats an inherited cite.
+      { state: 'provisional' },
+    ])
+  })
+
+  it('lets a cable be cited inside an uncited recipe', () => {
+    // The direction an author actually reaches for on a semi-modular: the whole recipe is
+    // patched by ear, except the one connection the manual walks you through.
+    expect(
+      resolvePatch(recipe({ verified: false, patch: [{ from: 'A', to: 'B', verified: MANUAL }] })),
+    ).toEqual([{ from: 'A', to: 'B', provenance: { state: 'authored', cite: MANUAL } }])
   })
 })
 

@@ -149,9 +149,10 @@ export function Rack({ result }: { result: ResolveResult | undefined }) {
       ) : null}
       {/*
         §3.3 patch entries are carried by the model and rendered as a count, never as a cable:
-        they are patch points *inside* one box, and no authored recipe declares any yet. The path
-        exists so a semi-modular device gets on-panel routing without a new data shape; nothing
-        is invented in the meantime.
+        they are patch points *inside* one box. The Cascadia (#49) is the first device to declare
+        any, and the count is still the honest rendering — drawing a cable between two jacks needs
+        jack *positions*, and `PanelLayout` has no jack feature to carry them. Saying so is the
+        same honesty as a gap; inventing a cable stub would not be.
       */}
       {patched.length > 0 ? (
         <p className="rack-note">
