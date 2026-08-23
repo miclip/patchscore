@@ -1795,6 +1795,37 @@ its bottom rail, which is the thing the bottom rail exists to prevent. A cable b
 on one row still just hangs. A gutter is only reserved when a cable uses it, so a rig that fits on
 one row is laid out to the millimetre as it was before rows existed.
 
+**The voice field is packed by cell shape, not only by cell area.** The one region a panel hands
+to the resolver (`kind: 'voices'`, §2.3) is filled with one cell per assignable, and the column
+count is chosen rather than fixed — the authored regions are too different for a constant cell
+size, from a 314 x 22 mm instrument row to a 106 x 62 mm screen. The rule was "take the column
+count with the largest cell area", and on a *shallow* region that rule fails: eleven voices in a
+237.7 x 18 mm strip come out as 18.9 x 14.7 mm at eleven columns and 37.1 x 7.5 mm at six, which
+are 278.1 mm2 and 278.4 mm2. Area chose two rows of slabs over one row of buttons on **0.3 mm2**,
+three parts in a thousand, because area cannot see the difference between a 1.28:1 cell and a
+4.95:1 one. So a candidate layout is now rejected when `cellW / cellH` exceeds `MAX_CELL_ASPECT`,
+which is 3 — the same ceiling `test/rack.test.ts` has always asserted against every drawn panel,
+now named once in `components/rack/model.ts` and imported by the test rather than written twice.
+
+Two things about it, and the second is the one that would bite:
+
+- **The constraint is a preference, never a veto.** A region so shallow that no column count
+  clears the ceiling still gets the best layout that fits, squat cells and all. Drawing the voices
+  badly is a cost; failing to draw them is a bug, and a strict ceiling would have shipped that bug
+  on the first device authored with a shallower row than anything in the library today. The empty
+  return keeps its original and much narrower meaning: nothing fits this region at all, so the
+  "panel not drawn yet" sentence stays honest.
+- **The cost is that a shallow region now trades a little coverage for shape.** On the 237.7 x 18
+  strip, coverage moves from 0.7157 to 0.7149 — three cells short of nothing, and far above the
+  0.55 floor. That is the direction the trade should go, but it is a trade: a future region could
+  clear the ceiling only by giving up real area, and the packer will take that deal without
+  saying so.
+
+Adding the constraint moved exactly one panel in the nine-device library and left the other eight
+byte-identical, which is the evidence that it bites only where it should. That check is worth
+repeating on any future change to the packer, because both existing guards — coverage above 0.55
+and aspect under 3 — can pass while a panel that was already right gets worse.
+
 What the resolver actually produces that is spatial is **clock**: §7.4's source and the boxes that
 can sync to it. Audio is not drawn, and the page says so beside the legend — the resolver assigns
 parts to voices, never to a destination box or mixer channel, so there is no authored endpoint to

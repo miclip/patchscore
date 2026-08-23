@@ -159,6 +159,16 @@ const MIN_CELL_W_MM = 3.5
 const MIN_CELL_H_MM = 3
 const BANK_LABEL_MM = 5
 
+/**
+ * §10. How wide a cell may be relative to its height before it stops reading as the pad, button
+ * or fader it stands for and starts reading as a strip of nothing.
+ *
+ * Exported because `test/rack.test.ts` asserts the same number against every drawn panel, and two
+ * copies of a contract are two contracts. `CELL_ASPECT` bounds the *other* end: a cell is never
+ * taller than `1 / CELL_ASPECT` — about 1.28 — so only the wide end needs a ceiling.
+ */
+export const MAX_CELL_ASPECT = 3
+
 /** The generated fallback panel: a name plate, then the voice field fills what is left. */
 const MARGIN_MM = 8
 const PLATE_MM = 46
@@ -559,7 +569,24 @@ function banksFor(
   const labelMm = buckets.length > 1 ? BANK_LABEL_MM : 0
   const most = Math.max(...buckets.map(([, b]) => b.items.length))
 
-  let best: { cols: number; cellW: number; cellH: number } | undefined
+  type Fit = { cols: number; cellW: number; cellH: number }
+  /**
+   * Two incumbents, not one. `shapely` is the best layout whose cells stay under
+   * `MAX_CELL_ASPECT`; `any` is the best layout that merely fits at all.
+   *
+   * Area alone picks the wrong one on a *shallow* region, and by a margin far too thin to be
+   * carrying the decision. A device authoring an instrument-button row of 237.7 x 18 mm for
+   * eleven buttons — a 13:1 strip — gets 18.9 x 14.7 mm cells at eleven columns and 37.1 x 7.5
+   * at six. Those are 278.1 mm2 and 278.4 mm2: the old rule chose two rows of slabs over one row
+   * of buttons on a **0.3 mm2** difference, three parts in a thousand. Area cannot tell a
+   * 1.28:1 cell from a 4.95:1 one at all, so it was never going to be the rule that did.
+   *
+   * The shape is a property of shallow rows, not of one device. A 314 x 22 mm row is the same
+   * shape and escaped only because ten voices happened to fit its width; the eleventh voice
+   * would have tipped it the same way.
+   */
+  let shapely: Fit | undefined
+  let any: Fit | undefined
   for (let cols = 1; cols <= most; cols++) {
     const cellW = (rect.w - CELL_GAP_MM * (cols - 1)) / cols
     if (cellW < MIN_CELL_W_MM) break
@@ -568,10 +595,22 @@ function banksFor(
       rect.h - labelMm * buckets.length - CELL_GAP_MM * (rows - buckets.length) - CELL_GAP_MM * (buckets.length - 1)
     const cellH = Math.min(cellW * CELL_ASPECT, spare / rows)
     if (cellH < MIN_CELL_H_MM) continue
+    const fit = { cols, cellW, cellH }
     // Maximise cell area rather than taking the first fit: the first fit is a tall thin column.
-    if (best === undefined || cellW * cellH > best.cellW * best.cellH) best = { cols, cellW, cellH }
+    if (any === undefined || cellW * cellH > any.cellW * any.cellH) any = fit
+    if (cellW / cellH > MAX_CELL_ASPECT) continue
+    if (shapely === undefined || cellW * cellH > shapely.cellW * shapely.cellH) shapely = fit
   }
 
+  /**
+   * **The ceiling is a preference, never a veto**, and the order of these two lines is the whole
+   * of that rule. A region so shallow that *no* column count comes in under the ceiling still
+   * gets the best layout that fits, squat cells and all — drawing the voices badly is a cost,
+   * failing to draw them is a bug, and the second is what a strict ceiling would have shipped on
+   * the first device nobody has authored yet. The empty return below stays reserved for its
+   * original meaning: nothing fits this region at all, so §10's "not drawn" sentence is honest.
+   */
+  const best = shapely ?? any
   if (best === undefined) {
     return { banks: [], hidden: buckets.reduce((n, [, b]) => n + b.items.length, 0) }
   }

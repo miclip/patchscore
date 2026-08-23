@@ -13,6 +13,7 @@ import {
   PANEL_GAP_MM,
   PANEL_HEIGHT_MM,
   RAIL_MM,
+  MAX_CELL_ASPECT,
   cablePath,
   perRowForWidth,
   rackModel,
@@ -426,6 +427,91 @@ describe('panel layouts', () => {
       panel: { ...two.panel, features: [...two.panel.features, ...two.panel.features] },
     }
     expect(DeviceSchema.safeParse(doubled).success).toBe(false)
+  })
+
+  /**
+   * #?? / §10. `banksFor` picks one column count for a whole panel by cell *area*, and area is
+   * blind to shape: on a shallow row it will take two rows of slabs over one row of buttons for a
+   * margin of a fraction of a percent. `MAX_CELL_ASPECT` is what tells those apart.
+   *
+   * Deliberately device-agnostic — none of these fixtures is a device in the library, and the
+   * numbers are chosen to make the *shape* argument, not to reproduce one manifest. The library's
+   * own panels are covered by the whole-registry cases above and below.
+   */
+  describe('cell shape, not just cell area (§10)', () => {
+    /** A box with `count` fixed voices and one authored voice region of the given size. */
+    function strip(id: string, count: number, w: number, h: number): Device {
+      return box(id, {
+        voices: Array.from({ length: count }, (_, i) => ({
+          kind: 'fixed' as const,
+          id: `v${i + 1}`,
+          label: `V${i + 1}`,
+          roles: ['kick' as const],
+          polyphony: 1,
+        })),
+        recipes: [makeRecipe('r-kick', 'kick', 'hard', 'v1')],
+        panel: {
+          panelRiseMm: 120,
+          verified: { kind: 'manual', source: 'Fixture p.1' },
+          features: [{ kind: 'voices', x: 10, y: 60, w, h, label: 'STRIP' }],
+        },
+      })
+    }
+
+    function cellsOf(device: Device) {
+      const panel = rackModel(rig([device])).panels.find((p) => p.deviceId === device.id)
+      return panel?.banks.flatMap((b) => b.cells) ?? []
+    }
+
+    it('lays a shallow row out in one row rather than stacking slabs', () => {
+      // 11 voices across a 13:1 region. Both candidate layouts fit and their cell areas are
+      // within a rounding error of each other, so area alone cannot choose; shape can.
+      const cells = cellsOf(strip('a-shallow', 11, 237.7, 18))
+      expect(cells).toHaveLength(11)
+      // One row: every cell shares a y, and there are as many distinct x as there are cells.
+      expect(new Set(cells.map((c) => c.y.toFixed(4))).size).toBe(1)
+      expect(new Set(cells.map((c) => c.x.toFixed(4))).size).toBe(11)
+      for (const cell of cells) expect(cell.w / cell.h).toBeLessThanOrEqual(MAX_CELL_ASPECT)
+    })
+
+    it('still packs a deep region into several rows, because the ceiling is not a row limit', () => {
+      // The same voice count in a region tall enough to want stacking. Nothing about the ceiling
+      // should push a genuinely two-dimensional field into one line.
+      const cells = cellsOf(strip('b-deep', 16, 106, 62))
+      expect(cells).toHaveLength(16)
+      expect(new Set(cells.map((c) => c.y.toFixed(4))).size).toBeGreaterThan(1)
+      for (const cell of cells) expect(cell.w / cell.h).toBeLessThanOrEqual(MAX_CELL_ASPECT)
+    })
+
+    /**
+     * **The ceiling is a preference, never a veto.** This is the case the fix could plausibly
+     * have broken and that no device in the library would have caught: a region so shallow that
+     * *every* column count produces a cell wider than `MAX_CELL_ASPECT`. `banksFor` must still
+     * return a full bank list — squat cells and all — because drawing the voices badly is a cost
+     * and failing to draw them is a bug.
+     */
+    it('falls back to the best fit when no layout clears the ceiling', () => {
+      const device = strip('c-impossible', 6, 240, 4)
+      const cells = cellsOf(device)
+      expect(cells).toHaveLength(6)
+      expect(cells.every((c) => c.w / c.h > MAX_CELL_ASPECT)).toBe(true)
+      // Nothing hidden, nothing dropped: every voice got a cell.
+      const panel = rackModel(rig([device])).panels.find((p) => p.deviceId === device.id)
+      expect(panel?.hiddenCells).toBe(0)
+      expect(new Set(cells.map((c) => c.voiceId)).size).toBe(6)
+    })
+
+    /**
+     * And the empty return keeps its original meaning. A region too small for *any* cell is the
+     * one case that legitimately draws nothing, and §10's "panel not drawn" sentence depends on
+     * this staying distinct from the squat-cell fallback above.
+     */
+    it('still reports nothing drawn when the region fits no cell at all', () => {
+      const device = strip('d-tiny', 8, 2, 2)
+      const panel = rackModel(rig([device])).panels.find((p) => p.deviceId === device.id)
+      expect(panel?.banks.flatMap((b) => b.cells) ?? []).toHaveLength(0)
+      expect(panel?.hiddenCells).toBe(8)
+    })
   })
 
   it('fills the authored region rather than leaving it mostly empty', () => {
