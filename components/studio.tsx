@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type {
   DeviceId,
   GuideInputsV1,
@@ -19,14 +19,14 @@ import {
   bootstrapStudio,
   composeTemplate,
   copyStudioLink,
-  syncStudio,
+  createStudioSync,
   withAxis,
   withDevice,
   withInspiration,
   withSeed,
   withTemplate,
 } from '@/lib/studio/session'
-import type { Bootstrap, StudioNotice } from '@/lib/studio/session'
+import type { Bootstrap, StudioNotice, SyncReport, SyncScheduler } from '@/lib/studio/session'
 import { DevicePicker } from './device-picker'
 import { Footer } from './footer'
 import { GenrePicker } from './genre-picker'
@@ -110,11 +110,7 @@ export function Studio() {
     setBootstrapped(true)
   }, [])
 
-  // The address bar and the store, kept in step with the inputs. `replaceState`, so a knob turn
-  // is not a back-button entry and nothing navigates out from under someone mid-guide.
-  useEffect(() => {
-    if (!bootstrapped) return
-    const report = syncStudio(browserEnv(), inputs, rig, { persist })
+  const onSynced = useCallback((report: SyncReport) => {
     setPermalink(report.href)
     if (report.notice === undefined) return
     setNotices((current) =>
@@ -122,6 +118,49 @@ export function Studio() {
         ? current
         : [...current, report.notice as StudioNotice],
     )
+  }, [])
+
+  /**
+   * One scheduler for the life of the component, and **deliberately not recreated per change**.
+   * A scheduler torn down and rebuilt whenever the inputs move would restart its timer from
+   * empty each time, which is a debounce that never fires.
+   *
+   * Built in an effect rather than lazily in render, for the same reason the bootstrap is: this
+   * component never calls `browserEnv()` outside an effect or a handler, so a render in Node
+   * with no `window` stays a pure render (`test/studio-render.test.ts`).
+   *
+   * **Flush on unmount, never cancel.** A queued write is a write somebody's last edit is
+   * waiting on, and dropping it would lose it. Nothing is queued before the bootstrap has run,
+   * so this cannot write the defaults over a link either.
+   */
+  const sync = useRef<SyncScheduler | undefined>(undefined)
+  useEffect(() => {
+    const scheduler = createStudioSync(browserEnv(), onSynced)
+    sync.current = scheduler
+    return () => {
+      scheduler.flush()
+      sync.current = undefined
+    }
+  }, [onSynced])
+
+  /**
+   * The address bar and the store, kept in step with the inputs — on a trailing edge, 300ms
+   * after the last change (`createStudioSync`). `replaceState`, so a knob turn is not a
+   * back-button entry and nothing navigates out from under someone mid-guide.
+   *
+   * **Debounced because WebKit throws.** A knob drag changes `inputs` on every pointer move, and
+   * writing the URL on each one hit Safari/iOS's `replaceState` rate limit — roughly 100 calls
+   * per 30 seconds — after about two seconds of dragging, killing the page outright. The
+   * `localStorage` write rides the same effect and was doing the same work for the same lack of
+   * reason. `resolve` is *not* debounced: the guide tracks the knob live, which is the point of
+   * the control.
+   */
+  useEffect(() => {
+    // `bootstrapped` only becomes true on a later commit than the mount effects, so the
+    // scheduler is always in place by the time there is anything to schedule. The guard is
+    // there so that ordering is a fact rather than an assumption.
+    if (!bootstrapped || sync.current === undefined) return
+    sync.current.schedule(inputs, rig, { persist })
   }, [bootstrapped, persist, inputs, rig])
 
   const selected = useMemo(() => new Set(inputs.devices), [inputs.devices])

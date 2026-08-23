@@ -44,6 +44,27 @@ Three sources, and they do different jobs:
 
 The community docs are a **moving target**, unlike a PDF — `manuals/deluge-community/VERSION` records the tag and fetch date, and a citation to them must name the tag or it means nothing. Note also that the `menus/` docs are prose about what a parameter *does* and still carry `TODO` markers; they state no numeric ranges. That is exactly the gap `observed` citations exist for (§3.1).
 
+
+## Added for the device queue
+
+| File | Device | Notes |
+|---|---|---|
+| `MC-101_Reference_eng01_W.pdf` | Roland MC-101 | **The Reference Manual**, 260k chars. The Owner's Manual alone documents no ranges — same trap as the TR-1000 (#18). Note the capital `R` in the filename. |
+| `MC-101_update_eng08_W.pdf` | Roland MC-101 | Later firmware features |
+| `TR-8S_eng03_W.pdf` | Roland TR-8S | Owner's Manual. Refers to a Reference Manual **8 times** — do not author from this alone. |
+| `TR-8S_Reference_eng01_W.pdf` | Roland TR-8S | The Reference Manual, 140k chars. Capital `R` again. |
+| `metropolix_manual_v1.6_2025.09.24.pdf` | Intellijel Metropolix | 339k chars, v1.6 |
+| `Zoom_LiveTrak_L-8_E_02.pdf` | Zoom LiveTrak L-8 | 91k chars, English edition |
+| `Digitakt-II_User_Manual_ENG_OS1.15A.pdf` | Elektron Digitakt II | 292k chars |
+| `Digitakt_User_Manual_ENG_OS1.51.pdf` | Elektron Digitakt | 242k chars, the original |
+| `CRAVE_QSG_BE_0718-AAJ_WW.pdf` | Behringer Crave | Quick-start, **multilingual worldwide edition** — only a fraction of its 248k chars is English. Documents the patchbay properly (jack names, directions, internal normals) but is not a parameter reference, so expect cited jacks and provisional knob values. |
+
+### Roland's split-manual pattern
+
+Roland ships an Owner's Manual that names the controls and a separate Reference Manual that documents parameter ranges. **Authoring from the Owner's Manual alone produces a device whose values are entirely provisional and whose mood knobs are inert** — that is what happened to the TR-1000 before #23.
+
+Filename casing is inconsistent between products: `TR-1000_reference_...` is lowercase, `MC-101_Reference_...` and `TR-8S_Reference_...` are capitalised. Roland returns **403, not 404**, for a filename that does not exist, so a wrong guess looks like a permissions problem rather than a typo.
+
 ## Known gaps
 
 - **MC-101 Reference Manual** — the Owner's Manual points at one, and it is not here. Download it

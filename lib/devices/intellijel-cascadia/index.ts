@@ -123,8 +123,16 @@ import { CASCADIA_PANEL } from './panel'
  *  - **Any per-step articulation.** Cascadia has no sequencer, so `features.perStep` is absent
  *    and no recipe articulates. See `routing` on the recipes: this box is played from whatever
  *    is sequencing the rig.
- *  - **`swing`.** Nothing on this box has a swing to offer, so no parameter declares the axis and
- *    §6 lets it decline by simply not appearing.
+ *  - **`swing`.** Checked against the manual, not assumed: the words *swing*, *shuffle* and
+ *    *groove* do not appear in it once. Cascadia has no sequencer and therefore no timing
+ *    control to offer — every mention of a sequencer in the manual is an *external* one feeding
+ *    the box — so no parameter declares the axis and §6.1 lets it decline by simply not
+ *    appearing, exactly as a box with no drive stage declines `grit`.
+ *
+ *    Recorded here rather than left as an omission (#62). The other three devices in this
+ *    library all carry a shuffle parameter — TR-1000 pattern `SHUFFLE`, Tracker Mini `SWING`,
+ *    Deluge song swing — and without this line the next person to compare them has no way to
+ *    tell a box that has nothing from a box nobody got to.
  */
 
 // ---------------------------------------------------------------------------

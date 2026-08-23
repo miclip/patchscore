@@ -378,6 +378,119 @@ export function syncStudio(
 }
 
 // ---------------------------------------------------------------------------
+// Sync, on a trailing edge
+// ---------------------------------------------------------------------------
+
+/**
+ * How long after the last change the sync runs. 300ms is under the threshold at which a person
+ * notices the address bar lagging, and long enough that no plausible drag fires twice.
+ */
+export const SYNC_DEBOUNCE_MS = 300
+
+/**
+ * A queued `syncStudio`, on a **trailing edge**: while the inputs keep changing nothing is
+ * written, and one write happens once they stop.
+ *
+ * ### Why this exists
+ *
+ * `syncStudio` writes two things per call — `history.replaceState` and a synchronous
+ * `localStorage.setItem` — and the studio called it once per input change, straight out of an
+ * effect keyed on the inputs. A knob drag changes the inputs on every pointer move, so a
+ * two-second drag on a phone was a couple of hundred writes.
+ *
+ * **WebKit throws for that.** Safari and every iOS browser (Brave included — they are all
+ * WebKit) rate-limit `replaceState` and raise a `SecurityError` at roughly 100 calls per 30
+ * seconds. An uncaught one during a render kills the page: "This page could not load".
+ *
+ * Measured in the dev build before the fix, each input change produced **two** `replaceState`
+ * calls rather than one: ours, and then one from Next's App Router reacting to the URL we had
+ * just changed. So the budget was reached twice as fast as the call site suggests, and
+ * debouncing our call is what removes both — Next's is downstream of it.
+ *
+ * ### Why trailing-edge, and not a throttle
+ *
+ * A throttle at 4/sec still reaches 120 calls in 30 seconds and would keep crashing during a
+ * long drag. A trailing debounce fires **zero** times while a drag is moving and exactly once
+ * after it stops, which is the property that actually bounds the rate.
+ *
+ * ### What is not debounced
+ *
+ * `resolve` — deliberately. The guide tracks the knob live, because that is the whole point of
+ * the control; it is pure, single-digit milliseconds, and writes nothing. It is the URL and the
+ * store that have no business updating mid-drag.
+ *
+ * ### What is guaranteed
+ *
+ * The queued payload is **replaced**, never accumulated: whatever was scheduled last is what
+ * runs, so the address bar and the store end up at the final inputs rather than one change
+ * stale. A single change — a typed number, the reroll button — is not swallowed; it is simply
+ * written 300ms later.
+ */
+export type SyncScheduler = {
+  /** Queue a sync, replacing any already queued. */
+  schedule(inputs: GuideInputsV1, rig: StoredRigV1 | undefined, options?: SyncOptions): void
+  /** Run a queued sync now, if there is one. Used on unmount, so nothing queued is lost. */
+  flush(): void
+  /** Drop a queued sync without running it. */
+  cancel(): void
+  /** Whether a sync is waiting. For tests and for a caller that wants to know. */
+  pending(): boolean
+}
+
+type Queued = {
+  inputs: GuideInputsV1
+  rig: StoredRigV1 | undefined
+  options: SyncOptions
+}
+
+/**
+ * `setTimeout` off the global, not injected. The whole module is otherwise built around
+ * injected capabilities, and this is the one place that is not worth it: `vi.useFakeTimers()`
+ * already replaces the global pair, so the regression test can drive this exactly, and a
+ * `TimerLike` parameter would be a seam nothing else in the codebase needs.
+ */
+export function createStudioSync(
+  env: StudioEnv,
+  onReport: (report: SyncReport) => void,
+  delayMs: number = SYNC_DEBOUNCE_MS,
+): SyncScheduler {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let queued: Queued | undefined
+
+  function run(): void {
+    timer = undefined
+    const next = queued
+    queued = undefined
+    if (next === undefined) return
+    // `syncStudio` never throws; `onReport` is the caller's, so it is not wrapped here — a
+    // caller that throws in its own callback should see that, not have it swallowed by a timer.
+    onReport(syncStudio(env, next.inputs, next.rig, next.options))
+  }
+
+  return {
+    schedule(inputs, rig, options = {}) {
+      queued = { inputs, rig, options }
+      // Restarting the timer is what makes this trailing rather than leading: a change during
+      // the window pushes the write out, it does not add one.
+      if (timer !== undefined) clearTimeout(timer)
+      timer = setTimeout(run, delayMs)
+    },
+    flush() {
+      if (timer !== undefined) clearTimeout(timer)
+      run()
+    },
+    cancel() {
+      if (timer !== undefined) clearTimeout(timer)
+      timer = undefined
+      queued = undefined
+    },
+    pending() {
+      return queued !== undefined
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Copy link
 // ---------------------------------------------------------------------------
 

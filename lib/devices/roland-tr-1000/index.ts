@@ -1,5 +1,5 @@
 import type { Device } from '../../core/device'
-import type { AuthoredEnumParam, AuthoredNumericParam, Cite } from '../../core/params'
+import type { AuthoredEnumParam, AuthoredNumericParam, AuthoredParam, Cite } from '../../core/params'
 import { TR_1000_PANEL } from './panel'
 
 /**
@@ -134,6 +134,142 @@ function send(
     hint: which === 'RVB' ? 'reverb-send' : 'delay-send',
     ...(space === undefined ? {} : { mood: [{ axis: 'space', amount: space }] }),
   })
+}
+
+/**
+ * §6.1. The swing axis, and the reason #62 turned out to be an authoring gap rather than a hole
+ * in the model.
+ *
+ * The issue argued that no parameter could carry a `swing` offset, because swing is a timing
+ * transform and mood moves parameter values. **A SHUFFLE knob is a parameter whose value means
+ * timing.** Roland already did that abstraction; the model did not need to. So this is an
+ * ordinary cited numeric declaring a mood axis, exactly as `TUNE` declares `darkness`, and the
+ * engine learns nothing new.
+ *
+ * **Which of the three shuffle controls this is, because they are not interchangeable:**
+ *
+ *  - **Master Shuffle** — TEMPO screen, [C1] knob, `-100–+100` (p.18). Global to the box, and
+ *    not saved with the pattern.
+ *  - **Track SHUFFLE** — TRACK SETTING screen, [C6/VALUE] knob, `-100–+100` (p.19). Per track,
+ *    and the page says it plainly: *"For all tracks, this parameter is scaled by Master
+ *    Shuffle found in TEMPO"*. **A guide that told you to set this could be telling you to set
+ *    something inert**, because the scaler it depends on lives on a screen we never mentioned.
+ *    That is why it is not the one authored here, tempting though a genuinely per-track control
+ *    is when a recipe is per track.
+ *  - **Pattern Shuffle** — PTN SETTING screen (p.26), `-100–+100`, *"Adjusts the timing of every
+ *    other step to create a swinging rhythm."* Nothing scales it, and it is saved with the
+ *    pattern, which is the thing a guide is helping somebody build. This one.
+ *
+ * The `note` carries the scope, because the value is on every recipe and the reader should not
+ * conclude it is per voice: it is one setting for the whole pattern, and seeing it under the
+ * kick and the hat is the same number twice, not two.
+ *
+ * **This note claims no neutral, unlike the other two boxes', because p.26 states none.** The
+ * Tracker Mini prints "50% is no swing" and the Deluge prints "50 = Off"; the PTN SETTING table
+ * prints a range and a sentence and stops. `0` is the obvious neutral for a symmetric timing
+ * offset, and it is still only our reading, so it is not stated in the reader's voice. p.19's
+ * "SHUFFLE=0" diagram is not borrowable for it: that is the *track* control, a different
+ * parameter on a different screen, and the whole reason this one was chosen over it.
+ *
+ * `amount` is 100, which is exactly the distance from the point to each bound — the same rule
+ * `send` follows for `space`. The full sweep of the knob moves the value and no part of the
+ * travel is spent against a clamp.
+ */
+function shuffle(): AuthoredNumericParam {
+  return {
+    kind: 'numeric',
+    name: 'SHUFFLE',
+    value: 0,
+    range: { min: -100, max: 100, verified: cite(26) },
+    mood: [{ axis: 'swing', amount: 100 }],
+    hint: 'ptn-shuffle',
+    note: 'Pattern-wide: one setting for every track, saved with the pattern',
+    verified: false,
+  }
+}
+
+/**
+ * §0's reader, and #58: *"a tempo-synced LFO on a filter cutoff"* is the thing they are stuck on,
+ * and every part of it is an ordinary parameter with a printed range. **No engine change, no
+ * schema change** — which is the whole finding of that issue.
+ *
+ * **The parameter list prints two MOD tables, and they differ.** This is the p.54-vs-p.71 trap
+ * `send` documents, in a second place:
+ *
+ *     p.56, above SIDE CHAIN            p.71, beside MIXER  <- the one cited here
+ *     ----------------------            ---------------------------------------
+ *     WAVE   SINE, TRI, SAW, SQR, S&H   WAVE   SINE, TRI, SAW, SQR, S&H
+ *     TIME   10.0s-100ms                TIME   10.0s-100ms
+ *     STEP   64.00Stp-0.25Stp           STEP   64.00Stp-0.25Stp
+ *     NOTE   1/1-1/32                   NOTE   1/1-1/32
+ *     PHASE  0deg-359deg                PHASE  0-359deg
+ *     SYNC   TIME, STEP, NOTE           DEST   1-3
+ *     TARGET -                          TARGET -
+ *     AMOUNT -100.0%-0.0%-+100.0%       AMOUNT -100.0%-0.0%-100.0%
+ *
+ * p.56 has a `SYNC` selector and no `DEST`; p.71 has `DEST` and no `SYNC`. Whether that is one
+ * block listed twice with a row missing from each, or two different modulation blocks, the
+ * manual never says — and nothing here guesses.
+ *
+ * **p.71 is the table this recipe cites, because p.39 says so.** The instrument-edit procedure
+ * — track select, then SHIFT + [FILTER] for the MODULATION screen — ends with *"For details on
+ * the parameters, refer to 'MOD' (p. 71)"*. So the recipe authors what p.71 lists and does not
+ * import p.56's `SYNC`: a control taken from a table this screen is not directed to would be a
+ * claim about a screen nobody checked.
+ *
+ * **The p.71 table has no `SYNC` row, so tempo sync is expressed by `NOTE`.** Its three rate
+ * rows share one Explanation cell — TIME free running, STEP counting sequencer steps, NOTE
+ * locked to the clock — and setting `NOTE` alone is unambiguous under either reading. Where
+ * p.56's selector does turn up on the screen in front of the reader, the `note` tells them to
+ * point it at NOTE, which costs nothing and closes the one gap the ambiguity could open.
+ *
+ * **`NOTE` is a `text` param, not an enum.** The Value column prints the span `1/1-1/32` and
+ * never the divisions inside it — whether the box offers dotted or triplet values is not on the
+ * page — so an `options` list would be an invented legality claim (§3.2). `1/1` is one of the
+ * two endpoints the table actually prints, which is why it is the division chosen: nothing here
+ * rests on a reading of what lies between them. One cycle per bar also happens to be the
+ * musical answer for a backbeat clap — successive hits land at different points of the sweep, so
+ * the part moves across bars rather than wobbling within one.
+ *
+ * **`TARGET` is a `text` param because the manual's Value column is literally `-`.** It names no
+ * legal set at all, so there is nothing to cite and nothing to pick from; what the recipe can
+ * honestly say is which parameter it means, and `FILTER` is one this recipe already sets.
+ *
+ * Names are prefixed `MOD` where the table prints them bare. A flat `AMOUNT` beside `CLAPS` and
+ * `SPEED` would be unreadable at the machine, and the same reasoning already gave `RVB SEND` its
+ * prefix. The screen itself is reached by SHIFT + [FILTER] (p.39), which is the hint.
+ */
+function mod(target: string, amount: number, wave: string, note: string): AuthoredParam[] {
+  return [
+    {
+      kind: 'enum',
+      name: 'MOD WAVE',
+      value: wave,
+      options: { values: ['SINE', 'TRI', 'SAW', 'SQR', 'S&H'], verified: cite(71) },
+      verified: false,
+      hint: 'mod-screen',
+    },
+    // The tempo-synced rate. See above for why this is text and why the division is an endpoint.
+    {
+      kind: 'text',
+      name: 'MOD NOTE',
+      value: note,
+      verified: false,
+      note: 'Tempo-synced rate; if the screen offers a SYNC selector, point it at NOTE',
+    },
+    // Built inline rather than through `num`, which takes a unit: the table prints none for
+    // DEST, and an empty string is not "no unit", it is a schema error waiting to happen.
+    {
+      kind: 'numeric',
+      name: 'MOD DEST',
+      value: 1,
+      range: { min: 1, max: 3, verified: cite(71) },
+      verified: false,
+      note: 'Which of the three assignment slots this uses',
+    },
+    { kind: 'text', name: 'MOD TARGET', value: target, verified: false },
+    num('MOD AMOUNT', amount, BIPOLAR, '%', 71),
+  ]
 }
 
 /**
@@ -322,9 +458,34 @@ export const device: Device = {
    * per-step capabilities the manual documents as their own gestures (p.17-18) rather than as
    * STEP EDIT fields, and the articulation below uses all three.
    *
-   * `lfo` is omitted on purpose: the MOD screen exists (SHIFT + [FILTER]) but the manual never
-   * states how many LFOs there are or whether they sync, and inventing a count to fill the
-   * field is exactly invariant 5's failure mode.
+   * **`lfo` is omitted, and after #58 the reason is a finding rather than an absence.** The MOD
+   * block is fully documented — p.71's table, reached by SHIFT + [FILTER] (p.39), and now
+   * authored on `tr1000-clap-bright`. What the manual describes is a topology `LfoSpec`'s
+   * `{ count, syncable, destinations[] }` cannot state:
+   *
+   *  - `DEST` is `1-3`, *"Sets the assignment number of the LFO"*. Three **assignment slots**,
+   *    not three LFOs — the table says "the LFO" throughout, singular — so `count: 3` would put
+   *    a number in a field that means something else.
+   *  - `TARGET` *"Selects the parameter to be modulated"*, and its Value column is literally
+   *    `-`. **Any parameter.** `destinations: string[]` would have to enumerate every knob on
+   *    the box, and the enumeration would be ours rather than the manual's.
+   *
+   * `syncable` is **not** among the problems, and an earlier draft of this comment wrongly said
+   * it was. This LFO demonstrably syncs — `NOTE` is a tempo division on both MOD tables and
+   * p.56's carries an explicit `SYNC` selector — so `true` would be answerable and correct. The
+   * field is unusable for the two reasons above, not for three.
+   *
+   * Whether `WAVE` and the rate rows are per assignment or shared across all three, p.71 does
+   * not say, and nothing here pretends to know — any more than it guesses which of the two MOD
+   * tables in the parameter list (p.56, p.71) governs which screen.
+   *
+   * The field is left off rather than bent to fit, because nothing reads `features.lfo` — no
+   * resolver, no renderer, no validation, no recipe. A more elaborate shape for a field with no
+   * consumer is harder to delete than a simple one, and this project has already paid twice for
+   * types settled before real data met them (`PatchEntry`, #49; params, the step 1 review). When
+   * something needs to read it — rig integration saying what modulation a box has, or checking
+   * that a recipe's LFO target is reachable — it can be modelled against three authored devices
+   * and a consumer, in one pass instead of two.
    */
   features: {
     perStep: [
@@ -350,6 +511,8 @@ export const device: Device = {
     'layer-ab': 'LAYER [A]/[B] selects the layer',
     'select-gen': 'Hold [SHIFT], press [GEN]',
     'motion-rec': 'MOTION [REC] lit, then move knob',
+    'mod-screen': 'Hold [SHIFT], press [FILTER]',
+    'ptn-shuffle': 'Hold [SHIFT], press [PTN SELECT]',
     'reverb-send': 'Hold [BD]-[RC], turn REVERB [LEVEL]',
     'delay-send': 'Hold [BD]-[RC], turn DELAY [LEVEL]',
   },
@@ -379,6 +542,7 @@ export const device: Device = {
         num('ATTACK', 74, PCT, '%', 59),
         send('RVB', 0),
         send('DLY', 0),
+        shuffle(),
       ],
       articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
       routing: 'INDIVIDUAL OUT BD — effects are bypassed on that jack',
@@ -397,6 +561,7 @@ export const device: Device = {
         num('DECAY', 78, PCT, '%', 59, { mood: [{ axis: 'density', amount: -20 }] }),
         send('RVB', 0),
         send('DLY', 0),
+        shuffle(),
       ],
       articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -416,6 +581,7 @@ export const device: Device = {
         num('BODY DEP', 40, PCT, '%', 60),
         send('RVB', 0),
         send('DLY', 0),
+        shuffle(),
       ],
       articulation: [
         { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
@@ -438,6 +604,7 @@ export const device: Device = {
         num('DRIVE', 18, PCT, '%', 61),
         send('RVB', 0),
         send('DLY', 0),
+        shuffle(),
       ],
       routing: 'INDIVIDUAL OUT BD so the sub stays out of the bus effects',
       verified: false,
@@ -457,6 +624,7 @@ export const device: Device = {
         num('SNAPPY', 70, PCT, '%', 60),
         send('RVB', 0),
         send('DLY', 0),
+        shuffle(),
       ],
       articulation: [
         { slot: 'backbeat', set: { accent: true }, hint: 'accent-step' },
@@ -478,6 +646,7 @@ export const device: Device = {
         num('SNAPPY', 55, BIPOLAR, '%', 62),
         send('RVB', 24, 20),
         send('DLY', 12, 12),
+        shuffle(),
       ],
       articulation: [{ slot: 'backbeat', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -497,6 +666,7 @@ export const device: Device = {
         num('COARSE', 0, SEMITONES_24, 'St', 63),
         send('RVB', 18, 16),
         send('DLY', 14, 14),
+        shuffle(),
       ],
       articulation: [
         { slot: 'backbeat', set: { accent: true }, hint: 'accent-step' },
@@ -519,6 +689,7 @@ export const device: Device = {
         num('DECAY', 72, PCT, '%', 60, { mood: [{ axis: 'density', amount: -18 }] }),
         send('RVB', 20, 18),
         send('DLY', 8, 8),
+        shuffle(),
       ],
       articulation: [{ slot: 'fill', set: { substep: '1/3' }, hint: 'sub-step' }],
       verified: false,
@@ -536,6 +707,7 @@ export const device: Device = {
         num('DECAY', 40, PCT, '%', 60, { mood: [{ axis: 'density', amount: -12 }] }),
         send('RVB', 26, 20),
         send('DLY', 10, 10),
+        shuffle(),
       ],
       articulation: [
         { slot: 'fill', set: { substep: '1/3' }, hint: 'sub-step' },
@@ -559,6 +731,7 @@ export const device: Device = {
         num('BODY', 25, PCT, '%', 60),
         send('RVB', 8, 8),
         send('DLY', 0),
+        shuffle(),
       ],
       articulation: [{ slot: 'offbeat', set: { 'alt-inst': true }, hint: 'alt-inst' }],
       verified: false,
@@ -577,6 +750,7 @@ export const device: Device = {
         num('FREQ MOD', 20, PCT, '%', 62),
         send('RVB', 22, 20),
         send('DLY', 14, 14),
+        shuffle(),
       ],
       articulation: [
         { slot: 'ghost', set: { weak: true }, hint: 'weak-step' },
@@ -599,8 +773,12 @@ export const device: Device = {
         num('SPEED', 55, PCT, '%', 62),
         num('MIX', 20, BIPOLAR, '%', 62, { hint: 'Clap against tail, not layers' }),
         num('TAIL DCY', 62, PCT, '%', 62, { mood: [{ axis: 'density', amount: -18 }] }),
+        // #58. A tempo-synced triangle on this recipe's own FILTER: one cycle per bar, so the
+        // two backbeat claps in a bar sit at different points of the sweep.
+        ...mod('FILTER', 22, 'TRI', '1/1'),
         send('RVB', 30, 22),
         send('DLY', 14, 14),
+        shuffle(),
       ],
       articulation: [{ slot: 'backbeat', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -617,6 +795,7 @@ export const device: Device = {
         num('TAIL LVL', 38, PCT, '%', 59, { mood: [{ axis: 'density', amount: -12 }] }),
         send('RVB', 34, 24),
         send('DLY', 10, 10),
+        shuffle(),
       ],
       articulation: [{ slot: 'ghost', set: { weak: true }, hint: 'weak-step' }],
       verified: false,
@@ -636,6 +815,7 @@ export const device: Device = {
         num('ERROR', 8, PCT, '%', 62, { hint: 'Noise into the DA converter' }),
         send('RVB', 6, 6),
         send('DLY', 0),
+        shuffle(),
       ],
       articulation: [
         { slot: 'offbeat', set: { weak: true }, hint: 'weak-step' },
@@ -656,6 +836,7 @@ export const device: Device = {
         num('METALLIC', 72, PCT, '%', 62, { mood: [{ axis: 'grit', amount: 20 }], hint: 'Metal-like overtone level' }),
         send('RVB', 10, 10),
         send('DLY', 8, 8),
+        shuffle(),
       ],
       articulation: [
         { slot: 'offbeat', set: { weak: true }, hint: 'weak-step' },
@@ -678,6 +859,7 @@ export const device: Device = {
         num('ERROR', 10, PCT, '%', 62),
         send('RVB', 16, 16),
         send('DLY', 20, 18),
+        shuffle(),
       ],
       articulation: [{ slot: 'offbeat', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -695,6 +877,7 @@ export const device: Device = {
         num('TONE', -35, BIPOLAR, '%', 62, { hint: 'Brightness of the cymbal' }),
         send('RVB', 14, 12),
         send('DLY', 12, 12),
+        shuffle(),
       ],
       articulation: [{ slot: 'offbeat', set: { weak: true }, hint: 'weak-step' }],
       verified: false,
@@ -713,6 +896,7 @@ export const device: Device = {
         num('DECAY', 84, PCT, '%', 62, { mood: [{ axis: 'density', amount: -20 }] }),
         send('RVB', 42, 26),
         send('DLY', 18, 16),
+        shuffle(),
       ],
       articulation: [{ slot: 'first-hit', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -729,6 +913,7 @@ export const device: Device = {
         num('DECAY', 74, PCT, '%', 62, { mood: [{ axis: 'density', amount: -14 }] }),
         send('RVB', 14, 14),
         send('DLY', 8, 8),
+        shuffle(),
       ],
       articulation: [
         { slot: 'offbeat', set: { 'alt-inst': true }, hint: 'alt-inst' },

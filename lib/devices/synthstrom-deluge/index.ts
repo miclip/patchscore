@@ -120,6 +120,43 @@ function num(
   }
 }
 
+/**
+ * §6.1. The swing axis, as an ordinary cited numeric (#62).
+ *
+ * Guidebook p.39: *"Press [SHIFT] + turn (TEMPO) button. A swing % value between 1-99 can be
+ * dialled in"*, with the diagram spelling out the neutral and both directions — `50 = Off`,
+ * `51-99 = notes late`, `1-49 = notes early`. Bounds and neutral both printed, so the only
+ * taste here is sitting at the neutral by default.
+
+ * **The point stays `verified: false`, and that is not an oversight.** The page prints where the
+ * neutral *is*; it does not say that this recipe should sit there. Those are two claims, and
+ * §3.2 splits them exactly this way: the range is the legality gate and carries the citation,
+ * the point is authority and is taste. Badging the point `manual` would put the manual's name to
+ * "a soft pad wants no swing", which no page states. The neutral is a property of the scale, so
+ * it travels on the range's own citation and in the `note` — which is how `EQ BASS AMOUNT`'s
+ * "25 is neutral" is already carried on the Deluge.
+ *
+ * **Song-wide, and the page says so**: *"operates generically and not at an individual note
+ * level"*. The `note` carries that, because the value appears under every part this box carries
+ * and it is one setting, not one per clip.
+ *
+ * The community firmware this rig runs moves the *interval* menu to `SONG > SWING INTERVAL` and
+ * adds a `TAP TEMPO`-held gesture for it (`community_features.md` 3.4), but the amount, its
+ * range and the [SHIFT] + (TEMPO) gesture are the guidebook's and are unchanged — so the
+ * citation is the guidebook, which is the document that actually prints the bounds.
+ *
+ * `amount` is 49, the distance from 50 to each printed bound, so the whole sweep of the knob
+ * moves the value and no part of the travel is spent against a clamp.
+ */
+function swing(): AuthoredNumericParam {
+  return num('SWING', 50, { min: 1, max: 99 }, cite(39), {
+    unit: '%',
+    mood: [{ axis: 'swing', amount: 49 }],
+    hint: 'swing-amount',
+    note: '50 is off, above is late, below is early — song-wide, not per clip',
+  })
+}
+
 /** §3.2: the option set is legality and is cited; the selection is authority and is taste. */
 function pick(name: string, value: string, options: string[], where: Cite): AuthoredEnumParam {
   return {
@@ -226,6 +263,7 @@ const RECIPES: Recipe[] = [
       num('EQ BASS AMOUNT', 33, Z50, cite(219), { note: '25 is neutral; above boosts' }),
       num('EQ BASS FREQUENCY', 14, Z50, cite(219)),
       num('DECIMATION', 6, Z50, cite(217), { mood: [{ axis: 'grit', amount: 10 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'accent', set: { velocity: 127 }, hint: 'note-velocity' }],
     verified: false,
@@ -243,6 +281,7 @@ const RECIPES: Recipe[] = [
         note: '25 is neutral; below cuts',
       }),
       num('EQ BASS AMOUNT', 31, Z50, cite(219)),
+      swing(),
     ],
     articulation: [{ slot: 'downbeat', set: { velocity: 112 } }],
     verified: false,
@@ -259,6 +298,7 @@ const RECIPES: Recipe[] = [
       num('DECIMATION', 14, Z50, cite(217), { mood: [{ axis: 'grit', amount: 14 }] }),
       num('BITCRUSH', 9, Z50, cite(217), { mood: [{ axis: 'grit', amount: 12 }] }),
       num('EQ BASS AMOUNT', 29, Z50, cite(219)),
+      swing(),
     ],
     articulation: [{ slot: 'offbeat', set: { probability: 90 }, hint: 'note-probability' }],
     verified: false,
@@ -276,6 +316,7 @@ const RECIPES: Recipe[] = [
       num('EQ TREBLE AMOUNT', 34, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -7 }] }),
       num('EQ TREBLE FREQUENCY', 30, Z50, cite(219)),
       num('REVERB AMOUNT', 8, Z50, cite(225), { mood: [{ axis: 'space', amount: 12 }] }),
+      swing(),
     ],
     articulation: [
       { slot: 'backbeat', set: { velocity: 118 } },
@@ -293,6 +334,7 @@ const RECIPES: Recipe[] = [
       pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
       num('REVERB AMOUNT', 19, Z50, cite(225), { mood: [{ axis: 'space', amount: 16 }] }),
       num('EQ TREBLE AMOUNT', 31, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -5 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'backbeat', set: { velocity: 110 } }],
     verified: false,
@@ -307,6 +349,7 @@ const RECIPES: Recipe[] = [
       pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
       num('EQ BASS AMOUNT', 19, Z50, cite(219), { note: '25 is neutral; below cuts' }),
       num('EQ TREBLE AMOUNT', 28, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -4 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'ghost', set: { probability: 55 }, hint: 'note-probability' }],
     verified: false,
@@ -322,6 +365,7 @@ const RECIPES: Recipe[] = [
       pick('REPEAT MODE', 'CUT', REPEAT_MODES, cite(81)),
       num('EQ TREBLE AMOUNT', 32, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -6 }] }),
       num('EQ BASS AMOUNT', 18, Z50, cite(219)),
+      swing(),
     ],
     articulation: [{ slot: 'offbeat', set: { velocity: 88 } }],
     verified: false,
@@ -337,6 +381,7 @@ const RECIPES: Recipe[] = [
       pick('LPF MODE', '24dB/Octave', LPF_MODES, cite(83)),
       num('EQ TREBLE AMOUNT', 20, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -8 }] }),
       num('REVERB AMOUNT', 10, Z50, cite(225), { mood: [{ axis: 'space', amount: 12 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'offbeat', set: { velocity: 96 } }],
     verified: false,
@@ -351,6 +396,7 @@ const RECIPES: Recipe[] = [
       pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
       num('REVERB AMOUNT', 12, Z50, cite(225), { mood: [{ axis: 'space', amount: 14 }] }),
       num('EQ BASS AMOUNT', 20, Z50, cite(219)),
+      swing(),
     ],
     articulation: [{ slot: 'ghost', set: { probability: 45 }, hint: 'note-probability' }],
     verified: false,
@@ -369,6 +415,7 @@ const RECIPES: Recipe[] = [
       num('MOD FX RATE', 9, Z50, cite(229)),
       num('REVERB AMOUNT', 27, Z50, cite(225), { mood: [{ axis: 'space', amount: 18 }] }),
       num('EQ TREBLE AMOUNT', 27, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -7 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'first-hit', set: { automation: 1 }, hint: 'automation-view' }],
     verified: false,
@@ -386,6 +433,7 @@ const RECIPES: Recipe[] = [
       // Rate without amount is a delay nobody can hear; both are authored or neither is.
       num('DELAY AMOUNT', 14, Z50, cite(222), { mood: [{ axis: 'space', amount: 10 }] }),
       num('DELAY RATE', 24, Z50, cite(222)),
+      swing(),
     ],
     articulation: [{ slot: 'accent', set: { velocity: 124 } }],
     verified: false,
@@ -402,6 +450,7 @@ const RECIPES: Recipe[] = [
       num('MOD FX RATE', 16, Z50, cite(229)),
       num('MOD FX FEEDBACK', 18, Z50, cite(229), { note: 'Flanger and phaser types only' }),
       num('EQ TREBLE AMOUNT', 29, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -6 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'accent', set: { velocity: 120 } }],
     verified: false,
@@ -427,6 +476,7 @@ const RECIPES: Recipe[] = [
       num('ARP RATCHET PROBABILITY', 14, Z50, community('community_features.md'), {
         note: '0 is never, 50 is always',
       }),
+      swing(),
     ],
     articulation: [{ slot: 'offbeat', set: { probability: 95 } }],
     verified: false,
@@ -443,6 +493,7 @@ const RECIPES: Recipe[] = [
       pick('FILTER ROUTE', 'HPF TO LPF', FILTER_ROUTES, community('community_features.md')),
       num('DECIMATION', 17, Z50, cite(217), { mood: [{ axis: 'grit', amount: 16 }] }),
       num('BITCRUSH', 7, Z50, cite(217), { mood: [{ axis: 'grit', amount: 10 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'accent', set: { velocity: 127 } }],
     verified: false,
@@ -461,6 +512,7 @@ const RECIPES: Recipe[] = [
       num('REVERB AMOUNT', 30, Z50, cite(225), { mood: [{ axis: 'space', amount: 20 }] }),
       num('DELAY AMOUNT', 11, Z50, cite(222), { mood: [{ axis: 'space', amount: 8 }] }),
       num('EQ TREBLE AMOUNT', 22, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -8 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'first-hit', set: { automation: 1 }, hint: 'automation-view' }],
     routing:
@@ -479,6 +531,7 @@ const RECIPES: Recipe[] = [
       num('BITCRUSH', 21, Z50, cite(217), { mood: [{ axis: 'grit', amount: 18 }] }),
       num('DECIMATION', 13, Z50, cite(217), { mood: [{ axis: 'grit', amount: 12 }] }),
       num('EQ BASS AMOUNT', 16, Z50, cite(219)),
+      swing(),
     ],
     articulation: [{ slot: 'first-hit', set: { velocity: 70 } }],
     verified: false,
@@ -496,6 +549,7 @@ const RECIPES: Recipe[] = [
       num('EQ TREBLE AMOUNT', 35, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -8 }] }),
       num('REVERB AMOUNT', 23, Z50, cite(225), { mood: [{ axis: 'space', amount: 16 }] }),
       num('DELAY AMOUNT', 16, Z50, cite(222), { mood: [{ axis: 'space', amount: 10 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'last-hit', set: { automation: 1 }, hint: 'automation-view' }],
     verified: false,
@@ -511,6 +565,7 @@ const RECIPES: Recipe[] = [
       num('DECIMATION', 20, Z50, cite(217), { mood: [{ axis: 'grit', amount: 14 }] }),
       num('REVERB AMOUNT', 34, Z50, cite(225), { mood: [{ axis: 'space', amount: 14 }] }),
       num('EQ BASS AMOUNT', 32, Z50, cite(219)),
+      swing(),
     ],
     articulation: [{ slot: 'first-hit', set: { velocity: 127 } }],
     verified: false,
@@ -527,6 +582,7 @@ const RECIPES: Recipe[] = [
       num('MOD FX RATE', 7, Z50, cite(229)),
       num('MOD FX FEEDBACK', 22, Z50, cite(229), { note: 'Flanger and phaser types only' }),
       num('REVERB AMOUNT', 26, Z50, cite(225), { mood: [{ axis: 'space', amount: 18 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'last-hit', set: { automation: 1 }, hint: 'automation-view' }],
     verified: false,
@@ -656,6 +712,7 @@ export const device: Device = {
     'automation-view': 'In a clip, press [CLIP] to automate',
     'dx7-new': 'CUSTOM 1 + [SYNTH] makes a DX7 synth',
     'max-voices': 'VOICE menu, then MAX VOICES',
+    'swing-amount': 'Hold [SHIFT], turn (TEMPO)',
     // Community views this rig has. Neither is used by a recipe; both change how a part is
     // played in, so they are reachable as jogs rather than buried in a comment.
     'performance-view': 'From song view, press [KEYBOARD]',

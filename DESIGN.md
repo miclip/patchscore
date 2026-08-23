@@ -1099,12 +1099,23 @@ template end-to-end first, then add inspirations against it.
 Continuous 0–100 values applied *after* recipe resolution. They apply offsets and character
 preferences; they never introduce parameter values of their own.
 
+**All five axes are parameter offsets, `swing` included.** #62 argued that swing could not be
+one — that it is a timing transform, and mood moves parameter values — and the hole in that
+argument is that a SHUFFLE knob *is* a parameter whose value means timing. The boxes had already
+made the abstraction: the TR-1000's pattern `SHUFFLE` (`-100–+100`, Reference p.26), the Tracker
+Mini's `SWING` step FX (`25–75%`, p.185), the Deluge's song swing (`1–99`, guidebook p.39). Each
+is an ordinary cited numeric declaring the axis, exactly as `TUNE` declares `darkness`, and the
+engine needed nothing added. A device with no shuffle control declares no `swing` offset and the
+knob does nothing on it — precisely as a device with no drive stage ignores `grit`. That is §6.1
+working, not a gap; the Cascadia's manifest says so in as many words, so the silence is a
+recorded finding rather than an omission.
+
 | Axis | Effect |
 |---|---|
 | `darkness` | Biases character toward `dark`; offsets filter cutoff and tuning down |
 | `density`  | Leans the section's energy band by at most one (§4.3, §6.3), and offsets probability params. Never edits hits |
 | `grit`     | Drive, saturation, bitcrush, sample rate reduction |
-| `swing`    | Timing offsets, substep placement |
+| `swing`    | Shuffle, groove and swing amount — a box's own shuffle control, over its printed range |
 | `space`    | Reverb and delay depth, send levels |
 
 ### 6.1 Numeric application
