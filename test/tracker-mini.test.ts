@@ -395,9 +395,11 @@ describe('Tracker Mini manifest', () => {
     }
   })
 
-  it('declines the swing axis by simply having no param that declares it (§6)', () => {
-    // There is no capability check and must not be one: swing on this box is a step FX and a
-    // pattern property, not an instrument parameter, so no param offers the axis.
+  it('offers the swing axis on the pattern Swing FX, over its printed range (§6.1)', () => {
+    // This test asserted the opposite until #62 was re-read against the manual. "Swing on this
+    // box is a step FX and a pattern property, not an instrument parameter" was the reasoning,
+    // and the hole in it is that a pattern property with a printed range is *exactly* what §6.1
+    // moves: p.185 gives bounds and neutral both — "50% is no swing. Range is 25% to 75%".
     const axes = new Set(
       device.recipes.flatMap((r) =>
         (r.params as AuthoredParam[]).flatMap((p) =>
@@ -405,7 +407,37 @@ describe('Tracker Mini manifest', () => {
         ),
       ),
     )
-    expect([...axes].sort()).toEqual(['darkness', 'density', 'grit', 'space'])
+    expect([...axes].sort()).toEqual(['darkness', 'density', 'grit', 'space', 'swing'])
+  })
+
+  it('sits at the neutral the manual prints, and says so without badging it as authority', () => {
+    // p.185 prints where the neutral *is* ("50% is no swing"). It does not say that a soft pad
+    // should sit there. §3.2 splits those: the range is legality and carries the citation, the
+    // point is authority and is taste. So the fact reaches the reader through the cited range
+    // and the note — the same way `EQ BASS AMOUNT`'s "25 is neutral" does on the Deluge — and
+    // the point stays provisional, which is this file's stated citation regime for every point.
+    for (const recipe of device.recipes) {
+      const swing = (recipe.params as AuthoredParam[]).find((p) => p.name === 'SWING')
+      if (swing?.kind !== 'numeric') throw new Error(`${recipe.id}: SWING is not numeric`)
+      expect(swing.value, recipe.id).toBe(50)
+      expect(swing.note, recipe.id).toContain('50% is no swing')
+      expect(swing.verified, recipe.id).toBe(false)
+      expect(swing.range.verified, recipe.id).toMatchObject({ kind: 'manual' })
+    }
+  })
+
+  it('carries pattern swing on every recipe, because it is one setting for the pattern', () => {
+    for (const recipe of device.recipes) {
+      const swing = (recipe.params as AuthoredParam[]).find((p) => p.name === 'SWING')
+      expect(swing, recipe.id).toBeDefined()
+      if (swing?.kind !== 'numeric') throw new Error(`${recipe.id}: SWING is not numeric`)
+      expect(swing.value, recipe.id).toBe(50)
+      expect({ min: swing.range.min, max: swing.range.max }).toEqual({ min: 25, max: 75 })
+      // Amount == the distance to each bound, so the whole knob moves it and none of the travel
+      // is spent against a clamp (§6.1).
+      expect(swing.mood).toEqual([{ axis: 'swing', amount: 25 }])
+      expect(swing.note, recipe.id).toContain('whole pattern')
+    }
   })
 })
 

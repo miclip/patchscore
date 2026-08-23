@@ -231,6 +231,22 @@ describe('an inspiration names neither a template nor a device (§5, invariant 3
     // actual box — which is what "never names a device" is really about.
     const deviceWords = new Set<string>()
     const deviceNames: string[] = [...DEVICE_FOLDERS]
+    /**
+     * Musical terms a box happens to silkscreen, which are not thereby device words.
+     *
+     * `shuffle` arrived here when the TR-1000 authored its pattern `SHUFFLE` parameter (#62).
+     * It is a generic musical synonym for the shared `swing` concept — `swing` is a `MoodAxis`
+     * and therefore already exempt through `SHARED_VOCABULARY`, and the word for the same idea
+     * should not be forbidden merely because one manifest spells it the way its panel does.
+     * The inspiration named `shuffle` is named after a *feel*, and it named no device before
+     * that parameter existed or after it. Invariant 3 is about layering: what it forbids is an
+     * inspiration reaching for something only one box has.
+     *
+     * `swing` needs no entry: it is a `MoodAxis`, so the shared vocabulary already exempts it.
+     * Keep this list to words that are genuinely generic; a device-specific one belongs on the
+     * device, and an inspiration reaching for it is the bug this test exists to catch.
+     */
+    const MUSICAL_TERMS = new Set(['shuffle'])
     for (const device of DEVICES) {
       deviceNames.push(device.id, device.name, device.maker)
       const words = [
@@ -244,7 +260,7 @@ describe('an inspiration names neither a template nor a device (§5, invariant 3
       for (const word of words) {
         for (const token of tokens(word)) {
           if (token.length === 1 || /^[0-9]+$/.test(token)) continue
-          if (!SHARED_VOCABULARY.has(token)) deviceWords.add(token)
+          if (!SHARED_VOCABULARY.has(token) && !MUSICAL_TERMS.has(token)) deviceWords.add(token)
         }
       }
     }

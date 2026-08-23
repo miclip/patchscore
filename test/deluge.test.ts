@@ -210,8 +210,9 @@ describe('Deluge manifest', () => {
   })
 
   it('keeps every numeric inside a range a source actually prints', () => {
-    // Two shapes, and only two: the 0-50 display scale, and the arpeggiator's 1-8 octave range
-    // (p.84). Anything else would be a bound nobody printed, which is the failure this pins.
+    // Three shapes, and only three: the 0-50 display scale, the arpeggiator's 1-8 octave range
+    // (p.84), and swing's 1-99 (p.39). Anything else would be a bound nobody printed, which is
+    // the failure this pins.
     //
     // PAN is deliberately absent. p.86 prints "32L - 0 - 32R" — a left/right label scale, not a
     // signed number line — so encoding left as -32 would be a transcription of the range rather
@@ -219,6 +220,7 @@ describe('Deluge manifest', () => {
     const SHAPES = [
       { min: 0, max: 50 },
       { min: 1, max: 8 },
+      { min: 1, max: 99 },
     ]
     for (const { recipe, param } of params()) {
       if (param.kind !== 'numeric') continue
@@ -441,7 +443,11 @@ describe('Deluge manifest', () => {
     }
   })
 
-  it('declines the swing axis by having no param that declares it (§6)', () => {
+  it('offers the swing axis on song swing, over the range the guidebook prints (§6.1)', () => {
+    // This test asserted the opposite until #62 was re-read against the manual. The claim was
+    // that swing could not be a parameter offset because it is a timing transform — but a swing
+    // control *is* a parameter whose value means timing, and the guidebook prints its bounds
+    // and its neutral: "A swing % value between 1-99", `50 = Off` (p.39).
     const axes = new Set(
       device.recipes.flatMap((r) =>
         (r.params as AuthoredParam[]).flatMap((p) =>
@@ -449,6 +455,35 @@ describe('Deluge manifest', () => {
         ),
       ),
     )
-    expect([...axes].sort()).toEqual(['darkness', 'density', 'grit', 'space'])
+    expect([...axes].sort()).toEqual(['darkness', 'density', 'grit', 'space', 'swing'])
+  })
+
+  it('sits at the neutral the guidebook prints, and says so without badging it as authority', () => {
+    // p.39 prints `50 = Off`. That is where the neutral is, not a claim that this recipe should
+    // sit there — §3.2's two gates. The cited range and the note carry the fact; the point stays
+    // provisional, exactly as `EQ BASS AMOUNT` carries "25 is neutral" beside a cited p.219.
+    for (const recipe of device.recipes) {
+      const swing = (recipe.params as AuthoredParam[]).find((p) => p.name === 'SWING')
+      if (swing?.kind !== 'numeric') throw new Error(`${recipe.id}: SWING is not numeric`)
+      expect(swing.value, recipe.id).toBe(50)
+      expect(swing.note, recipe.id).toContain('50 is off')
+      expect(swing.verified, recipe.id).toBe(false)
+      expect(swing.range.verified, recipe.id).toMatchObject({ kind: 'manual' })
+    }
+  })
+
+  it('carries song swing on every recipe, because it is one setting for the song', () => {
+    for (const recipe of device.recipes) {
+      const swing = (recipe.params as AuthoredParam[]).find((p) => p.name === 'SWING')
+      expect(swing, recipe.id).toBeDefined()
+      if (swing?.kind !== 'numeric') throw new Error(`${recipe.id}: SWING is not numeric`)
+      expect(swing.value, recipe.id).toBe(50)
+      expect({ min: swing.range.min, max: swing.range.max }).toEqual({ min: 1, max: 99 })
+      // §6.1's rule, the one `send` follows for `space`: an amount larger than the distance to
+      // the bound spends the end of the knob's travel against a clamp.
+      expect(swing.mood).toEqual([{ axis: 'swing', amount: 49 }])
+      // The note is what stops a reader setting it once per part. It is one setting.
+      expect(swing.note, recipe.id).toContain('song-wide')
+    }
   })
 })

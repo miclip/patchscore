@@ -137,6 +137,58 @@ function send(
 }
 
 /**
+ * §6.1. The swing axis, and the reason #62 turned out to be an authoring gap rather than a hole
+ * in the model.
+ *
+ * The issue argued that no parameter could carry a `swing` offset, because swing is a timing
+ * transform and mood moves parameter values. **A SHUFFLE knob is a parameter whose value means
+ * timing.** Roland already did that abstraction; the model did not need to. So this is an
+ * ordinary cited numeric declaring a mood axis, exactly as `TUNE` declares `darkness`, and the
+ * engine learns nothing new.
+ *
+ * **Which of the three shuffle controls this is, because they are not interchangeable:**
+ *
+ *  - **Master Shuffle** — TEMPO screen, [C1] knob, `-100–+100` (p.18). Global to the box, and
+ *    not saved with the pattern.
+ *  - **Track SHUFFLE** — TRACK SETTING screen, [C6/VALUE] knob, `-100–+100` (p.19). Per track,
+ *    and the page says it plainly: *"For all tracks, this parameter is scaled by Master
+ *    Shuffle found in TEMPO"*. **A guide that told you to set this could be telling you to set
+ *    something inert**, because the scaler it depends on lives on a screen we never mentioned.
+ *    That is why it is not the one authored here, tempting though a genuinely per-track control
+ *    is when a recipe is per track.
+ *  - **Pattern Shuffle** — PTN SETTING screen (p.26), `-100–+100`, *"Adjusts the timing of every
+ *    other step to create a swinging rhythm."* Nothing scales it, and it is saved with the
+ *    pattern, which is the thing a guide is helping somebody build. This one.
+ *
+ * The `note` carries the scope, because the value is on every recipe and the reader should not
+ * conclude it is per voice: it is one setting for the whole pattern, and seeing it under the
+ * kick and the hat is the same number twice, not two.
+ *
+ * **This note claims no neutral, unlike the other two boxes', because p.26 states none.** The
+ * Tracker Mini prints "50% is no swing" and the Deluge prints "50 = Off"; the PTN SETTING table
+ * prints a range and a sentence and stops. `0` is the obvious neutral for a symmetric timing
+ * offset, and it is still only our reading, so it is not stated in the reader's voice. p.19's
+ * "SHUFFLE=0" diagram is not borrowable for it: that is the *track* control, a different
+ * parameter on a different screen, and the whole reason this one was chosen over it.
+ *
+ * `amount` is 100, which is exactly the distance from the point to each bound — the same rule
+ * `send` follows for `space`. The full sweep of the knob moves the value and no part of the
+ * travel is spent against a clamp.
+ */
+function shuffle(): AuthoredNumericParam {
+  return {
+    kind: 'numeric',
+    name: 'SHUFFLE',
+    value: 0,
+    range: { min: -100, max: 100, verified: cite(26) },
+    mood: [{ axis: 'swing', amount: 100 }],
+    hint: 'ptn-shuffle',
+    note: 'Pattern-wide: one setting for every track, saved with the pattern',
+    verified: false,
+  }
+}
+
+/**
  * Generators, by name, from the Preset GEN/INST List.
  *
  * `GEN` used to hold one of `Analog / ACB / FM / PCM / Sample`. Those five are real — both
@@ -350,6 +402,7 @@ export const device: Device = {
     'layer-ab': 'LAYER [A]/[B] selects the layer',
     'select-gen': 'Hold [SHIFT], press [GEN]',
     'motion-rec': 'MOTION [REC] lit, then move knob',
+    'ptn-shuffle': 'Hold [SHIFT], press [PTN SELECT]',
     'reverb-send': 'Hold [BD]-[RC], turn REVERB [LEVEL]',
     'delay-send': 'Hold [BD]-[RC], turn DELAY [LEVEL]',
   },
@@ -379,6 +432,7 @@ export const device: Device = {
         num('ATTACK', 74, PCT, '%', 59),
         send('RVB', 0),
         send('DLY', 0),
+        shuffle(),
       ],
       articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
       routing: 'INDIVIDUAL OUT BD — effects are bypassed on that jack',
@@ -397,6 +451,7 @@ export const device: Device = {
         num('DECAY', 78, PCT, '%', 59, { mood: [{ axis: 'density', amount: -20 }] }),
         send('RVB', 0),
         send('DLY', 0),
+        shuffle(),
       ],
       articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -416,6 +471,7 @@ export const device: Device = {
         num('BODY DEP', 40, PCT, '%', 60),
         send('RVB', 0),
         send('DLY', 0),
+        shuffle(),
       ],
       articulation: [
         { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
@@ -438,6 +494,7 @@ export const device: Device = {
         num('DRIVE', 18, PCT, '%', 61),
         send('RVB', 0),
         send('DLY', 0),
+        shuffle(),
       ],
       routing: 'INDIVIDUAL OUT BD so the sub stays out of the bus effects',
       verified: false,
@@ -457,6 +514,7 @@ export const device: Device = {
         num('SNAPPY', 70, PCT, '%', 60),
         send('RVB', 0),
         send('DLY', 0),
+        shuffle(),
       ],
       articulation: [
         { slot: 'backbeat', set: { accent: true }, hint: 'accent-step' },
@@ -478,6 +536,7 @@ export const device: Device = {
         num('SNAPPY', 55, BIPOLAR, '%', 62),
         send('RVB', 24, 20),
         send('DLY', 12, 12),
+        shuffle(),
       ],
       articulation: [{ slot: 'backbeat', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -497,6 +556,7 @@ export const device: Device = {
         num('COARSE', 0, SEMITONES_24, 'St', 63),
         send('RVB', 18, 16),
         send('DLY', 14, 14),
+        shuffle(),
       ],
       articulation: [
         { slot: 'backbeat', set: { accent: true }, hint: 'accent-step' },
@@ -519,6 +579,7 @@ export const device: Device = {
         num('DECAY', 72, PCT, '%', 60, { mood: [{ axis: 'density', amount: -18 }] }),
         send('RVB', 20, 18),
         send('DLY', 8, 8),
+        shuffle(),
       ],
       articulation: [{ slot: 'fill', set: { substep: '1/3' }, hint: 'sub-step' }],
       verified: false,
@@ -536,6 +597,7 @@ export const device: Device = {
         num('DECAY', 40, PCT, '%', 60, { mood: [{ axis: 'density', amount: -12 }] }),
         send('RVB', 26, 20),
         send('DLY', 10, 10),
+        shuffle(),
       ],
       articulation: [
         { slot: 'fill', set: { substep: '1/3' }, hint: 'sub-step' },
@@ -559,6 +621,7 @@ export const device: Device = {
         num('BODY', 25, PCT, '%', 60),
         send('RVB', 8, 8),
         send('DLY', 0),
+        shuffle(),
       ],
       articulation: [{ slot: 'offbeat', set: { 'alt-inst': true }, hint: 'alt-inst' }],
       verified: false,
@@ -577,6 +640,7 @@ export const device: Device = {
         num('FREQ MOD', 20, PCT, '%', 62),
         send('RVB', 22, 20),
         send('DLY', 14, 14),
+        shuffle(),
       ],
       articulation: [
         { slot: 'ghost', set: { weak: true }, hint: 'weak-step' },
@@ -601,6 +665,7 @@ export const device: Device = {
         num('TAIL DCY', 62, PCT, '%', 62, { mood: [{ axis: 'density', amount: -18 }] }),
         send('RVB', 30, 22),
         send('DLY', 14, 14),
+        shuffle(),
       ],
       articulation: [{ slot: 'backbeat', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -617,6 +682,7 @@ export const device: Device = {
         num('TAIL LVL', 38, PCT, '%', 59, { mood: [{ axis: 'density', amount: -12 }] }),
         send('RVB', 34, 24),
         send('DLY', 10, 10),
+        shuffle(),
       ],
       articulation: [{ slot: 'ghost', set: { weak: true }, hint: 'weak-step' }],
       verified: false,
@@ -636,6 +702,7 @@ export const device: Device = {
         num('ERROR', 8, PCT, '%', 62, { hint: 'Noise into the DA converter' }),
         send('RVB', 6, 6),
         send('DLY', 0),
+        shuffle(),
       ],
       articulation: [
         { slot: 'offbeat', set: { weak: true }, hint: 'weak-step' },
@@ -656,6 +723,7 @@ export const device: Device = {
         num('METALLIC', 72, PCT, '%', 62, { mood: [{ axis: 'grit', amount: 20 }], hint: 'Metal-like overtone level' }),
         send('RVB', 10, 10),
         send('DLY', 8, 8),
+        shuffle(),
       ],
       articulation: [
         { slot: 'offbeat', set: { weak: true }, hint: 'weak-step' },
@@ -678,6 +746,7 @@ export const device: Device = {
         num('ERROR', 10, PCT, '%', 62),
         send('RVB', 16, 16),
         send('DLY', 20, 18),
+        shuffle(),
       ],
       articulation: [{ slot: 'offbeat', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -695,6 +764,7 @@ export const device: Device = {
         num('TONE', -35, BIPOLAR, '%', 62, { hint: 'Brightness of the cymbal' }),
         send('RVB', 14, 12),
         send('DLY', 12, 12),
+        shuffle(),
       ],
       articulation: [{ slot: 'offbeat', set: { weak: true }, hint: 'weak-step' }],
       verified: false,
@@ -713,6 +783,7 @@ export const device: Device = {
         num('DECAY', 84, PCT, '%', 62, { mood: [{ axis: 'density', amount: -20 }] }),
         send('RVB', 42, 26),
         send('DLY', 18, 16),
+        shuffle(),
       ],
       articulation: [{ slot: 'first-hit', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -729,6 +800,7 @@ export const device: Device = {
         num('DECAY', 74, PCT, '%', 62, { mood: [{ axis: 'density', amount: -14 }] }),
         send('RVB', 14, 14),
         send('DLY', 8, 8),
+        shuffle(),
       ],
       articulation: [
         { slot: 'offbeat', set: { 'alt-inst': true }, hint: 'alt-inst' },

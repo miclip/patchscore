@@ -540,6 +540,10 @@ Routing — played from MIDI IN or EXT IN PITCH/GATE — Cascadia has no sequenc
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
 - **ENV DECAY** `0.28` Sec (0…10 Sec)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.126
+- **SWING** `50` % (25…75 %)
+  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.185
+  - ↳ note: 50% is no swing; set once, it applies across the whole pattern
+  - ↳ hint: Hold [FX1], press (Up)/(Down)
 
 ### TR-1000
 
@@ -566,6 +570,10 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **DLY SEND** `0` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
+- **SHUFFLE** `0` (-100…100)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.26
+  - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
+  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 #### HC — `clap`: Wide clap sitting on top of the snare
 
@@ -586,6 +594,10 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **DLY SEND** `14` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
+- **SHUFFLE** `0` (-100…100)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.26
+  - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
+  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 #### CH — `closed-hat`: Grainy CR-78 hat with a metallic edge
 
@@ -603,6 +615,10 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **DLY SEND** `8` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
+- **SHUFFLE** `0` (-100…100)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.26
+  - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
+  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 #### OH — `open-hat`: Dull open hat, more air than sizzle
 
@@ -620,6 +636,10 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **DLY SEND** `12` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
+- **SHUFFLE** `0` (-100…100)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.26
+  - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
+  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 #### CC — `impact`: Crash marking the top of a section
 
@@ -635,6 +655,10 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **DLY SEND** `18` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
+- **SHUFFLE** `0` (-100…100)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.26
+  - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
+  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 ### Deluge
 
@@ -650,6 +674,10 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **BITCRUSH** `9` (0…50)
 - **EQ BASS AMOUNT** `29` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
+- **SWING** `50` % (1…99 %)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
+  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
+  - ↳ hint: Hold [SHIFT], turn (TEMPO)
 
 #### Track 2 — `stab`: Square stab through a fast phaser
 
@@ -664,6 +692,10 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ note: Flanger and phaser types only
 - **EQ TREBLE AMOUNT** `29` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
+- **SWING** `50` % (1…99 %)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
+  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
+  - ↳ hint: Hold [SHIFT], turn (TEMPO)
 
 #### Track 3 — `pad`: Wavetable pad, slow chorus, wide reverb send
 
@@ -677,6 +709,10 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.225
 - **EQ TREBLE AMOUNT** `27` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
+- **SWING** `50` % (1…99 %)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
+  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
+  - ↳ hint: Hold [SHIFT], turn (TEMPO)
 
 #### Track 4 — `riser`: Saw riser, top end open, thrown into the reverb
 
@@ -687,6 +723,10 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.225
 - **DELAY AMOUNT** `16` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.222
+- **SWING** `50` % (1…99 %)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
+  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
+  - ↳ hint: Hold [SHIFT], turn (TEMPO)
 
 #### Track 5 — `noise`: Crushed noise wash under the drums
 
@@ -698,6 +738,10 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **DECIMATION** `13` (0…50)
 - **EQ BASS AMOUNT** `16` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
+- **SWING** `50` % (1…99 %)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
+  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
+  - ↳ hint: Hold [SHIFT], turn (TEMPO)
 
 ## 7. Finishing
 

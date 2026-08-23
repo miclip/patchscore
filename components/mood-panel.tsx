@@ -13,7 +13,7 @@ import { Knob } from './knob'
 const HINTS: Record<Exclude<MoodAxis, 'density'>, string> = {
   darkness: 'cutoff and tuning down',
   grit: 'drive, saturation, bitcrush',
-  swing: 'timing offsets, substep placement',
+  swing: 'shuffle, groove, swing amount',
   space: 'reverb, delay, sends',
 }
 

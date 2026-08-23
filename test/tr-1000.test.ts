@@ -120,13 +120,15 @@ describe('TR-1000 manifest', () => {
 
   it("sets only parameters the cited page exposes, in the manual's own units", () => {
     // The whole point of dropping '% travel': a unit and a bound that came off the panel by
-    // eye are not a citation. Every numeric now carries the Value column's own bounds, which
-    // on this device are only ever percent (uni- or bipolar) or semitones.
-    const SHAPES = [
+    // eye are not a citation. Every numeric carries the Value column's own bounds — which for
+    // the generator parameters are only ever percent (uni- or bipolar) or semitones, and for
+    // the pattern's SHUFFLE are bare numbers, because p.26 prints no unit for it.
+    const SHAPES: { unit: string | undefined; min: number; max: number }[] = [
       { unit: '%', min: 0, max: 100 },
       { unit: '%', min: -100, max: 100 },
       { unit: 'St', min: -12, max: 12 },
       { unit: 'St', min: -24, max: 24 },
+      { unit: undefined, min: -100, max: 100 },
     ]
     for (const recipe of device.recipes) {
       for (const param of recipe.params as AuthoredParam[]) {
@@ -152,6 +154,8 @@ describe('TR-1000 manifest', () => {
     //
     // The two sends are the exception and are checked separately below: they are not generator
     // parameters at all, they are the track's own MIXER block, which is its own table (p.71).
+    // SHUFFLE is the same kind of exception — a PTN SETTING parameter off p.26, checked in the
+    // swing group below.
     const PAGES: Record<string, number[]> = {
       'tr1000-kick-hard': [59],
       'tr1000-kick-dark': [59],
@@ -180,6 +184,7 @@ describe('TR-1000 manifest', () => {
       for (const param of recipe.params as AuthoredParam[]) {
         if (param.kind !== 'numeric') continue
         if (param.name === 'RVB SEND' || param.name === 'DLY SEND') continue
+        if (param.name === 'SHUFFLE') continue
         const v = param.range.verified
         if (v === undefined || v === false) throw new Error(`${recipe.id} range uncited`)
         const page = Number(v.source.split('p.')[1])
@@ -366,6 +371,64 @@ describe('TR-1000 manifest', () => {
     }
     // Most of the box moves on space: this is the axis the sends exist for.
     expect(moved).toBeGreaterThan(20)
+  })
+
+  it('offers the swing axis on the pattern SHUFFLE, cited to p.26 (§6.1)', () => {
+    // #62 claimed no parameter could carry a `swing` offset, because swing is a timing
+    // transform and mood moves parameter values. A SHUFFLE knob is a parameter whose value
+    // means timing, so the axis is ordinary authoring and the engine needed nothing.
+    const axes = new Set(
+      device.recipes.flatMap((r) =>
+        (r.params as AuthoredParam[]).flatMap((p) =>
+          p.kind === 'numeric' ? (p.mood ?? []).map((m) => m.axis) : [],
+        ),
+      ),
+    )
+    expect(axes.has('swing')).toBe(true)
+
+    for (const recipe of device.recipes) {
+      const shuffle = (recipe.params as AuthoredParam[]).find((p) => p.name === 'SHUFFLE')
+      expect(shuffle, recipe.id).toBeDefined()
+      if (shuffle?.kind !== 'numeric') throw new Error(`${recipe.id}: SHUFFLE is not numeric`)
+      expect(shuffle.value, recipe.id).toBe(0)
+      expect({ min: shuffle.range.min, max: shuffle.range.max }).toEqual({ min: -100, max: 100 })
+      // Amount == the distance to each bound, so the whole knob moves it (§6.1) — the same rule
+      // the sends follow for `space`.
+      expect(shuffle.mood).toEqual([{ axis: 'swing', amount: 100 }])
+      expect(shuffle.note, recipe.id).toContain('Pattern-wide')
+    }
+  })
+
+  it('claims no neutral in the reader’s voice, because p.26 prints none', () => {
+    // The asymmetry with the other two boxes is deliberate and is the honest reading. p.185 and
+    // guidebook p.39 both print their neutral; the PTN SETTING table prints a range and a
+    // sentence and stops. `0` is the obvious neutral for a symmetric timing offset and is still
+    // only our reading, so the note does not assert it. p.19's "SHUFFLE=0" diagram belongs to
+    // the *track* control — a different parameter, on a different screen.
+    for (const recipe of device.recipes) {
+      const shuffle = (recipe.params as AuthoredParam[]).find((p) => p.name === 'SHUFFLE')
+      if (shuffle?.kind !== 'numeric') throw new Error(`${recipe.id}: SHUFFLE is not numeric`)
+      expect(shuffle.note?.toLowerCase(), recipe.id).not.toContain('neutral')
+      expect(shuffle.note?.toLowerCase(), recipe.id).not.toContain('no swing')
+      expect(shuffle.verified, recipe.id).toBe(false)
+    }
+  })
+
+  it('takes the pattern SHUFFLE, never the track one that Master Shuffle can zero out', () => {
+    // Three shuffle controls on this box and they are not interchangeable. The TRACK SETTING
+    // one (p.19) is the tempting fit — a recipe is per track — but the page says "For all
+    // tracks, this parameter is scaled by Master Shuffle found in TEMPO", so a guide telling
+    // you to set it could be telling you to set something inert. The PTN SETTING one (p.26) is
+    // scaled by nothing and is saved with the pattern, which is what a guide is helping build.
+    for (const recipe of device.recipes) {
+      const shuffle = (recipe.params as AuthoredParam[]).find((p) => p.name === 'SHUFFLE')
+      if (shuffle?.kind !== 'numeric') throw new Error(`${recipe.id}: SHUFFLE is not numeric`)
+      const cited = shuffle.range.verified
+      if (cited === undefined || cited === false) throw new Error(`${recipe.id}: SHUFFLE uncited`)
+      expect(cited.source, recipe.id).toContain('p.26')
+      // The jog names the screen that actually carries it.
+      expect(device.hints?.[shuffle.hint as string]).toBe('Hold [SHIFT], press [PTN SELECT]')
+    }
   })
 
   it('jogs both sends with the shortcut the manual prints for them', () => {

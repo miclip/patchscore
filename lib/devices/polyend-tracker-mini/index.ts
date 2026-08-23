@@ -109,6 +109,43 @@ function num(
 }
 
 /**
+ * §6.1. The swing axis, as an ordinary cited numeric (#62).
+ *
+ * p.185, the Swing step FX (`I`): *"Introduces a groove or shuffle into the pattern timing. 50%
+ * is no swing. Range is 25% to 75% of pattern swing. Also applied to MIDI Out."* Everything the
+ * axis needs is printed there — the bounds **and** the neutral point, which is rarer than it
+ * sounds and is why nothing here is a guess but the taste of where to sit inside it.
+
+ * **The point stays `verified: false`, and that is not an oversight.** The page prints where the
+ * neutral *is*; it does not say that this recipe should sit there. Those are two claims, and
+ * §3.2 splits them exactly this way: the range is the legality gate and carries the citation,
+ * the point is authority and is taste. Badging the point `manual` would put the manual's name to
+ * "a soft pad wants no swing", which no page states. The neutral is a property of the scale, so
+ * it travels on the range's own citation and in the `note` — which is how `EQ BASS AMOUNT`'s
+ * "25 is neutral" is already carried on the Deluge.
+ *
+ * **Pattern-wide, though it is entered on a step.** The same page: *"Swing on a step track will
+ * apply across the pattern."* So the `note` says so, because the value appears under every part
+ * this box carries and a reader should not set it sixteen times.
+ *
+ * Not `micro-move` (p.186), which nudges a single step forward and is the per-step control. It
+ * would take one edit per offbeat hit and an invented percentage-to-value scale to reproduce
+ * what this does with one setting — the manual will not say how far a Micro Move actually
+ * moves a note ("only in small amounts"), so that scale could only ever be fabricated.
+ *
+ * `amount` is 25, the distance from 50 to each printed bound, so the whole sweep of the knob
+ * moves the value and no part of the travel is spent against a clamp.
+ */
+function swing(): AuthoredNumericParam {
+  return num('SWING', 50, { min: 25, max: 75 }, 185, {
+    unit: '%',
+    mood: [{ axis: 'swing', amount: 25 }],
+    hint: 'pick-fx',
+    note: '50% is no swing; set once, it applies across the whole pattern',
+  })
+}
+
+/**
  * A time in seconds. Identical to `num` but for the step, which is a hundredth.
  *
  * The manual prints these bounds to two decimals — `0.00-10 Sec`, p.126 — so a hundredth is the
@@ -267,6 +304,7 @@ const SYNTH_RECIPES: Recipe[] = [
       }),
       num('FILTER RESONANCE', 18, PCT, 156, { unit: '%' }),
       secs('AMP ENV RELEASE', 0.35, SECONDS_10, 156),
+      swing(),
     ],
     articulation: [{ slot: 'downbeat', set: { glide: 35 }, hint: 'pick-fx' }],
     verified: false,
@@ -291,6 +329,7 @@ const SYNTH_RECIPES: Recipe[] = [
       secs('AMP ENV ATTACK', 1.2, SECONDS_10, 159),
       secs('AMP ENV RELEASE', 2.4, SECONDS_10, 159),
       num('VOICE VOLUME', 86, VOICE_VOL, 161, { unit: '%' }),
+      swing(),
     ],
     articulation: [{ slot: 'first-hit', set: { 'gate-length': 95 } }],
     verified: false,
@@ -313,6 +352,7 @@ const SYNTH_RECIPES: Recipe[] = [
       }),
       num('FILTER NOTE TRACK', 65, NOTE_TRACK, 158, { unit: '%' }),
       secs('GLIDE TIME', 0.06, SECONDS_3, 161),
+      swing(),
     ],
     articulation: [{ slot: 'accent', set: { volume: 100 }, hint: 'pick-fx' }],
     verified: false,
@@ -346,6 +386,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('CUTOFF', 74, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -16 }] }),
       num('OVERDRIVE', 18, PCT, 120, { unit: '%', mood: [{ axis: 'grit', amount: 22 }] }),
       secs('ENV DECAY', 0.28, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.09 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'accent', set: { volume: 100 }, hint: 'pick-fx' }],
     verified: false,
@@ -366,6 +407,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('CUTOFF', 46, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -14 }] }),
       secs('ENV DECAY', 0.62, SECONDS_10, 126),
       num('REVERB SEND', 8, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 18 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'downbeat', set: { volume: 92 } }],
     verified: false,
@@ -383,6 +425,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('TUNE', 2, SEMITONES_24, 116, { unit: 'St' }),
       secs('ENV DECAY', 0.3, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.1 }] }),
       num('DELAY SEND', 12, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 24 }] }),
+      swing(),
     ],
     articulation: [
       { slot: 'backbeat', set: { volume: 96 } },
@@ -402,6 +445,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('FINETUNE', 22, FINE_CENTS, 116, { unit: 'c' }),
       num('REVERB SEND', 26, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 26 }] }),
       secs('ENV RELEASE', 0.4, SECONDS_10, 126),
+      swing(),
     ],
     articulation: [{ slot: 'backbeat', set: { panning: 8 } }],
     verified: false,
@@ -418,6 +462,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('CUTOFF', 34, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: 10 }] }),
       secs('ENV DECAY', 0.09, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.03 }] }),
       num('PANNING', -12, PAN, 116),
+      swing(),
     ],
     articulation: [
       { slot: 'offbeat', set: { 'micro-move': 25 }, hint: 'pick-fx' },
@@ -437,6 +482,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('CUTOFF', 58, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -18 }] }),
       secs('ENV RELEASE', 0.24, SECONDS_10, 126),
       num('BIT DEPTH', 12, BITS, 120, { unit: 'Bits', mood: [{ axis: 'grit', amount: -4 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'offbeat', set: { 'gate-length': 45 } }],
     verified: false,
@@ -452,6 +498,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('TUNE', 4, SEMITONES_24, 116, { unit: 'St' }),
       num('PANNING', 18, PAN, 116),
       secs('ENV DECAY', 0.11, SECONDS_10, 126),
+      swing(),
     ],
     articulation: [{ slot: 'ghost', set: { chance: 65 }, hint: 'pick-fx' }],
     verified: false,
@@ -468,6 +515,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('CUTOFF', 62, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -12 }] }),
       secs('ENV RELEASE', 0.9, SECONDS_10, 126),
       num('REVERB SEND', 16, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 20 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'accent', set: { 'random-volume': 12 } }],
     verified: false,
@@ -484,6 +532,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('TUNE', -5, SEMITONES_24, 116, { unit: 'St' }),
       num('CUTOFF', 52, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -15 }] }),
       secs('ENV DECAY', 0.44, SECONDS_10, 126),
+      swing(),
     ],
     articulation: [{ slot: 'fill', set: { roll: 2 }, hint: 'pick-fx' }],
     verified: false,
@@ -499,6 +548,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('PANNING', -22, PAN, 116),
       num('FINETUNE', -14, FINE_CENTS, 116, { unit: 'c' }),
       secs('ENV DECAY', 0.07, SECONDS_10, 126, { mood: [{ axis: 'density', amount: 0.04 }] }),
+      swing(),
     ],
     articulation: [
       { slot: 'ghost', set: { volume: 30 } },
@@ -518,6 +568,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('BIT DEPTH', 8, BITS, 120, { unit: 'Bits', mood: [{ axis: 'grit', amount: -3 }] }),
       num('OVERDRIVE', 34, PCT, 120, { unit: '%', mood: [{ axis: 'grit', amount: 26 }] }),
       num('FINETUNE', 30, FINE_CENTS, 116, { unit: 'c' }),
+      swing(),
     ],
     // p.196: Reverse Sample is one of several step FX that only exist for a sample instrument,
     // which is why no `track-synth` recipe uses it.
@@ -602,6 +653,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       // honestly is the envelope's, which p.126 prints as a plain 0-100%.
       num('ENV SUSTAIN', 84, PCT, 126, { unit: '%' }),
       num('REVERB SEND', 30, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 24 }] }),
+      swing(),
     ],
     articulation: [{ slot: 'first-hit', set: { 'gate-length': 95 } }],
     routing: 'Tracks 1-8 — costs no synth slot: the chord is in the sample, not in an engine',
@@ -620,6 +672,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('CUTOFF', 48, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -20 }] }),
       num('REVERB SEND', 42, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 30 }] }),
       secs('ENV ATTACK', 1.8, SECONDS_10, 126),
+      swing(),
     ],
     articulation: [{ slot: 'first-hit', set: { 'low-pass': 55 } }],
     verified: false,
