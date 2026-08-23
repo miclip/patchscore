@@ -149,6 +149,9 @@ describe('TR-1000 manifest', () => {
     // A citation to the wrong page is worse than none - it looks checkable and is not. The
     // Parameter list runs ANALOG on p.59, ACB on p.60-62 and FM on p.63, so a recipe's range
     // pages have to be the ones its generator lives on.
+    //
+    // The two sends are the exception and are checked separately below: they are not generator
+    // parameters at all, they are the track's own MIXER block, which is its own table (p.71).
     const PAGES: Record<string, number[]> = {
       'tr1000-kick-hard': [59],
       'tr1000-kick-dark': [59],
@@ -176,6 +179,7 @@ describe('TR-1000 manifest', () => {
       expect(allowed, recipe.id).toBeDefined()
       for (const param of recipe.params as AuthoredParam[]) {
         if (param.kind !== 'numeric') continue
+        if (param.name === 'RVB SEND' || param.name === 'DLY SEND') continue
         const v = param.range.verified
         if (v === undefined || v === false) throw new Error(`${recipe.id} range uncited`)
         const page = Number(v.source.split('p.')[1])
@@ -262,6 +266,121 @@ describe('TR-1000 manifest', () => {
   it('keeps hints to jogs rather than documentation (invariant 7)', () => {
     for (const hint of Object.values(device.hints ?? {})) {
       expect(hint.split(/\s+/).length).toBeLessThanOrEqual(8)
+    }
+  })
+
+  // -------------------------------------------------------------------------
+  // The two per-instrument sends (#59)
+  // -------------------------------------------------------------------------
+
+  /** The `RVB SEND`/`DLY SEND` pair on one recipe, in the order the manifest authors them. */
+  function sends(id: string): AuthoredParam[] {
+    const recipe = device.recipes.find((r) => r.id === id)
+    expect(recipe, id).toBeDefined()
+    return (recipe?.params as AuthoredParam[]).filter(
+      (p) => p.name === 'RVB SEND' || p.name === 'DLY SEND',
+    )
+  }
+
+  it('gives every recipe both sends, because zero is an instruction and not an omission', () => {
+    // The sends are kit state, edited in place (p.34) and saved deliberately (p.50), so a
+    // recipe that says nothing about them is a recipe that inherits the last kit's settings.
+    for (const recipe of device.recipes) {
+      const names = (recipe.params as AuthoredParam[]).map((p) => p.name)
+      expect(names, recipe.id).toContain('RVB SEND')
+      expect(names, recipe.id).toContain('DLY SEND')
+    }
+  })
+
+  it('cites the MIXER table on p.71, not the EXT IN table on p.54', () => {
+    // p.54 prints `RVB SEND` and `DLY SEND` with word-for-word the same explanations, and it is
+    // a different parameter: that block is KIT > EXT IN, the sends for audio arriving at the
+    // EXTERNAL IN jacks. The per-instrument sends are the track's own MIXER block on p.71. Two
+    // tables printing one name is exactly what a citation is for, so this is pinned by page.
+    for (const recipe of device.recipes) {
+      for (const param of sends(recipe.id)) {
+        if (param.kind !== 'numeric') throw new Error(`${recipe.id} / ${param.name} not numeric`)
+        const cite = param.range.verified
+        if (cite === undefined || cite === false) throw new Error(`${recipe.id} send uncited`)
+        expect(cite.source, `${recipe.id} / ${param.name}`).toContain('p.71')
+        // p.71's Value column prints `0%-100%`. The point inside it is taste (§3.2).
+        expect(param.range.min, recipe.id).toBe(0)
+        expect(param.range.max, recipe.id).toBe(100)
+        expect(param.unit, recipe.id).toBe('%')
+        expect(param.verified, recipe.id).toBe(false)
+      }
+    }
+  })
+
+  it('holds both sends flat and mood-inert on every recipe leaving by an individual out', () => {
+    // p.71: with INDV OUT = INDIV "the track sound is output only from the INDV/TRIG OUT, and
+    // not from the MIX OUT", and the audio diagram (p.33) taps that jack at the MIXER stage,
+    // ahead of the reverb and the delay. A send on such a track feeds a bus the track is not
+    // using. `space` is therefore not declared at all rather than declared and set to zero:
+    // §6.1's model is that a parameter declines an axis by not naming it.
+    const routed = device.recipes.filter((r) => r.routing !== undefined)
+    expect(routed.map((r) => r.id)).toEqual([
+      'tr1000-kick-hard',
+      'tr1000-sub-dark',
+      'tr1000-snare-hard',
+    ])
+    for (const recipe of routed) {
+      // The send does not make the routing line redundant: one says where the track leaves the
+      // box, the other says what it feeds on the way. Both are still printed.
+      expect(recipe.routing, recipe.id).toMatch(/INDIVIDUAL OUT/)
+      for (const param of sends(recipe.id)) {
+        if (param.kind !== 'numeric') throw new Error(`${recipe.id} send not numeric`)
+        expect(param.value, `${recipe.id} / ${param.name}`).toBe(0)
+        expect(param.mood, `${recipe.id} / ${param.name}`).toBeUndefined()
+      }
+    }
+  })
+
+  it('keeps the low end out of the reverb at every mood setting', () => {
+    // A kick or a sub in a reverb is mud whatever `space` says, so the whole BD voice is flat
+    // and inert — including the two kick recipes that leave by the MIX OUT like everything else.
+    for (const recipe of device.recipes.filter((r) => r.voice === 'bd')) {
+      for (const param of sends(recipe.id)) {
+        if (param.kind !== 'numeric') throw new Error(`${recipe.id} send not numeric`)
+        expect(param.value, `${recipe.id} / ${param.name}`).toBe(0)
+        expect(param.mood, `${recipe.id} / ${param.name}`).toBeUndefined()
+      }
+    }
+  })
+
+  it('moves the sends on space and on nothing else, and never out of the printed range', () => {
+    let moved = 0
+    for (const recipe of device.recipes) {
+      for (const param of sends(recipe.id)) {
+        if (param.kind !== 'numeric') throw new Error(`${recipe.id} send not numeric`)
+        for (const entry of param.mood ?? []) {
+          expect(entry.axis, `${recipe.id} / ${param.name}`).toBe('space')
+          moved += 1
+          // Both ends of the axis, against the bounds p.71 prints.
+          expect(param.value + entry.amount, `${recipe.id} / ${param.name} at full space`)
+            .toBeLessThanOrEqual(100)
+          expect(param.value - entry.amount, `${recipe.id} / ${param.name} at no space`)
+            .toBeGreaterThanOrEqual(0)
+        }
+      }
+    }
+    // Most of the box moves on space: this is the axis the sends exist for.
+    expect(moved).toBeGreaterThan(20)
+  })
+
+  it('jogs both sends with the shortcut the manual prints for them', () => {
+    // p.73's shortcut list: `[BD]-[RC] + REVERB [LEVEL]` and `[BD]-[RC] + DELAY [LEVEL]`. The
+    // knob is silkscreened but the gesture is not — on its own that knob sets the kit's reverb
+    // level, and the per-instrument send only appears while a track button is held (p.34).
+    expect(device.hints?.['reverb-send']).toBe('Hold [BD]-[RC], turn REVERB [LEVEL]')
+    expect(device.hints?.['delay-send']).toBe('Hold [BD]-[RC], turn DELAY [LEVEL]')
+    for (const recipe of device.recipes) {
+      for (const param of sends(recipe.id)) {
+        const hint = param.kind === 'numeric' ? param.hint : undefined
+        expect(hint, `${recipe.id} / ${param.name}`).toBe(
+          param.name === 'RVB SEND' ? 'reverb-send' : 'delay-send',
+        )
+      }
     }
   })
 })

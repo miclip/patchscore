@@ -16,6 +16,7 @@ import {
 import type { ResolveResult, ResolvedAssignment } from './pipeline'
 import { GUIDE_PHASES } from './guide'
 import { bandTrajectory, type BandGroup } from './arrangement'
+import { fxSources, type FxSource } from './fx'
 
 /**
  * §8. The resolved guide as Markdown.
@@ -1011,12 +1012,23 @@ function phaseFinishing(result: ResolveResult): Line[] {
 
   out.push('**Master FX**')
   out.push('')
-  const fx = result.devices.filter((d) => d.kind === 'fx-processor' || d.kind === 'mixer-recorder')
+  const fx = fxSources(result.devices)
+  const byId = new Map(result.devices.map((d) => [d.id, d]))
   if (fx.length === 0) {
     // §2.3 models per-device capability, not a master chain. Saying so beats guessing one.
-    out.push('No effects unit or mixer in this rig. The master chain is yours at the desk.')
+    out.push('Nothing in this rig processes audio. The master chain is yours at the desk.')
+  } else if (fx.length === 1) {
+    const only = fx[0] as FxSource
+    out.push(
+      `The ${only.name} ${fxText(only, byId.get(only.deviceId))}; ` +
+        'nothing else in this rig processes audio.',
+    )
   } else {
-    for (const device of fx) out.push(`- ${device.name} (${device.kind}) — ${ioText(device)}`)
+    out.push('What processes audio in this rig:')
+    out.push('')
+    for (const source of fx) {
+      out.push(`- ${source.name} — ${fxText(source, byId.get(source.deviceId))}`)
+    }
   }
   out.push('')
 
@@ -1063,6 +1075,38 @@ function groupNotes(group: BandGroup): string[] {
   }
   if (group.differsOn.length > 0) notes.push(`differs on ${roleList(group.differsOn)}`)
   return notes
+}
+
+/** `a`, `a and b`, `a, b and c`. The plain-string sibling of `roleList`, which backticks. */
+function andList(items: readonly string[]): string {
+  if (items.length < 2) return items.join('')
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1] as string}`
+}
+
+/**
+ * The predicate of "this box processes audio", built only from what `fx.ts` found the device
+ * declaring. Restated in `components/guide/format.ts` for the web guide exactly as `ioText` and
+ * `mixerText` are: the *fact* that a box has effects is derived once, in `fx.ts`; the sentence
+ * is written twice, because these two renderers share ink with nobody.
+ *
+ * Panel labels are printed verbatim and in panel order — `MASTER FX` is what is silkscreened on
+ * the box, and the point of naming it is that you can find it while standing there.
+ */
+function fxText(source: FxSource, device: Device | undefined): string {
+  const clauses: string[] = []
+  let opening: string | undefined
+  for (const evidence of source.evidence) {
+    if (evidence.kind === 'unit') {
+      const noun = evidence.deviceKind === 'fx-processor' ? 'an effects unit' : 'a mixer and recorder'
+      opening = `is ${noun}${device === undefined ? '' : ` (${ioText(device)})`}`
+    } else if (evidence.kind === 'panel') {
+      clauses.push(`${andList(evidence.labels)} on the panel`)
+    } else {
+      clauses.push(`${andList(evidence.params)} in its recipes`)
+    }
+  }
+  const carries = clauses.length === 0 ? undefined : `carries ${clauses.join(', and ')}`
+  return [opening, carries].filter((part) => part !== undefined).join(', and ')
 }
 
 function roleList(roles: readonly Role[]): string {

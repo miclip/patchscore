@@ -12,10 +12,11 @@ import {
   type ResolveResult,
   type ResolvedParam,
   type SectionName,
+  type Device,
   type Template,
 } from '../lib/core/index'
 import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
-import { box, request, withRoles } from './rigs'
+import { box, makeRecipe, request, withRoles } from './rigs'
 
 /**
  * §8. What the renderer must never do: drop a phase, print a value without its provenance,
@@ -925,5 +926,174 @@ describe('hoisted range citations in Sound design (§8)', () => {
     )
     expect(body.filter((l) => l.includes('Ranges cite'))).toHaveLength(1)
     expect(body.filter((l) => l.includes('range unverified'))).toHaveLength(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Phase 7 — Master FX (#59)
+// ---------------------------------------------------------------------------
+
+/**
+ * The block used to read `kind` and nothing else, so a rig containing a TR-1000 — a box with a
+ * reverb, a delay, a master effect and an analog FX path silkscreened across the top of it —
+ * was told "No effects unit or mixer in this rig". That is a false negative, not a gap shown
+ * honestly (invariant 5), and these assertions are about the two ways it can come back: a box
+ * that processes audio going unnamed, and a box that does not being named anyway.
+ *
+ * The rig is a fixture rather than the real library on purpose. What the real boxes say is
+ * pinned byte for byte by `guide-golden.test.ts`; what is worth testing here is the *rule*,
+ * including the two evidence kinds no shipped device has yet — a dedicated effects unit and a
+ * mixer — which a golden file cannot cover because nobody has authored one.
+ */
+describe('Master FX names what processes audio (§8 phase 7)', () => {
+  /** The Master FX block: its heading to the arrangement heading, blank lines dropped. */
+  function masterFx(doc: string): string[] {
+    const body = phaseBody(doc, 7)
+    const start = body.indexOf('**Master FX**')
+    expect(start, 'master FX heading').toBeGreaterThan(-1)
+    const rest = body.slice(start + 1)
+    const end = rest.indexOf('**Arrangement variations**')
+    return (end === -1 ? rest : rest.slice(0, end)).filter((l) => l !== '')
+  }
+
+  /** The golden rig — which carries no effect at all — plus whatever is under test. */
+  function fxBlock(...extra: Device[]): string[] {
+    return masterFx(
+      renderGuide(
+        resolve({
+          devices: [...GOLDEN_DEVICES, ...extra],
+          template: GOLDEN_TEMPLATE,
+          mood: GOLDEN_MOOD,
+          seed: GOLDEN_SEED,
+        }),
+      ),
+    )
+  }
+
+  const panel = (...labels: string[]): Device['panel'] => ({
+    panelRiseMm: 100,
+    verified: { kind: 'manual', source: 'Fixture p.1' },
+    features: labels.map((text, i) => ({ kind: 'label' as const, x: i * 10, y: 10, text })),
+  })
+
+  const noise = box('B-noise', {
+    name: 'Noisy Box',
+    // Sound design, every one of them, and on three different boxes in the real library.
+    panel: panel('DRIVE', 'FILTER', 'FDBK'),
+    voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['lead'], polyphony: 1 }],
+    recipes: [
+      makeRecipe('noise-lead', 'lead', 'hard', 'v', {
+        params: [
+          { kind: 'numeric', name: 'OVERDRIVE', value: 40, range: { min: 0, max: 100, verified: false } },
+          { kind: 'numeric', name: 'BIT DEPTH', value: 8, range: { min: 1, max: 16, verified: false } },
+        ],
+      }),
+    ],
+  })
+
+  it('says so plainly when nothing in the rig processes audio', () => {
+    expect(fxBlock()).toEqual([
+      'Nothing in this rig processes audio. The master chain is yours at the desk.',
+    ])
+  })
+
+  it('reads an effect off the panel the box declares, in the words silkscreened on it', () => {
+    const fx = box('C-drum', {
+      name: 'Effect Drum',
+      panel: panel('ACCENT', 'REVERB', 'MASTER FX', 'ANALOG FX'),
+      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['kick'], polyphony: 1 }],
+      recipes: [makeRecipe('fx-kick', 'kick', 'hard', 'v')],
+    })
+    // Panel order, not sorted: it is the order you read them standing at the box. `ACCENT`
+    // shares the effect strip with them on a real panel and is not an effect.
+    expect(fxBlock(fx)).toEqual([
+      'The Effect Drum carries REVERB, MASTER FX and ANALOG FX on the panel; ' +
+        'nothing else in this rig processes audio.',
+    ])
+  })
+
+  it('reads an effect off a parameter its recipes set, because the recipe needs it to exist', () => {
+    const send = box('C-send', {
+      name: 'Send Box',
+      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['lead'], polyphony: 1 }],
+      recipes: [
+        makeRecipe('send-lead', 'lead', 'hard', 'v', {
+          params: [
+            { kind: 'numeric', name: 'REVERB SEND', value: 8, range: { min: 0, max: 100, verified: false } },
+            { kind: 'numeric', name: 'DELAY SEND', value: 12, range: { min: 0, max: 100, verified: false } },
+          ],
+        }),
+      ],
+    })
+    // Code unit order here, unlike the panel: a recipe list has no reading order to preserve.
+    expect(fxBlock(send)).toEqual([
+      'The Send Box carries DELAY SEND and REVERB SEND in its recipes; ' +
+        'nothing else in this rig processes audio.',
+    ])
+  })
+
+  it('names a dedicated unit as the unit it is, with the I/O it declares', () => {
+    const unit = box('C-fx', {
+      name: 'Rack FX',
+      kind: 'fx-processor',
+      io: { main: 'stereo', individualOuts: 0, audioIn: true, usbAudio: false },
+    })
+    expect(fxBlock(unit)).toEqual([
+      'The Rack FX is an effects unit (stereo main out · audio in); ' +
+        'nothing else in this rig processes audio.',
+    ])
+  })
+
+  it('does not read per-voice sound design as an effect', () => {
+    // `DRIVE`, `FILTER`, `OVERDRIVE` and `BIT DEPTH` shape one voice. Listing them under Master
+    // FX would tell a reader their drive knob is their effects chain.
+    expect(fxBlock(noise)).toEqual([
+      'Nothing in this rig processes audio. The master chain is yours at the desk.',
+    ])
+  })
+
+  it('drops the "nothing else" claim as soon as something else does process audio', () => {
+    const one = box('C-one', {
+      name: 'One',
+      kind: 'fx-processor',
+      io: { main: 'mono', individualOuts: 0, audioIn: true, usbAudio: false },
+    })
+    const two = box('D-two', {
+      name: 'Two',
+      panel: panel('CHORUS'),
+      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['lead'], polyphony: 1 }],
+      recipes: [makeRecipe('two-lead', 'lead', 'hard', 'v')],
+    })
+    const block = fxBlock(one, two, noise)
+    expect(block).toEqual([
+      'What processes audio in this rig:',
+      '- One — is an effects unit (mono main out · audio in)',
+      '- Two — carries CHORUS on the panel',
+    ])
+    // The box with only sound design on it is still absent, and no line claims a rig-wide fact.
+    expect(block.join('\n')).not.toContain('Noisy Box')
+    expect(block.join('\n')).not.toContain('nothing else')
+  })
+
+  it('states both kinds of evidence for one box, rather than picking a winner', () => {
+    const both = box('C-both', {
+      name: 'Desk',
+      kind: 'mixer-recorder',
+      io: { main: 'stereo', individualOuts: 4, audioIn: true, usbAudio: true },
+      panel: panel('MASTER FX'),
+      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['lead'], polyphony: 1 }],
+      recipes: [
+        makeRecipe('both-lead', 'lead', 'hard', 'v', {
+          params: [
+            { kind: 'numeric', name: 'DELAY AMOUNT', value: 8, range: { min: 0, max: 50, verified: false } },
+          ],
+        }),
+      ],
+    })
+    expect(fxBlock(both)).toEqual([
+      'The Desk is a mixer and recorder (stereo main out · 4 individual outs · USB audio · ' +
+        'audio in), and carries MASTER FX on the panel, and DELAY AMOUNT in its recipes; ' +
+        'nothing else in this rig processes audio.',
+    ])
   })
 })

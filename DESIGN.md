@@ -1480,7 +1480,20 @@ Do not reorder.
 7. **Finishing** — sidechain, master FX, and the arrangement as a **band trajectory** (§6.3):
    which sections program identically part for part, and which parts do not follow the band.
    Deliberately not a second copy of phases 1–3 — it printed the device list, a bars-and-energy
-   table and every role under every section heading, and all three already exist above it
+   table and every role under every section heading, and all three already exist above it.
+
+   **Master FX names what processes audio, and nothing declares that.** There is no
+   `features.fx`: the block reads three things a device already says about itself — `kind`
+   (an `fx-processor` or a `mixer-recorder` *is* the processing), panel labels naming an effect
+   (§10 — `MASTER FX` silkscreened on a TR-1000 is the box saying where its effects are, in the
+   words you read standing at it), and effect parameters its recipes set (a recipe asking for
+   `REVERB SEND` will not sound as authored on a box with no reverb). Reading `kind` alone told
+   a rig containing a TR-1000 and a Deluge that it had no effects at all, which is a false
+   negative rather than a gap shown honestly (invariant 5). All three are name matches against a
+   short, deliberately conservative effect vocabulary, and a name match is weaker than a
+   declaration: a box with no panel drawing and no effect parameter goes unmentioned, and a knob
+   labelled `DELAY` that is really an envelope delay would be read as an effect. Both are known
+   limits of reading names rather than declarations, and both under- and over-claim quietly
 
 **Terminology.** Clock roles are `canSendClock` / `canReceiveClock` and the guide says *clock
 source* and *sync to it*. Never master/slave. "Master FX" and "master bus" stay — that is the

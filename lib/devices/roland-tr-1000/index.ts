@@ -94,6 +94,49 @@ function num(
 }
 
 /**
+ * The two per-instrument sends, on every recipe.
+ *
+ * **The page is 71, not 54.** p.54 prints `RVB SEND` and `DLY SEND` with the same explanations
+ * and it is the wrong table: that block is `KIT` → `EXT IN`, the sends for audio arriving at the
+ * EXTERNAL IN jacks. The per-instrument sends are the `MIXER` block on p.71, which is the track's
+ * own mixer stage — `MIXER : RVB SEND` and `MIXER : DLY SEND` in the audio diagram (p.33). Two
+ * tables printing one parameter name is exactly the trap §3.1 exists for, and the citation has to
+ * be the page that documents *this* parameter.
+ *
+ * p.71's Value column prints `0%-100%`, without the decimal the GEN pages print on `0.0%-100.0%`.
+ * The bounds are the same two numbers and `PCT` carries them; no `step` is authored here for the
+ * same reason it is authored nowhere else on this box (see `num`).
+ *
+ * A send is on **every** recipe including the ones that send nothing, because zero is an
+ * instruction here rather than an omission: the sends are kit state, edited in place (p.34) and
+ * saved deliberately (p.50), so a recipe silent about them inherits whatever the last kit left
+ * there. "Set it to 0" is a thing a reader does.
+ *
+ * `space` is declared only where the part is one a reverb belongs on. A kick or a sub in the
+ * reverb is mud at any setting, so those sends are flat *and* inert — §6.1's model is that a
+ * device declines an axis by having no parameter that declares it, which is a per-parameter
+ * decision, not a per-device one.
+ *
+ * Where `space` *is* declared, its amount never exceeds the point it moves. §6.1's offset is
+ * bipolar around a centred axis, so an amount larger than the point hits the bottom of the
+ * range before the knob does, and the last of the travel stops changing anything. Keeping
+ * amount <= point means the whole sweep of `space` moves the send. It does **not** mean every
+ * send reaches zero at the bottom — the crash still sends 16 to the reverb there — and it
+ * should not: how dry the driest setting is remains a per-part decision, and a crash with no
+ * reverb at all is a different sound rather than a drier one.
+ */
+function send(
+  which: 'RVB' | 'DLY',
+  value: number,
+  space?: number,
+): AuthoredNumericParam {
+  return num(`${which} SEND`, value, PCT, '%', 71, {
+    hint: which === 'RVB' ? 'reverb-send' : 'delay-send',
+    ...(space === undefined ? {} : { mood: [{ axis: 'space', amount: space }] }),
+  })
+}
+
+/**
  * Generators, by name, from the Preset GEN/INST List.
  *
  * `GEN` used to hold one of `Analog / ACB / FM / PCM / Sample`. Those five are real — both
@@ -307,6 +350,8 @@ export const device: Device = {
     'layer-ab': 'LAYER [A]/[B] selects the layer',
     'select-gen': 'Hold [SHIFT], press [GEN]',
     'motion-rec': 'MOTION [REC] lit, then move knob',
+    'reverb-send': 'Hold [BD]-[RC], turn REVERB [LEVEL]',
+    'delay-send': 'Hold [BD]-[RC], turn DELAY [LEVEL]',
   },
 
   /**
@@ -332,6 +377,8 @@ export const device: Device = {
         num('DECAY', 32, PCT, '%', 59),
         num('TUNE', 30, BIPOLAR, '%', 59, { hint: 'Pitch-envelope intensity, not tuning' }),
         num('ATTACK', 74, PCT, '%', 59),
+        send('RVB', 0),
+        send('DLY', 0),
       ],
       articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
       routing: 'INDIVIDUAL OUT BD — effects are bypassed on that jack',
@@ -348,6 +395,8 @@ export const device: Device = {
         num('TUNE', -45, BIPOLAR, '%', 59, { mood: [{ axis: 'darkness', amount: -20 }] }),
         num('TONE', -20, BIPOLAR, '%', 59),
         num('DECAY', 78, PCT, '%', 59, { mood: [{ axis: 'density', amount: -20 }] }),
+        send('RVB', 0),
+        send('DLY', 0),
       ],
       articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -365,6 +414,8 @@ export const device: Device = {
         num('ATTACK', 76, PCT, '%', 60, { hint: 'This is the click' }),
         num('EXCITE', 62, PCT, '%', 60, { mood: [{ axis: 'grit', amount: 30 }], hint: 'Odd-harmonic distortion' }),
         num('BODY DEP', 40, PCT, '%', 60),
+        send('RVB', 0),
+        send('DLY', 0),
       ],
       articulation: [
         { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
@@ -385,6 +436,8 @@ export const device: Device = {
         num('DECAY', 92, PCT, '%', 61, { mood: [{ axis: 'density', amount: -25 }] }),
         num('P. AMOUNT', 12, PCT, '%', 61, { hint: 'Near-flat pitch envelope' }),
         num('DRIVE', 18, PCT, '%', 61),
+        send('RVB', 0),
+        send('DLY', 0),
       ],
       routing: 'INDIVIDUAL OUT BD so the sub stays out of the bus effects',
       verified: false,
@@ -402,6 +455,8 @@ export const device: Device = {
         num('TUNE', 16, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -20 }] }),
         num('TONE', 62, PCT, '%', 60),
         num('SNAPPY', 70, PCT, '%', 60),
+        send('RVB', 0),
+        send('DLY', 0),
       ],
       articulation: [
         { slot: 'backbeat', set: { accent: true }, hint: 'accent-step' },
@@ -421,6 +476,8 @@ export const device: Device = {
         num('TUNE', 45, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -25 }] }),
         num('DECAY', 30, PCT, '%', 62),
         num('SNAPPY', 55, BIPOLAR, '%', 62),
+        send('RVB', 24, 20),
+        send('DLY', 12, 12),
       ],
       articulation: [{ slot: 'backbeat', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -438,6 +495,8 @@ export const device: Device = {
         num('FM DEPTH', 68, PCT, '%', 63, { mood: [{ axis: 'grit', amount: 25 }] }),
         num('NOISE', 45, PCT, '%', 63),
         num('COARSE', 0, SEMITONES_24, 'St', 63),
+        send('RVB', 18, 16),
+        send('DLY', 14, 14),
       ],
       articulation: [
         { slot: 'backbeat', set: { accent: true }, hint: 'accent-step' },
@@ -458,6 +517,8 @@ export const device: Device = {
         num('TUNE', -55, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -18 }] }),
         num('COLOR', 35, PCT, '%', 60, { hint: 'Ambience, i.e. noise amount' }),
         num('DECAY', 72, PCT, '%', 60, { mood: [{ axis: 'density', amount: -18 }] }),
+        send('RVB', 20, 18),
+        send('DLY', 8, 8),
       ],
       articulation: [{ slot: 'fill', set: { substep: '1/3' }, hint: 'sub-step' }],
       verified: false,
@@ -473,6 +534,8 @@ export const device: Device = {
         num('TUNE', 40, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -22 }] }),
         num('COLOR', 25, PCT, '%', 60),
         num('DECAY', 40, PCT, '%', 60, { mood: [{ axis: 'density', amount: -12 }] }),
+        send('RVB', 26, 20),
+        send('DLY', 10, 10),
       ],
       articulation: [
         { slot: 'fill', set: { substep: '1/3' }, hint: 'sub-step' },
@@ -494,6 +557,8 @@ export const device: Device = {
         num('TONE', 30, BIPOLAR, '%', 60),
         num('DECAY', 8, PCT, '%', 60, { hint: 'Floor it; the tail is the enemy' }),
         num('BODY', 25, PCT, '%', 60),
+        send('RVB', 8, 8),
+        send('DLY', 0),
       ],
       articulation: [{ slot: 'offbeat', set: { 'alt-inst': true }, hint: 'alt-inst' }],
       verified: false,
@@ -510,6 +575,8 @@ export const device: Device = {
         num('DECAY', 12, PCT, '%', 62),
         num('COARSE', -3, SEMITONES, 'St', 62),
         num('FREQ MOD', 20, PCT, '%', 62),
+        send('RVB', 22, 20),
+        send('DLY', 14, 14),
       ],
       articulation: [
         { slot: 'ghost', set: { weak: true }, hint: 'weak-step' },
@@ -532,6 +599,8 @@ export const device: Device = {
         num('SPEED', 55, PCT, '%', 62),
         num('MIX', 20, BIPOLAR, '%', 62, { hint: 'Clap against tail, not layers' }),
         num('TAIL DCY', 62, PCT, '%', 62, { mood: [{ axis: 'density', amount: -18 }] }),
+        send('RVB', 30, 22),
+        send('DLY', 14, 14),
       ],
       articulation: [{ slot: 'backbeat', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -546,6 +615,8 @@ export const device: Device = {
         gen('808 Hand Clap', CLAP_GENS),
         num('CLP SIZE', -25, BIPOLAR, '%', 59, { mood: [{ axis: 'darkness', amount: -20 }], hint: 'Thickness of the sound' }),
         num('TAIL LVL', 38, PCT, '%', 59, { mood: [{ axis: 'density', amount: -12 }] }),
+        send('RVB', 34, 24),
+        send('DLY', 10, 10),
       ],
       articulation: [{ slot: 'ghost', set: { weak: true }, hint: 'weak-step' }],
       verified: false,
@@ -563,6 +634,8 @@ export const device: Device = {
         num('TUNE', 10, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -22 }] }),
         num('DECAY', 14, PCT, '%', 62, { mood: [{ axis: 'density', amount: -6 }] }),
         num('ERROR', 8, PCT, '%', 62, { hint: 'Noise into the DA converter' }),
+        send('RVB', 6, 6),
+        send('DLY', 0),
       ],
       articulation: [
         { slot: 'offbeat', set: { weak: true }, hint: 'weak-step' },
@@ -581,6 +654,8 @@ export const device: Device = {
         num('TUNE', -5, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -20 }] }),
         num('DECAY', 20, PCT, '%', 62, { mood: [{ axis: 'density', amount: -8 }] }),
         num('METALLIC', 72, PCT, '%', 62, { mood: [{ axis: 'grit', amount: 20 }], hint: 'Metal-like overtone level' }),
+        send('RVB', 10, 10),
+        send('DLY', 8, 8),
       ],
       articulation: [
         { slot: 'offbeat', set: { weak: true }, hint: 'weak-step' },
@@ -601,6 +676,8 @@ export const device: Device = {
         num('TUNE', 28, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -26 }] }),
         num('DECAY', 58, PCT, '%', 62, { mood: [{ axis: 'density', amount: -16 }] }),
         num('ERROR', 10, PCT, '%', 62),
+        send('RVB', 16, 16),
+        send('DLY', 20, 18),
       ],
       articulation: [{ slot: 'offbeat', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -616,6 +693,8 @@ export const device: Device = {
         num('TUNE', -18, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -20 }] }),
         num('DECAY', 64, PCT, '%', 62, { mood: [{ axis: 'density', amount: -16 }] }),
         num('TONE', -35, BIPOLAR, '%', 62, { hint: 'Brightness of the cymbal' }),
+        send('RVB', 14, 12),
+        send('DLY', 12, 12),
       ],
       articulation: [{ slot: 'offbeat', set: { weak: true }, hint: 'weak-step' }],
       verified: false,
@@ -632,6 +711,8 @@ export const device: Device = {
         gen('9X Crash Cymbal', CRASH_GENS),
         num('TUNE', 0, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -20 }] }),
         num('DECAY', 84, PCT, '%', 62, { mood: [{ axis: 'density', amount: -20 }] }),
+        send('RVB', 42, 26),
+        send('DLY', 18, 16),
       ],
       articulation: [{ slot: 'first-hit', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
@@ -646,6 +727,8 @@ export const device: Device = {
         gen('9X Ride Cymbal', RIDE_GENS),
         num('TUNE', 12, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -16 }] }),
         num('DECAY', 74, PCT, '%', 62, { mood: [{ axis: 'density', amount: -14 }] }),
+        send('RVB', 14, 14),
+        send('DLY', 8, 8),
       ],
       articulation: [
         { slot: 'offbeat', set: { 'alt-inst': true }, hint: 'alt-inst' },

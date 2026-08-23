@@ -560,6 +560,12 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **P. AMOUNT** `12` % (0…100 %)
   - ↳ hint: Near-flat pitch envelope
 - **DRIVE** `18` % (0…100 %)
+- **RVB SEND** `0` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
+- **DLY SEND** `0` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
 #### HC — `clap`: Wide clap sitting on top of the snare
 
@@ -574,6 +580,12 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **MIX** `20` % (-100…100 %)
   - ↳ hint: Clap against tail, not layers
 - **TAIL DCY** `62` % (0…100 %)
+- **RVB SEND** `30` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
+- **DLY SEND** `14` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
 #### CH — `closed-hat`: Grainy CR-78 hat with a metallic edge
 
@@ -585,6 +597,12 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **DECAY** `20` % (0…100 %)
 - **METALLIC** `72` % (0…100 %)
   - ↳ hint: Metal-like overtone level
+- **RVB SEND** `10` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
+- **DLY SEND** `8` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
 #### OH — `open-hat`: Dull open hat, more air than sizzle
 
@@ -596,15 +614,27 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **DECAY** `64` % (0…100 %)
 - **TONE** `-35` % (-100…100 %)
   - ↳ hint: Brightness of the cymbal
+- **RVB SEND** `14` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
+- **DLY SEND** `12` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
 #### CC — `impact`: Crash marking the top of a section
-
-*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
 
 - **GEN** `9X Crash Cymbal`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
 - **TUNE** `0` % (-100…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 - **DECAY** `84` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
+- **RVB SEND** `42` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
+- **DLY SEND** `18` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
 ### Deluge
 
@@ -679,7 +709,11 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 
 **Master FX**
 
-No effects unit or mixer in this rig. The master chain is yours at the desk.
+What processes audio in this rig:
+
+- Tracker Mini — carries DELAY SEND and REVERB SEND in its recipes
+- TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
+- Deluge — carries BITCRUSH, DECIMATION, DELAY AMOUNT, DELAY RATE, MOD FX FEEDBACK, MOD FX RATE, MOD FX TYPE and REVERB AMOUNT in its recipes
 
 **Arrangement variations**
 
