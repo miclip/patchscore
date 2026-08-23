@@ -1,10 +1,10 @@
 import type { Device } from './device'
 import type { DeviceId, SectionName } from './ids'
 import type { Cite, Provenance, ResolvedParam, ResolvedRange } from './params'
+import { dominantRangeCite, sameCite } from './params'
 import type { Pattern, PatternHit } from './template'
 import type { BoundArticulation, ResolvedPatchEntry } from './resolver'
 import type { Gap } from './search'
-import { compareCodeUnits } from './resolver'
 import { enharmonicAlternative, type HookChoice, type ResolvedHook, type ResolvedNote } from './harmony'
 import type { ResolveResult, ResolvedAssignment } from './pipeline'
 
@@ -166,53 +166,6 @@ function provenanceText(provenance: Provenance): string {
 function mark(provenance: Provenance): string {
   const text = provenanceText(provenance)
   return text === '' ? '' : ` · ${text}`
-}
-
-/**
- * §3.2's range citation, hoisted when a recipe repeats it.
- *
- * A recipe whose parameters all come off one manual page printed that page under every line —
- * five consecutive params, five identical citations. Same principle as the provenance mark and
- * the note convention: state it once, annotate the exceptions.
- *
- * Rules, and each of them exists to keep the hoisted line *true*:
- *
- *  - Only **range** citations hoist. A value citation is a claim about one number and does not
- *    generalise to the parameter beside it.
- *  - Only a **verified** range has a citation at all; an unverified one is a different claim
- *    (§3.2's legality gate) and always keeps its own line.
- *  - The citation must actually repeat. One occurrence is not a pattern, and hoisting it would
- *    move a line without removing one.
- *  - A tie hoists **nothing**. Two citations appearing twice each have no dominant one, and
- *    picking either would silently demote the other from a fact to an exception.
- *
- * Exceptions are never suppressed: a parameter citing a different page keeps its own line, and
- * that is the whole point of hoisting — the page under it becomes the thing worth reading.
- */
-export function dominantRangeCite(params: readonly ResolvedParam[]): Cite | undefined {
-  const counts = new Map<string, { cite: Cite; n: number }>()
-  for (const param of params) {
-    const { range } = param
-    if (range === undefined || range.verified === false) continue
-    const cite = range.verified
-    const key = `${cite.kind}\u0000${cite.source}`
-    const seen = counts.get(key)
-    if (seen === undefined) counts.set(key, { cite, n: 1 })
-    else seen.n += 1
-  }
-
-  const ranked = [...counts.values()].sort(
-    (a, b) => b.n - a.n || compareCodeUnits(`${a.cite.kind}${a.cite.source}`, `${b.cite.kind}${b.cite.source}`),
-  )
-  const top = ranked[0]
-  if (top === undefined || top.n < 2) return undefined
-  const runnerUp = ranked[1]
-  if (runnerUp !== undefined && runnerUp.n === top.n) return undefined
-  return top.cite
-}
-
-function sameCite(a: Cite, b: Cite | undefined): boolean {
-  return b !== undefined && a.kind === b.kind && a.source === b.source
 }
 
 /**

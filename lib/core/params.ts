@@ -276,3 +276,68 @@ export const ResolvedParamSchema = z.strictObject({
   hint: z.string().min(1).optional(),
   note: z.string().min(1).optional(),
 })
+
+// ---------------------------------------------------------------------------
+// §3.2 — which citation a whole recipe shares
+// ---------------------------------------------------------------------------
+
+/** Two citations are the same claim only if the kind matches as well as the source. */
+export function sameCite(a: Cite, b: Cite | undefined): boolean {
+  return b !== undefined && a.kind === b.kind && a.source === b.source
+}
+
+/**
+ * The range citation a set of parameters repeats, if there is exactly one.
+ *
+ * A recipe whose parameters all come off one manual page prints that page under every line —
+ * five consecutive params, five identical citations. A renderer that knows this can state it
+ * once and annotate the exceptions, which is the same principle the provenance mark and the
+ * note convention already follow.
+ *
+ * It lives here, beside `Cite` and `ResolvedParam`, rather than in a renderer: it is a fact
+ * about a set of parameters, it returns a `Cite` rather than a formatted string, and §8's two
+ * renderers are **siblings**. A shared decision housed inside one of them would make the other
+ * a dependent of it, and the next shared decision would land in whichever file happened to
+ * need it first.
+ *
+ * Four rules, and each of them exists to keep a hoisted line *true*:
+ *
+ *  - Only **range** citations are considered. A value citation is a claim about one number and
+ *    does not generalise to the parameter beside it.
+ *  - Only a **verified** range has a citation at all; an unverified one is the legality gate's
+ *    separate claim (§3.2) and is never a candidate.
+ *  - The citation must actually **repeat**. One occurrence is not a pattern.
+ *  - A **tie** yields nothing. Two citations appearing twice each have no dominant one, and
+ *    picking either would silently demote the other from a fact to an exception.
+ *
+ * No ordering is involved, deliberately: the answer is a unique maximum or nothing at all, so
+ * there is no tie to break and therefore no comparator to get wrong across platforms (§7.2).
+ */
+export function dominantRangeCite(params: readonly ResolvedParam[]): Cite | undefined {
+  const counts = new Map<string, { cite: Cite; n: number }>()
+  for (const param of params) {
+    const { range } = param
+    if (range === undefined || range.verified === false) continue
+    const cite = range.verified
+    const key = `${cite.kind}\u0000${cite.source}`
+    const seen = counts.get(key)
+    if (seen === undefined) counts.set(key, { cite, n: 1 })
+    else seen.n += 1
+  }
+
+  let best: Cite | undefined
+  let bestCount = 0
+  let tied = false
+  for (const { cite, n } of counts.values()) {
+    if (n > bestCount) {
+      best = cite
+      bestCount = n
+      tied = false
+    } else if (n === bestCount) {
+      tied = true
+    }
+  }
+
+  // One occurrence is not a repetition, and a tie has no dominant citation.
+  return bestCount < 2 || tied ? undefined : best
+}

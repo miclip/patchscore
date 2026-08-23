@@ -1,6 +1,7 @@
 import type { Device } from '@/lib/core'
 import type { DeviceId } from '@/lib/core'
 import type { Cite, Provenance, ResolvedParam, ResolvedRange } from '@/lib/core'
+import { sameCite } from '@/lib/core'
 import type { Gap, ResolvedHook, ResolvedNote } from '@/lib/core'
 
 /**
@@ -84,9 +85,6 @@ export function citeLines(
   return parts
 }
 
-function sameCite(a: Cite, b: Cite | undefined): boolean {
-  return b !== undefined && a.kind === b.kind && a.source === b.source
-}
 
 /**
  * A device's `hints` table is keyed lookup for articulation and free text for parameters. One
