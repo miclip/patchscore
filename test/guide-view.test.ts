@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   GUIDE_PHASES,
   NEUTRAL_MOOD,
+  bandTrajectory,
   dominantRangeCite,
   renderGuide,
   resolve,
@@ -12,12 +13,18 @@ import type { ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 import { Guide } from '../components/guide/guide'
+import { mergeBlocks } from '../components/guide/phase-steps'
 import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
 
 /**
  * #33. The web guide and the Markdown guide are **siblings** reading one `ResolveResult`, not
  * stages in a pipeline. Nothing checks that automatically — they share no code path by design —
  * so this file is the check: same phases, same parts, same values, same holes.
+ *
+ * "Share no code path" is a rule about **ink**, not about arithmetic: derived musical facts —
+ * §6.3's band trajectory in `lib/core/arrangement.ts` — are computed once and read by both, and
+ * two copies of a claim like "these sections are the same page" would give a drifting copy the
+ * power to be wrong about the box in front of somebody. What is written twice is formatting.
  *
  * It is deliberately not a snapshot. `test/guide-golden.test.ts` pins the Markdown byte for
  * byte because a person reads those bytes; markup is restyled constantly and a snapshot of it
@@ -209,33 +216,111 @@ describe('the two renderers agree about the facts', () => {
 })
 
 describe('inline token lists keep their separators', () => {
-  it('separates the roles in each arrangement section', () => {
+  it('separates the sections in each band group, and the roles in each note', () => {
     const out = text(html(real))
-    const multi = real.template.structure
-      .map((section) => ({
-        section,
-        roles: real.assignments
-          .filter((a) => a.sections.includes(section.name))
-          .map((a) => a.role),
-      }))
-      .filter((entry) => entry.roles.length > 1)
+    const trajectory = bandTrajectory(real)
 
     // The bug this covers rendered `kickclapclosed-hatopen-hat`: adjacent spans in a container
     // with no gap. A separator that lives in CSS can be lost silently; this one is markup.
-    expect(multi.length).toBeGreaterThan(0)
-    for (const { roles } of multi) expect(out).toContain(roles.join(', '))
+    const grouped = trajectory.groups.filter((g) => g.sections.length > 1)
+    expect(grouped.length).toBeGreaterThan(0)
+    for (const group of grouped) expect(out).toContain(group.sections.join(', '))
+
+    // Roles in a note are joined the same way the Markdown sibling joins them.
+    expect(trajectory.unpatterned.length).toBeGreaterThan(1)
+    const last = trajectory.unpatterned[trajectory.unpatterned.length - 1] as string
+    expect(out).toContain(`${trajectory.unpatterned.slice(0, -1).join(', ')} and ${last}`)
   })
 
   it('separates the sections a part occupies, and the axes a mood move names', () => {
     const out = text(html(real))
+    // What the page prints under one heading is the *merged* group of sections that program
+    // identically, not every section the part occupies: energy picks the band per section
+    // (§6.3), so a continuous part routinely spans several headings.
+    let multiSection = 0
     for (const a of real.assignments) {
-      if (a.sections.length > 1) expect(out).toContain(a.sections.join(', '))
+      for (const block of mergeBlocks(a)) {
+        if (block.sections.length > 1) {
+          multiSection++
+          expect(out).toContain(block.sections.join(', '))
+        }
+      }
+      // Transient parts name their sections in Finishing as a list of their own.
+      if (a.sections.length > 1 && a.sections.length < real.template.structure.length) {
+        expect(out).toContain(a.sections.join(', '))
+      }
     }
+    expect(multiSection).toBeGreaterThan(0)
     const moved = real.assignments
       .flatMap((a) => a.params)
       .flatMap((p) => (p.provenance.state !== 'authored' ? (p.provenance.axes ?? []) : []))
       .filter((axes) => axes.length > 0)
     for (const axes of moved) expect(out).toContain(axes)
+  })
+})
+
+describe('slot lines are worded the same in both renderers (§8)', () => {
+  it('hoists a shared velocity in the view exactly as the Markdown does', () => {
+    const view = text(html(real))
+    const md = renderGuide(real)
+    const shared = md.match(/- `[a-z-]+` — [^\n]*\(all vel \d+\)/g) ?? []
+    expect(shared.length).toBeGreaterThan(0)
+    for (const line of shared) {
+      // Same words, minus the Markdown punctuation the view expresses as markup.
+      expect(view).toContain(line.replace(/^- /, '').replace(/`/g, '').replace(' — ', '—'))
+    }
+  })
+})
+
+describe("Finishing's band trajectory says the same thing in both renderers (§6.3)", () => {
+  // The two renderers share no code path, so this is the only thing holding their arrangement
+  // sections together. Asserted as *facts* rather than as bytes: the markup carries a hint
+  // column and the Markdown does not, so a byte comparison would fail on formatting alone.
+  const arrangement = (doc: string) => doc.slice(doc.indexOf('**Arrangement variations**'))
+
+  it('names the same band groups in the same order', () => {
+    const view = text(html(real))
+    const md = arrangement(renderGuide(real))
+    const groups = bandTrajectory(real).groups
+    expect(groups.length).toBeGreaterThan(1)
+    let at = -1
+    for (const group of groups) {
+      const label = group.band === undefined ? 'no parts' : `band ${String(group.band)}`
+      const sections = group.sections.join(', ')
+      expect(md).toContain(`**${label}** — ${sections}`)
+      expect(view).toContain(`${label} ${sections}`)
+      // Order matters: the trajectory is read top to bottom as the track plays.
+      const next = view.indexOf(`${label} ${sections}`)
+      expect(next).toBeGreaterThan(at)
+      at = next
+    }
+  })
+
+  it('names the same parts outside the trajectory', () => {
+    const view = text(html(real))
+    const md = arrangement(renderGuide(real))
+    const { unpatterned } = bandTrajectory(real)
+    expect(unpatterned.length).toBeGreaterThan(0)
+    for (const role of unpatterned) {
+      expect(view).toContain(role)
+      expect(md).toContain(`\`${role}\``)
+    }
+  })
+
+  it('drops the same three duplicated lists from both', () => {
+    // Phase 1 owns bars and energy, phase 2 owns which parts play where, phase 3 owns the
+    // device list. The old section reprinted all three.
+    const view = text(html(real))
+    const md = arrangement(renderGuide(real))
+    const tail = view.slice(view.indexOf('Arrangement variations'))
+    for (const device of real.devices) {
+      expect(md, device.name).not.toContain(device.name)
+      expect(tail, device.name).not.toContain(device.name)
+    }
+    for (const word of ['energy', 'bars']) {
+      expect(md, word).not.toContain(word)
+      expect(tail, word).not.toContain(word)
+    }
   })
 })
 

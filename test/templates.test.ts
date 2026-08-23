@@ -8,7 +8,7 @@ import {
   PATTERN_SLOTS,
   ROLES,
   TemplateSchema,
-  densityBand,
+  bandFor,
   moodState,
   resolve,
   sectionsFor,
@@ -17,10 +17,14 @@ import {
   type Device,
   type Pattern,
   type Role,
+  type SectionName,
   type Template,
 } from '../lib/core/index'
 import { DEVICES, DEVICE_FOLDERS } from '../lib/devices/registry.generated'
 import { TEMPLATES, industrialTechno, templateById } from '../lib/templates/index'
+// The UI's three detents, imported rather than restated: a vector pinned against numbers the
+// control does not actually emit would pass while the app did something else (§6.3).
+import { DENSITY_DETENTS } from '../components/density-detents'
 
 const TEMPLATE_DIR = join(import.meta.dirname, '..', 'lib', 'templates')
 
@@ -181,7 +185,8 @@ describe('density bands (§4.3, §6.3)', () => {
 
   it('never falls back a band, at any density, in any section (§6.3)', () => {
     // Band fallback is a *reported* degradation. Correct behaviour for a template with holes;
-    // a content bug in one that claims complete coverage.
+    // a content bug in one that claims complete coverage. The band asked for now depends on
+    // the section's energy as well as the knob, so this sweeps both.
     const densities = [0, 24, 25, 49, 50, 74, 75, 100]
     for (const template of TEMPLATES) {
       const patterned = new Set(patternedRoles(template))
@@ -193,7 +198,9 @@ describe('density bands (§4.3, §6.3)', () => {
             if (patterned.has(request.role)) {
               expect(selection.outcome, where).toBe('exact')
               if (selection.outcome !== 'none') {
-                expect(selection.usedBand, where).toBe(densityBand(density))
+                expect(selection.usedBand, where).toBe(
+                  bandFor(template, section, moodState({ density })),
+                )
               }
             } else {
               // Invariant 5 applied to rhythm: nothing authored, nothing invented.
@@ -202,6 +209,51 @@ describe('density bands (§4.3, §6.3)', () => {
           }
         }
       }
+    }
+  })
+
+  it('moves industrial techno through three distinct arrangements, one per detent (§6.3)', () => {
+    // The acceptance test for the whole knob: not "the band changed" but "the *arrangement*
+    // changed", pinned as the section-order vector at each of the three detents the UI offers.
+    // Read down a column and you see one section's life; read across and you see the knob.
+    //
+    //            Intro  Build  Drop  Breakdown  Peak  Outro
+    //   energy    0.15   0.45   0.9     0.3      1     0.2
+    const vector = (density: number) =>
+      industrialTechno.structure.map((s) =>
+        bandFor(industrialTechno, s.name, moodState({ density })),
+      )
+
+    expect(vector(DENSITY_DETENTS[0])).toEqual([0, 0, 2, 0, 2, 0]) // sparser
+    expect(vector(DENSITY_DETENTS[1])).toEqual([0, 1, 3, 1, 3, 0]) // as authored
+    expect(vector(DENSITY_DETENTS[2])).toEqual([1, 2, 3, 2, 3, 1]) // busier
+
+    // Every detent is a different guide. A knob with two settings that resolve alike is a knob
+    // someone will report as broken.
+    const vectors = DENSITY_DETENTS.map((d) => vector(d).join(''))
+    expect(new Set(vectors).size).toBe(DENSITY_DETENTS.length)
+  })
+
+  it('is locally inert at a clamped section without being globally inert (§6.3)', () => {
+    // The clamp means a section already at an edge cannot move: Drop (0.9) and Peak (1) are
+    // band 3 at both the neutral and the busy detent, and Intro (0.15) and Outro (0.2) are
+    // band 0 at both the sparse and the neutral one. That is not the knob failing — the rest
+    // of the arrangement still moves — but it is why "turn density up and the Drop gets
+    // busier" is the wrong sentence to put in front of a user.
+    const at = (name: string, density: number) =>
+      bandFor(industrialTechno, name as SectionName, moodState({ density }))
+
+    for (const section of ['Drop', 'Peak']) {
+      expect(at(section, DENSITY_DETENTS[1]), section).toBe(at(section, DENSITY_DETENTS[2]))
+    }
+    for (const section of ['Intro', 'Outro']) {
+      expect(at(section, DENSITY_DETENTS[0]), section).toBe(at(section, DENSITY_DETENTS[1]))
+    }
+    // ...and the sections that are not pinned move at every step, which is what keeps the two
+    // detents distinct as whole arrangements.
+    for (const section of ['Build', 'Breakdown']) {
+      expect(at(section, DENSITY_DETENTS[0]), section).toBeLessThan(at(section, DENSITY_DETENTS[1]))
+      expect(at(section, DENSITY_DETENTS[1]), section).toBeLessThan(at(section, DENSITY_DETENTS[2]))
     }
   })
 

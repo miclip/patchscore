@@ -11,6 +11,7 @@ import {
   type Hook,
   type ResolveResult,
   type ResolvedParam,
+  type SectionName,
   type Template,
 } from '../lib/core/index'
 import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
@@ -34,11 +35,35 @@ const golden = (): ResolveResult =>
     seed: GOLDEN_SEED,
   })
 
+/** The same scenario with two sections at one energy, so §6.3 puts them in one band. */
+const sameBandGuide = (): ResolveResult =>
+  resolve({
+    devices: GOLDEN_DEVICES,
+    template: {
+      ...GOLDEN_TEMPLATE,
+      structure: [
+        { name: 'Intro', bars: 16, energy: 0.5 },
+        { name: 'Build', bars: 16, energy: 0.5 },
+        { name: 'Drop', bars: 32, energy: 0.9 },
+      ],
+    },
+    mood: GOLDEN_MOOD,
+    seed: GOLDEN_SEED,
+  })
+
 function lines(doc: string): string[] {
   return doc.split('\n')
 }
 
 /** The body of one 1-based phase, exclusive of its own heading and the next one. */
+/** §8 phase 7's arrangement block: from its heading to the end of the phase. */
+function variations(doc: string): string[] {
+  const body = phaseBody(doc, 7)
+  const start = body.indexOf('**Arrangement variations**')
+  expect(start, 'arrangement heading').toBeGreaterThan(-1)
+  return body.slice(start + 1).filter((l) => l !== '')
+}
+
 function phaseBody(doc: string, phase: number): string[] {
   const all = lines(doc)
   const start = all.findIndex((l) => l.startsWith(`## ${phase}. `))
@@ -412,9 +437,25 @@ describe('at-the-machine layout (§8, §10)', () => {
   const doc = renderGuide(result)
 
   it('merges sections that program identically into one block', () => {
-    // The golden kick is continuous over three sections with one variant: one block naming
-    // all three, not the same sixteen steps printed three times.
-    const body = phaseBody(doc, 5)
+    // Two sections at the same energy ask for the same band (§6.3), so one continuous part
+    // programs both the same way: one block naming both, not the same sixteen steps twice.
+    // Drop is louder and asks for band 3, so it stays its own block.
+    const flat = renderGuide(
+      resolve({
+        devices: GOLDEN_DEVICES,
+        template: {
+          ...GOLDEN_TEMPLATE,
+          structure: [
+            { name: 'Intro', bars: 16, energy: 0.5 },
+            { name: 'Build', bars: 16, energy: 0.5 },
+            { name: 'Drop', bars: 32, energy: 0.9 },
+          ],
+        },
+        mood: GOLDEN_MOOD,
+        seed: GOLDEN_SEED,
+      }),
+    )
+    const body = phaseBody(flat, 5)
     const kick = body.indexOf('### `kick` — Golden Drum · BD')
     expect(kick).toBeGreaterThan(-1)
     const next = body.findIndex((l, i) => i > kick && l.startsWith('### '))
@@ -422,15 +463,17 @@ describe('at-the-machine layout (§8, §10)', () => {
     expect(block.filter((l) => l.startsWith('**'))).toEqual([
       // No pattern id in the headline: template-internal, and meaningless at a machine.
       '**hard kick** — settings in Sound design',
-      '**Intro, Build, Drop** — 16 steps, band 2',
+      '**Intro, Build** — 16 steps, band 2',
+      '**On this box** — Golden Drum',
+      '**Drop** — 16 steps, band 2 — nothing authored at band 3',
       '**On this box** — Golden Drum',
     ])
-    expect(block.filter((l) => l === '```')).toHaveLength(2)
   })
 
   it('does not merge sections that agree on the variant but not on the band it fell back from', () => {
-    // The golden hat has a band-2 variant in Drop only, so Intro and Build fall back to band 1
-    // (§6.3). Merging those with Drop would hide the one thing the density knob did.
+    // The golden hat has a band-1 variant everywhere and a band-2 variant in Drop only. Intro
+    // and Build both land on `p-hat-b1` — but they asked for different bands, because their
+    // energies differ (§6.3), and merging them would hide what the arrangement did.
     const body = phaseBody(doc, 5)
     const hat = body.indexOf('### `closed-hat` — Golden Drum · CH')
     const next = body.findIndex((l, i) => i > hat && l.startsWith('### '))
@@ -438,9 +481,126 @@ describe('at-the-machine layout (§8, §10)', () => {
       .slice(hat, next)
       .filter((l) => l.startsWith('**') && l.includes(' steps, band '))
     expect(headlines).toEqual([
-      '**Intro, Build** — 16 steps, band 1 — nothing authored at band 2',
-      '**Drop** — 16 steps, band 2',
+      '**Intro** — 16 steps, band 1 — nothing authored at band 0',
+      '**Build** — 16 steps, band 1 — nothing authored at band 2',
+      '**Drop** — 16 steps, band 2 — nothing authored at band 3',
     ])
+  })
+
+  it('hoists a velocity shared by every hit in a slot, rather than repeating it', () => {
+    // A band-3 ghost slot is eight sixteenths at one velocity. Per-hit that is a 105-character
+    // line that wraps three times on the phone §10 says this is read on, and the repetition
+    // buries the step numbers, which are the thing being scanned for.
+    const body = phaseBody(doc, 5)
+    for (const line of body.filter((l) => l.startsWith('- `'))) {
+      expect(line.length, line).toBeLessThan(80)
+    }
+    const t: Template = {
+      ...GOLDEN_TEMPLATE,
+      structure: [{ name: 'Drop', bars: 32, energy: 0.5 }],
+      roles: GOLDEN_TEMPLATE.roles.filter((r) => r.id === 'r-kick'),
+      patterns: [
+        {
+          id: 'p-kick-b2',
+          forRole: 'kick',
+          band: 2,
+          length: 16,
+          hits: [
+            { step: 2, slot: 'ghost', velocity: 42 },
+            { step: 4, slot: 'ghost', velocity: 42 },
+            { step: 6, slot: 'ghost', velocity: 42 },
+            { step: 1, slot: 'accent', velocity: 110 },
+            { step: 9, slot: 'accent', velocity: 96 },
+            { step: 13, slot: 'downbeat' },
+          ],
+        },
+      ],
+    }
+    const steps = phaseBody(
+      renderGuide(
+        resolve({ devices: GOLDEN_DEVICES, template: t, mood: GOLDEN_MOOD, seed: GOLDEN_SEED }),
+      ),
+      5,
+    )
+    expect(steps).toContain('- `ghost` — 2, 4, 6 (all vel 42)')
+    // Velocities that differ stay per hit: the shared figure is the only thing worth hoisting.
+    expect(steps).toContain('- `accent` — 1 (vel 110), 9 (vel 96)')
+    expect(steps).toContain('- `downbeat` — 13')
+  })
+
+  it('renders the trajectory as one line per group, labelled by the band asked for', () => {
+    // §6.3's grouping is derived in `lib/core/arrangement.ts` and tested there; what this
+    // pins is the shape of the line a reader holds.
+    const arrangement = variations(renderGuide(sameBandGuide()))
+    expect(arrangement.some((l) => l.startsWith('- **band 2** — Intro, Build'))).toBe(true)
+    expect(arrangement.some((l) => l.startsWith('- **band 3** — Drop'))).toBe(true)
+  })
+
+  it('says nothing phase 1, 2 or 3 already said', () => {
+    // The section it replaced printed the device list, a bars-and-energy table and every role
+    // under every section heading — three lists that existed elsewhere in the same document.
+    const arrangement = variations(doc).join('\n')
+    for (const device of result.devices) expect(arrangement, device.name).not.toContain(device.name)
+    expect(arrangement).not.toContain('energy')
+    expect(arrangement).not.toContain('bars')
+    // Which sections a part occupies is phase 2's, including for a part that comes and goes:
+    // it was briefly repeated here, and it was `a.sections` printed a second time.
+    expect(arrangement).not.toContain('come and go')
+    for (const a of result.assignments) {
+      expect(arrangement, a.role).not.toContain(a.sections.join(', '))
+    }
+  })
+
+  it('never words a fallback as though the band asked for were playing (§6.3)', () => {
+    // The golden scenario authors band 2 only, so its Intro asks band 0 and gets band 2. A line
+    // reading "band 0 — Intro" with nothing after it would be a lie about what is on the box.
+    const arrangement = variations(doc).join('\n')
+    expect(arrangement).toMatch(/\*\*band 0\*\* — Intro · [^\n]*plays? band 2/)
+    expect(arrangement).toMatch(/\*\*band 3\*\* — Drop · [^\n]*plays? band 2/)
+    // ...and it does not reprint the grid, the slots or the articulation: that is phase 5.
+    expect(arrangement).not.toContain('`downbeat`')
+    expect(arrangement).not.toContain('```')
+  })
+
+  it('words a section where every part fell back as one clause, not a roll-call', () => {
+    const t: Template = {
+      ...GOLDEN_TEMPLATE,
+      structure: [{ name: 'Drop', bars: 32, energy: 0.9 }],
+      roles: GOLDEN_TEMPLATE.roles.filter((r) => r.id === 'r-kick'),
+      patterns: GOLDEN_TEMPLATE.patterns.filter((p) => p.forRole === 'kick'),
+    }
+    const arrangement = variations(
+      renderGuide(
+        resolve({ devices: GOLDEN_DEVICES, template: t, mood: GOLDEN_MOOD, seed: GOLDEN_SEED }),
+      ),
+    ).join('\n')
+    expect(arrangement).toContain('- **band 3** — Drop · every part plays band 2')
+  })
+
+  it('words the two kinds of silence differently, and hoists only the permanent one', () => {
+    const arrangement = variations(doc).join('\n')
+    expect(arrangement).toContain('`bass-mid` and `tom` have no pattern authored at any band')
+    expect(arrangement).not.toContain('`bass-mid` has nothing authored here')
+
+    // Authored, but only in the Drop: silence in the Intro is a fact about that group.
+    const t: Template = {
+      ...GOLDEN_TEMPLATE,
+      structure: [
+        { name: 'Intro', bars: 16, energy: 0.5 },
+        { name: 'Drop', bars: 32, energy: 0.5 },
+      ],
+      roles: GOLDEN_TEMPLATE.roles.filter((r) => r.id === 'r-kick'),
+      patterns: GOLDEN_TEMPLATE.patterns
+        .filter((p) => p.forRole === 'kick')
+        .map((p) => ({ ...p, sections: ['Drop' as SectionName] })),
+    }
+    const scoped = variations(
+      renderGuide(
+        resolve({ devices: GOLDEN_DEVICES, template: t, mood: GOLDEN_MOOD, seed: GOLDEN_SEED }),
+      ),
+    ).join('\n')
+    expect(scoped).toContain('`kick` has nothing authored here')
+    expect(scoped).not.toContain('no pattern authored at any band')
   })
 
   it('merging loses no section — every section a part occupies is still named', () => {

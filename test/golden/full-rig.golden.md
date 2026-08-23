@@ -128,25 +128,68 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Tight one-shot kick, tuned down, no tail** — settings in Sound design
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — 16 steps, band 2
+**Intro, Outro** — 16 steps, band 0
 
 ```
- 1 x··· x··· x··· x··x
+ 1 x··· ···· x··· ····
+```
+- `downbeat` — 1, 9
+
+**Build, Breakdown** — 16 steps, band 1
+
+```
+ 1 x··· x··· x··· x···
 ```
 - `downbeat` — 1, 5, 9, 13
-- `ghost` — 16 (vel 55)
+
+**Drop, Peak** — 16 steps, band 3
+
+```
+ 1 x··· x··x x··· x··x
+```
+- `downbeat` — 1, 5, 13
+- `ghost` — 8 (vel 50), 16 (vel 60)
+- `accent` — 9 (vel 112)
+
+**On this box** — Tracker Mini
+
+- `accent` → `volume` 100 on step 9
+  - ↳ hint: Hold [FX1], press (Up)/(Down)
 
 ### `sub` — Deluge · Track 1
 
 **Sine sub with the top end cut away** — settings in Sound design
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — 16 steps, band 2
+**Intro, Outro** — 16 steps, band 0
 
 ```
- 1 x··· ··x· ··x· ··x·
+ 1 x··· ···· ···· ····
 ```
 - `downbeat` — 1
-- `offbeat` — 7, 11, 15
+
+**On this box** — Deluge
+
+- `downbeat` → `velocity` 112 on step 1
+
+**Build, Breakdown** — 16 steps, band 1
+
+```
+ 1 x··· ···· x··· ··x·
+```
+- `downbeat` — 1, 9
+- `offbeat` — 15
+
+**On this box** — Deluge
+
+- `downbeat` → `velocity` 112 on steps 1, 9
+
+**Drop, Peak** — 16 steps, band 3
+
+```
+ 1 x·x· ··x· ··x· ··x·
+```
+- `downbeat` — 1
+- `offbeat` — 3, 7, 11, 15
 
 **On this box** — Deluge
 
@@ -156,59 +199,85 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Analog saw bass through the drive filter, crushed** — settings in Sound design
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — 32 steps, band 2
+**Intro, Outro** — 32 steps, band 0
 
 ```
- 1 x··· ··x· x··· ····
-17 x··· ··x· x··· ····
+ 1 x··· ···· ···· ····
+17 x··· ···· ···· ····
+```
+- `downbeat` — 1, 17
+
+**Build, Breakdown** — 32 steps, band 1
+
+```
+ 1 x··· ···· x··· ····
+17 x··· ···· x··· ····
 ```
 - `downbeat` — 1, 9, 17, 25
-- `offbeat` — 7, 23
+
+**Drop, Peak** — 32 steps, band 3
+
+```
+ 1 x··x ··x· x·x· ····
+17 x··x ··x· x·x· ··x·
+```
+- `downbeat` — 1, 9, 17, 25
+- `ghost` — 4, 20 (all vel 50)
+- `offbeat` — 7, 11, 23, 27
+- `accent` — 31 (vel 110)
 
 **On this box** — Deluge
 
-- `offbeat` → `probability` 90 on steps 7, 23
+- `offbeat` → `probability` 90 on steps 7, 11, 23, 27
   - ↳ hint: Hold pad, turn (SELECT) anticlockwise
 
 ### `clap` — TR-1000 · HC
 
 **Wide clap sitting on top of the snare** — settings in Sound design
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — 16 steps, band 2
+**Intro, Outro** — 16 steps, band 0
 
 ```
- 1 ···· x··· ···· x··x
+ 1 ···· ···· ···· x···
+```
+- `backbeat` — 13
+
+**On this box** — TR-1000
+
+- `backbeat` → `accent` true on step 13
+  - ↳ hint: ACCENT [STEP], then step keys
+
+**Build, Breakdown** — 16 steps, band 1
+
+```
+ 1 ···· x··· ···· x···
 ```
 - `backbeat` — 5, 13
-- `ghost` — 16 (vel 50)
 
 **On this box** — TR-1000
 
 - `backbeat` → `accent` true on steps 5, 13
   - ↳ hint: ACCENT [STEP], then step keys
 
+**Drop, Peak** — 16 steps, band 3
+
+```
+ 1 ···· x··· ···· xxxx
+```
+- `backbeat` — 5
+- `accent` — 13 (vel 112)
+- `fill` — 14, 15, 16
+
+**On this box** — TR-1000
+
+- `backbeat` → `accent` true on step 5
+  - ↳ hint: ACCENT [STEP], then step keys
+
 ### `closed-hat` — TR-1000 · CH
 
 **Grainy CR-78 hat with a metallic edge** — settings in Sound design
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — 16 steps, band 2
-
-```
- 1 ·xx· ·xx· ·xx· ·xx·
-```
-- `ghost` — 2 (vel 45), 6 (vel 45), 10 (vel 45), 14 (vel 45)
-- `offbeat` — 3, 7, 11, 15
-
-**On this box** — TR-1000
-
-- `offbeat` → `weak` true on steps 3, 7, 11, 15
-  - ↳ hint: Hold [SHIFT], press step keys
-
-### `open-hat` — TR-1000 · OH
-
-**Dull open hat, more air than sizzle** — settings in Sound design
-
-**Intro, Build, Drop, Breakdown, Peak, Outro** — 16 steps, band 2
+**Intro, Outro** — 16 steps, band 0
 
 ```
  1 ··x· ··x· ··x· ··x·
@@ -220,33 +289,127 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `offbeat` → `weak` true on steps 3, 7, 11, 15
   - ↳ hint: Hold [SHIFT], press step keys
 
+**Build, Breakdown** — 16 steps, band 1
+
+```
+ 1 ·xx· ··x· ·xx· ··x·
+```
+- `ghost` — 2, 10 (all vel 45)
+- `offbeat` — 3, 7, 11, 15
+
+**On this box** — TR-1000
+
+- `offbeat` → `weak` true on steps 3, 7, 11, 15
+  - ↳ hint: Hold [SHIFT], press step keys
+
+**Drop, Peak** — 16 steps, band 3
+
+```
+ 1 xxxx xxxx xxxx xxxx
+```
+- `downbeat` — 1, 5, 9, 13
+- `ghost` — 2, 4, 6, 8, 10, 12, 14, 16 (all vel 42)
+- `offbeat` — 3, 7, 11
+- `accent` — 15 (vel 108)
+
+**On this box** — TR-1000
+
+- `offbeat` → `weak` true on steps 3, 7, 11
+  - ↳ hint: Hold [SHIFT], press step keys
+- `accent` → `accent` true on step 15
+  - ↳ hint: ACCENT [STEP], then step keys
+
+### `open-hat` — TR-1000 · OH
+
+**Dull open hat, more air than sizzle** — settings in Sound design
+
+**Intro, Outro** — 16 steps, band 0
+
+```
+ 1 ···· ··x· ···· ····
+```
+- `offbeat` — 7
+
+**On this box** — TR-1000
+
+- `offbeat` → `weak` true on step 7
+  - ↳ hint: Hold [SHIFT], press step keys
+
+**Build, Breakdown** — 16 steps, band 1
+
+```
+ 1 ··x· ···· ··x· ····
+```
+- `offbeat` — 3, 11
+
+**On this box** — TR-1000
+
+- `offbeat` → `weak` true on steps 3, 11
+  - ↳ hint: Hold [SHIFT], press step keys
+
+**Drop, Peak** — 16 steps, band 3
+
+```
+ 1 ··x· ··x· ··x· x·x·
+```
+- `offbeat` — 3, 7, 11
+- `downbeat` — 13
+- `accent` — 15 (vel 106)
+
+**On this box** — TR-1000
+
+- `offbeat` → `weak` true on steps 3, 7, 11
+  - ↳ hint: Hold [SHIFT], press step keys
+
 ### `stab` — Deluge · Track 3
 
 **Square stab through a fast phaser** — settings in Sound design
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — 32 steps, band 2
+**Intro, Outro** — 32 steps, band 0
 
 ```
- 1 x··· ···· ··x· ····
+ 1 x··· ···· ···· ····
+17 ···· ···· ···· ····
+```
+- `downbeat` — 1
+
+**Build, Breakdown** — 32 steps, band 1
+
+```
+ 1 x··· ···· ···· ····
 17 x··· ···· ···· ····
 ```
 - `downbeat` — 1, 17
-- `offbeat` — 11
+
+**Drop, Peak** — 32 steps, band 3
+
+```
+ 1 x··· ··x· ··x· ····
+17 x··· ··x· ···· x···
+```
+- `downbeat` — 1, 17
+- `offbeat` — 7, 11, 23
+- `accent` — 29 (vel 108)
+
+**On this box** — Deluge
+
+- `accent` → `velocity` 120 on step 29
 
 ### `impact` — TR-1000 · CC
 
 **Crash marking the top of a section** — settings in Sound design
 
-**Drop, Peak** — 64 steps, band 2
+**Drop, Peak** — 64 steps, band 3
 
 ```
  1 x··· ···· ···· ····
-17 x··· ···· ···· ····
+17 x··· ···· x··· ····
 33 x··· ···· ···· ····
-49 x··· ···· ···· ····
+49 x··· ···· x··· ····
 ```
 - `first-hit` — 1
-- `downbeat` — 17, 33, 49
+- `downbeat` — 17, 25, 49, 57
+- `accent` — 33 (vel 114)
 
 **On this box** — TR-1000
 
@@ -257,26 +420,47 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Wavetable pad, slow chorus, wide reverb send** — settings in Sound design
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — no pattern authored for `pad` at any band (asked for band 2)
+**Intro, Outro** — no pattern authored for `pad` at any band (asked for band 0)
+
+**Build, Breakdown** — no pattern authored for `pad` at any band (asked for band 1)
+
+**Drop, Peak** — no pattern authored for `pad` at any band (asked for band 3)
 
 ### `riser` — Deluge · Track 5
 
 **Saw riser, top end open, thrown into the reverb** — settings in Sound design
 
-**Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 2)
+**Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 1)
 
 ### `noise` — Deluge · Track 6
 
 **Crushed noise wash under the drums** — settings in Sound design
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — 32 steps, band 2
+**Intro, Outro** — 32 steps, band 0
 
 ```
- 1 x··· ···· ··x· ····
-17 x··· ···· ··x· ····
+ 1 x··· ···· ···· ····
+17 ···· ···· ···· ····
+```
+- `downbeat` — 1
+
+**Build, Breakdown** — 32 steps, band 1
+
+```
+ 1 x··· ···· ···· ····
+17 x··· ···· ···· ····
 ```
 - `downbeat` — 1, 17
-- `offbeat` — 11, 27
+
+**Drop, Peak** — 32 steps, band 3
+
+```
+ 1 x··· ··x· ···· ··x·
+17 x··· ··x· ···· ··x·
+```
+- `downbeat` — 1, 17
+- `offbeat` — 7, 15, 23
+- `accent` — 31 (vel 104)
 
 ## 6. Sound design
 
@@ -427,15 +611,10 @@ No effects unit or mixer in this rig. The master chain is yours at the desk.
 
 **Arrangement variations**
 
-Parts live on Tracker Mini, TR-1000, Deluge. Section by section:
+Sections that program identically, part for part — build one and copy it:
 
-- **Intro** (16 bars, energy 0.15) — `kick`, `sub`, `bass-mid`, `clap`, `closed-hat`, `open-hat`, `stab`, `pad`, `noise`
-- **Build** (16 bars, energy 0.45) — `kick`, `sub`, `bass-mid`, `clap`, `closed-hat`, `open-hat`, `stab`, `pad`, `riser`, `noise`
-- **Drop** (32 bars, energy 0.9) — `kick`, `sub`, `bass-mid`, `clap`, `closed-hat`, `open-hat`, `stab`, `impact`, `pad`, `noise`
-- **Breakdown** (16 bars, energy 0.3) — `kick`, `sub`, `bass-mid`, `clap`, `closed-hat`, `open-hat`, `stab`, `pad`, `riser`, `noise`
-- **Peak** (32 bars, energy 1) — `kick`, `sub`, `bass-mid`, `clap`, `closed-hat`, `open-hat`, `stab`, `impact`, `pad`, `noise`
-- **Outro** (16 bars, energy 0.2) — `kick`, `sub`, `bass-mid`, `clap`, `closed-hat`, `open-hat`, `stab`, `pad`, `noise`
+- **band 0** — Intro, Outro
+- **band 1** — Build, Breakdown
+- **band 3** — Drop, Peak
 
-Parts that come and go:
-- `impact` — Drop, Peak only
-- `riser` — Build, Breakdown only
+`pad` and `riser` have no pattern authored at any band, so nothing here varies for them.

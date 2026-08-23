@@ -26,8 +26,8 @@ import { SeedField } from './seed-field'
  * wait for and no request to make (invariant 1).
  */
 
-/** §6.3: density's neutral 50 sits in band 2, so its detent is band 2's centre. */
-const INITIAL_MOOD: MoodState = { ...NEUTRAL_MOOD, density: DENSITY_DETENTS[2] }
+/** §6.3: density's neutral 50 is the middle detent - no lean, sections as authored. */
+const INITIAL_MOOD: MoodState = { ...NEUTRAL_MOOD, density: DENSITY_DETENTS[1] }
 
 /**
  * A constant, not a random draw. The server and the client must render the same first frame,

@@ -186,7 +186,8 @@ describe('pipeline ordering (§7)', () => {
     const result = run({ template: t })
     expect(result.gaps.map((g) => g.requestId)).toEqual(['r-pad'])
     // ...and the pad still has its rhythm selected, so the gap can say what was lost.
-    expect(result.patterns.get('r-pad')?.get('Drop')).toMatchObject({
+    // Build is energy 0.5, so band 2 is the band asked for and the fixture's variant is exact.
+    expect(result.patterns.get('r-pad')?.get('Build')).toMatchObject({
       outcome: 'exact',
       pattern: { id: 'p-pad-b2' },
     })
@@ -278,14 +279,27 @@ describe('recipe substitution surfaces in the result (§3.5)', () => {
 
 describe('pattern fallback is reported, not silent (§6.3)', () => {
   it('names the band asked for and the band used', () => {
+    // Drop is energy 0.9 -> band 3, and only a band-2 variant is authored.
     const result = run({ mood: moodState({ density: 100 }) })
     const drop = result.assignments[0]?.patterns.find((p) => p.section === 'Drop')
     expect(drop?.selection).toMatchObject({ outcome: 'fallback', band: 3, usedBand: 2 })
   })
 
-  it('says so plainly when the knob lands on the authored band', () => {
-    const drop = run().assignments[0]?.patterns.find((p) => p.section === 'Drop')
-    expect(drop?.selection).toMatchObject({ outcome: 'exact', band: 2, usedBand: 2 })
+  it('says so plainly when the section lands on the authored band', () => {
+    // Build is energy 0.5 -> band 2, with the knob centred, which is what the fixture authors.
+    const build = run().assignments[0]?.patterns.find((p) => p.section === 'Build')
+    expect(build?.selection).toMatchObject({ outcome: 'exact', band: 2, usedBand: 2 })
+  })
+
+  it('gives one part a different band in each section of one guide (§6.3)', () => {
+    const a = run().assignments[0]!
+    // Energy 0.2 / 0.5 / 0.9 across the fixture's three sections. The template authors only
+    // band 2, so two of the three are honest fallbacks rather than a silently reused variant.
+    expect(a.patterns.map((p) => [p.section, p.selection.band])).toEqual([
+      ['Intro', 0],
+      ['Build', 2],
+      ['Drop', 3],
+    ])
   })
 
   it('omits the pattern rather than inventing one, and articulates nothing (invariant 5)', () => {
@@ -339,10 +353,12 @@ describe('articulation binding (§7 step 7)', () => {
     const t = scene({
       patterns: [kickPattern({ hits: [{ step: 1, slot: 'downbeat' }] })],
     })
-    const drop = run({ template: t }).assignments[0]!.patterns[0]!
+    const build = run({ template: t }).assignments[0]!.patterns.find(
+      (p) => p.section === 'Build',
+    )!
     // The recipe articulates accent and last-hit; this variant has neither.
-    expect(drop.articulation).toEqual([])
-    expect(drop.selection.outcome).toBe('exact')
+    expect(build.articulation).toEqual([])
+    expect(build.selection.outcome).toBe('exact')
   })
 
   it('stamps provenance on every bound entry, and never derived (§3.2)', () => {

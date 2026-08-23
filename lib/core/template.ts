@@ -101,7 +101,10 @@ export const RoleRequestSchema = z
 // §4.3 Step patterns
 // ---------------------------------------------------------------------------
 
-/** §4.3/§6.3. Four density bands, fixed. Density selects a variant; it never mutates hits. */
+/**
+ * §4.3/§6.3. Four bands, fixed. The section's `energy` picks one and density leans it by one;
+ * neither mutates hits.
+ */
 export const DENSITY_BANDS = [0, 1, 2, 3] as const
 export type DensityBand = (typeof DENSITY_BANDS)[number]
 export const DensityBandSchema = z.union([

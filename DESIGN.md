@@ -726,15 +726,27 @@ type Pattern = {
 }
 ```
 
-**Density never mutates `hits`.** It selects which authored variant is in play (§6.3). A knob that
+**Nothing mutates `hits`.** Selection picks which authored variant is in play (§6.3). A knob that
 adds and removes steps emits patterns nobody authored and nobody can defend musically — that is
 generative behaviour, the thing this design exists to avoid, smuggled in through a slider. It
 would also create rhythm with no provenance at all, which is invariant 4's problem in a second
 medium.
 
-The consequence, stated plainly: **density is quantised.** Four bands, not a continuum. The UI
-should show four detents rather than pretending to a 0–100 sweep, so nobody hunts for an effect
-between 26 and 49 that does not exist.
+**The band comes from the section's `energy`, not from the density knob** (§6.3). Energy is
+already authored per section, and it is the thing that says a Drop is busier than an Intro. When
+density alone chose the band, every section of a guide got the same variant — the Intro as busy as
+the Drop — and the four authored bands per role bought nothing but a knob. Authoring four bands is
+only worth the effort if the arrangement moves through them, and the arrangement is what `energy`
+describes.
+
+Density is then a **lean over that**: one band sparser, as authored, or one band busier (§6.3). It
+can shift the whole arrangement but never flatten it, so the shape the template authored across
+its sections survives every setting of the knob.
+
+The consequence, stated plainly: **both controls are quantised.** Four bands, not a continuum, and
+three density zones rather than four. The UI should show three detents on density — *sparser · as
+authored · busier* — rather than pretending to a 0–100 sweep, so nobody hunts for an effect between
+26 and 49 that does not exist.
 
 Devices contribute `articulation` (§3), addressed by `PatternSlot` — which is why `PatternSlot` is
 named in invariant 3's shared vocabulary. Slots are how a device says "accent the accents at
@@ -799,7 +811,7 @@ preferences; they never introduce parameter values of their own.
 | Axis | Effect |
 |---|---|
 | `darkness` | Biases character toward `dark`; offsets filter cutoff and tuning down |
-| `density`  | Selects the authored pattern variant (§4.3, §6.3), and offsets probability params. Never edits hits |
+| `density`  | Leans the section's energy band by at most one (§4.3, §6.3), and offsets probability params. Never edits hits |
 | `grit`     | Drive, saturation, bitcrush, sample rate reduction |
 | `swing`    | Timing offsets, substep placement |
 | `space`    | Reverb and delay depth, send levels |
@@ -839,11 +851,45 @@ unless the push exceeds it. Unit-test as a table of `(base, mood) → character`
 
 `nearestCharacter`'s tie-break is by UTF-16 code unit, not `localeCompare` — see §7.2.
 
-### 6.3 Density band selection
+### 6.3 Band selection: energy chooses, density leans
+
+The band is a property of **the section**, not of the knob. Selection therefore happens once per
+request *per section* (§7 step 4), and two sections of one guide routinely play different bands.
 
 ```ts
-const band = density < 25 ? 0 : density < 50 ? 1 : density < 75 ? 2 : 3
+const energyBand = Math.min(3, Math.floor(section.energy * 4))   // energy is 0–1
+const shift      = density < 25 ? -1 : density < 75 ? 0 : 1      // density is 0–100
+const band       = clamp(energyBand + shift, 0, 3)
 ```
+
+`Math.min(3, …)` catches `energy === 1`, which would otherwise floor to a fourth band that does
+not exist. The outer clamp catches the same thing after the lean: energy 1 leaned up is 4, energy 0
+leaned down is −1, and neither is a band anyone can author. Both are load-bearing rather than
+belt-and-braces — without them the resolver asks for a band outside the union, and §6.3's fallback
+then reports, in the guide, that nothing was authored at a band that could never have existed.
+
+Density is **one band of lean, not four bands of authority**. Three zones, so the middle zone is
+"play it as authored" and the two ends are "sparser" and "busier". A knob that could pick any band
+outright would erase the arrangement — every section identical — which is exactly the failure this
+shape exists to prevent.
+
+**The clamp makes the knob locally inert at the edges, and that is not a bug.** A section already
+at band 3 cannot get busier, and one at band 0 cannot get sparser. Industrial techno's six
+sections, at the three detents:
+
+| detent | Intro `0.15` | Build `0.45` | Drop `0.9` | Breakdown `0.3` | Peak `1` | Outro `0.2` |
+|---|---|---|---|---|---|---|
+| sparser | 0 | 0 | 2 | 0 | 2 | 0 |
+| as authored | 0 | 1 | 3 | 1 | 3 | 0 |
+| busier | 1 | 2 | 3 | 2 | 3 | 1 |
+
+Read across the Drop: turning the knob from centre to busier does nothing to it. Read across the
+whole row and the three vectors are all different — the arrangement changed, the Drop just was not
+the part that changed. **The effect is on the arrangement, never promised per section**, and the
+guide must not say "turn this up and the Drop gets busier" — the one section a listener is most
+likely to be watching is the one most likely to be pinned. This is pinned as an acceptance test
+rather than left as a property, because the vectors are the specification: three detents, three
+distinct guides.
 
 Eligible variants are those matching `(request.role, band)` and eligible in the section. If a band
 has no authored variant, fall back to the nearest lower band, then the nearest higher. If a role
@@ -853,8 +899,9 @@ to rhythm, exactly as §4.1 applies it to melody.
 Band fallback is **reported**, not silent: "no band-3 kick authored for this template; using band
 2". A knob that visibly does nothing is a bug report waiting to happen.
 
-Band edges are fixed constants, inclusive-below and exclusive-above. They are not tunable: a
-moving edge would make invariant 6 depend on a config file.
+Both sets of edges are fixed constants, inclusive-below and exclusive-above. They are not tunable:
+a moving edge would make invariant 6 depend on a config file. A section name outside `structure`
+has no energy to quantise and is an error, not a default band.
 
 ---
 
@@ -890,9 +937,10 @@ Pipeline:
  1. Emit role requests, sorted by **ascending** priority (§4.4)
  2. Expand all selected devices to `Assignable[]` — pure and cacheable (§2.2, §4.2)
  3. Resolve character per request (§6.2)
- 4. Select a pattern variant per request and section from the density band (§6.3) — **before**
-    assignment, because a variant's length and slot mix are part of what a recipe has to
-    articulate
+ 4. Select a pattern variant per request and section from that section's energy band, leaned by
+    density (§6.3) — **before** assignment, because a variant's length and slot mix are part of
+    what a recipe has to articulate, and **per section**, because the band moves with the
+    arrangement
  5. Search assignments against the lexicographic objective (§7.1), producing `Occupancy`
  6. Resolve recipes, with fallback (§3.5)
  7. Bind each recipe's `articulation` to the selected pattern's slots (§4.3). A slot the variant
@@ -907,7 +955,9 @@ Pipeline:
 Steps 4 and 7 are the pipeline consequence of moving patterns out of recipes. Note that step 4
 depends only on template + mood, so **pattern selection is independent of the rig**: two users
 with different boxes and the same inputs get the same rhythms. That is the correct behaviour and
-a cheap test to write.
+a cheap test to write. Section energy is template data, so reading it in step 4 does not weaken
+that: the input widened from `(mood, role)` to `(mood, role, section)`, and both halves are still
+on the template side of the rig boundary.
 
 ### 7.1 Assignment is a bounded search over a lexicographic objective
 
@@ -1164,7 +1214,10 @@ Do not reorder.
    (`52`, `52 · manual`, `52 → 45 · manual · moved by darkness`). `ResolvedParam.provenance`
    is non-optional, so every value's provenance is decided before the renderer sees it — an
    unmarked value is a decision, never a case that fell through
-7. **Finishing** — sidechain, master FX, arrangement variations
+7. **Finishing** — sidechain, master FX, and the arrangement as a **band trajectory** (§6.3):
+   which sections program identically part for part, and which parts do not follow the band.
+   Deliberately not a second copy of phases 1–3 — it printed the device list, a bars-and-energy
+   table and every role under every section heading, and all three already exist above it
 
 **Terminology.** Clock roles are `canSendClock` / `canReceiveClock` and the guide says *clock
 source* and *sync to it*. Never master/slave. "Master FX" and "master bus" stay — that is the
@@ -1316,10 +1369,11 @@ multiply the test surface across every template that exists.
 register modifier becomes a fourth recipe-lookup dimension and reintroduces exactly the
 combinatorics the closed union exists to bound.
 
-**12.2 — Bars-per-pattern: authored variants, selected by density.** See §4.3 and §6.3. Step
-patterns move out of device recipes and into templates, authored in four density bands. Density
-*selects* a variant; it never mutates hits. Devices keep `articulation`, addressed by
-`PatternSlot`. Accepted cost: density is quantised to four detents.
+**12.2 — Bars-per-pattern: authored variants, selected per section.** See §4.3 and §6.3. Step
+patterns move out of device recipes and into templates, authored in four bands. The **section's
+`energy`** picks the band and density leans it by one; neither mutates hits. Devices keep
+`articulation`, addressed by `PatternSlot`. Accepted cost: both controls are quantised — four
+bands, and density as three detents rather than a sweep.
 
 **12.3 — Assignment weights: there are none.** See §7.1. A scalar cost needs an exchange rate
 between incommensurable kinds of badness. Replaced by a lexicographic `Score` vector led by

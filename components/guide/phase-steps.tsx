@@ -111,6 +111,25 @@ function Articulation({
 type Block = { sections: SectionName[]; entry: ResolvedAssignment['patterns'][number] }
 
 /**
+ * One slot's hits as steps, with a shared velocity hoisted to the end: `2, 4, 6, 8 (all vel 42)`
+ * rather than eight copies of `(vel 42)`. The Markdown sibling words it the same way — a band-3
+ * ghost slot is eight sixteenths, and per-hit it wraps three times on a phone (§10).
+ */
+function slotSteps(hits: readonly PatternHit[]): string {
+  const first = hits[0] as PatternHit
+  const uniform =
+    hits.length > 1 &&
+    first.velocity !== undefined &&
+    hits.every((h) => h.velocity === first.velocity)
+  if (uniform) {
+    return `${hits.map((h) => num(h.step)).join(', ')} (all vel ${num(first.velocity as number)})`
+  }
+  return hits
+    .map((h) => (h.velocity === undefined ? num(h.step) : `${num(h.step)} (vel ${num(h.velocity)})`))
+    .join(', ')
+}
+
+/**
  * Sections that program identically, merged into one block.
  *
  * A continuous part in a six-section template repeated its grid, its slot list and its
@@ -119,8 +138,12 @@ type Block = { sections: SectionName[]; entry: ResolvedAssignment['patterns'][nu
  * that genuinely differ. Merged by identity of the *instruction*, not by pattern id: two
  * sections agreeing on a variant but disagreeing on the band it fell back from are not the same
  * instruction. First-appearance order is kept, so §8's reading order is unchanged.
+ *
+ * Exported for the view test: what the page renders as one heading is this grouping, not
+ * `a.sections`, and a test that assumed the two were the same would silently stop checking
+ * separators the moment a template spanned more than one band (§6.3).
  */
-function mergeBlocks(a: ResolvedAssignment): Block[] {
+export function mergeBlocks(a: ResolvedAssignment): Block[] {
   const merged = new Map<string, Block>()
   for (const entry of a.patterns) {
     const s = entry.selection
@@ -179,13 +202,7 @@ function BlockBody({
           <li key={slot}>
             <span className="mono slot">{slot}</span>
             <span className="token-sep">—</span>
-            <span className="mono">
-              {hits
-                .map((h) =>
-                  h.velocity === undefined ? num(h.step) : `${num(h.step)} (vel ${num(h.velocity)})`,
-                )
-                .join(', ')}
-            </span>
+            <span className="mono">{slotSteps(hits)}</span>
           </li>
         ))}
       </ul>
