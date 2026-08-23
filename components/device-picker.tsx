@@ -1,7 +1,7 @@
 'use client'
 
 import { useId, useMemo, useState } from 'react'
-import type { DeviceId } from '@/lib/core'
+import type { Device, DeviceId } from '@/lib/core'
 import { expand } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { ANY_KIND, deviceView, kindsPresent } from '@/lib/studio/picker'
@@ -94,42 +94,60 @@ export function DevicePicker({ selected, onToggle }: DevicePickerProps) {
         not have to carry the whole explanation.
       */}
       {shown.matched === 0 ? (
-        <p className="empty">
-          Nothing here matches that.
-          {shown.retained > 0
-            ? ` The ${shown.retained === 1 ? 'box' : `${shown.retained} boxes`} you have selected ${shown.retained === 1 ? 'is' : 'are'} still listed.`
-            : ''}
-        </p>
-      ) : shown.retained > 0 ? (
-        <p className="note picker-kept">
-          {shown.retained === 1 ? 'One selected box is' : `${shown.retained} selected boxes are`}{' '}
-          outside this filter and stay listed.
-        </p>
+        <p className="empty">Nothing here matches that.</p>
       ) : null}
 
+      {/*
+       * Two groups, not one list.
+       *
+       * A selected device must stay visible and stay tickable when a filter would hide it —
+       * losing sight of your own rig by typing is the failure this rule exists to prevent, and
+       * a summary line does not fix it because you cannot untick a sentence.
+       *
+       * But interleaving them meant that with every device selected the list never shrank, and
+       * the search read as broken at exactly the moment someone reached for it. Separating the
+       * groups gives both: the filter visibly filters, and nothing selected disappears.
+       */}
       <fieldset className="picker-list">
-        {shown.rows.map(({ item: device, selected: isSelected, retained }) => {
-          const assignables = expand(device).length
-          return (
-            <label className="pick" key={device.id} data-retained={retained ? 'yes' : 'no'}>
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={(event) => onToggle(device.id, event.target.checked)}
-              />
-              <span className="name">
-                {device.maker} {device.name}
-              </span>
-              <span className="sub mono">
-                {device.kind} · {assignables} assignable{assignables === 1 ? '' : 's'} ·{' '}
-                {device.recipes.length} recipes
-                {device.clock.canSendClock ? ' · can send clock' : ''}
-                {retained ? ' · still selected' : ''}
-              </span>
-            </label>
-          )
-        })}
+        {shown.rows.filter((row) => !row.retained).map((row) => pick(row, onToggle))}
       </fieldset>
+
+      {shown.retained > 0 ? (
+        <>
+          <p className="note picker-kept">
+            Also selected, outside this filter — untick here to drop{' '}
+            {shown.retained === 1 ? 'it' : 'them'}.
+          </p>
+          <fieldset className="picker-list picker-kept-list">
+            {shown.rows.filter((row) => row.retained).map((row) => pick(row, onToggle))}
+          </fieldset>
+        </>
+      ) : null}
     </section>
+  )
+}
+
+function pick(
+  row: { item: Device; selected: boolean; retained: boolean },
+  onToggle: (id: DeviceId, on: boolean) => void,
+) {
+  const device = row.item
+  const assignables = expand(device).length
+  return (
+    <label className="pick" key={device.id} data-retained={row.retained ? 'yes' : 'no'}>
+      <input
+        type="checkbox"
+        checked={row.selected}
+        onChange={(event) => onToggle(device.id, event.target.checked)}
+      />
+      <span className="name">
+        {device.maker} {device.name}
+      </span>
+      <span className="sub mono">
+        {device.kind} · {assignables} assignable{assignables === 1 ? '' : 's'} ·{' '}
+        {device.recipes.length} recipes
+        {device.clock.canSendClock ? ' · can send clock' : ''}
+      </span>
+    </label>
   )
 }
