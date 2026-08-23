@@ -22,7 +22,12 @@ import type { Role } from '../../core/vocabulary'
  *
  * **Citation regime: legality is cited, authority never is.** Every *point* is taste and stays
  * `verified: false`, enums included; every *range* and every *option set* is the manual's own,
- * cited to the page carrying it (§3.2). Both halves of the manual cooperate here: the instrument pages print a Range column
+ * cited to the page carrying it (§3.2). One exception, of a different kind rather than a
+ * loosening: a `text` param has no legality gate to carry a citation, because it states an
+ * instruction rather than picking among legal values — so when the instruction is the manual's
+ * own printed procedure, `verified` on the point is the only place that fact can go, and
+ * `false` there would badge a documented procedure as a guess. `tm-pad-soft-chord`'s
+ * `INSTRUMENT` is the only such param today. Both halves of the manual cooperate here: the instrument pages print a Range column
  * (ch.6) and the step FX chapter prints a "Value Ranges" block per effect (ch.7). Neither states
  * which value suits a dark kick, so no point is ever cited.
  *
@@ -516,6 +521,89 @@ const SAMPLE_RECIPES: Recipe[] = [
     // p.196: Reverse Sample is one of several step FX that only exist for a sample instrument,
     // which is why no `track-synth` recipe uses it.
     articulation: [{ slot: 'first-hit', set: { 'reverse-sample': '<<<' }, hint: 'pick-fx' }],
+    verified: false,
+  },
+  /**
+   * §12.4's `sampled-chord`, and the only recipe here that is not a synth patch pretending to
+   * be one. p.104 is unambiguous: "Each track in Tracker Mini can handle one voice which can
+   * play multiple notes, but not simultaneously... A triad would therefore need 3 tracks to play
+   * the chord." A pad the template asks for as three simultaneous notes is therefore *not*
+   * reachable by any patch on this box — `tm-pad-soft` is a VAP synth and one track of it sounds
+   * one note at a time, whatever the model can do.
+   *
+   * The same page gives the way out, immediately after the passage above: render the tracks to
+   * an audio chord and play the result from one track. That is a real, documented procedure, and
+   * once the sample is loaded the chord *is* one note as far as the track is concerned. Hence
+   * `realisation: 'sampled-chord'` — the polyphony demand belongs to this recipe rather than to
+   * the request, and it is 1 where its VAP neighbour on the very same voice demands 3.
+   *
+   * **It is `soft` on `track-sample`, exactly like `tm-pad-soft-sample`, and that is the point.**
+   * The two are the same part described twice: one lush soft pad, played on a polyphonic voice
+   * or loaded as a sample. Under §3's original `(role, character, voice)` key one of them had to
+   * be given a character it did not have in order to exist at all, which is precisely the lie
+   * this device folder is careful never to tell. The key now carries realisation too (§12.4), so
+   * the honest pair is expressible — and it is unambiguous: on a one-note track only this one is
+   * usable for a triad, and on a track with three notes to spare §7.1 takes the VAP patch.
+   *
+   * **Two things this recipe deliberately does not do.**
+   *
+   * It names no sample, and does not say how many. We do not know the reader's library, and
+   * printing a filename they do not have would be an invented value of exactly the kind §3.1
+   * exists to refuse. The count is not ours either: it is a property of the *hook* the template
+   * authored — one sample per distinct chord *shape* (§12.4), since p.128's "Note value affects
+   * pitch" means the step note transposes the whole chord and one recording covers its shape at
+   * every root — so the Hook phase lists them and this param points at that rather than
+   * guessing. Everything after "it is loaded" is specifiable, and that is what the rest of the
+   * params are.
+   *
+   * It sets no MODEL, no oscillator and no detune, because there is no synth here. That is not a
+   * shortfall, it is the point: **this recipe costs none of the three synth slots** (p.32,
+   * p.146). On a box with three of them and sixteen tracks, a pad that leaves all three free is
+   * a materially different proposition from one that spends a third of the project's synth
+   * budget, and the `routing` line says so where the reader will be standing.
+   */
+  {
+    id: 'tm-pad-soft-chord',
+    role: 'pad',
+    character: 'soft',
+    voice: 'track-sample',
+    title: 'Rendered chord sample, filtered back and swelled',
+    realisation: 'sampled-chord',
+    params: [
+      {
+        kind: 'text',
+        name: 'INSTRUMENT',
+        value: 'Chord sample(s) — yours, or rendered to audio here; one per chord shape played',
+        // The *procedure* is the manual's, printed in full on the page that also states why a
+        // triad would otherwise cost three tracks. The choice of sample is the reader's.
+        verified: cite(104),
+        note:
+          'Manual p.104, Rendering Tracks To Audio Chords: place the notes of one chord on ' +
+          'separate tracks, Shift + D-Pad to select that range, [More] -> [Render Selection], ' +
+          'name it, then [Render & Load]. Replace the instrument on one track with the ' +
+          'rendered chord and free the others. One sample covers every chord of the same shape: ' +
+          'p.128, the step note sets the playback pitch, so placing a higher note transposes ' +
+          'the whole chord. Repeat only where the shape changes — the Hook phase lists which ' +
+          'samples this part needs and what to transpose each trigger by.',
+      },
+      // p.104 step 8: "Ensure the note is set to the same default for the sample playback,
+      // example C5." The chord sounds at the pitch it was rendered at, transposed by the step's
+      // note — it does not re-voice, so the harmony moves as a block.
+      pick('PLAY MODE', 'Forward loop', PLAY_MODES, 127),
+      pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
+      num('CUTOFF', 44, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -18 }] }),
+      num('TUNE', -2, SEMITONES_24, 116, { unit: 'St' }),
+      secs('ENV ATTACK', 1.4, SECONDS_10, 126),
+      secs('ENV RELEASE', 2.2, SECONDS_10, 126),
+      // The sustained level of the chord while the step holds it. Instrument Volume is *not*
+      // authored anywhere in this file — p.116 prints its range as "-inf dB to 24.00 dB" and
+      // `NumericRange` rightly refuses a non-finite bound — so the level that can be stated
+      // honestly is the envelope's, which p.126 prints as a plain 0-100%.
+      num('ENV SUSTAIN', 84, PCT, 126, { unit: '%' }),
+      num('REVERB SEND', 30, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 24 }] }),
+    ],
+    articulation: [{ slot: 'first-hit', set: { 'gate-length': 95 } }],
+    routing: 'Tracks 1-8 — costs no synth slot: the chord is in the sample, not in an engine',
     verified: false,
   },
   {

@@ -2,7 +2,8 @@ import type { AssignableKey, Occupancy } from './occupancy'
 import type { DeviceId, RecipeId, RequestId, SectionName } from './ids'
 import type { Score } from './objective'
 import type { Character, Role } from './vocabulary'
-import type { Assignable, Device } from './device'
+import { realisationOf } from './device'
+import type { Assignable, Device, Realisation } from './device'
 import type { RoleRequest, Template } from './template'
 import type { ResolvedParam } from './params'
 import {
@@ -151,6 +152,12 @@ export type ResolvedRecipeRef = {
   /** The character actually authored, which for 'substituted' is not the one asked for. */
   character: Character
   outcome: 'exact' | 'substituted'
+  /**
+   * §12.4. How this recipe makes the notes. Resolved rather than optional — the renderer has to
+   * tell the reader which of the two they got, and an optional field would leave it applying a
+   * default it has no business knowing.
+   */
+  realisation: Realisation
   routing?: string
 }
 
@@ -161,6 +168,12 @@ export type ResolvedAssignment = {
   character: Character
   priority: number
   optional: boolean
+  /**
+   * §12.4. Simultaneous notes this part needs — the request's own count, defaulted to 1. Carried
+   * because the guide cannot explain the realisation without it: "one sampled chord" is only
+   * worth saying when there is more than one note in the chord.
+   */
+  notes: number
   assignable: Assignable
   deviceId: DeviceId
   deviceName: string
@@ -265,6 +278,7 @@ export function resolve(input: ResolveInput): ResolveResult {
       character: a.character,
       priority: request.priority,
       optional: request.optional === true,
+      notes: request.polyphony ?? 1,
       assignable: a.assignable,
       deviceId: a.deviceId,
       deviceName: deviceById.get(a.deviceId)?.name ?? a.deviceId,
@@ -273,6 +287,7 @@ export function resolve(input: ResolveInput): ResolveResult {
         title: a.recipe.title,
         character: a.recipeCharacter,
         outcome: a.outcome,
+        realisation: realisationOf(a.recipe),
         ...(a.recipe.routing === undefined ? {} : { routing: a.recipe.routing }),
       },
       params: resolveParams(a.recipe, mood),

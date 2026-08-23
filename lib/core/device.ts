@@ -107,6 +107,59 @@ export const ArticulationEntrySchema = z.strictObject({
 })
 
 /**
+ * §12.4. How a recipe turns the notes a request asks for into sound.
+ *
+ * The request says *how many notes* the part needs; the recipe says *how this box makes them*,
+ * and the two are not the same claim. A triad pad can be a real three-note voice or a chord
+ * baked into one sample, and a sampler that plays the second is not thereby polyphonic —
+ * `polyphony` on the assignable still means simultaneous notes (§2.2, §12.4) and is not bent
+ * to accommodate it.
+ *
+ *  - `polyphonic-voice` — the voice sounds every note itself, so it needs polyphony of *at
+ *    least* the note count. The default: a recipe that says nothing claims nothing special.
+ *  - `sampled-chord` — the notes are already inside one sample (or one wavetable, one preset
+ *    stab), so polyphony 1 suffices however many notes are heard.
+ *
+ * It is a property of the *recipe*, not of the device and not of the template: the same
+ * assignable can hold a real polyphonic patch under one recipe and a chord sample under
+ * another, and only the recipe knows which.
+ */
+export const REALISATIONS = ['polyphonic-voice', 'sampled-chord'] as const
+
+export type Realisation = (typeof REALISATIONS)[number]
+export const RealisationSchema = z.enum(REALISATIONS)
+
+/** A recipe that says nothing sounds its notes itself. Silence is not a claim of cleverness. */
+export function realisationOf(recipe: Recipe): Realisation {
+  return recipe.realisation ?? 'polyphonic-voice'
+}
+
+/**
+ * The **floor** on one assignable's polyphony for this recipe to deliver `notes` simultaneous
+ * notes — callers compare with `<=`, so more polyphony than this is always fine and a three-note
+ * part is served perfectly well by an eight-voice track. This is capacity *within* a single
+ * voice, never a count of voices: a request is served by exactly one assignable (§12.4), and
+ * nothing here spreads it over several.
+ *
+ * A sampled chord is one note as far as the voice is concerned, whatever is heard; anything else
+ * needs the whole count.
+ */
+export function requiredVoicePolyphony(recipe: Recipe, notes: number): number {
+  return realisationOf(recipe) === 'sampled-chord' ? 1 : notes
+}
+
+/**
+ * §7.1 ranks a `polyphonic-voice` recipe ahead of a `sampled-chord` one when both can carry a
+ * part of more than one note, and ranks it ahead of character fidelity. A chord sample does
+ * transpose, so it follows a progression; what it cannot do is change shape — no re-voicing, no
+ * inversion, no quality it was not recorded with (§4.1). That is still a limit on what the part
+ * can *do*, where a substituted character only approximates how it sounds.
+ */
+export function realisationRank(recipe: Recipe): number {
+  return realisationOf(recipe) === 'polyphonic-voice' ? 0 : 1
+}
+
+/**
  * `verified` here is a *default citation* only. It is inherited by any param, patch entry or
  * articulation entry that does not carry its own (§3.1). It is not itself a provenance state.
  */
@@ -117,6 +170,8 @@ export type Recipe = {
   /** Matches `poolId ?? voiceId` (§2.2). */
   voice: string
   title: string
+  /** §12.4. How the notes are made. Omitted means `polyphonic-voice`. */
+  realisation?: Realisation
   params: AuthoredParam[]
   patch?: PatchEntry[]
   articulation?: ArticulationEntry[]
@@ -131,6 +186,7 @@ export const RecipeSchema = z
     character: CharacterSchema,
     voice: z.string().min(1),
     title: z.string().min(1),
+    realisation: RealisationSchema.optional(),
     params: z.array(AuthoredParamSchema),
     patch: z.array(PatchEntrySchema).min(1).optional(),
     articulation: z.array(ArticulationEntrySchema).min(1).optional(),
@@ -275,15 +331,26 @@ export const DeviceSchema = z
       })
     }
 
-    // §3's authoring rule: one recipe per (role, character, voice). Uniqueness must match the
-    // lookup key (`poolId ?? voiceId`, §2.2), and the older device-wide key did not: it rejected
-    // two toms of one flavour on a drum machine, and every tonal recipe a two-pool device needs
-    // on both of its pools.
-    const slots = device.recipes.map((r) => `${r.role}\u0000${r.character}\u0000${r.voice}`)
+    // §3's authoring rule: one recipe per (role, character, voice, realisation). Uniqueness must
+    // match the lookup key (`poolId ?? voiceId`, §2.2), and the original device-wide key did not:
+    // it rejected two toms of one flavour on a drum machine, and every tonal recipe a two-pool
+    // device needs on both of its pools.
+    //
+    // `realisation` joined the key (§12.4) because two recipes can describe the *same* sound on
+    // the same voice and still be different jobs: a triad played on a polyphonic voice and the
+    // same triad loaded as one sample are not variants of each other, and forbidding the pair
+    // forced a device to pretend one of them did not exist. The pair is unambiguous where the
+    // older key was not — at a given note count and voice polyphony either only one of them is
+    // usable at all, or §7.1's realisation ranking decides between them on a stated principle
+    // rather than on which id sorts first. Two recipes agreeing on all four keys remain a
+    // genuine duplicate and are still refused.
+    const slots = device.recipes.map(
+      (r) => `${r.role}\u0000${r.character}\u0000${r.voice}\u0000${realisationOf(r)}`,
+    )
     if (new Set(slots).size !== slots.length) {
       ctx.addIssue({
         code: 'custom',
-        message: 'at most one recipe per (role, character, voice) in a device (§3)',
+        message: 'at most one recipe per (role, character, voice, realisation) in a device (§3)',
         path: ['recipes'],
       })
     }

@@ -6,8 +6,35 @@ import type {
   ResolvedPatchEntry,
 } from '@/lib/core'
 import { dominantRangeCite } from '@/lib/core'
-import { citeLines, citeText, hintText } from './format'
+import { citeLines, citeText, count, hintText, num } from './format'
 import { Instruction, ParamLine, ProvenanceMark } from './instruction'
+
+/**
+ * §12.4, and an instruction rather than a note: the two realisations are two different things to
+ * do at the box, and doing the wrong one produces the wrong number of sounds. A chord you load
+ * is not a chord you play. Anything device-specific about the trade — which slot it spends,
+ * which it does not — is the recipe's `routing` line, because this view knows nothing about any
+ * box.
+ *
+ * Hand-written to match the Markdown renderer word for word. The two share no code path, so the
+ * only thing keeping them in step is that someone wrote the same sentence twice on purpose.
+ */
+function realisationInstruction(a: ResolvedAssignment): string {
+  if (a.notes <= 1) return ''
+  const notes = count(a.notes, 'note')
+  const n = num(a.notes)
+  if (a.recipe.realisation === 'sampled-chord') {
+    return (
+      `Polyphony — ${notes}, already inside the sample. Load the chord sample(s) onto this one ` +
+      `voice rather than spreading the notes across ${n}. One sample covers its chord shape at ` +
+      `any root; a different shape needs its own — see Hook.`
+    )
+  }
+  return (
+    `Polyphony — ${notes} sounding at once on this one voice. It needs a genuinely polyphonic ` +
+    `voice, not ${n} separate ones.`
+  )
+}
 
 function Patch({ entries }: { entries: readonly ResolvedPatchEntry[] }) {
   return (
@@ -104,6 +131,10 @@ export function PhaseSound({
                   <span className="role mono">{a.role}</span>
                   <span className="recipe-title">{a.recipe.title}</span>
                 </h5>
+
+                {realisationInstruction(a) === '' ? null : (
+                  <p className="quiet">{realisationInstruction(a)}</p>
+                )}
 
                 {a.recipe.routing === undefined ? null : (
                   <p className="quiet">Routing — {a.recipe.routing}</p>

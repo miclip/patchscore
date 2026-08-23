@@ -668,7 +668,7 @@ describe('gaps (invariant 5, §7.3)', () => {
 
   it('distinguishes "buy a box" from "author a recipe"', () => {
     const body = phaseBody(doc, 2).join('\n')
-    expect(body).toContain('needs another box')
+    expect(body).toContain('nothing in your rig plays this part')
     expect(body).toContain('capable but unauthored')
   })
 
