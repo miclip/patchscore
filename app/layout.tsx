@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { SITE_ORIGIN } from '@/lib/studio/site'
 import type { ReactNode } from 'react'
 import './globals.css'
 
@@ -16,7 +17,7 @@ import './globals.css'
  * link previews as itself rather than as nothing.
  */
 export const metadata: Metadata = {
-  metadataBase: new URL('https://patchscore.app'),
+  metadataBase: new URL(SITE_ORIGIN),
   alternates: { canonical: '/' },
   title: 'Patchscore',
   description: 'Your hardware, a musical direction, and a phased guide with real parameter values.',
