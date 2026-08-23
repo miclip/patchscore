@@ -28,6 +28,7 @@ import {
 } from '@/lib/studio/session'
 import type { Bootstrap, StudioNotice } from '@/lib/studio/session'
 import { DevicePicker } from './device-picker'
+import { Footer } from './footer'
 import { GenrePicker } from './genre-picker'
 import { GuideArea } from './guide-area'
 import { InspirationPicker } from './inspiration-picker'
@@ -74,6 +75,13 @@ export function Studio() {
   const [source, setSource] = useState<Bootstrap['source']>('default')
   const [edited, setEdited] = useState(false)
   const [copied, setCopied] = useState<{ ok: boolean; message: string } | undefined>(undefined)
+  /**
+   * The URL now in the address bar, for the footer's issue links to quote. State, not a read:
+   * the first frame has no address bar (`test/studio-render.test.ts` renders it with no `window`
+   * at all), and the sync effect below already knows the canonical href. It is the same string
+   * Copy link hands out, so a report and a copied link can never describe different guides.
+   */
+  const [permalink, setPermalink] = useState<string | undefined>(undefined)
 
   /**
    * Nothing is written until something has been read — and this **must** be state, not a ref.
@@ -107,6 +115,7 @@ export function Studio() {
   useEffect(() => {
     if (!bootstrapped) return
     const report = syncStudio(browserEnv(), inputs, rig, { persist })
+    setPermalink(report.href)
     if (report.notice === undefined) return
     setNotices((current) =>
       current.some((n) => n.kind === report.notice?.kind)
@@ -238,6 +247,8 @@ export function Studio() {
 
         <GuideArea application={application} result={result} seed={inputs.seed} />
       </div>
+
+      <Footer permalink={permalink} devices={devices.map((d) => `${d.maker} ${d.name}`)} />
     </main>
   )
 }

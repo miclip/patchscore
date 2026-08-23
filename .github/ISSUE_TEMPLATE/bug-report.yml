@@ -1,0 +1,38 @@
+name: Bug report
+description: Something in the app is broken or does not do what it says.
+title: 'Bug: '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Guides are deterministic: the same rig, direction, mood and seed always produce the same
+        guide. The link is therefore the reproduction. Without it, a report usually cannot be
+        investigated.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: what-expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: permalink
+    attributes:
+      label: Patchscore link
+      description: The URL from the address bar when it happened.
+      placeholder: https://patchscore.app/?format=1&resolver=1&device=...
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Safari 18.3, macOS 15
+    validations:
+      required: false

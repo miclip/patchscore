@@ -1,0 +1,52 @@
+name: Device request
+description: Ask for a synth, drum machine or groovebox to be added.
+title: 'Device request: '
+labels: [content, enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        A device is added by reading its manual and typing verified numbers. A request can only
+        be acted on if that manual is available to read.
+  - type: input
+    id: maker
+    attributes:
+      label: Maker
+      placeholder: Elektron
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      placeholder: Digitakt II
+    validations:
+      required: true
+  - type: dropdown
+    id: manual-public
+    attributes:
+      label: Is the manual publicly available?
+      description: Downloadable from the maker or another public source, without an account.
+      options:
+        - 'Yes'
+        - 'No'
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: manual-url
+    attributes:
+      label: Manual URL
+      description: Required if the manual is public. A direct link to the PDF is best.
+      placeholder: https://www.elektron.se/...
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else worth knowing
+      description: >
+        What you would use it for, which parts it would cover in your rig, or anything unusual
+        about how it is programmed.
+    validations:
+      required: false
