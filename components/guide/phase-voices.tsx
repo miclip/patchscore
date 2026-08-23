@@ -1,5 +1,5 @@
 import type { Device, DeviceId, ResolveResult, ResolvedAssignment } from '@/lib/core'
-import { adviceText, num } from './format'
+import { adviceText, count, num } from './format'
 
 /** §3.5. Why this recipe, in the one case where the answer is not "it matched". */
 function recipeWhy(a: ResolvedAssignment) {
@@ -16,6 +16,23 @@ function recipeWhy(a: ResolvedAssignment) {
       <span className="mono">{a.recipe.character}</span>
     </>
   )
+}
+
+/**
+ * §12.4. What the reader is being asked to play, when that is more than one note. Empty for a
+ * one-note part: the realisation makes no difference there, and a clause saying so on every
+ * kick would bury the one case that matters.
+ *
+ * Written out by hand rather than imported from the Markdown renderer, which is the rule for
+ * everything in this tree: the two renderers share no code path, so a fact appears in both only
+ * because someone put it in both, in the same words.
+ */
+function realisationText(a: ResolvedAssignment): string {
+  if (a.notes <= 1) return ''
+  if (a.recipe.realisation === 'sampled-chord') {
+    return `${count(a.notes, 'note')} from one sampled chord`
+  }
+  return `${count(a.notes, 'note')} at once on one polyphonic voice`
 }
 
 /**
@@ -57,7 +74,8 @@ export function PhaseVoices({
               </div>
               <p className="subordinate">
                 p{num(a.priority)}
-                {a.optional ? ', optional' : ''} · {recipeWhy(a)} ·{' '}
+                {a.optional ? ', optional' : ''} · {recipeWhy(a)}
+                {realisationText(a) === '' ? null : ` · ${realisationText(a)}`} ·{' '}
                 {a.sections.length === sectionCount ? 'every section' : a.sections.join(', ')}
               </p>
             </li>

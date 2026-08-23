@@ -97,7 +97,7 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
 
   it('pins all three gap reasons, which only a rig too small ever shows at once (§7.3)', () => {
     const one = guideText('tr-1000')
-    expect(one).toContain('needs another box')
+    expect(one).toContain('nothing in your rig plays this part')
     expect(one).toContain('capable but unauthored')
     expect(one).toContain('no room')
   })

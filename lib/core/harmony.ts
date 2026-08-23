@@ -342,3 +342,120 @@ export function chooseHook(
     candidates: Object.freeze(forRole.map((h) => h.id)),
   }
 }
+
+// ---------------------------------------------------------------------------
+// §4.1 / §12.4 — hook chords, and which of them are the same chord
+// ---------------------------------------------------------------------------
+
+/** One trigger point in a hook: the notes authored at one step, in authored order. */
+export type HookChord = { step: number; notes: ResolvedNote[] }
+
+/**
+ * One occurrence of a voicing, and how far the sample has to move to play it.
+ *
+ * `semitones` is 0 at the occurrence the sample is captured from and the interval to the others.
+ * It is a transposition of the whole chord, which is the only thing a sample can do — and, on a
+ * tracker, the only thing it is asked to do: the note placed on the step *is* the transposition.
+ */
+export type ChordTrigger = { step: number; notes: ResolvedNote[]; semitones: number }
+
+/**
+ * A distinct chord **shape** in a hook, and every step it is played at.
+ *
+ * Distinctness is by *normalised interval structure* — the semitones of each note above the
+ * lowest — because that is exactly what one recording can and cannot cover. A sample transposes
+ * as a block: every pitch moves by the same interval, so the shape is preserved and one
+ * recording serves that shape at any root. What it cannot do is change shape, and shape is where
+ * quality and inversion live: a minor triad is `0-3-7` and a major one `0-4-7`, and no
+ * transposition turns one into the other. A first-inversion major triad is `0-3-8`, distinct
+ * again, which is why "inversion" needs no separate rule here — it falls out of the intervals.
+ *
+ * This corrects an earlier version that keyed on absolute pitch and so demanded a sample per
+ * chord. That was not a conservative simplification, it was a false claim about what a sampler
+ * does, and it asked readers to record chords they already had.
+ *
+ * Derived here rather than in either renderer. §8's two renderers share no *ink*, but a musical
+ * fact computed twice is a fact that can differ between the page and the screen, which is worse
+ * than the duplication it saves.
+ */
+export type ChordVoicing = {
+  /** 'A', 'B', ... 'Z', 'AA'. A label for the guide to point at — never a filename (§3.1). */
+  label: string
+  /** The chord to actually record: the first occurrence of this shape, at its own pitch. */
+  notes: ResolvedNote[]
+  /** Semitones above the lowest note. The identity of the shape, and of the sample. */
+  shape: number[]
+  /** Every occurrence, in step order, each with its transposition from `notes`. */
+  at: ChordTrigger[]
+}
+
+/** Notes grouped by the step they are triggered at, in step order. */
+export function hookChords(hook: ResolvedHook): HookChord[] {
+  const byStep = new Map<number, ResolvedNote[]>()
+  for (const note of hook.notes) {
+    const existing = byStep.get(note.step)
+    if (existing === undefined) byStep.set(note.step, [note])
+    else existing.push(note)
+  }
+  return [...byStep].map(([step, notes]) => ({ step, notes })).sort((a, b) => a.step - b.step)
+}
+
+/** Lowest sounding note, which every interval here is measured from. */
+function rootMidi(chord: HookChord): number {
+  return chord.notes.reduce((low, n) => Math.min(low, n.midi), Infinity)
+}
+
+/**
+ * Semitones above the lowest note, ascending and de-duplicated.
+ *
+ * Sorted numerically, never as strings, and de-duplicated so a chord doubling a pitch at the
+ * same octave is the same shape as one that does not — the doubling is inaudible in the sample
+ * either way. Octave doublings are *not* collapsed: `0-4-7` and `0-4-7-12` are different
+ * recordings and a reader can hear the difference.
+ */
+function shapeOf(chord: HookChord): number[] {
+  const root = rootMidi(chord)
+  return [...new Set(chord.notes.map((n) => n.midi - root))].sort((a, b) => a - b)
+}
+
+/** 'A'..'Z', then 'AA'. Base 26 rather than a 26-chord ceiling nobody would think to test. */
+function voicingLabel(index: number): string {
+  let label = ''
+  let n = index
+  do {
+    label = String.fromCharCode(65 + (n % 26)) + label
+    n = Math.floor(n / 26) - 1
+  } while (n >= 0)
+  return label
+}
+
+/**
+ * The distinct chord shapes of a hook, in first-appearance order, each carrying every step it
+ * occurs at and the transposition needed there. One entry is one sample to obtain or render
+ * (§12.4); the same entry played at two roots is one recording moved, not two recordings.
+ */
+export function chordVoicings(hook: ResolvedHook): ChordVoicing[] {
+  const byShape = new Map<string, { voicing: ChordVoicing; root: number }>()
+  const order: { voicing: ChordVoicing; root: number }[] = []
+  for (const chord of hookChords(hook)) {
+    const shape = shapeOf(chord)
+    const key = shape.join(',')
+    const seen = byShape.get(key)
+    if (seen === undefined) {
+      const entry = {
+        voicing: {
+          label: '',
+          notes: chord.notes,
+          shape,
+          at: [{ ...chord, semitones: 0 }],
+        },
+        root: rootMidi(chord),
+      }
+      byShape.set(key, entry)
+      order.push(entry)
+    } else {
+      seen.voicing.at.push({ ...chord, semitones: rootMidi(chord) - seen.root })
+    }
+  }
+  return order.map(({ voicing }, i) => ({ ...voicing, label: voicingLabel(i) }))
+}

@@ -431,7 +431,16 @@ export const industrialTechno: Template = {
 
     { id: 'r-open-hat', role: 'open-hat', priority: 3, character: 'dark', sustain: 'continuous' },
     { id: 'r-metallic', role: 'metallic', priority: 3, character: 'dark', sustain: 'continuous' },
-    { id: 'r-stab', role: 'stab', priority: 3, character: 'hard', sustain: 'continuous' },
+    // §12.4, same as the pad below: a stab is a chord hit, not a single note. Asking for one
+    // note and calling it a stab would get a rig a monophonic bleep and no way to tell.
+    {
+      id: 'r-stab',
+      role: 'stab',
+      priority: 3,
+      character: 'hard',
+      sustain: 'continuous',
+      polyphony: 3,
+    },
 
     // §12.4: a minimum note count, not a device name. A rig that cannot voice three notes at
     // once gets an honest gap here rather than a pad that is secretly monophonic.

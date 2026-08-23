@@ -2,10 +2,12 @@ import type { AssignableKey, Occupancy } from './occupancy'
 import type { DeviceId, RequestId, SectionName } from './ids'
 import type { Score } from './objective'
 import type { Character, Role } from './vocabulary'
+import { realisationOf } from './device'
 import type { Assignable, Device, Recipe } from './device'
 import type { RoleRequest, Template } from './template'
 import {
   assignableKey,
+  canCarryNotes,
   compareCodeUnits,
   expand,
   resolveCharacter,
@@ -73,6 +75,21 @@ export type GapReason = (typeof GAP_REASONS)[number]
 export const NO_ROOM_CAUSES = ['contended', 'crowding', 'distinct'] as const
 export type NoRoomCause = (typeof NO_ROOM_CAUSES)[number]
 
+/**
+ * §7.3, §12.4. `no-capable-voice` used to mean one thing — "nothing in your rig covers this" —
+ * and once a recipe could reach a note count its voice cannot (§12.4), that stopped being true
+ * of half the cases. A rig full of monophonic tracks *does* play pads; it cannot play three
+ * notes at once. Told the old sentence, a reader goes shopping for a pad machine when what they
+ * need is one chord sample, or a template that asks for one note.
+ *
+ *  - `no-such-role` — no assignable in the rig declares the role at all. The original meaning,
+ *    and the only one where buying a box is the answer.
+ *  - `polyphony` — voices declare the role, and none can reach the requested note count by any
+ *    realisation they have authored (§12.4).
+ */
+export const NO_CAPABLE_VOICE_CAUSES = ['no-such-role', 'polyphony'] as const
+export type NoCapableVoiceCause = (typeof NO_CAPABLE_VOICE_CAUSES)[number]
+
 type GapBase = {
   requestId: RequestId
   role: Role
@@ -80,20 +97,38 @@ type GapBase = {
   priority: number
   optional: boolean
   /**
-   * Empty for 'no-capable-voice'. For 'no-recipe', every assignable that could have carried
-   * the part — "your TR-1000 BD can do it, dial it by ear". For 'no-room', the ones that
-   * could have carried it and did not get it.
+   * The assignables that **could have carried this part**, and only ever that. For 'no-recipe',
+   * every one of them — "your TR-1000 BD can do it, dial it by ear". For 'no-room', the ones
+   * that could have and did not get it. Empty for both causes of 'no-capable-voice', including
+   * `polyphony`, where the voices declare the role and still could not carry it — those are on
+   * `roleVoices` instead, precisely so this field does not have to mean two things.
    */
   capable: readonly Assignable[]
 }
 
 /**
- * `because` and `detail` live on `no-room` alone rather than being optional everywhere, so it
- * is a type error to build a `no-room` gap without saying what gave way — the same discipline
- * as `ResolvedParam.provenance` being non-optional (§3.1).
+ * `because` and `detail` live on the variants that have them rather than being optional
+ * everywhere, so it is a type error to build a gap without saying what gave way — the same
+ * discipline as `ResolvedParam.provenance` being non-optional (§3.1). `no-recipe` carries
+ * neither, and that is not an omission: there is exactly one way to have no recipe.
  */
 export type Gap =
-  | (GapBase & { reason: 'no-capable-voice' | 'no-recipe' })
+  | (GapBase & {
+      reason: 'no-capable-voice'
+      because: NoCapableVoiceCause
+      /** §12.4. Simultaneous notes asked for. 1 unless the request said otherwise. */
+      notes: number
+      /**
+       * For `polyphony`: the assignables that declare the role and cannot reach `notes`. Empty
+       * for `no-such-role`, where by definition there are none.
+       *
+       * Deliberately *not* folded into `capable`, which means one thing everywhere — "could
+       * have carried this part" — and these could not. The renderer needs them to say how far
+       * short the rig falls without guessing.
+       */
+      roleVoices: readonly Assignable[]
+    })
+  | (GapBase & { reason: 'no-recipe' })
   | (GapBase & { reason: 'no-room'; because: NoRoomCause; detail: string })
 
 /** §7.1: "If the cap is hit, fall back to the greedy result **and log it** — no silent truncation." */
@@ -159,6 +194,12 @@ type Candidate = {
   outcome: 'exact' | 'substituted'
   recipeCharacter: Character
   distance: number
+  /**
+   * §12.4. 1 when a request needing more than one note is being filled from a chord sample
+   * rather than a real polyphonic voice. A one-note request is never charged: the recipe's
+   * realisation makes no difference to it, and `scoreRecipes` does not rank on it there either.
+   */
+  sampledChord: number
   /** §7.1: the role's index within `voice.roles`. An authoring hint, ranked accordingly. */
   roleFit: number
 }
@@ -173,7 +214,17 @@ type Ctx = {
   requests: RoleRequest[]
   wanted: Character[]
   sections: SectionName[][]
-  /** Role + polyphony only: what the *rig* can carry, before recipes or occupancy. */
+  /**
+   * Every assignable that declares the role, and nothing else asked of it. Kept apart from
+   * `capable` so §7.3 can tell "your rig does not play pads" from "your rig plays pads one note
+   * at a time" — two different sentences, and only the first is fixed by buying a box.
+   */
+  roleOnly: Assignable[][]
+  /**
+   * What the *rig* can carry, before character or occupancy: the role fits and the assignable
+   * can reach the request's note count (§12.4), either on its own polyphony or through a
+   * `sampled-chord` recipe this device authors for that voice.
+   */
   capable: Assignable[][]
   /** Capable, and with a usable recipe. The candidate pool before occupancy and `distinct`. */
   voiceable: Candidate[][]
@@ -212,6 +263,7 @@ function buildCtx(input: AssignInput): Ctx {
 
   const wanted: Character[] = []
   const sections: SectionName[][] = []
+  const roleOnly: Assignable[][] = []
   const capable: Assignable[][] = []
   const voiceable: Candidate[][] = []
   const reach: Set<DeviceId>[] = []
@@ -221,11 +273,18 @@ function buildCtx(input: AssignInput): Ctx {
     wanted.push(character)
     sections.push(sectionsFor(request, template))
 
-    const fits = assignables.filter(
-      (a) =>
-        a.roles.includes(request.role) &&
-        a.polyphony >= (request.polyphony ?? 1),
-    )
+    // §12.4: capability is recipe-aware from here on. The request's `polyphony` is still a
+    // note count and the assignable's is still simultaneous notes — neither moved — but a
+    // `sampled-chord` recipe reaches the count with one voice, so whether a mono voice can
+    // carry a triad is a question only the device's recipe list can answer.
+    const notes = request.polyphony ?? 1
+    const plays = assignables.filter((a) => a.roles.includes(request.role))
+    roleOnly.push(plays)
+    const fits = plays.filter((a) => {
+      const owner = assignableOwner.get(assignableKey(a))
+      if (owner === undefined) return false
+      return canCarryNotes(owner, a, request.role, notes)
+    })
     capable.push(fits)
 
     const candidates: Candidate[] = []
@@ -233,9 +292,10 @@ function buildCtx(input: AssignInput): Ctx {
       const key = assignableKey(assignable)
       const owner = assignableOwner.get(key)
       if (owner === undefined) continue
-      const resolution = resolveRecipe(owner, assignable, request.role, character)
+      const resolution = resolveRecipe(owner, assignable, request.role, character, notes)
       // The human ruling: unvoiced is not a candidate. It neither fills nor occupies, and is
-      // recovered as a `no-recipe` gap reason instead.
+      // recovered as a `no-recipe` gap reason instead. A voice that is capable only through a
+      // chord sample lands here too when no *usable* recipe survives the character filter.
       if (resolution.outcome === 'unvoiced') continue
       candidates.push({
         assignable,
@@ -244,6 +304,7 @@ function buildCtx(input: AssignInput): Ctx {
         outcome: resolution.outcome,
         recipeCharacter: resolution.character,
         distance: quantiseDistance(resolution.distanceSq),
+        sampledChord: notes > 1 && realisationOf(resolution.recipe) === 'sampled-chord' ? 1 : 0,
         roleFit: assignable.roles.indexOf(request.role),
       })
     }
@@ -274,6 +335,7 @@ function buildCtx(input: AssignInput): Ctx {
     requests,
     wanted,
     sections,
+    roleOnly,
     capable,
     voiceable,
     suffixReach,
@@ -291,6 +353,7 @@ type State = {
   misses: number[]
   optionalMisses: number
   recipeDistance: number
+  sampledChords: number
   roleFitPenalty: number
   /** Occupied assignables per device — one entry per assignable occupied in >= 1 section. */
   occupiedByDevice: Map<DeviceId, Set<AssignableKey>>
@@ -303,6 +366,7 @@ function emptyState(ctx: Ctx): State {
     misses: new Array(ctx.missSlots).fill(0),
     optionalMisses: 0,
     recipeDistance: 0,
+    sampledChords: 0,
     roleFitPenalty: 0,
     occupiedByDevice: new Map(ctx.devices.map((d) => [d.id, new Set<AssignableKey>()])),
     occupancy: new Map(),
@@ -341,6 +405,7 @@ function scoreOf(ctx: Ctx, state: State): Score {
     ...state.misses,
     crowdOverflow(ctx, state),
     state.optionalMisses,
+    state.sampledChords,
     state.recipeDistance,
     state.roleFitPenalty,
     idleDevices(ctx, state),
@@ -368,6 +433,7 @@ function lowerBound(ctx: Ctx, state: State, next: number): Score {
     ...state.misses,
     crowdOverflow(ctx, state),
     state.optionalMisses,
+    state.sampledChords,
     state.recipeDistance,
     state.roleFitPenalty,
     unreachableIdle,
@@ -384,6 +450,7 @@ function apply(ctx: Ctx, state: State, index: number, candidate: Candidate): voi
   for (const section of ctx.sections[index] ?? []) bySection.set(section, request.id)
   state.occupiedByDevice.get(candidate.assignable.deviceId)?.add(candidate.key)
   state.recipeDistance += candidate.distance
+  state.sampledChords += candidate.sampledChord
   state.roleFitPenalty += candidate.roleFit
   state.chosen[index] = candidate
 }
@@ -400,6 +467,7 @@ function undo(ctx: Ctx, state: State, index: number, candidate: Candidate): void
     }
   }
   state.recipeDistance -= candidate.distance
+  state.sampledChords -= candidate.sampledChord
   state.roleFitPenalty -= candidate.roleFit
   state.chosen[index] = null
 }
@@ -718,6 +786,7 @@ function firstWhere(
  */
 function classify(ctx: Ctx, state: State, index: number): Gap {
   const request = ctx.requests[index] as RoleRequest
+  const roleOnly = ctx.roleOnly[index] ?? []
   const capable = ctx.capable[index] ?? []
   const voiceable = ctx.voiceable[index] ?? []
   const base = {
@@ -728,9 +797,19 @@ function classify(ctx: Ctx, state: State, index: number): Gap {
     optional: request.optional === true,
   }
 
-  // "Nothing in your rig covers this." The fix is buying.
+  // Nothing can carry it. §12.4 split this in two, because the two have different fixes: no
+  // voice plays the role (buy a box), or voices play it and cannot reach the note count (author
+  // a `sampled-chord` recipe, or ask for fewer notes). Reported apart rather than merged, since
+  // a reader told the wrong one goes shopping for the wrong thing.
   if (capable.length === 0) {
-    return { ...base, reason: 'no-capable-voice', capable: [] }
+    return {
+      ...base,
+      reason: 'no-capable-voice',
+      because: roleOnly.length === 0 ? 'no-such-role' : 'polyphony',
+      notes: request.polyphony ?? 1,
+      capable: [],
+      roleVoices: roleOnly,
+    }
   }
   // "Your TR-1000 BD can do it — dial it by ear." The fix is authoring, not buying.
   if (voiceable.length === 0) {

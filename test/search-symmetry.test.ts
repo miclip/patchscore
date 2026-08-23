@@ -16,7 +16,7 @@ import {
   type Template,
 } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { box, bruteForceBest, desugarPools, makeRecipe, request, withRoles } from './rigs'
+import { box, bruteForceBest, desugarPools, keys, makeRecipe, request, withRoles } from './rigs'
 
 /**
  * §7.1's pool symmetry breaking, and the one thing that matters about it: **it must not change
@@ -907,10 +907,8 @@ describe('nothing distinguishes two members of one pool (§7.1)', () => {
       request({ id: 'r-pad', role: 'pad', character: 'dark', priority: 1 }),
     ])
     const result = assign({ devices: [crowded], template: t, mood: moodState(), seed: 1 })
-    const vector = result.score as unknown as number[]
-    const crowdOverflow = vector[vector.length - 5] as number
     expect(result.assignments.length).toBe(3)
-    expect(crowdOverflow).toBe(1)
+    expect(keys(result.score).crowdOverflow).toBe(1)
     expect(result.score as unknown as Score).toEqual(bruteForceBest([crowded], t))
   })
 })

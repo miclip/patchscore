@@ -123,6 +123,26 @@ export function capableText(capable: Gap['capable'], deviceById: Map<DeviceId, D
 }
 
 /**
+ * §7.3, §12.4. The `polyphony` half of `no-capable-voice`, said in a way a reader can act on.
+ *
+ * The shortfall is stated rather than the fix, and it is measured off the rig rather than
+ * assumed: "every voice here is monophonic" is the Tracker Mini case and is common, but a rig
+ * whose pad voices top out at four notes is a different sentence and saying the monophonic one
+ * would be false. The general form names the real ceiling.
+ *
+ * Written out by hand rather than imported from the Markdown renderer: the two share no code
+ * path, so a sentence appears in both only because someone put it in both, in the same words.
+ */
+function polyphonyShortfall(notes: number, roleVoices: Gap['capable']): string {
+  const ceiling = roleVoices.reduce((most, a) => Math.max(most, a.polyphony), 0)
+  const short =
+    ceiling <= 1
+      ? 'every voice here is monophonic'
+      : `the most any voice here can sound is ${count(ceiling, 'note')}`
+  return `needs ${count(notes, 'note')} at once and ${short}`
+}
+
+/**
  * §7.3 as advice rather than as failure. A `no-recipe` gap naming the voice that could carry it
  * *is* advice; the same gap rendered as an error is discouraging and wrong (#33). Nothing here
  * invents an assignment to close the hole (invariant 5) — it says what would close it.
@@ -130,7 +150,10 @@ export function capableText(capable: Gap['capable'], deviceById: Map<DeviceId, D
 export function adviceText(gap: Gap, deviceById: Map<DeviceId, Device>): string {
   if (gap.reason === 'no-room') return `no room (${gap.because}) — ${gap.detail}`
   if (gap.reason === 'no-capable-voice') {
-    return 'no voice in this rig declares the role — this one needs another box'
+    if (gap.because === 'no-such-role') return 'nothing in your rig plays this part'
+    // §12.4: the rig *does* play this part, one note at a time. Told the sentence above, a
+    // reader would go and buy a box they already own the equivalent of.
+    return polyphonyShortfall(gap.notes, gap.roleVoices)
   }
   return `${capableText(gap.capable, deviceById)} could carry it — dial it by ear`
 }

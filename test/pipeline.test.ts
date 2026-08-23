@@ -232,7 +232,14 @@ describe('pipeline ordering (§7)', () => {
     const a = run().assignments[0]!
     expect(a.recipe).not.toHaveProperty('params')
     expect(a.recipe).not.toHaveProperty('articulation')
-    expect(Object.keys(a.recipe).sort()).toEqual(['character', 'id', 'outcome', 'routing', 'title'])
+    expect(Object.keys(a.recipe).sort()).toEqual([
+      'character',
+      'id',
+      'outcome',
+      'realisation',
+      'routing',
+      'title',
+    ])
   })
 
   it('reports the occupancy, score and search from the same run', () => {

@@ -230,6 +230,7 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   character: 'hard',
   voice: 'bd',                 // matches poolId ?? voiceId
   title: 'Short, hard, forward kick',
+  realisation: 'polyphonic-voice',  // §12.4. Omitted means this. See below.
   params: [ /* AuthoredParam[], §3.1 */ ],
   patch: [ /* §3.3, semi-modular only */ ],
 
@@ -262,11 +263,27 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   not find in the manual and did not check on the unit gets
   `range: { min, max, verified: false }`, which is a different and quieter debt: it does not make
   the point provisional, it just makes that param deaf to mood (§3.2).
-- One recipe per `(role, character, voice)`, where `voice` is the recipe's target — the
-  `poolId ?? voiceId` the lookup keys on (§2.2). The key was written `(role, character, device)`
+- One recipe per `(role, character, voice, realisation)`, where `voice` is the recipe's target —
+  the `poolId ?? voiceId` the lookup keys on (§2.2) — and `realisation` is the effective one, so
+  an omitted field counts as `polyphonic-voice`. The key was written `(role, character, device)`
   before any device had two pools, and it did not match the lookup: it rejected authoring
   `tom + dark` for both LT and MT, and rejected a tonal recipe appearing on each pool of a
-  two-pool device. Roughly 15–20 recipes covers a device well.
+  two-pool device. `realisation` joined it later, for a different reason: two recipes can
+  describe the *same* sound on the same voice and still be two different jobs — a triad played
+  on a polyphonic voice and the same triad loaded as one sample — and the three-key form forced
+  a device to give one of them a character it did not have in order to exist at all. That is an
+  invented value, which is the thing §3.1 exists to refuse. The pair is unambiguous: at a given
+  note count and voice polyphony either only one of them is usable, or §7.1's realisation
+  ranking decides on a stated principle rather than on which id sorts first. Two recipes
+  agreeing on all four keys are the same recipe written twice and are still refused. Roughly
+  15–20 recipes covers a device well.
+- `realisation` says how this recipe makes the notes the request asked for (§12.4), and it is
+  the recipe's business rather than the device's: `polyphonic-voice` (the default — the voice
+  sounds every note itself, so it needs at least that much polyphony) or `sampled-chord` (the
+  notes are already inside one sample, one wavetable, one preset stab, so one voice is enough
+  however many are heard). Mark `sampled-chord` only when the chord really is baked in; it is
+  what lets a one-voice sampler carry a triad, and claiming it falsely produces a guide that says
+  three notes and sounds one.
 - A recipe never authors hits, step counts or bar structure. If you catch yourself writing
   `hits: [1, 5, 9, 13]` inside a device folder, that pattern belongs to a template (§4.3) —
   four-on-the-floor is a property of the genre, not of the TR-1000.
@@ -619,10 +636,18 @@ Every request carries a stable `id`. Occupancy (§4.2) and the rendered guide bo
 because a template may legitimately request the same role twice — two toms, two stabs — so `role`
 is not an identity.
 
-`polyphony` on a request is a **minimum note count**, matched against the assignable's
-`polyphony`. It is a number, not a device name, so it does not breach invariant 3. An assignable
-that cannot meet it is not a candidate; if nothing in the rig can, the request becomes a gap
-(§7.3) rather than a silently monophonic pad.
+`polyphony` on a request is a **minimum note count**. It is a number, not a device name, so it
+does not breach invariant 3. It is *not* matched against the assignable's `polyphony` directly:
+the note count is the musical requirement, and how many voices that costs is the recipe's answer
+(§3, §12.4). A `polyphonic-voice` recipe needs the assignable's own polyphony to be **at least**
+the note count, because the voice sounds every note itself; a `sampled-chord` recipe needs
+polyphony 1 however many notes are heard. Both are floors, not equalities — a request for three
+notes is served perfectly well by an eight-voice track, and nothing is gained by refusing it.
+
+Either way the request is served by **one** assignable: the requirement is simultaneous-note
+capacity inside a single voice, never a number of voices to gather up. If no assignable in the
+rig can reach the count by either route, the request becomes a gap (§7.3) rather than a silently
+monophonic pad.
 
 ### 4.1 Harmony and hooks are authored, not generated
 
@@ -631,6 +656,26 @@ no generation. The seed picks among multiple authored hooks.
 
 **If no hook is authored for the assigned role, the guide omits the hook section rather than
 inventing one.** This is invariant 5 applied to melody.
+
+**A hook is authored as notes; how those notes are *delivered* is the recipe's business
+(§12.4), and the two can disagree.** A hook is degrees and steps — it says nothing about
+polyphony and must not, because the same hook is legal on any box that can carry the part. But a
+part assigned to a `sampled-chord` recipe is not played note by note: it triggers a recording,
+and a recording is a fixed set of intervals that moves as a block.
+
+What that costs is narrower than it first looks, and stating it too broadly is its own error.
+Transposition **preserves the interval structure**, so one recording covers its chord shape at
+every root — a major triad moved up a tone is still a major triad. What transposition cannot do
+is change the shape, and shape is where quality and inversion live. The industrial-techno pad
+hook is `i - VI - VII`: `0-3-7` then `0-4-7` twice, so it needs **two** recordings, not three
+and not one. The minor triad is its own sample; the two major ones are one sample and a `+2 st`
+trigger.
+
+That reconciliation belongs to the renderer, not to this layer: §8 phase 4 groups a sampled
+part's hook by shape, lists one sample per shape, and prints the transposition on every trigger.
+Nothing here changes, and nothing about a hook is authored twice — which is the point. A
+template that had to know how each device makes a chord would be naming devices, and that is
+invariant 3.
 
 #### Middle C is C4
 
@@ -980,6 +1025,7 @@ type Score = [
   ...missesByPriority: number[],  // keys 0..k: unfilled *required* requests at priority 1..k
   crowdOverflow:  number,         // sum over devices of max(0, occupiedAssignables - comfortable)
   optionalMisses: number,         // unfilled requests marked optional
+  sampledChords:  number,         // multi-note requests filled from a chord sample (§12.4)
   recipeDistance: number,         // sum of §3.4 distances, x1000 and rounded to an integer
   roleFitPenalty: number,         // sum of the role's index within voice.roles
   idleDevices:    number,         // devices with zero occupied assignables
@@ -988,17 +1034,28 @@ type Score = [
 ```
 
 Read it as an order of concerns, because that is what it is: never miss a required part; then do
-not over-subscribe a box; then fill the optional parts; then prefer exact recipes over substituted
-ones; then prefer voices whose author listed the role first; then avoid leaving a box switched on
-and unused.
+not over-subscribe a box; then fill the optional parts; then voice a chord for real rather than
+from a sample; then prefer exact recipes over substituted ones; then prefer voices whose author
+listed the role first; then avoid leaving a box switched on and unused.
 
-Three lower-order claims are load-bearing, and are exactly what the fixtures have to confirm:
+Four lower-order claims are load-bearing, and are exactly what the fixtures have to confirm:
 
 - **Crowding outranks optional requests.** A rig that fills an optional `texture` by putting a
   seventh part on a four-voice box is a worse guide than one that leaves `texture` unfilled. Under
   the original scalar cost, with `MISS[4]` above `W_CROWD`, it would have chosen the crowded rig.
 - **Recipe quality outranks role fit.** A substituted recipe is visible to the user and degrades
   the actual sound; role-list order is only an authoring hint.
+- **Realisation outranks recipe quality, and is outranked by everything above it.** A chord
+  sample is a fill, not a gap — it is the right notes — so it must never cost a part, and it
+  never does: the key sits below every miss key, below crowding and below optional fills. But
+  above `recipeDistance`, because the two are not the same kind of shortfall. A substituted
+  character *approximates how the part sounds*; a chord sample *limits what the part can do* —
+  it transposes, so it follows the progression, but it cannot be inverted, re-voiced, or given a
+  quality it was not recorded with (§4.1), so it is closer to a correctness limit than to a
+  timbral one. Given both routes, take the real voice
+  and accept the substitution. Requests of one note never touch this key at all — there is no
+  chord to invert, so the preference would be paying a worse-sounding recipe for flexibility
+  nothing will use — which is also why adding the key changed no existing guide.
 - **Idle devices rank last and are nearly cosmetic.** Spreading parts across boxes is a preference,
   never a correctness property, and it must never cause a miss.
 
@@ -1137,17 +1194,52 @@ them tells the user to do the wrong thing:
 
 | reason | meaning | the action |
 |---|---|---|
-| `no-capable-voice` | nothing in the rig declares this role | buy something. Say what capability is missing |
+| `no-capable-voice` | no assignable can carry this part, by role or by note count | change the rig or change the ask. Say which |
 | `no-recipe` | a capable assignable exists, nothing authored within character distance 2 | nothing to buy; we owe you authoring. Name the voice that could carry it |
 | `no-room` | capable and voiceable, but the objective ranked some other allocation higher | your rig cannot carry this arrangement as configured. Say what gave way |
 
-**Three, because there are exactly three actions.** The reasons exist to tell the user what to
-*do*. A fourth top-level reason would split the third action into cases that all resolve the same
-way, which is why `no-room`'s sub-cause is a field rather than a sibling:
+**Three, because a reason answers "why did this part not get made" and there are three answers:**
+nothing could carry it, nothing is authored for what could, or something else won the voice. The
+*action* mostly follows from that and originally followed from it exactly — three reasons, three
+things to do — but §12.4 broke the one-to-one, and the honest record of that is worth more than
+the symmetry:
+
+- `no-room`'s three sub-causes **share an action**: change the arrangement, or the rig's
+  configuration. They are a field rather than three siblings purely so the top level stays
+  three-wide and readable, which is the original argument and still holds.
+- `no-capable-voice`'s two sub-causes **do not share an action** — one is buying, the other is
+  authoring or asking for less. They are still a field, because a top-level reason names a
+  *state* of the search ("nothing could carry this") and both of these are that state. Promoting
+  `polyphony` would put a remedy in the reason vocabulary, where every other name describes what
+  happened. The cost is that a reader must read the sub-cause to know what to do, which is why
+  `because` is mandatory on the variant and both sentences below say the action outright.
 
 ```ts
+// no-capable-voice
+because: 'no-such-role' | 'polyphony'            // plus the note count that was asked for
+// no-room
 because: 'contended' | 'crowding' | 'distinct'   // plus a sentence naming the specific thing
 ```
+
+`no-capable-voice` gained its sub-cause with §12.4. Once a recipe can reach a note count its
+voice cannot, "nothing in the rig declares this role" stopped being true of half the cases, and
+the two halves have opposite fixes:
+
+| because | the sentence says | the fix |
+|---|---|---|
+| `no-such-role` | "nothing in your rig plays this part" | buy something |
+| `polyphony` | "needs 3 notes at once and every voice here is monophonic" | author a `sampled-chord` recipe, or ask for fewer notes |
+
+A rig full of monophonic tracks *does* play pads. Told the first sentence, its owner goes
+shopping for a pad machine when what they need is one chord sample. The `polyphony` case carries
+the assignables that declare the role, so the shortfall is measured off the rig rather than
+assumed: where those voices are not all monophonic the sentence names the real ceiling — "the
+most any voice here can sound is 4 notes" — because the monophonic wording would simply be false.
+
+Those role-declaring voices are carried **separately from `capable`**, which means one thing at
+every reason: the assignables that could have carried the part. In a `polyphony` gap they could
+not, so `capable` is empty there exactly as it is for `no-such-role`, and `no-recipe`'s promise
+to name a voice that can do the job stays true.
 
 | because | the sentence says |
 |---|---|
@@ -1205,12 +1297,33 @@ Phased, in this order. The sequence reflects how a real session unfolds at the m
 Do not reorder.
 
 1. **Song** — BPM, key, hook, harmonic cycle, bar-count energy map
-2. **Voice assignment** — which role lives on which device and voice, and why
+2. **Voice assignment** — which role lives on which device and voice, and why. For a part of
+   more than one note, *how* those notes are made (§12.4) is one of the facts: "3 notes at once
+   on one polyphonic voice" and "3 notes from one sampled chord" are different things to do, and
+   the reader has to be told which one they got. A one-note part says nothing about realisation,
+   because there is nothing to say
 3. **Rig integration** — clock source, MIDI routing, audio outs, mixer channels
-4. **Hook** — written before sound design
+4. **Hook** — written before sound design. A part carried by a `sampled-chord` recipe (§12.4) is
+   rendered as **two lists rather than one**: the chord shapes, as content to obtain or render
+   before starting, and the steps, as trigger events. The ordinary note-per-chord rendering
+   would tell its reader to enter three notes on a voice that sounds one. Grouping is by
+   **normalised interval shape** — semitones above the lowest note — because that is exactly
+   what one recording covers: a sample transposes as a block, keeping its shape, so a separate
+   sample is required **only where the shape changes**, which means a different quality or a
+   different inversion. Each trigger prints its transposition (`as recorded`, `+2 st`) and the
+   chord that results, so the reader can check the move rather than infer it. Samples are
+   labelled `sample A`, `sample B` — a label to point at, never a filename, which we could not
+   know (invariant 5). A polyphonic part's hook is unchanged
 5. **Step programming** — the selected template pattern per part (§4.3), rendered per device with
    that device's slot articulation bound to it (§7 step 8)
-6. **Sound design** — parameter values, device by device, each rendered per §3.2's table
+6. **Sound design** — where the multi-note realisation becomes an *instruction* rather than a
+   fact. "Load the chord sample(s) onto this one voice" is a step a reader will otherwise not
+   take, and the plural is load-bearing: the instruction names no count, because the count is a
+   property of the hook rather than of the recipe, so it points at phase 4 for which samples are
+   needed. Then the recipe's own `routing` line, which is where anything device-specific about
+   the trade lives — that a chord sample costs the Tracker Mini no synth slot is the device's
+   claim, not the renderer's, which knows about no box. Then parameter values, device by device,
+   each rendered per §3.2's table
    (`52`, `52 · manual`, `52 → 45 · manual · moved by darkness`). `ResolvedParam.provenance`
    is non-optional, so every value's provenance is decided before the renderer sees it — an
    unmarked value is a decision, never a case that fell through
@@ -1385,6 +1498,89 @@ outcomes rather than cost numbers.
 assignable serves exactly one request per section. `polyphony` is a minimum-note-count constraint
 on candidacy. Multitimbrality is modelled by pools, not by polyphony. `comfortableVoices` counts
 *occupied assignables* — one per assignable occupied in at least one section.
+
+*Worked example, and the case that proves the demand belongs to the recipe:* the Tracker Mini
+sounds one note per track — "Each track in Tracker Mini can handle one voice which can play
+multiple notes, but not simultaneously... A triad would therefore need 3 tracks" (manual p.104) —
+so a three-note pad was unreachable on that box under any patch. The same page documents
+rendering the tracks to an audio chord and playing the result from one track, and once that
+sample is loaded the chord *is* one note as far as the track is concerned. `tm-pad-soft-chord`
+is that recipe. It also costs none of the box's three synth slots, a real advantage stated in
+its `routing`.
+
+The correctness this forces, and the reason it is not only a candidacy question: **a sampled
+chord follows a progression by transposition, and transposition preserves shape.** The
+industrial-techno pad hook is `i - VI - VII` — in F minor `0-3-7` then `0-4-7` twice — so it
+needs two recordings: the minor triad, and one major triad reused a tone up. §8 phase 4
+therefore groups such a hook by shape and prints the transposition per trigger.
+
+Both of the obvious simplifications here are wrong, and the second one is the mistake this
+paragraph exists to record. "One sample follows the whole progression" is wrong because no
+transposition turns a minor triad into a major one. But "every chord needs its own sample" — the
+first version of this feature, written as the *conservative* reading — is wrong too, and worse:
+it is a false claim about what a sampler does, it made a reader record chords they already had,
+and being over-cautious did not make it any less untrue. A guide is not allowed to be wrong in
+the safe direction.
+
+It sits on the **same voice, role and character** as the VAP synth pad `tm-pad-soft-sample` —
+`pad`, `soft`, `track-sample` — and the two ask different things of that voice: 3 and 1. That
+pair is the proof, and it is why §3's uniqueness key had to grow a fourth term. They are one
+soft pad described twice, and the three-key form would have forced one of them to claim a
+character it does not have simply to be authorable. Resolution is not ambiguous: on a one-note
+track only the sampled one can carry a triad at all, on a track with three notes free §7.1 takes
+the VAP patch, and for a *single*-note request the VAP patch wins on realisation at equal
+character — without that last tie-break the choice would fall to id order, and a part asking for
+one note would be handed a three-note sample. Nothing about the voice changed to allow any of
+it.
+
+*Amended:* the note count and the voice cost are two claims, and the first version conflated
+them. Matching a request's note count straight against an assignable's `polyphony` says a
+one-voice sampler cannot play a triad, which is false the moment someone samples a chord — and
+the only ways out of it were both wrong: inflate the sampler's `polyphony` to 3 (a lie about the
+box, and one that would let it carry a genuinely three-voice part) or lose the pad. So the count
+stays on the request, and **how the notes are made moves to the recipe** as `realisation` (§3):
+`polyphonic-voice` needs the voice's own polyphony to be at least the count, `sampled-chord`
+needs polyphony 1. Both are capacity *within one assignable* — `requiredVoicePolyphony` is a
+simultaneous-note figure, not a count of voices to collect — and a request is still served by
+exactly one assignable. Candidacy asks the recipe, not the voice alone; `Score` gains a
+`sampledChords` key, ranked **above `recipeDistance`**, so a rig holding both routes takes the
+real voice even at the cost of a character substitution. `Assignable.polyphony` does not move —
+it is still simultaneous notes, and a sampler playing a chord sample is still monophonic.
+
+*Recommendation — defer multi-assignable stacking to a follow-up.* Issue #40 asked for a rig of
+monophonic voices to be able to hold a pad or a stab, and observed that a tracker plays a chord
+across three tracks. Stacking N assignables under one request is one way to get there. It is not
+what is built above, and the recommendation is that it stays unbuilt for now, for a reason that
+is about scope rather than about merit: **the reported failure is fixed without it.** A
+`sampled-chord` recipe carries the pad on a one-note track, and it does so entirely inside the
+existing model — one request, one assignable, occupancy untouched, `crowdOverflow` counting what
+it always counted. Nothing above widens the load-bearing shape of §4.2, and that is the property
+worth keeping until something genuinely needs it spent.
+
+Stacking is still worth doing, and #40 should not be closed on the strength of the pad alone.
+It is the answer for a role with **no chord sample authored** — Tracker `stab` today, which is an
+honest `polyphony` gap (§7.3) precisely because nobody has recorded a stab chord and no amount of
+recipe work changes that a single track sounds one note. What it needs, and none of it is
+incidental:
+
+- **A deliberate `Assignment` / `Occupancy` shape.** Occupancy is keyed per assignable per
+  section and an assignment names exactly one; a stacked part names several, and every consumer
+  of that shape — gap classification, the `distinct` rule (§12.6), pool symmetry breaking
+  (§7.1) — has to be re-read against it rather than assumed to survive.
+- **Crowding accounting.** §12.4 counts *occupied assignables*, so a stacked triad costs three.
+  That is probably right and is certainly not obvious: it makes one pad on a tracker as expensive
+  as three separate parts, which is a real musical claim about the box and needs to be argued,
+  not defaulted.
+- **Per-note track rendering.** The guide would have to say which note goes on which track, in
+  both renderers, and §8 phase 5's per-part step programming currently addresses one voice.
+- **Ranking fixtures.** At minimum: a genuine polyphonic voice must beat stacking. A part that
+  can be played on one voice should never be spread across three, whatever else is true.
+
+**The ordering between `sampled-chord` and stacking is deliberately not decided here.** Both
+sit below a real polyphonic voice; which of the two comes next is a musical question — a chord
+sample is one recording with fixed shape, a stack is three voices spent — and answering it in
+advance of building either the fixtures or the mechanism would be exactly the unfalsifiable
+weighting §7.1 exists to refuse. Decide it with a fixture in front of you.
 
 **12.5 — Section-transition patterns: fills are out of v1; `Pattern` stays flat.** See §4.3.
 One variant per request per section; change happens at section boundaries only. A bar offset (or

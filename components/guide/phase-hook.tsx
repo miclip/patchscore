@@ -1,7 +1,7 @@
-import type { HookChoice, ResolveResult, ResolvedAssignment } from '@/lib/core'
+import type { HookChoice, ResolveResult, ResolvedAssignment, ResolvedHook, ResolvedNote } from '@/lib/core'
 import { Fragment } from 'react'
-import { enharmonicAlternative } from '@/lib/core'
-import { barOf, chordsOf, degreeName, gridFits, lenText, num } from './format'
+import { chordVoicings, enharmonicAlternative } from '@/lib/core'
+import { barOf, chordsOf, count, degreeName, gridFits, lenText, num } from './format'
 import { SoundRef } from './instruction'
 
 /**
@@ -19,6 +19,148 @@ function NoteConvention() {
       which not every maker agrees with — the MIDI number is the form nothing disagrees about.
       Where a role has more than one hook authored, rerolling the seed picks a different one.
     </p>
+  )
+}
+
+/**
+ * How far to move the sample for one trigger. Printed on every row, `as recorded` included, so
+ * the column is always there to scan — a reader checking whether a chord moves should not have
+ * to notice an *absent* value.
+ */
+function transposeText(semitones: number): string {
+  if (semitones === 0) return 'as recorded'
+  return `${semitones > 0 ? '+' : '-'}${num(Math.abs(semitones))} st`
+}
+
+/** The pitches of one chord, spelled with the enharmonic in brackets only where it differs. */
+function ChordNotes({ notes }: { notes: readonly ResolvedNote[] }) {
+  return (
+    <span className="chord">
+      {notes.map((note, i) => {
+        const enharmonic = enharmonicAlternative(note)
+        return (
+          <Fragment key={note.midi}>
+            {i === 0 ? null : ' '}
+            <span className="mono note-name">{note.note}</span>
+            {enharmonic === undefined ? null : <span className="mono quiet"> ({enharmonic})</span>}
+          </Fragment>
+        )
+      })}
+    </span>
+  )
+}
+
+/**
+ * §12.4. The hook, for a part whose recipe puts the chord inside a sample.
+ *
+ * Two lists rather than one, because there are two different things to do and they happen at
+ * different times: the chords are *content to obtain* before you start, and the steps are
+ * *triggers* to place once you have them. Rendering them as one list of notes — which is what
+ * this replaces — asked the reader to play a chord on a voice that sounds one note.
+ *
+ * A sample transposes as a block, and that is a real capability rather than a limitation: one
+ * recording covers its shape at every root, so a trigger carries the interval to move it by. A
+ * second sample is needed only where the *shape* changes — a different quality, or a different
+ * inversion — which no transposition can produce.
+ *
+ * The sentences are written out here by hand to match the Markdown renderer word for word; the
+ * grouping behind them is `chordVoicings`, computed once in `lib/core` so the page and the
+ * screen cannot disagree about which chords are the same chord.
+ */
+function SampledHook({ hook, framed }: { hook: ResolvedHook; framed: boolean }) {
+  const voicings = chordVoicings(hook)
+  const triggers = voicings
+    .flatMap((voicing) => voicing.at.map((occurrence) => ({ voicing, occurrence })))
+    // Step order, not voicing order: this list is entered left to right at the machine, and a
+    // reader following it should never have to jump backwards.
+    .sort((a, b) => a.occurrence.step - b.occurrence.step)
+
+  return (
+    <>
+      <p className="callout">
+        Sampled chord — you trigger a sample, you do not play these notes.{' '}
+        {voicings.length === 1
+          ? 'One chord shape throughout, so one sample, transposed where the chord moves.'
+          : `${count(voicings.length, 'chord shape')}, so ${count(voicings.length, 'sample')}. ` +
+            'A sample transposes as a block, keeping its shape, so one recording covers that ' +
+            'shape at every root. A separate sample is needed only where the shape changes — ' +
+            'a different quality, or a different inversion.'}
+      </p>
+
+      <h5>Samples to obtain or render — {count(voicings.length, 'chord shape')}</h5>
+      <ul className="notes">
+        {voicings.map((voicing) => (
+          <li key={voicing.label}>
+            <span className="pos">
+              <span className="quiet">sample </span>
+              <span className="mono">{voicing.label}</span>
+            </span>
+            <span className="token-sep"> · </span>
+            <ChordNotes notes={voicing.notes} />
+            <span className="token-sep"> · </span>
+            <span className="degrees">
+              {voicing.notes.map((note, i) => (
+                <Fragment key={note.midi}>
+                  {i === 0 ? null : ' '}
+                  <span className="degree">{degreeName(note.degree)}</span>
+                </Fragment>
+              ))}
+            </span>
+            <span className="token-sep"> · </span>
+            <span className="pos">
+              <span className="quiet">MIDI </span>
+              <span className="mono">{voicing.notes.map((n) => num(n.midi)).join(' ')}</span>
+            </span>
+            <span className="token-sep"> · </span>
+            <span className="pos">
+              <span className="quiet">shape </span>
+              <span className="mono">{voicing.shape.map(num).join('-')}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <h5>Trigger — one step event per chord, and the sample sounds all of it</h5>
+      <ul className="notes">
+        {triggers.map(({ voicing, occurrence }) => (
+          <li key={occurrence.step}>
+            {framed ? (
+              <>
+                <span className="pos">
+                  <span className="quiet">bar </span>
+                  <span className="mono">{num(barOf(occurrence.step))}</span>
+                </span>
+                <span className="token-sep"> · </span>
+              </>
+            ) : null}
+            <span className="pos">
+              <span className="quiet">step </span>
+              <span className="mono">{num(occurrence.step)}</span>
+            </span>
+            <span className="token-sep"> · </span>
+            <span className="pos">
+              <span className="quiet">len </span>
+              <span className="mono">{lenText(occurrence.notes)}</span>
+            </span>
+            <span className="token-sep"> · </span>
+            <span className="pos">
+              <span className="quiet">sample </span>
+              <span className="mono">{voicing.label}</span>
+            </span>
+            <span className="token-sep"> · </span>
+            <span className="pos">
+              {occurrence.semitones === 0 ? (
+                <span className="quiet">as recorded</span>
+              ) : (
+                <span className="mono">{transposeText(occurrence.semitones)}</span>
+              )}
+            </span>
+            <span className="token-sep"> · </span>
+            <ChordNotes notes={occurrence.notes} />
+          </li>
+        ))}
+      </ul>
+    </>
   )
 }
 
@@ -69,6 +211,15 @@ function HookBlock({
             <span className="mono">{num(choice.chosen.hook.bars)}</span> bars in{' '}
             <span className="mono">{choice.chosen.hook.key}</span>.
           </p>
+          {/*
+            §12.4: a part carried by a `sampled-chord` recipe is not played note by note, and the
+            ordinary rendering below would tell its reader to enter three notes on a voice that
+            sounds one — and imply the progression follows, which it does not.
+          */}
+          {carriedBy?.recipe.realisation === 'sampled-chord' ? (
+            <SampledHook hook={choice.chosen.hook} framed={framed} />
+          ) : (
+          <>
           {/*
             One row per chord, not per note. Labels stay inline rather than moving to a header
             row: measured at 390px, a six-column layout needs about 490px and would have to
@@ -134,6 +285,8 @@ function HookBlock({
               </li>
             ))}
           </ul>
+          </>
+          )}
         </>
       )}
     </section>

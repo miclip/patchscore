@@ -43,11 +43,11 @@ glance whether the screen in front of you is the one the line is about.
 - **`open-hat`** → TR-1000 · OH — *Dull open hat, more air than sizzle*
   - p3 · exact `dark` · every section
 - **`stab`** → Deluge · Track 3 — *Square stab through a fast phaser*
-  - p3 · exact `hard` · every section
+  - p3 · exact `hard` · 3 notes at once on one polyphonic voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
 - **`pad`** → Deluge · Track 4 — *Wavetable pad, slow chorus, wide reverb send*
-  - p4 · substituted — asked `dark`, authored `soft` · every section
+  - p4 · substituted — asked `dark`, authored `soft` · 3 notes at once on one polyphonic voice · every section
 - **`riser`** → Deluge · Track 5 — *Saw riser, top end open, thrown into the reverb*
   - p4 · exact `bright` · Build, Breakdown
 - **`noise`** → Deluge · Track 6 — *Crushed noise wash under the drums*
@@ -556,6 +556,8 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 #### Track 3 — `stab`: Square stab through a fast phaser
 
+Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
+
 *Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.229.*
 
 - **OSC TYPE** `Analog Square`
@@ -567,6 +569,8 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
 
 #### Track 4 — `pad`: Wavetable pad, slow chorus, wide reverb send
+
+Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 
 - **OSC TYPE** `Wavetable`
 - **MOD FX TYPE** `CHORUS`

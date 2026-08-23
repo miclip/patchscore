@@ -6,7 +6,13 @@ import { dominantRangeCite, sameCite } from './params'
 import type { Pattern, PatternHit } from './template'
 import type { BoundArticulation, ResolvedPatchEntry } from './resolver'
 import type { Gap } from './search'
-import { enharmonicAlternative, type HookChoice, type ResolvedHook, type ResolvedNote } from './harmony'
+import {
+  chordVoicings,
+  enharmonicAlternative,
+  type HookChoice,
+  type ResolvedHook,
+  type ResolvedNote,
+} from './harmony'
 import type { ResolveResult, ResolvedAssignment } from './pipeline'
 import { GUIDE_PHASES } from './guide'
 import { bandTrajectory, type BandGroup } from './arrangement'
@@ -252,6 +258,44 @@ function phaseSong(result: ResolveResult): Line[] {
 // Phase 2 — Voice assignment
 // ---------------------------------------------------------------------------
 
+/**
+ * §12.4. What the reader is actually being asked to play, when that is more than one note.
+ *
+ * Empty for a one-note part: the realisation makes no difference there, and a clause saying so
+ * on every kick would bury the one case that matters. When it is not empty it is the difference
+ * between a chord you *load* and a chord you *play*, which is not a nuance — the two are
+ * different actions at the machine.
+ */
+function realisationText(assignment: ResolvedAssignment): string {
+  if (assignment.notes <= 1) return ''
+  if (assignment.recipe.realisation === 'sampled-chord') {
+    return `${count(assignment.notes, 'note')} from one sampled chord`
+  }
+  return `${count(assignment.notes, 'note')} at once on one polyphonic voice`
+}
+
+/**
+ * The same fact as `realisationText`, written as something to do rather than something to know.
+ * Phase 2 is a list of what went where; phase 6 is the reader standing at the instrument, and
+ * "load a chord sample" is a step they will otherwise not take.
+ */
+function realisationInstruction(assignment: ResolvedAssignment): string {
+  if (assignment.notes <= 1) return ''
+  const notes = count(assignment.notes, 'note')
+  const n = num(assignment.notes)
+  if (assignment.recipe.realisation === 'sampled-chord') {
+    return (
+      `Polyphony — ${notes}, already inside the sample. Load the chord sample(s) onto this one ` +
+      `voice rather than spreading the notes across ${n}. One sample covers its chord shape at ` +
+      `any root; a different shape needs its own — see Hook.`
+    )
+  }
+  return (
+    `Polyphony — ${notes} sounding at once on this one voice. It needs a genuinely polyphonic ` +
+    `voice, not ${n} separate ones.`
+  )
+}
+
 /** §3.5. Why this recipe, in the one case where the answer is not "it matched". */
 function recipeWhy(assignment: ResolvedAssignment): string {
   if (assignment.recipe.outcome === 'exact') return `exact \`${assignment.character}\``
@@ -286,11 +330,31 @@ function capableText(
     .join(', ')
 }
 
+/**
+ * §7.3, §12.4. The `polyphony` half of `no-capable-voice`, said in a way a reader can act on.
+ *
+ * The shortfall is stated rather than the fix, and it is measured off the rig rather than
+ * assumed: "every voice here is monophonic" is the Tracker Mini case and is common, but a rig
+ * whose pad voices top out at four notes is a different sentence and saying the monophonic one
+ * would be false. The general form names the real ceiling.
+ */
+function polyphonyShortfall(notes: number, roleVoices: Gap['capable']): string {
+  const ceiling = roleVoices.reduce((most, a) => Math.max(most, a.polyphony), 0)
+  const short =
+    ceiling <= 1
+      ? 'every voice here is monophonic'
+      : `the most any voice here can sound is ${count(ceiling, 'note')}`
+  return `needs ${count(notes, 'note')} at once and ${short}`
+}
+
 /** §7.3. Said in words, because a reason code is not an answer to "why is there no kick". */
 function gapText(gap: Gap, deviceById: Map<DeviceId, Device>): string {
   if (gap.reason === 'no-room') return `no room (${gap.because}) — ${gap.detail}`
   if (gap.reason === 'no-capable-voice') {
-    return 'no voice in this rig declares the role — this one needs another box'
+    if (gap.because === 'no-such-role') return 'nothing in your rig plays this part'
+    // §12.4: the rig *does* play this part, one note at a time. Told the sentence above, a
+    // reader would go and buy a box they already own the equivalent of.
+    return polyphonyShortfall(gap.notes, gap.roleVoices)
   }
   // §3.5's `unvoiced`, which is fixed by authoring a recipe rather than by buying a box — so
   // the assignables that *could* have carried it are the useful half of the answer.
@@ -313,9 +377,11 @@ function phaseVoiceAssignment(result: ResolveResult, deviceById: Map<DeviceId, D
           ? 'every section'
           : a.sections.join(', ')
       const where = `${a.deviceName} · ${a.assignable.label}`
+      const realisation = realisationText(a)
       out.push(`- **\`${a.role}\`** → ${where} — *${a.recipe.title}*`)
       out.push(
-        `  - p${num(a.priority)}${a.optional ? ', optional' : ''} · ${recipeWhy(a)} · ${sections}`,
+        `  - p${num(a.priority)}${a.optional ? ', optional' : ''} · ${recipeWhy(a)}` +
+          `${realisation === '' ? '' : ` · ${realisation}`} · ${sections}`,
       )
     }
   }
@@ -488,6 +554,77 @@ const NOTE_CONVENTION = [
   'Where a role has more than one hook authored, rerolling the seed picks a different one.',
 ]
 
+/**
+ * §12.4. The hook, for a part whose recipe puts the chord inside a sample.
+ *
+ * Two lists rather than one, because there are two different things to do and they happen at
+ * different times: the chords are *content to obtain* before you start, and the steps are
+ * *triggers* to place once you have them. Rendering them as one list of notes — which is what
+ * this replaces — asked the reader to play a chord on a voice that sounds one note.
+ *
+ * A sample transposes as a block, and that is a real capability rather than a limitation: one
+ * recording covers its shape at every root, so a trigger carries the interval to move it by. A
+ * second sample is needed only where the *shape* changes — a different quality, or a different
+ * inversion — which no transposition can produce.
+ */
+/**
+ * How far to move the sample for one trigger. Printed on every row, `as recorded` included, so
+ * the column is always there to scan — a reader checking whether a chord moves should not have
+ * to notice an *absent* value.
+ */
+function transposeText(semitones: number): string {
+  if (semitones === 0) return 'as recorded'
+  return `${semitones > 0 ? '+' : '-'}${num(Math.abs(semitones))} st`
+}
+
+function sampledHookLines(hook: ResolvedHook, framed: boolean): Line[] {
+  const out: Line[] = []
+  const voicings = chordVoicings(hook)
+
+  out.push('Sampled chord — you trigger a sample, you do not play these notes.')
+  out.push('')
+  out.push(
+    voicings.length === 1
+      ? 'One chord shape throughout, so one sample, transposed where the chord moves.'
+      : `${count(voicings.length, 'chord shape')}, so ${count(voicings.length, 'sample')}. ` +
+          'A sample transposes as a block, keeping its shape, so one recording covers that ' +
+          'shape at every root. A separate sample is needed only where the shape changes — a ' +
+          'different quality, or a different inversion.',
+  )
+  out.push('')
+
+  out.push(`**Samples to obtain or render** — ${count(voicings.length, 'chord shape')}`)
+  out.push('')
+  for (const voicing of voicings) {
+    out.push(
+      `- sample ${voicing.label} · ` +
+        `${voicing.notes.map(spelling).join(' ')} · ` +
+        `${voicing.notes.map((n) => degreeName(n.degree)).join(' ')} · ` +
+        `MIDI ${voicing.notes.map((n) => num(n.midi)).join(' ')} · ` +
+        `shape ${voicing.shape.map(num).join('-')}`,
+    )
+  }
+  out.push('')
+
+  out.push('**Trigger** — one step event per chord, and the sample sounds all of it')
+  out.push('')
+  // Step order, not voicing order: this list is entered left to right at the machine, and a
+  // reader following it should never have to jump backwards.
+  const triggers = voicings
+    .flatMap((voicing) => voicing.at.map((occurrence) => ({ voicing, occurrence })))
+    .sort((a, b) => a.occurrence.step - b.occurrence.step)
+  for (const { voicing, occurrence } of triggers) {
+    const where = framed
+      ? `bar ${num(barOf(occurrence.step))} · step ${num(occurrence.step)}`
+      : `step ${num(occurrence.step)}`
+    out.push(
+      `- ${where} · len ${lenText(occurrence.notes)} · sample ${voicing.label} · ` +
+        `${transposeText(occurrence.semitones)} · ${occurrence.notes.map(spelling).join(' ')}`,
+    )
+  }
+  return out
+}
+
 function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined): Line[] {
   const out: Line[] = []
 
@@ -524,6 +661,16 @@ function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined
   const framed = gridFits(hook)
   out.push(`${num(hook.bars)} bars in ${hook.key}.`)
   out.push('')
+
+  // §12.4. A part carried by a `sampled-chord` recipe is not played note by note, and the
+  // ordinary rendering below would tell its reader to enter three notes on a voice that sounds
+  // one. It also says nothing about what has to be recorded: a sample follows a progression by
+  // transposition, which covers every root of its own shape and no other shape at all.
+  if (carriedBy?.recipe.realisation === 'sampled-chord') {
+    out.push(...sampledHookLines(hook, framed))
+    return out
+  }
+
   // One labelled line per chord, rather than a table: a labelled line survives wrapping on a
   // phone, where a table's header scrolls away from its body.
   for (const chord of chordsOf(hook)) {
@@ -799,6 +946,16 @@ function phaseSound(
       out.push('')
       out.push(`#### ${a.assignable.label} — \`${a.role}\`: ${a.recipe.title}`)
       out.push('')
+      // §12.4, and an instruction rather than a note: the two realisations are two different
+      // things to do at the box, and doing the wrong one produces the wrong number of sounds.
+      // A chord you load is not a chord you play. Anything device-specific about the trade —
+      // which slot it spends, which it does not — is the recipe's `routing` line immediately
+      // below, because this renderer knows nothing about any box.
+      const realisation = realisationInstruction(a)
+      if (realisation !== '') {
+        out.push(realisation)
+        out.push('')
+      }
       if (a.recipe.routing !== undefined) {
         out.push(`Routing — ${a.recipe.routing}`)
         out.push('')

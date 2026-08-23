@@ -105,6 +105,7 @@
     0,
     0,
     2,
+    0,
     4242,
     1,
     0
@@ -128,6 +129,7 @@
       "character": "hard",
       "priority": 1,
       "optional": false,
+      "notes": 1,
       "deviceId": "a-drum",
       "deviceName": "Golden Drum",
       "assignable": {
@@ -144,6 +146,7 @@
         "title": "hard kick",
         "character": "hard",
         "outcome": "exact",
+        "realisation": "polyphonic-voice",
         "routing": "Keep out of the analog FX path"
       },
       "params": [
@@ -482,6 +485,7 @@
       "character": "dark",
       "priority": 1,
       "optional": false,
+      "notes": 1,
       "deviceId": "B-tracker",
       "deviceName": "Golden Tracker",
       "assignable": {
@@ -501,7 +505,8 @@
         "id": "tracker-sub-dirty",
         "title": "dirty sub",
         "character": "dirty",
-        "outcome": "substituted"
+        "outcome": "substituted",
+        "realisation": "polyphonic-voice"
       },
       "params": [
         {
@@ -652,6 +657,7 @@
       "character": "dark",
       "priority": 2,
       "optional": false,
+      "notes": 1,
       "deviceId": "A-cascade",
       "deviceName": "Golden Cascade",
       "assignable": {
@@ -668,7 +674,8 @@
         "id": "cascade-bassmid-dark",
         "title": "dark bass-mid",
         "character": "dark",
-        "outcome": "exact"
+        "outcome": "exact",
+        "realisation": "polyphonic-voice"
       },
       "params": [
         {
@@ -780,6 +787,7 @@
       "character": "dirty",
       "priority": 2,
       "optional": false,
+      "notes": 1,
       "deviceId": "a-drum",
       "deviceName": "Golden Drum",
       "assignable": {
@@ -795,7 +803,8 @@
         "id": "drum-hat-dirty",
         "title": "dirty closed-hat",
         "character": "dirty",
-        "outcome": "exact"
+        "outcome": "exact",
+        "realisation": "polyphonic-voice"
       },
       "params": [
         {
@@ -1012,6 +1021,7 @@
       "character": "dark",
       "priority": 2,
       "optional": false,
+      "notes": 3,
       "deviceId": "B-tracker",
       "deviceName": "Golden Tracker",
       "assignable": {
@@ -1031,7 +1041,8 @@
         "id": "tracker-pad-ice",
         "title": "dirty pad",
         "character": "dirty",
-        "outcome": "substituted"
+        "outcome": "substituted",
+        "realisation": "polyphonic-voice"
       },
       "params": [
         {
@@ -1229,6 +1240,7 @@
       "character": "dark",
       "priority": 3,
       "optional": false,
+      "notes": 3,
       "deviceId": "B-tracker",
       "deviceName": "Golden Tracker",
       "assignable": {
@@ -1248,7 +1260,8 @@
         "id": "tracker-pad-ice",
         "title": "dirty pad",
         "character": "dirty",
-        "outcome": "substituted"
+        "outcome": "substituted",
+        "realisation": "polyphonic-voice"
       },
       "params": [
         {
@@ -1446,6 +1459,7 @@
       "character": "hard",
       "priority": 3,
       "optional": false,
+      "notes": 1,
       "deviceId": "a-drum",
       "deviceName": "Golden Drum",
       "assignable": {
@@ -1462,7 +1476,8 @@
         "id": "drum-tom-hard",
         "title": "hard tom",
         "character": "hard",
-        "outcome": "exact"
+        "outcome": "exact",
+        "realisation": "polyphonic-voice"
       },
       "params": [],
       "patch": [],
@@ -1509,6 +1524,8 @@
       "reason": "no-recipe",
       "because": null,
       "detail": null,
+      "notes": null,
+      "roleVoices": null,
       "capable": [
         {
           "deviceId": "a-drum",
@@ -1530,6 +1547,8 @@
       "reason": "no-room",
       "because": "contended",
       "detail": "the Golden Drum LT is carrying tom",
+      "notes": null,
+      "roleVoices": null,
       "capable": [
         {
           "deviceId": "a-drum",
@@ -1550,8 +1569,10 @@
       "priority": 4,
       "optional": true,
       "reason": "no-capable-voice",
-      "because": null,
+      "because": "no-such-role",
       "detail": null,
+      "notes": 1,
+      "roleVoices": [],
       "capable": []
     },
     {
@@ -1563,6 +1584,8 @@
       "reason": "no-recipe",
       "because": null,
       "detail": null,
+      "notes": null,
+      "roleVoices": null,
       "capable": [
         {
           "deviceId": "B-tracker",

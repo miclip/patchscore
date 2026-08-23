@@ -10,6 +10,7 @@ import {
   type MoodAxis,
   type Role,
 } from './vocabulary'
+import { realisationRank, requiredVoicePolyphony } from './device'
 import type {
   ArticulationEntry,
   Assignable,
@@ -415,25 +416,74 @@ export type RecipeResolution =
     }
   | { outcome: 'unvoiced'; distanceSq: 0 }
 
+/** Every recipe this device authors for that voice and role, before any filtering. */
+export function recipesFor(device: Device, assignable: Assignable, role: Role): Recipe[] {
+  const voiceKey = recipeVoiceKey(assignable)
+  return device.recipes.filter((r) => r.role === role && r.voice === voiceKey)
+}
+
 /**
- * Candidate recipes for one assignable and role, nearest character first, ties broken by
- * recipe id in UTF-16 code unit order (§7.2 — §3.5 originally wrote `localeCompare` here).
- * Opposites are excluded, never merely ranked last.
+ * §12.4. Whether this assignable can carry `notes` simultaneous notes in this role *at all* —
+ * either because the voice sounds that many itself, or because the device authors a recipe for
+ * this voice and role that gets there another way (a chord in one sample).
+ *
+ * Character is deliberately not consulted. This is the rig question §7.3 asks before the
+ * authoring question: a voice whose only pad recipe is the wrong character is still a voice
+ * that can play a pad, and the gap it produces is `no-recipe` ("dial it by ear"), not
+ * `no-capable-voice`. The same has to hold for a chord sample, or a request for three notes
+ * would report "nothing can carry this" against a box that plainly does it.
+ */
+export function canCarryNotes(
+  device: Device,
+  assignable: Assignable,
+  role: Role,
+  notes: number,
+): boolean {
+  if (assignable.polyphony >= notes) return true
+  return recipesFor(device, assignable, role).some(
+    (recipe) => requiredVoicePolyphony(recipe, notes) <= assignable.polyphony,
+  )
+}
+
+/**
+ * Candidate recipes for one assignable and role. Ordered by realisation first when the part has
+ * more than one note (§12.4, matching §7.1's key order), then nearest character, then recipe id
+ * in UTF-16 code unit order (§7.2 — §3.5 originally wrote `localeCompare` here). Opposites are
+ * excluded, never merely ranked last, and so is any recipe needing more polyphony than the
+ * assignable has.
+ *
+ * Realisation appears **twice**, and the two appearances answer different questions.
+ *
+ *  - *Above* character, for a part of more than one note: taking the real voice is worth a
+ *    character substitution (§7.1), because a chord sample cannot be inverted or moved to the
+ *    next section's degrees.
+ *  - *Below* character, always: at equal character distance a real voice still wins. This is
+ *    what decides between two recipes sharing `(role, character, voice)` — legal since §3's key
+ *    gained realisation (§12.4) — and without it a one-note part would pick between them by
+ *    which id happens to sort first, which for a sampled chord means being handed a chord where
+ *    it asked for a note.
+ *
+ * It is deliberately not above character for a one-note part: there is no chord to invert, so
+ * the trade that justifies the substitution is not available to buy.
  */
 export function scoreRecipes(
   device: Device,
   assignable: Assignable,
   role: Role,
   want: Character,
+  notes = 1,
 ): { recipe: Recipe; distanceSq: number }[] {
-  const voiceKey = recipeVoiceKey(assignable)
-  return device.recipes
-    .filter((r) => r.role === role && r.voice === voiceKey)
+  const realisationDecides = notes > 1
+  return recipesFor(device, assignable, role)
+    .filter((recipe) => requiredVoicePolyphony(recipe, notes) <= assignable.polyphony)
     .map((recipe) => ({ recipe, distanceSq: characterDistanceSq(recipe.character, want) }))
     .filter((x) => x.distanceSq < MAX_SUBSTITUTION_DISTANCE_SQ)
     .sort(
       (a, b) =>
-        a.distanceSq - b.distanceSq || compareCodeUnits(a.recipe.id, b.recipe.id),
+        (realisationDecides ? realisationRank(a.recipe) - realisationRank(b.recipe) : 0) ||
+        a.distanceSq - b.distanceSq ||
+        realisationRank(a.recipe) - realisationRank(b.recipe) ||
+        compareCodeUnits(a.recipe.id, b.recipe.id),
     )
 }
 
@@ -447,8 +497,10 @@ export function resolveRecipe(
   assignable: Assignable,
   role: Role,
   want: Character,
+  /** §12.4. Simultaneous notes the request needs. Recipes that cannot reach it are excluded. */
+  notes = 1,
 ): RecipeResolution {
-  const best = scoreRecipes(device, assignable, role, want)[0]
+  const best = scoreRecipes(device, assignable, role, want, notes)[0]
   if (best === undefined) return { outcome: 'unvoiced', distanceSq: 0 }
   return {
     outcome: best.distanceSq === 0 ? 'exact' : 'substituted',

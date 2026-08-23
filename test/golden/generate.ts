@@ -45,6 +45,7 @@ export function serialise(result: ResolveResult): string {
         character: a.character,
         priority: a.priority,
         optional: a.optional,
+        notes: a.notes,
         deviceId: a.deviceId,
         deviceName: a.deviceName,
         assignable: a.assignable,
@@ -65,8 +66,12 @@ export function serialise(result: ResolveResult): string {
         priority: g.priority,
         optional: g.optional,
         reason: g.reason,
-        because: g.reason === 'no-room' ? g.because : null,
+        // `because` is on two variants now and means a different taxonomy on each (§7.3), so
+        // it is pinned per variant rather than as one loose field.
+        because: g.reason === 'no-recipe' ? null : g.because,
         detail: g.reason === 'no-room' ? g.detail : null,
+        notes: g.reason === 'no-capable-voice' ? g.notes : null,
+        roleVoices: g.reason === 'no-capable-voice' ? g.roleVoices : null,
         capable: g.capable,
       })),
       // Maps, as ordered entries.

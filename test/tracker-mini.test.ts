@@ -5,6 +5,7 @@ import {
   ROLES,
   expand,
   moodState,
+  realisationOf,
   resolveParams,
   resolveRecipe,
   type AuthoredParam,
@@ -107,12 +108,18 @@ describe('Tracker Mini manifest', () => {
   it('resolves one authored recipe from every ordinal in its pool (§2.2)', () => {
     // The point of keying on `poolId ?? voiceId`: one recipe serves all eight tracks. If this
     // broke, pools would just relocate the duplication instead of removing it.
+    //
+    // Asked for by realisation as well as by (role, character), because §3's key now carries it
+    // (§12.4) and `pad + soft` on `track-sample` is authored twice — once as a VAP patch, once
+    // as a chord sample. Asking without saying which one you mean has a right answer (§7.1
+    // prefers the real voice) but it is not the question this test is about.
     const assignables = expand(device)
     for (const recipe of device.recipes) {
       const members = assignables.filter((a) => a.poolId === recipe.voice)
       expect(members, recipe.id).toHaveLength(8)
+      const notes = realisationOf(recipe) === 'sampled-chord' ? 3 : 1
       for (const member of members) {
-        const resolution = resolveRecipe(device, member, recipe.role, recipe.character)
+        const resolution = resolveRecipe(device, member, recipe.role, recipe.character, notes)
         const where = `${recipe.id} on ${member.voiceId}`
         expect(resolution.outcome, where).toBe('exact')
         if (resolution.outcome === 'unvoiced') throw new Error(`${where}: unvoiced`)
@@ -156,8 +163,14 @@ describe('Tracker Mini manifest', () => {
     expect(DUPLICATED_SYNTH_RECIPES).toBe(3)
 
     for (const synthRecipe of twinned) {
+      // Matched on realisation too, because `pad + soft` on the sample pool is now authored
+      // twice (§3, §12.4) and the chord-sample one is not a twin of anything — it is the sample
+      // pool's own recipe, which is exactly why it does not appear on `track-synth`.
       const twin = recipesOn('track-sample').find(
-        (r) => r.role === synthRecipe.role && r.character === synthRecipe.character,
+        (r) =>
+          r.role === synthRecipe.role &&
+          r.character === synthRecipe.character &&
+          realisationOf(r) === realisationOf(synthRecipe),
       )
       expect(twin, `${synthRecipe.id} has no track-sample twin`).toBeDefined()
       // Identical but for id, voice and routing — the twins cannot drift apart.
@@ -191,12 +204,24 @@ describe('Tracker Mini manifest', () => {
   // Content and citation discipline (§3.1, §3.2)
   // -------------------------------------------------------------------------
 
-  it('carries 15-20 recipes on distinct (role, character, voice) triples (§3)', () => {
+  it('carries 15-20 recipes on distinct (role, character, voice, realisation) keys (§3)', () => {
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
     expect(device.recipes.length).toBeLessThanOrEqual(20)
 
-    const triples = device.recipes.map((r) => `${r.role}\u0000${r.character}\u0000${r.voice}`)
-    expect(new Set(triples).size).toBe(triples.length)
+    const keys = device.recipes.map(
+      (r) => `${r.role}\u0000${r.character}\u0000${r.voice}\u0000${realisationOf(r)}`,
+    )
+    expect(new Set(keys).size).toBe(keys.length)
+
+    // And the pair that made realisation part of the key: one soft pad on the sample pool,
+    // authored twice because it is two jobs — play the chord, or load it (§12.4).
+    const softPads = device.recipes.filter(
+      (r) => r.role === 'pad' && r.character === 'soft' && r.voice === 'track-sample',
+    )
+    expect(softPads.map((r) => realisationOf(r)).sort()).toEqual([
+      'polyphonic-voice',
+      'sampled-chord',
+    ])
 
     // Two recipes sharing (role, character) on *different* pools is the whole point, and is
     // exactly what the old per-device key rejected.
@@ -250,11 +275,24 @@ describe('Tracker Mini manifest', () => {
     expect(counts.unverifiedRanges).toBe(0)
     expect(counts.moodInert).toBe(0)
     expect(counts.manualRanges).toBe(counts.numerics)
-    // No point is cited at all, enums included: `verified` on a param is a claim about the
+
+    // No *setting* is cited on its point, enums included: `verified` there is a claim about the
     // selected value, and every selection here is taste. The option sets carry their own
     // citations, asserted below.
-    expect(counts.manualPoints).toBe(0)
-    expect(counts.provisionalPoints).toBe(counts.params)
+    //
+    // Text params are the one exception, and it is a difference in kind rather than a loophole.
+    // A numeric or enum param has a legality gate of its own — the range, the option set — so a
+    // citation has somewhere to go that is not the point. A text param has no such gate: it
+    // states an instruction rather than picks among legal values, so if the instruction is the
+    // manual's, `verified` is the only place that can be recorded, and recording it as `false`
+    // would badge a documented procedure as a guess. It is cited only when the manual really
+    // does print the procedure, which is asserted below by page.
+    const settings = device.recipes.flatMap((r) =>
+      (r.params as AuthoredParam[]).filter((p) => p.kind !== 'text'),
+    )
+    expect(settings.every((p) => p.verified === false)).toBe(true)
+    expect(counts.manualPoints).toBe(counts.params - settings.length)
+    expect(counts.provisionalPoints).toBe(settings.length)
   })
 
   it('cites a page that exists in the manual, and never page 0', () => {

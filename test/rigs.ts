@@ -31,7 +31,13 @@ import { template } from './fixtures'
 // Rig fixtures - hand-authored boxes with known properties (§7.1)
 // ---------------------------------------------------------------------------
 
-export function makeRecipe(id: string, role: Role, character: Character, voice: string): Recipe {
+export function makeRecipe(
+  id: string,
+  role: Role,
+  character: Character,
+  voice: string,
+  over: Partial<Recipe> = {},
+): Recipe {
   return {
     id,
     role,
@@ -47,6 +53,7 @@ export function makeRecipe(id: string, role: Role, character: Character, voice: 
       },
     ],
     verified: { kind: 'manual', source: 'fixture p.1' },
+    ...over,
   }
 }
 
@@ -170,14 +177,15 @@ export function desugarPools(device: Device): Device {
 
 export function keys(score: Score) {
   const v = score as unknown as number[]
-  const tail = v.length - 5
+  const tail = v.length - 6
   return {
     misses: v.slice(0, tail),
     crowdOverflow: v[tail] as number,
     optionalMisses: v[tail + 1] as number,
-    recipeDistance: v[tail + 2] as number,
-    roleFitPenalty: v[tail + 3] as number,
-    idleDevices: v[tail + 4] as number,
+    sampledChords: v[tail + 2] as number,
+    recipeDistance: v[tail + 3] as number,
+    roleFitPenalty: v[tail + 4] as number,
+    idleDevices: v[tail + 5] as number,
   }
 }
 
@@ -206,19 +214,33 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
   )
   const maxPriority = requests.reduce((m, r) => Math.max(m, r.priority), 0)
 
-  type Cand = { a: Assignable; distance: number; fit: number }
+  type Cand = { a: Assignable; distance: number; sampledChord: number; fit: number }
   const cands: Cand[][] = []
   const sections: string[][] = []
   for (const r of requests) {
     const want = resolveCharacter(r.character, seedlessMood)
     sections.push(sectionsFor(r, t))
     const list: Cand[] = []
+    const notes = r.polyphony ?? 1
     for (const { a, d } of owners) {
       if (!a.roles.includes(r.role)) continue
-      if (a.polyphony < (r.polyphony ?? 1)) continue
-      const res = resolveRecipe(d, a, r.role, want)
+      // §12.4, restated rather than shared: the voice sounds the notes itself, or a
+      // `sampled-chord` recipe gets there with one voice. Deliberately a second implementation.
+      const sampled = d.recipes.some(
+        (x) =>
+          x.role === r.role &&
+          x.voice === (a.poolId ?? a.voiceId) &&
+          x.realisation === 'sampled-chord',
+      )
+      if (a.polyphony < notes && !sampled) continue
+      const res = resolveRecipe(d, a, r.role, want, notes)
       if (res.outcome === 'unvoiced') continue
-      list.push({ a, distance: quantiseDistance(res.distanceSq), fit: a.roles.indexOf(r.role) })
+      list.push({
+        a,
+        distance: quantiseDistance(res.distanceSq),
+        sampledChord: notes > 1 && res.recipe.realisation === 'sampled-chord' ? 1 : 0,
+        fit: a.roles.indexOf(r.role),
+      })
     }
     cands.push(list)
   }
@@ -231,6 +253,7 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
     const misses = new Array(maxPriority).fill(0)
     let optionalMisses = 0
     let recipeDistance = 0
+    let sampledChords = 0
     let roleFitPenalty = 0
     const byDevice = new Map<string, Set<string>>()
     requests.forEach((r, i) => {
@@ -241,6 +264,7 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
         return
       }
       recipeDistance += c.distance
+      sampledChords += c.sampledChord
       roleFitPenalty += c.fit
       const set = byDevice.get(c.a.deviceId) ?? new Set<string>()
       set.add(assignableKey(c.a))
@@ -259,6 +283,7 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
       ...misses,
       crowdOverflow,
       optionalMisses,
+      sampledChords,
       recipeDistance,
       roleFitPenalty,
       idleDevices,
