@@ -1,5 +1,12 @@
-import type { Device, DeviceId, ResolveResult, ResolvedPatchEntry } from '@/lib/core'
-import { citeLines, hintText } from './format'
+import type {
+  Device,
+  DeviceId,
+  ResolveResult,
+  ResolvedAssignment,
+  ResolvedPatchEntry,
+} from '@/lib/core'
+import { dominantRangeCite } from '@/lib/core'
+import { citeLines, citeText, hintText } from './format'
 import { Instruction, ParamLine, ProvenanceMark } from './instruction'
 
 function Patch({ entries }: { entries: readonly ResolvedPatchEntry[] }) {
@@ -21,6 +28,35 @@ function Patch({ entries }: { entries: readonly ResolvedPatchEntry[] }) {
         </li>
       ))}
     </ul>
+  )
+}
+
+/**
+ * A recipe whose parameters all come off one manual page printed that page under every line.
+ * The shared citation is stated once under the heading; a parameter citing a different page —
+ * or one whose range is unverified, which is a different claim entirely — keeps its own.
+ */
+function Params({ assignment, owner }: { assignment: ResolvedAssignment; owner: Device | undefined }) {
+  const hoisted = dominantRangeCite(assignment.params)
+  return (
+    <>
+      {hoisted === undefined ? null : (
+        <p className="quiet">Ranges cite {citeText(hoisted)}.</p>
+      )}
+      <div className="params">
+        {assignment.params.map((param) => {
+          const hint = param.hint === undefined ? undefined : hintText(owner, param.hint)
+          return (
+            <ParamLine
+              key={param.name}
+              param={param}
+              {...(hint === undefined ? {} : { hint })}
+              {...(hoisted === undefined ? {} : { hoisted })}
+            />
+          )
+        })}
+      </div>
+    </>
   )
 }
 
@@ -76,19 +112,7 @@ export function PhaseSound({
                 {a.params.length === 0 ? (
                   <p className="quiet">No settings authored for this recipe.</p>
                 ) : (
-                  <div className="params">
-                    {a.params.map((param) => {
-                      const hint =
-                        param.hint === undefined ? undefined : hintText(owner, param.hint)
-                      return (
-                        <ParamLine
-                          key={param.name}
-                          param={param}
-                          {...(hint === undefined ? {} : { hint })}
-                        />
-                      )
-                    })}
-                  </div>
+                  <Params assignment={a} owner={owner} />
                 )}
 
                 {a.patch.length === 0 ? null : (

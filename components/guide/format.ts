@@ -66,17 +66,26 @@ export function valueParts(param: ResolvedParam): ValueParts {
  * citation sitting under it. A provisional point has no citation to give and gets none — that
  * absence is the honest rendering, not a hole to fill.
  */
-export function citeLines(provenance: Provenance, range: ResolvedRange | undefined): string[] {
+export function citeLines(
+  provenance: Provenance,
+  range: ResolvedRange | undefined,
+  hoisted?: Cite,
+): string[] {
   const parts: string[] = []
   if (provenance.state !== 'provisional') parts.push(`value ${citeText(provenance.cite)}`)
   if (range !== undefined) {
-    parts.push(
-      range.verified === false
-        ? 'range unverified — mood leaves this value alone'
-        : `range ${citeText(range.verified)}`,
-    )
+    if (range.verified === false) {
+      parts.push('range unverified — mood leaves this value alone')
+    } else if (!sameCite(range.verified, hoisted)) {
+      // The exception keeps its line. Hoisting removes repetition, never the outlier.
+      parts.push(`range ${citeText(range.verified)}`)
+    }
   }
   return parts
+}
+
+function sameCite(a: Cite, b: Cite | undefined): boolean {
+  return b !== undefined && a.kind === b.kind && a.source === b.source
 }
 
 /**

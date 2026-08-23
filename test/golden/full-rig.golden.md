@@ -303,53 +303,48 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 #### HC — `clap`: Wide clap sitting on top of the snare
 
+*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
+
 - **GEN** `9X Hand Clap`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
 - **FILTER** `35` % (-100…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
   - ↳ hint: Clap brightness
 - **CLAPS** `70` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 - **SPEED** `55` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 - **MIX** `20` % (-100…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
   - ↳ hint: Clap against tail, not layers
 - **TAIL DCY** `62` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 
 #### CH — `closed-hat`: Grainy CR-78 hat with a metallic edge
+
+*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
 
 - **GEN** `CR78 HiHat`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
 - **TUNE** `-5` % (-100…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 - **DECAY** `20` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 - **METALLIC** `72` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
   - ↳ hint: Metal-like overtone level
 
 #### OH — `open-hat`: Dull open hat, more air than sizzle
 
+*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
+
 - **GEN** `606 Open HiHat`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
 - **TUNE** `-18` % (-100…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 - **DECAY** `64` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 - **TONE** `-35` % (-100…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
   - ↳ hint: Brightness of the cymbal
 
 #### CC — `impact`: Crash marking the top of a section
 
+*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
+
 - **GEN** `9X Crash Cymbal`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
 - **TUNE** `0` % (-100…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 - **DECAY** `84` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 
 ### Deluge
 
@@ -357,32 +352,32 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 #### Track 1 — `sub`: Sine sub with the top end cut away
 
+*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.219.*
+
 - **OSC TYPE** `Sine`
 - **EQ TREBLE AMOUNT** `17` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
   - ↳ note: 25 is neutral; below cuts
 - **EQ BASS AMOUNT** `31` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
 
 #### Track 2 — `bass-mid`: Analog saw bass through the drive filter, crushed
+
+*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.217.*
 
 - **OSC TYPE** `Analog Saw`
 - **LPF MODE** `DRIVE`
 - **DECIMATION** `14` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
 - **BITCRUSH** `9` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
 - **EQ BASS AMOUNT** `29` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
 
 #### Track 3 — `stab`: Square stab through a fast phaser
 
+*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.229.*
+
 - **OSC TYPE** `Analog Square`
 - **MOD FX TYPE** `PHASER`
 - **MOD FX RATE** `16` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.229
 - **MOD FX FEEDBACK** `18` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.229
   - ↳ note: Flanger and phaser types only
 - **EQ TREBLE AMOUNT** `29` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
@@ -410,12 +405,12 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 #### Track 6 — `noise`: Crushed noise wash under the drums
 
+*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.217.*
+
 - **OSC TYPE** `Sample`
 - **REPEAT MODE** `LOOP`
 - **BITCRUSH** `21` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
 - **DECIMATION** `13` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
 - **EQ BASS AMOUNT** `16` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
 

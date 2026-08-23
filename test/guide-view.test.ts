@@ -1,7 +1,13 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { GUIDE_PHASES, NEUTRAL_MOOD, renderGuide, resolve } from '../lib/core/index'
+import {
+  GUIDE_PHASES,
+  NEUTRAL_MOOD,
+  dominantRangeCite,
+  renderGuide,
+  resolve,
+} from '../lib/core/index'
 import type { ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
@@ -273,5 +279,53 @@ describe('hooks read as chords', () => {
     expect(out).toContain('class="chord"')
     expect(out).toContain('>root<')
     expect(out).not.toContain('>degree<')
+  })
+})
+
+describe('range citations hoist in the web view too', () => {
+  it('states a repeated citation once per recipe and keeps only the exceptions inline', () => {
+    const out = text(html(real))
+    let hoistedRecipes = 0
+
+    for (const a of real.assignments) {
+      const hoisted = dominantRangeCite(a.params)
+      if (hoisted === undefined) {
+        // No unambiguous repetition: every citation stays where it was.
+        for (const param of a.params) {
+          if (param.range === undefined || param.range.verified === false) continue
+          expect(out).toContain(`range ${param.range.verified.kind} — ${param.range.verified.source}`)
+        }
+        continue
+      }
+
+      hoistedRecipes += 1
+      expect(out).toContain(`Ranges cite ${hoisted.kind} — ${hoisted.source}.`)
+
+      // Every exception is still on the page; the shared one is not repeated under each line.
+      const exceptions = a.params.filter(
+        (p) =>
+          p.range !== undefined &&
+          p.range.verified !== false &&
+          !(p.range.verified.kind === hoisted.kind && p.range.verified.source === hoisted.source),
+      )
+      for (const param of exceptions) {
+        const cite = param.range?.verified
+        if (cite === undefined || cite === false) continue
+        expect(out).toContain(`range ${cite.kind} — ${cite.source}`)
+      }
+    }
+
+    expect(hoistedRecipes).toBeGreaterThan(0)
+  })
+
+  it('hoists no value citation — that is a claim about one number', () => {
+    const out = text(html(golden))
+    const valueCites = golden.assignments.flatMap((a) =>
+      a.params.flatMap((p) => (p.provenance.state === 'provisional' ? [] : [p.provenance.cite])),
+    )
+    expect(valueCites.length).toBeGreaterThan(0)
+    for (const cite of valueCites) {
+      expect(out).toContain(`value ${cite.kind} — ${cite.source}`)
+    }
   })
 })

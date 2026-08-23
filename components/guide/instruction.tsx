@@ -1,6 +1,6 @@
 import { Fragment } from 'react'
 import type { ReactNode } from 'react'
-import type { Provenance, ResolvedParam } from '@/lib/core'
+import type { Cite, Provenance, ResolvedParam } from '@/lib/core'
 import { GUIDE_PHASES } from '@/lib/core'
 import { citeLines, num, rangeText, valueParts } from './format'
 
@@ -119,10 +119,19 @@ export function Value({ param }: { param: ResolvedParam }) {
  * `ResolvedParam.provenance` is non-optional, so there is no unmarked case for this to fall
  * through to (invariant 4) — every value on the page carries where it came from.
  */
-export function ParamLine({ param, hint }: { param: ResolvedParam; hint?: string }) {
+export function ParamLine({
+  param,
+  hint,
+  hoisted,
+}: {
+  param: ResolvedParam
+  hint?: string
+  /** The recipe's shared range citation, already printed under its heading. */
+  hoisted?: Cite
+}) {
   return (
     <Instruction
-      cites={citeLines(param.provenance, param.range)}
+      cites={citeLines(param.provenance, param.range, hoisted)}
       {...(param.note === undefined ? {} : { note: param.note })}
       {...(hint === undefined ? {} : { hint })}
     >

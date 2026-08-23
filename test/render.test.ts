@@ -2,14 +2,19 @@ import { describe, expect, it } from 'vitest'
 import {
   GUIDE_PHASES,
   SUBORDINATE,
+  dominantRangeCite,
   moodState,
   renderGuide,
   resolve,
+  type AuthoredParam,
+  type Cite,
   type Hook,
   type ResolveResult,
+  type ResolvedParam,
   type Template,
 } from '../lib/core/index'
 import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
+import { box, request, withRoles } from './rigs'
 
 /**
  * §8. What the renderer must never do: drop a phase, print a value without its provenance,
@@ -173,13 +178,19 @@ describe('provenance (invariant 4, §3.2)', () => {
     const body = phaseBody(renderGuide(golden()), 6)
     const resonance = body.findIndex((l) => l.startsWith('- **RESONANCE**'))
     expect(resonance).toBeGreaterThan(-1)
-    // Point observed on the unit, range read off the page — and both said out loud.
+
+    // Point observed on the unit, and said out loud under the value it is about: a value
+    // citation is a claim about one number and never hoists.
     expect(body[resonance + 1]).toBe(
       `  - ${SUBORDINATE.cite} value observed — golden unit, firmware 1.11`,
     )
-    expect(body[resonance + 2]).toBe(
-      `  - ${SUBORDINATE.cite} range manual — Golden Manual p.12`,
-    )
+
+    // Range read off the page, and still said out loud — once, at the head of the recipe that
+    // repeats it, rather than under every line of it.
+    const heading = body.slice(0, resonance).findLastIndex((l) => l.startsWith('#### '))
+    expect(heading).toBeGreaterThan(-1)
+    const recipe = body.slice(heading, resonance)
+    expect(recipe.join('\n')).toContain('*Ranges cite manual — Golden Manual p.12.*')
   })
 
   it('says an unverified range is why mood did nothing, rather than leaving it unexplained', () => {
@@ -616,5 +627,143 @@ describe('copy says what is true, not what we declined to do', () => {
       expect(doc).not.toContain('not modelled')
       expect(doc).not.toContain('authors none')
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Range citations hoist when a recipe repeats one
+// ---------------------------------------------------------------------------
+
+/** A resolved numeric param with the given range citation, or an unverified range. */
+function ranged(name: string, verified: Cite | false): ResolvedParam {
+  return {
+    name,
+    value: 10,
+    range: { min: 0, max: 100, verified },
+    provenance: { state: 'provisional' },
+  }
+}
+
+const P59: Cite = { kind: 'manual', source: 'Fixture Manual p.59' }
+const P60: Cite = { kind: 'manual', source: 'Fixture Manual p.60' }
+const OBSERVED59: Cite = { kind: 'observed', source: 'Fixture Manual p.59' }
+
+describe('dominantRangeCite (§3.2, state it once)', () => {
+  const cases: { name: string; params: ResolvedParam[]; expected: Cite | undefined }[] = [
+    {
+      name: 'uniform — every range cites one page',
+      params: [ranged('A', P59), ranged('B', P59), ranged('C', P59)],
+      expected: P59,
+    },
+    {
+      name: 'exceptional — one param cites a different page',
+      params: [ranged('A', P59), ranged('B', P59), ranged('C', P60)],
+      expected: P59,
+    },
+    {
+      name: 'ambiguous — two citations twice each, so neither dominates',
+      params: [ranged('A', P59), ranged('B', P59), ranged('C', P60), ranged('D', P60)],
+      expected: undefined,
+    },
+    {
+      name: 'no repetition — one occurrence is not a pattern',
+      params: [ranged('A', P59), ranged('B', P60)],
+      expected: undefined,
+    },
+    {
+      name: 'unverified ranges carry no citation to hoist',
+      params: [ranged('A', false), ranged('B', false), ranged('C', false)],
+      expected: undefined,
+    },
+    {
+      name: 'an unverified range does not dilute a repeated one',
+      params: [ranged('A', P59), ranged('B', P59), ranged('C', false)],
+      expected: P59,
+    },
+    {
+      name: 'cite.kind is part of identity — a manual and an observation are not one citation',
+      params: [ranged('A', P59), ranged('B', OBSERVED59)],
+      expected: undefined,
+    },
+    {
+      name: 'nothing to hoist from a recipe with no ranges at all',
+      params: [{ name: 'MODE', value: 'On', provenance: { state: 'provisional' } }],
+      expected: undefined,
+    },
+  ]
+
+  for (const { name, params, expected } of cases) {
+    it(name, () => {
+      expect(dominantRangeCite(params)).toEqual(expected)
+    })
+  }
+})
+
+describe('hoisted range citations in Sound design (§8)', () => {
+  /** One device, one recipe, whose params carry the citations under test. */
+  function guideFor(params: AuthoredParam[]): string {
+    const device = box('A-hoist', {
+      voices: [{ kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 }],
+      recipes: [
+        { id: 'r', role: 'kick', character: 'hard', voice: 'bd', title: 'hoist fixture', params },
+      ],
+    })
+    return renderGuide(
+      resolve({
+        devices: [device],
+        template: withRoles([request({ id: 'r-kick', role: 'kick' })]),
+        mood: moodState(),
+        seed: 1,
+      }),
+    )
+  }
+
+  function numeric(name: string, verified: Cite | false): AuthoredParam {
+    return { kind: 'numeric', name, value: 10, range: { min: 0, max: 100, verified } }
+  }
+
+  it('states a uniform citation once and drops every per-parameter copy', () => {
+    const body = phaseBody(guideFor([numeric('A', P59), numeric('B', P59), numeric('C', P59)]), 6)
+    expect(body.filter((l) => l.includes('*Ranges cite manual — Fixture Manual p.59.*'))).toHaveLength(1)
+    expect(body.filter((l) => l.includes('↳ cite: range'))).toHaveLength(0)
+  })
+
+  it('keeps the exception on its own line, which is the point of hoisting', () => {
+    const body = phaseBody(guideFor([numeric('A', P59), numeric('B', P59), numeric('C', P60)]), 6)
+    expect(body.filter((l) => l.includes('*Ranges cite manual — Fixture Manual p.59.*'))).toHaveLength(1)
+    const kept = body.filter((l) => l.includes('↳ cite: range'))
+    expect(kept).toHaveLength(1)
+    expect(kept[0]).toContain('p.60')
+  })
+
+  it('hoists nothing when two citations tie, and leaves every line in place', () => {
+    const body = phaseBody(
+      guideFor([numeric('A', P59), numeric('B', P59), numeric('C', P60), numeric('D', P60)]),
+      6,
+    )
+    expect(body.filter((l) => l.includes('Ranges cite'))).toHaveLength(0)
+    expect(body.filter((l) => l.includes('↳ cite: range'))).toHaveLength(4)
+  })
+
+  it('never hoists a value citation — that is a claim about one number', () => {
+    const body = phaseBody(
+      guideFor([
+        { kind: 'numeric', name: 'A', value: 10, range: { min: 0, max: 100, verified: P59 }, verified: P59 },
+        { kind: 'numeric', name: 'B', value: 20, range: { min: 0, max: 100, verified: P59 }, verified: P59 },
+      ]),
+      6,
+    )
+    // The shared range hoists; both value citations stay exactly where they are.
+    expect(body.filter((l) => l.includes('Ranges cite'))).toHaveLength(1)
+    expect(body.filter((l) => l.includes('↳ cite: value'))).toHaveLength(2)
+  })
+
+  it('leaves an unverified range alone — it is a different claim, not a repetition', () => {
+    const body = phaseBody(
+      guideFor([numeric('A', P59), numeric('B', P59), numeric('C', false)]),
+      6,
+    )
+    expect(body.filter((l) => l.includes('Ranges cite'))).toHaveLength(1)
+    expect(body.filter((l) => l.includes('range unverified'))).toHaveLength(1)
   })
 })
