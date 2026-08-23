@@ -79,13 +79,84 @@ export type Assignable = {
 // §3 Recipes
 // ---------------------------------------------------------------------------
 
-/** §3.3. A patchable device's recipe is a patch list plus knob positions. */
-export type PatchEntry = { from: string; to: string; note?: string }
+/**
+ * §3.3. A patch point on the panel, declared **once by the device** and referenced by name from
+ * every recipe that uses it.
+ *
+ * ## Why this is device data and not part of the cable
+ *
+ * A cable carries three separate claims, and the project has now walked into this same shape
+ * three times:
+ *
+ *     the `from` jack exists      documented — p.27
+ *     the `to` jack exists        documented — p.68
+ *     connecting them is right    taste
+ *
+ * That is exactly a numeric param (`range` cited, point taste, §3.1) and exactly the enum repair
+ * from step 4 (`options` cited, selection taste, §3.2). Three unrelated device kinds pushing on
+ * one assumption means the assumption is wrong, not the devices.
+ *
+ * The fix is *not* three `verified` fields on `PatchEntry`. That would copy one jack's citation
+ * onto every cable that touches it — twenty-seven cables restating the same handful of pages —
+ * and make each cable responsible for facts that belong to the box. **A jack exists or it does
+ * not; that is device-level, and it is documented on one page.** So the device declares its
+ * jacks, cited once each, and a `PatchEntry` names two of them.
+ *
+ * This is the pattern the codebase already had: an articulation's `set` keys must appear in the
+ * device's `features.perStep`, checked by Zod at device level, because the capability belongs to
+ * the device and the recipe only references it. Jacks are the same kind of thing.
+ *
+ * `id` is **section-qualified**, exactly as the panel prints it — `VCO A · FM 1`, not `FM 1`.
+ * Panels reuse jack names freely: `IN` appears in five sections of a Cascadia, and `PITCH`,
+ * `SYNC`, `LEVEL`, `TRIG` and `FM 1` all repeat. A bare name is unresolvable at the machine.
+ *
+ * **A position would hang here**, and that is the point of listing them: §10's rack draws
+ * inter-device cables but cannot draw a cable between two jacks on one panel, because
+ * `PanelFeature` has no jack and there are no coordinates to draw between. Nothing here carries
+ * a position yet and this is deliberately not the change that adds one — but the list is the
+ * foundation that change would extend, rather than something it would have to invent first.
+ */
+export type JackSpec = {
+  /** Section-qualified, as the panel prints it: 'VCO A · FM 1'. */
+  id: string
+  /** A cable leaves an `out` and arrives at an `in`. Checked, per patch entry. */
+  direction: 'in' | 'out'
+  /** The page that documents this jack. Cited once, here, however many cables touch it. */
+  verified: Verified
+  /** Anything a name alone would mislead a reader about. */
+  note?: string
+}
+
+export const JackSpecSchema = z.strictObject({
+  id: z.string().min(1),
+  direction: z.enum(['in', 'out']),
+  verified: VerifiedSchema,
+  note: z.string().min(1).optional(),
+})
+
+/**
+ * §3.3. A patchable device's recipe is a patch list plus knob positions.
+ *
+ * `from` and `to` name jacks the device declares in `jacks` — Zod refuses a patch entry naming
+ * one it does not, the same way it refuses an articulation key absent from `features.perStep`,
+ * and refuses a cable that leaves an input or arrives at an output.
+ *
+ * **`verified` here claims exactly one thing: that *this connection* is the right choice.** Not
+ * that the jacks exist — their own declarations say that, once each. So a cable somebody patched
+ * because it sounded good is `false` and renders provisional, which is the honest answer and the
+ * one the shape could not express before; a cable the manual itself instructs ("Patch the ENV B
+ * output jack to the S&H section's TRIG input jack", p.14) carries that page.
+ *
+ * Inheritance is §3.1's, unchanged: omitted inherits the recipe's, a citation overrides it, an
+ * explicit `false` overrides an inherited citation.
+ */
+export type PatchEntry = { from: string; to: string; note?: string; verified?: Verified }
 
 export const PatchEntrySchema = z.strictObject({
   from: z.string().min(1),
   to: z.string().min(1),
   note: z.string().min(1).optional(),
+  verified: VerifiedSchema.optional(),
 })
 
 /**
@@ -98,12 +169,26 @@ export type ArticulationEntry = {
   set: Record<string, number | string | boolean>
   /** A key into the device's `hints` table. */
   hint?: string
+  /**
+   * §3.1's inheritance, per entry, exactly as on `PatchEntry` and `AuthoredParam`: omitted
+   * inherits the recipe's, a citation overrides it, an explicit `false` overrides an inherited
+   * citation.
+   *
+   * It is here for the same reason and in the same pass as the patch one. The two entry kinds
+   * had the identical defect and only one of them was found by a device — but §3 names all
+   * three shapes in one sentence, and a design sentence that is true of one of the three things
+   * it names is worse than one that is true of none, because it reads as authoritative. The
+   * concrete case is the same shape too: a per-step capability documented on the page that
+   * describes that gesture, sitting in a recipe whose parameters came off a different page.
+   */
+  verified?: Verified
 }
 
 export const ArticulationEntrySchema = z.strictObject({
   slot: PatternSlotSchema,
   set: z.record(z.string().min(1), z.union([z.number().finite(), z.string(), z.boolean()])),
   hint: z.string().min(1).optional(),
+  verified: VerifiedSchema.optional(),
 })
 
 /**
@@ -161,7 +246,8 @@ export function realisationRank(recipe: Recipe): number {
 
 /**
  * `verified` here is a *default citation* only. It is inherited by any param, patch entry or
- * articulation entry that does not carry its own (§3.1). It is not itself a provenance state.
+ * articulation entry that does not carry its own (§3.1) — all three of those now genuinely
+ * carry one, which they did not until #49. It is not itself a provenance state.
  */
 export type Recipe = {
   id: RecipeId
@@ -455,6 +541,11 @@ export type Device = {
   physical: PhysicalSpec
   /** §10. A simplified original drawing of the panel. Optional; the rack generates one without. */
   panel?: PanelLayout
+  /**
+   * §3.3. The patch points this device declares, each cited once. Required only in the sense
+   * that a recipe cannot name a jack that is not here — a box nobody patches declares none.
+   */
+  jacks?: JackSpec[]
   voices: VoiceSpec[]
   /**
    * How many *occupied assignables* this device is comfortable carrying (§12.4).
@@ -478,6 +569,7 @@ export const DeviceSchema = z
     io: IoSpecSchema,
     physical: PhysicalSpecSchema,
     panel: PanelLayoutSchema.optional(),
+    jacks: z.array(JackSpecSchema).optional(),
     voices: z.array(VoiceSpecSchema),
     comfortableVoices: z.int().min(1).optional(),
     features: DeviceFeaturesSchema.optional(),
@@ -555,6 +647,23 @@ export const DeviceSchema = z
       })
     }
 
+    // §3.3. Jack ids are unique within a device, for the same reason voice ids are: a patch
+    // entry names one, and two declarations of one name make the citation and the direction
+    // ambiguous rather than merely redundant.
+    const jackDirection = new Map<string, 'in' | 'out'>()
+    const duplicateJacks: string[] = []
+    for (const jack of device.jacks ?? []) {
+      if (jackDirection.has(jack.id)) duplicateJacks.push(jack.id)
+      else jackDirection.set(jack.id, jack.direction)
+    }
+    if (duplicateJacks.length > 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `jack ids must be unique within a device: ${duplicateJacks.join(', ')}`,
+        path: ['jacks'],
+      })
+    }
+
     const perStep = new Set(device.features?.perStep ?? [])
     const hintKeys = new Set(Object.keys(device.hints ?? {}))
 
@@ -567,6 +676,36 @@ export const DeviceSchema = z
           path: ['recipes', i, 'voice'],
         })
       }
+
+      // §3.3: a cable names two jacks the device declares, and runs from an output to an
+      // input. Both are the same class of check as an articulation key against `features.perStep`
+      // below — the capability is the device's and the recipe only references it — and both fail
+      // the build rather than a request (§9). Before this existed, a typo in a jack name rendered
+      // happily and sent a reader hunting for a socket that is not on the box.
+      recipe.patch?.forEach((entry, j) => {
+        for (const [end, name] of [
+          ['from', entry.from],
+          ['to', entry.to],
+        ] as const) {
+          const direction = jackDirection.get(name)
+          if (direction === undefined) {
+            ctx.addIssue({
+              code: 'custom',
+              message: `patch entry names jack '${name}', which this device does not declare`,
+              path: ['recipes', i, 'patch', j, end],
+            })
+            continue
+          }
+          const wanted = end === 'from' ? 'out' : 'in'
+          if (direction !== wanted) {
+            ctx.addIssue({
+              code: 'custom',
+              message: `a cable's '${end}' must be an ${wanted}put; '${name}' is an ${direction}put`,
+              path: ['recipes', i, 'patch', j, end],
+            })
+          }
+        }
+      })
 
       recipe.articulation?.forEach((entry, j) => {
         // §3: an articulation the box physically cannot do fails the build, not a request.

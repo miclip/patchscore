@@ -546,8 +546,9 @@ export function inheritVerified(own: Verified | undefined, fromRecipe: Verified 
 // ---------------------------------------------------------------------------
 
 /**
- * §3.2: articulation values carry the recipe's citation on the same inheritance rules and are
- * `authored` or `provisional` only — mood never touches them, so `derived` cannot arise here.
+ * §3.2: articulation values carry their own citation, or the recipe's behind it, on §3.1's
+ * inheritance rules — and are `authored` or `provisional` only, since mood never touches them,
+ * so `derived` cannot arise here.
  */
 export type BoundArticulation = {
   slot: ArticulationEntry['slot']
@@ -577,7 +578,6 @@ export function bindArticulation(recipe: Recipe, pattern: Pattern): BoundArticul
     else existing.push(hit.step)
   }
 
-  const provenance = citedProvenance(inheritVerified(undefined, recipe.verified))
   const out: BoundArticulation[] = []
   // Authored order is preserved: an author who writes accent before last-hit meant that
   // reading order, and there is nothing to sort by that would beat it.
@@ -589,7 +589,9 @@ export function bindArticulation(recipe: Recipe, pattern: Pattern): BoundArticul
       set: entry.set,
       steps: [...steps].sort((a, b) => a - b),
       ...(entry.hint === undefined ? {} : { hint: entry.hint }),
-      provenance,
+      // Resolved **per entry**, not hoisted: two articulations in one recipe can come off two
+      // pages, and one of them can be a guess in a recipe that is otherwise cited.
+      provenance: citedProvenance(inheritVerified(entry.verified, recipe.verified)),
     })
   }
   return out
@@ -597,18 +599,24 @@ export function bindArticulation(recipe: Recipe, pattern: Pattern): BoundArticul
 
 /**
  * §3.3. Patch cables are rendered values, so invariant 4 applies to them exactly as it does
- * to parameters. `PatchEntry` carries no `verified` of its own, so the recipe's is the only
- * claim there is — and, like articulation, mood never touches it.
+ * to parameters — and, since #49, on the same *inheritance* as parameters too: a `PatchEntry`
+ * carries its own `verified`, the recipe's is the default behind it, and mood never touches
+ * either.
+ *
+ * **What this provenance is about is the connection, not the endpoints.** That the jacks exist
+ * is device data, cited once each on `Device.jacks` (§3.3), and nothing here restates it. What
+ * is left in doubt per entry is whether connecting these two is the right move — taste for a
+ * cable somebody patched by ear, cited for one the manual instructs — so the resolution is per
+ * entry rather than hoisted once for the list.
  */
 export type ResolvedPatchEntry = { from: string; to: string; note?: string; provenance: Provenance }
 
 export function resolvePatch(recipe: Recipe): ResolvedPatchEntry[] {
-  const provenance = citedProvenance(inheritVerified(undefined, recipe.verified))
   return (recipe.patch ?? []).map((entry: PatchEntry) => ({
     from: entry.from,
     to: entry.to,
     ...(entry.note === undefined ? {} : { note: entry.note }),
-    provenance,
+    provenance: citedProvenance(inheritVerified(entry.verified, recipe.verified)),
   }))
 }
 

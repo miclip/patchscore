@@ -331,14 +331,17 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   // steps it is handed, addressed by slot rather than by absolute index.
   articulation: [
     { slot: 'accent',   set: { velocity: 110 } },
-    { slot: 'last-hit', set: { cycle: 2 }, hint: 'apply-cycle' },
+    // Like a param and like a patch entry, an articulation may carry its own citation.
+    { slot: 'last-hit', set: { cycle: 2 }, hint: 'apply-cycle', verified: { /* Cite */ } },
   ],
   routing: 'Keep out of the analog FX path so the panel FILTER acts only on LT',
 
   // Default citation only. It is *inherited* by any param, patch entry or articulation entry
-  // that does not carry its own `verified` (§3.1). It is not itself a provenance state: the
-  // recipe is not the thing rendered, individual values are. `false` here means everything
-  // that does not override it is provisional.
+  // that does not carry its own `verified` (§3.1) — and all three of those really do carry one;
+  // the two entry kinds did not until #49, which made this sentence false of two of the three
+  // things it names. It is not itself a provenance state: the recipe is not the thing rendered,
+  // individual values are. `false` here means everything that does not override it is
+  // provisional.
   verified: { kind: 'manual', source: 'TR-1000 manual p.42' },
 }
 ```
@@ -610,12 +613,66 @@ range — so a case that stops adding up is a case that was added without a home
 
 A patchable device's recipe is a patch list plus knob positions, not knob positions alone.
 
-```ts
-patch?: { from: string; to: string; note?: string }[]   // 'OSC1 SUB' → 'FILTER IN'
+**A cable carries three claims, and they are not the same kind of claim:**
+
+```
+the `from` jack exists          documented — one page
+the `to` jack exists            documented — one page
+connecting them is right        taste
 ```
 
-Jack names come from the manual, so they are verifiable on the same terms as parameter
-values. The rack UI (§8) needs this data to draw cables, so it has two consumers.
+That is exactly the shape of a numeric param — `range` cited, point authored by ear (§3.1) — and
+exactly the shape of the enum repair — `options` cited, selection taste (§3.2). Three unrelated
+device kinds have now pushed on the same assumption, so the assumption is what was wrong.
+
+**A jack existing is a fact about the device, not about the cable.** So the device declares its
+patch points, cited once each, and a recipe references them by name:
+
+```ts
+// on the Device
+jacks?: {
+  id: string                   // section-qualified: 'VCO A · FM 1'
+  direction: 'in' | 'out'
+  verified: Verified           // the page describing this jack. Once, however many cables use it.
+  note?: string
+}[]
+
+// on the Recipe
+patch?: {
+  from: string                 // a declared jack id, direction 'out'
+  to: string                   // a declared jack id, direction 'in'
+  note?: string                // which normal this replaces, or that there was none to replace
+  verified?: Verified          // whether *this connection* is the right choice. §3.1 inheritance.
+}[]
+```
+
+The alternative — three `verified` fields on the entry — was rejected: it copies one jack's
+citation onto every cable that touches it (twenty-seven cables restating a handful of pages) and
+makes each cable responsible for facts that belong to the box.
+
+**Zod refuses a patch entry naming a jack the device does not declare**, and refuses a cable that
+leaves an input or arrives at an output. This is the same check, at the same level and for the
+same reason, as an articulation's `set` keys against `features.perStep`: the capability belongs to
+the device, the recipe only references it, and a mistake fails the build rather than a request
+(§9). Before it existed, a typo in a jack name rendered happily and sent a reader hunting for a
+socket that is not on the box. Jack ids are unique within a device, as voice ids are.
+
+**Ids are section-qualified because panels reuse names.** `IN` is silkscreened in five sections of
+one panel in the seed set; `PITCH`, `SYNC`, `LEVEL`, `TRIG` and `FM 1` all repeat. A bare `IN`
+is unresolvable standing at the machine.
+
+**What a patch entry's own `verified` claims is now exactly one thing: that this connection is the
+right choice.** Not that the jacks exist — their declarations say that. So a cable somebody
+patched because it sounded good is `false` and renders provisional, which is the honest answer;
+a cable the manual itself instructs — "Patch the ENV B output jack to the S&H section's TRIG
+input jack" — carries the page that instructs it. Inheritance is §3.1's, unchanged: omitted
+inherits the recipe's, a citation overrides it, an explicit `false` overrides an inherited one.
+
+**A position would hang on a jack declaration**, and that is a second reason to have the list.
+§10's rack draws inter-device cables and cannot draw a cable between two jacks on one panel,
+because `PanelFeature` has no jack and there are no coordinates to draw between. Nothing here
+carries a position and adding one is its own piece of work — but it would extend this list rather
+than having to invent it first.
 
 ### 3.4 Character is a vector
 

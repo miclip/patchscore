@@ -127,9 +127,143 @@ describe('Recipe (§3)', () => {
       false,
     )
   })
+
+  it('lets a patch entry and an articulation carry their own citation (§3.1, §3.3)', () => {
+    // The repair #49 produced. §3 always said the recipe citation is inherited by "any param,
+    // patch entry or articulation entry that does not carry its own" — and only params could.
+    const cited = { kind: 'manual', source: 'fixture manual p.25' } as const
+    expect(
+      RecipeSchema.safeParse(
+        recipe({ patch: [{ from: 'VCO B · SAW', to: 'VCO A · SYNC', verified: cited }] }),
+      ).success,
+    ).toBe(true)
+    expect(
+      RecipeSchema.safeParse(
+        recipe({ articulation: [{ slot: 'accent', set: { velocity: 110 }, verified: cited }] }),
+      ).success,
+    ).toBe(true)
+
+    // `false` is a legal, meaningful value on both: "this one is a guess, in a recipe that is
+    // otherwise cited". It is the direction an inheritance built on `||` gets wrong.
+    expect(
+      RecipeSchema.safeParse(
+        recipe({ patch: [{ from: 'A', to: 'B', verified: false }] }),
+      ).success,
+    ).toBe(true)
+    expect(
+      RecipeSchema.safeParse(
+        recipe({ articulation: [{ slot: 'accent', set: { velocity: 110 }, verified: false }] }),
+      ).success,
+    ).toBe(true)
+
+    // And a malformed citation is still refused on both, rather than shrugged through.
+    expect(
+      RecipeSchema.safeParse(
+        recipe({ patch: [{ from: 'A', to: 'B', verified: { kind: 'rumour' } as never }] }),
+      ).success,
+    ).toBe(false)
+    expect(
+      RecipeSchema.safeParse(
+        recipe({
+          articulation: [{ slot: 'accent', set: { velocity: 1 }, verified: { kind: 'manual' } as never }],
+        }),
+      ).success,
+    ).toBe(false)
+  })
 })
 
 describe('Device manifest (§2.3)', () => {
+  /**
+   * §3.3. A jack exists or it does not, and that is device-level — the same standing as a
+   * per-step capability in `features.perStep`, which a recipe may reference and may not invent.
+   */
+  const JACK_CITE = { kind: 'manual', source: 'fixture manual p.25' } as const
+
+  function patchable(over: Record<string, unknown> = {}) {
+    return device({
+      jacks: [
+        { id: 'VCO A · SAW', direction: 'out', verified: JACK_CITE },
+        { id: 'VCF · IN', direction: 'in', verified: JACK_CITE },
+      ],
+      recipes: [recipe({ patch: [{ from: 'VCO A · SAW', to: 'VCF · IN' }] })],
+      ...over,
+    } as never)
+  }
+
+  it('accepts a patch entry whose endpoints the device declares (§3.3)', () => {
+    const parsed = DeviceSchema.safeParse(patchable())
+    expect(parsed.success ? [] : parsed.error.issues).toEqual([])
+  })
+
+  it('rejects a patch entry naming a jack the device does not declare (§3.3)', () => {
+    // The check this repair exists for: before it, a typo in a jack name rendered happily and
+    // sent a reader hunting for a socket that is not on the box.
+    const bad = patchable({
+      recipes: [recipe({ patch: [{ from: 'VCO A · SAW', to: 'VCF · INN' }] })],
+    })
+    const parsed = DeviceSchema.safeParse(bad)
+    expect(parsed.success).toBe(false)
+    expect(JSON.stringify(parsed.success ? [] : parsed.error.issues)).toContain('does not declare')
+  })
+
+  it('rejects a patch entry with no jack list at all to check against', () => {
+    const bare = device({ recipes: [recipe({ patch: [{ from: 'A', to: 'B' }] })] } as never)
+    expect(DeviceSchema.safeParse(bare).success).toBe(false)
+  })
+
+  it('rejects a cable that leaves an input or arrives at an output (§3.3)', () => {
+    // A cable runs output to input. Reversed endpoints are a real authoring mistake and the
+    // declared direction is what makes them catchable.
+    const reversed = patchable({
+      recipes: [recipe({ patch: [{ from: 'VCF · IN', to: 'VCO A · SAW' }] })],
+    })
+    const parsed = DeviceSchema.safeParse(reversed)
+    expect(parsed.success).toBe(false)
+    const issues = JSON.stringify(parsed.success ? [] : parsed.error.issues)
+    expect(issues).toContain('must be an output')
+    expect(issues).toContain('must be an input')
+  })
+
+  it('rejects two jack declarations sharing one id (§3.3)', () => {
+    // Same reason voice ids are unique: a patch entry names one, and two declarations make the
+    // citation and the direction ambiguous rather than merely redundant.
+    const dup = patchable({
+      jacks: [
+        { id: 'VCO A · SAW', direction: 'out', verified: JACK_CITE },
+        { id: 'VCO A · SAW', direction: 'in', verified: JACK_CITE },
+        { id: 'VCF · IN', direction: 'in', verified: JACK_CITE },
+      ],
+    })
+    const parsed = DeviceSchema.safeParse(dup)
+    expect(parsed.success).toBe(false)
+    expect(JSON.stringify(parsed.success ? [] : parsed.error.issues)).toContain('must be unique')
+  })
+
+  it('requires a jack declaration to carry a citation, `false` included (§3.3)', () => {
+    // `verified` is not optional here. A jack whose page nobody has found is a real state and
+    // says so; a jack with no claim at all is an omission the type should not permit.
+    expect(
+      DeviceSchema.safeParse(
+        patchable({
+          jacks: [
+            { id: 'VCO A · SAW', direction: 'out', verified: false },
+            { id: 'VCF · IN', direction: 'in', verified: JACK_CITE },
+          ],
+        }),
+      ).success,
+    ).toBe(true)
+    expect(
+      DeviceSchema.safeParse(
+        patchable({
+          jacks: [
+            { id: 'VCO A · SAW', direction: 'out' },
+            { id: 'VCF · IN', direction: 'in', verified: JACK_CITE },
+          ],
+        }),
+      ).success,
+    ).toBe(false)
+  })
+
   it('accepts a fixed-voice device and a pool device', () => {
     expect(DeviceSchema.safeParse(device()).success).toBe(true)
     expect(DeviceSchema.safeParse(poolDevice()).success).toBe(true)
