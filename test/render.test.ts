@@ -2,14 +2,19 @@ import { describe, expect, it } from 'vitest'
 import {
   GUIDE_PHASES,
   SUBORDINATE,
+  dominantRangeCite,
   moodState,
   renderGuide,
   resolve,
+  type AuthoredParam,
+  type Cite,
   type Hook,
   type ResolveResult,
+  type ResolvedParam,
   type Template,
 } from '../lib/core/index'
 import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
+import { box, request, withRoles } from './rigs'
 
 /**
  * §8. What the renderer must never do: drop a phase, print a value without its provenance,
@@ -43,13 +48,20 @@ function phaseBody(doc: string, phase: number): string[] {
   return end === -1 ? rest : rest.slice(0, end)
 }
 
-// `provisional` is the common state and renders as a bare mark rather than a sentence (#35):
-// a warning on nine lines in ten tells the reader nothing and pushes the values apart. The
-// invariant is still "exactly one state per line", so the marker set just gets shorter.
-const PROVENANCE = ['authored', 'derived by', '⚠']
-
-function provenanceMarkers(line: string): string[] {
-  return PROVENANCE.filter((state) => line.includes(state))
+/**
+ * The mark is the **positive** claim: `manual` or `observed` where the point was cited, and the
+ * knob named where mood moved it. An unmarked value is a starting point, which is what a patch
+ * sheet has always been and needs no annotation.
+ *
+ * Invariant 4 is untouched by that — it is a type guarantee (`ResolvedParam.provenance` is
+ * non-optional), not a claim about ink — so these tests check something stricter than the old
+ * "exactly one marker per line": every line is checked against *its own* provenance, so a mark
+ * that drifts from the value it describes fails here rather than looking plausible.
+ */
+function soundDesignParams(result: ReturnType<typeof resolve>) {
+  return result.devices.flatMap((device) =>
+    result.assignments.filter((a) => a.deviceId === device.id).flatMap((a) => a.params),
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -72,9 +84,9 @@ describe('phases (§8)', () => {
     const doc = renderGuide(empty)
     const headings = lines(doc).filter((l) => l.startsWith('## '))
     expect(headings).toHaveLength(GUIDE_PHASES.length)
-    // Invariant 5: the phases that have nothing say so.
-    expect(doc).toContain('nothing to program')
-    expect(doc).toContain('nothing to dial in')
+    // Invariant 5: the phases that have nothing say so — flatly, in as few words as the
+    // fact takes. An empty phase is the least interesting thing on the page.
+    expect(doc.split('No parts assigned.').length - 1).toBeGreaterThanOrEqual(3)
     expect(doc).toContain('nothing in this rig can send clock')
   })
 
@@ -88,27 +100,57 @@ describe('phases (§8)', () => {
 // ---------------------------------------------------------------------------
 
 describe('provenance (invariant 4, §3.2)', () => {
-  it('marks every parameter line with exactly one of the three states', () => {
+  it('marks each parameter line with what is true of that parameter, and nothing else', () => {
     const result = golden()
     const valueLines = phaseBody(renderGuide(result), 6).filter((l) => l.startsWith('- **'))
+    const params = soundDesignParams(result)
 
-    const authored = result.assignments.reduce((n, a) => n + a.params.length, 0)
-    expect(valueLines).toHaveLength(authored)
-    for (const line of valueLines) expect(provenanceMarkers(line), line).toHaveLength(1)
+    expect(valueLines).toHaveLength(params.length)
+    params.forEach((param, i) => {
+      const line = valueLines[i] as string
+      const { provenance } = param
+      expect(line, line).toContain(`**${param.name}**`)
+
+      if (provenance.state === 'authored') {
+        expect(line, line).toContain(` · ${provenance.cite.kind}`)
+        expect(line, line).not.toContain('moved by')
+      } else if (provenance.state === 'derived') {
+        expect(line, line).toContain(
+          ` · ${provenance.cite.kind} · moved by ${provenance.axes.join(', ')}`,
+        )
+      } else if (provenance.axes !== undefined && provenance.axes.length > 0) {
+        // A move on an uncited point is still shown, and still borrows no authority from it.
+        expect(line, line).toContain(` · moved by ${provenance.axes.join(', ')}`)
+        expect(line, line).not.toContain(' · manual')
+        expect(line, line).not.toContain(' · observed')
+      } else {
+        // A starting point. No mark, and no trailing separator left behind by one.
+        expect(line, line).not.toContain(' · ')
+      }
+    })
   })
 
-  it('marks every patch and articulation line too — mood never touches them, provenance does', () => {
+  it('has no warning glyph anywhere — an unmarked value is the norm, not a defect', () => {
+    expect(renderGuide(golden())).not.toContain('⚠')
+  })
+
+  it('marks cited patch and articulation lines and leaves the rest bare', () => {
     const doc = renderGuide(golden())
-    const marked = [...phaseBody(doc, 5), ...phaseBody(doc, 6)].filter((l) =>
-      l.startsWith('- `'),
-    )
-    // Slot lines in phase 5 list steps, not values, and carry no provenance; every other
-    // backticked bullet is a rendered value.
-    for (const line of marked) {
-      const isSlotList = /^- `[a-z-]+` — \d/.test(line)
-      if (isSlotList) continue
-      expect(provenanceMarkers(line), line).toHaveLength(1)
+    // Slot lines list steps, not values, and carry no provenance; every other backticked
+    // bullet in these two phases is a rendered value.
+    const bullets = [...phaseBody(doc, 5), ...phaseBody(doc, 6)]
+      .filter((l) => l.startsWith('- `'))
+      .filter((l) => !/^- `[a-z-]+` — \d/.test(l))
+
+    expect(bullets.length).toBeGreaterThan(0)
+    for (const line of bullets) {
+      const at = line.indexOf(' · ')
+      if (at === -1) continue
+      // Mood never touches patch or articulation, so `derived` cannot arise there (§3.2): the
+      // only mark either can carry is the citation kind.
+      expect(line.slice(at + 3), line).toMatch(/^(manual|observed)$/)
     }
+    expect(bullets.some((l) => / · (manual|observed)$/.test(l))).toBe(true)
   })
 
   it('renders a derived value as the move that produced it, and names the knob', () => {
@@ -117,18 +159,18 @@ describe('provenance (invariant 4, §3.2)', () => {
     const tune = phaseBody(doc, 6).find((l) => l.startsWith('- **TUNE**'))
     expect(tune).toBeDefined()
     expect(tune).toContain('52 → 45')
-    expect(tune).toContain('derived by darkness')
+    expect(tune).toContain('manual · moved by darkness')
   })
 
-  it('marks a provisional value compactly and gives it no citation to borrow authority from', () => {
+  it('leaves an unverified point unmarked, and gives it no citation to borrow authority from', () => {
     const doc = renderGuide(golden())
     const body = phaseBody(doc, 6)
     const mode = body.findIndex((l) => l.startsWith('- **MODE**'))
     expect(mode).toBeGreaterThan(-1)
-    expect(body[mode]).toContain('⚠')
-    // Compact, not absent: the mark must be there, the sentence must not (#35).
+    // Unmarked is the norm and says nothing about the value beyond what it is: a starting point.
+    expect(body[mode]).not.toContain(' · ')
     expect(body[mode]).not.toContain('nobody has checked')
-    // The next line must not be a citation for a value nobody checked.
+    // Still no value citation, which is the claim that would be false.
     expect(body[mode + 1] ?? '').not.toContain(`${SUBORDINATE.cite} value`)
   })
 
@@ -136,13 +178,19 @@ describe('provenance (invariant 4, §3.2)', () => {
     const body = phaseBody(renderGuide(golden()), 6)
     const resonance = body.findIndex((l) => l.startsWith('- **RESONANCE**'))
     expect(resonance).toBeGreaterThan(-1)
-    // Point observed on the unit, range read off the page — and both said out loud.
+
+    // Point observed on the unit, and said out loud under the value it is about: a value
+    // citation is a claim about one number and never hoists.
     expect(body[resonance + 1]).toBe(
       `  - ${SUBORDINATE.cite} value observed — golden unit, firmware 1.11`,
     )
-    expect(body[resonance + 2]).toBe(
-      `  - ${SUBORDINATE.cite} range manual — Golden Manual p.12`,
-    )
+
+    // Range read off the page, and still said out loud — once, at the head of the recipe that
+    // repeats it, rather than under every line of it.
+    const heading = body.slice(0, resonance).findLastIndex((l) => l.startsWith('#### '))
+    expect(heading).toBeGreaterThan(-1)
+    const recipe = body.slice(heading, resonance)
+    expect(recipe.join('\n')).toContain('*Ranges cite manual — Golden Manual p.12.*')
   })
 
   it('says an unverified range is why mood did nothing, rather than leaving it unexplained', () => {
@@ -223,6 +271,22 @@ const FLAT_TEMPLATE: Template = {
   hooks: [FLAT_HOOK],
 }
 
+describe('template-internal ids stay internal (§8)', () => {
+  it('names no pattern or hook id, and does not explain which one the seed took', () => {
+    const result = golden()
+    const doc = renderGuide(result)
+    const ids = [
+      ...result.template.patterns.map((p) => p.id),
+      ...result.template.hooks.map((h) => h.id),
+    ]
+    expect(ids.length).toBeGreaterThan(0)
+    for (const id of ids) expect(doc, id).not.toContain(id)
+    expect(doc).not.toContain('the seed picked this one')
+    // The fact worth keeping is stated once instead, in the phase intro.
+    expect(doc.split('rerolling the seed picks a different one')).toHaveLength(2)
+  })
+})
+
 describe('hook notes (#32, §4.1)', () => {
   const doc = renderGuide(
     resolve({
@@ -234,14 +298,44 @@ describe('hook notes (#32, §4.1)', () => {
   )
   const body = phaseBody(doc, 4)
 
-  it('explains the note line once, near the notes, rather than per note', () => {
-    const occurrences = body.filter((l) => l.includes('**step, length, degree, note, MIDI**'))
-    expect(occurrences).toHaveLength(1)
+  it('explains the grid and the chord rule once, near the notes, rather than per note', () => {
+    const doc4 = body.join('\n')
+    expect(doc4.split('Notes sharing a step are one chord')).toHaveLength(2)
+    // The frame a reader needs to know what `step 33` means without doing arithmetic.
+    expect(doc4).toContain('16 to a bar')
   })
 
-  it('puts every field of a note on one line, so a note is one thing to read and enter', () => {
+  it('puts a chord on one line, framed by bar, with the degree named rather than numbered', () => {
     const eFlat = body.find((l) => l.includes('`Eb3`')) as string
-    expect(eFlat).toBe('- step 1 · len 1 · degree 7 · `Eb3` (`D#3`) · MIDI 51')
+    expect(eFlat).toBe('- bar 1 · step 1 · len 1 · `Eb3` (`D#3`) · 7th · MIDI 51')
+  })
+
+  it('groups notes that share a step into one chord instead of listing them separately', () => {
+    // Three notes at one step is a triad, and one row per note hides that.
+    const triad: Hook = {
+      id: 'triad-hook',
+      forRole: 'lead',
+      bars: 1,
+      baseOctave: 3,
+      notes: [
+        { step: 1, degree: 1, octave: 0, len: 2 },
+        { step: 1, degree: 3, octave: 0, len: 2 },
+        { step: 1, degree: 5, octave: 0, len: 2 },
+      ],
+    }
+    const chordDoc = renderGuide(
+      resolve({
+        devices: GOLDEN_DEVICES,
+        template: { ...GOLDEN_TEMPLATE, keys: ['A minor'], hooks: [triad] },
+        mood: GOLDEN_MOOD,
+        seed: GOLDEN_SEED,
+      }),
+    )
+    const rows = phaseBody(chordDoc, 4).filter((l) => l.startsWith('- bar '))
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toContain('`A3` `C4` `E4`')
+    expect(rows[0]).toContain('root 3rd 5th')
+    expect(rows[0]).toContain('MIDI 57 60 64')
   })
 
   it('keeps the key-correct spelling and offers the sharps-only reading beside it', () => {
@@ -259,7 +353,7 @@ describe('hook notes (#32, §4.1)', () => {
 
   it('says a hook belongs to no assigned part instead of implying one plays it', () => {
     // Nothing in the golden rig serves `lead`.
-    expect(body.join('\n')).toContain('no part in this rig carries this role')
+    expect(body.join('\n')).toContain('Nothing in your rig plays this part')
   })
 
   it('omits the hook rather than inventing one when the template authors none', () => {
@@ -271,7 +365,7 @@ describe('hook notes (#32, §4.1)', () => {
         seed: GOLDEN_SEED,
       }),
     )
-    expect(phaseBody(doc2, 4).join('\n')).toContain('authors no hooks')
+    expect(phaseBody(doc2, 4).join('\n')).toContain('This template has no hooks.')
   })
 })
 
@@ -326,7 +420,9 @@ describe('at-the-machine layout (§8, §10)', () => {
     const next = body.findIndex((l, i) => i > kick && l.startsWith('### '))
     const block = body.slice(kick, next)
     expect(block.filter((l) => l.startsWith('**'))).toEqual([
-      '**Intro, Build, Drop** — `p-kick-b2`, 16 steps, band 2',
+      // No pattern id in the headline: template-internal, and meaningless at a machine.
+      '**hard kick** — settings in Sound design',
+      '**Intro, Build, Drop** — 16 steps, band 2',
       '**On this box** — Golden Drum',
     ])
     expect(block.filter((l) => l === '```')).toHaveLength(2)
@@ -338,10 +434,12 @@ describe('at-the-machine layout (§8, §10)', () => {
     const body = phaseBody(doc, 5)
     const hat = body.indexOf('### `closed-hat` — Golden Drum · CH')
     const next = body.findIndex((l, i) => i > hat && l.startsWith('### '))
-    const headlines = body.slice(hat, next).filter((l) => l.startsWith('**') && l.includes(' — `'))
+    const headlines = body
+      .slice(hat, next)
+      .filter((l) => l.startsWith('**') && l.includes(' steps, band '))
     expect(headlines).toEqual([
-      '**Intro, Build** — `p-hat-b1`, 16 steps, band 1 — nothing authored at band 2',
-      '**Drop** — `p-hat-b2-drop`, 16 steps, band 2',
+      '**Intro, Build** — 16 steps, band 1 — nothing authored at band 2',
+      '**Drop** — 16 steps, band 2',
     ])
   })
 
@@ -405,7 +503,7 @@ describe('gaps (invariant 5, §7.3)', () => {
     const body = phaseBody(doc, 2).join('\n')
     expect(result.gaps.length).toBeGreaterThan(0)
     for (const gap of result.gaps) expect(body).toContain(`\`${gap.role}\``)
-    expect(body).toContain('Nothing was invented')
+    expect(body).toContain('These parts are not in the guide below.')
   })
 
   it('distinguishes "buy a box" from "author a recipe"', () => {
@@ -497,5 +595,175 @@ describe('song (§8 phase 1)', () => {
     )
     expect(doc).toContain('**BPM** 1234')
     expect(doc).not.toContain('1,234')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Voice — the guide tells you what to do, not what we decided
+// ---------------------------------------------------------------------------
+
+describe('copy says what is true, not what we declined to do', () => {
+  const docs = [
+    renderGuide(golden()),
+    renderGuide(
+      resolve({ devices: [], template: GOLDEN_TEMPLATE, mood: GOLDEN_MOOD, seed: GOLDEN_SEED }),
+    ),
+  ]
+
+  it('never narrates its own restraint', () => {
+    // Not inventing things is the job, not news. A reader cares what is there and what is not.
+    for (const doc of docs) {
+      expect(doc).not.toContain('was invented')
+      expect(doc).not.toContain('nothing was invented')
+    }
+  })
+
+  it('never cites our own design document at a reader who does not have it', () => {
+    for (const doc of docs) expect(doc).not.toContain('§')
+  })
+
+  it('does not use our word for our data structures', () => {
+    for (const doc of docs) {
+      expect(doc).not.toContain('not modelled')
+      expect(doc).not.toContain('authors none')
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Range citations hoist when a recipe repeats one
+// ---------------------------------------------------------------------------
+
+/** A resolved numeric param with the given range citation, or an unverified range. */
+function ranged(name: string, verified: Cite | false): ResolvedParam {
+  return {
+    name,
+    value: 10,
+    range: { min: 0, max: 100, verified },
+    provenance: { state: 'provisional' },
+  }
+}
+
+const P59: Cite = { kind: 'manual', source: 'Fixture Manual p.59' }
+const P60: Cite = { kind: 'manual', source: 'Fixture Manual p.60' }
+const OBSERVED59: Cite = { kind: 'observed', source: 'Fixture Manual p.59' }
+
+describe('dominantRangeCite (§3.2, state it once)', () => {
+  const cases: { name: string; params: ResolvedParam[]; expected: Cite | undefined }[] = [
+    {
+      name: 'uniform — every range cites one page',
+      params: [ranged('A', P59), ranged('B', P59), ranged('C', P59)],
+      expected: P59,
+    },
+    {
+      name: 'exceptional — one param cites a different page',
+      params: [ranged('A', P59), ranged('B', P59), ranged('C', P60)],
+      expected: P59,
+    },
+    {
+      name: 'ambiguous — two citations twice each, so neither dominates',
+      params: [ranged('A', P59), ranged('B', P59), ranged('C', P60), ranged('D', P60)],
+      expected: undefined,
+    },
+    {
+      name: 'no repetition — one occurrence is not a pattern',
+      params: [ranged('A', P59), ranged('B', P60)],
+      expected: undefined,
+    },
+    {
+      name: 'unverified ranges carry no citation to hoist',
+      params: [ranged('A', false), ranged('B', false), ranged('C', false)],
+      expected: undefined,
+    },
+    {
+      name: 'an unverified range does not dilute a repeated one',
+      params: [ranged('A', P59), ranged('B', P59), ranged('C', false)],
+      expected: P59,
+    },
+    {
+      name: 'cite.kind is part of identity — a manual and an observation are not one citation',
+      params: [ranged('A', P59), ranged('B', OBSERVED59)],
+      expected: undefined,
+    },
+    {
+      name: 'nothing to hoist from a recipe with no ranges at all',
+      params: [{ name: 'MODE', value: 'On', provenance: { state: 'provisional' } }],
+      expected: undefined,
+    },
+  ]
+
+  for (const { name, params, expected } of cases) {
+    it(name, () => {
+      expect(dominantRangeCite(params)).toEqual(expected)
+    })
+  }
+})
+
+describe('hoisted range citations in Sound design (§8)', () => {
+  /** One device, one recipe, whose params carry the citations under test. */
+  function guideFor(params: AuthoredParam[]): string {
+    const device = box('A-hoist', {
+      voices: [{ kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 }],
+      recipes: [
+        { id: 'r', role: 'kick', character: 'hard', voice: 'bd', title: 'hoist fixture', params },
+      ],
+    })
+    return renderGuide(
+      resolve({
+        devices: [device],
+        template: withRoles([request({ id: 'r-kick', role: 'kick' })]),
+        mood: moodState(),
+        seed: 1,
+      }),
+    )
+  }
+
+  function numeric(name: string, verified: Cite | false): AuthoredParam {
+    return { kind: 'numeric', name, value: 10, range: { min: 0, max: 100, verified } }
+  }
+
+  it('states a uniform citation once and drops every per-parameter copy', () => {
+    const body = phaseBody(guideFor([numeric('A', P59), numeric('B', P59), numeric('C', P59)]), 6)
+    expect(body.filter((l) => l.includes('*Ranges cite manual — Fixture Manual p.59.*'))).toHaveLength(1)
+    expect(body.filter((l) => l.includes('↳ cite: range'))).toHaveLength(0)
+  })
+
+  it('keeps the exception on its own line, which is the point of hoisting', () => {
+    const body = phaseBody(guideFor([numeric('A', P59), numeric('B', P59), numeric('C', P60)]), 6)
+    expect(body.filter((l) => l.includes('*Ranges cite manual — Fixture Manual p.59.*'))).toHaveLength(1)
+    const kept = body.filter((l) => l.includes('↳ cite: range'))
+    expect(kept).toHaveLength(1)
+    expect(kept[0]).toContain('p.60')
+  })
+
+  it('hoists nothing when two citations tie, and leaves every line in place', () => {
+    const body = phaseBody(
+      guideFor([numeric('A', P59), numeric('B', P59), numeric('C', P60), numeric('D', P60)]),
+      6,
+    )
+    expect(body.filter((l) => l.includes('Ranges cite'))).toHaveLength(0)
+    expect(body.filter((l) => l.includes('↳ cite: range'))).toHaveLength(4)
+  })
+
+  it('never hoists a value citation — that is a claim about one number', () => {
+    const body = phaseBody(
+      guideFor([
+        { kind: 'numeric', name: 'A', value: 10, range: { min: 0, max: 100, verified: P59 }, verified: P59 },
+        { kind: 'numeric', name: 'B', value: 20, range: { min: 0, max: 100, verified: P59 }, verified: P59 },
+      ]),
+      6,
+    )
+    // The shared range hoists; both value citations stay exactly where they are.
+    expect(body.filter((l) => l.includes('Ranges cite'))).toHaveLength(1)
+    expect(body.filter((l) => l.includes('↳ cite: value'))).toHaveLength(2)
+  })
+
+  it('leaves an unverified range alone — it is a different claim, not a repetition', () => {
+    const body = phaseBody(
+      guideFor([numeric('A', P59), numeric('B', P59), numeric('C', false)]),
+      6,
+    )
+    expect(body.filter((l) => l.includes('Ranges cite'))).toHaveLength(1)
+    expect(body.filter((l) => l.includes('range unverified'))).toHaveLength(1)
   })
 })

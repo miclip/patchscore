@@ -5,7 +5,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "moduleDetection": "force",
-    "jsx": "preserve",
+    "jsx": "react-jsx",
 
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -23,11 +23,28 @@
     "resolveJsonModule": true,
     "noEmit": true,
 
+    "allowJs": true,
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     }
   },
-  "include": ["lib/**/*.ts", "lib/**/*.tsx", "scripts/**/*.ts", "test/**/*.ts", "*.config.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "lib/**/*.ts",
+    "lib/**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "scripts/**/*.ts",
+    "test/**/*.ts",
+    "*.config.ts",
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": ["node_modules", ".next"]
 }

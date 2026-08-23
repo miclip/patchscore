@@ -1,11 +1,13 @@
 import type { Device } from './device'
 import type { DeviceId, SectionName } from './ids'
 import type { Cite, Provenance, ResolvedParam, ResolvedRange } from './params'
+import { dominantRangeCite, sameCite } from './params'
 import type { Pattern, PatternHit } from './template'
 import type { BoundArticulation, ResolvedPatchEntry } from './resolver'
 import type { Gap } from './search'
-import { enharmonicAlternative, type HookChoice } from './harmony'
+import { enharmonicAlternative, type HookChoice, type ResolvedHook, type ResolvedNote } from './harmony'
 import type { ResolveResult, ResolvedAssignment } from './pipeline'
+import { GUIDE_PHASES } from './guide'
 
 /**
  * §8. The resolved guide as Markdown.
@@ -34,23 +36,6 @@ import type { ResolveResult, ResolvedAssignment } from './pipeline'
 // ---------------------------------------------------------------------------
 // The shape of the document
 // ---------------------------------------------------------------------------
-
-/**
- * §8's phase order, which "reflects how a real session unfolds at the machine. Do not reorder."
- * Exported because it is the contract: a UI building a table of contents and a test asserting
- * the order must read the same list, not two copies of it.
- */
-export const GUIDE_PHASES = [
-  'Song',
-  'Voice assignment',
-  'Rig integration',
-  'Hook',
-  'Step programming',
-  'Sound design',
-  'Finishing',
-] as const
-
-export type GuidePhase = (typeof GUIDE_PHASES)[number]
 
 /**
  * §8.1. Hints, citations and authored notes are *subordinate* to the instruction they hang
@@ -130,28 +115,41 @@ function valueText(param: ResolvedParam): string {
 }
 
 /**
- * The visible three-state badge, deliberately asymmetric in length.
+ * The mark on a value, and it marks the **positive** claim.
  *
- * `provisional` is the overwhelmingly common state — almost every point value in this project
- * is taste, by design — so it gets a bare `⚠` and the legend carries the explanation once.
- * Restating "nobody has checked this value" on nine lines in ten was 14% of the guide by
- * character count, and a warning that appears on everything tells the reader nothing while
- * pushing the values it annotates apart. On a phone, at a machine, that is a real cost.
+ * An unmarked value is a starting point. That is what a patch sheet has always been, it is what
+ * this guide is, and it needs no annotation. What is worth a reader's attention is the opposite
+ * fact — *this number came off the manual* — because that is the one that changes what they do
+ * with it.
  *
- * The rare states stay wordy, because they are the surprising ones and the eye should catch
- * them: `authored` means somebody checked this exact value, `derived` means mood moved it.
- * §3.2's requirement is that a reader must not mistake an unchecked value for a cited one —
- * a mark on every unchecked value satisfies that; a sentence on every unchecked value does not
- * satisfy it any harder.
+ * The earlier scheme marked the common case instead: a `⚠` on nine values in ten, plus a legend
+ * opening "nobody has verified this, trust your ears over this page". That told a reader the
+ * tool did not know what it was talking about before they had seen a single value, and the mark
+ * carried no information precisely because it was everywhere.
+ *
+ * So: `cite.kind` is the mark — `manual` or `observed`, which is the distinction §3.2 calls
+ * orthogonal and worth keeping — and a mood move names its knob whether or not the point
+ * underneath was cited. A provisional point that nothing moved renders bare.
+ *
+ * **Nothing about provenance itself is weakened by this.** `ResolvedParam.provenance` is still
+ * non-optional (invariant 4 is a type guarantee, not a rendering convention), and the audit
+ * script still counts provisional points, unverified ranges and mood-inert params separately.
+ * What changed is which of the three states is the one the page bothers to name.
  */
 function provenanceText(provenance: Provenance): string {
-  if (provenance.state === 'authored') return 'authored'
-  if (provenance.state === 'derived') return `derived by ${provenance.axes.join(', ')}`
-  const moved =
-    provenance.axes !== undefined && provenance.axes.length > 0
-      ? ` · moved by ${provenance.axes.join(', ')}`
-      : ''
-  return `⚠${moved}`
+  const moved = (axes: readonly string[]) => `moved by ${axes.join(', ')}`
+  if (provenance.state === 'authored') return provenance.cite.kind
+  if (provenance.state === 'derived') {
+    return `${provenance.cite.kind} · ${moved(provenance.axes)}`
+  }
+  // §3.2: a provisional point still shows the move, and still inherits no authority from it.
+  return provenance.axes !== undefined && provenance.axes.length > 0 ? moved(provenance.axes) : ''
+}
+
+/** ` · manual`, or nothing at all. An unmarked value must not trail a separator. */
+function mark(provenance: Provenance): string {
+  const text = provenanceText(provenance)
+  return text === '' ? '' : ` · ${text}`
 }
 
 /**
@@ -159,17 +157,22 @@ function provenanceText(provenance: Provenance): string {
  * claim* (§3.1) become visible. A `provisional` point has no citation to give and gets none —
  * that absence is the honest rendering, not a hole to fill.
  */
-function citeLines(provenance: Provenance, range: ResolvedRange | undefined): string[] {
+function citeLines(
+  provenance: Provenance,
+  range: ResolvedRange | undefined,
+  hoisted?: Cite,
+): string[] {
   const parts: string[] = []
   // Labelled halves, because they are two independent claims (§3.1) and an unlabelled pair of
   // citations reads as one claim stated twice.
   if (provenance.state !== 'provisional') parts.push(`value ${citeText(provenance.cite)}`)
   if (range !== undefined) {
-    parts.push(
-      range.verified === false
-        ? 'range unverified — mood cannot move this value (§3.2)'
-        : `range ${citeText(range.verified)}`,
-    )
+    if (range.verified === false) {
+      parts.push('range unverified — mood leaves this value alone')
+    } else if (!sameCite(range.verified, hoisted)) {
+      // The exception. Hoisting only ever removes the repetition, never the outlier.
+      parts.push(`range ${citeText(range.verified)}`)
+    }
   }
   return parts
 }
@@ -215,7 +218,7 @@ function phaseSong(result: ResolveResult): Line[] {
     `- **BPM** ${num(song.bpm)} (template range ${num(template.bpm.min)}…${num(template.bpm.max)})`,
   )
   if (song.key === undefined) {
-    out.push('- **Key** — this template authors none, so no hook could be resolved (§4.1)')
+    out.push('- **Key** — this template has none, so the hooks below have no notes')
   } else {
     const others = song.keys.filter((k) => k !== song.key)
     const alternatives = others.length === 0 ? '' : ` (a reroll may pick ${others.join(', ')})`
@@ -297,7 +300,7 @@ function phaseVoiceAssignment(result: ResolveResult, deviceById: Map<DeviceId, D
   const out: Line[] = []
 
   if (result.assignments.length === 0) {
-    out.push('Nothing could be assigned. Every request is listed as a gap below.')
+    out.push('No parts assigned. Every one is listed below.')
   } else {
     // Per part, not a five-column table. This is read on a phone at arm's length beside a box:
     // a table that needs horizontal scrolling hides the column you were reading, while a bullet
@@ -319,11 +322,11 @@ function phaseVoiceAssignment(result: ResolveResult, deviceById: Map<DeviceId, D
   out.push('### Gaps')
   out.push('')
   if (result.gaps.length === 0) {
-    out.push('None — every requested part found a voice.')
+    out.push('None.')
     return out
   }
   // Invariant 5: shown, never filled by inventing an assignment.
-  out.push('These parts are **not** in the guide below. Nothing was invented to fill them.')
+  out.push('These parts are not in the guide below.')
   out.push('')
   for (const gap of result.gaps) {
     const optional = gap.optional ? ' *(optional)*' : ''
@@ -408,28 +411,105 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
  * one pitch need explaining exactly once, and a guide that explains it eleven times is a guide
  * nobody finishes reading.
  */
+/**
+ * §4.3's grid: patterns are 16, 32 or 64 steps over 1, 2 or 4 bars, so a step is a sixteenth.
+ * Hook steps are absolute across the whole hook and nothing in `Hook` restates the resolution,
+ * so it is inferred here — and checked, not assumed: a hook whose steps run past `bars * 16`
+ * was authored against a different grid, and gets no bar framing rather than a wrong one.
+ */
+const STEPS_PER_BAR = 16
+
+function barOf(step: number): number {
+  return Math.floor((step - 1) / STEPS_PER_BAR) + 1
+}
+
+function gridFits(hook: ResolvedHook): boolean {
+  return hook.notes.every((n) => n.step >= 1 && n.step <= hook.bars * STEPS_PER_BAR)
+}
+
+/**
+ * `degree 1` is jargon dressed as data. A musician reads `root` and `3rd` instantly, and those
+ * carry the harmonic function — the one thing the note name does not tell you.
+ *
+ * Ordinals, not `b7`: the degrees here are scale degrees within the key, so whether the 7th is
+ * flat is a property of the mode, and this layer does not know the mode. Calling it `b7`
+ * would be right in A minor and wrong in A major.
+ */
+function degreeName(degree: number): string {
+  if (degree === 1) return 'root'
+  const tens = degree % 100
+  if (tens >= 11 && tens <= 13) return `${num(degree)}th`
+  const suffix = degree % 10 === 1 ? 'st' : degree % 10 === 2 ? 'nd' : degree % 10 === 3 ? 'rd' : 'th'
+  return `${num(degree)}${suffix}`
+}
+
+/**
+ * Notes sharing a step are one chord, and rendering them as separate rows hides that. A stab
+ * playing four triads across four bars was twelve rows that looked like twelve unrelated
+ * events; grouped, it is four rows and obviously an A minor triad three times.
+ *
+ * Grouped by step alone. Two notes at one step with different lengths are still one chord —
+ * the lengths are listed rather than used to split it, because splitting would put half a
+ * triad on each of two rows, which is the failure this exists to fix.
+ */
+type Chord = { step: number; notes: ResolvedNote[] }
+
+function chordsOf(hook: ResolvedHook): Chord[] {
+  const byStep = new Map<number, ResolvedNote[]>()
+  for (const note of hook.notes) {
+    const existing = byStep.get(note.step)
+    if (existing === undefined) byStep.set(note.step, [note])
+    else existing.push(note)
+  }
+  return [...byStep].map(([step, notes]) => ({ step, notes }))
+}
+
+/** One `len` when the chord agrees, otherwise each. */
+function lenText(notes: readonly ResolvedNote[]): string {
+  const lens = [...new Set(notes.map((n) => n.len))]
+  return lens.map(num).join('/')
+}
+
+function spelling(note: ResolvedNote): string {
+  const enharmonic = enharmonicAlternative(note)
+  return enharmonic === undefined ? `\`${note.note}\`` : `\`${note.note}\` (\`${enharmonic}\`)`
+}
+
 const NOTE_CONVENTION = [
-  'Each note is one line: **step, length, degree, note, MIDI**. The note is spelled correctly',
-  'for the key, so F minor gets `Eb` and E major gets `D#`; a name in brackets after it is the',
-  'same pitch as a sharps-only box shows it, and appears only where it differs. Octaves are',
-  'scientific pitch notation — middle C is C4 — which not every maker agrees with. The MIDI',
-  'number is the one form nothing disagrees about: check that if the screen says something else.',
+  'Steps are sixteenths, counted from the start of the hook: 16 to a bar, so step 33 is bar 3.',
+  'Notes sharing a step are one chord and share a line.',
+  '',
+  'Names are spelled for the key, so F minor gets `Eb`; a name in brackets is the same pitch as',
+  'a sharps-only box shows it, and appears only where it differs. Octaves put middle C at C4,',
+  'which not every maker agrees with — the MIDI number is the form nothing disagrees about.',
+  '',
+  'Where a role has more than one hook authored, rerolling the seed picks a different one.',
 ]
 
 function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined): Line[] {
   const out: Line[] = []
+
+  // The heading says what the part is and where it lives. Not the hook's id — that is a
+  // template-internal identifier that means nothing to somebody standing at a box — and not
+  // how many hooks were authored or which one the seed took, which is our machinery rather
+  // than their information. The reroll fact worth having is stated once, up in the intro.
   const where =
     carriedBy === undefined
-      ? '*no part in this rig carries this role — the hook is here as musical intent only*'
+      ? 'unassigned'
       : `${carriedBy.deviceName} · ${carriedBy.assignable.label}`
-  const alternatives =
-    choice.candidates.length > 1
-      ? ` (${num(choice.candidates.length)} authored for this role; the seed picked this one)`
-      : ''
-
-  out.push(`### \`${choice.forRole}\` — \`${choice.chosenId}\`${alternatives}`)
+  out.push(`### \`${choice.forRole}\` — ${where}`)
   out.push('')
-  out.push(`${where}`)
+
+  // §8 puts Hook before Sound design on purpose — write the line before designing the sound
+  // that plays it — but a reader here has no way of knowing the sound is defined further down,
+  // and reasonably concludes it is missing. The recipe title already describes the sound, so
+  // naming it costs one line and duplicates no value. The values themselves stay in phase 6:
+  // two places to change one number is how a guide goes stale.
+  if (carriedBy === undefined) {
+    out.push('*Nothing in your rig plays this part.*')
+  } else {
+    out.push(`**${carriedBy.recipe.title}** — settings in Sound design`)
+  }
   out.push('')
 
   if (choice.chosen.outcome === 'unresolved') {
@@ -439,18 +519,18 @@ function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined
   }
 
   const hook = choice.chosen.hook
+  const framed = gridFits(hook)
   out.push(`${num(hook.bars)} bars in ${hook.key}.`)
   out.push('')
-  // One line per note, each field labelled, rather than a five-column table. A note is entered
-  // one at a time at the machine, so one scannable line is the unit of work — and a labelled
-  // line survives wrapping on a phone, where a table's header scrolls away from its body.
-  for (const note of hook.notes) {
-    const enharmonic = enharmonicAlternative(note)
-    const spelling =
-      enharmonic === undefined ? `\`${note.note}\`` : `\`${note.note}\` (\`${enharmonic}\`)`
+  // One labelled line per chord, rather than a table: a labelled line survives wrapping on a
+  // phone, where a table's header scrolls away from its body.
+  for (const chord of chordsOf(hook)) {
+    const where = framed ? `bar ${num(barOf(chord.step))} · step ${num(chord.step)}` : `step ${num(chord.step)}`
     out.push(
-      `- step ${num(note.step)} · len ${num(note.len)} · degree ${num(note.degree)} · ` +
-        `${spelling} · MIDI ${num(note.midi)}`,
+      `- ${where} · len ${lenText(chord.notes)} · ` +
+        `${chord.notes.map(spelling).join(' ')} · ` +
+        `${chord.notes.map((n) => degreeName(n.degree)).join(' ')} · ` +
+        `MIDI ${chord.notes.map((n) => num(n.midi)).join(' ')}`,
     )
   }
   return out
@@ -460,7 +540,7 @@ function phaseHook(result: ResolveResult): Line[] {
   const out: Line[] = []
   if (result.song.hooks.length === 0) {
     // §4.1 / invariant 5: omit rather than invent — and say that is what happened.
-    out.push('This template authors no hooks. Nothing is written here, and nothing was invented.')
+    out.push('This template has no hooks.')
     return out
   }
 
@@ -529,7 +609,7 @@ function articulationLines(
       .join(', ')
     out.push(
       `- \`${entry.slot}\` → ${sets} on step${entry.steps.length === 1 ? '' : 's'} ` +
-        `${entry.steps.map(num).join(', ')} · ${provenanceText(entry.provenance)}`,
+        `${entry.steps.map(num).join(', ')}${mark(entry.provenance)}`,
     )
     for (const cite of citeLines(entry.provenance, undefined)) subordinate(out, '  ', 'cite', cite)
     if (options.hints && entry.hint !== undefined) {
@@ -556,7 +636,7 @@ function stepBlock(
     return {
       headline:
         `no pattern authored for \`${a.role}\` at any band ` +
-        `(asked for band ${num(selection.band)}). Nothing is programmed here.`,
+        `(asked for band ${num(selection.band)})`,
       body: [],
     }
   }
@@ -578,7 +658,9 @@ function stepBlock(
     body.push('')
     body.push(...articulationLines(entry.articulation, deviceById.get(a.deviceId), options))
   }
-  return { headline: `\`${pattern.id}\`, ${num(pattern.length)} steps, ${band}`, body }
+  // No pattern id: template-internal, and the two facts that carry meaning here are how long
+  // the variant is and which band it came from.
+  return { headline: `${num(pattern.length)} steps, ${band}`, body }
 }
 
 /**
@@ -618,12 +700,16 @@ function phaseSteps(
 ): Line[] {
   const out: Line[] = []
   if (result.assignments.length === 0) {
-    out.push('No part was assigned, so there is nothing to program.')
+    out.push('No parts assigned.')
     return out
   }
 
   for (const a of result.assignments) {
     out.push(`### \`${a.role}\` — ${a.deviceName} · ${a.assignable.label}`)
+    out.push('')
+    // Same reason as phase 4: this phase says what to play and not what it sounds like, so a
+    // reader stopping here would think the sound was missing.
+    out.push(`**${a.recipe.title}** — settings in Sound design`)
     for (const { sections, block } of mergeBlocks(a, deviceById, options)) {
       out.push('')
       out.push(`**${sections.join(', ')}** — ${block.headline}`)
@@ -644,14 +730,15 @@ function paramLines(
   param: ResolvedParam,
   device: Device | undefined,
   options: Required<RenderOptions>,
+  hoisted?: Cite,
 ): Line[] {
   const out: Line[] = []
   const unit = param.unit === undefined ? '' : ` ${param.unit}`
   const range = param.range === undefined ? '' : ` (${rangeText(param.range, param.unit)})`
-  out.push(
-    `- **${param.name}** \`${valueText(param)}\`${unit}${range} · ${provenanceText(param.provenance)}`,
-  )
-  for (const cite of citeLines(param.provenance, param.range)) subordinate(out, '  ', 'cite', cite)
+  out.push(`- **${param.name}** \`${valueText(param)}\`${unit}${range}${mark(param.provenance)}`)
+  for (const cite of citeLines(param.provenance, param.range, hoisted)) {
+    subordinate(out, '  ', 'cite', cite)
+  }
   if (param.note !== undefined) subordinate(out, '  ', 'note', param.note)
   if (options.hints && param.hint !== undefined) {
     subordinate(out, '  ', 'hint', hintText(device, param.hint))
@@ -662,7 +749,7 @@ function paramLines(
 function patchLines(entries: readonly ResolvedPatchEntry[]): Line[] {
   const out: Line[] = []
   for (const entry of entries) {
-    out.push(`- \`${entry.from}\` → \`${entry.to}\` · ${provenanceText(entry.provenance)}`)
+    out.push(`- \`${entry.from}\` → \`${entry.to}\`${mark(entry.provenance)}`)
     for (const cite of citeLines(entry.provenance, undefined)) subordinate(out, '  ', 'cite', cite)
     if (entry.note !== undefined) subordinate(out, '  ', 'note', entry.note)
   }
@@ -676,7 +763,7 @@ function phaseSound(
 ): Line[] {
   const out: Line[] = []
   if (result.assignments.length === 0) {
-    out.push('No part was assigned, so there is nothing to dial in.')
+    out.push('No parts assigned.')
     return out
   }
 
@@ -700,9 +787,14 @@ function phaseSound(
         out.push('')
       }
       if (a.params.length === 0) {
-        out.push('No parameters are authored for this recipe. Nothing was invented to fill it.')
+        out.push('No settings authored for this recipe.')
       } else {
-        for (const param of a.params) out.push(...paramLines(param, device, options))
+        const hoisted = dominantRangeCite(a.params)
+        if (hoisted !== undefined) {
+          out.push(`*Ranges cite ${citeText(hoisted)}.*`)
+          out.push('')
+        }
+        for (const param of a.params) out.push(...paramLines(param, device, options, hoisted))
       }
       if (a.patch.length > 0) {
         out.push('')
@@ -729,7 +821,7 @@ function phaseFinishing(result: ResolveResult, occupied: Map<DeviceId, number>):
   out.push('')
   const duckers = result.devices.filter((d) => d.features?.sidechain !== undefined)
   if (duckers.length === 0) {
-    out.push('No device in this rig declares a sidechain. Nothing here was invented for one.')
+    out.push('No device in this rig has a sidechain.')
   } else {
     for (const device of duckers) {
       const spec = device.features?.sidechain
@@ -748,8 +840,7 @@ function phaseFinishing(result: ResolveResult, occupied: Map<DeviceId, number>):
   const fx = result.devices.filter((d) => d.kind === 'fx-processor' || d.kind === 'mixer-recorder')
   if (fx.length === 0) {
     // §2.3 models per-device capability, not a master chain. Saying so beats guessing one.
-    out.push('Nothing in this rig is an fx-processor or a mixer-recorder, and per-device master')
-    out.push('chains are not modelled — so this is yours to decide at the desk.')
+    out.push('No effects unit or mixer in this rig. The master chain is yours at the desk.')
   } else {
     for (const device of fx) out.push(`- ${device.name} (${device.kind}) — ${ioText(device)}`)
   }
@@ -776,7 +867,7 @@ function phaseFinishing(result: ResolveResult, occupied: Map<DeviceId, number>):
   )
   if (transient.length > 0) {
     out.push('')
-    out.push('Parts that come and go, which is where the arrangement actually moves:')
+    out.push('Parts that come and go:')
     for (const a of transient) {
       out.push(`- \`${a.role}\` — ${a.sections.join(', ')} only`)
     }
@@ -800,18 +891,21 @@ function occupiedCounts(result: ResolveResult): Map<DeviceId, number> {
 }
 
 /**
- * Provenance and the range, explained once. Deliberately says nothing about hints: a legend
+ * The reading convention, stated once, in the voice of something that knows what it is talking
+ * about. It says what the values *are* rather than apologising for them, which is also the only
+ * thing that makes an unmarked value legible: the convention has to be stated somewhere, and
+ * once at the top is cheaper than on every line.
+ *
+ * Deliberately says nothing about hints: a legend
  * describing a line the reader has switched off is a small lie, and keeping it out is what lets
  * `hints: false` be exactly "the same document, minus the hint lines" — a property worth having
  * because §8.1's toggle must not move anything else on the page.
  */
 const LEGEND = [
-  'Most values here are **⚠** — a starting point nobody has checked, so trust your ears over',
-  'this page. The ones that are marked differently are the exceptions worth noticing:',
-  '`authored` means somebody verified that exact value against a manual or a unit, and',
-  '`derived` shows a move mood made (`52 → 45`) and which knob made it. Ranges are cited',
-  'either way. Numbers carry their range — `38 (0…100)` — so you can tell at a glance whether',
-  'the screen in front of you is the one this line is about.',
+  'Values are starting points — dial them to taste. Where a number came straight off the manual',
+  'or off a unit it says which, and where a mood knob moved it you see the move (`52 → 45`) and',
+  'the knob that did it. Every value carries its range — `38 (0…100)` — so you can tell at a',
+  'glance whether the screen in front of you is the one the line is about.',
 ]
 
 /**
