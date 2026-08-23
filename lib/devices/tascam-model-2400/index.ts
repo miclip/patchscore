@@ -31,14 +31,20 @@ import { MODEL_2400_PANEL } from './panel'
  *    to this unit's own transport, and the word "synchronize" occurs once in the whole manual,
  *    describing a DAW following *this* box.
  *
- * **That combination has a consequence worth stating, because it is the §7.4 tie-break showing
- * its edge on real data.** `selectClockSource` ranks `canSendClock` first and occupied-assignable
- * count second, so a device with no parts sorts last among the clock-capable — this box wins only
- * when nothing else in the rig can send clock, and then the guide says it is "carrying 0 parts".
- * That is honest rather than wrong, and it is the right answer for a recorder that a whole studio
- * runs to. But it is reached by a rule about *load*, which a zero-assignable box can never have,
- * rather than by anything that knows what a clock source is for. A rig of this and a Euroburo
- * picks correctly by luck.
+ * **That combination is why this is the library's first `clock.preferredSource`.** The manual
+ * describes a box the room runs to and not one that follows anything: MIDI OUT generates MTC and
+ * MIDI clock to the DIN socket and to a computer at the same time (p.45), MIDI IN is a
+ * pass-through for a keyboard, and the single occurrence of "synchronize" in the whole document
+ * is a DAW following *this* unit. That is a topology judgement about what the box is *for*, which
+ * §7.4 says a manifest states and the engine does not infer.
+ *
+ * It was reached, for a while, by two rules that both got the right answer for the wrong reason.
+ * First occupied-assignable count, which a zero-assignable box can never have, so this one won
+ * only when nothing else could send clock — correct in a rig of this and a Euroburo, and correct
+ * by luck. Then `!canReceiveClock`, which is a *capability* standing in for an intent: it would
+ * have elected this box in every rig it appears in without anyone ever writing down that a
+ * recorder should lead. Both are gone. What remains is the sentence above, authored here, where
+ * the evidence for it is.
  *
  * The rack's isolation reason is the honest half of the same fact: with any other box as the
  * source, this one reads "cannot receive clock", which is exactly true.
@@ -82,11 +88,19 @@ export const device: Device = {
 
   /**
    * A clock source that cannot be slaved — see the module JSDoc, which is where the evidence for
-   * both halves sits. `MIDI OUT` carries MTC and MIDI clock (p.45, p.74); `MIDI IN` is a
+   * all three fields sits. `MIDI OUT` carries MTC and MIDI clock (p.45, p.74); `MIDI IN` is a
    * USB conversion path for a keyboard (p.5, p.74). The generated clock also reaches a computer
    * over USB, which is why both transports are listed.
+   *
+   * `preferredSource` is the separate claim, and deliberately not implied by the two booleans
+   * above: this desk is what a studio runs to (§7.4). Nothing else in the library claims it.
    */
-  clock: { canSendClock: true, canReceiveClock: false, transport: ['midi-din', 'usb'] },
+  clock: {
+    canSendClock: true,
+    canReceiveClock: false,
+    transport: ['midi-din', 'usb'],
+    preferredSource: true,
+  },
 
   /**
    * `MAIN OUTPUT L/R` XLR out, eight `SUB OUTPUT` jacks on four assignable buses, twenty-two

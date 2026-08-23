@@ -61,7 +61,7 @@ None.
 
 ## 3. Rig integration
 
-**Clock source** — MC-101 over `midi-din`, carrying 3 parts. Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8, which cannot receive clock and run free.
+**Clock source** — Model 2400 over `midi-din`, carrying 0 parts. Sync everything else to it, except Zoom LiveTrak L-8, which cannot receive clock and runs free.
 
 - **ZOIA Euroburo** — fx-processor · 0 parts
   - clock: receives clock only · analog-clock/midi-din

@@ -305,13 +305,38 @@ export const DeviceKindSchema = z.enum(DEVICE_KINDS)
 export type ClockTransport = string
 export const ClockTransportSchema = z.string().min(1)
 
-export type ClockSpec = { canSendClock: boolean; canReceiveClock: boolean; transport: ClockTransport[] }
+/**
+ * §7.4. `preferredSource` is the one *topology judgement* a manifest is allowed to make: "this
+ * box's job in a rig is to drive it". A dedicated sequencer or transport says `true`; everything
+ * else omits the field.
+ *
+ * It is deliberately not derivable. `kind` cannot answer it — a groovebox and a dedicated
+ * sequencer can both be `groovebox`, and the difference is what the box is *for*, which is
+ * exactly the sort of thing §2.3 says the manifest states rather than the engine infers.
+ *
+ * Omitted, never `false`, when the device makes no claim: absent and "explicitly not preferred"
+ * would rank identically and the second spelling only invites an author to write it out eleven
+ * times. It is meaningless without `canSendClock`, and the schema refuses that combination
+ * rather than silently ignoring it.
+ */
+export type ClockSpec = {
+  canSendClock: boolean
+  canReceiveClock: boolean
+  transport: ClockTransport[]
+  preferredSource?: boolean
+}
 
-export const ClockSpecSchema = z.strictObject({
-  canSendClock: z.boolean(),
-  canReceiveClock: z.boolean(),
-  transport: z.array(ClockTransportSchema).min(1),
-})
+export const ClockSpecSchema = z
+  .strictObject({
+    canSendClock: z.boolean(),
+    canReceiveClock: z.boolean(),
+    transport: z.array(ClockTransportSchema).min(1),
+    preferredSource: z.boolean().optional(),
+  })
+  .refine((c) => !(c.preferredSource === true && !c.canSendClock), {
+    message: 'clock.preferredSource requires canSendClock',
+    path: ['preferredSource'],
+  })
 
 export type IoSpec = {
   main: 'mono' | 'stereo'

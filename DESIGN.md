@@ -1625,9 +1625,57 @@ key beneath it, which is exactly why §12.6 chose a flag on the request over a `
 
 ### 7.4 Clock source
 
-`canSendClock`, then occupied-assignable count descending (§12.4), then transport preference
-(`midi-din` > `usb`), then `deviceId` ascending by UTF-16 code unit (§7.2). **No seed** — this should be stable across
-rerolls, since rerolling a pattern should not re-cable the rig.
+`canSendClock`, then **one semantic key and two tie-breaks**:
+
+1. `clock.preferredSource` (§2.3) — the manifest's own topology judgement, "this box's job in a
+   rig is to drive it". A dedicated sequencer or a recorder transport says so; everything else
+   omits the field. Not derivable from `kind`: a groovebox and a dedicated sequencer can both be
+   `groovebox`, and the difference is what the box is *for*.
+2. Transport preference (`midi-din` > `usb`).
+3. `deviceId` ascending by UTF-16 code unit (§7.2).
+
+Keys 2 and 3 exist to make the answer **deterministic**, not to make it right. Only key 1 carries
+a judgement, and it is a person's.
+
+**No seed** — this should be stable across rerolls, since rerolling a pattern should not re-cable
+the rig.
+
+**Occupied-assignable count is not a ranking key, and used to be the first one.** The reasoning
+was that the busiest box is the one you are standing at, which is a guess about the *session*
+presented as a fact about the *rig*. Two things were wrong with it. It re-cables a studio because
+a template asked for one more hat — the physical MIDI topology of a room should not move when the
+genre does. And it made the clock source a function of the assignment search, so a change to
+§7.1's objective, or an extra device changing where parts land, silently moved the cables; the
+"no seed" rule above was being upheld in the letter while the assignment reached the same
+decision by another route.
+
+`ClockSource.occupiedAssignables` survives as **rendered information**: "carrying 5 parts" is
+worth printing beside the source, and that is now all it does.
+
+**`!canReceiveClock` is deliberately not a key**, and was one for exactly one revision. The
+argument for it was that a source-only box has nowhere else to sit in the topology. It does not
+follow: such a box simply runs free, which the guide already states by name for the LiveTrak L-8,
+and the rig's clock does not reach it either way. The deeper objection is that it would infer
+intent from a *capability*, doing by inference the one job `preferredSource` exists to make a
+person do explicitly — a recorder that should drive a studio ought to say so in its manifest, and
+under the inferred rule it never would.
+
+### What this costs
+
+Three things, all of them chosen rather than overlooked:
+
+- **Topology is now an authored judgement or it is nothing.** No rig gets a *considered* clock
+  source unless some manifest claims one. Every device in the library is unpreferred except the
+  Model 2400, so most rigs fall straight to the tie-breaks.
+- **Several preferred sources in one rig fall through to transport and id**, exactly as several
+  unpreferred ones do. The field says "this box can lead", not "this box leads over that one";
+  ranking two authored preferences against each other would need an ordering nobody has a basis
+  to author.
+- **A rig with no preference at all is decided alphabetically.** With load gone and every
+  bidirectional instrument in the library on `midi-din`, `deviceId` is what remains — so an
+  instrument-only rig is clocked by whichever box sorts first, regardless of what it carries.
+  That is honest determinism rather than a judgement, and the repair is to author the judgement,
+  not to reinstate a proxy for it.
 
 ---
 

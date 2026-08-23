@@ -730,15 +730,21 @@ describe('rig integration (§7.4)', () => {
   })
 
   // "Sync everything else to it" is an instruction, and a box that cannot receive cannot obey.
+  //
+  // The exempted box is **Golden Cascade, which cannot send clock either**, and that is the whole
+  // point of choosing it. This case used to mutate Golden Drum, which can send — so the fixture
+  // was one §7.4 ranking change away from electing the very box it wanted exempted, and a
+  // revision that briefly ranked `!canReceiveClock` did exactly that. A box that cannot be the
+  // source cannot spring that trap, whatever §7.4 does next.
   it('exempts boxes that cannot receive clock from the sync instruction, by name', () => {
     const devices = GOLDEN_DEVICES.map((d) =>
-      d.name === 'Golden Drum' ? { ...d, clock: { ...d.clock, canReceiveClock: false } } : d,
+      d.name === 'Golden Cascade' ? { ...d, clock: { ...d.clock, canReceiveClock: false } } : d,
     )
-    const doc = renderGuide(
-      resolve({ devices, template: GOLDEN_TEMPLATE, mood: GOLDEN_MOOD, seed: GOLDEN_SEED }),
-    )
-    const body = phaseBody(doc, 3).join('\n')
-    expect(body).toContain('except Golden Drum')
+    const result = resolve({ devices, template: GOLDEN_TEMPLATE, mood: GOLDEN_MOOD, seed: GOLDEN_SEED })
+    // Pin that first, or the assertions below are checking a sentence about the wrong box.
+    expect(result.clockSource?.deviceName).not.toBe('Golden Cascade')
+    const body = phaseBody(renderGuide(result), 3).join('\n')
+    expect(body).toContain('except Golden Cascade')
     expect(body).toContain('cannot receive clock')
   })
 

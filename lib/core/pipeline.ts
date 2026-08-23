@@ -66,7 +66,12 @@ export type ClockSource = {
   deviceName: string
   /** The most-preferred transport this device actually declares. */
   transport: string
-  /** §12.4: assignables occupied in at least one section. */
+  /**
+   * §12.4: assignables occupied in at least one section.
+   *
+   * **Rendered, never ranked.** This is here so the guide can say "carrying 5 parts" beside the
+   * clock source; it has no part in choosing that source. See `selectClockSource`.
+   */
   occupiedAssignables: number
 }
 
@@ -79,11 +84,31 @@ function transportRank(device: Device): number {
 }
 
 /**
- * §7.4. `canSendClock`, then occupied-assignable count descending (§12.4), then transport
- * preference (`midi-din` > `usb`), then `deviceId` ascending by UTF-16 code unit (§7.2).
+ * §7.4. `canSendClock`, then **one semantic key and two tie-breaks**:
+ *
+ *  1. `clock.preferredSource` — the manifest's own topology judgement (§2.3). The only key here
+ *     that means anything; the two below exist to make the answer deterministic, not right.
+ *  2. Transport preference (`midi-din` > `usb`).
+ *  3. `deviceId` ascending by UTF-16 code unit (§7.2).
+ *
+ * **`!canReceiveClock` is deliberately not a key.** It was one for exactly one revision, on the
+ * argument that a source-only box has nowhere else to sit in the topology. It does not follow:
+ * such a box simply runs free, which the guide already says by name for the LiveTrak L-8, and
+ * nothing about the rig's clock affects it. Worse, it would infer intent from a *capability* —
+ * doing by inference the one job `preferredSource` exists to make a person do explicitly. If a
+ * recorder should drive a studio, its manifest says so.
+ *
+ * **Load is no longer a ranking key.** It used to sit at the top, and the reasoning was that the
+ * busiest box is the one you are standing at. That is a guess about the *session* dressed up as a
+ * fact about the *rig*: it re-cables a studio because a template asked for one more hat, and it
+ * makes the clock source a function of the assignment search, so a change to the objective moves
+ * the MIDI cables. `occupiedAssignables` is still carried on the result, because "carrying 5
+ * parts" is worth printing beside the source — it is now information the guide renders, never a
+ * reason the guide chose.
  *
  * **No seed.** Rerolling a pattern should not re-cable the rig, so this must be stable across
- * rerolls in a way that the assignment deliberately is not.
+ * rerolls in a way that the assignment deliberately is not — and dropping load makes that
+ * strictly truer, since the assignment can no longer reach it at all.
  *
  * Returns `undefined` when nothing in the rig can send clock — a real rig, and a fact the guide has
  * to state rather than paper over by nominating a device that cannot do it.
@@ -96,8 +121,8 @@ export function selectClockSource(
   if (capable.length === 0) return undefined
 
   const ranked = [...capable].sort((a, b) => {
-    const byLoad = (occupied.get(b.id) ?? 0) - (occupied.get(a.id) ?? 0)
-    if (byLoad !== 0) return byLoad
+    const byPreferred = Number(b.clock.preferredSource === true) - Number(a.clock.preferredSource === true)
+    if (byPreferred !== 0) return byPreferred
     const byTransport = transportRank(a) - transportRank(b)
     if (byTransport !== 0) return byTransport
     return compareCodeUnits(a.id, b.id)

@@ -105,17 +105,30 @@ describe('the first box that sends clock and cannot receive it', () => {
     expect(sendOnly.map((d) => d.id)).toEqual(['tascam-model-2400'])
   })
 
-  it('loses the clock source to any box actually carrying parts (§7.4)', () => {
+  it('is the library\'s one authored clock preference (§7.4)', () => {
+    // The claim is separate from the two booleans above and is not implied by them: this desk is
+    // what a room runs to, which is a judgement about what the box is *for*. The evidence is in
+    // the manifest's own JSDoc, beside the manual pages it comes from.
+    expect(device.clock.preferredSource).toBe(true)
+    const claimed = DEVICES.filter((d) => d.clock.preferredSource === true)
+    expect(claimed.map((d) => d.id)).toEqual(['tascam-model-2400'])
+  })
+
+  it('takes the clock source from a box carrying the whole track (§7.4)', () => {
+    // This case used to read "loses the clock source to any box actually carrying parts", and
+    // asserted the TR-1000. Load ranked first then; `preferredSource` does now, so the desk
+    // leads a rig it contributes no parts to — which is what a studio running to a recorder
+    // looks like, and is now reached by the claim rather than by a proxy for it.
     const occupied = new Map([[tr1000.id, 5]])
-    expect(selectClockSource([tr1000, device], occupied)?.deviceId).toBe(tr1000.id)
+    const source = selectClockSource([tr1000, device], occupied)
+    expect(source?.deviceId).toBe(device.id)
+    // Nothing hidden about it: the guide prints what the source is carrying, which is nothing.
+    expect(source?.occupiedAssignables).toBe(0)
   })
 
   it('wins it when nothing else can send, and says it is carrying nothing', () => {
-    // §7.4 ranks `canSendClock` first and occupied-assignable count second, so a device with no
-    // parts sorts last among the clock-capable and only wins uncontested. That is the right
-    // answer for a recorder a studio runs to — but it is reached by a rule about *load*, which a
-    // zero-assignable box can never have, rather than by anything that knows what a clock source
-    // is for. Pinned here because this is the first rig in which it can happen.
+    // Uncontested rather than preferred — the L-8 can neither send nor receive — so this stays
+    // the case that proves an unopposed source is still named honestly.
     const source = selectClockSource([l8, device], new Map())
     expect(source?.deviceId).toBe(device.id)
     expect(source?.occupiedAssignables).toBe(0)

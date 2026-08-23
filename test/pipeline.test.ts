@@ -1,5 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import {
+  DeviceSchema,
   TRANSPORT_PREFERENCE,
   assignableKey,
   moodState,
@@ -15,6 +16,7 @@ import {
   type RoleRequest,
   type Template,
 } from '../lib/core/index'
+import { DEVICES } from '../lib/devices/registry.generated'
 import { template } from './fixtures'
 
 // ---------------------------------------------------------------------------
@@ -476,13 +478,18 @@ describe('clock source (§7.4)', () => {
     expect(chosen?.deviceId).toBe('b')
   })
 
-  it('takes occupied-assignable count descending first (§12.4)', () => {
-    // 'z' loses every later tie-break and still wins on load.
+  it('does not rank on occupied-assignable count, and reports it anyway (§12.4)', () => {
+    // This case used to read "takes occupied-assignable count descending first" and assert 'z'.
+    // Load ranked above everything until §7.4 replaced it with `preferredSource`; 'z' carries
+    // four parts to 'a''s one and now loses, because the two are level on every key that is
+    // still a key and 'a' sorts first.
     const chosen = selectClockSource([din('a'), din('z')], new Map([['a', 1], ['z', 4]]))
-    expect(chosen).toMatchObject({ deviceId: 'z', occupiedAssignables: 4 })
+    expect(chosen?.deviceId).toBe('a')
+    // The count still reaches the result, because the guide prints it beside the source.
+    expect(chosen?.occupiedAssignables).toBe(1)
   })
 
-  it('breaks a load tie on transport, midi-din over usb', () => {
+  it('breaks a tie on transport, midi-din over usb', () => {
     // 'a-usb' sorts first by id and still loses to the din box.
     const chosen = selectClockSource([usb('a-usb'), din('z-din')], new Map([['a-usb', 2], ['z-din', 2]]))
     expect(chosen).toMatchObject({ deviceId: 'z-din', transport: 'midi-din' })
@@ -527,3 +534,128 @@ describe('clock source (§7.4)', () => {
     expect(result.clockSource?.deviceId).toBe('a-drum')
   })
 })
+
+// ---------------------------------------------------------------------------
+// §7.4 Clock semantics, which replaced load as the ranking
+// ---------------------------------------------------------------------------
+
+describe('clock source ranks on semantics, not on load (§7.4)', () => {
+  /** A bidirectional box on midi-din: the ordinary case, and the thing that must lose below. */
+  const both = (id: string): Device =>
+    box(id, { clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din'] } })
+  /** Can send clock, cannot receive it — and is *not* preferred by that alone. */
+  const sourceOnly = (id: string): Device =>
+    box(id, { clock: { canSendClock: true, canReceiveClock: false, transport: ['midi-din'] } })
+  /** The manifest's own topology judgement: this box's job in a rig is to drive it. */
+  const preferred = (id: string, over: Partial<Device['clock']> = {}): Device =>
+    box(id, {
+      clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din'], preferredSource: true, ...over },
+    })
+
+  it('takes an idle preferred source over a groovebox carrying the whole track', () => {
+    // Every tie-break below `preferredSource` is stacked against the sequencer: it sorts last by
+    // id, it is on the slower transport, and it is carrying nothing at all while the groovebox
+    // carries eight parts. Under the old ranking the groovebox won on the first key.
+    const sequencer = preferred('z-sequencer', { transport: ['usb'] })
+    const groovebox = both('a-groovebox')
+    const chosen = selectClockSource([groovebox, sequencer], new Map([['a-groovebox', 8], ['z-sequencer', 0]]))
+    expect(chosen?.deviceId).toBe('z-sequencer')
+    // And the load still reaches the page — it is rendered, it just does not rank.
+    expect(chosen?.occupiedAssignables).toBe(0)
+  })
+
+  it('does not prefer a source-only box for being source-only', () => {
+    // `!canReceiveClock` was a ranking key for exactly one revision, and this is the case that
+    // says it is gone. A box that cannot receive clock is not thereby the right thing to clock a
+    // rig from — it simply runs free, which the guide states by name — and inferring intent from
+    // a capability is the job `preferredSource` exists to make someone do on purpose.
+    const recorder = sourceOnly('z-recorder')
+    const groovebox = both('a-groovebox')
+    const chosen = selectClockSource([groovebox, recorder], new Map([['a-groovebox', 6], ['z-recorder', 0]]))
+    expect(chosen?.deviceId).toBe('a-groovebox')
+    // Say it so, and it wins — on the claim rather than on the wiring.
+    const claimed = { ...recorder, clock: { ...recorder.clock, preferredSource: true } }
+    expect(selectClockSource([groovebox, claimed], new Map())?.deviceId).toBe('z-recorder')
+  })
+
+  it('leaves several preferred sources to the ordinary tie-breaks', () => {
+    // The field says "this box can lead", not "this box leads over that one". Ranking two
+    // authored preferences against each other would need an ordering nobody has a basis to
+    // author, so they fall through to transport and then id exactly as unpreferred boxes do.
+    const chosen = selectClockSource(
+      [preferred('z-din'), preferred('a-usb', { transport: ['usb'] })],
+      new Map([['a-usb', 9], ['z-din', 0]]),
+    )
+    expect(chosen).toMatchObject({ deviceId: 'z-din', transport: 'midi-din' })
+    expect(selectClockSource([preferred('b'), preferred('a')], new Map())?.deviceId).toBe('a')
+  })
+
+  it('ignores load entirely, at every position in the ranking', () => {
+    // The same three rigs resolved twice with the load map inverted. Nothing may move.
+    const rigs: Device[][] = [
+      [both('a'), both('z')],
+      [both('a'), sourceOnly('z')],
+      [preferred('a'), both('z')],
+      [both('a'), preferred('z')],
+    ]
+    for (const rig of rigs) {
+      const ids = rig.map((d) => d.id)
+      const heavyFirst = new Map(ids.map((id, i) => [id, i === 0 ? 9 : 0]))
+      const heavyLast = new Map(ids.map((id, i) => [id, i === 0 ? 0 : 9]))
+      const where = ids.join(' vs ')
+      expect(selectClockSource(rig, heavyFirst)?.deviceId, where).toBe(
+        selectClockSource(rig, heavyLast)?.deviceId,
+      )
+      expect(selectClockSource(rig, new Map())?.deviceId, where).toBe(
+        selectClockSource(rig, heavyLast)?.deviceId,
+      )
+    }
+  })
+
+  it('still falls through to transport and then id once semantics tie', () => {
+    // Two source-only boxes: the earlier keys are level, so the old lower keys decide as before.
+    const usbOnly = box('a-usb', {
+      clock: { canSendClock: true, canReceiveClock: false, transport: ['usb'] },
+    })
+    expect(selectClockSource([usbOnly, sourceOnly('z-din')], new Map())?.deviceId).toBe('z-din')
+    expect(selectClockSource([sourceOnly('B'), sourceOnly('a'), sourceOnly('A')], new Map())?.deviceId).toBe('A')
+  })
+
+  it('refuses a preferred source that cannot send clock', () => {
+    // The field is meaningless without `canSendClock`, so the schema rejects the pair rather than
+    // ignoring it and leaving a manifest that reads as if it made a claim.
+    const contradictory = {
+      ...both('a'),
+      clock: { canSendClock: false, canReceiveClock: true, transport: ['midi-din'], preferredSource: true },
+    }
+    const parsed = DeviceSchema.safeParse(contradictory)
+    expect(parsed.success).toBe(false)
+    expect(JSON.stringify(parsed.success ? [] : parsed.error.issues)).toContain('preferredSource')
+    // And the ordinary omission is still legal, which is how every shipped manifest spells it.
+    expect(DeviceSchema.safeParse(both('a')).success).toBe(true)
+  })
+
+  it('is claimed by exactly one box in the library, and omitted rather than falsified elsewhere', () => {
+    // Absent and `false` rank identically, so a second spelling would only invite an author to
+    // write it out eight times. The Model 2400 is the one manifest whose manual describes a box
+    // a room runs to; the evidence lives in that file, not here.
+    const claimed = DEVICES.filter((d) => d.clock.preferredSource === true)
+    expect(claimed.map((d) => d.id)).toEqual(['tascam-model-2400'])
+    for (const device of DEVICES) {
+      if (device.clock.preferredSource === true) continue
+      expect(device.clock.preferredSource, device.id).toBeUndefined()
+    }
+  })
+
+  it('leaves a rig with no authored preference to deterministic tie-breaks alone', () => {
+    // The cost, stated as a test rather than only in DESIGN.md §7.4. Every bidirectional
+    // instrument in the library is unpreferred and on midi-din, so an instrument-only rig is
+    // clocked by whichever id sorts first — not by what it carries, and not by any judgement.
+    const instruments = DEVICES.filter((d) => d.clock.canSendClock && d.clock.preferredSource !== true)
+    expect(instruments.length).toBeGreaterThan(4)
+    const heavy = new Map(instruments.map((d, i) => [d.id, instruments.length - i]))
+    const first = [...instruments].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0]
+    expect(selectClockSource(instruments, heavy)?.deviceId).toBe(first?.id)
+  })
+})
+
