@@ -1,26 +1,64 @@
-import type { DeviceId, ResolveResult } from '@/lib/core'
+import { Fragment } from 'react'
+import type { BandGroup, ResolveResult, Role } from '@/lib/core'
+import { bandTrajectory } from '@/lib/core'
 import { ioText, num } from './format'
 import { TokenList } from './instruction'
 
+/** `kick`, `kick and sub`, `kick, sub and clap` — the Markdown sibling joins the same way. */
+function RoleList({ roles }: { roles: readonly Role[] }) {
+  return (
+    <>
+      {roles.map((role, i) => (
+        <Fragment key={role}>
+          {i === 0 ? null : (
+            <span className="token-sep">{i === roles.length - 1 ? ' and ' : ', '}</span>
+          )}
+          <span className="role mono">{role}</span>
+        </Fragment>
+      ))}
+    </>
+  )
+}
+
+function GroupNotes({ group }: { group: BandGroup }) {
+  return (
+    <>
+      {group.fallbacks.map((f) => (
+        <span className="quiet" key={`fallback-${num(f.usedBand)}`}>
+          {' · '}
+          {f.all ? (
+            <>every part plays band {num(f.usedBand)}</>
+          ) : (
+            <>
+              <RoleList roles={f.roles} /> {f.roles.length === 1 ? 'plays' : 'play'} band{' '}
+              {num(f.usedBand)}
+            </>
+          )}
+        </span>
+      ))}
+      {group.silent.length === 0 ? null : (
+        <span className="quiet">
+          {' · '}
+          <RoleList roles={group.silent} /> {group.silent.length === 1 ? 'has' : 'have'} nothing
+          authored here
+        </span>
+      )}
+      {group.differsOn.length === 0 ? null : (
+        <span className="quiet">
+          {' · '}differs on <RoleList roles={group.differsOn} />
+        </span>
+      )}
+    </>
+  )
+}
+
 /** §8 phase 7. Sidechain, master FX, arrangement variations — what happens once it plays. */
-export function PhaseFinishing({
-  result,
-  occupied,
-}: {
-  result: ResolveResult
-  occupied: Map<DeviceId, number>
-}) {
+export function PhaseFinishing({ result }: { result: ResolveResult }) {
   const duckers = result.devices.filter((d) => d.features?.sidechain !== undefined)
   const fx = result.devices.filter(
     (d) => d.kind === 'fx-processor' || d.kind === 'mixer-recorder',
   )
-  const carried = result.devices
-    .filter((d) => (occupied.get(d.id) ?? 0) > 0)
-    .map((d) => d.name)
-    .join(', ')
-  const transient = result.assignments.filter(
-    (a) => a.sections.length < result.template.structure.length,
-  )
+  const trajectory = bandTrajectory(result)
 
   return (
     <>
@@ -67,46 +105,38 @@ export function PhaseFinishing({
       )}
 
       <h4>Arrangement variations</h4>
-      <p className="quiet">
-        Parts live on {carried === '' ? 'nothing' : carried}. Section by section:
-      </p>
-      <ul className="boxes flat">
-        {result.template.structure.map((section) => {
-          const here = result.assignments.filter((a) => a.sections.includes(section.name))
-          return (
-            <li key={section.name}>
-              <strong>{section.name}</strong>{' '}
-              <span className="quiet">
-                {num(section.bars)} bars, energy {num(section.energy)}
-              </span>{' '}
-              {here.length === 0 ? (
-                <span className="quiet">nothing assigned</span>
-              ) : (
-                <TokenList
-                  className="role mono"
-                  items={here.map((a) => ({ key: a.requestId, text: a.role }))}
-                />
-              )}
-            </li>
-          )
-        })}
-      </ul>
-
-      {transient.length === 0 ? null : (
+      {trajectory.groups.length === 0 ? (
+        <p className="quiet">Nothing is assigned, so there is no arrangement to vary.</p>
+      ) : (
         <>
           <p className="quiet">
-            Parts that come and go:
+            Sections that program identically, part for part — build one and copy it:
           </p>
           <ul className="boxes flat">
-            {transient.map((a) => (
-              <li key={a.requestId}>
-                <span className="role mono">{a.role}</span>{' '}
-                <span className="quiet">{a.sections.join(', ')} only</span>
+            {trajectory.groups.map((group) => (
+              <li key={group.sections.join(',')}>
+                <strong>
+                  {group.band === undefined ? 'no parts' : `band ${num(group.band)}`}
+                </strong>{' '}
+                <TokenList
+                  className="section"
+                  items={group.sections.map((s) => ({ key: s, text: s }))}
+                />
+                <GroupNotes group={group} />
               </li>
             ))}
           </ul>
         </>
       )}
+
+      {trajectory.unpatterned.length === 0 ? null : (
+        <p className="quiet">
+          <RoleList roles={trajectory.unpatterned} />{' '}
+          {trajectory.unpatterned.length === 1 ? 'has' : 'have'} no pattern authored at any band,
+          so nothing here varies for them.
+        </p>
+      )}
+
     </>
   )
 }

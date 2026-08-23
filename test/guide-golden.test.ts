@@ -66,10 +66,33 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
     // them similar, most of what the tr-1000 file exists to pin would stop being pinned.
     const full = guideText('full-rig')
     const one = guideText('tr-1000')
-    const gapsIn = (doc: string) => doc.split('\n').filter((l) => l.includes(' — no ')).length
+    // Counted from the Gaps section itself, not by scanning the whole document for a phrase:
+    // §6.3's "no pattern authored for `pad` at any band" is a *pattern* hole, not a rig gap,
+    // and it reads similarly enough to have quietly inflated this count.
+    const gapsIn = (doc: string) => {
+      const lines = doc.split('\n')
+      const start = lines.findIndex((l) => l.startsWith('### Gaps'))
+      if (start === -1) return 0
+      const rest = lines.slice(start + 1)
+      const end = rest.findIndex((l) => l.startsWith('## '))
+      return (end === -1 ? rest : rest.slice(0, end)).filter((l) => l.startsWith('- `')).length
+    }
     expect(gapsIn(one)).toBeGreaterThan(gapsIn(full))
     expect(full).toContain('Deluge')
     expect(one).not.toContain('Deluge')
+  })
+
+  it('summarises the arrangement as a band trajectory, at real six-section scale (§6.3)', () => {
+    // The one fact this phase owns: which sections program identically. Six sections collapse
+    // to three lines, which is three patterns to program instead of six — and it is only
+    // visible at real scale, where two sections happen to share a band.
+    for (const name of GUIDE_NAMES) {
+      const doc = guideText(name)
+      const arrangement = doc.slice(doc.indexOf('**Arrangement variations**'))
+      expect(arrangement, name).toContain('- **band 0** — Intro, Outro')
+      expect(arrangement, name).toContain('- **band 1** — Build, Breakdown')
+      expect(arrangement, name).toContain('- **band 3** — Drop, Peak')
+    }
   })
 
   it('pins all three gap reasons, which only a rig too small ever shows at once (§7.3)', () => {

@@ -1,20 +1,24 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import { DEVICES } from '../lib/devices/registry.generated'
 import {
+  DENSITY_BANDS,
   MAX_SUBSTITUTION_DISTANCE_SQ,
   MoodStateSchema,
   NEUTRAL_MOOD,
   assignableKey,
   bandFallbackOrder,
+  bandFor,
   bindArticulation,
   characterDistanceSq,
   compareCodeUnits,
-  densityBand,
+  densityShift,
+  energyBand,
   expand,
   expandAll,
   inheritVerified,
   moodState,
   nearestCharacter,
+  patternBand,
   recipeVoiceKey,
   resolveCharacter,
   resolveParam,
@@ -236,9 +240,62 @@ describe('resolveCharacter (§6.2)', () => {
 // §6.3 / §4.3 — density and pattern selection
 // ---------------------------------------------------------------------------
 
-describe('densityBand (§6.3)', () => {
+describe('energyBand (§6.3)', () => {
   it('has fixed edges, inclusive-below and exclusive-above', () => {
-    expect([0, 24, 25, 49, 50, 74, 75, 100].map(densityBand)).toEqual([0, 0, 1, 1, 2, 2, 3, 3])
+    expect([0, 0.24, 0.25, 0.49, 0.5, 0.74, 0.75, 0.99].map(energyBand)).toEqual([
+      0, 0, 1, 1, 2, 2, 3, 3,
+    ])
+  })
+
+  it('keeps full energy inside the four bands that exist', () => {
+    // floor(1 * 4) is 4, which is not a band. The min is load-bearing, not belt-and-braces.
+    expect(energyBand(1)).toBe(3)
+  })
+})
+
+describe('densityShift (§6.3)', () => {
+  it('is three zones - sparser, as authored, busier - not four bands', () => {
+    expect([0, 24, 25, 49, 50, 74, 75, 100].map(densityShift)).toEqual([
+      -1, -1, 0, 0, 0, 0, 1, 1,
+    ])
+  })
+})
+
+describe('patternBand (§6.3)', () => {
+  it('takes the band from energy and leans it by density', () => {
+    expect(patternBand(0.5, 50)).toBe(2)
+    expect(patternBand(0.5, 0)).toBe(1)
+    expect(patternBand(0.5, 100)).toBe(3)
+  })
+
+  it('clamps at both ends rather than asking for a band that does not exist', () => {
+    expect(patternBand(0, 0)).toBe(0) // 0 - 1
+    expect(patternBand(0, 100)).toBe(1)
+    expect(patternBand(1, 50)).toBe(3)
+    expect(patternBand(1, 100)).toBe(3) // 3 + 1
+  })
+
+  it('leans by at most one band, so the knob can never flatten the arrangement (§4.3)', () => {
+    for (const density of [0, 24, 25, 49, 50, 74, 75, 100]) {
+      const quiet = patternBand(0.1, density)
+      const loud = patternBand(0.9, density)
+      // The Drop is never sparser than the Intro, whatever the listener does to the knob.
+      expect(loud, `d=${density}`).toBeGreaterThanOrEqual(quiet)
+      expect(Math.abs(patternBand(0.5, density) - energyBand(0.5)), `d=${density}`).toBeLessThanOrEqual(1)
+    }
+  })
+})
+
+describe('bandFor (§6.3)', () => {
+  it('reads energy from the named section, so one template spans several bands', () => {
+    const t = template() // Intro 0.2, Build 0.5, Drop 0.9
+    expect(bandFor(t, 'Intro', moodState())).toBe(0)
+    expect(bandFor(t, 'Build', moodState())).toBe(2)
+    expect(bandFor(t, 'Drop', moodState())).toBe(3)
+  })
+
+  it('throws for a section outside `structure` rather than inventing a band', () => {
+    expect(() => bandFor(template(), 'Outro' as SectionName, moodState())).toThrow(/structure/)
   })
 })
 
@@ -285,48 +342,78 @@ describe('selectPattern (§7 step 5, §6.3)', () => {
     }
   }
 
-  it('selects the variant authored for the band the knob asks for', () => {
+  it("selects the variant authored for the section's own band", () => {
     const t = template({
-      patterns: [kickPattern({ id: 'p-b1', band: 1 }), kickPattern({ id: 'p-b2', band: 2 })],
+      patterns: [kickPattern({ id: 'p-b2', band: 2 }), kickPattern({ id: 'p-b3', band: 3 })],
     })
+    // Drop is energy 0.9 -> band 3; density 60 is the neutral zone, so no lean.
     const selection = selectPattern(t, kick, 'Drop', moodState({ density: 60 }))
     expect(selection.outcome).toBe('exact')
-    expect(selection).toMatchObject({ band: 2, usedBand: 2 })
-    expect(selection.outcome !== 'none' && selection.pattern.id).toBe('p-b2')
+    expect(selection).toMatchObject({ band: 3, usedBand: 3 })
+    expect(selection.outcome !== 'none' && selection.pattern.id).toBe('p-b3')
+  })
+
+  it('gives one request different bands in different sections at one density (§6.3)', () => {
+    const t = template({
+      patterns: DENSITY_BANDS.map((band) => kickPattern({ id: `p-b${band}`, band })),
+    })
+    const at = (section: SectionName) => {
+      const sel = selectPattern(t, kick, section, moodState())
+      expect(sel.outcome, section).toBe('exact')
+      return sel.outcome === 'none' ? -1 : sel.usedBand
+    }
+    // The whole point of the fix: energy 0.2 / 0.5 / 0.9 are three different bands, so the
+    // Intro is not handed the Drop's variant.
+    expect([at('Intro'), at('Build'), at('Drop')]).toEqual([0, 2, 3])
+  })
+
+  it('leans that band by density, one band and no further (§6.3)', () => {
+    const t = template({
+      patterns: DENSITY_BANDS.map((band) => kickPattern({ id: `p-b${band}`, band })),
+    })
+    const at = (density: number) => {
+      const sel = selectPattern(t, kick, 'Build', moodState({ density }))
+      return sel.outcome === 'none' ? -1 : sel.usedBand
+    }
+    // Build is energy 0.5 -> band 2.
+    expect([at(0), at(24), at(25), at(74), at(75), at(100)]).toEqual([1, 1, 2, 2, 3, 3])
   })
 
   it('falls back to the nearest lower band, and reports it (§6.3)', () => {
     const t = template({ patterns: [kickPattern({ id: 'p-b1', band: 1 })] })
+    // Drop's band 3, leaned up and clamped back to 3.
     const selection = selectPattern(t, kick, 'Drop', moodState({ density: 100 }))
     expect(selection).toMatchObject({ outcome: 'fallback', band: 3, usedBand: 1 })
   })
 
   it('falls back upward only when there is nothing lower', () => {
     const t = template({ patterns: [kickPattern({ id: 'p-b3', band: 3 })] })
-    const selection = selectPattern(t, kick, 'Drop', moodState({ density: 0 }))
+    // Intro's band 0, leaned down and clamped back to 0.
+    const selection = selectPattern(t, kick, 'Intro', moodState({ density: 0 }))
     expect(selection).toMatchObject({ outcome: 'fallback', band: 0, usedBand: 3 })
   })
 
   it('omits the pattern rather than inventing one when the role has none (invariant 5)', () => {
     const t = template({ patterns: [kickPattern({ forRole: 'snare' })] })
-    expect(selectPattern(t, kick, 'Drop', moodState())).toEqual({ outcome: 'none', band: 2 })
+    expect(selectPattern(t, kick, 'Drop', moodState())).toEqual({ outcome: 'none', band: 3 })
   })
 
   it('honours section eligibility, and an omitted `sections` means every section', () => {
     const t = template({
       patterns: [
-        kickPattern({ id: 'p-drop', band: 2, sections: ['Drop'] }),
+        kickPattern({ id: 'p-drop', band: 3, sections: ['Drop'] }),
         kickPattern({ id: 'p-any', band: 1 }),
       ],
     })
     expect(selectPattern(t, kick, 'Drop', moodState({ density: 60 }))).toMatchObject({
       outcome: 'exact',
-      usedBand: 2,
+      usedBand: 3,
     })
-    // Band 2 exists but is not eligible in Intro, so the band-1 variant is used and reported.
+    // Intro asks for band 0, and the band-3 variant is not eligible there anyway, so the
+    // band-1 variant is used and reported.
     expect(selectPattern(t, kick, 'Intro', moodState({ density: 60 }))).toMatchObject({
       outcome: 'fallback',
-      band: 2,
+      band: 0,
       usedBand: 1,
     })
   })
@@ -338,7 +425,7 @@ describe('selectPattern (§7 step 5, §6.3)', () => {
         kickPattern({ id: 'p-alpha', band: 2 }),
       ],
     })
-    const selection = selectPattern(t, kick, 'Drop', moodState({ density: 60 }))
+    const selection = selectPattern(t, kick, 'Build', moodState({ density: 60 }))
     expect(selection.outcome !== 'none' && selection.pattern.id).toBe('p-alpha')
     expect(selection.outcome !== 'none' && selection.candidates.map((p) => p.id)).toEqual([
       'p-alpha',
@@ -354,8 +441,21 @@ describe('selectPattern (§7 step 5, §6.3)', () => {
     })
     const t = template({ patterns: [authored] })
     for (const density of [0, 30, 60, 100]) {
-      const selection = selectPattern(t, kick, 'Drop', moodState({ density }))
-      expect(selection.outcome !== 'none' && selection.pattern.hits).toEqual(authored.hits)
+      for (const section of ['Intro', 'Build', 'Drop'] as SectionName[]) {
+        const selection = selectPattern(t, kick, section, moodState({ density }))
+        expect(selection.outcome !== 'none' && selection.pattern.hits).toEqual(authored.hits)
+      }
+    }
+  })
+
+  it('is a pure function of template, request, section and mood', () => {
+    const t = template({
+      patterns: DENSITY_BANDS.map((band) => kickPattern({ id: `p-b${band}`, band })),
+    })
+    for (const section of ['Intro', 'Build', 'Drop'] as SectionName[]) {
+      const once = selectPattern(t, kick, section, moodState({ density: 40 }))
+      const twice = selectPattern(t, kick, section, moodState({ density: 40 }))
+      expect(twice).toEqual(once)
     }
   })
 
@@ -373,14 +473,15 @@ describe('selectPattern (§7 step 5, §6.3)', () => {
   it('selects once per section a request occupies', () => {
     const t = template({
       patterns: [
-        kickPattern({ id: 'p-drop', band: 2, sections: ['Drop'] }),
+        kickPattern({ id: 'p-drop', band: 3, sections: ['Drop'] }),
         kickPattern({ id: 'p-any', band: 1 }),
       ],
     })
     const bySection = selectPatterns(t, kick, moodState({ density: 60 }))
     expect([...bySection.keys()]).toEqual(['Intro', 'Build', 'Drop'])
-    expect(bySection.get('Drop')).toMatchObject({ usedBand: 2 })
-    expect(bySection.get('Intro')).toMatchObject({ usedBand: 1 })
+    expect(bySection.get('Drop')).toMatchObject({ band: 3, usedBand: 3 })
+    expect(bySection.get('Build')).toMatchObject({ band: 2, usedBand: 1 })
+    expect(bySection.get('Intro')).toMatchObject({ band: 0, usedBand: 1 })
   })
 })
 

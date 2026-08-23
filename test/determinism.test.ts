@@ -42,6 +42,9 @@ const IMPLEMENTATION = [
   // §8's renderer is where a locale-aware formatter is most tempting — thousands separators on
   // a step number, a "nicely" formatted range — so it is scanned like the rest of the engine.
   'render.ts',
+  // §6.3's band trajectory. Derivation, not rendering, and it groups and orders sections —
+  // exactly the shape of code where a "tidier" sort reaches for `localeCompare`.
+  'arrangement.ts',
   // §8's phase order. Scanned rather than excluded with the other declaration-only modules:
   // it is read by renderers, which is where locale formatting creeps in, and a module that
   // costs nothing to scan is never the one worth leaving out of a ban.

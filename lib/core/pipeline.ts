@@ -7,9 +7,9 @@ import type { RoleRequest, Template } from './template'
 import type { ResolvedParam } from './params'
 import {
   assignableKey,
+  bandFor,
   bindArticulation,
   compareCodeUnits,
-  densityBand,
   resolveParams,
   resolvePatch,
   selectPatterns,
@@ -281,7 +281,7 @@ export function resolve(input: ResolveInput): ResolveResult {
       patterns: a.sections.map((section) => {
         const selection: PatternSelection = bySection?.get(section) ?? {
           outcome: 'none',
-          band: densityBand(mood.density),
+          band: bandFor(template, section, mood),
         }
         return {
           section,

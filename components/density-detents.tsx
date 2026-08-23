@@ -1,22 +1,23 @@
 'use client'
 
-import { densityBand } from '@/lib/core'
+import { densityShift } from '@/lib/core'
 
 /**
- * §6.3 / §12.2. Density is quantised: the band edges are fixed constants and each band selects
- * an authored pattern variant. A 0-100 sweep would imply a continuum and have people hunting
- * for an effect between 26 and 49 that does not exist, so this renders as four detents.
+ * §6.3 / §12.2. Density is quantised, and it is a *lean*, not the band itself: the section's
+ * energy picks the band and this shifts it by one, so there are three zones and not four. A
+ * 0-100 sweep would imply a continuum and have people hunting for an effect between 26 and 49
+ * that does not exist, so this renders as three detents.
  *
- * The four values are band centres, so a value round-tripped through a permalink lands back on
+ * The three values are zone centres, so a value round-tripped through a permalink lands back on
  * the same detent even if the edges are ever read off by one somewhere.
  *
- * `densityBand` is imported rather than reimplemented. The band edges live in the resolver and
- * a second copy here is a UI that can silently disagree with the guide it produced.
+ * `densityShift` is imported rather than reimplemented. The edges live in the resolver and a
+ * second copy here is a UI that can silently disagree with the guide it produced.
  */
-export const DENSITY_DETENTS = [12, 37, 62, 87] as const
+export const DENSITY_DETENTS = [12, 50, 87] as const
 
 /** UI labels only. Not vocabulary - nothing in a template or a device names these (invariant 3). */
-const BAND_WORDS = ['sparse', 'steady', 'driving', 'relentless'] as const
+const SHIFT_WORDS = ['sparser', 'as authored', 'busier'] as const
 
 export type DensityDetentsProps = {
   value: number
@@ -24,29 +25,30 @@ export type DensityDetentsProps = {
 }
 
 export function DensityDetents({ value, onChange }: DensityDetentsProps) {
-  const selected = densityBand(value)
+  const selected = densityShift(value) + 1
 
   return (
     <fieldset className="detents">
       <legend className="knob-label">density</legend>
       <div className="detent-row">
-        {DENSITY_DETENTS.map((detent, band) => (
+        {DENSITY_DETENTS.map((detent, zone) => (
           <label className="detent" key={detent}>
             <input
               type="radio"
               name="density"
               value={detent}
-              checked={band === selected}
+              checked={zone === selected}
               onChange={() => onChange(detent)}
             />
-            <span className="band mono">{band}</span>
-            <span className="word">{BAND_WORDS[band]}</span>
+            <span className="band mono">{zone === 1 ? '0' : zone === 0 ? '\u22121' : '+1'}</span>
+            <span className="word">{SHIFT_WORDS[zone]}</span>
           </label>
         ))}
       </div>
       <span className="knob-hint">
-        Four authored pattern bands. Falls back to the nearest lower band when a template has
-        not authored the one asked for.
+        Each section&rsquo;s energy picks its pattern band; this leans the arrangement one band
+        either way. A section already at the top or the bottom stays where it is. Falls back to
+        the nearest lower band when a template has not authored the one asked for.
       </span>
     </fieldset>
   )

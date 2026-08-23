@@ -297,7 +297,10 @@ export const industrialTechno: Template = {
    * Six sections, 128 bars. The §4 sketch's Intro/Build/Drop is the shape but not a track:
    * without a Breakdown there is nothing for the second Drop to be a return *from*, and
    * `sections` on a transient request has nothing to choose between. Energy is the arrangement
-   * curve the renderer reads; it is not the density knob, which the user drives.
+   * curve, and §6.3 reads it to pick each section's pattern band: 0.15 / 0.45 / 0.9 / 0.3 / 1 /
+   * 0.2 lands on bands 0 / 1 / 3 / 1 / 3 / 0, so the Intro and Outro program alike, the Build
+   * and Breakdown program alike, and the two peaks are the busiest thing in the guide. The
+   * density knob only leans that curve; it does not draw it.
    */
   structure: [
     { name: 'Intro', bars: 16, energy: 0.15 },

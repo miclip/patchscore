@@ -238,11 +238,55 @@ export function resolveCharacter(base: Character, state: MoodState): Character {
 // ---------------------------------------------------------------------------
 
 /**
- * §6.3. Fixed constants, inclusive-below and exclusive-above. Not tunable: a moving edge
- * would make invariant 6 depend on a config file.
+ * §6.3. The section's `energy` quantised to a band. `TemplateSchema` bounds energy to 0-1, and
+ * `Math.min(3, ...)` catches `energy === 1`, which would otherwise floor to a fourth band that
+ * does not exist.
+ *
+ * Energy is the band's *source*: a Drop is busier than an Intro because the template says so,
+ * not because the listener moved a knob. Fixed constants, inclusive-below and exclusive-above.
+ * Not tunable: a moving edge would make invariant 6 depend on a config file.
  */
-export function densityBand(density: number): DensityBand {
-  return density < 25 ? 0 : density < 50 ? 1 : density < 75 ? 2 : 3
+export function energyBand(energy: number): DensityBand {
+  return Math.min(3, Math.floor(energy * 4)) as DensityBand
+}
+
+/**
+ * §6.3. Density is a *lean*, not the band itself: one band sparser, as authored, or one band
+ * busier. Three zones, not four — the knob can move the arrangement by at most one band, so
+ * the shape the template authored across its sections survives any setting of it.
+ */
+export function densityShift(density: number): -1 | 0 | 1 {
+  return density < 25 ? -1 : density < 75 ? 0 : 1
+}
+
+/**
+ * §6.3. The band one request plays in one section: the section's energy band, shifted by
+ * density, clamped into the four that exist. Clamping is not belt-and-braces: energy 1 leaned
+ * up is 4 and energy 0 leaned down is -1, and a request for either would surface in the guide
+ * as "nothing authored at band 4".
+ */
+export function patternBand(energy: number, density: number): DensityBand {
+  const shifted = energyBand(energy) + densityShift(density)
+  return Math.min(3, Math.max(0, shifted)) as DensityBand
+}
+
+/**
+ * §6.3. The band for a named section of a template. The single place `structure` is read for
+ * its energy, so the pipeline's no-pattern fallback and `selectPattern` cannot drift apart.
+ *
+ * A section outside `structure` throws rather than defaulting: there is no energy to quantise,
+ * and answering with a band anyway would be a number with nothing behind it.
+ */
+export function bandFor(
+  template: Template,
+  section: SectionName,
+  state: MoodState,
+): DensityBand {
+  const found = template.structure.find((s) => s.name === section)
+  if (found === undefined) {
+    throw new Error(`section '${section}' is not in template '${template.id}' structure`)
+  }
+  return patternBand(found.energy, state.density)
 }
 
 /**
@@ -280,7 +324,7 @@ export function sectionsFor(request: RoleRequest, template: Template): SectionNa
 export type PatternSelection =
   | {
       outcome: 'exact' | 'fallback'
-      /** The band the density knob asked for. */
+      /** The band asked for: the section's energy band, shifted by density (§6.3). */
       band: DensityBand
       /** The band actually used. Differs from `band` only when `outcome` is 'fallback'. */
       usedBand: DensityBand
@@ -311,7 +355,8 @@ function eligible(template: Template, role: Role, section: SectionName, band: De
  * rig**: two users with different boxes and the same inputs get the same rhythms. That is
  * why no `Device` appears in this signature, and it is a cheap test to write.
  *
- * Density never mutates hits (§4.3) — it selects which authored variant is in play.
+ * Density never mutates hits (§4.3) — it leans the band the section's energy already chose,
+ * and the band selects which authored variant is in play.
  */
 export function selectPattern(
   template: Template,
@@ -319,7 +364,7 @@ export function selectPattern(
   section: SectionName,
   state: MoodState,
 ): PatternSelection {
-  const band = densityBand(state.density)
+  const band = bandFor(template, section, state)
   for (const candidateBand of bandFallbackOrder(band)) {
     const candidates = eligible(template, request.role, section, candidateBand)
     const first = candidates[0]

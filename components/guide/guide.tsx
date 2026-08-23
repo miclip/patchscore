@@ -20,8 +20,10 @@ import { PhaseVoices } from './phase-voices'
  * tables that scroll inside themselves instead of stretching the page.
  *
  * **The view decides nothing** (§8's rule for its Markdown sibling, and the reason there can be
- * two of them). Every musical choice is already settled in `ResolveResult`. What this file
- * decides is ink: what is loud, what is quiet, and what is reserved-but-invisible.
+ * two of them). Every musical choice is already settled in `ResolveResult`, and anything derived
+ * from it that is a musical claim rather than a layout choice — §6.3's band trajectory, in
+ * `lib/core/arrangement.ts` — is derived once and read by both. What this file decides is ink:
+ * what is loud, what is quiet, and what is reserved-but-invisible.
  *
  * Seven phases, always, in §8's order — not "the phases that had content". A guide whose hook
  * section vanishes is indistinguishable from a genre with no hook, so an empty phase says what
@@ -50,7 +52,7 @@ export function Guide({ result }: { result: ResolveResult }) {
     Hook: <PhaseHook result={result} />,
     'Step programming': <PhaseSteps result={result} deviceById={deviceById} />,
     'Sound design': <PhaseSound result={result} deviceById={deviceById} />,
-    Finishing: <PhaseFinishing result={result} occupied={occupied} />,
+    Finishing: <PhaseFinishing result={result} />,
   }
 
   return (

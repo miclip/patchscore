@@ -351,7 +351,7 @@ button:active {
 /* ----------------------------------------------------------------- density */
 
 /*
- * Density takes the whole row rather than sitting in a knob-sized cell. Four detents plus their
+ * Density takes the whole row rather than sitting in a knob-sized cell. Three detents plus their
  * labels do not fit a knob's footprint, and the difference in shape is the point: this axis is
  * quantised and the other four are not (§6.3).
  */
@@ -369,7 +369,7 @@ button:active {
 
 .detent-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   width: 100%;
   max-width: 460px;

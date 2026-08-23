@@ -1,5 +1,6 @@
 import type { Device } from './device'
 import type { DeviceId, SectionName } from './ids'
+import type { Role } from './vocabulary'
 import type { Cite, Provenance, ResolvedParam, ResolvedRange } from './params'
 import { dominantRangeCite, sameCite } from './params'
 import type { Pattern, PatternHit } from './template'
@@ -8,6 +9,7 @@ import type { Gap } from './search'
 import { enharmonicAlternative, type HookChoice, type ResolvedHook, type ResolvedNote } from './harmony'
 import type { ResolveResult, ResolvedAssignment } from './pipeline'
 import { GUIDE_PHASES } from './guide'
+import { bandTrajectory, type BandGroup } from './arrangement'
 
 /**
  * §8. The resolved guide as Markdown.
@@ -587,14 +589,29 @@ function slotLines(pattern: Pattern): Line[] {
     if (existing === undefined) bySlot.set(h.slot, [h])
     else existing.push(h)
   }
-  return [...bySlot].map(([slot, hits]) => {
-    const steps = hits
-      .map((h) =>
-        h.velocity === undefined ? num(h.step) : `${num(h.step)} (vel ${num(h.velocity)})`,
-      )
-      .join(', ')
-    return `- \`${slot}\` — ${steps}`
-  })
+  return [...bySlot].map(([slot, hits]) => `- \`${slot}\` — ${slotSteps(hits)}`)
+}
+
+/**
+ * One slot's hits as steps. When every hit carries the *same* velocity the figure is hoisted
+ * to the end — `2, 4, 6, 8 (all vel 42)` rather than eight copies of `(vel 42)`.
+ *
+ * Not cosmetic: a band-3 ghost slot is eight sixteenths, and per-hit it renders a 105-character
+ * line that wraps three times on the phone §10 says this is read on. The repetition also buries
+ * the thing the reader is actually scanning for, which is the step numbers.
+ */
+function slotSteps(hits: readonly PatternHit[]): string {
+  const first = hits[0] as PatternHit
+  const uniform =
+    hits.length > 1 &&
+    first.velocity !== undefined &&
+    hits.every((h) => h.velocity === first.velocity)
+  if (uniform) {
+    return `${hits.map((h) => num(h.step)).join(', ')} (all vel ${num(first.velocity as number)})`
+  }
+  return hits
+    .map((h) => (h.velocity === undefined ? num(h.step) : `${num(h.step)} (vel ${num(h.velocity)})`))
+    .join(', ')
 }
 
 function articulationLines(
@@ -814,7 +831,7 @@ function phaseSound(
 // Phase 7 — Finishing
 // ---------------------------------------------------------------------------
 
-function phaseFinishing(result: ResolveResult, occupied: Map<DeviceId, number>): Line[] {
+function phaseFinishing(result: ResolveResult): Line[] {
   const out: Line[] = []
 
   out.push('**Sidechain**')
@@ -848,31 +865,53 @@ function phaseFinishing(result: ResolveResult, occupied: Map<DeviceId, number>):
 
   out.push('**Arrangement variations**')
   out.push('')
-  const carried = result.devices
-    .filter((d) => (occupied.get(d.id) ?? 0) > 0)
-    .map((d) => d.name)
-    .join(', ')
-  out.push(`Parts live on ${carried === '' ? 'nothing' : carried}. Section by section:`)
+  const trajectory = bandTrajectory(result)
+  if (trajectory.groups.length === 0) {
+    out.push('Nothing is assigned, so there is no arrangement to vary.')
+    return out
+  }
+  out.push('Sections that program identically, part for part — build one and copy it:')
   out.push('')
-  for (const section of result.template.structure) {
-    const here = result.assignments.filter((a) => a.sections.includes(section.name))
-    const roles = here.map((a) => `\`${a.role}\``).join(', ')
+  for (const group of trajectory.groups) {
+    const notes = groupNotes(group).map((n) => ` · ${n}`).join('')
     out.push(
-      `- **${section.name}** (${num(section.bars)} bars, energy ${num(section.energy)}) — ` +
-        `${roles === '' ? 'nothing assigned' : roles}`,
+      `- **${group.band === undefined ? 'no parts' : `band ${num(group.band)}`}** — ` +
+        `${group.sections.join(', ')}${notes}`,
     )
   }
-  const transient = result.assignments.filter(
-    (a) => a.sections.length < result.template.structure.length,
-  )
-  if (transient.length > 0) {
+  if (trajectory.unpatterned.length > 0) {
     out.push('')
-    out.push('Parts that come and go:')
-    for (const a of transient) {
-      out.push(`- \`${a.role}\` — ${a.sections.join(', ')} only`)
-    }
+    out.push(
+      `${roleList(trajectory.unpatterned)} ${trajectory.unpatterned.length === 1 ? 'has' : 'have'}` +
+        ' no pattern authored at any band, so nothing here varies for them.',
+    )
   }
   return out
+}
+
+/** The per-group notes, in one order both renderers share. */
+function groupNotes(group: BandGroup): string[] {
+  const notes: string[] = []
+  for (const f of group.fallbacks) {
+    notes.push(
+      f.all
+        ? `every part plays band ${num(f.usedBand)}`
+        : `${roleList(f.roles)} ${f.roles.length === 1 ? 'plays' : 'play'} band ${num(f.usedBand)}`,
+    )
+  }
+  if (group.silent.length > 0) {
+    notes.push(
+      `${roleList(group.silent)} ${group.silent.length === 1 ? 'has' : 'have'} nothing authored here`,
+    )
+  }
+  if (group.differsOn.length > 0) notes.push(`differs on ${roleList(group.differsOn)}`)
+  return notes
+}
+
+function roleList(roles: readonly Role[]): string {
+  const names = roles.map((r) => `\`${r}\``)
+  if (names.length < 2) return names.join('')
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1] as string}`
 }
 
 // ---------------------------------------------------------------------------
@@ -927,7 +966,7 @@ export function renderGuide(result: ResolveResult, options: RenderOptions = {}):
     phaseHook(result),
     phaseSteps(result, deviceById, settings),
     phaseSound(result, deviceById, settings),
-    phaseFinishing(result, occupied),
+    phaseFinishing(result),
   ]
 
   const out: Line[] = [`# ${result.template.name}`, '', ...LEGEND]

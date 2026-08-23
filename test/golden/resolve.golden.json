@@ -192,8 +192,8 @@
         {
           "section": "Intro",
           "selection": {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 0,
             "usedBand": 2,
             "pattern": {
               "id": "p-kick-b2",
@@ -382,8 +382,8 @@
         {
           "section": "Drop",
           "selection": {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 3,
             "usedBand": 2,
             "pattern": {
               "id": "p-kick-b2",
@@ -542,8 +542,8 @@
         {
           "section": "Intro",
           "selection": {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 0,
             "usedBand": 2,
             "pattern": {
               "id": "p-sub-b2",
@@ -612,8 +612,8 @@
         {
           "section": "Drop",
           "selection": {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 3,
             "usedBand": 2,
             "pattern": {
               "id": "p-sub-b2",
@@ -752,7 +752,7 @@
           "section": "Intro",
           "selection": {
             "outcome": "none",
-            "band": 2
+            "band": 0
           },
           "articulation": []
         },
@@ -768,7 +768,7 @@
           "section": "Drop",
           "selection": {
             "outcome": "none",
-            "band": 2
+            "band": 3
           },
           "articulation": []
         }
@@ -837,7 +837,7 @@
           "section": "Intro",
           "selection": {
             "outcome": "fallback",
-            "band": 2,
+            "band": 0,
             "usedBand": 1,
             "pattern": {
               "id": "p-hat-b1",
@@ -940,8 +940,8 @@
         {
           "section": "Drop",
           "selection": {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 3,
             "usedBand": 2,
             "pattern": {
               "id": "p-hat-b2-drop",
@@ -1068,8 +1068,8 @@
         {
           "section": "Intro",
           "selection": {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 0,
             "usedBand": 2,
             "pattern": {
               "id": "p-pad-b2",
@@ -1172,8 +1172,8 @@
         {
           "section": "Drop",
           "selection": {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 3,
             "usedBand": 2,
             "pattern": {
               "id": "p-pad-b2",
@@ -1285,8 +1285,8 @@
         {
           "section": "Intro",
           "selection": {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 0,
             "usedBand": 2,
             "pattern": {
               "id": "p-pad-b2",
@@ -1389,8 +1389,8 @@
         {
           "section": "Drop",
           "selection": {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 3,
             "usedBand": 2,
             "pattern": {
               "id": "p-pad-b2",
@@ -1476,7 +1476,7 @@
           "section": "Intro",
           "selection": {
             "outcome": "none",
-            "band": 2
+            "band": 0
           },
           "articulation": []
         },
@@ -1492,7 +1492,7 @@
           "section": "Drop",
           "selection": {
             "outcome": "none",
-            "band": 2
+            "band": 3
           },
           "articulation": []
         }
@@ -1747,8 +1747,8 @@
         [
           "Intro",
           {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 0,
             "usedBand": 2,
             "pattern": {
               "id": "p-kick-b2",
@@ -1867,8 +1867,8 @@
         [
           "Drop",
           {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 3,
             "usedBand": 2,
             "pattern": {
               "id": "p-kick-b2",
@@ -1932,8 +1932,8 @@
         [
           "Intro",
           {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 0,
             "usedBand": 2,
             "pattern": {
               "id": "p-sub-b2",
@@ -2000,8 +2000,8 @@
         [
           "Drop",
           {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 3,
             "usedBand": 2,
             "pattern": {
               "id": "p-sub-b2",
@@ -2040,7 +2040,7 @@
           "Intro",
           {
             "outcome": "fallback",
-            "band": 2,
+            "band": 0,
             "usedBand": 1,
             "pattern": {
               "id": "p-hat-b1",
@@ -2107,8 +2107,8 @@
         [
           "Drop",
           {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 3,
             "usedBand": 2,
             "pattern": {
               "id": "p-hat-b2-drop",
@@ -2161,7 +2161,7 @@
           "Intro",
           {
             "outcome": "none",
-            "band": 2
+            "band": 0
           }
         ],
         [
@@ -2175,7 +2175,7 @@
           "Drop",
           {
             "outcome": "none",
-            "band": 2
+            "band": 3
           }
         ]
       ]
@@ -2186,8 +2186,8 @@
         [
           "Intro",
           {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 0,
             "usedBand": 2,
             "pattern": {
               "id": "p-pad-b2",
@@ -2254,8 +2254,8 @@
         [
           "Drop",
           {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 3,
             "usedBand": 2,
             "pattern": {
               "id": "p-pad-b2",
@@ -2293,8 +2293,8 @@
         [
           "Intro",
           {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 0,
             "usedBand": 2,
             "pattern": {
               "id": "p-pad-b2",
@@ -2361,8 +2361,8 @@
         [
           "Drop",
           {
-            "outcome": "exact",
-            "band": 2,
+            "outcome": "fallback",
+            "band": 3,
             "usedBand": 2,
             "pattern": {
               "id": "p-pad-b2",
@@ -2401,7 +2401,7 @@
           "Intro",
           {
             "outcome": "none",
-            "band": 2
+            "band": 0
           }
         ],
         [
@@ -2415,7 +2415,7 @@
           "Drop",
           {
             "outcome": "none",
-            "band": 2
+            "band": 3
           }
         ]
       ]
@@ -2427,7 +2427,7 @@
           "Intro",
           {
             "outcome": "none",
-            "band": 2
+            "band": 0
           }
         ],
         [
@@ -2441,7 +2441,7 @@
           "Drop",
           {
             "outcome": "none",
-            "band": 2
+            "band": 3
           }
         ]
       ]
@@ -2453,7 +2453,7 @@
           "Intro",
           {
             "outcome": "none",
-            "band": 2
+            "band": 0
           }
         ],
         [
@@ -2467,7 +2467,7 @@
           "Drop",
           {
             "outcome": "none",
-            "band": 2
+            "band": 3
           }
         ]
       ]
@@ -2479,7 +2479,7 @@
           "Intro",
           {
             "outcome": "none",
-            "band": 2
+            "band": 0
           }
         ],
         [
@@ -2493,7 +2493,7 @@
           "Drop",
           {
             "outcome": "none",
-            "band": 2
+            "band": 3
           }
         ]
       ]
