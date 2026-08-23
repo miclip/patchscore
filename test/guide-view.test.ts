@@ -32,7 +32,7 @@ import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './gol
  */
 
 function html(result: ResolveResult): string {
-  return renderToStaticMarkup(createElement(Guide, { result }))
+  return renderToStaticMarkup(createElement(Guide, { result, seed: 1 }))
 }
 
 const golden = resolve({

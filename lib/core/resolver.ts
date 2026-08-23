@@ -261,6 +261,17 @@ export function densityShift(density: number): -1 | 0 | 1 {
 }
 
 /**
+ * §12.2. The three values the UI is allowed to produce for density: the centre of each zone
+ * `densityShift` defines. Zone centres rather than edges, so a value round-tripped through a
+ * permalink lands back on the same detent even if an edge is ever read off by one somewhere.
+ *
+ * Here rather than in the component for the reason the edges are here: a second copy is a UI
+ * that can silently disagree with the guide it produced — and now also a *default* that can
+ * silently disagree with the UI.
+ */
+export const DENSITY_DETENTS = [12, 50, 87] as const
+
+/**
  * §6.3. The band one request plays in one section: the section's energy band, shifted by
  * density, clamped into the four that exist. Clamping is not belt-and-braces: energy 1 leaned
  * up is 4 and energy 0 leaned down is -1, and a request for either would surface in the guide

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { ChangeEvent } from 'react'
+import { SEED_MAX, SEED_MIN } from '@/lib/core'
 
 /**
  * The seed is an input, exactly like the devices and the mood knobs, and it is typed as well as
@@ -11,8 +12,11 @@ import type { ChangeEvent } from 'react'
  * that rule is about the resolver never reaching for entropy of its own. Reroll is the one
  * place a user has asked for an arbitrary number, and it is picked here, in an event handler,
  * then handed to the resolver as an ordinary integer input.
+ *
+ * The bounds come from `lib/core/permalink.ts` rather than being written here. A field that
+ * accepts a seed a permalink would reject — or the reverse — is a disagreement with no error
+ * anywhere, and it only shows up as a link that silently will not load.
  */
-const MAX_SEED = 999_999_999
 
 export type SeedFieldProps = {
   seed: number
@@ -27,7 +31,7 @@ export function SeedField({ seed, onChange }: SeedFieldProps) {
     setTyped(raw)
     const parsed = Number(raw)
     if (raw.trim() === '' || !Number.isFinite(parsed)) return
-    const next = Math.min(MAX_SEED, Math.max(0, Math.round(parsed)))
+    const next = Math.min(SEED_MAX, Math.max(SEED_MIN, Math.round(parsed)))
     if (next !== seed) onChange(next)
   }
 
@@ -47,8 +51,8 @@ export function SeedField({ seed, onChange }: SeedFieldProps) {
           className="seed-input mono"
           type="number"
           inputMode="numeric"
-          min={0}
-          max={MAX_SEED}
+          min={SEED_MIN}
+          max={SEED_MAX}
           step={1}
           value={typed ?? String(seed)}
           onChange={onFieldChange}
@@ -58,7 +62,7 @@ export function SeedField({ seed, onChange }: SeedFieldProps) {
           type="button"
           onClick={() => {
             setTyped(null)
-            onChange(Math.floor(Math.random() * (MAX_SEED + 1)))
+            onChange(Math.floor(Math.random() * (SEED_MAX + 1)))
           }}
         >
           Reroll

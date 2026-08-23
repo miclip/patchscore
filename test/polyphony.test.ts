@@ -425,7 +425,7 @@ describe('the guide says which realisation the reader got', () => {
   })
 
   function html(result: ResolveResult): string {
-    return renderToStaticMarkup(createElement(Guide, { result }))
+    return renderToStaticMarkup(createElement(Guide, { result, seed: 1 }))
   }
 
   it('tells the reader to load a chord sample, in Markdown and in the app', () => {
@@ -525,13 +525,13 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
       seed: 18,
     })
 
-    for (const text of [renderGuide(noRole), renderToStaticMarkup(createElement(Guide, { result: noRole }))]) {
+    for (const text of [renderGuide(noRole), renderToStaticMarkup(createElement(Guide, { result: noRole, seed: 1 }))]) {
       expect(text).toContain('nothing in your rig plays this part')
       expect(text).not.toContain('monophonic')
     }
     for (const text of [
       renderGuide(shortOfNotes),
-      renderToStaticMarkup(createElement(Guide, { result: shortOfNotes })),
+      renderToStaticMarkup(createElement(Guide, { result: shortOfNotes, seed: 1 })),
     ]) {
       expect(text).toContain('needs 3 notes at once and every voice here is monophonic')
       // The wrong sentence here would send someone shopping for a box they already own.
@@ -555,7 +555,7 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
     expect(gap).toMatchObject({ reason: 'no-capable-voice', because: 'polyphony' })
 
     const md = renderGuide(result)
-    const view = renderToStaticMarkup(createElement(Guide, { result }))
+    const view = renderToStaticMarkup(createElement(Guide, { result, seed: 1 }))
     for (const text of [md, view]) {
       expect(text).toContain('needs 5 notes at once and the most any voice here can sound is 4 notes')
       expect(text).not.toContain('monophonic')
@@ -593,7 +593,7 @@ describe('the industrial pad hook on a Tracker-only rig (i–VI–VII)', () => {
    * what a reader sees, rather than about two element trees that happen to contain a substring.
    */
   function views(result: ResolveResult): string[] {
-    const html = renderToStaticMarkup(createElement(Guide, { result }))
+    const html = renderToStaticMarkup(createElement(Guide, { result, seed: 1 }))
     return [renderGuide(result), html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ')]
   }
 

@@ -45,6 +45,14 @@ const IMPLEMENTATION = [
   // §6.3's band trajectory. Derivation, not rendering, and it groups and orders sections —
   // exactly the shape of code where a "tidier" sort reaches for `localeCompare`.
   'arrangement.ts',
+  // §8.2's permalink codec. It is not the resolver, but it decides the *inputs* the resolver
+  // runs on — including the order device ids are written in — and a locale-dependent sort there
+  // would hand two platforms two different rigs from one link, which invariant 6 would then
+  // faithfully render as two different guides.
+  'permalink.ts',
+  // §8.2's stored studio. Same argument as the codec above: it decides the inputs, including
+  // the device order a saved rig comes back in.
+  'studio-store.ts',
   // §8's phase order. Scanned rather than excluded with the other declaration-only modules:
   // it is read by renderers, which is where locale formatting creeps in, and a module that
   // costs nothing to scan is never the one worth leaving out of a ban.

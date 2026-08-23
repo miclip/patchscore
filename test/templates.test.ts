@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CHARACTERS,
   DENSITY_BANDS,
+  DENSITY_DETENTS,
   MOOD_AXES,
   PATTERN_SLOTS,
   ROLES,
@@ -22,9 +23,6 @@ import {
 } from '../lib/core/index'
 import { DEVICES, DEVICE_FOLDERS } from '../lib/devices/registry.generated'
 import { TEMPLATES, industrialTechno, templateById } from '../lib/templates/index'
-// The UI's three detents, imported rather than restated: a vector pinned against numbers the
-// control does not actually emit would pass while the app did something else (§6.3).
-import { DENSITY_DETENTS } from '../components/density-detents'
 
 const TEMPLATE_DIR = join(import.meta.dirname, '..', 'lib', 'templates')
 
