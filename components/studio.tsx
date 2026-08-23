@@ -17,7 +17,6 @@ import {
   CATALOGUE,
   DEFAULT_INPUTS,
   bootstrapStudio,
-  isStarterExample,
   composeTemplate,
   copyStudioLink,
   syncStudio,
@@ -34,7 +33,6 @@ import { GuideArea } from './guide-area'
 import { InspirationPicker } from './inspiration-picker'
 import { MoodPanel } from './mood-panel'
 import { SeedField } from './seed-field'
-import { StarterNote } from './starter-note'
 
 /**
  * Build step 8 (#10) and build step 10 (#12). The whole input surface, the single place
@@ -225,10 +223,6 @@ export function Studio() {
       )}
 
       <div className="columns">
-        {isStarterExample({ bootstrapped, source, edited }) ? (
-          <StarterNote devices={inputs.devices} />
-        ) : null}
-
         <DevicePicker selected={inputs.devices} onToggle={toggleDevice} />
         <GenrePicker selected={inputs.templateId} onSelect={selectTemplate} />
         <SeedField seed={inputs.seed} onChange={setSeed} />
