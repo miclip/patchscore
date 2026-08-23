@@ -12,10 +12,12 @@ out/
 # vercel
 .vercel/
 
-# next-env.d.ts is deliberately NOT ignored, unlike create-next-app default. CI runs
-# `npm ci && npm run verify` and never `next build`, so nothing regenerates it there;
-# ignoring it would make `tsc --noEmit` fail on a clean checkout the moment any file
-# imports CSS or next/* types.
+# next-env.d.ts is generated, and its contents differ depending on whether `next dev` or
+# `next build` ran last (.next/dev/types vs .next/types), so committing it dirties the tree
+# on every switch between the two. It is not needed for `tsc --noEmit` on a clean checkout:
+# next.config.ts imports from 'next', which pulls the same global declarations into the
+# program. If that ever stops being true, typecheck fails loudly in CI rather than drifting.
+next-env.d.ts
 
 # local env
 .env*.local
