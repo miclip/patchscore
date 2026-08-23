@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { CHARACTERS, DeviceSchema, ROLES, type AuthoredParam } from '../lib/core/index'
+import {
+  CHARACTERS,
+  DeviceSchema,
+  NEUTRAL_MOOD,
+  ROLES,
+  renderGuide,
+  resolve,
+  type AuthoredParam,
+} from '../lib/core/index'
 import { device } from '../lib/devices/roland-tr-1000/index'
+import { industrialTechno } from '../lib/templates/index'
 import { auditDevice } from '../scripts/audit-verified'
 
 /**
@@ -129,6 +138,8 @@ describe('TR-1000 manifest', () => {
       { unit: 'St', min: -12, max: 12 },
       { unit: 'St', min: -24, max: 24 },
       { unit: undefined, min: -100, max: 100 },
+      // MOD DEST: p.71 prints `1-3` and no unit — it is an assignment-slot number (#58).
+      { unit: undefined, min: 1, max: 3 },
     ]
     for (const recipe of device.recipes) {
       for (const param of recipe.params as AuthoredParam[]) {
@@ -155,7 +166,7 @@ describe('TR-1000 manifest', () => {
     // The two sends are the exception and are checked separately below: they are not generator
     // parameters at all, they are the track's own MIXER block, which is its own table (p.71).
     // SHUFFLE is the same kind of exception — a PTN SETTING parameter off p.26, checked in the
-    // swing group below.
+    // swing group below — and so is the MOD block, which is p.71's own table.
     const PAGES: Record<string, number[]> = {
       'tr1000-kick-hard': [59],
       'tr1000-kick-dark': [59],
@@ -185,6 +196,8 @@ describe('TR-1000 manifest', () => {
         if (param.kind !== 'numeric') continue
         if (param.name === 'RVB SEND' || param.name === 'DLY SEND') continue
         if (param.name === 'SHUFFLE') continue
+        // The MOD block is its own table on p.71, beside MIXER — not a generator table (#58).
+        if (param.name.startsWith('MOD ')) continue
         const v = param.range.verified
         if (v === undefined || v === false) throw new Error(`${recipe.id} range uncited`)
         const page = Number(v.source.split('p.')[1])
@@ -266,6 +279,103 @@ describe('TR-1000 manifest', () => {
       expect(name, name).toMatch(/^(808|909|8X|9X|707|606|CR78|FM|VA) /)
     }
     expect(seen.size).toBeGreaterThan(30)
+  })
+
+  // -------------------------------------------------------------------------
+  // The LFO a recipe actually uses (#58)
+  // -------------------------------------------------------------------------
+
+  /**
+   * §0's reader is stuck on "a tempo-synced LFO on a filter cutoff". The whole of #58's value is
+   * one recipe that does it, and none of it needed a schema: rate, target and depth are ordinary
+   * parameters with printed ranges.
+   */
+  function modParams(id: string): AuthoredParam[] {
+    const recipe = device.recipes.find((r) => r.id === id)
+    if (recipe === undefined) throw new Error(`no recipe ${id}`)
+    return (recipe.params as AuthoredParam[]).filter((p) => p.name.startsWith('MOD '))
+  }
+
+  it('gives one recipe a rate, a target and a non-zero depth', () => {
+    const mod = modParams('tr1000-clap-bright')
+    const by = new Map(mod.map((p) => [p.name, p]))
+
+    // The rate, and specifically the *tempo-synced* one. TIME is free-running and STEP counts
+    // sequencer steps; NOTE is the row that locks to the clock, so setting NOTE and not the
+    // other two is what "tempo-synced" means on the p.71 table, which lists no SYNC row.
+    const rate = by.get('MOD NOTE')
+    expect(rate?.kind).toBe('text')
+    expect(rate?.value).toBe('1/1')
+    expect(by.has('MOD TIME')).toBe(false)
+    expect(by.has('MOD STEP')).toBe(false)
+
+    // The target, and it is a parameter this same recipe sets — so the guide is coherent about
+    // what moves rather than naming something the reader was never told to dial.
+    expect(by.get('MOD TARGET')?.value).toBe('FILTER')
+    const recipe = device.recipes.find((r) => r.id === 'tr1000-clap-bright')
+    expect((recipe?.params as AuthoredParam[]).some((p) => p.name === 'FILTER')).toBe(true)
+
+    // The depth. Zero would render as an instruction to set up an LFO that does nothing.
+    const depth = by.get('MOD AMOUNT')
+    if (depth?.kind !== 'numeric') throw new Error('MOD AMOUNT is not numeric')
+    expect(depth.value).not.toBe(0)
+    expect({ min: depth.range.min, max: depth.range.max }).toEqual({ min: -100, max: 100 })
+  })
+
+  it('cites the MOD table on p.71 for every bound and option set it claims', () => {
+    for (const param of modParams('tr1000-clap-bright')) {
+      if (param.kind === 'numeric') {
+        expect(param.range.verified, param.name).toMatchObject({ source: expect.stringContaining('p.71') })
+      }
+      if (param.kind === 'enum') {
+        expect(param.options.verified, param.name).toMatchObject({ source: expect.stringContaining('p.71') })
+      }
+      // Legality is cited, authority never is — this file's regime, unchanged (§3.2).
+      expect(param.verified, param.name).toBe(false)
+    }
+  })
+
+  it('claims no legality the cited table does not print', () => {
+    const mod = modParams('tr1000-clap-bright')
+    // p.71's Value column for TARGET is literally `-`: it names no legal set, so there is
+    // nothing to cite and an `options` list here would be a fabricated legality claim.
+    const target = mod.find((p) => p.name === 'MOD TARGET')
+    expect(target?.kind).toBe('text')
+    // NOTE is text for the same reason: the table prints the span `1/1-1/32` and never the
+    // divisions inside it, and `1/1` is one of the two endpoints it does print.
+    expect(mod.find((p) => p.name === 'MOD NOTE')?.kind).toBe('text')
+  })
+
+  it('authors only the p.71 table, and does not import p.56’s SYNC selector', () => {
+    // The parameter list prints *two* MOD tables and they differ: p.56 carries a `SYNC` row
+    // (TIME, STEP, NOTE) and no `DEST`; p.71 carries `DEST 1-3` and no `SYNC`. Which screen
+    // each governs is never stated — but p.39's instrument-edit procedure ends "refer to 'MOD'
+    // (p. 71)", so p.71 is the table this recipe is entitled to, and a control lifted from the
+    // other one would be a claim about a screen nobody checked.
+    const mod = modParams('tr1000-clap-bright')
+    expect(mod.some((p) => p.name.includes('SYNC'))).toBe(false)
+    // `DEST` is the row that only p.71 has, so its presence pins which table was authored.
+    expect(mod.some((p) => p.name === 'MOD DEST')).toBe(true)
+    // The ambiguity is handed to the reader as an instruction rather than resolved by guess.
+    const rate = mod.find((p) => p.name === 'MOD NOTE')
+    expect(rate?.note).toContain('SYNC')
+  })
+
+  it('names the screen the MOD block is edited on (p.39)', () => {
+    const wave = modParams('tr1000-clap-bright').find((p) => p.name === 'MOD WAVE')
+    expect(device.hints?.[wave?.hint as string]).toBe('Hold [SHIFT], press [FILTER]')
+  })
+
+  it('renders the LFO as a readable instruction in the guide', () => {
+    const doc = renderGuide(
+      resolve({ devices: [device], template: industrialTechno, mood: NEUTRAL_MOOD, seed: 18 }),
+    )
+    // If the clap did not get assigned, this test is checking nothing — pin that first.
+    expect(doc).toContain('Wide clap sitting on top of the snare')
+    expect(doc).toContain('**MOD WAVE** `TRI`')
+    expect(doc).toContain('**MOD NOTE** `1/1`')
+    expect(doc).toContain('**MOD TARGET** `FILTER`')
+    expect(doc).toContain('**MOD AMOUNT** `22` % (-100…100 %)')
   })
 
   it('keeps hints to jogs rather than documentation (invariant 7)', () => {

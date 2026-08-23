@@ -588,6 +588,16 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **MIX** `20` % (-100…100 %)
   - ↳ hint: Clap against tail, not layers
 - **TAIL DCY** `62` % (0…100 %)
+- **MOD WAVE** `TRI`
+  - ↳ hint: Hold [SHIFT], press [FILTER]
+- **MOD NOTE** `1/1`
+  - ↳ note: Tempo-synced rate; if the screen offers a SYNC selector, point it at NOTE
+- **MOD DEST** `1` (1…3)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ note: Which of the three assignment slots this uses
+- **MOD TARGET** `FILTER`
+- **MOD AMOUNT** `22` % (-100…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
 - **RVB SEND** `30` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]

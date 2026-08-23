@@ -749,9 +749,28 @@ export const device: Device = {
    * Low Pass Filter p.205.
    *
    * `sidechain` and `lfo` are both omitted. The master chain is saturation, limiter, space and
-   * bass boost (p.269) with no sidechain at all, and while instrument automation and the VAP
-   * patch both have LFOs, the manual never states a per-track count — inventing one to fill the
-   * field is invariant 5's failure mode.
+   * bass boost (p.269) with no sidechain at all.
+   *
+   * **`lfo` is a finding rather than an absence** (#58). The automation section is documented in
+   * full on pp.121-122, and what it describes is a third topology again — different from the
+   * TR-1000's assignment slots and from the Cascadia's fixed LFO section:
+   *
+   *  - Six destinations — Volume, Wavetable Position, Panning, Finetune, Cutoff, Granular
+   *    Position — and *"Each destination has the option of an LFO, envelope or no automation."*
+   *    The LFO is **per destination**, so there is no pool to count: how many are running is a
+   *    property of the patch somebody built, not of the box. `count` has no honest value.
+   *  - *"LFO Speeds in Tracker Mini are hard synchronised to the project tempo"*, in step
+   *    intervals from 128 down to 1/64. `syncable: true` is right but says far less than the
+   *    page does, and the page also carves out an exception a boolean cannot carry: the 128-to-32
+   *    step speeds are unavailable when the destination is volume.
+   *  - Reset behaviour differs *by destination*: volume resets on each new note, the rest are
+   *    semi-free running and reset on playback but not on a note. A flat `destinations: string[]`
+   *    discards exactly that.
+   *
+   * So the field stays off. Nothing reads `features.lfo` — no resolver, no renderer, no
+   * validation, no recipe — and a shape elaborate enough to hold three unrelated topologies,
+   * designed before any consumer exists, is the mistake this project already made with
+   * `PatchEntry` and repaired twice. Model it when something needs to read it.
    */
   features: {
     perStep: [
