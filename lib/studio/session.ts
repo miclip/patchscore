@@ -196,30 +196,6 @@ export type Bootstrap = {
 // The starter example (#61)
 // ---------------------------------------------------------------------------
 
-/**
- * Whether the page should say out loud that the rig on it is an example.
- *
- * Three conditions, and each is doing work:
- *
- *  - **`bootstrapped`.** The first frame is `DEFAULT_INPUTS` for *everybody*, returning visitors
- *    included, because the store cannot be read during render without breaking hydration (§12).
- *    So `source` is not yet known on that frame, and labelling it would tell a visitor their own
- *    saved rig is a starter example — which is both wrong and the exact thing #61 is about. The
- *    label therefore arrives one frame late, deliberately, and the server renders none.
- *  - **`source === 'default'`.** A stored rig is the visitor's own and a permalink is somebody
- *    else's actual guide. Neither is an example, and calling either one an example is a lie the
- *    page would be telling about content it did not choose.
- *  - **`edited`.** The moment they change a device or the direction, the rig is theirs — it may
- *    still contain a box the default put there, but they have looked at it and kept it, which
- *    is not the same as never having been asked.
- */
-export function isStarterExample(state: {
-  bootstrapped: boolean
-  source: Bootstrap['source']
-  edited: boolean
-}): boolean {
-  return state.bootstrapped && state.source === 'default' && !state.edited
-}
 
 // ---------------------------------------------------------------------------
 // Bootstrap

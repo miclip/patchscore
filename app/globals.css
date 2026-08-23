@@ -1311,15 +1311,6 @@ button:active {
  * the two checkboxes directly under it, not about something that went wrong, and the notices
  * region is `role="status"` for things the session had to report.
  */
-.starter-note {
-  margin: 0;
-  line-height: 1.55;
-}
-
-.starter-note strong {
-  color: var(--silkscreen);
-}
-
 .convention {
   line-height: 1.6;
 }

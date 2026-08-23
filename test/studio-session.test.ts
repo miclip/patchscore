@@ -21,7 +21,6 @@ import {
   withTemplate,
 } from '../lib/studio/session'
 import type { DownloadFile, StudioEnv } from '../lib/studio/session'
-import { isStarterExample } from '../lib/studio/session'
 import { DEVICES } from '../lib/devices/registry.generated'
 
 /**
@@ -770,51 +769,5 @@ describe('the starter example (#61)', () => {
     expect(chosen.filter((d) => d.clock.canReceiveClock).length).toBeGreaterThan(0)
   })
 
-  it('labels the example only on a cold start, and only until it is edited', () => {
-    const on = { bootstrapped: true, source: 'default' as const, edited: false }
-    expect(isStarterExample(on)).toBe(true)
 
-    // Not before the store and the URL have been read: the first frame is `DEFAULT_INPUTS` for
-    // everybody, so labelling it there would tell a returning visitor their own rig is a demo.
-    expect(isStarterExample({ ...on, bootstrapped: false })).toBe(false)
-
-    // Not for a rig the visitor saved, and not for somebody else's shared link.
-    expect(isStarterExample({ ...on, source: 'storage' })).toBe(false)
-    expect(isStarterExample({ ...on, source: 'link' })).toBe(false)
-
-    // And not once they have answered the question it asks.
-    expect(isStarterExample({ ...on, edited: true })).toBe(false)
-    expect(isStarterExample({ bootstrapped: false, source: 'link', edited: true })).toBe(false)
-  })
-
-  it('never labels a restored rig, whichever way it was restored', () => {
-    // Storage: the visitor's own rig comes back, and it is not the landing pair.
-    const own = withDevice(withSeed(DEFAULT_INPUTS, 4242), CATALOGUE.devices[0] as string, true)
-    const { env, state } = fakeBrowser()
-    state.stored = JSON.stringify(studioDoc(own))
-    const stored = bootstrapStudio(env)
-    expect(stored.source).toBe('storage')
-    expect(stored.inputs.devices).toEqual(own.devices)
-    expect(stored.inputs.devices).not.toEqual(DEFAULT_INPUTS.devices)
-    expect(isStarterExample({ bootstrapped: true, source: stored.source, edited: false })).toBe(
-      false,
-    )
-
-    // A permalink: somebody else's actual guide, restored exactly, and read-only against storage.
-    const shared = withTemplate(withSeed(DEFAULT_INPUTS, 77), otherTemplate())
-    const link = fakeBrowser({ search: `?${encodeGuideInputs(shared, CATALOGUE)}` })
-    const booted = bootstrapStudio(link.env)
-    expect(booted.source).toBe('link')
-    expect(booted.inputs).toEqual(shared)
-    expect(booted.persist).toBe(false)
-    expect(isStarterExample({ bootstrapped: true, source: booted.source, edited: false })).toBe(
-      false,
-    )
-
-    // A cold start still is one — otherwise the three assertions above prove nothing.
-    const cold = bootstrapStudio(fakeBrowser().env)
-    expect(cold.source).toBe('default')
-    expect(cold.inputs.devices).toEqual(DEFAULT_INPUTS.devices)
-    expect(isStarterExample({ bootstrapped: true, source: cold.source, edited: false })).toBe(true)
-  })
 })
