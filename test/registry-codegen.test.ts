@@ -282,7 +282,7 @@ describe('the committed registry', () => {
 
   it('keeps the seed set in the span order the rack will draw them (§10)', () => {
     // A relative-width claim is only meaningful against the other panels, so assert the ordering
-    // rather than only the three numbers: this survives a re-measurement that moves every span
+    // rather than only the four numbers: this survives a re-measurement that moves every span
     // slightly, and fails if one device is ever authored in the wrong units.
     //
     // It does *not* catch the Tracker Mini being reset to Polyend's 170 mm — that still sorts
@@ -291,6 +291,11 @@ describe('the committed registry', () => {
     const byWidth = [...DEVICES]
       .sort((a, b) => a.physical.panelSpanMm - b.physical.panelSpanMm)
       .map((d) => d.id)
-    expect(byWidth).toEqual(['polyend-tracker-mini', 'synthstrom-deluge', 'roland-tr-1000'])
+    expect(byWidth).toEqual([
+      'polyend-tracker-mini',
+      'synthstrom-deluge',
+      'intellijel-cascadia',
+      'roland-tr-1000',
+    ])
   })
 })

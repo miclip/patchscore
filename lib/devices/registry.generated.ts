@@ -5,12 +5,14 @@
 // Regenerate with `npm run gen:registry`; the staleness test fails if this drifts.
 
 import type { Device } from '../core/device'
+import { device as device_intellijel_cascadia } from './intellijel-cascadia/index'
 import { device as device_polyend_tracker_mini } from './polyend-tracker-mini/index'
 import { device as device_roland_tr_1000 } from './roland-tr-1000/index'
 import { device as device_synthstrom_deluge } from './synthstrom-deluge/index'
 
 /** Every device manifest, ordered by folder name (UTF-16 code unit). */
 export const DEVICES: readonly Device[] = [
+  device_intellijel_cascadia,
   device_polyend_tracker_mini,
   device_roland_tr_1000,
   device_synthstrom_deluge,
@@ -18,6 +20,7 @@ export const DEVICES: readonly Device[] = [
 
 /** Folder names, in the same order. Useful for error messages that name a source. */
 export const DEVICE_FOLDERS: readonly string[] = [
+  'intellijel-cascadia',
   'polyend-tracker-mini',
   'roland-tr-1000',
   'synthstrom-deluge',

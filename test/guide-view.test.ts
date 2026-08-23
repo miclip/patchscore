@@ -49,6 +49,17 @@ const real = resolve({
   seed: 1,
 })
 
+/**
+ * One box, one voice, twelve requests: a rig that is mostly holes. The full library fills every
+ * request the golden template makes, so a gap assertion needs a rig that does not.
+ */
+const sparse = resolve({
+  devices: DEVICES.filter((d) => d.id === 'intellijel-cascadia'),
+  template: TEMPLATES[0] as (typeof TEMPLATES)[number],
+  mood: NEUTRAL_MOOD,
+  seed: 1,
+})
+
 /** The rendered text a reader actually sees, with the markup taken back out. */
 function text(html: string): string {
   return html.replace(/<[^>]+>/g, '')
@@ -205,13 +216,20 @@ describe('the two renderers agree about the facts', () => {
   })
 
   it('reports the same holes as the Markdown sibling', () => {
-    const out = html(real)
-    const markdown = renderGuide(real)
-    for (const gap of real.gaps) {
-      expect(out).toContain(gap.role)
-      expect(markdown).toContain(gap.role)
+    // Checked on both rigs, because the full library now *fills every request* and a hole test
+    // run only against it would pass vacuously for ever. `sparse` is one monophonic semi-modular
+    // against a template that asks for twelve parts, so the holes are real and plentiful — and
+    // two of them are polyphony shortfalls rather than capability ones, which is the case the
+    // two renderers most easily disagree about.
+    for (const result of [real, sparse]) {
+      const out = html(result)
+      const markdown = renderGuide(result)
+      for (const gap of result.gaps) {
+        expect(out).toContain(gap.role)
+        expect(markdown).toContain(gap.role)
+      }
     }
-    expect(real.gaps.length).toBeGreaterThan(0)
+    expect(sparse.gaps.length).toBeGreaterThan(0)
   })
 })
 

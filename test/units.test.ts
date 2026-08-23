@@ -22,6 +22,7 @@ import { DEVICES } from '../lib/devices/registry.generated'
 
 /**
  * Reviewed 2026-08-22, against the three registry devices.
+ * Reviewed again 2026-08-23, when the Cascadia added three.
  *
  * Two known drifts are in this list rather than fixed by it, because repairing them is content
  * work on the device folders and this file is only the tripwire:
@@ -31,8 +32,23 @@ import { DEVICES } from '../lib/devices/registry.generated'
  *
  * #29 records both. Fixing either is expected to fail this test, which is the point: the fix
  * gets reviewed here rather than landing silently.
+ *
+ * The 2026-08-23 additions, and what each was weighed against:
+ *
+ *  - **`V`** — volts, for envelope sustain, which the Cascadia manual prints as a voltage rather
+ *    than a percentage ("0 V at the bottom and 5 V at the top", p.28). No existing unit covers it.
+ *  - **`°`** — degrees, for an LFO phase offset printed as "0° at the bottom, to 360° at the top"
+ *    (p.36). Likewise nothing existing.
+ *  - **`% travel`** — how far up a slider sits, on a control whose panel carries no scale at all.
+ *    Deliberately *not* spelled `%`: a bare percent on that library's other devices means a value
+ *    the box itself displays as a percentage, and this one means a physical fader position with
+ *    no displayed number behind it. Two different claims should not share a spelling.
+ *
+ * Two units the Cascadia introduced and then gave up, to avoid widening the drift above:
+ * `semitones` became `st`, and `% duty` became `%`. Both were the manual's own wording, and both
+ * would have been a *third* spelling of something the library already spells two ways.
  */
-const REVIEWED_UNITS = ['%', 'Bits', 'Hz', 'Sec', 'St', 'c', 'ms', 'st']
+const REVIEWED_UNITS = ['%', '% travel', 'Bits', 'Hz', 'Sec', 'St', 'V', 'c', 'ms', 'st', '°']
 
 function unitsInUse(): string[] {
   const seen = new Set<string>()

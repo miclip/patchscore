@@ -32,49 +32,53 @@ glance whether the screen in front of you is the one the line is about.
 
 - **`kick`** → Tracker Mini · Track 1 — *Tight one-shot kick, tuned down, no tail*
   - p1 · exact `hard` · every section
-- **`sub`** → Deluge · Track 1 — *Sine sub with the top end cut away*
+- **`sub`** → TR-1000 · BD — *Kick tuned down into a sustained sub*
   - p1 · exact `dark` · every section
-- **`bass-mid`** → Deluge · Track 2 — *Analog saw bass through the drive filter, crushed*
+- **`bass-mid`** → Deluge · Track 1 — *Analog saw bass through the drive filter, crushed*
   - p2 · exact `dirty` · every section
 - **`clap`** → TR-1000 · HC — *Wide clap sitting on top of the snare*
   - p2 · exact `bright` · every section
 - **`closed-hat`** → TR-1000 · CH — *Grainy CR-78 hat with a metallic edge*
   - p2 · exact `dirty` · every section
+- **`metallic`** → Cascadia · Voice — *Ring modulator fed a square, notched rather than filtered*
+  - p3 · exact `dark` · every section
 - **`open-hat`** → TR-1000 · OH — *Dull open hat, more air than sizzle*
   - p3 · exact `dark` · every section
-- **`stab`** → Deluge · Track 3 — *Square stab through a fast phaser*
+- **`stab`** → Deluge · Track 2 — *Square stab through a fast phaser*
   - p3 · exact `hard` · 3 notes at once on one polyphonic voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
-- **`pad`** → Deluge · Track 4 — *Wavetable pad, slow chorus, wide reverb send*
+- **`pad`** → Deluge · Track 3 — *Wavetable pad, slow chorus, wide reverb send*
   - p4 · substituted — asked `dark`, authored `soft` · 3 notes at once on one polyphonic voice · every section
-- **`riser`** → Deluge · Track 5 — *Saw riser, top end open, thrown into the reverb*
+- **`riser`** → Deluge · Track 4 — *Saw riser, top end open, thrown into the reverb*
   - p4 · exact `bright` · Build, Breakdown
-- **`noise`** → Deluge · Track 6 — *Crushed noise wash under the drums*
+- **`noise`** → Deluge · Track 5 — *Crushed noise wash under the drums*
   - p5, optional · exact `dirty` · every section
 
 ### Gaps
 
-These parts are not in the guide below.
-
-- `metallic` `dark` (p3) — capable but unauthored — Tracker Mini (16 voices), TR-1000 RS/CC/RC, Deluge (24 voices) could carry it, dial it by ear
+None.
 
 ## 3. Rig integration
 
-**Clock source** — Deluge over `midi-din`, carrying 6 parts. Sync everything else to it.
+**Clock source** — TR-1000 over `midi-din`, carrying 5 parts. Sync everything else to it.
 
+- **Cascadia** — semi-modular · 1 part
+  - clock: sends clock · midi-din/usb/analog-clock
+  - audio: mono main out · audio in
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **Tracker Mini** — groovebox · 1 part
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio · audio in
   - mixer: 1 part, no individual outs: one stereo channel for all
-- **TR-1000** — drum-machine · 4 parts
+- **TR-1000** — drum-machine · 5 parts
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
-  - mixer: 4 parts, 10 individual outs: one channel each
-- **Deluge** — groovebox · 6 parts
+  - mixer: 5 parts, 10 individual outs: one channel each
+- **Deluge** — groovebox · 5 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: stereo main out · audio in
-  - mixer: 6 parts, no individual outs: one stereo channel for all
+  - mixer: 5 parts, no individual outs: one stereo channel for all
 
 ## 4. Hook
 
@@ -87,7 +91,7 @@ which not every maker agrees with — the MIDI number is the form nothing disagr
 
 Where a role has more than one hook authored, rerolling the seed picks a different one.
 
-### `bass-mid` — Deluge · Track 2
+### `bass-mid` — Deluge · Track 1
 
 **Analog saw bass through the drive filter, crushed** — settings in Sound design
 
@@ -101,7 +105,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - bar 2 · step 23 · len 2 · `Db2` (`C#2`) · 6th · MIDI 37
 - bar 2 · step 27 · len 4 · `C2` · 5th · MIDI 36
 
-### `pad` — Deluge · Track 4
+### `pad` — Deluge · Track 3
 
 **Wavetable pad, slow chorus, wide reverb send** — settings in Sound design
 
@@ -111,7 +115,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - bar 5 · step 65 · len 32 · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
 - bar 7 · step 97 · len 32 · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`) · 7th 2nd 4th · MIDI 63 67 70
 
-### `stab` — Deluge · Track 3
+### `stab` — Deluge · Track 2
 
 **Square stab through a fast phaser** — settings in Sound design
 
@@ -156,9 +160,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `accent` → `volume` 100 on step 9
   - ↳ hint: Hold [FX1], press (Up)/(Down)
 
-### `sub` — Deluge · Track 1
+### `sub` — TR-1000 · BD
 
-**Sine sub with the top end cut away** — settings in Sound design
+**Kick tuned down into a sustained sub** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -166,10 +170,6 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
  1 x··· ···· ···· ····
 ```
 - `downbeat` — 1
-
-**On this box** — Deluge
-
-- `downbeat` → `velocity` 112 on step 1
 
 **Build, Breakdown** — 16 steps, band 1
 
@@ -179,10 +179,6 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `downbeat` — 1, 9
 - `offbeat` — 15
 
-**On this box** — Deluge
-
-- `downbeat` → `velocity` 112 on steps 1, 9
-
 **Drop, Peak** — 16 steps, band 3
 
 ```
@@ -191,11 +187,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `downbeat` — 1
 - `offbeat` — 3, 7, 11, 15
 
-**On this box** — Deluge
-
-- `downbeat` → `velocity` 112 on step 1
-
-### `bass-mid` — Deluge · Track 2
+### `bass-mid` — Deluge · Track 1
 
 **Analog saw bass through the drive filter, crushed** — settings in Sound design
 
@@ -319,6 +311,37 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `accent` → `accent` true on step 15
   - ↳ hint: ACCENT [STEP], then step keys
 
+### `metallic` — Cascadia · Voice
+
+**Ring modulator fed a square, notched rather than filtered** — settings in Sound design
+
+**Intro, Outro** — 32 steps, band 0
+
+```
+ 1 ···· ···· ···· ····
+17 x··· ···· ···· ····
+```
+- `downbeat` — 17
+
+**Build, Breakdown** — 32 steps, band 1
+
+```
+ 1 x··· ···· ···· ····
+17 x··· ···· ···· ····
+```
+- `downbeat` — 1, 17
+
+**Drop, Peak** — 32 steps, band 3
+
+```
+ 1 x··· ··x· ··x· ····
+17 x··· ··x· ··x· ···x
+```
+- `accent` — 1 (vel 110)
+- `offbeat` — 7, 11, 23, 27
+- `downbeat` — 17
+- `last-hit` — 32
+
 ### `open-hat` — TR-1000 · OH
 
 **Dull open hat, more air than sizzle** — settings in Sound design
@@ -361,7 +384,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `offbeat` → `weak` true on steps 3, 7, 11
   - ↳ hint: Hold [SHIFT], press step keys
 
-### `stab` — Deluge · Track 3
+### `stab` — Deluge · Track 2
 
 **Square stab through a fast phaser** — settings in Sound design
 
@@ -416,7 +439,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `first-hit` → `accent` true on step 1
   - ↳ hint: ACCENT [STEP], then step keys
 
-### `pad` — Deluge · Track 4
+### `pad` — Deluge · Track 3
 
 **Wavetable pad, slow chorus, wide reverb send** — settings in Sound design
 
@@ -426,13 +449,13 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Drop, Peak** — no pattern authored for `pad` at any band (asked for band 3)
 
-### `riser` — Deluge · Track 5
+### `riser` — Deluge · Track 4
 
 **Saw riser, top end open, thrown into the reverb** — settings in Sound design
 
 **Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 1)
 
-### `noise` — Deluge · Track 6
+### `noise` — Deluge · Track 5
 
 **Crushed noise wash under the drums** — settings in Sound design
 
@@ -464,6 +487,43 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 ## 6. Sound design
 
+### Cascadia
+
+*Values below cite Intellijel Cascadia Manual, v1.1 (2023.04.18).*
+
+#### Voice — `metallic`: Ring modulator fed a square, notched rather than filtered
+
+Routing — played from MIDI IN or EXT IN PITCH/GATE — Cascadia has no sequencer of its own. RING MOD is already on mixer channel 1 (p.43); this changes what it eats
+
+- **VCF · MODE** `NT2`
+- **VCF · FREQ** `38` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCF · Q** `54` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **MIXER · IN 1** `82` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **MIXER · IN 2** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: VCO A’s sine off, so only the ring output is heard
+- **VCO B · OCTAVE** `4` (0…7)
+  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.26
+- **VCO B · PITCH** `3` st (-6…6 st)
+  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.26
+  - ↳ note: detune from VCO A is what makes it clang
+- **VCO B · PITCH SOURCE** `PITCH B`
+- **ENVELOPE A · SPEED** `FAST`
+- **ENVELOPE A · ATTACK** `1` ms (0.2…1500 ms)
+  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.31
+- **ENVELOPE A · DECAY** `320` ms (0.6…2500 ms)
+  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.31
+- **ENVELOPE A · SUSTAIN** `0` V (0…5 V)
+  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.28
+
+**Patch**
+
+- `VCO B · SQUARE` → `RING MOD · IN 2`
+  - ↳ note: breaks the VCO B sine normal — a square through the ring modulator is harsher
+
 ### Tracker Mini
 
 *Values below cite Polyend Tracker Mini Manual, 2.2.1b.*
@@ -484,6 +544,22 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 ### TR-1000
 
 *Values below cite TR-1000 Owner’s Manual, eng02.*
+
+#### BD — `sub`: Kick tuned down into a sustained sub
+
+Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
+
+*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.61.*
+
+- **GEN** `9X Bass Drum`
+  - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
+- **COARSE** `-12` St (-12…12 St)
+  - ↳ hint: An octave down, in semitones
+- **TUNE** `-70` % (-100…100 %)
+- **DECAY** `92` % (0…100 %)
+- **P. AMOUNT** `12` % (0…100 %)
+  - ↳ hint: Near-flat pitch envelope
+- **DRIVE** `18` % (0…100 %)
 
 #### HC — `clap`: Wide clap sitting on top of the snare
 
@@ -534,16 +610,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 *Values below cite Deluge Official Guidebook, OS 4.1 (OLED) + community firmware release_1_2_1 (Chopin).*
 
-#### Track 1 — `sub`: Sine sub with the top end cut away
-
-*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.219.*
-
-- **OSC TYPE** `Sine`
-- **EQ TREBLE AMOUNT** `17` (0…50)
-  - ↳ note: 25 is neutral; below cuts
-- **EQ BASS AMOUNT** `31` (0…50)
-
-#### Track 2 — `bass-mid`: Analog saw bass through the drive filter, crushed
+#### Track 1 — `bass-mid`: Analog saw bass through the drive filter, crushed
 
 *Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.217.*
 
@@ -554,7 +621,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - **EQ BASS AMOUNT** `29` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
 
-#### Track 3 — `stab`: Square stab through a fast phaser
+#### Track 2 — `stab`: Square stab through a fast phaser
 
 Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 
@@ -568,7 +635,7 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **EQ TREBLE AMOUNT** `29` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
 
-#### Track 4 — `pad`: Wavetable pad, slow chorus, wide reverb send
+#### Track 3 — `pad`: Wavetable pad, slow chorus, wide reverb send
 
 Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 
@@ -581,7 +648,7 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **EQ TREBLE AMOUNT** `27` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
 
-#### Track 5 — `riser`: Saw riser, top end open, thrown into the reverb
+#### Track 4 — `riser`: Saw riser, top end open, thrown into the reverb
 
 - **OSC TYPE** `Saw`
 - **EQ TREBLE AMOUNT** `35` (0…50)
@@ -591,7 +658,7 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **DELAY AMOUNT** `16` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.222
 
-#### Track 6 — `noise`: Crushed noise wash under the drums
+#### Track 5 — `noise`: Crushed noise wash under the drums
 
 *Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.217.*
 
@@ -606,6 +673,7 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 
 **Sidechain**
 
+- Cascadia — from external audio
 - TR-1000 — internal, from external audio
 - Deluge — internal
 
