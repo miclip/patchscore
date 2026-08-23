@@ -107,6 +107,16 @@ describe('the default is a constant, fit for both renders', () => {
     expect(DEFAULT_INPUTS.mood.density).toBe(DENSITY_DETENTS[1])
   })
 
+  it('lands on Industrial Techno by name, not on whichever id sorts first', () => {
+    // This was `CATALOGUE.templates[0]`, and the registry is ordered by id (§7.2) — so adding
+    // a template called `ambient-dub` silently changed which genre a first-time visitor saw.
+    // The landing direction is a choice; a choice that moves when an unrelated file is added
+    // is not one. It must also still be a template this build actually ships.
+    expect(DEFAULT_INPUTS.templateId).toBe('industrial-techno')
+    expect(CATALOGUE.templates).toContain(DEFAULT_INPUTS.templateId)
+    expect(CATALOGUE.templates.length).toBeGreaterThan(1)
+  })
+
   it('is the same object every time it is asked for', () => {
     // No clock, no draw, no read. Two builds of the first frame must agree byte for byte.
     expect(encodeGuideInputs(DEFAULT_INPUTS, CATALOGUE)).toBe(
@@ -347,6 +357,13 @@ describe('sync writes the canonical query and the studio', () => {
     expect(strip(last)).toBe(strip(state.replaceCalls[0] as string))
   })
 
+  /** Any template this build ships that the default is not — the change has to be a change. */
+  function otherTemplate(): string {
+    const other = CATALOGUE.templates.find((id) => id !== DEFAULT_INPUTS.templateId)
+    if (other === undefined) throw new Error('this build ships only one template')
+    return other
+  }
+
   it('writes a new query for every kind of input change', () => {
     const { env, state } = fakeBrowser()
     const changes: GuideInputsV1[] = [
@@ -354,13 +371,14 @@ describe('sync writes the canonical query and the studio', () => {
       withSeed(DEFAULT_INPUTS, 2),
       withAxis(DEFAULT_INPUTS, 'grit', 80),
       withDevice(DEFAULT_INPUTS, CATALOGUE.devices[0] as string, false),
-      withTemplate(DEFAULT_INPUTS, CATALOGUE.templates[0] as string),
+      withTemplate(DEFAULT_INPUTS, otherTemplate()),
     ]
     for (const inputs of changes) syncStudio(env, inputs, undefined)
 
-    // Four distinct URLs from five syncs: the template change is a no-op on a one-template
-    // build, and saying so here is better than pretending it is five.
-    expect(new Set(state.replaceCalls).size).toBe(4)
+    // Five distinct URLs from five syncs. This used to expect four, because the build shipped
+    // one template and switching to it was a no-op; now that there are several, the template
+    // has to be one the default is not, or the assertion goes back to proving nothing.
+    expect(new Set(state.replaceCalls).size).toBe(5)
   })
 
   it('round trips: the URL it wrote is a URL it can boot from', () => {

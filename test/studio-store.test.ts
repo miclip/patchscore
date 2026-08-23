@@ -253,7 +253,7 @@ describe('unknown ids are corruption, not something to quietly drop', () => {
     expect(loadStudio(stored(json), CATALOGUE).status).toBe('invalid')
   })
 
-  it('refuses an inspiration, which no build has yet', () => {
+  it('refuses an inspiration this catalogue does not ship', () => {
     const json = valid.replace('"inspirations":[]', '"inspirations":["blue-monday"]')
     expect(loadStudio(stored(json), CATALOGUE).status).toBe('invalid')
   })

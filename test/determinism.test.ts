@@ -57,6 +57,14 @@ const IMPLEMENTATION = [
   // it is read by renderers, which is where locale formatting creeps in, and a module that
   // costs nothing to scan is never the one worth leaving out of a ban.
   'guide.ts',
+  // §5's inspiration composition. It orders the selected inspirations, orders the conflicts it
+  // reports and builds the effective template the resolver then runs on — so a locale-dependent
+  // sort here would hand two platforms two different templates from one selection, which
+  // invariant 6 would faithfully render as two different guides.
+  'inspiration.ts',
+  // §4.3's authoring helpers. `variant` sorts a pattern's hits into step order, which is what
+  // makes two variants written in a different group order byte-identical downstream.
+  'authoring.ts',
 ]
 const BANNED = ['localeCompare', 'toLocaleString', 'toLocaleDateString', 'Intl.', 'Math.random']
 

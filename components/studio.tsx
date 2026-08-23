@@ -1,28 +1,37 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { DeviceId, GuideInputsV1, MoodAxis, StoredRigV1, TemplateId } from '@/lib/core'
+import type {
+  DeviceId,
+  GuideInputsV1,
+  InspirationId,
+  MoodAxis,
+  StoredRigV1,
+  TemplateId,
+} from '@/lib/core'
 import { resolve } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
-import { templateById } from '@/lib/templates'
+import { INSPIRATIONS } from '@/lib/inspirations'
 import { browserEnv } from '@/lib/studio/browser-env'
 import {
   CATALOGUE,
   DEFAULT_INPUTS,
   bootstrapStudio,
+  composeTemplate,
   copyStudioLink,
   syncStudio,
   withAxis,
   withDevice,
+  withInspiration,
   withSeed,
   withTemplate,
 } from '@/lib/studio/session'
 import type { StudioNotice } from '@/lib/studio/session'
 import { DevicePicker } from './device-picker'
 import { GenrePicker } from './genre-picker'
+import { GuideArea } from './guide-area'
+import { InspirationPicker } from './inspiration-picker'
 import { MoodPanel } from './mood-panel'
-import { Guide } from './guide/guide'
-import { Rack } from './rack/rack'
 import { SeedField } from './seed-field'
 
 /**
@@ -96,12 +105,25 @@ export function Studio() {
     )
   }, [bootstrapped, persist, inputs, rig])
 
-  const template = templateById(inputs.templateId)
   const selected = useMemo(() => new Set(inputs.devices), [inputs.devices])
   // Registry order, not click order: the rig is a set, and the resolver's tie-breaks are
   // documented against a stable device order (§7.2).
   const devices = useMemo(() => DEVICES.filter((d) => selected.has(d.id)), [selected])
 
+  /**
+   * §7 step 1, the caller's pre-step: the direction composed with its influences. The resolver
+   * takes an *effective* template and never an id or a patch instruction (§7), so this is the
+   * one place the two are joined.
+   */
+  const application = useMemo(() => composeTemplate(inputs), [inputs])
+  const template = application?.outcome === 'applied' ? application.template : undefined
+
+  /**
+   * `undefined` covers two different situations on purpose, and `GuideArea` distinguishes them:
+   * no direction chosen, and a pair of influences that cannot be combined. **Neither falls back
+   * to the base template.** Rendering the un-patched guide under a refused selection would be
+   * showing a guide nobody asked for while the controls say otherwise.
+   */
   const result = useMemo(
     () =>
       template === undefined
@@ -124,8 +146,18 @@ export function Studio() {
     setInputs((current) => withDevice(current, id, on))
   }
 
+  /**
+   * The influences are deliberately *kept* across a change of direction. They are keyed on
+   * `(role, band)` and name no template (§5.1), so they reapply against the new one on their
+   * own terms — and anything the new direction has no room for is reported rather than dropped.
+   * Clearing them here would be the picker asserting a coupling the data does not have.
+   */
   function selectTemplate(id: TemplateId) {
     setInputs((current) => withTemplate(current, id))
+  }
+
+  function toggleInspiration(id: InspirationId, on: boolean) {
+    setInputs((current) => withInspiration(current, id, on))
   }
 
   function setAxis(axis: MoodAxis, value: number) {
@@ -173,41 +205,16 @@ export function Studio() {
         <GenrePicker selected={inputs.templateId} onSelect={selectTemplate} />
         <SeedField seed={inputs.seed} onChange={setSeed} />
 
-        <section className="panel">
-          <header>
-            <h2>Inspirations</h2>
-            <p className="note">Not built yet</p>
-          </header>
-          <p className="empty">
-            Reference patches that bend a template toward a specific record — build step 7 (#9).
-          </p>
-        </section>
+        <InspirationPicker
+          inspirations={INSPIRATIONS}
+          selected={inputs.inspirations}
+          onToggle={toggleInspiration}
+          application={application}
+        />
 
         <MoodPanel mood={inputs.mood} onChange={setAxis} />
 
-        {/*
-          §10's signature element sits above the guide, not under it: the guide is seven phases
-          long, and a rack drawing below all of that is a rack drawing nobody scrolls to.
-        */}
-        <Rack result={result} />
-
-        {result === undefined ? (
-          <section className="panel span-2">
-            <header>
-              <h2>Guide</h2>
-            </header>
-            <p className="empty">No template selected.</p>
-          </section>
-        ) : (
-          /*
-            `guide-panel` is what `@media print` keeps. Everything else on the page is chrome —
-            pickers, knobs, the rack, the notices — and a printed guide with a device picker at
-            the top of page 1 is a printed guide somebody has to explain.
-          */
-          <section className="panel span-2 guide-panel">
-            <Guide result={result} seed={inputs.seed} />
-          </section>
-        )}
+        <GuideArea application={application} result={result} seed={inputs.seed} />
       </div>
     </main>
   )

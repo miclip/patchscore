@@ -207,6 +207,65 @@ body {
   overflow-wrap: anywhere;
 }
 
+/* ----------------------------------------------------------- inspirations */
+
+/*
+  §5. At the cap the unchosen rows are disabled rather than hidden — the influence is still
+  offered against every direction (it names no template), it is only this *selection* that is
+  full. Dimming says "not now"; removing it would say "not here", which would be false.
+*/
+.pick-off {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pick-off:hover {
+  border-color: var(--edge);
+}
+
+/*
+  §5.3's refusal. Given the accent border the notices use, because it is the same kind of
+  statement: something did not happen, here is exactly what, and the page is not pretending
+  otherwise. No guide renders while this is on screen.
+*/
+.inspiration-refused {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--edge);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--panel-1);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.inspiration-notes,
+.inspiration-diagnostics {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.inspiration-notes li {
+  color: var(--ink);
+}
+
+.inspiration-notes .who {
+  color: var(--silkscreen);
+  margin-right: 8px;
+}
+
+/* Not a warning. A `no-such-target` is the honest answer to a legitimate pairing (§5.4). */
+.inspiration-diagnostics li {
+  color: var(--ink-dim);
+}
+
 /* -------------------------------------------------------------------- seed */
 
 .seed-row {

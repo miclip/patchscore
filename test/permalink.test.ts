@@ -189,7 +189,7 @@ describe('malformed input fails safely', () => {
     ['a duplicated device', `${canonical}&device=A-cascade`, 'malformed'],
     ['an unknown device', canonical.replace('device=A-cascade', 'device=nonexistent'), 'unknown-id'],
     ['an unknown template', canonical.replace('template=golden-techno', 'template=house'), 'unknown-id'],
-    ['an inspiration, which no build has yet', `${canonical}&inspiration=blue-monday`, 'unknown-id'],
+    ['an inspiration this catalogue does not ship', `${canonical}&inspiration=blue-monday`, 'unknown-id'],
     // Syntax before membership: an id that could not survive a URL is malformed, not merely
     // absent from the catalogue.
     ['an id that could not survive a URL', canonical.replace('device=A-cascade', 'device=a.b'), 'malformed'],

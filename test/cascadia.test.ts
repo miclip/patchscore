@@ -11,7 +11,7 @@ import {
   type AuthoredParam,
 } from '../lib/core/index'
 import { device, type CascadiaJack } from '../lib/devices/intellijel-cascadia/index'
-import { TEMPLATES } from '../lib/templates/index'
+import { industrialTechno } from '../lib/templates/index'
 
 /**
  * #49. The Cascadia is the first device in the library whose recipes carry a `patch` list, so
@@ -36,11 +36,16 @@ function voice() {
   return v
 }
 
-/** One box, the golden template: twelve requests against one monophonic voice. */
+/**
+ * One box, Industrial Techno: twelve requests against one monophonic voice. Named rather than
+ * taken as `TEMPLATES[0]`, because what this file needs is a template that asks for a `pad` and
+ * a `stab` — the registry is ordered by id (§7.2) and its first entry is whichever genre sorts
+ * first, which is not a promise about what any genre requests.
+ */
 function alone() {
   return resolve({
     devices: [device],
-    template: TEMPLATES[0] as (typeof TEMPLATES)[number],
+    template: industrialTechno,
     mood: NEUTRAL_MOOD,
     seed: 7,
   })

@@ -11,7 +11,7 @@ import {
 } from '../lib/core/index'
 import type { ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { TEMPLATES } from '../lib/templates/index'
+import { industrialTechno } from '../lib/templates/index'
 import { Guide } from '../components/guide/guide'
 import { mergeBlocks } from '../components/guide/phase-steps'
 import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
@@ -44,7 +44,7 @@ const golden = resolve({
 
 const real = resolve({
   devices: DEVICES,
-  template: TEMPLATES[0] as (typeof TEMPLATES)[number],
+  template: industrialTechno,
   mood: NEUTRAL_MOOD,
   seed: 1,
 })
@@ -55,7 +55,7 @@ const real = resolve({
  */
 const sparse = resolve({
   devices: DEVICES.filter((d) => d.id === 'intellijel-cascadia'),
-  template: TEMPLATES[0] as (typeof TEMPLATES)[number],
+  template: industrialTechno,
   mood: NEUTRAL_MOOD,
   seed: 1,
 })
