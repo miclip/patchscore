@@ -19,11 +19,14 @@ function recipeWhy(a: ResolvedAssignment) {
 }
 
 /**
- * §8 phase 2, plus the advice that phase 7.3 calls gaps.
+ * §8 phase 2, and the gaps of §7.3.
  *
- * Gaps are rendered as **Advice**, neutrally. A `no-recipe` gap naming the voice that could
- * carry the part is advice; the same fact rendered as a red error is discouraging and wrong
- * (#33). Nothing here is invented to fill a hole — the honesty is invariant 5, the tone is not.
+ * The heading is **Gaps**, matching the Markdown renderer and saying what the section is. It
+ * was briefly "Advice", which was a misreading: the instruction was that a gap should *read*
+ * as advice rather than as an error — a `no-recipe` gap naming the voice that could carry the
+ * part is useful, the same fact in a red error box is discouraging and wrong. That is the tone
+ * of the lines, not the name of the section. A reader who has to ask what "Advice" means has
+ * been told nothing, and softening the word is the opposite of invariant 5's honesty.
  */
 export function PhaseVoices({
   result,
@@ -37,7 +40,7 @@ export function PhaseVoices({
   return (
     <>
       {result.assignments.length === 0 ? (
-        <p className="quiet">No parts assigned. Every one is listed under Advice.</p>
+        <p className="quiet">No parts assigned. Every one is listed under Gaps.</p>
       ) : (
         <ul className="parts">
           {result.assignments.map((a) => (
@@ -62,7 +65,7 @@ export function PhaseVoices({
         </ul>
       )}
 
-      <h4>Advice</h4>
+      <h4>Gaps</h4>
       {result.gaps.length === 0 ? (
         <p className="quiet">None.</p>
       ) : (

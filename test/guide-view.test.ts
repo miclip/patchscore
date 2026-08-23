@@ -158,10 +158,13 @@ describe('§3.2 provenance reaches the page', () => {
   })
 })
 
-describe('gaps are advice, not failure (#33)', () => {
-  it('names every gap under Advice, and never as an error', () => {
+describe('gaps read as advice, but are named Gaps (#33)', () => {
+  // The heading says what the section is; the *lines* carry the helpful tone. Naming the
+  // section "Advice" told a reader nothing and softened the word, which is the opposite of
+  // invariant 5. Markdown and the view now agree.
+  it('names every gap under Gaps, and never as an error', () => {
     const out = html(real)
-    expect(out).toContain('>Advice<')
+    expect(out).toContain('>Gaps<')
     for (const gap of real.gaps) expect(out).toContain(`>${gap.role}</span>`)
     for (const word of ['error', 'failure', 'failed', 'invalid']) {
       expect(out.toLowerCase()).not.toContain(word)
