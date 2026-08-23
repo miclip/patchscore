@@ -98,11 +98,11 @@ describe('rack geometry (§10)', () => {
   })
 
   it('bottom-aligns panels of different heights on one rail, per row', () => {
-    const model = rackModel(real, { perRow: 5 })
+    const model = rackModel(real, { perRow: DEVICES.length })
     const rails = new Set(model.panels.map((p) => p.topMm + p.riseMm))
     expect(rails.size).toBe(1)
-    // Not vacuous: these five boxes are genuinely different depths.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(5)
+    // Not vacuous: every one of these boxes is a genuinely different depth.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -115,7 +115,7 @@ describe('rack geometry (§10)', () => {
   })
 
   it('accumulates x by span plus one gap within a row, and totals without a trailing gap', () => {
-    const model = rackModel(real, { perRow: 5 })
+    const model = rackModel(real, { perRow: DEVICES.length })
     let expected = 0
     for (const panel of model.panels) {
       expect(panel.xMm).toBe(expected)
@@ -397,6 +397,14 @@ describe('panel layouts', () => {
     const model = rackModel(real)
     for (const device of DEVICES) {
       const fields = device.panel?.features.filter((f) => f.kind === 'voices') ?? []
+      // §2.4. A device with no voices contributes no assignables, so it authors no voice field:
+      // the region would be filled with nothing on every guide ever rendered, claiming a readout
+      // the box cannot produce. The LiveTrak L-8 is the first box in the library like this, and
+      // the rule is "at most one", not "one" — the schema has always said so.
+      if (device.voices.length === 0) {
+        expect(fields).toHaveLength(0)
+        continue
+      }
       expect(fields).toHaveLength(1)
       const field = fields[0]
       if (field?.kind !== 'voices') throw new Error('no voice field')
@@ -423,6 +431,7 @@ describe('panel layouts', () => {
   it('fills the authored region rather than leaving it mostly empty', () => {
     const model = rackModel(real)
     for (const device of DEVICES) {
+      if (device.voices.length === 0) continue // §2.4: no assignables, no region to fill.
       const field = device.panel?.features.find((f) => f.kind === 'voices')
       if (field?.kind !== 'voices') throw new Error('no voice field')
       const cells = model.panels.find((p) => p.deviceId === device.id)?.banks.flatMap((b) => b.cells) ?? []
@@ -602,12 +611,12 @@ describe('rack view', () => {
 
     // Every kind in the vocabulary is exercised by the authored boxes, so a renderer arm
     // that stopped working would show up here rather than only in Chrome.
-    expect(count('rack-screen')).toBe(4) // all but the Cascadia, which has no display
+    expect(count('rack-screen')).toBe(5) // all but the Cascadia, which has no display
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the Cascadia's thirty-four — that box is set with
-    // sliders almost exclusively, which is why its panel is mostly this one shape — and the
-    // MC-101's four track levels.
-    expect(count('rack-fader')).toBe(49)
+    // sliders almost exclusively, which is why its panel is mostly this one shape — the MC-101's
+    // four track levels, and the L-8's ten: eight channels, EFX RTN and MASTER.
+    expect(count('rack-fader')).toBe(59)
     expect(count('rack-key')).toBe(16) // and the TR-1000's sixteen step keys
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)

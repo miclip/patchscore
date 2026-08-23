@@ -140,7 +140,7 @@ describe('device search matches name, maker and kind', () => {
 describe('the kind filter', () => {
   it('offers the kinds this build ships, in the order the registry first mentions them', () => {
     const kinds = kindsPresent(DEVICES)
-    expect(kinds).toEqual(['semi-modular', 'groovebox', 'drum-machine'])
+    expect(kinds).toEqual(['semi-modular', 'groovebox', 'drum-machine', 'mixer-recorder'])
     // Derived, not enumerated: every kind offered has at least one device behind it, and every
     // device's kind is offered. An option that can only return nothing is not a filter.
     for (const kind of kinds) expect(DEVICES.some((d) => d.kind === kind)).toBe(true)
