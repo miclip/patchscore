@@ -7,6 +7,7 @@ import type { BoundArticulation, ResolvedPatchEntry } from './resolver'
 import type { Gap } from './search'
 import { enharmonicAlternative, type HookChoice, type ResolvedHook, type ResolvedNote } from './harmony'
 import type { ResolveResult, ResolvedAssignment } from './pipeline'
+import { GUIDE_PHASES } from './guide'
 
 /**
  * §8. The resolved guide as Markdown.
@@ -35,23 +36,6 @@ import type { ResolveResult, ResolvedAssignment } from './pipeline'
 // ---------------------------------------------------------------------------
 // The shape of the document
 // ---------------------------------------------------------------------------
-
-/**
- * §8's phase order, which "reflects how a real session unfolds at the machine. Do not reorder."
- * Exported because it is the contract: a UI building a table of contents and a test asserting
- * the order must read the same list, not two copies of it.
- */
-export const GUIDE_PHASES = [
-  'Song',
-  'Voice assignment',
-  'Rig integration',
-  'Hook',
-  'Step programming',
-  'Sound design',
-  'Finishing',
-] as const
-
-export type GuidePhase = (typeof GUIDE_PHASES)[number]
 
 /**
  * §8.1. Hints, citations and authored notes are *subordinate* to the instruction they hang

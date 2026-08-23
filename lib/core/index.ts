@@ -1,6 +1,7 @@
 export * from './ids'
 export * from './seed'
 export * from './vocabulary'
+export * from './guide'
 export * from './params'
 export * from './device'
 export * from './template'
