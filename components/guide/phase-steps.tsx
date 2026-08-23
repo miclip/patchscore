@@ -9,7 +9,7 @@ import type {
   SectionName,
 } from '@/lib/core'
 import { citeLines, hintText, num } from './format'
-import { Instruction, ProvenanceMark } from './instruction'
+import { Instruction, ProvenanceMark, SoundRef } from './instruction'
 
 const ROW = 16
 
@@ -159,9 +159,10 @@ function BlockBody({
 
   return (
     <>
+      {/* No pattern id: template-internal. The two facts that carry meaning here are how
+          long the variant is and which band it came from. */}
       <p className="block-head">
-        <span className="mono">{selection.pattern.id}</span>
-        <span className="quiet">{num(selection.pattern.length)} steps</span>
+        <span className="steps-count mono">{num(selection.pattern.length)} steps</span>
         {/* §6.3's fallback is reported, never silent: a knob that visibly does nothing is a
             bug report waiting to happen. */}
         <span className={selection.outcome === 'fallback' ? 'band-fallback' : 'quiet'}>
@@ -177,6 +178,7 @@ function BlockBody({
         {slotGroups(selection.pattern).map(({ slot, hits }) => (
           <li key={slot}>
             <span className="mono slot">{slot}</span>
+            <span className="token-sep">—</span>
             <span className="mono">
               {hits
                 .map((h) =>
@@ -218,10 +220,14 @@ export function PhaseSteps({
         <section className="part" key={a.requestId}>
           <h4>
             <span className="role mono">{a.role}</span>
+            <span className="token-sep">—</span>
             <span className="quiet">
               {a.deviceName} · {a.assignable.label}
             </span>
           </h4>
+          {/* Same reason as the hook phase: this one says what to play, not what it sounds
+              like, so a reader stopping here would think the sound was missing. */}
+          <SoundRef title={a.recipe.title} />
           {mergeBlocks(a).map((block) => (
             <div className="block" key={block.sections.join(',')}>
               <h5>{block.sections.join(', ')}</h5>

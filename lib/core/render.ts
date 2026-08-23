@@ -414,22 +414,34 @@ const NOTE_CONVENTION = [
   'same pitch as a sharps-only box shows it, and appears only where it differs. Octaves are',
   'scientific pitch notation — middle C is C4 — which not every maker agrees with. The MIDI',
   'number is the one form nothing disagrees about: check that if the screen says something else.',
+  '',
+  'Where a role has more than one hook authored, rerolling the seed picks a different one.',
 ]
 
 function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined): Line[] {
   const out: Line[] = []
+
+  // The heading says what the part is and where it lives. Not the hook's id — that is a
+  // template-internal identifier that means nothing to somebody standing at a box — and not
+  // how many hooks were authored or which one the seed took, which is our machinery rather
+  // than their information. The reroll fact worth having is stated once, up in the intro.
   const where =
     carriedBy === undefined
-      ? '*no part in this rig carries this role — the hook is here as musical intent only*'
+      ? 'no part in this rig carries this role'
       : `${carriedBy.deviceName} · ${carriedBy.assignable.label}`
-  const alternatives =
-    choice.candidates.length > 1
-      ? ` (${num(choice.candidates.length)} authored for this role; the seed picked this one)`
-      : ''
-
-  out.push(`### \`${choice.forRole}\` — \`${choice.chosenId}\`${alternatives}`)
+  out.push(`### \`${choice.forRole}\` — ${where}`)
   out.push('')
-  out.push(`${where}`)
+
+  // §8 puts Hook before Sound design on purpose — write the line before designing the sound
+  // that plays it — but a reader here has no way of knowing the sound is defined further down,
+  // and reasonably concludes it is missing. The recipe title already describes the sound, so
+  // naming it costs one line and duplicates no value. The values themselves stay in phase 6:
+  // two places to change one number is how a guide goes stale.
+  if (carriedBy === undefined) {
+    out.push('*The hook is here as musical intent only.*')
+  } else {
+    out.push(`**${carriedBy.recipe.title}** — settings in Sound design`)
+  }
   out.push('')
 
   if (choice.chosen.outcome === 'unresolved') {
@@ -578,7 +590,9 @@ function stepBlock(
     body.push('')
     body.push(...articulationLines(entry.articulation, deviceById.get(a.deviceId), options))
   }
-  return { headline: `\`${pattern.id}\`, ${num(pattern.length)} steps, ${band}`, body }
+  // No pattern id: template-internal, and the two facts that carry meaning here are how long
+  // the variant is and which band it came from.
+  return { headline: `${num(pattern.length)} steps, ${band}`, body }
 }
 
 /**
@@ -624,6 +638,10 @@ function phaseSteps(
 
   for (const a of result.assignments) {
     out.push(`### \`${a.role}\` — ${a.deviceName} · ${a.assignable.label}`)
+    out.push('')
+    // Same reason as phase 4: this phase says what to play and not what it sounds like, so a
+    // reader stopping here would think the sound was missing.
+    out.push(`**${a.recipe.title}** — settings in Sound design`)
     for (const { sections, block } of mergeBlocks(a, deviceById, options)) {
       out.push('')
       out.push(`**${sections.join(', ')}** — ${block.headline}`)

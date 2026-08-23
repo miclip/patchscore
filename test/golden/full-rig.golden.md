@@ -86,9 +86,11 @@ same pitch as a sharps-only box shows it, and appears only where it differs. Oct
 scientific pitch notation — middle C is C4 — which not every maker agrees with. The MIDI
 number is the one form nothing disagrees about: check that if the screen says something else.
 
-### `bass-mid` — `it-hook-bass-2` (2 authored for this role; the seed picked this one)
+Where a role has more than one hook authored, rerolling the seed picks a different one.
 
-Deluge · Track 2
+### `bass-mid` — Deluge · Track 2
+
+**Analog saw bass through the drive filter, crushed** — settings in Sound design
 
 2 bars in F minor.
 
@@ -100,9 +102,9 @@ Deluge · Track 2
 - step 23 · len 2 · degree 6 · `Db2` (`C#2`) · MIDI 37
 - step 27 · len 4 · degree 5 · `C2` · MIDI 36
 
-### `pad` — `it-hook-pad-1`
+### `pad` — Deluge · Track 4
 
-Deluge · Track 4
+**Wavetable pad, slow chorus, wide reverb send** — settings in Sound design
 
 8 bars in F minor.
 
@@ -116,9 +118,9 @@ Deluge · Track 4
 - step 97 · len 32 · degree 2 · `G4` · MIDI 67
 - step 97 · len 32 · degree 4 · `Bb4` (`A#4`) · MIDI 70
 
-### `stab` — `it-hook-stab-1`
+### `stab` — Deluge · Track 3
 
-Deluge · Track 3
+**Square stab through a fast phaser** — settings in Sound design
 
 4 bars in F minor.
 
@@ -139,7 +141,9 @@ Deluge · Track 3
 
 ### `kick` — Tracker Mini · Track 1
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — `it-kick-b2`, 16 steps, band 2
+**Tight one-shot kick, tuned down, no tail** — settings in Sound design
+
+**Intro, Build, Drop, Breakdown, Peak, Outro** — 16 steps, band 2
 
 ```
  1 x··· x··· x··· x··x
@@ -149,7 +153,9 @@ Deluge · Track 3
 
 ### `sub` — Deluge · Track 1
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — `it-sub-b2`, 16 steps, band 2
+**Sine sub with the top end cut away** — settings in Sound design
+
+**Intro, Build, Drop, Breakdown, Peak, Outro** — 16 steps, band 2
 
 ```
  1 x··· ··x· ··x· ··x·
@@ -163,7 +169,9 @@ Deluge · Track 3
 
 ### `bass-mid` — Deluge · Track 2
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — `it-bass-mid-b2`, 32 steps, band 2
+**Analog saw bass through the drive filter, crushed** — settings in Sound design
+
+**Intro, Build, Drop, Breakdown, Peak, Outro** — 32 steps, band 2
 
 ```
  1 x··· ··x· x··· ····
@@ -179,7 +187,9 @@ Deluge · Track 3
 
 ### `clap` — TR-1000 · HC
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — `it-clap-b2`, 16 steps, band 2
+**Wide clap sitting on top of the snare** — settings in Sound design
+
+**Intro, Build, Drop, Breakdown, Peak, Outro** — 16 steps, band 2
 
 ```
  1 ···· x··· ···· x··x
@@ -194,7 +204,9 @@ Deluge · Track 3
 
 ### `closed-hat` — TR-1000 · CH
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — `it-closed-hat-b2`, 16 steps, band 2
+**Grainy CR-78 hat with a metallic edge** — settings in Sound design
+
+**Intro, Build, Drop, Breakdown, Peak, Outro** — 16 steps, band 2
 
 ```
  1 ·xx· ·xx· ·xx· ·xx·
@@ -209,7 +221,9 @@ Deluge · Track 3
 
 ### `open-hat` — TR-1000 · OH
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — `it-open-hat-b2`, 16 steps, band 2
+**Dull open hat, more air than sizzle** — settings in Sound design
+
+**Intro, Build, Drop, Breakdown, Peak, Outro** — 16 steps, band 2
 
 ```
  1 ··x· ··x· ··x· ··x·
@@ -223,7 +237,9 @@ Deluge · Track 3
 
 ### `stab` — Deluge · Track 3
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — `it-stab-b2`, 32 steps, band 2
+**Square stab through a fast phaser** — settings in Sound design
+
+**Intro, Build, Drop, Breakdown, Peak, Outro** — 32 steps, band 2
 
 ```
  1 x··· ···· ··x· ····
@@ -234,7 +250,9 @@ Deluge · Track 3
 
 ### `impact` — TR-1000 · CC
 
-**Drop, Peak** — `it-impact-b2`, 64 steps, band 2
+**Crash marking the top of a section** — settings in Sound design
+
+**Drop, Peak** — 64 steps, band 2
 
 ```
  1 x··· ···· ···· ····
@@ -252,15 +270,21 @@ Deluge · Track 3
 
 ### `pad` — Deluge · Track 4
 
+**Wavetable pad, slow chorus, wide reverb send** — settings in Sound design
+
 **Intro, Build, Drop, Breakdown, Peak, Outro** — no pattern authored for `pad` at any band (asked for band 2). Nothing is programmed here.
 
 ### `riser` — Deluge · Track 5
+
+**Saw riser, top end open, thrown into the reverb** — settings in Sound design
 
 **Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 2). Nothing is programmed here.
 
 ### `noise` — Deluge · Track 6
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — `it-noise-b2`, 32 steps, band 2
+**Crushed noise wash under the drums** — settings in Sound design
+
+**Intro, Build, Drop, Breakdown, Peak, Outro** — 32 steps, band 2
 
 ```
  1 x··· ···· ··x· ····

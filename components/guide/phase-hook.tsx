@@ -1,6 +1,7 @@
 import type { HookChoice, ResolveResult, ResolvedAssignment } from '@/lib/core'
 import { enharmonicAlternative } from '@/lib/core'
 import { num } from './format'
+import { SoundRef } from './instruction'
 
 /**
  * #32, stated once near the notes rather than repeated per note: three representations of one
@@ -15,6 +16,7 @@ function NoteConvention() {
       pitch as a sharps-only box shows it, and appears only where it differs. Octaves are
       scientific pitch notation — middle C is C4 — which not every maker agrees with. The MIDI
       number is the one form nothing disagrees about: check that if the screen says something else.
+      {' '}Where a role has more than one hook authored, rerolling the seed picks a different one.
     </p>
   )
 }
@@ -28,21 +30,31 @@ function HookBlock({
 }) {
   return (
     <section className="hook">
+      {/*
+        The heading says what the part is and where it lives. Not the hook's id — a
+        template-internal identifier that means nothing to somebody standing at a box — and not
+        which of several the seed picked, which is our machinery rather than their information.
+        The reroll fact worth having is stated once, up in the intro.
+      */}
       <h4>
         <span className="role mono">{choice.forRole}</span>
-        <span className="mono quiet">{choice.chosenId}</span>
-        {choice.candidates.length > 1 ? (
-          <span className="quiet">
-            {num(choice.candidates.length)} authored for this role; the seed picked this one
-          </span>
-        ) : null}
+        {carriedBy === undefined ? null : (
+          <>
+            <span className="token-sep">—</span>
+            <span className="quiet">
+              {carriedBy.deviceName} · {carriedBy.assignable.label}
+            </span>
+          </>
+        )}
       </h4>
 
-      <p className="quiet">
-        {carriedBy === undefined
-          ? 'No part in this rig carries this role — the hook is here as musical intent only.'
-          : `${carriedBy.deviceName} · ${carriedBy.assignable.label}`}
-      </p>
+      {carriedBy === undefined ? (
+        <p className="quiet">
+          No part in this rig carries this role — the hook is here as musical intent only.
+        </p>
+      ) : (
+        <SoundRef title={carriedBy.recipe.title} />
+      )}
 
       {choice.chosen.outcome === 'unresolved' ? (
         // Reported, never guessed at (§4.1).

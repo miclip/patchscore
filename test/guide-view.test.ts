@@ -36,6 +36,11 @@ const real = resolve({
   seed: 1,
 })
 
+/** The rendered text a reader actually sees, with the markup taken back out. */
+function text(html: string): string {
+  return html.replace(/<[^>]+>/g, '')
+}
+
 /** Occurrences of a literal, without a regex to escape. */
 function occurrences(haystack: string, needle: string): number {
   let n = 0
@@ -171,5 +176,58 @@ describe('the two renderers agree about the facts', () => {
       expect(markdown).toContain(gap.role)
     }
     expect(real.gaps.length).toBeGreaterThan(0)
+  })
+})
+
+describe('inline token lists keep their separators', () => {
+  it('separates the roles in each arrangement section', () => {
+    const out = text(html(real))
+    const multi = real.template.structure
+      .map((section) => ({
+        section,
+        roles: real.assignments
+          .filter((a) => a.sections.includes(section.name))
+          .map((a) => a.role),
+      }))
+      .filter((entry) => entry.roles.length > 1)
+
+    // The bug this covers rendered `kickclapclosed-hatopen-hat`: adjacent spans in a container
+    // with no gap. A separator that lives in CSS can be lost silently; this one is markup.
+    expect(multi.length).toBeGreaterThan(0)
+    for (const { roles } of multi) expect(out).toContain(roles.join(', '))
+  })
+
+  it('separates the sections a part occupies, and the axes a mood move names', () => {
+    const out = text(html(real))
+    for (const a of real.assignments) {
+      if (a.sections.length > 1) expect(out).toContain(a.sections.join(', '))
+    }
+    const moved = real.assignments
+      .flatMap((a) => a.params)
+      .flatMap((p) => (p.provenance.state !== 'authored' ? (p.provenance.axes ?? []) : []))
+      .filter((axes) => axes.length > 0)
+    for (const axes of moved) expect(out).toContain(axes)
+  })
+})
+
+describe('template-internal ids stay internal', () => {
+  it('names no pattern or hook id anywhere on the page', () => {
+    const out = html(real)
+    const ids = [
+      ...real.template.patterns.map((p) => p.id),
+      ...real.template.hooks.map((h) => h.id),
+    ]
+    expect(ids.length).toBeGreaterThan(0)
+    for (const id of ids) expect(out).not.toContain(id)
+  })
+
+  it('says where the sound for a hook or a rhythm is defined, without repeating it', () => {
+    const out = text(html(real))
+    // §8's phase order puts both before Sound design; a reader stopping at either would
+    // otherwise conclude the sound was missing.
+    for (const a of real.assignments) expect(out).toContain(`${a.recipe.title} — settings in`)
+    expect(out).toContain('settings in Sound design')
+    // The pointer is a link, not just words, because Sound design is a long way down a phone.
+    expect(html(real)).toContain('href="#phase-6"')
   })
 })

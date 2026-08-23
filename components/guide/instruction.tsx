@@ -1,5 +1,7 @@
+import { Fragment } from 'react'
 import type { ReactNode } from 'react'
 import type { Provenance, ResolvedParam } from '@/lib/core'
+import { GUIDE_PHASES } from '@/lib/core'
 import { citeLines, num, rangeText, valueParts } from './format'
 
 /**
@@ -125,4 +127,55 @@ export function ParamLine({ param, hint }: { param: ResolvedParam; hint?: string
 /** A plain instruction whose value is a number the reader types somewhere. */
 export function Steps({ steps }: { steps: readonly number[] }) {
   return <span className="mono">{steps.map(num).join(', ')}</span>
+}
+
+/**
+ * A run of short inline tokens, with the separator in the **markup**.
+ *
+ * The arrangement list rendered `kickclapclosed-hatopen-hat` because its tokens were adjacent
+ * spans in a block container, relying on a flex gap that container did not have. A separator
+ * that lives in CSS is a separator that can vanish when a rule elsewhere changes, and the
+ * failure is silent and only visible on the page. This one cannot vanish.
+ */
+export function TokenList({
+  items,
+  className,
+}: {
+  items: readonly { key: string; text: string }[]
+  className?: string
+}) {
+  return (
+    <span className="token-list">
+      {items.map((item, i) => (
+        <Fragment key={item.key}>
+          {i === 0 ? null : <span className="token-sep">, </span>}
+          <span className={className}>{item.text}</span>
+        </Fragment>
+      ))}
+    </span>
+  )
+}
+
+/**
+ * Derived from `GUIDE_PHASES` rather than written as `#phase-6`, so it cannot drift if the
+ * list ever changes — §8 forbids reordering, but a hard-coded anchor would break silently and
+ * a derived one breaks at the type level.
+ */
+const SOUND_DESIGN_ANCHOR = `#phase-${GUIDE_PHASES.indexOf('Sound design') + 1}`
+
+/**
+ * §8 puts Hook and Step programming before Sound design on purpose — write the line, then
+ * design the sound that plays it. The cost is that a reader stopping at either phase has no
+ * indication the sound exists at all, and reasonably concludes it is missing. The recipe title
+ * already describes the sound, so naming it costs one line and duplicates no parameter value.
+ *
+ * The link matters more here than in the Markdown: on a phone, "see Sound design" when Sound
+ * design is two thousand pixels further down is not much of a pointer.
+ */
+export function SoundRef({ title }: { title: string }) {
+  return (
+    <p className="sound-ref">
+      <strong>{title}</strong> — settings in <a href={SOUND_DESIGN_ANCHOR}>Sound design</a>
+    </p>
+  )
 }

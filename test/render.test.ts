@@ -223,6 +223,22 @@ const FLAT_TEMPLATE: Template = {
   hooks: [FLAT_HOOK],
 }
 
+describe('template-internal ids stay internal (§8)', () => {
+  it('names no pattern or hook id, and does not explain which one the seed took', () => {
+    const result = golden()
+    const doc = renderGuide(result)
+    const ids = [
+      ...result.template.patterns.map((p) => p.id),
+      ...result.template.hooks.map((h) => h.id),
+    ]
+    expect(ids.length).toBeGreaterThan(0)
+    for (const id of ids) expect(doc, id).not.toContain(id)
+    expect(doc).not.toContain('the seed picked this one')
+    // The fact worth keeping is stated once instead, in the phase intro.
+    expect(doc.split('rerolling the seed picks a different one')).toHaveLength(2)
+  })
+})
+
 describe('hook notes (#32, §4.1)', () => {
   const doc = renderGuide(
     resolve({
@@ -326,7 +342,9 @@ describe('at-the-machine layout (§8, §10)', () => {
     const next = body.findIndex((l, i) => i > kick && l.startsWith('### '))
     const block = body.slice(kick, next)
     expect(block.filter((l) => l.startsWith('**'))).toEqual([
-      '**Intro, Build, Drop** — `p-kick-b2`, 16 steps, band 2',
+      // No pattern id in the headline: template-internal, and meaningless at a machine.
+      '**hard kick** — settings in Sound design',
+      '**Intro, Build, Drop** — 16 steps, band 2',
       '**On this box** — Golden Drum',
     ])
     expect(block.filter((l) => l === '```')).toHaveLength(2)
@@ -338,10 +356,12 @@ describe('at-the-machine layout (§8, §10)', () => {
     const body = phaseBody(doc, 5)
     const hat = body.indexOf('### `closed-hat` — Golden Drum · CH')
     const next = body.findIndex((l, i) => i > hat && l.startsWith('### '))
-    const headlines = body.slice(hat, next).filter((l) => l.startsWith('**') && l.includes(' — `'))
+    const headlines = body
+      .slice(hat, next)
+      .filter((l) => l.startsWith('**') && l.includes(' steps, band '))
     expect(headlines).toEqual([
-      '**Intro, Build** — `p-hat-b1`, 16 steps, band 1 — nothing authored at band 2',
-      '**Drop** — `p-hat-b2-drop`, 16 steps, band 2',
+      '**Intro, Build** — 16 steps, band 1 — nothing authored at band 2',
+      '**Drop** — 16 steps, band 2',
     ])
   })
 

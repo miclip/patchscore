@@ -1129,3 +1129,61 @@ button:active {
     min-height: 1.15rem;
   }
 }
+
+/* ------------------------------------------------- cross-references and lists */
+
+.token-list {
+  min-width: 0;
+}
+
+/*
+ * The separator is markup, not a gap, so it cannot be lost to a container that stops being a
+ * flex box — which is exactly how the arrangement list came to read `kickclapclosed-hat`.
+ */
+.token-sep {
+  color: var(--ink-dim);
+  white-space: pre;
+}
+
+/* A heading or slot separator is a character, for the same reason: a gap is invisible to
+ * anything reading the text rather than the layout — a screen reader, a copy-paste, a test. */
+h4 > .token-sep,
+.slots .token-sep {
+  color: var(--edge-strong);
+}
+
+.sound-ref {
+  margin: 4px 0 10px;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.sound-ref strong {
+  color: var(--silkscreen);
+  font-weight: 600;
+}
+
+.guide a {
+  color: var(--accent);
+  text-decoration-color: var(--accent-dim);
+  text-underline-offset: 2px;
+}
+
+.guide a:hover {
+  text-decoration-color: var(--accent);
+}
+
+.steps-count {
+  color: var(--silkscreen);
+}
+
+/* The anchor lands with the heading clear of the panel edge rather than flush against it. */
+.phase > h4[id],
+.phase,
+.phase > h3 {
+  scroll-margin-top: 16px;
+}
+
+html {
+  scroll-behavior: smooth;
+}

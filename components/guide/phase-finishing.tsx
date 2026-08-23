@@ -1,5 +1,6 @@
 import type { DeviceId, ResolveResult } from '@/lib/core'
 import { ioText, num } from './format'
+import { TokenList } from './instruction'
 
 /** §8 phase 7. Sidechain, master FX, arrangement variations — what happens once it plays. */
 export function PhaseFinishing({
@@ -82,11 +83,10 @@ export function PhaseFinishing({
               {here.length === 0 ? (
                 <span className="quiet">nothing assigned</span>
               ) : (
-                here.map((a) => (
-                  <span className="role mono" key={a.requestId}>
-                    {a.role}
-                  </span>
-                ))
+                <TokenList
+                  className="role mono"
+                  items={here.map((a) => ({ key: a.requestId, text: a.role }))}
+                />
               )}
             </li>
           )
