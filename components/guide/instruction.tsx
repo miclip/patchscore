@@ -44,33 +44,42 @@ export function Instruction({ children, hint, cites, note }: InstructionProps) {
 }
 
 /**
- * §3.2's three states, with the ink distributed the way commit "Invert provenance rendering:
- * mark the exceptions, not the rule" distributed it in the Markdown.
+ * The mark, and it marks the **positive** claim — the same rule as the Markdown sibling's
+ * `provenanceText`, in ink instead of words.
  *
- * `provisional` is the overwhelmingly common state — almost every point value in this project
- * is taste, by design — so it gets a compact mark and the guide-level note carries the
- * explanation once. `authored` and `derived` are the surprising ones, and are the two the eye
- * should catch without reading: somebody verified this exact value, or mood moved it.
+ * An unmarked value is a starting point. That is what this guide is, and a patch sheet has
+ * always been starting points, so it needs no annotation and gets none: no glyph, no quieter
+ * badge, nothing. What earns a mark is the notable fact — *this number came off the manual* —
+ * because that is the one that changes what a reader does with it. `cite.kind` is therefore the
+ * mark itself, since §3.2 keeps `manual` and `observed` as a real distinction.
+ *
+ * A mood move names its knob whether or not the point underneath was cited: the move is a fact
+ * about the value, not a claim about its authority, and §3.2 still refuses to let a provisional
+ * point inherit any from having been moved.
+ *
+ * Nothing about provenance is weakened here. `ResolvedParam.provenance` is non-optional
+ * (invariant 4 is a type guarantee) and the audit script still counts provisional points; this
+ * is which of the three states the page bothers to name, and nothing else.
  */
 export function ProvenanceMark({ provenance }: { provenance: Provenance }) {
-  if (provenance.state === 'authored') {
-    return <span className="prov prov-authored">authored</span>
-  }
-  if (provenance.state === 'derived') {
-    return <span className="prov prov-derived">derived · {provenance.axes.join(', ')}</span>
-  }
-  const moved =
-    provenance.axes !== undefined && provenance.axes.length > 0
-      ? ` Moved by ${provenance.axes.join(', ')}.`
-      : ''
+  const axes =
+    provenance.state === 'derived'
+      ? provenance.axes
+      : provenance.state === 'provisional'
+        ? (provenance.axes ?? [])
+        : []
+
   return (
-    <span
-      className="prov prov-provisional"
-      title={`Unverified starting point — trust your ears over this page.${moved}`}
-      aria-label={`unverified starting point${moved}`}
-    >
-      ⚠
-    </span>
+    <>
+      {provenance.state === 'provisional' ? null : (
+        <span className="prov prov-cited" title={provenance.cite.source}>
+          {provenance.cite.kind}
+        </span>
+      )}
+      {axes.length === 0 ? null : (
+        <span className="prov prov-moved">moved by {axes.join(', ')}</span>
+      )}
+    </>
   )
 }
 

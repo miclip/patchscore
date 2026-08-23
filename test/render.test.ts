@@ -43,13 +43,20 @@ function phaseBody(doc: string, phase: number): string[] {
   return end === -1 ? rest : rest.slice(0, end)
 }
 
-// `provisional` is the common state and renders as a bare mark rather than a sentence (#35):
-// a warning on nine lines in ten tells the reader nothing and pushes the values apart. The
-// invariant is still "exactly one state per line", so the marker set just gets shorter.
-const PROVENANCE = ['authored', 'derived by', '⚠']
-
-function provenanceMarkers(line: string): string[] {
-  return PROVENANCE.filter((state) => line.includes(state))
+/**
+ * The mark is the **positive** claim: `manual` or `observed` where the point was cited, and the
+ * knob named where mood moved it. An unmarked value is a starting point, which is what a patch
+ * sheet has always been and needs no annotation.
+ *
+ * Invariant 4 is untouched by that — it is a type guarantee (`ResolvedParam.provenance` is
+ * non-optional), not a claim about ink — so these tests check something stricter than the old
+ * "exactly one marker per line": every line is checked against *its own* provenance, so a mark
+ * that drifts from the value it describes fails here rather than looking plausible.
+ */
+function soundDesignParams(result: ReturnType<typeof resolve>) {
+  return result.devices.flatMap((device) =>
+    result.assignments.filter((a) => a.deviceId === device.id).flatMap((a) => a.params),
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -88,27 +95,57 @@ describe('phases (§8)', () => {
 // ---------------------------------------------------------------------------
 
 describe('provenance (invariant 4, §3.2)', () => {
-  it('marks every parameter line with exactly one of the three states', () => {
+  it('marks each parameter line with what is true of that parameter, and nothing else', () => {
     const result = golden()
     const valueLines = phaseBody(renderGuide(result), 6).filter((l) => l.startsWith('- **'))
+    const params = soundDesignParams(result)
 
-    const authored = result.assignments.reduce((n, a) => n + a.params.length, 0)
-    expect(valueLines).toHaveLength(authored)
-    for (const line of valueLines) expect(provenanceMarkers(line), line).toHaveLength(1)
+    expect(valueLines).toHaveLength(params.length)
+    params.forEach((param, i) => {
+      const line = valueLines[i] as string
+      const { provenance } = param
+      expect(line, line).toContain(`**${param.name}**`)
+
+      if (provenance.state === 'authored') {
+        expect(line, line).toContain(` · ${provenance.cite.kind}`)
+        expect(line, line).not.toContain('moved by')
+      } else if (provenance.state === 'derived') {
+        expect(line, line).toContain(
+          ` · ${provenance.cite.kind} · moved by ${provenance.axes.join(', ')}`,
+        )
+      } else if (provenance.axes !== undefined && provenance.axes.length > 0) {
+        // A move on an uncited point is still shown, and still borrows no authority from it.
+        expect(line, line).toContain(` · moved by ${provenance.axes.join(', ')}`)
+        expect(line, line).not.toContain(' · manual')
+        expect(line, line).not.toContain(' · observed')
+      } else {
+        // A starting point. No mark, and no trailing separator left behind by one.
+        expect(line, line).not.toContain(' · ')
+      }
+    })
   })
 
-  it('marks every patch and articulation line too — mood never touches them, provenance does', () => {
+  it('has no warning glyph anywhere — an unmarked value is the norm, not a defect', () => {
+    expect(renderGuide(golden())).not.toContain('⚠')
+  })
+
+  it('marks cited patch and articulation lines and leaves the rest bare', () => {
     const doc = renderGuide(golden())
-    const marked = [...phaseBody(doc, 5), ...phaseBody(doc, 6)].filter((l) =>
-      l.startsWith('- `'),
-    )
-    // Slot lines in phase 5 list steps, not values, and carry no provenance; every other
-    // backticked bullet is a rendered value.
-    for (const line of marked) {
-      const isSlotList = /^- `[a-z-]+` — \d/.test(line)
-      if (isSlotList) continue
-      expect(provenanceMarkers(line), line).toHaveLength(1)
+    // Slot lines list steps, not values, and carry no provenance; every other backticked
+    // bullet in these two phases is a rendered value.
+    const bullets = [...phaseBody(doc, 5), ...phaseBody(doc, 6)]
+      .filter((l) => l.startsWith('- `'))
+      .filter((l) => !/^- `[a-z-]+` — \d/.test(l))
+
+    expect(bullets.length).toBeGreaterThan(0)
+    for (const line of bullets) {
+      const at = line.indexOf(' · ')
+      if (at === -1) continue
+      // Mood never touches patch or articulation, so `derived` cannot arise there (§3.2): the
+      // only mark either can carry is the citation kind.
+      expect(line.slice(at + 3), line).toMatch(/^(manual|observed)$/)
     }
+    expect(bullets.some((l) => / · (manual|observed)$/.test(l))).toBe(true)
   })
 
   it('renders a derived value as the move that produced it, and names the knob', () => {
@@ -117,18 +154,18 @@ describe('provenance (invariant 4, §3.2)', () => {
     const tune = phaseBody(doc, 6).find((l) => l.startsWith('- **TUNE**'))
     expect(tune).toBeDefined()
     expect(tune).toContain('52 → 45')
-    expect(tune).toContain('derived by darkness')
+    expect(tune).toContain('manual · moved by darkness')
   })
 
-  it('marks a provisional value compactly and gives it no citation to borrow authority from', () => {
+  it('leaves an unverified point unmarked, and gives it no citation to borrow authority from', () => {
     const doc = renderGuide(golden())
     const body = phaseBody(doc, 6)
     const mode = body.findIndex((l) => l.startsWith('- **MODE**'))
     expect(mode).toBeGreaterThan(-1)
-    expect(body[mode]).toContain('⚠')
-    // Compact, not absent: the mark must be there, the sentence must not (#35).
+    // Unmarked is the norm and says nothing about the value beyond what it is: a starting point.
+    expect(body[mode]).not.toContain(' · ')
     expect(body[mode]).not.toContain('nobody has checked')
-    // The next line must not be a citation for a value nobody checked.
+    // Still no value citation, which is the claim that would be false.
     expect(body[mode + 1] ?? '').not.toContain(`${SUBORDINATE.cite} value`)
   })
 

@@ -56,24 +56,25 @@ export function valueParts(param: ResolvedParam): ValueParts {
 }
 
 /**
- * The citation lines for one provenance.
+ * The citation lines for one provenance — identical to the Markdown sibling's, deliberately.
  *
- * Narrower than the Markdown's, on purpose. Commit "Invert provenance rendering: mark the
- * exceptions, not the rule" established that a mark on nine lines in ten tells the reader
- * nothing; the same argument applies to a citation line under nine lines in ten. So the
- * evidence shown here is the evidence that is *surprising*: a value somebody actually verified,
- * and a range whose bounds are unverified — which is load-bearing, because an unverified range
- * is why mood left a value alone (§3.2).
+ * Labelled halves, because they are two independent claims (§3.1): the point decides authority,
+ * the range decides legality. An unlabelled pair reads as one claim stated twice.
  *
- * A cited range under a provisional point is neither, and its numbers are already on the line.
+ * These are the evidence behind the mark, so they are not thinned out to save ink. "Where a
+ * number came off the manual it is marked" has to be *true*, and what makes it checkable is the
+ * citation sitting under it. A provisional point has no citation to give and gets none — that
+ * absence is the honest rendering, not a hole to fill.
  */
 export function citeLines(provenance: Provenance, range: ResolvedRange | undefined): string[] {
   const parts: string[] = []
   if (provenance.state !== 'provisional') parts.push(`value ${citeText(provenance.cite)}`)
-  if (range !== undefined && range.verified === false) {
-    parts.push('range unverified — mood cannot move this value (§3.2)')
-  } else if (range !== undefined && provenance.state !== 'provisional') {
-    parts.push(`range ${citeText(range.verified as Cite)}`)
+  if (range !== undefined) {
+    parts.push(
+      range.verified === false
+        ? 'range unverified — mood cannot move this value (§3.2)'
+        : `range ${citeText(range.verified)}`,
+    )
   }
   return parts
 }
