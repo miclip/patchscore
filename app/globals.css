@@ -694,6 +694,18 @@ button:active {
   column-gap: 16px;
   padding: 3px 0;
   min-width: 0;
+  /*
+   * Cap the pair, or the 1fr column stretches to the shell and strands the hint against the
+   * far edge. On a wide screen "offbeat -> WEAK true on steps 3, 7, 11" is short, so the hint
+   * that belongs to it ended up hundreds of pixels away with nothing in between — legible, and
+   * impossible to associate at a glance. The reserved column only works if it is beside the
+   * thing it annotates.
+   *
+   * 62ch is the measure used for prose elsewhere in the guide; 14rem is the hint column and
+   * 16px the gap. Capping here rather than on a parent keeps the reserved-cell behaviour and
+   * the narrow-screen row swap untouched.
+   */
+  max-width: calc(62ch + 14rem + 16px);
 }
 
 .instruction-main {
