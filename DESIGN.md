@@ -20,6 +20,20 @@ selection, not from a model.
 work; a well-covered device is a day of reading a 200-page PDF and typing verified numbers.
 Build the engine so that adding content requires touching exactly one folder.
 
+### Who this is for
+
+The reader owns a synth or a drum machine and can operate it. They have little keyboard technique
+and little formal theory. They have the manual, which explains what every control does but not
+what to set it to, and they have videos, which usually assume experience they do not have yet.
+
+Patchscore answers two questions: what to set, and in what order. Concrete values, on the devices
+they own, sequenced into passes they can work through at the front panel.
+
+That does not make it a teaching tool. A guide carries a brief *why* only where the reason
+explains this choice in this track, such as a short decay leaving room for the sub. It never
+explains what a decay envelope is. General concepts are the manual's job, and invariant 7 holds:
+a hint is a jog, and a why that needs a paragraph is a manual reference instead.
+
 ### Invariants
 
 These are load-bearing. If one stops being true, stop and fix the architecture.

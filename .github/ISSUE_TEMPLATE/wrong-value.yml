@@ -1,0 +1,70 @@
+name: Wrong value
+description: A parameter value in a guide is wrong for the device it names.
+title: 'Wrong value: '
+labels: [content]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Use this when a number is wrong for the box: out of range, in the wrong unit, or on a
+        parameter the device does not have. Every value carries a provenance mark: cited to a
+        source, or provisional. A correction can only be marked verified if it comes with its
+        own source. Without one it goes in as provisional.
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Maker and model, as the guide names it.
+      placeholder: Roland TR-1000
+    validations:
+      required: true
+  - type: input
+    id: parameter
+    attributes:
+      label: Parameter
+      description: The name as it appears on the device, not as the guide abbreviates it.
+      placeholder: DECAY
+    validations:
+      required: true
+  - type: input
+    id: value-shown
+    attributes:
+      label: Value shown
+      description: What the guide printed.
+      placeholder: '38'
+    validations:
+      required: true
+  - type: input
+    id: value-expected
+    attributes:
+      label: Value expected
+      description: What it should be, or the legal range if the point is a matter of taste.
+      placeholder: 0-127
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Manual and page
+      description: >
+        The document and page the correct value is on. An observation from the hardware also
+        counts: give the unit and the firmware it was running.
+      placeholder: TR-1000 Reference Manual, p.12
+    validations:
+      required: true
+  - type: input
+    id: permalink
+    attributes:
+      label: Patchscore link
+      description: >
+        The URL from the address bar of the guide showing the wrong value. It carries the rig,
+        direction, mood and seed, so it reproduces exactly.
+      placeholder: https://patchscore.app/?format=1&resolver=1&device=...
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+    validations:
+      required: false

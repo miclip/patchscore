@@ -89,6 +89,43 @@ body {
   min-width: 0;
 }
 
+/*
+  The masthead's proportions, mirrored: the same hairline rule, the same dim ink, the same 13px.
+  A hairline above rather than below, because this one closes the page instead of opening it.
+*/
+.footer {
+  margin-top: 32px;
+  padding-top: 14px;
+  border-top: 1px solid var(--edge);
+  color: var(--ink-dim);
+  font-size: 13px;
+}
+
+.footer-line {
+  margin: 0;
+  max-width: 62ch;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.footer a {
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--edge-strong);
+}
+
+.footer a:hover {
+  color: var(--silkscreen);
+  border-bottom-color: var(--accent);
+}
+
 .columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -2040,6 +2077,7 @@ html {
   /* Chrome. Everything that is not the guide. */
   .masthead,
   .masthead-actions,
+  .footer,
   .notices,
   .rack-section,
   .panel:not(.guide-panel),
