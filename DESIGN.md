@@ -1336,10 +1336,83 @@ the cap is hit, fall back to the greedy result **and log it** — no silent trun
 
 **Bounding is per key, and one key is not monotone.** Branch-and-bound needs a lower bound on the
 final score of a partial assignment. Misses, crowding, recipe distance and role fit only grow as
-the assignment extends, so the partial value bounds them. `idleDevices` *shrinks*, so its
-admissible lower bound is the number of devices that no remaining unassigned request could
-legally reach — not the current idle count. Using the current count prunes the optimum. Worth a
-dedicated test with a rig whose best answer looks bad halfway down the tree.
+the assignment extends, so the partial value bounds them. `idleDevices` *shrinks*, so the current
+idle count is not a lower bound and using it prunes the optimum. Worth a dedicated test with a rig
+whose best answer looks bad halfway down the tree.
+
+**`idleDevices` has an admissible floor**, built from two facts, and **the second one is what
+makes it bite**:
+
+- A device that no remaining unassigned request could legally reach is idle now and can never
+  stop being idle.
+- **A request activates at most one device.** Each remaining request takes one candidate or takes
+  the miss branch, so at most `min(reachableIdle, remainingRequests)` of the currently-idle
+  devices can still be woken.
+
+So the floor is `currentIdle - min(reachableIdle, remainingRequests)`, equivalently
+`unreachableIdle + max(0, reachableIdle - remainingRequests)` — the form the code uses, because it
+stays in non-negative integers and invariant 6 does not tolerate float summation. Reachability
+alone is the special case where the second term is ignored, and on a rig of interchangeable boxes
+it degenerates to zero: every box is reachable, so nothing is ever cut on idleness. The
+per-request term is the half that prunes there.
+
+The floor ignores occupancy and `distinct`, and is admissible anyway: both can only *stop* a
+request from waking a device, never let one request wake two. Ignoring them can leave the bound
+loose; it cannot make it exceed the true final idle count. At a leaf `remainingRequests` is zero
+and the floor equals the exact idle count, so the bound stays tight where it decides the
+incumbent.
+
+**The partial value alone is a weak bound, because it charges nothing for the requests still to
+come.** At depth one it has costed one request and is silent about the other eleven, so it only
+ever cuts a branch that is *already* worse than the incumbent — which on a rig of nine devices is
+almost never. The fix is a **relaxed suffix bound**, precomputed once per search: for each request,
+drop occupancy, crowding and `distinct`, and take the cheapest thing it could possibly do. That is
+the lexicographic minimum over its static candidate list of `(sampledChords, recipeDistance,
+roleFitPenalty)` — or, when the list is empty, a certain miss, charged to `misses` (or
+`optionalMisses`). Suffix-sum those per-request minima and add them to the partial value.
+
+Two things make this admissible:
+
+- Dropping occupancy, crowding and `distinct` can only *widen* a request's option set, so the
+  per-request minimum can only fall. A request never prefers the miss branch here, because missing
+  costs a whole point on a key that outranks everything a candidate can charge.
+- Summing lexicographic minima bounds the lexicographic sum, because lexicographic order on
+  non-negative integer vectors is compatible with addition: if `a ≤lex b` and `c ≤lex d` then
+  `a + c ≤lex b + d`. Independent per-key minima would also be admissible — componentwise `≤`
+  implies lexicographic `≤` — but weaker, because they let several candidates each donate their
+  best key to a hybrid that no candidate offers.
+
+`crowdOverflow` is left at its partial value: it is the one additive key whose per-request cost
+depends on where the *other* requests land, so there is no per-request minimum to sum. It sits
+between the miss keys and the rest of the vector, and mixing it in is still safe — a lower bound
+only needs `B ≤lex S` for every completion `S`, the additive keys satisfy that in their own order
+by the argument above, and `crowdOverflow` and `idleDevices` are each independently below their
+final value, so wherever the comparison stops it stops in the bound's favour or moves on.
+
+**What it was worth.** Measured on the nine-device registry, every knob centred:
+
+| rig / template | before | after |
+| --- | --- | --- |
+| full rig, `industrial-techno`, seed 18 | 50,000 — **capped, greedy** | 33,142 — exhaustive |
+| `industrial-techno`, worst of eight seeds | 382,837 (lifted cap) | 41,259 — exhaustive |
+| `ambient-dub`, worst of eight seeds | 71,332 (lifted cap) | 137 — exhaustive |
+| `major-key-electro`, worst of eight seeds | 15,580 | 2,298 — exhaustive |
+| synthetic 12 roles, whole registry | beyond 380,000 | ~2,000 — exhaustive |
+
+**This replaces pool-ordinal symmetry breaking as the thing that keeps a realistic rig out of the
+greedy fallback**, and the claim below has to be read in that light. The fixture that motivated
+symmetry breaking — eight parts over an eight-track pool — used to hit the cap with the ordinals
+left in; it now finishes in 45 nodes with them left in, because the suffix bound alone is enough.
+Scaling does not bring the cap back: 24 tracks and 24 parts is 325 nodes.
+
+What symmetry breaking still does is narrow the branching factor, and that is now its whole job: it
+takes those 45 nodes to 17, and shrinks 65 of the 67 cells in
+`test/search-symmetry.test.ts`'s rig × template matrix. So it stays, as a constant-factor win on
+top of the bound rather than as the thing preventing a fallback. The two cells that no longer
+shrink are named in that file: with a strong bound the *quality of the first incumbent* matters
+more than the branching factor, and restricting a pool to its lowest free ordinal changes which
+leaf the first descent reaches. Both are ordering effects and neither loses a candidate — the
+optimality matrix runs those exact cells against brute force on every seed and agrees.
 
 **Pool ordinals are searched once, not `count` times.** A pool (§2.2) expands into `count`
 assignables that differ in nothing the objective or the constraints can see: recipes key on
@@ -1352,6 +1425,12 @@ blow-up meant **realistic rigs containing full-size pool devices hit the node ca
 to greedy** — reported in `SearchReport`, per the no-silent-truncation rule above, but visible
 and wrong is still wrong. The greedy answer is precisely the "pile everything onto the TR-1000"
 failure this section exists to avoid.
+
+**That was true when this was written and is no longer the reason to keep it.** The relaxed suffix
+bound above now carries the fallback on its own, on this fixture and on every shipped template; the
+factorial blow-up is real but the bound cuts it before the cap does. What follows is retained
+because it still narrows the branching factor by roughly two thirds on a full-size pool — a
+constant factor on top of the bound, which is a smaller claim than the one this paragraph makes.
 
 Not *every* pooled rig: a two-track pool with eight parts finished in 116 nodes, and a TR-1000
 plus a Tracker Mini still resolved exhaustively at eight. That is what made it hard to see. The

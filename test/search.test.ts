@@ -675,6 +675,234 @@ describe('branch-and-bound optimality (§7.1, obligation 3)', () => {
 })
 
 // ---------------------------------------------------------------------------
+// §7.1 The idle bound is counted per request, not per device
+// ---------------------------------------------------------------------------
+
+/**
+ * Five boxes that are interchangeable for the requests below, so *every* one of them is
+ * reachable and idle at the root. Reachability alone says nothing here — it would let all five
+ * wake up — and the count of remaining requests is the only thing that says they cannot.
+ *
+ * Two properties are deliberate, and the fixture proves nothing without either:
+ *
+ *  - `comfortableVoices: 1` over a `polyphony: 2` voice. Piling two parts onto one box costs
+ *    `crowdOverflow`, which outranks `idleDevices`, so the optimum genuinely spreads and the
+ *    idle floor the bound computes is the idle count the optimum actually reaches.
+ *  - **One role per voice, and every request asking for it.** `roleFitPenalty` sits *above*
+ *    `idleDevices` in the vector, so a voice whose second role answers a request makes the bound
+ *    differ on `roleFit` and the comparison never reaches the idle key at all. That is what a
+ *    first draft of this fixture did, and it pruned identically under both bounds while looking
+ *    like a test of the new one.
+ */
+const interchangeable: Device[] = ['p', 'q', 'r', 's', 't'].map((tag) =>
+  box(`${tag}-any`, {
+    voices: [{ kind: 'fixed', id: `${tag}1`, label: `${tag.toUpperCase()}1`, roles: ['sub'], polyphony: 2 }],
+    comfortableVoices: 1,
+    recipes: [makeRecipe(`${tag}-sub`, 'sub', 'dark', `${tag}1`)],
+  }),
+)
+
+const twoSubs = withRoles([
+  request({ id: 'r-sub-1', role: 'sub', character: 'dark', priority: 1 }),
+  request({ id: 'r-sub-2', role: 'sub', character: 'dark', priority: 1 }),
+])
+
+describe('the idle bound counts remaining requests, not reachable devices (§7.1)', () => {
+  /**
+   * The precondition the whole block rests on. If a later edit made the rig no larger than the
+   * template, `min(reachableIdle, remaining)` would collapse onto `reachableIdle` and every case
+   * below would pass while testing the old bound.
+   */
+  it('really does offer more reachable idle devices than there are requests', () => {
+    expect(interchangeable.length).toBeGreaterThan(twoSubs.roles.length)
+    // Every box is a live candidate for every request, so none is idle by unreachability.
+    for (const device of interchangeable) {
+      const a = expand(device)[0] as Assignable
+      expect(a.roles).toEqual(['sub'])
+    }
+  })
+
+  /**
+   * The obligation: a *tighter* bound is still an admissible one. Brute force enumerates the
+   * whole tree with no bound at all, so if the strengthened floor ever exceeded the true final
+   * idle count it would prune the optimum and these would disagree.
+   *
+   * Three templates, because the three ways a remaining request can fail to wake an idle device
+   * are the three ways the bound could have been wrong: it takes a candidate, it takes the miss
+   * branch, or `distinct` blocks it — and the bound deliberately ignores the last two.
+   */
+  const cases: [string, Template][] = [
+    ['two requests, five boxes', twoSubs],
+    [
+      'a request no box can reach, so fewer wake than remain',
+      withRoles([
+        request({ id: 'r-sub-1', role: 'sub', character: 'dark', priority: 1 }),
+        request({ id: 'r-sub-2', role: 'sub', character: 'dark', priority: 1 }),
+        request({ id: 'r-vox', role: 'vox-chop', priority: 2 }),
+      ]),
+    ],
+    [
+      'distinct subs, which the bound is allowed to ignore',
+      withRoles([
+        request({ id: 'r-sub-1', role: 'sub', character: 'dark', priority: 1, distinct: true }),
+        request({ id: 'r-sub-2', role: 'sub', character: 'dark', priority: 1, distinct: true }),
+        request({ id: 'r-sub-3', role: 'sub', character: 'dark', priority: 2, distinct: true }),
+      ]),
+    ],
+  ]
+
+  for (const [name, t] of cases) {
+    it(`matches brute force: ${name}`, () => {
+      const optimum = bruteForceBest(interchangeable, t)
+      // Seeds permute the candidate order among ties, and every candidate here is a tie, so
+      // each seed walks a different tree.
+      for (const seed of [0, 1, 2, 3, 5, 8, 13, 21]) {
+        const result = assign({ devices: interchangeable, template: t, mood: moodState(), seed })
+        expect(result.search.capped, `seed ${seed}`).toBe(false)
+        expect(result.score, `seed ${seed}`).toEqual(optimum)
+      }
+    })
+  }
+
+  /**
+   * And the floor is reached, not merely respected. Two requests over five one-voice boxes:
+   * crowding outranks idleness, so the optimum uses two boxes and leaves three idle — exactly
+   * `5 - min(5, 2)`, the number the bound computes at the root.
+   */
+  it('leaves exactly the devices idle that the bound says it must', () => {
+    const result = assign({
+      devices: interchangeable,
+      template: twoSubs,
+      mood: moodState(),
+      seed: 1,
+    })
+    expect(keys(result.score).idleDevices).toBe(interchangeable.length - twoSubs.roles.length)
+    expect(result.assignments.length).toBe(twoSubs.roles.length)
+  })
+
+  /**
+   * Not a performance budget, a smoke alarm — the same reasoning as the node counts in
+   * `test/search-symmetry.test.ts`, and the reason no exact figure is asserted.
+   *
+   * Under the old bound nothing here could be cut on idleness: with every box reachable, the
+   * count of individually unreachable idle devices is 0 at every interior node, so the bound's
+   * idle key reads 0 against an incumbent's 3 and no interior branch is ever cut — 32 nodes
+   * visited where the strengthened bound visits 12. The ceiling is loose enough to survive a
+   * harmless change to these fixtures and tight enough to fail if the strengthening is
+   * reverted.
+   */
+  it('prunes on idleness rather than walking the whole tree', () => {
+    const result = assign({
+      devices: interchangeable,
+      template: twoSubs,
+      mood: moodState(),
+      seed: 1,
+    })
+    expect(result.search.nodes).toBeLessThan(30)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// §7.1 The relaxed suffix bound
+// ---------------------------------------------------------------------------
+
+const SUFFIX_ROLES = ['kick', 'sub', 'pad', 'lead'] as const
+
+/**
+ * Four boxes that each author every role, but each at a *different* character, and none of them
+ * at the characters the template below asks for. So every candidate carries a real
+ * `recipeDistance` and there is no free assignment anywhere in the tree — which is the condition
+ * under which a bound built only from the partial assignment is nearly useless: at depth one it
+ * has charged for one request and says nothing at all about the other four.
+ *
+ * `comfortableVoices: 1` over two voices keeps crowding in play, and the reversed role list on
+ * `v2` gives the two voices different `roleFit` for the same role, so that key moves too.
+ */
+const suffixBoxes: Device[] = (['hard', 'bright', 'dark', 'clean'] as const).map((character, i) =>
+  box(`${'abcd'[i] as string}-box`, {
+    voices: [
+      { kind: 'fixed', id: 'v1', label: 'V1', roles: [...SUFFIX_ROLES], polyphony: 2 },
+      { kind: 'fixed', id: 'v2', label: 'V2', roles: [...SUFFIX_ROLES].reverse(), polyphony: 2 },
+    ],
+    comfortableVoices: 1,
+    recipes: SUFFIX_ROLES.flatMap((role) => [
+      makeRecipe(`${i}-${role}-1`, role, character, 'v1'),
+      makeRecipe(`${i}-${role}-2`, role, (['hard', 'bright', 'dark', 'clean'] as const)[(i + 1) % 4] as Character, 'v2'),
+    ]),
+  }),
+)
+
+/**
+ * Five requests, four fillable and one — `vox-chop` — that no box in the rig plays at all. The
+ * unfillable one is deliberate: it is the only part of the suffix floor that reaches `misses`,
+ * the highest-ranked key, and charging for it at the root is worth more than every distance term
+ * below it put together.
+ */
+const suffixTemplate = withRoles([
+  request({ id: 'r-1', role: 'kick', character: 'dirty', priority: 1 }),
+  request({ id: 'r-2', role: 'sub', character: 'dirty', priority: 1 }),
+  request({ id: 'r-3', role: 'pad', character: 'clean', priority: 2 }),
+  request({ id: 'r-4', role: 'lead', character: 'dirty', priority: 2 }),
+  request({ id: 'r-5', role: 'vox-chop', character: 'hard', priority: 1 }),
+])
+
+describe('the relaxed suffix bound (§7.1)', () => {
+  /**
+   * The obligation, same as every other bound in this file: brute force enumerates the tree with
+   * no bound at all, so a floor that ever exceeded the true remaining cost would prune the
+   * optimum and the two would disagree. Every seed, because seeds permute ties and each one walks
+   * a different tree.
+   */
+  it('finds the optimum, on every seed', () => {
+    const optimum = bruteForceBest(suffixBoxes, suffixTemplate)
+    for (const seed of [0, 1, 2, 3, 5, 8, 13, 21]) {
+      const result = assign({
+        devices: suffixBoxes,
+        template: suffixTemplate,
+        mood: moodState(),
+        seed,
+      })
+      expect(result.search.capped, `seed ${seed}`).toBe(false)
+      expect(result.score, `seed ${seed}`).toEqual(optimum)
+    }
+  })
+
+  /**
+   * The rig really is the hard case the comment above claims: nothing is free, so the bound has
+   * something to charge for at every level.
+   */
+  it('really is a rig where no assignment is free', () => {
+    const result = assign({
+      devices: suffixBoxes,
+      template: suffixTemplate,
+      mood: moodState(),
+      seed: 1,
+    })
+    expect(keys(result.score).recipeDistance).toBeGreaterThan(0)
+    // Four fillable parts and one that nothing in the rig plays.
+    expect(result.assignments.length).toBe(4)
+    expect(keys(result.score).misses[0]).toBe(1)
+  })
+
+  /**
+   * And it is exercised, not merely correct. A smoke alarm rather than a budget — no exact figure
+   * is asserted, for the reason `test/search-symmetry.test.ts` gives — but the gap being measured
+   * is large: the same fixture walks 435 nodes with the suffix terms removed from `lowerBound`
+   * and 27 with them, so this ceiling fails loudly if the bound is reverted or weakened, and
+   * survives any harmless change to the fixtures.
+   */
+  it('prunes on what the remaining requests must still cost', () => {
+    const result = assign({
+      devices: suffixBoxes,
+      template: suffixTemplate,
+      mood: moodState(),
+      seed: 1,
+    })
+    expect(result.search.nodes).toBeLessThan(100)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // §7.3 Is the three-reason enum complete?
 // ---------------------------------------------------------------------------
 
