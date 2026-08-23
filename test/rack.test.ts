@@ -697,20 +697,26 @@ describe('rack view', () => {
 
     // Every kind in the vocabulary is exercised by the authored boxes, so a renderer arm
     // that stopped working would show up here rather than only in Chrome.
-    expect(count('rack-screen')).toBe(7) // all but the Cascadia, which has no display
+    // Nine, not eight: the TR-8S is the first box in the library to author *two* screens, its
+    // main display and the separate value readout beside it.
+    expect(count('rack-screen')).toBe(9) // all but the Cascadia, which has no display
     expect(count('rack-group')).toBeGreaterThan(3)
-    // The TR-1000's eleven instrument faders, the Cascadia's thirty-four — that box is set with
-    // sliders almost exclusively, which is why its panel is mostly this one shape — the MC-101's
-    // four track levels, the L-8's ten (eight channels, EFX RTN and MASTER), and the Model
-    // 2400's twenty-two: seventeen input channels, four SUB pairs and MAIN.
-    expect(count('rack-fader')).toBe(81)
-    expect(count('rack-key')).toBe(16) // and the TR-1000's sixteen step keys
+    // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
+    // that box is set with sliders almost exclusively, which is why its panel is mostly this one
+    // shape — the MC-101's four track levels, the L-8's ten (eight channels, EFX RTN and MASTER),
+    // and the Model 2400's twenty-two: seventeen input channels, four SUB pairs and MAIN.
+    expect(count('rack-fader')).toBe(92)
+    // Still sixteen, and the TR-8S is why that is worth a sentence: it has sixteen step buttons
+    // of its own and draws them as pads, because they are square backlit buttons rather than the
+    // TR-1000's piano-profile keys. Two boxes, the same sixteen steps, two authored shapes — the
+    // renderer has no opinion and the manifests decide.
+    expect(count('rack-key')).toBe(16)
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(5)
+    expect(fields).toHaveLength(6)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

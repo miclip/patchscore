@@ -307,6 +307,7 @@ describe('the committed registry', () => {
       'zoom-livetrak-l-8',
       'synthstrom-deluge',
       'intellijel-cascadia',
+      'roland-tr-8s',
       'roland-tr-1000',
       'tascam-model-2400',
     ])

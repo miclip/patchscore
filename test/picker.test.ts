@@ -88,8 +88,12 @@ describe('device search matches name, maker and kind', () => {
     // Name.
     expect(ids(devices({ query: 'tr-1000' }).rows)).toEqual(['roland-tr-1000'])
     expect(ids(devices({ query: 'TR-1000' }).rows)).toEqual(['roland-tr-1000'])
-    // Maker — two Rolands in the registry since the MC-101 landed, in registry order.
-    expect(ids(devices({ query: 'roLAnd' }).rows)).toEqual(['roland-mc-101', 'roland-tr-1000'])
+    // Maker — three Rolands in the registry since the TR-8S landed, in registry order.
+    expect(ids(devices({ query: 'roLAnd' }).rows)).toEqual([
+      'roland-mc-101',
+      'roland-tr-1000',
+      'roland-tr-8s',
+    ])
     expect(ids(devices({ query: 'polyend' }).rows)).toEqual(['polyend-tracker-mini'])
     // Kind — the field #53 asked for by name, and the one that groups rather than identifies.
     expect(ids(devices({ query: 'groovebox' }).rows)).toEqual([
@@ -101,9 +105,17 @@ describe('device search matches name, maker and kind', () => {
 
   it('accepts a hyphenated kind written as two words', () => {
     // 'drum-machine' is hyphenated for the schema's benefit. Nobody types it that way.
-    expect(ids(devices({ query: 'drum-machine' }).rows)).toEqual(['roland-tr-1000'])
-    expect(ids(devices({ query: 'drum machine' }).rows)).toEqual(['roland-tr-1000'])
+    const drumMachines = ['roland-tr-1000', 'roland-tr-8s']
+    expect(ids(devices({ query: 'drum-machine' }).rows)).toEqual(drumMachines)
+    expect(ids(devices({ query: 'drum machine' }).rows)).toEqual(drumMachines)
     expect(ids(devices({ query: 'semi modular' }).rows)).toEqual(['intellijel-cascadia'])
+  })
+
+  it('tells the two Roland drum machines apart by name, not only by maker or kind', () => {
+    // The reason the row above is worth having: `roland` and `drum machine` both return two, so
+    // the name is the only field that identifies one box, and 'tr-8' must not drag in 'tr-1000'.
+    expect(ids(devices({ query: 'tr-8s' }).rows)).toEqual(['roland-tr-8s'])
+    expect(ids(devices({ query: 'TR-8S' }).rows)).toEqual(['roland-tr-8s'])
   })
 
   it('returns nothing rather than everything when nothing matches', () => {
