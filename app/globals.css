@@ -1707,3 +1707,324 @@ h4 > .token-sep,
 html {
   scroll-behavior: smooth;
 }
+
+/* --------------------------------------------------------------------------
+   §8.2 Permalink: the copy control and the non-blocking notices.
+   -------------------------------------------------------------------------- */
+
+.masthead-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.link-button {
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--panel-1);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  border-color: var(--edge-strong);
+}
+
+.copy-ok,
+.copy-failed {
+  font-size: 0.8rem;
+}
+
+.copy-ok {
+  color: var(--ink-dim);
+}
+
+.copy-failed {
+  color: var(--accent);
+}
+
+.notices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+/*
+  A notice never hides the guide and never pushes it off screen: it is a strip above the
+  columns, not a modal. §8.2 says an old link must render *and* say that it drifted, which
+  only works if both are visible at once.
+*/
+.notice {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--edge);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: var(--panel-1);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+
+.notice-drift,
+.notice-link-newer {
+  border-left-color: var(--accent);
+}
+
+.notice-link-unreadable,
+.notice-stored-unreadable,
+.notice-storage-unavailable {
+  border-left-color: var(--edge-strong);
+}
+
+/* --------------------------------------------------------------------------
+   §8.2 / #12 Export: the guide-level controls, and the printed page.
+   -------------------------------------------------------------------------- */
+
+.guide-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.export-ok,
+.export-failed {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+}
+
+.export-ok {
+  color: var(--ink-dim);
+}
+
+.export-failed {
+  color: var(--accent);
+}
+
+/*
+  The printed guide. There is no PDF library and there will not be one (§8.2): the browser has a
+  perfectly good one behind the print dialog, and what it needs from us is a stylesheet, not a
+  dependency.
+
+  Two rules govern everything below.
+
+  **Only the guide survives.** A printed page carrying a device picker, a mood knob and a rack
+  drawing is a page somebody has to explain. Everything that exists to *change* the guide is
+  chrome; the guide itself is the artefact.
+
+  **Paper is not a screen.** The app is dark because it is read at a machine in a dim room. Paper
+  is white and ink is cheap to read and expensive to lay down, so the palette inverts rather than
+  printing a black rectangle onto every sheet.
+*/
+@media print {
+  /*
+    The palette is repointed at its **tokens**, not overridden selector by selector.
+    Every panel, rule and label in the app already draws from these six, so inverting them here
+    inverts the whole guide at once — and, more importantly, keeps inverting it when somebody
+    adds a component next month without thinking about paper. A print stylesheet built from a
+    list of selectors is a list that goes stale silently, which is the specific way print
+    stylesheets rot: nobody prints during development.
+
+    The first draft of this did override `body` alone, and the result was a white page carrying
+    dark cards and light-grey headings — "Song", "Gaps", "Rig integration" were nearly invisible.
+    Found by printing it, not by reading it.
+  */
+  :root {
+    /*
+      The page canvas — the band outside `@page`'s margins — is painted by the user agent from
+      the colour scheme, not from any rule of ours. Left as `dark` it prints a black border on
+      every sheet: a lot of toner, and it reads as a bug. No selector can reach that area; only
+      the scheme can.
+    */
+    color-scheme: light;
+
+    --panel-0: #fff;
+    --panel-1: #fff;
+    /* A whisper of tint, so a card still reads as a card without laying down real ink. */
+    --panel-2: #f2f2f2;
+    --edge: #bbb;
+    --edge-strong: #888;
+    --silkscreen: #000;
+    --ink: #111;
+    /* Subordinate lines: grey enough to recede, dark enough to actually read on paper. */
+    --ink-dim: #444;
+    --accent: #000;
+    --accent-dim: #777;
+  }
+
+  :root,
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  /* The two hardcoded dark grounds the tokens cannot reach. */
+  .prov-moved,
+  .callout {
+    background: transparent;
+    color: #000;
+    border-color: #666;
+  }
+
+  /* Chrome. Everything that is not the guide. */
+  .masthead,
+  .masthead-actions,
+  .notices,
+  .rack-section,
+  .panel:not(.guide-panel),
+  .guide-actions,
+  .hints-toggle {
+    display: none !important;
+  }
+
+  .shell,
+  .columns {
+    display: block;
+    margin: 0;
+    padding: 0;
+    max-width: none;
+  }
+
+  /* The guide is the page, not a card sitting on one. */
+  .guide-panel {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /*
+    §8.1's hint column is *always* printed, whatever the on-screen toggle says. The toggle is for
+    someone who already knows their boxes and wants a denser screen; a printout is taken to a
+    machine precisely because the reader does not have the app in front of them, so the jogs are
+    worth more on paper than they are anywhere else.
+  */
+  .hint {
+    visibility: visible !important;
+  }
+
+  /*
+    Nothing scrolls on paper, and anything that clips is simply gone. Tables and step grids are
+    the two places the screen layout deliberately confines content to a scroller (#21).
+  */
+  .table-scroll,
+  .step-grid,
+  .steps,
+  .boxes,
+  .parts {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  /* A heading at the foot of a page with its content overleaf is the classic printing failure. */
+  h1,
+  h2,
+  h3,
+  h4,
+  .guide-head,
+  .block-head,
+  .part-head,
+  .recipe-title,
+  .phase > h3 {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+
+  /*
+    Break-inside, in rough order of how badly a split hurts. A parameter list is the worst of
+    them: `DECAY 38 (0…100)` on one page and the rest of the recipe on the next is a reader
+    standing at a machine turning paper over to find out which knob the number belongs to.
+  */
+  .params,
+  .instruction,
+  .instruction-line,
+  .recipe,
+  .step-grid,
+  .step-row,
+  .chord,
+  .callout,
+  .legend {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
+  /*
+    `.part` and `.block` are deliberately **not** in that list, and it took a print to see why.
+    With them included, a part that is nearly page-length can never share a page with anything,
+    so every part started a fresh sheet and left a third to a half of it blank — sixteen pages of
+    guide in what should be far fewer, which is its own kind of unusable.
+
+    The units above are the ones where a split actually costs the reader something: a parameter
+    list broken across a fold means `DECAY 38 (0…100)` on one sheet and the knob it belongs to on
+    the next, at a machine, with both hands busy. A part broken across a fold costs nothing,
+    because its heading is repeated in the reader's memory and the `break-after` rules above keep
+    that heading with whatever follows it.
+  */
+  .part,
+  .block {
+    break-inside: auto;
+  }
+
+  /*
+    A phase may legitimately be longer than a page, so it is not `avoid` — but it should start on
+    a fresh one rather than dangling two lines below the previous phase's last recipe.
+  */
+  .phase {
+    break-before: auto;
+    break-inside: auto;
+  }
+
+  /* Tables have to survive without the screen's borders-by-background trick. */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  table th,
+  table td {
+    border: 1px solid #999;
+    padding: 3px 6px;
+    background: transparent;
+    color: #000;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  /*
+    Provenance is colour on screen. On paper it has to survive in grey — but `.prov-cited` is an
+    inverted chip (white on black) and must keep its own colours, so this is deliberately not a
+    blanket `.prov` rule.
+  */
+  .cite,
+  .quiet,
+  .subordinate,
+  .hint {
+    color: #444;
+  }
+
+  .mono {
+    color: #000;
+  }
+
+  a[href]::after {
+    content: '';
+  }
+
+  @page {
+    margin: 14mm;
+  }
+}

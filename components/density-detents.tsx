@@ -1,6 +1,6 @@
 'use client'
 
-import { densityShift } from '@/lib/core'
+import { DENSITY_DETENTS, densityShift } from '@/lib/core'
 
 /**
  * §6.3 / §12.2. Density is quantised, and it is a *lean*, not the band itself: the section's
@@ -8,13 +8,10 @@ import { densityShift } from '@/lib/core'
  * 0-100 sweep would imply a continuum and have people hunting for an effect between 26 and 49
  * that does not exist, so this renders as three detents.
  *
- * The three values are zone centres, so a value round-tripped through a permalink lands back on
- * the same detent even if the edges are ever read off by one somewhere.
- *
- * `densityShift` is imported rather than reimplemented. The edges live in the resolver and a
- * second copy here is a UI that can silently disagree with the guide it produced.
+ * Both the detent values and `densityShift` are imported rather than reimplemented: the edges
+ * and the centres live together in the resolver, and a second copy here is a UI that can
+ * silently disagree with the guide it produced.
  */
-export const DENSITY_DETENTS = [12, 50, 87] as const
 
 /** UI labels only. Not vocabulary - nothing in a template or a device names these (invariant 3). */
 const SHIFT_WORDS = ['sparser', 'as authored', 'busier'] as const

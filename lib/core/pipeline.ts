@@ -186,6 +186,23 @@ export type ResolvedAssignment = {
   patterns: ResolvedSectionPattern[]
 }
 
+/**
+ * Invariant 6, in full: *same inputs + same seed + **same resolver version** -> byte-identical
+ * guide*. The version is the third term, and it exists because §8.2 permalinks carry inputs
+ * only. A link made last month re-resolves under whatever engine is deployed today, so without
+ * a stamp the drift is real and undetectable; with one it is real and *announced*.
+ *
+ * Bump this on any change that can alter resolved output — the objective, a tie-break, mood
+ * arithmetic, pattern selection, harmony. Do not bump it for a renderer-only change: the
+ * renderer decides nothing (§7 step 10), and a version that moves for reasons the guide's
+ * content cannot see would cry drift at links that did not drift.
+ *
+ * It lives beside `ResolveInput` because that is the contract it versions. `permalink.ts`
+ * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
+ * behaved differently per version would be two resolvers wearing one name.
+ */
+export const RESOLVER_VERSION = 1
+
 export type ResolveInput = {
   /** Effective devices: shared definition composed with the user's overlay (#16). */
   devices: readonly Device[]

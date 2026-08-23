@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react'
 import type { Device, DeviceId, GuidePhase, ResolveResult } from '@/lib/core'
 import type { ReactNode } from 'react'
 import { GUIDE_PHASES } from '@/lib/core'
+import { browserEnv } from '@/lib/studio/browser-env'
+import { downloadGuideMarkdown, printGuide } from '@/lib/studio/export'
 import { occupiedCounts } from './format'
 import { PhaseFinishing } from './phase-finishing'
 import { PhaseHook } from './phase-hook'
@@ -30,9 +32,10 @@ import { PhaseVoices } from './phase-voices'
  * is missing instead of disappearing (invariant 5). `GUIDE_PHASES` is imported rather than
  * restated: one list, read by the Markdown renderer, this view, and the tests.
  */
-export function Guide({ result }: { result: ResolveResult }) {
-  /** §8.1: on by default, off once you know your boxes. */
+export function Guide({ result, seed }: { result: ResolveResult; seed: number }) {
+  /** §8.1: on by default, off once you know your boxes. Print ignores it (see `@media print`). */
   const [hints, setHints] = useState(true)
+  const [exported, setExported] = useState<{ ok: boolean; message: string } | undefined>(undefined)
 
   const deviceById = useMemo<Map<DeviceId, Device>>(
     () => new Map(result.devices.map((d) => [d.id, d])),
@@ -55,19 +58,54 @@ export function Guide({ result }: { result: ResolveResult }) {
     Finishing: <PhaseFinishing result={result} />,
   }
 
+  /*
+   * Both handlers build the environment inside the handler, never during render (#12). Nothing
+   * in this component reads `window` while React is rendering it, which is what keeps the
+   * server's markup and the client's first markup the same bytes.
+   */
+  function onDownload() {
+    const outcome = downloadGuideMarkdown(browserEnv(), result, seed)
+    setExported(
+      outcome.ok
+        ? { ok: true, message: `Saved ${outcome.name}` }
+        : { ok: false, message: outcome.message },
+    )
+  }
+
+  function onPrint() {
+    const outcome = printGuide(browserEnv())
+    // Success says nothing: the print dialog is its own feedback, and a toast underneath a modal
+    // is a toast nobody sees. Only failure is worth a line.
+    setExported(outcome.ok ? undefined : { ok: false, message: outcome.message })
+  }
+
   return (
     <article className="guide" data-hints={hints ? 'on' : 'off'}>
       <header className="guide-head">
         <h2>{result.template.name}</h2>
-        <label className="hints-toggle">
-          <input
-            type="checkbox"
-            checked={hints}
-            onChange={(event) => setHints(event.target.checked)}
-          />
-          Show hints
-        </label>
+        <div className="guide-actions">
+          <label className="hints-toggle">
+            <input
+              type="checkbox"
+              checked={hints}
+              onChange={(event) => setHints(event.target.checked)}
+            />
+            Show hints
+          </label>
+          <button type="button" className="link-button" onClick={onDownload}>
+            Download Markdown
+          </button>
+          <button type="button" className="link-button" onClick={onPrint}>
+            Print / Save PDF
+          </button>
+        </div>
       </header>
+
+      {exported === undefined ? null : (
+        <p className={exported.ok ? 'export-ok' : 'export-failed'} role="status">
+          {exported.message}
+        </p>
+      )}
 
       {/*
         The reading convention, stated once, and it is what makes an unmarked value legible:
