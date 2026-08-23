@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
-import type { BandGroup, ResolveResult, Role } from '@/lib/core'
-import { bandTrajectory } from '@/lib/core'
-import { ioText, num } from './format'
+import type { BandGroup, FxSource, ResolveResult, Role } from '@/lib/core'
+import { bandTrajectory, fxSources } from '@/lib/core'
+import { fxText, num } from './format'
 import { TokenList } from './instruction'
 
 /** `kick`, `kick and sub`, `kick, sub and clap` — the Markdown sibling joins the same way. */
@@ -55,9 +55,9 @@ function GroupNotes({ group }: { group: BandGroup }) {
 /** §8 phase 7. Sidechain, master FX, arrangement variations — what happens once it plays. */
 export function PhaseFinishing({ result }: { result: ResolveResult }) {
   const duckers = result.devices.filter((d) => d.features?.sidechain !== undefined)
-  const fx = result.devices.filter(
-    (d) => d.kind === 'fx-processor' || d.kind === 'mixer-recorder',
-  )
+  const fx = fxSources(result.devices)
+  const byId = new Map(result.devices.map((d) => [d.id, d]))
+  const only = fx[0] as FxSource | undefined
   const trajectory = bandTrajectory(result)
 
   return (
@@ -91,17 +91,26 @@ export function PhaseFinishing({ result }: { result: ResolveResult }) {
       <h4>Master FX</h4>
       {fx.length === 0 ? (
         <p className="quiet">
-          No effects unit or mixer in this rig. The master chain is yours at the desk.
+          Nothing in this rig processes audio. The master chain is yours at the desk.
+        </p>
+      ) : only !== undefined && fx.length === 1 ? (
+        <p>
+          The <strong>{only.name}</strong>{' '}
+          <span className="quiet">{fxText(only, byId.get(only.deviceId))}</span>; nothing else in
+          this rig processes audio.
         </p>
       ) : (
-        <ul className="boxes flat">
-          {fx.map((device) => (
-            <li key={device.id}>
-              <strong>{device.name}</strong> <span className="quiet">{device.kind}</span>{' '}
-              <span className="quiet">{ioText(device)}</span>
-            </li>
-          ))}
-        </ul>
+        <>
+          <p className="quiet">What processes audio in this rig:</p>
+          <ul className="boxes flat">
+            {fx.map((source) => (
+              <li key={source.deviceId}>
+                <strong>{source.name}</strong>{' '}
+                <span className="quiet">{fxText(source, byId.get(source.deviceId))}</span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       <h4>Arrangement variations</h4>

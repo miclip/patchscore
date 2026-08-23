@@ -45,6 +45,10 @@ const IMPLEMENTATION = [
   // §6.3's band trajectory. Derivation, not rendering, and it groups and orders sections —
   // exactly the shape of code where a "tidier" sort reaches for `localeCompare`.
   'arrangement.ts',
+  // §8 phase 7's FX derivation. It is the one module in the engine that changes the *case* of
+  // a string, and a case fold is the same trap as a sort: `I` folds differently under a Turkish
+  // locale, so a rig would be told it had effects on one machine and none on another.
+  'fx.ts',
   // §8.2's permalink codec. It is not the resolver, but it decides the *inputs* the resolver
   // runs on — including the order device ids are written in — and a locale-dependent sort there
   // would hand two platforms two different rigs from one link, which invariant 6 would then
@@ -58,7 +62,17 @@ const IMPLEMENTATION = [
   // costs nothing to scan is never the one worth leaving out of a ban.
   'guide.ts',
 ]
-const BANNED = ['localeCompare', 'toLocaleString', 'toLocaleDateString', 'Intl.', 'Math.random']
+const BANNED = [
+  'localeCompare',
+  'toLocaleString',
+  'toLocaleDateString',
+  // Case folding, added with `fx.ts` (#59): the locale-aware pair answers `i`/`I` differently
+  // under `tr-TR`, which is the same platform split as `localeCompare` wearing another name.
+  'toLocaleUpperCase',
+  'toLocaleLowerCase',
+  'Intl.',
+  'Math.random',
+]
 
 describe('no locale-dependent or random API in the resolver (§7.2)', () => {
   // The whole implementation, not one file of it: a ban that covers only the module somebody

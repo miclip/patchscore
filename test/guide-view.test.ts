@@ -6,6 +6,7 @@ import {
   NEUTRAL_MOOD,
   bandTrajectory,
   dominantRangeCite,
+  fxSources,
   renderGuide,
   resolve,
 } from '../lib/core/index'
@@ -13,6 +14,7 @@ import type { ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 import { Guide } from '../components/guide/guide'
+import { fxText } from '../components/guide/format'
 import { mergeBlocks } from '../components/guide/phase-steps'
 import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
 
@@ -433,5 +435,62 @@ describe('range citations hoist in the web view too', () => {
     for (const cite of valueCites) {
       expect(out).toContain(`value ${cite.kind} — ${cite.source}`)
     }
+  })
+})
+
+describe("Finishing's Master FX says the same thing in both renderers (#59)", () => {
+  // The same rule as the band trajectory above: the *fact* that a box processes audio is
+  // derived once in `lib/core/fx.ts`, and the sentence is written twice. Asserted against the
+  // real library because the point of #59 is a false negative the real library produced — the
+  // TR-1000 was told it had no effects while carrying four of them on its own panel.
+  const master = (doc: string) =>
+    doc.slice(doc.indexOf('Master FX'), doc.indexOf('Arrangement variations'))
+
+  const tr = resolve({
+    devices: DEVICES.filter((d) => d.id === 'roland-tr-1000'),
+    template: TEMPLATES[0] as (typeof TEMPLATES)[number],
+    mood: NEUTRAL_MOOD,
+    seed: 1,
+  })
+
+  it('names the TR-1000 panel effects rather than claiming the rig has none', () => {
+    const sentence =
+      'The TR-1000 carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, ' +
+      'and DLY SEND and RVB SEND in its recipes; nothing else in this rig processes audio.'
+    expect(master(text(html(tr)))).toContain(sentence)
+    expect(master(renderGuide(tr))).toContain(sentence)
+    // The sentence this replaced, in both renderers.
+    for (const doc of [text(html(tr)), renderGuide(tr)]) {
+      expect(doc).not.toContain('No effects unit or mixer in this rig')
+    }
+  })
+
+  it('names the same boxes, in the same order, when several process audio', () => {
+    const sources = fxSources(real.devices)
+    expect(sources.length).toBeGreaterThan(1)
+    const view = master(text(html(real)))
+    const md = master(renderGuide(real))
+    let at = -1
+    for (const source of sources) {
+      const device = real.devices.find((d) => d.id === source.deviceId)
+      const phrase = fxText(source, device)
+      expect(md).toContain(`- ${source.name} — ${phrase}`)
+      expect(view).toContain(`${source.name} ${phrase}`)
+      const next = view.indexOf(`${source.name} ${phrase}`)
+      expect(next).toBeGreaterThan(at)
+      at = next
+    }
+    // Several sources means no box can claim to be the only one.
+    expect(md).not.toContain('nothing else in this rig')
+    expect(view).not.toContain('nothing else in this rig')
+  })
+
+  it('says nothing processes audio for a rig where nothing does', () => {
+    // The Cascadia has a wave folder and a soft clip — sound design, one voice at a time — and
+    // no effect. Naming either under Master FX would be inventing a chain (invariant 5).
+    const line = 'Nothing in this rig processes audio. The master chain is yours at the desk.'
+    expect(fxSources(sparse.devices)).toEqual([])
+    expect(master(text(html(sparse)))).toContain(line)
+    expect(master(renderGuide(sparse))).toContain(line)
   })
 })

@@ -3,6 +3,7 @@ import type { DeviceId } from '@/lib/core'
 import type { Cite, Provenance, ResolvedParam, ResolvedRange } from '@/lib/core'
 import { sameCite } from '@/lib/core'
 import type { Gap, ResolvedHook, ResolvedNote } from '@/lib/core'
+import type { FxSource } from '@/lib/core'
 
 /**
  * #33. The web guide's formatting, kept free of JSX so it can be tested directly.
@@ -168,6 +169,37 @@ export function ioText(device: Device): string {
   if (device.io.usbAudio) parts.push('USB audio')
   if (device.io.audioIn) parts.push('audio in')
   return parts.join(' · ')
+}
+
+/** `a`, `a and b`, `a, b and c`. Plain strings — the role lists are a component, not a string. */
+export function andList(items: readonly string[]): string {
+  if (items.length < 2) return items.join('')
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1] as string}`
+}
+
+/**
+ * The predicate of "this box processes audio", built only from what `lib/core/fx.ts` found the
+ * device declaring. Restated from `lib/core/render.ts` exactly as `ioText` and `mixerText` are:
+ * the *fact* that a box has effects is derived once, in `fx.ts`; the sentence is written twice.
+ *
+ * Panel labels are printed verbatim and in panel order — `MASTER FX` is what is silkscreened on
+ * the box, and the point of naming it is that you can find it while standing there.
+ */
+export function fxText(source: FxSource, device: Device | undefined): string {
+  const clauses: string[] = []
+  let opening: string | undefined
+  for (const evidence of source.evidence) {
+    if (evidence.kind === 'unit') {
+      const noun = evidence.deviceKind === 'fx-processor' ? 'an effects unit' : 'a mixer and recorder'
+      opening = `is ${noun}${device === undefined ? '' : ` (${ioText(device)})`}`
+    } else if (evidence.kind === 'panel') {
+      clauses.push(`${andList(evidence.labels)} on the panel`)
+    } else {
+      clauses.push(`${andList(evidence.params)} in its recipes`)
+    }
+  }
+  const carries = clauses.length === 0 ? undefined : `carries ${clauses.join(', and ')}`
+  return [opening, carries].filter((part) => part !== undefined).join(', and ')
 }
 
 /**
