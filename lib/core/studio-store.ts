@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { DeviceId } from './ids'
+import { INSPIRATION_CAP } from './inspiration'
 import { MoodStateSchema } from './resolver'
 import {
   FORMAT_VERSION,
@@ -243,7 +244,9 @@ const StoredRigSchema = z.strictObject({
 
 const ScoreInputsSchema = z.strictObject({
   templateId: z.string().regex(PERMALINK_ID),
-  inspirations: z.array(z.string().regex(PERMALINK_ID)),
+  // §5's cap, on disk as well as on the wire. `localStorage` is user-editable, so a document
+  // claiming three inspirations is corruption to report rather than a selection to honour.
+  inspirations: z.array(z.string().regex(PERMALINK_ID)).max(INSPIRATION_CAP),
   mood: MoodStateSchema,
   seed: z.number().int().min(SEED_MIN).max(SEED_MAX),
 })

@@ -2,9 +2,10 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it } from 'vitest'
 import { Studio } from '../components/studio'
-import { encodeGuideInputs, resolve, renderGuide } from '../lib/core/index'
+import { INSPIRATION_CAP, encodeGuideInputs, resolve, renderGuide } from '../lib/core/index'
 import { CATALOGUE, DEFAULT_INPUTS } from '../lib/studio/session'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { INSPIRATIONS } from '../lib/inspirations/index'
 import { templateById } from '../lib/templates/index'
 
 /**
@@ -66,6 +67,19 @@ describe('the first frame', () => {
 
   it('offers the copy control before anything has been bootstrapped', () => {
     expect(firstFrame()).toContain('Copy link')
+  })
+
+  it('offers the inspirations this build actually ships (§5)', () => {
+    // The panel was a placeholder reading "Not built yet" until step 7 landed. It is now real,
+    // and it is rendered from the registry — so this fails if the wiring is ever unhooked.
+    const markup = firstFrame()
+    expect(markup).toContain('Inspirations')
+    expect(markup).not.toContain('Not built yet')
+    for (const inspiration of INSPIRATIONS) expect(markup).toContain(inspiration.name)
+    // Nothing selected by default, so the first frame is the plain direction: no notes, no
+    // refusal, and the guide is on the page.
+    expect(markup).toContain(`0 of ${String(INSPIRATION_CAP)} selected`)
+    expect(markup).toContain('guide-panel')
   })
 })
 

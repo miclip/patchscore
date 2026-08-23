@@ -1,6 +1,8 @@
 import {
   DENSITY_DETENTS,
   FORMAT_VERSION,
+  INSPIRATION_CAP,
+  applyInspirations,
   NEUTRAL_MOOD,
   decodeGuideInputs,
   encodeGuideInputs,
@@ -12,6 +14,9 @@ import {
 import type {
   Catalogue,
   DeviceId,
+  Inspiration,
+  InspirationApplication,
+  InspirationId,
   GuideInputsV1,
   MoodAxis,
   StorageSource,
@@ -19,7 +24,8 @@ import type {
   TemplateId,
 } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
-import { TEMPLATES } from '@/lib/templates'
+import { INSPIRATIONS } from '@/lib/inspirations'
+import { TEMPLATES, templateById } from '@/lib/templates'
 
 /**
  * Everything the Studio does that involves the browser, with the browser injected.
@@ -47,8 +53,21 @@ import { TEMPLATES } from '@/lib/templates'
 export const CATALOGUE: Catalogue = {
   devices: DEVICES.map((d) => d.id),
   templates: TEMPLATES.map((t) => t.id),
-  inspirations: [],
+  inspirations: INSPIRATIONS.map((i) => i.id),
 }
+
+/**
+ * The direction a first-time visitor lands on, named rather than derived.
+ *
+ * It used to be `CATALOGUE.templates[0]`, which reads as a sensible default and is not one: the
+ * registry is ordered by id (§7.2), so that expression means "whichever genre sorts first", and
+ * the day a template called `ambient-dub` was authored the landing page silently changed genre.
+ * A default that moves when an unrelated file is added is a default nobody chose.
+ *
+ * Industrial Techno because it is the template proven end to end (§11 step 6) and the one with
+ * the most authored content behind it — the widest set of parts a rig can actually fill.
+ */
+const LANDING_TEMPLATE: TemplateId = 'industrial-techno'
 
 /**
  * A constant, not a draw and not a read. The server and the client must render the same first
@@ -59,7 +78,7 @@ export const CATALOGUE: Catalogue = {
 export const DEFAULT_INPUTS: GuideInputsV1 = {
   version: FORMAT_VERSION,
   devices: CATALOGUE.devices,
-  templateId: CATALOGUE.templates[0] ?? '',
+  templateId: LANDING_TEMPLATE,
   inspirations: [],
   // §6.3: density's neutral is the middle detent — no lean, sections as authored.
   mood: { ...NEUTRAL_MOOD, density: DENSITY_DETENTS[1] },
@@ -398,6 +417,57 @@ export function withTemplate(inputs: GuideInputsV1, templateId: TemplateId): Gui
 
 export function withAxis(inputs: GuideInputsV1, axis: MoodAxis, value: number): GuideInputsV1 {
   return { ...inputs, mood: { ...inputs.mood, [axis]: value } }
+}
+
+/**
+ * Registry order, not click order, for the same reason `withDevice` recomputes rather than
+ * appending: the selection is a set, §5 composes it in canonical id order whatever order it
+ * arrives in, and click order would give one guide two links.
+ *
+ * **Adding past the cap is a no-op, not a truncation.** Silently dropping whichever one sorted
+ * last would answer a tick with a different tick; the UI disables the control at the cap and
+ * this is the same answer for anything that gets past it (§5).
+ *
+ * Unticking is never refused, so a user sitting at the cap can always get out of it.
+ */
+export function withInspiration(
+  inputs: GuideInputsV1,
+  inspirationId: InspirationId,
+  on: boolean,
+  catalogue: Catalogue = CATALOGUE,
+): GuideInputsV1 {
+  const selected = new Set(inputs.inspirations)
+  if (on) {
+    if (selected.has(inspirationId)) return inputs
+    if (selected.size >= INSPIRATION_CAP) return inputs
+    selected.add(inspirationId)
+  } else {
+    if (!selected.has(inspirationId)) return inputs
+    selected.delete(inspirationId)
+  }
+  return { ...inputs, inspirations: catalogue.inspirations.filter((id) => selected.has(id)) }
+}
+
+/**
+ * The selected inspirations as objects, in registry order. Ids this build does not ship are
+ * dropped rather than thrown on: validated inputs cannot contain one, and the component holds
+ * inputs that may be mid-edit.
+ */
+export function inspirationsFor(inputs: GuideInputsV1): Inspiration[] {
+  const selected = new Set(inputs.inspirations)
+  return INSPIRATIONS.filter((i) => selected.has(i.id))
+}
+
+/**
+ * §5 / §7 step 1: the effective template the resolver runs on, composed from the inputs.
+ *
+ * `undefined` when the template id names nothing this build ships — that is the "no direction"
+ * case the UI already had, and it is not a refusal.
+ */
+export function composeTemplate(inputs: GuideInputsV1): InspirationApplication | undefined {
+  const template = templateById(inputs.templateId)
+  if (template === undefined) return undefined
+  return applyInspirations(template, inspirationsFor(inputs))
 }
 
 /** Reroll is a change of seed and nothing else (§7.2). */

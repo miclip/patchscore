@@ -2,6 +2,7 @@ import type { DeviceId, InspirationId, TemplateId } from './ids'
 import type { MoodAxis } from './vocabulary'
 import { MOOD_AXES } from './vocabulary'
 import type { MoodState } from './resolver'
+import { INSPIRATION_CAP } from './inspiration'
 import { RESOLVER_VERSION } from './pipeline'
 
 /**
@@ -100,9 +101,8 @@ export const SEED_MAX = 999_999_999
 export type ScoreInputsV1 = {
   templateId: TemplateId
   /**
-   * Reserved. Inspirations are build step 7 (#9) and DESIGN.md §5 deliberately has no
-   * `Inspiration` type yet, so this is always empty today — but the field is in v1 from the
-   * start, because adding it later would strand every link ever shared.
+   * §5, capped at two. In v1 from the start rather than added later, because adding it later
+   * would have stranded every link ever shared.
    */
   inspirations: readonly InspirationId[]
   mood: MoodState
@@ -137,7 +137,7 @@ export type Catalogue = {
   /** Registry order. Also the canonical order device ids are written in. */
   devices: readonly DeviceId[]
   templates: readonly TemplateId[]
-  /** Empty until step 7. An inspiration id in a link today is therefore an unknown id. */
+  /** Registry order (§5), which is also the canonical order inspiration ids are written in. */
   inspirations: readonly InspirationId[]
 }
 
@@ -349,11 +349,23 @@ export function checkGuideInputs(
       return { reason: 'malformed', detail: `inspiration '${id}' appears twice` }
     }
     seenInspiration.add(id)
-    // Empty until step 7, so this rejects every inspiration id today. That is the honest
-    // answer: we cannot apply what we do not have, and dropping it silently would render a
-    // guide under a link that promised a different one.
+    // We cannot apply what we do not have, and dropping it silently would render a guide under
+    // a link that promised a different one.
     if (!catalogue.inspirations.includes(id)) {
       return { reason: 'unknown-id', detail: `no inspiration '${id}' in this build` }
+    }
+  }
+
+  // §5's cap, enforced at the boundary rather than only in the UI. A link is hand-editable and
+  // arrives from anywhere, so "the checkbox was disabled" is not a guarantee about its contents.
+  // Two inspirations that *conflict* are legal here on purpose: composition refuses them by name
+  // (§5.3), which is a thing the reader should see rather than a link that will not open.
+  if (inputs.inspirations.length > INSPIRATION_CAP) {
+    return {
+      reason: 'out-of-range',
+      detail:
+        `at most ${String(INSPIRATION_CAP)} inspirations (§5), got ` +
+        String(inputs.inspirations.length),
     }
   }
 
@@ -407,12 +419,20 @@ export function encodeGuideInputs(inputs: GuideInputsV1, catalogue: Catalogue): 
     (a, b) => (order.get(a) as number) - (order.get(b) as number),
   )
 
+  // Inspirations get the same treatment for the same reason: the selection is a set, §5 composes
+  // it in canonical id order whatever order it arrives in, and encoding click order would give
+  // one guide two links.
+  const inspirationOrder = new Map(catalogue.inspirations.map((id, index) => [id, index]))
+  const inspirations = [...inputs.inspirations].sort(
+    (a, b) => (inspirationOrder.get(a) as number) - (inspirationOrder.get(b) as number),
+  )
+
   const parts: string[] = [
     `${FORMAT}=${FORMAT_VERSION}`,
     `${RESOLVER}=${RESOLVER_VERSION}`,
     ...devices.map((id) => `${DEVICE}=${id}`),
     `${TEMPLATE}=${inputs.templateId}`,
-    ...inputs.inspirations.map((id) => `${INSPIRATION}=${id}`),
+    ...inspirations.map((id) => `${INSPIRATION}=${id}`),
     ...MOOD_ORDER_V1.map((axis) => `${axis}=${inputs.mood[axis]}`),
     `${SEED}=${inputs.seed}`,
   ]

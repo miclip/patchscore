@@ -960,38 +960,120 @@ filled if it fits, dropped without complaint if not.
 
 ## 5. Layer 4 — Inspirations
 
-Additive modifiers, not separate genres. An inspiration patches a template.
+Modifiers, not separate genres. An inspiration patches a template, and this is what makes
+"industrial techno with a reggae influence" coherent rather than two genres stapled together.
+
+Settled at build step 7 ([#9](https://github.com/miclip/patchscore/issues/9)), against three real
+templates. The example this section used to carry predated the design review and is gone: it gave
+an added role request with no `id` and no `sustain`, and a `roles.modify.kick.pattern` that
+assumed the obsolete pattern ownership §4.3 moved to templates.
 
 ```ts
 {
   id: 'reggae',
   name: 'Reggae',
   patch: {
-    bpm: { shift: -60 },
-    roles: {
-      add: [{ role: 'stab', priority: 2, character: 'clean', timing: 'offbeat' }],
-      modify: { kick: { pattern: 'sparse-drop-one' } },
-    },
-    notes: ['Bass sits on root and fifth, long notes, heavy low end'],
+    bpm: { shift: -40 },
+    replacePatterns: [ /* Pattern[], keyed by (forRole, band) */ ],
+    addRoles:        [ /* RoleRequest[], continuous only */ ],
+    addPatterns:     [ /* Pattern[], for a role the template authors none for */ ],
+    notes: ['The first beat of the bar stays empty. The kick answers on the third.'],
   },
 }
 ```
 
-> **Illustrative only. This example predates the design review — do not author against it.** Its
-> added role request lacks `id` and `sustain`, both of which §4 requires, and
-> `roles.modify.kick.pattern` assumes the obsolete pattern ownership, which §4.3 moved to
-> templates as authored variants selected per request and per section. The real shape of
-> `Inspiration.patch` is settled at build step 7
-> ([#9](https://github.com/miclip/patchscore/issues/9)), against a template proven end to end.
-> Until then there is deliberately no `Inspiration` type in the codebase.
+### 5.1 An inspiration never names a template
 
-This is what makes "industrial techno with a reggae influence" coherent rather than two
-genres stapled together. Inspirations must compose; cap at two.
+This is invariant 3 one layer up. A template must not name a device; an inspiration must not name
+a template. The shared vocabulary is `Role`, `Character`, `MoodAxis` and `PatternSlot`, and an
+inspiration speaks that and nothing else — no template id, no section name, no request or pattern
+id belonging to anything but itself.
 
-Note that `modify.kick.pattern` already assumed patterns were addressable in template space — an
-inspiration cannot reach into a device folder without breaching invariant 3. §4.3 makes that
-assumption true rather than accidental: `pattern` names a `Pattern.id`, and an inspiration may add
-variants of its own (a reggae kick at band 2) rather than mutating the template's.
+Two rules fall straight out of it, and the schema enforces both:
+
+- **Every id an inspiration authors begins with its own id.** `reggae-kick-b2`, never `it-kick-b2`.
+  It cannot collide with a template's ids without claiming to be that template, and a reader can
+  see where each part of a guide came from.
+- **No `sections`, anywhere.** Section names are authored per template (§4.2), so a pattern scoped
+  to sections and a `transient` added request are both untypable here. Added requests are
+  `continuous`.
+
+### 5.2 Replacement is keyed on `(role, band)`
+
+**"For the kick role at band 2, play this instead."** Template-agnostic, deterministic, and it
+reads as musical intent. It lands on any template with a kick at band 2 and reports itself on one
+without.
+
+Keyed on a `Pattern.id` it would read "replace `it-kick-b2`" — which works on exactly one template
+and makes every inspiration a per-template patch wearing a general name. That is the same mistake
+invariant 3 exists to prevent, one layer up.
+
+Replacement rather than addition, for the kick and the bass, because purely additive is a lottery.
+A reggae kick that merely *joins* the pool at `(kick, 2)` is heard or not heard depending on which
+id sorts first, and a reroll can change whether the track sounds like reggae at all. §5's claim is
+that the combination is coherent, and coherent means reliably audible. So an inspiration that
+claims `(kick, 2)` takes it: the template's variants there are removed and its own installed.
+
+Addition stays for what addition is for — a role the template does not request, and patterns for a
+role it authors none for.
+
+### 5.3 Conflicts are refused, never resolved
+
+Two inspirations that both claim `(kick, 2)` genuinely collide. Picking a winner by id order would
+make the outcome depend on an invisible alphabetical accident, which is the class of thing §7.2's
+seeding discipline exists to keep out of this design. The combination is refused, by name:
+
+> Dancehall and Reggae both claim kick at band 0, kick at band 1, kick at band 2, kick at band 3;
+> they cannot be combined. Choose one of the two, or a different pair.
+
+Honest, actionable, and it leaves the user a different pair to pick. Same posture as a gap
+(invariant 5): say what cannot be done rather than quietly doing something arbitrary. A claim is a
+`(role, band)` from either `replacePatterns` or `addPatterns`, or a whole role from `addRoles` —
+two inspirations adding variants for the same silent role is the same lottery by another route.
+
+Non-conflicting inspirations compose in canonical id order, which is safe precisely because
+nothing about the outcome depends on it. **Cap at two.**
+
+### 5.4 Nothing is silent
+
+A claim the template cannot honour is *reported*, never dropped:
+
+| diagnostic | means |
+| --- | --- |
+| `no-such-target` | the template authors no such `(role, band)`; the replacement did not apply |
+| `role-already-patterned` | the template programs that role itself, so added variants did not apply |
+| `role-already-requested` | the template already asks for that part, so it was not added twice |
+| `bpm-clamped` | the shift would have gone below `MIN_EFFECTIVE_BPM`, so it was held there |
+
+A toggle that visibly does nothing is the failure §6.3 warns about, and an inspiration that
+silently does nothing is the same bug wearing a different hat.
+
+### 5.5 Composition
+
+```ts
+applyInspirations(template: Template, inspirations: Inspiration[]): InspirationApplication
+```
+
+Pure, and every decision is taken against the **base** template rather than the partially-composed
+one — inspirations patch the template, they do not patch each other. That is what makes "compose
+in canonical id order" a statement about bookkeeping rather than about outcomes.
+
+It returns an application, not a bare `Template`, because a refusal and a diagnostic are both
+things it has to be able to say:
+
+```ts
+| { outcome: 'applied';  template: Template; applied: InspirationId[]
+    notes: InspirationNote[]; diagnostics: InspirationDiagnostic[] }
+| { outcome: 'refused';  reason: 'too-many' | 'duplicate' | 'conflict' | 'invalid-result'
+    conflicts: InspirationConflict[]; detail: string }
+```
+
+The effective template is validated against `TemplateSchema` before it is returned. §7 resolves
+against a `Template`, so composition owes it a legal one — reporting `invalid-result` here keeps
+the failure at the layer that caused it.
+
+`notes` are carried out rather than into the template: `Template` is a strict object with nowhere
+to put prose, and prose belongs beside the guide, not inside the genre.
 
 **Sequencing note:** inspirations multiply the test surface across every template. Land one
 template end-to-end first, then add inspirations against it.
@@ -1118,14 +1200,18 @@ row from a database — resolves without a redeploy.
 Applying inspirations is therefore a **pre-step performed by the caller**, not a pipeline stage:
 
 ```ts
-applyInspirations(template: Template, inspirations: Inspiration[]): Template   // §5, step 7
+applyInspirations(template: Template, inspirations: Inspiration[]): InspirationApplication  // §5
 ```
 
-A separate pure function, specified in §5 and built at build step 7. It is deliberately not
-defined yet: §11 puts inspirations after a template is proven end to end because they multiply the
-test surface across every template, and designing a patch language against zero real templates is
-the mistake the review caught in step 1, where shapes settled in the abstract turned out wrong
-once there was something concrete to check them against.
+A separate pure function, specified in §5 and built at build step 7. It returns an application
+rather than a bare `Template` because a conflicting pair is refused by name and an unhonourable
+claim is reported (§5.3, §5.4); a signature that could only return a template would have to
+resolve conflicts silently, which is the one thing §5 says it must not do.
+
+§11 put inspirations after a template was proven end to end because they multiply the test surface
+across every template, and designing a patch language against zero real templates is the mistake
+the review caught in step 1, where shapes settled in the abstract turned out wrong once there was
+something concrete to check them against.
 
 Pipeline:
 

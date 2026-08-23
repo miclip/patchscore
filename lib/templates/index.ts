@@ -1,6 +1,8 @@
 import type { TemplateId } from '../core/ids'
 import type { Template } from '../core/template'
+import { ambientDub } from './ambient-dub'
 import { industrialTechno } from './industrial-techno'
+import { majorKeyElectro } from './major-key-electro'
 
 /**
  * The template registry. Hand-written and static, unlike `lib/devices/registry.generated.ts`.
@@ -16,9 +18,9 @@ import { industrialTechno } from './industrial-techno'
  * Ordered by id in UTF-16 code unit order, matching the device registry's convention (§7.2) —
  * insertion order would make the list depend on the order of the imports above.
  */
-export const TEMPLATES: readonly Template[] = [industrialTechno]
+export const TEMPLATES: readonly Template[] = [ambientDub, industrialTechno, majorKeyElectro]
 
-export { industrialTechno }
+export { ambientDub, industrialTechno, majorKeyElectro }
 
 const BY_ID: ReadonlyMap<TemplateId, Template> = new Map(TEMPLATES.map((t) => [t.id, t]))
 
