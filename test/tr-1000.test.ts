@@ -15,6 +15,18 @@ describe('TR-1000 manifest', () => {
     expect(parsed.success ? [] : parsed.error.issues).toEqual([])
   })
 
+  it('spans 486 mm across the panel, cited to the specifications table (§10)', () => {
+    // 486 (W) x 311 (D) x 125 (H) mm, read off the *rendered* table — pdftotext scrambles its
+    // columns, so the W/D/H order is only trustworthy from the page itself. Roland's stated width
+    // is the horizontal span here, confirmed against the landscape panel diagram (p.9) rather
+    // than assumed from the convention, which the Tracker Mini shows does not always hold.
+    expect(device.physical.panelSpanMm).toBe(486)
+    expect(device.physical.verified).toEqual({
+      kind: 'manual',
+      source: 'TR-1000 Reference Manual eng02, p.74 (Main specifications)',
+    })
+  })
+
   it('is comfortable with eight of its ten tracks occupied (§2.3)', () => {
     expect(device.comfortableVoices).toBe(8)
     expect(device.voices.length).toBe(10)

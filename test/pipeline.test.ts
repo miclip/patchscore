@@ -31,6 +31,7 @@ function box(id: string, over: Partial<Device>): Device {
     kind: 'drum-machine',
     clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din'] },
     io: { main: 'stereo', individualOuts: 2, audioIn: false, usbAudio: false },
+    physical: { panelSpanMm: 400, verified: { kind: 'manual', source: 'Fixture p.1' } },
     voices: [],
     recipes: [],
     ...over,

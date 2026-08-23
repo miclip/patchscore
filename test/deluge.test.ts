@@ -31,6 +31,18 @@ describe('Deluge manifest', () => {
     expect(parsed.success ? [] : parsed.error.issues).toEqual([])
   })
 
+  it('spans 305 mm across the panel, cited to the published specifications (§10)', () => {
+    // 305 x 208 x 46 mm. Orientation checked against the diagrams, not assumed: the p.3 plan view
+    // is landscape at ~1.48 aspect against 305/208 = 1.47, and the p.6 rear-panel drawing runs the
+    // jack-bearing long edge horizontally. The guidebook states no dimensions anywhere, so the
+    // source names Synthstrom's specifications instead of a page. Not `false`: somebody checked.
+    expect(device.physical.panelSpanMm).toBe(305)
+    expect(device.physical.verified).toEqual({
+      kind: 'manual',
+      source: 'Synthstrom Deluge product specifications, synthstrom.com/product/deluge',
+    })
+  })
+
   // -------------------------------------------------------------------------
   // §2.1 — `count` is a planning horizon, not a track count
   // -------------------------------------------------------------------------

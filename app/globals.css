@@ -1,6 +1,7 @@
 /*
- * §10. Flat, quiet, highly legible. The rack is the only skeuomorphic surface in the design
- * and it does not exist yet (#11), so nothing here has a bevel, a screw or an LED.
+ * §10. Flat, quiet, highly legible. The rack (#11) is the only skeuomorphic surface in the
+ * design: its rules live in one block at the end of this file and nothing outside that block
+ * has a bevel, a screw or an LED.
  *
  * Two faces, kept visually distinct on purpose: a sans for prose and labels, a monospace for
  * every numeric value. §10 forbids using one face for both.
@@ -430,37 +431,508 @@ button:active {
 
 /* -------------------------------------------------------------------- rack */
 
-.rack-placeholder {
-  display: grid;
-  place-items: center;
-  gap: 6px;
-  min-height: 132px;
-  padding: 24px 16px;
-  border: 1px dashed var(--edge-strong);
-  border-radius: var(--radius);
-  background: repeating-linear-gradient(
-    135deg,
-    var(--panel-1),
-    var(--panel-1) 10px,
-    var(--panel-2) 10px,
-    var(--panel-2) 20px
-  );
-  text-align: center;
+/* ======================================================================== rack */
+/*
+ * §10: the rack is the ONE skeuomorphic surface. Anodized gradient, a hairline bevel, mounting
+ * screws, silkscreen labels — and nothing of that vocabulary anywhere else on the page. Every
+ * other panel in this file stays flat, because the guide is read at the machine in a dark room
+ * and legibility beats atmosphere there.
+ */
+
+.rack-section {
   min-width: 0;
 }
 
-.rack-placeholder .headline {
+.rack-figure {
+  margin: 0 0 14px;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+/*
+ * #21, said honestly, as a ladder rather than a single switch.
+ *
+ * The inline rack is fitted to width, so its scale is whatever the column gives it — and the
+ * silkscreen has a real size in millimetres. At a 1100 px figure the whole 953 mm rack renders at
+ * about 1.2 px/mm, which puts a 3.4 mm control label at four pixels: not small, *absent*, and a
+ * smear of grey where a label should be is worse than no label. So each tier of text drops out
+ * at the width where it stops being readable, largest text surviving longest:
+ *
+ *   under 1300 px  control, jack and bank labels go — the panel keeps its shapes and its name
+ *   under  760 px  voice-cell numbers go — lit-versus-unlit still says where the parts landed
+ *   under  520 px  everything goes; the overview is a *shape*, and the legend carries the words
+ *
+ * None of this touches the full-size layer (a different container) or `<title>`/`<desc>`, so
+ * nothing is lost to a screen reader and everything is one button away.
+ */
+@container (max-width: 1300px) {
+  .rack-frame .rack-feature-label,
+  .rack-frame .rack-jack-label,
+  .rack-frame .rack-bank-label {
+    display: none;
+  }
+}
+
+@container (max-width: 760px) {
+  .rack-frame .rack-cell-label,
+  .rack-frame .rack-more {
+    display: none;
+  }
+}
+
+@container (max-width: 520px) {
+  .rack-frame text {
+    display: none;
+  }
+}
+
+/*
+ * Fit to width, always, at every viewport. The SVG's viewBox is in millimetres, so `width: 100%`
+ * is the whole of "realistic relative width" — and it is also why the page body can never scroll
+ * sideways because of the rack (#21). The rail gradient is the frame the panels sit in.
+ */
+.rack-frame {
+  padding: 10px;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, var(--panel-2) 0 6px, var(--panel-0) 6px calc(100% - 6px), var(--panel-2) calc(100% - 6px) 100%);
+  min-width: 0;
+}
+
+.rack-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* ------------------------------------------------------------- panel surface */
+
+.rack-bevel {
+  fill: none;
+  stroke: var(--edge-strong);
+  stroke-width: 1;
+}
+
+.rack-screw circle {
+  fill: #3a4046;
+  stroke: #15181b;
+  stroke-width: 0.4;
+}
+
+.rack-screw line {
+  stroke: #15181b;
+  stroke-width: 1;
+}
+
+.rack-rule {
+  stroke: var(--edge-strong);
+  stroke-width: 1;
+}
+
+.rack-maker,
+.rack-name,
+.rack-bank-label,
+.rack-jack-label,
+.rack-feature-label,
+.rack-more {
+  font-family: var(--font-label);
+  fill: var(--silkscreen);
+}
+
+.rack-name-corner {
+  font-size: 7px;
+  letter-spacing: 0.5px;
+}
+
+.rack-feature-label {
+  font-size: 3.4px;
+  letter-spacing: 0.2px;
+  fill: var(--ink-dim);
+}
+
+/* ------------------------------------------------------------- panel parts */
+/*
+ * Every shape a `PanelFeature` can be. Outlines and one fill weight, the way a silkscreened
+ * panel actually looks — no bevels on individual controls, no gloss, nothing that would turn
+ * a diagram into a rendering.
+ */
+
+.rack-screen rect {
+  fill: #07090c;
+  stroke: #454c54;
+  stroke-width: 1;
+}
+
+.rack-knob circle {
+  fill: #262b31;
+  stroke: #6a727c;
+  stroke-width: 1;
+}
+
+.rack-knob line {
+  stroke: var(--silkscreen);
+  stroke-width: 1;
+}
+
+.rack-button rect,
+.rack-pad,
+.rack-key {
+  fill: #232830;
+  stroke: #59616b;
+  stroke-width: 1;
+}
+
+.rack-key {
+  fill: #2f3640;
+  stroke: #6a7480;
+}
+
+.rack-fader line {
+  stroke: #08090b;
+  stroke-width: 2.5;
+}
+
+.rack-fader rect {
+  fill: #5b636c;
+  stroke: #838c96;
+  stroke-width: 1;
+}
+
+.rack-group rect {
+  fill: none;
+  stroke: #4b525b;
+  stroke-width: 1;
+}
+
+/*
+ * The patch rail is not the panel. It is a drawing convention — these boxes put their sockets on
+ * the back — so it is drawn as a separate darker strip rather than blended into the face, and
+ * the caption says as much.
+ */
+.rack-rail {
+  fill: #0b0c0e;
+  stroke: var(--edge);
+  stroke-width: 1;
+}
+
+.rack-maker {
+  font-size: 5px;
+  letter-spacing: 0.3px;
+  fill: var(--ink-dim);
+}
+
+.rack-name {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+.rack-bank-label {
+  font-size: 4.4px;
+  letter-spacing: 0.4px;
+  fill: var(--ink-dim);
+}
+
+.rack-jack-label,
+.rack-more {
+  font-size: 3.6px;
+  fill: var(--ink-dim);
+}
+
+/* ---------------------------------------------------------------------- jacks */
+
+.rack-jack-ring {
+  fill: #0c0d0f;
+  stroke: #4a5158;
+  stroke-width: 1;
+}
+
+.rack-jack-hole {
+  fill: #000;
+}
+
+.rack-jack[data-live='yes'] .rack-jack-ring {
+  stroke: var(--accent);
+}
+
+.rack-jack[data-live='yes'] .rack-jack-label {
+  fill: var(--accent);
+}
+
+/* ---------------------------------------------------------------------- cells */
+/*
+ * One cell per assignable. Lit means the resolver put a part on it — the panel is a readout of
+ * this guide, not a picture of the box in the abstract.
+ */
+
+.rack-cell rect {
+  fill: #0f1113;
+  stroke: var(--edge-strong);
+  stroke-width: 1;
+}
+
+.rack-cell-label {
+  font-family: var(--font-value);
+  fill: var(--ink-dim);
+}
+
+.rack-cell[data-occupied='yes'] rect {
+  fill: var(--accent-dim);
+  stroke: var(--accent);
+}
+
+.rack-cell[data-occupied='yes'] .rack-cell-label {
+  fill: var(--silkscreen);
+}
+
+/* --------------------------------------------------------------------- cables */
+
+.rack-cable-casing {
+  fill: none;
+  stroke: #08090a;
+  stroke-width: 7.5;
+  stroke-linecap: round;
+}
+
+.rack-cable-core {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.rack-cable-end {
+  fill: var(--accent);
+}
+
+/*
+ * §10's quality floor names the cable animation as the thing to gate. It is opt-in rather than
+ * opt-out: the dash pattern that makes a draw-on possible lives INSIDE the no-preference query,
+ * so with reduced motion — or in any engine that does not run the animation — the cable is a
+ * plain solid path rather than an invisible one waiting for a keyframe that never arrives.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .rack-cable-core,
+  .rack-cable-casing {
+    /* `pathLength="1"` on the path, so one dash pattern draws any cable at any scale. */
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: rack-draw 900ms ease-out forwards;
+  }
+
+  .rack-cable-end {
+    opacity: 0;
+    animation: rack-plug 260ms ease-out 820ms forwards;
+  }
+}
+
+@keyframes rack-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes rack-plug {
+  to {
+    opacity: 1;
+  }
+}
+
+/* -------------------------------------------------------------------- caption */
+
+.rack-caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-top: 8px;
+  color: var(--ink-dim);
+  font-size: 12px;
+  min-width: 0;
+}
+
+.rack-open {
+  flex: none;
+  padding: 6px 12px;
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--silkscreen);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.rack-open:hover {
+  border-color: var(--accent);
+}
+
+/* --------------------------------------------------------------------- legend */
+
+.rack-legend {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rack-legend li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 6px 8px;
+  border: 1px solid var(--edge);
+  border-left: 2px solid var(--edge-strong);
+  border-radius: var(--radius);
+  font-size: 12px;
+  min-width: 0;
+}
+
+.rack-legend li[data-clock='source'] {
+  border-left-color: var(--accent);
+}
+
+.rack-legend li[data-clock='isolated'] {
+  border-left-style: dashed;
+}
+
+.rack-legend-name {
+  color: var(--silkscreen);
+  font-weight: 600;
+}
+
+.rack-legend-role {
+  color: var(--ink-dim);
+  min-width: 0;
+}
+
+.rack-legend-span,
+.rack-legend-parts {
+  margin-left: auto;
+  color: var(--ink-dim);
   font-size: 11px;
+}
+
+.rack-sources {
+  margin: 10px 0 0;
+  display: grid;
+  gap: 3px;
+  color: var(--ink-dim);
+  font-size: 11px;
+  line-height: 1.45;
+  min-width: 0;
+}
+
+.rack-sources > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  min-width: 0;
+}
+
+.rack-sources dt {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.rack-sources dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.rack-note {
+  margin: 10px 0 0;
+  color: var(--ink-dim);
+  font-size: 11.5px;
+  line-height: 1.5;
+  min-width: 0;
+}
+
+/* ----------------------------------------------------------------- full size */
+/*
+ * #21. Fixed, so it cannot contribute to the page's own scrolling in either axis; the drawing
+ * inside is held at a legible px-per-mm and the region around it pans.
+ */
+
+.rack-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--panel-0);
+}
+
+.rack-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--edge);
+}
+
+.rack-modal-head h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--silkscreen);
 }
 
-.rack-placeholder .detail {
-  font-size: 12px;
+.rack-modal-close {
+  padding: 8px 16px;
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--silkscreen);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/*
+ * Flex with `align-items: center` centres the drawing vertically without touching the axis it
+ * scrolls on — a grid `place-items: center` would centre on the scroll axis too, and an
+ * over-wide item centred on its own scroll axis has its left edge clipped out of reach.
+ */
+.rack-modal-body {
+  display: flex;
+  align-items: center;
+  overflow: auto;
+  padding: 14px;
+  cursor: grab;
+  overscroll-behavior: contain;
+}
+
+.rack-modal-body:active {
+  cursor: grabbing;
+}
+
+/*
+ * `--rack-mm` is the layout width the model computed. 1.7px per mm keeps a 3.6mm silkscreen
+ * label at ~6px, which is the floor for legibility; below that the overview is the honest view
+ * and this layer would be lying about being readable.
+ */
+.rack-modal-body .rack-svg {
+  width: 100%;
+  min-width: calc(var(--rack-mm) * 1.7px);
+  flex: none;
+}
+
+.rack-modal-foot {
+  margin: 0;
+  padding: 8px 14px;
+  border-top: 1px solid var(--edge);
   color: var(--ink-dim);
-  max-width: 46ch;
-  min-width: 0;
+  font-size: 12px;
 }
 
 /* ----------------------------------------------------------------- readout */

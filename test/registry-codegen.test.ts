@@ -11,6 +11,7 @@ import {
   listDeviceFolders,
   renderRegistry,
 } from '../scripts/gen-registry'
+import { DEVICES } from '../lib/devices/registry.generated'
 import { device } from './fixtures'
 
 /**
@@ -260,5 +261,36 @@ describe('the committed registry', () => {
     const generated = readFileSync(join(REAL_DEVICES_ROOT, GENERATED_BASENAME), 'utf8')
     const listed = [...generated.matchAll(/from '\.\/(.+?)\/index'/g)].map((m) => m[1])
     expect(listed).toEqual(listDeviceFolders(REAL_DEVICES_ROOT))
+  })
+
+  // §10. The schema already requires a span; what it cannot require is that somebody looked it
+  // up, in the right orientation. This is the sweep that catches a device added with a
+  // plausible-looking guess.
+  it('gives every device a cited panel span in a believable range (§10)', () => {
+    for (const device of DEVICES) {
+      expect(Number.isFinite(device.physical.panelSpanMm), device.id).toBe(true)
+      // Narrower than a 2 HP blank or wider than a 19-inch rack means somebody typed inches,
+      // or centimetres, or nothing at all.
+      expect(device.physical.panelSpanMm, device.id).toBeGreaterThan(10)
+      expect(device.physical.panelSpanMm, device.id).toBeLessThan(600)
+      // Provenance is mandatory and `false` is a legal, meaningful answer — but a cited width
+      // must actually name something.
+      const { verified } = device.physical
+      if (verified !== false) expect(verified.source.trim().length, device.id).toBeGreaterThan(0)
+    }
+  })
+
+  it('keeps the seed set in the span order the rack will draw them (§10)', () => {
+    // A relative-width claim is only meaningful against the other panels, so assert the ordering
+    // rather than only the three numbers: this survives a re-measurement that moves every span
+    // slightly, and fails if one device is ever authored in the wrong units.
+    //
+    // It does *not* catch the Tracker Mini being reset to Polyend's 170 mm — that still sorts
+    // below the Deluge. The per-device test in tracker-mini.test.ts is what guards the
+    // orientation, and it asserts `not.toBe(170)` for exactly this reason.
+    const byWidth = [...DEVICES]
+      .sort((a, b) => a.physical.panelSpanMm - b.physical.panelSpanMm)
+      .map((d) => d.id)
+    expect(byWidth).toEqual(['polyend-tracker-mini', 'synthstrom-deluge', 'roland-tr-1000'])
   })
 })

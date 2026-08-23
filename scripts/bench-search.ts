@@ -70,6 +70,7 @@ function poolDevice(count: number): Device {
     kind: 'groovebox',
     clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din'] },
     io: { main: 'stereo', individualOuts: 0, audioIn: false, usbAudio: true },
+    physical: { panelSpanMm: 300, verified: { kind: 'manual', source: 'Bench fixture p.1' } },
     voices: [
       { kind: 'pool', id: 'track', label: 'Track', count, roles: POOL_ROLES, polyphony: 4 },
     ],
