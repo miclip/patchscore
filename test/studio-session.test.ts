@@ -12,15 +12,17 @@ import type { GuideInputsV1, StoredRigV1 } from '../lib/core/index'
 import {
   CATALOGUE,
   DEFAULT_INPUTS,
+  SYNC_DEBOUNCE_MS,
   bootstrapStudio,
   copyStudioLink,
+  createStudioSync,
   syncStudio,
   withAxis,
   withDevice,
   withSeed,
   withTemplate,
 } from '../lib/studio/session'
-import type { DownloadFile, StudioEnv } from '../lib/studio/session'
+import type { DownloadFile, StudioEnv, SyncReport } from '../lib/studio/session'
 import { DEVICES } from '../lib/devices/registry.generated'
 
 /**
@@ -39,6 +41,8 @@ function fakeBrowser(options: { search?: string; storage?: 'ok' | 'none' | 'thro
     pathname: '/',
     search: options.search ?? '',
     stored: null as string | null,
+    /** Writes attempted, not the value — the bug this counts was one of rate, not of content. */
+    storeWrites: 0,
     replaceCalls: [] as string[],
     copied: [] as string[],
     downloaded: [] as DownloadFile[],
@@ -50,7 +54,9 @@ function fakeBrowser(options: { search?: string; storage?: 'ok' | 'none' | 'thro
       return key === STUDIO_STORAGE_KEY ? state.stored : null
     },
     setItem(key: string, value: string) {
-      if (key === STUDIO_STORAGE_KEY) state.stored = value
+      if (key !== STUDIO_STORAGE_KEY) return
+      state.storeWrites++
+      state.stored = value
     },
   }
 
@@ -96,6 +102,165 @@ function fakeBrowser(options: { search?: string; storage?: 'ok' | 'none' | 'thro
 function link(over: Partial<GuideInputsV1> = {}): string {
   return `?${encodeGuideInputs({ ...DEFAULT_INPUTS, ...over }, CATALOGUE)}`
 }
+
+// ---------------------------------------------------------------------------
+
+describe('a drag writes once, not once per pointer move', () => {
+  /**
+   * The bug: `syncStudio` was called straight out of an effect keyed on the inputs, so a knob
+   * drag wrote the URL and `localStorage` on every pointer move. **WebKit throws for that** —
+   * Safari and every iOS browser rate-limit `history.replaceState` and raise a `SecurityError`
+   * at roughly 100 calls per 30 seconds, which two seconds of dragging clears comfortably. An
+   * uncaught one killed the page: "This page could not load", reported from Brave on iOS.
+   *
+   * Measured in the dev build beforehand, each input change produced **two** `replaceState`
+   * calls — ours, and one from Next's App Router reacting to the URL we had just changed — so
+   * the budget went twice as fast as the single call site suggests.
+   *
+   * The assertion that stops it coming back is a count, and it needs no browser: the injected
+   * `HistoryLike` records every call, and fake timers drive the debounce exactly.
+   *
+   * A **trailing** edge is the property under test, not merely "fewer calls". A throttle at
+   * 4/sec still reaches 120 in 30 seconds and would keep crashing; a trailing debounce fires
+   * zero times while movement continues and once after it stops.
+   */
+  function draggingSync() {
+    const { env, state } = fakeBrowser()
+    const reports: SyncReport[] = []
+    const sync = createStudioSync(env, (report) => reports.push(report))
+    return { env, state, reports, sync }
+  }
+
+  it('writes nothing at all while the inputs keep changing', () => {
+    vi.useFakeTimers()
+    try {
+      const { state, sync } = draggingSync()
+      // A two-second drag at 60Hz, which is what killed the page.
+      for (let i = 0; i < 120; i++) {
+        sync.schedule(withAxis(DEFAULT_INPUTS, 'swing', i % 101), undefined, {})
+        vi.advanceTimersByTime(16)
+      }
+      expect(state.replaceCalls).toEqual([])
+      expect(state.storeWrites).toBe(0)
+      expect(sync.pending()).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('writes exactly once after movement stops, and writes the final inputs', () => {
+    vi.useFakeTimers()
+    try {
+      const { state, reports, sync } = draggingSync()
+      for (let i = 0; i < 120; i++) {
+        sync.schedule(withAxis(DEFAULT_INPUTS, 'swing', i % 101), undefined, {})
+        vi.advanceTimersByTime(16)
+      }
+      vi.advanceTimersByTime(SYNC_DEBOUNCE_MS)
+
+      expect(state.replaceCalls).toHaveLength(1)
+      expect(state.storeWrites).toBe(1)
+      // Not one change stale: the footer permalink and the store are the *last* thing scheduled.
+      const last = withAxis(DEFAULT_INPUTS, 'swing', 119 % 101)
+      expect(state.replaceCalls[0]).toBe(`/?${encodeGuideInputs(last, CATALOGUE)}`)
+      expect(reports).toHaveLength(1)
+      expect(reports[0]?.href).toContain(`swing=${119 % 101}`)
+      expect(guideInputsFrom(JSON.parse(state.stored as string))).toEqual(last)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not swallow a single change — a typed number or a reroll still lands', () => {
+    vi.useFakeTimers()
+    try {
+      const { state, sync } = draggingSync()
+      sync.schedule(withSeed(DEFAULT_INPUTS, 4242), undefined, {})
+      expect(state.replaceCalls).toEqual([])
+      vi.advanceTimersByTime(SYNC_DEBOUNCE_MS)
+      expect(state.replaceCalls).toHaveLength(1)
+      expect(state.replaceCalls[0]).toContain('seed=4242')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stays quiet once it has fired, so an idle page writes nothing', () => {
+    vi.useFakeTimers()
+    try {
+      const { state, sync } = draggingSync()
+      sync.schedule(DEFAULT_INPUTS, undefined, {})
+      vi.advanceTimersByTime(SYNC_DEBOUNCE_MS)
+      expect(state.replaceCalls).toHaveLength(1)
+      expect(sync.pending()).toBe(false)
+      vi.advanceTimersByTime(SYNC_DEBOUNCE_MS * 20)
+      expect(state.replaceCalls).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('flushes a queued write immediately, which is what unmount does', () => {
+    vi.useFakeTimers()
+    try {
+      const { state, reports, sync } = draggingSync()
+      sync.schedule(withSeed(DEFAULT_INPUTS, 7), undefined, {})
+      sync.flush()
+      // Not lost: the last edit is written even though nobody waited out the delay.
+      expect(state.replaceCalls).toHaveLength(1)
+      expect(state.replaceCalls[0]).toContain('seed=7')
+      expect(reports).toHaveLength(1)
+      expect(sync.pending()).toBe(false)
+      // And not leaked: the timer it cancelled cannot fire a second write afterwards.
+      vi.advanceTimersByTime(SYNC_DEBOUNCE_MS * 5)
+      expect(state.replaceCalls).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('flushing with nothing queued writes nothing', () => {
+    vi.useFakeTimers()
+    try {
+      const { state, sync } = draggingSync()
+      sync.flush()
+      sync.flush()
+      expect(state.replaceCalls).toEqual([])
+      expect(state.storeWrites).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('cancels a queued write outright, and nothing fires later', () => {
+    vi.useFakeTimers()
+    try {
+      const { state, sync } = draggingSync()
+      sync.schedule(withSeed(DEFAULT_INPUTS, 9), undefined, {})
+      sync.cancel()
+      expect(sync.pending()).toBe(false)
+      vi.advanceTimersByTime(SYNC_DEBOUNCE_MS * 5)
+      expect(state.replaceCalls).toEqual([])
+      expect(state.storeWrites).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('carries each schedule’s own options, so a shared link stays read-only', () => {
+    vi.useFakeTimers()
+    try {
+      const { state, sync } = draggingSync()
+      sync.schedule(withSeed(DEFAULT_INPUTS, 3), undefined, { persist: false })
+      vi.advanceTimersByTime(SYNC_DEBOUNCE_MS)
+      // The address bar is canonicalised either way; the store is somebody's property.
+      expect(state.replaceCalls).toHaveLength(1)
+      expect(state.storeWrites).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
 
 // ---------------------------------------------------------------------------
 
