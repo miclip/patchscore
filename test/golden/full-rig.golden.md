@@ -61,7 +61,7 @@ None.
 
 ## 3. Rig integration
 
-**Clock source** — TR-1000 over `midi-din`, carrying 5 parts. Sync everything else to it.
+**Clock source** — TR-1000 over `midi-din`, carrying 5 parts. Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8, which cannot receive clock and run free.
 
 - **ZOIA Euroburo** — fx-processor · 0 parts
   - clock: receives clock only · analog-clock/midi-din
@@ -88,11 +88,11 @@ None.
   - audio: stereo main out · audio in
   - mixer: 2 parts, no individual outs: one stereo channel for all
 - **Model 2400** — mixer-recorder · 0 parts
-  - clock: sends clock · midi-din/usb
+  - clock: sends clock, cannot receive · midi-din/usb
   - audio: stereo main out · 8 individual outs · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
 - **Zoom LiveTrak L-8** — mixer-recorder · 0 parts
-  - clock: receives clock only · usb
+  - clock: no clock in or out
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
 

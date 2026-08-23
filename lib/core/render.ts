@@ -92,6 +92,13 @@ function count(n: number, singular: string): string {
   return `${num(n)} ${singular}${n === 1 ? '' : 's'}`
 }
 
+/** Names in prose: "the L-8", "the L-8 and the 2400", "a, b, and c". */
+function list(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? ''
+  if (items.length === 2) return `${items[0]} and ${items[1]}`
+  return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`
+}
+
 /** 'manual — TR-1000 Reference Manual p.61'. `cite.kind` is rendered, never dropped (§3.2). */
 function citeText(cite: Cite): string {
   return `${cite.kind} — ${cite.source}`
@@ -446,9 +453,20 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
     out.push('**Clock** — nothing in this rig can send clock. Every box here has to receive one,')
     out.push('so the clock has to come from something outside it.')
   } else {
+    // §7.4. "Sync everything else to it" is an instruction, and some boxes cannot obey it —
+    // a device that does not receive clock runs free no matter what the source is doing.
+    // Naming them here beats leaving the reader to discover it at the machine.
+    const deaf = result.devices.filter(
+      (d) => d.id !== source.deviceId && !d.clock.canReceiveClock,
+    )
+    const sync =
+      deaf.length === 0
+        ? 'Sync everything else to it.'
+        : `Sync everything else to it, except ${list(deaf.map((d) => d.name))}, ` +
+          `which cannot receive clock and ${deaf.length === 1 ? 'runs' : 'run'} free.`
     out.push(
       `**Clock source** — ${source.deviceName} over \`${source.transport}\`, ` +
-        `carrying ${count(source.occupiedAssignables, 'part')}. Sync everything else to it.`,
+        `carrying ${count(source.occupiedAssignables, 'part')}. ${sync}`,
     )
   }
   out.push('')
@@ -458,10 +476,19 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
   // "what do I plug where" — so clock, audio and channel plan sit together, per box.
   for (const device of result.devices) {
     const parts = occupied.get(device.id) ?? 0
-    const clock = [
-      device.clock.canSendClock ? 'sends clock' : 'receives clock only',
-      device.clock.transport.join('/'),
-    ].join(' · ')
+    // Four cases, not two. A box that does neither read "receives clock only" — wrong about
+    // the box and, for a mixer whose manual never says MIDI, wrong about the wire as well.
+    // Transports are suppressed in that case: naming a wire implies a clock travels on it.
+    const clockText = device.clock.canSendClock
+      ? device.clock.canReceiveClock
+        ? 'sends clock'
+        : 'sends clock, cannot receive'
+      : device.clock.canReceiveClock
+        ? 'receives clock only'
+        : 'no clock in or out'
+    const clock = device.clock.canSendClock || device.clock.canReceiveClock
+      ? [clockText, device.clock.transport.join('/')].join(' · ')
+      : clockText
 
     out.push(`- **${device.name}** — ${device.kind} · ${count(parts, 'part')}`)
     out.push(`  - clock: ${clock}`)

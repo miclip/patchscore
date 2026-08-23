@@ -706,6 +706,47 @@ describe('rig integration (§7.4)', () => {
     expect(phaseBody(doc, 3).join('\n')).toContain('nothing in this rig can send clock')
   })
 
+  // A mixer or a recorder may do neither, and the line was a two-way branch: every box that
+  // could not send was told it "receives clock only". Wrong about the box, and wrong about the
+  // wire too, since it then named a transport no clock travels on.
+  it('distinguishes all four clock capabilities, not just send versus not-send', () => {
+    const cases: [boolean, boolean, string][] = [
+      [true, true, 'clock: sends clock · midi-din/usb'],
+      [true, false, 'clock: sends clock, cannot receive · midi-din/usb'],
+      [false, true, 'clock: receives clock only · midi-din/usb'],
+      [false, false, 'clock: no clock in or out'],
+    ]
+    for (const [canSendClock, canReceiveClock, expected] of cases) {
+      const devices = GOLDEN_DEVICES.map((d) =>
+        d.name === 'Golden Drum' ? { ...d, clock: { ...d.clock, canSendClock, canReceiveClock } } : d,
+      )
+      const doc = renderGuide(
+        resolve({ devices, template: GOLDEN_TEMPLATE, mood: GOLDEN_MOOD, seed: GOLDEN_SEED }),
+      )
+      const body = phaseBody(doc, 3)
+      const start = body.findIndex((l) => l.startsWith('- **Golden Drum**'))
+      expect(body[start + 1]).toBe(`  - ${expected}`)
+    }
+  })
+
+  // "Sync everything else to it" is an instruction, and a box that cannot receive cannot obey.
+  it('exempts boxes that cannot receive clock from the sync instruction, by name', () => {
+    const devices = GOLDEN_DEVICES.map((d) =>
+      d.name === 'Golden Drum' ? { ...d, clock: { ...d.clock, canReceiveClock: false } } : d,
+    )
+    const doc = renderGuide(
+      resolve({ devices, template: GOLDEN_TEMPLATE, mood: GOLDEN_MOOD, seed: GOLDEN_SEED }),
+    )
+    const body = phaseBody(doc, 3).join('\n')
+    expect(body).toContain('except Golden Drum')
+    expect(body).toContain('cannot receive clock')
+  })
+
+  // The exemption clause must not appear when it is not true of anything in the rig.
+  it('says plain "Sync everything else to it" when every other box can follow', () => {
+    expect(phaseBody(renderGuide(golden()), 3).join('\n')).toContain('Sync everything else to it.')
+  })
+
   it('derives mixer channels from declared outs alone', () => {
     const body = phaseBody(renderGuide(golden()), 3).join('\n')
     // 3 parts on a box with no individual outs: one stereo channel, not three invented ones.
