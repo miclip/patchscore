@@ -413,28 +413,9 @@ So provenance is three-state, and always rendered:
 
 | provenance | means | rendered |
 |---|---|---|
-| `authored` | the point value was read off the manual or the hardware, and `cite.kind` says which | `TUNE 52 · manual` |
-| `derived` | mood moved a verified point inside its verified range | `TUNE 52 → 45 · manual · moved by darkness` |
-| `provisional` | the point is unverified (`verified: false`, inherited or explicit) | `TUNE 52`, unmarked |
-
-**The rendering marks the positive claim.** An unmarked value is a starting point — that is what
-a patch sheet has always been and what this guide is, so it needs no annotation. What earns a
-mark is *this number came off the manual*, because that is the fact that changes what a reader
-does with it. A mood move names its knob whether or not the point underneath was cited, since
-the move is a fact about the value rather than a claim about its authority.
-
-This replaced an earlier scheme that marked the common case instead: a warning glyph on nine
-values in ten, under a legend that opened by telling the reader nobody had checked any of it. A
-mark that appears on almost everything carries no information, and leading with an apology tells
-a reader the tool does not know what it is talking about before they have seen a single value.
-
-What the inversion costs is real and is accepted: skimming to a single line, a reader can no
-longer tell *unmarked because it is a starting point* from *unmarked because nobody got to it
-yet*. That is tolerable only because the convention is stated once at the top of every guide and
-because the audit script (§9) still counts provisional points, unverified ranges and mood-inert
-params separately — the debt stays visible to the project even where it is no longer ink on the
-page. Invariant 4 is untouched by any of this: `ResolvedParam.provenance` is non-optional, which
-is a type guarantee and not a rendering convention.
+| `authored` | the point value was read off the manual or the hardware, and `cite.kind` says which | `TUNE 52` |
+| `derived` | mood moved a verified point inside its verified range | `TUNE 52 → 45` |
+| `provisional` | the point is unverified (`verified: false`, inherited or explicit) | `TUNE 52` + provisional badge |
 
 `cite.kind` is orthogonal to the three states. It does not add a fourth: an observed point is
 `authored`, exactly like a manual one, and carries the same authority in the resolver. What it
@@ -477,7 +458,7 @@ The two gates are orthogonal, so all four combinations occur and the state funct
 
 **`provisional` dominates `derived`.** Moving an unverified point inside a verified range is
 legal — the result is in-bounds — but it inherits no authority the starting point never had, so
-it gains no citation mark and `Provenance.from` still records the move. The alternative, refusing to apply
+the badge stays and `Provenance.from` still records the move. The alternative, refusing to apply
 mood to provisional params, would make a device with an unverified recipe silently ignore the
 knobs, which reads as a bug and hides the debt instead of showing it.
 
@@ -1160,10 +1141,9 @@ Do not reorder.
 4. **Hook** — written before sound design
 5. **Step programming** — the selected template pattern per part (§4.3), rendered per device with
    that device's slot articulation bound to it (§7 step 8)
-6. **Sound design** — parameter values, device by device, each rendered per §3.2's table
-   (`52`, `52 · manual`, `52 → 45 · manual · moved by darkness`). `ResolvedParam.provenance`
-   is non-optional, so every value's provenance is decided before the renderer sees it — an
-   unmarked value is a decision, never a case that fell through
+6. **Sound design** — parameter values, device by device, each rendered with its provenance
+   per §3.2's table (`52`, `52 → 45`, or a provisional badge). `ResolvedParam.provenance` is
+   non-optional, so there is no unmarked case for this phase to fall through to
 7. **Finishing** — sidechain, master FX, arrangement variations
 
 **Terminology.** Clock roles are `canSendClock` / `canReceiveClock` and the guide says *clock

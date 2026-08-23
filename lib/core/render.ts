@@ -130,41 +130,28 @@ function valueText(param: ResolvedParam): string {
 }
 
 /**
- * The mark on a value, and it marks the **positive** claim.
+ * The visible three-state badge, deliberately asymmetric in length.
  *
- * An unmarked value is a starting point. That is what a patch sheet has always been, it is what
- * this guide is, and it needs no annotation. What is worth a reader's attention is the opposite
- * fact — *this number came off the manual* — because that is the one that changes what they do
- * with it.
+ * `provisional` is the overwhelmingly common state — almost every point value in this project
+ * is taste, by design — so it gets a bare `⚠` and the legend carries the explanation once.
+ * Restating "nobody has checked this value" on nine lines in ten was 14% of the guide by
+ * character count, and a warning that appears on everything tells the reader nothing while
+ * pushing the values it annotates apart. On a phone, at a machine, that is a real cost.
  *
- * The earlier scheme marked the common case instead: a `⚠` on nine values in ten, plus a legend
- * opening "nobody has verified this, trust your ears over this page". That told a reader the
- * tool did not know what it was talking about before they had seen a single value, and the mark
- * carried no information precisely because it was everywhere.
- *
- * So: `cite.kind` is the mark — `manual` or `observed`, which is the distinction §3.2 calls
- * orthogonal and worth keeping — and a mood move names its knob whether or not the point
- * underneath was cited. A provisional point that nothing moved renders bare.
- *
- * **Nothing about provenance itself is weakened by this.** `ResolvedParam.provenance` is still
- * non-optional (invariant 4 is a type guarantee, not a rendering convention), and the audit
- * script still counts provisional points, unverified ranges and mood-inert params separately.
- * What changed is which of the three states is the one the page bothers to name.
+ * The rare states stay wordy, because they are the surprising ones and the eye should catch
+ * them: `authored` means somebody checked this exact value, `derived` means mood moved it.
+ * §3.2's requirement is that a reader must not mistake an unchecked value for a cited one —
+ * a mark on every unchecked value satisfies that; a sentence on every unchecked value does not
+ * satisfy it any harder.
  */
 function provenanceText(provenance: Provenance): string {
-  const moved = (axes: readonly string[]) => `moved by ${axes.join(', ')}`
-  if (provenance.state === 'authored') return provenance.cite.kind
-  if (provenance.state === 'derived') {
-    return `${provenance.cite.kind} · ${moved(provenance.axes)}`
-  }
-  // §3.2: a provisional point still shows the move, and still inherits no authority from it.
-  return provenance.axes !== undefined && provenance.axes.length > 0 ? moved(provenance.axes) : ''
-}
-
-/** ` · manual`, or nothing at all. An unmarked value must not trail a separator. */
-function mark(provenance: Provenance): string {
-  const text = provenanceText(provenance)
-  return text === '' ? '' : ` · ${text}`
+  if (provenance.state === 'authored') return 'authored'
+  if (provenance.state === 'derived') return `derived by ${provenance.axes.join(', ')}`
+  const moved =
+    provenance.axes !== undefined && provenance.axes.length > 0
+      ? ` · moved by ${provenance.axes.join(', ')}`
+      : ''
+  return `⚠${moved}`
 }
 
 /**
@@ -542,7 +529,7 @@ function articulationLines(
       .join(', ')
     out.push(
       `- \`${entry.slot}\` → ${sets} on step${entry.steps.length === 1 ? '' : 's'} ` +
-        `${entry.steps.map(num).join(', ')}${mark(entry.provenance)}`,
+        `${entry.steps.map(num).join(', ')} · ${provenanceText(entry.provenance)}`,
     )
     for (const cite of citeLines(entry.provenance, undefined)) subordinate(out, '  ', 'cite', cite)
     if (options.hints && entry.hint !== undefined) {
@@ -661,7 +648,9 @@ function paramLines(
   const out: Line[] = []
   const unit = param.unit === undefined ? '' : ` ${param.unit}`
   const range = param.range === undefined ? '' : ` (${rangeText(param.range, param.unit)})`
-  out.push(`- **${param.name}** \`${valueText(param)}\`${unit}${range}${mark(param.provenance)}`)
+  out.push(
+    `- **${param.name}** \`${valueText(param)}\`${unit}${range} · ${provenanceText(param.provenance)}`,
+  )
   for (const cite of citeLines(param.provenance, param.range)) subordinate(out, '  ', 'cite', cite)
   if (param.note !== undefined) subordinate(out, '  ', 'note', param.note)
   if (options.hints && param.hint !== undefined) {
@@ -673,7 +662,7 @@ function paramLines(
 function patchLines(entries: readonly ResolvedPatchEntry[]): Line[] {
   const out: Line[] = []
   for (const entry of entries) {
-    out.push(`- \`${entry.from}\` → \`${entry.to}\`${mark(entry.provenance)}`)
+    out.push(`- \`${entry.from}\` → \`${entry.to}\` · ${provenanceText(entry.provenance)}`)
     for (const cite of citeLines(entry.provenance, undefined)) subordinate(out, '  ', 'cite', cite)
     if (entry.note !== undefined) subordinate(out, '  ', 'note', entry.note)
   }
@@ -811,21 +800,18 @@ function occupiedCounts(result: ResolveResult): Map<DeviceId, number> {
 }
 
 /**
- * The reading convention, stated once, in the voice of something that knows what it is talking
- * about. It says what the values *are* rather than apologising for them, which is also the only
- * thing that makes an unmarked value legible: the convention has to be stated somewhere, and
- * once at the top is cheaper than on every line.
- *
- * Deliberately says nothing about hints: a legend
+ * Provenance and the range, explained once. Deliberately says nothing about hints: a legend
  * describing a line the reader has switched off is a small lie, and keeping it out is what lets
  * `hints: false` be exactly "the same document, minus the hint lines" — a property worth having
  * because §8.1's toggle must not move anything else on the page.
  */
 const LEGEND = [
-  'Values are starting points — dial them to taste. Where a number came straight off the manual',
-  'or off a unit it says which, and where a mood knob moved it you see the move (`52 → 45`) and',
-  'the knob that did it. Every value carries its range — `38 (0…100)` — so you can tell at a',
-  'glance whether the screen in front of you is the one the line is about.',
+  'Most values here are **⚠** — a starting point nobody has checked, so trust your ears over',
+  'this page. The ones that are marked differently are the exceptions worth noticing:',
+  '`authored` means somebody verified that exact value against a manual or a unit, and',
+  '`derived` shows a move mood made (`52 → 45`) and which knob made it. Ranges are cited',
+  'either way. Numbers carry their range — `38 (0…100)` — so you can tell at a glance whether',
+  'the screen in front of you is the one this line is about.',
 ]
 
 /**

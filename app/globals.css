@@ -760,22 +760,32 @@ button:active {
   padding: 1px 6px;
 }
 
-/*
- * This number came off the manual, or off a unit. The notable fact, so it is the loud one —
- * and the only thing an unmarked value means is that it is a starting point, which is what the
- * guide is. There is no mark for that, not even a quiet one.
- */
-.prov-cited {
+/* Somebody checked this exact value. The rarest state, and the loudest. */
+.prov-authored {
   color: var(--panel-0);
   background: var(--silkscreen);
-  cursor: help;
 }
 
-/* A mood knob moved it. A fact about the value, not a claim about its authority. */
-.prov-moved {
+/* Mood moved it, and the axes are named. */
+.prov-derived {
   color: var(--accent);
   background: #241a16;
   border: 1px solid var(--accent-dim);
+}
+
+/*
+ * The common case, so it is a mark rather than a sentence — the legend carries the explanation
+ * once. Deliberately not a warning colour: nine values in ten are this, and a page of red is a
+ * page that reads as broken rather than as honest.
+ */
+.prov-provisional {
+  padding: 0 2px;
+  font-size: 12px;
+  letter-spacing: 0;
+  color: var(--ink-dim);
+  background: none;
+  border: 0;
+  cursor: help;
 }
 
 /* ----------------------------------------------------------- §10 values */

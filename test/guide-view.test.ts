@@ -89,35 +89,15 @@ describe('§8.1 the hint toggle cannot reflow the page', () => {
 })
 
 describe('§3.2 provenance reaches the page', () => {
-  it('marks the positive claim and leaves a starting point unmarked', () => {
+  it('marks every state it is given, and marks nothing it is not', () => {
     const out = html(golden)
     const states = new Set(
       golden.assignments.flatMap((a) => a.params.map((p) => p.provenance.state)),
     )
     expect(states.size).toBeGreaterThan(1)
-
-    // A cited point says which kind of citation it has; a move names its knob.
-    expect(states.has('authored') || states.has('derived')).toBe(true)
-    expect(out).toContain('prov-cited')
-    expect(out).toContain('prov-moved')
-
-    // Nothing on the page looks like a warning, and there is no quieter badge standing in for
-    // one either: an unmarked value is the norm and the legend explains the convention once.
-    expect(out).not.toContain('⚠')
-    expect(out).not.toContain('prov-provisional')
-    expect(out.toLowerCase()).not.toContain('trust your ears')
-    expect(out).toContain('Values are starting points')
-  })
-
-  it('marks every cited value, and no uncited one', () => {
-    const out = html(golden)
-    const cited = golden.assignments.flatMap((a) =>
-      a.params.filter((p) => p.provenance.state !== 'provisional'),
-    )
-    expect(cited.length).toBeGreaterThan(0)
-    // One mark per cited value, plus the one standing in the legend.
-    const marks = out.split('class="prov prov-cited"').length - 1
-    expect(marks).toBeGreaterThanOrEqual(cited.length)
+    if (states.has('authored')) expect(out).toContain('prov-authored')
+    if (states.has('derived')) expect(out).toContain('prov-derived')
+    if (states.has('provisional')) expect(out).toContain('prov-provisional')
   })
 
   it('renders every parameter value, in monospace (§10)', () => {

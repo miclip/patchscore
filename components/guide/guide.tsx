@@ -68,18 +68,18 @@ export function Guide({ result }: { result: ResolveResult }) {
       </header>
 
       {/*
-        The reading convention, stated once, and it is what makes an unmarked value legible:
-        the convention has to live somewhere, and once at the top is cheaper than a badge on
-        every line. Said in the voice of something that knows what it is talking about — no
-        apology, no warning, and nothing telling the reader to distrust the page.
+        The one guide-level explanation of provenance. Stated once here so the marks on the page
+        can be compact: a sentence saying "nobody has checked this" on nine lines in ten is 14%
+        of the guide by character count and tells the reader nothing.
       */}
       <p className="legend">
-        Values are starting points — dial them to taste. Where a number came straight off the
-        manual or off a unit it says which (
-        <span className="prov prov-cited">manual</span>), and where a mood knob moved it you see
-        the move — <span className="mono">52 → 45</span> — and{' '}
-        <span className="prov prov-moved">the knob that did it</span>. Every value carries its
-        range, <span className="mono">38 (0…100)</span>, so you can tell at a glance whether the
+        Most values here are marked <span className="prov prov-provisional">⚠</span> — a starting
+        point nobody has verified, so trust your ears over this page. The exceptions are worth
+        noticing: <span className="prov prov-authored">authored</span> means somebody checked that
+        exact value against a manual or a unit, and{' '}
+        <span className="prov prov-derived">derived</span> shows a move mood made, written{' '}
+        <span className="mono">52 → 45</span>, with the knob that made it. Values carry their
+        range — <span className="mono">38 (0…100)</span> — so you can tell at a glance whether the
         screen in front of you is the one the line is about.
       </p>
 
