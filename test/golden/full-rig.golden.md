@@ -1,11 +1,9 @@
 # Industrial Techno
 
-Most values here are **⚠** — a starting point nobody has checked, so trust your ears over
-this page. The ones that are marked differently are the exceptions worth noticing:
-`authored` means somebody verified that exact value against a manual or a unit, and
-`derived` shows a move mood made (`52 → 45`) and which knob made it. Ranges are cited
-either way. Numbers carry their range — `38 (0…100)` — so you can tell at a glance whether
-the screen in front of you is the one this line is about.
+Values are starting points — dial them to taste. Where a number came straight off the manual
+or off a unit it says which, and where a mood knob moved it you see the move (`52 → 45`) and
+the knob that did it. Every value carries its range — `38 (0…100)` — so you can tell at a
+glance whether the screen in front of you is the one the line is about.
 
 ## 1. Song
 
@@ -165,7 +163,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **On this box** — Deluge
 
-- `downbeat` → `velocity` 112 on step 1 · ⚠
+- `downbeat` → `velocity` 112 on step 1
 
 ### `bass-mid` — Deluge · Track 2
 
@@ -182,7 +180,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **On this box** — Deluge
 
-- `offbeat` → `probability` 90 on steps 7, 23 · ⚠
+- `offbeat` → `probability` 90 on steps 7, 23
   - ↳ hint: Hold pad, turn (SELECT) anticlockwise
 
 ### `clap` — TR-1000 · HC
@@ -199,7 +197,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **On this box** — TR-1000
 
-- `backbeat` → `accent` true on steps 5, 13 · ⚠
+- `backbeat` → `accent` true on steps 5, 13
   - ↳ hint: ACCENT [STEP], then step keys
 
 ### `closed-hat` — TR-1000 · CH
@@ -216,7 +214,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **On this box** — TR-1000
 
-- `offbeat` → `weak` true on steps 3, 7, 11, 15 · ⚠
+- `offbeat` → `weak` true on steps 3, 7, 11, 15
   - ↳ hint: Hold [SHIFT], press step keys
 
 ### `open-hat` — TR-1000 · OH
@@ -232,7 +230,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **On this box** — TR-1000
 
-- `offbeat` → `weak` true on steps 3, 7, 11, 15 · ⚠
+- `offbeat` → `weak` true on steps 3, 7, 11, 15
   - ↳ hint: Hold [SHIFT], press step keys
 
 ### `stab` — Deluge · Track 3
@@ -265,7 +263,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **On this box** — TR-1000
 
-- `first-hit` → `accent` true on step 1 · ⚠
+- `first-hit` → `accent` true on step 1
   - ↳ hint: ACCENT [STEP], then step keys
 
 ### `pad` — Deluge · Track 4
@@ -301,15 +299,15 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 #### Track 1 — `kick`: Tight one-shot kick, tuned down, no tail
 
-- **PLAY MODE** `1-Shot` · ⚠
-- **FILTER TYPE** `Low-pass` · ⚠
-- **TUNE** `-3` St (-24…24 St) · ⚠
+- **PLAY MODE** `1-Shot`
+- **FILTER TYPE** `Low-pass`
+- **TUNE** `-3` St (-24…24 St)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.116
-- **CUTOFF** `74` % (0…100 %) · ⚠
+- **CUTOFF** `74` % (0…100 %)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
-- **OVERDRIVE** `18` % (0…100 %) · ⚠
+- **OVERDRIVE** `18` % (0…100 %)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
-- **ENV DECAY** `0.28` Sec (0…10 Sec) · ⚠
+- **ENV DECAY** `0.28` Sec (0…10 Sec)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.126
 
 ### TR-1000
@@ -318,52 +316,52 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 #### HC — `clap`: Wide clap sitting on top of the snare
 
-- **GEN** `9X Hand Clap` · ⚠
+- **GEN** `9X Hand Clap`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
-- **FILTER** `35` % (-100…100 %) · ⚠
+- **FILTER** `35` % (-100…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
   - ↳ hint: Clap brightness
-- **CLAPS** `70` % (0…100 %) · ⚠
+- **CLAPS** `70` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
-- **SPEED** `55` % (0…100 %) · ⚠
+- **SPEED** `55` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
-- **MIX** `20` % (-100…100 %) · ⚠
+- **MIX** `20` % (-100…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
   - ↳ hint: Clap against tail, not layers
-- **TAIL DCY** `62` % (0…100 %) · ⚠
+- **TAIL DCY** `62` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 
 #### CH — `closed-hat`: Grainy CR-78 hat with a metallic edge
 
-- **GEN** `CR78 HiHat` · ⚠
+- **GEN** `CR78 HiHat`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
-- **TUNE** `-5` % (-100…100 %) · ⚠
+- **TUNE** `-5` % (-100…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
-- **DECAY** `20` % (0…100 %) · ⚠
+- **DECAY** `20` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
-- **METALLIC** `72` % (0…100 %) · ⚠
+- **METALLIC** `72` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
   - ↳ hint: Metal-like overtone level
 
 #### OH — `open-hat`: Dull open hat, more air than sizzle
 
-- **GEN** `606 Open HiHat` · ⚠
+- **GEN** `606 Open HiHat`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
-- **TUNE** `-18` % (-100…100 %) · ⚠
+- **TUNE** `-18` % (-100…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
-- **DECAY** `64` % (0…100 %) · ⚠
+- **DECAY** `64` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
-- **TONE** `-35` % (-100…100 %) · ⚠
+- **TONE** `-35` % (-100…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
   - ↳ hint: Brightness of the cymbal
 
 #### CC — `impact`: Crash marking the top of a section
 
-- **GEN** `9X Crash Cymbal` · ⚠
+- **GEN** `9X Crash Cymbal`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
-- **TUNE** `0` % (-100…100 %) · ⚠
+- **TUNE** `0` % (-100…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
-- **DECAY** `84` % (0…100 %) · ⚠
+- **DECAY** `84` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 
 ### Deluge
@@ -372,66 +370,66 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 #### Track 1 — `sub`: Sine sub with the top end cut away
 
-- **OSC TYPE** `Sine` · ⚠
-- **EQ TREBLE AMOUNT** `17` (0…50) · ⚠
+- **OSC TYPE** `Sine`
+- **EQ TREBLE AMOUNT** `17` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
   - ↳ note: 25 is neutral; below cuts
-- **EQ BASS AMOUNT** `31` (0…50) · ⚠
+- **EQ BASS AMOUNT** `31` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
 
 #### Track 2 — `bass-mid`: Analog saw bass through the drive filter, crushed
 
-- **OSC TYPE** `Analog Saw` · ⚠
-- **LPF MODE** `DRIVE` · ⚠
-- **DECIMATION** `14` (0…50) · ⚠
+- **OSC TYPE** `Analog Saw`
+- **LPF MODE** `DRIVE`
+- **DECIMATION** `14` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
-- **BITCRUSH** `9` (0…50) · ⚠
+- **BITCRUSH** `9` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
-- **EQ BASS AMOUNT** `29` (0…50) · ⚠
+- **EQ BASS AMOUNT** `29` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
 
 #### Track 3 — `stab`: Square stab through a fast phaser
 
-- **OSC TYPE** `Analog Square` · ⚠
-- **MOD FX TYPE** `PHASER` · ⚠
-- **MOD FX RATE** `16` (0…50) · ⚠
+- **OSC TYPE** `Analog Square`
+- **MOD FX TYPE** `PHASER`
+- **MOD FX RATE** `16` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.229
-- **MOD FX FEEDBACK** `18` (0…50) · ⚠
+- **MOD FX FEEDBACK** `18` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.229
   - ↳ note: Flanger and phaser types only
-- **EQ TREBLE AMOUNT** `29` (0…50) · ⚠
+- **EQ TREBLE AMOUNT** `29` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
 
 #### Track 4 — `pad`: Wavetable pad, slow chorus, wide reverb send
 
-- **OSC TYPE** `Wavetable` · ⚠
-- **MOD FX TYPE** `CHORUS` · ⚠
-- **MOD FX RATE** `9` (0…50) · ⚠
+- **OSC TYPE** `Wavetable`
+- **MOD FX TYPE** `CHORUS`
+- **MOD FX RATE** `9` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.229
-- **REVERB AMOUNT** `27` (0…50) · ⚠
+- **REVERB AMOUNT** `27` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.225
-- **EQ TREBLE AMOUNT** `27` (0…50) · ⚠
+- **EQ TREBLE AMOUNT** `27` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
 
 #### Track 5 — `riser`: Saw riser, top end open, thrown into the reverb
 
-- **OSC TYPE** `Saw` · ⚠
-- **EQ TREBLE AMOUNT** `35` (0…50) · ⚠
+- **OSC TYPE** `Saw`
+- **EQ TREBLE AMOUNT** `35` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
-- **REVERB AMOUNT** `23` (0…50) · ⚠
+- **REVERB AMOUNT** `23` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.225
-- **DELAY AMOUNT** `16` (0…50) · ⚠
+- **DELAY AMOUNT** `16` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.222
 
 #### Track 6 — `noise`: Crushed noise wash under the drums
 
-- **OSC TYPE** `Sample` · ⚠
-- **REPEAT MODE** `LOOP` · ⚠
-- **BITCRUSH** `21` (0…50) · ⚠
+- **OSC TYPE** `Sample`
+- **REPEAT MODE** `LOOP`
+- **BITCRUSH** `21` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
-- **DECIMATION** `13` (0…50) · ⚠
+- **DECIMATION** `13` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
-- **EQ BASS AMOUNT** `16` (0…50) · ⚠
+- **EQ BASS AMOUNT** `16` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
 
 ## 7. Finishing
