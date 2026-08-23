@@ -19,6 +19,13 @@ import { RackDiagram } from './diagram'
  * The page body still never scrolls horizontally — this is `position: fixed`, and the overview
  * is `width: 100%`, so neither can contribute to it.
  *
+ * **It inherits the overview's wrap, deliberately** (#63 asked for the decision rather than the
+ * inheritance). The alternative was tempting — one long row here, since this layer already pans
+ * sideways — and it is wrong for two reasons. The reader arrives at this layer from the overview
+ * and expects to find the same rack, not a different arrangement of it; and one row would put the
+ * clock cables back across a metre of panel, which is the run that no longer fits on a screen at
+ * a readable scale. Same model, same rows, same cables, drawn larger and panned in both axes.
+ *
  * The keyboard path is a real path, not an afterthought: the scroll region is focusable and
  * scrolls with the arrow keys, Escape closes, focus is trapped between the two stops while open
  * and returned to the trigger on close.

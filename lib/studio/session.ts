@@ -70,6 +70,34 @@ export const CATALOGUE: Catalogue = {
 const LANDING_TEMPLATE: TemplateId = 'industrial-techno'
 
 /**
+ * The rig a first-time visitor lands on (#61). **Two boxes, named, not the whole catalogue.**
+ *
+ * Every device used to be checked. That was defensible at three devices and is not now: it
+ * presumes the visitor owns everything, and the first guide they read is therefore not about
+ * their rig, which is the entire premise. `CATALOGUE.devices` also grows on its own, so the
+ * landing rig quietly changed shape every time a manifest was authored.
+ *
+ * Two is the smallest rig that shows what the product *is*. One box has no clock source to
+ * choose among, nothing for the rack to cable, and a voice phase that collapses to "everything
+ * goes here" — the three things the guide exists to work out. A **groovebox plus a drum
+ * machine** is the most legible pair: the drum machine takes percussion, the groovebox takes the
+ * tonal roles, and the split is obvious at a glance. It fills most of the direction's parts and
+ * still gaps several, which is the product demonstrating both halves of itself — a guide worth
+ * reading, and invariant 5's honesty about what a rig cannot cover.
+ *
+ * The Tracker Mini and the TR-1000 are that pair among what is authored today. #61 asks for
+ * *cheap* boxes, and the TR-1000 is not one — it is the flagship. There is no inexpensive drum
+ * machine in the library yet; when an MC-101 or a TR-6S lands, this constant is the one line to
+ * change, which is why it is a constant.
+ *
+ * Filtered through the catalogue so the order is registry order (§7.2) and an id that ever stops
+ * existing drops out instead of shipping a landing rig that names a device this build does not
+ * have. `test/studio-session.test.ts` asserts the pair survives that filter, so a typo is a
+ * failing test rather than a silently smaller default.
+ */
+const LANDING_DEVICES: readonly DeviceId[] = ['polyend-tracker-mini', 'roland-tr-1000']
+
+/**
  * A constant, not a draw and not a read. The server and the client must render the same first
  * frame, so this may not depend on the URL, on storage, or on the clock — and "the app picks a
  * different guide every time you reload" is a worse default than one shared starting point with
@@ -77,7 +105,7 @@ const LANDING_TEMPLATE: TemplateId = 'industrial-techno'
  */
 export const DEFAULT_INPUTS: GuideInputsV1 = {
   version: FORMAT_VERSION,
-  devices: CATALOGUE.devices,
+  devices: CATALOGUE.devices.filter((id) => LANDING_DEVICES.includes(id)),
   templateId: LANDING_TEMPLATE,
   inspirations: [],
   // §6.3: density's neutral is the middle detent — no lean, sections as authored.
@@ -162,6 +190,35 @@ export type Bootstrap = {
    */
   persist: boolean
   notices: StudioNotice[]
+}
+
+// ---------------------------------------------------------------------------
+// The starter example (#61)
+// ---------------------------------------------------------------------------
+
+/**
+ * Whether the page should say out loud that the rig on it is an example.
+ *
+ * Three conditions, and each is doing work:
+ *
+ *  - **`bootstrapped`.** The first frame is `DEFAULT_INPUTS` for *everybody*, returning visitors
+ *    included, because the store cannot be read during render without breaking hydration (§12).
+ *    So `source` is not yet known on that frame, and labelling it would tell a visitor their own
+ *    saved rig is a starter example — which is both wrong and the exact thing #61 is about. The
+ *    label therefore arrives one frame late, deliberately, and the server renders none.
+ *  - **`source === 'default'`.** A stored rig is the visitor's own and a permalink is somebody
+ *    else's actual guide. Neither is an example, and calling either one an example is a lie the
+ *    page would be telling about content it did not choose.
+ *  - **`edited`.** The moment they change a device or the direction, the rig is theirs — it may
+ *    still contain a box the default put there, but they have looked at it and kept it, which
+ *    is not the same as never having been asked.
+ */
+export function isStarterExample(state: {
+  bootstrapped: boolean
+  source: Bootstrap['source']
+  edited: boolean
+}): boolean {
+  return state.bootstrapped && state.source === 'default' && !state.edited
 }
 
 // ---------------------------------------------------------------------------

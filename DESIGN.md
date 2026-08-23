@@ -1673,6 +1673,24 @@ no device-id switch anywhere. Once a guide resolves, patch cables (SVG bezier cu
 sag) connect the panels to show signal flow and clock. The cables *are* the visualisation of the
 resolver's output. This is the one place to spend effort.
 
+**The rack wraps onto rows.** A row holds at most three panels on a phone, four on a tablet and
+five on a desktop — a hard cap by breakpoint, not a minimum panel width, so the wrap is checkable
+by counting rather than by measuring and two rigs of the same size never wrap differently. Adding
+a box therefore grows the frame instead of shrinking every panel already in it, which is how a
+physical rack behaves. Rows fill in registry order, and they are **ragged**: a row of three narrow
+boxes is shorter than a row of three wide ones, and a short row is never stretched to justify it,
+because one millimetre has to be the same length everywhere in the figure. There is one `viewBox`
+in millimetres for the whole rack, so the shared scale is structural rather than arithmetic.
+
+Wrapping is what makes the cables real work. Every row sits over a **cable corridor**, and the
+left and right of the panel band are **gutters** reserved for cables that have to leave their row:
+such a cable drops out of its jack into the corridor, crosses to a gutter, runs down (or up) the
+side of the frame, travels the corridor *beneath* its target row and rises into its CLK IN. Under,
+always — a cable arriving from above would have to cross the target's own face to reach a jack on
+its bottom rail, which is the thing the bottom rail exists to prevent. A cable between two boxes
+on one row still just hangs. A gutter is only reserved when a cable uses it, so a rig that fits on
+one row is laid out to the millimetre as it was before rows existed.
+
 What the resolver actually produces that is spatial is **clock**: §7.4's source and the boxes that
 can sync to it. Audio is not drawn, and the page says so beside the legend — the resolver assigns
 parts to voices, never to a destination box or mixer channel, so there is no authored endpoint to

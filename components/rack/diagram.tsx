@@ -377,6 +377,11 @@ function Cable({ cable }: { cable: ClockCable }) {
 function summary(model: RackModel): string {
   if (model.panels.length === 0) return 'An empty rack.'
   const names = model.panels.map((p) => `${p.name} (${p.spanMm} by ${p.riseMm} mm)`).join(', ')
+  const rows =
+    model.rows.length === 1
+      ? ''
+      : ` The rack is on ${model.rows.length} rows of at most ${model.perRow} boxes; ` +
+        `the panels are one scale throughout, so a row with fewer boxes is simply shorter.`
   const clock =
     model.clockSource === undefined
       ? 'Nothing in this rig can send clock, so no clock cables are drawn.'
@@ -386,7 +391,7 @@ function summary(model: RackModel): string {
     model.isolated.length === 0
       ? ''
       : ` Not on the clock: ${model.isolated.map((p) => p.name).join(', ')}.`
-  return `A rack of ${names}, drawn to relative width. ${clock}${isolated}`
+  return `A rack of ${names}, drawn to relative width.${rows} ${clock}${isolated}`
 }
 
 export function RackDiagram({ model, idPrefix }: { model: RackModel; idPrefix: string }) {
@@ -411,6 +416,26 @@ export function RackDiagram({ model, idPrefix }: { model: RackModel; idPrefix: s
         </linearGradient>
       </defs>
       <style>{`.rack-face { fill: url(#${idPrefix}-anodized); }`}</style>
+
+      {/*
+        The case rail each row's panels are bolted to, drawn first and behind them, spanning the
+        band rather than the row. It is what makes a short row read as a row in a rack with space
+        left in it, instead of a group of panels floating under the one above — which is the whole
+        argument for wrapping (#63): a real rack has rows, and its last row is rarely full.
+      */}
+      {model.rows.length > 1
+        ? model.rows.map((row) => (
+            <rect
+              key={row.index}
+              className="rack-row-rail"
+              x={model.leftGutterMm}
+              y={row.corridorMm - RAIL_MM}
+              width={Math.max(0, model.totalMm - model.leftGutterMm - model.rightGutterMm)}
+              height={RAIL_MM}
+              rx={1.5}
+            />
+          ))
+        : null}
 
       {model.panels.map((panel) => (
         <Panel key={panel.deviceId} panel={panel} />

@@ -145,7 +145,94 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * Present to a screen reader, absent from the layout. Used for the picker control labels (#53):
+ * a visible label above each control would cost a line of height on a phone, and `aria-label`
+ * alone is a string with no element behind it — which some voice-control software cannot target
+ * and no `for`/`id` association can be checked against.
+ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ------------------------------------------------------------------ picker */
+
+/*
+ * #53's control row. One line at 390px, and it has to stay one line: the picker is the first
+ * thing on the page and #21 makes 390px a primary reading context, so a row that wraps costs
+ * the guide a whole line of vertical space before anyone has read a word of it.
+ *
+ * `nowrap` plus `min-width: 0` on the flexing input is the whole trick. Without the `min-width`
+ * an input refuses to shrink below its intrinsic size — its default `size` attribute, about
+ * twenty characters — and the row overflows its panel instead of the input getting narrower,
+ * which is how a body ends up scrolling sideways on a phone.
+ */
+.picker-controls {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-width: 0;
+}
+
+.picker-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.picker-kind {
+  flex: 0 0 auto;
+  max-width: 45%;
+  padding: 7px 8px;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.picker-search:focus-visible,
+.picker-kind:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.picker-search::placeholder {
+  color: var(--ink-dim);
+}
+
+.picker-kept {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+/*
+ * A row on the list only because it is selected. Dashed, so it reads as "kept" rather than as a
+ * result — quiet, per §10, and never invisible: a filter that silently disobeys itself is worse
+ * than one that explains the exception.
+ */
+.pick[data-retained='yes'] {
+  border-style: dashed;
+  opacity: 0.82;
+}
 
 .picker-list {
   display: grid;
@@ -674,6 +761,17 @@ button:active {
   fill: #0b0c0e;
   stroke: var(--edge);
   stroke-width: 1;
+}
+
+/*
+ * The case rail behind a wrapped row (#63). Dimmer than the patch rail in front of it, so the
+ * part of a short row's rail with nothing bolted to it reads as empty rack space rather than as
+ * a panel nobody drew.
+ */
+.rack-row-rail {
+  fill: #08090b;
+  stroke: var(--edge);
+  stroke-width: 0.6;
 }
 
 .rack-maker {
@@ -1206,6 +1304,20 @@ button:active {
   border: 1px solid var(--edge);
   border-left: 2px solid var(--accent-dim);
   border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+/*
+ * #61's landing label. It sits in the picker grid rather than up with the notices: it is about
+ * the two checkboxes directly under it, not about something that went wrong, and the notices
+ * region is `role="status"` for things the session had to report.
+ */
+.starter-note {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.starter-note strong {
+  color: var(--silkscreen);
 }
 
 .convention {

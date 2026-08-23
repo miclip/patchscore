@@ -21,6 +21,8 @@ import {
   withTemplate,
 } from '../lib/studio/session'
 import type { DownloadFile, StudioEnv } from '../lib/studio/session'
+import { isStarterExample } from '../lib/studio/session'
+import { DEVICES } from '../lib/devices/registry.generated'
 
 /**
  * Build step 10 (#12): the browser half of the studio, with the browser injected.
@@ -221,8 +223,11 @@ describe('what the user is told, and never blocked by', () => {
 
   it('reports a rig naming a device this build does not ship', () => {
     const { env, state } = fakeBrowser()
+    // A device the default rig actually names, so the corruption lands. `CATALOGUE.devices[0]`
+    // used to serve here and stopped the day the landing rig became two named boxes (#61): the
+    // replace found nothing, the document stayed valid, and the test passed by doing nothing.
     state.stored = JSON.stringify(studioDoc(DEFAULT_INPUTS)).replace(
-      CATALOGUE.devices[0] as string,
+      DEFAULT_INPUTS.devices[0] as string,
       'aphex-widget',
     )
     expect(bootstrapStudio(env).notices.map((n) => n.kind)).toEqual(['stored-unreadable'])
@@ -370,7 +375,8 @@ describe('sync writes the canonical query and the studio', () => {
       DEFAULT_INPUTS,
       withSeed(DEFAULT_INPUTS, 2),
       withAxis(DEFAULT_INPUTS, 'grit', 80),
-      withDevice(DEFAULT_INPUTS, CATALOGUE.devices[0] as string, false),
+      // A device the default rig has, or unchecking it is a no-op and this proves nothing.
+      withDevice(DEFAULT_INPUTS, DEFAULT_INPUTS.devices[0] as string, false),
       withTemplate(DEFAULT_INPUTS, otherTemplate()),
     ]
     for (const inputs of changes) syncStudio(env, inputs, undefined)
@@ -712,5 +718,103 @@ describe('nothing reaches the browser except through the env', () => {
     env.history = () => ({ replaceState: spy })
     syncStudio(env, DEFAULT_INPUTS, undefined)
     expect(spy).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The landing rig, and saying it is one (#61)
+// ---------------------------------------------------------------------------
+
+describe('the starter example (#61)', () => {
+  function otherTemplate(): string {
+    const other = CATALOGUE.templates.find((id) => id !== DEFAULT_INPUTS.templateId)
+    if (other === undefined) throw new Error('this build ships only one template')
+    return other
+  }
+
+  it('lands on exactly two boxes — a groovebox and a drum machine', () => {
+    // The pair is named, so name it here: a test that recomputed it from the same constant
+    // would agree with any typo. Adding a fifth manifest must not change this line.
+    expect(DEFAULT_INPUTS.devices).toEqual(['polyend-tracker-mini', 'roland-tr-1000'])
+
+    // Two, not all of them. "Every device checked" is the thing #61 exists to end: it presumes
+    // the visitor owns the shop, and it grew on its own every time a manifest was authored.
+    expect(DEFAULT_INPUTS.devices).toHaveLength(2)
+    expect(DEFAULT_INPUTS.devices.length).toBeLessThan(CATALOGUE.devices.length)
+
+    // Both are real, and in registry order (§7.2) — the filter through the catalogue is what
+    // guarantees the second, and this is what would catch a typo in the constant.
+    for (const id of DEFAULT_INPUTS.devices) expect(CATALOGUE.devices).toContain(id)
+    expect(DEFAULT_INPUTS.devices).toEqual(
+      CATALOGUE.devices.filter((id) => DEFAULT_INPUTS.devices.includes(id)),
+    )
+
+    // And the split that makes the pair legible: the drum machine takes percussion, the other
+    // box is not one, so the first guide a visitor reads distributes parts across two boxes.
+    const kinds = DEFAULT_INPUTS.devices.map(
+      (id) => DEVICES.find((d) => d.id === id)?.kind,
+    )
+    expect(kinds).toContain('drum-machine')
+    expect(new Set(kinds).size).toBe(2)
+
+    // The direction is unchanged, and still named rather than "whichever sorts first".
+    expect(DEFAULT_INPUTS.templateId).toBe('industrial-techno')
+  })
+
+  it('is the smallest rig that has anything to say about clock and routing', () => {
+    // Why two and not one: a single box has no clock source to choose among and nothing for the
+    // rack to cable. Both default boxes can take a clock, and at least one can send one.
+    const chosen = DEVICES.filter((d) => DEFAULT_INPUTS.devices.includes(d.id))
+    expect(chosen).toHaveLength(2)
+    expect(chosen.some((d) => d.clock.canSendClock)).toBe(true)
+    expect(chosen.filter((d) => d.clock.canReceiveClock).length).toBeGreaterThan(0)
+  })
+
+  it('labels the example only on a cold start, and only until it is edited', () => {
+    const on = { bootstrapped: true, source: 'default' as const, edited: false }
+    expect(isStarterExample(on)).toBe(true)
+
+    // Not before the store and the URL have been read: the first frame is `DEFAULT_INPUTS` for
+    // everybody, so labelling it there would tell a returning visitor their own rig is a demo.
+    expect(isStarterExample({ ...on, bootstrapped: false })).toBe(false)
+
+    // Not for a rig the visitor saved, and not for somebody else's shared link.
+    expect(isStarterExample({ ...on, source: 'storage' })).toBe(false)
+    expect(isStarterExample({ ...on, source: 'link' })).toBe(false)
+
+    // And not once they have answered the question it asks.
+    expect(isStarterExample({ ...on, edited: true })).toBe(false)
+    expect(isStarterExample({ bootstrapped: false, source: 'link', edited: true })).toBe(false)
+  })
+
+  it('never labels a restored rig, whichever way it was restored', () => {
+    // Storage: the visitor's own rig comes back, and it is not the landing pair.
+    const own = withDevice(withSeed(DEFAULT_INPUTS, 4242), CATALOGUE.devices[0] as string, true)
+    const { env, state } = fakeBrowser()
+    state.stored = JSON.stringify(studioDoc(own))
+    const stored = bootstrapStudio(env)
+    expect(stored.source).toBe('storage')
+    expect(stored.inputs.devices).toEqual(own.devices)
+    expect(stored.inputs.devices).not.toEqual(DEFAULT_INPUTS.devices)
+    expect(isStarterExample({ bootstrapped: true, source: stored.source, edited: false })).toBe(
+      false,
+    )
+
+    // A permalink: somebody else's actual guide, restored exactly, and read-only against storage.
+    const shared = withTemplate(withSeed(DEFAULT_INPUTS, 77), otherTemplate())
+    const link = fakeBrowser({ search: `?${encodeGuideInputs(shared, CATALOGUE)}` })
+    const booted = bootstrapStudio(link.env)
+    expect(booted.source).toBe('link')
+    expect(booted.inputs).toEqual(shared)
+    expect(booted.persist).toBe(false)
+    expect(isStarterExample({ bootstrapped: true, source: booted.source, edited: false })).toBe(
+      false,
+    )
+
+    // A cold start still is one — otherwise the three assertions above prove nothing.
+    const cold = bootstrapStudio(fakeBrowser().env)
+    expect(cold.source).toBe('default')
+    expect(cold.inputs.devices).toEqual(DEFAULT_INPUTS.devices)
+    expect(isStarterExample({ bootstrapped: true, source: cold.source, edited: false })).toBe(true)
   })
 })
