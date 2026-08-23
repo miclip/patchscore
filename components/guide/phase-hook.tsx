@@ -1,6 +1,7 @@
 import type { HookChoice, ResolveResult, ResolvedAssignment } from '@/lib/core'
+import { Fragment } from 'react'
 import { enharmonicAlternative } from '@/lib/core'
-import { num } from './format'
+import { barOf, chordsOf, degreeName, gridFits, lenText, num } from './format'
 import { SoundRef } from './instruction'
 
 /**
@@ -11,12 +12,12 @@ import { SoundRef } from './instruction'
 function NoteConvention() {
   return (
     <p className="quiet convention">
-      Each note is one line: <strong>step, length, degree, note, MIDI</strong>. The note is spelled
-      for the key, so F minor gets <span className="mono">Eb</span>; a name in brackets is the same
-      pitch as a sharps-only box shows it, and appears only where it differs. Octaves are
-      scientific pitch notation — middle C is C4 — which not every maker agrees with. The MIDI
-      number is the one form nothing disagrees about: check that if the screen says something else.
-      {' '}Where a role has more than one hook authored, rerolling the seed picks a different one.
+      Steps are sixteenths, counted from the start of the hook: 16 to a bar, so step 33 is bar 3.
+      Notes sharing a step are one chord and share a line. Names are spelled for the key, so F
+      minor gets <span className="mono">Eb</span>; a name in brackets is the same pitch as a
+      sharps-only box shows it, and appears only where it differs. Octaves put middle C at C4,
+      which not every maker agrees with — the MIDI number is the form nothing disagrees about.
+      Where a role has more than one hook authored, rerolling the seed picks a different one.
     </p>
   )
 }
@@ -28,6 +29,9 @@ function HookBlock({
   choice: HookChoice
   carriedBy: ResolvedAssignment | undefined
 }) {
+  // A hook authored against a different grid gets no bar framing rather than a wrong one.
+  const framed = choice.chosen.outcome === 'resolved' && gridFits(choice.chosen.hook)
+
   return (
     <section className="hook">
       {/*
@@ -49,9 +53,7 @@ function HookBlock({
       </h4>
 
       {carriedBy === undefined ? (
-        <p className="quiet">
-          No part in this rig carries this role — the hook is here as musical intent only.
-        </p>
+        <p className="quiet">Nothing in your rig plays this part.</p>
       ) : (
         <SoundRef title={carriedBy.recipe.title} />
       )}
@@ -67,26 +69,70 @@ function HookBlock({
             <span className="mono">{num(choice.chosen.hook.bars)}</span> bars in{' '}
             <span className="mono">{choice.chosen.hook.key}</span>.
           </p>
+          {/*
+            One row per chord, not per note. Labels stay inline rather than moving to a header
+            row: measured at 390px, a six-column layout needs about 490px and would have to
+            scroll sideways, and a hook that scrolls is worse than a hook that wraps.
+          */}
           <ul className="notes">
-            {choice.chosen.hook.notes.map((note, i) => {
-              const enharmonic = enharmonicAlternative(note)
-              return (
-                <li key={`${note.step}-${note.midi}-${i}`}>
-                  <span className="quiet">step</span>
-                  <span className="mono">{num(note.step)}</span>
-                  <span className="quiet">len</span>
-                  <span className="mono">{num(note.len)}</span>
-                  <span className="quiet">degree</span>
-                  <span className="mono">{num(note.degree)}</span>
-                  <span className="mono note-name">{note.note}</span>
-                  {enharmonic === undefined ? null : (
-                    <span className="mono quiet">({enharmonic})</span>
-                  )}
-                  <span className="quiet">MIDI</span>
-                  <span className="mono">{num(note.midi)}</span>
-                </li>
-              )
-            })}
+            {chordsOf(choice.chosen.hook).map((chord) => (
+              <li key={chord.step}>
+                {/*
+                  Cells joined by a real separator, the same ` · ` the Markdown uses. The row
+                  then reads identically on screen, to a screen reader, and pasted into a notes
+                  app — which is where a guide ends up on the way to the studio.
+                */}
+                {[
+                  framed ? (
+                    <span className="pos" key="bar">
+                      <span className="quiet">bar </span>
+                      <span className="mono">{num(barOf(chord.step))}</span>
+                    </span>
+                  ) : null,
+                  <span className="pos" key="step">
+                    <span className="quiet">step </span>
+                    <span className="mono">{num(chord.step)}</span>
+                  </span>,
+                  <span className="pos" key="len">
+                    <span className="quiet">len </span>
+                    <span className="mono">{lenText(chord.notes)}</span>
+                  </span>,
+                  <span className="chord" key="chord">
+                    {chord.notes.map((note, i) => {
+                      const enharmonic = enharmonicAlternative(note)
+                      return (
+                        <Fragment key={note.midi}>
+                          {i === 0 ? null : ' '}
+                          <span className="mono note-name">{note.note}</span>
+                          {enharmonic === undefined ? null : (
+                            <span className="mono quiet"> ({enharmonic})</span>
+                          )}
+                        </Fragment>
+                      )
+                    })}
+                  </span>,
+                  <span className="degrees" key="degrees">
+                    {chord.notes.map((note, i) => (
+                      <Fragment key={note.midi}>
+                        {i === 0 ? null : ' '}
+                        <span className="degree">{degreeName(note.degree)}</span>
+                      </Fragment>
+                    ))}
+                  </span>,
+                  <span className="pos" key="midi">
+                    <span className="quiet">MIDI </span>
+                    <span className="mono">{chord.notes.map((n) => num(n.midi)).join(' ')}</span>
+                  </span>,
+                ]
+                  .filter((cell) => cell !== null)
+                  .map((cell, i) => (
+                    <Fragment key={i}>
+                      {i === 0 ? null : <span className="token-sep"> · </span>}
+                      {cell}
+                    </Fragment>
+                  ))}
+              </li>
+            ))}
           </ul>
         </>
       )}
@@ -100,7 +146,7 @@ export function PhaseHook({ result }: { result: ResolveResult }) {
     // §4.1 / invariant 5: omit rather than invent — and say that is what happened.
     return (
       <p className="quiet">
-        This template authors no hooks. Nothing is written here, and nothing was invented.
+        This template has no hooks.
       </p>
     )
   }

@@ -65,8 +65,8 @@ export function SeedField({ seed, onChange }: SeedFieldProps) {
         </button>
       </div>
       <p className="knob-hint" style={{ textAlign: 'left', marginTop: '8px' }}>
-        Rerolling re-picks the key, the hooks and how parts land on your boxes. It never
-        re-cables the rig — the clock source is chosen without the seed (§7.4).
+        Rerolling re-picks the key, the hooks and how parts land on your boxes. The clock
+        source does not change.
       </p>
     </section>
   )

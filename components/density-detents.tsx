@@ -45,8 +45,8 @@ export function DensityDetents({ value, onChange }: DensityDetentsProps) {
         ))}
       </div>
       <span className="knob-hint">
-        Four authored pattern bands (§6.3). Falls back to the nearest lower band when a template
-        has not authored the one asked for.
+        Four authored pattern bands. Falls back to the nearest lower band when a template has
+        not authored the one asked for.
       </span>
     </fieldset>
   )

@@ -970,15 +970,61 @@ button:active {
   overflow-wrap: anywhere;
 }
 
-.notes > li,
 .slots > li {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 4px 8px;
-  padding: 3px 0;
+  gap: 3px 10px;
+  padding: 1px 0;
   font-size: 12.5px;
   min-width: 0;
+}
+
+/*
+ * A block, not a flex row: the cells are separated by real ` · ` characters, so the line wraps
+ * at them the way prose does and reads the same in the text layer as on screen.
+ */
+.notes > li {
+  padding: 1px 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  min-width: 0;
+}
+
+/*
+ * The row must be able to break at its separators. `.token-sep` is `pre` elsewhere to protect
+ * a ", " between two role names; here the whole point is that a long chord row wraps like
+ * prose instead of pushing the page sideways on a phone.
+ */
+.notes .token-sep {
+  white-space: normal;
+}
+
+/* Tighter than the rest of the guide: these rows are a list to scan, not prose to read, and
+ * loose leading is what turned a twelve-note hook into a full phone screen. */
+.notes {
+  gap: 2px;
+}
+
+/*
+ * Inline, not inline-flex: the spaces between these tokens are real characters in the markup,
+ * so the row reads the same to a screen reader, to a copy-paste and to a test as it does on
+ * screen. `nowrap` keeps a label with its value when the row wraps.
+ */
+.pos,
+.chord,
+.degrees {
+  display: inline;
+  white-space: nowrap;
+}
+
+.degrees {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+.degree {
+  letter-spacing: 0.04em;
 }
 
 .note-name {

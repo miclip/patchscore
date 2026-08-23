@@ -4,7 +4,7 @@ import type { Cite, Provenance, ResolvedParam, ResolvedRange } from './params'
 import type { Pattern, PatternHit } from './template'
 import type { BoundArticulation, ResolvedPatchEntry } from './resolver'
 import type { Gap } from './search'
-import { enharmonicAlternative, type HookChoice } from './harmony'
+import { enharmonicAlternative, type HookChoice, type ResolvedHook, type ResolvedNote } from './harmony'
 import type { ResolveResult, ResolvedAssignment } from './pipeline'
 
 /**
@@ -180,7 +180,7 @@ function citeLines(provenance: Provenance, range: ResolvedRange | undefined): st
   if (range !== undefined) {
     parts.push(
       range.verified === false
-        ? 'range unverified — mood cannot move this value (§3.2)'
+        ? 'range unverified — mood leaves this value alone'
         : `range ${citeText(range.verified)}`,
     )
   }
@@ -228,7 +228,7 @@ function phaseSong(result: ResolveResult): Line[] {
     `- **BPM** ${num(song.bpm)} (template range ${num(template.bpm.min)}…${num(template.bpm.max)})`,
   )
   if (song.key === undefined) {
-    out.push('- **Key** — this template authors none, so no hook could be resolved (§4.1)')
+    out.push('- **Key** — this template has none, so the hooks below have no notes')
   } else {
     const others = song.keys.filter((k) => k !== song.key)
     const alternatives = others.length === 0 ? '' : ` (a reroll may pick ${others.join(', ')})`
@@ -310,7 +310,7 @@ function phaseVoiceAssignment(result: ResolveResult, deviceById: Map<DeviceId, D
   const out: Line[] = []
 
   if (result.assignments.length === 0) {
-    out.push('Nothing could be assigned. Every request is listed as a gap below.')
+    out.push('No parts assigned. Every one is listed below.')
   } else {
     // Per part, not a five-column table. This is read on a phone at arm's length beside a box:
     // a table that needs horizontal scrolling hides the column you were reading, while a bullet
@@ -332,11 +332,11 @@ function phaseVoiceAssignment(result: ResolveResult, deviceById: Map<DeviceId, D
   out.push('### Gaps')
   out.push('')
   if (result.gaps.length === 0) {
-    out.push('None — every requested part found a voice.')
+    out.push('None.')
     return out
   }
   // Invariant 5: shown, never filled by inventing an assignment.
-  out.push('These parts are **not** in the guide below. Nothing was invented to fill them.')
+  out.push('These parts are not in the guide below.')
   out.push('')
   for (const gap of result.gaps) {
     const optional = gap.optional ? ' *(optional)*' : ''
@@ -421,12 +421,77 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
  * one pitch need explaining exactly once, and a guide that explains it eleven times is a guide
  * nobody finishes reading.
  */
+/**
+ * §4.3's grid: patterns are 16, 32 or 64 steps over 1, 2 or 4 bars, so a step is a sixteenth.
+ * Hook steps are absolute across the whole hook and nothing in `Hook` restates the resolution,
+ * so it is inferred here — and checked, not assumed: a hook whose steps run past `bars * 16`
+ * was authored against a different grid, and gets no bar framing rather than a wrong one.
+ */
+const STEPS_PER_BAR = 16
+
+function barOf(step: number): number {
+  return Math.floor((step - 1) / STEPS_PER_BAR) + 1
+}
+
+function gridFits(hook: ResolvedHook): boolean {
+  return hook.notes.every((n) => n.step >= 1 && n.step <= hook.bars * STEPS_PER_BAR)
+}
+
+/**
+ * `degree 1` is jargon dressed as data. A musician reads `root` and `3rd` instantly, and those
+ * carry the harmonic function — the one thing the note name does not tell you.
+ *
+ * Ordinals, not `b7`: the degrees here are scale degrees within the key, so whether the 7th is
+ * flat is a property of the mode, and this layer does not know the mode. Calling it `b7`
+ * would be right in A minor and wrong in A major.
+ */
+function degreeName(degree: number): string {
+  if (degree === 1) return 'root'
+  const tens = degree % 100
+  if (tens >= 11 && tens <= 13) return `${num(degree)}th`
+  const suffix = degree % 10 === 1 ? 'st' : degree % 10 === 2 ? 'nd' : degree % 10 === 3 ? 'rd' : 'th'
+  return `${num(degree)}${suffix}`
+}
+
+/**
+ * Notes sharing a step are one chord, and rendering them as separate rows hides that. A stab
+ * playing four triads across four bars was twelve rows that looked like twelve unrelated
+ * events; grouped, it is four rows and obviously an A minor triad three times.
+ *
+ * Grouped by step alone. Two notes at one step with different lengths are still one chord —
+ * the lengths are listed rather than used to split it, because splitting would put half a
+ * triad on each of two rows, which is the failure this exists to fix.
+ */
+type Chord = { step: number; notes: ResolvedNote[] }
+
+function chordsOf(hook: ResolvedHook): Chord[] {
+  const byStep = new Map<number, ResolvedNote[]>()
+  for (const note of hook.notes) {
+    const existing = byStep.get(note.step)
+    if (existing === undefined) byStep.set(note.step, [note])
+    else existing.push(note)
+  }
+  return [...byStep].map(([step, notes]) => ({ step, notes }))
+}
+
+/** One `len` when the chord agrees, otherwise each. */
+function lenText(notes: readonly ResolvedNote[]): string {
+  const lens = [...new Set(notes.map((n) => n.len))]
+  return lens.map(num).join('/')
+}
+
+function spelling(note: ResolvedNote): string {
+  const enharmonic = enharmonicAlternative(note)
+  return enharmonic === undefined ? `\`${note.note}\`` : `\`${note.note}\` (\`${enharmonic}\`)`
+}
+
 const NOTE_CONVENTION = [
-  'Each note is one line: **step, length, degree, note, MIDI**. The note is spelled correctly',
-  'for the key, so F minor gets `Eb` and E major gets `D#`; a name in brackets after it is the',
-  'same pitch as a sharps-only box shows it, and appears only where it differs. Octaves are',
-  'scientific pitch notation — middle C is C4 — which not every maker agrees with. The MIDI',
-  'number is the one form nothing disagrees about: check that if the screen says something else.',
+  'Steps are sixteenths, counted from the start of the hook: 16 to a bar, so step 33 is bar 3.',
+  'Notes sharing a step are one chord and share a line.',
+  '',
+  'Names are spelled for the key, so F minor gets `Eb`; a name in brackets is the same pitch as',
+  'a sharps-only box shows it, and appears only where it differs. Octaves put middle C at C4,',
+  'which not every maker agrees with — the MIDI number is the form nothing disagrees about.',
   '',
   'Where a role has more than one hook authored, rerolling the seed picks a different one.',
 ]
@@ -440,7 +505,7 @@ function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined
   // than their information. The reroll fact worth having is stated once, up in the intro.
   const where =
     carriedBy === undefined
-      ? 'no part in this rig carries this role'
+      ? 'unassigned'
       : `${carriedBy.deviceName} · ${carriedBy.assignable.label}`
   out.push(`### \`${choice.forRole}\` — ${where}`)
   out.push('')
@@ -451,7 +516,7 @@ function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined
   // naming it costs one line and duplicates no value. The values themselves stay in phase 6:
   // two places to change one number is how a guide goes stale.
   if (carriedBy === undefined) {
-    out.push('*The hook is here as musical intent only.*')
+    out.push('*Nothing in your rig plays this part.*')
   } else {
     out.push(`**${carriedBy.recipe.title}** — settings in Sound design`)
   }
@@ -464,18 +529,18 @@ function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined
   }
 
   const hook = choice.chosen.hook
+  const framed = gridFits(hook)
   out.push(`${num(hook.bars)} bars in ${hook.key}.`)
   out.push('')
-  // One line per note, each field labelled, rather than a five-column table. A note is entered
-  // one at a time at the machine, so one scannable line is the unit of work — and a labelled
-  // line survives wrapping on a phone, where a table's header scrolls away from its body.
-  for (const note of hook.notes) {
-    const enharmonic = enharmonicAlternative(note)
-    const spelling =
-      enharmonic === undefined ? `\`${note.note}\`` : `\`${note.note}\` (\`${enharmonic}\`)`
+  // One labelled line per chord, rather than a table: a labelled line survives wrapping on a
+  // phone, where a table's header scrolls away from its body.
+  for (const chord of chordsOf(hook)) {
+    const where = framed ? `bar ${num(barOf(chord.step))} · step ${num(chord.step)}` : `step ${num(chord.step)}`
     out.push(
-      `- step ${num(note.step)} · len ${num(note.len)} · degree ${num(note.degree)} · ` +
-        `${spelling} · MIDI ${num(note.midi)}`,
+      `- ${where} · len ${lenText(chord.notes)} · ` +
+        `${chord.notes.map(spelling).join(' ')} · ` +
+        `${chord.notes.map((n) => degreeName(n.degree)).join(' ')} · ` +
+        `MIDI ${chord.notes.map((n) => num(n.midi)).join(' ')}`,
     )
   }
   return out
@@ -485,7 +550,7 @@ function phaseHook(result: ResolveResult): Line[] {
   const out: Line[] = []
   if (result.song.hooks.length === 0) {
     // §4.1 / invariant 5: omit rather than invent — and say that is what happened.
-    out.push('This template authors no hooks. Nothing is written here, and nothing was invented.')
+    out.push('This template has no hooks.')
     return out
   }
 
@@ -581,7 +646,7 @@ function stepBlock(
     return {
       headline:
         `no pattern authored for \`${a.role}\` at any band ` +
-        `(asked for band ${num(selection.band)}). Nothing is programmed here.`,
+        `(asked for band ${num(selection.band)})`,
       body: [],
     }
   }
@@ -645,7 +710,7 @@ function phaseSteps(
 ): Line[] {
   const out: Line[] = []
   if (result.assignments.length === 0) {
-    out.push('No part was assigned, so there is nothing to program.')
+    out.push('No parts assigned.')
     return out
   }
 
@@ -705,7 +770,7 @@ function phaseSound(
 ): Line[] {
   const out: Line[] = []
   if (result.assignments.length === 0) {
-    out.push('No part was assigned, so there is nothing to dial in.')
+    out.push('No parts assigned.')
     return out
   }
 
@@ -729,7 +794,7 @@ function phaseSound(
         out.push('')
       }
       if (a.params.length === 0) {
-        out.push('No parameters are authored for this recipe. Nothing was invented to fill it.')
+        out.push('No settings authored for this recipe.')
       } else {
         for (const param of a.params) out.push(...paramLines(param, device, options))
       }
@@ -758,7 +823,7 @@ function phaseFinishing(result: ResolveResult, occupied: Map<DeviceId, number>):
   out.push('')
   const duckers = result.devices.filter((d) => d.features?.sidechain !== undefined)
   if (duckers.length === 0) {
-    out.push('No device in this rig declares a sidechain. Nothing here was invented for one.')
+    out.push('No device in this rig has a sidechain.')
   } else {
     for (const device of duckers) {
       const spec = device.features?.sidechain
@@ -777,8 +842,7 @@ function phaseFinishing(result: ResolveResult, occupied: Map<DeviceId, number>):
   const fx = result.devices.filter((d) => d.kind === 'fx-processor' || d.kind === 'mixer-recorder')
   if (fx.length === 0) {
     // §2.3 models per-device capability, not a master chain. Saying so beats guessing one.
-    out.push('Nothing in this rig is an fx-processor or a mixer-recorder, and per-device master')
-    out.push('chains are not modelled — so this is yours to decide at the desk.')
+    out.push('No effects unit or mixer in this rig. The master chain is yours at the desk.')
   } else {
     for (const device of fx) out.push(`- ${device.name} (${device.kind}) — ${ioText(device)}`)
   }
@@ -805,7 +869,7 @@ function phaseFinishing(result: ResolveResult, occupied: Map<DeviceId, number>):
   )
   if (transient.length > 0) {
     out.push('')
-    out.push('Parts that come and go, which is where the arrangement actually moves:')
+    out.push('Parts that come and go:')
     for (const a of transient) {
       out.push(`- \`${a.role}\` — ${a.sections.join(', ')} only`)
     }

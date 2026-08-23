@@ -37,7 +37,7 @@ export function PhaseVoices({
   return (
     <>
       {result.assignments.length === 0 ? (
-        <p className="quiet">Nothing could be assigned. Every request is listed under Advice.</p>
+        <p className="quiet">No parts assigned. Every one is listed under Advice.</p>
       ) : (
         <ul className="parts">
           {result.assignments.map((a) => (
@@ -64,12 +64,11 @@ export function PhaseVoices({
 
       <h4>Advice</h4>
       {result.gaps.length === 0 ? (
-        <p className="quiet">Every requested part found a voice. Nothing is missing here.</p>
+        <p className="quiet">None.</p>
       ) : (
         <>
           <p className="quiet">
-            These parts are not in the guide below, and nothing was invented to fill them. Each
-            line says what would close it.
+            These parts are not in the guide below. Each line says what would close it.
           </p>
           <ul className="advice">
             {result.gaps.map((gap) => (

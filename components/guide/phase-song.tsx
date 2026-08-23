@@ -36,7 +36,7 @@ export function PhaseSong({ result }: { result: ResolveResult }) {
           <dd>
             {song.key === undefined ? (
               // Reported, never guessed (§4.1 / invariant 5).
-              <span className="quiet">this template authors none, so no hook could resolve</span>
+              <span className="quiet">this template has none, so the hooks have no notes</span>
             ) : (
               <>
                 <span className="mono">{song.key}</span>

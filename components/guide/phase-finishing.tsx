@@ -27,7 +27,7 @@ export function PhaseFinishing({
       <h4>Sidechain</h4>
       {duckers.length === 0 ? (
         <p className="quiet">
-          No device in this rig declares a sidechain. Nothing here was invented for one.
+          No device in this rig has a sidechain.
         </p>
       ) : (
         <ul className="boxes flat">
@@ -53,8 +53,7 @@ export function PhaseFinishing({
       <h4>Master FX</h4>
       {fx.length === 0 ? (
         <p className="quiet">
-          Nothing in this rig is an fx-processor or a mixer-recorder, and per-device master chains
-          are not modelled — so this is yours to decide at the desk.
+          No effects unit or mixer in this rig. The master chain is yours at the desk.
         </p>
       ) : (
         <ul className="boxes flat">
@@ -96,7 +95,7 @@ export function PhaseFinishing({
       {transient.length === 0 ? null : (
         <>
           <p className="quiet">
-            Parts that come and go, which is where the arrangement actually moves:
+            Parts that come and go:
           </p>
           <ul className="boxes flat">
             {transient.map((a) => (

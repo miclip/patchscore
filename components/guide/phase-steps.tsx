@@ -151,8 +151,8 @@ function BlockBody({
   if (selection.outcome === 'none') {
     return (
       <p className="quiet">
-        No pattern is authored for <span className="mono">{a.role}</span> at any band (asked for
-        band <span className="mono">{num(selection.band)}</span>). Nothing is programmed here.
+        No pattern authored for <span className="mono">{a.role}</span> at any band (asked for band{' '}
+        <span className="mono">{num(selection.band)}</span>).
       </p>
     )
   }
@@ -211,7 +211,7 @@ export function PhaseSteps({
   deviceById: Map<DeviceId, Device>
 }) {
   if (result.assignments.length === 0) {
-    return <p className="quiet">No part was assigned, so there is nothing to program.</p>
+    return <p className="quiet">No parts assigned.</p>
   }
 
   return (

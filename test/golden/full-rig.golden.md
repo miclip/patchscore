@@ -55,7 +55,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ### Gaps
 
-These parts are **not** in the guide below. Nothing was invented to fill them.
+These parts are not in the guide below.
 
 - `metallic` `dark` (p3) — capable but unauthored — Tracker Mini (16 voices), TR-1000 RS/CC/RC, Deluge (24 voices) could carry it, dial it by ear
 
@@ -78,11 +78,12 @@ These parts are **not** in the guide below. Nothing was invented to fill them.
 
 ## 4. Hook
 
-Each note is one line: **step, length, degree, note, MIDI**. The note is spelled correctly
-for the key, so F minor gets `Eb` and E major gets `D#`; a name in brackets after it is the
-same pitch as a sharps-only box shows it, and appears only where it differs. Octaves are
-scientific pitch notation — middle C is C4 — which not every maker agrees with. The MIDI
-number is the one form nothing disagrees about: check that if the screen says something else.
+Steps are sixteenths, counted from the start of the hook: 16 to a bar, so step 33 is bar 3.
+Notes sharing a step are one chord and share a line.
+
+Names are spelled for the key, so F minor gets `Eb`; a name in brackets is the same pitch as
+a sharps-only box shows it, and appears only where it differs. Octaves put middle C at C4,
+which not every maker agrees with — the MIDI number is the form nothing disagrees about.
 
 Where a role has more than one hook authored, rerolling the seed picks a different one.
 
@@ -92,13 +93,13 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 2 bars in F minor.
 
-- step 1 · len 3 · degree 1 · `F1` · MIDI 29
-- step 7 · len 2 · degree 1 · `F1` · MIDI 29
-- step 11 · len 3 · degree 4 · `Bb1` (`A#1`) · MIDI 34
-- step 15 · len 2 · degree 1 · `F1` · MIDI 29
-- step 17 · len 3 · degree 1 · `F1` · MIDI 29
-- step 23 · len 2 · degree 6 · `Db2` (`C#2`) · MIDI 37
-- step 27 · len 4 · degree 5 · `C2` · MIDI 36
+- bar 1 · step 1 · len 3 · `F1` · root · MIDI 29
+- bar 1 · step 7 · len 2 · `F1` · root · MIDI 29
+- bar 1 · step 11 · len 3 · `Bb1` (`A#1`) · 4th · MIDI 34
+- bar 1 · step 15 · len 2 · `F1` · root · MIDI 29
+- bar 2 · step 17 · len 3 · `F1` · root · MIDI 29
+- bar 2 · step 23 · len 2 · `Db2` (`C#2`) · 6th · MIDI 37
+- bar 2 · step 27 · len 4 · `C2` · 5th · MIDI 36
 
 ### `pad` — Deluge · Track 4
 
@@ -106,15 +107,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 8 bars in F minor.
 
-- step 1 · len 64 · degree 1 · `F3` · MIDI 53
-- step 1 · len 64 · degree 3 · `Ab3` (`G#3`) · MIDI 56
-- step 1 · len 64 · degree 5 · `C4` · MIDI 60
-- step 65 · len 32 · degree 6 · `Db4` (`C#4`) · MIDI 61
-- step 65 · len 32 · degree 1 · `F4` · MIDI 65
-- step 65 · len 32 · degree 3 · `Ab4` (`G#4`) · MIDI 68
-- step 97 · len 32 · degree 7 · `Eb4` (`D#4`) · MIDI 63
-- step 97 · len 32 · degree 2 · `G4` · MIDI 67
-- step 97 · len 32 · degree 4 · `Bb4` (`A#4`) · MIDI 70
+- bar 1 · step 1 · len 64 · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
+- bar 5 · step 65 · len 32 · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
+- bar 7 · step 97 · len 32 · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`) · 7th 2nd 4th · MIDI 63 67 70
 
 ### `stab` — Deluge · Track 3
 
@@ -122,18 +117,10 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 4 bars in F minor.
 
-- step 1 · len 2 · degree 1 · `F3` · MIDI 53
-- step 1 · len 2 · degree 3 · `Ab3` (`G#3`) · MIDI 56
-- step 1 · len 2 · degree 5 · `C4` · MIDI 60
-- step 11 · len 1 · degree 1 · `F3` · MIDI 53
-- step 11 · len 1 · degree 3 · `Ab3` (`G#3`) · MIDI 56
-- step 11 · len 1 · degree 5 · `C4` · MIDI 60
-- step 33 · len 2 · degree 1 · `F3` · MIDI 53
-- step 33 · len 2 · degree 3 · `Ab3` (`G#3`) · MIDI 56
-- step 33 · len 2 · degree 5 · `C4` · MIDI 60
-- step 49 · len 3 · degree 5 · `C4` · MIDI 60
-- step 49 · len 3 · degree 7 · `Eb4` (`D#4`) · MIDI 63
-- step 49 · len 3 · degree 2 · `G4` · MIDI 67
+- bar 1 · step 1 · len 2 · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
+- bar 1 · step 11 · len 1 · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
+- bar 3 · step 33 · len 2 · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
+- bar 4 · step 49 · len 3 · `C4` `Eb4` (`D#4`) `G4` · 5th 7th 2nd · MIDI 60 63 67
 
 ## 5. Step programming
 
@@ -270,13 +257,13 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Wavetable pad, slow chorus, wide reverb send** — settings in Sound design
 
-**Intro, Build, Drop, Breakdown, Peak, Outro** — no pattern authored for `pad` at any band (asked for band 2). Nothing is programmed here.
+**Intro, Build, Drop, Breakdown, Peak, Outro** — no pattern authored for `pad` at any band (asked for band 2)
 
 ### `riser` — Deluge · Track 5
 
 **Saw riser, top end open, thrown into the reverb** — settings in Sound design
 
-**Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 2). Nothing is programmed here.
+**Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 2)
 
 ### `noise` — Deluge · Track 6
 
@@ -441,8 +428,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Master FX**
 
-Nothing in this rig is an fx-processor or a mixer-recorder, and per-device master
-chains are not modelled — so this is yours to decide at the desk.
+No effects unit or mixer in this rig. The master chain is yours at the desk.
 
 **Arrangement variations**
 
@@ -455,6 +441,6 @@ Parts live on Tracker Mini, TR-1000, Deluge. Section by section:
 - **Peak** (32 bars, energy 1) — `kick`, `sub`, `bass-mid`, `clap`, `closed-hat`, `open-hat`, `stab`, `impact`, `pad`, `noise`
 - **Outro** (16 bars, energy 0.2) — `kick`, `sub`, `bass-mid`, `clap`, `closed-hat`, `open-hat`, `stab`, `pad`, `noise`
 
-Parts that come and go, which is where the arrangement actually moves:
+Parts that come and go:
 - `impact` — Drop, Peak only
 - `riser` — Build, Breakdown only

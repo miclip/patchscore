@@ -69,9 +69,9 @@ describe('the guide view renders every phase (§8)', () => {
     })
     const out = html(empty)
     for (const phase of GUIDE_PHASES) expect(out).toContain(`>${phase}<`)
-    // A phase with nothing in it says so rather than disappearing.
-    expect(out).toContain('nothing to program')
-    expect(out).toContain('nothing to dial in')
+    // A phase with nothing in it says so rather than disappearing — flatly, in as few words
+    // as the fact takes.
+    expect(out.split('No parts assigned.').length - 1).toBeGreaterThanOrEqual(3)
   })
 })
 
@@ -249,5 +249,29 @@ describe('template-internal ids stay internal', () => {
     expect(out).toContain('settings in Sound design')
     // The pointer is a link, not just words, because Sound design is a long way down a phone.
     expect(html(real)).toContain('href="#phase-6"')
+  })
+})
+
+describe('copy says what is true, not what we declined to do', () => {
+  it('narrates no restraint, cites no design section, and names no data structure', () => {
+    const out = text(html(real))
+    for (const phrase of ['was invented', '§', 'not modelled', 'authors none']) {
+      expect(out, phrase).not.toContain(phrase)
+    }
+  })
+})
+
+describe('hooks read as chords', () => {
+  it('puts every note sharing a step on one row, with its degree named', () => {
+    const out = html(real)
+    for (const choice of real.song.hooks) {
+      if (choice.chosen.outcome !== 'resolved') continue
+      const steps = new Set(choice.chosen.hook.notes.map((n) => n.step))
+      // One row per distinct step, not per note: a triad is one chord, not three events.
+      expect(steps.size).toBeLessThanOrEqual(choice.chosen.hook.notes.length)
+    }
+    expect(out).toContain('class="chord"')
+    expect(out).toContain('>root<')
+    expect(out).not.toContain('>degree<')
   })
 })

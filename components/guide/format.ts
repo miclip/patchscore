@@ -1,7 +1,7 @@
 import type { Device } from '@/lib/core'
 import type { DeviceId } from '@/lib/core'
 import type { Cite, Provenance, ResolvedParam, ResolvedRange } from '@/lib/core'
-import type { Gap } from '@/lib/core'
+import type { Gap, ResolvedHook, ResolvedNote } from '@/lib/core'
 
 /**
  * #33. The web guide's formatting, kept free of JSX so it can be tested directly.
@@ -72,7 +72,7 @@ export function citeLines(provenance: Provenance, range: ResolvedRange | undefin
   if (range !== undefined) {
     parts.push(
       range.verified === false
-        ? 'range unverified — mood cannot move this value (§3.2)'
+        ? 'range unverified — mood leaves this value alone'
         : `range ${citeText(range.verified)}`,
     )
   }
@@ -171,4 +171,67 @@ export function occupiedCounts(assignments: { deviceId: DeviceId; assignable: { 
     byDevice.set(a.deviceId, set)
   }
   return new Map([...byDevice].map(([id, set]) => [id, set.size]))
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4 — hooks read as chords
+// ---------------------------------------------------------------------------
+
+/**
+ * The grid: patterns are 16, 32 or 64 steps over 1, 2 or 4 bars, so a step is a sixteenth.
+ * Hook steps are absolute across the whole hook and nothing in `Hook` restates the resolution,
+ * so it is inferred here — and checked, not assumed: a hook whose steps run past `bars * 16`
+ * was authored against a different grid, and gets no bar framing rather than a wrong one.
+ */
+export const STEPS_PER_BAR = 16
+
+export function barOf(step: number): number {
+  return Math.floor((step - 1) / STEPS_PER_BAR) + 1
+}
+
+export function gridFits(hook: ResolvedHook): boolean {
+  return hook.notes.every((n) => n.step >= 1 && n.step <= hook.bars * STEPS_PER_BAR)
+}
+
+/**
+ * `degree 1` is jargon dressed as data. A musician reads `root` and `3rd` instantly, and those
+ * carry the harmonic function — the one thing the note name does not tell you.
+ *
+ * Ordinals, not `b7`: these are scale degrees within the key, so whether the 7th is flat is a
+ * property of the mode, and this layer does not know the mode. `b7` would be right in A minor
+ * and wrong in A major.
+ */
+export function degreeName(degree: number): string {
+  if (degree === 1) return 'root'
+  const tens = degree % 100
+  if (tens >= 11 && tens <= 13) return `${num(degree)}th`
+  const ones = degree % 10
+  const suffix = ones === 1 ? 'st' : ones === 2 ? 'nd' : ones === 3 ? 'rd' : 'th'
+  return `${num(degree)}${suffix}`
+}
+
+export type Chord = { step: number; notes: ResolvedNote[] }
+
+/**
+ * Notes sharing a step are one chord, and one row per note hides that: a stab playing four
+ * triads was twelve rows that looked like twelve unrelated events, and on a phone it filled
+ * the screen. Grouped, it is four rows and obviously an A minor triad three times.
+ *
+ * Grouped by step alone. Two notes at one step with different lengths are still one chord —
+ * the lengths are listed rather than used to split it, because splitting would put half a
+ * triad on each of two rows, which is the failure this exists to fix.
+ */
+export function chordsOf(hook: ResolvedHook): Chord[] {
+  const byStep = new Map<number, ResolvedNote[]>()
+  for (const note of hook.notes) {
+    const existing = byStep.get(note.step)
+    if (existing === undefined) byStep.set(note.step, [note])
+    else existing.push(note)
+  }
+  return [...byStep].map(([step, notes]) => ({ step, notes }))
+}
+
+/** One `len` when the chord agrees, otherwise each. */
+export function lenText(notes: readonly ResolvedNote[]): string {
+  return [...new Set(notes.map((n) => n.len))].map(num).join('/')
 }

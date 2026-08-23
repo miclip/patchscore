@@ -79,9 +79,9 @@ describe('phases (§8)', () => {
     const doc = renderGuide(empty)
     const headings = lines(doc).filter((l) => l.startsWith('## '))
     expect(headings).toHaveLength(GUIDE_PHASES.length)
-    // Invariant 5: the phases that have nothing say so.
-    expect(doc).toContain('nothing to program')
-    expect(doc).toContain('nothing to dial in')
+    // Invariant 5: the phases that have nothing say so — flatly, in as few words as the
+    // fact takes. An empty phase is the least interesting thing on the page.
+    expect(doc.split('No parts assigned.').length - 1).toBeGreaterThanOrEqual(3)
     expect(doc).toContain('nothing in this rig can send clock')
   })
 
@@ -287,14 +287,44 @@ describe('hook notes (#32, §4.1)', () => {
   )
   const body = phaseBody(doc, 4)
 
-  it('explains the note line once, near the notes, rather than per note', () => {
-    const occurrences = body.filter((l) => l.includes('**step, length, degree, note, MIDI**'))
-    expect(occurrences).toHaveLength(1)
+  it('explains the grid and the chord rule once, near the notes, rather than per note', () => {
+    const doc4 = body.join('\n')
+    expect(doc4.split('Notes sharing a step are one chord')).toHaveLength(2)
+    // The frame a reader needs to know what `step 33` means without doing arithmetic.
+    expect(doc4).toContain('16 to a bar')
   })
 
-  it('puts every field of a note on one line, so a note is one thing to read and enter', () => {
+  it('puts a chord on one line, framed by bar, with the degree named rather than numbered', () => {
     const eFlat = body.find((l) => l.includes('`Eb3`')) as string
-    expect(eFlat).toBe('- step 1 · len 1 · degree 7 · `Eb3` (`D#3`) · MIDI 51')
+    expect(eFlat).toBe('- bar 1 · step 1 · len 1 · `Eb3` (`D#3`) · 7th · MIDI 51')
+  })
+
+  it('groups notes that share a step into one chord instead of listing them separately', () => {
+    // Three notes at one step is a triad, and one row per note hides that.
+    const triad: Hook = {
+      id: 'triad-hook',
+      forRole: 'lead',
+      bars: 1,
+      baseOctave: 3,
+      notes: [
+        { step: 1, degree: 1, octave: 0, len: 2 },
+        { step: 1, degree: 3, octave: 0, len: 2 },
+        { step: 1, degree: 5, octave: 0, len: 2 },
+      ],
+    }
+    const chordDoc = renderGuide(
+      resolve({
+        devices: GOLDEN_DEVICES,
+        template: { ...GOLDEN_TEMPLATE, keys: ['A minor'], hooks: [triad] },
+        mood: GOLDEN_MOOD,
+        seed: GOLDEN_SEED,
+      }),
+    )
+    const rows = phaseBody(chordDoc, 4).filter((l) => l.startsWith('- bar '))
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toContain('`A3` `C4` `E4`')
+    expect(rows[0]).toContain('root 3rd 5th')
+    expect(rows[0]).toContain('MIDI 57 60 64')
   })
 
   it('keeps the key-correct spelling and offers the sharps-only reading beside it', () => {
@@ -312,7 +342,7 @@ describe('hook notes (#32, §4.1)', () => {
 
   it('says a hook belongs to no assigned part instead of implying one plays it', () => {
     // Nothing in the golden rig serves `lead`.
-    expect(body.join('\n')).toContain('no part in this rig carries this role')
+    expect(body.join('\n')).toContain('Nothing in your rig plays this part')
   })
 
   it('omits the hook rather than inventing one when the template authors none', () => {
@@ -324,7 +354,7 @@ describe('hook notes (#32, §4.1)', () => {
         seed: GOLDEN_SEED,
       }),
     )
-    expect(phaseBody(doc2, 4).join('\n')).toContain('authors no hooks')
+    expect(phaseBody(doc2, 4).join('\n')).toContain('This template has no hooks.')
   })
 })
 
@@ -462,7 +492,7 @@ describe('gaps (invariant 5, §7.3)', () => {
     const body = phaseBody(doc, 2).join('\n')
     expect(result.gaps.length).toBeGreaterThan(0)
     for (const gap of result.gaps) expect(body).toContain(`\`${gap.role}\``)
-    expect(body).toContain('Nothing was invented')
+    expect(body).toContain('These parts are not in the guide below.')
   })
 
   it('distinguishes "buy a box" from "author a recipe"', () => {
@@ -554,5 +584,37 @@ describe('song (§8 phase 1)', () => {
     )
     expect(doc).toContain('**BPM** 1234')
     expect(doc).not.toContain('1,234')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Voice — the guide tells you what to do, not what we decided
+// ---------------------------------------------------------------------------
+
+describe('copy says what is true, not what we declined to do', () => {
+  const docs = [
+    renderGuide(golden()),
+    renderGuide(
+      resolve({ devices: [], template: GOLDEN_TEMPLATE, mood: GOLDEN_MOOD, seed: GOLDEN_SEED }),
+    ),
+  ]
+
+  it('never narrates its own restraint', () => {
+    // Not inventing things is the job, not news. A reader cares what is there and what is not.
+    for (const doc of docs) {
+      expect(doc).not.toContain('was invented')
+      expect(doc).not.toContain('nothing was invented')
+    }
+  })
+
+  it('never cites our own design document at a reader who does not have it', () => {
+    for (const doc of docs) expect(doc).not.toContain('§')
+  })
+
+  it('does not use our word for our data structures', () => {
+    for (const doc of docs) {
+      expect(doc).not.toContain('not modelled')
+      expect(doc).not.toContain('authors none')
+    }
   })
 })

@@ -30,8 +30,7 @@ export function MoodPanel({ mood, onChange }: MoodPanelProps) {
       <header>
         <h2>Mood</h2>
         <p className="note">
-          Drag vertically, hold Shift to fine-adjust, or type a number. Applied after recipe
-          resolution — never invents a parameter value (§6).
+          Drag vertically, hold Shift to fine-adjust, or type a number.
         </p>
       </header>
 

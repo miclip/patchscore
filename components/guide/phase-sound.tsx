@@ -37,7 +37,7 @@ export function PhaseSound({
   deviceById: Map<DeviceId, Device>
 }) {
   if (result.assignments.length === 0) {
-    return <p className="quiet">No part was assigned, so there is nothing to dial in.</p>
+    return <p className="quiet">No parts assigned.</p>
   }
 
   const carrying = result.devices
@@ -74,9 +74,7 @@ export function PhaseSound({
                 )}
 
                 {a.params.length === 0 ? (
-                  <p className="quiet">
-                    No parameters are authored for this recipe. Nothing was invented to fill it.
-                  </p>
+                  <p className="quiet">No settings authored for this recipe.</p>
                 ) : (
                   <div className="params">
                     {a.params.map((param) => {
