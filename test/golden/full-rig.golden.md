@@ -87,6 +87,10 @@ None.
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: stereo main out · audio in
   - mixer: 2 parts, no individual outs: one stereo channel for all
+- **Model 2400** — mixer-recorder · 0 parts
+  - clock: sends clock · midi-din/usb
+  - audio: stereo main out · 8 individual outs · USB audio · audio in
+  - mixer: no parts assigned; nothing to patch
 - **Zoom LiveTrak L-8** — mixer-recorder · 0 parts
   - clock: receives clock only · usb
   - audio: stereo main out · USB audio · audio in
@@ -803,6 +807,7 @@ What processes audio in this rig:
 - MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and DELAY SEND and REVERB SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 - Deluge — carries BITCRUSH, DECIMATION, DELAY AMOUNT, DELAY RATE, MOD FX FEEDBACK, MOD FX RATE, MOD FX TYPE and REVERB AMOUNT in its recipes
+- Model 2400 — is a mixer and recorder (stereo main out · 8 individual outs · USB audio · audio in)
 - Zoom LiveTrak L-8 — is a mixer and recorder (stereo main out · USB audio · audio in)
 
 **Arrangement variations**

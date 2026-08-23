@@ -11,6 +11,7 @@ import { device as device_polyend_tracker_mini } from './polyend-tracker-mini/in
 import { device as device_roland_mc_101 } from './roland-mc-101/index'
 import { device as device_roland_tr_1000 } from './roland-tr-1000/index'
 import { device as device_synthstrom_deluge } from './synthstrom-deluge/index'
+import { device as device_tascam_model_2400 } from './tascam-model-2400/index'
 import { device as device_zoom_livetrak_l_8 } from './zoom-livetrak-l-8/index'
 
 /** Every device manifest, ordered by folder name (UTF-16 code unit). */
@@ -21,6 +22,7 @@ export const DEVICES: readonly Device[] = [
   device_roland_mc_101,
   device_roland_tr_1000,
   device_synthstrom_deluge,
+  device_tascam_model_2400,
   device_zoom_livetrak_l_8,
 ]
 
@@ -32,5 +34,6 @@ export const DEVICE_FOLDERS: readonly string[] = [
   'roland-mc-101',
   'roland-tr-1000',
   'synthstrom-deluge',
+  'tascam-model-2400',
   'zoom-livetrak-l-8',
 ]
