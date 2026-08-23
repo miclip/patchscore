@@ -1,11 +1,61 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ResolveResult } from '@/lib/core'
 import { citeText, count } from '../guide/format'
 import { RackDiagram } from './diagram'
 import { RackFullscreen } from './fullscreen'
-import { AUDIO_OMISSION, SCALE_CAVEAT, rackModel } from './model'
+import { AUDIO_OMISSION, NARROW_PER_ROW, ROW_CAPS, SCALE_CAVEAT, rackModel } from './model'
+
+/**
+ * The row cap, from the viewport (#63).
+ *
+ * It has to be JavaScript rather than CSS, and that is worth saying: the wrap changes the SVG's
+ * *geometry* — how many panels are on a row, where the cables run, how tall the figure is — and
+ * a stylesheet cannot reach any of that. A media query can only restyle what the model already
+ * decided, so the model has to be told.
+ *
+ * `useSyncExternalStore` rather than an effect, because the server has no viewport: the third
+ * argument is the server snapshot, so the first paint is the narrow layout everywhere and the
+ * client re-renders once with the real one. No hydration mismatch, and nothing flashes on the
+ * device the issue is about.
+ */
+// Built once and reused: `getSnapshot` runs on every render, and a fresh `MediaQueryList` per
+// call would be both wasteful and a different object each time.
+const QUERIES = new Map<number, MediaQueryList>()
+
+function queryFor(minPx: number): MediaQueryList {
+  const held = QUERIES.get(minPx)
+  if (held !== undefined) return held
+  const made = window.matchMedia(`(min-width: ${minPx}px)`)
+  QUERIES.set(minPx, made)
+  return made
+}
+
+function subscribe(onChange: () => void): () => void {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => {}
+  const list = ROW_CAPS.filter((tier) => tier.minPx > 0).map((tier) => queryFor(tier.minPx))
+  for (const query of list) query.addEventListener('change', onChange)
+  return () => {
+    for (const query of list) query.removeEventListener('change', onChange)
+  }
+}
+
+function perRowNow(): number {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return NARROW_PER_ROW
+  }
+  // Widest tier first, so the first match is the right one.
+  for (const tier of ROW_CAPS) {
+    if (tier.minPx === 0) return tier.perRow
+    if (queryFor(tier.minPx).matches) return tier.perRow
+  }
+  return NARROW_PER_ROW
+}
+
+function serverPerRow(): number {
+  return NARROW_PER_ROW
+}
 
 /**
  * §10's signature element, build step 9 (#11).
@@ -28,7 +78,11 @@ import { AUDIO_OMISSION, SCALE_CAVEAT, rackModel } from './model'
 export function Rack({ result }: { result: ResolveResult | undefined }) {
   const [full, setFull] = useState(false)
   const openRef = useRef<HTMLButtonElement>(null)
-  const model = useMemo(() => (result === undefined ? undefined : rackModel(result)), [result])
+  const perRow = useSyncExternalStore(subscribe, perRowNow, serverPerRow)
+  const model = useMemo(
+    () => (result === undefined ? undefined : rackModel(result, { perRow })),
+    [result, perRow],
+  )
 
   function close() {
     setFull(false)
@@ -66,9 +120,16 @@ export function Rack({ result }: { result: ResolveResult | undefined }) {
           <RackDiagram model={model} idPrefix="rack-inline" />
         </div>
         <figcaption className="rack-caption">
+          {/*
+            The number quoted is `frontPanelMm` — the sum of the cited spans — rather than the
+            figure's width. They were the same thing when every box sat on one row; once the rack
+            wraps, the figure's width is only the widest row, and "mm of front panel" has to keep
+            meaning the front panel a person owns.
+          */}
           <span>
-            Overview, fitted to the page. {model.totalMm} mm of front panel across{' '}
-            {count(model.panels.length, 'box')}.
+            Overview, fitted to the page. {model.frontPanelMm} mm of front panel across{' '}
+            {count(model.panels.length, 'box', 'boxes')}
+            {model.rows.length > 1 ? `, on ${count(model.rows.length, 'row')}` : ''}.
           </span>
           <button ref={openRef} type="button" className="rack-open" onClick={() => setFull(true)}>
             Open full size

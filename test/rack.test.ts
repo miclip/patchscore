@@ -9,11 +9,15 @@ import { TEMPLATES } from '../lib/templates/index'
 import { Rack } from '../components/rack/rack'
 import {
   AUDIO_OMISSION,
+  NARROW_PER_ROW,
   PANEL_GAP_MM,
   PANEL_HEIGHT_MM,
+  RAIL_MM,
   cablePath,
+  perRowForWidth,
   rackModel,
   sagFor,
+  samplePath,
 } from '../components/rack/model'
 import { box, request, withRoles } from './rigs'
 import { makeRecipe } from './rigs'
@@ -93,25 +97,37 @@ describe('rack geometry (§10)', () => {
     expect(panel?.banks.flatMap((b) => b.cells)).toHaveLength(1)
   })
 
-  it('bottom-aligns panels of different heights on one rail', () => {
-    const model = rackModel(real)
+  it('bottom-aligns panels of different heights on one rail, per row', () => {
+    const model = rackModel(real, { perRow: 5 })
     const rails = new Set(model.panels.map((p) => p.topMm + p.riseMm))
     expect(rails.size).toBe(1)
     // Not vacuous: these four boxes are genuinely different depths.
     expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(4)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
+
+    // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
+    // what lets a same-row cable stay a horizontal hang rather than a diagonal.
+    const wrapped = rackModel(real, { perRow: 2 })
+    expect(wrapped.rows).toHaveLength(2)
+    for (const row of wrapped.rows) {
+      expect(new Set(row.panels.map((p) => p.topMm + p.riseMm)).size).toBe(1)
+    }
   })
 
-  it('accumulates x by span plus one gap, and totals without a trailing gap', () => {
-    const model = rackModel(real)
+  it('accumulates x by span plus one gap within a row, and totals without a trailing gap', () => {
+    const model = rackModel(real, { perRow: 5 })
     let expected = 0
     for (const panel of model.panels) {
       expect(panel.xMm).toBe(expected)
       expected += panel.spanMm + PANEL_GAP_MM
     }
+    // One row and no inter-row cable, so no gutter is reserved and the figure is the band.
+    expect(model.leftGutterMm).toBe(0)
+    expect(model.rightGutterMm).toBe(0)
     expect(model.totalMm).toBe(expected - PANEL_GAP_MM)
     const spans = model.panels.reduce((sum, p) => sum + p.spanMm, 0)
     expect(model.totalMm).toBe(spans + PANEL_GAP_MM * (model.panels.length - 1))
+    expect(model.frontPanelMm).toBe(spans)
   })
 
   it('puts the jacks the cables use on the panel that draws them', () => {
@@ -617,5 +633,306 @@ describe('rack view', () => {
 
   it('renders the same bytes twice', () => {
     expect(markup(real)).toBe(markup(real))
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Rows (#63)
+// ---------------------------------------------------------------------------
+
+/** A rig of `n` boxes where only the first can send clock, so the source's row is known. */
+function wideRig(n: number, sourceAt = 0): ResolveResult {
+  const devices = Array.from({ length: n }, (_, i) =>
+    box(`b${i}`, {
+      // Spans differ so the rows are genuinely ragged rather than accidentally equal.
+      physical: { panelSpanMm: 120 + (i % 4) * 90, verified: { kind: 'manual', source: 'fx p.1' } },
+      clock: {
+        canSendClock: i === sourceAt,
+        canReceiveClock: true,
+        transport: ['midi-din'],
+      },
+      voices: [{ kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 }],
+      recipes: [makeRecipe(`r${i}`, 'kick', 'hard', 'bd')],
+    }),
+  )
+  return rig(devices)
+}
+
+/** The panel proper — the face the cables must keep off. The rail below it is theirs. */
+function face(panel: { xMm: number; topMm: number; spanMm: number; riseMm: number }) {
+  return { x: panel.xMm, y: panel.topMm, w: panel.spanMm, h: panel.riseMm }
+}
+
+describe('rack rows (#63)', () => {
+  it('caps a row by breakpoint: three on a phone, four on a tablet, five on a desktop', () => {
+    // The number the human gave, honoured as a count rather than as a minimum width — so it is
+    // checkable by counting instead of by measuring.
+    expect(perRowForWidth(320)).toBe(3)
+    expect(perRowForWidth(390)).toBe(3)
+    expect(perRowForWidth(767)).toBe(3)
+    expect(perRowForWidth(768)).toBe(4)
+    expect(perRowForWidth(1023)).toBe(4)
+    expect(perRowForWidth(1024)).toBe(5)
+    expect(perRowForWidth(1920)).toBe(5)
+    // The server has no viewport and renders the narrow one, so nothing wider than a phone is
+    // ever guessed on a phone.
+    expect(NARROW_PER_ROW).toBe(perRowForWidth(390))
+  })
+
+  it('never puts more than the cap on a row, at every cap', () => {
+    for (const perRow of [3, 4, 5]) {
+      for (const n of [1, 2, 3, 4, 7, 11]) {
+        const model = rackModel(wideRig(n), { perRow })
+        expect(model.perRow).toBe(perRow)
+        expect(model.rows).toHaveLength(Math.ceil(n / perRow))
+        for (const row of model.rows) expect(row.panels.length).toBeLessThanOrEqual(perRow)
+        // Every panel is on exactly one row, and the rows partition them.
+        expect(model.rows.flatMap((r) => r.panels.map((p) => p.deviceId))).toEqual(
+          model.panels.map((p) => p.deviceId),
+        )
+      }
+    }
+  })
+
+  it('fills rows in registry order, so a reroll cannot rearrange the rack', () => {
+    const model = rackModel(wideRig(7), { perRow: 3 })
+    expect(model.panels.map((p) => p.deviceId)).toEqual(
+      ['b0', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6'],
+    )
+    expect(model.panels.map((p) => p.row)).toEqual([0, 0, 0, 1, 1, 1, 2])
+    // Rows never run backwards: panel i is on the same row as panel i-1 or the next one down.
+    let previous = 0
+    for (const panel of model.panels) {
+      expect(panel.row === previous || panel.row === previous + 1).toBe(true)
+      previous = panel.row
+    }
+  })
+
+  it('keeps one millimetre the same length on every row', () => {
+    // The claim §10 makes, and the one wrapping could most easily break. There is a single
+    // viewBox in millimetres, so the test is that a panel's drawn span is its cited span
+    // wherever it lands — a box does not get bigger for being on the last row.
+    const cited = new Map(DEVICES.map((d) => [d.id, d.physical.panelSpanMm]))
+    for (const perRow of [1, 2, 3, 4, 5]) {
+      const model = rackModel(real, { perRow })
+      for (const panel of model.panels) expect(panel.spanMm).toBe(cited.get(panel.deviceId))
+    }
+
+    // And said as a ratio between two boxes that a narrow cap puts on different rows: the
+    // Tracker Mini still reads narrow beside the TR-1000 when it is a row below it.
+    const wrapped = rackModel(real, { perRow: 1 })
+    const rows = new Map(wrapped.panels.map((p) => [p.deviceId, p.row]))
+    const widest = wrapped.panels.reduce((a, b) => (a.spanMm >= b.spanMm ? a : b))
+    const narrowest = wrapped.panels.reduce((a, b) => (a.spanMm <= b.spanMm ? a : b))
+    expect(rows.get(widest.deviceId)).not.toBe(rows.get(narrowest.deviceId))
+    expect(widest.spanMm / narrowest.spanMm).toBeCloseTo(
+      (cited.get(widest.deviceId) ?? 0) / (cited.get(narrowest.deviceId) ?? 1),
+      10,
+    )
+  })
+
+  it('leaves rows ragged rather than stretching a short one to fit', () => {
+    const model = rackModel(wideRig(7), { perRow: 3 })
+    for (const row of model.rows) {
+      // A row is exactly its panels plus the gaps between them. No justification, no padding.
+      const spans = row.panels.reduce((sum, p) => sum + p.spanMm, 0)
+      expect(row.widthMm).toBe(spans + PANEL_GAP_MM * (row.panels.length - 1))
+      // And every row starts at the same left edge, which is what makes the raggedness read.
+      expect(row.panels[0]?.xMm).toBe(model.leftGutterMm)
+    }
+    // Not vacuous: the last row holds one box and is much shorter than the widest.
+    const widths = model.rows.map((r) => r.widthMm)
+    const last = widths[widths.length - 1] ?? 0
+    expect(last).toBeLessThan(Math.max(...widths))
+    // The figure is the widest row plus whatever gutters the cables needed, never the sum.
+    expect(model.totalMm).toBe(model.leftGutterMm + Math.max(...widths) + model.rightGutterMm)
+    expect(model.totalMm).toBeLessThan(model.frontPanelMm)
+  })
+
+  it('stacks each row block over its own cable corridor, and reports the height honestly', () => {
+    const model = rackModel(wideRig(7), { perRow: 3 })
+    for (const row of model.rows) {
+      expect(row.blockMm).toBe(
+        Math.max(...row.panels.map((p) => p.riseMm + RAIL_MM)),
+      )
+      expect(row.corridorMm).toBe(row.topMm + row.blockMm)
+      // Panels sit inside their row's block, with none escaping into the corridor.
+      for (const panel of row.panels) {
+        expect(panel.topMm).toBeGreaterThanOrEqual(row.topMm)
+        expect(panel.topMm + panel.riseMm + RAIL_MM).toBeCloseTo(row.topMm + row.blockMm, 6)
+      }
+    }
+    // Rows do not overlap, and each is clear of the one above by a whole corridor.
+    for (let i = 1; i < model.rows.length; i++) {
+      const above = model.rows[i - 1]
+      const here = model.rows[i]
+      if (above === undefined || here === undefined) throw new Error('missing row')
+      expect(here.topMm).toBeGreaterThan(above.corridorMm)
+    }
+    const lastRow = model.rows[model.rows.length - 1]
+    expect(model.heightMm).toBeGreaterThan(lastRow?.corridorMm ?? 0)
+  })
+
+  it('keeps the same-row hang exactly as it was', () => {
+    const model = rackModel(wideRig(5), { perRow: 3 })
+    const sameRow = model.cables.filter((c) => c.routing === 'same-row')
+    expect(sameRow.length).toBeGreaterThan(0)
+    for (const cable of sameRow) {
+      // Byte for byte the curve this drawing has always drawn: one cubic, sagging.
+      expect(cable.d).toBe(cablePath(cable.from, cable.to))
+      expect(cable.path.segs).toHaveLength(1)
+      expect(cable.path.segs[0]?.kind).toBe('cubic')
+    }
+  })
+
+  it('lays a one-row rig out exactly as it did before rows existed', () => {
+    // The regression guard that matters: wrapping must cost nothing when nothing wraps. No
+    // gutter is reserved, so not one millimetre of the old geometry moved.
+    const model = rackModel(real, { perRow: DEVICES.length })
+    expect(model.rows).toHaveLength(1)
+    expect(model.leftGutterMm).toBe(0)
+    expect(model.rightGutterMm).toBe(0)
+    expect(model.panels[0]?.xMm).toBe(0)
+    expect(model.cables.every((c) => c.routing === 'same-row')).toBe(true)
+    for (const cable of model.cables) expect(cable.d).toBe(cablePath(cable.from, cable.to))
+  })
+
+  it('routes an inter-row cable round the side, never across a panel', () => {
+    // The real work of #63. A cable from a box on row 1 to a box on row 2 leaves its jack
+    // downward into the corridor, crosses to a reserved gutter, drops down the side of the
+    // frame and comes back along the corridor *under* its target. Nothing it touches is a face.
+    for (const [n, perRow] of [[7, 3], [11, 4], [9, 5], [6, 2]] as const) {
+      const model = rackModel(wideRig(n), { perRow })
+      const inter = model.cables.filter((c) => c.routing === 'inter-row')
+      expect(inter.length).toBeGreaterThan(0)
+
+      for (const cable of model.cables) {
+        for (const point of samplePath(cable.path)) {
+          for (const panel of model.panels) {
+            const rect = face(panel)
+            const on =
+              point.x >= rect.x &&
+              point.x <= rect.x + rect.w &&
+              point.y >= rect.y &&
+              point.y <= rect.y + rect.h
+            expect(
+              on,
+              `${cable.fromName}→${cable.toName} crosses ${panel.name} at ${point.x},${point.y}`,
+            ).toBe(false)
+          }
+        }
+      }
+    }
+  })
+
+  it('reserves the gutter it uses, and actually goes round the outside', () => {
+    const model = rackModel(wideRig(7), { perRow: 3 })
+    const bandLeft = model.leftGutterMm
+    const bandRight = model.totalMm - model.rightGutterMm
+    expect(model.leftGutterMm + model.rightGutterMm).toBeGreaterThan(0)
+    // Every panel is inside the band; the gutters belong to the cables alone.
+    for (const panel of model.panels) {
+      expect(panel.xMm).toBeGreaterThanOrEqual(bandLeft)
+      expect(panel.xMm + panel.spanMm).toBeLessThanOrEqual(bandRight + 0.001)
+    }
+    for (const cable of model.cables.filter((c) => c.routing === 'inter-row')) {
+      const points = samplePath(cable.path)
+      // Not merely avoiding the panels: it leaves the band entirely, which is what a loom does.
+      expect(points.some((p) => p.x < bandLeft || p.x > bandRight)).toBe(true)
+      // And it stays inside the figure, so nothing is clipped by the viewBox.
+      for (const point of points) {
+        expect(point.x).toBeGreaterThanOrEqual(-0.001)
+        expect(point.x).toBeLessThanOrEqual(model.totalMm + 0.001)
+        expect(point.y).toBeGreaterThanOrEqual(-0.001)
+        expect(point.y).toBeLessThanOrEqual(model.heightMm + 0.001)
+      }
+    }
+  })
+
+  it('routes upward as readily as downward when the source is on a lower row', () => {
+    const model = rackModel(wideRig(7, 6), { perRow: 3 })
+    const source = model.panels.find((p) => p.clockRole === 'source')
+    expect(source?.row).toBe(2)
+    const inter = model.cables.filter((c) => c.routing === 'inter-row')
+    expect(inter.length).toBe(6)
+    for (const cable of inter) {
+      expect(cable.to.y).toBeLessThan(cable.from.y)
+      for (const point of samplePath(cable.path)) {
+        for (const panel of model.panels) {
+          const rect = face(panel)
+          expect(
+            point.x >= rect.x &&
+              point.x <= rect.x + rect.w &&
+              point.y >= rect.y &&
+              point.y <= rect.y + rect.h,
+          ).toBe(false)
+        }
+      }
+    }
+  })
+
+  it('gives every routed cable its own lane rather than drawing them on top of each other', () => {
+    const model = rackModel(wideRig(9), { perRow: 3 })
+    const inter = model.cables.filter((c) => c.routing === 'inter-row')
+    expect(inter.length).toBeGreaterThan(2)
+    // Two cables sharing a corridor must not share its depth, or the drawing shows one cable
+    // where the rig has several.
+    const paths = new Set(inter.map((c) => c.d))
+    expect(paths.size).toBe(inter.length)
+  })
+
+  it('quotes the front panel a person owns, not the width of the figure', () => {
+    const model = rackModel(real, { perRow: 3 })
+    expect(model.frontPanelMm).toBe(
+      DEVICES.reduce((sum, d) => sum + d.physical.panelSpanMm, 0),
+    )
+    // The line #63 asked not to lose, still on the page and still counting boxes.
+    const html = markup(real)
+    expect(html).toContain(`Overview, fitted to the page. ${model.frontPanelMm} mm of front panel`)
+    expect(html).toContain(`across ${DEVICES.length} boxes`)
+    expect(html).toContain('on 2 rows')
+    // And the two notes that survive whatever the layout becomes.
+    expect(html).toContain('Audio paths are not drawn')
+    expect(html).toContain('to scale against each other in both dimensions')
+  })
+
+  it('draws a case rail behind each row, and none at all when nothing wrapped', () => {
+    // A short row against a full-width rail is what "a real rack where the last row is rarely
+    // full" looks like. One row needs no such rail: the panels' own patch rails are the frame.
+    const wrapped = markup(real)
+    expect((wrapped.match(/class="rack-row-rail"/g) ?? []).length).toBe(
+      rackModel(real, { perRow: NARROW_PER_ROW }).rows.length,
+    )
+    const one = renderToStaticMarkup(
+      createElement(Rack, { result: rig([box('solo', {
+        voices: [{ kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 }],
+        recipes: [makeRecipe('r-kick', 'kick', 'hard', 'bd')],
+      })]) }),
+    )
+    expect(one).not.toContain('rack-row-rail')
+  })
+
+  it('routes the same way twice, on any machine', () => {
+    // Invariant 6's reasoning applied to layout: lanes and gutter sides are decided by integer
+    // and IEEE-754 arithmetic on numbers already fixed, never by insertion order into a shared
+    // map or by anything ambient. Two models of one rig are the same drawing.
+    const a = rackModel(wideRig(9), { perRow: 4 })
+    const b = rackModel(wideRig(9), { perRow: 4 })
+    expect(a.cables.map((c) => c.d)).toEqual(b.cables.map((c) => c.d))
+    expect(a.panels.map((p) => [p.xMm, p.topMm, p.row])).toEqual(
+      b.panels.map((p) => [p.xMm, p.topMm, p.row]),
+    )
+    for (const cable of a.cables) expect(cable.d).not.toMatch(/,\d{3}/)
+  })
+
+  it('renders the narrow layout on the server, wrapped and in one coordinate system', () => {
+    const model = rackModel(real, { perRow: NARROW_PER_ROW })
+    expect(model.rows.length).toBeGreaterThan(1)
+    const html = markup(real)
+    expect(html).toContain(`viewBox="0 0 ${model.totalMm} ${model.heightMm}"`)
+    // One viewBox for the whole figure is what makes the shared scale structural rather than
+    // arithmetic: there is no second scale for a renderer to get wrong.
+    expect((html.match(/<svg/g) ?? []).length).toBe(1)
+    expect(html).toContain('The rack is on 2 rows of at most 3 boxes')
   })
 })

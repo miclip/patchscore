@@ -55,7 +55,7 @@ export const PANEL_GAP_MM = 16
 export const PANEL_HEIGHT_MM = 170
 
 /**
- * Room under the frame for the cables to hang in.
+ * Room under **each row** for the cables to hang in — the cable corridor.
  *
  * This is the layout decision the drawing turns on, so it is worth saying why. The first cut put
  * the clock jacks on a top rail, which is where they sit on most of these boxes — and every
@@ -65,8 +65,74 @@ export const PANEL_HEIGHT_MM = 170
  *
  * Height costs nothing here, because the diagram is fitted to width — adding room below does not
  * shrink the panels, it only makes the figure taller.
+ *
+ * With rows (#63) every row gets one, including the last: an inter-row cable approaches its
+ * target's CLK IN from *underneath*, so the bottom row needs a corridor as much as the others.
  */
 const CABLE_ROOM_MM = 62
+
+// ---------------------------------------------------------------------------
+// Rows (#63)
+// ---------------------------------------------------------------------------
+
+/**
+ * How many panels a row may hold, by viewport width.
+ *
+ * **A hard cap, not a minimum panel width.** The number the human gave is "about three devices
+ * wide maximum on a phone", and a cap honours that number directly and is checkable by counting.
+ * A minimum-width rule would instead fit four narrow boxes across and three wide ones, so two
+ * rigs of the same size would wrap differently — adaptive, and inconsistent in exactly the way
+ * a rack is not.
+ *
+ * The consequence has to be said out loud: capping the *count* means a row of three narrow boxes
+ * is physically shorter than a row of three wide ones. Rows are therefore **ragged**, and a short
+ * row is never stretched to justify it — stretching would break the one thing §10 promises, which
+ * is that a millimetre is the same length everywhere in the figure.
+ */
+export const ROW_CAPS = [
+  { minPx: 1024, perRow: 5 },
+  { minPx: 768, perRow: 4 },
+  { minPx: 0, perRow: 3 },
+] as const
+
+/**
+ * The narrow cap, and the one the server renders with.
+ *
+ * There is no viewport on the server, so the first paint has to guess. It guesses *narrow*: three
+ * across is legible at every width, where five across is legible at exactly one of them. A desktop
+ * reader sees the row count widen on hydration; a phone reader — the one #63 is about — sees the
+ * right layout from the first frame, and so does anyone with JavaScript off.
+ */
+export const NARROW_PER_ROW = 3
+
+/** The cap for a viewport width in CSS pixels. */
+export function perRowForWidth(px: number): number {
+  for (const tier of ROW_CAPS) {
+    if (px >= tier.minPx) return tier.perRow
+  }
+  return NARROW_PER_ROW
+}
+
+/**
+ * Cable gutters: reserved vertical corridors down the left and right of the panel band, where an
+ * inter-row cable makes its descent. Width is `MARGIN + LANE * cables`, and **zero when no cable
+ * uses that side** — so a rig that fits on one row is laid out exactly as it was before rows
+ * existed, to the millimetre.
+ */
+const GUTTER_MARGIN_MM = 10
+const GUTTER_LANE_MM = 9
+
+/**
+ * The band inside a corridor where inter-row cables run horizontally, measured down from the
+ * rail. It starts below the deepest ordinary sag rather than at the top of the corridor, so a
+ * routed cable reads as a separate run from the ones hanging off the same rail instead of
+ * threading between them.
+ */
+const LANE_TOP_MM = 34
+const LANE_BOTTOM_MM = CABLE_ROOM_MM - 6
+
+/** Corner radius on a routed run. A cable bends, it does not mitre. */
+const CORNER_MM = 7
 
 /**
  * The patch rail: a strip under every panel carrying its jacks.
@@ -159,6 +225,8 @@ export type RackPanel = {
   xMm: number
   /** Top edge, in layout mm. Panels are bottom-aligned, the way boxes sit on a desk. */
   topMm: number
+  /** Which row this panel wrapped onto, counting from zero. Registry order fills rows in turn. */
+  row: number
   /** The authored drawing, or `undefined` for a manifest that has not been drawn yet. */
   layout?: PanelLayout
   /** Where the drawing came from. Absent on a generated panel, which claims nothing. */
@@ -199,6 +267,20 @@ export type RackPanel = {
 // ---------------------------------------------------------------------------
 
 /**
+ * A cable, as geometry rather than as a string.
+ *
+ * The `d` attribute is the *output*; keeping the segments is what lets a test walk the path and
+ * assert where it does and does not go. A claim like "no cable crosses a panel" is only worth
+ * making if something can check it, and nothing can check a string.
+ */
+export type PathSeg =
+  | { kind: 'line'; to: Point }
+  | { kind: 'quad'; c: Point; to: Point }
+  | { kind: 'cubic'; c1: Point; c2: Point; to: Point }
+
+export type CableGeometry = { start: Point; segs: readonly PathSeg[] }
+
+/**
  * Clock only. There is no audio cable type and that is deliberate — see `AUDIO_OMISSION`.
  */
 export type ClockCable = {
@@ -209,7 +291,15 @@ export type ClockCable = {
   transport: string
   from: Point
   to: Point
-  /** Cubic bézier, sagging downward under its own weight. */
+  /**
+   * `same-row` is the hanging bézier this drawing has always used. `inter-row` is a routed run
+   * through the reserved gutters — a cable that has to get past a row of panels, and does it the
+   * way a loom does, round the side rather than across the faces.
+   */
+  routing: 'same-row' | 'inter-row'
+  /** The segments, in order, from `from` to `to`. */
+  path: CableGeometry
+  /** Those segments as SVG path data. */
   d: string
 }
 
@@ -263,11 +353,114 @@ export function sagFor(from: Point, to: Point): number {
   return Math.min(SAG_BASE_MM + distance * SAG_PER_MM, SAG_MAX_MM)
 }
 
-export function cablePath(from: Point, to: Point): string {
+/** The hanging cable: one cubic, sagging under its own weight between two jacks on one rail. */
+export function sagCurve(from: Point, to: Point): CableGeometry {
   const sag = sagFor(from, to)
-  const c1 = { x: from.x, y: from.y + sag }
-  const c2 = { x: to.x, y: to.y + sag }
-  return `M ${round(from.x)} ${round(from.y)} C ${round(c1.x)} ${round(c1.y)}, ${round(c2.x)} ${round(c2.y)}, ${round(to.x)} ${round(to.y)}`
+  return {
+    start: from,
+    segs: [
+      { kind: 'cubic', c1: { x: from.x, y: from.y + sag }, c2: { x: to.x, y: to.y + sag }, to },
+    ],
+  }
+}
+
+/**
+ * A routed run: the polyline through `points`, with its corners rounded.
+ *
+ * The corner is a quadratic whose control point *is* the mitre, so the curve stays inside the
+ * corner it replaces. That is what makes the containment argument work: round a route whose
+ * straight segments clear the panels and the rounded version clears them too, because rounding
+ * only ever cuts material away from the outside of a bend.
+ */
+export function routedPath(points: readonly Point[], radius = CORNER_MM): CableGeometry {
+  // Consecutive duplicates would divide by zero below, and they happen honestly: a cable whose
+  // jack sits exactly over its lane has no horizontal run to make.
+  const via: Point[] = []
+  for (const p of points) {
+    const last = via[via.length - 1]
+    if (last === undefined || last.x !== p.x || last.y !== p.y) via.push(p)
+  }
+  const first = via[0]
+  const last = via[via.length - 1]
+  if (first === undefined || last === undefined) return { start: { x: 0, y: 0 }, segs: [] }
+  if (via.length < 3) return { start: first, segs: [{ kind: 'line', to: last }] }
+
+  const segs: PathSeg[] = []
+  for (let i = 1; i < via.length - 1; i++) {
+    const before = via[i - 1]
+    const corner = via[i]
+    const after = via[i + 1]
+    if (before === undefined || corner === undefined || after === undefined) continue
+    const inLen = Math.hypot(corner.x - before.x, corner.y - before.y)
+    const outLen = Math.hypot(after.x - corner.x, after.y - corner.y)
+    const r = Math.min(radius, inLen / 2, outLen / 2)
+    const enter = {
+      x: corner.x - ((corner.x - before.x) / inLen) * r,
+      y: corner.y - ((corner.y - before.y) / inLen) * r,
+    }
+    const leave = {
+      x: corner.x + ((after.x - corner.x) / outLen) * r,
+      y: corner.y + ((after.y - corner.y) / outLen) * r,
+    }
+    segs.push({ kind: 'line', to: enter }, { kind: 'quad', c: corner, to: leave })
+  }
+  segs.push({ kind: 'line', to: last })
+  return { start: first, segs }
+}
+
+/** SVG path data for a geometry. The only place path syntax is written. */
+export function pathD(path: CableGeometry): string {
+  const parts = [`M ${round(path.start.x)} ${round(path.start.y)}`]
+  for (const seg of path.segs) {
+    if (seg.kind === 'line') {
+      parts.push(`L ${round(seg.to.x)} ${round(seg.to.y)}`)
+    } else if (seg.kind === 'quad') {
+      parts.push(`Q ${round(seg.c.x)} ${round(seg.c.y)}, ${round(seg.to.x)} ${round(seg.to.y)}`)
+    } else {
+      parts.push(
+        `C ${round(seg.c1.x)} ${round(seg.c1.y)}, ${round(seg.c2.x)} ${round(seg.c2.y)}, ${round(seg.to.x)} ${round(seg.to.y)}`,
+      )
+    }
+  }
+  return parts.join(' ')
+}
+
+export function cablePath(from: Point, to: Point): string {
+  return pathD(sagCurve(from, to))
+}
+
+/**
+ * Walk a path. `per` is samples per segment, endpoints included.
+ *
+ * This exists for the tests, and says so: "the cable does not cross a panel" is the claim the
+ * routing is for, and the honest way to check it is to walk the drawn geometry rather than to
+ * re-derive it from the same numbers that produced it.
+ */
+export function samplePath(path: CableGeometry, per = 48): readonly Point[] {
+  const points: Point[] = [path.start]
+  let at = path.start
+  for (const seg of path.segs) {
+    for (let i = 1; i <= per; i++) {
+      const t = i / per
+      if (seg.kind === 'line') {
+        points.push({ x: at.x + (seg.to.x - at.x) * t, y: at.y + (seg.to.y - at.y) * t })
+      } else if (seg.kind === 'quad') {
+        const u = 1 - t
+        points.push({
+          x: u * u * at.x + 2 * u * t * seg.c.x + t * t * seg.to.x,
+          y: u * u * at.y + 2 * u * t * seg.c.y + t * t * seg.to.y,
+        })
+      } else {
+        const u = 1 - t
+        points.push({
+          x: u ** 3 * at.x + 3 * u * u * t * seg.c1.x + 3 * u * t * t * seg.c2.x + t ** 3 * seg.to.x,
+          y: u ** 3 * at.y + 3 * u * u * t * seg.c1.y + 3 * u * t * t * seg.c2.y + t ** 3 * seg.to.y,
+        })
+      }
+    }
+    at = seg.to
+  }
+  return points
 }
 
 /**
@@ -418,17 +611,50 @@ function voiceRect(span: number, rise: number, layout: PanelLayout | undefined):
 // The model
 // ---------------------------------------------------------------------------
 
+/** One row of the rack, and the block of the figure it owns. */
+export type RackRow = {
+  index: number
+  /** The panels on it, in registry order. */
+  panels: readonly RackPanel[]
+  /** Top of the row's panel block, layout mm. */
+  topMm: number
+  /** Height of the block: the tallest panel on the row, plus its rail. */
+  blockMm: number
+  /** Panels plus the gaps between them. Ragged by design — a short row is never stretched. */
+  widthMm: number
+  /** Top of the cable corridor under this row. */
+  corridorMm: number
+}
+
 export type RackModel = {
   panels: readonly RackPanel[]
+  /** The same panels, grouped. `rows.length` is 1 for a rig that fits the cap. */
+  rows: readonly RackRow[]
   cables: readonly ClockCable[]
-  /** Full layout width in mm, panels plus the gaps between them. */
+  /** The per-row cap this layout was built with, so a caller can say what it is showing. */
+  perRow: number
+  /** Figure width in mm: the widest row, plus whatever cable gutters were reserved. */
   totalMm: number
-  /** Tallest panel block plus the room the cables hang in — the figure's height, not a panel's. */
+  /**
+   * Millimetres of actual front panel — the sum of the cited spans. Unlike `totalMm` this does
+   * not move when the layout wraps, which is what makes it the number the caption should quote.
+   */
+  frontPanelMm: number
+  /** Every row block plus its corridor — the figure's height, not a panel's. */
   heightMm: number
+  /** Width of the reserved left cable gutter, mm. Zero when no cable needs it. */
+  leftGutterMm: number
+  /** Width of the reserved right cable gutter, mm. Zero when no cable needs it. */
+  rightGutterMm: number
   /** `undefined` when nothing in the rig can send clock (§7.4). */
   clockSource: ResolveResult['clockSource']
   /** Boxes the clock cannot reach, in panel order. Rendered as a stated fact, not hidden. */
   isolated: readonly RackPanel[]
+}
+
+export type RackLayoutOptions = {
+  /** Hard cap on panels per row. Defaults to the narrow cap — see `NARROW_PER_ROW`. */
+  perRow?: number
 }
 
 /**
@@ -445,7 +671,8 @@ function isolationReason(device: Device, transport: string): string | undefined 
   return undefined
 }
 
-export function rackModel(result: ResolveResult): RackModel {
+export function rackModel(result: ResolveResult, options: RackLayoutOptions = {}): RackModel {
+  const perRow = Math.max(1, Math.floor(options.perRow ?? NARROW_PER_ROW))
   const parts = occupiedCounts(result.assignments)
 
   const occupiedByDevice = new Map<DeviceId, Set<string>>()
@@ -463,20 +690,100 @@ export function rackModel(result: ResolveResult): RackModel {
 
   const source = result.clockSource
 
-  // Bottom-aligned, so every panel's rail — and therefore every clock socket — is on one line,
-  // the way boxes of different depths sit on one desk.
+  // Bottom-aligned within a row, so every panel's rail on that row — and therefore every clock
+  // socket on it — is on one line, the way boxes of different depths sit on one desk.
   const blockOf = (device: Device) => (device.panel?.panelRiseMm ?? PANEL_HEIGHT_MM) + RAIL_MM
-  const tallest =
-    result.devices.length === 0 ? 0 : Math.max(...result.devices.map((d) => blockOf(d)))
 
-  // Registry order, which is the resolver's own device order (§7.2) — so the rack does not
-  // reorder itself when a reroll changes which box carries the most parts.
-  let x = 0
-  const panels: RackPanel[] = result.devices.map((device) => {
+  /**
+   * Registry order, which is the resolver's own device order (§7.2), chunked at the cap — so the
+   * rack does not reorder itself when a reroll changes which box carries the most parts, and does
+   * not reorder itself when it wraps either. Grouping by clock role would shorten the cables and
+   * cost the one property that makes the picture stable between rerolls.
+   */
+  const chunks: Device[][] = []
+  result.devices.forEach((device, index) => {
+    if (index % perRow === 0) chunks.push([])
+    chunks[chunks.length - 1]?.push(device)
+  })
+
+  /**
+   * Pass one: rows and each panel's x *within the panel band*, before the gutters exist.
+   *
+   * Gutter width depends on how many cables use each side, which depends on where the panels are
+   * — but only on their offsets relative to one another, and a common left shift does not change
+   * those. So the two can be computed in order rather than solved together.
+   */
+  type Placed = { device: Device; row: number; localX: number; topMm: number }
+  const placed: Placed[] = []
+  const rowTops: number[] = []
+  const rowBlocks: number[] = []
+  const rowWidths: number[] = []
+  let y = 0
+  chunks.forEach((chunk, row) => {
+    const block = Math.max(...chunk.map(blockOf))
+    let localX = 0
+    for (const device of chunk) {
+      placed.push({ device, row, localX, topMm: y + block - blockOf(device) })
+      localX += device.physical.panelSpanMm + PANEL_GAP_MM
+    }
+    rowTops.push(y)
+    rowBlocks.push(block)
+    rowWidths.push(localX - PANEL_GAP_MM)
+    y += block + CABLE_ROOM_MM
+  })
+  const bandMm = rowWidths.length === 0 ? 0 : Math.max(...rowWidths)
+  const heightMm = y
+
+  const clockOf = (device: Device): { role: ClockRole; reason?: string } => {
+    if (source === undefined) return { role: 'isolated', reason: 'no clock source in this rig' }
+    if (device.id === source.deviceId) return { role: 'source' }
+    const reason = isolationReason(device, source.transport)
+    return reason === undefined ? { role: 'receiver' } : { role: 'isolated', reason }
+  }
+
+  // Jack positions relative to the band, which is all the side choice below needs.
+  const localOut = (p: Placed) => p.localX + p.device.physical.panelSpanMm - JACK_SIDE_MM
+  const localIn = (p: Placed) => p.localX + JACK_SIDE_MM
+
+  /**
+   * Pass two: which cables have to leave their row, and down which side.
+   *
+   * The side is whichever gutter makes the two horizontal runs shorter, ties to the left. It is
+   * arithmetic on numbers that are already fixed, so it is decided the same way on every machine
+   * (invariant 6's reasoning, applied to layout).
+   */
+  const sourceIndex = placed.findIndex((p) => clockOf(p.device).role === 'source')
+  type Run = { fromIndex: number; toIndex: number; side?: 'left' | 'right' }
+  const runs: Run[] = []
+  const from = placed[sourceIndex]
+  if (from !== undefined) {
+    placed.forEach((target, toIndex) => {
+      if (clockOf(target.device).role !== 'receiver') return
+      if (target.row === from.row) {
+        runs.push({ fromIndex: sourceIndex, toIndex })
+        return
+      }
+      const toLeft = localOut(from) + localIn(target)
+      const toRight = bandMm - localOut(from) + (bandMm - localIn(target))
+      runs.push({ fromIndex: sourceIndex, toIndex, side: toLeft <= toRight ? 'left' : 'right' })
+    })
+  }
+
+  const routed = runs.filter((r) => r.side !== undefined)
+  const gutterMm = (lanes: number) => (lanes === 0 ? 0 : GUTTER_MARGIN_MM + lanes * GUTTER_LANE_MM)
+  const leftLanes = routed.filter((r) => r.side === 'left').length
+  const rightLanes = routed.filter((r) => r.side === 'right').length
+  const leftGutterMm = gutterMm(leftLanes)
+  const rightGutterMm = gutterMm(rightLanes)
+  const totalMm = leftGutterMm + bandMm + rightGutterMm
+
+  // Pass three: the panels, now that the band's left edge is known.
+  const panels: RackPanel[] = placed.map((p) => {
+    const device = p.device
     const span = device.physical.panelSpanMm
     const layout = device.panel
     const rise = layout?.panelRiseMm ?? PANEL_HEIGHT_MM
-    const top = tallest - blockOf(device)
+    const xMm = leftGutterMm + p.localX
 
     const { jacks, hidden: hiddenJacks } = jacksFor(device, span, rise)
     const { banks, hidden: hiddenCells } = banksFor(
@@ -485,7 +792,8 @@ export function rackModel(result: ResolveResult): RackModel {
       voiceRect(span, rise, layout),
     )
 
-    const railY = top + rise + RAIL_MM / 2
+    const railY = p.topMm + rise + RAIL_MM / 2
+    const clock = clockOf(device)
     const panel: RackPanel = {
       deviceId: device.id,
       name: device.name,
@@ -493,73 +801,139 @@ export function rackModel(result: ResolveResult): RackModel {
       kind: device.kind,
       spanMm: span,
       riseMm: rise,
-      xMm: x,
-      topMm: top,
+      xMm,
+      topMm: p.topMm,
+      row: p.row,
       generated: layout === undefined,
       spanVerified: device.physical.verified,
-      clockRole: 'isolated',
+      clockRole: clock.role,
       parts: parts.get(device.id) ?? 0,
       jacks,
       banks,
       hiddenCells,
       hiddenJacks,
       internalPatch: patchByDevice.get(device.id) ?? [],
-      outAt: { x: x + span - JACK_SIDE_MM, y: railY },
-      inAt: { x: x + JACK_SIDE_MM, y: railY },
+      outAt: { x: xMm + span - JACK_SIDE_MM, y: railY },
+      inAt: { x: xMm + JACK_SIDE_MM, y: railY },
     }
     if (layout !== undefined) {
       panel.layout = layout
       panel.layoutVerified = layout.verified
     }
-    x += span + PANEL_GAP_MM
-
-    if (source === undefined) {
-      panel.isolatedReason = 'no clock source in this rig'
-      return panel
-    }
-    if (device.id === source.deviceId) {
-      panel.clockRole = 'source'
-      return panel
-    }
-    const reason = isolationReason(device, source.transport)
-    if (reason === undefined) panel.clockRole = 'receiver'
-    else panel.isolatedReason = reason
+    if (clock.reason !== undefined) panel.isolatedReason = clock.reason
     return panel
   })
 
-  const totalMm = panels.length === 0 ? 0 : x - PANEL_GAP_MM
+  const rows: RackRow[] = chunks.map((_, index) => ({
+    index,
+    panels: panels.filter((p) => p.row === index),
+    topMm: rowTops[index] ?? 0,
+    blockMm: rowBlocks[index] ?? 0,
+    widthMm: rowWidths[index] ?? 0,
+    corridorMm: (rowTops[index] ?? 0) + (rowBlocks[index] ?? 0),
+  }))
 
-  const sourcePanel = panels.find((p) => p.clockRole === 'source')
-  const cables: ClockCable[] =
-    source === undefined || sourcePanel === undefined
-      ? []
-      : panels
-          .filter((p) => p.clockRole === 'receiver')
-          .map((target) => {
-            // Always CLK OUT to CLK IN, whichever side of the source the target sits on. The
-            // tidier-looking rule — leave by whichever edge faces the target — puts the cable in
-            // the source's *input* socket for every box to its left, which is a drawing of a
-            // patch that does not work. A cable that loops back over its own panel is what that
-            // rig actually looks like on a desk.
-            const from = sourcePanel.outAt
-            const to = target.inAt
-            return {
-              fromDeviceId: sourcePanel.deviceId,
-              toDeviceId: target.deviceId,
-              fromName: sourcePanel.name,
-              toName: target.name,
-              transport: source.transport,
-              from,
+  /**
+   * Lanes, so two routed cables sharing a corridor or a gutter do not draw as one.
+   *
+   * Both are spread across the reserved band rather than stepped at a fixed pitch, because a
+   * fixed pitch stops separating cables at exactly the rig size that most needs it: the band is
+   * divided into `n + 1` and each cable takes a division. Deterministic, and it never overflows
+   * the reservation however many boxes #57 queues up.
+   */
+  const corridorUse = new Map<number, number>()
+  const sideUse = new Map<string, number>()
+  for (const run of routed) {
+    const source_ = placed[run.fromIndex]
+    const target = placed[run.toIndex]
+    if (source_ === undefined || target === undefined) continue
+    corridorUse.set(source_.row, (corridorUse.get(source_.row) ?? 0) + 1)
+    corridorUse.set(target.row, (corridorUse.get(target.row) ?? 0) + 1)
+    sideUse.set(run.side ?? 'left', (sideUse.get(run.side ?? 'left') ?? 0) + 1)
+  }
+  const corridorTaken = new Map<number, number>()
+  const sideTaken = new Map<string, number>()
+
+  const laneY = (row: number): number => {
+    const taken = corridorTaken.get(row) ?? 0
+    corridorTaken.set(row, taken + 1)
+    const of = corridorUse.get(row) ?? 1
+    const top = (rowTops[row] ?? 0) + (rowBlocks[row] ?? 0)
+    return top + LANE_TOP_MM + ((taken + 1) * (LANE_BOTTOM_MM - LANE_TOP_MM)) / (of + 1)
+  }
+  const channelX = (side: 'left' | 'right'): number => {
+    const taken = sideTaken.get(side) ?? 0
+    sideTaken.set(side, taken + 1)
+    const of = sideUse.get(side) ?? 1
+    if (side === 'left') return ((taken + 1) * leftGutterMm) / (of + 1)
+    return leftGutterMm + bandMm + ((taken + 1) * rightGutterMm) / (of + 1)
+  }
+
+  const cables: ClockCable[] = runs.flatMap((run) => {
+    const sourcePanel = panels[run.fromIndex]
+    const target = panels[run.toIndex]
+    if (sourcePanel === undefined || target === undefined) return []
+
+    // Always CLK OUT to CLK IN, whichever side of the source the target sits on. The tidier-
+    // looking rule — leave by whichever edge faces the target — puts the cable in the source's
+    // *input* socket for every box to its left, which is a drawing of a patch that does not work.
+    // A cable that loops back over its own panel is what that rig actually looks like on a desk.
+    const at = sourcePanel.outAt
+    const to = target.inAt
+
+    /**
+     * Same row: the hanging bézier, unchanged. Different rows: down into this row's corridor,
+     * out to a gutter, down (or up) the side of the frame, along the corridor *under* the target
+     * row, and up into its CLK IN.
+     *
+     * Under, always. A cable arriving from above would have to cross the target's own face to
+     * reach a jack on its bottom rail — which is the thing the bottom rail exists to prevent.
+     */
+    const path =
+      run.side === undefined
+        ? sagCurve(at, to)
+        : (() => {
+            const leave = laneY(sourcePanel.row)
+            const channel = channelX(run.side)
+            const arrive = laneY(target.row)
+            return routedPath([
+              at,
+              { x: at.x, y: leave },
+              { x: channel, y: leave },
+              { x: channel, y: arrive },
+              { x: to.x, y: arrive },
               to,
-              d: cablePath(from, to),
-            }
-          })
+            ])
+          })()
+
+    return [
+      {
+        fromDeviceId: sourcePanel.deviceId,
+        toDeviceId: target.deviceId,
+        fromName: sourcePanel.name,
+        toName: target.name,
+        // `source` is defined whenever a run exists: a run needs a panel whose role is `source`,
+        // and `clockOf` only returns that role when the resolver named one.
+        transport: source?.transport ?? '',
+        from: at,
+        to,
+        routing: run.side === undefined ? ('same-row' as const) : ('inter-row' as const),
+        path,
+        d: pathD(path),
+      },
+    ]
+  })
 
   return {
     panels,
+    rows,
     cables,
+    perRow,
     totalMm,
-    heightMm: tallest + CABLE_ROOM_MM,
+    frontPanelMm: panels.reduce((sum, p) => sum + p.spanMm, 0),
+    heightMm,
+    leftGutterMm,
+    rightGutterMm,
     clockSource: source,
     isolated: panels.filter((p) => p.clockRole === 'isolated'),
   }

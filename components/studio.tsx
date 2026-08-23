@@ -17,6 +17,7 @@ import {
   CATALOGUE,
   DEFAULT_INPUTS,
   bootstrapStudio,
+  isStarterExample,
   composeTemplate,
   copyStudioLink,
   syncStudio,
@@ -26,13 +27,14 @@ import {
   withSeed,
   withTemplate,
 } from '@/lib/studio/session'
-import type { StudioNotice } from '@/lib/studio/session'
+import type { Bootstrap, StudioNotice } from '@/lib/studio/session'
 import { DevicePicker } from './device-picker'
 import { GenrePicker } from './genre-picker'
 import { GuideArea } from './guide-area'
 import { InspirationPicker } from './inspiration-picker'
 import { MoodPanel } from './mood-panel'
 import { SeedField } from './seed-field'
+import { StarterNote } from './starter-note'
 
 /**
  * Build step 8 (#10) and build step 10 (#12). The whole input surface, the single place
@@ -64,6 +66,15 @@ export function Studio() {
    */
   const [persist, setPersist] = useState(true)
   const [notices, setNotices] = useState<readonly StudioNotice[]>([])
+  /**
+   * Where the inputs on screen came from, and whether they have been touched (#61). Together
+   * they decide one thing: whether the page is allowed to call this rig an example. `source`
+   * starts at `'default'` because that is what the first frame renders, and `bootstrapped`
+   * — already needed by the sync effect — is what stops it being *believed* until the store and
+   * the URL have had their say.
+   */
+  const [source, setSource] = useState<Bootstrap['source']>('default')
+  const [edited, setEdited] = useState(false)
   const [copied, setCopied] = useState<{ ok: boolean; message: string } | undefined>(undefined)
 
   /**
@@ -87,6 +98,7 @@ export function Studio() {
     const boot = bootstrapStudio(browserEnv())
     setInputs(boot.inputs)
     setRig(boot.rig)
+    setSource(boot.source)
     setPersist(boot.persist)
     setNotices(boot.notices)
     setBootstrapped(true)
@@ -142,7 +154,18 @@ export function Studio() {
     })
   }, [])
 
+  /**
+   * The two edits that make the rig theirs (#61). Seed and mood do not: rerolling an example is
+   * still looking at the example, where changing a box or the direction is the visitor answering
+   * the question the note asks. One way only — toggling a device back off does not make the page
+   * an example again, because by then they have been asked and have answered.
+   */
+  function claimAsOwn() {
+    setEdited(true)
+  }
+
   function toggleDevice(id: DeviceId, on: boolean) {
+    claimAsOwn()
     setInputs((current) => withDevice(current, id, on))
   }
 
@@ -153,6 +176,7 @@ export function Studio() {
    * Clearing them here would be the picker asserting a coupling the data does not have.
    */
   function selectTemplate(id: TemplateId) {
+    claimAsOwn()
     setInputs((current) => withTemplate(current, id))
   }
 
@@ -201,6 +225,10 @@ export function Studio() {
       )}
 
       <div className="columns">
+        {isStarterExample({ bootstrapped, source, edited }) ? (
+          <StarterNote devices={inputs.devices} />
+        ) : null}
+
         <DevicePicker selected={inputs.devices} onToggle={toggleDevice} />
         <GenrePicker selected={inputs.templateId} onSelect={selectTemplate} />
         <SeedField seed={inputs.seed} onChange={setSeed} />

@@ -24,9 +24,16 @@ export function num(value: number): string {
   return String(value)
 }
 
-/** '1 part', '3 parts'. English only, and hard-coded: this view is not internationalised. */
-export function count(n: number, singular: string): string {
-  return `${num(n)} ${singular}${n === 1 ? '' : 's'}`
+/**
+ * '1 part', '3 parts'. English only, and hard-coded: this view is not internationalised.
+ *
+ * `plural` is for the words an -s does not pluralise. Every noun this page counts took the -s
+ * until the rack started counting boxes, and '4 boxs' shipped for a while because the default
+ * looked total and was not. Pass the plural when the word needs one.
+ */
+export function count(n: number, singular: string, plural?: string): string {
+  if (n === 1) return `${num(n)} ${singular}`
+  return `${num(n)} ${plural ?? `${singular}s`}`
 }
 
 /** 'manual — TR-1000 Reference Manual p.61'. `cite.kind` is rendered, never dropped (§3.2). */
