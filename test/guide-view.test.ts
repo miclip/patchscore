@@ -12,7 +12,7 @@ import {
 } from '../lib/core/index'
 import type { ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { industrialTechno } from '../lib/templates/index'
+import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 import { Guide } from '../components/guide/guide'
 import { fxText } from '../components/guide/format'
 import { mergeBlocks } from '../components/guide/phase-steps'
