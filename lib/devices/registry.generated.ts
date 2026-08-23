@@ -7,6 +7,7 @@
 import type { Device } from '../core/device'
 import { device as device_intellijel_cascadia } from './intellijel-cascadia/index'
 import { device as device_polyend_tracker_mini } from './polyend-tracker-mini/index'
+import { device as device_roland_mc_101 } from './roland-mc-101/index'
 import { device as device_roland_tr_1000 } from './roland-tr-1000/index'
 import { device as device_synthstrom_deluge } from './synthstrom-deluge/index'
 
@@ -14,6 +15,7 @@ import { device as device_synthstrom_deluge } from './synthstrom-deluge/index'
 export const DEVICES: readonly Device[] = [
   device_intellijel_cascadia,
   device_polyend_tracker_mini,
+  device_roland_mc_101,
   device_roland_tr_1000,
   device_synthstrom_deluge,
 ]
@@ -22,6 +24,7 @@ export const DEVICES: readonly Device[] = [
 export const DEVICE_FOLDERS: readonly string[] = [
   'intellijel-cascadia',
   'polyend-tracker-mini',
+  'roland-mc-101',
   'roland-tr-1000',
   'synthstrom-deluge',
 ]

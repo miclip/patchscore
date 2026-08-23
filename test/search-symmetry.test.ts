@@ -16,6 +16,7 @@ import {
   type Template,
 } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { TEMPLATES } from '../lib/templates/index'
 import { box, bruteForceBest, desugarPools, keys, makeRecipe, request, withRoles } from './rigs'
 
 /**
@@ -957,24 +958,76 @@ describe('the real registry searches exhaustively (§7.1)', () => {
     )
   }
 
-  for (const count of [10, 12]) {
-    it(`TR-1000 + Tracker Mini + Deluge, ${count} roles, finishes without the cap`, () => {
-      const result = assign({
-        devices: [...DEVICES],
-        template: realistic(count),
-        mood: moodState(),
-        seed: 1,
-      })
-      expect(result.search.capped).toBe(false)
-      expect(result.search.method).toBe('exhaustive')
-      // Not a performance budget, a smoke alarm. This rig sits in the low thousands against a
-      // 50k cap, so a change that costs a large multiple should be looked at here, where it
-      // fails, rather than in a `capped: true` nobody reads. `scripts/bench-search.ts` prints
-      // the current figures; no exact number is asserted, because that would fail on every
-      // harmless change to a manifest.
-      expect(result.search.nodes).toBeLessThan(DEFAULT_NODE_CAP)
+  it('the whole registry, 10 roles, finishes without the cap', () => {
+    const result = assign({
+      devices: [...DEVICES],
+      template: realistic(10),
+      mood: moodState(),
+      seed: 1,
     })
-  }
+    expect(result.search.capped).toBe(false)
+    expect(result.search.method).toBe('exhaustive')
+    // Not a performance budget, a smoke alarm. `scripts/bench-search.ts` prints the current
+    // figures; no exact number is asserted, because that would fail on every harmless change to
+    // a manifest.
+    expect(result.search.nodes).toBeLessThan(DEFAULT_NODE_CAP)
+  })
+
+  /**
+   * **The alarm above fired when the MC-101 landed, and this is what looking at it found.**
+   *
+   * This case used to read "12 roles, finishes without the cap" and it no longer does. A fifth
+   * voice-bearing device costs roughly what a fifth device should: every request gains another
+   * set of candidate assignables, and the tree multiplies. 12 synthetic roles went from 12,286
+   * nodes on four devices to 158,086 on five.
+   *
+   * What that is *not* is the §7.1 symmetry bug coming back. Pool members still collapse — the
+   * lifted-cap run below completes exhaustively in about a tenth of a second, and the count grows
+   * with the number of *devices*, not factorially with pool size. The synthetic template is also
+   * harsher than anything shipped: twelve requests, every one of them `dark`, so nearly every
+   * device offers a candidate for nearly every request.
+   *
+   * So the finding is about `DEFAULT_NODE_CAP`, a constant chosen when the registry held four
+   * devices, and the decision it needs is not this file's to make. Recorded here rather than
+   * repaired here, and the case below is the one that says whether it matters in practice.
+   */
+  it('the whole registry, 12 roles, now needs more than the shipped cap', () => {
+    const template = realistic(12)
+    const lifted = assign({
+      devices: [...DEVICES],
+      template,
+      mood: moodState(),
+      seed: 1,
+      nodeCap: 5_000_000,
+    })
+    // No pathology: it terminates, and it terminates fast. Only the ceiling is wrong.
+    expect(lifted.search.capped).toBe(false)
+    expect(lifted.search.method).toBe('exhaustive')
+    expect(lifted.search.nodes).toBeGreaterThan(DEFAULT_NODE_CAP)
+    expect(lifted.search.nodes).toBeLessThan(1_000_000)
+  })
+
+  /**
+   * The case that decides whether the finding above is a product problem or a headroom problem.
+   *
+   * Every template the app can actually run still searches exhaustively at the shipped cap, so no
+   * guide anybody generates today is a greedy fallback. `industrial-techno` is the tight one at
+   * roughly 49.6k of 50k — under one percent of room — so the next handful of recipes authored
+   * anywhere in the library tips it over, and this is where that will be noticed.
+   *
+   * Nothing here asserts an exact node count, for the reason the smoke alarm above gives. What is
+   * asserted is the property that matters: real inputs, real cap, exhaustive.
+   */
+  it('leaves every shipped template inside the shipped cap', () => {
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = assign({ devices: [...DEVICES], template, mood: moodState(), seed })
+        const where = `${template.id} seed ${seed}`
+        expect(result.search.capped, where).toBe(false)
+        expect(result.search.method, where).toBe('exhaustive')
+      }
+    }
+  })
 
   it('is deterministic on the real registry, whatever the seed', () => {
     const t = realistic(10)

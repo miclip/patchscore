@@ -44,15 +44,15 @@ glance whether the screen in front of you is the one the line is about.
   - p3 · exact `dark` · every section
 - **`open-hat`** → TR-1000 · OH — *Dull open hat, more air than sizzle*
   - p3 · exact `dark` · every section
-- **`stab`** → Deluge · Track 2 — *Square stab through a fast phaser*
+- **`stab`** → MC-101 · TONE Track 1 — *Short chord stab, played on the track*
   - p3 · exact `hard` · 3 notes at once on one polyphonic voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
-- **`pad`** → Deluge · Track 3 — *Wavetable pad, slow chorus, wide reverb send*
+- **`pad`** → MC-101 · TONE Track 2 — *Slow polyphonic pad, opening under the drums*
   - p4 · substituted — asked `dark`, authored `soft` · 3 notes at once on one polyphonic voice · every section
-- **`riser`** → Deluge · Track 4 — *Saw riser, top end open, thrown into the reverb*
+- **`riser`** → MC-101 · TONE Track 3 — *Filter opening across the bar, drawn rather than played*
   - p4 · exact `bright` · Build, Breakdown
-- **`noise`** → Deluge · Track 5 — *Crushed noise wash under the drums*
+- **`noise`** → Deluge · Track 2 — *Crushed noise wash under the drums*
   - p5, optional · exact `dirty` · every section
 
 ### Gaps
@@ -71,14 +71,18 @@ None.
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio · audio in
   - mixer: 1 part, no individual outs: one stereo channel for all
+- **MC-101** — groovebox · 3 parts
+  - clock: sends clock · midi-din/usb
+  - audio: stereo main out · USB audio
+  - mixer: 3 parts, no individual outs: one stereo channel for all
 - **TR-1000** — drum-machine · 5 parts
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
   - mixer: 5 parts, 10 individual outs: one channel each
-- **Deluge** — groovebox · 5 parts
+- **Deluge** — groovebox · 2 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: stereo main out · audio in
-  - mixer: 5 parts, no individual outs: one stereo channel for all
+  - mixer: 2 parts, no individual outs: one stereo channel for all
 
 ## 4. Hook
 
@@ -105,9 +109,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - bar 2 · step 23 · len 2 · `Db2` (`C#2`) · 6th · MIDI 37
 - bar 2 · step 27 · len 4 · `C2` · 5th · MIDI 36
 
-### `pad` — Deluge · Track 3
+### `pad` — MC-101 · TONE Track 2
 
-**Wavetable pad, slow chorus, wide reverb send** — settings in Sound design
+**Slow polyphonic pad, opening under the drums** — settings in Sound design
 
 8 bars in F minor.
 
@@ -115,9 +119,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - bar 5 · step 65 · len 32 · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
 - bar 7 · step 97 · len 32 · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`) · 7th 2nd 4th · MIDI 63 67 70
 
-### `stab` — Deluge · Track 2
+### `stab` — MC-101 · TONE Track 1
 
-**Square stab through a fast phaser** — settings in Sound design
+**Short chord stab, played on the track** — settings in Sound design
 
 4 bars in F minor.
 
@@ -384,9 +388,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `offbeat` → `weak` true on steps 3, 7, 11
   - ↳ hint: Hold [SHIFT], press step keys
 
-### `stab` — Deluge · Track 2
+### `stab` — MC-101 · TONE Track 1
 
-**Square stab through a fast phaser** — settings in Sound design
+**Short chord stab, played on the track** — settings in Sound design
 
 **Intro, Outro** — 32 steps, band 0
 
@@ -414,9 +418,10 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `offbeat` — 7, 11, 23
 - `accent` — 29 (vel 108)
 
-**On this box** — Deluge
+**On this box** — MC-101
 
-- `accent` → `velocity` 120 on step 29
+- `accent` → `velocity` 116, `note-length` 3 on step 29
+  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
 
 ### `impact` — TR-1000 · CC
 
@@ -439,9 +444,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `first-hit` → `accent` true on step 1
   - ↳ hint: ACCENT [STEP], then step keys
 
-### `pad` — Deluge · Track 3
+### `pad` — MC-101 · TONE Track 2
 
-**Wavetable pad, slow chorus, wide reverb send** — settings in Sound design
+**Slow polyphonic pad, opening under the drums** — settings in Sound design
 
 **Intro, Outro** — no pattern authored for `pad` at any band (asked for band 0)
 
@@ -449,13 +454,13 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Drop, Peak** — no pattern authored for `pad` at any band (asked for band 3)
 
-### `riser` — Deluge · Track 4
+### `riser` — MC-101 · TONE Track 3
 
-**Saw riser, top end open, thrown into the reverb** — settings in Sound design
+**Filter opening across the bar, drawn rather than played** — settings in Sound design
 
 **Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 1)
 
-### `noise` — Deluge · Track 5
+### `noise` — Deluge · Track 2
 
 **Crushed noise wash under the drums** — settings in Sound design
 
@@ -544,6 +549,75 @@ Routing — played from MIDI IN or EXT IN PITCH/GATE — Cascadia has no sequenc
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.185
   - ↳ note: 50% is no swing; set once, it applies across the whole pattern
   - ↳ hint: Hold [FX1], press (Up)/(Down)
+
+### MC-101
+
+*Values below cite MC-101 Reference Manual, eng01.*
+
+#### TONE Track 1 — `stab`: Short chord stab, played on the track
+
+Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
+
+*Ranges cite manual — MC-101 Reference Manual eng01, p.45.*
+
+- **MONO/POLY** `POLY`
+- **ATTACK** `-40` (-64…63)
+- **DECAY** `-26` (-64…63)
+- **RELEASE** `-34` (-64…63)
+- **CUTOFF** `20` (-64…63)
+- **RESONANCE** `10` (-64…63)
+- **DELAY SEND** `18` (0…127)
+- **SHUFFLE** `0` (-50…50)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
+  - ↳ note: One setting for the whole clip, not per step
+  - ↳ hint: Hold [SHIFT], press PAD [CLIP]
+
+#### TONE Track 2 — `pad`: Slow polyphonic pad, opening under the drums
+
+Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
+
+*Ranges cite manual — MC-101 Reference Manual eng01, p.45.*
+
+- **MONO/POLY** `POLY`
+- **ATTACK** `34` (-64…63)
+- **RELEASE** `40` (-64…63)
+- **CUTOFF** `-12` (-64…63)
+- **VIB RATE** `-14` (-64…63)
+- **VIB DEPTH** `8` (-64…63)
+- **REVERB SEND** `68` (0…127)
+- **DELAY SEND** `24` (0…127)
+- **LEVEL** `92` (0…127)
+- **SHUFFLE** `0` (-50…50)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
+  - ↳ note: One setting for the whole clip, not per step
+  - ↳ hint: Hold [SHIFT], press PAD [CLIP]
+
+#### TONE Track 3 — `riser`: Filter opening across the bar, drawn rather than played
+
+Routing — Ver.1.80 or later for the LFO page; draw the sweep with MOTION DESIGNER if you prefer
+
+*Ranges cite manual — MC-101 Update eng08, p.3 (Ver.1.80).*
+
+- **OSC** `Noise`
+- **LFO1 WAV** `SAW-UP`
+- **LFO1 SYN** `ON`
+- **LFO1 RAT** `512` (0…1023)
+  - ↳ note: RATE NOTE takes over once SYN is ON
+- **LFO1 FLT** `84` (-100…100)
+- **LFO1 AMP** `32` (-100…100)
+- **LFO1 PAN** `24` (-63…63)
+- **MFX TYPE** `05 Super Filter`
+- **FILTER TYPE** `HPF`
+- **FILTER CUTOFF** `40` (0…127)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.54
+- **FILTER RESONANCE** `58` (0…100)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.54
+- **LEVEL** `88` (0…127)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.54
+- **SHUFFLE** `0` (-50…50)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
+  - ↳ note: One setting for the whole clip, not per step
+  - ↳ hint: Hold [SHIFT], press PAD [CLIP]
 
 ### TR-1000
 
@@ -689,56 +763,7 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
   - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
   - ↳ hint: Hold [SHIFT], turn (TEMPO)
 
-#### Track 2 — `stab`: Square stab through a fast phaser
-
-Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
-
-*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.229.*
-
-- **OSC TYPE** `Analog Square`
-- **MOD FX TYPE** `PHASER`
-- **MOD FX RATE** `16` (0…50)
-- **MOD FX FEEDBACK** `18` (0…50)
-  - ↳ note: Flanger and phaser types only
-- **EQ TREBLE AMOUNT** `29` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
-- **SWING** `50` % (1…99 %)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
-  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
-  - ↳ hint: Hold [SHIFT], turn (TEMPO)
-
-#### Track 3 — `pad`: Wavetable pad, slow chorus, wide reverb send
-
-Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
-
-- **OSC TYPE** `Wavetable`
-- **MOD FX TYPE** `CHORUS`
-- **MOD FX RATE** `9` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.229
-- **REVERB AMOUNT** `27` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.225
-- **EQ TREBLE AMOUNT** `27` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
-- **SWING** `50` % (1…99 %)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
-  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
-  - ↳ hint: Hold [SHIFT], turn (TEMPO)
-
-#### Track 4 — `riser`: Saw riser, top end open, thrown into the reverb
-
-- **OSC TYPE** `Saw`
-- **EQ TREBLE AMOUNT** `35` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
-- **REVERB AMOUNT** `23` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.225
-- **DELAY AMOUNT** `16` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.222
-- **SWING** `50` % (1…99 %)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
-  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
-  - ↳ hint: Hold [SHIFT], turn (TEMPO)
-
-#### Track 5 — `noise`: Crushed noise wash under the drums
+#### Track 2 — `noise`: Crushed noise wash under the drums
 
 *Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.217.*
 
@@ -766,6 +791,7 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 What processes audio in this rig:
 
 - Tracker Mini — carries DELAY SEND and REVERB SEND in its recipes
+- MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and DELAY SEND and REVERB SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 - Deluge — carries BITCRUSH, DECIMATION, DELAY AMOUNT, DELAY RATE, MOD FX FEEDBACK, MOD FX RATE, MOD FX TYPE and REVERB AMOUNT in its recipes
 

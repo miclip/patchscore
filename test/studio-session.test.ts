@@ -843,12 +843,15 @@ describe('copy link', () => {
 
 describe('pure updates', () => {
   it('keeps devices in registry order however they are toggled', () => {
-    const first = CATALOGUE.devices[0] as string
-    const last = CATALOGUE.devices[CATALOGUE.devices.length - 1] as string
-    let inputs = withDevice(DEFAULT_INPUTS, first, false)
-    inputs = withDevice(inputs, last, false)
-    inputs = withDevice(inputs, last, true)
-    inputs = withDevice(inputs, first, true)
+    // Cleared, then switched back on in *reverse* registry order, so the assertion is about
+    // the ordering rather than about the sequence they arrived in. Written over the whole
+    // catalogue rather than over its first and last entries: that shorter form only reached
+    // every device while the registry happened to hold the landing pair plus two, and it
+    // stopped testing anything the moment a fifth device landed.
+    let inputs = DEFAULT_INPUTS
+    for (const id of CATALOGUE.devices) inputs = withDevice(inputs, id as string, false)
+    expect(inputs.devices).toEqual([])
+    for (const id of [...CATALOGUE.devices].reverse()) inputs = withDevice(inputs, id as string, true)
     expect(inputs.devices).toEqual([...CATALOGUE.devices])
   })
 
