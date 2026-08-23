@@ -63,6 +63,10 @@ None.
 
 **Clock source** — TR-1000 over `midi-din`, carrying 5 parts. Sync everything else to it.
 
+- **ZOIA Euroburo** — fx-processor · 0 parts
+  - clock: receives clock only · analog-clock/midi-din
+  - audio: stereo main out · audio in
+  - mixer: no parts assigned; nothing to patch
 - **Cascadia** — semi-modular · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: mono main out · audio in
@@ -794,6 +798,7 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 
 What processes audio in this rig:
 
+- ZOIA Euroburo — is an effects unit (stereo main out · audio in)
 - Tracker Mini — carries DELAY SEND and REVERB SEND in its recipes
 - MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and DELAY SEND and REVERB SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes

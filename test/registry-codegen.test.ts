@@ -293,6 +293,7 @@ describe('the committed registry', () => {
       .map((d) => d.id)
     expect(byWidth).toEqual([
       'polyend-tracker-mini',
+      'empress-zoia-euroburo',
       'roland-mc-101',
       'zoom-livetrak-l-8',
       'synthstrom-deluge',

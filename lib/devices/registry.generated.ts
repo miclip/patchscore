@@ -5,6 +5,7 @@
 // Regenerate with `npm run gen:registry`; the staleness test fails if this drifts.
 
 import type { Device } from '../core/device'
+import { device as device_empress_zoia_euroburo } from './empress-zoia-euroburo/index'
 import { device as device_intellijel_cascadia } from './intellijel-cascadia/index'
 import { device as device_polyend_tracker_mini } from './polyend-tracker-mini/index'
 import { device as device_roland_mc_101 } from './roland-mc-101/index'
@@ -14,6 +15,7 @@ import { device as device_zoom_livetrak_l_8 } from './zoom-livetrak-l-8/index'
 
 /** Every device manifest, ordered by folder name (UTF-16 code unit). */
 export const DEVICES: readonly Device[] = [
+  device_empress_zoia_euroburo,
   device_intellijel_cascadia,
   device_polyend_tracker_mini,
   device_roland_mc_101,
@@ -24,6 +26,7 @@ export const DEVICES: readonly Device[] = [
 
 /** Folder names, in the same order. Useful for error messages that name a source. */
 export const DEVICE_FOLDERS: readonly string[] = [
+  'empress-zoia-euroburo',
   'intellijel-cascadia',
   'polyend-tracker-mini',
   'roland-mc-101',

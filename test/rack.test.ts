@@ -611,7 +611,7 @@ describe('rack view', () => {
 
     // Every kind in the vocabulary is exercised by the authored boxes, so a renderer arm
     // that stopped working would show up here rather than only in Chrome.
-    expect(count('rack-screen')).toBe(5) // all but the Cascadia, which has no display
+    expect(count('rack-screen')).toBe(6) // all but the Cascadia, which has no display
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the Cascadia's thirty-four — that box is set with
     // sliders almost exclusively, which is why its panel is mostly this one shape — the MC-101's
@@ -916,7 +916,7 @@ describe('rack rows (#63)', () => {
     const html = markup(real)
     expect(html).toContain(`Overview, fitted to the page. ${model.frontPanelMm} mm of front panel`)
     expect(html).toContain(`across ${DEVICES.length} boxes`)
-    expect(html).toContain('on 2 rows')
+    expect(html).toContain(`on ${rackModel(real, { perRow: NARROW_PER_ROW }).rows.length} rows`)
     // And the two notes that survive whatever the layout becomes.
     expect(html).toContain('Audio paths are not drawn')
     expect(html).toContain('to scale against each other in both dimensions')
@@ -959,6 +959,6 @@ describe('rack rows (#63)', () => {
     // One viewBox for the whole figure is what makes the shared scale structural rather than
     // arithmetic: there is no second scale for a renderer to get wrong.
     expect((html.match(/<svg/g) ?? []).length).toBe(1)
-    expect(html).toContain('The rack is on 2 rows of at most 3 boxes')
+    expect(html).toContain(`The rack is on ${model.rows.length} rows of at most ${NARROW_PER_ROW} boxes`)
   })
 })
