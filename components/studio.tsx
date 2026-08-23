@@ -10,7 +10,7 @@ import { DevicePicker } from './device-picker'
 import { GenrePicker } from './genre-picker'
 import { MoodPanel } from './mood-panel'
 import { Guide } from './guide/guide'
-import { RackPlaceholder } from './rack-placeholder'
+import { Rack } from './rack/rack'
 import { SeedField } from './seed-field'
 
 /**
@@ -90,6 +90,12 @@ export function Studio() {
 
         <MoodPanel mood={mood} onChange={setAxis} />
 
+        {/*
+          §10's signature element sits above the guide, not under it: the guide is seven phases
+          long, and a rack drawing below all of that is a rack drawing nobody scrolls to.
+        */}
+        <Rack result={result} />
+
         {result === undefined ? (
           <section className="panel span-2">
             <header>
@@ -102,8 +108,6 @@ export function Studio() {
             <Guide result={result} />
           </section>
         )}
-
-        <RackPlaceholder />
       </div>
     </main>
   )

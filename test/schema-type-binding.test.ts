@@ -7,7 +7,10 @@ import {
   HarmonySchema,
   HookSchema,
   NumericRangeSchema,
+  PanelFeatureSchema,
+  PanelLayoutSchema,
   PatternSchema,
+  PhysicalSpecSchema,
   ProvenanceSchema,
   RecipeSchema,
   ResolvedParamSchema,
@@ -21,7 +24,10 @@ import {
   type Harmony,
   type Hook,
   type NumericRange,
+  type PanelFeature,
+  type PanelLayout,
   type Pattern,
+  type PhysicalSpec,
   type Provenance,
   type Recipe,
   type ResolvedParam,
@@ -52,6 +58,15 @@ describe('schemas and types stay in step', () => {
 
     expectTypeOf<VoiceSpec>().toExtend<z.infer<typeof VoiceSpecSchema>>()
     expectTypeOf<z.infer<typeof VoiceSpecSchema>>().toExtend<VoiceSpec>()
+
+    expectTypeOf<PhysicalSpec>().toExtend<z.infer<typeof PhysicalSpecSchema>>()
+    expectTypeOf<z.infer<typeof PhysicalSpecSchema>>().toExtend<PhysicalSpec>()
+
+    expectTypeOf<PanelFeature>().toExtend<z.infer<typeof PanelFeatureSchema>>()
+    expectTypeOf<z.infer<typeof PanelFeatureSchema>>().toExtend<PanelFeature>()
+
+    expectTypeOf<PanelLayout>().toExtend<z.infer<typeof PanelLayoutSchema>>()
+    expectTypeOf<z.infer<typeof PanelLayoutSchema>>().toExtend<PanelLayout>()
 
     expectTypeOf<Recipe>().toExtend<z.infer<typeof RecipeSchema>>()
     expectTypeOf<z.infer<typeof RecipeSchema>>().toExtend<Recipe>()

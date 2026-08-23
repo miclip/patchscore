@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { DeviceSchema, RecipeSchema, VoiceSpecSchema, type Assignable } from '../lib/core/index'
+import {
+  DeviceSchema,
+  RecipeSchema,
+  VoiceSpecSchema,
+  type Assignable,
+  type Verified,
+} from '../lib/core/index'
 import { device, poolDevice, recipe } from './fixtures'
 
 describe('VoiceSpec (§2.1)', () => {
@@ -281,5 +287,131 @@ describe('Device manifest (§2.3)', () => {
 
   it('rejects an unknown top-level key rather than dropping it', () => {
     expect(DeviceSchema.safeParse({ ...device(), voicez: [] }).success).toBe(false)
+  })
+})
+
+describe('physical panel span (§10)', () => {
+  const CITED = { kind: 'manual', source: 'Fixture Manual p.1' } as const
+
+  it('requires a span — a device the rack cannot draw is not a legal device', () => {
+    const { physical: _dropped, ...noWidth } = device()
+    expect(DeviceSchema.safeParse(noWidth).success).toBe(false)
+  })
+
+  it('rejects a span that is not a positive, finite measurement', () => {
+    for (const panelSpanMm of [0, -170, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(DeviceSchema.safeParse(device({ physical: { panelSpanMm, verified: CITED } })).success).toBe(false)
+    }
+    expect(DeviceSchema.safeParse(device({ physical: { panelSpanMm: 170, verified: CITED } })).success).toBe(true)
+  })
+
+  it('carries provenance the same way a numeric range does (§3.1)', () => {
+    // A manual page, an observation off the unit, or an explicit `false` — the same three states
+    // as every other checked value in the library, and no fourth one invented for widths.
+    const states: Verified[] = [CITED, { kind: 'observed', source: 'Fixture unit, tape measure' }, false]
+    for (const verified of states) {
+      expect(DeviceSchema.safeParse(device({ physical: { panelSpanMm: 170, verified } })).success).toBe(true)
+    }
+  })
+
+  it('makes provenance mandatory, and refuses an empty or malformed citation', () => {
+    expect(DeviceSchema.safeParse(device({ physical: { panelSpanMm: 170 } as never })).success).toBe(false)
+    expect(
+      DeviceSchema.safeParse(device({ physical: { panelSpanMm: 170, verified: { kind: 'manual', source: '' } } })).success,
+    ).toBe(false)
+    // A bare string is not a citation. `false` is the only non-Cite the field accepts, and it is
+    // a claim in its own right: nobody checked.
+    expect(
+      DeviceSchema.safeParse(device({ physical: { panelSpanMm: 170, verified: 'p.13' } as never })).success,
+    ).toBe(false)
+    expect(
+      DeviceSchema.safeParse(device({ physical: { panelSpanMm: 170, verified: true } as never })).success,
+    ).toBe(false)
+  })
+
+  it('rejects an unknown key inside physical', () => {
+    expect(
+      DeviceSchema.safeParse(
+        device({ physical: { panelSpanMm: 170, verified: CITED, heightMm: 20 } as never }),
+      ).success,
+    ).toBe(false)
+  })
+})
+
+
+describe('panel layout (§10)', () => {
+  const CITED = { kind: 'manual', source: 'Fixture Manual p.9' } as const
+  const layout = (over: Record<string, unknown> = {}) => ({
+    panelRiseMm: 200,
+    verified: CITED,
+    features: [{ kind: 'screen', x: 10, y: 10, w: 50, h: 30 }],
+    ...over,
+  })
+
+  it('is optional: a box nobody has drawn is still a legal manifest', () => {
+    expect(DeviceSchema.safeParse(device()).success).toBe(true)
+    expect(DeviceSchema.safeParse(device({ panel: layout() as never })).success).toBe(true)
+  })
+
+  it('needs a rise and a citation, the same as a span does', () => {
+    expect(DeviceSchema.safeParse(device({ panel: layout({ panelRiseMm: 0 }) as never })).success).toBe(false)
+    expect(DeviceSchema.safeParse(device({ panel: layout({ panelRiseMm: -1 }) as never })).success).toBe(false)
+    expect(DeviceSchema.safeParse(device({ panel: layout({ verified: undefined }) as never })).success).toBe(false)
+    expect(DeviceSchema.safeParse(device({ panel: layout({ verified: 'p.9' }) as never })).success).toBe(false)
+    // `false` stays legal: a drawing nobody has checked is a claim, not a hole.
+    expect(DeviceSchema.safeParse(device({ panel: layout({ verified: false }) as never })).success).toBe(true)
+  })
+
+  it('refuses an empty drawing and an unknown feature kind', () => {
+    expect(DeviceSchema.safeParse(device({ panel: layout({ features: [] }) as never })).success).toBe(false)
+    expect(
+      DeviceSchema.safeParse(
+        device({ panel: layout({ features: [{ kind: 'lcd', x: 1, y: 1, w: 2, h: 2 }] }) as never }),
+      ).success,
+    ).toBe(false)
+    // Strict objects, so a typo is a build failure rather than a silently ignored coordinate.
+    expect(
+      DeviceSchema.safeParse(
+        device({ panel: layout({ features: [{ kind: 'screen', x: 1, y: 1, w: 2, h: 2, z: 3 }] }) as never }),
+      ).success,
+    ).toBe(false)
+  })
+
+  it('refuses a feature that falls off the panel', () => {
+    // `device()` is 400 mm wide, so this screen runs 10 mm past the right edge.
+    expect(
+      DeviceSchema.safeParse(
+        device({ panel: layout({ features: [{ kind: 'screen', x: 360, y: 10, w: 50, h: 30 }] }) as never }),
+      ).success,
+    ).toBe(false)
+    expect(
+      DeviceSchema.safeParse(
+        device({ panel: layout({ features: [{ kind: 'screen', x: 10, y: 190, w: 50, h: 30 }] }) as never }),
+      ).success,
+    ).toBe(false)
+    expect(
+      DeviceSchema.safeParse(
+        device({ panel: layout({ features: [{ kind: 'knob', x: -1, y: 10, d: 12 }] }) as never }),
+      ).success,
+    ).toBe(false)
+  })
+
+  it('allows at most one voice field', () => {
+    const one = [{ kind: 'voices', x: 10, y: 10, w: 100, h: 40 }]
+    expect(DeviceSchema.safeParse(device({ panel: layout({ features: one }) as never })).success).toBe(true)
+    expect(
+      DeviceSchema.safeParse(device({ panel: layout({ features: [...one, ...one] }) as never })).success,
+    ).toBe(false)
+  })
+
+  it('needs at least one row and column in a grid', () => {
+    const grid = (over: Record<string, unknown>) => [
+      { kind: 'grid', x: 10, y: 10, w: 100, h: 40, cols: 4, rows: 2, ...over },
+    ]
+    expect(DeviceSchema.safeParse(device({ panel: layout({ features: grid({}) }) as never })).success).toBe(true)
+    expect(DeviceSchema.safeParse(device({ panel: layout({ features: grid({ cols: 0 }) }) as never })).success).toBe(false)
+    expect(DeviceSchema.safeParse(device({ panel: layout({ features: grid({ rows: 1.5 }) }) as never })).success).toBe(false)
+    expect(DeviceSchema.safeParse(device({ panel: layout({ features: grid({ shape: 'slider' }) }) as never })).success).toBe(false)
+    expect(DeviceSchema.safeParse(device({ panel: layout({ features: grid({ shape: 'fader' }) }) as never })).success).toBe(true)
   })
 })

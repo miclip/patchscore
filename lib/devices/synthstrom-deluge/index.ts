@@ -1,6 +1,7 @@
 import type { Device, Recipe } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, Cite } from '../../core/params'
 import type { Role } from '../../core/vocabulary'
+import { DELUGE_PANEL } from './panel'
 
 /**
  * Synthstrom Audible Deluge (§2.3), running **community firmware `release_1_2_1` (Chopin)**.
@@ -548,6 +549,34 @@ export const device: Device = {
   // `individualOuts` is 0. The guidebook documents USB-B as MIDI, power and USB host only — there
   // is no USB audio interface mode, so `usbAudio` is false.
   io: { main: 'stereo', individualOuts: 0, audioIn: true, usbAudio: false },
+
+  /**
+   * §10. 305 mm horizontal span, from Synthstrom's published 305 x 208 x 46 mm.
+   *
+   * Orientation checked against the diagrams rather than assumed: the plan view in 1.2 What's in
+   * the Box (p.3) is landscape and measures ~1.48 in aspect against 305/208 = 1.47, and the Rear
+   * Panel / Front Panel drawings (p.6) show the jack-bearing long edge running horizontally. So
+   * the stated width is the horizontal span here, as it is for the TR-1000 and as it is *not* for
+   * the Tracker Mini.
+   *
+   * The guidebook states no dimensions anywhere — the Overview drawings carry no dimension lines
+   * unlike the Tracker Mini's, there is no specifications section, and the index has no Dimensions
+   * entry — so the citation is Synthstrom's published specifications rather than a page number.
+   * That is still a `manual` cite under §3.1's actual test: a document anyone can go and re-read,
+   * as against a reading only re-takeable on one unit. It is emphatically not `false`, which would
+   * claim nobody checked.
+   *
+   * Third-party listings circulate 317 mm. The manufacturer's own figure is the one authored here.
+   */
+  physical: {
+    panelSpanMm: 305,
+    verified: {
+      kind: 'manual',
+      source: 'Synthstrom Deluge product specifications, synthstrom.com/product/deluge',
+    },
+  },
+  /** §10. A simplified original drawing of the panel, read off the manual (see `panel.ts`). */
+  panel: DELUGE_PANEL,
 
   /**
    * **`count` is a planning horizon, not a track count (§2.1).** It bounds how many assignables

@@ -57,6 +57,7 @@ export function device(over: Partial<Device> = {}): Device {
     kind: 'drum-machine',
     clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
     io: { main: 'stereo', individualOuts: 8, audioIn: false, usbAudio: true },
+    physical: { panelSpanMm: 400, verified: { kind: 'manual', source: 'Fixture p.1' } },
     voices: [
       { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 },
       { kind: 'fixed', id: 'lt', label: 'LT', roles: ['sub', 'bass-mid', 'tom'], polyphony: 1 },

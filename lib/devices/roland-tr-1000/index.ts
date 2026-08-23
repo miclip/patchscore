@@ -1,5 +1,6 @@
 import type { Device } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, Cite } from '../../core/params'
+import { TR_1000_PANEL } from './panel'
 
 /**
  * Roland TR-1000 (§2.3). Ten instrument tracks, four of them layer tracks.
@@ -232,6 +233,26 @@ export const device: Device = {
   // MIX OUT L/MONO+R, ten INDIVIDUAL OUT/TRIGGER OUT jacks (BD-RC), ANALOG FX OUT L/R,
   // EXTERNAL IN L/R, USB-C audio to a computer (p.11-12).
   io: { main: 'stereo', individualOuts: 10, audioIn: true, usbAudio: true },
+
+  /**
+   * §10. 486 mm horizontal span. Reference Manual p.74 gives 486 (W) x 311 (D) x 125 (H) mm.
+   *
+   * Unlike the Tracker Mini, Roland's stated width *is* the horizontal span here — but that was
+   * checked rather than assumed, because the convention demonstrably does not always hold. The
+   * Top panel/front panel diagram (Owner's Manual p.9) shows a landscape box with its sixteen
+   * step keys running across the bottom, and the drawing's aspect (~1.60) matches 486/311 = 1.56.
+   *
+   * Read the specifications table on the *rendered* page: `pdftotext` scrambles that table's
+   * columns, so the W/D/H order is only trustworthy from the page itself.
+   *
+   * The widest box in the seed set by a long way, and the rack has to show that.
+   */
+  physical: {
+    panelSpanMm: 486,
+    verified: { kind: 'manual', source: 'TR-1000 Reference Manual eng02, p.74 (Main specifications)' },
+  },
+  /** §10. A simplified original drawing of the panel, read off the manual (see `panel.ts`). */
+  panel: TR_1000_PANEL,
 
   /**
    * The ten tracks, in panel order (p.14). BD-HT are layer tracks and sound generators A and

@@ -1,6 +1,7 @@
 import type { Device, Recipe } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, Cite } from '../../core/params'
 import type { Role } from '../../core/vocabulary'
+import { TRACKER_MINI_PANEL } from './panel'
 
 /**
  * Polyend Tracker Mini (§2.3). Sixteen tracks in **two pools**, which is why this device is in
@@ -640,6 +641,27 @@ export const device: Device = {
   // One stereo Line Out on a 3.5mm jack, doubling as headphone out; stereo Line In; USB-C audio
   // in/out, enabled in Config -> USB -> Audio (p.13, p.54). No individual outs.
   io: { main: 'stereo', individualOuts: 0, audioIn: true, usbAudio: true },
+
+  /**
+   * §10. 130 mm, measured off the dimensioned panel drawing in 1.2 Hardware Overview (p.13).
+   *
+   * **Polyend's specifications call 170 mm the width; that is the vertical span of the panel in
+   * playing orientation.** The Tracker Mini is portrait — taller than it is wide — and the p.13
+   * drawing dimensions it directly: 130 mm horizontal, 170 mm down the long edge, 20 mm thick.
+   * The vendor's 170 is a spec-sheet convention about the long axis, not a claim about which way
+   * up the box sits when you play it, and a rack rendering it 170 mm across would be showing it
+   * on its side.
+   *
+   * If you check the Polyend site in six months and think this is wrong: it is not, and this
+   * comment is why. The citation is the diagram rather than the spec sheet because the diagram
+   * is what was actually measured.
+   */
+  physical: {
+    panelSpanMm: 130,
+    verified: { kind: 'manual', source: 'Polyend Tracker Mini Manual 2.2.1b, p.13 (Hardware Overview)' },
+  },
+  /** §10. A simplified original drawing of the panel, read off the manual (see `panel.ts`). */
+  panel: TRACKER_MINI_PANEL,
 
   /**
    * p.22, the whole reason this device is here. One track sounds one voice: "Each track in

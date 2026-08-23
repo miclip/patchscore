@@ -161,6 +161,29 @@ export const device: Device = {
 
   io: { main: 'stereo', individualOuts: 8, audioIn: false, usbAudio: true },
 
+  // §10. Front-panel horizontal span in mm, cited like any other checked value. Required: the
+  // rack draws panels at realistic relative width, so a missing span would have to be invented.
+  physical: {
+    panelSpanMm: 486,
+    verified: { kind: 'manual', source: 'TR-1000 Reference Manual eng02, p.74 (Main specifications)' },
+  },
+
+  // §10. A simplified *original* drawing of the panel, read off the manual's hardware overview.
+  // Optional: a box nobody has drawn still gets a generated panel. Lives in its own file in the
+  // device folder, because it is long and it is data, not logic.
+  panel: {
+    panelRiseMm: 311,
+    verified: { kind: 'manual', source: "TR-1000 Owner's Manual eng02, p.9 (Top panel)" },
+    features: [
+      { kind: 'group',  x: 88,  y: 24,  w: 318, h: 40 },
+      { kind: 'knob',   x: 114, y: 38,  d: 11, label: 'LEVEL' },
+      { kind: 'grid',   x: 92,  y: 150, w: 312, h: 62, cols: 11, rows: 1, shape: 'fader' },
+      { kind: 'voices', x: 90,  y: 218, w: 314, h: 22, label: 'INSTRUMENT' },
+      { kind: 'screen', x: 411, y: 28,  w: 70,  h: 40 },
+      /* ...and the rest of the clusters */
+    ],
+  },
+
   voices: [
     { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 },
     { kind: 'fixed', id: 'sd', label: 'SD', roles: ['snare', 'clap'], polyphony: 1 },
@@ -197,6 +220,76 @@ export const device: Device = {
 
 `hints` is a flat lookup keyed by action, authored once per device and referenced by
 recipes. A few words to jog you, nothing more. Every string under ~8 words.
+
+`physical.panelSpanMm` is **the front-panel horizontal span in normal playing orientation** —
+how much room the box takes up in a row of panels sitting in front of a player. It is deliberately
+not called `width`, because a spec sheet calls the long axis the width regardless of which way up
+the box is played, and the two disagree.
+
+They disagree in the seed set already. The Tracker Mini is portrait: Polyend's specifications call
+170 mm its width, but that is the panel's *vertical* span as played, and its horizontal span is
+130 mm. A rack rendering it at 170 mm across would be showing it on its side. So a manufacturer's
+stated width is a *candidate* for this field and never automatically the answer — confirm the
+orientation against a panel diagram before authoring, and prefer citing that diagram, since it is
+the thing actually measured. The TR-1000 (486 mm) and the Deluge (305 mm) were both checked the
+same way and do happen to agree with their spec sheets; the check is what establishes that, not
+the convention.
+
+The contrast this buys is information, not pedantry: in a row of landscape boxes a portrait one
+should read as narrow and tall, because it is, and that is exactly what "realistic relative width"
+was asking for. The alternative is a rack that looks entirely plausible and is wrong, which is the
+failure mode hardest to notice later.
+
+`physical.verified` is the **same `Verified` a numeric range carries** (§3.1), and it means the
+same thing: a `Cite` names a document and page anybody can turn to, `false` says nobody checked.
+A panel span is citable device data exactly like a parameter range — manufacturers publish the
+dimensions and draw the panels. Note that `pdftotext` scrambles the columns of a specifications
+table and extracts nothing at all from a dimension callout inside a drawing, so a grep over the
+text dump is neither a safe reading of a table nor evidence that a manual is silent; the page has
+to be rendered and read.
+
+#### The panel drawing
+
+`panel` is the same idea one level up: **a simplified original drawing of the front panel, as
+data**. `panelRiseMm` is the vertical span in playing orientation, `verified` cites the drawing it
+was read off, and `features` is a list of shapes in panel-local millimetres — `screen`, `knob`,
+`button`, `grid`, `label`, `group`, and exactly one `voices` region.
+
+Three rules make this safe to have.
+
+**It is data, not a component.** Invariant 2 forbids a UI edit when a device is added, and a
+`tr-1000-panel.tsx` would be precisely that. One renderer switches on `PanelFeature['kind']` — a
+closed vocabulary that does not grow when a manifest does — and never on a device id. A test
+asserts no device id appears anywhere under `components/rack/`.
+
+**It is optional.** A manifest with no `panel` gets a generated one: name plate, jacks, voice
+field. A fourth box works on day one and looks like itself the day somebody draws it. The rack
+labels which is which rather than letting a plain panel read as a drawn one.
+
+**The parts that make claims are still generated.** The jacks are the ones `clock` and `io`
+declare, and the `voices` region is filled with one cell per *assignable* the resolver could have
+used, lit where this guide occupies it. The authored geometry says where things sit; it never says
+what this rig is doing.
+
+`panelRiseMm` springs the `panelSpanMm` trap from the other side, and it is worth stating plainly.
+For a desktop box lying flat, the surface you play is the top panel, so its vertical span is the
+figure the manufacturer calls **depth** — the Deluge is 305 × 208 on the desk and its
+specifications read "305 x 208 x 46". Read it off the drawing and check the aspect before
+believing either number.
+
+Manual artwork stays reference, never asset (§10). Look at the hardware-overview figure, measure
+the clusters, draw our own in our own line weights. Two practical notes from doing it: the
+Tracker Mini's figure carries its own dimension lines and is the easiest of the three, and the
+Deluge's is **split across two pages with each page clipping it**, so the halves have to be
+extracted separately and joined on a feature visible in both.
+
+`false` is therefore reserved for a box whose figure genuinely is not published, and it renders
+provisional like anything else unverified. It is never the place to park a guess. A fabricated
+span would be the first plausible fiction in this codebase, and one honestly-provisional panel is
+worth more than that.
+
+Span only, and no depth or height: depth does not exist in a front-panel view and height only
+matters if the rack ever stacks rows. A field nothing reads is a field nobody keeps accurate.
 
 ### 2.4 Devices that are not instruments
 
@@ -1416,9 +1509,20 @@ half. If the generated file is committed, that test is not optional.
 Eurorack panel, treated seriously as an interface rather than as decoration.
 
 **Signature element: the rack.** Selected devices appear as panels of realistic relative
-width in a rack frame. Once a guide resolves, patch cables (SVG bezier curves with real sag)
-connect the panels to show signal flow and clock. The cables *are* the visualisation of the
+width in a rack frame — from `device.physical.panelSpanMm` and `device.panel.panelRiseMm` (§2.3),
+both the front-panel spans in playing orientation, authored per device and cited, never estimated
+from the artwork. A portrait box therefore reads as portrait. Each panel carries its own
+simplified original drawing (`device.panel.features`, §2.3), rendered by one generic renderer with
+no device-id switch anywhere. Once a guide resolves, patch cables (SVG bezier curves with real
+sag) connect the panels to show signal flow and clock. The cables *are* the visualisation of the
 resolver's output. This is the one place to spend effort.
+
+What the resolver actually produces that is spatial is **clock**: §7.4's source and the boxes that
+can sync to it. Audio is not drawn, and the page says so beside the legend — the resolver assigns
+parts to voices, never to a destination box or mixer channel, so there is no authored endpoint to
+cable to and inventing one would be invariant 5's "never invent an assignment" wearing a different
+hat. `PatchEntry` data is carried through to the panel for a future semi-modular box and rendered
+as a count, never as a cable: those are patch points *inside* one box.
 
 - **Palette** — anodized black and raw aluminium, one saturated accent for live signal
   (not the obvious acid green). Silkscreen white for labels.
@@ -1431,6 +1535,19 @@ resolver's output. This is the one place to spend effort.
   the guide) is flat, quiet, highly legible. The guide is read at the machine, possibly on a
   phone, possibly in a dark room. Legibility beats atmosphere there. Resist screws, LEDs and
   wood cheeks on every other surface.
+
+**Manual artwork is reference, never asset.** Panel diagrams in `manuals/` are the right thing
+to *look at* while drawing: where the knobs and jacks actually sit, the proportions, the control
+clusters. Getting those right is what makes a panel recognisable, and that is the point. What we
+must not do is extract, embed, trace pixel-for-pixel, or ship any of it. patchscore.app is a
+public site, the diagrams are vendor copyright, and `manuals/` is gitignored precisely so none of
+it is redistributed. There is an aesthetic objection too, independent of the legal one: Roland,
+Polyend and Synthstrom draw in completely different line weights and conventions, so a rack
+assembled from their artwork would look like a scrapbook. This section asks for a designed
+surface with silkscreen labels, not photorealism.
+
+Wanting a device image to make a panel work is a signal that the panel design is not carrying
+enough on its own. Say so and fix the design; do not reach for the manual.
 
 Quality floor, unannounced: responsive to mobile, visible keyboard focus,
 `prefers-reduced-motion` respected (the cable animation is the main thing to gate).

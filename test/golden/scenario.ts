@@ -36,6 +36,7 @@ const cascade: Device = {
   kind: 'semi-modular',
   clock: { canSendClock: false, canReceiveClock: true, transport: ['usb'] },
   io: { main: 'stereo', individualOuts: 1, audioIn: true, usbAudio: false },
+  physical: { panelSpanMm: 220, verified: { kind: 'manual', source: 'Fixture p.1' } },
   voices: [{ kind: 'fixed', id: 'voice', label: 'Voice', roles: ['bass-mid', 'lead'], polyphony: 1 }],
   comfortableVoices: 1,
   features: { perStep: ['velocity'] },
@@ -79,6 +80,7 @@ const tracker: Device = {
   kind: 'groovebox',
   clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
   io: { main: 'stereo', individualOuts: 0, audioIn: false, usbAudio: true },
+  physical: { panelSpanMm: 300, verified: { kind: 'manual', source: 'Fixture p.1' } },
   voices: [
     { kind: 'pool', id: 'track', label: 'Track', count: 4, roles: ['pad', 'sub', 'texture'], polyphony: 4 },
   ],
@@ -149,6 +151,7 @@ const drum: Device = {
   kind: 'drum-machine',
   clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
   io: { main: 'stereo', individualOuts: 8, audioIn: false, usbAudio: true },
+  physical: { panelSpanMm: 420, verified: { kind: 'manual', source: 'Fixture p.1' } },
   voices: [
     { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 },
     { kind: 'fixed', id: 'ch', label: 'CH', roles: ['closed-hat'], polyphony: 1 },

@@ -114,9 +114,23 @@ Do not start UI work before the resolver passes its tests.
 ## Content authoring
 
 Device manuals are in `manuals/` — gitignored for size and copyright, and they are the source of
-truth for every parameter value. Actual values only: `DECAY 38`, never "short decay". Anything not
-manual-verified is flagged provisional and surfaced as such in the UI. Roughly 15–20 recipes covers
-a device well; there is no expectation of filling all 23 roles × 6 characters.
+truth for every parameter value.
+
+Two things about reading them:
+
+- **`pdftotext` is not enough.** It scrambles the columns of a specifications table and extracts
+  nothing at all from a dimension callout inside a drawing. A grep over the text dump is not
+  evidence a manual is silent. Render the page and look at it:
+  `pdftoppm -f <page> -l <page> -r 120 -png <pdf> <prefix>`, then Read the PNG.
+- **Panel artwork is reference, never asset** (`DESIGN.md §10`). Look at the diagrams to get
+  proportions and control clusters right, then draw our own panel. Never extract, embed, trace
+  pixel-for-pixel, or ship vendor artwork — patchscore.app is public and `manuals/` is gitignored
+  precisely so none of it is redistributed. Wanting a device image to make a panel work means the
+  panel design is underweight; raise it rather than reaching for the manual.
+
+Actual values only: `DECAY 38`, never "short decay". Anything not manual-verified is flagged
+provisional and surfaced as such in the UI. Roughly 15–20 recipes covers a device well; there is
+no expectation of filling all 23 roles × 6 characters.
 
 ## Conclave
 

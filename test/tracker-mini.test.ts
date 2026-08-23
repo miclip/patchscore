@@ -42,6 +42,19 @@ describe('Tracker Mini manifest', () => {
     expect(parsed.success ? [] : parsed.error.issues).toEqual([])
   })
 
+  it('spans 130 mm across the panel, not the 170 mm Polyend calls its width (§10)', () => {
+    // The p.13 drawing dimensions the panel directly: 130 mm horizontal, 170 mm down the long
+    // edge, 20 mm thick. Polyend's specifications call 170 mm the width, but that is the panel's
+    // *vertical* span in playing orientation — the Tracker Mini is portrait. Authoring 170 would
+    // draw it lying on its side and shrink every other panel against it.
+    expect(device.physical.panelSpanMm).toBe(130)
+    expect(device.physical.panelSpanMm).not.toBe(170)
+    expect(device.physical.verified).toEqual({
+      kind: 'manual',
+      source: 'Polyend Tracker Mini Manual 2.2.1b, p.13 (Hardware Overview)',
+    })
+  })
+
   // -------------------------------------------------------------------------
   // The two pools — the reason this device is in the build (§2.1)
   // -------------------------------------------------------------------------
