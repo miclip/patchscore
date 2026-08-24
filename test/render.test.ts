@@ -5,6 +5,8 @@ import {
   SUBORDINATE,
   dominantRangeCite,
   moodState,
+  citationSentence,
+  rangeDocuments,
   renderGuide,
   resolve,
   type AuthoredParam,
@@ -1267,5 +1269,53 @@ describe('Master FX names what processes audio (§8 phase 7)', () => {
         'audio in), and carries MASTER FX on the panel, and DELAY AMOUNT in its recipes; ' +
         'nothing else in this rig processes audio.',
     ])
+  })
+})
+
+describe('the guide cites the document the values came from (#89)', () => {
+  /**
+   * It used to print `Device.manual.title`, a separate assertion nothing keeps in agreement with
+   * the citations. A TR-1000 guide said "Values below cite TR-1000 Owner's Manual" while every
+   * range cited the Reference Manual — a different book, and the only one that prints a range at
+   * all, which is why it was tracked down in #18. The guide was sending a reader to look
+   * something up where it cannot be found, about the one thing this app claims to be careful
+   * with.
+   */
+  it('names the document the ranges cite, not the one the manifest declares', () => {
+    const tr1000 = DEVICES.find((d) => d.id === 'roland-tr-1000') as Device
+    const sentence = citationSentence(tr1000)
+    expect(sentence).toContain('Reference Manual')
+    expect(sentence).not.toContain('Owner')
+  })
+
+  it('names every document when a device cites more than one', () => {
+    const mc101 = DEVICES.find((d) => d.id === 'roland-mc-101') as Device
+    const sentence = citationSentence(mc101) ?? ''
+    for (const document of rangeDocuments(mc101)) expect(sentence).toContain(document)
+    expect(rangeDocuments(mc101).length).toBeGreaterThan(1)
+  })
+
+  it('says nothing for a device whose ranges cite nothing', () => {
+    for (const device of DEVICES) {
+      if (rangeDocuments(device).length > 0) continue
+      expect(citationSentence(device), device.id).toBeUndefined()
+    }
+  })
+
+  /**
+   * Every device, so a manifest that declares one book and cites another is caught when it is
+   * authored rather than when somebody reads the guide.
+   */
+  it('never names a document no range cites', () => {
+    for (const device of DEVICES) {
+      const sentence = citationSentence(device)
+      if (sentence === undefined) continue
+      for (const document of rangeDocuments(device)) expect(sentence).toContain(document)
+      // Strike out every cited document and only the scaffolding may remain. A declared title
+      // leaking back in would survive this; a wording change would not break it.
+      let bare = sentence
+      for (const document of rangeDocuments(device)) bare = bare.split(document).join('')
+      expect(bare.replace(/Values below cite|and|[.,\s]/g, ''), device.id).toBe('')
+    }
   })
 })

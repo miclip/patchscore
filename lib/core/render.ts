@@ -1,4 +1,5 @@
 import type { Device } from './device'
+import { rangeDocuments } from './device'
 import type { DeviceId, SectionName } from './ids'
 import type { Role } from './vocabulary'
 import type { Cite, Provenance, ResolvedParam, ResolvedRange } from './params'
@@ -879,6 +880,22 @@ function stepBlock(
 }
 
 /**
+ * What the values under a device heading actually cite, as a sentence, or nothing when they cite
+ * nothing.
+ *
+ * Derived from the citations rather than from `Device.manual`, which is a separate assertion
+ * nothing keeps in agreement with them. A TR-1000 declares its Owner's Manual while every range
+ * cites the Reference Manual — a different book, and the only one that prints a range at all — so
+ * the guide was telling a reader to look something up where it cannot be found. Two devices cite
+ * two documents each, which one declared title cannot express however it is worded.
+ */
+export function citationSentence(device: Device): string | undefined {
+  const documents = rangeDocuments(device)
+  if (documents.length === 0) return undefined
+  return `Values below cite ${list([...documents])}.`
+}
+
+/**
  * Sections that program identically, merged into one block.
  *
  * A continuous part in a six-section template repeated its grid, its slot list and its
@@ -988,10 +1005,10 @@ function phaseSound(
     const mine = result.assignments.filter((a) => a.deviceId === device.id)
     if (mine.length === 0) continue
     out.push(`### ${device.name}`)
-    if (device.manual !== undefined) {
-      const edition = device.manual.edition === undefined ? '' : `, ${device.manual.edition}`
+    const cites = citationSentence(device)
+    if (cites !== undefined) {
       out.push('')
-      out.push(`*Values below cite ${device.manual.title}${edition}.*`)
+      out.push(`*${cites}*`)
     }
     for (const a of mine) {
       out.push('')

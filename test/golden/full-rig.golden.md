@@ -528,7 +528,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 ### CRAVE
 
-*Values below cite CRAVE Quick Start Guide, BE_0718-AAJ_WW.*
+*Values below cite CRAVE Quick Start Guide BE_0718-AAJ_WW.*
 
 #### Voice — `noise`: Raw noise through the filter, oscillator out of the mix
 
@@ -567,7 +567,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 ### Cascadia
 
-*Values below cite Intellijel Cascadia Manual, v1.1 (2023.04.18).*
+*Values below cite Intellijel Cascadia Manual v1.1.*
 
 #### Voice — `metallic`: Ring modulator fed a square, notched rather than filtered
 
@@ -604,7 +604,7 @@ Routing — played from MIDI IN or EXT IN PITCH/GATE — Cascadia has no sequenc
 
 ### minilogue xd
 
-*Values below cite minilogue xd/minilogue xd module Owner's Manual, E 9.*
+*Values below cite minilogue xd Owner's Manual E 9.*
 
 #### Voice — `pad`: Low pad with the filter shut down over the top of it
 
@@ -688,7 +688,7 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 
 ### MC-101
 
-*Values below cite MC-101 Reference Manual, eng01.*
+*Values below cite MC-101 Reference Manual eng01 and MC-101 Update eng08.*
 
 #### TONE Track 1 — `sub`: Sine sub, one note at a time, nothing above the fundamental
 
@@ -758,7 +758,7 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 
 ### TR-1000
 
-*Values below cite TR-1000 Owner’s Manual, eng02.*
+*Values below cite TR-1000 Reference Manual (eng02) v1.13+.*
 
 #### HC — `clap`: Wide clap sitting on top of the snare
 
@@ -815,7 +815,7 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 
 ### TR-8S
 
-*Values below cite TR-8S Reference Manual, eng01.*
+*Values below cite TR-8S Reference Manual eng01.*
 
 #### CH — `closed-hat`: Hat pushed into the compressor
 
@@ -893,7 +893,7 @@ Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
 
 ### Deluge
 
-*Values below cite Deluge Official Guidebook, OS 4.1 (OLED) + community firmware release_1_2_1 (Chopin).*
+*Values below cite Deluge Official Guidebook OS 4.1 (OLED) and Deluge community firmware release_1_2_1, community_features.md.*
 
 #### Track 1 — `kick`: Kit-row kick, bass lifted, edge from decimation
 
