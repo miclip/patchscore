@@ -44,11 +44,19 @@ import { DEVICES } from '../lib/devices/registry.generated'
  *    the box itself displays as a percentage, and this one means a physical fader position with
  *    no displayed number behind it. Two different claims should not share a spelling.
  *
+ * The 2026-08-23 addition when the MC-101 landed:
+ *
+ *  - **`dB`** — decibels, for the gain of an EQ band, printed as such throughout that box's
+ *    parameter tables (`Low Gain -24.0-+24.0 [dB]`, Reference Manual p.47). Nothing existing
+ *    covers it: `%` is a proportion the box displays, `V` is a voltage. It is spelled the way
+ *    every manual in `manuals/` spells it, which is the one spelling this library will keep
+ *    meeting, so it introduces no drift of the `St`/`st` kind.
+ *
  * Two units the Cascadia introduced and then gave up, to avoid widening the drift above:
  * `semitones` became `st`, and `% duty` became `%`. Both were the manual's own wording, and both
  * would have been a *third* spelling of something the library already spells two ways.
  */
-const REVIEWED_UNITS = ['%', '% travel', 'Bits', 'Hz', 'Sec', 'St', 'V', 'c', 'ms', 'st', '°']
+const REVIEWED_UNITS = ['%', '% travel', 'Bits', 'Hz', 'Sec', 'St', 'V', 'c', 'dB', 'ms', 'st', '°']
 
 function unitsInUse(): string[] {
   const seen = new Set<string>()

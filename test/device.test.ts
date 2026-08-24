@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  DEVICE_KINDS,
+  DeviceKindSchema,
   DeviceSchema,
   RecipeSchema,
   VoiceSpecSchema,
+  expand,
   type Assignable,
   type Verified,
 } from '../lib/core/index'
@@ -284,6 +287,59 @@ describe('Device manifest (§2.3)', () => {
 
   it('rejects a kind outside the closed list', () => {
     expect(DeviceSchema.safeParse(device({ kind: 'eurorack' as never })).success).toBe(false)
+  })
+
+  it('accepts every kind in the closed list, and only those', () => {
+    // The list is closed because `kind` drives a user-visible filter and a free-text kind would
+    // make that filter a list of typos. Asserted over `DEVICE_KINDS` rather than as a literal
+    // list, so adding one here cannot silently pass while the schema rejects it.
+    for (const kind of DEVICE_KINDS) {
+      const parsed = DeviceSchema.safeParse(device({ kind }))
+      expect(parsed.success, kind).toBe(true)
+    }
+    expect(DeviceKindSchema.options).toEqual([...DEVICE_KINDS])
+  })
+
+  it('accepts io.main: none, for a box with no audio path (§2.3)', () => {
+    // Adding this dropped an assumption true of every device in the library until now: that
+    // everything has an audio output. `mono` on a box with none would make both renderers print
+    // a main out that does not exist and make the rack draw a jack nobody can plug into.
+    const silent = device({ io: { main: 'none', individualOuts: 0, audioIn: false, usbAudio: false } })
+    const parsed = DeviceSchema.safeParse(silent)
+    expect(parsed.success ? [] : parsed.error.issues).toEqual([])
+    // `none` says there is no *main* bus, not that there is no audio anywhere: the combination
+    // with individual outs, an input or USB audio is legal and consumers have to handle it.
+    expect(
+      DeviceSchema.safeParse(
+        device({ io: { main: 'none', individualOuts: 2, audioIn: true, usbAudio: true } }),
+      ).success,
+    ).toBe(true)
+    // And the closed list is still closed.
+    expect(
+      DeviceSchema.safeParse(
+        device({ io: { main: 'silent' as never, individualOuts: 0, audioIn: false, usbAudio: false } }),
+      ).success,
+    ).toBe(false)
+  })
+
+  it('accepts a sequencer: no voices, no recipes, and that is the whole point (§2.3, §2.4)', () => {
+    // A Eurorack sequencer has pitch and gate tracks, modulation lanes, and no sound engine at
+    // all. `semi-modular` would imply a normalised audio instrument — and voices, assignables
+    // and recipes it does not have — while `groovebox` would imply self-contained sound
+    // generation, which is the one thing it is defined by not doing. Both would make the
+    // manifest state something false, which is the test a new kind has to pass.
+    const sequencer = device({
+      id: 'intellijel-metropolix',
+      kind: 'sequencer',
+      voices: [],
+      recipes: [],
+      features: undefined,
+      hints: undefined,
+    })
+    const parsed = DeviceSchema.safeParse(sequencer)
+    expect(parsed.success ? [] : parsed.error.issues).toEqual([])
+    // And it behaves like §2.4's other voiceless boxes rather than needing a special case.
+    expect(expand(parsed.success ? parsed.data : sequencer)).toHaveLength(0)
   })
 
   it('rejects duplicate voice ids and duplicate recipe ids', () => {

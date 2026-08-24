@@ -78,6 +78,29 @@ const SHARED_VOCABULARY = new Set(
   ),
 )
 
+/**
+ * Ordinary musical English that a device manual happens to print on a control.
+ *
+ * `key` is the MC-101's own name for a drum pad's tuning — `Key Offset`, Reference Manual p.47 —
+ * and it is also what every musician calls the tonality a template is written in, which is what
+ * `major-key-electro` is naming. That is not a template naming a device, and renaming the
+ * parameter to dodge the check would put a word on the screen that the box does not print.
+ *
+ * `transient` is the same collision from the other direction. A template's `sustain` is either
+ * `continuous` or `transient` — that is §4.4's own word for a part that plays in some sections
+ * and not others, chosen long before this device landed — and the TR-8S prints `TRANSIENT` as an
+ * INST FX type with a `TRANSIENT ATTACK` control under it (Reference Manual eng01). Three
+ * templates say `sustain: 'transient'`. Neither side may move: renaming the template field would
+ * rewrite §4.4's vocabulary to dodge a check, and renaming the parameter would put a word on the
+ * screen that the box does not print.
+ *
+ * This is the same false positive the single-letter rule below already records for `A minor`,
+ * and it is repaired the same way: by naming the word, once, with the reason. Keep this set
+ * tiny. A word earns a place here only when a device manual's own vocabulary collides with
+ * ordinary musical English, never to let a template through that really is naming a box.
+ */
+const MUSICAL_ENGLISH = new Set(['key', 'transient'])
+
 function tokens(text: string): string[] {
   return text
     .toLowerCase()
@@ -113,6 +136,7 @@ function deviceVocabulary(devices: readonly Device[]): Set<string> {
       // 'a' as a device word forbids a template from naming the key of A minor, which is what
       // it did the day this device landed.
       if (token.length === 1) continue
+      if (MUSICAL_ENGLISH.has(token)) continue
       if (!SHARED_VOCABULARY.has(token)) out.add(token)
     }
   }

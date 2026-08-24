@@ -92,6 +92,13 @@ function count(n: number, singular: string): string {
   return `${num(n)} ${singular}${n === 1 ? '' : 's'}`
 }
 
+/** Names in prose: "the L-8", "the L-8 and the 2400", "a, b, and c". */
+function list(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? ''
+  if (items.length === 2) return `${items[0]} and ${items[1]}`
+  return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`
+}
+
 /** 'manual — TR-1000 Reference Manual p.61'. `cite.kind` is rendered, never dropped (§3.2). */
 function citeText(cite: Cite): string {
   return `${cite.kind} — ${cite.source}`
@@ -412,10 +419,16 @@ function phaseVoiceAssignment(result: ResolveResult, deviceById: Map<DeviceId, D
 // ---------------------------------------------------------------------------
 
 function ioText(device: Device): string {
-  const parts = [`${device.io.main} main out`]
+  const parts: string[] = []
+  // §2.3: `main: 'none'` is a box with no audio bus at all. It may still have the other three,
+  // so this is a missing entry in the list rather than a special case around it.
+  if (device.io.main !== 'none') parts.push(`${device.io.main} main out`)
   if (device.io.individualOuts > 0) parts.push(count(device.io.individualOuts, 'individual out'))
   if (device.io.usbAudio) parts.push('USB audio')
   if (device.io.audioIn) parts.push('audio in')
+  // Empty only when `main` is `none` and nothing else is declared either, because every other
+  // value of `main` pushes. So this sentence means what it says rather than approximating it.
+  if (parts.length === 0) return 'no audio I/O'
   return parts.join(' · ')
 }
 
@@ -428,12 +441,29 @@ function mixerText(device: Device, parts: number): string {
   const separable = Math.min(parts, device.io.individualOuts)
   const outs = count(device.io.individualOuts, 'individual out')
   if (separable === parts) return `${count(parts, 'part')}, ${outs}: one channel each`
+
+  // Past here some part has to go somewhere other than its own jack, and both remaining
+  // sentences name the main bus. A box with `main: 'none'` has no bus to name, so it is handled
+  // before `main` is read rather than after — and `main` is then bound to a local the compiler
+  // has narrowed, so a future value of the union cannot reach a template string by accident.
+  //
+  // This is not reachable by any device in the library today: a box with no audio path also has
+  // no assignables, so `parts === 0` returns above. It is written for the first box that has
+  // both, because "unreachable via an early return in a different function" is not a guarantee.
+  if (device.io.main === 'none') {
+    if (separable === 0) return `${count(parts, 'part')}, no audio output: nothing to patch`
+    return (
+      `${count(parts, 'part')}, ${outs}: ${num(separable)} on their own channels, ` +
+      `the rest have no output`
+    )
+  }
+  const main: 'mono' | 'stereo' = device.io.main
   if (separable === 0) {
-    return `${count(parts, 'part')}, no individual outs: one ${device.io.main} channel for all`
+    return `${count(parts, 'part')}, no individual outs: one ${main} channel for all`
   }
   return (
     `${count(parts, 'part')}, ${outs}: ${num(separable)} on their own channels, ` +
-    `the rest summed to the ${device.io.main} out`
+    `the rest summed to the ${main} out`
   )
 }
 
@@ -446,9 +476,20 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
     out.push('**Clock** — nothing in this rig can send clock. Every box here has to receive one,')
     out.push('so the clock has to come from something outside it.')
   } else {
+    // §7.4. "Sync everything else to it" is an instruction, and some boxes cannot obey it —
+    // a device that does not receive clock runs free no matter what the source is doing.
+    // Naming them here beats leaving the reader to discover it at the machine.
+    const deaf = result.devices.filter(
+      (d) => d.id !== source.deviceId && !d.clock.canReceiveClock,
+    )
+    const sync =
+      deaf.length === 0
+        ? 'Sync everything else to it.'
+        : `Sync everything else to it, except ${list(deaf.map((d) => d.name))}, ` +
+          `which cannot receive clock and ${deaf.length === 1 ? 'runs' : 'run'} free.`
     out.push(
       `**Clock source** — ${source.deviceName} over \`${source.transport}\`, ` +
-        `carrying ${count(source.occupiedAssignables, 'part')}. Sync everything else to it.`,
+        `carrying ${count(source.occupiedAssignables, 'part')}. ${sync}`,
     )
   }
   out.push('')
@@ -458,10 +499,19 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
   // "what do I plug where" — so clock, audio and channel plan sit together, per box.
   for (const device of result.devices) {
     const parts = occupied.get(device.id) ?? 0
-    const clock = [
-      device.clock.canSendClock ? 'sends clock' : 'receives clock only',
-      device.clock.transport.join('/'),
-    ].join(' · ')
+    // Four cases, not two. A box that does neither read "receives clock only" — wrong about
+    // the box and, for a mixer whose manual never says MIDI, wrong about the wire as well.
+    // Transports are suppressed in that case: naming a wire implies a clock travels on it.
+    const clockText = device.clock.canSendClock
+      ? device.clock.canReceiveClock
+        ? 'sends clock'
+        : 'sends clock, cannot receive'
+      : device.clock.canReceiveClock
+        ? 'receives clock only'
+        : 'no clock in or out'
+    const clock = device.clock.canSendClock || device.clock.canReceiveClock
+      ? [clockText, device.clock.transport.join('/')].join(' · ')
+      : clockText
 
     out.push(`- **${device.name}** — ${device.kind} · ${count(parts, 'part')}`)
     out.push(`  - clock: ${clock}`)

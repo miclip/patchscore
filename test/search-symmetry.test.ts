@@ -16,6 +16,7 @@ import {
   type Template,
 } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { TEMPLATES } from '../lib/templates/index'
 import { box, bruteForceBest, desugarPools, keys, makeRecipe, request, withRoles } from './rigs'
 
 /**
@@ -644,6 +645,29 @@ describe('pool symmetry breaking does not change the optimum (§7.1)', () => {
   }
 })
 
+/**
+ * The one cell of the matrix below where symmetry breaking now costs *more* nodes than it saves.
+ *
+ * It is an ordering effect, not a lost candidate: restricting each pool to its lowest free
+ * ordinal narrows the branching factor but also changes which leaf the first descent reaches, and
+ * since the relaxed suffix bound landed, the quality of the first incumbent matters more than the
+ * branching factor does. The desugared run happens to hit its optimum immediately here and then
+ * prunes everything else at depth one. 42 nodes against 26, and 20 against 19 — a different
+ * route, not a blow-up.
+ *
+ * That this is *only* an ordering effect is proved elsewhere, not asserted here: the optimality
+ * matrix above runs these exact rigs and templates against brute force on every seed and the two
+ * agree. Named rather than tolerated, so that a future change which removes an inversion fails
+ * this test and forces the entry to be deleted.
+ *
+ * Both cells are on the `everything` rig — three devices, two of them pooled — which is the only
+ * row where the bound has enough candidates to reach its optimum on the first descent.
+ */
+const SYMMETRY_INVERSIONS = new Set([
+  'everything / section-disjoint reuse',
+  'everything / a part asked for after every pool has been opened',
+])
+
 describe('the pruning is doing something (§7.1)', () => {
   it('visits strictly fewer nodes than the unpruned search wherever a pool is involved', () => {
     let compared = 0
@@ -651,10 +675,14 @@ describe('the pruning is doing something (§7.1)', () => {
       for (const [tName, t] of templates) {
         const pruned = assign({ devices, template: t, mood: moodState(), seed: 1 })
         const explored = assign(unpruned(devices, t, 1))
-        expect(
-          pruned.search.nodes,
-          `${rigName} / ${tName}: ${pruned.search.nodes} vs ${explored.search.nodes}`,
-        ).toBeLessThanOrEqual(explored.search.nodes)
+        const where = `${rigName} / ${tName}: ${pruned.search.nodes} vs ${explored.search.nodes}`
+        if (SYMMETRY_INVERSIONS.has(`${rigName} / ${tName}`)) {
+          expect(pruned.search.nodes, `no longer inverted, delete the entry: ${where}`).toBeGreaterThan(
+            explored.search.nodes,
+          )
+          continue
+        }
+        expect(pruned.search.nodes, where).toBeLessThanOrEqual(explored.search.nodes)
         if (pruned.search.nodes < explored.search.nodes) compared++
       }
     }
@@ -664,7 +692,22 @@ describe('the pruning is doing something (§7.1)', () => {
     expect(compared).toBeGreaterThan(rigs.length)
   })
 
-  it('turns a rig that could only be searched greedily into one that is searched exhaustively', () => {
+  /**
+   * **This case used to read "turns a rig that could only be searched greedily into one that is
+   * searched exhaustively", and the relaxed suffix bound took that claim away from it.**
+   *
+   * The fixture is unchanged and so is the arithmetic it was built on: eight parts over an
+   * eight-track pool is 8! orderings of one assignment, and before the suffix bound the desugared
+   * search hit the 50k cap on it. It now finishes in 45 nodes, because every part has a
+   * perfect-distance candidate on every track — so the floor is exactly achievable, the first
+   * descent is optimal, and everything else prunes at depth one. Scaling the fixture does not
+   * bring the cap back: 24 tracks and 24 parts is 325 nodes.
+   *
+   * What is left is still worth asserting, and it is what the fixture was really for: symmetry
+   * breaking cuts this tree by roughly two thirds on top of the bound. The rescue-from-greedy
+   * claim is not restated, because on this rig it is no longer the symmetry prune doing it.
+   */
+  it('cuts a full-size pool down even where the suffix bound has already finished the job', () => {
     // Eight tracks and eight parts: 8! orderings of an assignment that is one assignment.
     const eight = box('big-pool', {
       kind: 'groovebox',
@@ -699,11 +742,15 @@ describe('the pruning is doing something (§7.1)', () => {
     ]
     const t = withRoles(roles)
 
-    expect(assign(unpruned([eight], t, 1)).search.capped).toBe(true)
+    const explored = assign(unpruned([eight], t, 1))
     const pruned = assign({ devices: [eight], template: t, mood: moodState(), seed: 1 })
+    expect(explored.search.capped).toBe(false)
     expect(pruned.search.capped).toBe(false)
-    // All eight parts fit on eight tracks, so nothing may be missed.
+    expect(pruned.search.nodes).toBeLessThan(explored.search.nodes / 2)
+    // All eight parts fit on eight tracks, so nothing may be missed — and the two agree on that,
+    // which is the part of the old assertion that never depended on the cap.
     expect(pruned.assignments.length).toBe(8)
+    expect(explored.assignments.length).toBe(8)
   })
 })
 
@@ -957,24 +1004,68 @@ describe('the real registry searches exhaustively (§7.1)', () => {
     )
   }
 
-  for (const count of [10, 12]) {
-    it(`TR-1000 + Tracker Mini + Deluge, ${count} roles, finishes without the cap`, () => {
-      const result = assign({
-        devices: [...DEVICES],
-        template: realistic(count),
-        mood: moodState(),
-        seed: 1,
-      })
-      expect(result.search.capped).toBe(false)
-      expect(result.search.method).toBe('exhaustive')
-      // Not a performance budget, a smoke alarm. This rig sits in the low thousands against a
-      // 50k cap, so a change that costs a large multiple should be looked at here, where it
-      // fails, rather than in a `capped: true` nobody reads. `scripts/bench-search.ts` prints
-      // the current figures; no exact number is asserted, because that would fail on every
-      // harmless change to a manifest.
-      expect(result.search.nodes).toBeLessThan(DEFAULT_NODE_CAP)
+  it('the whole registry, 10 roles, finishes without the cap', () => {
+    const result = assign({
+      devices: [...DEVICES],
+      template: realistic(10),
+      mood: moodState(),
+      seed: 1,
     })
-  }
+    expect(result.search.capped).toBe(false)
+    expect(result.search.method).toBe('exhaustive')
+    // Not a performance budget, a smoke alarm. `scripts/bench-search.ts` prints the current
+    // figures; no exact number is asserted, because that would fail on every harmless change to
+    // a manifest.
+    expect(result.search.nodes).toBeLessThan(DEFAULT_NODE_CAP)
+  })
+
+  /**
+   * **The alarm above fired when the MC-101 landed, this case recorded the finding, and the
+   * relaxed suffix bound repaired it. Kept as the regression test for that repair.**
+   *
+   * The history is worth keeping because it is what the bound was built for. This case used to
+   * read "12 roles, finishes without the cap"; a fifth voice-bearing device broke it, and 12
+   * synthetic roles went from 12,286 nodes on four devices to 158,086 on five. Adding the TR-8S
+   * as a ninth took it past 380,000. That was never the §7.1 symmetry bug returning — pool
+   * members still collapse, and the count grew with the number of *devices*, not factorially with
+   * pool size — so the answer was not a bigger cap but a bound that charges for the requests not
+   * yet decided (`buildSuffixFloor` in `lib/core/search.ts`).
+   *
+   * The synthetic template here is harsher than anything shipped: twelve requests, every one of
+   * them `dark`, so nearly every device offers a candidate for nearly every request. It now
+   * finishes exhaustively inside the shipped cap with room to spare, which is the assertion.
+   */
+  it('the whole registry, 12 roles, is back inside the shipped cap', () => {
+    const template = realistic(12)
+    const result = assign({ devices: [...DEVICES], template, mood: moodState(), seed: 1 })
+    expect(result.search.capped).toBe(false)
+    expect(result.search.method).toBe('exhaustive')
+    // A smoke alarm, not a budget, for the reason the case above gives — but a *tight* one, so
+    // that losing the suffix bound is caught here rather than only as a slow test run.
+    expect(result.search.nodes).toBeLessThan(DEFAULT_NODE_CAP / 2)
+  })
+
+  /**
+   * The case that decides whether the finding above is a product problem or a headroom problem.
+   *
+   * Every template the app can actually run still searches exhaustively at the shipped cap, so no
+   * guide anybody generates today is a greedy fallback. `industrial-techno` is the tight one at
+   * roughly 49.6k of 50k — under one percent of room — so the next handful of recipes authored
+   * anywhere in the library tips it over, and this is where that will be noticed.
+   *
+   * Nothing here asserts an exact node count, for the reason the smoke alarm above gives. What is
+   * asserted is the property that matters: real inputs, real cap, exhaustive.
+   */
+  it('leaves every shipped template inside the shipped cap', () => {
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = assign({ devices: [...DEVICES], template, mood: moodState(), seed })
+        const where = `${template.id} seed ${seed}`
+        expect(result.search.capped, where).toBe(false)
+        expect(result.search.method, where).toBe('exhaustive')
+      }
+    }
+  })
 
   it('is deterministic on the real registry, whatever the seed', () => {
     const t = realistic(10)

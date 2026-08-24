@@ -269,10 +269,19 @@ describe('the committed registry', () => {
   it('gives every device a cited panel span in a believable range (§10)', () => {
     for (const device of DEVICES) {
       expect(Number.isFinite(device.physical.panelSpanMm), device.id).toBe(true)
-      // Narrower than a 2 HP blank or wider than a 19-inch rack means somebody typed inches,
-      // or centimetres, or nothing at all.
+      // Narrower than a 2 HP blank, or wider than a large mixing desk, means somebody typed
+      // inches, or centimetres, or nothing at all.
+      //
+      // **The ceiling was 600 until the Model 2400 landed, and 600 was a 19-inch rack plus
+      // headroom.** That reference stopped bounding the library the moment it took a device that
+      // is not a rack unit: the 2400 is a 22-channel desk and measures 680.5 mm across its side
+      // panels, cited to a dimensioned plan view and cross-checked against the drawn aspect. The
+      // bound is a slip detector, not a claim about how big hardware gets, so it moves to 1000 —
+      // which still catches the order-of-magnitude typo this exists for, and the two directions
+      // that produced the original number (inches read as mm, cm read as mm) are caught by the
+      // floor and by a reader, not by this line.
       expect(device.physical.panelSpanMm, device.id).toBeGreaterThan(10)
-      expect(device.physical.panelSpanMm, device.id).toBeLessThan(600)
+      expect(device.physical.panelSpanMm, device.id).toBeLessThan(1000)
       // Provenance is mandatory and `false` is a legal, meaningful answer — but a cited width
       // must actually name something.
       const { verified } = device.physical
@@ -282,7 +291,7 @@ describe('the committed registry', () => {
 
   it('keeps the seed set in the span order the rack will draw them (§10)', () => {
     // A relative-width claim is only meaningful against the other panels, so assert the ordering
-    // rather than only the four numbers: this survives a re-measurement that moves every span
+    // rather than only the numbers themselves: this survives a re-measurement that moves every span
     // slightly, and fails if one device is ever authored in the wrong units.
     //
     // It does *not* catch the Tracker Mini being reset to Polyend's 170 mm — that still sorts
@@ -293,9 +302,19 @@ describe('the committed registry', () => {
       .map((d) => d.id)
     expect(byWidth).toEqual([
       'polyend-tracker-mini',
+      // Two devices at exactly 172.7 mm — both are 34 HP Eurorack. `Array.prototype.sort` is
+      // stable, so the tie keeps registry order, which is folder order.
+      'empress-zoia-euroburo',
+      'intellijel-metropolix',
+      'roland-mc-101',
+      'elektron-digitakt-ii',
+      'zoom-livetrak-l-8',
       'synthstrom-deluge',
+      'behringer-crave',
       'intellijel-cascadia',
+      'roland-tr-8s',
       'roland-tr-1000',
+      'tascam-model-2400',
     ])
   })
 })

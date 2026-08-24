@@ -284,10 +284,31 @@ export const RecipeSchema = z
 // §2.3 Device manifest
 // ---------------------------------------------------------------------------
 
+/**
+ * §2.3. What the box *is*, as a closed list.
+ *
+ * Closed on purpose: the kind drives the picker's filter, and a free-text kind would make that
+ * filter a list of typos. It is **not** one of invariant 3's four shared vocabularies — a kind is
+ * a fact about hardware, not a term templates and devices meet on — but the same discipline
+ * applies for a different reason. Adding one widens a filter every user sees, so a kind earns its
+ * place only when the alternatives would make a manifest *say something false*, never when they
+ * would merely be a loose fit.
+ *
+ * `sequencer` is here because both alternatives failed that test for a Eurorack sequencer with no
+ * sound engine at all. `semi-modular` implies a normalised audio instrument — the Cascadia's whole
+ * point is that it makes a sound with nothing patched — and would imply voices, assignables and
+ * recipes for a box that has none. `groovebox` implies self-contained sound generation, which is
+ * the one thing such a box is defined by not doing. §2.4 already says a device with no voices is
+ * modelled properly rather than special-cased; this is that rule reaching the kind list.
+ *
+ * The order here is not a display order. `kindsPresent` derives the picker's options from the
+ * registry in first-mention order, so nothing reads this array's sequence.
+ */
 export const DEVICE_KINDS = [
   'drum-machine',
   'groovebox',
   'sampler',
+  'sequencer',
   'synth',
   'semi-modular',
   'mixer-recorder',
@@ -305,23 +326,68 @@ export const DeviceKindSchema = z.enum(DEVICE_KINDS)
 export type ClockTransport = string
 export const ClockTransportSchema = z.string().min(1)
 
-export type ClockSpec = { canSendClock: boolean; canReceiveClock: boolean; transport: ClockTransport[] }
+/**
+ * §7.4. `preferredSource` is the one *topology judgement* a manifest is allowed to make: "this
+ * box's job in a rig is to drive it". A dedicated sequencer or transport says `true`; everything
+ * else omits the field.
+ *
+ * It is deliberately not derivable, and `kind` in particular cannot answer it. The library's two
+ * `mixer-recorder`s make the point on real data: the Model 2400 is the one box that claims this
+ * field, and the LiveTrak L-8 cannot send clock at all. Same kind, opposite ends of the topology.
+ * Whether a box's job is to drive a rig is a fact about how it is used, which is exactly the sort
+ * of thing §2.3 says the manifest states rather than the engine infers.
+ *
+ * (This argument used to be made with "a groovebox and a dedicated sequencer can both be
+ * `groovebox`", which stopped being true when §2.3 gained a `sequencer` kind. The claim survives
+ * the loss of that example; it did not depend on it.)
+ *
+ * Omitted, never `false`, when the device makes no claim: absent and "explicitly not preferred"
+ * would rank identically and the second spelling only invites an author to write it out eleven
+ * times. It is meaningless without `canSendClock`, and the schema refuses that combination
+ * rather than silently ignoring it.
+ */
+export type ClockSpec = {
+  canSendClock: boolean
+  canReceiveClock: boolean
+  transport: ClockTransport[]
+  preferredSource?: boolean
+}
 
-export const ClockSpecSchema = z.strictObject({
-  canSendClock: z.boolean(),
-  canReceiveClock: z.boolean(),
-  transport: z.array(ClockTransportSchema).min(1),
-})
+export const ClockSpecSchema = z
+  .strictObject({
+    canSendClock: z.boolean(),
+    canReceiveClock: z.boolean(),
+    transport: z.array(ClockTransportSchema).min(1),
+    preferredSource: z.boolean().optional(),
+  })
+  .refine((c) => !(c.preferredSource === true && !c.canSendClock), {
+    message: 'clock.preferredSource requires canSendClock',
+    path: ['preferredSource'],
+  })
 
+/**
+ * §2.3. The audio the box has, as the manifest states it.
+ *
+ * **`main: 'none'` is a real answer**, and adding it dropped an assumption that had been true of
+ * every device in the library: that everything has an audio output. A Eurorack sequencer has
+ * pitch, gate, modulation and clock outputs and no audio path at all, so `mono` would make both
+ * renderers print a "mono main out" that does not exist and make the rack draw a jack nobody can
+ * plug into. Invariant 5 forbids inventing an assignment to fill a hole; a fictional output is
+ * the same fault wearing different clothes.
+ *
+ * `none` says only that there is no *main* bus. A box may still declare `individualOuts`,
+ * `audioIn` or `usbAudio` alongside it, and consumers have to handle that combination rather than
+ * treating `none` as "no audio anywhere".
+ */
 export type IoSpec = {
-  main: 'mono' | 'stereo'
+  main: 'mono' | 'stereo' | 'none'
   individualOuts: number
   audioIn: boolean
   usbAudio: boolean
 }
 
 export const IoSpecSchema = z.strictObject({
-  main: z.enum(['mono', 'stereo']),
+  main: z.enum(['mono', 'stereo', 'none']),
   individualOuts: z.int().min(0),
   audioIn: z.boolean(),
   usbAudio: z.boolean(),

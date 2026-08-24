@@ -1,0 +1,129 @@
+import type { Device } from '../../core/device'
+import { ZOIA_EUROBURO_PANEL } from './panel'
+
+/**
+ * Empress ZOIA Euroburo (§2.3, §2.4). The library's first `fx-processor`, its first Eurorack
+ * module, and its second device with nothing to assign.
+ *
+ * ## The honest disclaimer first, because it is the biggest thing about this manifest
+ *
+ * **The manual says this box is a synthesizer, and this manifest says it is an effect.** p.1:
+ * *"The ZOIA Euroburo is, in essence, a fully featured modular synthesizer within a single
+ * module… Instead of thinking of the ZOIA as simply a module, it is probably more accurate to
+ * think of it as a platform. It provides the basic tools so that you can build your own effects,
+ * synths, and instruments."*
+ *
+ * `kind: 'fx-processor'` and zero voices come from §2.5, which named this box as the library's
+ * fx-processor before anybody opened the manual. That is a design decision and it is defensible —
+ * a rig gains more from knowing there is a processor in it than from a device whose voice list
+ * would have to be invented patch by patch — but it is **not what the document says**, and the
+ * distinction matters because every other manifest in this library is a reading of a manual.
+ *
+ * The concrete cost: a ZOIA patch that is three oscillators and a filter is a synth voice this
+ * model cannot offer to any role, and no guide will ever suggest one. That is recorded here
+ * rather than hidden, and it is the deferred question this device raises.
+ *
+ * ## Zero assignables, and the L-8 already proved the path
+ *
+ * `voices` and `recipes` are both empty. §2.4: *"a device with no voices simply contributes no
+ * assignables and still appears in rig integration"*. It is permanently idle in §7.1's sense — a
+ * constant on the last key of the `Score` vector, applied to every candidate equally, so it can
+ * never reorder them — and it shows up in the guide twice: a rig-integration block with an honest
+ * channel plan, and the Master FX list, where `kind === 'fx-processor'` is already first-class
+ * evidence.
+ *
+ * ## A platform manual, not a parameter manual, and that shapes what is absent
+ *
+ * This is a 44-page document about the *hardware and the editing workflow*: the knob, the action
+ * buttons, the grid, connections, pages, patches, the config menu, the SD card. **It never
+ * enumerates the module library.** ZOIA's actual sound-shaping — its oscillators, filters,
+ * delays, reverbs, LFOs, sequencers and clock modules — lives in a separate module index that is
+ * not in `manuals/`.
+ *
+ * So three fields that would ordinarily be filled are deliberately empty, and each is an absence
+ * of documentation rather than of capability:
+ *
+ *  - **no `features.lfo`** — the manual mentions no LFO. ZOIA certainly has them; this document
+ *    does not say so, and `manuals/README.md` forbids authoring from memory.
+ *  - **no `features.sidechain`** — likewise. A ZOIA patch can obviously duck one signal from
+ *    another; nothing here documents it, and the field would be a guess.
+ *  - **no `features.perStep`** — this box has no step sequencer of its own that the manual
+ *    describes, and nothing addresses steps.
+ *
+ * `hints` and `jacks` are absent for a different, structural reason: both exist to be referenced
+ * by recipes (§2.3, §3.3), and a device with no recipes would be declaring a table nothing reads.
+ *
+ * ## What the manual does document, and what is used
+ *
+ * Audio in (L/R), audio out (L/R), a headphone out that is *"a clone of what's sent to the main
+ * audio outputs"* (p.5), four CV inputs and four CV outputs with selectable ranges of -5V to 5V,
+ * 0V to 5V or 0V to 10V (p.6), two 1/8" TRS MIDI ports of *"MIDI Type A spec"* with 5-pin dongles
+ * included (p.26), and a microSD card for patches. No USB anywhere.
+ */
+export const device: Device = {
+  id: 'empress-zoia-euroburo',
+  name: 'ZOIA Euroburo',
+  maker: 'Empress Effects',
+  kind: 'fx-processor',
+
+  /**
+   * **The weakest claim in this file, and it is flagged rather than smoothed over.**
+   *
+   * `canSendClock: false` records the *document*, not the box. This manual documents three MIDI
+   * behaviours and no more — program change to load a patch, CC #60 to bypass, and CC control of
+   * starred parameters (p.26) — and says nothing about transmitting clock. Whether a ZOIA patch
+   * can emit one is a question about the module library, which this manual never lists.
+   *
+   * `canReceiveClock: true` is an inference from three cited facts and is stated as such so it
+   * can be overruled in one read: the four CV inputs exist *"to connect the Euroburo to other
+   * eurorack modules"* and accept 0-10V (p.6); a Eurorack clock is a voltage on such an input;
+   * and Empress's own name for the option on those inputs is **`clk filter`** (p.7). The prose
+   * beside it explains the filter as a noise threshold and never uses the word clock, which is
+   * why this is an inference and not a citation.
+   *
+   * `transport` carries the CV inputs and the MIDI ports. The sockets are 1/8" TRS Type A rather
+   * than 5-pin, but *"the included 1/8" TRS to-5-pin dongles"* (p.26) are what the box ships
+   * with, so a reader told to run MIDI clock into it can.
+   */
+  clock: { canSendClock: false, canReceiveClock: true, transport: ['analog-clock', 'midi-din'] },
+
+  /**
+   * Stereo in, stereo out, and a headphone out that duplicates the main pair rather than being a
+   * third destination (p.5). `individualOuts: 0` — the four CV outputs are control voltage, not
+   * audio, and there is no second audio pair to send a part to on its own.
+   *
+   * `usbAudio: false`, and this is a checked absence rather than an unfilled field: the word USB
+   * does not occur in the manual. Patches move on a microSD card (p.28) and firmware arrives the
+   * same way (p.27).
+   */
+  io: { main: 'stereo', individualOuts: 0, audioIn: true, usbAudio: false },
+
+  /**
+   * §10. 34 HP across. The specifications give *"Size: 34hp Eurorack Format Module"* (p.29) and
+   * no millimetre figure at all, so the number here is that value converted at the defined
+   * 5.08 mm per HP: 34 x 5.08 = 172.72, authored as 172.7.
+   *
+   * This is the library's first module rather than a box on a desk, and the orientation question
+   * §2.3 exists for has a different answer because of it: a module is played bolted upright into
+   * a case, so its horizontal span is the HP width, and the 28 mm the specifications call
+   * *depth* is what sticks out behind the rails — invisible in a front-panel view. `panel.ts`
+   * carries the rise, which the manual never states and which was therefore measured off the
+   * cover drawing.
+   */
+  physical: {
+    panelSpanMm: 172.7,
+    verified: {
+      kind: 'manual',
+      source: 'ZOIA Euroburo User Manual Rrev2 (firmware 2.30), p.29 (Specifications)',
+    },
+  },
+
+  /** §10. A simplified original drawing of the front panel, read off the cover (see `panel.ts`). */
+  panel: ZOIA_EUROBURO_PANEL,
+
+  /** §2.4. No voices, so no assignables, so no recipes. See the module JSDoc for the cost. */
+  voices: [],
+  recipes: [],
+
+  manual: { title: 'ZOIA Euroburo User Manual', edition: 'Rrev2 (firmware 2.30)' },
+}

@@ -230,9 +230,108 @@ type Ctx = {
   voiceable: Candidate[][]
   /** Devices a request could legally occupy, ignoring occupancy — for the idle lower bound. */
   suffixReach: Set<DeviceId>[]
+  /**
+   * The cheapest the *remaining* requests can possibly be on the additive keys. `suffixFloor[i]`
+   * covers requests i..n-1, and `suffixFloor[n]` is all zeroes so the leaf bound stays exact.
+   */
+  suffixFloor: SuffixFloor[]
   missSlots: number
   seed: number
   nodeCap: number
+}
+
+/**
+ * §7.1's relaxed suffix bound: what the requests not yet decided must cost *at least*, on the
+ * keys that only ever grow. Precomputed once per `assign`, because none of it depends on the
+ * partial assignment.
+ *
+ * The relaxation drops occupancy, crowding and `distinct` — every remaining request is costed
+ * against its full static candidate list as though the rest of the tree did not exist. That can
+ * only *widen* each request's option set, so the per-request minimum can only fall, and a floor
+ * built from it stays below anything the search can actually reach.
+ */
+type SuffixFloor = {
+  misses: readonly number[]
+  optionalMisses: number
+  sampledChords: number
+  recipeDistance: number
+  roleFitPenalty: number
+}
+
+/**
+ * The cheapest single option for one request, **chosen lexicographically rather than key by
+ * key**, and the distinction is the whole reason this bound is worth anything.
+ *
+ * Independent per-key minima — lowest `sampledChord` anywhere, lowest `distance` anywhere,
+ * lowest `roleFit` anywhere — would also be admissible, because componentwise `<=` implies
+ * lexicographic `<=`. It would also be *weaker*: it lets three different candidates each donate
+ * their best key to a hybrid no candidate offers. The lexicographic minimum is a real option,
+ * sits componentwise above that hybrid, and is still a valid floor, because lexicographic order
+ * on non-negative integer vectors is compatible with addition — if `a <=lex b` and `c <=lex d`
+ * then `a + c <=lex b + d`. So summing per-request lexicographic minima bounds the sum of
+ * whatever the completion actually picks.
+ *
+ * A request with candidates never prefers the miss branch here: missing costs a whole point on
+ * `misses` (or `optionalMisses`), and both of those outrank every key a candidate can charge.
+ * So the choice is only ever "the best candidate, or a forced miss when there are none".
+ */
+function cheapestCandidate(candidates: readonly Candidate[]): Candidate | undefined {
+  let best: Candidate | undefined
+  for (const candidate of candidates) {
+    if (best === undefined) {
+      best = candidate
+      continue
+    }
+    if (candidate.sampledChord !== best.sampledChord) {
+      if (candidate.sampledChord < best.sampledChord) best = candidate
+      continue
+    }
+    if (candidate.distance !== best.distance) {
+      if (candidate.distance < best.distance) best = candidate
+      continue
+    }
+    if (candidate.roleFit < best.roleFit) best = candidate
+  }
+  return best
+}
+
+function buildSuffixFloor(
+  requests: readonly RoleRequest[],
+  voiceable: readonly Candidate[][],
+  missSlots: number,
+): SuffixFloor[] {
+  const floors: SuffixFloor[] = new Array(requests.length + 1)
+  floors[requests.length] = {
+    misses: new Array<number>(missSlots).fill(0),
+    optionalMisses: 0,
+    sampledChords: 0,
+    recipeDistance: 0,
+    roleFitPenalty: 0,
+  }
+  for (let i = requests.length - 1; i >= 0; i--) {
+    const ahead = floors[i + 1] as SuffixFloor
+    const request = requests[i] as RoleRequest
+    const misses = [...ahead.misses]
+    let optionalMisses = ahead.optionalMisses
+    let sampledChords = ahead.sampledChords
+    let recipeDistance = ahead.recipeDistance
+    let roleFitPenalty = ahead.roleFitPenalty
+
+    const best = cheapestCandidate(voiceable[i] ?? [])
+    if (best === undefined) {
+      // No candidate before occupancy is no candidate after it: `orderedCandidates` only ever
+      // filters this list down. The miss is forced, so the bound may charge for it outright —
+      // and it charges on `misses`, the key that outranks everything below.
+      if (request.optional === true) optionalMisses += 1
+      else misses[request.priority - 1] = (misses[request.priority - 1] ?? 0) + 1
+    } else {
+      sampledChords += best.sampledChord
+      recipeDistance += best.distance
+      roleFitPenalty += best.roleFit
+    }
+    floors[i] = { misses, optionalMisses, sampledChords, recipeDistance, roleFitPenalty }
+  }
+  return floors
 }
 
 function buildCtx(input: AssignInput): Ctx {
@@ -326,6 +425,8 @@ function buildCtx(input: AssignInput): Ctx {
   // produces a vector of the same shape and `compareScore` never compares ragged tuples.
   const missSlots = requests.reduce((max, r) => Math.max(max, r.priority), 0)
 
+  const suffixFloor = buildSuffixFloor(requests, voiceable, missSlots)
+
   return {
     template,
     devices,
@@ -339,6 +440,7 @@ function buildCtx(input: AssignInput): Ctx {
     capable,
     voiceable,
     suffixReach,
+    suffixFloor,
     missSlots,
     seed,
     nodeCap: input.nodeCap ?? DEFAULT_NODE_CAP,
@@ -416,27 +518,62 @@ function scoreOf(ctx: Ctx, state: State): Score {
  * §7.1's branch-and-bound bound, **per key, and one key is not monotone.**
  *
  * Misses, crowding, recipe distance and role fit only grow as the assignment extends, so the
- * partial value bounds them. `idleDevices` *shrinks*, so the current idle count is not a lower
- * bound and using it prunes the optimum. The admissible bound is the number of devices that no
- * remaining request could legally reach — those are idle now and can never stop being idle.
+ * partial value bounds them — and the partial value alone is a *weak* bound, because it charges
+ * nothing at all for the requests still to come. `ctx.suffixFloor` (see `buildSuffixFloor`) adds
+ * what those must cost at minimum. `crowdOverflow` is left at its partial value: it is the one
+ * additive key whose per-request cost depends on where the *other* requests land, so there is no
+ * per-request minimum to sum.
+ *
+ * Mixing the two is safe even though `crowdOverflow` sits *between* the miss keys and the rest.
+ * A lower bound only needs `B <=lex S` for every completion `S`. On the additive keys taken in
+ * their own order that holds by the addition argument in `buildSuffixFloor`; `crowdOverflow` and
+ * `idleDevices` are each independently `<=` their final value, so wherever the comparison stops
+ * it stops in the bound's favour or moves on.
+ *
+ * `idleDevices` *shrinks*, so the current idle count is not a lower bound and using it prunes
+ * the optimum.
+ *
+ * Reachability alone gives an admissible bound — the devices no remaining request could legally
+ * reach are idle now and can never stop being idle — but a weak one, because it lets *every*
+ * reachable idle device wake up at once. **A request activates at most one device.** Each of the
+ * remaining requests takes one candidate or takes the miss branch, so at most
+ * `min(reachableIdle, remainingRequests)` of the currently-idle devices can still be woken, and
+ * the rest are as permanently idle as the unreachable ones.
+ *
+ * The counting is exact whichever way it is written: `currentIdle - min(reachableIdle, remaining)`
+ * is `unreachableIdle + max(0, reachableIdle - remaining)`, since the two idle classes partition
+ * the idle devices. The second form is used below because it stays in non-negative integers —
+ * no float summation, hence no cross-platform drift (invariant 6).
+ *
+ * Admissible while ignoring both occupancy and `distinct`, and deliberately so: those can only
+ * *stop* a request from waking a device, never let one request wake two. Ignoring them can make
+ * the bound loose; it cannot make it exceed the true final idle count.
+ *
+ * At the leaf `remaining` is 0 and `reachable` is empty, so this returns the current idle count
+ * exactly — the bound stays tight where it decides the incumbent.
  */
 function lowerBound(ctx: Ctx, state: State, next: number): Score {
+  const floor = ctx.suffixFloor[next] as SuffixFloor
   const reachable = ctx.suffixReach[next] ?? new Set<DeviceId>()
   let unreachableIdle = 0
-  // A voiceless device is in no request's reachable set, so it is counted here exactly as
-  // `idleDevices` counts it — the bound stays exact at the leaf.
+  let reachableIdle = 0
+  // A voiceless device is in no request's reachable set, so it lands in `unreachableIdle` and is
+  // counted here exactly as `idleDevices` counts it — the bound stays exact at the leaf.
   for (const id of ctx.deviceIds) {
     if ((state.occupiedByDevice.get(id)?.size ?? 0) !== 0) continue
-    if (!reachable.has(id)) unreachableIdle++
+    if (reachable.has(id)) reachableIdle++
+    else unreachableIdle++
   }
+  const remaining = ctx.requests.length - next
+  const floorIdle = unreachableIdle + Math.max(0, reachableIdle - remaining)
   return [
-    ...state.misses,
+    ...state.misses.map((m, p) => m + (floor.misses[p] ?? 0)),
     crowdOverflow(ctx, state),
-    state.optionalMisses,
-    state.sampledChords,
-    state.recipeDistance,
-    state.roleFitPenalty,
-    unreachableIdle,
+    state.optionalMisses + floor.optionalMisses,
+    state.sampledChords + floor.sampledChords,
+    state.recipeDistance + floor.recipeDistance,
+    state.roleFitPenalty + floor.roleFitPenalty,
+    floorIdle,
   ] as unknown as Score
 }
 

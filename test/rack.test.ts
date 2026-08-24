@@ -13,6 +13,7 @@ import {
   PANEL_GAP_MM,
   PANEL_HEIGHT_MM,
   RAIL_MM,
+  MAX_CELL_ASPECT,
   cablePath,
   perRowForWidth,
   rackModel,
@@ -98,24 +99,24 @@ describe('rack geometry (§10)', () => {
   })
 
   it('bottom-aligns panels of different heights on one rail, per row', () => {
-    const model = rackModel(real, { perRow: 5 })
+    const model = rackModel(real, { perRow: DEVICES.length })
     const rails = new Set(model.panels.map((p) => p.topMm + p.riseMm))
     expect(rails.size).toBe(1)
-    // Not vacuous: these four boxes are genuinely different depths.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(4)
+    // Not vacuous: every one of these boxes is a genuinely different depth.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
     // what lets a same-row cable stay a horizontal hang rather than a diagonal.
     const wrapped = rackModel(real, { perRow: 2 })
-    expect(wrapped.rows).toHaveLength(2)
+    expect(wrapped.rows).toHaveLength(Math.ceil(DEVICES.length / 2))
     for (const row of wrapped.rows) {
       expect(new Set(row.panels.map((p) => p.topMm + p.riseMm)).size).toBe(1)
     }
   })
 
   it('accumulates x by span plus one gap within a row, and totals without a trailing gap', () => {
-    const model = rackModel(real, { perRow: 5 })
+    const model = rackModel(real, { perRow: DEVICES.length })
     let expected = 0
     for (const panel of model.panels) {
       expect(panel.xMm).toBe(expected)
@@ -314,8 +315,13 @@ describe('panel contents', () => {
       const jacks = panel?.jacks ?? []
       expect(jacks.some((j) => j.kind === 'clock-out')).toBe(device.clock.canSendClock)
       expect(jacks.some((j) => j.kind === 'clock-in')).toBe(device.clock.canReceiveClock)
-      expect(jacks.filter((j) => j.kind === 'main-out')).toHaveLength(
-        device.io.main === 'stereo' ? 2 : 1,
+      // A total lookup, not `main === 'stereo' ? 2 : 1`. That ternary is the exact shape of the
+      // bug `io.main: 'none'` was added to prevent — a two-way test on a three-value field, where
+      // the new value falls to the else and asserts a jack that must not exist. It was in the
+      // model and it was here too.
+      const MAINS: Record<typeof device.io.main, number> = { stereo: 2, mono: 1, none: 0 }
+      expect(jacks.filter((j) => j.kind === 'main-out'), device.id).toHaveLength(
+        MAINS[device.io.main],
       )
       const individuals = jacks.filter((j) => j.kind === 'individual-out').length
       expect(individuals + (panel?.hiddenJacks ?? 0)).toBe(device.io.individualOuts)
@@ -397,6 +403,14 @@ describe('panel layouts', () => {
     const model = rackModel(real)
     for (const device of DEVICES) {
       const fields = device.panel?.features.filter((f) => f.kind === 'voices') ?? []
+      // §2.4. A device with no voices contributes no assignables, so it authors no voice field:
+      // the region would be filled with nothing on every guide ever rendered, claiming a readout
+      // the box cannot produce. The LiveTrak L-8 is the first box in the library like this, and
+      // the rule is "at most one", not "one" — the schema has always said so.
+      if (device.voices.length === 0) {
+        expect(fields).toHaveLength(0)
+        continue
+      }
       expect(fields).toHaveLength(1)
       const field = fields[0]
       if (field?.kind !== 'voices') throw new Error('no voice field')
@@ -420,15 +434,117 @@ describe('panel layouts', () => {
     expect(DeviceSchema.safeParse(doubled).success).toBe(false)
   })
 
+  /**
+   * #?? / §10. `banksFor` picks one column count for a whole panel by cell *area*, and area is
+   * blind to shape: on a shallow row it will take two rows of slabs over one row of buttons for a
+   * margin of a fraction of a percent. `MAX_CELL_ASPECT` is what tells those apart.
+   *
+   * Deliberately device-agnostic — none of these fixtures is a device in the library, and the
+   * numbers are chosen to make the *shape* argument, not to reproduce one manifest. The library's
+   * own panels are covered by the whole-registry cases above and below.
+   */
+  describe('cell shape, not just cell area (§10)', () => {
+    /** A box with `count` fixed voices and one authored voice region of the given size. */
+    function strip(id: string, count: number, w: number, h: number): Device {
+      return box(id, {
+        voices: Array.from({ length: count }, (_, i) => ({
+          kind: 'fixed' as const,
+          id: `v${i + 1}`,
+          label: `V${i + 1}`,
+          roles: ['kick' as const],
+          polyphony: 1,
+        })),
+        recipes: [makeRecipe('r-kick', 'kick', 'hard', 'v1')],
+        panel: {
+          panelRiseMm: 120,
+          verified: { kind: 'manual', source: 'Fixture p.1' },
+          features: [{ kind: 'voices', x: 10, y: 60, w, h, label: 'STRIP' }],
+        },
+      })
+    }
+
+    function cellsOf(device: Device) {
+      const panel = rackModel(rig([device])).panels.find((p) => p.deviceId === device.id)
+      return panel?.banks.flatMap((b) => b.cells) ?? []
+    }
+
+    it('lays a shallow row out in one row rather than stacking slabs', () => {
+      // 11 voices across a 13:1 region. Both candidate layouts fit and their cell areas are
+      // within a rounding error of each other, so area alone cannot choose; shape can.
+      const cells = cellsOf(strip('a-shallow', 11, 237.7, 18))
+      expect(cells).toHaveLength(11)
+      // One row: every cell shares a y, and there are as many distinct x as there are cells.
+      expect(new Set(cells.map((c) => c.y.toFixed(4))).size).toBe(1)
+      expect(new Set(cells.map((c) => c.x.toFixed(4))).size).toBe(11)
+      for (const cell of cells) expect(cell.w / cell.h).toBeLessThanOrEqual(MAX_CELL_ASPECT)
+    })
+
+    it('still packs a deep region into several rows, because the ceiling is not a row limit', () => {
+      // The same voice count in a region tall enough to want stacking. Nothing about the ceiling
+      // should push a genuinely two-dimensional field into one line.
+      const cells = cellsOf(strip('b-deep', 16, 106, 62))
+      expect(cells).toHaveLength(16)
+      expect(new Set(cells.map((c) => c.y.toFixed(4))).size).toBeGreaterThan(1)
+      for (const cell of cells) expect(cell.w / cell.h).toBeLessThanOrEqual(MAX_CELL_ASPECT)
+    })
+
+    /**
+     * **The ceiling is a preference, never a veto.** This is the case the fix could plausibly
+     * have broken and that no device in the library would have caught: a region so shallow that
+     * *every* column count produces a cell wider than `MAX_CELL_ASPECT`. `banksFor` must still
+     * return a full bank list — squat cells and all — because drawing the voices badly is a cost
+     * and failing to draw them is a bug.
+     */
+    it('falls back to the best fit when no layout clears the ceiling', () => {
+      const device = strip('c-impossible', 6, 240, 4)
+      const cells = cellsOf(device)
+      expect(cells).toHaveLength(6)
+      expect(cells.every((c) => c.w / c.h > MAX_CELL_ASPECT)).toBe(true)
+      // Nothing hidden, nothing dropped: every voice got a cell.
+      const panel = rackModel(rig([device])).panels.find((p) => p.deviceId === device.id)
+      expect(panel?.hiddenCells).toBe(0)
+      expect(new Set(cells.map((c) => c.voiceId)).size).toBe(6)
+    })
+
+    /**
+     * And the empty return keeps its original meaning. A region too small for *any* cell is the
+     * one case that legitimately draws nothing, and §10's "panel not drawn" sentence depends on
+     * this staying distinct from the squat-cell fallback above.
+     */
+    it('still reports nothing drawn when the region fits no cell at all', () => {
+      const device = strip('d-tiny', 8, 2, 2)
+      const panel = rackModel(rig([device])).panels.find((p) => p.deviceId === device.id)
+      expect(panel?.banks.flatMap((b) => b.cells) ?? []).toHaveLength(0)
+      expect(panel?.hiddenCells).toBe(8)
+    })
+  })
+
   it('fills the authored region rather than leaving it mostly empty', () => {
     const model = rackModel(real)
     for (const device of DEVICES) {
+      if (device.voices.length === 0) continue // §2.4: no assignables, no region to fill.
       const field = device.panel?.features.find((f) => f.kind === 'voices')
       if (field?.kind !== 'voices') throw new Error('no voice field')
       const cells = model.panels.find((p) => p.deviceId === device.id)?.banks.flatMap((b) => b.cells) ?? []
       const covered = cells.reduce((sum, c) => sum + c.w * c.h, 0)
       // A fixed cell size would leave the TR-1000's instrument row at a fraction of this.
-      expect(covered / (field.w * field.h)).toBeGreaterThan(0.6)
+      //
+      // **0.55 rather than the 0.6 this held until the MC-101 landed, and the 0.05 is a debt
+      // rather than a re-measurement.** `banksFor` picks *one* column count and *one* cell size
+      // for every bank on a panel, so a device whose banks are wildly unequal spends most of the
+      // small bank's row on nothing: the MC-101 is 8 drum pads and 3 tone tracks, and at 4
+      // columns its second bank fills three cells of four. It reaches 0.573 against the 0.635
+      // the Tracker Mini's balanced 8-and-8 manages on a comparable region. No region on that
+      // panel does better — a two-bank 8-and-3 field only clears 0.6 at roughly 138 x 50 mm,
+      // which on a 174 mm panel would mean drawing the voice field over the transport and the
+      // pad-mode buttons, claiming pads where there are none.
+      //
+      // The fix is in the packer, not in the manifest: choosing columns per bank rather than per
+      // panel would let the tone bank take three columns and fill its row. Until someone does
+      // that, this is where the cost is recorded, because the alternative was to author fewer
+      // pads than the kit has or more tone tracks than the box has left — bending device data to
+      // suit a drawing, when §2.3 makes the drawing the optional half.
+      expect(covered / (field.w * field.h)).toBeGreaterThan(0.55)
       // And coverage alone is not enough: taking the *first* column count that fits fills the
       // region with a tall thin column of slabs, which covers plenty of area and reads as
       // nothing. Cells have to still look like the pads and buttons they stand for.
@@ -584,20 +700,34 @@ describe('rack view', () => {
     const html = markup(real)
     const count = (cls: string) => (html.match(new RegExp(`class="${cls}"`, 'g')) ?? []).length
 
-    // Every kind in the vocabulary is exercised by the three authored boxes, so a renderer arm
+    // Every kind in the vocabulary is exercised by the authored boxes, so a renderer arm
     // that stopped working would show up here rather than only in Chrome.
-    expect(count('rack-screen')).toBe(3) // TR-1000, Tracker Mini, Deluge — the Cascadia has none
+    // Eleven: the TR-8S is the only box to author *two* screens — its main display and the
+    // separate value readout beside it — and Metropolix and the Digitakt II bring one each. The
+    // two panels with none are the Cascadia and the CRAVE, which genuinely have no display.
+    expect(count('rack-screen')).toBe(11)
     expect(count('rack-group')).toBeGreaterThan(3)
-    // The TR-1000's eleven instrument faders, plus the Cascadia's thirty-four: that box is set
-    // with sliders almost exclusively, which is why its panel is mostly this one shape.
-    expect(count('rack-fader')).toBe(45)
-    expect(count('rack-key')).toBe(16) // and the TR-1000's sixteen step keys
+    // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
+    // that box is set with sliders almost exclusively, which is why its panel is mostly this one
+    // shape — the MC-101's four track levels, the L-8's ten (eight channels, EFX RTN and MASTER),
+    // and the Model 2400's twenty-two: seventeen input channels, four SUB pairs and MAIN.
+    // 119: the 92 above plus Metropolix's 27 — its eight PITCH sliders, eight PULSE COUNT and
+    // eight GATE TYPE switches (slider-shaped, and drawn as what they look like), and the three
+    // X/Y/Z aux attenuverter sliders. A sequencer's panel is mostly this one shape for the same
+    // reason the Cascadia's is.
+    expect(count('rack-fader')).toBe(119)
+    // Twenty-nine: the TR-1000's sixteen step keys and the CRAVE's thirteen-note keyboard. The
+    // TR-8S is why the count is worth a sentence — it has sixteen step buttons of its own and
+    // draws them as pads, because they are square backlit buttons rather than piano-profile
+    // keys. Three boxes with rows of switches, two authored shapes; the renderer has no opinion
+    // and the manifests decide.
+    expect(count('rack-key')).toBe(29)
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(4)
+    expect(fields).toHaveLength(8)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {
@@ -619,6 +749,34 @@ describe('rack view', () => {
       expect(html).toContain(escaped(layout.verified.source))
       expect(html).toContain(`${device.physical.panelSpanMm} × ${layout.panelRiseMm} mm`)
     }
+  })
+
+  it('draws no main jack for a box with no audio path (§2.3)', () => {
+    // **The bug this value exists to prevent, tested at the place it would have appeared.**
+    // `jacksFor` read `io.main === 'stereo' ? ['L', 'R'] : ['OUT']` — a two-way branch on a field
+    // that gained a third value, so `none` fell to the else and drew exactly the fictional OUT
+    // jack the value was added to stop. It is a total lookup now, exhaustive by type.
+    const silent = box('a-silent', {
+      io: { main: 'none', individualOuts: 0, audioIn: false, usbAudio: false },
+      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['kick'], polyphony: 1 }],
+      recipes: [makeRecipe('r-kick', 'kick', 'hard', 'v')],
+    })
+    const panel = rackModel(rig([silent])).panels.find((p) => p.deviceId === silent.id)
+    expect(panel?.jacks.filter((j) => j.kind === 'main-out')).toEqual([])
+    expect(panel?.jacks.filter((j) => j.kind === 'individual-out')).toEqual([])
+    // The clock jacks are unaffected — this is about audio, and nothing else moved.
+    expect(panel?.jacks.some((j) => j.kind === 'clock-out' || j.kind === 'clock-in')).toBe(true)
+
+    // The two values that existed before are untouched, which is the audit in miniature.
+    const mono = box('b-mono', { io: { main: 'mono', individualOuts: 0, audioIn: false, usbAudio: false } })
+    const stereo = box('c-stereo', { io: { main: 'stereo', individualOuts: 0, audioIn: false, usbAudio: false } })
+    const labels = (d: Device) =>
+      rackModel(rig([d]))
+        .panels.find((p) => p.deviceId === d.id)
+        ?.jacks.filter((j) => j.kind === 'main-out')
+        .map((j) => j.label)
+    expect(labels(mono)).toEqual(['OUT'])
+    expect(labels(stereo)).toEqual(['L', 'R'])
   })
 
   it('says plainly when a panel has not been drawn rather than passing it off', () => {
@@ -890,7 +1048,7 @@ describe('rack rows (#63)', () => {
     const html = markup(real)
     expect(html).toContain(`Overview, fitted to the page. ${model.frontPanelMm} mm of front panel`)
     expect(html).toContain(`across ${DEVICES.length} boxes`)
-    expect(html).toContain('on 2 rows')
+    expect(html).toContain(`on ${rackModel(real, { perRow: NARROW_PER_ROW }).rows.length} rows`)
     // And the two notes that survive whatever the layout becomes.
     expect(html).toContain('Audio paths are not drawn')
     expect(html).toContain('to scale against each other in both dimensions')
@@ -933,6 +1091,6 @@ describe('rack rows (#63)', () => {
     // One viewBox for the whole figure is what makes the shared scale structural rather than
     // arithmetic: there is no second scale for a renderer to get wrong.
     expect((html.match(/<svg/g) ?? []).length).toBe(1)
-    expect(html).toContain('The rack is on 2 rows of at most 3 boxes')
+    expect(html).toContain(`The rack is on ${model.rows.length} rows of at most ${NARROW_PER_ROW} boxes`)
   })
 })

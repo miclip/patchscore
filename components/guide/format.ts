@@ -171,10 +171,16 @@ export function adviceText(gap: Gap, deviceById: Map<DeviceId, Device>): string 
 // ---------------------------------------------------------------------------
 
 export function ioText(device: Device): string {
-  const parts = [`${device.io.main} main out`]
+  const parts: string[] = []
+  // §2.3: `main: 'none'` is a box with no audio bus at all. It may still have the other three,
+  // so this is a missing entry in the list rather than a special case around it.
+  if (device.io.main !== 'none') parts.push(`${device.io.main} main out`)
   if (device.io.individualOuts > 0) parts.push(count(device.io.individualOuts, 'individual out'))
   if (device.io.usbAudio) parts.push('USB audio')
   if (device.io.audioIn) parts.push('audio in')
+  // Empty only when `main` is `none` and nothing else is declared either, because every other
+  // value of `main` pushes. So this sentence means what it says rather than approximating it.
+  if (parts.length === 0) return 'no audio I/O'
   return parts.join(' · ')
 }
 
@@ -218,12 +224,29 @@ export function mixerText(device: Device, parts: number): string {
   const separable = Math.min(parts, device.io.individualOuts)
   const outs = count(device.io.individualOuts, 'individual out')
   if (separable === parts) return `${count(parts, 'part')}, ${outs}: one channel each`
+
+  // Past here some part has to go somewhere other than its own jack, and both remaining
+  // sentences name the main bus. A box with `main: 'none'` has no bus to name, so it is handled
+  // before `main` is read rather than after — and `main` is then bound to a local the compiler
+  // has narrowed, so a future value of the union cannot reach a template string by accident.
+  //
+  // This is not reachable by any device in the library today: a box with no audio path also has
+  // no assignables, so `parts === 0` returns above. It is written for the first box that has
+  // both, because "unreachable via an early return in a different function" is not a guarantee.
+  if (device.io.main === 'none') {
+    if (separable === 0) return `${count(parts, 'part')}, no audio output: nothing to patch`
+    return (
+      `${count(parts, 'part')}, ${outs}: ${num(separable)} on their own channels, ` +
+      `the rest have no output`
+    )
+  }
+  const main: 'mono' | 'stereo' = device.io.main
   if (separable === 0) {
-    return `${count(parts, 'part')}, no individual outs: one ${device.io.main} channel for all`
+    return `${count(parts, 'part')}, no individual outs: one ${main} channel for all`
   }
   return (
     `${count(parts, 'part')}, ${outs}: ${num(separable)} on their own channels, ` +
-    `the rest summed to the ${device.io.main} out`
+    `the rest summed to the ${main} out`
   )
 }
 

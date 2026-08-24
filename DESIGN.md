@@ -168,12 +168,13 @@ export const device: Device = {
   id: 'roland-tr-1000',
   name: 'Roland TR-1000',
   maker: 'Roland',
-  kind: 'drum-machine',   // | 'groovebox' | 'sampler' | 'synth' | 'semi-modular'
-                          // | 'mixer-recorder' | 'fx-processor'
+  kind: 'drum-machine',   // | 'groovebox' | 'sampler' | 'sequencer' | 'synth'
+                          // | 'semi-modular' | 'mixer-recorder' | 'fx-processor'
 
   clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
 
   io: { main: 'stereo', individualOuts: 8, audioIn: false, usbAudio: true },
+                          // main: 'mono' | 'stereo' | 'none'
 
   // §10. Front-panel horizontal span in mm, cited like any other checked value. Required: the
   // rack draws panels at realistic relative width, so a missing span would have to be invented.
@@ -311,6 +312,43 @@ The Tascam Model 2400 is a device with `kind: 'mixer-recorder'` — no voices, b
 that participates in routing instructions. Empress ZOIA Euroburo is `kind: 'fx-processor'`.
 Model them properly rather than special-casing; a device with no voices simply contributes
 no assignables and still appears in rig integration.
+
+**Not every device has an audio output**, and `io.main: 'none'` is how one says so. This dropped
+an assumption that had been true of every manifest until a Eurorack sequencer arrived: pitch,
+gate, modulation and clock outputs, and nothing to plug into a mixer. `mono` would have made both
+renderers print a main out that does not exist and made §10's rack draw a jack nobody can plug
+into — invariant 5 forbids inventing an assignment to fill a hole, and a fictional output is the
+same fault in different clothes.
+
+`none` says there is no *main bus*, not that there is no audio anywhere: a box may declare
+`individualOuts`, `audioIn` or `usbAudio` alongside it, and consumers handle that combination
+rather than treating `none` as a synonym for silence. The rig block prints `no audio I/O` only
+when nothing at all is declared.
+
+**The cost is that "every device has an audio output" is no longer a fact anything may assume**,
+and it was being assumed in three places rather than one. `ioText` and `mixerText` — which exist
+twice, see below — interpolated `io.main` straight into prose, so `none` would have printed *one
+none channel for all*. §10's `jacksFor` branched `main === 'stereo' ? [L, R] : [OUT]`, a two-way
+test on a field that now has three values, so `none` fell to the else and drew the very jack this
+change exists to prevent. That one is now a lookup keyed by the whole union, so the next value
+added fails the build rather than falling through.
+
+**`sequencer` is the third of these, and it is the one that had to be added rather than found.**
+A Eurorack sequencer — pitch and gate tracks, modulation lanes, no sound engine and no audio
+voice — has no kind in the original list that is merely a loose fit. Both candidates state
+something false:
+
+- `semi-modular` implies a **normalised audio instrument**. The Cascadia's defining property is
+  that it makes a sound with nothing patched into it; a sequencer makes none however it is
+  patched. The kind would also imply voices, assignables and recipes for a box with none of them.
+- `groovebox` implies **self-contained sound generation**, which is precisely what such a box is
+  defined by not doing.
+
+**The cost is that the closed kind vocabulary and the picker's filter both got one wider.** `kind`
+drives a user-visible filter, so every addition is a term someone has to scan past. A kind earns
+its place only when the alternatives would make a manifest *say something false* — never when they
+would merely fit loosely. That test is the whole reason this is a separate decision from the
+device that motivated it, and the reason the list is otherwise unchanged since the first draft.
 
 ### 2.5 Seed order
 
@@ -1336,10 +1374,83 @@ the cap is hit, fall back to the greedy result **and log it** — no silent trun
 
 **Bounding is per key, and one key is not monotone.** Branch-and-bound needs a lower bound on the
 final score of a partial assignment. Misses, crowding, recipe distance and role fit only grow as
-the assignment extends, so the partial value bounds them. `idleDevices` *shrinks*, so its
-admissible lower bound is the number of devices that no remaining unassigned request could
-legally reach — not the current idle count. Using the current count prunes the optimum. Worth a
-dedicated test with a rig whose best answer looks bad halfway down the tree.
+the assignment extends, so the partial value bounds them. `idleDevices` *shrinks*, so the current
+idle count is not a lower bound and using it prunes the optimum. Worth a dedicated test with a rig
+whose best answer looks bad halfway down the tree.
+
+**`idleDevices` has an admissible floor**, built from two facts, and **the second one is what
+makes it bite**:
+
+- A device that no remaining unassigned request could legally reach is idle now and can never
+  stop being idle.
+- **A request activates at most one device.** Each remaining request takes one candidate or takes
+  the miss branch, so at most `min(reachableIdle, remainingRequests)` of the currently-idle
+  devices can still be woken.
+
+So the floor is `currentIdle - min(reachableIdle, remainingRequests)`, equivalently
+`unreachableIdle + max(0, reachableIdle - remainingRequests)` — the form the code uses, because it
+stays in non-negative integers and invariant 6 does not tolerate float summation. Reachability
+alone is the special case where the second term is ignored, and on a rig of interchangeable boxes
+it degenerates to zero: every box is reachable, so nothing is ever cut on idleness. The
+per-request term is the half that prunes there.
+
+The floor ignores occupancy and `distinct`, and is admissible anyway: both can only *stop* a
+request from waking a device, never let one request wake two. Ignoring them can leave the bound
+loose; it cannot make it exceed the true final idle count. At a leaf `remainingRequests` is zero
+and the floor equals the exact idle count, so the bound stays tight where it decides the
+incumbent.
+
+**The partial value alone is a weak bound, because it charges nothing for the requests still to
+come.** At depth one it has costed one request and is silent about the other eleven, so it only
+ever cuts a branch that is *already* worse than the incumbent — which on a rig of nine devices is
+almost never. The fix is a **relaxed suffix bound**, precomputed once per search: for each request,
+drop occupancy, crowding and `distinct`, and take the cheapest thing it could possibly do. That is
+the lexicographic minimum over its static candidate list of `(sampledChords, recipeDistance,
+roleFitPenalty)` — or, when the list is empty, a certain miss, charged to `misses` (or
+`optionalMisses`). Suffix-sum those per-request minima and add them to the partial value.
+
+Two things make this admissible:
+
+- Dropping occupancy, crowding and `distinct` can only *widen* a request's option set, so the
+  per-request minimum can only fall. A request never prefers the miss branch here, because missing
+  costs a whole point on a key that outranks everything a candidate can charge.
+- Summing lexicographic minima bounds the lexicographic sum, because lexicographic order on
+  non-negative integer vectors is compatible with addition: if `a ≤lex b` and `c ≤lex d` then
+  `a + c ≤lex b + d`. Independent per-key minima would also be admissible — componentwise `≤`
+  implies lexicographic `≤` — but weaker, because they let several candidates each donate their
+  best key to a hybrid that no candidate offers.
+
+`crowdOverflow` is left at its partial value: it is the one additive key whose per-request cost
+depends on where the *other* requests land, so there is no per-request minimum to sum. It sits
+between the miss keys and the rest of the vector, and mixing it in is still safe — a lower bound
+only needs `B ≤lex S` for every completion `S`, the additive keys satisfy that in their own order
+by the argument above, and `crowdOverflow` and `idleDevices` are each independently below their
+final value, so wherever the comparison stops it stops in the bound's favour or moves on.
+
+**What it was worth.** Measured on the nine-device registry, every knob centred:
+
+| rig / template | before | after |
+| --- | --- | --- |
+| full rig, `industrial-techno`, seed 18 | 50,000 — **capped, greedy** | 33,142 — exhaustive |
+| `industrial-techno`, worst of eight seeds | 382,837 (lifted cap) | 41,259 — exhaustive |
+| `ambient-dub`, worst of eight seeds | 71,332 (lifted cap) | 137 — exhaustive |
+| `major-key-electro`, worst of eight seeds | 15,580 | 2,298 — exhaustive |
+| synthetic 12 roles, whole registry | beyond 380,000 | ~2,000 — exhaustive |
+
+**This replaces pool-ordinal symmetry breaking as the thing that keeps a realistic rig out of the
+greedy fallback**, and the claim below has to be read in that light. The fixture that motivated
+symmetry breaking — eight parts over an eight-track pool — used to hit the cap with the ordinals
+left in; it now finishes in 45 nodes with them left in, because the suffix bound alone is enough.
+Scaling does not bring the cap back: 24 tracks and 24 parts is 325 nodes.
+
+What symmetry breaking still does is narrow the branching factor, and that is now its whole job: it
+takes those 45 nodes to 17, and shrinks 65 of the 67 cells in
+`test/search-symmetry.test.ts`'s rig × template matrix. So it stays, as a constant-factor win on
+top of the bound rather than as the thing preventing a fallback. The two cells that no longer
+shrink are named in that file: with a strong bound the *quality of the first incumbent* matters
+more than the branching factor, and restricting a pool to its lowest free ordinal changes which
+leaf the first descent reaches. Both are ordering effects and neither loses a candidate — the
+optimality matrix runs those exact cells against brute force on every seed and agrees.
 
 **Pool ordinals are searched once, not `count` times.** A pool (§2.2) expands into `count`
 assignables that differ in nothing the objective or the constraints can see: recipes key on
@@ -1352,6 +1463,12 @@ blow-up meant **realistic rigs containing full-size pool devices hit the node ca
 to greedy** — reported in `SearchReport`, per the no-silent-truncation rule above, but visible
 and wrong is still wrong. The greedy answer is precisely the "pile everything onto the TR-1000"
 failure this section exists to avoid.
+
+**That was true when this was written and is no longer the reason to keep it.** The relaxed suffix
+bound above now carries the fallback on its own, on this fixture and on every shipped template; the
+factorial blow-up is real but the bound cuts it before the cap does. What follows is retained
+because it still narrows the branching factor by roughly two thirds on a full-size pool — a
+constant factor on top of the bound, which is a smaller claim than the one this paragraph makes.
 
 Not *every* pooled rig: a two-track pool with eight parts finished in 116 nodes, and a TR-1000
 plus a Tracker Mini still resolved exhaustively at eight. That is what made it hard to see. The
@@ -1546,9 +1663,71 @@ key beneath it, which is exactly why §12.6 chose a flag on the request over a `
 
 ### 7.4 Clock source
 
-`canSendClock`, then occupied-assignable count descending (§12.4), then transport preference
-(`midi-din` > `usb`), then `deviceId` ascending by UTF-16 code unit (§7.2). **No seed** — this should be stable across
-rerolls, since rerolling a pattern should not re-cable the rig.
+`canSendClock`, then **one semantic key and two tie-breaks**:
+
+1. `clock.preferredSource` (§2.3) — the manifest's own topology judgement, "this box's job in a
+   rig is to drive it". A dedicated sequencer or a recorder transport says so; everything else
+   omits the field. **Not derivable from `kind`**, and the library's two `mixer-recorder`s show
+   why: the Model 2400 claims it and the LiveTrak L-8 cannot send clock at all. Same kind,
+   opposite ends of the topology. Nor does §2.3's `sequencer` kind make it derivable — a
+   sequencer following a DAW is still a follower.
+2. Transport preference (`midi-din` > `usb`).
+3. `deviceId` ascending by UTF-16 code unit (§7.2).
+
+Keys 2 and 3 exist to make the answer **deterministic**, not to make it right. Only key 1 carries
+a judgement, and it is a person's.
+
+**`kind` is not a key, and briefly was.** One revision ranked `kind: 'sequencer'` above other
+preferred boxes, to settle the case where two manifests each honestly claim the field. It was the
+same mistake as the `!canReceiveClock` paragraph below, one tier down: an inference standing in
+for a claim, and the first time a `DeviceKind` had been given meaning by the engine rather than by
+the picker. Where two boxes have each said "my job is to drive a rig", §7.4 has no basis to rank
+them and says so — the repair is for one of them not to make the claim, not for the engine to
+guess which claim it believes.
+
+**No seed** — this should be stable across rerolls, since rerolling a pattern should not re-cable
+the rig.
+
+**Occupied-assignable count is not a ranking key, and used to be the first one.** The reasoning
+was that the busiest box is the one you are standing at, which is a guess about the *session*
+presented as a fact about the *rig*. Two things were wrong with it. It re-cables a studio because
+a template asked for one more hat — the physical MIDI topology of a room should not move when the
+genre does. And it made the clock source a function of the assignment search, so a change to
+§7.1's objective, or an extra device changing where parts land, silently moved the cables; the
+"no seed" rule above was being upheld in the letter while the assignment reached the same
+decision by another route.
+
+`ClockSource.occupiedAssignables` survives as **rendered information**: "carrying 5 parts" is
+worth printing beside the source, and that is now all it does.
+
+**`!canReceiveClock` is deliberately not a key**, and was one for exactly one revision. The
+argument for it was that a source-only box has nowhere else to sit in the topology. It does not
+follow: such a box simply runs free, which the guide already states by name for the LiveTrak L-8,
+and the rig's clock does not reach it either way. The deeper objection is that it would infer
+intent from a *capability*, doing by inference the one job `preferredSource` exists to make a
+person do explicitly — a recorder that should drive a studio ought to say so in its manifest, and
+under the inferred rule it never would.
+
+### What this costs
+
+Three things, all of them chosen rather than overlooked:
+
+- **Topology is now an authored judgement or it is nothing.** No rig gets a *considered* clock
+  source unless some manifest claims one, and **no device in the library claims one**. The Model
+  2400 did for two commits, on the strength of a manual that proves the desk can generate clock
+  and cannot receive it — but neither fact says it should lead every rig it is put in, which is
+  what the field means. That was capability promoted into preference: the same error as the two
+  ranking keys this section has already removed, moved out of the engine and into a manifest,
+  where it is harder to see. So every rig today falls straight to the tie-breaks.
+- **Several preferred sources in one rig fall through to transport and id**, exactly as several
+  unpreferred ones do. The field says "this box can lead", not "this box leads over that one";
+  ranking two authored preferences against each other would need an ordering nobody has a basis
+  to author.
+- **A rig with no preference at all is decided alphabetically.** With load gone and every
+  bidirectional instrument in the library on `midi-din`, `deviceId` is what remains — so an
+  instrument-only rig is clocked by whichever box sorts first, regardless of what it carries.
+  That is honest determinism rather than a judgement, and the repair is to author the judgement,
+  not to reinstate a proxy for it.
 
 ---
 
@@ -1715,6 +1894,37 @@ always — a cable arriving from above would have to cross the target's own face
 its bottom rail, which is the thing the bottom rail exists to prevent. A cable between two boxes
 on one row still just hangs. A gutter is only reserved when a cable uses it, so a rig that fits on
 one row is laid out to the millimetre as it was before rows existed.
+
+**The voice field is packed by cell shape, not only by cell area.** The one region a panel hands
+to the resolver (`kind: 'voices'`, §2.3) is filled with one cell per assignable, and the column
+count is chosen rather than fixed — the authored regions are too different for a constant cell
+size, from a 314 x 22 mm instrument row to a 106 x 62 mm screen. The rule was "take the column
+count with the largest cell area", and on a *shallow* region that rule fails: eleven voices in a
+237.7 x 18 mm strip come out as 18.9 x 14.7 mm at eleven columns and 37.1 x 7.5 mm at six, which
+are 278.1 mm2 and 278.4 mm2. Area chose two rows of slabs over one row of buttons on **0.3 mm2**,
+three parts in a thousand, because area cannot see the difference between a 1.28:1 cell and a
+4.95:1 one. So a candidate layout is now rejected when `cellW / cellH` exceeds `MAX_CELL_ASPECT`,
+which is 3 — the same ceiling `test/rack.test.ts` has always asserted against every drawn panel,
+now named once in `components/rack/model.ts` and imported by the test rather than written twice.
+
+Two things about it, and the second is the one that would bite:
+
+- **The constraint is a preference, never a veto.** A region so shallow that no column count
+  clears the ceiling still gets the best layout that fits, squat cells and all. Drawing the voices
+  badly is a cost; failing to draw them is a bug, and a strict ceiling would have shipped that bug
+  on the first device authored with a shallower row than anything in the library today. The empty
+  return keeps its original and much narrower meaning: nothing fits this region at all, so the
+  "panel not drawn yet" sentence stays honest.
+- **The cost is that a shallow region now trades a little coverage for shape.** On the 237.7 x 18
+  strip, coverage moves from 0.7157 to 0.7149 — three cells short of nothing, and far above the
+  0.55 floor. That is the direction the trade should go, but it is a trade: a future region could
+  clear the ceiling only by giving up real area, and the packer will take that deal without
+  saying so.
+
+Adding the constraint moved exactly one panel in the nine-device library and left the other eight
+byte-identical, which is the evidence that it bites only where it should. That check is worth
+repeating on any future change to the packer, because both existing guards — coverage above 0.55
+and aspect under 3 — can pass while a panel that was already right gets worse.
 
 What the resolver actually produces that is spatial is **clock**: §7.4's source and the boxes that
 can sync to it. Audio is not drawn, and the page says so beside the legend — the resolver assigns

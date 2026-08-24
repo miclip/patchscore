@@ -88,21 +88,37 @@ describe('device search matches name, maker and kind', () => {
     // Name.
     expect(ids(devices({ query: 'tr-1000' }).rows)).toEqual(['roland-tr-1000'])
     expect(ids(devices({ query: 'TR-1000' }).rows)).toEqual(['roland-tr-1000'])
-    // Maker.
-    expect(ids(devices({ query: 'roLAnd' }).rows)).toEqual(['roland-tr-1000'])
+    // Maker — three Rolands in the registry since the TR-8S landed, in registry order.
+    expect(ids(devices({ query: 'roLAnd' }).rows)).toEqual([
+      'roland-mc-101',
+      'roland-tr-1000',
+      'roland-tr-8s',
+    ])
     expect(ids(devices({ query: 'polyend' }).rows)).toEqual(['polyend-tracker-mini'])
     // Kind — the field #53 asked for by name, and the one that groups rather than identifies.
     expect(ids(devices({ query: 'groovebox' }).rows)).toEqual([
       'polyend-tracker-mini',
+      'roland-mc-101',
       'synthstrom-deluge',
     ])
   })
 
   it('accepts a hyphenated kind written as two words', () => {
     // 'drum-machine' is hyphenated for the schema's benefit. Nobody types it that way.
-    expect(ids(devices({ query: 'drum-machine' }).rows)).toEqual(['roland-tr-1000'])
-    expect(ids(devices({ query: 'drum machine' }).rows)).toEqual(['roland-tr-1000'])
-    expect(ids(devices({ query: 'semi modular' }).rows)).toEqual(['intellijel-cascadia'])
+    const drumMachines = ['roland-tr-1000', 'roland-tr-8s']
+    expect(ids(devices({ query: 'drum-machine' }).rows)).toEqual(drumMachines)
+    expect(ids(devices({ query: 'drum machine' }).rows)).toEqual(drumMachines)
+    expect(ids(devices({ query: 'semi modular' }).rows)).toEqual([
+      'behringer-crave',
+      'intellijel-cascadia',
+    ])
+  })
+
+  it('tells the two Roland drum machines apart by name, not only by maker or kind', () => {
+    // The reason the row above is worth having: `roland` and `drum machine` both return two, so
+    // the name is the only field that identifies one box, and 'tr-8' must not drag in 'tr-1000'.
+    expect(ids(devices({ query: 'tr-8s' }).rows)).toEqual(['roland-tr-8s'])
+    expect(ids(devices({ query: 'TR-8S' }).rows)).toEqual(['roland-tr-8s'])
   })
 
   it('returns nothing rather than everything when nothing matches', () => {
@@ -139,7 +155,19 @@ describe('device search matches name, maker and kind', () => {
 describe('the kind filter', () => {
   it('offers the kinds this build ships, in the order the registry first mentions them', () => {
     const kinds = kindsPresent(DEVICES)
-    expect(kinds).toEqual(['semi-modular', 'groovebox', 'drum-machine'])
+    // The order is first *mention* in the registry, and the registry is sorted by folder name, so
+    // a new device can reorder this list without any kind being added or removed. `semi-modular`
+    // leads because `behringer-crave` sorts first; `sequencer` sits third because
+    // `intellijel-metropolix` falls between the Euroburo and the Tracker Mini.
+    expect(kinds).toEqual([
+      'semi-modular',
+      'sampler',
+      'fx-processor',
+      'sequencer',
+      'groovebox',
+      'drum-machine',
+      'mixer-recorder',
+    ])
     // Derived, not enumerated: every kind offered has at least one device behind it, and every
     // device's kind is offered. An option that can only return nothing is not a filter.
     for (const kind of kinds) expect(DEVICES.some((d) => d.kind === kind)).toBe(true)
@@ -150,17 +178,20 @@ describe('the kind filter', () => {
   it('narrows to one kind, and combines with the search as AND', () => {
     expect(ids(devices({ kind: 'groovebox' }).rows)).toEqual([
       'polyend-tracker-mini',
+      'roland-mc-101',
       'synthstrom-deluge',
     ])
 
-    // Both conditions, not either: the query alone would return two grooveboxes, the kind alone
-    // would return two, and together they return the one that satisfies both.
+    // Both conditions, not either: the kind alone returns three grooveboxes and the query alone
+    // returns one device, and together they return the one that satisfies both.
     expect(ids(devices({ kind: 'groovebox', query: 'polyend' }).rows)).toEqual([
       'polyend-tracker-mini',
     ])
     // A query that matches a device of the wrong kind returns nothing, rather than falling back
     // to whichever half still matched.
-    expect(devices({ kind: 'groovebox', query: 'roland' }).rows).toHaveLength(0)
+    // 'roland' stopped being an example of this the moment a Roland groovebox landed — it now
+    // matches the MC-101, which satisfies both halves. Intellijel makes no groovebox.
+    expect(devices({ kind: 'groovebox', query: 'intellijel' }).rows).toHaveLength(0)
     expect(devices({ kind: 'drum-machine', query: 'polyend' }).rows).toHaveLength(0)
   })
 
@@ -280,7 +311,7 @@ describe('selected entries survive any filter', () => {
     const shown = devices({ kind: 'groovebox' }, ['roland-tr-1000'])
     expect(ids(shown.rows)).toContain('roland-tr-1000')
     expect(shown.rows.find((r) => r.item.id === 'roland-tr-1000')?.retained).toBe(true)
-    expect(shown.matched).toBe(2)
+    expect(shown.matched).toBe(3)
   })
 
   it('keeps them in registry order rather than appending them at the end', () => {

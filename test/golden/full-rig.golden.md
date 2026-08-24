@@ -30,29 +30,29 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → Tracker Mini · Track 1 — *Tight one-shot kick, tuned down, no tail*
+- **`kick`** → Deluge · Track 1 — *Kit-row kick, bass lifted, edge from decimation*
   - p1 · exact `hard` · every section
-- **`sub`** → TR-1000 · BD — *Kick tuned down into a sustained sub*
+- **`sub`** → MC-101 · TONE Track 1 — *Sine sub, one note at a time, nothing above the fundamental*
   - p1 · exact `dark` · every section
-- **`bass-mid`** → Deluge · Track 1 — *Analog saw bass through the drive filter, crushed*
+- **`bass-mid`** → Digitakt II · Track 1 — *Repitched bass with the multi-mode filter opened by the envelope*
   - p2 · exact `dirty` · every section
 - **`clap`** → TR-1000 · HC — *Wide clap sitting on top of the snare*
   - p2 · exact `bright` · every section
-- **`closed-hat`** → TR-1000 · CH — *Grainy CR-78 hat with a metallic edge*
+- **`closed-hat`** → TR-8S · CH — *Hat pushed into the compressor*
   - p2 · exact `dirty` · every section
 - **`metallic`** → Cascadia · Voice — *Ring modulator fed a square, notched rather than filtered*
   - p3 · exact `dark` · every section
-- **`open-hat`** → TR-1000 · OH — *Dull open hat, more air than sizzle*
+- **`open-hat`** → TR-8S · OH — *Open hat with the top rolled off*
   - p3 · exact `dark` · every section
-- **`stab`** → Deluge · Track 2 — *Square stab through a fast phaser*
+- **`stab`** → MC-101 · TONE Track 2 — *Short chord stab, played on the track*
   - p3 · exact `hard` · 3 notes at once on one polyphonic voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
-- **`pad`** → Deluge · Track 3 — *Wavetable pad, slow chorus, wide reverb send*
+- **`pad`** → MC-101 · TONE Track 3 — *Slow polyphonic pad, opening under the drums*
   - p4 · substituted — asked `dark`, authored `soft` · 3 notes at once on one polyphonic voice · every section
-- **`riser`** → Deluge · Track 4 — *Saw riser, top end open, thrown into the reverb*
+- **`riser`** → TR-8S · CC — *A sample played backwards into the change*
   - p4 · exact `bright` · Build, Breakdown
-- **`noise`** → Deluge · Track 5 — *Crushed noise wash under the drums*
+- **`noise`** → CRAVE · Voice — *Raw noise through the filter, oscillator out of the mix*
   - p5, optional · exact `dirty` · every section
 
 ### Gaps
@@ -61,24 +61,56 @@ None.
 
 ## 3. Rig integration
 
-**Clock source** — TR-1000 over `midi-din`, carrying 5 parts. Sync everything else to it.
+**Clock source** — Metropolix over `usb`, carrying 0 parts. Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8, which cannot receive clock and run free.
 
+- **CRAVE** — semi-modular · 1 part
+  - clock: receives clock only · midi-din/usb
+  - audio: mono main out · audio in
+  - mixer: 1 part, no individual outs: one mono channel for all
+- **Digitakt II** — sampler · 1 part
+  - clock: sends clock · midi-din/usb
+  - audio: stereo main out · USB audio · audio in
+  - mixer: 1 part, no individual outs: one stereo channel for all
+- **ZOIA Euroburo** — fx-processor · 0 parts
+  - clock: receives clock only · analog-clock/midi-din
+  - audio: stereo main out · audio in
+  - mixer: no parts assigned; nothing to patch
 - **Cascadia** — semi-modular · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: mono main out · audio in
   - mixer: 1 part, no individual outs: one mono channel for all
-- **Tracker Mini** — groovebox · 1 part
+- **Metropolix** — sequencer · 0 parts
+  - clock: sends clock · usb/analog-clock
+  - audio: no audio I/O
+  - mixer: no parts assigned; nothing to patch
+- **Tracker Mini** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio · audio in
-  - mixer: 1 part, no individual outs: one stereo channel for all
-- **TR-1000** — drum-machine · 5 parts
+  - mixer: no parts assigned; nothing to patch
+- **MC-101** — groovebox · 3 parts
+  - clock: sends clock · midi-din/usb
+  - audio: stereo main out · USB audio
+  - mixer: 3 parts, no individual outs: one stereo channel for all
+- **TR-1000** — drum-machine · 2 parts
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
-  - mixer: 5 parts, 10 individual outs: one channel each
-- **Deluge** — groovebox · 5 parts
+  - mixer: 2 parts, 10 individual outs: one channel each
+- **TR-8S** — drum-machine · 3 parts
+  - clock: sends clock · midi-din/usb/trigger
+  - audio: stereo main out · 6 individual outs · USB audio · audio in
+  - mixer: 3 parts, 6 individual outs: one channel each
+- **Deluge** — groovebox · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: stereo main out · audio in
-  - mixer: 5 parts, no individual outs: one stereo channel for all
+  - mixer: 1 part, no individual outs: one stereo channel for all
+- **Model 2400** — mixer-recorder · 0 parts
+  - clock: sends clock, cannot receive · midi-din/usb
+  - audio: stereo main out · 8 individual outs · USB audio · audio in
+  - mixer: no parts assigned; nothing to patch
+- **Zoom LiveTrak L-8** — mixer-recorder · 0 parts
+  - clock: no clock in or out
+  - audio: stereo main out · USB audio · audio in
+  - mixer: no parts assigned; nothing to patch
 
 ## 4. Hook
 
@@ -91,9 +123,9 @@ which not every maker agrees with — the MIDI number is the form nothing disagr
 
 Where a role has more than one hook authored, rerolling the seed picks a different one.
 
-### `bass-mid` — Deluge · Track 1
+### `bass-mid` — Digitakt II · Track 1
 
-**Analog saw bass through the drive filter, crushed** — settings in Sound design
+**Repitched bass with the multi-mode filter opened by the envelope** — settings in Sound design
 
 2 bars in F minor.
 
@@ -105,9 +137,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - bar 2 · step 23 · len 2 · `Db2` (`C#2`) · 6th · MIDI 37
 - bar 2 · step 27 · len 4 · `C2` · 5th · MIDI 36
 
-### `pad` — Deluge · Track 3
+### `pad` — MC-101 · TONE Track 3
 
-**Wavetable pad, slow chorus, wide reverb send** — settings in Sound design
+**Slow polyphonic pad, opening under the drums** — settings in Sound design
 
 8 bars in F minor.
 
@@ -115,9 +147,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - bar 5 · step 65 · len 32 · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
 - bar 7 · step 97 · len 32 · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`) · 7th 2nd 4th · MIDI 63 67 70
 
-### `stab` — Deluge · Track 2
+### `stab` — MC-101 · TONE Track 2
 
-**Square stab through a fast phaser** — settings in Sound design
+**Short chord stab, played on the track** — settings in Sound design
 
 4 bars in F minor.
 
@@ -128,9 +160,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 ## 5. Step programming
 
-### `kick` — Tracker Mini · Track 1
+### `kick` — Deluge · Track 1
 
-**Tight one-shot kick, tuned down, no tail** — settings in Sound design
+**Kit-row kick, bass lifted, edge from decimation** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -155,14 +187,14 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — Tracker Mini
+**On this box** — Deluge
 
-- `accent` → `volume` 100 on step 9
-  - ↳ hint: Hold [FX1], press (Up)/(Down)
+- `accent` → `velocity` 127 on step 9
+  - ↳ hint: Hold the note pad, turn (SELECT)
 
-### `sub` — TR-1000 · BD
+### `sub` — MC-101 · TONE Track 1
 
-**Kick tuned down into a sustained sub** — settings in Sound design
+**Sine sub, one note at a time, nothing above the fundamental** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -170,6 +202,11 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
  1 x··· ···· ···· ····
 ```
 - `downbeat` — 1
+
+**On this box** — MC-101
+
+- `downbeat` → `note-length` 12 on step 1
+  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
 
 **Build, Breakdown** — 16 steps, band 1
 
@@ -179,6 +216,11 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `downbeat` — 1, 9
 - `offbeat` — 15
 
+**On this box** — MC-101
+
+- `downbeat` → `note-length` 12 on steps 1, 9
+  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
+
 **Drop, Peak** — 16 steps, band 3
 
 ```
@@ -187,9 +229,14 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `downbeat` — 1
 - `offbeat` — 3, 7, 11, 15
 
-### `bass-mid` — Deluge · Track 1
+**On this box** — MC-101
 
-**Analog saw bass through the drive filter, crushed** — settings in Sound design
+- `downbeat` → `note-length` 12 on step 1
+  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
+
+### `bass-mid` — Digitakt II · Track 1
+
+**Repitched bass with the multi-mode filter opened by the envelope** — settings in Sound design
 
 **Intro, Outro** — 32 steps, band 0
 
@@ -199,6 +246,11 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 ```
 - `downbeat` — 1, 17
 
+**On this box** — Digitakt II
+
+- `downbeat` → `velocity` 112, `note-length` 12 on steps 1, 17
+  - ↳ hint: Hold a [TRIG] key, turn DATA ENTRY
+
 **Build, Breakdown** — 32 steps, band 1
 
 ```
@@ -206,6 +258,11 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 17 x··· ···· x··· ····
 ```
 - `downbeat` — 1, 9, 17, 25
+
+**On this box** — Digitakt II
+
+- `downbeat` → `velocity` 112, `note-length` 12 on steps 1, 9, 17, 25
+  - ↳ hint: Hold a [TRIG] key, turn DATA ENTRY
 
 **Drop, Peak** — 32 steps, band 3
 
@@ -218,10 +275,10 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `offbeat` — 7, 11, 23, 27
 - `accent` — 31 (vel 110)
 
-**On this box** — Deluge
+**On this box** — Digitakt II
 
-- `offbeat` → `probability` 90 on steps 7, 11, 23, 27
-  - ↳ hint: Hold pad, turn (SELECT) anticlockwise
+- `downbeat` → `velocity` 112, `note-length` 12 on steps 1, 9, 17, 25
+  - ↳ hint: Hold a [TRIG] key, turn DATA ENTRY
 
 ### `clap` — TR-1000 · HC
 
@@ -265,9 +322,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `backbeat` → `accent` true on step 5
   - ↳ hint: ACCENT [STEP], then step keys
 
-### `closed-hat` — TR-1000 · CH
+### `closed-hat` — TR-8S · CH
 
-**Grainy CR-78 hat with a metallic edge** — settings in Sound design
+**Hat pushed into the compressor** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -276,10 +333,10 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 ```
 - `offbeat` — 3, 7, 11, 15
 
-**On this box** — TR-1000
+**On this box** — TR-8S
 
-- `offbeat` → `weak` true on steps 3, 7, 11, 15
-  - ↳ hint: Hold [SHIFT], press step keys
+- `offbeat` → `alt-inst` true on steps 3, 7, 11, 15
+  - ↳ hint: Hold [BD]-[RC], press a pad
 
 **Build, Breakdown** — 16 steps, band 1
 
@@ -289,10 +346,12 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `ghost` — 2, 10 (all vel 45)
 - `offbeat` — 3, 7, 11, 15
 
-**On this box** — TR-1000
+**On this box** — TR-8S
 
-- `offbeat` → `weak` true on steps 3, 7, 11, 15
-  - ↳ hint: Hold [SHIFT], press step keys
+- `offbeat` → `alt-inst` true on steps 3, 7, 11, 15
+  - ↳ hint: Hold [BD]-[RC], press a pad
+- `ghost` → `weak` true on steps 2, 10
+  - ↳ hint: Hold [SHIFT], press a pad
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -304,12 +363,12 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `offbeat` — 3, 7, 11
 - `accent` — 15 (vel 108)
 
-**On this box** — TR-1000
+**On this box** — TR-8S
 
-- `offbeat` → `weak` true on steps 3, 7, 11
-  - ↳ hint: Hold [SHIFT], press step keys
-- `accent` → `accent` true on step 15
-  - ↳ hint: ACCENT [STEP], then step keys
+- `offbeat` → `alt-inst` true on steps 3, 7, 11
+  - ↳ hint: Hold [BD]-[RC], press a pad
+- `ghost` → `weak` true on steps 2, 4, 6, 8, 10, 12, 14, 16
+  - ↳ hint: Hold [SHIFT], press a pad
 
 ### `metallic` — Cascadia · Voice
 
@@ -342,9 +401,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `downbeat` — 17
 - `last-hit` — 32
 
-### `open-hat` — TR-1000 · OH
+### `open-hat` — TR-8S · OH
 
-**Dull open hat, more air than sizzle** — settings in Sound design
+**Open hat with the top rolled off** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -353,22 +412,12 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 ```
 - `offbeat` — 7
 
-**On this box** — TR-1000
-
-- `offbeat` → `weak` true on step 7
-  - ↳ hint: Hold [SHIFT], press step keys
-
 **Build, Breakdown** — 16 steps, band 1
 
 ```
  1 ··x· ···· ··x· ····
 ```
 - `offbeat` — 3, 11
-
-**On this box** — TR-1000
-
-- `offbeat` → `weak` true on steps 3, 11
-  - ↳ hint: Hold [SHIFT], press step keys
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -379,14 +428,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `downbeat` — 13
 - `accent` — 15 (vel 106)
 
-**On this box** — TR-1000
+### `stab` — MC-101 · TONE Track 2
 
-- `offbeat` → `weak` true on steps 3, 7, 11
-  - ↳ hint: Hold [SHIFT], press step keys
-
-### `stab` — Deluge · Track 2
-
-**Square stab through a fast phaser** — settings in Sound design
+**Short chord stab, played on the track** — settings in Sound design
 
 **Intro, Outro** — 32 steps, band 0
 
@@ -414,9 +458,10 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `offbeat` — 7, 11, 23
 - `accent` — 29 (vel 108)
 
-**On this box** — Deluge
+**On this box** — MC-101
 
-- `accent` → `velocity` 120 on step 29
+- `accent` → `velocity` 116, `note-length` 3 on step 29
+  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
 
 ### `impact` — TR-1000 · CC
 
@@ -439,9 +484,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `first-hit` → `accent` true on step 1
   - ↳ hint: ACCENT [STEP], then step keys
 
-### `pad` — Deluge · Track 3
+### `pad` — MC-101 · TONE Track 3
 
-**Wavetable pad, slow chorus, wide reverb send** — settings in Sound design
+**Slow polyphonic pad, opening under the drums** — settings in Sound design
 
 **Intro, Outro** — no pattern authored for `pad` at any band (asked for band 0)
 
@@ -449,15 +494,15 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Drop, Peak** — no pattern authored for `pad` at any band (asked for band 3)
 
-### `riser` — Deluge · Track 4
+### `riser` — TR-8S · CC
 
-**Saw riser, top end open, thrown into the reverb** — settings in Sound design
+**A sample played backwards into the change** — settings in Sound design
 
 **Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 1)
 
-### `noise` — Deluge · Track 5
+### `noise` — CRAVE · Voice
 
-**Crushed noise wash under the drums** — settings in Sound design
+**Raw noise through the filter, oscillator out of the mix** — settings in Sound design
 
 **Intro, Outro** — 32 steps, band 0
 
@@ -486,6 +531,59 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `accent` — 31 (vel 104)
 
 ## 6. Sound design
+
+### CRAVE
+
+*Values below cite CRAVE Quick Start Guide, BE_0718-AAJ_WW.*
+
+#### Voice — `noise`: Raw noise through the filter, oscillator out of the mix
+
+*Ranges cite manual — CRAVE Quick Start Guide BE_0718-AAJ_WW, p.70.*
+
+- **FREQUENCY** `0` (-5…5)
+- **PULSE WIDTH** `50` % (5…95 %)
+- **OSC MOD** `0` (0…10)
+- **MIX** `5` (-5…5)
+  - ↳ note: Negative is oscillator, positive is noise or external audio
+- **CUTOFF** `6` (0…10)
+  - ↳ note: 20 Hz to 20 kHz across the travel
+- **RESONANCE** `4` (0…10)
+- **VCF MOD** `0` (0…10)
+- **VOLUME** `7` (0…10)
+- **VCO SHAPE** `pulse`
+- **VCO MOD SOURCE** `env/osc mod`
+- **VCO MOD DEST** `width`
+- **VCF MODE** `low pass`
+- **VCF MOD SOURCE** `env`
+- **VCF MOD POLARITY** `positive`
+- **VCA MODE** `envelope`
+- **ATTACK** `0` (0…10)
+  - ↳ note: 2 ms to 3 s across the travel
+- **DECAY** `2` (0…10)
+  - ↳ note: 2 ms to 5 s across the travel
+- **SUSTAIN** `0` (0…10)
+  - ↳ note: 0 to 8 V across the travel
+- **SUSTAIN SWITCH** `off`
+  - ↳ note: Off: the level decays after the attack
+
+**Patch**
+
+- `OUT · ENV` → `IN · VCF CUTOFF`
+  - ↳ note: The filter closing across each hit
+
+### Digitakt II
+
+*Values below cite Digitakt II User Manual, OS 1.15A.*
+
+#### Track 1 — `bass-mid`: Repitched bass with the multi-mode filter opened by the envelope
+
+- **SRC MACHINE** `REPITCH`
+- **PLAY** `FORWARD`
+- **FLTR MACHINE** `MULTI-MODE`
+- **AMP MODE** `ADSR`
+- **LFO MODE** `TRG`
+- **FADE** `-20` (-64…63)
+  - ↳ cite: range manual — Digitakt II User Manual OS 1.15A, p.58
 
 ### Cascadia
 
@@ -524,56 +622,75 @@ Routing — played from MIDI IN or EXT IN PITCH/GATE — Cascadia has no sequenc
 - `VCO B · SQUARE` → `RING MOD · IN 2`
   - ↳ note: breaks the VCO B sine normal — a square through the ring modulator is harsher
 
-### Tracker Mini
+### MC-101
 
-*Values below cite Polyend Tracker Mini Manual, 2.2.1b.*
+*Values below cite MC-101 Reference Manual, eng01.*
 
-#### Track 1 — `kick`: Tight one-shot kick, tuned down, no tail
+#### TONE Track 1 — `sub`: Sine sub, one note at a time, nothing above the fundamental
 
-- **PLAY MODE** `1-Shot`
-- **FILTER TYPE** `Low-pass`
-- **TUNE** `-3` St (-24…24 St)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.116
-- **CUTOFF** `74` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
-- **OVERDRIVE** `18` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
-- **ENV DECAY** `0.28` Sec (0…10 Sec)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.126
-- **SWING** `50` % (25…75 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.185
-  - ↳ note: 50% is no swing; set once, it applies across the whole pattern
-  - ↳ hint: Hold [FX1], press (Up)/(Down)
+Routing — Keep the sub mono and dry — the reverb and delay sends stay at 0
+
+*Ranges cite manual — MC-101 Reference Manual eng01, p.45.*
+
+- **MONO/POLY** `MONO`
+- **OCT SHIFT** `-1` (-3…3)
+- **CUTOFF** `-34` (-64…63)
+- **RESONANCE** `-18` (-64…63)
+- **ATTACK** `-20` (-64…63)
+- **RELEASE** `-24` (-64…63)
+- **MFX TYPE** `04 Low Boost`
+- **BOOST FREQUENCY** `63`
+- **BOOST GAIN** `5` dB (0…12 dB)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.54
+  - ↳ hint: Hold [SHIFT], press [SOUND]
+- **BOOST WIDTH** `NARROW`
+- **REVERB SEND** `0` (0…127)
+- **SHUFFLE** `0` (-50…50)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
+  - ↳ note: One setting for the whole clip, not per step
+  - ↳ hint: Hold [SHIFT], press PAD [CLIP]
+
+#### TONE Track 2 — `stab`: Short chord stab, played on the track
+
+Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
+
+*Ranges cite manual — MC-101 Reference Manual eng01, p.45.*
+
+- **MONO/POLY** `POLY`
+- **ATTACK** `-40` (-64…63)
+- **DECAY** `-26` (-64…63)
+- **RELEASE** `-34` (-64…63)
+- **CUTOFF** `20` (-64…63)
+- **RESONANCE** `10` (-64…63)
+- **DELAY SEND** `18` (0…127)
+- **SHUFFLE** `0` (-50…50)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
+  - ↳ note: One setting for the whole clip, not per step
+  - ↳ hint: Hold [SHIFT], press PAD [CLIP]
+
+#### TONE Track 3 — `pad`: Slow polyphonic pad, opening under the drums
+
+Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
+
+*Ranges cite manual — MC-101 Reference Manual eng01, p.45.*
+
+- **MONO/POLY** `POLY`
+- **ATTACK** `34` (-64…63)
+- **RELEASE** `40` (-64…63)
+- **CUTOFF** `-12` (-64…63)
+- **VIB RATE** `-14` (-64…63)
+- **VIB DEPTH** `8` (-64…63)
+- **REVERB SEND** `68` (0…127)
+- **DELAY SEND** `24` (0…127)
+- **LEVEL** `92` (0…127)
+- **SHUFFLE** `0` (-50…50)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
+  - ↳ note: One setting for the whole clip, not per step
+  - ↳ hint: Hold [SHIFT], press PAD [CLIP]
 
 ### TR-1000
 
 *Values below cite TR-1000 Owner’s Manual, eng02.*
-
-#### BD — `sub`: Kick tuned down into a sustained sub
-
-Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
-
-*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.61.*
-
-- **GEN** `9X Bass Drum`
-  - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
-- **COARSE** `-12` St (-12…12 St)
-  - ↳ hint: An octave down, in semitones
-- **TUNE** `-70` % (-100…100 %)
-- **DECAY** `92` % (0…100 %)
-- **P. AMOUNT** `12` % (0…100 %)
-  - ↳ hint: Near-flat pitch envelope
-- **DRIVE** `18` % (0…100 %)
-- **RVB SEND** `0` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
-  - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
-- **DLY SEND** `0` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
-  - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
-- **SHUFFLE** `0` (-100…100)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.26
-  - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
-  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 #### HC — `clap`: Wide clap sitting on top of the snare
 
@@ -609,48 +726,6 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
   - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
   - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
-#### CH — `closed-hat`: Grainy CR-78 hat with a metallic edge
-
-*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
-
-- **GEN** `CR78 HiHat`
-  - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
-- **TUNE** `-5` % (-100…100 %)
-- **DECAY** `20` % (0…100 %)
-- **METALLIC** `72` % (0…100 %)
-  - ↳ hint: Metal-like overtone level
-- **RVB SEND** `10` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
-  - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
-- **DLY SEND** `8` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
-  - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
-- **SHUFFLE** `0` (-100…100)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.26
-  - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
-  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
-
-#### OH — `open-hat`: Dull open hat, more air than sizzle
-
-*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
-
-- **GEN** `606 Open HiHat`
-  - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
-- **TUNE** `-18` % (-100…100 %)
-- **DECAY** `64` % (0…100 %)
-- **TONE** `-35` % (-100…100 %)
-  - ↳ hint: Brightness of the cymbal
-- **RVB SEND** `14` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
-  - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
-- **DLY SEND** `12` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
-  - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
-- **SHUFFLE** `0` (-100…100)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.26
-  - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
-  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
-
 #### CC — `impact`: Crash marking the top of a section
 
 - **GEN** `9X Crash Cymbal`
@@ -670,84 +745,99 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
   - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
   - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
+### TR-8S
+
+*Values below cite TR-8S Reference Manual, eng01.*
+
+#### CH — `closed-hat`: Hat pushed into the compressor
+
+*Ranges cite manual — TR-8S Reference Manual eng01, p.30.*
+
+- **TONE** `CH category`
+- **TUNE** `40` (-128…127)
+- **DECAY** `44` (0…255)
+- **INST FX TYPE** `COMP+DRV`
+  - ↳ hint: Hold [SHIFT], press [INST]
+- **COMP+DRV BALANCE** `200` (1…255)
+  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.32
+- **CMP BALANCE** `220` (1…255)
+  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.32
+- **DRV BALANCE** `130` (1…255)
+  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.32
+- **REVERB SEND** `20` (0…255)
+  - ↳ hint: INST Edit > ReverbSend
+- **DELAY SEND** `24` (0…255)
+  - ↳ hint: INST Edit > DelaySend
+- **SHUFFLE** `0` (-128…127)
+  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.17
+  - ↳ note: Pattern-wide: one setting for the whole pattern, not per instrument
+  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
+
+#### OH — `open-hat`: Open hat with the top rolled off
+
+Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
+
+*Ranges cite manual — TR-8S Reference Manual eng01, p.30.*
+
+- **TONE** `OH category`
+- **TUNE** `-24` (-128…127)
+- **DECAY** `176` (0…255)
+- **INST FX TYPE** `LPF`
+  - ↳ hint: Hold [SHIFT], press [INST]
+- **LPF CUTOFF** `132` (0…255)
+  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.31
+- **REVERB SEND** `56` (0…255)
+  - ↳ hint: INST Edit > ReverbSend
+- **DELAY SEND** `48` (0…255)
+  - ↳ hint: INST Edit > DelaySend
+- **SHUFFLE** `0` (-128…127)
+  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.17
+  - ↳ note: Pattern-wide: one setting for the whole pattern, not per instrument
+  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
+
+#### CC — `riser`: A sample played backwards into the change
+
+*Ranges cite manual — TR-8S Reference Manual eng01, p.31.*
+
+- **TONE** `Sample`
+  - ↳ note: Everything below the TUNE line is in the "Sample tone only" block (p.31) and does not exist on an ACB tone
+- **TUNE** `0` (-128…127)
+  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
+- **COARSE TUNE** `-5` St (-24…24 St)
+  - ↳ note: Pitch in semitone steps
+- **RATE** `-0.7` (-1…1)
+  - ↳ note: Negative plays backward; -1.00 is full speed in reverse (p.31)
+- **SPREAD** `32` (-50…50)
+  - ↳ note: Skews pitch L/R for a stereo image
+- **BIT REDUCE** `3` (0…12)
+- **INST FX TYPE** `THRU`
+  - ↳ hint: Hold [SHIFT], press [INST]
+- **REVERB SEND** `150` (0…255)
+  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
+  - ↳ hint: INST Edit > ReverbSend
+- **DELAY SEND** `90` (0…255)
+  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
+  - ↳ hint: INST Edit > DelaySend
+- **SHUFFLE** `0` (-128…127)
+  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.17
+  - ↳ note: Pattern-wide: one setting for the whole pattern, not per instrument
+  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
+
 ### Deluge
 
 *Values below cite Deluge Official Guidebook, OS 4.1 (OLED) + community firmware release_1_2_1 (Chopin).*
 
-#### Track 1 — `bass-mid`: Analog saw bass through the drive filter, crushed
+#### Track 1 — `kick`: Kit-row kick, bass lifted, edge from decimation
 
-*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.217.*
-
-- **OSC TYPE** `Analog Saw`
-- **LPF MODE** `DRIVE`
-- **DECIMATION** `14` (0…50)
-- **BITCRUSH** `9` (0…50)
-- **EQ BASS AMOUNT** `29` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
-- **SWING** `50` % (1…99 %)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
-  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
-  - ↳ hint: Hold [SHIFT], turn (TEMPO)
-
-#### Track 2 — `stab`: Square stab through a fast phaser
-
-Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
-
-*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.229.*
-
-- **OSC TYPE** `Analog Square`
-- **MOD FX TYPE** `PHASER`
-- **MOD FX RATE** `16` (0…50)
-- **MOD FX FEEDBACK** `18` (0…50)
-  - ↳ note: Flanger and phaser types only
-- **EQ TREBLE AMOUNT** `29` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
-- **SWING** `50` % (1…99 %)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
-  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
-  - ↳ hint: Hold [SHIFT], turn (TEMPO)
-
-#### Track 3 — `pad`: Wavetable pad, slow chorus, wide reverb send
-
-Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
-
-- **OSC TYPE** `Wavetable`
-- **MOD FX TYPE** `CHORUS`
-- **MOD FX RATE** `9` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.229
-- **REVERB AMOUNT** `27` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.225
-- **EQ TREBLE AMOUNT** `27` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
-- **SWING** `50` % (1…99 %)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
-  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
-  - ↳ hint: Hold [SHIFT], turn (TEMPO)
-
-#### Track 4 — `riser`: Saw riser, top end open, thrown into the reverb
-
-- **OSC TYPE** `Saw`
-- **EQ TREBLE AMOUNT** `35` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
-- **REVERB AMOUNT** `23` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.225
-- **DELAY AMOUNT** `16` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.222
-- **SWING** `50` % (1…99 %)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
-  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
-  - ↳ hint: Hold [SHIFT], turn (TEMPO)
-
-#### Track 5 — `noise`: Crushed noise wash under the drums
-
-*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.217.*
+*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.219.*
 
 - **OSC TYPE** `Sample`
-- **REPEAT MODE** `LOOP`
-- **BITCRUSH** `21` (0…50)
-- **DECIMATION** `13` (0…50)
-- **EQ BASS AMOUNT** `16` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
+- **REPEAT MODE** `ONCE`
+- **EQ BASS AMOUNT** `33` (0…50)
+  - ↳ note: 25 is neutral; above boosts
+- **EQ BASS FREQUENCY** `14` (0…50)
+- **DECIMATION** `6` (0…50)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
 - **SWING** `50` % (1…99 %)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
   - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
@@ -759,15 +849,21 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 
 - Cascadia — from external audio
 - TR-1000 — internal, from external audio
+- TR-8S — internal
 - Deluge — internal
 
 **Master FX**
 
 What processes audio in this rig:
 
+- ZOIA Euroburo — is an effects unit (stereo main out · audio in)
 - Tracker Mini — carries DELAY SEND and REVERB SEND in its recipes
+- MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and DELAY SEND and REVERB SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
+- TR-8S — carries REVERB, DELAY and MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
 - Deluge — carries BITCRUSH, DECIMATION, DELAY AMOUNT, DELAY RATE, MOD FX FEEDBACK, MOD FX RATE, MOD FX TYPE and REVERB AMOUNT in its recipes
+- Model 2400 — is a mixer and recorder (stereo main out · 8 individual outs · USB audio · audio in)
+- Zoom LiveTrak L-8 — is a mixer and recorder (stereo main out · USB audio · audio in)
 
 **Arrangement variations**
 

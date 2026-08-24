@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   GUIDE_PHASES,
+  NEUTRAL_MOOD,
   SUBORDINATE,
   dominantRangeCite,
   moodState,
@@ -15,6 +16,9 @@ import {
   type Device,
   type Template,
 } from '../lib/core/index'
+import { ioText, mixerText } from '../components/guide/format'
+import { DEVICES } from '../lib/devices/registry.generated'
+import { TEMPLATES } from '../lib/templates/index'
 import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
 import { box, makeRecipe, request, withRoles } from './rigs'
 
@@ -706,10 +710,178 @@ describe('rig integration (§7.4)', () => {
     expect(phaseBody(doc, 3).join('\n')).toContain('nothing in this rig can send clock')
   })
 
+  // A mixer or a recorder may do neither, and the line was a two-way branch: every box that
+  // could not send was told it "receives clock only". Wrong about the box, and wrong about the
+  // wire too, since it then named a transport no clock travels on.
+  it('distinguishes all four clock capabilities, not just send versus not-send', () => {
+    const cases: [boolean, boolean, string][] = [
+      [true, true, 'clock: sends clock · midi-din/usb'],
+      [true, false, 'clock: sends clock, cannot receive · midi-din/usb'],
+      [false, true, 'clock: receives clock only · midi-din/usb'],
+      [false, false, 'clock: no clock in or out'],
+    ]
+    for (const [canSendClock, canReceiveClock, expected] of cases) {
+      const devices = GOLDEN_DEVICES.map((d) =>
+        d.name === 'Golden Drum' ? { ...d, clock: { ...d.clock, canSendClock, canReceiveClock } } : d,
+      )
+      const doc = renderGuide(
+        resolve({ devices, template: GOLDEN_TEMPLATE, mood: GOLDEN_MOOD, seed: GOLDEN_SEED }),
+      )
+      const body = phaseBody(doc, 3)
+      const start = body.findIndex((l) => l.startsWith('- **Golden Drum**'))
+      expect(body[start + 1]).toBe(`  - ${expected}`)
+    }
+  })
+
+  // "Sync everything else to it" is an instruction, and a box that cannot receive cannot obey.
+  //
+  // The exempted box is **Golden Cascade, which cannot send clock either**, and that is the whole
+  // point of choosing it. This case used to mutate Golden Drum, which can send — so the fixture
+  // was one §7.4 ranking change away from electing the very box it wanted exempted, and a
+  // revision that briefly ranked `!canReceiveClock` did exactly that. A box that cannot be the
+  // source cannot spring that trap, whatever §7.4 does next.
+  it('exempts boxes that cannot receive clock from the sync instruction, by name', () => {
+    const devices = GOLDEN_DEVICES.map((d) =>
+      d.name === 'Golden Cascade' ? { ...d, clock: { ...d.clock, canReceiveClock: false } } : d,
+    )
+    const result = resolve({ devices, template: GOLDEN_TEMPLATE, mood: GOLDEN_MOOD, seed: GOLDEN_SEED })
+    // Pin that first, or the assertions below are checking a sentence about the wrong box.
+    expect(result.clockSource?.deviceName).not.toBe('Golden Cascade')
+    const body = phaseBody(renderGuide(result), 3).join('\n')
+    expect(body).toContain('except Golden Cascade')
+    expect(body).toContain('cannot receive clock')
+  })
+
+  /**
+   * The same clause, against the **shipped registry** rather than the golden fixtures.
+   *
+   * §7.4's fixtures churned three times in one session — load removed, a source-only key added
+   * and removed, a `kind` key added and removed — and one of them was found to be a single
+   * ranking change away from electing the very box it wanted exempted. This case is deliberately
+   * not written in terms of who wins: it asserts the winner is someone else *first*, so it
+   * cannot quietly become vacuous the next time the ranking moves.
+   */
+  it('names every deaf box in the real registry, whoever ends up leading', () => {
+    const template = TEMPLATES[0]
+    if (template === undefined) throw new Error('no templates')
+    const result = resolve({ devices: DEVICES, template, mood: NEUTRAL_MOOD, seed: 1 })
+    const deaf = DEVICES.filter((d) => !d.clock.canReceiveClock)
+    expect(deaf.length).toBeGreaterThan(0)
+
+    const body = phaseBody(renderGuide(result), 3).join('\n')
+    for (const device of deaf) {
+      // A box that is itself the source is not a follower and must not be exempted from
+      // following. Pin which case we are in rather than assuming.
+      if (result.clockSource?.deviceId === device.id) continue
+      expect(body, device.id).toContain(`except`)
+      expect(body, device.id).toContain(device.name)
+    }
+    expect(body).toContain('cannot receive clock')
+
+    // And absent when nothing in the rig is deaf, or the loop above is checking a sentence the
+    // renderer prints unconditionally.
+    const hearing = DEVICES.filter((d) => d.clock.canReceiveClock)
+    expect(hearing.some((d) => d.clock.canSendClock)).toBe(true)
+    const clean = phaseBody(
+      renderGuide(resolve({ devices: hearing, template, mood: NEUTRAL_MOOD, seed: 1 })),
+      3,
+    ).join('\n')
+    expect(clean).not.toContain('cannot receive clock')
+    expect(clean).toContain('Sync everything else to it.')
+  })
+
+  // The exemption clause must not appear when it is not true of anything in the rig.
+  it('says plain "Sync everything else to it" when every other box can follow', () => {
+    expect(phaseBody(renderGuide(golden()), 3).join('\n')).toContain('Sync everything else to it.')
+  })
+
   it('derives mixer channels from declared outs alone', () => {
     const body = phaseBody(renderGuide(golden()), 3).join('\n')
     // 3 parts on a box with no individual outs: one stereo channel, not three invented ones.
     expect(body).toContain('mixer: 3 parts, no individual outs')
+  })
+
+  /**
+   * §2.3 gained `io.main: 'none'` for a box with no audio path at all — a Eurorack sequencer has
+   * pitch, gate, modulation and clock outputs and nothing to plug into a mixer. Both renderers
+   * had to stop printing a main out that does not exist; invariant 5 forbids inventing an
+   * assignment to fill a hole, and a fictional output is the same fault in different clothes.
+   */
+  describe('a device with no audio output at all (§2.3)', () => {
+    /** Golden Drum with its audio path removed and nothing put in its place. */
+    function silent(over: Partial<Device['io']> = {}): Device[] {
+      return GOLDEN_DEVICES.map((d) =>
+        d.name === 'Golden Drum'
+          ? { ...d, io: { main: 'none' as const, individualOuts: 0, audioIn: false, usbAudio: false, ...over } }
+          : d,
+      )
+    }
+
+    /** The `n`th sub-line of Golden Drum's block, with its bullet stripped. */
+    function subLine(devices: Device[], n: number): string {
+      const body = phaseBody(
+        renderGuide(resolve({ devices, template: GOLDEN_TEMPLATE, mood: GOLDEN_MOOD, seed: GOLDEN_SEED })),
+        3,
+      )
+      const start = body.findIndex((l) => l.startsWith('- **Golden Drum**'))
+      return (body[start + n] ?? '').trim().replace(/^- /, '')
+    }
+
+    const audioLine = (devices: Device[]) => subLine(devices, 2)
+    const mixerLine = (devices: Device[]) => subLine(devices, 3)
+
+    it('says so plainly rather than naming a bus that is not there', () => {
+      expect(audioLine(silent())).toBe('audio: no audio I/O')
+    })
+
+    it('still lists the audio it does have, when it has some', () => {
+      // `none` says there is no *main* bus, not that there is no audio anywhere. A box can have
+      // individual outs, an input or USB audio and still have nothing to call a main out.
+      expect(audioLine(silent({ individualOuts: 2 }))).toBe('audio: 2 individual outs')
+      expect(audioLine(silent({ audioIn: true, usbAudio: true }))).toBe('audio: USB audio · audio in')
+    })
+
+    it('never names a main bus in the channel plan either', () => {
+      // **The latent trap, tested rather than reasoned about.** `mixerText` interpolates
+      // `io.main` into prose, so `none` would print "one none channel for all". No device in the
+      // library can reach it today — a box with no audio path also has no assignables, so the
+      // `parts === 0` early return fires first — but that is a guarantee in a different
+      // function, which is not a guarantee at all.
+      const mixer = mixerLine(silent())
+      expect(mixer).not.toContain('none channel')
+      expect(mixer).not.toContain('none out')
+      // Golden Drum carries parts, so this is the sentence a real box would get.
+      expect(mixer).toBe('mixer: 3 parts, no audio output: nothing to patch')
+    })
+
+    it('says where the parts that do not fit go, when some of them do', () => {
+      // The other reachable branch: separable outs exist but do not cover every part, and there
+      // is no main bus for the remainder to be summed to.
+      expect(mixerLine(silent({ individualOuts: 2 }))).toBe(
+        'mixer: 3 parts, 2 individual outs: 2 on their own channels, the rest have no output',
+      )
+    })
+
+    it('agrees with the other renderer, byte for byte', () => {
+      // `ioText` and `mixerText` exist twice — once in `lib/core/render.ts` for the Markdown
+      // guide and once in `components/guide/format.ts` for the view. Two implementations of one
+      // contract, which is a finding in its own right; until they are one, this pins that they
+      // agree on the value that is new.
+      for (const io of [
+        { main: 'none' as const, individualOuts: 0, audioIn: false, usbAudio: false },
+        { main: 'none' as const, individualOuts: 2, audioIn: true, usbAudio: false },
+        { main: 'none' as const, individualOuts: 0, audioIn: false, usbAudio: true },
+        { main: 'mono' as const, individualOuts: 0, audioIn: false, usbAudio: false },
+        { main: 'stereo' as const, individualOuts: 4, audioIn: true, usbAudio: true },
+      ]) {
+        const devices = GOLDEN_DEVICES.map((d) => (d.name === 'Golden Drum' ? { ...d, io } : d))
+        const device = devices.find((d) => d.name === 'Golden Drum') as Device
+        const where = JSON.stringify(io)
+        expect(audioLine(devices), where).toBe(`audio: ${ioText(device)}`)
+        // Golden Drum carries three parts in this scenario, so that is the count both sides see.
+        expect(mixerLine(devices), where).toBe(`mixer: ${mixerText(device, 3)}`)
+      }
+    })
   })
 
   it('keeps each box\'s clock, audio and channel plan together in one block', () => {
