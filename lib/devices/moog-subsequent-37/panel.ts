@@ -67,16 +67,16 @@ import type { PanelFeature, PanelLayout } from '@/lib/core'
  * and where the front panel shows what it is doing with them. One cell, because the box is one
  * assignable of two-note paraphony and not two assignables (see `index.ts`).
  *
- * **The KNOB SHIFT strip is drawn as its button and not as its silkscreen.** The real panel
- * prints `DELAY  HOLD  VEL AMT  KB TRACK` across that strip, and drawing those four words is
- * what a faithful simplification would do. It is left out because `lib/core/fx.ts` reads panel
- * labels as evidence of an effects chain, matching `DELAY` as a whole word — and it says so
- * about itself: *"a knob labelled `DELAY` that is really an envelope delay would be read as an
- * effect"*. With the silkscreen drawn, every guide containing this box listed it under **Master
- * FX** as *"carries DELAY · HOLD · VEL AMT · KB TRACK on the panel"*, which is false twice over:
- * this instrument has no time-based effects at all, and the word on the strip is an envelope
- * stage. A drawing detail is worth less than a true sentence, so the strip keeps its button and
- * loses its four words. The engine-side limitation is real and is not fixed here.
+ * **The KNOB SHIFT strip carries its silkscreen.** The real panel prints
+ * `DELAY  HOLD  VEL AMT  KB TRACK` across it, and those four words are what the strip says.
+ *
+ * They were left out when this device was authored, because `lib/core/fx.ts` matched `DELAY` as
+ * a whole word anywhere in a label and listed this box under **Master FX** as *"carries DELAY ·
+ * HOLD · VEL AMT · KB TRACK on the panel"* — false twice over, since the instrument has no
+ * time-based effects and the word on the strip is an envelope stage. Dropping the silkscreen
+ * fixed the sentence by making the drawing less true than the box, which is the wrong way round.
+ * The matcher now requires every word in a label to be an effect token or a qualifier, so this
+ * strip no longer reads as an effects chain and the words can come back.
  *
  * **The wheels are drawn as rounded buttons.** `PanelFeature` has no wheel, and a wheel seen
  * from above is a tall narrow rounded rectangle. The minilogue xd records the same compromise
@@ -296,6 +296,12 @@ export const SUBSEQUENT_37_PANEL: PanelLayout = {
     knob(618.4, 27.4, 'RELEASE'),
     { kind: 'grid', x: 507, y: 46, w: 126, h: 7, cols: 5, rows: 1, shape: 'pad' },
     button(506, 68.6, 'KNOB SHIFT', 9, 9),
+    // The strip's own silkscreen, as one row because that is what it is: four words printed
+    // across a single strip naming what the eight envelope knobs become when SHIFT is held
+    // (pp.30-33). `DELAY` here is the envelope stage before the attack and not an effect, and
+    // keeping the row whole is what lets `lib/core/fx.ts` tell the difference — `DELAY` alone
+    // is a delay effect by any name-based reading, and no token list can say otherwise.
+    { kind: 'label', x: 522.0, y: 66, text: 'DELAY  HOLD  VEL AMT  KB TRACK', align: 'start' },
     knob(522.0, 105.1, 'ATTACK'),
     knob(554.2, 105.1, 'DECAY'),
     knob(586.2, 105.1, 'SUSTAIN'),

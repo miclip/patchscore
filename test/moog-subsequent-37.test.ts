@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { fxSources } from '../lib/core/fx'
+import type { Device } from '../lib/core/index'
 import {
   CHARACTERS,
   DeviceSchema,
@@ -14,7 +16,6 @@ import {
   type RoleRequest,
 } from '../lib/core/index'
 import { device } from '../lib/devices/moog-subsequent-37/index'
-import { fxSources } from '../lib/core/fx'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, ambientDub, industrialTechno } from '../lib/templates/index'
 import { template } from './fixtures'
@@ -761,17 +762,22 @@ describe('the panel (§10)', () => {
   })
 
   it('never lands in the Master FX list, because this box has no effects', () => {
-    // `lib/core/fx.ts` reads panel labels as evidence of an effects chain and matches `DELAY` as
-    // a whole word. The real panel silkscreens `DELAY  HOLD  VEL AMT  KB TRACK` across the KNOB
-    // SHIFT strip — all four are envelope stages — so drawing that silkscreen put this
-    // instrument under **Master FX** in every guide that contained it, claiming a delay it does
-    // not have. The strip therefore keeps its button and loses its four words, and this holds
-    // the repair rather than leaving it to whoever next tidies the panel.
+    // `lib/core/fx.ts` reads panel labels as evidence of an effects chain. The real panel
+    // silkscreens `DELAY  HOLD  VEL AMT  KB TRACK` across the KNOB SHIFT strip — all four are
+    // envelope stages — and while the matcher accepted any effect token anywhere in a label,
+    // drawing that silkscreen put this instrument under **Master FX** in every guide containing
+    // it, claiming a delay it does not have.
+    //
+    // This asserted the workaround for a while: that no label anywhere on the panel contains the
+    // word. That held the drawing hostage to an engine limitation, and the matcher now requires
+    // every word in a label to be an effect token or a qualifier. So the strip is drawn, whole,
+    // and the assertion is the thing that actually matters.
     expect(fxSources(DEVICES).map((s) => s.deviceId)).not.toContain('moog-subsequent-37')
-    const labels = (device.panel?.features ?? []).flatMap((f) =>
-      f.kind === 'label' ? [f.text] : 'label' in f && f.label !== undefined ? [f.label] : [],
+    const strip = (device.panel?.features ?? []).filter(
+      (f) => f.kind === 'label' && f.text.includes('DELAY'),
     )
-    expect(labels.some((l) => /\bDELAY\b/i.test(l))).toBe(false)
+    expect(strip).toHaveLength(1)
+    expect(strip[0]?.kind === 'label' ? strip[0].text : '').toBe('DELAY  HOLD  VEL AMT  KB TRACK')
     // Nor does any recipe parameter name one, which is the module's other evidence route.
     expect(every().some((p) => /\b(DELAY|REVERB|CHORUS|FX)\b/i.test(p.name))).toBe(false)
   })
@@ -882,5 +888,23 @@ describe('the recipe library', () => {
       // KNOB SHIFT: the envelope knobs are the envelope knobs (p.30).
       expect(shift.value, recipe.id).toBe('OFF')
     }
+  })
+})
+
+describe('the KNOB SHIFT strip, split, would read as an effect', () => {
+  it('would be read as an effect if the row were split', () => {
+    const split: Device = {
+      ...device,
+      panel: {
+        ...(device.panel as NonNullable<Device['panel']>),
+        features: [
+          ...(device.panel?.features ?? []).filter(
+            (f) => !(f.kind === 'label' && f.text.includes('DELAY')),
+          ),
+          { kind: 'label', x: 522, y: 66, text: 'DELAY', align: 'start' },
+        ],
+      },
+    }
+    expect(fxSources([split])).not.toEqual([])
   })
 })

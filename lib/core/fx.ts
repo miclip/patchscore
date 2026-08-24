@@ -64,7 +64,62 @@ const EFFECT_TOKENS: readonly string[] = [
  * `toUpperCase`, never `toLocaleUpperCase` (§7.2): the second one answers `I` differently under
  * a Turkish locale and would make detection platform-dependent.
  */
-function isEffectName(text: string): boolean {
+/**
+ * Words that carry no claim of their own and may sit beside an effect name: `MASTER FX`,
+ * `MULTI FX`, `ANALOG FX`, `FX DEPTH`. Every panel label in the library that names an effect is
+ * one token plus at most one of these.
+ */
+const EFFECT_QUALIFIERS: readonly string[] = [
+  '',
+  'ANALOG',
+  'DEPTH',
+  'DIGITAL',
+  'LEVEL',
+  'MASTER',
+  'MIX',
+  'MULTI',
+  'PRM',
+  'RETURN',
+  'SEND',
+  'TIME',
+]
+
+/**
+ * **A panel label**: every word must be an effect token or a qualifier, not merely one of them.
+ *
+ * `some` was the rule and it over-claimed exactly as the note above predicted it would. The
+ * Subsequent 37 silkscreens `DELAY HOLD VEL AMT KB TRACK` over its envelope section — a delay
+ * *stage before the attack*, not a delay effect — and one matching word put a monosynth under
+ * "what processes audio in this rig". The first response was to drop the label from that device's
+ * panel drawing, which fixes the symptom by making the drawing less true than the box.
+ *
+ * A label that names an effect is short and is about the effect. A six-word control-cluster
+ * label that happens to contain `DELAY` is not, and no list of tokens can tell those apart by
+ * looking at one word.
+ *
+ * This can now under-claim: a real effect label with an unlisted qualifier goes unnoticed. That
+ * is the safer error and the note above already says so — an over-claim tells someone their
+ * monosynth has a delay, and an under-claim leaves a line off a list.
+ */
+function isEffectLabel(text: string): boolean {
+  const words = text.toUpperCase().split(/[^A-Z0-9]+/)
+  if (!words.some((word) => EFFECT_TOKENS.includes(word))) return false
+  return words.every((word) => EFFECT_TOKENS.includes(word) || EFFECT_QUALIFIERS.includes(word))
+}
+
+/**
+ * **A recipe parameter name**: one token anywhere is enough, and the strict rule above would be
+ * wrong here.
+ *
+ * The two evidence routes have different naming discipline and it is worth saying why they get
+ * different rules. A panel label is a transcription of silkscreen, and silkscreen runs a whole
+ * strip of unrelated words together — `DELAY  HOLD  VEL AMT  KB TRACK` is one row naming four
+ * envelope stages. A parameter name is chosen by an author for one parameter: `DELAY AMOUNT` is
+ * a delay control because somebody named that control. Requiring every word to be known would
+ * reject it for `AMOUNT`, and the list of words a real effect parameter may contain — amount,
+ * rate, feedback, time, width — is open in a way a panel qualifier list is not.
+ */
+function isEffectParam(text: string): boolean {
   const words = text.toUpperCase().split(/[^A-Z0-9]+/)
   return words.some((word) => EFFECT_TOKENS.includes(word))
 }
@@ -105,7 +160,7 @@ function panelLabels(device: Device): string[] {
   for (const feature of device.panel?.features ?? []) {
     const text =
       feature.kind === 'label' ? feature.text : 'label' in feature ? feature.label : undefined
-    if (text !== undefined && isEffectName(text)) labels.push(text)
+    if (text !== undefined && isEffectLabel(text)) labels.push(text)
   }
   return unique(labels)
 }
@@ -113,7 +168,7 @@ function panelLabels(device: Device): string[] {
 function recipeParams(device: Device): string[] {
   const names: string[] = []
   for (const recipe of device.recipes) {
-    for (const param of recipe.params) if (isEffectName(param.name)) names.push(param.name)
+    for (const param of recipe.params) if (isEffectParam(param.name)) names.push(param.name)
   }
   return unique(names).sort(byCodeUnit)
 }
