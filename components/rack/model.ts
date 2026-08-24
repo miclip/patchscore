@@ -664,6 +664,59 @@ function voiceRect(span: number, rise: number, layout: PanelLayout | undefined):
   return { x: MARGIN_MM, y: PLATE_MM, w: span - 2 * MARGIN_MM, h: rise - PLATE_MM - MARGIN_MM }
 }
 
+/**
+ * One device's panel with no rig around it (#84).
+ *
+ * The catalogue page has no `ResolveResult` and must not manufacture one: nothing is assigned
+ * here, so every cell is unoccupied and no jack is lit. `clockRole: 'isolated'` states that
+ * without a reason attached, because the reason would be "there is no rig", which is a fact
+ * about the page rather than about the box.
+ *
+ * It goes through `jacksFor`, `banksFor` and `voiceRect` like every other panel, so the drawing
+ * on a device page is the drawing in the rack. A second panel builder would be a second answer
+ * to where a box's sockets are.
+ */
+export function soloPanel(device: Device): RackPanel {
+  const span = device.physical.panelSpanMm
+  const layout = device.panel
+  const rise = layout?.panelRiseMm ?? PANEL_HEIGHT_MM
+  const { jacks, hidden: hiddenJacks } = jacksFor(device, span, rise)
+  const { banks, hidden: hiddenCells } = banksFor(
+    device,
+    new Set<string>(),
+    voiceRect(span, rise, layout),
+  )
+  const railY = rise + RAIL_MM / 2
+
+  const panel: RackPanel = {
+    deviceId: device.id,
+    name: device.name,
+    maker: device.maker,
+    kind: device.kind,
+    spanMm: span,
+    riseMm: rise,
+    xMm: 0,
+    topMm: 0,
+    row: 0,
+    generated: layout === undefined,
+    spanVerified: device.physical.verified,
+    clockRole: 'isolated',
+    parts: 0,
+    jacks,
+    banks,
+    hiddenCells,
+    hiddenJacks,
+    internalPatch: [],
+    outAt: { x: span - JACK_SIDE_MM, y: railY },
+    inAt: { x: JACK_SIDE_MM, y: railY },
+  }
+  if (layout !== undefined) {
+    panel.layout = layout
+    panel.layoutVerified = layout.verified
+  }
+  return panel
+}
+
 // ---------------------------------------------------------------------------
 // The model
 // ---------------------------------------------------------------------------

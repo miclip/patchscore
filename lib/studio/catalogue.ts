@@ -89,3 +89,21 @@ export function countLine<T>(view: PickerView<T>, noun: CatalogueSource<T>['noun
   if (view.filtering) return `${view.matched} of ${view.total} match`
   return `${view.total} ${view.total === 1 ? noun.one : noun.many}`
 }
+
+// ---------------------------------------------------------------------------
+// Naming and addressing
+// ---------------------------------------------------------------------------
+
+/**
+ * How the box is named in prose: maker and name, unless the manifest's name already carries the
+ * maker. One of the thirteen does, and `Zoom Zoom LiveTrak L-8` is not a device anybody owns.
+ */
+export function deviceLabel(device: Device): string {
+  const lower = device.name.toLowerCase()
+  return lower.startsWith(device.maker.toLowerCase()) ? device.name : `${device.maker} ${device.name}`
+}
+
+/** `/devices/roland-tr-1000`. One place, so the sitemap, the card and the canonical agree. */
+export function deviceHref(device: Device): string {
+  return `/devices/${device.id}`
+}
