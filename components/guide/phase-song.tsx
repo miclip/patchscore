@@ -1,17 +1,6 @@
 import type { ResolveResult } from '@/lib/core'
 import { num } from './format'
-
-/** A ten-cell meter. Integer cells from a fraction, so no float ever reaches the page. */
-function EnergyMeter({ energy }: { energy: number }) {
-  const filled = Math.round(energy * 10)
-  return (
-    <span className="meter" role="img" aria-label={`energy ${num(energy)}`}>
-      {Array.from({ length: 10 }, (_, i) => (
-        <span key={i} className={i < filled ? 'meter-cell on' : 'meter-cell'} />
-      ))}
-    </span>
-  )
-}
+import { ProgressionTable, SectionTable } from './song-tables'
 
 /** §8 phase 1. BPM, key, hook harmony, and the bar-count energy map. */
 export function PhaseSong({ result }: { result: ResolveResult }) {
@@ -57,55 +46,12 @@ export function PhaseSong({ result }: { result: ResolveResult }) {
       </dl>
 
       <h4>Progression</h4>
-      <div className="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Degree</th>
-              <th scope="col" className="numeric">
-                Bars
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {template.harmony.progression.map((step, i) => (
-              <tr key={`${step.degree}-${i}`}>
-                <td className="mono">{step.degree}</td>
-                <td className="mono numeric">{num(step.bars)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ProgressionTable harmony={template.harmony} />
 
       <h4>
         Arrangement <span className="quiet">{num(totalBars)} bars total</span>
       </h4>
-      <div className="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Section</th>
-              <th scope="col" className="numeric">
-                Bars
-              </th>
-              <th scope="col">Energy</th>
-            </tr>
-          </thead>
-          <tbody>
-            {template.structure.map((section) => (
-              <tr key={section.name}>
-                <td>{section.name}</td>
-                <td className="mono numeric">{num(section.bars)}</td>
-                <td>
-                  <EnergyMeter energy={section.energy} />{' '}
-                  <span className="mono quiet">{num(section.energy)}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <SectionTable structure={template.structure} />
     </>
   )
 }

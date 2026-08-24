@@ -220,7 +220,7 @@ function Feature({ f }: { f: PanelFeature }) {
 
 const GRID_GAP = 1.2
 
-function Panel({ panel }: { panel: RackPanel }) {
+export function Panel({ panel }: { panel: RackPanel }) {
   const { spanMm, riseMm } = panel
   // Scaled to the panel, not a fixed size: 9 mm of silkscreen on a 130 mm panel is a banner, and
   // 4.5 mm on a 486 mm one is unreadable. The clamp keeps a narrow panel's name legible without

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { REPOSITORY_URL, feedbackLinks } from '@/lib/studio/feedback'
 import type { FeedbackContext } from '@/lib/studio/feedback'
 
@@ -26,7 +27,20 @@ export function Footer(props: FeedbackContext) {
         No LLM. Every value comes from authored device data and a deterministic resolver, so the
         same rig, direction and seed always produce the same guide.
       </p>
+      {/*
+        The catalogue is reachable from here and from a search result, and from nowhere else.
+        Seventeen authored pages that only a crawler could find is most of #84's value thrown
+        away, and these are internal links, so they carry weight a sitemap entry does not.
+
+        `Link`, not `a`: these stay inside the app, unlike everything below them.
+      */}
       <ul className="footer-links">
+        <li>
+          <Link href="/devices">Browse devices</Link>
+        </li>
+        <li>
+          <Link href="/directions">Browse directions</Link>
+        </li>
         <li>
           <a href={REPOSITORY_URL}>Source on GitHub</a>
         </li>
