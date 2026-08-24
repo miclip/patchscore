@@ -34,7 +34,7 @@ glance whether the screen in front of you is the one the line is about.
   - p1 · exact `hard` · every section
 - **`sub`** → MC-101 · TONE Track 1 — *Sine sub, one note at a time, nothing above the fundamental*
   - p1 · exact `dark` · every section
-- **`bass-mid`** → Digitakt II · Track 1 — *Repitched bass with the multi-mode filter opened by the envelope*
+- **`bass-mid`** → MC-101 · TONE Track 2 — *Overdriven mid bass with a bit of slide between notes*
   - p2 · exact `dirty` · every section
 - **`clap`** → TR-1000 · HC — *Wide clap sitting on top of the snare*
   - p2 · exact `bright` · every section
@@ -44,12 +44,12 @@ glance whether the screen in front of you is the one the line is about.
   - p3 · exact `dark` · every section
 - **`open-hat`** → TR-8S · OH — *Open hat with the top rolled off*
   - p3 · exact `dark` · every section
-- **`stab`** → MC-101 · TONE Track 2 — *Short chord stab, played on the track*
+- **`stab`** → MC-101 · TONE Track 3 — *Short chord stab, played on the track*
   - p3 · exact `hard` · 3 notes at once on one polyphonic voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
-- **`pad`** → MC-101 · TONE Track 3 — *Slow polyphonic pad, opening under the drums*
-  - p4 · substituted — asked `dark`, authored `soft` · 3 notes at once on one polyphonic voice · every section
+- **`pad`** → minilogue xd · Voice — *Low pad with the filter shut down over the top of it*
+  - p4 · exact `dark` · 3 notes at once on one polyphonic voice · every section
 - **`riser`** → TR-8S · CC — *A sample played backwards into the change*
   - p4 · exact `bright` · Build, Breakdown
 - **`noise`** → CRAVE · Voice — *Raw noise through the filter, oscillator out of the mix*
@@ -67,10 +67,10 @@ None.
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
   - mixer: 1 part, no individual outs: one mono channel for all
-- **Digitakt II** — sampler · 1 part
+- **Digitakt II** — sampler · 0 parts
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio · audio in
-  - mixer: 1 part, no individual outs: one stereo channel for all
+  - mixer: no parts assigned; nothing to patch
 - **ZOIA Euroburo** — fx-processor · 0 parts
   - clock: receives clock only · analog-clock/midi-din
   - audio: stereo main out · audio in
@@ -83,6 +83,10 @@ None.
   - clock: sends clock · usb/analog-clock
   - audio: no audio I/O
   - mixer: no parts assigned; nothing to patch
+- **minilogue xd** — synth · 1 part
+  - clock: sends clock · midi-din/usb/sync
+  - audio: stereo main out
+  - mixer: 1 part, no individual outs: one stereo channel for all
 - **Tracker Mini** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio · audio in
@@ -123,9 +127,9 @@ which not every maker agrees with — the MIDI number is the form nothing disagr
 
 Where a role has more than one hook authored, rerolling the seed picks a different one.
 
-### `bass-mid` — Digitakt II · Track 1
+### `bass-mid` — MC-101 · TONE Track 2
 
-**Repitched bass with the multi-mode filter opened by the envelope** — settings in Sound design
+**Overdriven mid bass with a bit of slide between notes** — settings in Sound design
 
 2 bars in F minor.
 
@@ -137,9 +141,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - bar 2 · step 23 · len 2 · `Db2` (`C#2`) · 6th · MIDI 37
 - bar 2 · step 27 · len 4 · `C2` · 5th · MIDI 36
 
-### `pad` — MC-101 · TONE Track 3
+### `pad` — minilogue xd · Voice
 
-**Slow polyphonic pad, opening under the drums** — settings in Sound design
+**Low pad with the filter shut down over the top of it** — settings in Sound design
 
 8 bars in F minor.
 
@@ -147,7 +151,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - bar 5 · step 65 · len 32 · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
 - bar 7 · step 97 · len 32 · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`) · 7th 2nd 4th · MIDI 63 67 70
 
-### `stab` — MC-101 · TONE Track 2
+### `stab` — MC-101 · TONE Track 3
 
 **Short chord stab, played on the track** — settings in Sound design
 
@@ -234,9 +238,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `downbeat` → `note-length` 12 on step 1
   - ↳ hint: SEQ mode: hold [SHIFT], press the pad
 
-### `bass-mid` — Digitakt II · Track 1
+### `bass-mid` — MC-101 · TONE Track 2
 
-**Repitched bass with the multi-mode filter opened by the envelope** — settings in Sound design
+**Overdriven mid bass with a bit of slide between notes** — settings in Sound design
 
 **Intro, Outro** — 32 steps, band 0
 
@@ -246,11 +250,6 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 ```
 - `downbeat` — 1, 17
 
-**On this box** — Digitakt II
-
-- `downbeat` → `velocity` 112, `note-length` 12 on steps 1, 17
-  - ↳ hint: Hold a [TRIG] key, turn DATA ENTRY
-
 **Build, Breakdown** — 32 steps, band 1
 
 ```
@@ -258,11 +257,6 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 17 x··· ···· x··· ····
 ```
 - `downbeat` — 1, 9, 17, 25
-
-**On this box** — Digitakt II
-
-- `downbeat` → `velocity` 112, `note-length` 12 on steps 1, 9, 17, 25
-  - ↳ hint: Hold a [TRIG] key, turn DATA ENTRY
 
 **Drop, Peak** — 32 steps, band 3
 
@@ -275,10 +269,10 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `offbeat` — 7, 11, 23, 27
 - `accent` — 31 (vel 110)
 
-**On this box** — Digitakt II
+**On this box** — MC-101
 
-- `downbeat` → `velocity` 112, `note-length` 12 on steps 1, 9, 17, 25
-  - ↳ hint: Hold a [TRIG] key, turn DATA ENTRY
+- `accent` → `motion-sound` 96 on step 31
+  - ↳ hint: On EDIT STEP, press the [VALUE] dial
 
 ### `clap` — TR-1000 · HC
 
@@ -428,7 +422,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `downbeat` — 13
 - `accent` — 15 (vel 106)
 
-### `stab` — MC-101 · TONE Track 2
+### `stab` — MC-101 · TONE Track 3
 
 **Short chord stab, played on the track** — settings in Sound design
 
@@ -484,9 +478,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `first-hit` → `accent` true on step 1
   - ↳ hint: ACCENT [STEP], then step keys
 
-### `pad` — MC-101 · TONE Track 3
+### `pad` — minilogue xd · Voice
 
-**Slow polyphonic pad, opening under the drums** — settings in Sound design
+**Low pad with the filter shut down over the top of it** — settings in Sound design
 
 **Intro, Outro** — no pattern authored for `pad` at any band (asked for band 0)
 
@@ -571,20 +565,6 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `OUT · ENV` → `IN · VCF CUTOFF`
   - ↳ note: The filter closing across each hit
 
-### Digitakt II
-
-*Values below cite Digitakt II User Manual, OS 1.15A.*
-
-#### Track 1 — `bass-mid`: Repitched bass with the multi-mode filter opened by the envelope
-
-- **SRC MACHINE** `REPITCH`
-- **PLAY** `FORWARD`
-- **FLTR MACHINE** `MULTI-MODE`
-- **AMP MODE** `ADSR`
-- **LFO MODE** `TRG`
-- **FADE** `-20` (-64…63)
-  - ↳ cite: range manual — Digitakt II User Manual OS 1.15A, p.58
-
 ### Cascadia
 
 *Values below cite Intellijel Cascadia Manual, v1.1 (2023.04.18).*
@@ -622,6 +602,90 @@ Routing — played from MIDI IN or EXT IN PITCH/GATE — Cascadia has no sequenc
 - `VCO B · SQUARE` → `RING MOD · IN 2`
   - ↳ note: breaks the VCO B sine normal — a square through the ring modulator is harsher
 
+### minilogue xd
+
+*Values below cite minilogue xd/minilogue xd module Owner's Manual, E 9.*
+
+#### Voice — `pad`: Low pad with the filter shut down over the top of it
+
+Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
+
+*Ranges cite manual — minilogue xd Owner's Manual E 9, p.24.*
+
+- **PORTAMENTO** `20` (0…127)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.17
+- **SWING** `0` % (-75…75 %)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.41
+  - ↳ note: 0 is straight; the arpeggiator uses the same value
+  - ↳ hint: EDIT MODE, PROGRAM EDIT, button 7
+- **VOICE MODE TYPE** `POLY`
+- **VOICE MODE DEPTH** `0` (0…1023)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.17
+  - ↳ note: Left at 0 — turning right crosses into DUO, which spends two voices on every key
+- **VCO 1 · WAVE** `SAW`
+- **VCO 1 · OCTAVE** `16'`
+- **VCO 1 · PITCH** `0` c (-1200…1200 c)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
+- **VCO 1 · SHAPE** `380` (0…1023)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
+  - ↳ note: Shape, complexity, or duty cycle of the selected wave
+- **VCO 2 · WAVE** `TRI`
+- **VCO 2 · OCTAVE** `8'`
+- **VCO 2 · PITCH** `-9` c (-1200…1200 c)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
+- **VCO 2 · SHAPE** `200` (0…1023)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
+- **VCO 2 · SYNC** `OFF`
+  - ↳ note: Locks oscillator 2 to the phase of oscillator 1
+- **VCO 2 · RING** `OFF`
+  - ↳ note: Oscillator 1 ring-modulates oscillator 2
+- **CROSS MOD DEPTH** `0` (0…1023)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.19
+  - ↳ note: Oscillator 1 modulating the pitch of oscillator 2
+- **MULTI ENGINE · NOISE/VPM/USR** `NOISE`
+- **MULTI ENGINE · TYPE** `Low`
+- **MULTI ENGINE · SHAPE** `400` Hz (10…21000 Hz)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.20
+  - ↳ note: CUTOFF — the low-pass filter on the noise
+- **MIXER · VCO 1** `700` (0…1023)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
+- **MIXER · VCO 2** `540` (0…1023)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
+- **MIXER · MULTI** `120` (0…1023)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
+- **CUTOFF** `300` (0…1023)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.23
+  - ↳ note: Set too low and the patch may be barely audible
+- **RESONANCE** `180` (0…1023)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.23
+- **DRIVE** `50%`
+  - ↳ note: The filter drive circuit, in three stages
+- **KEYTRACK** `50%`
+  - ↳ note: 100% moves the cutoff with the key, centred on C4
+- **AMP EG · ATTACK** `620` (0…1023)
+- **AMP EG · DECAY** `760` (0…1023)
+- **AMP EG · SUSTAIN** `800` (0…1023)
+- **AMP EG · RELEASE** `780` (0…1023)
+- **EG · ATTACK** `500` (0…1023)
+- **EG · DECAY** `700` (0…1023)
+- **EG · INT** `-18` % (-100…100 %)
+  - ↳ note: Negative applies the envelope downwards
+- **EG · TARGET** `CUTOFF`
+- **LFO · WAVE** `TRI`
+- **LFO · MODE** `NORMAL`
+- **LFO · RATE** `110` (0…1023)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.25
+- **LFO · INT** `70` (0…511)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.25
+  - ↳ hint: Hold SHIFT, turn INT to invert
+- **LFO · TARGET** `CUTOFF`
+- **EFFECTS · DEL/REV/MOD** `REV`
+  - ↳ note: Selects which effect the two knobs below are setting; the other two keep their stored values
+- **EFFECTS · OFF/ON/SELECT** `ON`
+  - ↳ hint: Hold SHIFT, flip to SELECT
+- **EFFECTS · DEPTH** `62` % (0…100 %)
+  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
+
 ### MC-101
 
 *Values below cite MC-101 Reference Manual, eng01.*
@@ -650,7 +714,31 @@ Routing — Keep the sub mono and dry — the reverb and delay sends stay at 0
   - ↳ note: One setting for the whole clip, not per step
   - ↳ hint: Hold [SHIFT], press PAD [CLIP]
 
-#### TONE Track 2 — `stab`: Short chord stab, played on the track
+#### TONE Track 2 — `bass-mid`: Overdriven mid bass with a bit of slide between notes
+
+*Ranges cite manual — MC-101 Reference Manual eng01, p.45.*
+
+- **MONO/POLY** `MONO`
+- **PORTAMENT** `ON`
+- **PORTA TIME** `18` (0…127)
+  - ↳ note: TONE is also selectable, deferring to the tone
+- **CUTOFF** `12` (-64…63)
+- **RESONANCE** `16` (-64…63)
+- **DECAY** `-14` (-64…63)
+- **MFX TYPE** `29 Overdrive`
+- **DRIVE** `62` (0…127)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.63
+  - ↳ hint: Hold [SHIFT], press [SOUND]
+- **TONE** `74` (0…127)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.63
+- **HIGH GAIN** `-4` dB (-15…15 dB)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.63
+- **SHUFFLE** `0` (-50…50)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
+  - ↳ note: One setting for the whole clip, not per step
+  - ↳ hint: Hold [SHIFT], press PAD [CLIP]
+
+#### TONE Track 3 — `stab`: Short chord stab, played on the track
 
 Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 
@@ -663,26 +751,6 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **CUTOFF** `20` (-64…63)
 - **RESONANCE** `10` (-64…63)
 - **DELAY SEND** `18` (0…127)
-- **SHUFFLE** `0` (-50…50)
-  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
-  - ↳ note: One setting for the whole clip, not per step
-  - ↳ hint: Hold [SHIFT], press PAD [CLIP]
-
-#### TONE Track 3 — `pad`: Slow polyphonic pad, opening under the drums
-
-Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
-
-*Ranges cite manual — MC-101 Reference Manual eng01, p.45.*
-
-- **MONO/POLY** `POLY`
-- **ATTACK** `34` (-64…63)
-- **RELEASE** `40` (-64…63)
-- **CUTOFF** `-12` (-64…63)
-- **VIB RATE** `-14` (-64…63)
-- **VIB DEPTH** `8` (-64…63)
-- **REVERB SEND** `68` (0…127)
-- **DELAY SEND** `24` (0…127)
-- **LEVEL** `92` (0…127)
 - **SHUFFLE** `0` (-50…50)
   - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
   - ↳ note: One setting for the whole clip, not per step

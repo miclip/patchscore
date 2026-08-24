@@ -254,7 +254,7 @@ describe('a real polyphonic voice is preferred', () => {
 // The production slice: a real device, a real template, a real chord sample
 // ---------------------------------------------------------------------------
 
-describe('the Tracker Mini chord pad (§12.4, production)', () => {
+describe('the Tracker Mini chord recipes (§12.4, production)', () => {
   const trackerOnly = DEVICES.filter((d) => d.id === 'polyend-tracker-mini')
   const only = (id: string) => DEVICES.filter((d) => d.id === id)
 
@@ -309,12 +309,116 @@ describe('the Tracker Mini chord pad (§12.4, production)', () => {
     expect(pad?.recipe.outcome).toBe('substituted')
   })
 
-  it('leaves the stab an honest gap on a Tracker-only rig', () => {
-    // `stab` is three notes too, and nothing here authors a chord sample for it. Invariant 5:
-    // the hole is shown rather than filled with a monophonic bleep called a stab.
+  it('carries the stab from a chord sample too, on the same voice as the pad', () => {
+    // `stab` is three notes on a box whose every track sounds one, exactly as `pad` is. It used
+    // to be an honest gap here and the pad did not, which was a difference between two roles
+    // that nothing about the machine justified — the pad had a recipe because somebody had
+    // written one. Both are now reachable the same documented way (p.104, p.128).
     const { result } = padOf(trackerOnly)
-    expect(result.assignments.find((a) => a.role === 'stab')).toBeUndefined()
-    expect(result.gaps.find((g) => g.role === 'stab')?.reason).toBe('no-capable-voice')
+    expect(result.gaps.find((g) => g.role === 'stab')).toBeUndefined()
+    const stab = result.assignments.find((a) => a.role === 'stab')
+    expect(stab?.recipe.id).toBe('tm-stab-hard-chord')
+    // Read back off the manifest rather than the assignment: `ResolvedRecipeRef` is the
+    // renderer's view and carries no `realisation`, which is the field under test.
+    const authored = (DEVICES.find((d) => d.id === 'polyend-tracker-mini') as Device).recipes.find(
+      (r) => r.id === 'tm-stab-hard-chord',
+    ) as Recipe
+    expect(realisationOf(authored)).toBe('sampled-chord')
+    // Still one note as far as the track is concerned, however many are heard (§12.4).
+    expect(requiredVoicePolyphony(authored, 3)).toBe(1)
+  })
+})
+
+/**
+ * §12.4's two-part bar, as tests. A chord sample standing in for a pad has to do two things:
+ * **sustain**, and **transpose per step** so it follows the harmonic cycle. A box that can hold a
+ * chord and not move it plays the same chord under every degree, which is a drone that disagrees
+ * with the harmony rather than a pad — so the substitution is declined and the gap is shown.
+ *
+ * These are the declines, asserted where someone will look when they wonder why their drum
+ * machine has no pad. The evidence for each is in the manifest that declines it.
+ */
+describe('the boxes that can hold a chord and cannot move it (§12.4)', () => {
+  const only = (id: string) =>
+    resolve({
+      devices: DEVICES.filter((d) => d.id === id),
+      template: industrialTechno,
+      mood: moodState(),
+      seed: 18,
+    })
+
+  it('authors no sampled chord for either Roland drum machine', () => {
+    // Both pass the sustain half outright — the TR-8S has `Hold Mode: Whole`, "the sound is
+    // heard to the end without decaying" (Reference p.31), and the TR-1000 the same control as
+    // `HLD MODE WHOLE`, "the entire sample is played" (Reference p.64). Both fail the second
+    // half: the only per-step-recordable pitch control on either is a [TUNE] knob the manual
+    // describes as "Adjusts the tuning (pitch)" with no semitone scale, and the semitone control
+    // each of them does print — `Coarse Tune -24–0–+24` / `COARSE -12St–12St` — is not reachable
+    // from a knob whose motion the sequencer records per step.
+    for (const id of ['roland-tr-8s', 'roland-tr-1000']) {
+      const device = DEVICES.find((d) => d.id === id) as Device
+      expect(device.recipes.filter((r) => realisationOf(r) === 'sampled-chord'), id).toEqual([])
+    }
+  })
+
+  it('leaves pad and stab as gaps on a drum-machine-only rig, rather than a drone', () => {
+    for (const id of ['roland-tr-8s', 'roland-tr-1000']) {
+      const result = only(id)
+      for (const role of ['pad', 'stab']) {
+        expect(result.assignments.find((a) => a.role === role), `${id} ${role}`).toBeUndefined()
+        expect(result.gaps.find((g) => g.role === role), `${id} ${role}`).toBeDefined()
+      }
+    }
+  })
+
+  it('still gaps the MC-101 pad on an MC-101-only rig, for the documented reason', () => {
+    // The drum pool loads user samples and could hold a chord. `Key Offset` is the semitone
+    // control (Reference p.47) and it is a per-pad kit setting, not step-lockable; the motion
+    // recording that *is* per step reaches only track-wide Coarse Tune (pp.27-28), which would
+    // detune the kick and the clap on the same steps. Declining is the honest answer: a gap says
+    // "your rig cannot do this", where that advice would say "do this" and be wrong.
+    const drum = DEVICES.find((d) => d.id === 'roland-mc-101') as Device
+    expect(drum.recipes.filter((r) => r.voice === 'drum-pad' && realisationOf(r) === 'sampled-chord')).toEqual([])
+    // And the consequence, on the rig where it bites. The three TONE tracks go to higher-priority
+    // tonal parts, so `pad` is left contending for a voice that is already carrying one — while
+    // eight drum pads sit unoccupied, able to load a chord sample and unable to transpose it.
+    // That is the shape of the decline: the capacity exists and the capability does not.
+    const result = only('roland-mc-101')
+    expect(result.assignments.find((a) => a.role === 'pad')).toBeUndefined()
+    const gap = result.gaps.find((g) => g.role === 'pad')
+    expect(gap?.reason).toBe('no-room')
+    if (gap?.reason !== 'no-room') throw new Error('expected no-room')
+    expect(gap.because).toBe('contended')
+    expect(gap.detail).toContain('TONE Track')
+    // Nothing was quietly handed to a drum pad instead.
+    expect(result.assignments.every((a) => a.assignable.poolId !== 'drum-pad' || a.role !== 'pad')).toBe(true)
+  })
+
+  it('adds no sampled substitute to a voice that is genuinely polyphonic', () => {
+    // The Deluge pool sounds eight notes and the minilogue xd four, and both already carry a
+    // real pad and stab. §7.1 ranks `polyphonic-voice` ahead of `sampled-chord` *and* ahead of
+    // character fidelity for any multi-note part, so a chord-sample twin on those voices could
+    // never be chosen — not rarely, never. Authoring one would ship a recipe no guide can render.
+    for (const id of ['synthstrom-deluge', 'korg-minilogue-xd']) {
+      const device = DEVICES.find((d) => d.id === id) as Device
+      expect(device.recipes.filter((r) => realisationOf(r) === 'sampled-chord'), id).toEqual([])
+    }
+  })
+
+  it('is why a real polyphonic voice takes the part off every sampled substitute', () => {
+    // The rule those declines rest on, exercised rather than assumed: put the samplers and the
+    // real polyphonic boxes in one rig and the pad lands on a polyphonic voice.
+    const result = resolve({
+      devices: DEVICES.filter((d) =>
+        ['polyend-tracker-mini', 'elektron-digitakt-ii', 'korg-minilogue-xd'].includes(d.id),
+      ),
+      template: industrialTechno,
+      mood: moodState(),
+      seed: 18,
+    })
+    const pad = result.assignments.find((a) => a.role === 'pad')
+    expect(pad?.assignable.deviceId).toBe('korg-minilogue-xd')
+    expect(pad?.assignable.polyphony).toBeGreaterThanOrEqual(3)
   })
 })
 
@@ -488,14 +592,18 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
     expect(gap.notes).toBe(3)
   })
 
-  it('calls the Tracker Mini stab `polyphony` — it plays stabs, one note at a time', () => {
-    const { gap } = gapFor(rig('polyend-tracker-mini'), 'stab')
+  it('calls the CRAVE stab `polyphony` — it plays stabs, one note at a time', () => {
+    // This exemplar was the Tracker Mini until it gained a `sampled-chord` stab, and the move is
+    // the taxonomy working rather than a test being repaired: a box stops being an example of
+    // "declares the role, cannot reach the notes" precisely when somebody authors the recipe
+    // that reaches them. The CRAVE cannot be rescued the same way — it has no sampler.
+    const { gap } = gapFor(rig('behringer-crave'), 'stab')
     expect(gap).toMatchObject({ reason: 'no-capable-voice', because: 'polyphony' })
     if (gap?.reason !== 'no-capable-voice') throw new Error('expected no-capable-voice')
     expect(gap.notes).toBe(3)
-    // Both pools declare `stab` and both are monophonic, so all sixteen tracks are named as
-    // voices that play the part and cannot hold the chord.
-    expect(gap.roleVoices.length).toBe(16)
+    // One analog voice, declaring `stab`, monophonic: named as the voice that plays the part
+    // and cannot hold the chord.
+    expect(gap.roleVoices.length).toBe(1)
     expect(gap.roleVoices.every((a) => a.polyphony === 1)).toBe(true)
     // `capable` still means "could have carried this part", so it stays empty. The two lists
     // are not interchangeable and merging them would make `no-recipe` unreadable.
@@ -503,12 +611,22 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
   })
 
   it('does not report the Tracker Mini pad as a gap at all — the chord recipe carries it', () => {
-    // The contrast that makes the taxonomy worth having: same box, same note count, and `pad`
-    // resolves while `stab` does not, purely because one has a `sampled-chord` recipe authored
-    // and the other does not.
+    // The contrast that makes the taxonomy worth having, and it is now between *boxes* rather
+    // than between roles: same note count, same monophonic voice, and the Tracker Mini resolves
+    // both `pad` and `stab` where the CRAVE above resolves neither. Nothing about either box's
+    // polyphony differs — one can load a chord as a sample and move it per step, and the other
+    // has no sampler at all.
+    //
+    // This used to read "`pad` resolves while `stab` does not, purely because one has a
+    // `sampled-chord` recipe authored and the other does not", which was true and was also a
+    // description of an authoring gap rather than of the machine. The gap is closed; the
+    // taxonomy point survives it.
     const { result, gap } = gapFor(rig('polyend-tracker-mini'), 'pad')
     expect(gap).toBeUndefined()
     expect(result.assignments.find((a) => a.role === 'pad')?.recipe.id).toBe('tm-pad-soft-chord')
+    const stab = gapFor(rig('polyend-tracker-mini'), 'stab')
+    expect(stab.gap).toBeUndefined()
+    expect(stab.result.assignments.find((a) => a.role === 'stab')?.recipe.id).toBe('tm-stab-hard-chord')
   })
 
   it('says the two things differently, in Markdown and in the app', () => {
@@ -519,7 +637,7 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
       seed: 18,
     })
     const shortOfNotes = resolve({
-      devices: rig('polyend-tracker-mini'),
+      devices: rig('behringer-crave'),
       template: industrialTechno,
       mood: moodState(),
       seed: 18,
@@ -534,9 +652,26 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
       renderToStaticMarkup(createElement(Guide, { result: shortOfNotes, seed: 1 })),
     ]) {
       expect(text).toContain('needs 3 notes at once and every voice here is monophonic')
-      // The wrong sentence here would send someone shopping for a box they already own.
-      expect(text).not.toContain('nothing in your rig plays this part')
     }
+
+    // **Asserted per gap line, not per document.** A one-voice rig gaps a dozen parts for
+    // several different reasons at once — the CRAVE's guide says "nothing in your rig plays
+    // this part" about `clap` in the same list where it says the polyphony sentence about
+    // `stab`. Checking the whole page for the *absence* of the other sentence only ever passed
+    // because the rig it was written against happened to have no `no-such-role` gap, which is a
+    // property of that rig and not of the taxonomy. The claim that matters is that each line
+    // carries the right one, and the wrong one here would send someone shopping for a box they
+    // already own.
+    const lineFor = (result: ResolveResult, role: string) =>
+      renderGuide(result)
+        .split('\n')
+        .find((l) => l.startsWith(`- \`${role}\``)) as string
+    expect(lineFor(shortOfNotes, 'stab')).toContain(
+      'needs 3 notes at once and every voice here is monophonic',
+    )
+    expect(lineFor(shortOfNotes, 'stab')).not.toContain('nothing in your rig plays this part')
+    expect(lineFor(noRole, 'pad')).toContain('nothing in your rig plays this part')
+    expect(lineFor(noRole, 'pad')).not.toContain('monophonic')
   })
 
   it('names the real ceiling when the role voices are not all monophonic', () => {
@@ -634,8 +769,19 @@ describe('the industrial pad hook on a Tracker-only rig (i–VI–VII)', () => {
       expect(text).toContain('Trigger')
     }
     // One trigger per occurrence, carrying its step, length, transposition and resulting chord.
+    //
+    // Scoped to the `pad` block, because the Tracker Mini now carries the `stab` from a chord
+    // sample too and renders its own trigger list under its own heading. Splitting on the
+    // heading keeps the claim exhaustive — "these three and no others *for this part*" — where
+    // an `arrayContaining` would quietly stop noticing a fourth.
     const md = renderGuide(sampled)
-    const triggers = md.split('\n').filter((l) => /^- bar \d+ · step \d+ · len \d+ · sample [A-Z] · /.test(l))
+    const padBlock = md
+      .split('\n### ')
+      .find((block) => block.startsWith('`pad`')) as string
+    expect(padBlock).toBeDefined()
+    const triggers = padBlock
+      .split('\n')
+      .filter((l) => /^- bar \d+ · step \d+ · len \d+ · sample [A-Z] · /.test(l))
     expect(triggers).toEqual([
       '- bar 1 · step 1 · len 64 · sample A · as recorded · `F3` `Ab3` (`G#3`) `C4`',
       '- bar 5 · step 65 · len 32 · sample B · as recorded · `Db4` (`C#4`) `F4` `Ab4` (`G#4`)',

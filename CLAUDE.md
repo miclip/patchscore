@@ -128,9 +128,41 @@ Two things about reading them:
   precisely so none of it is redistributed. Wanting a device image to make a panel work means the
   panel design is underweight; raise it rather than reaching for the manual.
 
+**A cited range can still be the wrong range.** Where a manual prints more than one scale for a
+control, the citation beside a value proves nothing on its own — the value has to come from the
+scale that is actually in force. Two devices have hit this: the TR-8S's INST table splits by
+loaded tone, so `SNAPPY` only exists for ACB tones of the SD category; and the minilogue xd has
+four knobs whose scale a switch elsewhere replaces, including `SHAPE`, which under NOISE has four
+separate printed ranges in three different units. Both solve it the same way — the recipe carries
+the switch or tone as a param, so the pairing cannot come apart. A value read off the wrong one of
+two printed scales is made up, however carefully the range beside it is cited.
+
 Actual values only: `DECAY 38`, never "short decay". Anything not manual-verified is flagged
 provisional and surfaced as such in the UI. Roughly 15–20 recipes covers a device well; there is
 no expectation of filling all 23 roles × 6 characters.
+
+## Reading on a phone (#21)
+
+§8 says the guide is read *at the machine* — standing at a rack, hands busy, often in poor light.
+That is a phone or a tablet propped against something far more often than a laptop, so narrow
+viewports are a primary context and not a fallback. Standing rules, all settled in #21:
+
+- **The rack diagram** must not be squashed to fit (relative width was the point), must not scroll
+  horizontally (cables get cut by the viewport edge, which is exactly what the diagram exists to
+  show), and must not be hidden on mobile. `prefers-reduced-motion` gates the cable animation, and
+  the diagram stays comprehensible without it.
+- **Knobs**: `touch-action: none` on the knob itself and nothing wider, or the page locks up when
+  someone tries to scroll past a control. Hit target and visual size are decoupled — a knob drawn
+  to look right on a panel is smaller than a 44px target.
+- **Typed input is the accessible path and the precise one**, so it matters more on a phone, not
+  less. It must never be a hidden fallback behind a drag gesture. Shift-for-fine-adjustment has no
+  touch equivalent; typed-only fine adjustment on touch is a legitimate answer if stated.
+- **Parameter values stay monospace and legible at arm's length.** Wrap or scroll; do not shrink
+  type to fit.
+- **Anything wide** — tables, code blocks, long rows — scrolls inside its own `overflow-x: auto`
+  container. The page body never scrolls horizontally.
+- **Hints** (§8.1) keep their reserved space at every width, so toggling changes only
+  `visibility` and nothing reflows. Verify at 390px.
 
 ## Conclave
 
@@ -140,4 +172,13 @@ listed in `.git/info/exclude` — do not commit or hand-edit them. `.conclave/co
 `permissions: bypass` for this project, so seats run commands without prompting.
 
 `conclave guard` exits non-zero while participant sessions are live; do not commit a tree while a
-session is running, since it is still moving.
+session is running, since it is still moving. That rule is for the **operator**. A seat committing
+its own work is expected to see a red guard for its whole run — the condition never clears while it
+is seated — so it should enumerate the dirty paths, confirm they are all its own, and commit.
+
+**Send operator messages to `>both`, not to one seat.** A message withheld from a seat arms
+conclave's `authority_conflict` detector against every later instruction touching the files that
+message mentioned. One informational note cost four false-positive pauses in a single run, the last
+matching on `DESIGN.md` alone — which every engine commit touches, by the rule above. Filed
+upstream as conclave#171; until it lands, `>both` avoids the condition entirely. The cost is giving
+up genuinely one-seat messages, which is rarely what an operator note needs.

@@ -18,7 +18,8 @@ import { auditDevice } from '../scripts/audit-verified'
  * The Model 2400 is the third zero-assignable device, so §2.4's path is well covered by now.
  * What this file pins is what only this box brings: it is the **first device that sends clock
  * and cannot receive it**, which puts §7.4's tie-break somewhere it has never been, and it is
- * the widest panel in the library by 200 mm.
+ * the widest panel in the library — by 180 mm now that the minilogue xd's 500 mm keyboard is the
+ * runner-up, and it was 195 mm clear of the TR-1000 before that.
  */
 
 const MANUAL = 'Tascam Model 2400 Owner’s Manual'

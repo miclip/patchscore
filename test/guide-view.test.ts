@@ -62,9 +62,33 @@ const sparse = resolve({
   seed: 1,
 })
 
-/** The rendered text a reader actually sees, with the markup taken back out. */
+/**
+ * The rendered text a reader actually sees: tag-stripped, with the five entities React escapes
+ * decoded back.
+ *
+ * The decode is load-bearing rather than tidy: a citation carrying an apostrophe — every page of
+ * `minilogue xd Owner's Manual E 9` — reaches the markup as `&#x27;`, so a raw comparison against
+ * the string the manifest authored fails on a page that is in fact rendering correctly. `&amp;`
+ * is decoded last, because decoding it first would turn `&amp;lt;` into a tag.
+ */
 function text(html: string): string {
-  return html.replace(/<[^>]+>/g, '')
+  return html
+    .replace(/<[^>]+>/g, '')
+    .replace(/&#x27;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+}
+
+/** The same escaping, applied forwards, for assertions made against raw markup. */
+function escaped(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
 }
 
 /** Occurrences of a literal, without a regex to escape. */
@@ -157,7 +181,9 @@ describe('§3.2 provenance reaches the page', () => {
     expect(params.length).toBeGreaterThan(0)
     for (const param of params) {
       const shown = typeof param.value === 'number' ? String(param.value) : param.value
-      expect(out).toContain(`<span class="value-now mono">${shown}</span>`)
+      // Escaped, because a value can contain markup-significant characters: the minilogue xd's
+      // OCTAVE switch is printed `16'`, `8'`, `4'`, `2'` and reaches the page as `16&#x27;`.
+      expect(out).toContain(`<span class="value-now mono">${escaped(shown)}</span>`)
     }
   })
 

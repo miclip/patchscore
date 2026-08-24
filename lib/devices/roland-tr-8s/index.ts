@@ -722,6 +722,50 @@ export const device: Device = {
   panel: TR_8S_PANEL,
 
   /**
+   * ## Why there is no `sampled-chord` pad or stab here (§12.4)
+   *
+   * This box loads user samples and can hold a chord in one, so the obvious move is the Tracker
+   * Mini's: give RC a rendered chord and let one monophonic voice carry a three-note pad. It
+   * does not work, and the half that fails is worth stating because the half that passes is so
+   * convincing.
+   *
+   * **Sustain passes, outright.** p.30's INST screen legend lists `User: Tones that use imported
+   * samples` and `Loop: Tones that play repeatedly`, and p.31's *Sample tone only* block gives
+   * `Hold Mode  Whole, Time, Step` with `Whole: The sound is heard to the end without decaying`.
+   * A chord loaded here will sustain under a bar.
+   *
+   * **Per-step transposition fails, and that is the half that decides it.** A chord sample
+   * standing in for a pad has to *follow the progression* — our templates give a pad a harmonic
+   * cycle, and a chord pinned to one pitch plays the same chord under every degree, which is a
+   * drone that disagrees with the harmony rather than a pad. So the box has to be able to retune
+   * the slot at individual steps, and this one cannot:
+   *
+   *  - p.16 says exactly which controls motion records into steps — *"movements of the instrument
+   *    [TUNE] knobs, [DECAY] knobs, and [CTRL] knobs"* — and gives the per-step form: *"Operate a
+   *    knob while holding down a pad [1]–[16]."* So the question is only what those three knobs
+   *    can carry.
+   *  - `Tune` (p.30, the [TUNE] knob) is `-128–0–+127`, described in full as *"Adjusts the tuning
+   *    (pitch)"*. **No semitone scale is printed for it anywhere.** Transposing a chord by a minor
+   *    third needs a number in semitones, and turning -128–+127 into one would be inventing the
+   *    mapping (invariant 5).
+   *  - `Coarse Tune` (p.31) *is* in semitones — `-24–0–+24`, *"Specifies the pitch in semitone
+   *    steps"* — and is **not reachable from a [CTRL] knob**. The parameters that are carry an
+   *    `INST [CTRL]` marker and a footnote; `Color`, `Pan`, `ReverbSend`, `DelaySend`, `LFO
+   *    Depth` and the filter `Cutoff`s all have one, and `Coarse Tune` has none. KIT: CTRL `Sel`
+   *    (p.28) offers `OFF, Pan, ReverbSend, DelaySend, LFO Depth, InstFX, User`, and pitch is in
+   *    none of them.
+   *
+   * The near miss, recorded so the next person does not have to find it twice: p.30's LFO
+   * destination list *does* include `(SAMPLE) Coarse`, and `LFO Depth` *is* on a [CTRL] knob. So
+   * one can motion-record LFO Depth per step with the LFO pointed at Coarse. That is a pitch
+   * sweep of an unstated span, not a stable semitone transposition, and no page maps LFO Depth
+   * onto semitones — so it cannot produce "play this chord two semitones up" and is not a route.
+   *
+   * The honest consequence: a rig of nothing but this box gaps `pad` and `stab`, and the guide
+   * says so. §12.4's `sampled-chord` requires a voice that can move the chord, and this one can
+   * hold it and not move it.
+   */
+  /**
    * The eleven instruments, in panel order (p.4). Every one is monophonic — one trigger, one
    * sound — so `polyphony` is 1 throughout; §2.2's meaning of the field is *notes within one
    * role*, and nothing on this box sounds two notes of one part at once.

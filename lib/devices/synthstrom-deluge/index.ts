@@ -657,6 +657,15 @@ export const device: Device = {
    * a conservative planning bound rather than a hardware maximum.
    */
   voices: [
+    /**
+     * §12.4: **no `sampled-chord` recipe here, because this voice does not need one.** The
+     * substitution exists for a box that cannot sound three notes on one voice; this pool sounds
+     * eight, and already carries a real `pad`/`soft` and `stab`/`hard`. §7.1 ranks
+     * `polyphonic-voice` ahead of `sampled-chord` and ahead of character fidelity for any
+     * multi-note part, so a chord-sample twin on this voice would lose every comparison it could
+     * ever be in. The Deluge is the box a sampled chord loses *to*, which is the outcome §7.1 is
+     * for — see `test/polyphony.test.ts`.
+     */
     { kind: 'pool', id: 'track', label: 'Track', count: 24, roles: TRACK_ROLES, polyphony: 8 },
   ],
 

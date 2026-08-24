@@ -1049,9 +1049,34 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * The case that decides whether the finding above is a product problem or a headroom problem.
    *
    * Every template the app can actually run still searches exhaustively at the shipped cap, so no
-   * guide anybody generates today is a greedy fallback. `industrial-techno` is the tight one at
-   * roughly 49.6k of 50k — under one percent of room — so the next handful of recipes authored
-   * anywhere in the library tips it over, and this is where that will be noticed.
+   * guide anybody generates today is a greedy fallback.
+   *
+   * ## This test has fired once, and the warning it left was accurate
+   *
+   * It used to read: *"`industrial-techno` is the tight one at roughly 49.6k of 50k — under one
+   * percent of room — so the next handful of recipes authored anywhere in the library tips it
+   * over, and this is where that will be noticed."*
+   *
+   * It was one recipe, not a handful. Adding a single `sampled-chord` stab to the Tracker Mini
+   * took the worst case over these seeds to 51,606 against the old 50,000 cap and dropped 8 of
+   * these 24 cases to greedy — and the guide it degraded was worse in a way a reader would see:
+   * the golden full rig's `pad` came out as a *substitution* (asked `dark`, got `soft`) under the
+   * fallback, where the exhaustive answer is an exact `dark` match. `DEFAULT_NODE_CAP` was raised
+   * to 150,000 rather than the content being dropped; the reasoning, the timing and the #78
+   * stopgap framing are on the constant itself.
+   *
+   * **The number the next reader needs is not the cap, it is the curve.** The full *twelve*-device
+   * rig measured 33,142 nodes worst case on this template, uncapped. One further device — 19
+   * recipes over 6 tonal roles — took seed 18 to 86,722, a 2.6x jump from a 1/13th increase in
+   * boxes. Growth tracks **recipes x supported roles**, because a device that can serve many
+   * tonal roles adds branching at every level of the search; it does not track how many folders
+   * are under `lib/devices/`. Size the fix against that.
+   *
+   * So the same warning, with today's numbers: 150,000 leaves ~73% headroom over the 86,722 that
+   * forced the raise, and ~41% over the worst seen in a wider sweep (88,596, across 40 seeds x 3
+   * templates). Real room, and still a constant standing in for a bound.
+   * The next device that serves five or six tonal roles is the one to watch, and this is again
+   * where it will be noticed.
    *
    * Nothing here asserts an exact node count, for the reason the smoke alarm above gives. What is
    * asserted is the property that matters: real inputs, real cap, exhaustive.

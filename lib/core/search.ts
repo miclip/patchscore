@@ -148,8 +148,36 @@ export type AssignmentResult = {
   search: SearchReport
 }
 
-/** §7.1. Tiny problem, generous ceiling; the cap exists to bound pathology, not to tune. */
-export const DEFAULT_NODE_CAP = 50_000
+/**
+ * §7.1. The cap is a **latency guard, not a correctness bound**: hitting it does not make an
+ * answer wrong, it swaps the exhaustive answer for the greedy one and says so in `SearchReport`.
+ * So the number is not "how big can the problem get" but "how long are we willing to wait before
+ * degrading", for a search that runs once when somebody presses generate.
+ *
+ * **50,000 was chosen when the library had three devices, and it stopped being generous.** Raised
+ * to 150,000 on the measurement below, which is a **stopgap and is filed as one — see #78**, the
+ * issue arguing that raising the cap treats the symptom and buys time until the next device. It
+ * has been right twice now. What would actually fix this is a tighter *bound* — the suffix floor
+ * admits branches a sharper admissible estimate would prune — and that is bound work, not a
+ * constant.
+ *
+ * The measurement, on the tree that raised it:
+ *
+ *  - 361 nodes/ms on the machine it was timed on.
+ *  - Worst case across six seeds of `industrial-techno` on the full rig: **86,722 nodes**, about
+ *    240 ms here and low single-digit seconds on a phone.
+ *  - 150,000 covers that with ~73% headroom, at roughly 415 ms here in the pathological case.
+ *    A wider sweep (40 seeds x 3 templates) tops out at 88,596, so ~41% headroom against the
+ *    worst seen anywhere rather than against the case that forced the raise.
+ *
+ * **The growth curve is recipes x roles, not folder count**, and that is the number for whoever
+ * picks up #78 to size against. The full *twelve*-device rig measured 33,142 nodes worst case on
+ * this template, uncapped. Adding one device — 19 recipes over 6 tonal roles — took seed 18 to
+ * 86,722. A device that can serve many roles adds branching at every level of the search, so
+ * sizing the bound against how many boxes are in `lib/devices/` would size it against the wrong
+ * variable.
+ */
+export const DEFAULT_NODE_CAP = 150_000
 
 // ---------------------------------------------------------------------------
 // §7.1 The objective

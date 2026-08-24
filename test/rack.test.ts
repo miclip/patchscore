@@ -702,10 +702,13 @@ describe('rack view', () => {
 
     // Every kind in the vocabulary is exercised by the authored boxes, so a renderer arm
     // that stopped working would show up here rather than only in Chrome.
-    // Eleven: the TR-8S is the only box to author *two* screens — its main display and the
-    // separate value readout beside it — and Metropolix and the Digitakt II bring one each. The
-    // two panels with none are the Cascadia and the CRAVE, which genuinely have no display.
-    expect(count('rack-screen')).toBe(11)
+    // Thirteen, from two boxes that author *two* screens each and the rest one apiece. The TR-8S
+    // draws its main display and the separate value readout beside it; the minilogue xd draws
+    // its main organic-EL display and the MULTI ENGINE's own 7-segment readout, which p.66 lists
+    // as two separate things in two separate sections. Metropolix and the Digitakt II bring one
+    // each. The two panels with none are the Cascadia and the CRAVE, which genuinely have no
+    // display.
+    expect(count('rack-screen')).toBe(13)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -716,18 +719,20 @@ describe('rack view', () => {
     // X/Y/Z aux attenuverter sliders. A sequencer's panel is mostly this one shape for the same
     // reason the Cascadia's is.
     expect(count('rack-fader')).toBe(119)
-    // Twenty-nine: the TR-1000's sixteen step keys and the CRAVE's thirteen-note keyboard. The
+    // Sixty-six: the TR-1000's sixteen step keys, the CRAVE's thirteen-note keyboard, and the
+    // minilogue xd's thirty-seven — twenty-two white in one grid and fifteen black in six
+    // clusters, because a keyboard drawn as an even row of rectangles stops reading as one. The
     // TR-8S is why the count is worth a sentence — it has sixteen step buttons of its own and
     // draws them as pads, because they are square backlit buttons rather than piano-profile
-    // keys. Three boxes with rows of switches, two authored shapes; the renderer has no opinion
+    // keys. Four boxes with rows of switches, two authored shapes; the renderer has no opinion
     // and the manifests decide.
-    expect(count('rack-key')).toBe(29)
+    expect(count('rack-key')).toBe(66)
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(8)
+    expect(fields).toHaveLength(9)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {
