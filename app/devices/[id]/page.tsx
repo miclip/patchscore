@@ -7,7 +7,12 @@ import { PanelFigure } from '@/components/rack/panel-figure'
 import type { Device } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceHref, deviceLabel } from '@/lib/studio/catalogue'
-import { clockText, devicePage, provenanceSentence } from '@/lib/studio/device-page'
+import {
+  capabilitySentence,
+  clockText,
+  devicePage,
+  provenanceSentence,
+} from '@/lib/studio/device-page'
 
 /**
  * #84. One device, everything the library holds about it.
@@ -227,6 +232,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               </table>
             </div>
           )}
+          {/*
+            §2.6/#22. What this box says about its own capability facts — the clock, the audio,
+            the voices, the per-step features. Prose rather than a fourth table, because the
+            counts are small and the interesting half of the sentence is the state a table has no
+            column for: a fact somebody looked for and the manual does not print.
+          */}
+          <p className="provenance-lead">{capabilitySentence(page.provenance)}</p>
           <p className="note">
             Panel span: {' '}
             {device.physical.verified === false

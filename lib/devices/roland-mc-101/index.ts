@@ -86,9 +86,15 @@ import { MC_101_PANEL } from './panel'
  *
  * §3.2's split, as the Tracker Mini states it: **legality is cited, authority is not.** Every
  * range and every option set carries the page that prints it; every point stays
- * `verified: false`, because no page says which value suits a dark kick. Capability data — track
- * count, jacks, clock, per-step lanes — is cited in comments rather than in `verified`, since
- * invariant 4 is scoped to parameter values.
+ * `verified: false`, because no page says which value suits a dark kick.
+ *
+ * Capability data — track count, clock, per-step lanes — is **not yet migrated** and its pages are
+ * still in the comments below. §2.6/#22 gives capability facts a home in `capabilityEvidence`,
+ * keyed by field path, and this manifest has not moved into it; the TR-1000 is the one that has.
+ * Nothing forces the move here, because this box declares no jacks and no clock setup — the two
+ * families §2.6 makes mandatory — and invariant 4 is scoped to parameter values. It is a debt of
+ * authoring, and it is worth naming as one rather than letting a comment read as the settled
+ * regime.
  *
  * One thing that regime cannot cover, and it is a real gap rather than an oversight:
  * **the per-step lanes have no printed ranges.** p.22 and p.23 name `VEL`, `STA`, `LEN`, `MTE`

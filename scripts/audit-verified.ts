@@ -12,7 +12,7 @@
 
 import { relative } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import type { AuditCounts, DeviceAudit } from '../lib/studio/provenance'
+import type { AuditCounts, AuditFinding, DeviceAudit } from '../lib/studio/provenance'
 import { auditDevice, totalCounts } from '../lib/studio/provenance'
 import {
   DEFAULT_DEVICES_ROOT,
@@ -33,6 +33,7 @@ export {
   auditDevice,
   citeKind,
   effectiveVerified,
+  evidenceKind,
   isCited,
   totalCounts,
 } from '../lib/studio/provenance'
@@ -40,12 +41,19 @@ export {
 const n = (v: number): string => String(v).padStart(5)
 
 /**
- * Three lines per device: the point claim and the range claim are about different things and a
- * single line long enough to hold both is a line nobody reads, and #29's unit count is not a
- * claim about verification at all.
+ * Four lines per device: the point claim and the range claim are about different things and a
+ * single line long enough to hold both is a line nobody reads, #29's unit count is not a claim
+ * about verification at all, and §2.6's capability line counts a different kind of claim about a
+ * different kind of thing.
+ *
+ * **The capability line prints only when there is something to print.** Its total is the number
+ * of facts a manifest has *spoken about*, not the number it could speak about (see `AuditCounts`),
+ * so a device with no entries has no line rather than a row of zeros — and a row of zeros in a
+ * debt table reads as a debt, which is exactly what a manifest that was never asked to cite its
+ * capabilities does not have.
  */
 export function countsBlock(label: string, c: AuditCounts): string[] {
-  return [
+  const lines = [
     `  ${label}`,
     `    points ${n(c.params)} total  ${n(c.manualPoints)} manual  ` +
       `${n(c.observedPoints)} observed  ${n(c.provisionalPoints)} provisional`,
@@ -57,6 +65,19 @@ export function countsBlock(label: string, c: AuditCounts): string[] {
     `    units  ${n(c.unitlessNumerics)} of ${n(c.numerics).trim()} numerics carry no unit ` +
       `(watched, not a target)`,
   ]
+  if (c.capabilityFacts > 0) {
+    lines.push(
+      `    caps   ${n(c.capabilityFacts)} total  ${n(c.manualCapabilities)} manual  ` +
+        `${n(c.observedCapabilities)} observed  ${n(c.uncheckedCapabilities)} unchecked  ` +
+        `${n(c.undocumentedCapabilities)} undocumented`,
+    )
+  }
+  return lines
+}
+
+/** Two coordinate systems, one line each. A capability fact has no recipe and says so (§2.6). */
+export function findingLine(f: AuditFinding): string {
+  return 'fact' in f ? `${f.kind}: ${f.fact}` : `${f.kind}: ${f.recipeId} / ${f.paramName}`
 }
 
 export function formatAudit(audits: DeviceAudit[], verbose: boolean): string {
@@ -67,7 +88,7 @@ export function formatAudit(audits: DeviceAudit[], verbose: boolean): string {
   for (const a of ordered) {
     lines.push(...countsBlock(a.deviceId, a.counts), '')
     if (!verbose) continue
-    for (const f of a.findings) lines.push(`      ${f.kind}: ${f.recipeId} / ${f.paramName}`)
+    for (const f of a.findings) lines.push(`      ${findingLine(f)}`)
     lines.push('')
   }
 

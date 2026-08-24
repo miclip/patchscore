@@ -10,6 +10,7 @@ import {
 } from './vocabulary'
 import {
   AuthoredParamSchema,
+  CiteSchema,
   VerifiedSchema,
   type AuthoredParam,
   type Verified,
@@ -91,6 +92,168 @@ export type ClockTransport = string
 export const ClockTransportSchema = z.string().min(1)
 
 // ---------------------------------------------------------------------------
+// §2.6 Capability provenance
+// ---------------------------------------------------------------------------
+
+/**
+ * §2.6/#22. **A capability fact somebody went looking for and the document does not state.**
+ *
+ * `Verified` has two states and neither of them is this one. `false` is *authored, nothing
+ * checked against* — nobody opened the book. A fact whose page somebody hunted for and did not
+ * find is a different and more expensive thing to know: it is finished work, it does not need
+ * doing again, and it is the strongest evidence there is that the box's own documentation is
+ * silent. Collapsing the two loses the distinction in the direction that costs the most, because
+ * the unchecked pile is the one an author is meant to work through.
+ *
+ * `reason` is required so the state cannot be a shrug. "The manual never says what KNOB ASSIGN
+ * can target" is a finding; a bare `unknown` is an author giving up in a field that reads like
+ * diligence.
+ */
+export type UncheckedFact = { kind: 'unknown'; reason: string }
+
+/**
+ * §2.6/#22. How a **device capability fact** was checked — the third `kind` alongside `manual`
+ * and `observed`, plus `false`.
+ *
+ * Deliberately a superset of `Verified` rather than a separate vocabulary: a cited capability is
+ * cited in exactly the sense a cited range is, and the renderers, the audit and the device page
+ * all branch on `kind` the way they already do.
+ */
+export type CapabilityEvidence = Verified | UncheckedFact
+
+export const UncheckedFactSchema = z.strictObject({
+  kind: z.literal('unknown'),
+  reason: z.string().min(1, 'an unknown capability fact needs a reason'),
+})
+
+export const CapabilityEvidenceSchema = z.union([
+  CiteSchema,
+  UncheckedFactSchema,
+  z.literal(false),
+])
+
+/**
+ * §2.6/#22. **The capability facts a manifest may cite, as a closed list of paths.**
+ *
+ * ## Why a map rather than a field
+ *
+ * `clock`, `io`, `voices` and `features` are read off a manual exactly as a parameter range is,
+ * and until now they had nowhere to record it: the TR-1000 carried nine Owner's Manual page
+ * references for these facts **in comments**, where `npm run audit` cannot see them and a reader
+ * of the device page cannot either. Three shapes were available and the other two were rejected:
+ *
+ *  - **One `verified` on `Device`**, meaning "the structural facts were checked against this
+ *    document". One field, no migration, and false in practice the moment it is written: the
+ *    TR-1000's transports come off p.30, its jack list off p.12, its tracks off p.14 and its
+ *    per-step gestures off pp.17-18. A single citation would name one of those four and imply
+ *    the other three, which is the shape of claim invariant 4 exists to prevent — it is the
+ *    recipe-level `verified` mistake (§3.1) with a wider blast radius.
+ *  - **Per-field `Verified`** on `clock`, `io`, `voices` and `features`. Precise, and it doubles
+ *    the device schema surface for a dozen facts per box that almost never change. Worse, it
+ *    forces every device to answer for every field: `io.usbAudio` on a Eurorack module would
+ *    need a slot filled in with `false` on fourteen manifests to say nothing at all.
+ *
+ * The map costs one optional field and buys per-fact precision, so an author cites what they
+ * actually checked and stays silent about the rest. Silence is the honest default here and is
+ * not a debt: invariant 4 is scoped to parameter values, and the audit counts a capability fact
+ * only once a manifest has said something about it.
+ *
+ * ## Why the paths are closed
+ *
+ * A free-text key is a key nothing can check, and an evidence map whose keys drift away from the
+ * fields they describe is worse than no map: it reads as provenance and cites nothing. So the
+ * scalar facts are enumerated here, the two keyed families are checked against the collections
+ * they index, and an unrecognised path fails the build (§9) rather than sitting in the manifest
+ * looking authoritative.
+ *
+ * `physical` and `panel` are absent on purpose. Both already carry a required `verified` of their
+ * own (§10), because both are *drawn* rather than merely stated and neither is optional for the
+ * rack — moving them here would make a required claim optional. `comfortableVoices` is absent for
+ * the opposite reason: it is a musical judgement about a box (§12.4), no page states it, and a
+ * slot to cite it in is an invitation to cite a page that does not say what it is being made to
+ * say.
+ *
+ * `features.*` paths are accepted whether or not the feature is declared, and that is the point
+ * rather than a hole in the checking. "The manual documents no LFO topology this shape can hold"
+ * is evidence *about an absence*, and invariant 5 asks for exactly that — the gap shown honestly
+ * instead of an omission a reader has to guess at. The TR-1000's `features.lfo` is the case.
+ */
+export const CAPABILITY_FACTS = [
+  'clock.canSendClock',
+  'clock.canReceiveClock',
+  'clock.transport',
+  'io.main',
+  'io.individualOuts',
+  'io.audioIn',
+  'io.usbAudio',
+  'voices',
+  'features.perStep',
+  'features.sidechain.internal',
+  'features.sidechain.fromExternalAudio',
+  'features.lfo',
+] as const
+
+export type CapabilityFact = (typeof CAPABILITY_FACTS)[number]
+
+/**
+ * The two keyed families. A jack and a clock-output setup are *rendered* capability facts — a
+ * reader standing at the machine patches the one and dials the other — so each declared member
+ * carries an entry, checked at device level. That requirement is what the per-field `verified`
+ * these two used to carry was buying, and it survives the move intact: the check moved from the
+ * type to `DeviceSchema`, and a jack with no evidence still fails the build.
+ *
+ * Keyed by **id and transport, never by index.** An array position is an authoring accident that
+ * changes when a jack is inserted, and a citation that silently re-points at the neighbouring
+ * socket is the failure this map exists to prevent.
+ */
+export function jackFact(jackId: string): string {
+  return `jacks[${jackId}]`
+}
+
+export function clockSourceSetupFact(transport: ClockTransport): string {
+  return `clock.sourceSetup[${transport}]`
+}
+
+/** `jacks[MIDI IN]` -> `{ family: 'jacks', key: 'MIDI IN' }`, or nothing for a scalar path. */
+export function parseKeyedFact(
+  path: string,
+): { family: 'jacks' | 'clock.sourceSetup'; key: string } | undefined {
+  const at = path.indexOf('[')
+  if (at === -1 || !path.endsWith(']')) return undefined
+  const family = path.slice(0, at)
+  const key = path.slice(at + 1, -1)
+  if (key === '') return undefined
+  if (family !== 'jacks' && family !== 'clock.sourceSetup') return undefined
+  return { family, key }
+}
+
+/**
+ * What this manifest says about one capability fact, or nothing if it has said nothing.
+ *
+ * One lookup shared by both renderers, the audit and the device page, for the reason
+ * `clockSourceSetup` gives about itself: which entry answers a path is not prose, it has one
+ * right answer, and four copies of it are four things to keep in step.
+ */
+export function evidenceFor(device: Device, path: string): CapabilityEvidence | undefined {
+  return device.capabilityEvidence?.[path]
+}
+
+/**
+ * The same lookup where the schema guarantees an answer — a declared jack, a declared clock
+ * setup. The fallback is unreachable for any manifest that has been through `DeviceSchema`, and
+ * it is an `unknown` rather than a throw because a hand-built fixture reaching a renderer should
+ * render honestly, not crash the page.
+ */
+export function requiredEvidence(device: Device, path: string): CapabilityEvidence {
+  return (
+    evidenceFor(device, path) ?? {
+      kind: 'unknown',
+      reason: 'no evidence recorded for this fact',
+    }
+  )
+}
+
+// ---------------------------------------------------------------------------
 // §3 Recipes
 // ---------------------------------------------------------------------------
 
@@ -161,17 +324,21 @@ export type JackSpec = {
    * *jacks* claiming the same transport in the same direction leaves the rack choosing.
    */
   clock?: ClockTransport[]
-  /** The page that documents this jack. Cited once, here, however many cables touch it. */
-  verified: Verified
   /** Anything a name alone would mislead a reader about. */
   note?: string
 }
 
+/**
+ * §2.6/#22. **The page documenting this jack is not here.** It lives at `jacks[<id>]` in the
+ * device's `capabilityEvidence`, with every other capability citation, and `DeviceSchema` refuses
+ * a declared jack that has no entry — so the claim is exactly as required as it was when it was a
+ * field, and one lookup now answers "who checked this?" for a socket, a menu path, a transport
+ * and a track count alike.
+ */
 export const JackSpecSchema = z.strictObject({
   id: z.string().min(1),
   direction: z.enum(['in', 'out']),
   clock: z.array(ClockTransportSchema).min(1).optional(),
-  verified: VerifiedSchema,
   note: z.string().min(1).optional(),
 })
 
@@ -466,8 +633,11 @@ export const DeviceKindSchema = z.enum(DEVICE_KINDS)
  * Clock Out`, not "the clock output setting". §8 is read at the machine, and a reader is looking
  * for that string on a screen.
  *
- * `verified` is required, as on a `JackSpec`: a menu path has a page or nobody checked it. There
- * is no third state to inherit toward — this is device data and no recipe is above it.
+ * **The page is required and no longer a field here** (§2.6/#22): it sits at
+ * `clock.sourceSetup[<transport>]` in the device's `capabilityEvidence`, and `DeviceSchema`
+ * refuses a setup with no entry. A menu path has a page, or somebody looked and the manual does
+ * not print one, or nobody looked — three states now where the field had two, and there is still
+ * nothing to inherit from: this is device data and no recipe is above it.
  *
  * **Nothing here is derived and nothing is guessed.** A box that needs no setting declares none,
  * and a box whose manual does not print one declares none either; both render as they do today,
@@ -482,8 +652,6 @@ export type ClockSourceSetup = {
   value: string
   /** Anything a reader would otherwise have to discover at the machine. */
   note?: string
-  /** The page that prints the menu. */
-  verified: Verified
 }
 
 export const ClockSourceSetupSchema = z.strictObject({
@@ -491,7 +659,6 @@ export const ClockSourceSetupSchema = z.strictObject({
   path: z.string().min(1),
   value: z.string().min(1),
   note: z.string().min(1).optional(),
-  verified: VerifiedSchema,
 })
 
 export type ClockSpec = {
@@ -512,11 +679,17 @@ export type ClockSpec = {
  * entry matches is not prose: it is the same question with one right answer, and two copies of
  * it are two things to keep in step for no benefit. The wording around it stays written twice.
  */
+export type ResolvedClockSourceSetup = ClockSourceSetup & { evidence: CapabilityEvidence }
+
 export function clockSourceSetup(
   device: Device,
   transport: ClockTransport,
-): ClockSourceSetup | undefined {
-  return device.clock.sourceSetup?.find((s) => s.transport === transport)
+): ResolvedClockSourceSetup | undefined {
+  const setup = device.clock.sourceSetup?.find((s) => s.transport === transport)
+  if (setup === undefined) return undefined
+  // §2.6. The authored shape carries the menu path; the map carries who checked it. They are
+  // joined here, once, so neither renderer has to know the path spelling.
+  return { ...setup, evidence: requiredEvidence(device, clockSourceSetupFact(transport)) }
 }
 
 /**
@@ -540,7 +713,20 @@ export type ClockJackNote = {
   /** The jacks this is about, in manifest order: 'MIDI Out', 'MIDI In'. */
   jacks: string[]
   note: string
-  verified: Verified
+  /** §2.6. Fetched from `capabilityEvidence` at `jacks[<id>]`, not carried by the jack. */
+  evidence: CapabilityEvidence
+}
+
+/**
+ * A dedup key for one piece of evidence. Not `JSON.stringify`: key order in an object literal is
+ * an authoring accident, and two identical citations written in the other order must not read as
+ * two claims.
+ */
+export function evidenceKey(evidence: CapabilityEvidence): string {
+  if (evidence === false) return 'false'
+  return evidence.kind === 'unknown'
+    ? `unknown\u0000${evidence.reason}`
+    : `${evidence.kind}\u0000${evidence.source}`
 }
 
 export function clockJackNotes(device: Device, transport: ClockTransport): ClockJackNote[] {
@@ -548,13 +734,11 @@ export function clockJackNotes(device: Device, transport: ClockTransport): Clock
   for (const jack of device.jacks ?? []) {
     if (jack.note === undefined) continue
     if (!(jack.clock ?? []).includes(transport)) continue
-    // Not `JSON.stringify(jack.verified)`: key order in an object literal is an authoring
-    // accident, and two identical citations written in the other order must not read as two.
-    const cite = jack.verified === false ? 'false' : `${jack.verified.kind}\u0000${jack.verified.source}`
-    const key = `${jack.note}\u0000${cite}`
+    const evidence = requiredEvidence(device, jackFact(jack.id))
+    const key = `${jack.note}\u0000${evidenceKey(evidence)}`
     const seen = byClaim.get(key)
     if (seen === undefined) {
-      byClaim.set(key, { jacks: [jack.id], note: jack.note, verified: jack.verified })
+      byClaim.set(key, { jacks: [jack.id], note: jack.note, evidence })
     } else {
       seen.jacks.push(jack.id)
     }
@@ -848,6 +1032,14 @@ export type Device = {
    */
   comfortableVoices?: number
   features?: DeviceFeatures
+  /**
+   * §2.6/#22. **Who checked the capability facts above, keyed by field path.**
+   *
+   * Optional, and silence is the honest default — an author cites what they checked. Required in
+   * one place: every declared jack and every declared clock setup has an entry, because both are
+   * rendered at the machine and both used to carry the claim as a field.
+   */
+  capabilityEvidence?: Record<string, CapabilityEvidence>
   /** A flat lookup keyed by action, referenced by recipes. A few words to jog you. */
   hints?: Record<string, string>
   manual?: ManualRef
@@ -868,6 +1060,12 @@ export const DeviceSchema = z
     voices: z.array(VoiceSpecSchema),
     comfortableVoices: z.int().min(1).optional(),
     features: DeviceFeaturesSchema.optional(),
+    capabilityEvidence: z
+      .record(z.string().min(1), CapabilityEvidenceSchema)
+      .refine((m) => Object.keys(m).length > 0, {
+        message: 'capabilityEvidence declares at least one fact, or is omitted',
+      })
+      .optional(),
     hints: z.record(z.string().min(1), z.string().min(1)).optional(),
     manual: ManualRefSchema.optional(),
     recipes: z.array(RecipeSchema),
@@ -1003,6 +1201,74 @@ export const DeviceSchema = z
         clockSockets.add(key)
       })
     })
+
+    /**
+     * §2.6/#22. **Capability evidence is checked against the fields it claims to describe.**
+     *
+     * An unrecognised path is refused rather than ignored, because an evidence map is only worth
+     * having if a key that no longer names anything is loud. A citation on `jacks[MIDI 1N]` reads
+     * exactly like diligence and cites nothing at all — that is the failure a free-text key set
+     * makes silent, and it is the same class as a patch entry naming a jack the device does not
+     * declare, which this schema has refused since §3.3.
+     *
+     * The reverse direction is checked too: every declared jack and every declared clock setup
+     * has an entry. Both were required fields before the move (#103/#104) and both are rendered
+     * at the machine, so requiring them here is not new discipline — it is the same discipline in
+     * the one place the compiler can no longer enforce it.
+     */
+    const facts = new Set<string>(CAPABILITY_FACTS)
+    const jackIds = new Set((device.jacks ?? []).map((j) => j.id))
+    const setupTransports = new Set((device.clock.sourceSetup ?? []).map((s) => s.transport))
+    const evidence = device.capabilityEvidence ?? {}
+
+    for (const path of Object.keys(evidence)) {
+      const keyed = parseKeyedFact(path)
+      if (keyed === undefined) {
+        if (!facts.has(path)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `capabilityEvidence names '${path}', which is not a capability fact (§2.6)`,
+            path: ['capabilityEvidence', path],
+          })
+        }
+        continue
+      }
+      if (keyed.family === 'jacks' && !jackIds.has(keyed.key)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `capabilityEvidence cites jack '${keyed.key}', which this device does not declare`,
+          path: ['capabilityEvidence', path],
+        })
+      }
+      if (keyed.family === 'clock.sourceSetup' && !setupTransports.has(keyed.key)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `capabilityEvidence cites a clock setup for '${keyed.key}', which this device does not declare`,
+          path: ['capabilityEvidence', path],
+        })
+      }
+    }
+
+    for (const jack of device.jacks ?? []) {
+      if (evidence[jackFact(jack.id)] === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `jack '${jack.id}' has no capabilityEvidence entry at '${jackFact(jack.id)}' (§2.6)`,
+          path: ['capabilityEvidence', jackFact(jack.id)],
+        })
+      }
+    }
+
+    for (const setup of device.clock.sourceSetup ?? []) {
+      const path = clockSourceSetupFact(setup.transport)
+      if (evidence[path] === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `clock setup for '${setup.transport}' has no capabilityEvidence entry at '${path}' (§2.6)`,
+          path: ['capabilityEvidence', path],
+        })
+      }
+    }
 
     const perStep = new Set(device.features?.perStep ?? [])
     const hintKeys = new Set(Object.keys(device.hints ?? {}))

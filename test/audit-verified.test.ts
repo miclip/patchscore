@@ -178,7 +178,9 @@ describe('the three counts are separate debts (§3.2, §9)', () => {
       'unverified-range',
       'mood-inert',
     ])
-    expect(new Set(a.findings.map((f) => f.paramName))).toEqual(new Set(['TUNE']))
+    expect(new Set(a.findings.map((f) => ('fact' in f ? f.fact : f.paramName)))).toEqual(
+      new Set(['TUNE']),
+    )
   })
 })
 

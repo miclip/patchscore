@@ -2,6 +2,8 @@ import { describe, expect, expectTypeOf, it } from 'vitest'
 import {
   CHARACTERS,
   DeviceSchema,
+  evidenceFor,
+  jackFact,
   NEUTRAL_MOOD,
   ROLES,
   expand,
@@ -111,8 +113,13 @@ describe('CRAVE manifest', () => {
       // p.21: items 40-57 are the Input Section, 58-72 the Output Section.
       expect(ins).toHaveLength(18)
       expect(outs).toHaveLength(15)
+      // §2.6/#22. The citation is no longer on the jack: it is at `jacks[<id>]` in the device's
+      // one capability-evidence map, and `DeviceSchema` refuses a declared jack with no entry.
       for (const j of device.jacks ?? []) {
-        expect(j.verified, j.id).toMatchObject({ kind: 'manual', source: expect.stringContaining(GUIDE) })
+        expect(evidenceFor(device, jackFact(j.id)), j.id).toMatchObject({
+          kind: 'manual',
+          source: expect.stringContaining(GUIDE),
+        })
       }
     })
 

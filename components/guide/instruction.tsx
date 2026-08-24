@@ -1,8 +1,8 @@
 import { Fragment } from 'react'
 import type { ReactNode } from 'react'
-import type { Cite, Provenance, ResolvedParam } from '@/lib/core'
+import type { CapabilityEvidence, Cite, Provenance, ResolvedParam } from '@/lib/core'
 import { GUIDE_PHASES } from '@/lib/core'
-import { citeLines, num, rangeText, valueParts } from './format'
+import { citeLines, citeText, num, rangeText, valueParts } from './format'
 
 /**
  * §8.1's layout primitive, and the reason this view is not converted Markdown.
@@ -83,6 +83,53 @@ export function ProvenanceMark({ provenance }: { provenance: Provenance }) {
       )}
     </>
   )
+}
+
+/**
+ * §2.6/#22. The mark for a **capability fact** — a socket, a menu path — which carries a
+ * `CapabilityEvidence` rather than a resolved provenance and has a third state.
+ *
+ * **Every state is marked here, unlike `ProvenanceMark` above, and that is the same rule applied
+ * rather than an exception to it.** A parameter goes unmarked when it is provisional because
+ * nine values in ten are, so a mark on all of them carries nothing. A rig prints a handful of
+ * capability facts and every one of them is cited today, which makes `unchecked` and
+ * `undocumented` the notable states — the ones that change what a reader does. "Patch MIDI IN"
+ * from a box whose rear panel nobody has read is worth a word.
+ *
+ * The two quiet states are not interchangeable and are not drawn alike. `unchecked` is work
+ * nobody has done. `undocumented` is work somebody finished: they went to the manual and it is
+ * silent, which is the more expensive thing to know and the reason it carries a reason.
+ *
+ * Written here rather than shared with the Markdown renderer, like every other rendering decision
+ * under `components/guide/` — one right answer to *which evidence*, two hand-written vocabularies
+ * around it.
+ */
+export function EvidenceMark({ evidence }: { evidence: CapabilityEvidence }) {
+  if (evidence === false) return <span className="prov prov-unchecked">unchecked</span>
+  if (evidence.kind === 'unknown') {
+    return (
+      <span className="prov prov-undocumented" title={evidence.reason}>
+        undocumented
+      </span>
+    )
+  }
+  return (
+    <span className="prov prov-cited" title={evidence.source}>
+      {evidence.kind}
+    </span>
+  )
+}
+
+/**
+ * The subordinate lines one piece of capability evidence earns. A citation names its page; an
+ * `undocumented` fact states what the manual does not say, because a bare "undocumented" is the
+ * shrug §2.6 refuses; an unchecked fact has nothing to add that the mark did not already say.
+ */
+export function evidenceLines(evidence: CapabilityEvidence): string[] {
+  if (evidence === false) return []
+  return evidence.kind === 'unknown'
+    ? [`undocumented — ${evidence.reason}`]
+    : [`value ${citeText(evidence)}`]
 }
 
 /**

@@ -1,19 +1,7 @@
 import type { DeviceId, ResolveResult } from '@/lib/core'
-import type { Provenance, Verified } from '@/lib/core'
 import { clockJackNotes, clockSourceSetup } from '@/lib/core'
-import { citeLines, count, ioText, mixerText } from './format'
-import { ProvenanceMark } from './instruction'
-
-/**
- * §3.1's two states, for device data that carries a `Verified` rather than a `ResolvedParam`.
- *
- * A menu path and a jack note are rendered values, so invariant 4 applies to them exactly as it
- * applies to a knob position — they are just not resolved through `resolveParam`, because no
- * recipe owns them and no mood can move them.
- */
-function provenanceOf(verified: Verified): Provenance {
-  return verified === false ? { state: 'provisional' } : { state: 'authored', cite: verified }
-}
+import { count, ioText, mixerText } from './format'
+import { EvidenceMark, evidenceLines } from './instruction'
 
 /**
  * §8 phase 3. One block per box rather than a table plus a second list keyed by name: two
@@ -71,7 +59,7 @@ export function PhaseRig({
           <p>
             On the {source.deviceName}, set <span className="mono">{setup.path}</span> to{' '}
             <span className="mono">{setup.value}</span>{' '}
-            <ProvenanceMark provenance={provenanceOf(setup.verified)} />
+            <EvidenceMark evidence={setup.evidence} />
           </p>
           {/*
             §8.1's subordinate lines, the same two the sound-design phase uses. The citation is
@@ -80,7 +68,7 @@ export function PhaseRig({
             changes what they do with the value.
           */}
           {setup.note === undefined ? null : <p className="subordinate note">{setup.note}</p>}
-          {citeLines(provenanceOf(setup.verified), undefined).map((cite) => (
+          {evidenceLines(setup.evidence).map((cite) => (
             <p className="subordinate cite" key={cite}>
               {cite}
             </p>
@@ -120,8 +108,8 @@ export function PhaseRig({
                       <div key={jackNote.jacks.join(',')}>
                         <dt className="mono">{jackNote.jacks.join(', ')}</dt>
                         <dd>
-                          {jackNote.note} <ProvenanceMark provenance={provenanceOf(jackNote.verified)} />
-                          {citeLines(provenanceOf(jackNote.verified), undefined).map((cite) => (
+                          {jackNote.note} <EvidenceMark evidence={jackNote.evidence} />
+                          {evidenceLines(jackNote.evidence).map((cite) => (
                             <p className="subordinate cite" key={cite}>
                               {cite}
                             </p>

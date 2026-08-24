@@ -1,4 +1,5 @@
 import type { Device } from '../../core/device'
+import { jackFact } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, AuthoredParam, Cite } from '../../core/params'
 import { TR_1000_PANEL } from './panel'
 
@@ -13,13 +14,12 @@ import { TR_1000_PANEL } from './panel'
  * (TR-1000_reference_eng02_W.pdf) carries the Parameter list, which states the bounds. So:
  *
  *  - the capability data below (tracks, jacks, clock, per-step features, gestures) is read
- *    off the owner's manual and is the reason this file can be written at all. Most of those
- *    page references stay in comments: invariant 4 is scoped to parameter values, and a wrong
- *    `individualOuts` is visible to anyone holding the box in a way a wrong DECAY is not.
- *    **Where a capability field is itself rendered, it carries its own `verified` instead**
- *    (#103/#104) — `JackSpec.verified` on the jacks below, and `clock.sourceSetup.verified` on
- *    a clock-output menu path. A comment cannot cite something a reader is standing at the
- *    machine acting on, and both of those reach the guide;
+ *    off the owner's manual and is the reason this file can be written at all. Those page
+ *    references used to live in comments, where `npm run audit` could not see them and neither
+ *    could a reader of the device page — this box's nine of them are what #22 was about. They
+ *    are now in `capabilityEvidence` below, keyed by field path (§2.6), and the comments keep
+ *    only the *reasoning*: which of two tables is in force, why a field is absent, what a page
+ *    does not say. A comment is a fine place to argue and a bad place to cite;
  *  - every recipe carries `verified: false`, and so does every numeric *point*, because a
  *    documented range for TUNE is not a citation for "TUNE sits at 44 for a hard kick".
  *    Citing the page for a taste judgement would be exactly the fraud invariant 4 prevents.
@@ -77,7 +77,7 @@ function cite(page: number): Cite {
  * from the Reference Manual. Two helpers rather than one page number, so a citation cannot name
  * the wrong document by omission.
  */
-function owner(page: number): Cite {
+function owner(page: number | string): Cite {
   return { kind: 'manual', source: `TR-1000 Owner’s Manual (eng02), p.${page}` }
 }
 
@@ -416,8 +416,22 @@ export const device: Device = {
   maker: 'Roland',
   kind: 'drum-machine',
 
-  // MIDI IN/OUT1/OUT2-THRU, both OUT connectors switchable to DIN SYNC; USB clock; CLK OUT
-  // mini-jack; TRG IN usable as a clock source (p.11-12, p.30, p.33 sync settings).
+  /**
+   * MIDI IN/OUT1/OUT2-THRU, both OUT connectors switchable to DIN SYNC; USB clock; CLK OUT
+   * mini-jack; TRG IN usable as a clock source. Cited per fact in `capabilityEvidence` below.
+   *
+   * **No single page carries all five transports**, which is why `clock.transport` is cited to
+   * the rear-panel connector tables (p.12) — the one page that names every socket they run on —
+   * rather than to any of the four pages that establish them one at a time: p.30 for MIDI and
+   * DIN sync, p.31's `Tempo Sync  Auto, MIDI, USB, INT` for USB, p.32's `Trig In` for the
+   * analog pair. The send and receive capabilities themselves are p.30, which is the
+   * synchronization chapter and states both in its first sentence.
+   *
+   * An earlier version of this comment cited **p.33 for "sync settings"**. p.33 is `BACKUP`
+   * under Various settings; the sync setting is the GENERAL block on p.31. That is the whole
+   * argument for moving these out of comments — a page number nothing reads is a page number
+   * nobody rechecks.
+   */
   clock: {
     canSendClock: true,
     canReceiveClock: true,
@@ -425,7 +439,8 @@ export const device: Device = {
   },
 
   // MIX OUT L/MONO+R, ten INDIVIDUAL OUT/TRIGGER OUT jacks (BD-RC), ANALOG FX OUT L/R,
-  // EXTERNAL IN L/R, USB-C audio to a computer (p.11-12).
+  // EXTERNAL IN L/R, USB-C audio to a computer. All four claims are the p.12 connector tables;
+  // the citations are in `capabilityEvidence` below, one per field.
   io: { main: 'stereo', individualOuts: 10, audioIn: true, usbAudio: true },
 
   /**
@@ -455,17 +470,16 @@ export const device: Device = {
   jacks: [
     // p.12, MIDI connectors: `OUT1 connector or DIN SYNC 1 connector`, `IN connector`. Named
     // with the section, as §3.3 requires — a bare `IN` is unresolvable on a box with this many.
-    { id: 'MIDI OUT1', direction: 'out', clock: ['midi-din'], verified: owner(12) },
-    { id: 'MIDI IN', direction: 'in', clock: ['midi-din'], verified: owner(12) },
+    { id: 'MIDI OUT1', direction: 'out', clock: ['midi-din'] },
+    { id: 'MIDI IN', direction: 'in', clock: ['midi-din'] },
     {
       id: 'DIN SYNC 1',
       direction: 'out',
       clock: ['din-sync'],
-      verified: owner(12),
       note: 'The same connector as MIDI OUT1, switched to DIN SYNC',
     },
     // p.12: "Use this jack to output synchronization signals to an external device."
-    { id: 'CLK OUT', direction: 'out', clock: ['analog-clock'], verified: owner(12) },
+    { id: 'CLK OUT', direction: 'out', clock: ['analog-clock'] },
     /**
      * p.12 describes `TRG IN` only as "Connect a device that has a TRIGGER OUT jack here" — it
      * is p.32 that makes it a clock input, and it is a *setting*, not a property of the hole:
@@ -480,7 +494,6 @@ export const device: Device = {
       id: 'TRG IN',
       direction: 'in',
       clock: ['analog-clock', 'trigger'],
-      verified: owner(12),
       note: 'Set Trig In = Sync (Owner’s Manual p.32) or the pulses are not treated as clock',
     },
   ],
@@ -604,6 +617,71 @@ export const device: Device = {
       'alt-inst',
     ],
     sidechain: { internal: true, fromExternalAudio: true },
+  },
+
+  /**
+   * §2.6/#22. **The nine Owner's Manual pages this box's capability facts come off, as data.**
+   *
+   * Every one of these was a page number in a comment until #22. The claims did not change and
+   * neither did the reading behind them; what changed is that `npm run audit` can now count them,
+   * the device page can print them, and a wrong one is a thing a reviewer can be pointed at. Two
+   * of them were wrong. `clock`'s comment cited p.33 for the sync settings and p.33 is the backup
+   * procedure, and nothing in the codebase was in a position to notice.
+   *
+   * Read on the rendered pages, not off `pdftotext`: p.12's connector tables and p.17's STEP EDIT
+   * table both have the column structure the text dump scrambles.
+   *
+   *   p.12    the rear-panel connector tables — every socket on the box, by section
+   *   p.14    "The variations (A-H) and fill-ins each have 10 tracks (BD, SD, LT, HT, RS, HC,
+   *           CH, OH, CC and RC)", and the four layer / six single split
+   *   p.17    the STEP EDIT parameter table (VELOCITY, START, SUBSTEP, PROB, CYCLE), plus
+   *           weak beats and ALT INST as their own gestures
+   *   p.18    ACCENT [STEP], the third gesture `perStep` names
+   *   p.30    the synchronization chapter: receives MIDI clock, drives MIDI devices, and
+   *           "the output can be set to the DIN sync protocol"
+   *
+   * `features.sidechain` is split across two documents and therefore across two paths, which is
+   * the case the map's per-fact keying exists for: the external half is p.30's "Apply a side
+   * chain" to EXTERNAL IN audio, and the internal half is the Reference Manual's SIDE CHAIN
+   * block, whose `SOURCE  OFF, BD (A,B)–RC` selects the instrument that triggers it. One
+   * citation covering both booleans would have named one book and implied the other.
+   *
+   * `comfortableVoices` is deliberately not here. Eight is a musical judgement about this box
+   * (§12.4) and no page states it; a slot to cite it in would only invite citing p.14, which
+   * says ten.
+   */
+  capabilityEvidence: {
+    'clock.canSendClock': owner(30),
+    'clock.canReceiveClock': owner(30),
+    'clock.transport': owner(12),
+
+    'io.main': owner(12),
+    'io.individualOuts': owner(12),
+    'io.audioIn': owner(12),
+    'io.usbAudio': owner(12),
+
+    voices: owner(14),
+
+    'features.perStep': owner('17-18'),
+    'features.sidechain.fromExternalAudio': owner(30),
+    'features.sidechain.internal': cite(56),
+    /**
+     * §2.6's third state, and the reason it exists. This is not "nobody checked" — the MOD block
+     * has been read closely enough to author a recipe from it (see `features` above). It is
+     * checked, and the answer is that the manual does not state the two things `LfoSpec` needs.
+     */
+    'features.lfo': {
+      kind: 'unknown',
+      reason:
+        'p.71 gives DEST 1-3 as assignment slots for one LFO, not a count, and TARGET’s Value column is literally “-”; neither `count` nor `destinations` has an answer the manual prints',
+    },
+
+    // The five clock-carrying sockets, all on p.12's TRIGGER/CV and MIDI connector tables.
+    [jackFact('MIDI OUT1')]: owner(12),
+    [jackFact('MIDI IN')]: owner(12),
+    [jackFact('DIN SYNC 1')]: owner(12),
+    [jackFact('CLK OUT')]: owner(12),
+    [jackFact('TRG IN')]: owner(12),
   },
 
   /** Gestures, straight off the panel. Jogs, not documentation (invariant 7). */

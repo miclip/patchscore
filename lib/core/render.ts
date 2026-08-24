@@ -1,4 +1,4 @@
-import type { Device } from './device'
+import type { CapabilityEvidence, Device } from './device'
 import { clockJackNotes, clockSourceSetup, rangeDocuments } from './device'
 import type { DeviceId, SectionName } from './ids'
 import type { Role } from './vocabulary'
@@ -168,6 +168,33 @@ function provenanceText(provenance: Provenance): string {
 function mark(provenance: Provenance): string {
   const text = provenanceText(provenance)
   return text === '' ? '' : ` · ${text}`
+}
+
+/**
+ * §2.6/#22. The same idea for a **capability fact** — a socket, a menu path — which carries a
+ * `CapabilityEvidence` rather than a resolved provenance, and has a third state.
+ *
+ * **All three states are marked here, and that is the mark-the-exception rule applied rather than
+ * overridden.** A parameter renders bare when it is provisional because nine values in ten are,
+ * and a mark on all of them says nothing. Capability facts are the other way round: a rig prints
+ * a handful, every one of them is cited today, so `unchecked` and `undocumented` *are* the
+ * exceptions and a reader deserves to see them. "Patch MIDI IN" from a box whose rear panel
+ * nobody has read is worth a word.
+ *
+ * `undocumented` is not a softer `unchecked`. It is the more expensive fact — somebody went to
+ * the manual and it is silent — so it carries its reason on a line of its own, the way a citation
+ * carries its page.
+ */
+function evidenceMark(evidence: CapabilityEvidence): string {
+  if (evidence === false) return ' · unchecked'
+  return evidence.kind === 'unknown' ? ' · undocumented' : ` · ${evidence.kind}`
+}
+
+function evidenceLines(evidence: CapabilityEvidence): string[] {
+  if (evidence === false) return []
+  return evidence.kind === 'unknown'
+    ? [`undocumented — ${evidence.reason}`]
+    : [`value ${citeText(evidence)}`]
 }
 
 /**
@@ -507,12 +534,10 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
     const setup =
       sourceDevice === undefined ? undefined : clockSourceSetup(sourceDevice, source.transport)
     if (setup !== undefined) {
-      const provenance: Provenance =
-        setup.verified === false ? { state: 'provisional' } : { state: 'authored', cite: setup.verified }
       out.push('')
       out.push(
         `- On the ${source.deviceName}, set \`${setup.path}\` to \`${setup.value}\`` +
-          `${mark(provenance)}`,
+          `${evidenceMark(setup.evidence)}`,
       )
       // §8.1's subordinate lines, the same three tags every other cited instruction in this
       // document uses. `· manual` says *how* it was checked and never says *where*: a reader
@@ -520,7 +545,7 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
       // `manual`. The page belongs on the page, not only in a title attribute the printed guide
       // does not have.
       if (setup.note !== undefined) subordinate(out, '  ', 'note', setup.note)
-      for (const cite of citeLines(provenance, undefined)) subordinate(out, '  ', 'cite', cite)
+      for (const cite of evidenceLines(setup.evidence)) subordinate(out, '  ', 'cite', cite)
     }
   }
   out.push('')
@@ -552,15 +577,11 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
     // true of both the In and the Out is printed once.
     if (source !== undefined) {
       for (const jackNote of clockJackNotes(device, source.transport)) {
-        const provenance: Provenance =
-          jackNote.verified === false
-            ? { state: 'provisional' }
-            : { state: 'authored', cite: jackNote.verified }
-        out.push(`  - ${jackNote.jacks.join(', ')}: ${jackNote.note}${mark(provenance)}`)
+        out.push(`  - ${jackNote.jacks.join(', ')}: ${jackNote.note}${evidenceMark(jackNote.evidence)}`)
         // The jack's own page. p.284 stays in the note text above rather than being folded in
         // here: `verified` is the page that documents *this jack* (§3.3), and the adapter's
         // second page documents the adapter — one citation, one claim.
-        for (const cite of citeLines(provenance, undefined)) subordinate(out, '    ', 'cite', cite)
+        for (const cite of evidenceLines(jackNote.evidence)) subordinate(out, '    ', 'cite', cite)
       }
     }
     out.push(`  - audio: ${ioText(device)}`)

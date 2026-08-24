@@ -2,7 +2,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { DeviceSchema, NEUTRAL_MOOD, expand, resolve } from '../lib/core/index'
+import { DeviceSchema, NEUTRAL_MOOD, evidenceFor, expand, jackFact, resolve } from '../lib/core/index'
 import type { Device, ResolvedPatchEntry, ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, industrialTechno } from '../lib/templates/index'
@@ -393,7 +393,7 @@ describe('panel contents', () => {
           expect(declared, `${panel.deviceId} draws '${jack.label}'`).toBeDefined()
           expect(declared?.direction).toBe(jack.kind === 'clock-out' ? 'out' : 'in')
           expect(declared?.clock).toContain(model.clockSource?.transport)
-          expect(declared?.verified).not.toBe(false)
+          expect(evidenceFor(device, jackFact(jack.label))).not.toBe(false)
         }
       }
     }
@@ -460,7 +460,7 @@ describe('panel contents', () => {
     expect(midi).toHaveLength(2)
     for (const jack of midi) {
       expect(jack.note, jack.id).toContain('Type B')
-      expect(jack.verified, jack.id).toEqual({
+      expect(evidenceFor(device, jackFact(jack.id)), jack.id).toEqual({
         kind: 'manual',
         source: 'Polyend Tracker Mini Manual 2.2.1b, p.13',
       })

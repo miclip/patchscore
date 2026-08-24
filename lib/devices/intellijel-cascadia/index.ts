@@ -1,4 +1,5 @@
-import type { Device, JackSpec, PatchEntry, Recipe } from '../../core/device'
+import type { CapabilityEvidence, Device, JackSpec, PatchEntry, Recipe } from '../../core/device'
+import { jackFact } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, Cite } from '../../core/params'
 import type { Role } from '../../core/vocabulary'
 import { CASCADIA_PANEL } from './panel'
@@ -154,13 +155,28 @@ function cite(page: number): Cite {
  * claimed otherwise. The type-level tripwire in `test/cascadia.test.ts` is there so a silent
  * widening fails the build instead of a reviewer.
  */
+const JACK_EVIDENCE: Record<string, CapabilityEvidence> = {}
+
+/**
+ * §2.6/#22. **The page is recorded into `JACK_EVIDENCE`, not returned on the jack.**
+ *
+ * Jack citations moved into the device's one `capabilityEvidence` map, keyed by `jacks[<id>]`, so
+ * that a renderer or the audit asks one question to learn who checked a socket, a menu path or a
+ * track count. The citation still gets written beside the jack, which is where an author holding
+ * the manual writes it; only its destination changed.
+ *
+ * Written out by hand instead, the map would restate every id as a string key a second time, and
+ * a key that drifts from its jack is precisely the failure `DeviceSchema` now checks for. Better
+ * not to create the opportunity: there is one spelling of each id in this file.
+ */
 function jack<Id extends string>(
   id: Id,
   direction: JackSpec['direction'],
   page: number,
   note?: string,
 ): JackSpec & { id: Id } {
-  return { id, direction, verified: cite(page), ...(note === undefined ? {} : { note }) }
+  JACK_EVIDENCE[jackFact(id)] = cite(page)
+  return { id, direction, ...(note === undefined ? {} : { note }) }
 }
 
 /**
@@ -1376,6 +1392,9 @@ export const device: Device = {
 
   /** §3.3. Declared once, cited once, referenced by every cable below. */
   jacks: JACKS,
+
+  /** §2.6. Every jack above, cited on the page that describes it. */
+  capabilityEvidence: { ...JACK_EVIDENCE },
 
   /**
    * One voice. `polyphony: 1` is the manufacturer's own description — "a deep and flexible

@@ -1,4 +1,5 @@
-import type { Device, PatchEntry, Recipe } from '../../core/device'
+import type { CapabilityEvidence, Device, PatchEntry, Recipe } from '../../core/device'
+import { jackFact } from '../../core/device'
 import type { AuthoredParam, Cite } from '../../core/params'
 import { CRAVE_PANEL } from './panel'
 
@@ -123,13 +124,28 @@ const WIDTH = { min: 5, max: 95 }
  * mistyped endpoint is a compile error before it is a Zod error. The Cascadia records what
  * happens without this: a file whose comment claimed a compile-time check it did not have.
  */
+const JACK_EVIDENCE: Record<string, CapabilityEvidence> = {}
+
+/**
+ * §2.6/#22. **The page is recorded into `JACK_EVIDENCE`, not returned on the jack.**
+ *
+ * Jack citations moved into the device's one `capabilityEvidence` map, keyed by `jacks[<id>]`, so
+ * that a renderer or the audit asks one question to learn who checked a socket, a menu path or a
+ * track count. The citation still gets written beside the jack, which is where an author holding
+ * the manual writes it; only its destination changed.
+ *
+ * Written out by hand instead, the map would restate every id as a string key a second time, and
+ * a key that drifts from its jack is precisely the failure `DeviceSchema` now checks for. Better
+ * not to create the opportunity: there is one spelling of each id in this file.
+ */
 function jack<Id extends string>(
   id: Id,
   direction: 'in' | 'out',
   page: number,
   note?: string,
-): { id: Id; direction: 'in' | 'out'; verified: Cite; note?: string } {
-  return { id, direction, verified: cite(page), ...(note === undefined ? {} : { note }) }
+): { id: Id; direction: 'in' | 'out'; note?: string } {
+  JACK_EVIDENCE[jackFact(id)] = cite(page)
+  return { id, direction, ...(note === undefined ? {} : { note }) }
 }
 
 /**
@@ -787,6 +803,9 @@ export const device: Device = {
 
   panel: CRAVE_PANEL,
   jacks: [...JACKS],
+
+  /** §2.6. Every jack above, cited on the page that describes it. */
+  capabilityEvidence: { ...JACK_EVIDENCE },
 
   manual: { title: 'CRAVE Quick Start Guide', edition: 'BE_0718-AAJ_WW' },
 

@@ -1866,6 +1866,27 @@ button:active {
   cursor: help;
 }
 
+/*
+ * §2.6/#22. The two quiet states a *capability fact* can be in, and they are not the same state.
+ *
+ * Outlined rather than inverted, because neither is the notable claim `.prov-cited` is: they
+ * qualify a line the reader is acting on rather than vouching for it. Drawn apart from each
+ * other because they cost different things — `unchecked` is work nobody has done, and
+ * `undocumented` is work somebody finished and the manual is silent, which is a finding.
+ */
+.prov-unchecked {
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid var(--edge-strong);
+}
+
+.prov-undocumented {
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px dashed var(--edge-strong);
+  cursor: help;
+}
+
 /* A mood knob moved it. A fact about the value, not a claim about its authority. */
 .prov-moved {
   color: var(--accent);
