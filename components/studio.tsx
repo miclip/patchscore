@@ -15,7 +15,6 @@ import { INSPIRATIONS } from '@/lib/inspirations'
 import { browserEnv } from '@/lib/studio/browser-env'
 import {
   CATALOGUE,
-  DEFAULT_INPUTS,
   bootstrapStudio,
   composeTemplate,
   copyStudioLink,
@@ -44,17 +43,38 @@ import { SeedField } from './seed-field'
  * places to remember to re-encode and five chances for the URL to describe a guide that is not
  * the one on screen. One object changes once, and one effect writes it everywhere.
  *
- * **The first frame is a constant.** No `window`, no URL, no storage in render or in a state
- * initializer — the server and the client's first pass both render `DEFAULT_INPUTS`, and the
- * link and the store get their say in an effect afterwards. That is why the bootstrap is not a
- * lazy `useState` initializer, which is where this would otherwise obviously go.
+ * **The first frame is a pure function of `initialInputs`.** No `window`, no URL, no storage in
+ * render or in a state initializer — the server decodes the query (#99, `lib/studio/entry.ts`)
+ * and hands the result down as a prop, so both sides render the same bytes from the same value,
+ * and *storage* is the only thing left that gets its say in an effect afterwards. That is why
+ * the bootstrap is not a lazy `useState` initializer, which is where this would otherwise
+ * obviously go.
+ *
+ * The prop is the URL's contribution and nothing else. This component still reads no `window`
+ * during render, which is the invariant `test/studio-render.test.ts` guards with a hostile
+ * global: the URL reaching the first frame as data is exactly what makes reading it here
+ * unnecessary rather than merely discouraged.
  *
  * `resolve` is pure and takes single-digit milliseconds for a three-device rig, so it runs
  * synchronously on every change rather than behind a "generate" button. There is nothing to wait
  * for and no request to make (invariant 1).
  */
-export function Studio() {
-  const [inputs, setInputs] = useState<GuideInputsV1>(DEFAULT_INPUTS)
+export type StudioProps = {
+  /**
+   * The guide to open on, decoded from the query by `lib/studio/entry.ts`. **Required, with no
+   * default here on purpose**: `DEFAULT_INPUTS` is the answer to "there was no valid permalink",
+   * which is a question the server has already asked and answered. A default on this prop would
+   * be a second place that decides the fallback, and two of those is how a page comes to open on
+   * a guide neither of them chose.
+   *
+   * It is the server's answer, not the last word: the bootstrap effect below may still find a
+   * saved studio, and a link always beats both.
+   */
+  initialInputs: GuideInputsV1
+}
+
+export function Studio({ initialInputs }: StudioProps) {
+  const [inputs, setInputs] = useState<GuideInputsV1>(initialInputs)
   const [rig, setRig] = useState<StoredRigV1 | undefined>(undefined)
   /**
    * Whether this session owns the studio it is showing. A shared permalink does not: opening
@@ -68,9 +88,10 @@ export function Studio() {
   /**
    * Where the inputs on screen came from, and whether they have been touched (#61). Together
    * they decide one thing: whether the page is allowed to call this rig an example. `source`
-   * starts at `'default'` because that is what the first frame renders, and `bootstrapped`
-   * — already needed by the sync effect — is what stops it being *believed* until the store and
-   * the URL have had their say.
+   * starts at `'default'` because it is the *storage* question and storage has not been read
+   * yet — the server may well have opened a link (#99), and the bootstrap effect below says so
+   * a commit later. `bootstrapped` — already needed by the sync effect — is what stops this
+   * being *believed* until then.
    */
   const [source, setSource] = useState<Bootstrap['source']>('default')
   const [edited, setEdited] = useState(false)
@@ -87,9 +108,9 @@ export function Studio() {
    * Nothing is written until something has been read — and this **must** be state, not a ref.
    *
    * A ref set inside the bootstrap effect flips synchronously, so the sync effect below (same
-   * commit, runs straight after) would fire holding the *stale* `DEFAULT_INPUTS` closure: it
-   * would `replaceState` the defaults over the link the user just opened, and save them over the
-   * studio the bootstrap had only just loaded. A saved studio destroyed by the act of opening
+   * commit, runs straight after) would fire holding the *stale* `initialInputs` closure: it
+   * would `replaceState` those over whatever the bootstrap had just loaded, and save them over
+   * the studio it had only just read. A saved studio destroyed by the act of opening
    * it, and a shared link that silently becomes somebody else's. Under React's development
    * double-invocation the second bootstrap then reads that overwritten URL and the link is gone
    * for good.

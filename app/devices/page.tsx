@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { DeviceIndex } from '@/components/catalogue/device-index'
 import { Footer } from '@/components/footer'
 import { DEVICES } from '@/lib/devices/registry.generated'
@@ -30,9 +29,6 @@ export default function Page() {
         <h1>Devices</h1>
         <p>
           {DEVICES.length} boxes, what each one is asked to do, and where every number came from.
-        </p>
-        <p className="masthead-actions">
-          <Link href="/">Open the studio</Link>
         </p>
       </header>
 

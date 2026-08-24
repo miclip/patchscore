@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { DirectionIndex } from '@/components/catalogue/direction-index'
 import { Footer } from '@/components/footer'
 import { TEMPLATES } from '@/lib/templates'
@@ -23,9 +22,6 @@ export default function Page() {
         <p>
           {TEMPLATES.length} directions, what each one asks a rig for, and what your boxes cover
           of it.
-        </p>
-        <p className="masthead-actions">
-          <Link href="/devices">All devices</Link> <Link href="/">Open the studio</Link>
         </p>
       </header>
 

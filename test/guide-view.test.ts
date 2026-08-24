@@ -15,6 +15,10 @@ import type { ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, droneStudy, industrialTechno } from '../lib/templates/index'
 import { DEFAULT_INPUTS } from '../lib/studio/session'
+import { readFileSync } from 'node:fs'
+import { applyInspirations } from '../lib/core/index'
+import { templateHref } from '../lib/studio/catalogue'
+import { inspirationsFor } from '../lib/studio/session'
 import { Guide } from '../components/guide/guide'
 import { fxText } from '../components/guide/format'
 import { mergeBlocks } from '../components/guide/phase-steps'
@@ -806,5 +810,48 @@ describe('the clock source is told how to emit (§7.4/#104)', () => {
     const page = text(html(tr))
     expect(page).toContain('Clock source')
     expect(page).not.toContain('Clock Out')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #112 the guide names the direction, so the guide links to it
+// ---------------------------------------------------------------------------
+
+describe('#112 the guide heading links the direction', () => {
+  it('points at the direction page, and only there', () => {
+    // The guide names the direction on every phase and, until #112, linked to it from nowhere.
+    const markup = html(golden)
+    expect(markup).toContain(
+      `<h2><a href="${templateHref(golden.template)}">${golden.template.name}</a></h2>`,
+    )
+  })
+
+  it('links the *effective* template to the page for the direction it came from', () => {
+    // §5 composes an effective template with `...template`, so an inspiration changes the roles
+    // and the patterns and never the id — which is what makes this href always name a page that
+    // exists. Asserted rather than assumed: an id rewritten during composition would send every
+    // guide with an influence on it to a 404.
+    const applied = applyInspirations(industrialTechno, inspirationsFor({
+      ...DEFAULT_INPUTS,
+      inspirations: ['shuffle'],
+    }))
+    expect(applied.outcome).toBe('applied')
+    if (applied.outcome !== 'applied') return
+    expect(applied.template.id).toBe(industrialTechno.id)
+    expect(templateHref(applied.template)).toBe(templateHref(industrialTechno))
+  })
+
+  it('is a 44px target that reads as a heading rather than as a control', () => {
+    const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
+    const start = css.indexOf('\n.guide-head h2 a {')
+    expect(start, '.guide-head h2 a is missing entirely').toBeGreaterThan(-1)
+    const rule = css.slice(start, css.indexOf('}', start))
+    // #21's floor. The guide head is one row per guide, so buying the target with height costs
+    // a single row of a page that is metres long.
+    expect(rule).toContain('min-height: 44px')
+    // It inherits the heading's ink: this is the title of what you are reading, not a control
+    // at the top of it. The rule underneath is the affordance.
+    expect(rule).toContain('color: inherit')
+    expect(rule).toContain('border-bottom')
   })
 })

@@ -39,10 +39,12 @@ import { TEMPLATES, templateById } from '@/lib/templates'
  *
  * **Nothing here is called during render.** `location`, `localStorage` and `history` are read in
  * effects and event handlers only. That is what keeps the server's markup and the client's first
- * markup identical: the first frame is a pure function of `DEFAULT_INPUTS`, and the URL and the
- * store only get a say afterwards. `test/studio-render.test.ts` renders this component in Node,
- * where `window` does not exist at all — so a stray read during render is a thrown error rather
- * than a hydration mismatch nobody notices.
+ * markup identical: the first frame is a pure function of the `initialInputs` prop, which the
+ * server decoded from the query string (#99, `lib/studio/entry.ts`) and which both sides
+ * therefore hold before either renders. Storage gets its say afterwards.
+ * `test/studio-render.test.ts` renders this component in Node, where `window` does not exist at
+ * all — so a stray read during render is a thrown error rather than a hydration mismatch nobody
+ * notices.
  */
 
 // ---------------------------------------------------------------------------

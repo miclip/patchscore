@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs'
 import { ROLES } from '../lib/core/index'
 import type { Role } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { deviceHref, deviceLabel, templateHref } from '../lib/studio/catalogue'
 import { TEMPLATES } from '../lib/templates/index'
 import {
   ANY_KIND,
@@ -430,7 +431,9 @@ describe('the picker controls', () => {
     const { markup } = deviceMarkup(selected)
     const order = DEVICES.map((d) => ({
       id: d.id,
-      at: markup.indexOf(`${d.maker} ${d.name}`),
+      // `deviceLabel`, not `maker` + `name`: the row prints the label now (#112), which is the
+      // one that does not render `Zoom Zoom LiveTrak L-8`.
+      at: markup.indexOf(`>${deviceLabel(d)}<`),
       on: selected.includes(d.id),
     }))
     for (const row of order) expect(row.at, `${row.id} not rendered`).toBeGreaterThan(-1)
@@ -492,5 +495,152 @@ describe('the picker controls', () => {
     expect(markup).not.toContain('All kinds')
     for (const template of TEMPLATES) expect(markup).toContain(template.name)
     expect(markup).toContain(`${TEMPLATES.length} templates authored`)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #112 the row is two targets
+// ---------------------------------------------------------------------------
+
+/**
+ * #112. A picker row stopped being one control and became a container holding two.
+ *
+ * The obstacle was structural rather than cosmetic, which is why it is asserted structurally: the
+ * row was a `<label>` wrapping the whole thing, and an `<a>` may not go inside one. Interactive
+ * content in a label is invalid, and a click on it toggles the control on the way past — so a
+ * link laid over the existing label would have made the row's *checkbox* unreliable. #21 names
+ * that failure mode exactly: not "I cannot read about my device" but "I cannot select it".
+ *
+ * Rendered in Node with no DOM, so what is checkable is structure, order and hrefs. The 44px
+ * targets are in the stylesheet and are asserted there.
+ */
+describe('#112 a picker row carries two sibling targets', () => {
+  const deviceRows = renderToStaticMarkup(
+    createElement(DevicePicker, { selected: ['polyend-tracker-mini'], onToggle: vi.fn() }),
+  )
+  const directionRows = renderToStaticMarkup(
+    createElement(GenrePicker, { selected: 'industrial-techno', onSelect: vi.fn() }),
+  )
+
+  /** Every `<label class="pick-choose">…</label>`. Labels do not nest, so non-greedy is exact. */
+  function choosers(markup: string): string[] {
+    return [...markup.matchAll(/<label class="pick-choose">(.*?)<\/label>/g)].map((m) => m[1] ?? '')
+  }
+
+  it('never nests a link inside a label, which is the invalid structure it replaced', () => {
+    for (const markup of [deviceRows, directionRows]) {
+      const found = choosers(markup)
+      expect(found.length).toBeGreaterThan(0)
+      for (const inner of found) expect(inner).not.toContain('<a ')
+    }
+    // And the row itself is no longer a label, so it no longer toggles as a whole.
+    for (const markup of [deviceRows, directionRows]) {
+      expect(markup).not.toContain('<label class="pick"')
+      expect(markup).toContain('<div class="pick"')
+    }
+  })
+
+  it('keeps the control and its visible name inside the label, so the name is still the label', () => {
+    // The accessible name still comes from a real `<label>` wrapping the control — not from an
+    // `aria-label`, which is a string with no element behind it and which voice control cannot
+    // always target. `test/catalogue.test.ts` makes the same argument about `.sr-only`.
+    for (const device of DEVICES) {
+      const inner = choosers(deviceRows).find((c) => c.includes(`>${deviceLabel(device)}<`))
+      expect(inner, `${device.id} has no chooser`).toBeDefined()
+      expect(inner).toContain('type="checkbox"')
+      expect(inner).toContain('<span class="name">')
+    }
+    for (const template of TEMPLATES) {
+      const inner = choosers(directionRows).find((c) => c.includes(`>${template.name}<`))
+      expect(inner, `${template.id} has no chooser`).toBeDefined()
+      expect(inner).toContain('type="radio"')
+    }
+  })
+
+  it('describes the control with the metadata line rather than naming it with it', () => {
+    // The `sub` line used to sit inside the label, so it was part of the checkbox's *name* — the
+    // string a screen reader repeats on every arrow key. It is a description now: every fact is
+    // still reachable and none of it is the name.
+    for (const markup of [deviceRows, directionRows]) {
+      const described = [...markup.matchAll(/aria-describedby="([^"]+)"/g)].map((m) => m[1] ?? '')
+      expect(described.length).toBeGreaterThan(0)
+      for (const id of described) {
+        // The id it points at exists, and it is the metadata line rather than anything else.
+        expect(markup, `nothing carries id ${id}`).toContain(`<span class="sub mono" id="${id}">`)
+      }
+      // Unique per row: two rows sharing one description id is one row describing the other.
+      expect(new Set(described).size).toBe(described.length)
+    }
+  })
+
+  it('links every device row to its own page, after the control in focus order', () => {
+    for (const device of DEVICES) {
+      const href = deviceHref(device)
+      const link = `<a class="pick-details" href="${href}">`
+      expect(deviceRows, `${device.id} has no details link`).toContain(link)
+      // Visible word plus the device it belongs to, as real text: thirteen rows must not all
+      // announce as "Details", and an `aria-label` replacing the visible word would fail
+      // WCAG 2.5.3 (Label in Name) rather than satisfying it.
+      expect(deviceRows).toContain(
+        `${link}Details<span class="sr-only"> for ${deviceLabel(device)}</span></a>`,
+      )
+      // The control comes first in the DOM, so tab order matches the visual order of the row.
+      const row = deviceRows.indexOf(`>${deviceLabel(device)}<`)
+      expect(deviceRows.lastIndexOf('<label class="pick-choose">', row)).toBeLessThan(
+        deviceRows.indexOf(link, deviceRows.lastIndexOf('<div class="pick"', row)),
+      )
+    }
+  })
+
+  it('links every direction row to its own page', () => {
+    for (const template of TEMPLATES) {
+      expect(directionRows).toContain(
+        `<a class="pick-details" href="${templateHref(template)}">Details` +
+          `<span class="sr-only"> for ${template.name}</span></a>`,
+      )
+    }
+  })
+
+  it('gives both targets 44px and puts them in separate columns, so neither steals a tap', () => {
+    const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
+    const rule = (selector: string) => {
+      const start = css.indexOf(`\n${selector} {`)
+      expect(start, `${selector} is missing entirely`).toBeGreaterThan(-1)
+      return css.slice(start, css.indexOf('}', start))
+    }
+
+    expect(rule('.pick-choose')).toContain('min-height: 44px')
+    expect(rule('.pick-details')).toContain('min-height: 44px')
+    // Width too: a link that is 44px tall and 20px wide is still a miss on a phone.
+    expect(rule('.pick-details')).toContain('min-width: 44px')
+
+    // Different grid columns of the same row. Non-overlap is layout, not luck — the two cannot
+    // sit on top of each other however long the device name is.
+    expect(rule('.pick-choose')).toContain('grid-column: 1')
+    expect(rule('.pick-details')).toContain('grid-column: 2')
+    expect(rule('.pick-choose')).toContain('grid-row: 1')
+    expect(rule('.pick-details')).toContain('grid-row: 1')
+  })
+
+  it('lets a long name wrap at 390px rather than scrolling the row sideways', () => {
+    const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
+    const rule = (selector: string) => {
+      const start = css.indexOf(`\n${selector} {`)
+      expect(start).toBeGreaterThan(-1)
+      return css.slice(start, css.indexOf('}', start))
+    }
+
+    // #21: the page body never scrolls horizontally. The name column is the one that flexes, so
+    // it is the one that must be allowed to reach zero and wrap.
+    expect(rule('.pick')).toContain('grid-template-columns: minmax(0, 1fr) auto')
+    for (const selector of ['.pick', '.pick-choose', '.pick .name', '.pick .sub']) {
+      expect(rule(selector), selector).toContain('min-width: 0')
+    }
+    expect(rule('.pick .name')).toContain('overflow-wrap: anywhere')
+    expect(rule('.pick .sub')).toContain('overflow-wrap: anywhere')
+    // The details link is the one thing that keeps its width, so it may not wrap mid-word.
+    expect(rule('.pick-details')).toContain('white-space: nowrap')
+    // And nothing here buys the fit with a horizontal scroller.
+    expect(rule('.pick')).not.toContain('overflow-x')
   })
 })

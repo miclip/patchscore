@@ -490,14 +490,32 @@ export function decodeGuideInputs(text: string, catalogue: Catalogue): DecodedGu
   for (const pair of query.split('&')) {
     const eq = pair.indexOf('=')
     if (eq <= 0) return fail('malformed', `'${pair}' is not a field=value pair`)
-    const key = pair.slice(0, eq)
+    const rawKey = pair.slice(0, eq)
     const raw = pair.slice(eq + 1)
 
+    /**
+     * **Both halves are decoded, not just the value.** `?%73eed=1` is a legal spelling of
+     * `?seed=1` — nothing normalises percent-encoding between an address bar and this function,
+     * and a chat client or a redirect may hand one over.
+     *
+     * Reading the key raw was a real disagreement rather than a nicety (#99). The server reaches
+     * this through `queryFromSearchParams`, which re-encodes a key the framework has *already*
+     * decoded, so `%73eed` arrives here spelled `seed` and the guide resolves; the client passes
+     * `location.search` in untouched, so the same link arrived spelled `%73eed`, was dropped as
+     * an unknown field, and then failed as a link with no seed. One URL, a guide on the server
+     * and a broken link on the client, with no error on either side to say why.
+     *
+     * The format still has exactly one spelling it *writes* — `encodeGuideInputs` emits plain
+     * keys, always — so this is leniency on the way in only, which is where a link that has been
+     * through somebody else's software needs it.
+     */
+    let key: string
     let value: string
     try {
+      key = decodeURIComponent(rawKey)
       value = decodeURIComponent(raw)
     } catch {
-      return fail('malformed', `field '${key}' is not valid percent-encoding`)
+      return fail('malformed', `field '${rawKey}' is not valid percent-encoding`)
     }
 
     if (!KNOWN.has(key)) {
