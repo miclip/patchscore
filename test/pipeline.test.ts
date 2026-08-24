@@ -557,10 +557,13 @@ describe('clock source ranks on semantics, not on load (§7.4)', () => {
     // Every tie-break below `preferredSource` is stacked against the sequencer: it sorts last by
     // id, it is on the slower transport, and it is carrying nothing at all while the groovebox
     // carries eight parts. Under the old ranking the groovebox won on the first key.
-    const sequencer = preferred('z-sequencer', { transport: ['usb'] })
+    const preferredBox = preferred('z-preferred-box', { transport: ['usb'] })
     const groovebox = both('a-groovebox')
-    const chosen = selectClockSource([groovebox, sequencer], new Map([['a-groovebox', 8], ['z-sequencer', 0]]))
-    expect(chosen?.deviceId).toBe('z-sequencer')
+    const chosen = selectClockSource(
+      [groovebox, preferredBox],
+      new Map([['a-groovebox', 8], ['z-preferred-box', 0]]),
+    )
+    expect(chosen?.deviceId).toBe('z-preferred-box')
     // And the load still reaches the page — it is rendered, it just does not rank.
     expect(chosen?.occupiedAssignables).toBe(0)
   })

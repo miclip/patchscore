@@ -749,9 +749,9 @@ export const device: Device = {
     /**
      * TR-REC's per-step vocabulary, all from p.19, and it is **not the TR-1000's list**. This
      * box has no per-step probability and no cycle; it has a flam, which the TR-1000 does not.
-     * `alt-inst` is the one lane the two share — the TR-1000 declares it too — so the flam is the
-     * whole of the difference in this direction. `perStep` is an open per-device list precisely
-     * so the two can disagree (§2.3).
+     * The TR-1000 declares `alt-inst` too, so the flam is the whole of the difference in this
+     * direction — the two share five lanes in all (`velocity`, `substep`, `accent`, `weak`,
+     * `alt-inst`). `perStep` is an open per-device list precisely so they can disagree (§2.3).
      *
      *  - `velocity` — *"Hold down a pad [1]-[16] and turn the ACCENT [LEVEL] knob"*
      *  - `accent` — ACCENT [STEP], then pads
