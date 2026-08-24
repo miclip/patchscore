@@ -59,6 +59,30 @@ async function markupFor(id: string): Promise<string> {
 // Naming and addressing
 // ---------------------------------------------------------------------------
 
+describe('a box with nowhere to put a recipe', () => {
+  /**
+   * "Yet" is a promise. Four devices have no assignables at all (§2.4) — two mixers, a sequencer
+   * and an fx unit — so a recipe has nowhere to go and is not late. Telling a reader to come back
+   * for something that is never coming is worse than saying the box does not work that way.
+   */
+  it('says nothing to assign, not no recipes yet, when there is nowhere to put one', () => {
+    const markup = renderToStaticMarkup(createElement(DeviceIndexPage))
+    for (const device of DEVICES) {
+      if (device.recipes.length > 0) continue
+      const label = deviceLabel(device)
+      const at = markup.indexOf(label)
+      expect(at, `${device.id} missing`).toBeGreaterThan(-1)
+      const line = markup.slice(at, at + 400)
+      if (expand(device).length === 0) {
+        expect(line, `${device.id} is voiceless`).toContain('nothing to assign')
+        expect(line, `${device.id} should promise nothing`).not.toContain('no recipes yet')
+      } else {
+        expect(line, `${device.id} has voices and no recipes`).toContain('no recipes yet')
+      }
+    }
+  })
+})
+
 describe('how a device is named and addressed', () => {
   it('does not say the maker twice', () => {
     expect(deviceLabel(TR)).toBe('Roland TR-1000')
