@@ -55,7 +55,7 @@ function GroupNotes({ group }: { group: BandGroup }) {
 /** §8 phase 7. Sidechain, master FX, arrangement variations — what happens once it plays. */
 export function PhaseFinishing({ result }: { result: ResolveResult }) {
   const duckers = result.devices.filter((d) => d.features?.sidechain !== undefined)
-  const fx = fxSources(result.devices)
+  const fx = fxSources(result.devices, result.assignments)
   const byId = new Map(result.devices.map((d) => [d.id, d]))
   const only = fx[0] as FxSource | undefined
   const trajectory = bandTrajectory(result)

@@ -849,6 +849,15 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 
 *Values below cite TR-1000 Reference Manual (eng02) v1.13+.*
 
+**Pattern-wide**
+
+One setting for the whole pattern — set it once, not once per part below.
+
+- **SHUFFLE** `0` (-100…100)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.26
+  - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
+  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
+
 #### HC — `clap`: Wide clap sitting on top of the snare
 
 *Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
@@ -878,10 +887,6 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **DLY SEND** `14` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
-- **SHUFFLE** `0` (-100…100)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.26
-  - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
-  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 #### CC — `impact`: Crash marking the top of a section
 
@@ -897,14 +902,19 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **DLY SEND** `18` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
-- **SHUFFLE** `0` (-100…100)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.26
-  - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
-  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 ### TR-8S
 
 *Values below cite TR-8S Reference Manual eng01.*
+
+**Pattern-wide**
+
+One setting for the whole pattern — set it once, not once per part below.
+
+- **SHUFFLE** `0` (-128…127)
+  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.17
+  - ↳ note: Pattern-wide: one setting for the whole pattern, not per instrument
+  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 #### CH — `closed-hat`: Hat pushed into the compressor
 
@@ -925,10 +935,6 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ hint: INST Edit > ReverbSend
 - **DELAY SEND** `24` (0…255)
   - ↳ hint: INST Edit > DelaySend
-- **SHUFFLE** `0` (-128…127)
-  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.17
-  - ↳ note: Pattern-wide: one setting for the whole pattern, not per instrument
-  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 #### OH — `open-hat`: Open hat with the top rolled off
 
@@ -947,10 +953,6 @@ Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
   - ↳ hint: INST Edit > ReverbSend
 - **DELAY SEND** `48` (0…255)
   - ↳ hint: INST Edit > DelaySend
-- **SHUFFLE** `0` (-128…127)
-  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.17
-  - ↳ note: Pattern-wide: one setting for the whole pattern, not per instrument
-  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 #### CC — `riser`: A sample played backwards into the change
 
@@ -975,14 +977,19 @@ Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
 - **DELAY SEND** `90` (0…255)
   - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
   - ↳ hint: INST Edit > DelaySend
-- **SHUFFLE** `0` (-128…127)
-  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.17
-  - ↳ note: Pattern-wide: one setting for the whole pattern, not per instrument
-  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 ### Deluge
 
 *Values below cite Deluge Official Guidebook OS 4.1 (OLED) and Deluge community firmware release_1_2_1, community_features.md.*
+
+**Song-wide**
+
+One setting for the whole song — set it once, not once per part below.
+
+- **SWING** `50` % (1…99 %)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
+  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
+  - ↳ hint: Hold [SHIFT], turn (TEMPO)
 
 #### Track 1 — `kick`: Kit-row kick, bass lifted, edge from decimation
 
@@ -995,10 +1002,6 @@ Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
 - **EQ BASS FREQUENCY** `14` (0…50)
 - **DECIMATION** `6` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
-- **SWING** `50` % (1…99 %)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
-  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
-  - ↳ hint: Hold [SHIFT], turn (TEMPO)
 
 ## 7. Finishing
 
@@ -1014,11 +1017,10 @@ Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
 What processes audio in this rig:
 
 - ZOIA Euroburo — is an effects unit (stereo main out · audio in)
-- Tracker Mini — carries DELAY SEND and REVERB SEND in its recipes
 - MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and DELAY SEND and REVERB SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 - TR-8S — carries REVERB, DELAY and MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
-- Deluge — carries BITCRUSH, DECIMATION, DELAY AMOUNT, DELAY RATE, MOD FX FEEDBACK, MOD FX RATE, MOD FX TYPE and REVERB AMOUNT in its recipes
+- Deluge — carries DECIMATION in its recipes
 - Model 2400 — is a mixer and recorder (stereo main out · 8 individual outs · USB audio · audio in)
 - Zoom LiveTrak L-8 — is a mixer and recorder (stereo main out · USB audio · audio in)
 

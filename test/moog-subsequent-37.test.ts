@@ -772,7 +772,10 @@ describe('the panel (§10)', () => {
     // word. That held the drawing hostage to an engine limitation, and the matcher now requires
     // every word in a label to be an effect token or a qualifier. So the strip is drawn, whole,
     // and the assertion is the thing that actually matters.
-    expect(fxSources(DEVICES).map((s) => s.deviceId)).not.toContain('moog-subsequent-37')
+    // No assignments: this asks what the box declares about itself, which is routes 1 and 2
+    // only (#106). The parameter route is a per-guide fact now, and is asserted below
+    // against every recipe on the device — a stronger claim than any one guide could make.
+    expect(fxSources(DEVICES, []).map((s) => s.deviceId)).not.toContain('moog-subsequent-37')
     const strip = (device.panel?.features ?? []).filter(
       (f) => f.kind === 'label' && f.text.includes('DELAY'),
     )
@@ -905,6 +908,6 @@ describe('the KNOB SHIFT strip, split, would read as an effect', () => {
         ],
       },
     }
-    expect(fxSources([split])).not.toEqual([])
+    expect(fxSources([split], [])).not.toEqual([])
   })
 })

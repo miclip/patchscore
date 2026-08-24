@@ -1,5 +1,5 @@
 import type { Device, Recipe } from '../../core/device'
-import type { AuthoredParam, Cite } from '../../core/params'
+import type { AuthoredParam, Cite, ParamScope } from '../../core/params'
 import { TR_8S_PANEL } from './panel'
 
 /**
@@ -121,6 +121,7 @@ type NumExtra = {
   unit?: string
   hint?: string
   note?: string
+  scope?: ParamScope
 }
 
 /**
@@ -176,6 +177,7 @@ function shuffle(): AuthoredParam {
     mood: [{ axis: 'swing', amount: 127 }],
     hint: 'ptn-shuffle',
     note: 'Pattern-wide: one setting for the whole pattern, not per instrument',
+    scope: 'pattern',
   })
 }
 

@@ -1,5 +1,6 @@
 import type { DeviceId } from './ids'
 import type { Device } from './device'
+import type { ResolvedAssignment } from './pipeline'
 
 /**
  * §8 phase 7's other half: **what in this rig processes audio.**
@@ -23,14 +24,30 @@ import type { Device } from './device'
  *   1. `kind` — an `fx-processor` or a `mixer-recorder` *is* the processing.
  *   2. Panel labels (§10). A label silkscreened `MASTER FX` is the box telling you where its
  *      effects live, in the words you will read on the panel while standing at it.
- *   3. Recipe parameter names. A recipe that sets `REVERB SEND` is a recipe that will not sound
- *      as authored unless the box has a reverb.
+ *   3. **Resolved** parameter names. A part that sets `REVERB SEND` is a part that will not
+ *      sound as authored unless the box has a reverb.
  *
  * All three are name matches against `EFFECT_TOKENS`, and a name match is weaker evidence than
  * a declaration. It is what the current schema affords. Two consequences worth knowing:
  * detection is blind to a device with no panel drawing and no effect parameters (its FX would
  * go unmentioned), and a knob labelled `DELAY` that is really an envelope delay would be read
  * as an effect. The first under-claims and the second over-claims, and both do it quietly.
+ *
+ * **Why route 3 reads assignments and not `device.recipes` (#106).** It used to scan every
+ * authored recipe on the box, which makes it a *capability* fact wearing a per-guide sentence.
+ * A Tracker Mini drone study assigning one `texture` part was told the box "carries DELAY SEND
+ * and REVERB SEND in its recipes" — `DELAY SEND` is real on the Tracker Mini and resolved into
+ * nothing here, so the guide named a control the reader will not find on any page of it. Same
+ * family as #59 and #58: a manifest fact leaking into prose that claims to describe *this*
+ * guide. Routes 1 and 2 stay device-level on purpose — what the box *is*, and what is
+ * silkscreened on it, are true of the hardware standing in front of you whether or not this
+ * guide gave it a part.
+ *
+ * The cost is a narrower false negative than the one #59 fixed: a device whose only FX evidence
+ * is its parameters, given no part in this guide, now leaves the section entirely — and in a rig
+ * where it is the only candidate, the section says nothing here processes audio. That reads as a
+ * claim about the rack rather than about the guide. It is the honest direction of the two, and
+ * it is not yet a solved sentence.
  */
 
 /**
@@ -135,7 +152,11 @@ export type FxEvidence =
   | { kind: 'unit'; deviceKind: 'fx-processor' | 'mixer-recorder' }
   /** Panel labels naming an effect, **in panel order** — the order you read them on the box. */
   | { kind: 'panel'; labels: string[] }
-  /** Effect parameters this device's recipes set, by name, in UTF-16 code unit order. */
+  /**
+   * Effect parameters this guide's parts set on this device, by name, in UTF-16 code unit
+   * order. Resolved, not authored (#106) — a parameter the box can set but no part in this
+   * guide does is not evidence about this guide.
+   */
   | { kind: 'recipe'; params: string[] }
 
 export type FxSource = {
@@ -165,21 +186,48 @@ function panelLabels(device: Device): string[] {
   return unique(labels)
 }
 
-function recipeParams(device: Device): string[] {
-  const names: string[] = []
-  for (const recipe of device.recipes) {
-    for (const param of recipe.params) if (isEffectParam(param.name)) names.push(param.name)
+/**
+ * Effect parameter names per device, from what actually resolved (#106).
+ *
+ * Built once for the whole rig rather than per device, so the cost is one pass over the
+ * assignments however many boxes are in the rack. `ResolvedParam.name` is the authored name
+ * unchanged — mood moves values, never names (§6.1) — so the same token matching applies to
+ * both sides of the resolver.
+ *
+ * Sorted by code unit (§7.2), which is what makes the answer independent of assignment order:
+ * two rigs that resolve the same effect parameters in a different order print the same list.
+ */
+function resolvedEffectParams(
+  assignments: readonly ResolvedAssignment[],
+): Map<DeviceId, string[]> {
+  const byDevice = new Map<DeviceId, string[]>()
+  for (const assignment of assignments) {
+    for (const param of assignment.params) {
+      if (!isEffectParam(param.name)) continue
+      const names = byDevice.get(assignment.deviceId) ?? []
+      names.push(param.name)
+      byDevice.set(assignment.deviceId, names)
+    }
   }
-  return unique(names).sort(byCodeUnit)
+  return new Map([...byDevice].map(([id, names]) => [id, unique(names).sort(byCodeUnit)]))
 }
 
 /**
- * A pure function of device data, in the rig's own order — the same order phase 3 lists the rig
- * in, so a reader meets the boxes twice in one sequence. A device with no evidence is absent
- * rather than present-and-empty: "nothing here processes audio" is one claim about the rig, not
- * one claim per box.
+ * In the rig's own order — the same order phase 3 lists the rig in, so a reader meets the boxes
+ * twice in one sequence. A device with no evidence is absent rather than present-and-empty:
+ * "nothing here processes audio" is one claim about the rig, not one claim per box.
+ *
+ * `assignments` is required rather than defaulted (#106). A default would let a caller keep the
+ * capability-shaped answer by omitting an argument, which is precisely the mistake this call
+ * signature exists to make impossible; both renderers hold a whole `ResolveResult` and have
+ * nothing to lose by passing it. Pass `[]` deliberately to ask what a box declares about itself
+ * with no guide in hand — that answer carries routes 1 and 2 only, and says so by construction.
  */
-export function fxSources(devices: readonly Device[]): FxSource[] {
+export function fxSources(
+  devices: readonly Device[],
+  assignments: readonly ResolvedAssignment[],
+): FxSource[] {
+  const resolved = resolvedEffectParams(assignments)
   const sources: FxSource[] = []
   for (const device of devices) {
     const evidence: FxEvidence[] = []
@@ -188,7 +236,7 @@ export function fxSources(devices: readonly Device[]): FxSource[] {
     }
     const labels = panelLabels(device)
     if (labels.length > 0) evidence.push({ kind: 'panel', labels })
-    const params = recipeParams(device)
+    const params = resolved.get(device.id) ?? []
     if (params.length > 0) evidence.push({ kind: 'recipe', params })
     if (evidence.length > 0) sources.push({ deviceId: device.id, name: device.name, evidence })
   }

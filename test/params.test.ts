@@ -4,9 +4,11 @@ import {
   CITE_KINDS,
   CiteSchema,
   NumericRangeSchema,
+  PARAM_SCOPES,
   ProvenanceSchema,
   ResolvedParamSchema,
   VerifiedSchema,
+  hoistedParams,
   type AuthoredParam,
   type ResolvedParam,
 } from '../lib/core/index'
@@ -266,5 +268,100 @@ describe('ResolvedParam (§3.1, invariant 4)', () => {
         provenance: { state: 'provisional' },
       }).success,
     ).toBe(true)
+  })
+})
+
+describe('hoistedParams — the settings that belong to the device (§8/#107)', () => {
+  const CITE = { kind: 'manual', source: 'Fixture p.7' } as const
+
+  function swing(over: Partial<ResolvedParam> = {}): ResolvedParam {
+    return {
+      name: 'SWING',
+      value: 50,
+      unit: '%',
+      range: { min: 25, max: 75, verified: CITE },
+      provenance: { state: 'provisional' },
+      note: '50% is no swing',
+      hint: 'pick-fx',
+      scope: 'pattern',
+      ...over,
+    }
+  }
+
+  const cutoff: ResolvedParam = {
+    name: 'CUTOFF',
+    value: 74,
+    range: { min: 0, max: 100, verified: CITE },
+    provenance: { state: 'provisional' },
+  }
+
+  it('lifts a scoped parameter every part agrees on, and names it for the parts to drop', () => {
+    const out = hoistedParams([
+      [cutoff, swing()],
+      [swing(), cutoff],
+      [swing()],
+    ])
+    expect(out.groups).toHaveLength(1)
+    expect(out.groups[0]?.scope).toBe('pattern')
+    expect(out.groups[0]?.params.map((p) => p.name)).toEqual(['SWING'])
+    expect([...out.names]).toEqual(['SWING'])
+  })
+
+  it('carries the whole line, not just the name — hoisting must not cost evidence', () => {
+    const only = hoistedParams([[swing()]]).groups[0]?.params[0]
+    expect(only?.value).toBe(50)
+    expect(only?.unit).toBe('%')
+    expect(only?.range?.verified).toEqual(CITE)
+    expect(only?.note).toBe('50% is no swing')
+    expect(only?.hint).toBe('pick-fx')
+    expect(only?.provenance).toEqual({ state: 'provisional' })
+  })
+
+  it('leaves an unscoped parameter exactly where it is, however often it repeats', () => {
+    // The ordinary case, and the reason the field is opt-in: `CUTOFF` under three parts is three
+    // settings that happen to share a number, and merging them would be a claim about the box.
+    const out = hoistedParams([[cutoff], [cutoff], [cutoff]])
+    expect(out.groups).toEqual([])
+    expect(out.names.size).toBe(0)
+  })
+
+  it('refuses to hoist when the parts disagree, and says so by leaving them alone', () => {
+    // Two recipes authoring the same pattern-global control at different values. One line under a
+    // heading claiming it covers both would invent an agreement the data does not contain
+    // (invariant 5) — worse than the repetition it would tidy away. The reader sees both and can
+    // tell something is wrong, which is the honest failure.
+    const out = hoistedParams([[swing()], [swing({ value: 62 })]])
+    expect(out.groups).toEqual([])
+    expect(out.names.size).toBe(0)
+  })
+
+  it('refuses on a difference in evidence alone, not only in the value', () => {
+    // Same number, different citation: two recipes inheriting different recipe-level `verified`.
+    // The number a reader dials is identical and the claim behind it is not, so the lines are not
+    // one line.
+    const other = { kind: 'observed', source: 'fixture unit, firmware 1.11' } as const
+    const out = hoistedParams([
+      [swing({ provenance: { state: 'authored', cite: CITE } })],
+      [swing({ provenance: { state: 'authored', cite: other } })],
+    ])
+    expect(out.names.size).toBe(0)
+  })
+
+  it('keeps the scopes apart and orders them as PARAM_SCOPES does', () => {
+    // No shipped device declares both, but the block is one loop over the vocabulary and the
+    // order it prints in should not depend on which part resolved first.
+    const song = swing({ name: 'GROOVE', scope: 'song' })
+    const out = hoistedParams([[song], [swing()]])
+    expect(out.groups.map((g) => g.scope)).toEqual([...PARAM_SCOPES])
+    expect(out.groups.map((g) => g.params.map((p) => p.name))).toEqual([['SWING'], ['GROOVE']])
+  })
+
+  it('sorts within a scope by code unit, not by which part got there first', () => {
+    const a = swing({ name: 'ALPHA' })
+    const z = swing({ name: 'ZULU' })
+    expect(hoistedParams([[z], [a]]).groups[0]?.params.map((p) => p.name)).toEqual([
+      'ALPHA',
+      'ZULU',
+    ])
   })
 })

@@ -461,6 +461,18 @@ it:
   a manifest cannot author it. Collapsing both into one `Param` forces the field to be optional
   everywhere, which means nothing downstream can rely on it being present — and "every rendered
   value carries provenance" is precisely the invariant-4 repair.
+- **What one setting of it covers, when the answer is not "this part"** (`scope`, #107). A recipe
+  is authored per voice, so every parameter in it reads as per-voice, and most are. The Tracker
+  Mini's `SWING` and the TR-1000's Pattern Shuffle are authored pattern-wide; the Deluge's `SWING`
+  is authored `song-wide, not per clip`. Absent means per-part and stays unannotated; present lets
+  §8 phase 6 state it once per device. `pattern` and `song` are kept apart because they are
+  different claims, each taken from the scope its own device already committed to in that
+  parameter's `note` — the vocabulary carries those claims and adds no reading to them. The
+  MC-101's `SHUFFLE` has neither value: its note claims a scope against *steps* rather than
+  against parts, and that manifest gives the box three separate tone tracks, so two parts on it
+  can genuinely carry two settings. It is not a fifth shared vocabulary (invariant 3): nothing in
+  a template names it and nothing joins on it, so it travels device → renderer exactly as `unit`
+  and `note` do.
 
 ```ts
 type Cite =
@@ -496,17 +508,19 @@ indistinguishable from the ones read off a page.
 **Authored** — what a device folder contains, and the only shape an author ever writes:
 
 ```ts
+type ParamScope = 'pattern' | 'song'   // omitted → per-part, the ordinary case (#107)
+
 type AuthoredParam =
   | { kind: 'numeric'; name: string; value: number; range: NumericRange
       step?: number; unit?: string
       mood?: { axis: MoodAxis; amount: number }[]
       verified?: Verified            // the *point value*; omitted → inherit the recipe's
-      hint?: string; note?: string }
+      hint?: string; note?: string; scope?: ParamScope }
   | { kind: 'enum'; name: string; value: string; options: EnumOptions
       verified?: Verified            // the *selected option*; omitted → inherit the recipe's
-      hint?: string; note?: string }
+      hint?: string; note?: string; scope?: ParamScope }
   | { kind: 'text'; name: string; value: string
-      verified?: Verified; hint?: string; note?: string }
+      verified?: Verified; hint?: string; note?: string; scope?: ParamScope }
 ```
 
 **Resolved** — what §7 step 9 emits and §8 renders. Nothing downstream of the resolver sees an
@@ -525,6 +539,7 @@ type ResolvedParam = {
   unit?: string
   provenance: Provenance        // required, not optional — this is the invariant-4 repair
   hint?: string; note?: string
+  scope?: ParamScope            // carried, never computed — the box's claim, not the resolver's
 }
 ```
 
@@ -1767,6 +1782,17 @@ Do not reorder.
    (`52`, `52 · manual`, `52 → 45 · manual · moved by darkness`). `ResolvedParam.provenance`
    is non-optional, so every value's provenance is decided before the renderer sees it — an
    unmarked value is a decision, never a case that fell through
+
+   **A parameter with a `scope` is stated once per device, above the parts** (§3.1/#107). A
+   recipe is authored per voice, so everything in it reads as a per-voice setting; the Tracker
+   Mini's `SWING` and the TR-1000's Pattern Shuffle are not, and the landing rig printed nine of
+   them — four tracks and five voices — each carrying a note explaining that the other eight were
+   the same number. The hoisted line keeps its value, citation, note and hint: hoisting removes a
+   repetition, never evidence. Above the parts rather than below, because that is the order it is
+   done at the box. **A scope declaration alone is not enough to hoist:** every occurrence must
+   render identically first, and when two recipes disagree the parameter stays in every part.
+   One line under a heading claiming it covers a value it does not is an invented agreement, and
+   invariant 5 forbids that more clearly than it forbids a repetition
 7. **Finishing** — sidechain, master FX, and the arrangement as a **band trajectory** (§6.3):
    which sections program identically part for part, and which parts do not follow the band.
    Deliberately not a second copy of phases 1–3 — it printed the device list, a bars-and-energy
@@ -1776,14 +1802,25 @@ Do not reorder.
    `features.fx`: the block reads three things a device already says about itself — `kind`
    (an `fx-processor` or a `mixer-recorder` *is* the processing), panel labels naming an effect
    (§10 — `MASTER FX` silkscreened on a TR-1000 is the box saying where its effects are, in the
-   words you read standing at it), and effect parameters its recipes set (a recipe asking for
-   `REVERB SEND` will not sound as authored on a box with no reverb). Reading `kind` alone told
-   a rig containing a TR-1000 and a Deluge that it had no effects at all, which is a false
-   negative rather than a gap shown honestly (invariant 5). All three are name matches against a
-   short, deliberately conservative effect vocabulary, and a name match is weaker than a
-   declaration: a box with no panel drawing and no effect parameter goes unmentioned, and a knob
-   labelled `DELAY` that is really an envelope delay would be read as an effect. Both are known
-   limits of reading names rather than declarations, and both under- and over-claim quietly
+   words you read standing at it), and effect parameters **the parts in this guide set** (a part
+   asking for `REVERB SEND` will not sound as authored on a box with no reverb). Reading `kind`
+   alone told a rig containing a TR-1000 and a Deluge that it had no effects at all, which is a
+   false negative rather than a gap shown honestly (invariant 5). All three are name matches
+   against a short, deliberately conservative effect vocabulary, and a name match is weaker than
+   a declaration: a box with no panel drawing and no effect parameter goes unmentioned, and a
+   knob labelled `DELAY` that is really an envelope delay would be read as an effect. Both are
+   known limits of reading names rather than declarations, and both under- and over-claim quietly
+
+   The parameter route reads `assignments`, not `device.recipes`. Scanning every authored recipe
+   makes it a *capability* fact, and this section's sentences claim to describe the resolved
+   guide: a Tracker Mini drone study assigning one `texture` part was told the box carries
+   `DELAY SEND` and `REVERB SEND` in its recipes, when only the reverb send resolved and the
+   delay send appears nowhere the reader can act on. `kind` and panel labels stay device-level,
+   because what the box *is* and what is silkscreened on it are true of the hardware in front of
+   you whether or not this guide gave it a part. The remaining cost is a narrower false negative
+   than the original: a box whose only evidence is its parameters, idle in this guide, leaves the
+   section — and where it is the only candidate the section says nothing in the rig processes
+   audio, which reads as a claim about the rack rather than about the guide. Not yet solved
 
 **Terminology.** Clock roles are `canSendClock` / `canReceiveClock` and the guide says *clock
 source* and *sync to it*. Never master/slave. "Master FX" and "master bus" stay — that is the
