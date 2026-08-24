@@ -7,12 +7,14 @@ import {
   bandTrajectory,
   dominantRangeCite,
   fxSources,
+  moodState,
   renderGuide,
   resolve,
 } from '../lib/core/index'
 import type { ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { TEMPLATES, industrialTechno } from '../lib/templates/index'
+import { TEMPLATES, droneStudy, industrialTechno } from '../lib/templates/index'
+import { DEFAULT_INPUTS } from '../lib/studio/session'
 import { Guide } from '../components/guide/guide'
 import { fxText } from '../components/guide/format'
 import { mergeBlocks } from '../components/guide/phase-steps'
@@ -492,7 +494,7 @@ describe("Finishing's Master FX says the same thing in both renderers (#59)", ()
   })
 
   it('names the same boxes, in the same order, when several process audio', () => {
-    const sources = fxSources(real.devices)
+    const sources = fxSources(real.devices, real.assignments)
     expect(sources.length).toBeGreaterThan(1)
     const view = master(text(html(real)))
     const md = master(renderGuide(real))
@@ -511,12 +513,129 @@ describe("Finishing's Master FX says the same thing in both renderers (#59)", ()
     expect(view).not.toContain('nothing else in this rig')
   })
 
+  it('names only the effect parameters this guide resolved, not the ones the box has (#106)', () => {
+    // The permalink from the issue, exactly:
+    // ?device=polyend-tracker-mini&template=drone-study&darkness=59&grit=52&seed=1
+    //
+    // The Tracker Mini authors `DELAY SEND` and `REVERB SEND` across its recipes and both are
+    // real controls on the box. This guide resolves one part — a `texture` on `tm-texture-soft`
+    // — whose parameters include `REVERB SEND` and no delay at all. Finishing said the box
+    // "carries DELAY SEND and REVERB SEND in its recipes", which is a true sentence about the
+    // hardware inside a section that claims to describe the resolved guide.
+    //
+    // Asserted in both renderers because the sentence is written twice (§8) and the fact behind
+    // it once. A fix landing in one of them would leave the other quietly lying.
+    const drone = resolve({
+      devices: DEVICES.filter((d) => d.id === 'polyend-tracker-mini'),
+      template: droneStudy,
+      mood: moodState({ darkness: 59, grit: 52 }),
+      seed: 1,
+    })
+    // The premise: authored on the box, absent from the guide. If the library ever gives this
+    // template a part that does set a delay, this test is testing nothing and should be told so
+    // here rather than passing vacuously.
+    const authored = drone.devices.flatMap((d) => d.recipes.flatMap((r) => r.params.map((p) => p.name)))
+    expect(authored).toContain('DELAY SEND')
+    const resolved = drone.assignments.flatMap((a) => a.params.map((p) => p.name))
+    expect(resolved).toContain('REVERB SEND')
+    expect(resolved).not.toContain('DELAY SEND')
+
+    for (const doc of [text(html(drone)), renderGuide(drone)]) {
+      const section = master(doc)
+      expect(section).toContain('REVERB SEND')
+      expect(section).not.toContain('DELAY SEND')
+    }
+  })
+
   it('says nothing processes audio for a rig where nothing does', () => {
     // The Cascadia has a wave folder and a soft clip — sound design, one voice at a time — and
     // no effect. Naming either under Master FX would be inventing a chain (invariant 5).
     const line = 'Nothing in this rig processes audio. The master chain is yours at the desk.'
-    expect(fxSources(sparse.devices)).toEqual([])
+    expect(fxSources(sparse.devices, sparse.assignments)).toEqual([])
     expect(master(text(html(sparse)))).toContain(line)
     expect(master(renderGuide(sparse))).toContain(line)
+  })
+})
+
+describe('pattern-global settings are set once per device, not once per part (#107)', () => {
+  /**
+   * The landing rig, taken from `DEFAULT_INPUTS` rather than rebuilt here — this is the guide the
+   * issue was reported against and the one every visitor sees first, so it has to be *that* rig
+   * and not a copy of it that can drift.
+   *
+   * Before the fix it carried nine of these lines: `SWING` under each of the Tracker Mini's four
+   * parts and `SHUFFLE` under each of the TR-1000's five, each with a note explaining that the
+   * other eight were the same number. Both renderers, because #33 makes them siblings and a fix
+   * in one would leave the other repeating.
+   */
+  const landing = resolve({
+    devices: DEVICES.filter((d) => DEFAULT_INPUTS.devices.includes(d.id)),
+    template: TEMPLATES.find((t) => t.id === DEFAULT_INPUTS.templateId) as (typeof TEMPLATES)[number],
+    mood: DEFAULT_INPUTS.mood,
+    seed: DEFAULT_INPUTS.seed,
+  })
+
+  /** How many parts on each device authored the setting — the count that used to be printed. */
+  function partsSetting(name: string, deviceId: string): number {
+    return landing.assignments.filter(
+      (a) => a.deviceId === deviceId && a.params.some((p) => p.name === name),
+    ).length
+  }
+
+  it('resolves the nine repetitions the issue reported, so the counts below are not vacuous', () => {
+    expect(partsSetting('SWING', 'polyend-tracker-mini')).toBe(4)
+    expect(partsSetting('SHUFFLE', 'roland-tr-1000')).toBe(5)
+  })
+
+  it('names each of them exactly once, in both renderers', () => {
+    // Counted on the rendered text rather than on the markup, because the two renderers wrap the
+    // name in different elements and the claim is about what a reader sees.
+    for (const doc of [text(html(landing)), renderGuide(landing)]) {
+      expect(occurrences(doc, 'SWING')).toBe(1)
+      expect(occurrences(doc, 'SHUFFLE')).toBe(1)
+    }
+  })
+
+  it('keeps the value, the citation, the note and the hint on the hoisted line', () => {
+    // Hoisting must not cost evidence. The range citation, the manual's neutral, and the gesture
+    // that reaches the control are the whole reason the line is worth printing at all.
+    for (const doc of [text(html(landing)), renderGuide(landing)]) {
+      expect(doc).toContain('Pattern-wide')
+      expect(doc).toContain('One setting for the whole pattern')
+      expect(doc).toContain('50% is no swing; set once, it applies across the whole pattern')
+      expect(doc).toContain('Pattern-wide: one setting for every track, saved with the pattern')
+      // The Tracker Mini's SWING page, and the TR-1000's PTN SETTING page.
+      expect(doc).toContain('Polyend Tracker Mini Manual 2.2.1b, p.185')
+      expect(doc).toContain('Hold [FX1], press (Up)/(Down)')
+    }
+  })
+
+  it('says both scopes in the same words in both renderers, because the sentence is written twice', () => {
+    // §8's two renderers are siblings sharing no code path, so #107's heading exists twice by
+    // design — once in `lib/core/render.ts`, once in `components/guide/phase-sound.tsx`. Two
+    // copies of a sentence drift, and nothing else in the build would notice: the Markdown side
+    // is pinned byte for byte by the goldens while the web side is pinned by nothing at all.
+    //
+    // `real` rather than the landing rig, because it is the only one carrying both scopes — the
+    // Deluge's `SWING` is authored song-wide and no landing device declares that value.
+    const both = [text(html(real)), renderGuide(real)]
+    for (const doc of both) {
+      expect(doc).toContain('Pattern-wide')
+      expect(doc).toContain('One setting for the whole pattern — set it once, not once per part below.')
+      expect(doc).toContain('Song-wide')
+      expect(doc).toContain('One setting for the whole song — set it once, not once per part below.')
+    }
+  })
+
+  it('states it above the parts, not inside one of them', () => {
+    // Order is the instruction: set the control the pattern shares, then work through the
+    // voices. A hoisted block below the first part would be a footnote to it.
+    const md = renderGuide(landing)
+    const device = md.indexOf('### Tracker Mini')
+    const block = md.indexOf('**Pattern-wide**', device)
+    const firstPart = md.indexOf('#### ', device)
+    expect(device).toBeGreaterThan(-1)
+    expect(block).toBeGreaterThan(device)
+    expect(block).toBeLessThan(firstPart)
   })
 })

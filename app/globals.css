@@ -1595,6 +1595,29 @@ button:active {
   line-height: 1.6;
 }
 
+/*
+ * #107. The settings a device sets once, above the parts that used to repeat them.
+ *
+ * It needs to be visually distinct from a part, because its `h5` is the same element a part
+ * heading uses and "Pattern-wide" sitting in that position otherwise reads as the name of a
+ * voice. The left rule and the recessed panel say device-level; the parameter lines inside are
+ * the ordinary `.instruction` grid, so §8.1's reserved hint column is unchanged and the hoisted
+ * line toggles exactly as every other line does.
+ */
+.scoped {
+  margin: 12px 0 4px;
+  padding: 2px 12px 8px;
+  /* `--panel-2`, not `--panel-1`: print flattens `--panel-1` to plain white, and this block has
+     to still read as a block on paper — the guide is printed and taped to a rack. */
+  background: var(--panel-2);
+  border-left: 2px solid var(--edge);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.scoped > h5 {
+  margin-top: 10px;
+}
+
 /* ------------------------------------------------- §8.1 the reserved column */
 /*
  * "Toggling must not reflow the page." The hint column exists whether or not a hint does, and
@@ -2098,6 +2121,16 @@ button:active {
     grid-column: 1;
     min-height: 1.15rem;
   }
+
+  /*
+    #21: parameter values stay monospace and legible at arm's length, so the width they need is
+    not negotiable. At 390px the block's side padding is width taken off the value, and the left
+    rule alone is enough to say device-level — the indent was never carrying that claim.
+  */
+  .scoped {
+    padding-right: 0;
+    padding-left: 8px;
+  }
 }
 
 /* ------------------------------------------------- cross-references and lists */
@@ -2415,6 +2448,7 @@ html {
   .instruction,
   .instruction-line,
   .recipe,
+  .scoped,
   .step-grid,
   .step-row,
   .chord,

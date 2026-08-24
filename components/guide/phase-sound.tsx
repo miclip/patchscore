@@ -3,10 +3,12 @@ import type {
   DeviceId,
   ResolveResult,
   ResolvedAssignment,
+  ResolvedParam,
   ResolvedPatchEntry,
 } from '@/lib/core'
 import { citationSentence } from '@/lib/core'
-import { dominantRangeCite } from '@/lib/core'
+import { dominantRangeCite, hoistedParams } from '@/lib/core'
+import type { ParamScope, ScopedParams } from '@/lib/core'
 import { citeLines, citeText, count, hintText, num } from './format'
 import { Instruction, ParamLine, ProvenanceMark } from './instruction'
 
@@ -64,15 +66,21 @@ function Patch({ entries }: { entries: readonly ResolvedPatchEntry[] }) {
  * The shared citation is stated once under the heading; a parameter citing a different page —
  * or one whose range is unverified, which is a different claim entirely — keeps its own.
  */
-function Params({ assignment, owner }: { assignment: ResolvedAssignment; owner: Device | undefined }) {
-  const hoisted = dominantRangeCite(assignment.params)
+function Params({
+  params,
+  owner,
+}: {
+  params: readonly ResolvedParam[]
+  owner: Device | undefined
+}) {
+  const hoisted = dominantRangeCite(params)
   return (
     <>
       {hoisted === undefined ? null : (
         <p className="quiet">Ranges cite {citeText(hoisted)}.</p>
       )}
       <div className="params">
-        {assignment.params.map((param) => {
+        {params.map((param) => {
           const hint = param.hint === undefined ? undefined : hintText(owner, param.hint)
           return (
             <ParamLine
@@ -85,6 +93,49 @@ function Params({ assignment, owner }: { assignment: ResolvedAssignment; owner: 
         })}
       </div>
     </>
+  )
+}
+
+/**
+ * #107's heading and its reason, hand-written to match the Markdown renderer word for word — the
+ * same arrangement `realisationInstruction` above already lives under. The two renderers share no
+ * code path by design (#33), so importing the sentence from `lib/core/render.ts` would make this
+ * view a dependent of the Markdown guide rather than its sibling. `hoistedParams` decides *which*
+ * settings belong to the device; the words are each renderer's own.
+ *
+ * `test/guide-view.test.ts` asserts both scopes' words in both renderers, because two copies of a
+ * sentence is exactly the thing that drifts.
+ */
+function scopeHeading(scope: ParamScope): string {
+  return scope === 'pattern' ? 'Pattern-wide' : 'Song-wide'
+}
+
+function scopeSentence(scope: ParamScope): string {
+  return scope === 'pattern'
+    ? 'One setting for the whole pattern — set it once, not once per part below.'
+    : 'One setting for the whole song — set it once, not once per part below.'
+}
+
+/**
+ * #107. The settings this device sets once, above the parts that used to repeat them.
+ *
+ * No shared-citation sentence over the block: a device-level line prints its own evidence in
+ * full, so `hoisted` is deliberately not threaded in (§3.2).
+ */
+function ScopedBlock({ group, owner }: { group: ScopedParams; owner: Device | undefined }) {
+  return (
+    <div className="scoped">
+      <h5>{scopeHeading(group.scope)}</h5>
+      <p className="quiet">{scopeSentence(group.scope)}</p>
+      <div className="params">
+        {group.params.map((param) => {
+          const hint = param.hint === undefined ? undefined : hintText(owner, param.hint)
+          return (
+            <ParamLine key={param.name} param={param} {...(hint === undefined ? {} : { hint })} />
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
@@ -105,15 +156,17 @@ export function PhaseSound({
   }
 
   const carrying = result.devices
-    .map((device) => ({
-      device,
-      mine: result.assignments.filter((a) => a.deviceId === device.id),
-    }))
+    .map((device) => {
+      const mine = result.assignments.filter((a) => a.deviceId === device.id)
+      // Once per device, not once per part: #107's answer is a fact about the device, and
+      // recomputing it inside the part loop would ask the same question five times.
+      return { device, mine, hoist: hoistedParams(mine.map((a) => a.params)) }
+    })
     .filter((entry) => entry.mine.length > 0)
 
   return (
     <>
-      {carrying.map(({ device, mine }) => (
+      {carrying.map(({ device, mine, hoist }) => (
         <section className="device" key={device.id}>
           <h4>{device.name}</h4>
           {/* The markdown renderer's own sentence, so the two cannot say different things. */}
@@ -121,8 +174,15 @@ export function PhaseSound({
             <p className="quiet">{citationSentence(device)}</p>
           )}
 
+          {/* #107, above the parts: the order it is done at the box — set the one control the
+              pattern shares, then work through the voices. */}
+          {hoist.groups.map((group) => (
+            <ScopedBlock key={group.scope} group={group} owner={deviceById.get(device.id)} />
+          ))}
+
           {mine.map((a) => {
             const owner: Device | undefined = deviceById.get(a.deviceId)
+            const own = a.params.filter((p) => !hoist.names.has(p.name))
             return (
               <div className="recipe" key={a.requestId}>
                 <h5>
@@ -141,8 +201,14 @@ export function PhaseSound({
 
                 {a.params.length === 0 ? (
                   <p className="quiet">No settings authored for this recipe.</p>
+                ) : own.length === 0 ? (
+                  /* Every setting this recipe has is device-level. "No settings authored" would
+                     be false — they are authored, and they are above. */
+                  <p className="quiet">
+                    Nothing to set for this part alone; every setting it has is above.
+                  </p>
                 ) : (
-                  <Params assignment={a} owner={owner} />
+                  <Params params={own} owner={owner} />
                 )}
 
                 {a.patch.length === 0 ? null : (

@@ -2,8 +2,8 @@ import type { Device } from './device'
 import { rangeDocuments } from './device'
 import type { DeviceId, SectionName } from './ids'
 import type { Role } from './vocabulary'
-import type { Cite, Provenance, ResolvedParam, ResolvedRange } from './params'
-import { dominantRangeCite, sameCite } from './params'
+import type { Cite, ParamScope, Provenance, ResolvedParam, ResolvedRange } from './params'
+import { dominantRangeCite, hoistedParams, sameCite } from './params'
 import type { Pattern, PatternHit } from './template'
 import type { BoundArticulation, ResolvedPatchEntry } from './resolver'
 import type { Gap } from './search'
@@ -978,6 +978,35 @@ function paramLines(
   return out
 }
 
+/**
+ * #107's heading, in words. Restated in `components/guide/phase-sound.tsx` for the web guide,
+ * exactly as `fxText` and `realisationInstruction` are — and **local, not exported**: §8's two
+ * renderers are siblings that share no code path, so the web guide reaching in here for a
+ * sentence would make it a dependent of the Markdown one. `hoistedParams` decides *which*
+ * settings belong to the device; each renderer writes its own introduction to them.
+ *
+ * The cost of two copies is that they can drift, so `test/guide-view.test.ts` asserts both
+ * scopes' words in both renderers rather than trusting the duplication.
+ *
+ * The scope's own word is printed rather than a generic "shared", because `pattern` and `song`
+ * are different claims — each one the scope its own device committed to in that parameter's
+ * `note` (§3.1) — and printing one box's claim over another's is not a tidier sentence, it is a
+ * wrong one.
+ */
+function scopeHeading(scope: ParamScope): string {
+  return scope === 'pattern' ? 'Pattern-wide' : 'Song-wide'
+}
+
+/**
+ * Why the block is here at all, in one line the reader can act on. `SWING` under four tracks was
+ * four instructions to set one control; this says outright that it is one.
+ */
+function scopeSentence(scope: ParamScope): string {
+  return scope === 'pattern'
+    ? 'One setting for the whole pattern — set it once, not once per part below.'
+    : 'One setting for the whole song — set it once, not once per part below.'
+}
+
 function patchLines(entries: readonly ResolvedPatchEntry[]): Line[] {
   const out: Line[] = []
   for (const entry of entries) {
@@ -1010,6 +1039,19 @@ function phaseSound(
       out.push('')
       out.push(`*${cites}*`)
     }
+    // #107. Above the parts, because that is the order it is done at the box: set the one
+    // control the pattern shares, then work through the voices.
+    const hoist = hoistedParams(mine.map((a) => a.params))
+    for (const group of hoist.groups) {
+      out.push('')
+      out.push(`**${scopeHeading(group.scope)}**`)
+      out.push('')
+      out.push(scopeSentence(group.scope))
+      out.push('')
+      // No `hoisted` cite: a device-level block has no shared-citation sentence over it, so
+      // every line prints its own evidence in full (§3.2).
+      for (const param of group.params) out.push(...paramLines(param, device, options))
+    }
     for (const a of mine) {
       out.push('')
       out.push(`#### ${a.assignable.label} — \`${a.role}\`: ${a.recipe.title}`)
@@ -1028,15 +1070,23 @@ function phaseSound(
         out.push(`Routing — ${a.recipe.routing}`)
         out.push('')
       }
+      const own = a.params.filter((p) => !hoist.names.has(p.name))
       if (a.params.length === 0) {
         out.push('No settings authored for this recipe.')
+      } else if (own.length === 0) {
+        // Every setting this recipe has is device-level. Saying "no settings authored" here
+        // would be false — they are authored, they are above — and saying nothing would leave
+        // a heading with no body under it.
+        out.push('Nothing to set for this part alone; every setting it has is above.')
       } else {
-        const hoisted = dominantRangeCite(a.params)
+        // Computed on what is actually printed. A hoisted parameter still in the tally could
+        // tip a citation into looking dominant when the lines it dominated have left the list.
+        const hoisted = dominantRangeCite(own)
         if (hoisted !== undefined) {
           out.push(`*Ranges cite ${citeText(hoisted)}.*`)
           out.push('')
         }
-        for (const param of a.params) out.push(...paramLines(param, device, options, hoisted))
+        for (const param of own) out.push(...paramLines(param, device, options, hoisted))
       }
       if (a.patch.length > 0) {
         out.push('')
@@ -1079,7 +1129,7 @@ function phaseFinishing(result: ResolveResult): Line[] {
 
   out.push('**Master FX**')
   out.push('')
-  const fx = fxSources(result.devices)
+  const fx = fxSources(result.devices, result.assignments)
   const byId = new Map(result.devices.map((d) => [d.id, d]))
   if (fx.length === 0) {
     // §2.3 models per-device capability, not a master chain. Saying so beats guessing one.

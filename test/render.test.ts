@@ -1103,6 +1103,115 @@ describe('hoisted range citations in Sound design (§8)', () => {
   })
 })
 
+/**
+ * #107. `SWING` under four tracks and `SHUFFLE` under five voices was nine instructions to set
+ * one control. `test/guide-view.test.ts` holds the landing rig those nine came from; these are
+ * the rules, against a fixture, including the two a real device does not exercise: a recipe that
+ * has nothing left after the hoist, and two devices that must not pool their settings.
+ */
+describe('pattern-global settings, hoisted to the device (§8/#107)', () => {
+  function scoped(name: string, over: Partial<AuthoredParam> = {}): AuthoredParam {
+    return {
+      kind: 'numeric',
+      name,
+      value: 50,
+      range: { min: 0, max: 100, verified: P59 },
+      scope: 'pattern',
+      ...over,
+    } as AuthoredParam
+  }
+
+  /** Two voices of one device, so a scoped parameter has something to repeat under. */
+  function twoParts(params: AuthoredParam[], id = 'A-scope'): Device {
+    return box(id, {
+      voices: [
+        { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 },
+        { kind: 'fixed', id: 'sd', label: 'SD', roles: ['snare'], polyphony: 1 },
+      ],
+      recipes: [
+        { id: `${id}-k`, role: 'kick', character: 'hard', voice: 'bd', title: 'kick', params },
+        { id: `${id}-s`, role: 'snare', character: 'hard', voice: 'sd', title: 'snare', params },
+      ],
+    })
+  }
+
+  function guideFor(...devices: Device[]): string[] {
+    return phaseBody(
+      renderGuide(
+        resolve({
+          devices,
+          template: withRoles([
+            request({ id: 'r-kick', role: 'kick' }),
+            request({ id: 'r-snare', role: 'snare' }),
+          ]),
+          mood: moodState(),
+          seed: 1,
+        }),
+      ),
+      6,
+    )
+  }
+
+  it('states it once above the parts, with its heading and its reason', () => {
+    const body = guideFor(twoParts([scoped('SWING'), scoped('CUTOFF', { scope: undefined })]))
+    expect(body.filter((l) => l.includes('**SWING**'))).toHaveLength(1)
+    expect(body.filter((l) => l.includes('**Pattern-wide**'))).toHaveLength(1)
+    expect(body.some((l) => l.includes('One setting for the whole pattern'))).toBe(true)
+    // The unscoped parameter is untouched: two parts, two settings.
+    expect(body.filter((l) => l.includes('**CUTOFF**'))).toHaveLength(2)
+  })
+
+  it('says what to do with a part whose every setting is device-level', () => {
+    // "No settings authored for this recipe" would be false — they are authored, and they are
+    // above. Nothing at all would leave a part heading with no body under it.
+    const body = guideFor(twoParts([scoped('SWING')]))
+    expect(body.filter((l) => l.includes('**SWING**'))).toHaveLength(1)
+    expect(
+      body.filter((l) => l.includes('Nothing to set for this part alone; every setting it has is above.')),
+    ).toHaveLength(2)
+    expect(body.filter((l) => l.includes('No settings authored for this recipe.'))).toHaveLength(0)
+  })
+
+  it('keeps two devices apart — a pattern is per box, not per rig', () => {
+    // Both boxes author `SWING`, identically. Pooling them into one line would say the rig has
+    // one swing control, and it has two.
+    const body = guideFor(twoParts([scoped('SWING')], 'A-one'), twoParts([scoped('SWING')], 'B-two'))
+    expect(body.filter((l) => l.includes('**SWING**'))).toHaveLength(2)
+    expect(body.filter((l) => l.includes('**Pattern-wide**'))).toHaveLength(2)
+  })
+
+  it('leaves the parts alone when they disagree, rather than picking one', () => {
+    // One recipe at 50, the other at 62. Hoisting either would claim it covers both.
+    const device = box('A-clash', {
+      voices: [
+        { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 },
+        { kind: 'fixed', id: 'sd', label: 'SD', roles: ['snare'], polyphony: 1 },
+      ],
+      recipes: [
+        {
+          id: 'clash-k', role: 'kick', character: 'hard', voice: 'bd', title: 'kick',
+          params: [scoped('SWING')],
+        },
+        {
+          id: 'clash-s', role: 'snare', character: 'hard', voice: 'sd', title: 'snare',
+          params: [scoped('SWING', { value: 62 })],
+        },
+      ],
+    })
+    const body = guideFor(device)
+    expect(body.filter((l) => l.includes('**Pattern-wide**'))).toHaveLength(0)
+    expect(body.filter((l) => l.includes('**SWING**'))).toHaveLength(2)
+  })
+
+  it('prints the hoisted line evidence in full, with no shared-citation sentence over it', () => {
+    // A device-level block has no "Ranges cite ..." heading to hoist under, so the line keeps its
+    // own citation. The per-part list computes its own sentence from what is left in it.
+    const body = guideFor(twoParts([scoped('SWING'), scoped('CUTOFF', { scope: undefined })]))
+    const at = body.findIndex((l) => l.includes('**SWING**'))
+    expect(body[at + 1]).toContain('↳ cite: range manual — Fixture Manual p.59')
+  })
+})
+
 // ---------------------------------------------------------------------------
 // Phase 7 — Master FX (#59)
 // ---------------------------------------------------------------------------
@@ -1186,12 +1295,16 @@ describe('Master FX names what processes audio (§8 phase 7)', () => {
     ])
   })
 
-  it('reads an effect off a parameter its recipes set, because the recipe needs it to exist', () => {
+  it('reads an effect off a parameter a part in this guide sets', () => {
+    // `acid` on purpose, not `lead`: the golden template requests `r-acid` and nothing in the
+    // golden rig can play it, so this box gets the part and its parameters resolve. A box
+    // offering a role the template never asks for would sit idle, and since #106 an idle box
+    // contributes no parameter evidence — the assertion would then be about the wrong thing.
     const send = box('C-send', {
       name: 'Send Box',
-      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['lead'], polyphony: 1 }],
+      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['acid'], polyphony: 1 }],
       recipes: [
-        makeRecipe('send-lead', 'lead', 'hard', 'v', {
+        makeRecipe('send-acid', 'acid', 'dirty', 'v', {
           params: [
             { kind: 'numeric', name: 'REVERB SEND', value: 8, range: { min: 0, max: 100, verified: false } },
             { kind: 'numeric', name: 'DELAY SEND', value: 12, range: { min: 0, max: 100, verified: false } },
@@ -1199,10 +1312,38 @@ describe('Master FX names what processes audio (§8 phase 7)', () => {
         }),
       ],
     })
-    // Code unit order here, unlike the panel: a recipe list has no reading order to preserve.
+    // Code unit order here, unlike the panel: a parameter list has no reading order to preserve.
     expect(fxBlock(send)).toEqual([
       'The Send Box carries DELAY SEND and REVERB SEND in its recipes; ' +
         'nothing else in this rig processes audio.',
+    ])
+  })
+
+  it('does not read an effect off a recipe no part in this guide used (#106)', () => {
+    // The same box, offering a role the golden template never requests. Every parameter above is
+    // still authored on it and every one of them is real; none of them resolved into this guide,
+    // so Finishing has nothing to say about its effects. Before #106 this printed the identical
+    // sentence to the test above — the box's capabilities, in a section describing the guide.
+    //
+    // This is also the shape of the residual false negative the module doc warns about: the rig
+    // now reads as processing no audio, which is a claim about the rack rather than the guide.
+    // Pinned here so a later fix to that sentence fails visibly instead of drifting.
+    const idle = box('C-idle', {
+      name: 'Idle Box',
+      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['lead'], polyphony: 1 }],
+      recipes: [
+        makeRecipe('idle-lead', 'lead', 'hard', 'v', {
+          params: [
+            { kind: 'numeric', name: 'REVERB SEND', value: 8, range: { min: 0, max: 100, verified: false } },
+            { kind: 'numeric', name: 'DELAY SEND', value: 12, range: { min: 0, max: 100, verified: false } },
+          ],
+        }),
+      ],
+    })
+    const block = fxBlock(idle)
+    expect(block.join('\n')).not.toContain('SEND')
+    expect(block).toEqual([
+      'Nothing in this rig processes audio. The master chain is yours at the desk.',
     ])
   })
 
@@ -1255,9 +1396,11 @@ describe('Master FX names what processes audio (§8 phase 7)', () => {
       kind: 'mixer-recorder',
       io: { main: 'stereo', individualOuts: 4, audioIn: true, usbAudio: true },
       panel: panel('MASTER FX'),
-      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['lead'], polyphony: 1 }],
+      // `acid` for the reason the send box above uses it: the parameter route only speaks for a
+      // box this guide gave a part to (#106).
+      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['acid'], polyphony: 1 }],
       recipes: [
-        makeRecipe('both-lead', 'lead', 'hard', 'v', {
+        makeRecipe('both-acid', 'acid', 'dirty', 'v', {
           params: [
             { kind: 'numeric', name: 'DELAY AMOUNT', value: 8, range: { min: 0, max: 50, verified: false } },
           ],

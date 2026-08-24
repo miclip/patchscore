@@ -142,6 +142,7 @@ function swing(): AuthoredNumericParam {
     mood: [{ axis: 'swing', amount: 25 }],
     hint: 'pick-fx',
     note: '50% is no swing; set once, it applies across the whole pattern',
+    scope: 'pattern',
   })
 }
 

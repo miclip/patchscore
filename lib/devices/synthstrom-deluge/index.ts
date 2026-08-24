@@ -154,6 +154,10 @@ function swing(): AuthoredNumericParam {
     mood: [{ axis: 'swing', amount: 49 }],
     hint: 'swing-amount',
     note: '50 is off, above is late, below is early — song-wide, not per clip',
+    // `song`, not `pattern`, on the strength of this parameter's own note above — *song-wide,
+    // not per clip* — which is the claim this file already commits to. Nothing here re-reads a
+    // page to add to it. Hoisted the same way `pattern` is; only the printed word differs (#107).
+    scope: 'song',
   })
 }
 

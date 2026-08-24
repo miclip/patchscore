@@ -93,6 +93,44 @@ export const MoodOffsetSchema = z.strictObject({
   amount: z.number().finite(),
 })
 
+/**
+ * §3.1/#107. **What one setting of this parameter covers**, when the answer is not "this part".
+ *
+ * A recipe is authored per voice, so every parameter in it reads as a per-voice setting. Most
+ * are. Some are not: the Tracker Mini's `SWING` and the TR-1000's Pattern Shuffle are one
+ * setting for the whole pattern, and the guide was printing them once per track — nine lines in
+ * the landing rig, each with a note explaining that the other eight were the same number. A
+ * reader dialling them in order sets one control nine times and reasonably wonders which of the
+ * nine the box actually kept.
+ *
+ * Absent means per-part, which is the ordinary case and stays unannotated. Present means the
+ * renderer may state it **once per device**, above the parts.
+ *
+ * **Why two values rather than one flag.** `song` is not `pattern`, and the two are not
+ * interchangeable to a reader deciding what a setting outlives. The Tracker Mini's `SWING` and
+ * the TR-1000's Pattern Shuffle are authored *pattern*-wide; the Deluge's `SWING` is authored
+ * `song-wide, not per clip`. Both hoist identically — the mechanism needs one bit — but the
+ * *word* printed beside the hoisted line is the device's own claim, and collapsing them would
+ * print one box's claim over another's.
+ *
+ * Each value comes from the scope its device already committed to in that parameter's `note`,
+ * which is where the manual reading was recorded when it was made. This module adds no reading
+ * of its own and cites no page: it is the vocabulary those notes are expressed in, nothing more.
+ *
+ * The MC-101's `SHUFFLE` is deliberately absent from this list rather than given a third value.
+ * Its authored note is `One setting for the whole clip, not per step` — a scope claim against
+ * *steps*, not against parts — and that manifest gives the box three separate tone tracks, so two
+ * parts on it can genuinely carry two settings. Not hoistable, on the manifest's own terms.
+ *
+ * This is not a fifth shared vocabulary (invariant 3). Nothing in a template names it and
+ * nothing joins on it; it travels device → renderer exactly as `unit` and `note` do.
+ */
+export const PARAM_SCOPES = ['pattern', 'song'] as const
+
+export type ParamScope = (typeof PARAM_SCOPES)[number]
+
+export const ParamScopeSchema = z.enum(PARAM_SCOPES)
+
 // ---------------------------------------------------------------------------
 // Authored — what a device folder contains, and the only shape an author writes.
 // ---------------------------------------------------------------------------
@@ -109,6 +147,8 @@ export type AuthoredNumericParam = {
   verified?: Verified
   hint?: string
   note?: string
+  /** Omitted → per-part, the ordinary case. */
+  scope?: ParamScope
 }
 
 export type AuthoredEnumParam = {
@@ -121,6 +161,7 @@ export type AuthoredEnumParam = {
   verified?: Verified
   hint?: string
   note?: string
+  scope?: ParamScope
 }
 
 export type AuthoredTextParam = {
@@ -130,6 +171,7 @@ export type AuthoredTextParam = {
   verified?: Verified
   hint?: string
   note?: string
+  scope?: ParamScope
 }
 
 export type AuthoredParam = AuthoredNumericParam | AuthoredEnumParam | AuthoredTextParam
@@ -139,6 +181,7 @@ const paramCommon = {
   verified: VerifiedSchema.optional(),
   hint: z.string().min(1).optional(),
   note: z.string().min(1).optional(),
+  scope: ParamScopeSchema.optional(),
 }
 
 /**
@@ -265,6 +308,8 @@ export type ResolvedParam = {
   provenance: Provenance
   hint?: string
   note?: string
+  /** #107. Carried through unchanged: what one setting of this covers is authored, not derived. */
+  scope?: ParamScope
 }
 
 export const ResolvedParamSchema = z.strictObject({
@@ -275,6 +320,7 @@ export const ResolvedParamSchema = z.strictObject({
   provenance: ProvenanceSchema,
   hint: z.string().min(1).optional(),
   note: z.string().min(1).optional(),
+  scope: ParamScopeSchema.optional(),
 })
 
 // ---------------------------------------------------------------------------
@@ -340,6 +386,128 @@ export function dominantRangeCite(params: readonly ResolvedParam[]): Cite | unde
 
   // One occurrence is not a repetition, and a tie has no dominant citation.
   return bestCount < 2 || tied ? undefined : best
+}
+
+// ---------------------------------------------------------------------------
+// §8/#107 — the settings that belong to the device, not to a part
+// ---------------------------------------------------------------------------
+
+/** Code unit order (§7.2). No `localeCompare` — ICU collation is not the same on two machines. */
+function byCodeUnit(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
+function sameCiteOrFalse(a: Verified, b: Verified): boolean {
+  if (a === false || b === false) return a === b
+  return a.kind === b.kind && a.source === b.source
+}
+
+function sameProvenance(a: Provenance, b: Provenance): boolean {
+  if (a.state !== b.state) return false
+  if (a.state === 'authored' && b.state === 'authored') return sameCiteOrFalse(a.cite, b.cite)
+  if (a.state === 'derived' && b.state === 'derived') {
+    return (
+      sameCiteOrFalse(a.cite, b.cite) &&
+      sameCiteOrFalse(a.rangeCite, b.rangeCite) &&
+      a.from === b.from &&
+      a.axes.length === b.axes.length &&
+      a.axes.every((axis, i) => axis === b.axes[i])
+    )
+  }
+  if (a.state === 'provisional' && b.state === 'provisional') {
+    const ax = a.axes ?? []
+    const bx = b.axes ?? []
+    return a.from === b.from && ax.length === bx.length && ax.every((axis, i) => axis === bx[i])
+  }
+  return false
+}
+
+/**
+ * **Everything the guide prints about a parameter, compared field by field.**
+ *
+ * Written out rather than `JSON.stringify`d for the reason `test/golden/generate.ts` gives about
+ * its own serialiser: an implicit comparison passes for the wrong reason the moment a field is
+ * added, and here that failure mode is a *hoist* — two lines the reader is told are one setting
+ * while they differ in something nobody remembered to compare. A missed field is a caught type
+ * error only if the fields are named, so they are named.
+ */
+function sameRenderedParam(a: ResolvedParam, b: ResolvedParam): boolean {
+  if (a.name !== b.name || a.value !== b.value) return false
+  if (a.unit !== b.unit || a.hint !== b.hint || a.note !== b.note || a.scope !== b.scope) {
+    return false
+  }
+  if ((a.range === undefined) !== (b.range === undefined)) return false
+  if (a.range !== undefined && b.range !== undefined) {
+    if (a.range.min !== b.range.min || a.range.max !== b.range.max) return false
+    if (!sameCiteOrFalse(a.range.verified, b.range.verified)) return false
+  }
+  return sameProvenance(a.provenance, b.provenance)
+}
+
+/** One scope's worth of hoisted parameters, in UTF-16 code unit order by name (§7.2). */
+export type ScopedParams = { scope: ParamScope; params: ResolvedParam[] }
+
+export type HoistedParams = {
+  /** In `PARAM_SCOPES` order. A scope with nothing to say has no entry. */
+  groups: ScopedParams[]
+  /**
+   * The names the per-part lists must now drop. A name absent from this set stays where it is
+   * even if it declares a scope — see the disagreement rule below.
+   */
+  names: ReadonlySet<string>
+}
+
+/**
+ * #107. The parameters one device sets once, lifted out of the parts that repeat them.
+ *
+ * Takes the parameter lists of every part **one device** carries, and answers which of them are
+ * device-level facts. Both renderers read this, so "these nine lines are one setting" is decided
+ * once and the sentence introducing them is written twice (§8) — the same division `fx.ts` and
+ * `arrangement.ts` follow.
+ *
+ * **A scope declaration is not on its own enough to hoist.** Every occurrence has to render
+ * identically first. Two recipes may author the same pattern-global parameter at different
+ * values, or inherit different recipe-level citations for it, and a hoist there would print one
+ * of them under a heading claiming it covers the other — inventing an agreement the data does
+ * not contain, which invariant 5 forbids more clearly than it forbids a repetition. When they
+ * disagree the parameter is simply left in every part, exactly as before, and the reader sees
+ * the two values and can tell that something is wrong. That is a worse-looking guide and a
+ * truer one. `test/params.test.ts` holds the case.
+ *
+ * Sorted by name in code unit order rather than authored order, because there is no single
+ * authored order to preserve: the same parameter arrives from several recipes, and "whichever
+ * part resolved first" would reorder a device-level block when an unrelated request changed.
+ */
+export function hoistedParams(
+  parts: readonly (readonly ResolvedParam[])[],
+): HoistedParams {
+  // Every occurrence of every scoped name, in encounter order — which only decides *which*
+  // occurrence is compared against, and they must all be equal for it to matter at all.
+  const seen = new Map<string, ResolvedParam[]>()
+  for (const params of parts) {
+    for (const param of params) {
+      if (param.scope === undefined) continue
+      const found = seen.get(param.name)
+      if (found === undefined) seen.set(param.name, [param])
+      else found.push(param)
+    }
+  }
+
+  const names = new Set<string>()
+  const agreed: ResolvedParam[] = []
+  for (const [name, occurrences] of seen) {
+    const first = occurrences[0] as ResolvedParam
+    if (!occurrences.every((p) => sameRenderedParam(first, p))) continue
+    names.add(name)
+    agreed.push(first)
+  }
+
+  const groups: ScopedParams[] = []
+  for (const scope of PARAM_SCOPES) {
+    const params = agreed.filter((p) => p.scope === scope).sort((a, b) => byCodeUnit(a.name, b.name))
+    if (params.length > 0) groups.push({ scope, params })
+  }
+  return { groups, names }
 }
 
 /**

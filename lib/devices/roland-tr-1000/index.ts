@@ -184,6 +184,7 @@ function shuffle(): AuthoredNumericParam {
     mood: [{ axis: 'swing', amount: 100 }],
     hint: 'ptn-shuffle',
     note: 'Pattern-wide: one setting for every track, saved with the pattern',
+    scope: 'pattern',
     verified: false,
   }
 }
