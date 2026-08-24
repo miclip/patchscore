@@ -404,8 +404,10 @@ synchronization chapter and p.31 carries the `Tempo Sync` setting.
 A device therefore declares an optional map, keyed by field path:
 
 ```ts
-type UncheckedFact      = { kind: 'unknown'; reason: string }
-type CapabilityEvidence = Verified | UncheckedFact          // Cite | false | unknown
+type UndocumentedFact   = { kind: 'unknown';       reason: string }
+type UnreadFact         = { kind: 'unread';        reason: string }
+type CitedAgainstFact   = { kind: 'cited-against'; reason: string; cite: Cite }
+type CapabilityEvidence = Verified | UndocumentedFact | UnreadFact | CitedAgainstFact
 
 // on the Device
 capabilityEvidence?: Record<string, CapabilityEvidence>
@@ -422,6 +424,11 @@ capabilityEvidence: {
   'jacks[MIDI IN]':        owner(12),
   'clock.sourceSetup[usb]': cite(54),
 }
+
+// The other two states, from the boxes that needed them (#120):
+'features.sidechain.internal': { kind: 'unread', reason: 'the ZOIA module index is not in manuals/…' },
+'clock.preferredSource':       { kind: 'cited-against', cite: cite(7),
+                                 reason: 'p.7 calls it a stand-alone instrument…' },
 ```
 
 **The paths are a closed vocabulary.** The scalar facts are enumerated in `CAPABILITY_FACTS`; the
@@ -446,15 +453,34 @@ map is in scope. Both are rendered at the machine — a reader patches the one a
 and neither may go uncited. The check moved from the type to the schema; the discipline did not
 change.
 
-#### The third state
+#### The three states past `Verified`
 
-`Verified` has two and neither is "somebody looked and the document does not say". `false` is
-*authored, nothing checked against* — nobody opened the book. `unknown` is finished work: it does
-not need doing again, and it is the strongest evidence there is that the box's own documentation is
-silent. Collapsing them loses the distinction in the direction that costs most, because the
-unchecked pile is the one an author works through. `reason` is required, so the state cannot be a
-shrug — "the manual never says what KNOB ASSIGN can target" is a finding; a bare `unknown` is
-giving up in a field that reads like diligence.
+`Verified` has two and neither is "somebody went and looked". `false` is *authored, nothing checked
+against* — nobody opened the book. What follows is what happens once somebody does, and it is three
+states rather than one because #120 caught one word doing three jobs: eight of the first nine real
+entries were `unknown` and they did not mean the same thing.
+
+- **`unknown` — read, and the document does not say.** Finished work: it does not need doing again,
+  and it is the strongest evidence there is that the box's own documentation is silent. Collapsing
+  it into `false` loses the distinction in the direction that costs most, because the unchecked pile
+  is the one an author works through.
+- **`unread` — the document could not be read.** Unfinished, and not the same unfinished work as
+  `false`: nobody has to open the book, somebody has to *find* it. Thirteen manuals are absent from
+  `manuals/` and three of those have no automatable URL at all (#119), so for a new box this is the
+  normal state rather than the exception, and it is the one state on this list nobody can clear by
+  reading harder. It arrived with its own incident — during #118 an `unknown` was written whose
+  reason was "the manual is not in `manuals/`", by an author citing that manual's p.110 in the same
+  file. Written as `unknown`, a missing document renders as finished research, which is the failure
+  `unknown` exists to prevent one level up.
+- **`cited-against` — read, and it answers no.** The document does not fail to answer the question;
+  it answers it in the other direction. That is a positive finding and the only one of the three
+  with a page to cite, so it is the only one carrying a `Cite`. Where that citation goes is the
+  point: `capabilityEvidence` is keyed by field path and the field it describes is deliberately
+  *absent*, so a reasoned non-claim had no provenance slot at all and its pages lived in prose
+  comments — the page-numbers-in-comments that §2.6 exists to end.
+
+`reason` is required on all three, so no state can be a shrug — "the manual never says what KNOB
+ASSIGN can target" is a finding; a bare state is giving up in a field that reads like diligence.
 
 The TR-1000's `features.lfo` is the case. The MOD block is documented well enough to author a
 recipe from, and `LfoSpec`'s `{ count, syncable, destinations[] }` still cannot hold it: `DEST 1-3`
@@ -463,13 +489,20 @@ literally `-`. `features.*` paths are accepted whether or not the feature is dec
 point rather than a hole in the checking — evidence *about an absence* is what invariant 5 asks
 for.
 
-All three states reach a reader and none borrows another's words. In the guide every one is
-marked — `manual`, `unchecked`, `undocumented` — which is §8's mark-the-exception rule applied
-rather than overridden: a parameter goes unmarked when provisional because nine values in ten are,
-while a rig prints a handful of capability facts and every one of them is cited today, so the two
-quiet states *are* the exceptions. On a device page the sentence states them apart, and
-`undocumented` is worded as an achievement rather than a debt, because reporting finished research
-as a backlog invites somebody to do it twice.
+No state borrows another's words. In the guide each is marked — `manual`, `unchecked`,
+`undocumented`, `unread`, `cited-against` — which is §8's mark-the-exception rule applied rather
+than overridden: a parameter goes unmarked when provisional because nine values in ten are, while a
+rig prints a handful of capability facts and nearly all of them are cited, so the quiet states *are*
+the exceptions. `npm run audit` splits the same total across two lines, `caps` for the three states
+with a document behind them and `gaps` for the three without (§9), and `undocumented` stays out of
+`unchecked` because reporting finished research as a backlog invites somebody to do it twice.
+
+**What a reader is shown is a separate question and #120 did not answer it.** The states above are a
+model, a schema and an audit; the guide marks them because a mark that named the wrong state would
+be worse than the model not existing, and that floor is all it is. The device page still speaks
+about the three states it spoke about before, and neither surface has a considered *place* for
+capability evidence yet. That is #121, and building it here would have been rendering a distinction
+before the distinction was settled.
 
 #### What was rejected
 
@@ -498,7 +531,8 @@ eight voices". A manual does say what a box is *for*: Metropolix's opens by call
 sequencer, and that sentence is the whole basis of one of the library's two `preferredSource: true`
 claims (§7.4). The other is the Tracker Mini's, cited to the sentence calling it "a perfect fit for
 the centre piece of a setup" — and the two pages that *look* like that evidence and are not are
-recorded in the manifest beside it, which is the map earning its keep. The `unknown` state is the half that was missing, and it is worth more here than the
+recorded in the manifest beside it, which is the map earning its keep. The states past `Verified`
+are the half that was missing, and they are worth more here than the
 citation — the Model 2400 held the claim for two commits on a manual proving the desk can
 generate clock and cannot receive it, a capability rather than a job, and when the claim came out
 there was nowhere to say the manual had been read and had not answered. That is finished work,
@@ -507,14 +541,16 @@ and it read as silence. The path is accepted whether or not the field is declare
 and it is the omission that wants accounting for. **A `canSendClock` page is not evidence here** —
 it proves the capability, and this field exists precisely because a capability is not a job.
 
-**One limit of the third state, found by #80 and not yet repaired.** `unknown` is defined as "the
-document was read and does not state the fact", and the library now uses it for two findings that
-are not the same: the Deluge's guidebook never says what the box is for, while the Cascadia's says
-plainly what it is for and it is not this. The second is the stronger result and is recorded in the
-weaker state, because the alternative is worse — a `Cite` on this path reads as evidence *for* a
-field that is absent, and would make a non-claim count and render identically to a claim. So the
-`reason` carries the distinction and the counts do not. A fourth state would fix it; nothing has
-needed one badly enough yet, and inventing one for a single device is how vocabularies rot.
+**The limit #80 found here is what #120 repaired.** `unknown` was defined as "the document was read
+and does not state the fact", and the library used it for two findings that are not the same: the
+Deluge's guidebook never says what the box is for, while the Cascadia's says plainly what it is for
+and it is not this. The stronger result was recorded in the weaker state, because the obvious
+alternative was worse — a plain `Cite` on this path reads as evidence *for* a field that is absent,
+and would make a non-claim count and render identically to a claim. `cited-against` is that
+citation hung off its own state instead, so the page is visible and the count stays apart. The
+worry about inventing a state for a single device stands and was answered by waiting: two states
+arrived together, both from real data, and the second one — `unread` — is the normal state of every
+box whose manual nobody here can open.
 
 ---
 
@@ -2254,8 +2290,10 @@ Three guards:
 - a `verified` audit script reporting provisional points, unverified ranges and mood-inert
   params separately (§3.2), so none of the three quietly accumulates, and splitting the cited
   remainder into manual and observed so neither is read as the other — and, since #22, the
-  capability facts a manifest has spoken about (§2.6), split four ways rather than three because
-  `undocumented` is finished work and `unchecked` is not
+  capability facts a manifest has spoken about (§2.6), split six ways over two lines — `caps` for
+  the states with a document behind them and `gaps` for the states without, because `undocumented`
+  is finished work, `unchecked` is work nobody has started, and `unread` is work nobody here can
+  start at all
 
 Authoring stays one folder; deployment stays static.
 

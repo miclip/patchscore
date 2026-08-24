@@ -663,9 +663,10 @@ export const device: Device = {
    *
    * This manifest's pages are otherwise still in the comments above — the TR-1000 is the one that
    * has migrated, and its map is the worked example. The exception is here because #80 asked a
-   * question of this guidebook that the guidebook does not answer, and the third state exists so
-   * that finding can be written down instead of reading as silence. See the `clock` comment for
-   * what was read and rejected.
+   * question of this guidebook that the guidebook does not answer, and `unknown` exists so that
+   * finding can be written down instead of reading as silence. Not `cited-against` (#120): this
+   * guidebook does not answer in the other direction either, it hedges and then documents both
+   * directions at equal length. See the `clock` comment for what was read and rejected.
    */
   capabilityEvidence: {
     'clock.preferredSource': {

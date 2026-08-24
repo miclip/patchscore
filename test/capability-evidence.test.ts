@@ -30,12 +30,25 @@ import { device, recipe } from './fixtures'
  * and to the device page both.
  *
  * These tests are about the map's three obligations: that a key which names nothing fails the
- * build, that the two rendered families still cannot go uncited, and that all three states
- * survive the trip to a reader.
+ * build, that the two rendered families still cannot go uncited, and that every state survives
+ * the trip to a reader.
+ *
+ * #120 is why there are six states rather than four. One word was doing three jobs — the document
+ * was read and is silent, the document could not be read at all, and the document answers in the
+ * other direction — and the first real data hit all three inside one PR.
  */
 
 const CITE = { kind: 'manual', source: 'fixture manual p.7' } as const
 const UNKNOWN = { kind: 'unknown', reason: 'the manual prints no figure for this' } as const
+const UNREAD = {
+  kind: 'unread',
+  reason: 'the module index that would print it is not in `manuals/`',
+} as const
+const AGAINST = {
+  kind: 'cited-against',
+  cite: CITE,
+  reason: 'the overview calls this a stand-alone instrument',
+} as const
 
 function patchable(over: Record<string, unknown> = {}) {
   return device({
@@ -46,29 +59,59 @@ function patchable(over: Record<string, unknown> = {}) {
   } as never)
 }
 
-describe('CapabilityEvidence is Verified plus one state (§2.6)', () => {
-  it('accepts a citation, an explicit `false`, and a reasoned unknown', () => {
+describe('CapabilityEvidence is Verified plus three states (§2.6/#120)', () => {
+  it('accepts a citation, an explicit `false`, and all three reasoned states', () => {
     expect(CapabilityEvidenceSchema.safeParse(CITE).success).toBe(true)
     expect(CapabilityEvidenceSchema.safeParse({ kind: 'observed', source: 'unit' }).success).toBe(
       true,
     )
     expect(CapabilityEvidenceSchema.safeParse(false).success).toBe(true)
     expect(CapabilityEvidenceSchema.safeParse(UNKNOWN).success).toBe(true)
+    expect(CapabilityEvidenceSchema.safeParse(UNREAD).success).toBe(true)
+    expect(CapabilityEvidenceSchema.safeParse(AGAINST).success).toBe(true)
   })
 
-  it('refuses an unknown with no reason, because that is the shrug it exists to prevent', () => {
-    // `false` already says "nobody checked". `unknown` claims somebody *did* and came back
-    // empty, which is a finding — and a finding with no sentence behind it is indistinguishable
-    // from giving up in a field that reads like diligence.
-    expect(CapabilityEvidenceSchema.safeParse({ kind: 'unknown' }).success).toBe(false)
-    expect(CapabilityEvidenceSchema.safeParse({ kind: 'unknown', reason: '' }).success).toBe(false)
+  it('refuses any of the three with no reason, because that is the shrug they exist to prevent', () => {
+    // `false` already says "nobody checked". Each of these claims somebody *did* something and
+    // came back with a finding — and a finding with no sentence behind it is indistinguishable
+    // from giving up in a field that reads like diligence. The rule was written for `unknown` in
+    // #117 and it applies unchanged to the two states #120 added: a bare `unread` does not say
+    // which document is missing, and a bare `cited-against` cites a page for a reading nobody
+    // wrote down.
+    for (const kind of ['unknown', 'unread'] as const) {
+      expect(CapabilityEvidenceSchema.safeParse({ kind }).success, kind).toBe(false)
+      expect(CapabilityEvidenceSchema.safeParse({ kind, reason: '' }).success, kind).toBe(false)
+    }
+    expect(CapabilityEvidenceSchema.safeParse({ kind: 'cited-against', cite: CITE }).success).toBe(
+      false,
+    )
+    expect(
+      CapabilityEvidenceSchema.safeParse({ kind: 'cited-against', cite: CITE, reason: '' }).success,
+    ).toBe(false)
   })
 
-  it('keeps `false` and `unknown` apart at every layer that reads them', () => {
+  it('refuses a `cited-against` with no citation, which is the half that makes it that state', () => {
+    // Without the page it is an `unknown` wearing a stronger word. The citation is the whole
+    // difference between "the document does not say" and "the document says otherwise".
+    expect(
+      CapabilityEvidenceSchema.safeParse({ kind: 'cited-against', reason: 'because' }).success,
+    ).toBe(false)
+    expect(
+      CapabilityEvidenceSchema.safeParse({
+        kind: 'cited-against',
+        reason: 'because',
+        cite: { kind: 'manual' },
+      }).success,
+    ).toBe(false)
+  })
+
+  it('keeps all six states apart at every layer that reads them', () => {
     expect(evidenceKind(CITE)).toBe('manual')
     expect(evidenceKind({ kind: 'observed', source: 'unit' })).toBe('observed')
     expect(evidenceKind(false)).toBe('unchecked')
     expect(evidenceKind(UNKNOWN)).toBe('undocumented')
+    expect(evidenceKind(UNREAD)).toBe('unread')
+    expect(evidenceKind(AGAINST)).toBe('cited-against')
   })
 })
 
@@ -246,24 +289,50 @@ describe('the audit can see capability facts now (§2.6/#22)', () => {
     return auditDevice(patchable({ capabilityEvidence: evidence }) as unknown as Device)
   }
 
-  it('counts each state apart, and the four add up', () => {
+  it('counts each state apart, and the six add up', () => {
     const a = audited({
       [jackFact('VCF · IN')]: CITE,
       'io.audioIn': { kind: 'observed', source: 'the unit' },
       'io.usbAudio': false,
       'features.lfo': UNKNOWN,
+      'features.sidechain.internal': UNREAD,
+      'clock.preferredSource': AGAINST,
     })
-    expect(a.counts.capabilityFacts).toBe(4)
+    expect(a.counts.capabilityFacts).toBe(6)
     expect(a.counts.manualCapabilities).toBe(1)
     expect(a.counts.observedCapabilities).toBe(1)
+    expect(a.counts.citedAgainstCapabilities).toBe(1)
     expect(a.counts.uncheckedCapabilities).toBe(1)
     expect(a.counts.undocumentedCapabilities).toBe(1)
+    expect(a.counts.unreadCapabilities).toBe(1)
+    // The identity that has to hold, now over six terms rather than four. A count that stops
+    // adding up means a state was added without a home (§2.6).
     expect(
       a.counts.manualCapabilities +
         a.counts.observedCapabilities +
+        a.counts.citedAgainstCapabilities +
         a.counts.uncheckedCapabilities +
-        a.counts.undocumentedCapabilities,
+        a.counts.undocumentedCapabilities +
+        a.counts.unreadCapabilities,
     ).toBe(a.counts.capabilityFacts)
+  })
+
+  it('never folds `unread` into either of the states it looks like', () => {
+    // It is not `unchecked`: nobody is failing to open a book. It is not `undocumented` either,
+    // which is finished research — this is research nobody here can start, and #118's live
+    // incident was an `unknown` whose reason was that the manual is not in `manuals/`.
+    const a = audited({ [jackFact('VCF · IN')]: CITE, 'features.lfo': UNREAD })
+    expect(a.counts.unreadCapabilities).toBe(1)
+    expect(a.counts.uncheckedCapabilities).toBe(0)
+    expect(a.counts.undocumentedCapabilities).toBe(0)
+  })
+
+  it('keeps `cited-against` out of the cited totals, because what it supports is an absence', () => {
+    // It carries a page and it is still not a claim: counted with `manual` it would make a
+    // manifest that argues *against* a field read as one that cited it (§2.6, and the Cascadia).
+    const a = audited({ [jackFact('VCF · IN')]: CITE, 'clock.preferredSource': AGAINST })
+    expect(a.counts.citedAgainstCapabilities).toBe(1)
+    expect(a.counts.manualCapabilities).toBe(1)
   })
 
   it('counts silence as nothing at all, never as a debt', () => {
@@ -275,34 +344,76 @@ describe('the audit can see capability facts now (§2.6/#22)', () => {
     expect(a.findings.filter((f) => 'fact' in f)).toEqual([])
   })
 
-  it('reports the two non-citation states, pointing at a path rather than a recipe', () => {
+  it('reports every non-claim state, pointing at a path rather than a recipe', () => {
     const a = audited({
       [jackFact('VCF · IN')]: false,
       'io.usbAudio': false,
       'features.lfo': UNKNOWN,
+      'features.sidechain.internal': UNREAD,
+      'clock.preferredSource': AGAINST,
     })
     const capability = a.findings.filter((f) => 'fact' in f)
     // Code unit order, not authoring order (§7.2): moving a line in a manifest must not reorder
     // a report and make a diff of two runs claim something changed.
     expect(capability.map((f) => ('fact' in f ? f.fact : ''))).toEqual([
+      'clock.preferredSource',
       'features.lfo',
+      'features.sidechain.internal',
       'io.usbAudio',
       'jacks[VCF · IN]',
     ])
     expect(capability.map((f) => f.kind)).toEqual([
+      'cited-against-capability',
       'undocumented-capability',
+      'unread-capability',
       'unchecked-capability',
       'unchecked-capability',
     ])
-    expect(findingLine(capability[0] as never)).toBe('undocumented-capability: features.lfo')
+    expect(findingLine(capability[1] as never)).toBe('undocumented-capability: features.lfo')
+    expect(findingLine(capability[2] as never)).toBe(
+      'unread-capability: features.sidechain.internal',
+    )
   })
 
-  it('prints a capability line only where a manifest has said something', () => {
+  it('prints the capability lines only where a manifest has said something', () => {
     const spoke = countsBlock('x', audited({ [jackFact('VCF · IN')]: CITE }).counts)
     expect(spoke.some((l) => l.includes('caps'))).toBe(true)
+    expect(spoke.some((l) => l.includes('gaps'))).toBe(true)
 
+    // A row of zeros in a debt table reads as a debt, and silence is not one (§2.6).
     const silent = auditDevice(device({ recipes: [recipe()] }) as unknown as Device)
     expect(countsBlock('x', silent.counts).some((l) => l.includes('caps'))).toBe(false)
+    expect(countsBlock('x', silent.counts).some((l) => l.includes('gaps'))).toBe(false)
+  })
+
+  it('splits the same total by one question: is there a document behind this entry (#120)', () => {
+    const block = countsBlock(
+      'x',
+      audited({
+        [jackFact('VCF · IN')]: CITE,
+        'io.audioIn': { kind: 'observed', source: 'the unit' },
+        'io.usbAudio': false,
+        'features.lfo': UNKNOWN,
+        'features.sidechain.internal': UNREAD,
+        'clock.preferredSource': AGAINST,
+      }).counts,
+    )
+    const caps = block.find((l) => l.includes('caps')) as string
+    const gaps = block.find((l) => l.includes('gaps')) as string
+
+    // `caps` holds the three states that can point at a page, `cited-against` included: a page
+    // that answers *no* is still a page somebody read.
+    expect(caps).toMatch(/6 total/)
+    expect(caps).toMatch(/1 manual/)
+    expect(caps).toMatch(/1 observed/)
+    expect(caps).toMatch(/1 cited-against/)
+
+    // `gaps` holds the three that cannot, and they stay three because they cost different things
+    // — an afternoon nobody spent, finished research, and a file that is not in `manuals/`.
+    expect(gaps).toMatch(/1 unchecked/)
+    expect(gaps).toMatch(/1 undocumented/)
+    expect(gaps).toMatch(/1 unread/)
+    expect(caps).not.toMatch(/unread/)
   })
 })
 
@@ -342,6 +453,7 @@ describe('all three states reach a reader (§2.6/#22)', () => {
     })
     expect(silent).toContain('No capability facts')
   })
+
 })
 
 describe('the library after the migration', () => {
@@ -426,6 +538,47 @@ describe('the library after the migration', () => {
     expect(setup?.evidence).toMatchObject({ source: expect.stringContaining('p.54') })
   })
 
+  /**
+   * #120's migration, pinned on the two devices that drove it. Both are `clock.preferredSource`
+   * findings about a field that is deliberately absent, and before #120 they wore the same word.
+   */
+  it('records the Cascadia as cited-against, with the page it is cited to', () => {
+    const cascadia = DEVICES.find((d) => d.id === 'intellijel-cascadia') as Device
+    const evidence = evidenceFor(cascadia, 'clock.preferredSource')
+    expect(evidence).toMatchObject({
+      kind: 'cited-against',
+      cite: { kind: 'manual', source: expect.stringContaining('p.7') },
+    })
+    // The reading, not just the page: this manual answers the question rather than skipping it.
+    expect((evidence as { reason: string }).reason).toContain('stand-alone instrument')
+    expect(evidenceKind(evidence as CapabilityEvidence)).toBe('cited-against')
+  })
+
+  it('records the Euroburo\u2019s module-index absences as unread, not as silence', () => {
+    const zoia = DEVICES.find((d) => d.id === 'empress-zoia-euroburo') as Device
+    for (const fact of [
+      'features.lfo',
+      'features.sidechain.internal',
+      'features.sidechain.fromExternalAudio',
+    ]) {
+      expect(evidenceFor(zoia, fact), fact).toMatchObject({ kind: 'unread' })
+    }
+    // The one entry on this box that *is* a finished reading keeps its own state.
+    expect(evidenceFor(zoia, 'clock.preferredSource')).toMatchObject({ kind: 'unknown' })
+  })
+
+  it('never writes `unknown` about a document nobody could open (#118\u2019s incident)', () => {
+    // During #118 an `unknown` was written whose reason was that the manual is not in `manuals/`,
+    // by an author citing that manual's p.110 in the same file. `unread` is where that finding
+    // goes now, and this is the guard that keeps it there.
+    for (const d of DEVICES) {
+      for (const [fact, evidence] of Object.entries(d.capabilityEvidence ?? {})) {
+        if (evidence === false || evidence.kind !== 'unknown') continue
+        expect(evidence.reason, `${d.id} / ${fact}`).not.toMatch(/not in `manuals\/`/)
+      }
+    }
+  })
+
   it('falls back to `unknown` rather than throwing for a fixture that skipped the schema', () => {
     // Unreachable for anything that has been through `DeviceSchema`. A hand-built fixture that
     // reaches a renderer should render honestly rather than crash the page.
@@ -438,11 +591,12 @@ describe('the library after the migration', () => {
 
 /**
  * §8. The guide is read at the machine, and a socket it tells a reader to patch carries whoever
- * checked that the socket is there. All three states are marked, unlike a parameter's — see
+ * checked that the socket is there. Every state is marked, unlike a parameter's — see
  * `evidenceMark` in `lib/core/render.ts` for why that is the same rule rather than an exception
- * to it.
+ * to it. What a reader is *shown* for the two states #120 added is #121's question, so it is not
+ * settled here and not asserted here.
  */
-describe('the guide marks all three states apart (§8/§2.6)', () => {
+describe('the guide marks the states it renders apart (§8/§2.6)', () => {
   /** The Tracker Mini's MIDI jacks carry a note, so its clock jack line is the one that renders. */
   function rigWith(evidence: CapabilityEvidence): string {
     const devices = DEVICES.filter(
@@ -504,6 +658,7 @@ describe('the guide marks all three states apart (§8/§2.6)', () => {
     // backlog invites somebody to do it twice.
     expect(body).not.toMatch(/Type B[^\n]* · unchecked/)
   })
+
 })
 
 /**
@@ -511,7 +666,7 @@ describe('the guide marks all three states apart (§8/§2.6)', () => {
  * they must agree on is which *states* exist and that a reader can tell them apart — the words
  * and the ink are written twice on purpose.
  */
-describe('the web guide marks the same three states (§8/§2.6/#33)', () => {
+describe('the web guide marks the same states (§8/§2.6/#33)', () => {
   const html = (evidence: CapabilityEvidence) =>
     renderToStaticMarkup(createElement(EvidenceMark, { evidence }))
 

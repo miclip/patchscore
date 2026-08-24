@@ -66,6 +66,8 @@ export type AuditKind =
   | 'mood-inert'
   | 'unchecked-capability'
   | 'undocumented-capability'
+  | 'unread-capability'
+  | 'cited-against-capability'
 
 /**
  * §2.6/#22. Where a capability finding points: at a **field path**, not a recipe and a parameter.
@@ -103,11 +105,12 @@ export type AuditCounts = {
    */
   unitlessNumerics: number
   /**
-   * §2.6/#22. **The capability facts a manifest has said something about**, and how.
+   * §2.6/#22/#120. **The capability facts a manifest has said something about**, and how.
    *
-   * `capabilityFacts` = manualCapabilities + observedCapabilities + uncheckedCapabilities +
-   * undocumentedCapabilities. A fourth identity that has to add up, on the same terms as the
-   * other two.
+   * `capabilityFacts` = manualCapabilities + observedCapabilities + citedAgainstCapabilities +
+   * uncheckedCapabilities + undocumentedCapabilities + unreadCapabilities. A fourth identity that
+   * has to add up, on the same terms as the other two — six ways rather than four since #120,
+   * because one state was answering three questions.
    *
    * **Silence is not counted, and that is the whole shape of this number.** A manifest that says
    * nothing about `io.usbAudio` has no entry, contributes nothing here, and owes nothing —
@@ -120,12 +123,21 @@ export type AuditCounts = {
    * `undocumented` is kept apart from `unchecked` for the reason the two states exist at all: one
    * is work waiting to be done and the other is work that was done and came back empty. Adding
    * them would report finished research as a backlog.
+   *
+   * `unread` is kept apart from both for the same reason one step further out. It *is* work
+   * waiting, so it is not `undocumented`; and it is blocked on finding a document rather than on
+   * reading one, so totalling it with `unchecked` would tell an author to go and read a file that
+   * is not there. `cited-against` sits with the citations because it is one — a page was read and
+   * it answers the question — and apart from them because what it supports is the *absence* of a
+   * claim, which is not the thing `manual` and `observed` count.
    */
   capabilityFacts: number
   manualCapabilities: number
   observedCapabilities: number
+  citedAgainstCapabilities: number
   uncheckedCapabilities: number
   undocumentedCapabilities: number
+  unreadCapabilities: number
 }
 
 export const ZERO_COUNTS: AuditCounts = {
@@ -142,8 +154,10 @@ export const ZERO_COUNTS: AuditCounts = {
   capabilityFacts: 0,
   manualCapabilities: 0,
   observedCapabilities: 0,
+  citedAgainstCapabilities: 0,
   uncheckedCapabilities: 0,
   undocumentedCapabilities: 0,
+  unreadCapabilities: 0,
 }
 
 export type DeviceAudit = { deviceId: string; counts: AuditCounts; findings: AuditFinding[] }
@@ -202,15 +216,19 @@ function auditRecipe(deviceId: string, recipe: Recipe, into: DeviceAudit): void 
 }
 
 /**
- * §2.6/#22. How one piece of capability evidence was checked, or that it was not.
+ * §2.6/#22/#120. How one piece of capability evidence was checked, or that it was not.
  *
- * Four states where `citeKind` has three, because `CapabilityEvidence` has a state `Verified`
- * cannot express. Kept as its own function rather than folded into `citeKind`, which answers a
- * question about a parameter claim and must keep answering exactly that.
+ * Six states where `citeKind` has three, because `CapabilityEvidence` has three states
+ * `Verified` cannot express. Kept as its own function rather than folded into `citeKind`, which
+ * answers a question about a parameter claim and must keep answering exactly that.
+ *
+ * Only one of the six is a rename: `unknown` reports as `undocumented`, because the state is
+ * about the *document* rather than about what anybody knows, and "unknown" beside "unchecked" in
+ * a report reads as two spellings of the same shrug. The other five say what they are.
  */
-export function evidenceKind(
-  evidence: CapabilityEvidence,
-): CiteKind | 'unchecked' | 'undocumented' {
+export type EvidenceKind = CiteKind | 'unchecked' | 'undocumented' | 'unread' | 'cited-against'
+
+export function evidenceKind(evidence: CapabilityEvidence): EvidenceKind {
   if (evidence === false) return 'unchecked'
   return evidence.kind === 'unknown' ? 'undocumented' : evidence.kind
 }
@@ -235,6 +253,12 @@ function auditCapabilities(device: Device, into: DeviceAudit): void {
       case 'observed':
         into.counts.observedCapabilities++
         break
+      case 'cited-against':
+        into.counts.citedAgainstCapabilities++
+        // Reported for the reason `undocumented` is, and more so: this one says the document
+        // answers in the other direction, which is the reading most worth disagreeing with.
+        into.findings.push({ deviceId: device.id, fact, kind: 'cited-against-capability' })
+        break
       case 'unchecked':
         into.counts.uncheckedCapabilities++
         into.findings.push({ deviceId: device.id, fact, kind: 'unchecked-capability' })
@@ -244,6 +268,11 @@ function auditCapabilities(device: Device, into: DeviceAudit): void {
         // A finding, but not a debt: it is reported so somebody can disagree with the reading,
         // not so somebody can go and do the work again.
         into.findings.push({ deviceId: device.id, fact, kind: 'undocumented-capability' })
+        break
+      case 'unread':
+        into.counts.unreadCapabilities++
+        // A debt, and one nobody here can pay by reading harder — it is waiting on a file.
+        into.findings.push({ deviceId: device.id, fact, kind: 'unread-capability' })
         break
     }
   }
@@ -272,9 +301,11 @@ export function totalCounts(audits: DeviceAudit[]): AuditCounts {
       capabilityFacts: acc.capabilityFacts + a.counts.capabilityFacts,
       manualCapabilities: acc.manualCapabilities + a.counts.manualCapabilities,
       observedCapabilities: acc.observedCapabilities + a.counts.observedCapabilities,
+      citedAgainstCapabilities: acc.citedAgainstCapabilities + a.counts.citedAgainstCapabilities,
       uncheckedCapabilities: acc.uncheckedCapabilities + a.counts.uncheckedCapabilities,
       undocumentedCapabilities:
         acc.undocumentedCapabilities + a.counts.undocumentedCapabilities,
+      unreadCapabilities: acc.unreadCapabilities + a.counts.unreadCapabilities,
     }),
     { ...ZERO_COUNTS },
   )

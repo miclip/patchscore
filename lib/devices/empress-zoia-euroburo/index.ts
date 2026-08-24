@@ -44,9 +44,10 @@ import { ZOIA_EUROBURO_PANEL } from './panel'
  * of documentation rather than of capability:
  *
  *  - **no `features.lfo`** — the manual mentions no LFO. ZOIA certainly has them; this document
- *    does not say so, and `manuals/README.md` forbids authoring from memory.
- *  - **no `features.sidechain`** — likewise. A ZOIA patch can obviously duck one signal from
- *    another; nothing here documents it, and the field would be a guess.
+ *    does not say so, and `manuals/README.md` forbids authoring from memory. Recorded as `unread`
+ *    in `capabilityEvidence` since #120, because the missing document is the finding.
+ *  - **no `features.sidechain`** — likewise, and likewise recorded. A ZOIA patch can obviously
+ *    duck one signal from another; nothing here documents it, and the field would be a guess.
  *  - **no `features.perStep`** — this box has no step sequencer of its own that the manual
  *    describes, and nothing addresses steps.
  *
@@ -100,15 +101,45 @@ export const device: Device = {
    *
    * Recorded rather than omitted, so the decision reads as a decision. Compare the Cascadia,
    * whose entry says something different again: there the box plainly sends clock, so the question
-   * is live rather than closed by the hardware, and its manual answers it in the negative — an
-   * instrument its own overview calls stand-alone, played by whatever controller you patch into
-   * it. Same recorded state, three different reasons for it.
+   * is live rather than closed by the hardware, and its manual answers it in the negative. Until
+   * #120 those two findings wore the same word; the Cascadia's is `cited-against` now and carries
+   * its pages, and this one stays `unknown` because silence is what this document actually is.
+   *
+   * ## Three more entries, and they are the reason `unread` exists (#120)
+   *
+   * The module index is not in `manuals/` (see the module JSDoc), so `features.lfo` and both
+   * `features.sidechain` paths are absences of *documentation* rather than of capability — and
+   * that is not the same finding as `unknown`. Nobody read a document and came back empty here:
+   * the document that would answer is out of reach, and the work is blocked on finding a file
+   * rather than on an author's afternoon. Written `unknown`, it would have reported a missing
+   * manual as finished research, which is the exact failure #118 hit and #120 fixed.
+   *
+   * `features.*` paths are accepted whether or not the feature is declared, which is what makes
+   * this expressible at all: evidence *about an absence* is what invariant 5 asks for.
    */
   capabilityEvidence: {
     'clock.preferredSource': {
       kind: 'unknown',
       reason:
         'this manual documents no clock transmission at all, so it states nothing about leading a rig either — and with `canSendClock: false` the field is not claimable in any case',
+    },
+
+    'features.lfo': {
+      kind: 'unread',
+      reason:
+        'ZOIA’s LFOs live in the module library, and the document that enumerates it — the module index — is not in `manuals/`; this 44-page hardware manual is about the knob, the grid, the pages and the connections, and mentions no LFO anywhere',
+    },
+
+    'features.sidechain.internal': {
+      kind: 'unread',
+      reason:
+        'same document, same absence: a ZOIA patch can plainly duck one signal from another, and the module index that would say how is not in `manuals/` — this manual never describes a ducking source',
+    },
+
+    'features.sidechain.fromExternalAudio': {
+      kind: 'unread',
+      reason:
+        'same document, same absence: the audio inputs are documented (p.5) and the modules that would read them for a ducking source are in the module index, which is not in `manuals/`',
     },
   },
 

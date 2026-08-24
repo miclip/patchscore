@@ -41,16 +41,24 @@ export {
 const n = (v: number): string => String(v).padStart(5)
 
 /**
- * Four lines per device: the point claim and the range claim are about different things and a
- * single line long enough to hold both is a line nobody reads, #29's unit count is not a claim
- * about verification at all, and §2.6's capability line counts a different kind of claim about a
- * different kind of thing.
+ * Four lines per device, five once a manifest has capability entries: the point claim and the
+ * range claim are about different things and a single line long enough to hold both is a line
+ * nobody reads, #29's unit count is not a claim about verification at all, and §2.6's capability
+ * counts are a different kind of claim about a different kind of thing.
  *
- * **The capability line prints only when there is something to print.** Its total is the number
- * of facts a manifest has *spoken about*, not the number it could speak about (see `AuditCounts`),
- * so a device with no entries has no line rather than a row of zeros — and a row of zeros in a
- * debt table reads as a debt, which is exactly what a manifest that was never asked to cite its
- * capabilities does not have.
+ * **The capability counts print only when there is something to print.** Their total is the
+ * number of facts a manifest has *spoken about*, not the number it could speak about (see
+ * `AuditCounts`), so a device with no entries has no lines rather than rows of zeros — and a row
+ * of zeros in a debt table reads as a debt, which is exactly what a manifest that was never asked
+ * to cite its capabilities does not have.
+ *
+ * **`caps` and `gaps` are the same total split by one question: is there a document behind this
+ * entry?** (#120.) `caps` holds the three states that can point at one, `cited-against` included,
+ * because a page that answers *no* is still a page somebody read. `gaps` holds the three that
+ * cannot, and they are three rather than one because they cost different things — `unchecked` is
+ * an afternoon nobody has spent, `undocumented` is finished research, and `unread` is blocked on
+ * a file that is not in `manuals/` at all. One line for all six was tried first and ran to 120
+ * columns, which is a line nobody reads either.
  */
 export function countsBlock(label: string, c: AuditCounts): string[] {
   const lines = [
@@ -68,8 +76,9 @@ export function countsBlock(label: string, c: AuditCounts): string[] {
   if (c.capabilityFacts > 0) {
     lines.push(
       `    caps   ${n(c.capabilityFacts)} total  ${n(c.manualCapabilities)} manual  ` +
-        `${n(c.observedCapabilities)} observed  ${n(c.uncheckedCapabilities)} unchecked  ` +
-        `${n(c.undocumentedCapabilities)} undocumented`,
+        `${n(c.observedCapabilities)} observed  ${n(c.citedAgainstCapabilities)} cited-against`,
+      `    gaps   ${n(c.uncheckedCapabilities)} unchecked  ` +
+        `${n(c.undocumentedCapabilities)} undocumented  ${n(c.unreadCapabilities)} unread`,
     )
   }
   return lines

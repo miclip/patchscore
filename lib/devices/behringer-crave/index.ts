@@ -785,7 +785,9 @@ export const device: Device = {
    * words — the TEMPO control "controls the value of clock division" when "USB or MIDI clock is
    * used". The send half is absent from the document: MIDI OUT/THRU "passes through MIDI data
    * received at the MIDI INPUT" (p.21 item 39), and there is no clock or run output anywhere in
-   * the patchbay's fifteen. `preferredSource` is therefore not claimed either (§7.4).
+   * the patchbay's fifteen. `preferredSource` is therefore not claimed either (§7.4), and the
+   * pages behind that non-claim are in `capabilityEvidence` below rather than in this sentence
+   * (§2.6/#120).
    */
   clock: { canSendClock: false, canReceiveClock: true, transport: ['midi-din', 'usb'] },
 
@@ -804,8 +806,22 @@ export const device: Device = {
   panel: CRAVE_PANEL,
   jacks: [...JACKS],
 
-  /** §2.6. Every jack above, cited on the page that describes it. */
-  capabilityEvidence: { ...JACK_EVIDENCE },
+  /**
+   * §2.6. Every jack above, cited on the page that describes it — plus the recorded non-claim
+   * for `clock.preferredSource` (§7.4/#80), which #120 moved out of the `clock` comment.
+   *
+   * `unknown` rather than `cited-against`: this document does not answer the question in the
+   * other direction, it never raises it. It documents a clock coming *in* and no way for one to
+   * leave, and the field is not claimable in any case with `canSendClock: false`.
+   */
+  capabilityEvidence: {
+    ...JACK_EVIDENCE,
+    'clock.preferredSource': {
+      kind: 'unknown',
+      reason:
+        'p.20 item 24 is the receive half in as many words — TEMPO "controls the value of clock division" when "USB or MIDI clock is used" — and the send half is absent from the document: MIDI OUT/THRU only "passes through MIDI data received at the MIDI INPUT" (p.21 item 39) and none of the patchbay’s fifteen jacks is a clock or run output, so no page states what this box is for in a rig',
+    },
+  },
 
   manual: { title: 'CRAVE Quick Start Guide', edition: 'BE_0718-AAJ_WW' },
 

@@ -1403,45 +1403,61 @@ export const device: Device = {
    * LiveTrak the question §7.4 asks is live here rather than closed by the hardware. The manual
    * answers it, and the answer is no.
    *
-   * **Four pages carry the capability and not one of them is a role page.** p.20 is the `MIDI CLK`
-   * jack-and-button description with a bare clock-division list; p.78 is the four-item back-panel
-   * MIDI jack list; pp.105-106 are Config App settings tables. The phrase that sounds like
-   * positioning — Intellijel's own name for what the box can be in a setup with no DAW in it —
-   * occurs four times in 110 pages and every one of the four is inside a jack list or a settings
-   * row. It also uses the older clock vocabulary this project does not (CLAUDE.md), which is why
-   * it is described here rather than quoted. There is no chapter about driving external gear and
-   * the table of contents has no entry for one.
+   * **Where the capability is documented, and what those pages actually say.** p.20 is the front
+   * panel's `MIDI CLK` jack — an analog clock output with a division list, plus tap tempo framed
+   * as *"particularly useful if you're not controlling Cascadia via MIDI"*. p.78's back-panel MIDI
+   * entries and p.106's Config App rows are the DIN and USB halves, and they say more than a jack
+   * list: both describe the port transmitting Cascadia's own Tap Clock and name a setup with no
+   * DAW in it as what that is for, and p.78 records the DIN output as on in the factory settings.
+   * (They also use the older clock vocabulary this project does not — CLAUDE.md — which is why
+   * they are described here rather than quoted. p.78 and p.106 disagree with each other about the
+   * USB default; the DIN one is consistent.) There is no chapter about driving external gear and
+   * the table of contents has no entry for one: everything about this box clocking anything else
+   * lives in those two jack-and-settings descriptions.
    *
-   * **The manual is not merely silent on the question; it answers in the other direction**, which
-   * is the finding worth keeping. The cover calls this an *"Advanced, Performance-Oriented,
-   * Semi-Modular Synthesizer"* and p.7's OVERVIEW a *"stand-alone instrument"* and *"a
-   * synthesist's synthesizer"*. p.7's *"whether used stand-alone or as part of a larger system"*
-   * looks like the sentence that settles it and points the other way once the sentence before it
-   * is read: the system in question is *"external modules"* expanding Cascadia, so the rack
-   * extends this box rather than following it. Then the places that establish role all put the
-   * timing outside: MAKE A SOUND (p.11) is *"connect its MIDI OUT to Cascadia's MIDI IN jack"*
-   * with the panel drawing's CV/GATE and MIDI arrows pointing **inward**; p.78's MIDI IN, the jack
-   * immediately above the clock-out one, is for *"whichever controller, sequencer or MIDI
-   * interface you'll use to play Cascadia"*; and p.20 frames tap tempo as *"particularly useful
-   * if you're not controlling Cascadia via MIDI"* — the clock output is what you reach for when
-   * nothing else is driving the box, which presumes something usually is. The box cannot start or
-   * stop anything either: the manual documents no MIDI Start, Stop or Continue anywhere.
+   * **None of that is this field.** §7.4 is a job, not a capability, and "if you enable it, this
+   * output sends a clock, which is handy when there is no DAW" is a description of what a socket
+   * does — the same class of page §2.6 already refuses as evidence here, because a `canSendClock`
+   * page proves the capability and this field exists precisely because a capability is not a job.
+   * The comparison that settles it is the Tracker Mini's p.283, which calls that box a fit for the
+   * centre piece of a setup and is about the box rather than about one of its sockets.
    *
-   * **A `Cite` was considered here and is the wrong shape**, which is worth recording because it
-   * looks like the better one. The manual does support the omission, so citing a page for it is
-   * tempting — but `Verified` on this path reads as evidence *for the field*, the field is absent,
-   * and the audit would then count this identically to the Tracker Mini's claim and print "83 of
-   * 83 cited" over two opposite decisions. `unknown` understates what is known here and
-   * understating is the safe direction; the `reason` carries the rest. See the FLAG in #80: §2.6's
-   * third state now covers both "the document is silent" and "the document answers no", and those
-   * are not the same finding.
+   * **What the manual says the box is, it says four times over and consistently.** The cover:
+   * *"Advanced, Performance-Oriented, Semi-Modular Synthesizer"*. p.7's OVERVIEW: *"a synthesist's
+   * synthesizer — a well-considered, finely-honed, stand-alone instrument capable of both nuance
+   * and bombast"*, and *"a deep and flexible semi-modular mono synth"*. p.7's *"whether used
+   * stand-alone or as part of a larger system"* looks like the sentence that settles it the other
+   * way and points back once the paragraph above it is read: those patch points *"conform to the
+   * Eurorack standard, meaning you can expand Cascadia's capabilities through the use of external
+   * modules"*, so the larger system extends this box rather than follows it — and the same
+   * sentence closes on *"the desktop to the eurorack"*. p.11's MAKE A SOUND: *"If you're playing
+   * Cascadia via a MIDI controller, connect its MIDI OUT to Cascadia's MIDI IN jack"*, and in that
+   * page's panel figure every signal arrow but the audio output points inward. p.78's MIDI IN, the
+   * jack immediately above the clock-carrying one: *"whichever controller, sequencer or MIDI
+   * interface you'll use to play Cascadia"*. The box cannot start or stop anything either — the
+   * manual documents no MIDI Start, Stop or Continue, and prints no MIDI implementation chart.
+   *
+   * **This is `cited-against`, the state #120 built for it, and #80's FLAG is what asked for it.**
+   * Recorded as `unknown`, this reading rendered as silence — as though somebody had opened the
+   * manual and found nothing, when what they found was an answer. A plain `Cite` on the path is
+   * still the wrong shape and for the reason it always was: `Verified` here reads as evidence
+   * *for* a field that is deliberately absent, and the audit would count this identically to the
+   * Tracker Mini's claim and print "83 of 83 cited" over two opposite decisions. `cited-against`
+   * is that citation hung off its own state — the page is visible, the reason carries the reading,
+   * and the count stays apart from the claims.
+   *
+   * The pages behind this were re-read against the rendered PDF for #120, and one sentence in the
+   * old note did not survive it: p.78 and p.106 were described as jack lists and settings tables
+   * mentioning the clock output only in passing, and they are more than that. The finding holds;
+   * the sentence supporting it did not, and the reason below says what those pages say.
    */
   capabilityEvidence: {
     ...JACK_EVIDENCE,
     'clock.preferredSource': {
-      kind: 'unknown',
+      kind: 'cited-against',
+      cite: cite(7),
       reason:
-        'no page states that leading a rig is this box’s job, and several state the reverse: the cover calls it a “Performance-Oriented, Semi-Modular Synthesizer”, p.7 a “stand-alone instrument”, p.11 and p.78 have a controller or sequencer playing it, and p.20 offers tap tempo for when MIDI is not driving it — the clock output is documented in jack lists (p.20, p.78) and settings tables (pp.105-106) only',
+        'the manual answers the question and the answer is no: p.7’s OVERVIEW calls this “a synthesist’s synthesizer — a well-considered, finely-honed, stand-alone instrument”, the cover an “Advanced, Performance-Oriented, Semi-Modular Synthesizer”, p.11’s MAKE A SOUND has a controller playing it with every signal arrow but the audio output pointing inward, and p.78’s MIDI IN is for “whichever controller, sequencer or MIDI interface you’ll use to play Cascadia”; p.78 and p.106 do describe the MIDI OUT and USB ports sending this box’s own Tap Clock for a setup with no DAW in it, DIN on by default, but that is a socket’s description rather than the box’s job (§7.4), and there is no chapter about driving external gear at all',
     },
   },
 

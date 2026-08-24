@@ -146,7 +146,8 @@ import { SUBSEQUENT_37_PANEL } from './panel'
  * `OUT PORTS` both defaulting to `BOTH` over DIN and USB (pp.35-36). There is no analog clock
  * jack; the four CV sockets are pitch, filter, volume and gate, all inputs (p.61).
  *
- * `preferredSource` is not claimed (§7.4). This box can drive a rig; driving one is not its job.
+ * `preferredSource` is not claimed (§7.4). This box can drive a rig; driving one is not its job,
+ * and since #120 the pages behind that sit in `capabilityEvidence` rather than in this sentence.
  */
 
 // ---------------------------------------------------------------------------
@@ -1201,9 +1202,34 @@ export const device: Device = {
    * both defaulting to `BOTH` (pp.35-36).
    *
    * `preferredSource` is not claimed (§7.4). A synth with a sequencer in it can drive a rig and
-   * that is not its job.
+   * that is not its job — see `capabilityEvidence` below for what the manual actually says.
    */
   clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
+
+  /**
+   * §2.6/#22, §7.4/#80. **One entry, and it is about a field this manifest does not declare.**
+   *
+   * #120 gave a reasoned non-claim somewhere to live besides a comment. This one is `unknown` and
+   * not `cited-against`, and the difference is worth stating because the Cascadia next door is
+   * the other call: that manual answers the question in one direction, and this one answers it in
+   * both. p.9's overview calls the box "the ideal instrument for any synthesist" and "a powerful
+   * MIDI controller" inside the same section; p.8 gives the wiring for controlling other gear and
+   * the wiring for being controlled, a paragraph each. A document that says both has not said
+   * this box's job is to lead a rig, and it has not said the reverse either.
+   *
+   * Two things the pages do *not* print, recorded so nobody looks for them twice: there is no
+   * manufacturer default beside `SEND CLOCK` or `FOLLOW SPP` (p.35's menu map and p.37's prose
+   * both leave them unmarked, where `SEND ST/STP` is marked "(default)"), and there is no global
+   * receive-clock setting at all — following an external clock is per-section, on the SYNC
+   * buttons.
+   */
+  capabilityEvidence: {
+    'clock.preferredSource': {
+      kind: 'unknown',
+      reason:
+        'no page states that leading a rig is this synth’s job, and the pages that come closest point both ways: p.9’s overview calls it "the ideal instrument for any synthesist" and "a powerful MIDI controller" in one section, and p.8 gives one paragraph for wiring it as a controller and one for controlling it from an external one; `SEND CLOCK: OFF, ARP, ON` (p.37) is a capability with no printed default, and p.15 warns that with SYNC on "the arp/sequencer will not play unless MIDI clock is received"',
+    },
+  },
 
   /**
    * p.61: `AUDIO OUTPUT: 1xTS, 1xTRS Headphone` — **one mono output**, and the headphone jack

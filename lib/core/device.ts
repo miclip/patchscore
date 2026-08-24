@@ -13,6 +13,7 @@ import {
   CiteSchema,
   VerifiedSchema,
   type AuthoredParam,
+  type Cite,
   type Verified,
   citedDocument,
   effectiveVerified,
@@ -96,39 +97,103 @@ export const ClockTransportSchema = z.string().min(1)
 // ---------------------------------------------------------------------------
 
 /**
- * §2.6/#22. **A capability fact somebody went looking for and the document does not state.**
+ * §2.6/#22/#120. **A capability fact somebody went looking for and did not come back with a
+ * claim from.** Three states, because #120 found that one state was doing the work of three.
  *
- * `Verified` has two states and neither of them is this one. `false` is *authored, nothing
- * checked against* — nobody opened the book. A fact whose page somebody hunted for and did not
- * find is a different and more expensive thing to know: it is finished work, it does not need
- * doing again, and it is the strongest evidence there is that the box's own documentation is
- * silent. Collapsing the two loses the distinction in the direction that costs the most, because
- * the unchecked pile is the one an author is meant to work through.
+ * `Verified` has two and neither is any of these. `false` is *authored, nothing checked
+ * against* — nobody opened the book. What follows is what happens once somebody does:
  *
- * `reason` is required so the state cannot be a shrug. "The manual never says what KNOB ASSIGN
- * can target" is a finding; a bare `unknown` is an author giving up in a field that reads like
- * diligence.
+ *  - **`unknown` — read, and the document does not say.** Finished work: it does not need doing
+ *    again, and it is the strongest evidence there is that the box's own documentation is
+ *    silent. This is #117's original third state and it keeps its name unchanged.
+ *  - **`unread` — the document could not be read.** Unfinished work, and *not* the same
+ *    unfinished work `false` is: nobody has to open the book, somebody has to find it. Thirteen
+ *    manuals are absent from `manuals/` and #119 records that three of them have no automatable
+ *    URL at all, so for a new box this is the normal state rather than the exception. It arrived
+ *    with its own incident: during #118 an `unknown` was written whose reason was "the manual is
+ *    not in `manuals/`", by an author citing that manual's p.110 in the same file. Collapsing it
+ *    into `unknown` renders a missing document as a finished finding, which is the failure
+ *    `unknown` was built to prevent one level up.
+ *  - **`cited-against` — read, and it answers no.** The document does not fail to answer the
+ *    question; it answers it in the other direction, which is a positive finding and the only
+ *    one of the three with a page to cite.
+ *
+ * `reason` is required on all three, for the reason #117 gave about the first: "the manual never
+ * says what KNOB ASSIGN can target" is a finding, and a bare state is an author giving up in a
+ * field that reads like diligence.
  */
-export type UncheckedFact = { kind: 'unknown'; reason: string }
+export type UndocumentedFact = { kind: 'unknown'; reason: string }
 
 /**
- * §2.6/#22. How a **device capability fact** was checked — the third `kind` alongside `manual`
- * and `observed`, plus `false`.
+ * §2.6/#120. **Nobody here could open the document**, so the fact is not merely unstated — it is
+ * unlooked-at, and the looking is blocked on a file rather than on an author's afternoon.
+ *
+ * `reason` names *which* document and why it is out of reach, because "unread" without that is
+ * indistinguishable from `false` to anybody deciding what to work on next. §2.5's rule is the
+ * companion to this state and is not weakened by it: what was cited while a manual was present
+ * stays cited, and a fact recorded `unread` waits for the file instead of being inferred from
+ * the pages a manifest already quotes.
+ */
+export type UnreadFact = { kind: 'unread'; reason: string }
+
+/**
+ * §2.6/#120, §7.4/#80. **Read, and the evidence is against the claim** — the state the Cascadia
+ * needed and could not have.
+ *
+ * That manual does not fail to answer whether leading a rig is the box's job. It answers no: the
+ * cover calls it a performance-oriented semi-modular synthesizer, p.7 a "stand-alone
+ * instrument", p.11 and p.78 have a controller or a sequencer playing it. Recorded as `unknown`,
+ * that finished reading rendered as silence.
+ *
+ * **A plain `Cite` on the path is the wrong shape and it is worth saying why, because it looks
+ * like the right one.** `Verified` at `clock.preferredSource` reads as evidence *for* the field.
+ * The field is absent by decision, so the audit would count the Cascadia's non-claim identically
+ * to the Tracker Mini's claim and print "83 of 83 cited" over two opposite decisions. The
+ * citation therefore hangs off its own state rather than standing in for one.
+ *
+ * **This is the provenance slot a reasoned non-claim never had.** `capabilityEvidence` is keyed
+ * by field path and the field is deliberately absent, so before #120 the pages behind four such
+ * decisions lived in prose comments — which is exactly the page-numbers-in-comments that #22
+ * existed to end.
+ *
+ * `cite` is a full `Cite` rather than a page string: a non-claim can be read off a manual or off
+ * a unit, and `observed` here would mean somebody tried it and the box does not do it.
+ */
+export type CitedAgainstFact = { kind: 'cited-against'; reason: string; cite: Cite }
+
+/**
+ * §2.6/#22/#120. How a **device capability fact** was checked — `manual` and `observed` from
+ * `Verified`, plus `false`, plus the three states above.
  *
  * Deliberately a superset of `Verified` rather than a separate vocabulary: a cited capability is
  * cited in exactly the sense a cited range is, and the renderers, the audit and the device page
- * all branch on `kind` the way they already do.
+ * all branch on `kind` the way they already do. It is **not** shared template vocabulary
+ * (invariant 3): this travels device → renderer, like `unit` and `note`, and no template names
+ * any of it.
  */
-export type CapabilityEvidence = Verified | UncheckedFact
+export type CapabilityEvidence = Verified | UndocumentedFact | UnreadFact | CitedAgainstFact
 
-export const UncheckedFactSchema = z.strictObject({
+export const UndocumentedFactSchema = z.strictObject({
   kind: z.literal('unknown'),
   reason: z.string().min(1, 'an unknown capability fact needs a reason'),
 })
 
+export const UnreadFactSchema = z.strictObject({
+  kind: z.literal('unread'),
+  reason: z.string().min(1, 'an unread capability fact needs a reason naming the document'),
+})
+
+export const CitedAgainstFactSchema = z.strictObject({
+  kind: z.literal('cited-against'),
+  reason: z.string().min(1, 'a cited-against capability fact needs a reason'),
+  cite: CiteSchema,
+})
+
 export const CapabilityEvidenceSchema = z.union([
   CiteSchema,
-  UncheckedFactSchema,
+  UndocumentedFactSchema,
+  UnreadFactSchema,
+  CitedAgainstFactSchema,
   z.literal(false),
 ])
 
@@ -761,9 +826,19 @@ export type ClockJackNote = {
  */
 export function evidenceKey(evidence: CapabilityEvidence): string {
   if (evidence === false) return 'false'
-  return evidence.kind === 'unknown'
-    ? `unknown\u0000${evidence.reason}`
-    : `${evidence.kind}\u0000${evidence.source}`
+  switch (evidence.kind) {
+    // The reason *is* the claim in these two, so two findings that read differently are two
+    // findings however alike their kind (§2.6/#120).
+    case 'unknown':
+    case 'unread':
+      return `${evidence.kind}\u0000${evidence.reason}`
+    // Both halves, for the reason above and the reason below: a non-claim carries a page and a
+    // sentence, and either one differing makes it a different claim.
+    case 'cited-against':
+      return `cited-against\u0000${evidence.reason}\u0000${evidence.cite.kind}\u0000${evidence.cite.source}`
+    default:
+      return `${evidence.kind}\u0000${evidence.source}`
+  }
 }
 
 export function clockJackNotes(device: Device, transport: ClockTransport): ClockJackNote[] {
