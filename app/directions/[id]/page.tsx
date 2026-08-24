@@ -9,6 +9,17 @@ import { TEMPLATES } from '@/lib/templates'
 import { directionPage } from '@/lib/studio/direction-page'
 
 /**
+ * "1 parts" and "1 of 1 required parts" were both reachable the moment a one-part direction
+ * existed, and both read as a bug rather than as a small number. `num` formats the digits and
+ * has no opinion about the noun beside them, which is right for every other line on this page —
+ * bars, sections and a harmonic cycle are never one — so the count-and-noun pairs that genuinely
+ * can be say so here instead.
+ */
+function plural(n: number, one: string): string {
+  return `${num(n)} ${n === 1 ? one : `${one}s`}`
+}
+
+/**
  * #84. One direction, everything the template holds and what any rig covers of it.
  *
  * Prerendered per template, a server component with no client boundary, and canonical to its own
@@ -88,8 +99,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             </dd>
             <dt>Asks for</dt>
             <dd className="mono">
-              {num(template.roles.length)} parts · {num(template.hooks.length)} hooks ·{' '}
-              {num(template.patterns.length)} step patterns
+              {plural(template.roles.length, 'part')} · {plural(template.hooks.length, 'hook')} ·{' '}
+              {plural(template.patterns.length, 'step pattern')}
             </dd>
           </dl>
 
@@ -173,7 +184,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             <li key={fit.deviceId}>
               <Link href={fit.href}>{fit.label}</Link>
               <span className="sub mono">
-                {fit.requiredCovered} of {fit.required} required parts
+                {fit.requiredCovered} of {plural(fit.required, 'required part')}
                 {fit.covered > fit.requiredCovered
                   ? `, ${fit.covered} of ${fit.requests} including optional`
                   : ''}

@@ -2,6 +2,8 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { ROLES } from '../lib/core/index'
+import type { Role } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 import {
@@ -230,12 +232,17 @@ describe('direction search matches name and authored keys only', () => {
     }
   })
 
-  it('does not match roles, because every direction asks for the same ones', () => {
-    // Not a hypothetical: every template authored requests a kick, so a role search would
-    // return all of them and a user would reasonably conclude the search is broken.
-    for (const template of TEMPLATES) {
-      expect(template.roles.some((r) => r.role === 'kick')).toBe(true)
-    }
+  it('does not match roles, because a role is shared by directions that are nothing alike', () => {
+    // Not a hypothetical. This used to read "every template requests a kick", which was true of
+    // the first three and stopped being true when the small-rig directions arrived — one asks
+    // for a single `texture` and the other for a `bass-mid` and a `lead` and nothing else. The
+    // claim the search rests on survives that intact and is the more general one: a role search
+    // returns a set nobody would recognise as an answer, so it must return nothing at all.
+    const asking = (role: Role) => TEMPLATES.filter((t) => t.roles.some((r) => r.role === role))
+    expect(asking('kick').length).toBeGreaterThan(1)
+    expect(asking('bass-mid').length).toBeGreaterThan(1)
+    // And no role is a search term, whether one direction asks for it or every one does.
+    for (const role of ROLES) expect(shown(role), role).toEqual([])
     expect(shown('kick')).toEqual([])
     expect(shown('bass')).toEqual([])
   })
