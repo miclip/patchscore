@@ -168,8 +168,8 @@ export const device: Device = {
   id: 'roland-tr-1000',
   name: 'Roland TR-1000',
   maker: 'Roland',
-  kind: 'drum-machine',   // | 'groovebox' | 'sampler' | 'synth' | 'semi-modular'
-                          // | 'mixer-recorder' | 'fx-processor'
+  kind: 'drum-machine',   // | 'groovebox' | 'sampler' | 'sequencer' | 'synth'
+                          // | 'semi-modular' | 'mixer-recorder' | 'fx-processor'
 
   clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
 
@@ -311,6 +311,23 @@ The Tascam Model 2400 is a device with `kind: 'mixer-recorder'` — no voices, b
 that participates in routing instructions. Empress ZOIA Euroburo is `kind: 'fx-processor'`.
 Model them properly rather than special-casing; a device with no voices simply contributes
 no assignables and still appears in rig integration.
+
+**`sequencer` is the third of these, and it is the one that had to be added rather than found.**
+A Eurorack sequencer — pitch and gate tracks, modulation lanes, no sound engine and no audio
+voice — has no kind in the original list that is merely a loose fit. Both candidates state
+something false:
+
+- `semi-modular` implies a **normalised audio instrument**. The Cascadia's defining property is
+  that it makes a sound with nothing patched into it; a sequencer makes none however it is
+  patched. The kind would also imply voices, assignables and recipes for a box with none of them.
+- `groovebox` implies **self-contained sound generation**, which is precisely what such a box is
+  defined by not doing.
+
+**The cost is that the closed kind vocabulary and the picker's filter both got one wider.** `kind`
+drives a user-visible filter, so every addition is a term someone has to scan past. A kind earns
+its place only when the alternatives would make a manifest *say something false* — never when they
+would merely fit loosely. That test is the whole reason this is a separate decision from the
+device that motivated it, and the reason the list is otherwise unchanged since the first draft.
 
 ### 2.5 Seed order
 
@@ -1629,8 +1646,10 @@ key beneath it, which is exactly why §12.6 chose a flag on the request over a `
 
 1. `clock.preferredSource` (§2.3) — the manifest's own topology judgement, "this box's job in a
    rig is to drive it". A dedicated sequencer or a recorder transport says so; everything else
-   omits the field. Not derivable from `kind`: a groovebox and a dedicated sequencer can both be
-   `groovebox`, and the difference is what the box is *for*.
+   omits the field. **Not derivable from `kind`**, and the library's two `mixer-recorder`s show
+   why: the Model 2400 claims it and the LiveTrak L-8 cannot send clock at all. Same kind,
+   opposite ends of the topology. Nor does §2.3's `sequencer` kind make it derivable — a
+   sequencer following a DAW is still a follower.
 2. Transport preference (`midi-din` > `usb`).
 3. `deviceId` ascending by UTF-16 code unit (§7.2).
 
