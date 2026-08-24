@@ -271,6 +271,18 @@ body {
   opacity: 0.82;
 }
 
+/*
+ * The list scrolls inside the panel instead of growing it. The picker is the first thing on the
+ * page (#53), so every device added pushed the guide further down — by twelve the thing you came
+ * for was below the fold before you had chosen anything, and directions will grow the same way.
+ *
+ * A cap, not pagination. Every row stays present in the DOM, so the `retained` rule still holds:
+ * a selected device outside the current filter is always reachable by scrolling. A device on
+ * "page 3" would not be, and the selection is the user's own rig.
+ *
+ * `overscroll-behavior: contain` stops a flick at the end of the list from scrolling the page
+ * behind it, which on a phone reads as the page jumping while you pick.
+ */
 .picker-list {
   display: grid;
   gap: 8px;
@@ -278,6 +290,27 @@ body {
   padding: 0;
   border: 0;
   min-width: 0;
+  max-height: 21rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Room for the scrollbar so it never sits on top of a checkbox. */
+  padding-right: 4px;
+}
+
+/* Secondary by definition — it holds what a filter would otherwise have hidden. */
+.picker-kept-list {
+  max-height: 12rem;
+}
+
+/* A short viewport is nearly all phone. Give the guide back the space. */
+@media (max-height: 720px) {
+  .picker-list {
+    max-height: 14rem;
+  }
+
+  .picker-kept-list {
+    max-height: 9rem;
+  }
 }
 
 .picker-list legend {
