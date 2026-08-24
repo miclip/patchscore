@@ -237,3 +237,26 @@ describe('the direction routes', () => {
     expect(island.startsWith("'use client'")).toBe(true)
   })
 })
+
+describe('a description a search result will show (#84)', () => {
+  /**
+   * The meta description is the sentence a search result shows, which is most of why these pages
+   * exist. It read "1 parts" for Drone Study from the day that direction landed: the body copy
+   * was fixed when a one-part direction first became possible, and the metadata was not, because
+   * the plural helper lived privately in the device page and this page had no copy of it.
+   */
+  it('never says "1 parts", on any direction', () => {
+    for (const template of TEMPLATES) {
+      const description = templateDescription(template)
+      expect(description, template.id).not.toMatch(/\b1 (parts|keys|sections|bars)\b/)
+    }
+  })
+
+  it('says "1 part" for a direction that asks for one', () => {
+    const one = TEMPLATES.filter((t) => t.roles.length === 1)
+    expect(one.length, 'no one-part direction to check').toBeGreaterThan(0)
+    for (const template of one) {
+      expect(templateDescription(template)).toContain('1 part with')
+    }
+  })
+})

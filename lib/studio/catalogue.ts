@@ -112,3 +112,15 @@ export function deviceHref(device: Device): string {
 export function templateHref(template: Template): string {
   return `/directions/${template.id}`
 }
+
+/**
+ * `3 sections`, `1 part`. Exported because both catalogue halves need it and a second private
+ * copy is how `1 parts` reached a live meta description: the device page had this helper, the
+ * direction page did not, and the direction page is the one that shipped a one-part direction.
+ *
+ * Only for nouns that can genuinely be one. Bars and sections never are, so they do not need it
+ * and `num` is right to have no opinion about the noun beside it.
+ */
+export function plural(n: number, one: string): string {
+  return `${n} ${n === 1 ? one : `${one}s`}`
+}

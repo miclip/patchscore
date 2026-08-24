@@ -1,7 +1,7 @@
 import type { Character, Device, Role, SectionName, Template } from '@/lib/core'
 import { sectionsFor } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
-import { deviceHref, deviceLabel, templateHref } from './catalogue'
+import { deviceHref, deviceLabel, templateHref, plural } from './catalogue'
 import { coverage } from './coverage'
 
 /**
@@ -107,7 +107,7 @@ export function templateDescription(template: Template): string {
   return (
     `${template.name}: ${template.bpm.min}–${template.bpm.max} BPM in ${keys}, ` +
     `${template.structure.length} sections over ${totalBars(template)} bars, ` +
-    `${template.roles.length} parts with characters and priorities.`
+    `${plural(template.roles.length, 'part')} with characters and priorities.`
   )
 }
 
