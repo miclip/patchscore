@@ -1,5 +1,9 @@
 manuals/*
 !manuals/README.md
+# Both forms. With only the trailing slash this matches a directory and not a symlink, and a
+# worktree given `ln -s .../node_modules` then slips one past `git add -A` — which is how an
+# absolute path from one laptop reached main in 3d7682f.
+node_modules
 node_modules/
 
 # next.js
