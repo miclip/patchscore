@@ -1671,31 +1671,19 @@ key beneath it, which is exactly why §12.6 chose a flag on the request over a `
    why: the Model 2400 claims it and the LiveTrak L-8 cannot send clock at all. Same kind,
    opposite ends of the topology. Nor does §2.3's `sequencer` kind make it derivable — a
    sequencer following a DAW is still a follower.
-2. **Inside the preferred tier only** — a `kind: 'sequencer'` (§2.3) outranks any other box that
-   has also claimed `preferredSource`.
-3. Transport preference (`midi-din` > `usb`).
-4. `deviceId` ascending by UTF-16 code unit (§7.2).
+2. Transport preference (`midi-din` > `usb`).
+3. `deviceId` ascending by UTF-16 code unit (§7.2).
 
-Keys 3 and 4 exist to make the answer **deterministic**, not to make it right.
+Keys 2 and 3 exist to make the answer **deterministic**, not to make it right. Only key 1 carries
+a judgement, and it is a person's.
 
-**Key 2 is `kind` participating in a topology decision, which this section otherwise says it must
-not**, and the tension is recorded rather than smoothed over. The case that forced it: two boxes
-can both honestly claim `preferredSource` — a recorder transport a studio runs to, and a dedicated
-sequencer whose entire function is driving a rig. That tie used to fall through to transport, so a
-mixing desk carrying a 5-pin DIN outranked a sequencer whose clock leaves over USB. Which socket a
-box happens to carry was never meant to decide who leads.
-
-What makes it narrow rather than a reversal is the guard: it applies **only** where two manifests
-have each already made the authored claim. Outside the preferred tier `kind` plays no part, and an
-unpreferred sequencer is ranked exactly as any other unpreferred box.
-
-**The behavioural cost is that §7.4 now has two sources of topology rather than one** — a person's
-claim, and one rule about what a machine is for — and the second is an inference of exactly the
-kind the `!canReceiveClock` paragraph below rejects. Adding a device of `kind: 'sequencer'` that
-claims `preferredSource` can now change which box an existing rig clocks from, without any
-manifest in that rig changing. The alternative on the table was to leave two honest claims decided
-by which socket a box happens to carry, and this is the trade that was taken; it is the first
-place a `kind` has been given meaning by the engine rather than by the picker.
+**`kind` is not a key, and briefly was.** One revision ranked `kind: 'sequencer'` above other
+preferred boxes, to settle the case where two manifests each honestly claim the field. It was the
+same mistake as the `!canReceiveClock` paragraph below, one tier down: an inference standing in
+for a claim, and the first time a `DeviceKind` had been given meaning by the engine rather than by
+the picker. Where two boxes have each said "my job is to drive a rig", §7.4 has no basis to rank
+them and says so — the repair is for one of them not to make the claim, not for the engine to
+guess which claim it believes.
 
 **No seed** — this should be stable across rerolls, since rerolling a pattern should not re-cable
 the rig.
@@ -1725,8 +1713,12 @@ under the inferred rule it never would.
 Three things, all of them chosen rather than overlooked:
 
 - **Topology is now an authored judgement or it is nothing.** No rig gets a *considered* clock
-  source unless some manifest claims one. Every device in the library is unpreferred except the
-  Model 2400, so most rigs fall straight to the tie-breaks.
+  source unless some manifest claims one, and **no device in the library claims one**. The Model
+  2400 did for two commits, on the strength of a manual that proves the desk can generate clock
+  and cannot receive it — but neither fact says it should lead every rig it is put in, which is
+  what the field means. That was capability promoted into preference: the same error as the two
+  ranking keys this section has already removed, moved out of the engine and into a manifest,
+  where it is harder to see. So every rig today falls straight to the tie-breaks.
 - **Several preferred sources in one rig fall through to transport and id**, exactly as several
   unpreferred ones do. The field says "this box can lead", not "this box leads over that one";
   ranking two authored preferences against each other would need an ordering nobody has a basis

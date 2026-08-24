@@ -591,121 +591,50 @@ describe('clock source ranks on semantics, not on load (§7.4)', () => {
   })
 
   /**
-   * **The one place `kind` reaches into §7.4, and the case that forced it.**
+   * **`kind` is not a ranking key, and for one revision it was.** That revision ranked
+   * `kind: 'sequencer'` above other preferred boxes, to settle the case where two manifests each
+   * honestly claim the field. It was the same mistake as the source-only rule one tier down: an
+   * inference standing in for a claim. Where two boxes have each said "my job is to drive a rig",
+   * §7.4 has no basis to rank them — the repair is for one of them not to claim it.
    *
-   * Two boxes can both honestly claim `preferredSource` — a recorder transport a studio runs to,
-   * and a dedicated sequencer whose whole job is driving a rig. Until this rule, that tie fell
-   * through to transport, so a mixing desk with a 5-pin DIN socket outranked a sequencer whose
-   * clock leaves over USB. Which socket a box happens to carry was never meant to decide who
-   * leads, and that is what key 2 exists to stop.
+   * Kept as a test rather than only deleted, because this is the third time in one section that
+   * something a box *can be* was let stand in for something a person decided.
    */
-  describe('a sequencer among preferred sources (§7.4 key 2)', () => {
-    /** The real shape: a zero-assignable sequencer on USB and analog clock. */
-    const metropolix = box('z-metropolix', {
+  it('gives a sequencer no rank for being a sequencer, preferred or not', () => {
+    const sequencer = box('z-sequencer-kind', {
       kind: 'sequencer',
       voices: [],
       recipes: [],
-      clock: {
-        canSendClock: true,
-        canReceiveClock: true,
-        transport: ['usb', 'analog-clock'],
-        preferredSource: true,
-      },
+      clock: { canSendClock: true, canReceiveClock: true, transport: ['usb'] },
     })
+    const groovebox = both('a-groovebox')
+    // Unpreferred: decided by transport, then id. The groovebox wins on both.
+    expect(selectClockSource([groovebox, sequencer], new Map())?.deviceId).toBe('a-groovebox')
 
-    it('outranks a preferred desk that is heavier, faster and earlier in the alphabet', () => {
-      // Every remaining key is stacked against the sequencer: `tascam-model-2400` sorts first,
-      // its `midi-din` beats `usb`, and it is carrying parts while the sequencer carries none.
-      const chosen = selectClockSource(
-        [model2400, metropolix],
-        new Map([[model2400.id, 7], ['z-metropolix', 0]]),
-      )
-      expect(chosen?.deviceId).toBe('z-metropolix')
-      // And the desk really did claim it, or this proves nothing about the preferred tier.
-      expect(model2400.clock.preferredSource).toBe(true)
-      expect(model2400.clock.transport[0]).toBe('midi-din')
-      expect(chosen?.occupiedAssignables).toBe(0)
-    })
-
-    it('gains nothing from being a sequencer without the authored claim', () => {
-      // The scope of the rule, stated as a test. Drop `preferredSource` and the sequencer is
-      // ranked exactly as any other box: the desk's authored claim wins on key 1.
-      const unclaimed = { ...metropolix, clock: { ...metropolix.clock, preferredSource: undefined } }
-      expect(selectClockSource([model2400, unclaimed], new Map())?.deviceId).toBe(model2400.id)
-      // And against an *unpreferred* ordinary box it still wins only on the ordinary keys —
-      // 'a-groovebox' sorts first and shares no transport preference with it.
-      const groovebox = both('a-groovebox')
-      expect(selectClockSource([groovebox, unclaimed], new Map())?.deviceId).toBe('a-groovebox')
-    })
-
-    it('still falls to transport and id between two preferred sequencers', () => {
-      const other = box('a-other-seq', {
-        kind: 'sequencer',
-        clock: {
-          canSendClock: true,
-          canReceiveClock: true,
-          transport: ['midi-din'],
-          preferredSource: true,
-        },
-      })
-      // Both are sequencers, so key 2 is level and midi-din takes it.
-      expect(selectClockSource([metropolix, other], new Map())?.deviceId).toBe('a-other-seq')
-    })
-  })
-
-  it('ignores load entirely, at every position in the ranking', () => {
-    // The same three rigs resolved twice with the load map inverted. Nothing may move.
-    const rigs: Device[][] = [
-      [both('a'), both('z')],
-      [both('a'), sourceOnly('z')],
-      [preferred('a'), both('z')],
-      [both('a'), preferred('z')],
+    // Preferred on both sides: still transport, then id. Being a sequencer adds nothing.
+    const bothPreferred = [
+      { ...sequencer, clock: { ...sequencer.clock, preferredSource: true } },
+      { ...groovebox, clock: { ...groovebox.clock, preferredSource: true } },
     ]
-    for (const rig of rigs) {
-      const ids = rig.map((d) => d.id)
-      const heavyFirst = new Map(ids.map((id, i) => [id, i === 0 ? 9 : 0]))
-      const heavyLast = new Map(ids.map((id, i) => [id, i === 0 ? 0 : 9]))
-      const where = ids.join(' vs ')
-      expect(selectClockSource(rig, heavyFirst)?.deviceId, where).toBe(
-        selectClockSource(rig, heavyLast)?.deviceId,
-      )
-      expect(selectClockSource(rig, new Map())?.deviceId, where).toBe(
-        selectClockSource(rig, heavyLast)?.deviceId,
-      )
-    }
+    expect(selectClockSource(bothPreferred, new Map())?.deviceId).toBe('a-groovebox')
+
+    // And the authored claim still decides when only one side makes it.
+    expect(
+      selectClockSource(
+        [groovebox, { ...sequencer, clock: { ...sequencer.clock, preferredSource: true } }],
+        new Map(),
+      )?.deviceId,
+    ).toBe('z-sequencer-kind')
   })
 
-  it('still falls through to transport and then id once semantics tie', () => {
-    // Two source-only boxes: the earlier keys are level, so the old lower keys decide as before.
-    const usbOnly = box('a-usb', {
-      clock: { canSendClock: true, canReceiveClock: false, transport: ['usb'] },
-    })
-    expect(selectClockSource([usbOnly, sourceOnly('z-din')], new Map())?.deviceId).toBe('z-din')
-    expect(selectClockSource([sourceOnly('B'), sourceOnly('a'), sourceOnly('A')], new Map())?.deviceId).toBe('A')
-  })
-
-  it('refuses a preferred source that cannot send clock', () => {
-    // The field is meaningless without `canSendClock`, so the schema rejects the pair rather than
-    // ignoring it and leaving a manifest that reads as if it made a claim.
-    const contradictory = {
-      ...both('a'),
-      clock: { canSendClock: false, canReceiveClock: true, transport: ['midi-din'], preferredSource: true },
-    }
-    const parsed = DeviceSchema.safeParse(contradictory)
-    expect(parsed.success).toBe(false)
-    expect(JSON.stringify(parsed.success ? [] : parsed.error.issues)).toContain('preferredSource')
-    // And the ordinary omission is still legal, which is how every shipped manifest spells it.
-    expect(DeviceSchema.safeParse(both('a')).success).toBe(true)
-  })
-
-  it('is claimed by exactly one box in the library, and omitted rather than falsified elsewhere', () => {
-    // Absent and `false` rank identically, so a second spelling would only invite an author to
-    // write it out eight times. The Model 2400 is the one manifest whose manual describes a box
-    // a room runs to; the evidence lives in that file, not here.
-    const claimed = DEVICES.filter((d) => d.clock.preferredSource === true)
-    expect(claimed.map((d) => d.id)).toEqual(['tascam-model-2400'])
+  it('is claimed by no device in the library, and omitted rather than falsified', () => {
+    // The Model 2400 claimed it for two commits, on the strength of a manual that proves the desk
+    // *can* generate clock and cannot receive it. Neither says it should lead every rig it is put
+    // in, which is what the field means — so the claim was capability promoted into preference,
+    // and it is gone. Absent and `false` rank identically, so there is one spelling for "no
+    // claim" rather than two.
+    expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([])
     for (const device of DEVICES) {
-      if (device.clock.preferredSource === true) continue
       expect(device.clock.preferredSource, device.id).toBeUndefined()
     }
   })

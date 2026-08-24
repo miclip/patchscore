@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   GUIDE_PHASES,
+  NEUTRAL_MOOD,
   SUBORDINATE,
   dominantRangeCite,
   moodState,
@@ -16,6 +17,8 @@ import {
   type Template,
 } from '../lib/core/index'
 import { ioText, mixerText } from '../components/guide/format'
+import { DEVICES } from '../lib/devices/registry.generated'
+import { TEMPLATES } from '../lib/templates/index'
 import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
 import { box, makeRecipe, request, withRoles } from './rigs'
 
@@ -747,6 +750,44 @@ describe('rig integration (§7.4)', () => {
     const body = phaseBody(renderGuide(result), 3).join('\n')
     expect(body).toContain('except Golden Cascade')
     expect(body).toContain('cannot receive clock')
+  })
+
+  /**
+   * The same clause, against the **shipped registry** rather than the golden fixtures.
+   *
+   * §7.4's fixtures churned three times in one session — load removed, a source-only key added
+   * and removed, a `kind` key added and removed — and one of them was found to be a single
+   * ranking change away from electing the very box it wanted exempted. This case is deliberately
+   * not written in terms of who wins: it asserts the winner is someone else *first*, so it
+   * cannot quietly become vacuous the next time the ranking moves.
+   */
+  it('names every deaf box in the real registry, whoever ends up leading', () => {
+    const template = TEMPLATES[0]
+    if (template === undefined) throw new Error('no templates')
+    const result = resolve({ devices: DEVICES, template, mood: NEUTRAL_MOOD, seed: 1 })
+    const deaf = DEVICES.filter((d) => !d.clock.canReceiveClock)
+    expect(deaf.length).toBeGreaterThan(0)
+
+    const body = phaseBody(renderGuide(result), 3).join('\n')
+    for (const device of deaf) {
+      // A box that is itself the source is not a follower and must not be exempted from
+      // following. Pin which case we are in rather than assuming.
+      if (result.clockSource?.deviceId === device.id) continue
+      expect(body, device.id).toContain(`except`)
+      expect(body, device.id).toContain(device.name)
+    }
+    expect(body).toContain('cannot receive clock')
+
+    // And absent when nothing in the rig is deaf, or the loop above is checking a sentence the
+    // renderer prints unconditionally.
+    const hearing = DEVICES.filter((d) => d.clock.canReceiveClock)
+    expect(hearing.some((d) => d.clock.canSendClock)).toBe(true)
+    const clean = phaseBody(
+      renderGuide(resolve({ devices: hearing, template, mood: NEUTRAL_MOOD, seed: 1 })),
+      3,
+    ).join('\n')
+    expect(clean).not.toContain('cannot receive clock')
+    expect(clean).toContain('Sync everything else to it.')
   })
 
   // The exemption clause must not appear when it is not true of anything in the rig.

@@ -61,7 +61,7 @@ None.
 
 ## 3. Rig integration
 
-**Clock source** — Model 2400 over `midi-din`, carrying 0 parts. Sync everything else to it, except Zoom LiveTrak L-8, which cannot receive clock and runs free.
+**Clock source** — Cascadia over `midi-din`, carrying 1 part. Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8, which cannot receive clock and run free.
 
 - **CRAVE** — semi-modular · 1 part
   - clock: receives clock only · midi-din/usb

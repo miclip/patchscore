@@ -105,25 +105,45 @@ describe('the first box that sends clock and cannot receive it', () => {
     expect(sendOnly.map((d) => d.id)).toEqual(['tascam-model-2400'])
   })
 
-  it('is the library\'s one authored clock preference (§7.4)', () => {
-    // The claim is separate from the two booleans above and is not implied by them: this desk is
-    // what a room runs to, which is a judgement about what the box is *for*. The evidence is in
-    // the manifest's own JSDoc, beside the manual pages it comes from.
-    expect(device.clock.preferredSource).toBe(true)
-    const claimed = DEVICES.filter((d) => d.clock.preferredSource === true)
-    expect(claimed.map((d) => d.id)).toEqual(['tascam-model-2400'])
+  it('claims no clock preference, and that is a decision (§7.4)', () => {
+    // **This manifest claimed `preferredSource` for two commits and should not have.** The manual
+    // proves the desk generates MTC and MIDI clock (p.45) and cannot receive it (p.5, p.74).
+    // Both facts are already carried by the two booleans. Neither says this box should lead every
+    // rig it is put in, which is what the field means — a person might run a studio to this
+    // recorder, or put it behind a sequencer that drives everything. The manual has no opinion.
+    expect(device.clock.preferredSource).toBeUndefined()
+    expect(device.clock.canSendClock).toBe(true)
+    expect(device.clock.canReceiveClock).toBe(false)
+    // Nothing in the library claims it yet.
+    expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([])
   })
 
-  it('takes the clock source from a box carrying the whole track (§7.4)', () => {
-    // This case used to read "loses the clock source to any box actually carrying parts", and
-    // asserted the TR-1000. Load ranked first then; `preferredSource` does now, so the desk
-    // leads a rig it contributes no parts to — which is what a studio running to a recorder
-    // looks like, and is now reached by the claim rather than by a proxy for it.
-    const occupied = new Map([[tr1000.id, 5]])
-    const source = selectClockSource([tr1000, device], occupied)
-    expect(source?.deviceId).toBe(device.id)
-    // Nothing hidden about it: the guide prints what the source is carrying, which is nothing.
-    expect(source?.occupiedAssignables).toBe(0)
+  it('loses the clock source to a box that ranks above it, carrying parts or not (§7.4)', () => {
+    // Capability confers no rank. Both boxes send clock on midi-din and neither claims a
+    // preference, so it falls to id — and `roland-tr-1000` sorts before `tascam-model-2400`.
+    // The desk's load is zero and the TR-1000's is five, and neither figure is consulted.
+    const source = selectClockSource([tr1000, device], new Map([[tr1000.id, 5]]))
+    expect(source?.deviceId).toBe(tr1000.id)
+    // Being source-only does not lift it either — that rule existed for one revision and is gone.
+    expect(selectClockSource([tr1000, device], new Map())?.deviceId).toBe(tr1000.id)
+  })
+
+  it('goes back to being an exempted follower, named in the guide (§7.4)', () => {
+    // **The consequence the operator asked be protected.** With something else leading, this box
+    // cannot obey "sync everything else to it", so §7.4's exemption clause has to name it — and
+    // that coverage must not depend on which box happens to win the ranking. So: assert the
+    // winner is some other box first, then assert the clause.
+    const rig = resolve({ devices: [tr1000, device], template, mood: NEUTRAL_MOOD, seed: 1 })
+    expect(rig.clockSource?.deviceId).not.toBe(device.id)
+    const doc = renderGuide(rig)
+    expect(doc).toContain('except Model 2400')
+    expect(doc).toContain('cannot receive clock')
+
+    // And the clause is absent when nothing in the rig is deaf, or the assertion above would
+    // pass on a sentence the renderer prints unconditionally.
+    const hearing = resolve({ devices: [tr1000], template, mood: NEUTRAL_MOOD, seed: 1 })
+    expect(renderGuide(hearing)).not.toContain('cannot receive clock')
+    expect(renderGuide(hearing)).toContain('Sync everything else to it.')
   })
 
   it('wins it when nothing else can send, and says it is carrying nothing', () => {

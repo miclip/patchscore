@@ -87,25 +87,16 @@ function transportRank(device: Device): number {
  * §7.4. `canSendClock`, then **one semantic key and two tie-breaks**:
  *
  *  1. `clock.preferredSource` — the manifest's own topology judgement (§2.3). The only key here
- *     that means anything; the ones below exist to make the answer deterministic, not right.
- *  2. **Inside the preferred tier only**, `kind: 'sequencer'` over any other preferred box.
- *  3. Transport preference (`midi-din` > `usb`).
- *  4. `deviceId` ascending by UTF-16 code unit (§7.2).
+ *     that means anything; the two below exist to make the answer deterministic, not right.
+ *  2. Transport preference (`midi-din` > `usb`).
+ *  3. `deviceId` ascending by UTF-16 code unit (§7.2).
  *
- * **Key 2 is a deliberate exception to "kind cannot answer this", and it is worth being honest
- * about the tension.** The paragraph below this one argues that inferring topology from a
- * capability is the job `preferredSource` exists to prevent, and `kind` is no less an inference
- * than `!canReceiveClock` was. What makes this narrower rather than a reversal is where it sits:
- * it applies *only* when two boxes have each already made the authored claim, which is the one
- * case §7.4 previously had no answer for and resolved by falling through to transport — so a
- * mixing desk with a MIDI DIN socket outranked a dedicated sequencer whose clock leaves over USB,
- * on a key that was never meant to decide anything. Outside the preferred tier `kind` plays no
- * part at all, and a box that has not claimed `preferredSource` gains nothing from being a
- * sequencer.
- *
- * It remains an inference, and the honest reading is that §7.4 now has *two* sources of
- * topology: a person's claim, and one rule about what a machine is for. The alternative on the
- * table was to leave two honest claims decided by which socket a box happens to carry.
+ * **`kind` is not a key, and briefly was.** One revision ranked `kind: 'sequencer'` above other
+ * preferred boxes, to settle the case where two manifests each honestly claim the field. It was
+ * the same mistake as the paragraph below, one tier down: an inference standing in for a claim.
+ * Where two boxes have each said "my job is to drive a rig", §7.4 has no basis to rank them and
+ * says so — the repair is for one of them not to make the claim, not for the engine to guess
+ * which claim it believes.
  *
  * **`!canReceiveClock` is deliberately not a key.** It was one for exactly one revision, on the
  * argument that a source-only box has nowhere else to sit in the topology. It does not follow:
@@ -137,16 +128,8 @@ export function selectClockSource(
   if (capable.length === 0) return undefined
 
   const ranked = [...capable].sort((a, b) => {
-    const aPreferred = a.clock.preferredSource === true
-    const bPreferred = b.clock.preferredSource === true
-    const byPreferred = Number(bPreferred) - Number(aPreferred)
+    const byPreferred = Number(b.clock.preferredSource === true) - Number(a.clock.preferredSource === true)
     if (byPreferred !== 0) return byPreferred
-    // Only when both have already made the authored claim. The guard is the whole scope of the
-    // rule: an unpreferred sequencer is ranked exactly as any other unpreferred box.
-    if (aPreferred && bPreferred) {
-      const bySequencer = Number(b.kind === 'sequencer') - Number(a.kind === 'sequencer')
-      if (bySequencer !== 0) return bySequencer
-    }
     const byTransport = transportRank(a) - transportRank(b)
     if (byTransport !== 0) return byTransport
     return compareCodeUnits(a.id, b.id)
