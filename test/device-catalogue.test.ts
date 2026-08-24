@@ -13,9 +13,10 @@ import {
   deviceTitle,
   devicePage,
   directionFit,
+  provenanceSentence,
   rolesCovered,
 } from '../lib/studio/device-page'
-import { auditDevice } from '../lib/studio/provenance'
+import { auditDevice, citedDocument, rangeDocuments } from '../lib/studio/provenance'
 import { PanelFigure } from '../components/rack/panel-figure'
 import { soloPanel } from '../components/rack/model'
 import DeviceIndexPage from '../app/devices/page'
@@ -38,6 +39,17 @@ import sitemap from '../app/sitemap'
 
 const TR = DEVICES.find((d) => d.id === 'roland-tr-1000') as Device
 const ZOIA = DEVICES.find((d) => d.id === 'empress-zoia-euroburo') as Device
+const TR8S = DEVICES.find((d) => d.id === 'roland-tr-8s') as Device
+
+/** React escapes text nodes; an apostrophe in a manual's title comes back as an entity. */
+function escaped(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+}
 
 async function markupFor(id: string): Promise<string> {
   return renderToStaticMarkup(await DevicePageRoute({ params: Promise.resolve({ id }) }))
@@ -114,6 +126,78 @@ describe('what the page says about a device', () => {
       expect(c.manualPoints + c.observedPoints + c.provisionalPoints).toBe(c.params)
       expect(c.manualRanges + c.observedRanges + c.unverifiedRanges).toBe(c.numerics)
     }
+  })
+
+  it('says "provisional" on the page, in those words, with the audit\'s own counts', () => {
+    // #84: provenance is the point, not a footnote, and `provisional` is not renamed. "Uncited"
+    // reads as a filing omission; a point value nobody has checked against a document is a
+    // setting somebody chose, which is a different claim about a different thing.
+    const counts = auditDevice(TR8S).counts
+    expect(provenanceSentence(TR8S, counts)).toBe(
+      `${counts.provisionalPoints} of ${counts.params} values provisional. ` +
+        `${counts.manualRanges} of ${counts.numerics} ranges cited to the TR-8S Reference Manual eng01.`,
+    )
+
+    for (const device of DEVICES) {
+      const sentence = provenanceSentence(device, auditDevice(device).counts)
+      const c = auditDevice(device).counts
+      if (c.params === 0) {
+        // Accurate for a box with nothing authored: `0 of 0 values provisional` is true and says
+        // nothing about a mixer that is here for its clock and its audio.
+        expect(sentence, device.id).toBe(
+          'No patch recipes are authored for this box, so it has no values and no ranges to cite.',
+        )
+        expect(sentence, device.id).not.toContain('provisional')
+        continue
+      }
+      expect(sentence, device.id).toContain(
+        `${c.provisionalPoints} of ${c.params} values provisional`,
+      )
+      // Manual and observed stay distinct: neither is folded into the other, and a count of zero
+      // is left out of the sentence rather than printed as a claim about nothing.
+      expect(sentence.includes('cited to a manual page'), device.id).toBe(c.manualPoints > 0)
+      expect(sentence.includes('observed on the unit'), device.id).toBe(
+        c.observedPoints > 0 || c.observedRanges > 0,
+      )
+      if (c.manualRanges > 0) {
+        expect(sentence, device.id).toContain(
+          `${c.manualRanges} of ${c.numerics} ranges cited to the ${rangeDocuments(device)[0] ?? ''}`,
+        )
+      }
+      expect(sentence.includes(`${c.unverifiedRanges} unverified`), device.id).toBe(
+        c.unverifiedRanges > 0,
+      )
+      // No rounding anywhere: every number in the sentence is one the audit produced. Document
+      // titles are cut out first — an edition like `BE_0718-AAJ_WW` carries digits that are part
+      // of a name rather than a count.
+      let bare = sentence
+      for (const document of rangeDocuments(device)) bare = bare.split(document).join('')
+      for (const n of bare.match(/\d+/g) ?? []) {
+        expect(
+          [
+            c.params,
+            c.provisionalPoints,
+            c.manualPoints,
+            c.observedPoints,
+            c.numerics,
+            c.manualRanges,
+            c.observedRanges,
+            c.unverifiedRanges,
+          ].map(String),
+          `${device.id}: ${n}`,
+        ).toContain(n)
+      }
+    }
+  })
+
+  it('names the document a range was cited to, without its page number', () => {
+    expect(citedDocument('TR-8S Reference Manual eng01, p.30')).toBe('TR-8S Reference Manual eng01')
+    expect(citedDocument('a document with no page')).toBe('a document with no page')
+    expect(rangeDocuments(TR8S)).toEqual(['TR-8S Reference Manual eng01'])
+    // The MC-101 cites two, most-cited first, so the list is not an accident of one device.
+    const mc = DEVICES.find((d) => d.id === 'roland-mc-101') as Device
+    expect(rangeDocuments(mc).length).toBeGreaterThan(1)
+    expect(rangeDocuments(ZOIA)).toEqual([])
   })
 
   it('describes itself in one sentence a search result can hold', () => {
@@ -229,6 +313,32 @@ describe('the device routes', () => {
     }
     // The panel is on the page, drawn rather than described.
     expect(markup).toContain('rack-svg')
+  })
+
+  it('puts the provisional count in the markup of every device page', async () => {
+    // The rendered claim, not just the helper's return value: the constraint in #84 is about what
+    // the page says, so the assertion has to be about the page.
+    for (const device of DEVICES) {
+      const markup = await markupFor(device.id)
+      const counts = auditDevice(device).counts
+      expect(markup, device.id).toContain(escaped(provenanceSentence(device, counts)))
+
+      if (counts.params > 0) {
+        expect(markup, device.id).toContain('provisional')
+        // The column keeps the word too, and the range column keeps its own.
+        expect(markup, device.id).toContain('>Provisional<')
+        expect(markup, device.id).toContain(`>${counts.provisionalPoints}<`)
+        expect(markup, device.id).toContain(`>${counts.params}<`)
+      }
+      if (counts.numerics > 0) {
+        expect(markup, device.id).toContain('>Unverified<')
+        expect(markup, device.id).toContain(`>${counts.manualRanges}<`)
+        expect(markup, device.id).toContain(`>${counts.observedRanges}<`)
+      }
+      // Not renamed, and not softened: `Uncited` was the heading this replaced.
+      expect(markup, device.id).not.toContain('Uncited')
+      expect(markup, device.id).not.toContain('uncited')
+    }
   })
 
   it('says what a box with no recipes is for, rather than showing it as empty', async () => {

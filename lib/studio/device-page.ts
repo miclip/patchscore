@@ -3,7 +3,7 @@ import { CHARACTERS, ROLES, expand } from '@/lib/core'
 import { TEMPLATES } from '@/lib/templates'
 import { deviceHref, deviceLabel, templateHref } from './catalogue'
 import { coverage } from './coverage'
-import { auditDevice } from './provenance'
+import { auditDevice, rangeDocuments } from './provenance'
 import type { AuditCounts } from './provenance'
 
 /**
@@ -13,6 +13,16 @@ import type { AuditCounts } from './provenance'
  * below is derived: nothing on a device page is authored a second time, because a fact restated
  * by hand is a fact that goes stale the day the manifest changes.
  */
+
+/**
+ * `a`, `a and b`. Three lines, restated rather than imported: the same list-joining lives in
+ * `components/guide/format.ts`, and a module under `lib/` reaching up into `components/` to
+ * borrow it would be the wrong direction for one sentence's worth of punctuation.
+ */
+function andList(items: readonly string[]): string {
+  if (items.length < 2) return items.join('')
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1] as string}`
+}
 
 function plural(n: number, one: string): string {
   return `${n} ${n === 1 ? one : `${one}s`}`
@@ -145,6 +155,53 @@ export function voiceLines(device: Device): readonly VoiceLine[] {
     polyphony: voice.polyphony,
     roles: voice.roles,
   }))
+}
+
+/**
+ * §3.2's counts as a sentence, because a table of numbers is a footnote and this is the point of
+ * the page. Every number is the audit's own, and none of them is rounded.
+ *
+ * The word is **provisional** and stays provisional. A point value with no citation is a setting
+ * somebody chose and nobody checked, and every softer word for that — uncited, unverified,
+ * authored — makes it sound like a filing omission rather than what a reader is being handed.
+ * Ranges keep their own word, `unverified`, for the same reason: it is the claim the audit makes
+ * about a range, and one column heading cannot be true of both.
+ *
+ * A box with no recipes says so. `0 of 0 values provisional` is arithmetically true and tells a
+ * reader nothing about a mixer that is in the library for its clock and its audio (§2.4).
+ */
+export function provenanceSentence(device: Device, counts: AuditCounts): string {
+  if (counts.params === 0) {
+    return 'No patch recipes are authored for this box, so it has no values and no ranges to cite.'
+  }
+
+  const parts: string[] = []
+  const points = [`${counts.provisionalPoints} of ${counts.params} values provisional`]
+  if (counts.manualPoints > 0) points.push(`${counts.manualPoints} cited to a manual page`)
+  if (counts.observedPoints > 0) points.push(`${counts.observedPoints} observed on the unit`)
+  parts.push(`${points.join(', ')}.`)
+
+  if (counts.numerics === 0) return parts.join(' ')
+
+  const ranges: string[] = []
+  if (counts.manualRanges > 0) {
+    const documents = rangeDocuments(device).map((document) => `the ${document}`)
+    ranges.push(
+      `${counts.manualRanges} of ${counts.numerics} ranges cited to ${andList(documents)}`,
+    )
+  }
+  if (counts.observedRanges > 0) {
+    const lead = ranges.length === 0 ? `of ${counts.numerics} ranges ` : ''
+    ranges.push(`${counts.observedRanges} ${lead}observed on the unit`)
+  }
+  if (counts.unverifiedRanges > 0) ranges.push(`${counts.unverifiedRanges} unverified`)
+  if (ranges.length === 0) {
+    parts.push(`None of the ${counts.numerics} ranges carries a citation.`)
+  } else {
+    parts.push(`${ranges.join(', ')}.`)
+  }
+
+  return parts.join(' ')
 }
 
 /** `Roland TR-1000 — Patchscore`. The maker is in it: people search for the box by both. */

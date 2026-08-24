@@ -180,3 +180,45 @@ export function totalCounts(audits: DeviceAudit[]): AuditCounts {
     { ...ZERO_COUNTS },
   )
 }
+
+// ---------------------------------------------------------------------------
+// Where the citations point
+// ---------------------------------------------------------------------------
+
+/**
+ * The document a citation names, without the page. `TR-8S Reference Manual eng01, p.30` is one
+ * page of one document, and a page number in a sentence about a whole device is noise.
+ *
+ * Split on the last `, p.` because a title may contain a comma of its own, and the page is always
+ * last. A source with no page at all is its own document.
+ */
+export function citedDocument(source: string): string {
+  const at = source.lastIndexOf(', p.')
+  return at === -1 ? source : source.slice(0, at)
+}
+
+/**
+ * The documents this device's **range** citations point at, most-cited first (#84).
+ *
+ * Ranges rather than every citation, because the sentence that uses this is about ranges, and
+ * two of the library's manual-cited points would otherwise put a document in a list of sources
+ * that no range came from.
+ *
+ * Ties break by code unit, never by locale (§7.2) — a device page is prerendered on whichever
+ * machine builds it.
+ */
+export function rangeDocuments(device: Device): readonly string[] {
+  const counts = new Map<string, number>()
+  for (const recipe of device.recipes) {
+    for (const param of recipe.params as AuthoredParam[]) {
+      if (param.kind !== 'numeric') continue
+      const verified = effectiveVerified(param.range.verified, recipe.verified)
+      if (verified === undefined || verified === false || verified.kind !== 'manual') continue
+      const document = citedDocument(verified.source)
+      counts.set(document, (counts.get(document) ?? 0) + 1)
+    }
+  }
+  return [...counts.entries()]
+    .sort((a, b) => (b[1] - a[1]) || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+    .map(([document]) => document)
+}

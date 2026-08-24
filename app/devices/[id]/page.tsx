@@ -7,7 +7,7 @@ import { PanelFigure } from '@/components/rack/panel-figure'
 import type { Device } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceHref, deviceLabel } from '@/lib/studio/catalogue'
-import { clockText, devicePage } from '@/lib/studio/device-page'
+import { clockText, devicePage, provenanceSentence } from '@/lib/studio/device-page'
 
 /**
  * #84. One device, everything the library holds about it.
@@ -147,46 +147,89 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             <p className="note">The same counts the audit prints.</p>
           </header>
           {/*
-            Three debts, kept apart (§3.2). A point is the value somebody chose to dial; it counts
-            as cited only where a document prints that value, which is rare and expected. A range
-            is the control's own limits, and mood may only move a value inside a cited one. Adding
-            them up would hide the second inside the first.
+            The sentence first, and in full ink: this is the reason to trust the page or not, and
+            a reader who stops after one line should have read the number that matters. The word
+            is provisional and stays provisional — a point value nobody has checked against a
+            document is a setting somebody chose, and every softer word for it makes that sound
+            like a filing omission.
           */}
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Claim</th>
-                  <th className="numeric">Total</th>
-                  <th className="numeric">Manual</th>
-                  <th className="numeric">Observed</th>
-                  <th className="numeric">Uncited</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Points</td>
-                  <td className="numeric mono">{page.provenance.params}</td>
-                  <td className="numeric mono">{page.provenance.manualPoints}</td>
-                  <td className="numeric mono">{page.provenance.observedPoints}</td>
-                  <td className="numeric mono">{page.provenance.provisionalPoints}</td>
-                </tr>
-                <tr>
-                  <td>Ranges</td>
-                  <td className="numeric mono">{page.provenance.numerics}</td>
-                  <td className="numeric mono">{page.provenance.manualRanges}</td>
-                  <td className="numeric mono">{page.provenance.observedRanges}</td>
-                  <td className="numeric mono">{page.provenance.unverifiedRanges}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <p className="provenance-lead">{provenanceSentence(device, page.provenance)}</p>
           <p className="note">
-            A point is the setting to dial and is a judgement unless a document prints that value.
-            A range is the control&rsquo;s own limits, and mood may move a value only inside a
-            cited range, so {page.provenance.moodInert} parameter
+            A point is the setting to dial, and it counts as cited only where a document prints
+            that value. A range is the control&rsquo;s own limits, and mood may move a value only
+            inside a cited range, so {page.provenance.moodInert} parameter
             {page.provenance.moodInert === 1 ? '' : 's'} here declare an axis that cannot move.
           </p>
+          {/*
+            Two tables, because §3.2's third column is a different claim on each row: a point with
+            no citation is provisional, a range with none is unverified, and one heading cannot be
+            true of both. Manual and observed stay apart for the reason the audit keeps them
+            apart — "how much of this rests on one person's ear" is only answerable if they do.
+          */}
+          {page.provenance.params === 0 ? null : (
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Points</th>
+                    <th scope="col" className="numeric">
+                      Total
+                    </th>
+                    <th scope="col" className="numeric">
+                      Manual
+                    </th>
+                    <th scope="col" className="numeric">
+                      Observed
+                    </th>
+                    <th scope="col" className="numeric">
+                      Provisional
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Values</td>
+                    <td className="numeric mono">{page.provenance.params}</td>
+                    <td className="numeric mono">{page.provenance.manualPoints}</td>
+                    <td className="numeric mono">{page.provenance.observedPoints}</td>
+                    <td className="numeric mono">{page.provenance.provisionalPoints}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+          {page.provenance.numerics === 0 ? null : (
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Ranges</th>
+                    <th scope="col" className="numeric">
+                      Total
+                    </th>
+                    <th scope="col" className="numeric">
+                      Manual
+                    </th>
+                    <th scope="col" className="numeric">
+                      Observed
+                    </th>
+                    <th scope="col" className="numeric">
+                      Unverified
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Bounds</td>
+                    <td className="numeric mono">{page.provenance.numerics}</td>
+                    <td className="numeric mono">{page.provenance.manualRanges}</td>
+                    <td className="numeric mono">{page.provenance.observedRanges}</td>
+                    <td className="numeric mono">{page.provenance.unverifiedRanges}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
           <p className="note">
             Panel span: {' '}
             {device.physical.verified === false
