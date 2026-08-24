@@ -158,12 +158,14 @@ describe('the kind filter', () => {
     // The order is first *mention* in the registry, and the registry is sorted by folder name, so
     // a new device can reorder this list without any kind being added or removed. `semi-modular`
     // leads because `behringer-crave` sorts first; `sequencer` sits third because
-    // `intellijel-metropolix` falls between the Euroburo and the Tracker Mini.
+    // `intellijel-metropolix` falls between the Euroburo and the Tracker Mini, and `synth`
+    // fourth because `korg-minilogue-xd` falls between Metropolix and the Tracker Mini.
     expect(kinds).toEqual([
       'semi-modular',
       'sampler',
       'fx-processor',
       'sequencer',
+      'synth',
       'groovebox',
       'drum-machine',
       'mixer-recorder',

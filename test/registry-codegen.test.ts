@@ -314,6 +314,8 @@ describe('the committed registry', () => {
       'intellijel-cascadia',
       'roland-tr-8s',
       'roland-tr-1000',
+      // The only keyboard in the library, and by a distance the widest thing that is not a mixer.
+      'korg-minilogue-xd',
       'tascam-model-2400',
     ])
   })
