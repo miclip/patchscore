@@ -20,7 +20,7 @@ opened.
 | `TR-1000_eng02_W.pdf` | Owner's Manual, v1.11+. Structure, I/O, clock. **No parameter ranges.** | [direct](https://static.roland.com/assets/media/pdf/TR-1000_eng02_W.pdf) · [support](https://www.roland.com/global/support/by_product/tr-1000/owners_manuals/) |
 | `TR-1000_reference_eng02_W.pdf` | **Reference Manual, v1.13+.** Parameter tables with ranges. The one that matters for values. | [direct](https://static.roland.com/assets/media/pdf/TR-1000_reference_eng02_W.pdf) · [support](https://www.roland.com/global/support/by_product/tr-1000/owners_manuals/) |
 | `TR1000_GEN_INST_List_eng02_W.pdf` | Preset GEN/INST list. ~1,700 generators with names and categories (`BD_E`, `SD_E`, `HIHAT_E`…). | Roland; exact URL unconfirmed — see [support](https://www.roland.com/global/support/by_product/tr-1000/owners_manuals/) |
-| `MC-101_eng02_W.pdf` | Owner's Manual. Defers to a Reference Manual **not yet downloaded**. | [direct](https://static.roland.com/assets/media/pdf/MC-101_eng02_W.pdf) · [support](https://www.roland.com/global/support/by_product/mc-101/owners_manuals/) |
+| `MC-101_eng02_W.pdf` | Owner's Manual. Documents no parameter ranges; defers to the Reference Manual below, which is now here. | [direct](https://static.roland.com/assets/media/pdf/MC-101_eng02_W.pdf) · [support](https://www.roland.com/global/support/by_product/mc-101/owners_manuals/) |
 | ~~`Deluge-Guidebook-4p0-edits-only.pdf`~~ | **Excerpt — do not author from this.** 42pp / 53k chars / 7 ranges. Confirmed a partial: the real guidebook is 284pp. Kept only so nobody re-downloads it by mistake. | — |
 | `Deluge-Guidebook-4p1-OLED.pdf` | **Official Guidebook, OS 4.1, OLED edition.** 390k chars, 75 ranges. The parameter source for the Deluge. | [direct](https://synthstrom-audible-deluge.s3.us-east-2.amazonaws.com/Deluge-Guidebook-4p1-OLED.pdf) |
 | `Deluge-Guidebook-4p0.pdf` | Official Guidebook, OS 4.0, numeric display. 391k chars, 82 ranges. Kept for cases the OLED edition words differently. | [direct](https://synthstrom-audible-deluge.s3.us-east-2.amazonaws.com/Deluge-Guidebook-4p0.pdf) |
@@ -49,7 +49,7 @@ The community docs are a **moving target**, unlike a PDF — `manuals/deluge-com
 
 | File | Device | Notes |
 |---|---|---|
-| `MC-101_Reference_eng01_W.pdf` | Roland MC-101 | **The Reference Manual**, 260k chars. The Owner's Manual alone documents no ranges — same trap as the TR-1000 (#18). Note the capital `R` in the filename. |
+| `MC-101_Reference_eng01_W.pdf` | Roland MC-101 | **The Reference Manual**, 260k chars. The Owner's Manual alone documents no ranges — same trap as the TR-1000 (#18). Note the capital `R` in the filename. [direct](https://static.roland.com/assets/media/pdf/MC-101_Reference_eng01_W.pdf), confirmed 2026-08-24. |
 | `MC-101_update_eng08_W.pdf` | Roland MC-101 | Later firmware features |
 | `TR-8S_eng03_W.pdf` | Roland TR-8S | Owner's Manual. Refers to a Reference Manual **8 times** — do not author from this alone. |
 | `TR-8S_Reference_eng01_W.pdf` | Roland TR-8S | The Reference Manual, 140k chars. Capital `R` again. |
@@ -102,8 +102,14 @@ Filename casing is inconsistent between products: `TR-1000_reference_...` is low
 
 ## Known gaps
 
-- **MC-101 Reference Manual** — the Owner's Manual points at one, and it is not here. Download it
-  before authoring the MC-101, or its values will be as unverifiable as the TR-1000's were. See #18.
+- ~~**MC-101 Reference Manual**~~ — resolved 2026-08-24. It is here, and the direct URL above is
+  confirmed working; Roland publishes it on the same `static.roland.com` path as the TR-1000 and
+  TR-8S references, which the support page does not link to directly.
+- **Manuals nobody has found a direct URL for.** Intellijel publishes none for the Cascadia or the
+  Metropolix, and polyend.com returns **403 to any automated request**, so the Tracker Mini manual
+  has to be fetched by hand from a browser. This is not a nicety: #80 had to leave the Cascadia's
+  `clock.preferredSource` undecided until its manual was supplied by hand, because a decision with
+  no page behind it is exactly what that field exists to prevent.
 - ~~**Deluge guidebook**~~ — resolved. It was an excerpt; the full 284pp guidebook and the
   community firmware docs are both here now.
 
