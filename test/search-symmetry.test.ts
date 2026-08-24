@@ -1081,6 +1081,17 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * Nothing here asserts an exact node count, for the reason the smoke alarm above gives. What is
    * asserted is the property that matters: real inputs, real cap, exhaustive.
    */
+  /**
+   * The timeout is not a workaround. This runs `TEMPLATES.length * SEEDS.length` exhaustive
+   * searches over the whole registry — forty of them today at fourteen devices and five
+   * directions, about 1.4s on a developer machine and several times that on a CI runner sharing
+   * a core with the other fifty-two test files. It first went red on `LANG=C.UTF-8` at the
+   * default 5s, which reads like a locale failure and is not one.
+   *
+   * The cost grows on both axes this file already warns about: a device that serves more tonal
+   * roles makes each search deeper, and every direction authored adds a whole column of them.
+   * Whoever raises the number next should read that as the same signal the node cap gives.
+   */
   it('leaves every shipped template inside the shipped cap', () => {
     for (const template of TEMPLATES) {
       for (const seed of SEEDS) {
@@ -1090,7 +1101,7 @@ describe('the real registry searches exhaustively (§7.1)', () => {
         expect(result.search.method, where).toBe('exhaustive')
       }
     }
-  })
+  }, 30_000)
 
   it('is deterministic on the real registry, whatever the seed', () => {
     const t = realistic(10)
