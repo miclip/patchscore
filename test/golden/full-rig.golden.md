@@ -61,7 +61,7 @@ None.
 
 ## 3. Rig integration
 
-**Clock source** — Cascadia over `midi-din`, carrying 1 part. Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8, which cannot receive clock and run free.
+**Clock source** — Metropolix over `usb`, carrying 0 parts. Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8, which cannot receive clock and run free.
 
 - **CRAVE** — semi-modular · 1 part
   - clock: receives clock only · midi-din/usb
@@ -75,6 +75,10 @@ None.
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: mono main out · audio in
   - mixer: 1 part, no individual outs: one mono channel for all
+- **Metropolix** — sequencer · 0 parts
+  - clock: sends clock · usb/analog-clock
+  - audio: no audio I/O
+  - mixer: no parts assigned; nothing to patch
 - **Tracker Mini** — groovebox · 1 part
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio · audio in

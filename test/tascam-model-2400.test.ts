@@ -114,8 +114,11 @@ describe('the first box that sends clock and cannot receive it', () => {
     expect(device.clock.preferredSource).toBeUndefined()
     expect(device.clock.canSendClock).toBe(true)
     expect(device.clock.canReceiveClock).toBe(false)
-    // Nothing in the library claims it yet.
-    expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([])
+    // Metropolix is the box that does claim it, and the contrast is the point: a sequencer with
+    // no voice of its own exists to drive a rig, where a recording desk merely can.
+    expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
+      'intellijel-metropolix',
+    ])
   })
 
   it('loses the clock source to a box that ranks above it, carrying parts or not (§7.4)', () => {

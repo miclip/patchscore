@@ -315,8 +315,13 @@ describe('panel contents', () => {
       const jacks = panel?.jacks ?? []
       expect(jacks.some((j) => j.kind === 'clock-out')).toBe(device.clock.canSendClock)
       expect(jacks.some((j) => j.kind === 'clock-in')).toBe(device.clock.canReceiveClock)
-      expect(jacks.filter((j) => j.kind === 'main-out')).toHaveLength(
-        device.io.main === 'stereo' ? 2 : 1,
+      // A total lookup, not `main === 'stereo' ? 2 : 1`. That ternary is the exact shape of the
+      // bug `io.main: 'none'` was added to prevent — a two-way test on a three-value field, where
+      // the new value falls to the else and asserts a jack that must not exist. It was in the
+      // model and it was here too.
+      const MAINS: Record<typeof device.io.main, number> = { stereo: 2, mono: 1, none: 0 }
+      expect(jacks.filter((j) => j.kind === 'main-out'), device.id).toHaveLength(
+        MAINS[device.io.main],
       )
       const individuals = jacks.filter((j) => j.kind === 'individual-out').length
       expect(individuals + (panel?.hiddenJacks ?? 0)).toBe(device.io.individualOuts)
@@ -697,15 +702,20 @@ describe('rack view', () => {
 
     // Every kind in the vocabulary is exercised by the authored boxes, so a renderer arm
     // that stopped working would show up here rather than only in Chrome.
-    // Nine, not eight: the TR-8S is the first box in the library to author *two* screens, its
-    // main display and the separate value readout beside it.
-    expect(count('rack-screen')).toBe(9) // all but the Cascadia, which has no display
+    // Ten: the TR-8S is the only box to author *two* screens — its main display and the separate
+    // value readout beside it — and Metropolix brings one more. The two panels with none are the
+    // Cascadia and the CRAVE, which genuinely have no display.
+    expect(count('rack-screen')).toBe(10)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
     // shape — the MC-101's four track levels, the L-8's ten (eight channels, EFX RTN and MASTER),
     // and the Model 2400's twenty-two: seventeen input channels, four SUB pairs and MAIN.
-    expect(count('rack-fader')).toBe(92)
+    // 119: the 92 above plus Metropolix's 27 — its eight PITCH sliders, eight PULSE COUNT and
+    // eight GATE TYPE switches (slider-shaped, and drawn as what they look like), and the three
+    // X/Y/Z aux attenuverter sliders. A sequencer's panel is mostly this one shape for the same
+    // reason the Cascadia's is.
+    expect(count('rack-fader')).toBe(119)
     // Twenty-nine: the TR-1000's sixteen step keys and the CRAVE's thirteen-note keyboard. The
     // TR-8S is why the count is worth a sentence — it has sixteen step buttons of its own and
     // draws them as pads, because they are square backlit buttons rather than piano-profile

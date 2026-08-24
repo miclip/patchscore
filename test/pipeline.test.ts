@@ -627,14 +627,17 @@ describe('clock source ranks on semantics, not on load (§7.4)', () => {
     ).toBe('z-sequencer-kind')
   })
 
-  it('is claimed by no device in the library, and omitted rather than falsified', () => {
-    // The Model 2400 claimed it for two commits, on the strength of a manual that proves the desk
-    // *can* generate clock and cannot receive it. Neither says it should lead every rig it is put
-    // in, which is what the field means — so the claim was capability promoted into preference,
-    // and it is gone. Absent and `false` rank identically, so there is one spelling for "no
-    // claim" rather than two.
-    expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([])
+  it('is claimed by exactly one device, and omitted rather than falsified elsewhere', () => {
+    // Metropolix, and the claim is about what the box *is for*: a sequencer with no voice of its
+    // own, whose entire output is timing and control for other boxes. The Model 2400 claimed it
+    // for two commits on the strength of a manual proving only that a desk *can* generate clock
+    // and cannot receive it — capability promoted into preference — and no longer does. Absent
+    // and `false` rank identically, so there is one spelling for "no claim" rather than two.
+    expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
+      'intellijel-metropolix',
+    ])
     for (const device of DEVICES) {
+      if (device.clock.preferredSource === true) continue
       expect(device.clock.preferredSource, device.id).toBeUndefined()
     }
   })

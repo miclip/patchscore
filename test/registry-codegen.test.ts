@@ -302,7 +302,10 @@ describe('the committed registry', () => {
       .map((d) => d.id)
     expect(byWidth).toEqual([
       'polyend-tracker-mini',
+      // Two devices at exactly 172.7 mm — both are 34 HP Eurorack. `Array.prototype.sort` is
+      // stable, so the tie keeps registry order, which is folder order.
       'empress-zoia-euroburo',
+      'intellijel-metropolix',
       'roland-mc-101',
       'zoom-livetrak-l-8',
       'synthstrom-deluge',

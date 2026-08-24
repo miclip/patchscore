@@ -155,10 +155,18 @@ describe('device search matches name, maker and kind', () => {
 describe('the kind filter', () => {
   it('offers the kinds this build ships, in the order the registry first mentions them', () => {
     const kinds = kindsPresent(DEVICES)
-    // `semi-modular` leads since the CRAVE landed: the order is first *mention* in the registry,
-    // the registry is sorted by folder name, and `behringer-crave` sorts ahead of the Euroburo.
-    // A new device can therefore reorder this list without any kind being added or removed.
-    expect(kinds).toEqual(['semi-modular', 'fx-processor', 'groovebox', 'drum-machine', 'mixer-recorder'])
+    // The order is first *mention* in the registry, and the registry is sorted by folder name, so
+    // a new device can reorder this list without any kind being added or removed. `semi-modular`
+    // leads because `behringer-crave` sorts first; `sequencer` sits third because
+    // `intellijel-metropolix` falls between the Euroburo and the Tracker Mini.
+    expect(kinds).toEqual([
+      'semi-modular',
+      'fx-processor',
+      'sequencer',
+      'groovebox',
+      'drum-machine',
+      'mixer-recorder',
+    ])
     // Derived, not enumerated: every kind offered has at least one device behind it, and every
     // device's kind is offered. An option that can only return nothing is not a filter.
     for (const kind of kinds) expect(DEVICES.some((d) => d.kind === kind)).toBe(true)
