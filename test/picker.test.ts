@@ -413,6 +413,37 @@ describe('the picker controls', () => {
     return { markup, onToggle }
   }
 
+  /**
+   * The list has a height cap so it stops pushing the guide down the page, which put the two
+   * devices this page ships checked below the fold on a list about five rows tall — the page
+   * opened looking like an empty rig. Position, not just presence, is the assertion.
+   */
+  it('puts every selected device above every unselected one', () => {
+    const selected = ['polyend-tracker-mini', 'roland-tr-1000']
+    const { markup } = deviceMarkup(selected)
+    const order = DEVICES.map((d) => ({
+      id: d.id,
+      at: markup.indexOf(`${d.maker} ${d.name}`),
+      on: selected.includes(d.id),
+    }))
+    for (const row of order) expect(row.at, `${row.id} not rendered`).toBeGreaterThan(-1)
+    const lastChosen = Math.max(...order.filter((r) => r.on).map((r) => r.at))
+    const firstOther = Math.min(...order.filter((r) => !r.on).map((r) => r.at))
+    expect(lastChosen).toBeLessThan(firstOther)
+  })
+
+  it('names the rig above the catalogue rather than only counting it', () => {
+    const { markup } = deviceMarkup(['polyend-tracker-mini', 'roland-tr-1000'])
+    expect(markup).toContain('Your rig')
+    // The count line is not enough on its own: it says how many, never which.
+    expect(markup).toContain('2 selected')
+  })
+
+  it('says nothing about a rig when none is chosen', () => {
+    const { markup } = deviceMarkup()
+    expect(markup).not.toContain('Your rig')
+  })
+
   it('offers a labelled search box and a kind filter built from the registry', () => {
     const { markup } = deviceMarkup()
     expect(markup).toContain('type="search"')
