@@ -128,17 +128,12 @@ export function DevicePicker({ selected, onToggle }: DevicePickerProps) {
        * groups gives both: the filter visibly filters, and nothing selected disappears.
        */}
       {chosen.length > 0 ? (
-        <>
-          <p className="note picker-kept">
-            Your rig — {chosen.length} selected. Untick to drop.
-          </p>
-          <fieldset className="picker-list picker-chosen-list">
-            {chosen.map((row) => pick(row, onToggle))}
-          </fieldset>
-        </>
+        <p className="note picker-kept">Your rig — {chosen.length} selected. Untick to drop.</p>
       ) : null}
 
-      <fieldset className="picker-list">{rest.map((row) => pick(row, onToggle))}</fieldset>
+      <fieldset className="picker-list">
+        {[...chosen, ...rest].map((row) => pick(row, onToggle))}
+      </fieldset>
 
       {rest.length === 0 && chosen.length > 0 && shown.matched > 0 ? (
         <p className="empty">Everything matching that is already in your rig.</p>

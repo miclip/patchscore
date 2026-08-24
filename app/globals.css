@@ -298,23 +298,10 @@ body {
   padding-right: 4px;
 }
 
-/*
- * The chosen group sits above the catalogue and gets its own, smaller cap. It is short in normal
- * use — a rig is a handful of boxes — and capping it stops someone who ticks the whole library
- * from pushing the catalogue off the screen with their own selection.
- */
-.picker-chosen-list {
-  max-height: 12rem;
-}
-
 /* A short viewport is nearly all phone. Give the guide back the space. */
 @media (max-height: 720px) {
   .picker-list {
     max-height: 14rem;
-  }
-
-  .picker-chosen-list {
-    max-height: 9rem;
   }
 }
 
