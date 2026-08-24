@@ -168,14 +168,20 @@ function gapFor(result: AssignmentResult, requestId: string) {
 describe('compareScore (§7.1)', () => {
   it('compares element by element, first difference deciding', () => {
     // One miss at priority 1 is worse than any number of misses at priority 2.
-    expect(compareScore([1, 0, 0, 0, 0, 0, 0] as Score, [0, 9, 0, 0, 0, 0, 0] as Score)).toBe(1)
+    expect(
+      compareScore([1, 0, 0, 0, 0, 0, 0, 0] as Score, [0, 9, 0, 0, 0, 0, 0, 0] as Score),
+    ).toBe(1)
     // Crowding outranks optional misses.
-    expect(compareScore([0, 1, 0, 0, 0, 0] as Score, [0, 0, 9, 0, 0, 0] as Score)).toBe(1)
+    expect(compareScore([0, 1, 0, 0, 0, 0, 0] as Score, [0, 0, 9, 0, 0, 0, 0] as Score)).toBe(1)
+    // Spreading a part over voices outranks taking a chord sample (§12.4).
+    expect(compareScore([0, 0, 1, 0, 0, 0, 0] as Score, [0, 0, 0, 9, 0, 0, 0] as Score)).toBe(1)
     // Recipe quality outranks role fit.
-    expect(compareScore([0, 0, 0, 1000, 0, 0] as Score, [0, 0, 0, 0, 9, 0] as Score)).toBe(1)
+    expect(compareScore([0, 0, 0, 0, 1000, 0, 0] as Score, [0, 0, 0, 0, 0, 9, 0] as Score)).toBe(
+      1,
+    )
     // Idle devices rank last and are nearly cosmetic.
-    expect(compareScore([0, 0, 0, 0, 0, 3] as Score, [0, 0, 0, 0, 1, 0] as Score)).toBe(-1)
-    expect(compareScore([0, 0, 0, 0, 0, 0] as Score, [0, 0, 0, 0, 0, 0] as Score)).toBe(0)
+    expect(compareScore([0, 0, 0, 0, 0, 0, 3] as Score, [0, 0, 0, 0, 0, 1, 0] as Score)).toBe(-1)
+    expect(compareScore([0, 0, 0, 0, 0, 0, 0] as Score, [0, 0, 0, 0, 0, 0, 0] as Score)).toBe(0)
   })
 })
 
@@ -246,12 +252,21 @@ describe('gap reasons (§7.3)', () => {
   })
 
   it('no-capable-voice also covers a polyphony nothing in the rig can meet (§12.4)', () => {
+    // A *fixed* voice, deliberately. Since §12.4 gained stacking, a pool short of the note
+    // count is no longer short of the part — the tracker's eight four-note tracks carry a
+    // six-note pad across two of them. Interchangeability is a pool claim, so a lone fixed
+    // voice is still the case where the rig genuinely cannot.
+    const oneSynth = box('b-mono-synth', {
+      kind: 'synth',
+      voices: [{ kind: 'fixed', id: 'v', label: 'Voice', roles: ['pad'], polyphony: 4 }],
+      recipes: [makeRecipe('v-pad-dark', 'pad', 'dark', 'v')],
+    })
     const t = withRoles([
       request({ id: 'r-pad', role: 'pad', character: 'dark', polyphony: 6 }),
     ])
-    const result = assign({ devices: [tracker], template: t, mood: moodState(), seed: 1 })
-    // The tracker declares `pad` but only 4-note polyphony, so the rig genuinely cannot.
+    const result = assign({ devices: [oneSynth], template: t, mood: moodState(), seed: 1 })
     expect(gapFor(result, 'r-pad')?.reason).toBe('no-capable-voice')
+    expect(gapFor(result, 'r-pad')).toMatchObject({ because: 'polyphony', notes: 6 })
   })
 
   it('no-recipe: capable but nothing authored - the fix is authoring, and it names the voice', () => {

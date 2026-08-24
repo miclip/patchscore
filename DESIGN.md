@@ -1324,6 +1324,7 @@ type Score = [
   ...missesByPriority: number[],  // keys 0..k: unfilled *required* requests at priority 1..k
   crowdOverflow:  number,         // sum over devices of max(0, occupiedAssignables - comfortable)
   optionalMisses: number,         // unfilled requests marked optional
+  stackedVoices:  number,         // voices spent beyond the first on a stacked part (§12.4)
   sampledChords:  number,         // multi-note requests filled from a chord sample (§12.4)
   recipeDistance: number,         // sum of §3.4 distances, x1000 and rounded to an integer
   roleFitPenalty: number,         // sum of the role's index within voice.roles
@@ -1333,11 +1334,12 @@ type Score = [
 ```
 
 Read it as an order of concerns, because that is what it is: never miss a required part; then do
-not over-subscribe a box; then fill the optional parts; then voice a chord for real rather than
-from a sample; then prefer exact recipes over substituted ones; then prefer voices whose author
-listed the role first; then avoid leaving a box switched on and unused.
+not over-subscribe a box; then fill the optional parts; then let one voice carry the part rather
+than spreading it over several; then voice a chord for real rather than from a sample; then prefer
+exact recipes over substituted ones; then prefer voices whose author listed the role first; then
+avoid leaving a box switched on and unused.
 
-Four lower-order claims are load-bearing, and are exactly what the fixtures have to confirm:
+Five lower-order claims are load-bearing, and are exactly what the fixtures have to confirm:
 
 - **Crowding outranks optional requests.** A rig that fills an optional `texture` by putting a
   seventh part on a four-voice box is a worse guide than one that leaves `texture` unfilled. Under
@@ -1355,6 +1357,17 @@ Four lower-order claims are load-bearing, and are exactly what the fixtures have
   and accept the substitution. Requests of one note never touch this key at all — there is no
   chord to invert, so the preference would be paying a worse-sounding recipe for flexibility
   nothing will use — which is also why adding the key changed no existing guide.
+- **Stacking outranks realisation, and is outranked by crowding.** Both `stackedVoices` and
+  `sampledChords` measure the same thing — a part that no single voice sounded on its own — so
+  they sit adjacent, and §12.4 refused to order them until there was a fixture. There is one now,
+  and it is the Tracker pad: `tm-pad-soft-chord` carries a triad on one track and, as §12.4 says
+  in as many words, "costs none of the box's three synth slots, a real advantage", while a stack
+  costs three tracks nothing else can then have. So the chord sample wins, which is the same
+  ordering §12.4 states in prose when it calls stacking "the answer for a role with **no chord
+  sample authored**". The argument the other way is real and loses: a stack *can* be re-voiced
+  where a sample cannot, but rig capacity is the scarcer thing and `crowdOverflow` only notices
+  it once a box is past comfortable. Placed below crowding for that reason — a stack that
+  over-subscribes a box is worse than a chord sample that does not.
 - **Idle devices rank last and are nearly cosmetic.** Spreading parts across boxes is a preference,
   never a correctness property, and it must never cause a miss.
 
@@ -1405,8 +1418,8 @@ come.** At depth one it has costed one request and is silent about the other ele
 ever cuts a branch that is *already* worse than the incumbent — which on a rig of nine devices is
 almost never. The fix is a **relaxed suffix bound**, precomputed once per search: for each request,
 drop occupancy, crowding and `distinct`, and take the cheapest thing it could possibly do. That is
-the lexicographic minimum over its static candidate list of `(sampledChords, recipeDistance,
-roleFitPenalty)` — or, when the list is empty, a certain miss, charged to `misses` (or
+the lexicographic minimum over its static option list of `(stackedVoices, sampledChords,
+recipeDistance, roleFitPenalty)` — or, when the list is empty, a certain miss, charged to `misses` (or
 `optionalMisses`). Suffix-sum those per-request minima and add them to the partial value.
 
 Two things make this admissible:
@@ -1741,7 +1754,14 @@ Do not reorder.
    more than one note, *how* those notes are made (§12.4) is one of the facts: "3 notes at once
    on one polyphonic voice" and "3 notes from one sampled chord" are different things to do, and
    the reader has to be told which one they got. A one-note part says nothing about realisation,
-   because there is nothing to say
+   because there is nothing to say.
+
+   A **stacked** part (§12.4a) names **every** voice — `CRAVE · Voice + Subsequent 37 · Voice` —
+   and then gives one line per voice carrying that voice's **note share** and that voice's own
+   recipe title. The share is printed because it is not always one: the Sub 37 is duophonic, so a
+   triad across those two boxes is one note and two, and a reader told only "2 voices" would
+   split it wrongly. The head line carries **no** recipe title for a stack, because the title it
+   would carry is one box's out of several
 3. **Rig integration** — clock source, MIDI routing, audio outs, mixer channels
 4. **Hook** — written before sound design. A part carried by a `sampled-chord` recipe (§12.4) is
    rendered as **two lists rather than one**: the chord shapes, as content to obtain or render
@@ -1753,20 +1773,55 @@ Do not reorder.
    different inversion. Each trigger prints its transposition (`as recorded`, `+2 st`) and the
    chord that results, so the reader can check the move rather than infer it. Samples are
    labelled `sample A`, `sample B` — a label to point at, never a filename, which we could not
-   know (invariant 5). A polyphonic part's hook is unchanged
+   know (invariant 5). A polyphonic part's hook is unchanged.
+
+   A **stacked** part's hook is the ordinary chord list with **one line per voice under each
+   chord**, saying which notes that voice plays and their MIDI numbers. The mapping is fixed:
+   the chord's notes are sorted **ascending by pitch** and dealt to the members **in resolver
+   order**, each taking as many as it can sound — lowest note to the first voice, upwards from
+   there. Two properties make that the rule rather than a rule. It is *stable*: neither the
+   member order nor the sort depends on the seed, so a box keeps its line of the chord through
+   every chord of the progression and through every re-render, and somebody who has patched
+   their Crave for the bottom note does not find it moved four bars later. And it is what a
+   person would do — the low note is the one that has to be solid, and the first voice is the one
+   the guide has been naming first all the way down the page. A chord with **fewer** notes than
+   there are voices leaves the surplus voices resting, said in words; a chord with **more** notes
+   than the voices can sound prints the leftovers as **not placed** rather than dropping them
+   (invariant 5)
 5. **Step programming** — the selected template pattern per part (§4.3), rendered per device with
-   that device's slot articulation bound to it (§7 step 8)
+   that device's slot articulation bound to it (§7 step 8).
+
+   A **stacked** part has **one pattern, entered once per voice**. The instruction to duplicate
+   the timing is printed **before** the grid, not after it, and names the voices: a reader
+   looking at one pattern and two boxes has no way to know whether the pattern is shared or
+   split, splitting it is what they will guess, and being told once they have finished entering
+   it is being told too late. Only the pitches differ, and the sentence points at phase 4 for
+   them. Articulation is then rendered **per member under that member's own voice heading**,
+   because which slots a box has anything to say about is a fact about that box's recipe — one
+   heading covering both would be telling somebody to set a Crave parameter on a Sub 37.
+   Section merging (identical sections rendered once) compares **every member's** articulation,
+   so two sections differing only on the second voice are not merged away
 6. **Sound design** — where the multi-note realisation becomes an *instruction* rather than a
    fact. "Load the chord sample(s) onto this one voice" is a step a reader will otherwise not
    take, and the plural is load-bearing: the instruction names no count, because the count is a
    property of the hook rather than of the recipe, so it points at phase 4 for which samples are
-   needed. Then the recipe's own `routing` line, which is where anything device-specific about
+   needed. For a **stacked** part the instruction says how many notes across how many voices,
+   how many *this* voice plays, that the steps are the same as on the others, and that the note
+   is in phase 4 — the three things a reader standing at one box of several would otherwise get
+   wrong. Then the recipe's own `routing` line, which is where anything device-specific about
    the trade lives — that a chord sample costs the Tracker Mini no synth slot is the device's
    claim, not the renderer's, which knows about no box. Then parameter values, device by device,
    each rendered per §3.2's table
    (`52`, `52 · manual`, `52 → 45 · manual · moved by darkness`). `ResolvedParam.provenance`
    is non-optional, so every value's provenance is decided before the renderer sees it — an
-   unmarked value is a decision, never a case that fell through
+   unmarked value is a decision, never a case that fell through.
+
+   This phase iterates **members, not parts**. A stacked part has one recipe per voice, and each
+   belongs under the box that voice is on — grouping by the part's first device would print
+   Crave settings under the Sub 37. The same rule governs every count of what a rig is carrying:
+   phase 3's parts-per-box, the clock source's "carrying 5 parts", and the rack diagram's filled
+   voices all count **every member on its own device**, or two of somebody's boxes read as idle
+   while a part is playing on them
 7. **Finishing** — sidechain, master FX, and the arrangement as a **band trajectory** (§6.3):
    which sections program identically part for part, and which parts do not follow the band.
    Deliberately not a second copy of phases 1–3 — it printed the device list, a bars-and-energy
@@ -2073,6 +2128,90 @@ exactly one assignable. Candidacy asks the recipe, not the voice alone; `Score` 
 real voice even at the cost of a character substitution. `Assignable.polyphony` does not move —
 it is still simultaneous notes, and a sampler playing a chord sample is still monophonic.
 
+**12.4a — Multi-assignable stacking, built.** The recommendation below deferred it and then
+described exactly what it would need; this records what was built against that list, and settles
+the two questions §12.4 left open. Everything in the horizontal reading of §12.4 still holds —
+`polyphony` is still a note count, `Assignable.polyphony` is still simultaneous notes, and a
+`sampled-chord` recipe still reaches a chord on one voice.
+
+- **Eligibility is inferred, never declared.** A request whose `polyphony` exceeds what one
+  candidate voice sounds is eligible, and that is the whole trigger. No template gate, no device
+  opt-in: #40's target rig is "a rack of Moog semi-modulars, a Cascadia plus a Crave, anything
+  all-monophonic", which is a fact about what somebody owns. Neither the template author (who
+  must not name a device, invariant 3) nor the device author (who must not name a genre) is in a
+  position to declare it for the other.
+- **A stack crosses pools and devices.** It is drawn from any role-capable voices in the rig, so
+  a triad can sit on a Cascadia and a Crave. Pools are not a gate on stacking, only a grouping
+  *inside* the enumeration: every member of a pool is interchangeable (§2.2), so "two of the
+  Tracker's tracks" is one combination rather than C(8, 2) of them, and the concrete ordinals are
+  picked canonically. `desugarPools` stays behaviour-preserving, and `test/search-symmetry.test.ts`
+  still holds the pooled rig and the desugared one to one oracle.
+- **Each member carries its own recipe**, resolved against its own device and against the share
+  *that voice* sounds rather than the request's full count. Members therefore have their own
+  `outcome` and their own character error — a part can be exact on the Cascadia and substituted
+  on the Crave — and `recipeDistance` and `roleFitPenalty` are **summed** over the members, so
+  three substituted patches cost three substitutions. Resolving against `min(polyphony, notes)`
+  is conservative where the share actually carried is smaller (a patch good for two notes is good
+  for one) and keeps an option's cost independent of the combination it lands in, which is what
+  the suffix floor needs.
+- **Members are only voices that cannot carry the part alone, and that is a dominance argument.**
+  Any stack containing a self-sufficient voice `v` occupies a superset of `{v}`, ties on every
+  miss key, and pays at least 1 on `stackedVoices` where the single placement pays 0 — so the
+  single dominates it at every point of the vector. One corollary: no member ever runs a
+  `sampled-chord` recipe, because a voice with one is self-sufficient by definition.
+- **Combinations are minimal.** The enumeration stops the moment the running total reaches the
+  note count and never takes more voices from a group than the shortfall needs, so no stack
+  contains a voice that could be dropped while still carrying the part. The Sub 37 is duophonic,
+  so a hard stab triad on a Crave-plus-Sub-37 rack comes out as two voices carrying one note and
+  two, not as three voices.
+- **`Assignment` and `Occupancy`.** `Assignment.members` is the whole truth — one entry per voice
+  with its own recipe, outcome and note share. `assignable`, `recipe`, `outcome` and `deviceId`
+  stay as the first member's, so every consumer that never learned about stacks still reads a
+  real voice. Every member is occupied **under the same request id**, in every section the
+  request holds, which is what keeps gap classification able to name the part that took a voice.
+- **Crowding counts every member**, on the member's own device. §12.4 called that "probably right
+  and certainly not obvious"; it is what is built, and it is the claim that one pad spread over
+  three monosynths is as expensive as three separate parts, because it is three voices nobody
+  else can have.
+- **`distinct` (§12.6) generalises to device sets.** Two `distinct` requests of one role conflict
+  when the sets of devices their voices sit on **intersect**. Any other reading would let a triad
+  over a Cascadia and a Crave sit beside a second triad over the Crave and a Moog, which is two
+  parts sharing a box.
+- **Capability is a capacity question, and is asked before character.** A rig can stack a count
+  exactly when the total simultaneous notes of its non-self-sufficient role-capable voices reach
+  it — voices may be taken freely from any group, so there is no packing constraint. Asked with
+  recipe *existence* but not character, on the same line `canCarryNotes` already drew: a rack
+  whose only pad recipes are the wrong character reports `no-recipe` ("dial it by ear"), not
+  `no-capable-voice`.
+- **Ranking**, the first open question: a genuine polyphonic voice beats a stack unconditionally
+  below `crowdOverflow`, which is §12.4's minimum bar. The second — `sampled-chord` against
+  stacking — is decided in §7.1's `stackedVoices` bullet, in favour of the chord sample.
+- **One combination per group, and that is the one deliberate incompleteness.** Which voices a
+  group contributes is chosen rather than searched: already-occupied-elsewhere voices first (they
+  add nothing to `crowdOverflow` and leave an idle sibling free for later), then lowest ordinal.
+  The first rule is a dominance argument; the second is `breakPoolSymmetry`'s canonicalisation.
+  The gap is that two voices busy in *different* sections are not interchangeable for a later
+  request wanting a third section. `test/rigs.ts`'s oracle enumerates every minimal covering
+  subset across every device, ignoring grouping entirely, precisely so that if this ever costs
+  the optimum it fails rather than passing quietly.
+
+**Rendering is built**, in both renderers, and the phase rules are in §8 — phases 2, 4, 5 and 6
+each state what a stack does differently, and every count of what a rig is carrying now counts
+every member on its own device. `ResolvedAssignment.members` carries the per-voice truth
+(device, assignable, note share, recipe, params, patch, and articulation bound against that
+member's own recipe); the eight promoted top-level fields are `members[0]`'s, so a consumer
+written before stacking still reads a real voice on a real box.
+
+The remaining hole is the node cap. Stacking widens the branching factor, and `industrial-techno` on the
+full rig now peaks at **136,453 nodes** against a cap of 150,000 (worst of 500 seeds, nothing
+capped). Matched at 40 seeds per template, the same worst case reads 112,454 with no stacking,
+125,928 with an earlier pool-only version, and 124,393 as built — so crossing devices did not
+cost what restricting to pools saved, and fourteen devices had already eaten most of the headroom
+before any of this. That is #78's problem getting closer, not a new one. The enumeration's own growth is `C(groups, size)`
+and it is in *groups*, not voices — three groups can serve `pad` across the whole shipped
+library, so it returns four options today. A rig of a dozen separate monosynths would return
+hundreds, and lands on the same budget.
+
 *Recommendation — defer multi-assignable stacking to a follow-up.* Issue #40 asked for a rig of
 monophonic voices to be able to hold a pad or a stab, and observed that a tracker plays a chord
 across three tracks. Stacking N assignables under one request is one way to get there. It is not
@@ -2107,6 +2246,12 @@ sit below a real polyphonic voice; which of the two comes next is a musical ques
 sample is one recording with fixed shape, a stack is three voices spent — and answering it in
 advance of building either the fixtures or the mechanism would be exactly the unfalsifiable
 weighting §7.1 exists to refuse. Decide it with a fixture in front of you.
+
+*Superseded by §12.4a, which is the record of building it.* The recommendation and its list are
+kept because the list is what the build was checked against, and because one line of it has gone
+stale: "Tracker `stab` today, which is an honest `polyphony` gap" stopped being true when
+`tm-stab-hard-chord` was authored. It is the chord-sample route, not stacking, that carries the
+Tracker's stab now.
 
 **12.5 — Section-transition patterns: fills are out of v1; `Pattern` stays flat.** See §4.3.
 One variant per request per section; change happens at section boundaries only. A bar offset (or

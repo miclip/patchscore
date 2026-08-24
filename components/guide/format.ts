@@ -255,12 +255,19 @@ export function mixerText(device: Device, parts: number): string {
 // ---------------------------------------------------------------------------
 
 /** An assignable occupied in any section counts once, never once per section. */
-export function occupiedCounts(assignments: { deviceId: DeviceId; assignable: { voiceId: string } }[]) {
+export function occupiedCounts(
+  assignments: { members: readonly { deviceId: DeviceId; assignable: { voiceId: string } }[] }[],
+) {
   const byDevice = new Map<DeviceId, Set<string>>()
+  // §12.4: over members, not assignments. A triad spread across three boxes spends a voice on
+  // each, and counting only the first would draw two of them idle in the rack while a part is
+  // playing on them.
   for (const a of assignments) {
-    const set = byDevice.get(a.deviceId) ?? new Set<string>()
-    set.add(a.assignable.voiceId)
-    byDevice.set(a.deviceId, set)
+    for (const member of a.members) {
+      const set = byDevice.get(member.deviceId) ?? new Set<string>()
+      set.add(member.assignable.voiceId)
+      byDevice.set(member.deviceId, set)
+    }
   }
   return new Map([...byDevice].map(([id, set]) => [id, set.size]))
 }

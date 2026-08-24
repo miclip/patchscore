@@ -145,13 +145,20 @@ export function selectClockSource(
   }
 }
 
-/** §12.4. One per assignable occupied in at least one section, never one per section. */
+/**
+ * §12.4. One per assignable occupied in at least one section, never one per section — and
+ * **every member of a stack counts**, on its own device. A triad spread over three boxes is
+ * three voices spent, so all three read as carrying a part; counting only the first would tell
+ * a reader two of their boxes were idle while a part played on them.
+ */
 function occupiedCounts(assignments: readonly ResolvedAssignment[]): Map<DeviceId, number> {
   const byDevice = new Map<DeviceId, Set<AssignableKey>>()
   for (const a of assignments) {
-    const set = byDevice.get(a.deviceId) ?? new Set<AssignableKey>()
-    set.add(assignableKey(a.assignable))
-    byDevice.set(a.deviceId, set)
+    for (const member of a.members) {
+      const set = byDevice.get(member.deviceId) ?? new Set<AssignableKey>()
+      set.add(assignableKey(member.assignable))
+      byDevice.set(member.deviceId, set)
+    }
   }
   return new Map([...byDevice].map(([id, set]) => [id, set.size]))
 }
@@ -193,6 +200,39 @@ export type ResolvedRecipeRef = {
   routing?: string
 }
 
+/**
+ * §12.4. One voice of a part, resolved.
+ *
+ * A stacked part crosses devices (#40's "a Cascadia plus a Crave"), so every voice has its own
+ * device, its own recipe, its own parameter values, its own patch and its own articulation —
+ * there is nothing here that could sensibly be hoisted to the part. §8 renders per member for
+ * exactly that reason: phase 6 puts each member's settings under the box it is actually on, and
+ * putting them anywhere else would send a reader to the wrong panel.
+ *
+ * Length 1 for every unstacked part, where this is the same placement `ResolvedAssignment`
+ * describes at its top level rather than a second one.
+ */
+export type ResolvedMember = {
+  assignable: Assignable
+  deviceId: DeviceId
+  deviceName: string
+  /**
+   * §12.4. Simultaneous notes *this voice* sounds. Sums to the part's `notes` across the
+   * members; equal to it for an unstacked part.
+   */
+  notes: number
+  recipe: ResolvedRecipeRef
+  /** §7 step 9. Every one carries provenance — the type makes it unskippable (§3.1). */
+  params: ResolvedParam[]
+  patch: ResolvedPatchEntry[]
+  /**
+   * §7 step 8, bound against **this member's** recipe. The `selection` inside is the part's —
+   * one pattern for the whole part, because a stack plays one rhythm — but which slots the box
+   * has anything to say about is a fact about this box's recipe and no other.
+   */
+  patterns: ResolvedSectionPattern[]
+}
+
 export type ResolvedAssignment = {
   requestId: RequestId
   role: Role
@@ -206,6 +246,15 @@ export type ResolvedAssignment = {
    * worth saying when there is more than one note in the chord.
    */
   notes: number
+  /**
+   * §12.4. Every voice this part is on, in the order §8 names them and the order phase 4 maps
+   * the chord's notes onto. Length 1 unless the part is stacked.
+   *
+   * The eight fields below are the **first member's**, repeated here so that every consumer
+   * written before stacking existed still reads a real voice on a real box rather than
+   * something averaged. A consumer that must be right about a stack reads `members`.
+   */
+  members: ResolvedMember[]
   assignable: Assignable
   deviceId: DeviceId
   deviceName: string
@@ -232,8 +281,14 @@ export type ResolvedAssignment = {
  * It lives beside `ResolveInput` because that is the contract it versions. `permalink.ts`
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
+ *
+ * **2** — §12.4a stacking. `Score` gained a `stackedVoices` key above `sampledChords`, and a
+ * request needing more notes than one voice sounds can now be filled by several. No shipped rig
+ * resolves differently today (the voices that could stack are wanted by higher-priority parts
+ * first), but "no rig in the library moves" is not "no link moves": a saved link naming a rig of
+ * monosynths would have had a `polyphony` gap where it now gets a part.
  */
-export const RESOLVER_VERSION = 1
+export const RESOLVER_VERSION = 2
 
 export type ResolveInput = {
   /** Effective devices: shared definition composed with the user's overlay (#16). */
@@ -316,11 +371,51 @@ export function resolve(input: ResolveInput): ResolveResult {
   // Steps 2, 3, 4, 6 and 7.
   const allocation = assign({ devices, template, mood, seed })
 
-  // Steps 8 and 9.
+  // Steps 8 and 9, per **member**: a stacked part has one recipe per voice (§12.4), so params,
+  // patch and articulation are resolved once for each and never once for the part.
   const assignments: ResolvedAssignment[] = allocation.assignments.map((a) => {
     const request = requestById.get(a.requestId) as RoleRequest
     const bySection = patterns.get(a.requestId)
 
+    // One pattern selection for the whole part, resolved once and shared by every member: a
+    // stack plays *one* rhythm, and giving each voice its own selection would be inventing a
+    // musical difference the template did not ask for. Only the articulation below is per
+    // member, because which slots a box has anything to say about is that box's business.
+    const selections = a.sections.map((section) => ({
+      section,
+      selection:
+        bySection?.get(section) ??
+        ({ outcome: 'none', band: bandFor(template, section, mood) } as PatternSelection),
+    }))
+
+    const members: ResolvedMember[] = a.members.map((m) => ({
+      assignable: m.assignable,
+      deviceId: m.deviceId,
+      deviceName: deviceById.get(m.deviceId)?.name ?? m.deviceId,
+      notes: m.notes,
+      recipe: {
+        id: m.recipe.id,
+        title: m.recipe.title,
+        character: m.recipeCharacter,
+        outcome: m.outcome,
+        realisation: realisationOf(m.recipe),
+        ...(m.recipe.routing === undefined ? {} : { routing: m.recipe.routing }),
+      },
+      params: resolveParams(m.recipe, mood),
+      patch: resolvePatch(m.recipe),
+      patterns: selections.map(({ section, selection }) => ({
+        section,
+        selection,
+        // A slot the variant does not contain is dropped silently (§7 step 8); a part with
+        // no pattern at all has nothing to articulate against.
+        articulation:
+          selection.outcome === 'none' ? [] : bindArticulation(m.recipe, selection.pattern),
+      })),
+    }))
+
+    // The first member, promoted. Every field here is `members[0]`'s and is repeated so that a
+    // consumer written before stacking still reads a real voice on a real box.
+    const first = members[0] as ResolvedMember
     return {
       requestId: a.requestId,
       role: a.role,
@@ -328,34 +423,15 @@ export function resolve(input: ResolveInput): ResolveResult {
       priority: request.priority,
       optional: request.optional === true,
       notes: request.polyphony ?? 1,
-      assignable: a.assignable,
-      deviceId: a.deviceId,
-      deviceName: deviceById.get(a.deviceId)?.name ?? a.deviceId,
-      recipe: {
-        id: a.recipe.id,
-        title: a.recipe.title,
-        character: a.recipeCharacter,
-        outcome: a.outcome,
-        realisation: realisationOf(a.recipe),
-        ...(a.recipe.routing === undefined ? {} : { routing: a.recipe.routing }),
-      },
-      params: resolveParams(a.recipe, mood),
-      patch: resolvePatch(a.recipe),
+      members,
+      assignable: first.assignable,
+      deviceId: first.deviceId,
+      deviceName: first.deviceName,
+      recipe: first.recipe,
+      params: first.params,
+      patch: first.patch,
       sections: a.sections,
-      patterns: a.sections.map((section) => {
-        const selection: PatternSelection = bySection?.get(section) ?? {
-          outcome: 'none',
-          band: bandFor(template, section, mood),
-        }
-        return {
-          section,
-          selection,
-          // A slot the variant does not contain is dropped silently (§7 step 8); a part with
-          // no pattern at all has nothing to articulate against.
-          articulation:
-            selection.outcome === 'none' ? [] : bindArticulation(a.recipe, selection.pattern),
-        }
-      }),
+      patterns: first.patterns,
     }
   })
 

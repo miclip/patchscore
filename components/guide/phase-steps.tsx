@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import type {
   BoundArticulation,
   Device,
@@ -8,8 +9,9 @@ import type {
   ResolvedAssignment,
   SectionName,
 } from '@/lib/core'
-import { citeLines, hintText, num } from './format'
+import { citeLines, count, hintText, num } from './format'
 import { Instruction, ProvenanceMark, SoundRef } from './instruction'
+import { memberWhere, partWhere } from './phase-voices'
 
 const ROW = 16
 
@@ -110,6 +112,14 @@ function Articulation({
 
 type Block = { sections: SectionName[]; entry: ResolvedAssignment['patterns'][number] }
 
+/** This member's articulation for one section, or nothing where it has none. */
+function articulationIn(
+  member: ResolvedAssignment['members'][number],
+  section: SectionName,
+): readonly BoundArticulation[] {
+  return member.patterns.find((p) => p.section === section)?.articulation ?? []
+}
+
 /**
  * One slot's hits as steps, with a shared velocity hoisted to the end: `2, 4, 6, 8 (all vel 42)`
  * rather than eight copies of `(vel 42)`. The Markdown sibling words it the same way — a band-3
@@ -147,8 +157,17 @@ export function mergeBlocks(a: ResolvedAssignment): Block[] {
   const merged = new Map<string, Block>()
   for (const entry of a.patterns) {
     const s = entry.selection
-    const articulation = entry.articulation
-      .map((x) => `${x.slot}|${x.steps.join('.')}|${JSON.stringify(x.set)}|${x.hint ?? ''}`)
+    // §12.4: over every member's articulation, not only the first's. Two sections whose
+    // articulation differs on the *second* voice of a stack are not the same instruction, and
+    // merging them would hide a difference on a box the reader is standing at.
+    const articulation = a.members
+      .flatMap((m) =>
+        articulationIn(m, entry.section).map(
+          (x) =>
+            `${m.assignable.deviceId}/${m.assignable.voiceId}|${x.slot}|${x.steps.join('.')}|` +
+            `${JSON.stringify(x.set)}|${x.hint ?? ''}`,
+        ),
+      )
       .join(';')
     const key =
       s.outcome === 'none'
@@ -164,11 +183,11 @@ export function mergeBlocks(a: ResolvedAssignment): Block[] {
 function BlockBody({
   a,
   block,
-  device,
+  deviceById,
 }: {
   a: ResolvedAssignment
   block: Block
-  device: Device | undefined
+  deviceById: Map<DeviceId, Device>
 }) {
   const { selection } = block.entry
   if (selection.outcome === 'none') {
@@ -195,6 +214,17 @@ function BlockBody({
         </span>
       </p>
 
+      {/* §12.4 stacking, before the grid rather than after it: a reader looking at one pattern
+          and two boxes has no way to know whether the pattern is shared or split, and splitting
+          it is what they will guess — so they have to be told before they start entering it. */}
+      {a.members.length > 1 ? (
+        <p className="quiet">
+          Enter this same timing on <strong>each of the {count(a.members.length, 'voice')}</strong>{' '}
+          — {partWhere(a)}. The steps are identical; only the note each voice plays differs, and
+          that is in Hook.
+        </p>
+      ) : null}
+
       <StepGrid pattern={selection.pattern} />
 
       <ul className="slots">
@@ -207,14 +237,20 @@ function BlockBody({
         ))}
       </ul>
 
-      {block.entry.articulation.length === 0 ? null : (
-        <>
-          {/* Labelled, because a bare second list under the slot list reads as more of the
-              same list — and it is not: these are the device's settings, not the steps. */}
-          <h6>On this box — {a.deviceName}</h6>
-          <Articulation entries={block.entry.articulation} device={device} />
-        </>
-      )}
+      {a.members.map((member) => {
+        const bound = articulationIn(member, block.entry.section)
+        if (bound.length === 0) return null
+        return (
+          <Fragment key={member.assignable.deviceId + '/' + member.assignable.voiceId}>
+            {/* Labelled, because a bare second list under the slot list reads as more of the
+                same list — and it is not: these are the device's settings, not the steps. Named
+                per voice for a stack, or telling the reader to set a Crave parameter on a
+                Sub 37 is one heading away. */}
+            <h6>On this box — {a.members.length > 1 ? memberWhere(member) : member.deviceName}</h6>
+            <Articulation entries={bound} device={deviceById.get(member.deviceId)} />
+          </Fragment>
+        )
+      })}
     </>
   )
 }
@@ -238,17 +274,18 @@ export function PhaseSteps({
           <h4>
             <span className="role mono">{a.role}</span>
             <span className="token-sep">—</span>
-            <span className="quiet">
-              {a.deviceName} · {a.assignable.label}
-            </span>
+            <span className="quiet">{partWhere(a)}</span>
           </h4>
           {/* Same reason as the hook phase: this one says what to play, not what it sounds
               like, so a reader stopping here would think the sound was missing. */}
-          <SoundRef title={a.recipe.title} />
+          <SoundRef
+            title={a.members.map((m) => m.recipe.title).join(' · ')}
+            perBox={a.members.length > 1}
+          />
           {mergeBlocks(a).map((block) => (
             <div className="block" key={block.sections.join(',')}>
               <h5>{block.sections.join(', ')}</h5>
-              <BlockBody a={a} block={block} device={deviceById.get(a.deviceId)} />
+              <BlockBody a={a} block={block} deviceById={deviceById} />
             </div>
           ))}
         </section>

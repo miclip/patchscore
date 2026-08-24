@@ -1,21 +1,68 @@
-import type { Device, DeviceId, ResolveResult, ResolvedAssignment } from '@/lib/core'
+import { Fragment } from 'react'
+import type {
+  Character,
+  Device,
+  DeviceId,
+  ResolveResult,
+  ResolvedAssignment,
+  ResolvedMember,
+} from '@/lib/core'
 import { adviceText, count, num } from './format'
 
-/** §3.5. Why this recipe, in the one case where the answer is not "it matched". */
+/**
+ * §3.5. Why this recipe, in the one case where the answer is not "it matched".
+ *
+ * Read over **every** member: a stack resolves one recipe per voice and can be exact on one box
+ * and substituted on another (§12.4), so answering from the first would be a claim about the
+ * part that is false of half of it. Worded exactly as the Markdown sibling words it.
+ */
 function recipeWhy(a: ResolvedAssignment) {
-  if (a.recipe.outcome === 'exact') {
+  if (a.members.every((m) => m.recipe.outcome === 'exact')) {
     return (
       <>
         exact <span className="mono">{a.character}</span>
       </>
     )
   }
+  const authored = [...new Set(a.members.map((m) => m.recipe.character))]
   return (
     <>
       substituted — asked <span className="mono">{a.character}</span>, authored{' '}
-      <span className="mono">{a.recipe.character}</span>
+      {authored.map((c, i) => (
+        <Fragment key={c}>
+          {i === 0 ? null : '/'}
+          <span className="mono">{c}</span>
+        </Fragment>
+      ))}
     </>
   )
+}
+
+/** The same question for one voice of a stack, where the answer can differ per voice. */
+function memberWhy(member: ResolvedMember, asked: Character) {
+  if (member.recipe.outcome === 'exact') {
+    return (
+      <>
+        exact <span className="mono">{asked}</span>
+      </>
+    )
+  }
+  return (
+    <>
+      substituted — asked <span className="mono">{asked}</span>, authored{' '}
+      <span className="mono">{member.recipe.character}</span>
+    </>
+  )
+}
+
+/** `Device · Voice`, the one form every phase uses to name where a part sits. */
+export function memberWhere(member: ResolvedMember): string {
+  return `${member.deviceName} · ${member.assignable.label}`
+}
+
+/** Every voice of a part, joined. One name for an unstacked part, so nothing reads differently. */
+export function partWhere(a: ResolvedAssignment): string {
+  return a.members.map(memberWhere).join(' + ')
 }
 
 /**
@@ -27,8 +74,13 @@ function recipeWhy(a: ResolvedAssignment) {
  * everything in this tree: the two renderers share no code path, so a fact appears in both only
  * because someone put it in both, in the same words.
  */
-function realisationText(a: ResolvedAssignment): string {
+export function realisationText(a: ResolvedAssignment): string {
   if (a.notes <= 1) return ''
+  // §12.4 stacking, checked first: a stacked part has one realisation per member and none of
+  // them is what the reader needs to know first, which is that this is several voices.
+  if (a.members.length > 1) {
+    return `${count(a.notes, 'note')} across ${count(a.members.length, 'voice')}`
+  }
   if (a.recipe.realisation === 'sampled-chord') {
     return `${count(a.notes, 'note')} from one sampled chord`
   }
@@ -67,10 +119,13 @@ export function PhaseVoices({
                 <span className="arrow" aria-hidden="true">
                   →
                 </span>
-                <span className="where">
-                  {a.deviceName} · {a.assignable.label}
-                </span>
-                <span className="recipe-title">{a.recipe.title}</span>
+                <span className="where">{partWhere(a)}</span>
+                {/* A stacked part's voices run different recipes, so the title moves to one
+                    line per voice below. Naming the first one up here would describe the whole
+                    part by one of its boxes. */}
+                {a.members.length > 1 ? null : (
+                  <span className="recipe-title">{a.recipe.title}</span>
+                )}
               </div>
               <p className="subordinate">
                 p{num(a.priority)}
@@ -78,6 +133,21 @@ export function PhaseVoices({
                 {realisationText(a) === '' ? null : ` · ${realisationText(a)}`} ·{' '}
                 {a.sections.length === sectionCount ? 'every section' : a.sections.join(', ')}
               </p>
+              {a.members.length > 1 ? (
+                <ul className="stack-members">
+                  {a.members.map((member) => (
+                    <li key={member.assignable.deviceId + '/' + member.assignable.voiceId}>
+                      <span className="where">{memberWhere(member)}</span>
+                      <span className="token-sep">—</span>
+                      <span className="quiet">{count(member.notes, 'note')}</span>
+                      <span className="token-sep">—</span>
+                      <span className="recipe-title">{member.recipe.title}</span>
+                      <span className="token-sep">·</span>
+                      <span className="quiet">{memberWhy(member, a.character)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </li>
           ))}
         </ul>

@@ -640,11 +640,18 @@ describe('patch entries (§3.3)', () => {
       to: 'FILTER IN',
       provenance: { state: 'authored', cite: { kind: 'manual', source: 'fixture p.1' } },
     }
+    // §12.4: the rack reads `members`, because a stacked part's patch entries belong to the box
+    // whose recipe authored them. The promoted top-level copy is set too, so the fixture stays a
+    // coherent `ResolvedAssignment` rather than one that disagrees with itself.
     const withPatch: ResolveResult = {
       ...real,
       assignments: real.assignments.map((a) =>
         a === target
-          ? { ...a, patch: [entry] }
+          ? {
+              ...a,
+              patch: [entry],
+              members: [{ ...(a.members[0] as (typeof a.members)[number]), patch: [entry] }],
+            }
           : a,
       ),
     }

@@ -787,15 +787,20 @@ export function rackModel(result: ResolveResult, options: RackLayoutOptions = {}
 
   const occupiedByDevice = new Map<DeviceId, Set<string>>()
   const patchByDevice = new Map<DeviceId, { from: string; to: string; note?: string }[]>()
+  // §12.4: per **member**. A stacked part occupies a voice on every box it touches, and its
+  // patch entries belong to the box whose recipe authored them — attributing all of them to the
+  // part's first device would draw cables on a panel that has no such jacks.
   for (const assignment of result.assignments) {
-    const set = occupiedByDevice.get(assignment.deviceId) ?? new Set<string>()
-    set.add(assignment.assignable.voiceId)
-    occupiedByDevice.set(assignment.deviceId, set)
+    for (const member of assignment.members) {
+      const set = occupiedByDevice.get(member.deviceId) ?? new Set<string>()
+      set.add(member.assignable.voiceId)
+      occupiedByDevice.set(member.deviceId, set)
 
-    if (assignment.patch.length === 0) continue
-    const list = patchByDevice.get(assignment.deviceId) ?? []
-    list.push(...assignment.patch)
-    patchByDevice.set(assignment.deviceId, list)
+      if (member.patch.length === 0) continue
+      const list = patchByDevice.get(member.deviceId) ?? []
+      list.push(...member.patch)
+      patchByDevice.set(member.deviceId, list)
+    }
   }
 
   const source = result.clockSource

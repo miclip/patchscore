@@ -190,10 +190,13 @@ const SOUND_DESIGN_ANCHOR = `#phase-${GUIDE_PHASES.indexOf('Sound design') + 1}`
  * The link matters more here than in the Markdown: on a phone, "see Sound design" when Sound
  * design is two thousand pixels further down is not much of a pointer.
  */
-export function SoundRef({ title }: { title: string }) {
+export function SoundRef({ title, perBox = false }: { title: string; perBox?: boolean }) {
   return (
     <p className="sound-ref">
       <strong>{title}</strong> — settings in <a href={SOUND_DESIGN_ANCHOR}>Sound design</a>
+      {/* §12.4: a stacked part has one entry per voice down there, and a reader told
+          "settings in Sound design" who finds three would not know which was theirs. */}
+      {perBox ? ', one entry per box' : ''}
     </p>
   )
 }

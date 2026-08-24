@@ -1,8 +1,43 @@
-import type { HookChoice, ResolveResult, ResolvedAssignment, ResolvedHook, ResolvedNote } from '@/lib/core'
+import type {
+  HookChoice,
+  ResolveResult,
+  ResolvedAssignment,
+  ResolvedHook,
+  ResolvedMember,
+  ResolvedNote,
+} from '@/lib/core'
 import { Fragment } from 'react'
 import { chordVoicings, enharmonicAlternative } from '@/lib/core'
 import { barOf, chordsOf, count, degreeName, gridFits, lenText, num } from './format'
 import { SoundRef } from './instruction'
+import { memberWhere, partWhere } from './phase-voices'
+
+/**
+ * §12.4 stacking, §8 phase 4. Which voice of a stack plays which note of one chord.
+ *
+ * **Lowest note to the first voice, then upwards**, each voice taking as many notes as it can
+ * sound. Deterministic and stable: `members` is fixed by the resolver and the notes are sorted
+ * by pitch, so the same box plays the same line of the chord in every chord of the progression
+ * and in every re-render. A reader who has patched their Crave for the bottom note does not
+ * find it moved four bars later.
+ *
+ * Notes past what the voices can sound are reported, never dropped (invariant 5). Written out
+ * by hand to match the Markdown renderer, which is the rule for everything in this tree.
+ */
+function shareChord(
+  members: readonly ResolvedMember[],
+  notes: readonly ResolvedNote[],
+): { shares: { member: ResolvedMember; notes: ResolvedNote[] }[]; unplaced: ResolvedNote[] } {
+  const ascending = [...notes].sort((a, b) => a.midi - b.midi)
+  const shares: { member: ResolvedMember; notes: ResolvedNote[] }[] = []
+  let next = 0
+  for (const member of members) {
+    const take = ascending.slice(next, next + member.notes)
+    next += take.length
+    shares.push({ member, notes: take })
+  }
+  return { shares, unplaced: ascending.slice(next) }
+}
 
 /**
  * #32, stated once near the notes rather than repeated per note: three representations of one
@@ -187,9 +222,7 @@ function HookBlock({
         {carriedBy === undefined ? null : (
           <>
             <span className="token-sep">—</span>
-            <span className="quiet">
-              {carriedBy.deviceName} · {carriedBy.assignable.label}
-            </span>
+            <span className="quiet">{partWhere(carriedBy)}</span>
           </>
         )}
       </h4>
@@ -197,7 +230,12 @@ function HookBlock({
       {carriedBy === undefined ? (
         <p className="quiet">Nothing in your rig plays this part.</p>
       ) : (
-        <SoundRef title={carriedBy.recipe.title} />
+        /* One title per voice: a stack's boxes run different recipes, and naming one of them
+           would send the reader looking for a single entry Sound design does not have. */
+        <SoundRef
+          title={carriedBy.members.map((m) => m.recipe.title).join(' · ')}
+          perBox={carriedBy.members.length > 1}
+        />
       )}
 
       {choice.chosen.outcome === 'unresolved' ? (
@@ -216,10 +254,20 @@ function HookBlock({
             ordinary rendering below would tell its reader to enter three notes on a voice that
             sounds one — and imply the progression follows, which it does not.
           */}
-          {carriedBy?.recipe.realisation === 'sampled-chord' ? (
+          {carriedBy?.recipe.realisation === 'sampled-chord' && carriedBy.members.length === 1 ? (
             <SampledHook hook={choice.chosen.hook} framed={framed} />
           ) : (
           <>
+          {/* §12.4 stacking: the chord is real and is played note by note, but not on one
+              voice, and a reader handed the list below without this sentence would enter the
+              whole chord on the first box. */}
+          {carriedBy !== undefined && carriedBy.members.length > 1 ? (
+            <p className="quiet">
+              {count(carriedBy.members.length, 'voice')} carry this part, one line of the chord
+              each. Lowest note to the first voice and upwards from there, the same way in every
+              chord — so a voice keeps its line for the whole progression.
+            </p>
+          ) : null}
           {/*
             One row per chord, not per note. Labels stay inline rather than moving to a header
             row: measured at 390px, a six-column layout needs about 490px and would have to
@@ -282,6 +330,51 @@ function HookBlock({
                       {cell}
                     </Fragment>
                   ))}
+                {carriedBy === undefined || carriedBy.members.length === 1 ? null : (
+                  <ul className="stack-members">
+                    {(() => {
+                      const { shares, unplaced } = shareChord(carriedBy.members, chord.notes)
+                      return (
+                        <>
+                          {shares.map((share) => (
+                            <li key={share.member.assignable.deviceId + '/' + share.member.assignable.voiceId}>
+                              <span className="where">{memberWhere(share.member)}</span>
+                              <span className="token-sep">—</span>
+                              {share.notes.length === 0 ? (
+                                <span className="quiet">
+                                  rest — this chord has fewer notes than there are voices
+                                </span>
+                              ) : (
+                                <>
+                                  <ChordNotes notes={share.notes} />
+                                  <span className="token-sep"> · </span>
+                                  <span className="pos">
+                                    <span className="quiet">MIDI </span>
+                                    <span className="mono">
+                                      {share.notes.map((n) => num(n.midi)).join(' ')}
+                                    </span>
+                                  </span>
+                                </>
+                              )}
+                            </li>
+                          ))}
+                          {/* Invariant 5: a note nothing can play is stated, never quietly lost. */}
+                          {unplaced.length === 0 ? null : (
+                            <li>
+                              <strong>not placed</strong>
+                              <span className="token-sep">—</span>
+                              <ChordNotes notes={unplaced} />
+                              <span className="quiet">
+                                : this chord has {count(chord.notes.length, 'note')} and the part
+                                was assigned {count(carriedBy.notes, 'note')} of voice
+                              </span>
+                            </li>
+                          )}
+                        </>
+                      )
+                    })()}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>

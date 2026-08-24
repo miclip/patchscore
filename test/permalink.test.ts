@@ -64,8 +64,13 @@ function goldenInputs(over: Partial<GuideInputsV1> = {}): GuideInputsV1 {
 describe('the v1 wire format', () => {
   it('names every value, in a fixed order, whatever the state', () => {
     const encoded = encodeGuideInputs(goldenInputs({ seed: 1, mood: NEUTRAL_MOOD }), GOLDEN)
+    // `format=` is pinned as a literal because the wire shape must not move without a
+    // deliberate change here; `resolver=` is interpolated because it is *expected* to move
+    // whenever the engine's output can (see `RESOLVER_VERSION`), and pinning it would turn every
+    // legitimate bump into a failure in a test that is about field order.
     expect(encoded).toBe(
-      'format=1&resolver=1&device=A-cascade&device=B-tracker&device=a-drum&template=golden-techno&darkness=50&density=50&grit=50&swing=50&space=50&seed=1',
+      `format=1&resolver=${RESOLVER_VERSION}&device=A-cascade&device=B-tracker&device=a-drum` +
+        '&template=golden-techno&darkness=50&density=50&grit=50&swing=50&space=50&seed=1',
     )
   })
 
@@ -130,13 +135,13 @@ describe('canonical encoding', () => {
     // Fields out of order and devices out of registry order — legal input, one canonical output.
     const messy =
       'seed=7&space=50&swing=50&grit=50&density=50&darkness=50&template=golden-techno' +
-      '&device=a-drum&device=A-cascade&resolver=1&format=1'
+      `&device=a-drum&device=A-cascade&resolver=${RESOLVER_VERSION}&format=1`
     const back = decodeGuideInputs(messy, GOLDEN)
     expect(back.ok).toBe(true)
     if (!back.ok) return
     expect(encodeGuideInputs(back.inputs, GOLDEN)).toBe(
-      'format=1&resolver=1&device=A-cascade&device=a-drum&template=golden-techno' +
-        '&darkness=50&density=50&grit=50&swing=50&space=50&seed=7',
+      `format=1&resolver=${RESOLVER_VERSION}&device=A-cascade&device=a-drum` +
+        '&template=golden-techno&darkness=50&density=50&grit=50&swing=50&space=50&seed=7',
     )
   })
 
@@ -177,9 +182,13 @@ describe('malformed input fails safely', () => {
     ['a missing scalar', canonical.replace('&seed=1', ''), 'malformed'],
     ['a missing mood axis', canonical.replace('&swing=50', ''), 'malformed'],
     ['a missing format stamp', canonical.replace('format=1&', ''), 'malformed'],
-    ['a missing resolver stamp', canonical.replace('resolver=1&', ''), 'malformed'],
+    ['a missing resolver stamp', canonical.replace(`resolver=${RESOLVER_VERSION}&`, ''), 'malformed'],
     ['a non-numeric format version', canonical.replace('format=1', 'format=one'), 'malformed'],
-    ['a non-numeric resolver version', canonical.replace('resolver=1', 'resolver=x'), 'malformed'],
+    [
+      'a non-numeric resolver version',
+      canonical.replace(`resolver=${RESOLVER_VERSION}`, 'resolver=x'),
+      'malformed',
+    ],
     ['a fractional mood value', canonical.replace('grit=50', 'grit=50.5'), 'malformed'],
     ['a signed number', canonical.replace('seed=1', 'seed=+1'), 'malformed'],
     ['a leading zero', canonical.replace('seed=1', 'seed=01'), 'malformed'],
@@ -238,7 +247,10 @@ describe('version mismatch is preserved, never silent', () => {
   it('decodes an older engine’s link and flags the drift', () => {
     // §8.2's policy: the inputs are readable, so re-resolve them under the current engine and
     // say so. A hard failure here would throw away a link that is perfectly usable.
-    const result = decodeGuideInputs(canonical.replace('resolver=1', 'resolver=0'), GOLDEN)
+    const result = decodeGuideInputs(
+      canonical.replace(`resolver=${RESOLVER_VERSION}`, 'resolver=0'),
+      GOLDEN,
+    )
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.drift).toBe(true)
@@ -248,7 +260,10 @@ describe('version mismatch is preserved, never silent', () => {
   })
 
   it('flags a link from a newer engine the same way, in the other direction', () => {
-    const result = decodeGuideInputs(canonical.replace('resolver=1', 'resolver=99'), GOLDEN)
+    const result = decodeGuideInputs(
+      canonical.replace(`resolver=${RESOLVER_VERSION}`, 'resolver=99'),
+      GOLDEN,
+    )
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.drift).toBe(true)

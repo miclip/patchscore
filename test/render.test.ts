@@ -257,20 +257,26 @@ describe('numeric values carry unit and range (#29)', () => {
       .find((p) => p.range !== undefined && p.range.min < 0)
     // The golden rig authors none, so this asserts the formatting rule directly instead.
     expect(bipolar).toBeUndefined()
+    const first = result.assignments[0] as (typeof result.assignments)[number]
+    const params = [
+      {
+        name: 'PITCH',
+        value: -3,
+        unit: 'St',
+        range: { min: -24, max: 24, verified: { kind: 'manual', source: 'p.1' } },
+        provenance: { state: 'authored', cite: { kind: 'manual', source: 'p.1' } },
+      },
+    ] as (typeof first)['params']
+    // §12.4: phase 6 reads `members`, because a stacked part has one set of values per voice.
+    // The promoted top-level copy is set too, so the fixture stays a coherent `ResolvedAssignment`
+    // rather than one that disagrees with itself.
     const doc = renderGuide({
       ...result,
       assignments: [
         {
-          ...(result.assignments[0] as (typeof result.assignments)[number]),
-          params: [
-            {
-              name: 'PITCH',
-              value: -3,
-              unit: 'St',
-              range: { min: -24, max: 24, verified: { kind: 'manual', source: 'p.1' } },
-              provenance: { state: 'authored', cite: { kind: 'manual', source: 'p.1' } },
-            },
-          ],
+          ...first,
+          params,
+          members: [{ ...(first.members[0] as (typeof first.members)[number]), params }],
         },
         ...result.assignments.slice(1),
       ],

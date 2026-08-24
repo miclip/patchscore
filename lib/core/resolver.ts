@@ -10,7 +10,7 @@ import {
   type MoodAxis,
   type Role,
 } from './vocabulary'
-import { realisationRank, requiredVoicePolyphony } from './device'
+import { realisationOf, realisationRank, requiredVoicePolyphony } from './device'
 import type {
   ArticulationEntry,
   Assignable,
@@ -454,6 +454,57 @@ export function canCarryNotes(
   return recipesFor(device, assignable, role).some(
     (recipe) => requiredVoicePolyphony(recipe, notes) <= assignable.polyphony,
   )
+}
+
+/**
+ * §12.4 stacking. Whether this voice could be **one member** of a stack carrying a role.
+ *
+ * The question is only whether the device authors a real per-voice recipe for it: each member
+ * sounds its own share of the notes with its own voice, so `requiredVoicePolyphony` is
+ * satisfied by construction and the note count does not enter. A `sampled-chord` recipe is
+ * excluded outright rather than ranked last — if a sample can carry the chord at all it
+ * carries the whole chord on one voice, so §7.1 never reaches a stack containing it anyway,
+ * and stacking three copies of one is not a thing anyone would do at the machine.
+ *
+ * Character is not consulted, exactly as `canCarryNotes` does not consult it: this is the rig
+ * question §7.3 asks before the authoring question.
+ */
+export function canStackNotes(device: Device, assignable: Assignable, role: Role): boolean {
+  return recipesFor(device, assignable, role).some(
+    (recipe) => realisationOf(recipe) === 'polyphonic-voice',
+  )
+}
+
+/**
+ * §12.4 stacking. The recipe **one member** of a stack runs, resolved against that member's own
+ * device.
+ *
+ * One per member, not one per part: a stack crosses devices (#40's "a Cascadia plus a Crave"),
+ * and the Cascadia's patch and the Crave's are two different authored things. Members of one
+ * *pool* do share a recipe, but only because §2.2 already says they share everything.
+ *
+ * Resolved against the share **that voice** carries rather than the request's full count, so a
+ * mono voice stacked into a triad looks up an ordinary one-note recipe. `sampled-chord` recipes
+ * are filtered out for the reason `canStackNotes` gives; the list is already in §3.5 order, so
+ * taking the first survivor takes the nearest character.
+ */
+export function resolveStackRecipe(
+  device: Device,
+  assignable: Assignable,
+  role: Role,
+  want: Character,
+  perMemberNotes: number,
+): RecipeResolution {
+  const best = scoreRecipes(device, assignable, role, want, perMemberNotes).find(
+    (x) => realisationOf(x.recipe) === 'polyphonic-voice',
+  )
+  if (best === undefined) return { outcome: 'unvoiced', distanceSq: 0 }
+  return {
+    outcome: best.distanceSq === 0 ? 'exact' : 'substituted',
+    recipe: best.recipe,
+    character: best.recipe.character,
+    distanceSq: best.distanceSq,
+  }
 }
 
 /**

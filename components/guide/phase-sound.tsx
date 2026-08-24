@@ -3,6 +3,7 @@ import type {
   DeviceId,
   ResolveResult,
   ResolvedAssignment,
+  ResolvedMember,
   ResolvedPatchEntry,
 } from '@/lib/core'
 import { citationSentence } from '@/lib/core'
@@ -20,11 +21,23 @@ import { Instruction, ParamLine, ProvenanceMark } from './instruction'
  * Hand-written to match the Markdown renderer word for word. The two share no code path, so the
  * only thing keeping them in step is that someone wrote the same sentence twice on purpose.
  */
-function realisationInstruction(a: ResolvedAssignment): string {
+function realisationInstruction(a: ResolvedAssignment, member: ResolvedMember): string {
   if (a.notes <= 1) return ''
   const notes = count(a.notes, 'note')
   const n = num(a.notes)
-  if (a.recipe.realisation === 'sampled-chord') {
+  // §12.4 stacking. This box plays a *share* of the chord, so the instruction is about which
+  // share and about the two things a reader standing here would otherwise get wrong: that the
+  // timing is the same as on the other boxes, and that the pitch is not.
+  if (a.members.length > 1) {
+    const rest = a.members.length - 1
+    const others = rest === 1 ? 'the other voice' : `the other ${count(rest, 'voice')}`
+    return (
+      `Polyphony — ${notes} across ${count(a.members.length, 'voice')}, and this one plays ` +
+      `${num(member.notes)} of them. Same steps as ${others} — see Step programming — and the ` +
+      'note this voice takes is in Hook.'
+    )
+  }
+  if (member.recipe.realisation === 'sampled-chord') {
     return (
       `Polyphony — ${notes}, already inside the sample. Load the chord sample(s) onto this one ` +
       `voice rather than spreading the notes across ${n}. One sample covers its chord shape at ` +
@@ -64,15 +77,15 @@ function Patch({ entries }: { entries: readonly ResolvedPatchEntry[] }) {
  * The shared citation is stated once under the heading; a parameter citing a different page —
  * or one whose range is unverified, which is a different claim entirely — keeps its own.
  */
-function Params({ assignment, owner }: { assignment: ResolvedAssignment; owner: Device | undefined }) {
-  const hoisted = dominantRangeCite(assignment.params)
+function Params({ member, owner }: { member: ResolvedMember; owner: Device | undefined }) {
+  const hoisted = dominantRangeCite(member.params)
   return (
     <>
       {hoisted === undefined ? null : (
         <p className="quiet">Ranges cite {citeText(hoisted)}.</p>
       )}
       <div className="params">
-        {assignment.params.map((param) => {
+        {member.params.map((param) => {
           const hint = param.hint === undefined ? undefined : hintText(owner, param.hint)
           return (
             <ParamLine
@@ -104,10 +117,15 @@ export function PhaseSound({
     return <p className="quiet">No parts assigned.</p>
   }
 
+  // §12.4 stacking: grouped by **member**, not by assignment. A stacked part has one recipe per
+  // voice and each belongs under the box that voice is on — grouping by the part's first device
+  // would print Crave settings under the Sub 37.
   const carrying = result.devices
     .map((device) => ({
       device,
-      mine: result.assignments.filter((a) => a.deviceId === device.id),
+      mine: result.assignments.flatMap((a) =>
+        a.members.filter((m) => m.deviceId === device.id).map((member) => ({ a, member })),
+      ),
     }))
     .filter((entry) => entry.mine.length > 0)
 
@@ -121,34 +139,34 @@ export function PhaseSound({
             <p className="quiet">{citationSentence(device)}</p>
           )}
 
-          {mine.map((a) => {
-            const owner: Device | undefined = deviceById.get(a.deviceId)
+          {mine.map(({ a, member }) => {
+            const owner: Device | undefined = deviceById.get(member.deviceId)
             return (
-              <div className="recipe" key={a.requestId}>
+              <div className="recipe" key={`${a.requestId}/${member.assignable.voiceId}`}>
                 <h5>
-                  <span>{a.assignable.label}</span>
+                  <span>{member.assignable.label}</span>
                   <span className="role mono">{a.role}</span>
-                  <span className="recipe-title">{a.recipe.title}</span>
+                  <span className="recipe-title">{member.recipe.title}</span>
                 </h5>
 
-                {realisationInstruction(a) === '' ? null : (
-                  <p className="quiet">{realisationInstruction(a)}</p>
+                {realisationInstruction(a, member) === '' ? null : (
+                  <p className="quiet">{realisationInstruction(a, member)}</p>
                 )}
 
-                {a.recipe.routing === undefined ? null : (
-                  <p className="quiet">Routing — {a.recipe.routing}</p>
+                {member.recipe.routing === undefined ? null : (
+                  <p className="quiet">Routing — {member.recipe.routing}</p>
                 )}
 
-                {a.params.length === 0 ? (
+                {member.params.length === 0 ? (
                   <p className="quiet">No settings authored for this recipe.</p>
                 ) : (
-                  <Params assignment={a} owner={owner} />
+                  <Params member={member} owner={owner} />
                 )}
 
-                {a.patch.length === 0 ? null : (
+                {member.patch.length === 0 ? null : (
                   <>
                     <h6>Patch</h6>
-                    <Patch entries={a.patch} />
+                    <Patch entries={member.patch} />
                   </>
                 )}
               </div>

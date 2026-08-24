@@ -6,6 +6,7 @@ import {
   quantiseDistance,
   resolveCharacter,
   resolveRecipe,
+  resolveStackRecipe,
   sectionsFor,
   type Assignable,
   type AssignmentResult,
@@ -178,15 +179,16 @@ export function desugarPools(device: Device): Device {
 
 export function keys(score: Score) {
   const v = score as unknown as number[]
-  const tail = v.length - 6
+  const tail = v.length - 7
   return {
     misses: v.slice(0, tail),
     crowdOverflow: v[tail] as number,
     optionalMisses: v[tail + 1] as number,
-    sampledChords: v[tail + 2] as number,
-    recipeDistance: v[tail + 3] as number,
-    roleFitPenalty: v[tail + 4] as number,
-    idleDevices: v[tail + 5] as number,
+    stackedVoices: v[tail + 2] as number,
+    sampledChords: v[tail + 3] as number,
+    recipeDistance: v[tail + 4] as number,
+    roleFitPenalty: v[tail + 5] as number,
+    idleDevices: v[tail + 6] as number,
   }
 }
 
@@ -215,7 +217,14 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
   )
   const maxPriority = requests.reduce((m, r) => Math.max(m, r.priority), 0)
 
-  type Cand = { a: Assignable; distance: number; sampledChord: number; fit: number }
+  type Cand = {
+    /** Every voice this placement takes. More than one only for a §12.4 stack. */
+    as: Assignable[]
+    distance: number
+    sampledChord: number
+    stackedVoices: number
+    fit: number
+  }
   const cands: Cand[][] = []
   const sections: string[][] = []
   for (const r of requests) {
@@ -223,6 +232,10 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
     sections.push(sectionsFor(r, t))
     const list: Cand[] = []
     const notes = r.polyphony ?? 1
+
+    /** Voices that could be one member of a stack, each with its own recipe (§12.4). */
+    const members: { a: Assignable; distance: number; fit: number; polyphony: number }[] = []
+
     for (const { a, d } of owners) {
       if (!a.roles.includes(r.role)) continue
       // §12.4, restated rather than shared: the voice sounds the notes itself, or a
@@ -233,16 +246,58 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
           x.voice === (a.poolId ?? a.voiceId) &&
           x.realisation === 'sampled-chord',
       )
-      if (a.polyphony < notes && !sampled) continue
-      const res = resolveRecipe(d, a, r.role, want, notes)
+      if (a.polyphony >= notes || sampled) {
+        const res = resolveRecipe(d, a, r.role, want, notes)
+        if (res.outcome !== 'unvoiced') {
+          list.push({
+            as: [a],
+            distance: quantiseDistance(res.distanceSq),
+            sampledChord: notes > 1 && res.recipe.realisation === 'sampled-chord' ? 1 : 0,
+            stackedVoices: 0,
+            fit: a.roles.indexOf(r.role),
+          })
+        }
+        // A self-sufficient voice is never a stack member: the single placement on it occupies
+        // a subset and costs less on `stackedVoices`, so every stack containing it is dominated.
+        continue
+      }
+      const res = resolveStackRecipe(d, a, r.role, want, Math.min(a.polyphony, notes))
       if (res.outcome === 'unvoiced') continue
-      list.push({
+      members.push({
         a,
         distance: quantiseDistance(res.distanceSq),
-        sampledChord: notes > 1 && res.recipe.realisation === 'sampled-chord' ? 1 : 0,
         fit: a.roles.indexOf(r.role),
+        polyphony: a.polyphony,
       })
     }
+
+    // §12.4 stacking, and deliberately **every** minimal covering subset across every device
+    // and pool, rather than the grouped enumeration the search performs. The oracle is not
+    // allowed to inherit the search's canonicalisation - if collapsing a pool's members, or
+    // picking them by ordinal, ever cost the optimum, this is where it shows up.
+    if (notes > 1) {
+      const chooseMembers = (from: number, taken: number[], covered: number): void => {
+        if (covered >= notes) {
+          if (taken.length < 2) return
+          const picked = taken.map((i) => members[i] as (typeof members)[number])
+          list.push({
+            as: picked.map((m) => m.a),
+            distance: picked.reduce((sum, m) => sum + m.distance, 0),
+            sampledChord: 0,
+            stackedVoices: taken.length - 1,
+            fit: picked.reduce((sum, m) => sum + m.fit, 0),
+          })
+          return
+        }
+        for (let i = from; i < members.length; i++) {
+          taken.push(i)
+          chooseMembers(i + 1, taken, covered + (members[i] as (typeof members)[number]).polyphony)
+          taken.pop()
+        }
+      }
+      chooseMembers(0, [], 0)
+    }
+
     cands.push(list)
   }
 
@@ -255,6 +310,7 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
     let optionalMisses = 0
     let recipeDistance = 0
     let sampledChords = 0
+    let stackedVoices = 0
     let roleFitPenalty = 0
     const byDevice = new Map<string, Set<string>>()
     requests.forEach((r, i) => {
@@ -266,10 +322,14 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
       }
       recipeDistance += c.distance
       sampledChords += c.sampledChord
+      stackedVoices += c.stackedVoices
       roleFitPenalty += c.fit
-      const set = byDevice.get(c.a.deviceId) ?? new Set<string>()
-      set.add(assignableKey(c.a))
-      byDevice.set(c.a.deviceId, set)
+      // §12.4: every member of a stack is occupied, so every member is charged for crowding.
+      for (const a of c.as) {
+        const set = byDevice.get(a.deviceId) ?? new Set<string>()
+        set.add(assignableKey(a))
+        byDevice.set(a.deviceId, set)
+      }
     })
     let crowdOverflow = 0
     let idleDevices = 0
@@ -284,6 +344,7 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
       ...misses,
       crowdOverflow,
       optionalMisses,
+      stackedVoices,
       sampledChords,
       recipeDistance,
       roleFitPenalty,
@@ -299,9 +360,13 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
     }
     const r = requests[i] as RoleRequest
     for (const c of cands[i] ?? []) {
-      const key = assignableKey(c.a)
-      const used = occupied.get(key) ?? new Set<string>()
-      if ((sections[i] ?? []).some((s) => used.has(s))) continue
+      const keys = c.as.map(assignableKey)
+      // A stack needs every member free in every section it wants, or none of it (§12.4).
+      if (
+        keys.some((key) => (sections[i] ?? []).some((s) => occupied.get(key)?.has(s) === true))
+      ) {
+        continue
+      }
       if (
         r.distinct === true &&
         requests.some(
@@ -309,19 +374,28 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
             j < i &&
             other.distinct === true &&
             other.role === r.role &&
-            chosen[j]?.a.deviceId === c.a.deviceId,
+            chosen[j]?.as[0]?.deviceId === c.as[0]?.deviceId,
         )
       ) {
         continue
       }
-      const added = (sections[i] ?? []).filter((s) => !used.has(s))
-      for (const s of added) used.add(s)
-      occupied.set(key, used)
+      const added = new Map<string, string[]>()
+      for (const key of keys) {
+        const used = occupied.get(key) ?? new Set<string>()
+        const fresh = (sections[i] ?? []).filter((s) => !used.has(s))
+        for (const s of fresh) used.add(s)
+        occupied.set(key, used)
+        added.set(key, fresh)
+      }
       chosen[i] = c
       rec(i + 1)
       chosen[i] = null
-      for (const s of added) used.delete(s)
-      if (used.size === 0) occupied.delete(key)
+      for (const [key, fresh] of added) {
+        const used = occupied.get(key)
+        if (used === undefined) continue
+        for (const s of fresh) used.delete(s)
+        if (used.size === 0) occupied.delete(key)
+      }
     }
     chosen[i] = null
     rec(i + 1)

@@ -1,7 +1,7 @@
 import type { Device } from './device'
 import { rangeDocuments } from './device'
 import type { DeviceId, SectionName } from './ids'
-import type { Role } from './vocabulary'
+import type { Character, Role } from './vocabulary'
 import type { Cite, Provenance, ResolvedParam, ResolvedRange } from './params'
 import { dominantRangeCite, sameCite } from './params'
 import type { Pattern, PatternHit } from './template'
@@ -14,7 +14,7 @@ import {
   type ResolvedHook,
   type ResolvedNote,
 } from './harmony'
-import type { ResolveResult, ResolvedAssignment } from './pipeline'
+import type { ResolveResult, ResolvedAssignment, ResolvedMember } from './pipeline'
 import { GUIDE_PHASES } from './guide'
 import { bandTrajectory, type BandGroup } from './arrangement'
 import { fxSources, type FxSource } from './fx'
@@ -277,10 +277,37 @@ function phaseSong(result: ResolveResult): Line[] {
  */
 function realisationText(assignment: ResolvedAssignment): string {
   if (assignment.notes <= 1) return ''
+  // §12.4 stacking. Checked before realisation, because a stacked part has one realisation per
+  // member and none of them is the fact the reader needs first: what they need first is that
+  // this is several voices and not one.
+  if (assignment.members.length > 1) {
+    return `${count(assignment.notes, 'note')} across ${count(assignment.members.length, 'voice')}`
+  }
   if (assignment.recipe.realisation === 'sampled-chord') {
     return `${count(assignment.notes, 'note')} from one sampled chord`
   }
   return `${count(assignment.notes, 'note')} at once on one polyphonic voice`
+}
+
+/** `Device · Voice`, the one form every phase uses to name where a part sits. */
+function memberWhere(member: ResolvedMember): string {
+  return `${member.deviceName} · ${member.assignable.label}`
+}
+
+/** Every voice of a part, joined. One name for an unstacked part, so nothing reads differently. */
+function partWhere(assignment: ResolvedAssignment): string {
+  return assignment.members.map(memberWhere).join(' + ')
+}
+
+/** `1 note` / `2 notes`, the share one voice of a stack carries (§12.4). */
+function shareText(member: ResolvedMember): string {
+  return count(member.notes, 'note')
+}
+
+/** The rest of a stack, from the point of view of one of its voices. */
+function otherVoices(assignment: ResolvedAssignment): string {
+  const rest = assignment.members.length - 1
+  return rest === 1 ? 'the other voice' : `the other ${count(rest, 'voice')}`
 }
 
 /**
@@ -288,11 +315,24 @@ function realisationText(assignment: ResolvedAssignment): string {
  * Phase 2 is a list of what went where; phase 6 is the reader standing at the instrument, and
  * "load a chord sample" is a step they will otherwise not take.
  */
-function realisationInstruction(assignment: ResolvedAssignment): string {
+function realisationInstruction(
+  assignment: ResolvedAssignment,
+  member: ResolvedMember,
+): string {
   if (assignment.notes <= 1) return ''
   const notes = count(assignment.notes, 'note')
   const n = num(assignment.notes)
-  if (assignment.recipe.realisation === 'sampled-chord') {
+  // §12.4 stacking. This box plays a *share* of the chord, so the instruction is about which
+  // share and about the two things a reader standing here would otherwise get wrong: that the
+  // timing is the same as on the other boxes, and that the pitch is not.
+  if (assignment.members.length > 1) {
+    return (
+      `Polyphony — ${notes} across ${count(assignment.members.length, 'voice')}, and this one ` +
+      `plays ${num(member.notes)} of them. Same steps as ${otherVoices(assignment)} — see ` +
+      'Step programming — and the note this voice takes is in Hook.'
+    )
+  }
+  if (member.recipe.realisation === 'sampled-chord') {
     return (
       `Polyphony — ${notes}, already inside the sample. Load the chord sample(s) onto this one ` +
       `voice rather than spreading the notes across ${n}. One sample covers its chord shape at ` +
@@ -305,11 +345,27 @@ function realisationInstruction(assignment: ResolvedAssignment): string {
   )
 }
 
-/** §3.5. Why this recipe, in the one case where the answer is not "it matched". */
+/**
+ * §3.5. Why this recipe, in the one case where the answer is not "it matched".
+ *
+ * Read over **every** member, because a stack resolves one recipe per voice and can be exact on
+ * one box and substituted on another (§12.4). Saying "exact" because the first voice happened to
+ * match would be a claim about the part that is false of half of it.
+ */
 function recipeWhy(assignment: ResolvedAssignment): string {
-  if (assignment.recipe.outcome === 'exact') return `exact \`${assignment.character}\``
-  const { character } = assignment.recipe
-  return `substituted — asked \`${assignment.character}\`, authored \`${character}\``
+  if (assignment.members.every((m) => m.recipe.outcome === 'exact')) {
+    return `exact \`${assignment.character}\``
+  }
+  const authored = [...new Set(assignment.members.map((m) => m.recipe.character))]
+  return `substituted — asked \`${assignment.character}\`, authored ${authored
+    .map((c) => `\`${c}\``)
+    .join('/')}`
+}
+
+/** The same question for one voice of a stack, where the answer can differ per voice. */
+function memberWhy(member: ResolvedMember, asked: Character): string {
+  if (member.recipe.outcome === 'exact') return `exact \`${asked}\``
+  return `substituted — asked \`${asked}\`, authored \`${member.recipe.character}\``
 }
 
 /**
@@ -385,13 +441,25 @@ function phaseVoiceAssignment(result: ResolveResult, deviceById: Map<DeviceId, D
         a.sections.length === result.template.structure.length
           ? 'every section'
           : a.sections.join(', ')
-      const where = `${a.deviceName} · ${a.assignable.label}`
       const realisation = realisationText(a)
-      out.push(`- **\`${a.role}\`** → ${where} — *${a.recipe.title}*`)
+      const stacked = a.members.length > 1
+      // A stacked part's voices run different recipes, so the head line names the voices and
+      // the titles move to one line each below. Naming the first member's title up here would
+      // be describing the whole part by one of its boxes.
+      out.push(
+        `- **\`${a.role}\`** → ${partWhere(a)}${stacked ? '' : ` — *${a.recipe.title}*`}`,
+      )
       out.push(
         `  - p${num(a.priority)}${a.optional ? ', optional' : ''} · ${recipeWhy(a)}` +
           `${realisation === '' ? '' : ` · ${realisation}`} · ${sections}`,
       )
+      if (!stacked) continue
+      for (const member of a.members) {
+        out.push(
+          `  - ${memberWhere(member)} — ${shareText(member)} — *${member.recipe.title}* · ` +
+            `${memberWhy(member, a.character)}`,
+        )
+      }
     }
   }
 
@@ -677,6 +745,54 @@ function sampledHookLines(hook: ResolvedHook, framed: boolean): Line[] {
   return out
 }
 
+/**
+ * §12.4 stacking, §8 phase 4. Which voice of a stack plays which note of one chord.
+ *
+ * **Lowest note to the first voice, then upwards**, each voice taking as many notes as it can
+ * sound. Two properties make this the rule rather than a rule:
+ *
+ *  - It is *deterministic and stable*. `members` is fixed by the resolver, the notes are sorted
+ *    by pitch, and neither depends on the seed — so the same box plays the same line of the
+ *    chord in every chord of the progression, and in every re-render of the same guide. A
+ *    reader who has patched their Crave for the bottom note does not find it moved four bars
+ *    later.
+ *  - It is what a person would do. The low note is the one that has to be solid, and the first
+ *    voice is the one the guide has been naming first all the way down the page.
+ *
+ * Notes past what the voices can sound are **reported, not dropped** (invariant 5): a hook
+ * authored with a wider chord than the request asked for is a template fact the reader has to
+ * know about, and silently losing a note would be the guide lying about a chord.
+ */
+type ChordShare = { member: ResolvedMember; notes: ResolvedNote[] }
+
+function shareChord(
+  members: readonly ResolvedMember[],
+  notes: readonly ResolvedNote[],
+): { shares: ChordShare[]; unplaced: ResolvedNote[] } {
+  const ascending = [...notes].sort((a, b) => a.midi - b.midi)
+  const shares: ChordShare[] = []
+  let next = 0
+  for (const member of members) {
+    const take = ascending.slice(next, next + member.notes)
+    next += take.length
+    shares.push({ member, notes: take })
+  }
+  return { shares, unplaced: ascending.slice(next) }
+}
+
+/**
+ * The sentence that has to appear before a stacked chord list, because the list below it is
+ * otherwise an instruction to play three notes on a monophonic box.
+ */
+function stackedHookIntro(assignment: ResolvedAssignment): Line[] {
+  return [
+    `${count(assignment.members.length, 'voice')} carry this part, one line of the chord each. ` +
+      'Lowest note to the first voice and upwards from there, the same way in every chord — so ' +
+      'a voice keeps its line for the whole progression.',
+    '',
+  ]
+}
+
 function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined): Line[] {
   const out: Line[] = []
 
@@ -684,10 +800,7 @@ function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined
   // template-internal identifier that means nothing to somebody standing at a box — and not
   // how many hooks were authored or which one the seed took, which is our machinery rather
   // than their information. The reroll fact worth having is stated once, up in the intro.
-  const where =
-    carriedBy === undefined
-      ? 'unassigned'
-      : `${carriedBy.deviceName} · ${carriedBy.assignable.label}`
+  const where = carriedBy === undefined ? 'unassigned' : partWhere(carriedBy)
   out.push(`### \`${choice.forRole}\` — ${where}`)
   out.push('')
 
@@ -698,6 +811,13 @@ function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined
   // two places to change one number is how a guide goes stale.
   if (carriedBy === undefined) {
     out.push('*Nothing in your rig plays this part.*')
+  } else if (carriedBy.members.length > 1) {
+    // One title per voice: a stack's boxes run different recipes, and naming one of them would
+    // send the reader looking for a single entry that Sound design does not have.
+    out.push(
+      `**${carriedBy.members.map((m) => m.recipe.title).join('** · **')}** — ` +
+        'settings in Sound design, one entry per box',
+    )
   } else {
     out.push(`**${carriedBy.recipe.title}** — settings in Sound design`)
   }
@@ -718,10 +838,14 @@ function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined
   // ordinary rendering below would tell its reader to enter three notes on a voice that sounds
   // one. It also says nothing about what has to be recorded: a sample follows a progression by
   // transposition, which covers every root of its own shape and no other shape at all.
-  if (carriedBy?.recipe.realisation === 'sampled-chord') {
+  if (carriedBy?.recipe.realisation === 'sampled-chord' && carriedBy.members.length === 1) {
     out.push(...sampledHookLines(hook, framed))
     return out
   }
+
+  // §12.4 stacking: the chord is real and is played note by note, but not on one voice.
+  const stacked = carriedBy !== undefined && carriedBy.members.length > 1
+  if (stacked) out.push(...stackedHookIntro(carriedBy))
 
   // One labelled line per chord, rather than a table: a labelled line survives wrapping on a
   // phone, where a table's header scrolls away from its body.
@@ -733,6 +857,24 @@ function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined
         `${chord.notes.map((n) => degreeName(n.degree)).join(' ')} · ` +
         `MIDI ${chord.notes.map((n) => num(n.midi)).join(' ')}`,
     )
+    if (!stacked) continue
+    const { shares, unplaced } = shareChord(carriedBy.members, chord.notes)
+    for (const share of shares) {
+      const played =
+        share.notes.length === 0
+          ? '*rest* — this chord has fewer notes than there are voices'
+          : `${share.notes.map(spelling).join(' ')} · ` +
+            `MIDI ${share.notes.map((n) => num(n.midi)).join(' ')}`
+      out.push(`  - ${memberWhere(share.member)} — ${played}`)
+    }
+    // Invariant 5: a note nothing can play is stated, never quietly lost.
+    if (unplaced.length > 0) {
+      out.push(
+        `  - **not placed** — ${unplaced.map(spelling).join(' ')}: this chord has ` +
+          `${count(chord.notes.length, 'note')} and the part was assigned ` +
+          `${count(carriedBy.notes, 'note')} of voice`,
+      )
+    }
   }
   return out
 }
@@ -843,16 +985,19 @@ type StepBlock = { headline: string; body: Line[] }
 
 function stepBlock(
   a: ResolvedAssignment,
-  entry: ResolvedAssignment['patterns'][number],
+  section: SectionName,
   deviceById: Map<DeviceId, Device>,
   options: Required<RenderOptions>,
 ): StepBlock {
-  const { selection } = entry
-  if (selection.outcome === 'none') {
+  // The selection is the *part's* — one rhythm, however many voices play it (§12.4) — so it is
+  // read off the first member, which is where the pipeline promotes it to.
+  const entry = a.patterns.find((p) => p.section === section)
+  const selection = entry?.selection
+  if (selection === undefined || selection.outcome === 'none') {
     return {
       headline:
         `no pattern authored for \`${a.role}\` at any band ` +
-        `(asked for band ${num(selection.band)})`,
+        `(asked for band ${num(selection?.band ?? 0)})`,
       body: [],
     }
   }
@@ -865,14 +1010,36 @@ function stepBlock(
       : `band ${num(selection.usedBand)}`
   const { pattern } = selection
 
-  const body: Line[] = ['', '```', ...gridRows(pattern), '```', ...slotLines(pattern)]
-  if (entry.articulation.length > 0) {
+  const body: Line[] = []
+
+  // §12.4 stacking, **before** the grid rather than after it. A reader looking at one pattern
+  // and two boxes has no way to know whether the pattern is shared or split, and splitting it
+  // is what they will guess — so they have to be told before they start entering it, not once
+  // they have finished. Only the pitches differ, and those are in Hook.
+  if (a.members.length > 1) {
+    body.push('')
+    body.push(
+      `Enter this same timing on **each of the ${count(a.members.length, 'voice')}** — ` +
+        `${partWhere(a)}. The steps are identical; only the note each voice plays differs, ` +
+        'and that is in Hook.',
+    )
+  }
+
+  body.push('', '```', ...gridRows(pattern), '```', ...slotLines(pattern))
+
+  for (const member of a.members) {
+    const bound = member.patterns.find((p) => p.section === section)?.articulation ?? []
+    if (bound.length === 0) continue
     body.push('')
     // Labelled, because a bare second list under the slot list reads as more of the same
-    // list — and it is not: these are the device's settings, not the template's steps.
-    body.push(`**On this box** — ${a.deviceName}`)
+    // list — and it is not: these are the device's settings, not the template's steps. Named
+    // per voice, because a stack's boxes each have their own and putting them under one
+    // heading would tell the reader to set a Crave parameter on a Sub 37.
+    body.push(
+      `**On this box** — ${a.members.length > 1 ? memberWhere(member) : member.deviceName}`,
+    )
     body.push('')
-    body.push(...articulationLines(entry.articulation, deviceById.get(a.deviceId), options))
+    body.push(...articulationLines(bound, deviceById.get(member.deviceId), options))
   }
   // No pattern id: template-internal, and the two facts that carry meaning here are how long
   // the variant is and which band it came from.
@@ -915,12 +1082,12 @@ function mergeBlocks(
   options: Required<RenderOptions>,
 ): { sections: SectionName[]; block: StepBlock }[] {
   const merged = new Map<string, { sections: SectionName[]; block: StepBlock }>()
-  for (const entry of a.patterns) {
-    const block = stepBlock(a, entry, deviceById, options)
+  for (const { section } of a.patterns) {
+    const block = stepBlock(a, section, deviceById, options)
     const key = `${block.headline}\n${block.body.join('\n')}`
     const existing = merged.get(key)
-    if (existing === undefined) merged.set(key, { sections: [entry.section], block })
-    else existing.sections.push(entry.section)
+    if (existing === undefined) merged.set(key, { sections: [section], block })
+    else existing.sections.push(section)
   }
   return [...merged.values()]
 }
@@ -937,11 +1104,18 @@ function phaseSteps(
   }
 
   for (const a of result.assignments) {
-    out.push(`### \`${a.role}\` — ${a.deviceName} · ${a.assignable.label}`)
+    out.push(`### \`${a.role}\` — ${partWhere(a)}`)
     out.push('')
     // Same reason as phase 4: this phase says what to play and not what it sounds like, so a
     // reader stopping here would think the sound was missing.
-    out.push(`**${a.recipe.title}** — settings in Sound design`)
+    if (a.members.length > 1) {
+      out.push(
+        `**${a.members.map((m) => m.recipe.title).join('** · **')}** — ` +
+          'settings in Sound design, one entry per box',
+      )
+    } else {
+      out.push(`**${a.recipe.title}** — settings in Sound design`)
+    }
     for (const { sections, block } of mergeBlocks(a, deviceById, options)) {
       out.push('')
       out.push(`**${sections.join(', ')}** — ${block.headline}`)
@@ -1001,8 +1175,14 @@ function phaseSound(
 
   // Device by device, in rig order (§8). A device carrying nothing has nothing to set and is
   // covered by rig integration above.
+  //
+  // §12.4 stacking: iterated over **members**, not assignments, because a stacked part has one
+  // recipe per voice and each belongs under the box that voice is on. Grouping by the part's
+  // first device would print Crave settings under the Sub 37.
   for (const device of result.devices) {
-    const mine = result.assignments.filter((a) => a.deviceId === device.id)
+    const mine = result.assignments.flatMap((a) =>
+      a.members.filter((m) => m.deviceId === device.id).map((member) => ({ a, member })),
+    )
     if (mine.length === 0) continue
     out.push(`### ${device.name}`)
     const cites = citationSentence(device)
@@ -1010,39 +1190,39 @@ function phaseSound(
       out.push('')
       out.push(`*${cites}*`)
     }
-    for (const a of mine) {
+    for (const { a, member } of mine) {
       out.push('')
-      out.push(`#### ${a.assignable.label} — \`${a.role}\`: ${a.recipe.title}`)
+      out.push(`#### ${member.assignable.label} — \`${a.role}\`: ${member.recipe.title}`)
       out.push('')
-      // §12.4, and an instruction rather than a note: the two realisations are two different
-      // things to do at the box, and doing the wrong one produces the wrong number of sounds.
-      // A chord you load is not a chord you play. Anything device-specific about the trade —
-      // which slot it spends, which it does not — is the recipe's `routing` line immediately
-      // below, because this renderer knows nothing about any box.
-      const realisation = realisationInstruction(a)
+      // §12.4, and an instruction rather than a note: the realisations are different things to
+      // do at the box, and doing the wrong one produces the wrong number of sounds. A chord you
+      // load is not a chord you play, and a line of a chord is neither. Anything device-specific
+      // about the trade — which slot it spends, which it does not — is the recipe's `routing`
+      // line immediately below, because this renderer knows nothing about any box.
+      const realisation = realisationInstruction(a, member)
       if (realisation !== '') {
         out.push(realisation)
         out.push('')
       }
-      if (a.recipe.routing !== undefined) {
-        out.push(`Routing — ${a.recipe.routing}`)
+      if (member.recipe.routing !== undefined) {
+        out.push(`Routing — ${member.recipe.routing}`)
         out.push('')
       }
-      if (a.params.length === 0) {
+      if (member.params.length === 0) {
         out.push('No settings authored for this recipe.')
       } else {
-        const hoisted = dominantRangeCite(a.params)
+        const hoisted = dominantRangeCite(member.params)
         if (hoisted !== undefined) {
           out.push(`*Ranges cite ${citeText(hoisted)}.*`)
           out.push('')
         }
-        for (const param of a.params) out.push(...paramLines(param, device, options, hoisted))
+        for (const param of member.params) out.push(...paramLines(param, device, options, hoisted))
       }
-      if (a.patch.length > 0) {
+      if (member.patch.length > 0) {
         out.push('')
         out.push('**Patch**')
         out.push('')
-        out.push(...patchLines(a.patch))
+        out.push(...patchLines(member.patch))
       }
     }
     out.push('')
@@ -1186,13 +1366,19 @@ function roleList(roles: readonly Role[]): string {
 // The document
 // ---------------------------------------------------------------------------
 
-/** §12.4's count, recomputed for display: an assignable occupied in any section counts once. */
+/**
+ * §12.4's count, recomputed for display: an assignable occupied in any section counts once, and
+ * every voice of a stack counts on its own device — so a triad over three boxes reads as three
+ * boxes carrying a part, which is what the reader will see when they look at the rack.
+ */
 function occupiedCounts(result: ResolveResult): Map<DeviceId, number> {
   const byDevice = new Map<DeviceId, Set<string>>()
   for (const a of result.assignments) {
-    const set = byDevice.get(a.deviceId) ?? new Set<string>()
-    set.add(a.assignable.voiceId)
-    byDevice.set(a.deviceId, set)
+    for (const member of a.members) {
+      const set = byDevice.get(member.deviceId) ?? new Set<string>()
+      set.add(member.assignable.voiceId)
+      byDevice.set(member.deviceId, set)
+    }
   }
   return new Map([...byDevice].map(([id, set]) => [id, set.size]))
 }
