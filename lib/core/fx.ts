@@ -1,5 +1,5 @@
 import type { DeviceId } from './ids'
-import type { Device, DeviceKind } from './device'
+import type { Device } from './device'
 
 /**
  * §8 phase 7's other half: **what in this rig processes audio.**
@@ -71,8 +71,13 @@ function isEffectName(text: string): boolean {
 
 /** Why we say this box processes audio. One device may have more than one. */
 export type FxEvidence =
-  /** The box is the processing: an `fx-processor` or a `mixer-recorder`. */
-  | { kind: 'unit'; deviceKind: DeviceKind }
+  /**
+   * The box is the processing: an `fx-processor` or a `mixer-recorder`. Narrowed to those two
+   * rather than `DeviceKind`, because both renderers read this with a two-way branch — anything
+   * that is not `fx-processor` prints "a mixer and recorder". Widening `DeviceKind` must fail the
+   * build here, not silently describe a sequencer as a mixer (§2.5).
+   */
+  | { kind: 'unit'; deviceKind: 'fx-processor' | 'mixer-recorder' }
   /** Panel labels naming an effect, **in panel order** — the order you read them on the box. */
   | { kind: 'panel'; labels: string[] }
   /** Effect parameters this device's recipes set, by name, in UTF-16 code unit order. */

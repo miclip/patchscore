@@ -656,4 +656,3 @@ describe('clock source ranks on semantics, not on load (§7.4)', () => {
     expect(selectClockSource(instruments, heavy)?.deviceId).toBe(first?.id)
   })
 })
-
