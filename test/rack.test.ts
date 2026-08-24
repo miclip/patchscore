@@ -50,6 +50,21 @@ const patchedRig = resolve({
   seed: 1,
 })
 
+/**
+ * #103. A two-box rig that resolves onto MIDI, which the full registry does not.
+ *
+ * §7.4 ranks `preferredSource` above transport, and the registry's preferred box declares `usb`
+ * before `midi-din`, so `real` syncs over USB and every clock socket in it is unlabelled — true,
+ * and useless for asserting that the labelled case is right. These two both declare `midi-din`
+ * and are the two panels #103 is about.
+ */
+const midiRig = resolve({
+  devices: DEVICES.filter((d) => d.id === 'polyend-tracker-mini' || d.id === 'roland-tr-1000'),
+  template,
+  mood: NEUTRAL_MOOD,
+  seed: 1,
+})
+
 function markup(result: ResolveResult | undefined): string {
   return renderToStaticMarkup(createElement(Rack, { result }))
 }
@@ -257,7 +272,7 @@ describe('clock cables (§7.4)', () => {
     expect(model.panels.every((p) => p.isolatedReason === 'no clock source in this rig')).toBe(true)
   })
 
-  it('always runs CLK OUT to CLK IN, including to boxes left of the source', () => {
+  it('always runs the out socket to the in socket, including to boxes left of the source', () => {
     const model = rackModel(real)
     const source = model.panels.find((p) => p.clockRole === 'source')
     if (source === undefined) throw new Error('the real rig has no clock source')
@@ -344,6 +359,133 @@ describe('panel contents', () => {
     const tr = model.panels.find((p) => p.deviceId === 'roland-tr-1000')
     expect(tr?.jacks.filter((j) => j.kind === 'individual-out')).toHaveLength(10)
     expect(tr?.hiddenJacks).toBe(0)
+  })
+
+  /**
+   * §10/#103. **A clock socket is labelled from the manifest, or it is not labelled.**
+   *
+   * `CLK OUT` and `CLK IN` were string literals in `jacksFor`, chosen by `canSendClock` and
+   * `canReceiveClock`, and drawn on all fourteen panels. Neither is printed on a Tracker Mini —
+   * p.13's hardware overview names its four sockets `Line In`, `Line Out`, `MIDI In`, `MIDI Out`
+   * — and only the first is printed on a TR-1000, whose TRIGGER/CV block (Owner's Manual p.12)
+   * is `TRG IN`, `TRG OUT`, `FILTER CV IN`, `CLK OUT` and has no clock input jack at all.
+   *
+   * A boolean says a box can sync. It cannot say what is silkscreened next to the hole, and a
+   * renderer that answers anyway is inventing an assignment to fill a gap (invariant 5). So the
+   * label now comes from a `JackSpec` carrying a page, and a device that has not declared one
+   * gets a bare socket — which is what twelve of the fourteen still have.
+   */
+  it('never invents a clock jack label, on any panel in the library (#103)', () => {
+    // Both rigs: `real` is the whole registry, which §7.4 resolves onto `usb` and where no box
+    // declares a socket, and `midiRig` is the pair that does. Running only the first would pass
+    // by drawing nothing at all.
+    for (const model of [rackModel(real), rackModel(midiRig)]) {
+      for (const panel of model.panels) {
+        const device = DEVICES.find((d) => d.id === panel.deviceId) as Device
+        for (const jack of panel.jacks) {
+          if (jack.kind !== 'clock-in' && jack.kind !== 'clock-out') continue
+          // The two strings that were never read off a manual. Neither may appear anywhere.
+          expect(jack.label, `${panel.deviceId} / ${jack.kind}`).not.toBe('CLK IN')
+          if (jack.label === undefined) continue
+          // A label that IS drawn is a jack the manifest declares, in the right direction, and
+          // carrying the transport this rig resolved. Nothing else can produce one.
+          const declared = (device.jacks ?? []).find((j) => j.id === jack.label)
+          expect(declared, `${panel.deviceId} draws '${jack.label}'`).toBeDefined()
+          expect(declared?.direction).toBe(jack.kind === 'clock-out' ? 'out' : 'in')
+          expect(declared?.clock).toContain(model.clockSource?.transport)
+          expect(declared?.verified).not.toBe(false)
+        }
+      }
+    }
+  })
+
+  /**
+   * The two panels #103 was filed against, asserted by name and by page.
+   *
+   * §7.4 ranks `midi-din` first and both boxes declare it, so the transport a real rig resolves
+   * is MIDI and the sockets drawn are the MIDI ones. That is the point of keying `JackSpec.clock`
+   * by transport rather than naming one socket per box: the TR-1000's `CLK OUT` is a minijack
+   * carrying `analog-clock`, and labelling this rig's cable with it would be a second wrong
+   * answer rather than a fix.
+   */
+  it('labels the Tracker Mini MIDI In/Out and never CLK, on a MIDI rig (p.13)', () => {
+    const model = rackModel(midiRig)
+    expect(model.clockSource?.transport).toBe('midi-din')
+    const mini = model.panels.find((p) => p.deviceId === 'polyend-tracker-mini')
+    const label = (kind: string) => mini?.jacks.find((j) => j.kind === kind)?.label
+    expect(label('clock-out')).toBe('MIDI Out')
+    expect(label('clock-in')).toBe('MIDI In')
+    // p.13 names four sockets on the bottom edge and none of them is a clock jack.
+    expect(JSON.stringify(mini?.jacks)).not.toContain('CLK')
+
+    // And it reaches the SVG. The model being right is not the deliverable — what a reader
+    // standing at the box sees is, and `CLK OUT` was in this markup until #103.
+    const svg = markup(midiRig)
+    expect(svg).toContain('MIDI Out')
+    expect(svg).toContain('MIDI In')
+    expect(svg).not.toContain('CLK')
+  })
+
+  it('never draws a CLK IN on the TR-1000, which has no clock input jack (p.12)', () => {
+    const model = rackModel(midiRig)
+    const tr = model.panels.find((p) => p.deviceId === 'roland-tr-1000')
+    // The socket is still there — the box does receive clock, and the cable has to land.
+    expect(tr?.jacks.some((j) => j.kind === 'clock-in')).toBe(true)
+    expect(tr?.jacks.find((j) => j.kind === 'clock-in')?.label).toBe('MIDI IN')
+    expect(tr?.jacks.find((j) => j.kind === 'clock-out')?.label).toBe('MIDI OUT1')
+
+    // And on a rig that resolves onto the minijack instead, the same manifest names the sockets
+    // p.12 actually prints there: CLK OUT, and TRG IN for the input the box has no CLK IN for.
+    const device = DEVICES.find((d) => d.id === 'roland-tr-1000') as Device
+    const byId = (id: string) => (device.jacks ?? []).find((j) => j.id === id)
+    expect(byId('CLK OUT')?.clock).toEqual(['analog-clock'])
+    expect(byId('CLK OUT')?.direction).toBe('out')
+    expect(byId('TRG IN')?.direction).toBe('in')
+    expect(byId('TRG IN')?.clock).toEqual(['analog-clock', 'trigger'])
+    // TRG IN is only a clock input once a *setting* says so, so the socket carries the setting.
+    expect(byId('TRG IN')?.note).toContain('Trig In = Sync')
+    // No jack of any name is a clock input over analog clock but called CLK IN.
+    expect((device.jacks ?? []).map((j) => j.id)).not.toContain('CLK IN')
+  })
+
+  /**
+   * The Type B adapter (#103's closing note). It is the uncommon MIDI adapter, the Tracker Mini
+   * needs it for every 5-pin cable, and a reader reaching for a Type A gets silence with nothing
+   * on screen to explain it. It reaches the manifest on the jack it describes, cited to the two
+   * pages that print it (p.13's callout and p.284's MIDI definitions).
+   */
+  it('keeps the Tracker Mini Type B adapter note on the MIDI jacks (p.13, p.284)', () => {
+    const device = DEVICES.find((d) => d.id === 'polyend-tracker-mini') as Device
+    const midi = (device.jacks ?? []).filter((j) => j.id.startsWith('MIDI'))
+    expect(midi).toHaveLength(2)
+    for (const jack of midi) {
+      expect(jack.note, jack.id).toContain('Type B')
+      expect(jack.verified, jack.id).toEqual({
+        kind: 'manual',
+        source: 'Polyend Tracker Mini Manual 2.2.1b, p.13',
+      })
+    }
+  })
+
+  /**
+   * The other twelve. Not an oversight to be filled in later with plausible strings: `manuals/`
+   * holds two of the fourteen manuals, so a label for any of the rest could only be invented,
+   * and an unlabelled socket says exactly what is known — this box syncs, and nobody has read its
+   * rear panel. Asserted so a future author adding one has to add the citation with it.
+   */
+  it('draws a bare socket for a box whose panel nobody has read (#103)', () => {
+    const model = rackModel(real)
+    const undeclared = model.panels.filter((p) => {
+      const device = DEVICES.find((d) => d.id === p.deviceId) as Device
+      return (device.jacks ?? []).every((j) => j.clock === undefined)
+    })
+    expect(undeclared.length).toBeGreaterThan(0)
+    for (const panel of undeclared) {
+      for (const jack of panel.jacks) {
+        if (jack.kind !== 'clock-in' && jack.kind !== 'clock-out') continue
+        expect(jack.label, panel.deviceId).toBeUndefined()
+      }
+    }
   })
 
   it('reports overflow instead of silently drawing fewer voices', () => {

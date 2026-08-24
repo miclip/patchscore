@@ -171,7 +171,14 @@ export const device: Device = {
   kind: 'drum-machine',   // | 'groovebox' | 'sampler' | 'sequencer' | 'synth'
                           // | 'semi-modular' | 'mixer-recorder' | 'fx-processor'
 
-  clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
+  clock: {
+    canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'],
+    // §7.4/#104. Optional, and only for a box whose clock output is behind a setting. Per
+    // transport, in the box's own words, with a page. The Tracker Mini's reads
+    //   { transport: 'midi-din', path: 'Config > MIDI > Clock Out',
+    //     value: 'MIDI Out jack', verified: cite(54) }
+    // This box needs none, so it declares none.
+  },
 
   io: { main: 'stereo', individualOuts: 8, audioIn: false, usbAudio: true },
                           // main: 'mono' | 'stereo' | 'none'
@@ -604,6 +611,16 @@ type AuthoredParam =
       verified?: Verified; hint?: string; note?: string; scope?: ParamScope }
 ```
 
+**`text` is for a setting whose scale the manual declines to print**, and that is the whole of it
+(#102). The Tracker Mini's granular `Position` has a Range column reading *"Variable"* — the scale
+is the loaded sample's own length — and the LFO's `Amount` is printed with no range at all. Neither
+can be a numeric without inventing bounds (invariant 5), and neither is an enum, because there is
+no option set to be legal against. So they are `text`, and the absence of a legality gate is not a
+loophole for citing the point: nobody checked the value, so `verified` is `false` and the guide
+renders it provisional. A page belongs on a text point only where the manual really does print the
+procedure the value states — and after `sourceAudio` took the one such case (§3, above), no device
+does that today.
+
 **Resolved** — what §7 step 9 emits and §8 renders. Nothing downstream of the resolver sees an
 `AuthoredParam`, and nothing in a device folder can construct a `ResolvedParam`:
 
@@ -781,6 +798,7 @@ patch points, cited once each, and a recipe references them by name:
 jacks?: {
   id: string                   // section-qualified: 'VCO A · FM 1'
   direction: 'in' | 'out'
+  clock?: ClockTransport[]     // §10: this is the socket clock uses, over these transports
   verified: Verified           // the page describing this jack. Once, however many cables use it.
   note?: string
 }[]
@@ -815,6 +833,24 @@ patched because it sounded good is `false` and renders provisional, which is the
 a cable the manual itself instructs — "Patch the ENV B output jack to the S&H section's TRIG
 input jack" — carries the page that instructs it. Inheritance is §3.1's, unchanged: omitted
 inherits the recipe's, a citation overrides it, an explicit `false` overrides an inherited one.
+
+**`clock` is what stopped §10 inventing silkscreen** (#103). The rack drew `CLK OUT` and `CLK IN`
+on every panel, derived from `canSendClock` and `canReceiveClock`. Those two booleans say a box
+can sync; nothing in them says what is written beside the hole, and on the two boxes whose manuals
+are in `manuals/` the derived answer was wrong both times — a Tracker Mini's bottom edge reads
+`Line In / Line Out / MIDI In / MIDI Out` and has no clock jack at all, and a TR-1000 has a
+`CLK OUT` but no clock input jack of any name (its minijack clock input is `TRG IN`, and only once
+the project parameter `Trig In` is set to `Sync`). A renderer answering a question the data cannot
+answer is invariant 5's fault in a new place.
+
+So a jack says it carries clock, and the rack labels the socket from the jack's own id and its own
+citation. **Keyed by transport, because the socket moves with it**: the TR-1000 takes clock at
+`MIDI IN` over `midi-din` and at `TRG IN` over `analog-clock`, so a single socket per box would be
+wrong for every rig that resolved the other. It is a *list* per jack for the mirror case — one
+hole speaking two protocols, as `TRG IN` does — while two jacks claiming one transport in one
+direction is refused, because that would leave the renderer choosing which socket a reader should
+patch. A device that declares none gets a socket with no label, which is the honest rendering of
+"this box syncs, and nobody has read its rear panel yet" — true of twelve of the fourteen.
 
 **A position would hang on a jack declaration**, and that is a second reason to have the list.
 §10's rack draws inter-device cables and cannot draw a cable between two jacks on one panel,
@@ -1807,6 +1843,26 @@ decision by another route.
 `ClockSource.occupiedAssignables` survives as **rendered information**: "carrying 5 parts" is
 worth printing beside the source, and that is now all it does.
 
+**Choosing the source is half the job; the other half is turning it on** (#104). `canSendClock`
+says a box *can* drive a rig, and on plenty of boxes that is a capability behind a switch. The rig
+phase said "Tracker Mini over `midi-din`. Sync everything else to it", and a reader who did
+exactly that got silence: clock output on that box is routed in a menu — `Config > MIDI > Clock
+Out`, taking Off / USB / MIDI Out jack / USB + MIDI Out jack — and nothing in the guide mentioned
+the menu. Every later phase assumes the transport is running, so one unstated setting stalls the
+whole guide.
+
+So a manifest may declare `clock.sourceSetup`: per transport, the menu `path` and the `value` to
+select there, **in the box's own words** (`Config > MIDI > Clock Out`, not "the clock output
+setting" — §8 is read at the machine and that string is on a screen), with a required `verified`
+and an optional `note`. Per transport because the setting is: the same menu takes `USB` for a USB
+rig, and printing the wrong option is worse than printing neither. Both renderers share the
+*lookup* — which entry matches has one right answer — and neither shares the sentence, which is
+§8's standing rule about ink.
+
+Nothing is derived. A box needing no setting declares none; a box whose manual prints none
+declares none either; both render exactly as they did, because an invented menu path is invariant
+5's fault wearing a different hat.
+
 **`!canReceiveClock` is deliberately not a key**, and was one for exactly one revision. The
 argument for it was that a source-only box has nowhere else to sit in the topology. It does not
 follow: such a box simply runs free, which the guide already states by name for the LiveTrak L-8,
@@ -2034,10 +2090,10 @@ in millimetres for the whole rack, so the shared scale is structural rather than
 Wrapping is what makes the cables real work. Every row sits over a **cable corridor**, and the
 left and right of the panel band are **gutters** reserved for cables that have to leave their row:
 such a cable drops out of its jack into the corridor, crosses to a gutter, runs down (or up) the
-side of the frame, travels the corridor *beneath* its target row and rises into its CLK IN. Under,
-always — a cable arriving from above would have to cross the target's own face to reach a jack on
-its bottom rail, which is the thing the bottom rail exists to prevent. A cable between two boxes
-on one row still just hangs. A gutter is only reserved when a cable uses it, so a rig that fits on
+side of the frame, travels the corridor *beneath* its target row and rises into its clock input
+socket. Under, always — a cable arriving from above would have to cross the target's own face to
+reach a jack on its bottom rail, which is the thing the bottom rail exists to prevent. A cable
+between two boxes on one row still just hangs. A gutter is only reserved when a cable uses it, so a rig that fits on
 one row is laid out to the millimetre as it was before rows existed.
 
 **The voice field is packed by cell shape, not only by cell area.** The one region a panel hands

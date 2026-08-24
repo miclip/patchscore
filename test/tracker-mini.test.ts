@@ -262,11 +262,114 @@ describe('Tracker Mini manifest', () => {
       // for one, which is the repair. Before this, the page sat on a text param's point.
       expect(Object.keys(source ?? {}).sort()).toEqual(['need', 'prep'])
     }
-    // And no `text` param survives anywhere on this box: `INSTRUMENT` was the only one.
+    // And `INSTRUMENT` — the text param whose *point* carried p.104 — is gone for good. Text
+    // params exist again on this box (#102), but for the opposite reason: they are the settings
+    // the manual prints no scale for, so they claim nothing. Asserted by name, because "no text
+    // param anywhere" was never the rule that mattered — "no citation on a text point" is, and
+    // it is asserted below.
     for (const recipe of device.recipes) {
       for (const param of recipe.params as AuthoredParam[]) {
-        expect(param.kind, recipe.id).not.toBe('text')
+        expect(param.name, recipe.id).not.toBe('INSTRUMENT')
       }
+    }
+  })
+
+  /**
+   * §6.11/#102. **A Granular recipe sets all four of the mode's core parameters, and makes the
+   * position move.**
+   *
+   * p.142: *"The granular play mode ... consists of four core parameters"* — Position, Length,
+   * Shape, Loop — and of those, *"The position parameter is what brings out the its sonic
+   * character"*. p.142 again, and p.143 in full: *"Modulating grain position is at the heart of
+   * the Tracker Mini's implementation of granular synthesis where an LFO or envelope can be
+   * used."*
+   *
+   * `tm-texture-soft` set `LENGTH` and nothing else granular, which resolved a template called
+   * Drone Study down to one voice running static grains. Length alone is the one of the four the
+   * page calls least interesting.
+   *
+   * Written as a rule over every Granular recipe rather than as a check on this one, because the
+   * next granular recipe somebody authors has exactly the same hole available to it. Nothing in
+   * the engine can catch this: `PLAY MODE` is an ordinary enum and the resolver has no idea that
+   * one of its options changes which other parameters mean anything.
+   */
+  it("sets all four granular core parameters and modulates the position (§6.11/#102)", () => {
+    const granular = device.recipes.filter((r) =>
+      (r.params as AuthoredParam[]).some((p) => p.name === 'PLAY MODE' && p.value === 'Granular'),
+    )
+    expect(granular.length).toBeGreaterThan(0)
+
+    for (const recipe of granular) {
+      const params = recipe.params as AuthoredParam[]
+      const by = (name: string) => params.find((p) => p.name === name)
+
+      // The four of p.142, all present.
+      for (const name of ['POSITION', 'LENGTH', 'SHAPE', 'LOOP']) {
+        expect(by(name), `${recipe.id} / ${name}`).toBeDefined()
+      }
+
+      // Two of them are option sets the page prints in its own Range column, and they are the
+      // whole set — narrowing to what is authored would hide the mode.
+      const shape = by('SHAPE')
+      if (shape?.kind !== 'enum') throw new Error(`${recipe.id}: SHAPE should be an enum`)
+      expect(shape.options.values).toEqual(['Square', 'Triangle', 'Gauss'])
+      expect(shape.options.verified).toEqual({ kind: 'manual', source: `${CITE_PREFIX}142` })
+
+      const loop = by('LOOP')
+      if (loop?.kind !== 'enum') throw new Error(`${recipe.id}: LOOP should be an enum`)
+      expect(loop.options.values).toEqual(['Forward', 'Reverse', 'Pingpong'])
+      expect(loop.options.verified).toEqual({ kind: 'manual', source: `${CITE_PREFIX}142` })
+
+      // Position is the one parameter here with no scale to cite. p.142's Range column reads
+      // "Variable" — it is the loaded sample's own length — so it is a text param and
+      // provisional, never a numeric over bounds nobody printed (invariant 5).
+      const position = by('POSITION')
+      expect(position?.kind, recipe.id).toBe('text')
+      expect(position?.verified, recipe.id).toBe(false)
+
+      // And it moves. Type, shape, speed and amount: four settings, because "add an LFO" is not
+      // something a reader can do at the machine without all four.
+      const type = by('POSITION AUTOMATION TYPE')
+      if (type?.kind !== 'enum') throw new Error(`${recipe.id}: AUTOMATION TYPE should be an enum`)
+      expect(type.value).toBe('LFO')
+      // Off is one of the three, and it is the state this recipe was in before #102.
+      expect(type.options.values).toEqual(['Off', 'Envelope', 'LFO'])
+      expect(type.options.verified).toEqual({ kind: 'manual', source: `${CITE_PREFIX}121` })
+      const lfoShape = by('POSITION LFO SHAPE')
+      if (lfoShape?.kind !== 'enum') throw new Error(`${recipe.id}: LFO SHAPE should be an enum`)
+      expect(lfoShape.options.values).toEqual(['Rev Saw', 'Saw', 'Triangle', 'Square', 'Random'])
+      expect(lfoShape.options.verified).toEqual({ kind: 'manual', source: `${CITE_PREFIX}121` })
+
+      // p.123's speed table in full, read down its six columns. The complete list, footnote and
+      // all: the 128-to-32 entries are unavailable only when the destination is volume, and this
+      // destination is Granular Position.
+      const speed = by('POSITION LFO SPEED')
+      if (speed?.kind !== 'enum') throw new Error(`${recipe.id}: LFO SPEED should be an enum`)
+      expect(speed.options.values).toHaveLength(29)
+      expect(speed.options.values[0]).toBe('128')
+      expect(speed.options.values.at(-1)).toBe('1/64')
+      expect(speed.options.verified).toEqual({ kind: 'manual', source: `${CITE_PREFIX}123` })
+
+      // The amount is the second parameter on this box with no printed scale. p.126's "0-100%"
+      // is the *envelope's* Amount, stated in the envelope's own subsection, and the same field
+      // means something else with Type set to LFO — so it is uncited here rather than borrowed
+      // off a scale that is not in force.
+      const amount = by('POSITION LFO AMOUNT')
+      expect(amount?.kind, recipe.id).toBe('text')
+      expect(amount?.verified, recipe.id).toBe(false)
+
+      // The grain's Shape and the LFO's Shape are two different controls on two different pages
+      // and must not collide on one name — the guide prints these as a flat list.
+      expect(new Set(params.map((p) => p.name)).size).toBe(params.length)
+
+      // A part that gets retriggered needs a level to hold at and a tail to leave on, not just
+      // a fade-in. Both cited to p.126, which prints "Range 0-100%" and "Range 0-10 Seconds".
+      const sustain = by('ENV SUSTAIN')
+      if (sustain?.kind !== 'numeric') throw new Error(`${recipe.id}: ENV SUSTAIN is numeric`)
+      expect(sustain.range).toEqual({ min: 0, max: 100, verified: { kind: 'manual', source: `${CITE_PREFIX}126` } })
+      const release = by('ENV RELEASE')
+      if (release?.kind !== 'numeric') throw new Error(`${recipe.id}: ENV RELEASE is numeric`)
+      expect(release.range).toEqual({ min: 0, max: 10, verified: { kind: 'manual', source: `${CITE_PREFIX}126` } })
     }
   })
 
@@ -349,20 +452,24 @@ describe('Tracker Mini manifest', () => {
     // No *setting* is cited on its point, enums included: `verified` there is a claim about the
     // selected value, and every selection here is taste. The option sets carry their own
     // citations, asserted below.
-    //
-    // Text params are the one exception, and it is a difference in kind rather than a loophole.
-    // A numeric or enum param has a legality gate of its own — the range, the option set — so a
-    // citation has somewhere to go that is not the point. A text param has no such gate: it
-    // states an instruction rather than picks among legal values, so if the instruction is the
-    // manual's, `verified` is the only place that can be recorded, and recording it as `false`
-    // would badge a documented procedure as a guess. It is cited only when the manual really
-    // does print the procedure, which is asserted below by page.
     const settings = device.recipes.flatMap((r) =>
       (r.params as AuthoredParam[]).filter((p) => p.kind !== 'text'),
     )
     expect(settings.every((p) => p.verified === false)).toBe(true)
-    expect(counts.manualPoints).toBe(counts.params - settings.length)
-    expect(counts.provisionalPoints).toBe(settings.length)
+
+    // A text param is the one shape where a citation *could* legitimately land on the point: it
+    // has no legality gate of its own — no range, no option set — so a documented procedure
+    // would have nowhere else to go. None here does. Both exist because the manual prints no
+    // scale for them (#102), which is the opposite of a documented procedure, so every point on
+    // this box is provisional and `manualPoints` is zero. The identity
+    // `params = manualPoints + observedPoints + provisionalPoints` makes that one assertion.
+    const texts = device.recipes.flatMap((r) =>
+      (r.params as AuthoredParam[]).filter((p) => p.kind === 'text'),
+    )
+    expect(texts.length).toBeGreaterThan(0)
+    expect(texts.every((p) => p.verified === false)).toBe(true)
+    expect(counts.manualPoints).toBe(0)
+    expect(counts.provisionalPoints).toBe(counts.params)
   })
 
   it('cites a page that exists in the manual, and never page 0', () => {

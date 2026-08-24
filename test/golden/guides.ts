@@ -17,13 +17,21 @@ import { industrialTechno } from '../../lib/templates/index'
  * identically, a device whose every point is provisional. A hand-built rig small enough to read
  * is a rig too small to show any of that.
  *
- * Two rigs, chosen to differ in the thing §8 is worst at:
+ * Three rigs, chosen to differ in the thing §8 is worst at:
  *
  *  - **full-rig** — every registry device, the rig that fills most parts and exercises pool
  *    voices, merged section blocks, a resolved hook and — since #49 — a real patch list.
  *  - **tr-1000** — one drum machine, which cannot carry a tonal part at all. Most of the
  *    template becomes gaps, so this is the fixture that proves invariant 5 renders honestly at
  *    scale rather than only in the one-gap case.
+ *  - **midi-clock** — Tracker Mini + TR-1000, the one rig here that resolves onto `midi-din`,
+ *    added with #103/#104. Neither of the other two reaches the phase-3 material those issues
+ *    added: `full-rig` resolves onto `usb`, because the Metropolix is the library's only
+ *    `preferredSource` and declares no MIDI DIN, and `tr-1000` is a source whose manual prints
+ *    neither a clock-output menu nor a note on its MIDI jacks. So the clock-source setup line
+ *    and the clock-jack notes had unit tests and no committed bytes at all — which is the state
+ *    these fixtures exist to prevent, since a renderer change that drops either moves not one
+ *    byte of the other two files.
  *
  * Neutral mood on purpose: mood is `resolve.golden.json`'s subject and it is off-centre there.
  * Holding every knob at 50 here means a diff in these files is a *rendering* diff, not §6.1
@@ -44,12 +52,28 @@ function guide(devices: readonly Device[]): string {
 
 const TR_1000 = DEVICES.filter((d) => d.id === 'roland-tr-1000')
 
-export const GUIDE_NAMES = ['full-rig', 'tr-1000'] as const
+/**
+ * #103/#104. Both boxes declare `midi-din` and neither claims `preferredSource`, so §7.4 breaks
+ * the transport tie on device id ascending and the Tracker Mini drives over MIDI — which is the
+ * one arrangement in which the clock-output menu and the Type B adapter note are both true and
+ * both rendered.
+ */
+const MIDI_CLOCK = DEVICES.filter(
+  (d) => d.id === 'polyend-tracker-mini' || d.id === 'roland-tr-1000',
+)
+
+export const GUIDE_NAMES = ['full-rig', 'tr-1000', 'midi-clock'] as const
 export type GuideName = (typeof GUIDE_NAMES)[number]
 
 /** The rendered guide for one fixture name. Pure — the same bytes on every call. */
+const RIGS: Record<GuideName, readonly Device[]> = {
+  'full-rig': DEVICES,
+  'tr-1000': TR_1000,
+  'midi-clock': MIDI_CLOCK,
+}
+
 export function guideText(name: GuideName): string {
-  return name === 'full-rig' ? guide(DEVICES) : guide(TR_1000)
+  return guide(RIGS[name])
 }
 
 const THIS_FILE = fileURLToPath(import.meta.url)

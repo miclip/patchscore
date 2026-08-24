@@ -1,4 +1,5 @@
 import type {
+  ClockTransport,
   Device,
   DeviceId,
   DeviceKind,
@@ -68,7 +69,8 @@ export const PANEL_HEIGHT_MM = 170
  * shrink the panels, it only makes the figure taller.
  *
  * With rows (#63) every row gets one, including the last: an inter-row cable approaches its
- * target's CLK IN from *underneath*, so the bottom row needs a corridor as much as the others.
+ * target's clock input socket from *underneath*, so the bottom row needs a corridor as much as
+ * the others.
  */
 const CABLE_ROOM_MM = 62
 
@@ -197,10 +199,24 @@ export type ClockRole = 'source' | 'receiver' | 'isolated'
 
 export type Point = { x: number; y: number }
 
-/** A socket on the panel. `label` is silkscreen; nothing here is drawn without one. */
+/**
+ * A socket on the panel.
+ *
+ * `label` is **silkscreen, and optional** (#103). An audio jack's label is the manifest's own —
+ * `L`, `R`, `1`..`10` come straight off `io` — but a clock socket's is not derivable from
+ * anything the clock spec holds, and for a long time the rack invented one: `CLK OUT` and
+ * `CLK IN`, drawn from `canSendClock`/`canReceiveClock` on all fourteen devices. Neither string
+ * is printed on a Tracker Mini, whose panel reads `Line In / Line Out / MIDI In / MIDI Out`, and
+ * only the first is printed on a TR-1000.
+ *
+ * So the socket is drawn — a box that syncs has a hole, and the cable has to land somewhere —
+ * and its name comes from a `JackSpec` the device declares with a page, or from nowhere at all.
+ * An unlabelled socket says "this box syncs and nobody has read its rear panel yet", which is
+ * true of twelve devices here and is invariant 5's answer rather than a placeholder.
+ */
 export type PanelJack = {
   id: string
-  label: string
+  label?: string
   kind: 'clock-out' | 'clock-in' | 'main-out' | 'individual-out'
   /** Panel-local, mm. */
   at: Point
@@ -498,22 +514,53 @@ function round(n: number): string {
 // Panel contents, from the manifest and nothing else
 // ---------------------------------------------------------------------------
 
-function jacksFor(device: Device, span: number, rise: number): { jacks: PanelJack[]; hidden: number } {
+/**
+ * #103. What the box prints beside the socket this rig's clock actually uses, or nothing.
+ *
+ * `transport` is the one the resolver picked, so a TR-1000 syncing over MIDI is labelled `MIDI
+ * IN` and the same box syncing over its minijack is labelled `TRG IN` — one manifest, two rigs,
+ * two sockets, because that is what a reader standing at the box has to patch. With no rig there
+ * is no transport and therefore no claim to make: a device page draws the socket bare.
+ */
+function clockLabel(
+  device: Device,
+  direction: 'in' | 'out',
+  transport: ClockTransport | undefined,
+): string | undefined {
+  if (transport === undefined) return undefined
+  return (device.jacks ?? []).find(
+    (j) => j.direction === direction && (j.clock ?? []).includes(transport),
+  )?.id
+}
+
+function jacksFor(
+  device: Device,
+  span: number,
+  rise: number,
+  transport?: ClockTransport,
+): { jacks: PanelJack[]; hidden: number } {
   const jacks: PanelJack[] = []
   const y = rise + RAIL_MM / 2
 
   // Out on the right, in on the left, so a cable crosses the gap between panels rather than the
   // face of one.
   if (device.clock.canSendClock) {
+    const label = clockLabel(device, 'out', transport)
     jacks.push({
       id: 'clock-out',
-      label: 'CLK OUT',
+      ...(label === undefined ? {} : { label }),
       kind: 'clock-out',
       at: { x: span - JACK_SIDE_MM, y },
     })
   }
   if (device.clock.canReceiveClock) {
-    jacks.push({ id: 'clock-in', label: 'CLK IN', kind: 'clock-in', at: { x: JACK_SIDE_MM, y } })
+    const label = clockLabel(device, 'in', transport)
+    jacks.push({
+      id: 'clock-in',
+      ...(label === undefined ? {} : { label }),
+      kind: 'clock-in',
+      at: { x: JACK_SIDE_MM, y },
+    })
   }
 
   // Main first, then the individual outs the manifest declares — ten of them on a TR-1000 is a
@@ -895,7 +942,7 @@ export function rackModel(result: ResolveResult, options: RackLayoutOptions = {}
     const rise = layout?.panelRiseMm ?? PANEL_HEIGHT_MM
     const xMm = leftGutterMm + p.localX
 
-    const { jacks, hidden: hiddenJacks } = jacksFor(device, span, rise)
+    const { jacks, hidden: hiddenJacks } = jacksFor(device, span, rise, source?.transport)
     const { banks, hidden: hiddenCells } = banksFor(
       device,
       occupiedByDevice.get(device.id) ?? new Set<string>(),
@@ -984,9 +1031,10 @@ export function rackModel(result: ResolveResult, options: RackLayoutOptions = {}
     const target = panels[run.toIndex]
     if (sourcePanel === undefined || target === undefined) return []
 
-    // Always CLK OUT to CLK IN, whichever side of the source the target sits on. The tidier-
-    // looking rule — leave by whichever edge faces the target — puts the cable in the source's
-    // *input* socket for every box to its left, which is a drawing of a patch that does not work.
+    // Always the source's output socket to the target's input, whichever side of the source the
+    // target sits on. The tidier-looking rule — leave by whichever edge faces the target — puts
+    // the cable in the source's *input* socket for every box to its left, which is a drawing of a
+    // patch that does not work.
     // A cable that loops back over its own panel is what that rig actually looks like on a desk.
     const at = sourcePanel.outAt
     const to = target.inAt
@@ -994,7 +1042,7 @@ export function rackModel(result: ResolveResult, options: RackLayoutOptions = {}
     /**
      * Same row: the hanging bézier, unchanged. Different rows: down into this row's corridor,
      * out to a gutter, down (or up) the side of the frame, along the corridor *under* the target
-     * row, and up into its CLK IN.
+     * row, and up into its clock input socket.
      *
      * Under, always. A cable arriving from above would have to cross the target's own face to
      * reach a jack on its bottom rail — which is the thing the bottom rail exists to prevent.

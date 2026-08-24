@@ -13,9 +13,13 @@ import { TR_1000_PANEL } from './panel'
  * (TR-1000_reference_eng02_W.pdf) carries the Parameter list, which states the bounds. So:
  *
  *  - the capability data below (tracks, jacks, clock, per-step features, gestures) is read
- *    off the owner's manual and is the reason this file can be written at all. Those page
- *    references stay in comments: invariant 4 is scoped to parameter values, and a wrong
- *    `individualOuts` is visible to anyone holding the box in a way a wrong DECAY is not;
+ *    off the owner's manual and is the reason this file can be written at all. Most of those
+ *    page references stay in comments: invariant 4 is scoped to parameter values, and a wrong
+ *    `individualOuts` is visible to anyone holding the box in a way a wrong DECAY is not.
+ *    **Where a capability field is itself rendered, it carries its own `verified` instead**
+ *    (#103/#104) — `JackSpec.verified` on the jacks below, and `clock.sourceSetup.verified` on
+ *    a clock-output menu path. A comment cannot cite something a reader is standing at the
+ *    machine acting on, and both of those reach the guide;
  *  - every recipe carries `verified: false`, and so does every numeric *point*, because a
  *    documented range for TUNE is not a citation for "TUNE sits at 44 for a hard kick".
  *    Citing the page for a taste judgement would be exactly the fraud invariant 4 prevents.
@@ -65,6 +69,16 @@ const SEMITONES_24 = { min: -24, max: 24 } // -24St-24St
  */
 function cite(page: number): Cite {
   return { kind: 'manual', source: `TR-1000 Reference Manual (eng02) v1.13+, p.${page}` }
+}
+
+/**
+ * The *other* book. Roland ships two, and the panel is only in one of them: the rear-jack tables
+ * and the project SOUND parameters are Owner's Manual pages, while every recipe value above comes
+ * from the Reference Manual. Two helpers rather than one page number, so a citation cannot name
+ * the wrong document by omission.
+ */
+function owner(page: number): Cite {
+  return { kind: 'manual', source: `TR-1000 Owner’s Manual (eng02), p.${page}` }
 }
 
 /**
@@ -413,6 +427,63 @@ export const device: Device = {
   // MIX OUT L/MONO+R, ten INDIVIDUAL OUT/TRIGGER OUT jacks (BD-RC), ANALOG FX OUT L/R,
   // EXTERNAL IN L/R, USB-C audio to a computer (p.11-12).
   io: { main: 'stereo', individualOuts: 10, audioIn: true, usbAudio: true },
+
+  /**
+   * §10/#103. **The sockets clock actually uses, so the rack stops inventing them.**
+   *
+   * The rack drew `CLK OUT` and `CLK IN` on every panel, derived from `canSendClock` and
+   * `canReceiveClock`. Half of that is right here and half is fiction: the Owner's Manual p.12
+   * lists the TRIGGER/CV jacks as `TRG IN`, `TRG OUT`, `FILTER CV IN` and `CLK OUT`, and there is
+   * no clock *input* jack on this box under any name. What the diagram was telling a reader to
+   * patch into does not exist.
+   *
+   * Only the clock-carrying jacks are declared. p.12 lists a dozen more — MIX OUT, ANALOG FX OUT,
+   * EXTERNAL IN, the ten BD-RC jacks, CONTROL, USB — and `io` already carries the audio ones as
+   * counts; listing them again here would restate the manifest in a second vocabulary for no
+   * consumer. §3.3's rule is unchanged: a jack is declared when something names it.
+   *
+   * **Which socket the rack draws depends on the rig**, which is why `clock` is per transport.
+   * §7.4 prefers `midi-din`, so in almost every rig this box is patched at `MIDI IN` / `MIDI
+   * OUT1` — and `CLK OUT` is the right label only for a rig that resolved onto the minijack.
+   *
+   * `usb` and the DIN SYNC *input* are deliberately absent. The USB COMPUTER port is one socket
+   * carrying both directions (p.12) and `JackSpec.direction` cannot say so; the two DIN SYNC
+   * connectors are the switchable *OUT* pair, and the `IN connector` is MIDI only, so this box
+   * sends DIN sync and does not take it. A rig resolving either draws its socket unlabelled,
+   * which claims nothing.
+   */
+  jacks: [
+    // p.12, MIDI connectors: `OUT1 connector or DIN SYNC 1 connector`, `IN connector`. Named
+    // with the section, as §3.3 requires — a bare `IN` is unresolvable on a box with this many.
+    { id: 'MIDI OUT1', direction: 'out', clock: ['midi-din'], verified: owner(12) },
+    { id: 'MIDI IN', direction: 'in', clock: ['midi-din'], verified: owner(12) },
+    {
+      id: 'DIN SYNC 1',
+      direction: 'out',
+      clock: ['din-sync'],
+      verified: owner(12),
+      note: 'The same connector as MIDI OUT1, switched to DIN SYNC',
+    },
+    // p.12: "Use this jack to output synchronization signals to an external device."
+    { id: 'CLK OUT', direction: 'out', clock: ['analog-clock'], verified: owner(12) },
+    /**
+     * p.12 describes `TRG IN` only as "Connect a device that has a TRIGGER OUT jack here" — it
+     * is p.32 that makes it a clock input, and it is a *setting*, not a property of the hole:
+     * the project SOUND parameter `Trig In` takes `Sync, Start, Head, Clock`, and `Sync` is
+     * "Uses the trigger input as the clock signal". A reader who patches this jack and leaves
+     * `Trig In` alone gets no sync, so the note carries the setting with the socket.
+     *
+     * Both `analog-clock` and `trigger` land here, which is the case `JackSpec.clock` is a list
+     * for: one socket, and p.32's parameter chooses what arriving pulses mean.
+     */
+    {
+      id: 'TRG IN',
+      direction: 'in',
+      clock: ['analog-clock', 'trigger'],
+      verified: owner(12),
+      note: 'Set Trig In = Sync (Owner’s Manual p.32) or the pulses are not treated as clock',
+    },
+  ],
 
   /**
    * §10. 486 mm horizontal span. Reference Manual p.74 gives 486 (W) x 311 (D) x 125 (H) mm.

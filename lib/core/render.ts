@@ -1,5 +1,5 @@
 import type { Device } from './device'
-import { rangeDocuments } from './device'
+import { clockJackNotes, clockSourceSetup, rangeDocuments } from './device'
 import type { DeviceId, SectionName } from './ids'
 import type { Role } from './vocabulary'
 import type { Cite, ParamScope, Provenance, ResolvedParam, ResolvedRange } from './params'
@@ -492,6 +492,35 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
       `**Clock source** — ${source.deviceName} over \`${source.transport}\`, ` +
         `carrying ${count(source.occupiedAssignables, 'part')}. ${sync}`,
     )
+
+    /**
+     * #104. The setting that makes the instruction above possible.
+     *
+     * "Sync everything else to it" is not actionable while the source is not emitting, and on
+     * boxes where clock output is routed in a menu it is not emitting until somebody says so.
+     * The path, the value and the page are all the device's (`ClockSpec.sourceSetup`) — this
+     * renderer names no box and knows no menu, so a device that declares none prints nothing
+     * here and a device that declares one gets its own words.
+     */
+    const sourceDevice = result.devices.find((d) => d.id === source.deviceId)
+    const setup =
+      sourceDevice === undefined ? undefined : clockSourceSetup(sourceDevice, source.transport)
+    if (setup !== undefined) {
+      const provenance: Provenance =
+        setup.verified === false ? { state: 'provisional' } : { state: 'authored', cite: setup.verified }
+      out.push('')
+      out.push(
+        `- On the ${source.deviceName}, set \`${setup.path}\` to \`${setup.value}\`` +
+          `${mark(provenance)}`,
+      )
+      // §8.1's subordinate lines, the same three tags every other cited instruction in this
+      // document uses. `· manual` says *how* it was checked and never says *where*: a reader
+      // holding the wrong book, or the same book at a different revision, cannot act on a bare
+      // `manual`. The page belongs on the page, not only in a title attribute the printed guide
+      // does not have.
+      if (setup.note !== undefined) subordinate(out, '  ', 'note', setup.note)
+      for (const cite of citeLines(provenance, undefined)) subordinate(out, '  ', 'cite', cite)
+    }
   }
   out.push('')
 
@@ -516,6 +545,23 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
 
     out.push(`- **${device.name}** — ${device.kind} · ${count(parts, 'part')}`)
     out.push(`  - clock: ${clock}`)
+    // #103. Whatever this box's manual says about the sockets *this* rig's clock runs through —
+    // the Tracker Mini's Type B adapter is the case. Filtered by the resolved transport and
+    // deduped by `clockJackNotes`, so a USB rig hears nothing about a MIDI adapter and a note
+    // true of both the In and the Out is printed once.
+    if (source !== undefined) {
+      for (const jackNote of clockJackNotes(device, source.transport)) {
+        const provenance: Provenance =
+          jackNote.verified === false
+            ? { state: 'provisional' }
+            : { state: 'authored', cite: jackNote.verified }
+        out.push(`  - ${jackNote.jacks.join(', ')}: ${jackNote.note}${mark(provenance)}`)
+        // The jack's own page. p.284 stays in the note text above rather than being folded in
+        // here: `verified` is the page that documents *this jack* (§3.3), and the adapter's
+        // second page documents the adapter — one citation, one claim.
+        for (const cite of citeLines(provenance, undefined)) subordinate(out, '    ', 'cite', cite)
+      }
+    }
     out.push(`  - audio: ${ioText(device)}`)
     out.push(`  - mixer: ${mixerText(device, parts)}`)
   }
