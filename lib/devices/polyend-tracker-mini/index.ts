@@ -1,5 +1,10 @@
 import type { Device, Recipe } from '../../core/device'
-import type { AuthoredEnumParam, AuthoredNumericParam, Cite } from '../../core/params'
+import type {
+  AuthoredEnumParam,
+  AuthoredNumericParam,
+  AuthoredTextParam,
+  Cite,
+} from '../../core/params'
 import type { Role } from '../../core/vocabulary'
 import { TRACKER_MINI_PANEL } from './panel'
 
@@ -35,8 +40,19 @@ import { TRACKER_MINI_PANEL } from './panel'
  * which value suits a dark kick, so no point is ever cited.
  *
  * Capability data — track count, jacks, clock, per-step FX names, gestures — is read off the
- * manual and cited in comments rather than in `verified`: invariant 4 is scoped to parameter
- * values, and a wrong `individualOuts` is visible to anyone holding the box.
+ * manual, and **where it is cited depends on whether a reader ever sees it.** Most of it is
+ * cited in comments rather than in `verified`: invariant 4 is scoped to parameter values, and a
+ * wrong `individualOuts` is visible to anyone holding the box.
+ *
+ * The exceptions are the capability fields that are *rendered*, and they carry their own
+ * `verified` (#103/#104): `JackSpec.verified` on the MIDI jacks below, whose ids label the rack
+ * diagram's clock sockets and whose notes reach the rig phase, and `clock.sourceSetup.verified`
+ * on the `Config > MIDI > Clock Out` menu path the guide tells a reader to set. A page in a
+ * comment cites nothing to somebody standing at the machine.
+ *
+ * **This changes nothing about parameter points**, which is the rule invariant 4 is actually
+ * about: every point in every recipe below is still `verified: false`, ranges and option sets
+ * still carry the legality citation, and `manualPoints` for this device is still zero.
  *
  * Four limits on what is authored here, recorded rather than fudged (invariant 5):
  *
@@ -173,14 +189,46 @@ function secs(
  * Mode table on p.127 or it does not. The *value* is which one this recipe reaches for, and that
  * is taste, so it stays provisional.
  */
-function pick(name: string, value: string, options: string[], page: number): AuthoredEnumParam {
+function pick(
+  name: string,
+  value: string,
+  options: string[],
+  page: number,
+  extra: Partial<AuthoredEnumParam> = {},
+): AuthoredEnumParam {
   return {
     kind: 'enum',
     name,
     value,
     options: { values: options, verified: cite(page) },
     verified: false,
+    ...extra,
   }
+}
+
+/**
+ * §3.2/#102. A setting the manual gives **no scale for**, so there is no legality gate for a
+ * citation to attach to and the point is provisional by construction.
+ *
+ * This is the shape the box forces exactly twice, and both times for the same reason. Granular
+ * `Position`'s Range column on p.142 reads *"Variable"* — the scale is the loaded sample's own
+ * length, so any `NumericRange` written here would be invented (invariant 5), and an absolute
+ * time would point at a different place in every file a reader loads. The LFO's `Amount` on the
+ * automation page is printed with no range at all: p.126's *"The amount will set how much of the
+ * envelope is applied 0-100%"* is the **envelope's** Amount, in the envelope's own subsection,
+ * and the same field means something else with `Type` set to LFO. Borrowing that bound would be
+ * the TR-8S `SNAPPY` mistake — a range cited off the scale that is not in force.
+ *
+ * Not a return of `INSTRUMENT`, the text param #101 removed. That one put a manual page on a
+ * text *point* because it had nowhere else to go, badging the reader's choice of sample as
+ * checked. These carry `verified: false` and claim nothing.
+ */
+function unscaled(
+  name: string,
+  value: string,
+  extra: Partial<AuthoredTextParam> = {},
+): AuthoredTextParam {
+  return { kind: 'text', name, value, verified: false, ...extra }
 }
 
 /** p.127, the Play Mode table, as the on-screen selector prints them. */
@@ -197,6 +245,50 @@ const PLAY_MODES = [
 
 /** p.117: "Options; Disabled, low-pass, high-pass, band-pass." */
 const FILTER_TYPES = ['Disabled', 'Low-pass', 'High-pass', 'Band-pass']
+
+/**
+ * p.142, the Granular parameters table's own Range column: Shape *"Square, Triangle, Gauss"*,
+ * Loop *"Forward, Reverse, Pingpong"*. Two of the granular mode's four core parameters, and the
+ * page says what each does — Shape is the grain's envelope, *"particularly pertinent in the
+ * attack phase"*; Loop *"selects the grain playback direction"*.
+ */
+const GRAIN_SHAPES = ['Square', 'Triangle', 'Gauss']
+const GRAIN_LOOPS = ['Forward', 'Reverse', 'Pingpong']
+
+/**
+ * p.121, the Instrument Automation page. Three columns of that screen are option sets, printed
+ * as the selector stacks them, and all three are cited to the one page that shows the screen.
+ *
+ *  - `Type` is `Off / Envelope / LFO`, per destination: *"Each destination has the option of an
+ *    LFO, envelope or no automation."*
+ *  - `Shape` is the LFO's, and p.122 documents the same five in full (spelling `Rev Saw` out as
+ *    "Reverse Saw"). The screen's spelling is what a reader is looking at, so it is what is
+ *    listed — the same rule `PLAY_MODES` follows.
+ */
+const AUTOMATION_TYPES = ['Off', 'Envelope', 'LFO']
+const LFO_SHAPES = ['Rev Saw', 'Saw', 'Triangle', 'Square', 'Random']
+
+/**
+ * p.123, *"LFO speed — Speed is based on pattern step intervals"*, read down its six columns.
+ * Twenty-nine intervals, bare as the table prints them; the screen appends `steps` or `step`
+ * (p.121), which the `note` on the parameter says rather than this list inventing a spelling
+ * for the fourteen entries the screen's scrolled window never shows.
+ *
+ * `65` is the manual's, not a transcription slip for 64.
+ *
+ * The footnote carves out an exception no flat list can carry: *"128 to 32 Step speed options
+ * are not available with volume as the destination."* Every use here modulates Granular
+ * Position, where the whole list is legal — which is why the options stay complete rather than
+ * being trimmed to the subset one destination allows.
+ */
+const LFO_SPEEDS = [
+  '128', '96', '65', '48', '32',
+  '24', '16', '12', '8', '6',
+  '4', '3', '2', '3/2', '1',
+  '3/4', '1/2', '3/8', '1/3', '1/4',
+  '3/16', '1/6', '1/8', '1/12', '1/16',
+  '1/24', '1/32', '1/48', '1/64',
+]
 
 /** p.156, the three FAT filter emulations. */
 const FAT_FILTERS = ['Low Pass MG 24dB', 'Low Pass OB 24dB', 'Low Pass OB 12dB']
@@ -780,12 +872,59 @@ const SAMPLE_RECIPES: Recipe[] = [
         'rather than playing it through',
     },
     params: [
+      // §6.11's four core parameters, in the order the Sample Playback page lays them out
+      // (p.141): Position, Length, Shape, Loop. Three of them were unauthored until #102, and
+      // the manual is explicit about which of the four matters — *"The position parameter is
+      // what brings out the its sonic character"* (p.142, sic).
       pick('PLAY MODE', 'Granular', PLAY_MODES, 127),
-      pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
+      unscaled('POSITION', 'A third into the sample', {
+        hint: 'scan-grain',
+        note: 'Set by proportion — the scale is the length of your sample, not a fixed time',
+      }),
       num('LENGTH', 640, { min: 1, max: 1000 }, 142, { unit: 'ms' }),
+      // Triangle over Square or Gauss because Shape is the grain's envelope and is *"recognised
+      // in the attack phase"* (p.142): Square restates the grain edge on every re-read, which is
+      // the click this bed is trying not to have, and Gauss softens the attack further than a
+      // bed with a 1.8 Sec fade-in needs. Taste, like every point here.
+      pick('SHAPE', 'Triangle', GRAIN_SHAPES, 142),
+      pick('LOOP', 'Forward', GRAIN_LOOPS, 142),
+      pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
       num('CUTOFF', 48, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -20 }] }),
       num('REVERB SEND', 42, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 30 }] }),
+      // **The grains have to move, or the title is a lie.** p.142: *"Modulating grain position
+      // is at the heart of the Tracker Mini's implementation of granular synthesis"*, and p.143
+      // says where it is done — Instrument Parameters page 2, the Granular Position row, an LFO
+      // or an envelope on it. Without these four lines the guide asked for Granular play mode
+      // and then left the play head parked, which is what #102 was filed about.
+      //
+      // An LFO rather than an envelope because a bed sustains: an envelope is *"more of a
+      // one-shot function"* that *"typically operates across a note length"* (p.125), so it
+      // sweeps once per trigger and then holds, while the LFO is semi-free running on this
+      // destination and keeps moving between notes (p.121).
+      pick('POSITION AUTOMATION TYPE', 'LFO', AUTOMATION_TYPES, 121, {
+        hint: 'inst-params',
+        note: 'On the Granular Position row of Instrument Automation 2/2',
+      }),
+      pick('POSITION LFO SHAPE', 'Triangle', LFO_SHAPES, 121),
+      // 16 steps: p.124's own worked example is this destination's neighbour — *"With the
+      // destination of cutoff, speed of 16 (and with 16 step pattern), the LFO cycle will span
+      // all the steps... will create a long drone pulse to the sound"*. One sweep per pattern
+      // is what a bed wants; the point is still taste, and the page is cited on the option set.
+      pick('POSITION LFO SPEED', '16', LFO_SPEEDS, 123, {
+        note: 'In pattern steps — the screen prints it as 16 steps: one sweep per 16-step pattern',
+      }),
+      // p.143 on where this sits: *"Small amounts will be more predictable textures and pad like
+      // sounds. Larger amount settings will move the position wider in the sample creating more
+      // glitchy, less predictable sounds."* 28 is at the quiet end of that, deliberately.
+      unscaled('POSITION LFO AMOUNT', '28%', {
+        note: 'Small amounts stay pad-like; larger ones sweep wider and glitchier',
+      }),
       secs('ENV ATTACK', 1.8, SECONDS_10, 126),
+      // The other half of #102: a part that gets retriggered needs a level to hold at and a tail
+      // to leave on. Without them the reader sets a 1.8 Sec fade-in and nothing about what
+      // happens after. Same pair, same page, as the soft pad above.
+      num('ENV SUSTAIN', 84, PCT, 126, { unit: '%' }),
+      secs('ENV RELEASE', 2.2, SECONDS_10, 126),
       swing(),
     ],
     verified: false,
@@ -802,11 +941,92 @@ export const device: Device = {
   // transport are routable Off / USB / MIDI jack / USB+MIDI in both directions (Config: MIDI
   // Clock In, MIDI Clock Out, Transport In, Transport Out, p.54). `midi-din` is declared because
   // the supplied adapter is what the jack is for; the TRS detail lives here.
-  clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
+  clock: {
+    canSendClock: true,
+    canReceiveClock: true,
+    transport: ['midi-din', 'usb'],
+
+    /**
+     * §7.4/#104. **Clock output on this box is a menu, and the guide never said so.**
+     *
+     * p.54's Config table, `MIDI` menu, `Clock Out`: *"Sets the Tracker Mini clock output. Off,
+     * USB, MIDI Out jack, USB + MIDI Out jack."* Four routings, and a clock leaves only by the
+     * one selected. The rig phase named this box as the clock source and told the reader to sync
+     * everything else to it, which is an instruction nothing in the rig can obey until this is
+     * set — and every phase after it assumes the transport is running.
+     *
+     * Two entries because the menu takes two different values for the two transports this box
+     * declares, and printing `USB` at a reader patching a MIDI cable is worse than printing
+     * nothing. The strings are the menu's, spelled as p.54 spells them — `MIDI Out jack`, not
+     * "the MIDI jack" — because §8 is read at the machine and that is what is on the screen.
+     *
+     * The matching `Clock In` row on the same page is not authored here: the guide tells a
+     * *receiver* to sync, and what that costs on each receiving box is a separate piece of work
+     * from making the source emit. `sourceSetup` is named for the half it covers.
+     */
+    sourceSetup: [
+      {
+        transport: 'midi-din',
+        path: 'Config > MIDI > Clock Out',
+        value: 'MIDI Out jack',
+        note: 'Off, USB, MIDI Out jack, USB + MIDI Out jack — clock leaves only by the routing set here',
+        verified: cite(54),
+      },
+      {
+        transport: 'usb',
+        path: 'Config > MIDI > Clock Out',
+        value: 'USB',
+        note: 'Off, USB, MIDI Out jack, USB + MIDI Out jack — clock leaves only by the routing set here',
+        verified: cite(54),
+      },
+    ],
+  },
 
   // One stereo Line Out on a 3.5mm jack, doubling as headphone out; stereo Line In; USB-C audio
   // in/out, enabled in Config -> USB -> Audio (p.13, p.54). No individual outs.
   io: { main: 'stereo', individualOuts: 0, audioIn: true, usbAudio: true },
+
+  /**
+   * §10/#103. **This box has no clock jacks, and the rack was drawing two.**
+   *
+   * p.13's hardware overview dimensions the bottom edge and names every hole on it: `Line In`,
+   * `Line Out`, `MIDI In`, `MIDI Out`. Four 3.5mm sockets, and not one of them says `CLK`. The
+   * rack derived `CLK OUT` / `CLK IN` from `canSendClock` / `canReceiveClock` and drew them here
+   * anyway, on the same page that describes its panels as "read off each manual's hardware
+   * overview" — so the reader was told to patch a socket the box does not have, on a diagram
+   * claiming to be the box.
+   *
+   * Clock leaves and arrives over MIDI, so the MIDI pair is what carries `midi-din` and what the
+   * rack now labels. Both are cited to the drawing that names them.
+   *
+   * `usb` is not declared, and the omission is the honest one: p.13 calls the USB-C socket the
+   * `USB Power charge input`, MIDI and audio over it are a Config setting rather than a second
+   * pair of holes (p.54), and one socket carrying both directions is a shape `JackSpec.direction`
+   * cannot state. A rig that resolved onto USB draws its sockets unlabelled.
+   *
+   * `Line In` and `Line Out` are on the panel and are not declared here, because nothing names
+   * them: `io` already carries the audio path, and §3.3's list is for jacks something references.
+   */
+  jacks: [
+    {
+      id: 'MIDI Out',
+      direction: 'out',
+      clock: ['midi-din'],
+      verified: cite(13),
+      // The Type B detail, on the jack it is about. p.13's callout: "3.5mm jack to 5 Pin MIDI.
+      // Adapter (Type B) supplied", restated at p.284: "Tracker Mini uses a TRS to Type B MIDI
+      // Adapter." Type B is the uncommon one, and a reader reaching for a Type A cable gets
+      // silence with nothing on screen to explain it.
+      note: '3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284)',
+    },
+    {
+      id: 'MIDI In',
+      direction: 'in',
+      clock: ['midi-din'],
+      verified: cite(13),
+      note: '3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284)',
+    },
+  ],
 
   /**
    * §10. 130 mm, measured off the dimensioned panel drawing in 1.2 Hardware Overview (p.13).
@@ -921,6 +1141,9 @@ export const device: Device = {
     'pick-synth': 'Hold [Instrument], press (Up)/(Down)',
     'synth-params': 'Press [2] for synth parameters',
     'edit-patch': 'Press [Edit Patch] screen button',
+    // p.142's Aid row: "Hold to play the grain from the current position selected. Also hold
+    // while adjusting position to 'scan' for the desired sound."
+    'scan-grain': 'Hold [Preview] while turning Position',
   },
 
   /**

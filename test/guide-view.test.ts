@@ -721,3 +721,90 @@ describe('source audio reaches both renderers, and says the same thing (§3/#101
     }
   })
 })
+
+/**
+ * §7.4/#104. The clock source's enabling setting, on the React side.
+ *
+ * The two renderers share no ink by design, so "the Markdown says it" is not evidence the page
+ * does. It is the page a reader on a phone at the machine is actually holding, and #104 was
+ * filed against the page.
+ *
+ * Tracker Mini + TR-1000: neither claims `preferredSource`, both declare `midi-din`, and §7.4
+ * breaks the tie on device id ascending, so the Tracker Mini is the source over MIDI.
+ */
+describe('the clock source is told how to emit (§7.4/#104)', () => {
+  const midiRig = resolve({
+    devices: DEVICES.filter((d) => d.id === 'polyend-tracker-mini' || d.id === 'roland-tr-1000'),
+    template: GOLDEN_TEMPLATE,
+    mood: GOLDEN_MOOD,
+    seed: GOLDEN_SEED,
+  })
+
+  it('renders the menu path, the value and the citation', () => {
+    expect(midiRig.clockSource?.deviceId).toBe('polyend-tracker-mini')
+    expect(midiRig.clockSource?.transport).toBe('midi-din')
+
+    const page = text(html(midiRig))
+    expect(page).toContain('On the Tracker Mini, set Config > MIDI > Clock Out to MIDI Out jack')
+    // The page and the Markdown carry the same claim in their own words, which is the rule in
+    // `components/guide` — what is written twice is the formatting, never the fact.
+    expect(page).toContain('clock leaves only by the routing set here')
+    // Invariant 4, on the page. The mark puts the kind in ink and the source in a title
+    // attribute...
+    expect(html(midiRig)).toContain(
+      `title="${escaped('Polyend Tracker Mini Manual 2.2.1b, p.54')}"`,
+    )
+    // ...and the document and page are *visible*, in the same subordinate cite line every other
+    // cited instruction in this guide carries. A citation is the guide's evidence, and a title
+    // attribute is not evidence to a reader on a phone or reading this on paper.
+    expect(page).toContain('value manual — Polyend Tracker Mini Manual 2.2.1b, p.54')
+    expect(html(midiRig)).toContain('class="subordinate cite"')
+  })
+
+  /**
+   * §8/#103. The Type B adapter, on the page. The manifest carried it on the jacks and nothing
+   * rendered it; the Markdown saying it is not evidence the page does, because the two share no
+   * ink by design — and the page is what a reader on a phone at the machine is holding.
+   */
+  it('surfaces the clock jack notes for the resolved transport, once (#103)', () => {
+    const page = text(html(midiRig))
+    expect(page).toContain('MIDI Out, MIDI In')
+    expect(page).toContain('Type B adapter')
+    expect(page).toContain('p.13, p.284')
+    // Deduped: one claim, though the manifest rightly states it on both jacks.
+    expect(occurrences(page, 'Type B adapter')).toBe(1)
+    // Invariant 4 on the page: cited, and the page visible rather than only in a title.
+    expect(html(midiRig)).toContain(
+      `title="${escaped('Polyend Tracker Mini Manual 2.2.1b, p.13')}"`,
+    )
+    expect(page).toContain('value manual — Polyend Tracker Mini Manual 2.2.1b, p.13')
+  })
+
+  it('says nothing about a MIDI adapter on a USB rig (#103)', () => {
+    const usbRig = resolve({
+      devices: DEVICES.filter(
+        (d) => d.id === 'polyend-tracker-mini' || d.id === 'intellijel-metropolix',
+      ),
+      template: GOLDEN_TEMPLATE,
+      mood: GOLDEN_MOOD,
+      seed: GOLDEN_SEED,
+    })
+    expect(usbRig.clockSource?.transport).toBe('usb')
+    const page = text(html(usbRig))
+    expect(page).toContain('Tracker Mini')
+    expect(page).not.toContain('Type B')
+  })
+
+  it('renders nothing for a source whose manual prints no such setting', () => {
+    const tr = resolve({
+      devices: DEVICES.filter((d) => d.id === 'roland-tr-1000'),
+      template: GOLDEN_TEMPLATE,
+      mood: GOLDEN_MOOD,
+      seed: GOLDEN_SEED,
+    })
+    expect(tr.clockSource?.deviceId).toBe('roland-tr-1000')
+    const page = text(html(tr))
+    expect(page).toContain('Clock source')
+    expect(page).not.toContain('Clock Out')
+  })
+})

@@ -1585,3 +1585,139 @@ describe('source audio (§3/#101)', () => {
     }
   })
 })
+
+/**
+ * §7.4/#104. **The clock source's own enabling setting.**
+ *
+ * The rig phase named a clock source and said "sync everything else to it", which is an
+ * instruction nothing in the rig can obey while the source is silent — and on the Tracker Mini
+ * clock output is a menu (p.54: Off, USB, MIDI Out jack, USB + MIDI Out jack), so it *is* silent
+ * until somebody sets it. Every phase after this one assumes the transport is running, so one
+ * unstated setting stalls the whole guide.
+ *
+ * The rig is Tracker Mini + TR-1000. Neither claims `preferredSource` and both declare
+ * `midi-din`, so §7.4's transport tie is broken by device id ascending — `polyend-` before
+ * `roland-` — and the Tracker Mini is the source over MIDI. That is asserted rather than
+ * assumed: if the tie-break ever moves, this test should say so instead of quietly checking
+ * nothing.
+ */
+/** Occurrences of a literal, without a regex to escape. */
+function occurrences(haystack: string, needle: string): number {
+  let n = 0
+  let at = haystack.indexOf(needle)
+  while (at !== -1) {
+    n++
+    at = haystack.indexOf(needle, at + needle.length)
+  }
+  return n
+}
+
+describe('the clock source is told how to emit (§7.4/#104)', () => {
+  const midiRig = (): ResolveResult =>
+    resolve({
+      devices: DEVICES.filter(
+        (d) => d.id === 'polyend-tracker-mini' || d.id === 'roland-tr-1000',
+      ),
+      template: GOLDEN_TEMPLATE,
+      mood: GOLDEN_MOOD,
+      seed: GOLDEN_SEED,
+    })
+
+  it('gives the menu path, the value and the page', () => {
+    const result = midiRig()
+    expect(result.clockSource?.deviceId).toBe('polyend-tracker-mini')
+    expect(result.clockSource?.transport).toBe('midi-din')
+
+    const body = phaseBody(renderGuide(result), 3).join('\n')
+    // The box's own words, because §8 is read at the machine and this is what is on the screen.
+    expect(body).toContain('`Config > MIDI > Clock Out`')
+    expect(body).toContain('`MIDI Out jack`')
+    expect(body).toContain('- On the Tracker Mini, set')
+    // Invariant 4: a rendered value carries its provenance, and this one is cited.
+    expect(body).toMatch(/Clock Out`[^\n]*`MIDI Out jack`[^\n]* · manual/)
+    // And the citation names the document and the page, in §8.1's own subordinate form. `·
+    // manual` says how it was checked and never says where: a reader holding a different book,
+    // or the same book at another revision, cannot act on a bare `manual`.
+    expect(body).toContain(
+      '  - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.54',
+    )
+    expect(body).toContain('  - ↳ note: Off, USB, MIDI Out jack')
+  })
+
+  it('gives the USB value on a USB rig, not the MIDI one', () => {
+    // Same box, same menu, different option — which is why `sourceSetup` is keyed by transport.
+    // Printing `MIDI Out jack` at a reader on a USB cable would be worse than printing nothing.
+    const device = DEVICES.find((d) => d.id === 'polyend-tracker-mini') as Device
+    const setups = device.clock.sourceSetup ?? []
+    expect(setups.map((s) => s.transport).sort()).toEqual(['midi-din', 'usb'])
+    const usb = setups.find((s) => s.transport === 'usb')
+    expect(usb?.path).toBe('Config > MIDI > Clock Out')
+    expect(usb?.value).toBe('USB')
+    for (const setup of setups) {
+      expect(setup.verified, setup.transport).toEqual({
+        kind: 'manual',
+        source: 'Polyend Tracker Mini Manual 2.2.1b, p.54',
+      })
+    }
+  })
+
+  /**
+   * §8/#103. The Tracker Mini's MIDI jacks are 3.5mm TRS and take the supplied **Type B**
+   * adapter for a 5-pin cable (p.13's callout, restated at p.284). Type B is the uncommon one,
+   * and a reader reaching for a Type A gets silence with nothing on screen to explain it — on
+   * the phase whose whole job is "what do I plug where".
+   *
+   * The manifest carried it on the jacks from #103; nothing rendered it until now.
+   */
+  it('surfaces the clock jack notes for the transport the rig resolved (#103)', () => {
+    const body = phaseBody(renderGuide(midiRig()), 3).join('\n')
+    expect(body).toContain('Type B adapter')
+    expect(body).toContain('p.13, p.284')
+    // Both jacks carry the note and both match `midi-din`, so it is one line naming both — not
+    // two lines that read as two different warnings about two different problems.
+    expect(occurrences(body, 'Type B adapter')).toBe(1)
+    expect(body).toContain('MIDI Out, MIDI In:')
+    // Invariant 4: rendered, so cited — and the page named, not just the kind.
+    expect(body).toMatch(/Type B[^\n]* · manual/)
+    expect(body).toContain(
+      '    - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.13',
+    )
+    // p.284 stays in the note text rather than being folded into the citation: `verified` is
+    // the page documenting *this jack* (§3.3), and the adapter's page documents the adapter.
+    expect(body).not.toContain('p.13, p.284 (')
+  })
+
+  it('says nothing about a MIDI adapter on a rig that resolved onto USB (#103)', () => {
+    // The same box, the same manifest, a transport that touches neither MIDI jack. A guide that
+    // warned about a 5-pin adapter here would be describing a cable nobody is holding.
+    const usbRig = resolve({
+      devices: DEVICES.filter(
+        (d) => d.id === 'polyend-tracker-mini' || d.id === 'intellijel-metropolix',
+      ),
+      template: GOLDEN_TEMPLATE,
+      mood: GOLDEN_MOOD,
+      seed: GOLDEN_SEED,
+    })
+    expect(usbRig.clockSource?.transport).toBe('usb')
+    const body = phaseBody(renderGuide(usbRig), 3).join('\n')
+    expect(body).toContain('Tracker Mini')
+    expect(body).not.toContain('Type B')
+  })
+
+  it('says nothing at all for a source that declares no setup', () => {
+    // The renderer names no box and knows no menu. A TR-1000-only rig makes the TR-1000 the
+    // source, and its manual prints no clock-output routing, so the honest output is silence —
+    // not an invented menu path (invariant 5).
+    const result = resolve({
+      devices: DEVICES.filter((d) => d.id === 'roland-tr-1000'),
+      template: GOLDEN_TEMPLATE,
+      mood: GOLDEN_MOOD,
+      seed: GOLDEN_SEED,
+    })
+    expect(result.clockSource?.deviceId).toBe('roland-tr-1000')
+    const body = phaseBody(renderGuide(result), 3).join('\n')
+    expect(body).toContain('**Clock source**')
+    expect(body).not.toContain('Clock Out')
+    expect(body).not.toContain(', set `')
+  })
+})

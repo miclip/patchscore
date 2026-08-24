@@ -77,6 +77,19 @@ export type Assignable = {
   polyphony: number
 }
 
+/**
+ * How a device passes clock and transport ('midi-din', 'usb', an analog clock jack). Left
+ * open: DESIGN.md gives an example list but never freezes the vocabulary, and a closed union
+ * guessed here would reject a legal manifest for a box with a transport nobody anticipated.
+ *
+ * Declared here rather than beside `ClockSpec` below, where the rest of §2.3's clock data lives,
+ * because `JackSpec.clock` names one of these and a Zod schema is a value: the reference has to
+ * be initialised before the object literal that reads it, not merely before the type-checker
+ * sees it.
+ */
+export type ClockTransport = string
+export const ClockTransportSchema = z.string().min(1)
+
 // ---------------------------------------------------------------------------
 // §3 Recipes
 // ---------------------------------------------------------------------------
@@ -123,6 +136,31 @@ export type JackSpec = {
   id: string
   /** A cable leaves an `out` and arrives at an `in`. Checked, per patch entry. */
   direction: 'in' | 'out'
+  /**
+   * §10/#103. **This is the socket clock uses on this box, over this transport.**
+   *
+   * Set it and the rack's clock cable is drawn into a jack the manual prints; leave it off and
+   * the rack draws the socket with no silkscreen at all, which is the honest rendering of "this
+   * box syncs, and nobody has read its rear panel yet".
+   *
+   * It is a property of the *jack*, not of the clock: `canSendClock` says a box can drive a rig,
+   * and no boolean anywhere says what is written next to the hole. The rack derived `CLK OUT`
+   * and `CLK IN` from those two booleans and drew them on all fourteen devices, including a
+   * Tracker Mini whose panel reads `Line In / Line Out / MIDI In / MIDI Out` and a TR-1000 that
+   * has a `CLK OUT` but no clock input jack of any name.
+   *
+   * **Keyed by transport because the socket moves with it.** A TR-1000 takes clock at `MIDI IN`
+   * over `midi-din` and at `TRG IN` over `analog-clock`; naming one socket per box would put the
+   * cable in the wrong hole for every rig that resolved the other transport, which is the same
+   * defect in a new place. Every entry must be one of the device's own `clock.transport` values.
+   *
+   * **A list, because one hole can speak more than one protocol.** The TR-1000's `TRG IN` is the
+   * endpoint for `analog-clock` and for `trigger` both — p.32's `Trig In` chooses which, on the
+   * same socket — and ids are unique per device, so a single-valued field would have forced a
+   * coin-flip between two true answers. The reverse is what must not happen, and is checked: two
+   * *jacks* claiming the same transport in the same direction leaves the rack choosing.
+   */
+  clock?: ClockTransport[]
   /** The page that documents this jack. Cited once, here, however many cables touch it. */
   verified: Verified
   /** Anything a name alone would mislead a reader about. */
@@ -132,6 +170,7 @@ export type JackSpec = {
 export const JackSpecSchema = z.strictObject({
   id: z.string().min(1),
   direction: z.enum(['in', 'out']),
+  clock: z.array(ClockTransportSchema).min(1).optional(),
   verified: VerifiedSchema,
   note: z.string().min(1).optional(),
 })
@@ -391,14 +430,6 @@ export type DeviceKind = (typeof DEVICE_KINDS)[number]
 export const DeviceKindSchema = z.enum(DEVICE_KINDS)
 
 /**
- * How a device passes clock and transport ('midi-din', 'usb', an analog clock jack). Left
- * open: DESIGN.md gives an example list but never freezes the vocabulary, and a closed union
- * guessed here would reject a legal manifest for a box with a transport nobody anticipated.
- */
-export type ClockTransport = string
-export const ClockTransportSchema = z.string().min(1)
-
-/**
  * §7.4. `preferredSource` is the one *topology judgement* a manifest is allowed to make: "this
  * box's job in a rig is to drive it". A dedicated sequencer or transport says `true`; everything
  * else omits the field.
@@ -418,11 +449,117 @@ export const ClockTransportSchema = z.string().min(1)
  * times. It is meaningless without `canSendClock`, and the schema refuses that combination
  * rather than silently ignoring it.
  */
+/**
+ * §7.4/#104. **What to set on this box so that it actually emits clock over a transport.**
+ *
+ * `canSendClock` says a box *can* drive a rig. On plenty of boxes that is a capability behind a
+ * switch, and the guide was naming a clock source without ever saying how to turn it on: the rig
+ * phase said "Tracker Mini over `midi-din`. Sync everything else to it", and a reader who did
+ * exactly that got silence, because clock output on that box is routed in a menu (Off / USB /
+ * MIDI Out jack / USB + MIDI Out jack, p.54) and nothing in the guide mentioned the menu. Every
+ * later phase depends on the transport running, so one unstated setting stalls the whole guide.
+ *
+ * **Per transport, because the setting is.** The same menu takes `USB` for a USB rig and
+ * `MIDI Out jack` for a MIDI one, and printing the wrong one is worse than printing neither.
+ *
+ * `path` and `value` are the box's own words, and stay in the box's own words: `Config > MIDI >
+ * Clock Out`, not "the clock output setting". §8 is read at the machine, and a reader is looking
+ * for that string on a screen.
+ *
+ * `verified` is required, as on a `JackSpec`: a menu path has a page or nobody checked it. There
+ * is no third state to inherit toward — this is device data and no recipe is above it.
+ *
+ * **Nothing here is derived and nothing is guessed.** A box that needs no setting declares none,
+ * and a box whose manual does not print one declares none either; both render as they do today,
+ * which is the honest gap rather than an invented menu path (invariant 5).
+ */
+export type ClockSourceSetup = {
+  /** Which transport this enables. Must be one the device declares. */
+  transport: ClockTransport
+  /** The menu path, as the box prints it: 'Config > MIDI > Clock Out'. */
+  path: string
+  /** The option to select there, in the menu's own words: 'MIDI Out jack'. */
+  value: string
+  /** Anything a reader would otherwise have to discover at the machine. */
+  note?: string
+  /** The page that prints the menu. */
+  verified: Verified
+}
+
+export const ClockSourceSetupSchema = z.strictObject({
+  transport: ClockTransportSchema,
+  path: z.string().min(1),
+  value: z.string().min(1),
+  note: z.string().min(1).optional(),
+  verified: VerifiedSchema,
+})
+
 export type ClockSpec = {
   canSendClock: boolean
   canReceiveClock: boolean
   transport: ClockTransport[]
   preferredSource?: boolean
+  /** §7.4/#104. How to make this box emit clock, per transport. */
+  sourceSetup?: ClockSourceSetup[]
+}
+
+/**
+ * §7.4/#104. The setup this box needs to drive a rig over `transport`, or nothing.
+ *
+ * One lookup shared by both renderers rather than two. The project's standing rule is that the
+ * Markdown renderer and the React one **do not share code** — a sentence appears in both only
+ * because someone wrote it in both, in the same words — and that rule is about *prose*. Which
+ * entry matches is not prose: it is the same question with one right answer, and two copies of
+ * it are two things to keep in step for no benefit. The wording around it stays written twice.
+ */
+export function clockSourceSetup(
+  device: Device,
+  transport: ClockTransport,
+): ClockSourceSetup | undefined {
+  return device.clock.sourceSetup?.find((s) => s.transport === transport)
+}
+
+/**
+ * §8/#103. **What a reader has to know about the sockets this rig's clock actually uses.**
+ *
+ * A `JackSpec.note` is "anything a name alone would mislead a reader about", and the sockets
+ * carrying clock are exactly where that bites: the Tracker Mini's MIDI jacks are 3.5mm TRS and
+ * need the supplied **Type B** adapter for a 5-pin cable (p.13, p.284). Type B is the uncommon
+ * one. A reader who reaches for a Type A gets silence, with nothing on screen to explain it, on
+ * the phase whose whole job is "what do I plug where".
+ *
+ * **Filtered by the resolved transport**, so a USB rig is not told about a MIDI adapter it will
+ * never touch, and **deduped**, because that note is true of the In and the Out both and the
+ * manifest rightly states it on each — a guide that printed it twice would read as two different
+ * warnings about two different problems.
+ *
+ * Deduped on the note *and its citation*: two jacks saying the same thing on different pages are
+ * two claims, and merging them would put one page's name to the other's sentence.
+ */
+export type ClockJackNote = {
+  /** The jacks this is about, in manifest order: 'MIDI Out', 'MIDI In'. */
+  jacks: string[]
+  note: string
+  verified: Verified
+}
+
+export function clockJackNotes(device: Device, transport: ClockTransport): ClockJackNote[] {
+  const byClaim = new Map<string, ClockJackNote>()
+  for (const jack of device.jacks ?? []) {
+    if (jack.note === undefined) continue
+    if (!(jack.clock ?? []).includes(transport)) continue
+    // Not `JSON.stringify(jack.verified)`: key order in an object literal is an authoring
+    // accident, and two identical citations written in the other order must not read as two.
+    const cite = jack.verified === false ? 'false' : `${jack.verified.kind}\u0000${jack.verified.source}`
+    const key = `${jack.note}\u0000${cite}`
+    const seen = byClaim.get(key)
+    if (seen === undefined) {
+      byClaim.set(key, { jacks: [jack.id], note: jack.note, verified: jack.verified })
+    } else {
+      seen.jacks.push(jack.id)
+    }
+  }
+  return [...byClaim.values()]
 }
 
 export const ClockSpecSchema = z
@@ -431,11 +568,31 @@ export const ClockSpecSchema = z
     canReceiveClock: z.boolean(),
     transport: z.array(ClockTransportSchema).min(1),
     preferredSource: z.boolean().optional(),
+    sourceSetup: z.array(ClockSourceSetupSchema).min(1).optional(),
   })
   .refine((c) => !(c.preferredSource === true && !c.canSendClock), {
     message: 'clock.preferredSource requires canSendClock',
     path: ['preferredSource'],
   })
+  // #104. The same three checks `JackSpec.clock` gets, for the same reason: a setup naming a
+  // transport this box does not carry can never be reached, one on a box that cannot send clock
+  // describes a state that does not exist, and two for one transport leaves the renderer picking
+  // which menu path a reader should follow.
+  .refine((c) => !(c.sourceSetup !== undefined && !c.canSendClock), {
+    message: 'clock.sourceSetup requires canSendClock',
+    path: ['sourceSetup'],
+  })
+  .refine((c) => (c.sourceSetup ?? []).every((s) => c.transport.includes(s.transport)), {
+    message: 'every clock.sourceSetup transport must appear in clock.transport',
+    path: ['sourceSetup'],
+  })
+  .refine(
+    (c) => new Set((c.sourceSetup ?? []).map((s) => s.transport)).size === (c.sourceSetup ?? []).length,
+    {
+      message: 'clock.sourceSetup declares one setup per transport',
+      path: ['sourceSetup'],
+    },
+  )
 
 /**
  * §2.3. The audio the box has, as the manifest states it.
@@ -801,6 +958,51 @@ export const DeviceSchema = z
         path: ['jacks'],
       })
     }
+
+    /**
+     * §10/#103. A jack claiming to carry clock is checked against the clock spec three ways,
+     * because all three failures draw a cable into a hole that is not there.
+     *
+     * The transport has to be one the box declares — `clock: 'analog-clock'` on a device whose
+     * `transport` is `['midi-din']` is a socket no rig can ever resolve onto. The direction has
+     * to match the capability: a clock-carrying `out` on a box that cannot send is the same
+     * fiction `CLK OUT`-from-a-boolean was. And one socket per (transport, direction), because
+     * the rack draws exactly one, and a device offering two would have the *renderer* choosing
+     * which of the box's jacks the reader should patch — a decision that belongs in the manifest
+     * beside its citation.
+     */
+    const transports = new Set(device.clock.transport)
+    const clockSockets = new Set<string>()
+    ;(device.jacks ?? []).forEach((jack, i) => {
+      if (jack.clock === undefined) return
+      const capable =
+        jack.direction === 'out' ? device.clock.canSendClock : device.clock.canReceiveClock
+      if (!capable) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `jack '${jack.id}' carries clock ${jack.direction} on a device that cannot ${jack.direction === 'out' ? 'send' : 'receive'} clock`,
+          path: ['jacks', i, 'clock'],
+        })
+      }
+      jack.clock.forEach((transport, j) => {
+        if (!transports.has(transport)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `jack '${jack.id}' carries clock over '${transport}', which this device does not declare in clock.transport`,
+            path: ['jacks', i, 'clock', j],
+          })
+        }
+        const key = `${transport}\u0000${jack.direction}`
+        if (clockSockets.has(key)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `two jacks carry clock ${jack.direction} over '${transport}'; the rack draws one`,
+            path: ['jacks', i, 'clock', j],
+          })
+        }
+        clockSockets.add(key)
+      })
+    })
 
     const perStep = new Set(device.features?.perStep ?? [])
     const hintKeys = new Set(Object.keys(device.hints ?? {}))

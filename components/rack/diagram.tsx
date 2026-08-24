@@ -41,14 +41,18 @@ function Jack({ jack, live }: { jack: PanelJack; live: boolean }) {
     <g className="rack-jack" data-kind={jack.kind} data-live={live ? 'yes' : 'no'}>
       <circle className="rack-jack-ring" cx={x} cy={y} r={JACK_R} vectorEffect="non-scaling-stroke" />
       <circle className="rack-jack-hole" cx={x} cy={y} r={JACK_HOLE_R} />
-      <text
-        className="rack-jack-label"
-        x={x}
-        y={above ? y - JACK_R - 2.6 : y + JACK_R + 4.4}
-        textAnchor="middle"
-      >
-        {jack.label}
-      </text>
+      {/* #103. No silkscreen, no text node: an unlabelled socket is a socket the manifest has
+          not named, and printing an empty label would leave a blank where a name looks due. */}
+      {jack.label === undefined ? null : (
+        <text
+          className="rack-jack-label"
+          x={x}
+          y={above ? y - JACK_R - 2.6 : y + JACK_R + 4.4}
+          textAnchor="middle"
+        >
+          {jack.label}
+        </text>
+      )}
     </g>
   )
 }
