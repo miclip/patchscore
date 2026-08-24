@@ -72,10 +72,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         <p className="mono">
           {num(bpm.min)}–{num(bpm.max)} BPM · {num(page.totalBars)} bars · {keys.join(' · ')}
         </p>
-        <p className="masthead-actions">
-          <Link href="/directions">All directions</Link> <Link href="/devices">All devices</Link>{' '}
-          <Link href="/">Open the studio</Link>
-        </p>
       </header>
 
       <div className="columns">

@@ -64,6 +64,67 @@ body {
   padding: 24px 16px 64px;
 }
 
+/*
+ * #112's navigation landmark, rendered once from the layout.
+ *
+ * It sits outside `.shell` — the layout wraps `{children}`, and every page brings its own
+ * `<main class="shell">` — so it repeats the shell's own measure and gutter rather than
+ * inheriting them. Two places now hold `1180px`; the alternative was a layout that reaches into
+ * the page to wrap it, which is a larger change than one number.
+ *
+ * **44px, wrapping, and never scrolling the body (#21.)** Three links fit on one line at 390px
+ * with room to spare, but the rule is `flex-wrap: wrap` rather than a width nobody re-checks:
+ * a fourth link, or a reader at 200% text size, must cost a second row and not a sideways page.
+ * The 44px is on the link, not on the row, because hit target and visual size are decoupled — the
+ * text is 13px and quiet, per §10, and the target around it is not.
+ */
+.site-nav {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.site-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+/*
+ * #21's floor is 44px in **both** directions, and height alone is the easy half to get right.
+ * Measured at 390px, "Studio" came out 41×44 — a target that passes a reading of the rule and
+ * fails the thumb it exists for. `min-width` with the text centred inside costs three pixels on
+ * one link and nothing on the other two.
+ *
+ * It cannot reach the body: three links at their natural widths plus two gaps is under 200px
+ * against 358px of content box at 390px, and the row wraps before it would overflow anyway.
+ */
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  color: var(--ink-dim);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+.site-nav a:hover {
+  color: var(--silkscreen);
+}
+
+.site-nav a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .masthead {
   display: flex;
   flex-wrap: wrap;
@@ -309,16 +370,28 @@ body {
   padding: 0;
 }
 
+/*
+ * #112. A row is a container, not a control: a `<label>` holding the checkbox and its name, and
+ * a details link beside it. Two columns, so the two targets are laid out side by side and
+ * **cannot overlap** — which is the whole safety argument. #21 is explicit that a mis-sized link
+ * here does not fail as "I cannot read about this device", it fails as "I cannot select it",
+ * because the link would be sitting on the checkbox's target.
+ *
+ * `minmax(0, 1fr)` on the choosing half and `auto` on the link, so at 390px the name wraps and
+ * the link keeps its width rather than the row taking the body sideways.
+ *
+ * `cursor: pointer` moved to `.pick-choose`: the row as a whole no longer toggles anything, and
+ * a hand cursor over dead space is a promise the row stopped keeping.
+ */
 .pick {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   gap: 4px 10px;
   padding: 10px 12px;
   background: var(--panel-2);
   border: 1px solid var(--edge);
   border-radius: var(--radius);
-  cursor: pointer;
   min-width: 0;
 }
 
@@ -330,16 +403,58 @@ body {
   border-color: var(--accent-dim);
 }
 
-.pick:has(input:focus-visible) {
+/* Either target focused lights the row, so the keyboard shows which row it is standing on. */
+.pick:has(input:focus-visible),
+.pick:has(.pick-details:focus-visible) {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
+/*
+ * The choosing half. 44px minimum, and it is the *label* that carries it rather than the 15px
+ * checkbox inside: hit target and visual size are decoupled (#21), and a control drawn to look
+ * right on a dense list is far smaller than a target reached with a thumb.
+ */
+.pick-choose {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+/*
+ * The details half. Square-ish and quiet — 13px text, dim ink, per §10 — with a target that is
+ * neither: 44px in both directions, laid out in its own column where nothing else can reach.
+ */
+.pick-details {
+  grid-column: 2;
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 6px;
+  color: var(--ink-dim);
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pick-details:hover {
+  color: var(--silkscreen);
+}
+
 .pick input {
-  margin: 3px 0 0;
+  margin: 0;
   accent-color: var(--accent);
   width: 15px;
   height: 15px;
+  flex: none;
 }
 
 .pick .name {
@@ -348,8 +463,16 @@ body {
   overflow-wrap: anywhere;
 }
 
+/*
+ * The metadata line spans the whole row and indents to clear the checkbox, so it still reads as
+ * belonging to the name above it. 25px is the checkbox (15px) plus `.pick-choose`'s gap (10px);
+ * it is a magic number because the alternative is a third grid column that exists only to hold
+ * an indent.
+ */
 .pick .sub {
-  grid-column: 2;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  padding-left: 25px;
   color: var(--ink-dim);
   font-size: 12px;
   min-width: 0;
@@ -448,17 +571,11 @@ body {
 
 /* --------------------------------------------------------- catalogue pages */
 
-.masthead-actions a {
-  color: var(--ink);
-  text-decoration: none;
-  border-bottom: 1px solid var(--edge-strong);
-  font-size: 13px;
-}
-
-.masthead-actions a:hover {
-  color: var(--silkscreen);
-  border-bottom-color: var(--accent);
-}
+/*
+ * `.masthead-actions a` used to live here, styling four hand-written link sets that #112 replaced
+ * with one `.site-nav`. The container rule stays — the studio still uses it for Copy link — but
+ * nothing renders an anchor inside it now, so the anchor rules went with the markup.
+ */
 
 .catalogue-page .panel {
   margin-top: 16px;
@@ -1479,6 +1596,35 @@ button:active {
   color: var(--silkscreen);
 }
 
+/*
+ * #112. The heading names the direction, so the heading is the way to the page about it.
+ *
+ * It inherits the heading's ink and case rather than announcing itself as a link — this is the
+ * title of what you are reading, and painting it accent blue would make the guide look like it
+ * starts with a navigation control. The rule underneath is the affordance, and it is the
+ * catalogue's own `--edge-strong` hairline.
+ *
+ * 44px (#21). The guide head is one row per guide rather than one per list item, so buying the
+ * target with height costs a single row of a page that is metres long.
+ */
+.guide-head h2 a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--edge-strong);
+}
+
+.guide-head h2 a:hover {
+  border-bottom-color: var(--accent);
+}
+
+.guide-head h2 a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .hints-toggle {
   display: flex;
   align-items: center;
@@ -2363,6 +2509,7 @@ html {
   /* Chrome. Everything that is not the guide. */
   .masthead,
   .masthead-actions,
+  .site-nav,
   .footer,
   .notices,
   .rack-section,

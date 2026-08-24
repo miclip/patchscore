@@ -1,10 +1,12 @@
 'use client'
 
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import type { Device, DeviceId, GuidePhase, ResolveResult } from '@/lib/core'
 import type { ReactNode } from 'react'
 import { GUIDE_PHASES } from '@/lib/core'
 import { browserEnv } from '@/lib/studio/browser-env'
+import { templateHref } from '@/lib/studio/catalogue'
 import { downloadGuideMarkdown, printGuide } from '@/lib/studio/export'
 import { occupiedCounts } from './format'
 import { PhaseFinishing } from './phase-finishing'
@@ -82,7 +84,15 @@ export function Guide({ result, seed }: { result: ResolveResult; seed: number })
   return (
     <article className="guide" data-hints={hints ? 'on' : 'off'}>
       <header className="guide-head">
-        <h2>{result.template.name}</h2>
+        {/*
+          #112. The guide names the direction on every phase and, until now, never linked to the
+          page describing it. `result.template` is the *effective* template — inspirations
+          applied — and §5 composes that from the base with `...template`, so the id and the name
+          are the authored ones and this href always names a page that exists.
+        */}
+        <h2>
+          <Link href={templateHref(result.template)}>{result.template.name}</Link>
+        </h2>
         <div className="guide-actions">
           <label className="hints-toggle">
             <input

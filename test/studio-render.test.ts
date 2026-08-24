@@ -10,9 +10,15 @@ import { INSPIRATIONS } from '../lib/inspirations/index'
 import { templateById } from '../lib/templates/index'
 
 /**
- * #12. The hydration contract: the server's markup and the client's first markup are the same
- * bytes, because both are a pure function of `DEFAULT_INPUTS`. The link and the store only get a
- * say in an effect, which is after the first frame by definition.
+ * #12, amended by #99. The hydration contract: the server's markup and the client's first markup
+ * are the same bytes, because both are a pure function of the `initialInputs` prop. The *store*
+ * only gets a say in an effect, which is after the first frame by definition.
+ *
+ * The URL used to be on that list and no longer is — it is decoded on the server now and arrives
+ * here as data (`lib/studio/entry.ts`, `test/page-render.test.ts`). That change makes the tests
+ * below *more* load-bearing rather than less: this component may still not read `window` during
+ * render, and the reason is now that it has no excuse to, since whatever the URL had to say has
+ * already been said by the time it is called.
  *
  * This runs in Node with no DOM, which is not a limitation here — it is the instrument. There is
  * no `window` in this environment, so a component that read `location` or `localStorage` during
@@ -28,11 +34,17 @@ afterEach(() => {
   else Object.defineProperty(globalThis, 'window', KEPT)
 })
 
+/**
+ * The default guide, which is what `studioEntry` hands the component when the URL carries no
+ * valid permalink (#99). The prop is required — `Studio` holds no default of its own, so that
+ * exactly one place decides what "no link" means — which is why it is named here rather than
+ * omitted.
+ */
 function firstFrame(): string {
-  return renderToStaticMarkup(createElement(Studio))
+  return renderToStaticMarkup(createElement(Studio, { initialInputs: DEFAULT_INPUTS }))
 }
 
-describe('the first frame', () => {
+describe('the first frame, given no inputs', () => {
   it('renders in an environment with no browser at all', () => {
     // Node: `window` is genuinely absent. Reaching for it during render throws here.
     expect('window' in globalThis).toBe(false)
@@ -121,11 +133,18 @@ describe('the first frame does not read the browser even when there is one', () 
     expect(firstFrame()).toBe(withoutBrowser)
   })
 
-  it('renders the same bytes whatever the URL says', () => {
+  it('renders the same bytes whatever `window.location` says, because the URL is a prop now', () => {
     const plain = firstFrame()
 
-    // A location carrying a perfectly good permalink for a *different* guide. The first frame
-    // must ignore it; the effect that honours it has not run yet.
+    // A location carrying a perfectly good permalink for a *different* guide. This component
+    // must ignore it — not because the URL does not matter, but because the URL reaches the
+    // first frame as `initialInputs`, decoded on the server (#99). A component that read
+    // `location` here would be a second answer to a question already answered, and the two
+    // would disagree the moment the address bar and the props diverged.
+    //
+    // The claim that the *page* honours that link is `test/page-render.test.ts`, which renders
+    // `app/page.tsx` with real search params and asserts it paints Drone Study rather than the
+    // default. This one is the narrower and still-necessary half.
     const other = encodeGuideInputs({ ...DEFAULT_INPUTS, seed: 999999 }, CATALOGUE)
     Object.defineProperty(globalThis, 'window', {
       value: { location: { search: `?${other}`, pathname: '/', href: `https://x/?${other}` } },

@@ -66,9 +66,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       <header className="masthead">
         <h1>{label}</h1>
         <p>{kind}</p>
-        <p className="masthead-actions">
-          <Link href="/devices">All devices</Link> <Link href="/">Open the studio</Link>
-        </p>
       </header>
 
       <section className="panel span-2">

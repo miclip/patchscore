@@ -1,8 +1,10 @@
 'use client'
 
+import Link from 'next/link'
 import { useId, useMemo, useState } from 'react'
 import type { TemplateId } from '@/lib/core'
 import { TEMPLATES } from '@/lib/templates'
+import { templateHref } from '@/lib/studio/catalogue'
 import { templateView } from '@/lib/studio/picker'
 
 /**
@@ -27,7 +29,8 @@ export type GenrePickerProps = {
 
 export function GenrePicker({ selected, onSelect }: GenrePickerProps) {
   const [query, setQuery] = useState('')
-  const searchId = `${useId()}-search`
+  const ids = useId()
+  const searchId = `${ids}-search`
   const shown = useMemo(() => templateView(TEMPLATES, selected, query), [selected, query])
 
   return (
@@ -66,23 +69,39 @@ export function GenrePicker({ selected, onSelect }: GenrePickerProps) {
         </p>
       ) : null}
 
+      {/*
+        Two sibling targets per row, exactly as the device picker has them and for the same
+        reasons (#112) — a `<label>` around the radio and its name, and a separate link to the
+        direction's own page. See `device-picker.tsx` for the full argument; the only difference
+        here is that a radio group is one tab stop, so the links are what the keyboard walks
+        through between the search box and the chosen radio.
+      */}
       <fieldset className="picker-list">
-        {shown.rows.map(({ item: template, selected: isSelected, retained }) => (
-          <label className="pick" key={template.id} data-retained={retained ? 'yes' : 'no'}>
-            <input
-              type="radio"
-              name="template"
-              checked={isSelected}
-              onChange={() => onSelect(template.id)}
-            />
-            <span className="name">{template.name}</span>
-            <span className="sub mono">
-              {template.bpm.default} BPM · {template.structure.length} sections ·{' '}
-              {template.roles.length} parts · {template.patterns.length} patterns
-              {retained ? ' · still chosen' : ''}
-            </span>
-          </label>
-        ))}
+        {shown.rows.map(({ item: template, selected: isSelected, retained }) => {
+          const subId = `${ids}-${template.id}-sub`
+          return (
+            <div className="pick" key={template.id} data-retained={retained ? 'yes' : 'no'}>
+              <label className="pick-choose">
+                <input
+                  type="radio"
+                  name="template"
+                  checked={isSelected}
+                  aria-describedby={subId}
+                  onChange={() => onSelect(template.id)}
+                />
+                <span className="name">{template.name}</span>
+              </label>
+              <Link className="pick-details" href={templateHref(template)}>
+                Details<span className="sr-only"> for {template.name}</span>
+              </Link>
+              <span className="sub mono" id={subId}>
+                {template.bpm.default} BPM · {template.structure.length} sections ·{' '}
+                {template.roles.length} parts · {template.patterns.length} patterns
+                {retained ? ' · still chosen' : ''}
+              </span>
+            </div>
+          )
+        })}
       </fieldset>
     </section>
   )

@@ -1,5 +1,6 @@
 'use client'
 
+import { useId } from 'react'
 import { INSPIRATION_CAP } from '@/lib/core'
 import type { Inspiration, InspirationApplication, InspirationId } from '@/lib/core'
 
@@ -56,6 +57,9 @@ export function InspirationPicker({
   onToggle,
   application,
 }: InspirationPickerProps) {
+  // Before the early return: a hook may not be called conditionally.
+  const ids = useId()
+
   // Nothing to offer, so nothing to draw — not even a heading.
   if (inspirations.length === 0) return null
 
@@ -73,23 +77,40 @@ export function InspirationPicker({
         </p>
       </header>
 
+      {/*
+        The same row shape as the other two pickers (#112) — a container, a `<label>` holding the
+        control and its name, and the summary as a description rather than as part of the
+        control's accessible name.
+
+        **No details link here, and the column it would sit in stays empty.** An influence has no
+        page of its own: §5.1 keys them on `(role, band)` and they name no template, so there is
+        nothing to author a page *about* that the direction pages do not already say better. The
+        row shares the shape so that one stylesheet describes all three, not because a link is
+        pending.
+      */}
       <fieldset className="picker-list">
         {inspirations.map((inspiration) => {
           const on = chosen.has(inspiration.id)
+          const subId = `${ids}-${inspiration.id}-sub`
           return (
-            <label className={`pick${!on && atCap ? ' pick-off' : ''}`} key={inspiration.id}>
-              <input
-                type="checkbox"
-                checked={on}
-                // At the cap the unchosen are disabled rather than silently ignored, so the
-                // control says what it will do before it is clicked. Unticking is never
-                // disabled: a user at the cap must always be able to get out of it.
-                disabled={!on && atCap}
-                onChange={(event) => onToggle(inspiration.id, event.target.checked)}
-              />
-              <span className="name">{inspiration.name}</span>
-              <span className="sub mono">{summarise(inspiration)}</span>
-            </label>
+            <div className={`pick${!on && atCap ? ' pick-off' : ''}`} key={inspiration.id}>
+              <label className="pick-choose">
+                <input
+                  type="checkbox"
+                  checked={on}
+                  aria-describedby={subId}
+                  // At the cap the unchosen are disabled rather than silently ignored, so the
+                  // control says what it will do before it is clicked. Unticking is never
+                  // disabled: a user at the cap must always be able to get out of it.
+                  disabled={!on && atCap}
+                  onChange={(event) => onToggle(inspiration.id, event.target.checked)}
+                />
+                <span className="name">{inspiration.name}</span>
+              </label>
+              <span className="sub mono" id={subId}>
+                {summarise(inspiration)}
+              </span>
+            </div>
           )
         })}
       </fieldset>

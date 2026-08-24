@@ -1,9 +1,11 @@
 'use client'
 
+import Link from 'next/link'
 import { useId, useMemo, useState } from 'react'
 import type { Device, DeviceId } from '@/lib/core'
 import { expand } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
+import { deviceHref, deviceLabel } from '@/lib/studio/catalogue'
 import { ANY_KIND, deviceView, kindsPresent } from '@/lib/studio/picker'
 import type { DeviceFilter } from '@/lib/studio/picker'
 
@@ -132,7 +134,7 @@ export function DevicePicker({ selected, onToggle }: DevicePickerProps) {
       ) : null}
 
       <fieldset className="picker-list">
-        {[...chosen, ...rest].map((row) => pick(row, onToggle))}
+        {[...chosen, ...rest].map((row) => pick(row, onToggle, ids))}
       </fieldset>
 
       {rest.length === 0 && chosen.length > 0 && shown.matched > 0 ? (
@@ -142,27 +144,61 @@ export function DevicePicker({ selected, onToggle }: DevicePickerProps) {
   )
 }
 
+/**
+ * One row: **two sibling targets, never one inside the other** (#112).
+ *
+ * The row used to be a single `<label>` wrapping everything, which made the whole row the
+ * checkbox's hit target and left nowhere to put a link — interactive content inside a `<label>`
+ * is invalid, and a click on it would toggle the checkbox on the way past. So the row is now a
+ * container holding a `<label>` that wraps only the control and its name, and a separate link
+ * beside it. They are grid siblings in different columns, so neither can steal a tap from the
+ * other; #21's warning applies exactly here, because a details link that eats the checkbox's
+ * target does not fail as "I cannot read about my device", it fails as "I cannot select it".
+ *
+ * **The `sub` line moved out of the label and came back as a description.** Inside the label it
+ * was part of the checkbox's accessible name, so the control announced as "Polyend Tracker Mini
+ * groovebox · 8 assignables · 22 recipes · can send clock, checkbox". `aria-describedby` keeps
+ * every one of those facts available and stops them being the control's *name*, which is the
+ * thing a screen reader repeats on every arrow key.
+ *
+ * The link's own name is "Details for Polyend Tracker Mini" — real text, not an `aria-label`, so
+ * the visible word is contained in the accessible name (WCAG 2.5.3) and thirteen rows do not all
+ * announce as "Details".
+ *
+ * `deviceLabel` rather than `maker` + `name`: one of the thirteen manifests already carries its
+ * maker in its name, and this row was the last place still printing `Zoom Zoom LiveTrak L-8`.
+ */
 function pick(
   row: { item: Device; selected: boolean; retained: boolean },
   onToggle: (id: DeviceId, on: boolean) => void,
+  idPrefix: string,
 ) {
   const device = row.item
   const assignables = expand(device).length
+  const label = deviceLabel(device)
+  // Device ids are permalink-safe (`PERMALINK_ID`: letters, digits, interior hyphens), so this
+  // is always a legal id and always unique within the list.
+  const subId = `${idPrefix}-${device.id}-sub`
+
   return (
-    <label className="pick" key={device.id} data-retained={row.retained ? 'yes' : 'no'}>
-      <input
-        type="checkbox"
-        checked={row.selected}
-        onChange={(event) => onToggle(device.id, event.target.checked)}
-      />
-      <span className="name">
-        {device.maker} {device.name}
-      </span>
-      <span className="sub mono">
+    <div className="pick" key={device.id} data-retained={row.retained ? 'yes' : 'no'}>
+      <label className="pick-choose">
+        <input
+          type="checkbox"
+          checked={row.selected}
+          aria-describedby={subId}
+          onChange={(event) => onToggle(device.id, event.target.checked)}
+        />
+        <span className="name">{label}</span>
+      </label>
+      <Link className="pick-details" href={deviceHref(device)}>
+        Details<span className="sr-only"> for {label}</span>
+      </Link>
+      <span className="sub mono" id={subId}>
         {device.kind} · {assignables} assignable{assignables === 1 ? '' : 's'} ·{' '}
         {device.recipes.length} recipes
         {device.clock.canSendClock ? ' · can send clock' : ''}
       </span>
-    </label>
+    </div>
   )
 }
