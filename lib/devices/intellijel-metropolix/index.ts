@@ -52,7 +52,8 @@ import { METROPOLIX_PANEL } from './panel'
  * sockets). `transport` describes the box a person owns, not the box plus a shopping list, so it
  * lists what is built in.
  *
- * **`preferredSource: true`, and this is the first device in the library to claim it.** §7.4 says
+ * **`preferredSource: true`, and this was the first device in the library to claim it** — #80 has
+ * since added a second, the Tracker Mini, and §7.4 ranks neither above the other. §7.4 says
  * the field is a topology judgement a manifest states and the engine does not infer, and the
  * evidence here is not a capability but a definition: the manual's own first line calls this a
  * "musical sequencer", the box has no voice to be played by anything else, and its entire output

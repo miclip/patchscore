@@ -177,11 +177,41 @@ export const CapabilityEvidenceSchema = z.union([
  * rather than a hole in the checking. "The manual documents no LFO topology this shape can hold"
  * is evidence *about an absence*, and invariant 5 asks for exactly that — the gap shown honestly
  * instead of an omission a reader has to guess at. The TR-1000's `features.lfo` is the case.
+ *
+ * ## Why a judgement field is in the list anyway
+ *
+ * `clock.preferredSource` is a judgement, so the line is not "judgements stay out" — and the
+ * difference from `comfortableVoices` is what a page can be asked. Nothing prints "this box is
+ * comfortable at eight voices", so a slot there only invites p.14, which says ten. A manual does
+ * say what a box is *for*: Metropolix's manual opens by calling it a musical sequencer, and the
+ * Tracker Mini's calls it "a perfect fit for the centre piece of a setup". Those two sentences are
+ * the whole basis of the two `preferredSource: true` claims in the library. §7.4 asks a person to
+ * make the claim; this records what they read when they made it.
+ *
+ * #80 is the case for the map rather than for the field. Nine boxes were asked and one qualified,
+ * so the interesting entries are the eight that did not — and the Tracker Mini's own manifest
+ * records **two pages it read and rejected**, p.11's "all in one workstation" (which the sentence
+ * scopes to being battery-powered) and p.295 (a keypress procedure). A comment can argue that; a
+ * map is what makes the argument countable, and `npm run audit` reports it.
+ *
+ * The `unknown` state is the half that was missing and is worth more here than the citation. The
+ * Model 2400 claimed the field for two commits on a manual proving the desk can generate clock
+ * and cannot receive it — a capability, not a job — and when the claim came back out there was
+ * nowhere to write down that the manual had been read and did not answer the question. That is
+ * finished work, and it read as silence.
+ *
+ * **The citation still has to be for the right claim.** p.30 proves `clock.canSendClock`; it is
+ * not evidence that driving a rig is the box's job, and copying one path's source onto the other
+ * is the `comfortableVoices` mistake wearing this field's name. Like `features.*` and for the
+ * same reason, the path is accepted whether or not `preferredSource` is declared: omitting it is
+ * the common case, and "the manual states what this box can do and never what it is for" is
+ * evidence about that omission rather than an empty slot.
  */
 export const CAPABILITY_FACTS = [
   'clock.canSendClock',
   'clock.canReceiveClock',
   'clock.transport',
+  'clock.preferredSource',
   'io.main',
   'io.individualOuts',
   'io.audioIn',
@@ -615,6 +645,13 @@ export const DeviceKindSchema = z.enum(DEVICE_KINDS)
  * would rank identically and the second spelling only invites an author to write it out eleven
  * times. It is meaningless without `canSendClock`, and the schema refuses that combination
  * rather than silently ignoring it.
+ *
+ * **A manifest may record what it read** at `clock.preferredSource` in `capabilityEvidence`
+ * (§2.6) — a citation for the page that says what the box is for, or an `unknown` saying
+ * somebody looked and the manual states only what it can do. Optional, like every scalar fact
+ * in that map, and accepted whether or not the field is declared, because the omission is the
+ * thing most manifests have to account for. What it must not carry is a `canSendClock` page:
+ * that proves a capability, and the whole point of this field is that a capability is not a job.
  */
 /**
  * §7.4/#104. **What to set on this box so that it actually emits clock over a transport.**

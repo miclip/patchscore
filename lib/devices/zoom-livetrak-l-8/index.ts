@@ -100,6 +100,28 @@ export const device: Device = {
   clock: { canSendClock: false, canReceiveClock: false, transport: ['usb'] },
 
   /**
+   * §2.6/#22, §7.4/#80. **This box is half of the pair that proves `preferredSource` is not
+   * derivable from `kind`, and it is the half that says nothing.**
+   *
+   * §7.4 uses the library's two `mixer-recorder`s to make that argument: the Model 2400 was
+   * considered for the field and declines it in a reasoned comment of its own, and this desk
+   * cannot send clock at all. Same kind, opposite ends of the topology — which is exactly why the
+   * field exists and why no engine may infer it.
+   *
+   * So the entry records a closed question rather than an open one. There is no MIDI anywhere on
+   * this box, `canSendClock` is false, and the schema refuses `preferredSource` without it; the
+   * manual has no role sentence to weigh because it has no clock to write one about. The guide
+   * already says this out loud — a LiveTrak in a rig is named as running free.
+   */
+  capabilityEvidence: {
+    'clock.preferredSource': {
+      kind: 'unknown',
+      reason:
+        'no MIDI and no clock anywhere on this box, so the manual states nothing about leading a rig — and with `canSendClock: false` the field is not claimable in any case',
+    },
+  },
+
+  /**
    * MASTER OUT is a balanced XLR pair (p.110). No per-part direct outs: MONITOR OUT A-C are cue
    * buses, not channel inserts. Eight analog inputs — six XLR/TRS combo MIC/LINE and two TS LINE
    * — and a USB audio interface of 12 in / 4 out.

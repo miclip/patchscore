@@ -88,6 +88,31 @@ export const device: Device = {
   clock: { canSendClock: false, canReceiveClock: true, transport: ['analog-clock', 'midi-din'] },
 
   /**
+   * §2.6/#22, §7.4/#80. **The one entry in this map, and it is about a field that is not here.**
+   *
+   * #80 asked every box in the library whether driving a rig is its job. On this one the question
+   * is closed before it is asked: `preferredSource` requires `canSendClock`, and the schema
+   * refuses the pair — so the field could not be claimed even if somebody wanted to. The entry is
+   * still worth writing, because "the schema would have refused it" is not the same finding as
+   * "the manual does not say", and this manual does not say either. It documents three MIDI
+   * behaviours and no transmission at all (see the `clock` comment above), so there is no role
+   * sentence to read one way or the other.
+   *
+   * Recorded rather than omitted, so the decision reads as a decision. Compare the Cascadia,
+   * whose entry says something different again: there the box plainly sends clock, so the question
+   * is live rather than closed by the hardware, and its manual answers it in the negative — an
+   * instrument its own overview calls stand-alone, played by whatever controller you patch into
+   * it. Same recorded state, three different reasons for it.
+   */
+  capabilityEvidence: {
+    'clock.preferredSource': {
+      kind: 'unknown',
+      reason:
+        'this manual documents no clock transmission at all, so it states nothing about leading a rig either — and with `canSendClock: false` the field is not claimable in any case',
+    },
+  },
+
+  /**
    * Stereo in, stereo out, and a headphone out that duplicates the main pair rather than being a
    * third destination (p.5). `individualOuts: 0` — the four CV outputs are control voltage, not
    * audio, and there is no second audio pair to send a part to on its own.

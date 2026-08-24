@@ -953,6 +953,37 @@ export const device: Device = {
     transport: ['midi-din', 'usb'],
 
     /**
+     * §7.4/#80. **`preferredSource: true`, and the evidence is a role sentence rather than a
+     * jack.** Everything above this line is capability: the box has a MIDI Out, and clock can be
+     * routed out of it. §7.4 asks a different question — is driving a rig this box's *job* — and
+     * p.283, the MIDI chapter's opening, answers it: *"Audio, controlled by Tracker Mini from
+     * external devices, can also be sampled back into Tracker Mini, making it a perfect fit for
+     * the centre piece of a setup."* The same paragraph states the topology rule this field
+     * exists to let a manifest answer: *"The clock in a multi gear setup will control timing
+     * between devices. As such, it is recommended that only one main clock is set as the primary
+     * lead."*
+     *
+     * p.287 is what makes it a documented default rather than one sentence: §11.3 "Typical MIDI
+     * Configurations" opens with *"Example configuration 1: Tracker Mini as the primary lead"*,
+     * drawn with *"Transport control e.g. Play, Stop and Clock is dictated by Tracker Mini and
+     * its current Tempo"* and the downstream gear following. Configuration 3 has it following
+     * instead, which is why the claim is "this box can lead" and never "this box leads over that
+     * one" — the manual documents both and prints the leading case first.
+     *
+     * **Two pages that look like this evidence and are not**, both checked and both rejected:
+     * p.11 calls it an *"ideal portable 'all in one' workstation"*, which the rest of the
+     * sentence scopes to *"a small form factor and rechargeable battery"* — self-contained, which
+     * is nearly the opposite claim; and p.295 is the keypress procedure `CREATING A MIDI CC
+     * OUTPUT STEP`, capability to its bones. Neither would have been evidence for this field.
+     *
+     * The citation is on `clock.preferredSource` in `capabilityEvidence` (§2.6) rather than in
+     * this comment, which is the whole point of #22 — and it is p.283, not the p.54 `Clock Out`
+     * menu below. That menu is how the clock gets out; it is not why this box should be the one
+     * sending it.
+     */
+    preferredSource: true,
+
+    /**
      * §7.4/#104. **Clock output on this box is a menu, and the guide never said so.**
      *
      * p.54's Config table, `MIDI` menu, `Clock Out`: *"Sets the Tracker Mini clock output. Off,
@@ -1043,6 +1074,12 @@ export const device: Device = {
     [jackFact('MIDI In')]: cite(13),
     [clockSourceSetupFact('midi-din')]: cite(54),
     [clockSourceSetupFact('usb')]: cite(54),
+
+    /**
+     * §7.4/#80. The role sentence, not the jack and not the menu — see the `clock` comment for
+     * why p.11 and p.295 were both read and both rejected.
+     */
+    'clock.preferredSource': cite(283),
   },
 
   /**

@@ -704,8 +704,47 @@ export const device: Device = {
    *
    * No DIN SYNC and no MIDI THRU socket: the rear panel is `MIDI (OUT, IN)` (p.6), and thru is a
    * software setting (`Soft Thru`, p.42).
+   *
+   * **`preferredSource` is not claimed (§7.4/#80).** Everything above is capability, and p.42 in
+   * particular is a UTILITY settings table — `TempoSync`, `Sync Out`, `RxStartStop` — which is
+   * the shape of page every box with a clock output has. §7.4 asks whether driving a rig is this
+   * box's *job*, and the chapter that would answer it opens on the other foot: "Synchronizing/
+   * Recording with Other Devices" (p.46) begins *"The TR-8S can receive MIDI Clock (F8) data to
+   * synchronize its tempo."*
+   *
+   * That chapter does document one arrangement in which this box is the clock source — a MIDI
+   * cable from its `MIDI OUT` to a TB-3's `MIDI IN` — and prints it immediately below the mirror
+   * arrangement where a DAW clocks the TR-8S over USB, as two of six procedures. Roland's own
+   * headings for that pair name each box's role in the older vocabulary this project does not use
+   * (see CLAUDE.md), which is why they are described here rather than quoted. The substance is a
+   * symmetric pair of options, and a pair of options is not a job.
+   *
+   * Nor does anything else in either book claim one. "Introduction" (p.7) is powering the box on
+   * and formatting an SD card; "Overview of the TR-8S" (p.8) is an internal block diagram of
+   * patterns, kits, instruments and effects with no external gear on it; and the only place the
+   * box says what it is is the specifications table — *"Roland TR-8S: RHYTHM PERFORMER"* (Owner's
+   * Manual p.24).
+   *
+   * One page was checked and is deliberately not being counted: the rear-panel reference (p.6)
+   * draws an SH-01A taking pulses from `TRIGGER OUT`, which is the strongest picture in either
+   * book of this box driving something. It is a jack-identification diagram — one callout among
+   * seven that also include speakers and headphones — and it carries no claim about purpose. It
+   * is worth knowing it is there, and it is not evidence for this field.
    */
   clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb', 'trigger'] },
+
+  /**
+   * §2.6/#22. One fact, recording a decision rather than a citation. This box's other capability
+   * pages are still in the comments around it — the TR-1000 is the manifest that has migrated
+   * them — and this entry exists because #80 needed the non-claim to be visible as a non-claim.
+   */
+  capabilityEvidence: {
+    'clock.preferredSource': {
+      kind: 'unknown',
+      reason:
+        'p.42 is a UTILITY settings table and p.46’s external-gear chapter opens receive-first, pairing one arrangement where this box leads with one where a DAW leads it; the only self-description in either book is Owner’s p.24’s “Roland TR-8S: RHYTHM PERFORMER”',
+    },
+  },
 
   /**
    * `MIX OUT (L/MONO, R)` for the mix, `ASSIGNABLE OUT/TRIGGER OUT 1-6` for parts, `EXT IN

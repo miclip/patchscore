@@ -24,14 +24,19 @@ import { industrialTechno } from '../../lib/templates/index'
  *  - **tr-1000** — one drum machine, which cannot carry a tonal part at all. Most of the
  *    template becomes gaps, so this is the fixture that proves invariant 5 renders honestly at
  *    scale rather than only in the one-gap case.
- *  - **midi-clock** — Tracker Mini + TR-1000, the one rig here that resolves onto `midi-din`,
- *    added with #103/#104. Neither of the other two reaches the phase-3 material those issues
- *    added: `full-rig` resolves onto `usb`, because the Metropolix is the library's only
- *    `preferredSource` and declares no MIDI DIN, and `tr-1000` is a source whose manual prints
- *    neither a clock-output menu nor a note on its MIDI jacks. So the clock-source setup line
- *    and the clock-jack notes had unit tests and no committed bytes at all — which is the state
- *    these fixtures exist to prevent, since a renderer change that drops either moves not one
- *    byte of the other two files.
+ *  - **midi-clock** — Tracker Mini + TR-1000, added with #103/#104 as the one rig here that
+ *    resolved onto `midi-din`. `tr-1000` still cannot reach the phase-3 material those issues
+ *    added, being a source whose manual prints neither a clock-output menu nor a note on its MIDI
+ *    jacks — which was the state these fixtures exist to prevent, since a renderer change that
+ *    drops either moves not one byte of the other file.
+ *
+ * **`full-rig` used to be the third case and #80 changed that**, which is worth recording because
+ * it looks like a fixture losing its purpose. It resolved onto `usb`, because the Metropolix was
+ * the library's only `preferredSource` and declares no MIDI DIN. #80 authored the Tracker Mini's
+ * claim on p.283, so the full rig now holds two authored preferences, falls through to transport,
+ * and lands on `midi-din` — carrying the setup line and the Type B jack note with it. The USB
+ * path keeps its unit tests in `render.test.ts` and `guide-view.test.ts`, which construct the rig
+ * that no longer occurs in the registry; what the committed bytes cover moved, and grew.
  *
  * Neutral mood on purpose: mood is `resolve.golden.json`'s subject and it is off-centre there.
  * Holding every knob at 50 here means a diff in these files is a *rendering* diff, not §6.1
@@ -53,10 +58,12 @@ function guide(devices: readonly Device[]): string {
 const TR_1000 = DEVICES.filter((d) => d.id === 'roland-tr-1000')
 
 /**
- * #103/#104. Both boxes declare `midi-din` and neither claims `preferredSource`, so §7.4 breaks
- * the transport tie on device id ascending and the Tracker Mini drives over MIDI — which is the
- * one arrangement in which the clock-output menu and the Type B adapter note are both true and
- * both rendered.
+ * #103/#104. Both boxes declare `midi-din`, and since #80 the Tracker Mini is the one that claims
+ * `preferredSource` — its manual calls it "a perfect fit for the centre piece of a setup" (p.283).
+ * So it drives over MIDI on the authored judgement rather than on `polyend-` sorting before
+ * `roland-`, which is the arrangement in which the clock-output menu and the Type B adapter note
+ * are both true and both rendered. The bytes did not move when the basis did; that they did not is
+ * the point, since §7.4's tie-breaks were already agreeing with the claim here.
  */
 const MIDI_CLOCK = DEVICES.filter(
   (d) => d.id === 'polyend-tracker-mini' || d.id === 'roland-tr-1000',
