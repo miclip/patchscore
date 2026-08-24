@@ -341,3 +341,21 @@ export function dominantRangeCite(params: readonly ResolvedParam[]): Cite | unde
   // One occurrence is not a repetition, and a tie has no dominant citation.
   return bestCount < 2 || tied ? undefined : best
 }
+
+/**
+ * A param's own citation, or the recipe's if it has none (§3.1). Lives here rather than in the
+ * audit that first needed it, because the guide, the catalogue and the audit all have to agree
+ * about which citation is in force, and three readings of one rule is three rules.
+ */
+export function effectiveVerified(
+  own: Verified | undefined,
+  inherited: Verified | undefined,
+): Verified | undefined {
+  return own ?? inherited
+}
+
+/** The document a citation names, without the page: `"X Manual, p.30"` -> `"X Manual"`. */
+export function citedDocument(source: string): string {
+  const at = source.lastIndexOf(', p.')
+  return at === -1 ? source : source.slice(0, at)
+}

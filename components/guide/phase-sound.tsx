@@ -5,6 +5,7 @@ import type {
   ResolvedAssignment,
   ResolvedPatchEntry,
 } from '@/lib/core'
+import { citationSentence } from '@/lib/core'
 import { dominantRangeCite } from '@/lib/core'
 import { citeLines, citeText, count, hintText, num } from './format'
 import { Instruction, ParamLine, ProvenanceMark } from './instruction'
@@ -115,11 +116,9 @@ export function PhaseSound({
       {carrying.map(({ device, mine }) => (
         <section className="device" key={device.id}>
           <h4>{device.name}</h4>
-          {device.manual === undefined ? null : (
-            <p className="quiet">
-              Values below cite {device.manual.title}
-              {device.manual.edition === undefined ? '' : `, ${device.manual.edition}`}.
-            </p>
+          {/* The markdown renderer's own sentence, so the two cannot say different things. */}
+          {citationSentence(device) === undefined ? null : (
+            <p className="quiet">{citationSentence(device)}</p>
           )}
 
           {mine.map((a) => {

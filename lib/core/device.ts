@@ -13,6 +13,8 @@ import {
   VerifiedSchema,
   type AuthoredParam,
   type Verified,
+  citedDocument,
+  effectiveVerified,
 } from './params'
 
 /**
@@ -794,3 +796,28 @@ export const DeviceSchema = z
       })
     })
   })
+
+/**
+ * The documents a device's ranges actually cite, most-cited first, ties by code unit (§7.2).
+ *
+ * Derived rather than declared, because `Device.manual` is a separate assertion that nothing
+ * keeps in agreement with the citations and that has drifted: a TR-1000 declares its Owner's
+ * Manual and every range cites the Reference Manual, which is a different book and the only one
+ * that prints a range at all. An MC-101 and a Deluge each cite two documents, which one title
+ * cannot express however it is worded.
+ */
+export function rangeDocuments(device: Device): readonly string[] {
+  const counts = new Map<string, number>()
+  for (const recipe of device.recipes) {
+    for (const param of recipe.params as AuthoredParam[]) {
+      if (param.kind !== 'numeric') continue
+      const verified = effectiveVerified(param.range.verified, recipe.verified)
+      if (verified === undefined || verified === false || verified.kind !== 'manual') continue
+      const document = citedDocument(verified.source)
+      counts.set(document, (counts.get(document) ?? 0) + 1)
+    }
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+    .map(([document]) => document)
+}
