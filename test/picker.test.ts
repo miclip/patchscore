@@ -108,7 +108,10 @@ describe('device search matches name, maker and kind', () => {
     const drumMachines = ['roland-tr-1000', 'roland-tr-8s']
     expect(ids(devices({ query: 'drum-machine' }).rows)).toEqual(drumMachines)
     expect(ids(devices({ query: 'drum machine' }).rows)).toEqual(drumMachines)
-    expect(ids(devices({ query: 'semi modular' }).rows)).toEqual(['intellijel-cascadia'])
+    expect(ids(devices({ query: 'semi modular' }).rows)).toEqual([
+      'behringer-crave',
+      'intellijel-cascadia',
+    ])
   })
 
   it('tells the two Roland drum machines apart by name, not only by maker or kind', () => {
@@ -152,7 +155,10 @@ describe('device search matches name, maker and kind', () => {
 describe('the kind filter', () => {
   it('offers the kinds this build ships, in the order the registry first mentions them', () => {
     const kinds = kindsPresent(DEVICES)
-    expect(kinds).toEqual(['fx-processor', 'semi-modular', 'groovebox', 'drum-machine', 'mixer-recorder'])
+    // `semi-modular` leads since the CRAVE landed: the order is first *mention* in the registry,
+    // the registry is sorted by folder name, and `behringer-crave` sorts ahead of the Euroburo.
+    // A new device can therefore reorder this list without any kind being added or removed.
+    expect(kinds).toEqual(['semi-modular', 'fx-processor', 'groovebox', 'drum-machine', 'mixer-recorder'])
     // Derived, not enumerated: every kind offered has at least one device behind it, and every
     // device's kind is offered. An option that can only return nothing is not a filter.
     for (const kind of kinds) expect(DEVICES.some((d) => d.kind === kind)).toBe(true)

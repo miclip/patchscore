@@ -52,7 +52,7 @@ glance whether the screen in front of you is the one the line is about.
   - p4 · substituted — asked `dark`, authored `soft` · 3 notes at once on one polyphonic voice · every section
 - **`riser`** → TR-8S · CC — *A sample played backwards into the change*
   - p4 · exact `bright` · Build, Breakdown
-- **`noise`** → Deluge · Track 2 — *Crushed noise wash under the drums*
+- **`noise`** → CRAVE · Voice — *Raw noise through the filter, oscillator out of the mix*
   - p5, optional · exact `dirty` · every section
 
 ### Gaps
@@ -63,6 +63,10 @@ None.
 
 **Clock source** — Model 2400 over `midi-din`, carrying 0 parts. Sync everything else to it, except Zoom LiveTrak L-8, which cannot receive clock and runs free.
 
+- **CRAVE** — semi-modular · 1 part
+  - clock: receives clock only · midi-din/usb
+  - audio: mono main out · audio in
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **ZOIA Euroburo** — fx-processor · 0 parts
   - clock: receives clock only · analog-clock/midi-din
   - audio: stereo main out · audio in
@@ -87,10 +91,10 @@ None.
   - clock: sends clock · midi-din/usb/trigger
   - audio: stereo main out · 6 individual outs · USB audio · audio in
   - mixer: 3 parts, 6 individual outs: one channel each
-- **Deluge** — groovebox · 2 parts
+- **Deluge** — groovebox · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: stereo main out · audio in
-  - mixer: 2 parts, no individual outs: one stereo channel for all
+  - mixer: 1 part, no individual outs: one stereo channel for all
 - **Model 2400** — mixer-recorder · 0 parts
   - clock: sends clock, cannot receive · midi-din/usb
   - audio: stereo main out · 8 individual outs · USB audio · audio in
@@ -478,9 +482,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 1)
 
-### `noise` — Deluge · Track 2
+### `noise` — CRAVE · Voice
 
-**Crushed noise wash under the drums** — settings in Sound design
+**Raw noise through the filter, oscillator out of the mix** — settings in Sound design
 
 **Intro, Outro** — 32 steps, band 0
 
@@ -509,6 +513,45 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `accent` — 31 (vel 104)
 
 ## 6. Sound design
+
+### CRAVE
+
+*Values below cite CRAVE Quick Start Guide, BE_0718-AAJ_WW.*
+
+#### Voice — `noise`: Raw noise through the filter, oscillator out of the mix
+
+*Ranges cite manual — CRAVE Quick Start Guide BE_0718-AAJ_WW, p.70.*
+
+- **FREQUENCY** `0` (-5…5)
+- **PULSE WIDTH** `50` % (5…95 %)
+- **OSC MOD** `0` (0…10)
+- **MIX** `5` (-5…5)
+  - ↳ note: Negative is oscillator, positive is noise or external audio
+- **CUTOFF** `6` (0…10)
+  - ↳ note: 20 Hz to 20 kHz across the travel
+- **RESONANCE** `4` (0…10)
+- **VCF MOD** `0` (0…10)
+- **VOLUME** `7` (0…10)
+- **VCO SHAPE** `pulse`
+- **VCO MOD SOURCE** `env/osc mod`
+- **VCO MOD DEST** `width`
+- **VCF MODE** `low pass`
+- **VCF MOD SOURCE** `env`
+- **VCF MOD POLARITY** `positive`
+- **VCA MODE** `envelope`
+- **ATTACK** `0` (0…10)
+  - ↳ note: 2 ms to 3 s across the travel
+- **DECAY** `2` (0…10)
+  - ↳ note: 2 ms to 5 s across the travel
+- **SUSTAIN** `0` (0…10)
+  - ↳ note: 0 to 8 V across the travel
+- **SUSTAIN SWITCH** `off`
+  - ↳ note: Off: the level decays after the attack
+
+**Patch**
+
+- `OUT · ENV` → `IN · VCF CUTOFF`
+  - ↳ note: The filter closing across each hit
 
 ### Cascadia
 
@@ -782,21 +825,6 @@ Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
 - **DECIMATION** `14` (0…50)
 - **BITCRUSH** `9` (0…50)
 - **EQ BASS AMOUNT** `29` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
-- **SWING** `50` % (1…99 %)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
-  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
-  - ↳ hint: Hold [SHIFT], turn (TEMPO)
-
-#### Track 2 — `noise`: Crushed noise wash under the drums
-
-*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.217.*
-
-- **OSC TYPE** `Sample`
-- **REPEAT MODE** `LOOP`
-- **BITCRUSH** `21` (0…50)
-- **DECIMATION** `13` (0…50)
-- **EQ BASS AMOUNT** `16` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
 - **SWING** `50` % (1…99 %)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39

@@ -706,17 +706,18 @@ describe('rack view', () => {
     // shape — the MC-101's four track levels, the L-8's ten (eight channels, EFX RTN and MASTER),
     // and the Model 2400's twenty-two: seventeen input channels, four SUB pairs and MAIN.
     expect(count('rack-fader')).toBe(92)
-    // Still sixteen, and the TR-8S is why that is worth a sentence: it has sixteen step buttons
-    // of its own and draws them as pads, because they are square backlit buttons rather than the
-    // TR-1000's piano-profile keys. Two boxes, the same sixteen steps, two authored shapes — the
-    // renderer has no opinion and the manifests decide.
-    expect(count('rack-key')).toBe(16)
+    // Twenty-nine: the TR-1000's sixteen step keys and the CRAVE's thirteen-note keyboard. The
+    // TR-8S is why the count is worth a sentence — it has sixteen step buttons of its own and
+    // draws them as pads, because they are square backlit buttons rather than piano-profile
+    // keys. Three boxes with rows of switches, two authored shapes; the renderer has no opinion
+    // and the manifests decide.
+    expect(count('rack-key')).toBe(29)
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(6)
+    expect(fields).toHaveLength(7)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

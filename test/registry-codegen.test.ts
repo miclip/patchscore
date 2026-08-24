@@ -306,6 +306,7 @@ describe('the committed registry', () => {
       'roland-mc-101',
       'zoom-livetrak-l-8',
       'synthstrom-deluge',
+      'behringer-crave',
       'intellijel-cascadia',
       'roland-tr-8s',
       'roland-tr-1000',
