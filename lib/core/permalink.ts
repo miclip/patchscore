@@ -147,9 +147,13 @@ export type Catalogue = {
 
 /**
  * ```
- * format=1&resolver=1&device=polyend-tracker-mini&device=roland-tr-1000&template=industrial-techno
+ * format=1&resolver=2&device=polyend-tracker-mini&device=roland-tr-1000&template=industrial-techno
  *   &darkness=50&density=50&grit=50&swing=50&space=50&seed=1
  * ```
+ *
+ * The two leading numbers are `FORMAT_VERSION` and `RESOLVER_VERSION` as they stand today, not
+ * constants of the format: the second moves whenever the engine's output can (#100), and a link
+ * carrying an older one still opens — see `drift` below.
  *
  * Whole words. Someone reading that in an address bar can tell what it does, and can change one
  * number and see what happens — worth far more than the twenty bytes short keys would save.

@@ -1,6 +1,7 @@
 import type { SectionName } from './ids'
 import type { ResolveResult, ResolvedAssignment } from './pipeline'
 import type { DensityBand } from './template'
+import { STEPS_PER_BAR } from './template'
 import type { Role } from './vocabulary'
 
 /**
@@ -152,4 +153,73 @@ export function bandTrajectory(result: ResolveResult): BandTrajectory {
   }
 
   return { groups, unpatterned }
+}
+
+// ---------------------------------------------------------------------------
+// #105 — sections that are not a whole number of what the part plays
+// ---------------------------------------------------------------------------
+
+/**
+ * How one section is built out of the thing the part actually repeats, when it does not divide.
+ *
+ * Drone Study, seed 1: a 16-bar hook and a 4-bar variant against sections of 9, 15, 21, 33, 18,
+ * 24 and 12 bars. Nothing divides — and that is authored intent, not arithmetic drift: the
+ * template's own note says the out-of-phase boundaries are "what stops 132 bars of one note
+ * reading as a loop". The lengths must not be rounded (#105). What was missing is the other
+ * half of that decision: on a box where you build a pattern and chain it in Song mode, a 9-bar
+ * section made of a 4-bar pattern is not playable as written unless the guide says how the last
+ * copy is cut.
+ *
+ * Derived here rather than in either renderer for the same reason the band trajectory is: it is
+ * a musical claim about the box in front of somebody, and two copies of it could disagree.
+ */
+export type SectionChain = {
+  section: SectionName
+  bars: number
+  /** Bars in one copy of what this part repeats — a step variant, or its hook (#100). */
+  unitBars: number
+  /** Whole copies that fit. **0 where the section is shorter than one copy** — Drone Study's
+   * 9-bar Settle against a 16-bar hook is one copy cut short and no full one at all. */
+  full: number
+  /** Bars in the final, shortened copy. Always 1..`unitBars - 1` — an even fit is not listed. */
+  remainder: number
+}
+
+/**
+ * The sections **this part** cannot fill with whole copies, in structure order.
+ *
+ * Empty for a part whose every section divides evenly, which is the common case and prints
+ * nothing: a guide that explains long division under a 16-bar section made of 4-bar patterns is
+ * a guide that has stopped being read by the time it says something true.
+ *
+ * Per section rather than per part, because the unit can change between them — §6.3 picks the
+ * band per section, and bands hold variants of different lengths, so one part can be 4 bars in
+ * the Drop and 1 bar in the Intro. A part deferring to its hook (#100) repeats the hook instead,
+ * so that is the unit for every section it occupies.
+ */
+export function chainPlan(result: ResolveResult, a: ResolvedAssignment): SectionChain[] {
+  const chosen = result.song.hooks.find((h) => h.forRole === a.role)?.chosen
+  const hookBars =
+    a.hookAuthority === undefined || chosen === undefined || chosen.outcome !== 'resolved'
+      ? undefined
+      : chosen.hook.bars
+
+  const barsOf = new Map(result.template.structure.map((s) => [s.name, s.bars]))
+  const out: SectionChain[] = []
+  for (const entry of a.patterns) {
+    const unitBars =
+      hookBars ??
+      (entry.selection.outcome === 'none'
+        ? undefined
+        : entry.selection.pattern.length / STEPS_PER_BAR)
+    const bars = barsOf.get(entry.section)
+    // A unit of no bars divides nothing, and a fractional one would put a false claim about the
+    // grid on the page. Both are unreachable through validated data; neither is guessed at.
+    if (unitBars === undefined || bars === undefined) continue
+    if (!Number.isInteger(unitBars) || unitBars < 1) continue
+    const remainder = bars % unitBars
+    if (remainder === 0) continue
+    out.push({ section: entry.section, bars, unitBars, full: (bars - remainder) / unitBars, remainder })
+  }
+  return out
 }

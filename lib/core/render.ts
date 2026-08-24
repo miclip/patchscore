@@ -5,6 +5,7 @@ import type { Role } from './vocabulary'
 import type { Cite, ParamScope, Provenance, ResolvedParam, ResolvedRange } from './params'
 import { dominantRangeCite, hoistedParams, sameCite } from './params'
 import type { Pattern, PatternHit } from './template'
+import { STEPS_PER_BAR } from './template'
 import type { BoundArticulation, ResolvedPatchEntry, ResolvedSourceAudio } from './resolver'
 import type { Gap } from './search'
 import {
@@ -16,7 +17,7 @@ import {
 } from './harmony'
 import type { ResolveResult, ResolvedAssignment } from './pipeline'
 import { GUIDE_PHASES } from './guide'
-import { bandTrajectory, type BandGroup } from './arrangement'
+import { bandTrajectory, chainPlan, type BandGroup, type SectionChain } from './arrangement'
 import { fxSources, type FxSource } from './fx'
 
 /**
@@ -578,13 +579,11 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
  * nobody finishes reading.
  */
 /**
- * §4.3's grid: patterns are 16, 32 or 64 steps over 1, 2 or 4 bars, so a step is a sixteenth.
  * Hook steps are absolute across the whole hook and nothing in `Hook` restates the resolution,
- * so it is inferred here — and checked, not assumed: a hook whose steps run past `bars * 16`
- * was authored against a different grid, and gets no bar framing rather than a wrong one.
+ * so the bar is inferred from §4.3's grid (`STEPS_PER_BAR`) — and checked, not assumed: a hook
+ * whose steps run past `bars * 16` was authored against a different grid, and gets no bar
+ * framing rather than a wrong one.
  */
-const STEPS_PER_BAR = 16
-
 function barOf(step: number): number {
   return Math.floor((step - 1) / STEPS_PER_BAR) + 1
 }
@@ -971,6 +970,60 @@ function mergeBlocks(
   return [...merged.values()]
 }
 
+/**
+ * #100. What phase 5 says for a part whose hook is its rhythm.
+ *
+ * A pointer rather than a restatement: repeating the hook's steps here would be the same
+ * contradiction one edit away, and §8 already puts Hook immediately above this phase, so the
+ * reader is being sent up one heading rather than across the document.
+ *
+ * It names no hook id — phase 4 does not either (that is our machinery, not the reader's), and
+ * the part is identified by the heading this line sits under.
+ */
+const HOOK_IS_THE_PATTERN =
+  '**The hook is the pattern** — see Hook above for its steps and note lengths. ' +
+  'Nothing separate to program here.'
+
+/**
+ * #105. How one out-of-phase section is chained, in the order it is built.
+ *
+ * `full === 0` is its own sentence rather than "0 copies": a 9-bar section against a 16-bar
+ * hook is one copy stopped early, and no amount of arithmetic makes that a repeat count.
+ */
+function chainText(chain: SectionChain): string {
+  if (chain.full === 0) return `one copy cut to ${count(chain.remainder, 'bar')}`
+  const copies =
+    chain.full === 1
+      ? `1 copy of ${count(chain.unitBars, 'bar')}`
+      : `${num(chain.full)} copies of ${count(chain.unitBars, 'bar')}`
+  return `${copies}, then one cut to ${count(chain.remainder, 'bar')}`
+}
+
+/**
+ * #105's standing note, once at the top of the phase — the same placement §8 gives phase 4's
+ * note conventions, and for the same reason: a paragraph repeated under twelve parts is a
+ * paragraph nobody reads under any of them.
+ *
+ * It says *deliberate* in as many words. Drone Study's sections are 9, 15, 21, 33, 18, 24 and
+ * 12 bars against a 16-bar cycle, and the template's own note explains why — out-of-phase
+ * boundaries are "what stops 132 bars of one note reading as a loop". Without this the numbers
+ * read as an arithmetic bug, and the reader's fix — rounding to 8 or 16 — would delete the
+ * arrangement.
+ */
+const OUT_OF_PHASE = [
+  '**Not every section is a whole number of repeats, and that is deliberate.** The template',
+  'puts section boundaries out of phase with the pattern and the harmonic cycle on purpose, so',
+  'the guide prints the lengths it was given and rounds nothing. In Song mode, chain full copies',
+  'and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.',
+]
+
+/** The sections one part cannot fill with whole copies, or nothing when they all divide. */
+function chainLines(result: ResolveResult, a: ResolvedAssignment): Line[] {
+  const plan = chainPlan(result, a)
+  if (plan.length === 0) return []
+  return ['', ...plan.map((c) => `- **${c.section}** · ${count(c.bars, 'bar')} — ${chainText(c)}`)]
+}
+
 function phaseSteps(
   result: ResolveResult,
   deviceById: Map<DeviceId, Device>,
@@ -982,17 +1035,33 @@ function phaseSteps(
     return out
   }
 
+  if (result.assignments.some((a) => chainPlan(result, a).length > 0)) {
+    out.push(...OUT_OF_PHASE)
+    out.push('')
+  }
+
   for (const a of result.assignments) {
     out.push(`### \`${a.role}\` — ${a.deviceName} · ${a.assignable.label}`)
     out.push('')
     // Same reason as phase 4: this phase says what to play and not what it sounds like, so a
     // reader stopping here would think the sound was missing.
     out.push(`**${a.recipe.title}** — settings in Sound design`)
-    for (const { sections, block } of mergeBlocks(a, deviceById, options)) {
+    // #100. Before the blocks, and instead of them: a variant was still selected for this part
+    // (the band it asks for is what §8's arrangement phase reads), but the hook is what gets
+    // played, so printing a grid here would restate the contradiction this replaced.
+    if (a.hookAuthority !== undefined) {
       out.push('')
-      out.push(`**${sections.join(', ')}** — ${block.headline}`)
-      out.push(...block.body)
+      out.push(HOOK_IS_THE_PATTERN)
+    } else {
+      for (const { sections, block } of mergeBlocks(a, deviceById, options)) {
+        out.push('')
+        out.push(`**${sections.join(', ')}** — ${block.headline}`)
+        out.push(...block.body)
+      }
     }
+    // #105. After the programming, hooked or not: it is how what was just described gets
+    // chained over the arrangement, so it cannot come before the thing being chained.
+    out.push(...chainLines(result, a))
     out.push('')
   }
   // Drop the trailing separator the loop leaves behind, never a line of content.

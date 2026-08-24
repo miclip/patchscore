@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   DENSITY_DETENTS,
+  FORMAT_VERSION,
+  RESOLVER_VERSION,
   STUDIO_STORAGE_KEY,
   decodeGuideInputs,
   encodeGuideInputs,
@@ -326,7 +328,7 @@ describe('bootstrap precedence: link, then store, then defaults', () => {
   })
 
   it('falls back to the store when the link is broken, and says the link was broken', () => {
-    const { env, state } = fakeBrowser({ search: '?format=1&resolver=1&device=nope' })
+    const { env, state } = fakeBrowser({ search: `?format=${FORMAT_VERSION}&resolver=${RESOLVER_VERSION}&device=nope` })
     state.stored = JSON.stringify(studioDoc({ ...DEFAULT_INPUTS, seed: 111 }))
 
     const boot = bootstrapStudio(env)
@@ -354,7 +356,7 @@ describe('bootstrap precedence: link, then store, then defaults', () => {
 
 describe('what the user is told, and never blocked by', () => {
   it('renders an older link under the current resolver and names the version change', () => {
-    const older = link({ seed: 5 }).replace('resolver=1', 'resolver=0')
+    const older = link({ seed: 5 }).replace(`resolver=${RESOLVER_VERSION}`, 'resolver=0')
     const { env } = fakeBrowser({ search: older })
 
     const boot = bootstrapStudio(env)
@@ -366,7 +368,7 @@ describe('what the user is told, and never blocked by', () => {
     expect(drift).toBeDefined()
     // Explicit about *which* versions, not a vague "this may be out of date".
     expect(drift?.message).toContain('v0')
-    expect(drift?.message).toContain('v1')
+    expect(drift?.message).toContain(`v${RESOLVER_VERSION}`)
   })
 
   it('says a link is from a newer build rather than calling it broken', () => {
@@ -730,7 +732,7 @@ describe('an ordinary session still persists', () => {
   })
 
   it('writes after a broken link fell through to the visitor’s own studio', () => {
-    const { env, state } = fakeBrowser({ search: '?format=1&resolver=1&device=nope' })
+    const { env, state } = fakeBrowser({ search: `?format=${FORMAT_VERSION}&resolver=${RESOLVER_VERSION}&device=nope` })
     state.stored = JSON.stringify(studioDoc({ ...DEFAULT_INPUTS, seed: 111 }))
     const before = state.stored
 

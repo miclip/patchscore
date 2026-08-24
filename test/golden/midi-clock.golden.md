@@ -208,47 +208,7 @@ One chord shape throughout, so one sample, transposed where the chord moves.
 
 **Wide detuned reese, filter well down** — settings in Sound design
 
-**Intro, Outro** — 32 steps, band 0
-
-```
- 1 x··· ···· ···· ····
-17 x··· ···· ···· ····
-```
-- `downbeat` — 1, 17
-
-**On this box** — Tracker Mini
-
-- `downbeat` → `glide` 35 on steps 1, 17
-  - ↳ hint: Hold [FX1], press (Up)/(Down)
-
-**Build, Breakdown** — 32 steps, band 1
-
-```
- 1 x··· ···· x··· ····
-17 x··· ···· x··· ····
-```
-- `downbeat` — 1, 9, 17, 25
-
-**On this box** — Tracker Mini
-
-- `downbeat` → `glide` 35 on steps 1, 9, 17, 25
-  - ↳ hint: Hold [FX1], press (Up)/(Down)
-
-**Drop, Peak** — 32 steps, band 3
-
-```
- 1 x··x ··x· x·x· ····
-17 x··x ··x· x·x· ··x·
-```
-- `downbeat` — 1, 9, 17, 25
-- `ghost` — 4, 20 (all vel 50)
-- `offbeat` — 7, 11, 23, 27
-- `accent` — 31 (vel 110)
-
-**On this box** — Tracker Mini
-
-- `downbeat` → `glide` 35 on steps 1, 9, 17, 25
-  - ↳ hint: Hold [FX1], press (Up)/(Down)
+**The hook is the pattern** — see Hook above for its steps and note lengths. Nothing separate to program here.
 
 ### `clap` — TR-1000 · HC
 
@@ -384,35 +344,7 @@ One chord shape throughout, so one sample, transposed where the chord moves.
 
 **Rendered chord sample, struck short and filtered hard** — settings in Sound design
 
-**Intro, Outro** — 32 steps, band 0
-
-```
- 1 x··· ···· ···· ····
-17 ···· ···· ···· ····
-```
-- `downbeat` — 1
-
-**Build, Breakdown** — 32 steps, band 1
-
-```
- 1 x··· ···· ···· ····
-17 x··· ···· ···· ····
-```
-- `downbeat` — 1, 17
-
-**Drop, Peak** — 32 steps, band 3
-
-```
- 1 x··· ··x· ··x· ····
-17 x··· ··x· ···· x···
-```
-- `downbeat` — 1, 17
-- `offbeat` — 7, 11, 23
-- `accent` — 29 (vel 108)
-
-**On this box** — Tracker Mini
-
-- `accent` → `volume` 118 on step 29
+**The hook is the pattern** — see Hook above for its steps and note lengths. Nothing separate to program here.
 
 ### `impact` — TR-1000 · CC
 
@@ -439,11 +371,7 @@ One chord shape throughout, so one sample, transposed where the chord moves.
 
 **Rendered chord sample, filtered back and swelled** — settings in Sound design
 
-**Intro, Outro** — no pattern authored for `pad` at any band (asked for band 0)
-
-**Build, Breakdown** — no pattern authored for `pad` at any band (asked for band 1)
-
-**Drop, Peak** — no pattern authored for `pad` at any band (asked for band 3)
+**The hook is the pattern** — see Hook above for its steps and note lengths. Nothing separate to program here.
 
 ## 6. Sound design
 

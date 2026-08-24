@@ -1,7 +1,7 @@
 import type { Device } from '@/lib/core'
 import type { DeviceId } from '@/lib/core'
 import type { Cite, Provenance, ResolvedParam, ResolvedRange } from '@/lib/core'
-import { sameCite } from '@/lib/core'
+import { STEPS_PER_BAR, sameCite } from '@/lib/core'
 import type { Gap, ResolvedHook, ResolvedNote } from '@/lib/core'
 import type { FxSource } from '@/lib/core'
 
@@ -270,13 +270,16 @@ export function occupiedCounts(assignments: { deviceId: DeviceId; assignable: { 
 // ---------------------------------------------------------------------------
 
 /**
- * The grid: patterns are 16, 32 or 64 steps over 1, 2 or 4 bars, so a step is a sixteenth.
  * Hook steps are absolute across the whole hook and nothing in `Hook` restates the resolution,
- * so it is inferred here — and checked, not assumed: a hook whose steps run past `bars * 16`
- * was authored against a different grid, and gets no bar framing rather than a wrong one.
+ * so the bar is inferred from §4.3's grid — and checked, not assumed: a hook whose steps run
+ * past `bars * 16` was authored against a different grid, and gets no bar framing rather than a
+ * wrong one.
+ *
+ * `STEPS_PER_BAR` is imported rather than restated. The rule at the top of this file is about
+ * not reading the *Markdown renderer's* output; the grid is a fact about the pattern data one
+ * layer below both of us, and a second copy of it here could only ever be a chance to disagree
+ * with the resolver about what a bar is.
  */
-export const STEPS_PER_BAR = 16
-
 export function barOf(step: number): number {
   return Math.floor((step - 1) / STEPS_PER_BAR) + 1
 }

@@ -53,6 +53,9 @@ export function serialise(result: ResolveResult): string {
         params: a.params,
         patch: a.patch,
         sections: a.sections,
+        // #100. A seeded decision like the key and the hook choice: which part defers to its
+        // hook is exactly the kind of drift this file exists to catch.
+        hookAuthority: a.hookAuthority ?? null,
         patterns: a.patterns.map((p) => ({
           section: p.section,
           selection: p.selection,

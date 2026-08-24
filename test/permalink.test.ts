@@ -59,13 +59,20 @@ function goldenInputs(over: Partial<GuideInputsV1> = {}): GuideInputsV1 {
   }
 }
 
+/**
+ * The two stamps every link opens with (§8.2), built from the constants rather than written out.
+ * What these tests pin is the order and completeness of the fields; a resolver bump (#100) should
+ * not have to rewrite a dozen string literals to keep saying so.
+ */
+const STAMP = `format=${FORMAT_VERSION}&resolver=${RESOLVER_VERSION}`
+
 // ---------------------------------------------------------------------------
 
 describe('the v1 wire format', () => {
   it('names every value, in a fixed order, whatever the state', () => {
     const encoded = encodeGuideInputs(goldenInputs({ seed: 1, mood: NEUTRAL_MOOD }), GOLDEN)
     expect(encoded).toBe(
-      'format=1&resolver=1&device=A-cascade&device=B-tracker&device=a-drum&template=golden-techno&darkness=50&density=50&grit=50&swing=50&space=50&seed=1',
+      `${STAMP}&device=A-cascade&device=B-tracker&device=a-drum&template=golden-techno&darkness=50&density=50&grit=50&swing=50&space=50&seed=1`,
     )
   })
 
@@ -130,12 +137,12 @@ describe('canonical encoding', () => {
     // Fields out of order and devices out of registry order — legal input, one canonical output.
     const messy =
       'seed=7&space=50&swing=50&grit=50&density=50&darkness=50&template=golden-techno' +
-      '&device=a-drum&device=A-cascade&resolver=1&format=1'
+      `&device=a-drum&device=A-cascade&resolver=${RESOLVER_VERSION}&format=${FORMAT_VERSION}`
     const back = decodeGuideInputs(messy, GOLDEN)
     expect(back.ok).toBe(true)
     if (!back.ok) return
     expect(encodeGuideInputs(back.inputs, GOLDEN)).toBe(
-      'format=1&resolver=1&device=A-cascade&device=a-drum&template=golden-techno' +
+      `${STAMP}&device=A-cascade&device=a-drum&template=golden-techno` +
         '&darkness=50&density=50&grit=50&swing=50&space=50&seed=7',
     )
   })
@@ -176,10 +183,10 @@ describe('malformed input fails safely', () => {
     ['a duplicated scalar', `${canonical}&seed=2`, 'malformed'],
     ['a missing scalar', canonical.replace('&seed=1', ''), 'malformed'],
     ['a missing mood axis', canonical.replace('&swing=50', ''), 'malformed'],
-    ['a missing format stamp', canonical.replace('format=1&', ''), 'malformed'],
-    ['a missing resolver stamp', canonical.replace('resolver=1&', ''), 'malformed'],
-    ['a non-numeric format version', canonical.replace('format=1', 'format=one'), 'malformed'],
-    ['a non-numeric resolver version', canonical.replace('resolver=1', 'resolver=x'), 'malformed'],
+    ['a missing format stamp', canonical.replace(`format=${FORMAT_VERSION}&`, ''), 'malformed'],
+    ['a missing resolver stamp', canonical.replace(`resolver=${RESOLVER_VERSION}&`, ''), 'malformed'],
+    ['a non-numeric format version', canonical.replace(`format=${FORMAT_VERSION}`, 'format=one'), 'malformed'],
+    ['a non-numeric resolver version', canonical.replace(`resolver=${RESOLVER_VERSION}`, 'resolver=x'), 'malformed'],
     ['a fractional mood value', canonical.replace('grit=50', 'grit=50.5'), 'malformed'],
     ['a signed number', canonical.replace('seed=1', 'seed=+1'), 'malformed'],
     ['a leading zero', canonical.replace('seed=1', 'seed=01'), 'malformed'],
@@ -238,7 +245,7 @@ describe('version mismatch is preserved, never silent', () => {
   it('decodes an older engine’s link and flags the drift', () => {
     // §8.2's policy: the inputs are readable, so re-resolve them under the current engine and
     // say so. A hard failure here would throw away a link that is perfectly usable.
-    const result = decodeGuideInputs(canonical.replace('resolver=1', 'resolver=0'), GOLDEN)
+    const result = decodeGuideInputs(canonical.replace(`resolver=${RESOLVER_VERSION}`, 'resolver=0'), GOLDEN)
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.drift).toBe(true)
@@ -248,7 +255,7 @@ describe('version mismatch is preserved, never silent', () => {
   })
 
   it('flags a link from a newer engine the same way, in the other direction', () => {
-    const result = decodeGuideInputs(canonical.replace('resolver=1', 'resolver=99'), GOLDEN)
+    const result = decodeGuideInputs(canonical.replace(`resolver=${RESOLVER_VERSION}`, 'resolver=99'), GOLDEN)
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.drift).toBe(true)
