@@ -1394,7 +1394,56 @@ export const device: Device = {
   jacks: JACKS,
 
   /** §2.6. Every jack above, cited on the page that describes it. */
-  capabilityEvidence: { ...JACK_EVIDENCE },
+  /**
+   * §2.6/#22. The jack citations, plus **the recorded non-claim for `clock.preferredSource`**
+   * (§7.4/#80).
+   *
+   * This box sends clock and sends it well — the MIDI OUT jack transmits Tap Clock by default and
+   * MIDI CLK is a divided clock output (see the `clock` comment) — so unlike the ZOIA and the
+   * LiveTrak the question §7.4 asks is live here rather than closed by the hardware. The manual
+   * answers it, and the answer is no.
+   *
+   * **Four pages carry the capability and not one of them is a role page.** p.20 is the `MIDI CLK`
+   * jack-and-button description with a bare clock-division list; p.78 is the four-item back-panel
+   * MIDI jack list; pp.105-106 are Config App settings tables. The phrase that sounds like
+   * positioning — Intellijel's own name for what the box can be in a setup with no DAW in it —
+   * occurs four times in 110 pages and every one of the four is inside a jack list or a settings
+   * row. It also uses the older clock vocabulary this project does not (CLAUDE.md), which is why
+   * it is described here rather than quoted. There is no chapter about driving external gear and
+   * the table of contents has no entry for one.
+   *
+   * **The manual is not merely silent on the question; it answers in the other direction**, which
+   * is the finding worth keeping. The cover calls this an *"Advanced, Performance-Oriented,
+   * Semi-Modular Synthesizer"* and p.7's OVERVIEW a *"stand-alone instrument"* and *"a
+   * synthesist's synthesizer"*. p.7's *"whether used stand-alone or as part of a larger system"*
+   * looks like the sentence that settles it and points the other way once the sentence before it
+   * is read: the system in question is *"external modules"* expanding Cascadia, so the rack
+   * extends this box rather than following it. Then the places that establish role all put the
+   * timing outside: MAKE A SOUND (p.11) is *"connect its MIDI OUT to Cascadia's MIDI IN jack"*
+   * with the panel drawing's CV/GATE and MIDI arrows pointing **inward**; p.78's MIDI IN, the jack
+   * immediately above the clock-out one, is for *"whichever controller, sequencer or MIDI
+   * interface you'll use to play Cascadia"*; and p.20 frames tap tempo as *"particularly useful
+   * if you're not controlling Cascadia via MIDI"* — the clock output is what you reach for when
+   * nothing else is driving the box, which presumes something usually is. The box cannot start or
+   * stop anything either: the manual documents no MIDI Start, Stop or Continue anywhere.
+   *
+   * **A `Cite` was considered here and is the wrong shape**, which is worth recording because it
+   * looks like the better one. The manual does support the omission, so citing a page for it is
+   * tempting — but `Verified` on this path reads as evidence *for the field*, the field is absent,
+   * and the audit would then count this identically to the Tracker Mini's claim and print "83 of
+   * 83 cited" over two opposite decisions. `unknown` understates what is known here and
+   * understating is the safe direction; the `reason` carries the rest. See the FLAG in #80: §2.6's
+   * third state now covers both "the document is silent" and "the document answers no", and those
+   * are not the same finding.
+   */
+  capabilityEvidence: {
+    ...JACK_EVIDENCE,
+    'clock.preferredSource': {
+      kind: 'unknown',
+      reason:
+        'no page states that leading a rig is this box’s job, and several state the reverse: the cover calls it a “Performance-Oriented, Semi-Modular Synthesizer”, p.7 a “stand-alone instrument”, p.11 and p.78 have a controller or sequencer playing it, and p.20 offers tap tempo for when MIDI is not driving it — the clock output is documented in jack lists (p.20, p.78) and settings tables (pp.105-106) only',
+    },
+  },
 
   /**
    * One voice. `polyphony: 1` is the manufacturer's own description — "a deep and flexible

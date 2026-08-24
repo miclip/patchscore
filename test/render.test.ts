@@ -1597,11 +1597,11 @@ describe('source audio (§3/#101)', () => {
  * until somebody sets it. Every phase after this one assumes the transport is running, so one
  * unstated setting stalls the whole guide.
  *
- * The rig is Tracker Mini + TR-1000. Neither claims `preferredSource` and both declare
- * `midi-din`, so §7.4's transport tie is broken by device id ascending — `polyend-` before
- * `roland-` — and the Tracker Mini is the source over MIDI. That is asserted rather than
- * assumed: if the tie-break ever moves, this test should say so instead of quietly checking
- * nothing.
+ * The rig is Tracker Mini + TR-1000. Both declare `midi-din`, and since #80 the Tracker Mini is
+ * the one that claims `preferredSource` — so it is the source over MIDI on §7.4's semantic key,
+ * where this once fell to device id ascending (`polyend-` before `roland-`). That is asserted
+ * rather than assumed: if the source ever moves, this test should say so instead of quietly
+ * checking nothing.
  */
 /** Occurrences of a literal, without a regex to escape. */
 function occurrences(haystack: string, needle: string): number {
@@ -1694,14 +1694,25 @@ describe('the clock source is told how to emit (§7.4/#104)', () => {
   it('says nothing about a MIDI adapter on a rig that resolved onto USB (#103)', () => {
     // The same box, the same manifest, a transport that touches neither MIDI jack. A guide that
     // warned about a 5-pin adapter here would be describing a cable nobody is holding.
+    //
+    // **The Tracker Mini's own claim is stripped here, and that is the only edit.** #80 authored
+    // `preferredSource` on this box, and the Metropolix is the library's one clock sender without
+    // `midi-din` — so with both claims standing, every registry rig containing the two resolves
+    // onto MIDI and the USB case became unreachable from real devices. What is under test is the
+    // *jack note*, not the preference, so the preference is the thing removed.
     const usbRig = resolve({
       devices: DEVICES.filter(
         (d) => d.id === 'polyend-tracker-mini' || d.id === 'intellijel-metropolix',
+      ).map((d) =>
+        d.id === 'polyend-tracker-mini'
+          ? { ...d, clock: { ...d.clock, preferredSource: undefined } }
+          : d,
       ),
       template: GOLDEN_TEMPLATE,
       mood: GOLDEN_MOOD,
       seed: GOLDEN_SEED,
     })
+    expect(usbRig.clockSource?.deviceId).toBe('intellijel-metropolix')
     expect(usbRig.clockSource?.transport).toBe('usb')
     const body = phaseBody(renderGuide(usbRig), 3).join('\n')
     expect(body).toContain('Tracker Mini')

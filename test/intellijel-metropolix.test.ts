@@ -178,10 +178,16 @@ describe('Metropolix manifest', () => {
   // -------------------------------------------------------------------------
 
   describe('clock (§7.4)', () => {
-    it('claims the preference, and is the only box that does', () => {
+    it('claims the preference, and is one of the two boxes that do', () => {
       expect(device.clock.preferredSource).toBe(true)
+      // This was the only claim in the library until #80 went through the nine boxes with no
+      // decision recorded either way. Exactly one of them cleared §7.4's bar: the Tracker Mini,
+      // whose manual calls it "a perfect fit for the centre piece of a setup" (p.283). The other
+      // eight carry a reasoned non-claim in `capabilityEvidence`, which is why the list is short
+      // rather than because nobody looked.
       expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
         'intellijel-metropolix',
+        'polyend-tracker-mini',
       ])
       // The Model 2400 claimed it for two commits on the strength of a manual proving only that
       // a desk *can* generate clock. Capability is not preference; this claim is about what the
@@ -189,24 +195,48 @@ describe('Metropolix manifest', () => {
       expect(model2400.clock.preferredSource).toBeUndefined()
     })
 
-    it('leads the full rig while carrying nothing, over the slower transport', () => {
-      // Every remaining key is against it: `usb` loses to the `midi-din` seven other boxes carry,
-      // `intellijel-metropolix` does not sort first, and it holds no parts at all. Only the
-      // authored claim puts it ahead — which is the whole point of the field.
-      const result = resolve({ devices: DEVICES, template, mood: NEUTRAL_MOOD, seed: 18 })
-      expect(result.clockSource?.deviceId).toBe(device.id)
-      expect(result.clockSource?.occupiedAssignables).toBe(0)
-      expect(result.clockSource?.transport).toBe('usb')
+    it('is lifted over every box that merely can send clock, carrying nothing', () => {
+      // Every remaining key is against it: `usb` loses to the `midi-din` every other clock-capable
+      // box carries, `intellijel-metropolix` does not sort first, and it holds no parts at all.
+      // Only the authored claim puts it ahead — which is the whole point of the field. Asserted
+      // against the unpreferred boxes rather than against the full rig, because the full rig now
+      // holds a *second* authored claim and that is a different question (below).
+      const unpreferred = DEVICES.filter(
+        (d) => d.clock.canSendClock && d.clock.preferredSource !== true,
+      )
+      expect(unpreferred.length).toBeGreaterThan(4)
+      expect(unpreferred.every((d) => d.clock.transport.includes('midi-din'))).toBe(true)
+      expect(unpreferred.some((d) => d.id < device.id)).toBe(true)
 
-      const others = DEVICES.filter((d) => d.id !== device.id && d.clock.canSendClock)
-      expect(others.length).toBeGreaterThan(4)
-      expect(others.every((d) => d.clock.transport.includes('midi-din'))).toBe(true)
-      expect(others.some((d) => d.id < device.id)).toBe(true)
+      const heavy = new Map(unpreferred.map((d, i) => [d.id, unpreferred.length - i]))
+      const source = selectClockSource([...unpreferred, device], heavy)
+      expect(source?.deviceId).toBe(device.id)
+      expect(source?.occupiedAssignables).toBe(0)
+      expect(source?.transport).toBe('usb')
+    })
+
+    it('loses the full rig to the other authored claim, on transport rather than on rank', () => {
+      // **#80's outcome, and it is the correct one rather than a regression.** The Tracker Mini
+      // claims the field too, and §7.4 has no basis to rank two authored preferences against each
+      // other — so the keys below the claim decide, and this box has only `usb` where the Tracker
+      // Mini has `midi-din`. That is a *justified* tie-break between two boxes each authored as a
+      // rig leader, which is exactly the thing #80 replaced: the same arithmetic among everything
+      // that merely can send clock was an alphabetical accident.
+      const result = resolve({ devices: DEVICES, template, mood: NEUTRAL_MOOD, seed: 18 })
+      expect(result.clockSource?.deviceId).toBe('polyend-tracker-mini')
+      expect(result.clockSource?.transport).toBe('midi-din')
+      // Not because this box was demoted: strip the other claim and it leads again.
+      const soleClaim = DEVICES.map((d) =>
+        d.id === 'polyend-tracker-mini'
+          ? { ...d, clock: { ...d.clock, preferredSource: undefined } }
+          : d,
+      )
+      expect(selectClockSource(soleClaim, new Map())?.deviceId).toBe(device.id)
     })
 
     it('says so in the guide, and still exempts the boxes that cannot follow', () => {
       const doc = renderGuide(resolve({ devices: DEVICES, template, mood: NEUTRAL_MOOD, seed: 18 }))
-      expect(doc).toContain('**Clock source** — Metropolix over `usb`, carrying 0 parts')
+      expect(doc).toContain('**Clock source** — Tracker Mini over `midi-din`')
       // §7.4's exemption clause, which must survive the source moving. Asserted against the boxes
       // that are actually deaf rather than against a remembered list.
       for (const deaf of DEVICES.filter((d) => !d.clock.canReceiveClock)) {
@@ -228,7 +258,9 @@ describe('Metropolix manifest', () => {
       // the box a person owns, not the box plus a shopping list.
       expect(device.clock.transport).not.toContain('midi-din')
       // The distinction is real rather than a technicality: it costs this device the transport
-      // tie-break against every other clock-capable box in the library.
+      // tie-break against every other clock-capable box in the library — including, since #80,
+      // the one other box that claims the same preference, which is why the full rig no longer
+      // resolves here.
       const others = DEVICES.filter((d) => d.id !== device.id && d.clock.canSendClock)
       expect(others.every((d) => d.clock.transport.includes('midi-din'))).toBe(true)
       // Without the authored preference it would lose the rig on exactly that.

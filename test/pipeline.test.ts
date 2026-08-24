@@ -469,12 +469,12 @@ describe('clock source (§7.4)', () => {
     expect(TRANSPORT_PREFERENCE).toEqual(['midi-din', 'usb'])
   })
 
-  it('returns nothing when nothing in the rig can master', () => {
+  it('returns nothing when nothing in the rig can send clock', () => {
     expect(selectClockSource([din('a', false), usb('b', false)], new Map())).toBeUndefined()
   })
 
-  it('considers only devices that can master', () => {
-    // 'a' sorts first and carries more parts, but cannot master.
+  it('considers only devices that can send clock', () => {
+    // 'a' sorts first and carries more parts, but cannot send clock.
     const chosen = selectClockSource([din('a', false), usb('b')], new Map([['a', 5], ['b', 1]]))
     expect(chosen?.deviceId).toBe('b')
   })
@@ -630,19 +630,53 @@ describe('clock source ranks on semantics, not on load (§7.4)', () => {
     ).toBe('z-sequencer-kind')
   })
 
-  it('is claimed by exactly one device, and omitted rather than falsified elsewhere', () => {
-    // Metropolix, and the claim is about what the box *is for*: a sequencer with no voice of its
-    // own, whose entire output is timing and control for other boxes. The Model 2400 claimed it
-    // for two commits on the strength of a manual proving only that a desk *can* generate clock
-    // and cannot receive it — capability promoted into preference — and no longer does. Absent
-    // and `false` rank identically, so there is one spelling for "no claim" rather than two.
+  it('is claimed by two devices, and omitted rather than falsified elsewhere', () => {
+    // Metropolix, whose entire output is timing and control for other boxes, and the Tracker
+    // Mini, whose manual calls it "a perfect fit for the centre piece of a setup" (p.283) and
+    // draws it leading as the first of its typical configurations (p.287). Both claims are about
+    // what the box *is for*. The Model 2400 claimed it for two commits on the strength of a manual
+    // proving only that a desk *can* generate clock and cannot receive it — capability promoted
+    // into preference — and no longer does. Absent and `false` rank identically, so there is one
+    // spelling for "no claim" rather than two.
+    //
+    // **Two is not a problem to be resolved** (§7.4/#80). The field says "this box can lead", not
+    // "this box leads over that one", so a rig holding both falls through to transport and id —
+    // and that fall-through between two authored leaders is a justified tie, where the same
+    // arithmetic between everything that merely *can* send clock is an alphabetical accident. The
+    // test below is the one that pins the difference.
     expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
       'intellijel-metropolix',
+      'polyend-tracker-mini',
     ])
     for (const device of DEVICES) {
       if (device.clock.preferredSource === true) continue
       expect(device.clock.preferredSource, device.id).toBeUndefined()
     }
+  })
+
+  it('decides the Deluge + Tracker Mini + TR-1000 rig on a claim, not on the alphabet (#80)', () => {
+    // **#80's done-when, as a test.** Before the nine decisions were authored, all three of these
+    // boxes merely *could* send clock and all three declare `midi-din`, so the source fell to
+    // `deviceId` ascending — `polyend-` before `roland-` before `synthstrom-` — and the reader was
+    // told to clock the rig from whichever box happened to sort first. The answer is the same box
+    // now and the *basis* is not: the Tracker Mini is the only one of the three whose manual says
+    // driving a rig is its job, and the other two carry a recorded non-claim.
+    const rig = DEVICES.filter((d) =>
+      ['synthstrom-deluge', 'polyend-tracker-mini', 'roland-tr-1000'].includes(d.id),
+    )
+    expect(rig).toHaveLength(3)
+    expect(rig.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
+      'polyend-tracker-mini',
+    ])
+    expect(selectClockSource(rig, new Map())?.deviceId).toBe('polyend-tracker-mini')
+
+    // The claim is load-bearing rather than incidentally agreeing with the alphabet: give the
+    // Deluge the claim instead and the source moves to a box that sorts *last* of the three.
+    const moved = rig.map((d) => ({
+      ...d,
+      clock: { ...d.clock, preferredSource: d.id === 'synthstrom-deluge' ? true : undefined },
+    }))
+    expect(selectClockSource(moved, new Map())?.deviceId).toBe('synthstrom-deluge')
   })
 
   it('leaves a rig with no authored preference to deterministic tie-breaks alone', () => {

@@ -90,11 +90,15 @@ import { MC_101_PANEL } from './panel'
  *
  * Capability data — track count, clock, per-step lanes — is **not yet migrated** and its pages are
  * still in the comments below. §2.6/#22 gives capability facts a home in `capabilityEvidence`,
- * keyed by field path, and this manifest has not moved into it; the TR-1000 is the one that has.
- * Nothing forces the move here, because this box declares no jacks and no clock setup — the two
- * families §2.6 makes mandatory — and invariant 4 is scoped to parameter values. It is a debt of
- * authoring, and it is worth naming as one rather than letting a comment read as the settled
- * regime.
+ * keyed by field path, and this manifest has moved exactly one fact into it; the TR-1000 is the
+ * one that has moved all of them. Nothing forces the rest, because this box declares no jacks and
+ * no clock setup — the two families §2.6 makes mandatory — and invariant 4 is scoped to parameter
+ * values. It is a debt of authoring, and it is worth naming as one rather than letting a comment
+ * read as the settled regime.
+ *
+ * The one entry is `clock.preferredSource`, and it is there because #80 asked a question this
+ * manifest had no way to answer in the negative. A page reference in a comment is a page nothing
+ * rechecks; a recorded non-claim is a decision the audit counts. See the `clock` comment.
  *
  * One thing that regime cannot cover, and it is a real gap rather than an oversight:
  * **the per-step lanes have no printed ranges.** p.22 and p.23 name `VEL`, `STA`, `LEN`, `MTE`
@@ -864,8 +868,41 @@ export const device: Device = {
    * source, `Sync Out` and `SyncOut USB` decide whether clock, start and stop leave the box
    * (p.40). p.44 states it plainly — *"The MC-101 can transmit and receive MIDI clock (F8) to
    * synchronize its tempo."*
+   *
+   * **`preferredSource` is not claimed (§7.4/#80), and p.44 is the page that decides it — read
+   * whole.** That sentence is the one quoted above, and it is symmetric: transmit *and* receive.
+   * The chapter it opens, "Interoperation with Other Devices", is **one page long** and holds
+   * exactly two diagrams, one for each direction. In the first a computer's `USB MIDI OUT` feeds
+   * this box's `USB MIDI IN` — the DAW is the source and the MC-101 follows. In the second the
+   * MC-101's `MIDI OUT` feeds a TR-8S's `MIDI IN`, and there it leads. A pair of options, drawn
+   * on one page, with no prose choosing between them.
+   *
+   * So the one documented arrangement in which this box leads is real, and it is not a claim
+   * about the box's job — which is exactly the distinction §7.4 exists to hold. Roland never
+   * makes such a claim here: neither book has a features list or a prose introduction, the
+   * Owner's Manual p.8 "An Overview of the MC-101" is an internal block diagram from System
+   * Setting down to MASTER FX with no external gear on it anywhere, the Reference Manual's
+   * rear-panel illustration (p.6) draws a computer, an SD card and speakers and no instrument at
+   * all, and the only place either book says what the box *is* is the Owner's Manual
+   * specifications table: *"Roland MC-101: Groovebox"* (p.19).
+   *
+   * The trap worth naming, since a first pass fell into it: read as a summary, p.44 sounds like
+   * "the MC-101 clocks a DAW and a TR-8S". The DAW diagram points the other way.
    */
   clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
+
+  /**
+   * §2.6/#22. One fact, recording a decision rather than a citation — see the module JSDoc for
+   * why the rest of this box's capability pages are still in comments, and the `clock` comment
+   * for what the Reference Manual's p.44 actually shows.
+   */
+  capabilityEvidence: {
+    'clock.preferredSource': {
+      kind: 'unknown',
+      reason:
+        'Reference p.44’s one-page “Interoperation with Other Devices” draws this box following a DAW and leading a TR-8S, one diagram each and no prose choosing; the only self-description in either book is Owner’s p.19’s “Roland MC-101: Groovebox”',
+    },
+  },
 
   /**
    * `OUT L/MONO` and `OUT R`, and nothing else: *"If you're outputting in mono, connect the

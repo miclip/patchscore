@@ -53,10 +53,13 @@ const patchedRig = resolve({
 /**
  * #103. A two-box rig that resolves onto MIDI, which the full registry does not.
  *
- * §7.4 ranks `preferredSource` above transport, and the registry's preferred box declares `usb`
- * before `midi-din`, so `real` syncs over USB and every clock socket in it is unlabelled — true,
- * and useless for asserting that the labelled case is right. These two both declare `midi-din`
- * and are the two panels #103 is about.
+ * §7.4 ranks `preferredSource` above transport, and `real` used to sync over USB because the
+ * registry's one preferred box declares `usb` before `midi-din` — every clock socket in it
+ * unlabelled, true and useless for asserting that the labelled case is right. Since #80 the
+ * Tracker Mini claims the preference too and wins that transport tie, so `real` now resolves onto
+ * MIDI as well. This two-box rig stays because it is the *smallest* one carrying the two panels
+ * #103 is about, and because a fixture that only works while a full registry happens to resolve a
+ * certain way is a fixture that breaks on the next manifest.
  */
 const midiRig = resolve({
   devices: DEVICES.filter((d) => d.id === 'polyend-tracker-mini' || d.id === 'roland-tr-1000'),

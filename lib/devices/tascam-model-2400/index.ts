@@ -93,8 +93,8 @@ export const device: Device = {
   kind: 'mixer-recorder',
 
   /**
-   * A clock source that cannot be slaved — see the module JSDoc, which is where the evidence for
-   * both halves sits. `MIDI OUT` carries MTC and MIDI clock (p.45, p.74); `MIDI IN` is a
+   * A clock source that cannot itself be synced to anything — see the module JSDoc, which is
+   * where the evidence for both halves sits. `MIDI OUT` carries MTC and MIDI clock (p.45, p.74); `MIDI IN` is a
    * USB conversion path for a keyboard (p.5, p.74). The generated clock also reaches a computer
    * over USB, which is why both transports are listed.
    *

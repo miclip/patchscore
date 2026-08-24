@@ -375,7 +375,20 @@ device that motivated it, and the reason the list is otherwise unchanged since t
 6. Tascam Model 2400 (`mixer-recorder`)
 7. Empress ZOIA Euroburo (`fx-processor`)
 
-Manuals for all seven are in `manuals/` (gitignored — copyright and size).
+Manuals live in `manuals/` (gitignored — copyright and size), and **the set is not complete and
+not stable**. This said "manuals for all seven" and had stopped being true; a first repair
+enumerated the three that were missing and one of them arrived during the same piece of work. So
+no roster here: `ls manuals/` is the only answer that stays right, and a manifest naming its own
+source file at the top (the Cascadia's does) is worth more than a list in a spec.
+
+The rule that does not change is what a missing file means. **A citation to a document nobody can
+currently open is not evidence, and the absence of the document is not evidence that the manifest
+around it is wrong.** What was cited while the manual was present stays cited — those pages were
+read — and *new* claims wait for the file rather than being inferred from the pages a manifest
+already quotes. #80 is the worked example in both directions: one decision was written as
+explicitly open for want of a document, and became a real decision within the same piece of work
+once the file appeared — which is the whole reason the rule is about the file rather than about a
+roster of which files there are.
 
 ---
 
@@ -478,6 +491,30 @@ optional for the rack; moving them here would make a required claim optional.
 `comfortableVoices` is out for the opposite reason: it is a musical judgement about a box (§12.4),
 no page states it, and a slot to cite it in is an invitation to cite p.14 — which says ten, where
 the field says eight.
+
+**`clock.preferredSource` is in, and it is a judgement too**, so the rule is not "judgements stay
+out" — the question is whether a page can be asked. Nothing prints "this box is comfortable at
+eight voices". A manual does say what a box is *for*: Metropolix's opens by calling it a musical
+sequencer, and that sentence is the whole basis of one of the library's two `preferredSource: true`
+claims (§7.4). The other is the Tracker Mini's, cited to the sentence calling it "a perfect fit for
+the centre piece of a setup" — and the two pages that *look* like that evidence and are not are
+recorded in the manifest beside it, which is the map earning its keep. The `unknown` state is the half that was missing, and it is worth more here than the
+citation — the Model 2400 held the claim for two commits on a manual proving the desk can
+generate clock and cannot receive it, a capability rather than a job, and when the claim came out
+there was nowhere to say the manual had been read and had not answered. That is finished work,
+and it read as silence. The path is accepted whether or not the field is declared, exactly as
+`features.*` is and for the same reason: omitting `preferredSource` is what most manifests do,
+and it is the omission that wants accounting for. **A `canSendClock` page is not evidence here** —
+it proves the capability, and this field exists precisely because a capability is not a job.
+
+**One limit of the third state, found by #80 and not yet repaired.** `unknown` is defined as "the
+document was read and does not state the fact", and the library now uses it for two findings that
+are not the same: the Deluge's guidebook never says what the box is for, while the Cascadia's says
+plainly what it is for and it is not this. The second is the stronger result and is recorded in the
+weaker state, because the alternative is worse — a `Cite` on this path reads as evidence *for* a
+field that is absent, and would make a non-claim count and render identically to a claim. So the
+`reason` carries the distinction and the counts do not. A fourth state would fix it; nothing has
+needed one badly enough yet, and inventing one for a single device is how vocabularies rot.
 
 ---
 
@@ -1918,11 +1955,13 @@ key beneath it, which is exactly why §12.6 chose a flag on the request over a `
 `canSendClock`, then **one semantic key and two tie-breaks**:
 
 1. `clock.preferredSource` (§2.3) — the manifest's own topology judgement, "this box's job in a
-   rig is to drive it". A dedicated sequencer or a recorder transport says so; everything else
-   omits the field. **Not derivable from `kind`**, and the library's two `mixer-recorder`s show
-   why: the Model 2400 claims it and the LiveTrak L-8 cannot send clock at all. Same kind,
-   opposite ends of the topology. Nor does §2.3's `sequencer` kind make it derivable — a
-   sequencer following a DAW is still a follower.
+   rig is to drive it". A dedicated sequencer or a groovebox documented as the centre of a setup
+   says so; everything else omits the field. **Not derivable from `kind`**, and the library's two
+   `mixer-recorder`s show why: the Model 2400 was considered for it and declines in a reasoned
+   comment of its own, while the LiveTrak L-8 cannot send clock at all. Same kind, and one of them
+   is not even eligible. Nor does §2.3's `sequencer` kind make it derivable — a sequencer following
+   a DAW is still a follower — and `groovebox` least of all: the library has four, and #80 found
+   that one of them qualifies.
 2. Transport preference (`midi-din` > `usb`).
 3. `deviceId` ascending by UTF-16 code unit (§7.2).
 
@@ -1986,12 +2025,33 @@ under the inferred rule it never would.
 Three things, all of them chosen rather than overlooked:
 
 - **Topology is now an authored judgement or it is nothing.** No rig gets a *considered* clock
-  source unless some manifest claims one, and **no device in the library claims one**. The Model
-  2400 did for two commits, on the strength of a manual that proves the desk can generate clock
-  and cannot receive it — but neither fact says it should lead every rig it is put in, which is
-  what the field means. That was capability promoted into preference: the same error as the two
-  ranking keys this section has already removed, moved out of the engine and into a manifest,
-  where it is harder to see. So every rig today falls straight to the tie-breaks.
+  source unless some manifest claims one, and **two devices in the library do**: Metropolix, whose
+  manual's first line calls it a musical sequencer and which has no voice to be played by anything
+  else, and the Tracker Mini, whose MIDI chapter calls it "a perfect fit for the centre piece of a
+  setup" (p.283) and opens its typical configurations with the one where it leads (p.287). Every
+  rig without either falls straight to the tie-breaks. The Model 2400 claimed the field for two
+  commits too, on the strength of a manual that proves the desk can generate clock and cannot
+  receive it — but neither fact says it should lead every rig it is put in, which is what the field
+  means. That was capability promoted into preference: the same error as the two ranking keys this
+  section has already removed, moved out of the engine and into a manifest, where it is harder to
+  see. Which of the two a manifest is doing is now recordable rather than only arguable, at
+  `clock.preferredSource` in `capabilityEvidence` (§2.6).
+
+  **#80 asked the question of the whole library and the answer was mostly no**, which is the
+  result worth recording rather than the two claims. Nine devices had no decision either way. One
+  qualified. Five are reasoned non-claims on manuals that turned out to document capability and
+  never purpose — the MC-101's one-page "Interoperation with Other Devices" draws it following a
+  DAW and leading a TR-8S, one diagram each; the TR-8S's external-gear chapter opens
+  receive-first; the TR-1000 is positioned as "the most complete rhythm machine ever made" and its
+  only topology note puts it *in the middle* of somebody else's chain; the Digitakt II is "a
+  compact drum machine and sampler" whose MIDI tracks cost you audio tracks; and the Cascadia,
+  whose four clock pages are two jack lists and two settings tables while every page that
+  establishes what it is for has a controller or a sequencer playing it. Two are closed by the
+  hardware, the ZOIA and the LiveTrak having no clock to transmit. The Deluge is the near miss
+  worth naming:
+  it has a clip type per external device and a "Typical MIDI Set Up" drawing with a synth module
+  hanging off it, and its guidebook still never states what the box is *for*, hedging to "can be a
+  controller". A field this narrow is supposed to come back empty most of the time.
 - **Several preferred sources in one rig fall through to transport and id**, exactly as several
   unpreferred ones do. The field says "this box can lead", not "this box leads over that one";
   ranking two authored preferences against each other would need an ordering nobody has a basis
@@ -2000,7 +2060,12 @@ Three things, all of them chosen rather than overlooked:
   bidirectional instrument in the library on `midi-din`, `deviceId` is what remains — so an
   instrument-only rig is clocked by whichever box sorts first, regardless of what it carries.
   That is honest determinism rather than a judgement, and the repair is to author the judgement,
-  not to reinstate a proxy for it.
+  not to reinstate a proxy for it. #80 performed that repair once and it is worth seeing what it
+  bought: a Deluge + Tracker Mini + TR-1000 rig resolves to the same box it always did, because
+  `polyend-` already sorted first. What changed is that the answer is now a claim the Tracker
+  Mini's manual supports rather than an accident of spelling, and moving the claim to the Deluge
+  moves the source to the box that sorts *last*. The outcome staying put is not evidence the field
+  did nothing; authoring it to move the outcome would be the same error from the other side.
 
 ---
 

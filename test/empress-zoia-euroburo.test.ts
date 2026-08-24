@@ -67,8 +67,14 @@ describe('the manifest', () => {
       expect(verified.source.startsWith(MANUAL)).toBe(true)
     }
     const audit = auditDevice(device)
-    expect(audit.findings).toHaveLength(0)
     expect(audit.counts.params).toBe(0)
+    // One finding, and it is #80's recorded non-claim rather than a debt. This manual documents no
+    // clock transmission at all, so it says nothing about leading a rig either — and
+    // `canSendClock: false` makes `preferredSource` unclaimable regardless (§7.4). Asserted
+    // exactly, so an *unchecked* finding here would still fail.
+    expect(audit.findings.map((f) => ('fact' in f ? `${f.kind} ${f.fact}` : f.kind))).toEqual([
+      'undocumented-capability clock.preferredSource',
+    ])
   })
 })
 

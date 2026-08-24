@@ -61,7 +61,11 @@ None.
 
 ## 3. Rig integration
 
-**Clock source** — Metropolix over `usb`, carrying 0 parts. Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8, which cannot receive clock and run free.
+**Clock source** — Tracker Mini over `midi-din`, carrying 0 parts. Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8, which cannot receive clock and run free.
+
+- On the Tracker Mini, set `Config > MIDI > Clock Out` to `MIDI Out jack` · manual
+  - ↳ note: Off, USB, MIDI Out jack, USB + MIDI Out jack — clock leaves only by the routing set here
+  - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.54
 
 - **CRAVE** — semi-modular · 1 part
   - clock: receives clock only · midi-din/usb
@@ -93,6 +97,8 @@ None.
   - mixer: 1 part, no individual outs: one mono channel for all
 - **Tracker Mini** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb
+  - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284) · manual
+    - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.13
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
 - **MC-101** — groovebox · 2 parts

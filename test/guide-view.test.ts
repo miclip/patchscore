@@ -733,8 +733,9 @@ describe('source audio reaches both renderers, and says the same thing (§3/#101
  * does. It is the page a reader on a phone at the machine is actually holding, and #104 was
  * filed against the page.
  *
- * Tracker Mini + TR-1000: neither claims `preferredSource`, both declare `midi-din`, and §7.4
- * breaks the tie on device id ascending, so the Tracker Mini is the source over MIDI.
+ * Tracker Mini + TR-1000: both declare `midi-din`, and since #80 the Tracker Mini is the one that
+ * claims `preferredSource`, so it is the source over MIDI on §7.4's one semantic key rather than
+ * on device id ascending. Same box, better reason.
  */
 describe('the clock source is told how to emit (§7.4/#104)', () => {
   const midiRig = resolve({
@@ -785,14 +786,23 @@ describe('the clock source is told how to emit (§7.4/#104)', () => {
   })
 
   it('says nothing about a MIDI adapter on a USB rig (#103)', () => {
+    // The Tracker Mini's #80 claim is stripped, and that is the only edit: with it standing, this
+    // box beats the Metropolix on transport and no registry rig holding the two resolves onto USB
+    // any more. The subject here is the jack note, so the preference is what gives way. Same
+    // reasoning as the Markdown side in `render.test.ts`.
     const usbRig = resolve({
       devices: DEVICES.filter(
         (d) => d.id === 'polyend-tracker-mini' || d.id === 'intellijel-metropolix',
+      ).map((d) =>
+        d.id === 'polyend-tracker-mini'
+          ? { ...d, clock: { ...d.clock, preferredSource: undefined } }
+          : d,
       ),
       template: GOLDEN_TEMPLATE,
       mood: GOLDEN_MOOD,
       seed: GOLDEN_SEED,
     })
+    expect(usbRig.clockSource?.deviceId).toBe('intellijel-metropolix')
     expect(usbRig.clockSource?.transport).toBe('usb')
     const page = text(html(usbRig))
     expect(page).toContain('Tracker Mini')

@@ -431,6 +431,29 @@ export const device: Device = {
    * under Various settings; the sync setting is the GENERAL block on p.31. That is the whole
    * argument for moving these out of comments — a page number nothing reads is a page number
    * nobody rechecks.
+   *
+   * **`preferredSource` is not claimed (§7.4/#80), and p.30 is why it must not be.** p.30 is
+   * already the citation for `canSendClock` in the map below, and reaching for the same page a
+   * second time to claim the judgement is the precise error §2.6 warns about: a `canSendClock`
+   * page proves the capability, and this field exists because a capability is not a job. Read as
+   * a role page it does not even point that way — the chapter is *"Synchronization with other
+   * devices and external audio input"*, its first sentence is receive-side (*"The TR-1000 can
+   * receive MIDI clocks (F8) for synchronizing its tempo"*), and its only remark about topology
+   * puts this box **in the middle of somebody else's chain**: *"The MIDI OUT 2 connector can be
+   * used as a MIDI THRU connector. Use this connector when you want to connect multiple devices
+   * and place the TR-1000 in the middle of the chain."* A pass-through link is not a lead.
+   *
+   * Roland's own positioning says the same thing outright. p.7's message from the developers
+   * calls this *"the most complete rhythm machine ever made"* and asks to be *"an integral part
+   * of their studios"* — a part, not a centre — and every sequencing claim on that page is about
+   * sequencing itself: off-grid capability, per-track shuffle, individual track timing, song
+   * mode. Nothing about sequencing external instruments. p.13's "Overview of the TR-1000" reads
+   * like the page that would settle it and is a data-hierarchy diagram with no prose at all.
+   *
+   * The asymmetry is the finding worth keeping. This box has `Tempo Sync`, `Rx Start Stop Cont`
+   * and `Trig In Sync Clock` on the receive side, and on the send side a `CLK OUT` jack, a
+   * `Sync Out Clock` value and no parameter for enabling MIDI clock transmission anywhere. It is
+   * documented as a box that follows, with sockets that let it lead.
    */
   clock: {
     canSendClock: true,
@@ -670,6 +693,17 @@ export const device: Device = {
      * has been read closely enough to author a recipe from it (see `features` above). It is
      * checked, and the answer is that the manual does not state the two things `LfoSpec` needs.
      */
+    /**
+     * §7.4/#80. Not `owner(30)`, which is `clock.canSendClock` three lines above and would be
+     * that citation wearing this field's name. See the `clock` comment for what p.30, p.7 and
+     * p.13 actually say.
+     */
+    'clock.preferredSource': {
+      kind: 'unknown',
+      reason:
+        'p.7 positions this as “the most complete rhythm machine ever made” and “an integral part of their studios”; p.30’s sync chapter is receive-framed and its one topology note places the TR-1000 in the middle of another chain, so no page states that leading a rig is its job',
+    },
+
     'features.lfo': {
       kind: 'unknown',
       reason:

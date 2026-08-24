@@ -63,8 +63,14 @@ describe('the manifest', () => {
     // A device with no recipes has no parameter provenance to audit, and that is a finding of
     // zero rather than an unrun audit: the auditor still walks it and still comes back clean.
     const audit = auditDevice(device)
-    expect(audit.findings).toHaveLength(0)
     expect(audit.counts.params).toBe(0)
+    // One finding, and it is #80's recorded non-claim rather than a debt: §7.4 asked whether
+    // driving a rig is this desk's job, and a box with no MIDI on it has no page that answers.
+    // `undocumented` is reported so somebody can disagree with the reading — see
+    // `capabilitySentence`. Asserted exactly, so an *unchecked* finding here would still fail.
+    expect(audit.findings.map((f) => ('fact' in f ? `${f.kind} ${f.fact}` : f.kind))).toEqual([
+      'undocumented-capability clock.preferredSource',
+    ])
   })
 })
 

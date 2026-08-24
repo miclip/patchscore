@@ -178,6 +178,63 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
     expect((patchable() as { features?: { lfo?: unknown } }).features?.lfo).toBeUndefined()
   })
 
+  it('accepts a citation or an `unknown` for the one judgement in the list (§7.4)', () => {
+    // `clock.preferredSource` is a topology judgement, not a capability, and it is in the closed
+    // list anyway — the rule is "can a page be asked", not "is this a judgement". A manual does
+    // say what a box is *for*; Metropolix's opens by calling itself a musical sequencer and the
+    // Tracker Mini's calls itself the centre piece of a setup, and those two sentences are the
+    // basis of the library's two claims.
+    const claimed = {
+      clock: {
+        canSendClock: true,
+        canReceiveClock: true,
+        transport: ['midi-din'],
+        preferredSource: true,
+      },
+      capabilityEvidence: {
+        [jackFact('VCF · IN')]: CITE,
+        'clock.preferredSource': CITE,
+      },
+    }
+    expect(DeviceSchema.safeParse(patchable(claimed)).success).toBe(true)
+
+    // The state that was missing, and the one worth more here. The Model 2400 held the claim for
+    // two commits on a manual proving only that the desk can generate clock; when it came out
+    // there was nowhere to record that the manual had been read and had not answered.
+    const looked = DeviceSchema.safeParse(
+      patchable({
+        capabilityEvidence: {
+          [jackFact('VCF · IN')]: CITE,
+          'clock.preferredSource': {
+            kind: 'unknown',
+            reason: 'the manual states what this desk can drive and never what its job is',
+          },
+        },
+      }),
+    )
+    expect(looked.success ? [] : looked.error.issues).toEqual([])
+  })
+
+  it('accepts `clock.preferredSource` evidence on a manifest that does not claim the field', () => {
+    // The same rule as `features.*`, for the same reason: omitting `preferredSource` is what most
+    // of the library does, so the omission is the thing that wants accounting for. A slot only
+    // reachable by claiming the field would leave every honest omission silent — and after #80 the
+    // omissions are where nearly all the evidence lives, eight recorded non-claims against one
+    // citation.
+    const parsed = DeviceSchema.safeParse(
+      patchable({
+        capabilityEvidence: {
+          [jackFact('VCF · IN')]: CITE,
+          'clock.preferredSource': UNKNOWN,
+        },
+      }),
+    )
+    expect(parsed.success ? [] : parsed.error.issues).toEqual([])
+    expect(
+      (patchable() as { clock: { preferredSource?: boolean } }).clock.preferredSource,
+    ).toBeUndefined()
+  })
+
   it('refuses an empty map rather than treating it as silence', () => {
     const bare = device({ recipes: [recipe()], capabilityEvidence: {} } as never)
     expect(DeviceSchema.safeParse(bare).success).toBe(false)

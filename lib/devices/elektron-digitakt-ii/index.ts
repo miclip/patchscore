@@ -517,7 +517,24 @@ export const device: Device = {
 
   /**
    * Sends and receives on both transports. The rear panel carries MIDI In, Out and Thru DIN
-   * sockets and a USB port (p.14), and the manual's SYNC settings cover clock over both.
+   * sockets and a USB port (p.14), and the manual's SYNC settings cover clock over both —
+   * `CLOCK SEND` "sets whether or not Digitakt II transmits MIDI clock" (p.77).
+   *
+   * **`preferredSource` is not claimed (§7.4/#80), and the manual's own definition is why.**
+   * p.10 opens: *"The Digitakt II is a compact drum machine and sampler from Elektron"*, and
+   * puts *"extensive possibilities to control external MIDI gear"* fourth in a list of four
+   * capabilities. A possibility is not a job. p.11's overview does not mention external gear,
+   * MIDI, or sync at all, and §16 SETUP EXAMPLES frames the box as a peer rather than a lead:
+   * *"The Digitakt II likes to play with other machines... Digitakt II gets along with other
+   * gear"* (p.86). Its worked examples do show it driving one — but between a sample-from-your-
+   * phone example and a key-combination appendix, as one rig you could build.
+   *
+   * **The architecture argues the same way, and this is the part a jack list would hide.** p.17's
+   * MIDI tracks do carry a purpose sentence — *"They are used to control external, MIDI equipped,
+   * gear"* — but the pool comment above is the reason it cannot be read as this box's job: the
+   * sixteen tracks are audio *or* MIDI, so every track spent sequencing something else is a track
+   * taken from the sampler the manual calls the product. A box built to drive a rig does not
+   * charge you a voice for it.
    */
   clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
 
@@ -526,6 +543,19 @@ export const device: Device = {
    * `individualOuts: 0` — this box has one output pair and no separations.
    */
   io: { main: 'stereo', individualOuts: 0, audioIn: true, usbAudio: true },
+
+  /**
+   * §2.6/#22. One entry, recording a decision rather than a citation — #80 asked this manual what
+   * the box is for, and the answer it gives is "a drum machine and sampler". See the `clock`
+   * comment.
+   */
+  capabilityEvidence: {
+    'clock.preferredSource': {
+      kind: 'unknown',
+      reason:
+        'p.10 defines the box as “a compact drum machine and sampler” and lists controlling external gear as a possibility; p.86 frames it as a peer that “gets along with other gear”, and a MIDI track costs an audio track (p.17)',
+    },
+  },
 
   /** p.91: `Dimensions: W 215 × D 176 × H 63 mm`. 63 mm is how far off the desk it stands. */
   physical: { panelSpanMm: 215, verified: cite(91) },

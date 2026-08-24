@@ -115,10 +115,14 @@ describe('the first box that sends clock and cannot receive it', () => {
     expect(device.clock.preferredSource).toBeUndefined()
     expect(device.clock.canSendClock).toBe(true)
     expect(device.clock.canReceiveClock).toBe(false)
-    // Metropolix is the box that does claim it, and the contrast is the point: a sequencer with
-    // no voice of its own exists to drive a rig, where a recording desk merely can.
+    // The boxes that do claim it, and the contrast is the point: a sequencer with no voice of its
+    // own exists to drive a rig, and the Tracker Mini's manual calls it "a perfect fit for the
+    // centre piece of a setup" — where a recording desk merely can. Two claims and no ranking
+    // between them (§7.4); this desk's absence is the assertion, and the list is here so a third
+    // claim has to be looked at rather than sliding in.
     expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
       'intellijel-metropolix',
+      'polyend-tracker-mini',
     ])
   })
 

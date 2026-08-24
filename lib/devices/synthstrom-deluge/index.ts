@@ -626,9 +626,30 @@ export const device: Device = {
   maker: 'Synthstrom Audible',
   kind: 'groovebox',
 
-  // Rear panel, p.6: MIDI In/Out on 5-pin DIN, USB-B carrying USB MIDI, a Clock In jack, and four
-  // Gate/Trigger outs whose trigger clock has an "adjustable PPQN out / 192 PPQN out". So it
-  // sends or receives clock over any of the three.
+  /**
+   * Rear panel, p.6: MIDI In/Out on 5-pin DIN, USB-B carrying USB MIDI, a Clock In jack, and four
+   * Gate/Trigger outs whose trigger clock has an "adjustable PPQN out / 192 PPQN out". So it
+   * sends or receives clock over any of the three.
+   *
+   * **`preferredSource` is not claimed (§7.4/#80), and this one was close.** Of the nine boxes
+   * #80 asked about, this is the one with the most designed-in support for driving other gear: a
+   * whole clip *type* per external device, MIDI clips and CV clips with their own arpeggiators,
+   * and §12.2's "Typical MIDI Set Up" drawing (p.239) with a synth module captioned
+   * *"controllable via the Deluge sequencer"* hanging off its MIDI out.
+   *
+   * It is still not a statement of what this box is *for*, and the guidebook never makes one —
+   * there is no positioning sentence anywhere in it. §1.4 "System Architecture" (p.9) is an
+   * entirely *internal* diagram: oscillators, engines, kit, effects, sequencer, and no external
+   * device on it at all. The nearest thing to a role sentence is p.253's *"Deluge can be a
+   * controller for external MIDI devices"* — "can be", the capability hedge this field exists to
+   * refuse — and §§12.4-12.6 spend four printed pages on the Deluge as the *follower*, taking
+   * system-level commands from outside. The MIDI chapter is symmetric, and a box documented
+   * symmetrically has not been told which end of the cable is its job.
+   *
+   * **p.18 is not the evidence either**, and was considered: it is §2.4 "Views", a taxonomy of
+   * clip/song/arranger/keyboard view whose only external-gear content is a bracket grouping the
+   * MIDI and CV clip views. A list of view modes is not a claim about a rig.
+   */
   clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb', 'analog-clock'] },
 
   // Two 1/4" main outs, "Right" and "Left / Mono" (p.6, p.8), plus a headphone out; line in and
@@ -636,6 +657,23 @@ export const device: Device = {
   // `individualOuts` is 0. The guidebook documents USB-B as MIDI, power and USB host only — there
   // is no USB audio interface mode, so `usbAudio` is false.
   io: { main: 'stereo', individualOuts: 0, audioIn: true, usbAudio: false },
+
+  /**
+   * §2.6/#22. **One entry, and it records a decision rather than a citation.**
+   *
+   * This manifest's pages are otherwise still in the comments above — the TR-1000 is the one that
+   * has migrated, and its map is the worked example. The exception is here because #80 asked a
+   * question of this guidebook that the guidebook does not answer, and the third state exists so
+   * that finding can be written down instead of reading as silence. See the `clock` comment for
+   * what was read and rejected.
+   */
+  capabilityEvidence: {
+    'clock.preferredSource': {
+      kind: 'unknown',
+      reason:
+        'the guidebook never states what this box is for; p.253 hedges to “can be a controller for external MIDI devices”, §1.4’s architecture diagram (p.9) is entirely internal, and §§12.4-12.6 document the Deluge as the follower at equal length',
+    },
+  },
 
   /**
    * §10. 305 mm horizontal span, from Synthstrom's published 305 x 208 x 46 mm.
