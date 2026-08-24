@@ -300,6 +300,28 @@ describe('Device manifest (§2.3)', () => {
     expect(DeviceKindSchema.options).toEqual([...DEVICE_KINDS])
   })
 
+  it('accepts io.main: none, for a box with no audio path (§2.3)', () => {
+    // Adding this dropped an assumption true of every device in the library until now: that
+    // everything has an audio output. `mono` on a box with none would make both renderers print
+    // a main out that does not exist and make the rack draw a jack nobody can plug into.
+    const silent = device({ io: { main: 'none', individualOuts: 0, audioIn: false, usbAudio: false } })
+    const parsed = DeviceSchema.safeParse(silent)
+    expect(parsed.success ? [] : parsed.error.issues).toEqual([])
+    // `none` says there is no *main* bus, not that there is no audio anywhere: the combination
+    // with individual outs, an input or USB audio is legal and consumers have to handle it.
+    expect(
+      DeviceSchema.safeParse(
+        device({ io: { main: 'none', individualOuts: 2, audioIn: true, usbAudio: true } }),
+      ).success,
+    ).toBe(true)
+    // And the closed list is still closed.
+    expect(
+      DeviceSchema.safeParse(
+        device({ io: { main: 'silent' as never, individualOuts: 0, audioIn: false, usbAudio: false } }),
+      ).success,
+    ).toBe(false)
+  })
+
   it('accepts a sequencer: no voices, no recipes, and that is the whole point (§2.3, §2.4)', () => {
     // A Eurorack sequencer has pitch and gate tracks, modulation lanes, and no sound engine at
     // all. `semi-modular` would imply a normalised audio instrument — and voices, assignables

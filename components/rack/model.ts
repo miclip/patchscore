@@ -2,6 +2,7 @@ import type {
   Device,
   DeviceId,
   DeviceKind,
+  IoSpec,
   PanelLayout,
   ResolveResult,
   Verified,
@@ -147,6 +148,16 @@ export const RAIL_MM = 26
 
 /** How far in from a panel's side edge its clock jack sits. */
 const JACK_SIDE_MM = 13
+
+/**
+ * §2.3's `IoSpec['main']`, drawn. Keyed by the whole union so a new value cannot be forgotten:
+ * `none` is a box with no audio bus, and it gets no main jack rather than a default one.
+ */
+const MAIN_JACK_LABELS: Record<IoSpec['main'], string[]> = {
+  stereo: ['L', 'R'],
+  mono: ['OUT'],
+  none: [],
+}
 
 /** First audio jack clears the clock-in socket; the rest march right at this pitch. */
 const OUT_START_MM = JACK_SIDE_MM + 22
@@ -507,7 +518,14 @@ function jacksFor(device: Device, span: number, rise: number): { jacks: PanelJac
 
   // Main first, then the individual outs the manifest declares — ten of them on a TR-1000 is a
   // real and visible property of that box, and drawing them costs no device-specific code.
-  const mains = device.io.main === 'stereo' ? ['L', 'R'] : ['OUT']
+  //
+  // **A total lookup rather than a ternary, and that is the point of it.** This line read
+  // `main === 'stereo' ? ['L', 'R'] : ['OUT']` until §2.3 gained `main: 'none'`, at which point
+  // the else arm would have drawn exactly the fictional OUT jack that value exists to prevent —
+  // silently, on the one device that must not have one. A `Record` keyed by the union is
+  // exhaustive by type, so the next value added to `IoSpec['main']` fails the build here instead
+  // of falling through to whichever arm happens to be last.
+  const mains = MAIN_JACK_LABELS[device.io.main]
   const individuals = Array.from({ length: device.io.individualOuts }, (_, i) => `${i + 1}`)
   const wanted = [...mains, ...individuals]
   const room = Math.max(0, Math.floor((span - OUT_START_MM - JACK_SIDE_MM - 9) / OUT_PITCH_MM) + 1)

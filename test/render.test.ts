@@ -15,6 +15,7 @@ import {
   type Device,
   type Template,
 } from '../lib/core/index'
+import { ioText, mixerText } from '../components/guide/format'
 import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
 import { box, makeRecipe, request, withRoles } from './rigs'
 
@@ -757,6 +758,89 @@ describe('rig integration (§7.4)', () => {
     const body = phaseBody(renderGuide(golden()), 3).join('\n')
     // 3 parts on a box with no individual outs: one stereo channel, not three invented ones.
     expect(body).toContain('mixer: 3 parts, no individual outs')
+  })
+
+  /**
+   * §2.3 gained `io.main: 'none'` for a box with no audio path at all — a Eurorack sequencer has
+   * pitch, gate, modulation and clock outputs and nothing to plug into a mixer. Both renderers
+   * had to stop printing a main out that does not exist; invariant 5 forbids inventing an
+   * assignment to fill a hole, and a fictional output is the same fault in different clothes.
+   */
+  describe('a device with no audio output at all (§2.3)', () => {
+    /** Golden Drum with its audio path removed and nothing put in its place. */
+    function silent(over: Partial<Device['io']> = {}): Device[] {
+      return GOLDEN_DEVICES.map((d) =>
+        d.name === 'Golden Drum'
+          ? { ...d, io: { main: 'none' as const, individualOuts: 0, audioIn: false, usbAudio: false, ...over } }
+          : d,
+      )
+    }
+
+    /** The `n`th sub-line of Golden Drum's block, with its bullet stripped. */
+    function subLine(devices: Device[], n: number): string {
+      const body = phaseBody(
+        renderGuide(resolve({ devices, template: GOLDEN_TEMPLATE, mood: GOLDEN_MOOD, seed: GOLDEN_SEED })),
+        3,
+      )
+      const start = body.findIndex((l) => l.startsWith('- **Golden Drum**'))
+      return (body[start + n] ?? '').trim().replace(/^- /, '')
+    }
+
+    const audioLine = (devices: Device[]) => subLine(devices, 2)
+    const mixerLine = (devices: Device[]) => subLine(devices, 3)
+
+    it('says so plainly rather than naming a bus that is not there', () => {
+      expect(audioLine(silent())).toBe('audio: no audio I/O')
+    })
+
+    it('still lists the audio it does have, when it has some', () => {
+      // `none` says there is no *main* bus, not that there is no audio anywhere. A box can have
+      // individual outs, an input or USB audio and still have nothing to call a main out.
+      expect(audioLine(silent({ individualOuts: 2 }))).toBe('audio: 2 individual outs')
+      expect(audioLine(silent({ audioIn: true, usbAudio: true }))).toBe('audio: USB audio · audio in')
+    })
+
+    it('never names a main bus in the channel plan either', () => {
+      // **The latent trap, tested rather than reasoned about.** `mixerText` interpolates
+      // `io.main` into prose, so `none` would print "one none channel for all". No device in the
+      // library can reach it today — a box with no audio path also has no assignables, so the
+      // `parts === 0` early return fires first — but that is a guarantee in a different
+      // function, which is not a guarantee at all.
+      const mixer = mixerLine(silent())
+      expect(mixer).not.toContain('none channel')
+      expect(mixer).not.toContain('none out')
+      // Golden Drum carries parts, so this is the sentence a real box would get.
+      expect(mixer).toBe('mixer: 3 parts, no audio output: nothing to patch')
+    })
+
+    it('says where the parts that do not fit go, when some of them do', () => {
+      // The other reachable branch: separable outs exist but do not cover every part, and there
+      // is no main bus for the remainder to be summed to.
+      expect(mixerLine(silent({ individualOuts: 2 }))).toBe(
+        'mixer: 3 parts, 2 individual outs: 2 on their own channels, the rest have no output',
+      )
+    })
+
+    it('agrees with the other renderer, byte for byte', () => {
+      // `ioText` and `mixerText` exist twice — once in `lib/core/render.ts` for the Markdown
+      // guide and once in `components/guide/format.ts` for the view. Two implementations of one
+      // contract, which is a finding in its own right; until they are one, this pins that they
+      // agree on the value that is new.
+      for (const io of [
+        { main: 'none' as const, individualOuts: 0, audioIn: false, usbAudio: false },
+        { main: 'none' as const, individualOuts: 2, audioIn: true, usbAudio: false },
+        { main: 'none' as const, individualOuts: 0, audioIn: false, usbAudio: true },
+        { main: 'mono' as const, individualOuts: 0, audioIn: false, usbAudio: false },
+        { main: 'stereo' as const, individualOuts: 4, audioIn: true, usbAudio: true },
+      ]) {
+        const devices = GOLDEN_DEVICES.map((d) => (d.name === 'Golden Drum' ? { ...d, io } : d))
+        const device = devices.find((d) => d.name === 'Golden Drum') as Device
+        const where = JSON.stringify(io)
+        expect(audioLine(devices), where).toBe(`audio: ${ioText(device)}`)
+        // Golden Drum carries three parts in this scenario, so that is the count both sides see.
+        expect(mixerLine(devices), where).toBe(`mixer: ${mixerText(device, 3)}`)
+      }
+    })
   })
 
   it('keeps each box\'s clock, audio and channel plan together in one block', () => {

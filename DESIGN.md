@@ -174,6 +174,7 @@ export const device: Device = {
   clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] },
 
   io: { main: 'stereo', individualOuts: 8, audioIn: false, usbAudio: true },
+                          // main: 'mono' | 'stereo' | 'none'
 
   // §10. Front-panel horizontal span in mm, cited like any other checked value. Required: the
   // rack draws panels at realistic relative width, so a missing span would have to be invented.
@@ -311,6 +312,26 @@ The Tascam Model 2400 is a device with `kind: 'mixer-recorder'` — no voices, b
 that participates in routing instructions. Empress ZOIA Euroburo is `kind: 'fx-processor'`.
 Model them properly rather than special-casing; a device with no voices simply contributes
 no assignables and still appears in rig integration.
+
+**Not every device has an audio output**, and `io.main: 'none'` is how one says so. This dropped
+an assumption that had been true of every manifest until a Eurorack sequencer arrived: pitch,
+gate, modulation and clock outputs, and nothing to plug into a mixer. `mono` would have made both
+renderers print a main out that does not exist and made §10's rack draw a jack nobody can plug
+into — invariant 5 forbids inventing an assignment to fill a hole, and a fictional output is the
+same fault in different clothes.
+
+`none` says there is no *main bus*, not that there is no audio anywhere: a box may declare
+`individualOuts`, `audioIn` or `usbAudio` alongside it, and consumers handle that combination
+rather than treating `none` as a synonym for silence. The rig block prints `no audio I/O` only
+when nothing at all is declared.
+
+**The cost is that "every device has an audio output" is no longer a fact anything may assume**,
+and it was being assumed in three places rather than one. `ioText` and `mixerText` — which exist
+twice, see below — interpolated `io.main` straight into prose, so `none` would have printed *one
+none channel for all*. §10's `jacksFor` branched `main === 'stereo' ? [L, R] : [OUT]`, a two-way
+test on a field that now has three values, so `none` fell to the else and drew the very jack this
+change exists to prevent. That one is now a lookup keyed by the whole union, so the next value
+added fails the build rather than falling through.
 
 **`sequencer` is the third of these, and it is the one that had to be added rather than found.**
 A Eurorack sequencer — pitch and gate tracks, modulation lanes, no sound engine and no audio

@@ -741,6 +741,34 @@ describe('rack view', () => {
     }
   })
 
+  it('draws no main jack for a box with no audio path (§2.3)', () => {
+    // **The bug this value exists to prevent, tested at the place it would have appeared.**
+    // `jacksFor` read `io.main === 'stereo' ? ['L', 'R'] : ['OUT']` — a two-way branch on a field
+    // that gained a third value, so `none` fell to the else and drew exactly the fictional OUT
+    // jack the value was added to stop. It is a total lookup now, exhaustive by type.
+    const silent = box('a-silent', {
+      io: { main: 'none', individualOuts: 0, audioIn: false, usbAudio: false },
+      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['kick'], polyphony: 1 }],
+      recipes: [makeRecipe('r-kick', 'kick', 'hard', 'v')],
+    })
+    const panel = rackModel(rig([silent])).panels.find((p) => p.deviceId === silent.id)
+    expect(panel?.jacks.filter((j) => j.kind === 'main-out')).toEqual([])
+    expect(panel?.jacks.filter((j) => j.kind === 'individual-out')).toEqual([])
+    // The clock jacks are unaffected — this is about audio, and nothing else moved.
+    expect(panel?.jacks.some((j) => j.kind === 'clock-out' || j.kind === 'clock-in')).toBe(true)
+
+    // The two values that existed before are untouched, which is the audit in miniature.
+    const mono = box('b-mono', { io: { main: 'mono', individualOuts: 0, audioIn: false, usbAudio: false } })
+    const stereo = box('c-stereo', { io: { main: 'stereo', individualOuts: 0, audioIn: false, usbAudio: false } })
+    const labels = (d: Device) =>
+      rackModel(rig([d]))
+        .panels.find((p) => p.deviceId === d.id)
+        ?.jacks.filter((j) => j.kind === 'main-out')
+        .map((j) => j.label)
+    expect(labels(mono)).toEqual(['OUT'])
+    expect(labels(stereo)).toEqual(['L', 'R'])
+  })
+
   it('says plainly when a panel has not been drawn rather than passing it off', () => {
     const undrawn = box('undrawn', {
       voices: [{ kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 }],

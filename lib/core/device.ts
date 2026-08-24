@@ -365,15 +365,29 @@ export const ClockSpecSchema = z
     path: ['preferredSource'],
   })
 
+/**
+ * §2.3. The audio the box has, as the manifest states it.
+ *
+ * **`main: 'none'` is a real answer**, and adding it dropped an assumption that had been true of
+ * every device in the library: that everything has an audio output. A Eurorack sequencer has
+ * pitch, gate, modulation and clock outputs and no audio path at all, so `mono` would make both
+ * renderers print a "mono main out" that does not exist and make the rack draw a jack nobody can
+ * plug into. Invariant 5 forbids inventing an assignment to fill a hole; a fictional output is
+ * the same fault wearing different clothes.
+ *
+ * `none` says only that there is no *main* bus. A box may still declare `individualOuts`,
+ * `audioIn` or `usbAudio` alongside it, and consumers have to handle that combination rather than
+ * treating `none` as "no audio anywhere".
+ */
 export type IoSpec = {
-  main: 'mono' | 'stereo'
+  main: 'mono' | 'stereo' | 'none'
   individualOuts: number
   audioIn: boolean
   usbAudio: boolean
 }
 
 export const IoSpecSchema = z.strictObject({
-  main: z.enum(['mono', 'stereo']),
+  main: z.enum(['mono', 'stereo', 'none']),
   individualOuts: z.int().min(0),
   audioIn: z.boolean(),
   usbAudio: z.boolean(),
