@@ -17,6 +17,7 @@ import {
   type Template,
 } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { device as model2400 } from '../lib/devices/tascam-model-2400/index'
 import { template } from './fixtures'
 
 // ---------------------------------------------------------------------------
@@ -578,16 +579,78 @@ describe('clock source ranks on semantics, not on load (§7.4)', () => {
     expect(selectClockSource([groovebox, claimed], new Map())?.deviceId).toBe('z-recorder')
   })
 
-  it('leaves several preferred sources to the ordinary tie-breaks', () => {
-    // The field says "this box can lead", not "this box leads over that one". Ranking two
-    // authored preferences against each other would need an ordering nobody has a basis to
-    // author, so they fall through to transport and then id exactly as unpreferred boxes do.
+  it('leaves several preferred sources of the same kind to the ordinary tie-breaks', () => {
+    // The field says "this box can lead", not "this box leads over that one", so two preferred
+    // boxes of the same kind still fall through to transport and then id.
     const chosen = selectClockSource(
       [preferred('z-din'), preferred('a-usb', { transport: ['usb'] })],
       new Map([['a-usb', 9], ['z-din', 0]]),
     )
     expect(chosen).toMatchObject({ deviceId: 'z-din', transport: 'midi-din' })
     expect(selectClockSource([preferred('b'), preferred('a')], new Map())?.deviceId).toBe('a')
+  })
+
+  /**
+   * **The one place `kind` reaches into §7.4, and the case that forced it.**
+   *
+   * Two boxes can both honestly claim `preferredSource` — a recorder transport a studio runs to,
+   * and a dedicated sequencer whose whole job is driving a rig. Until this rule, that tie fell
+   * through to transport, so a mixing desk with a 5-pin DIN socket outranked a sequencer whose
+   * clock leaves over USB. Which socket a box happens to carry was never meant to decide who
+   * leads, and that is what key 2 exists to stop.
+   */
+  describe('a sequencer among preferred sources (§7.4 key 2)', () => {
+    /** The real shape: a zero-assignable sequencer on USB and analog clock. */
+    const metropolix = box('z-metropolix', {
+      kind: 'sequencer',
+      voices: [],
+      recipes: [],
+      clock: {
+        canSendClock: true,
+        canReceiveClock: true,
+        transport: ['usb', 'analog-clock'],
+        preferredSource: true,
+      },
+    })
+
+    it('outranks a preferred desk that is heavier, faster and earlier in the alphabet', () => {
+      // Every remaining key is stacked against the sequencer: `tascam-model-2400` sorts first,
+      // its `midi-din` beats `usb`, and it is carrying parts while the sequencer carries none.
+      const chosen = selectClockSource(
+        [model2400, metropolix],
+        new Map([[model2400.id, 7], ['z-metropolix', 0]]),
+      )
+      expect(chosen?.deviceId).toBe('z-metropolix')
+      // And the desk really did claim it, or this proves nothing about the preferred tier.
+      expect(model2400.clock.preferredSource).toBe(true)
+      expect(model2400.clock.transport[0]).toBe('midi-din')
+      expect(chosen?.occupiedAssignables).toBe(0)
+    })
+
+    it('gains nothing from being a sequencer without the authored claim', () => {
+      // The scope of the rule, stated as a test. Drop `preferredSource` and the sequencer is
+      // ranked exactly as any other box: the desk's authored claim wins on key 1.
+      const unclaimed = { ...metropolix, clock: { ...metropolix.clock, preferredSource: undefined } }
+      expect(selectClockSource([model2400, unclaimed], new Map())?.deviceId).toBe(model2400.id)
+      // And against an *unpreferred* ordinary box it still wins only on the ordinary keys —
+      // 'a-groovebox' sorts first and shares no transport preference with it.
+      const groovebox = both('a-groovebox')
+      expect(selectClockSource([groovebox, unclaimed], new Map())?.deviceId).toBe('a-groovebox')
+    })
+
+    it('still falls to transport and id between two preferred sequencers', () => {
+      const other = box('a-other-seq', {
+        kind: 'sequencer',
+        clock: {
+          canSendClock: true,
+          canReceiveClock: true,
+          transport: ['midi-din'],
+          preferredSource: true,
+        },
+      })
+      // Both are sequencers, so key 2 is level and midi-din takes it.
+      expect(selectClockSource([metropolix, other], new Map())?.deviceId).toBe('a-other-seq')
+    })
   })
 
   it('ignores load entirely, at every position in the ranking', () => {

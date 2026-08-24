@@ -1671,11 +1671,31 @@ key beneath it, which is exactly why §12.6 chose a flag on the request over a `
    why: the Model 2400 claims it and the LiveTrak L-8 cannot send clock at all. Same kind,
    opposite ends of the topology. Nor does §2.3's `sequencer` kind make it derivable — a
    sequencer following a DAW is still a follower.
-2. Transport preference (`midi-din` > `usb`).
-3. `deviceId` ascending by UTF-16 code unit (§7.2).
+2. **Inside the preferred tier only** — a `kind: 'sequencer'` (§2.3) outranks any other box that
+   has also claimed `preferredSource`.
+3. Transport preference (`midi-din` > `usb`).
+4. `deviceId` ascending by UTF-16 code unit (§7.2).
 
-Keys 2 and 3 exist to make the answer **deterministic**, not to make it right. Only key 1 carries
-a judgement, and it is a person's.
+Keys 3 and 4 exist to make the answer **deterministic**, not to make it right.
+
+**Key 2 is `kind` participating in a topology decision, which this section otherwise says it must
+not**, and the tension is recorded rather than smoothed over. The case that forced it: two boxes
+can both honestly claim `preferredSource` — a recorder transport a studio runs to, and a dedicated
+sequencer whose entire function is driving a rig. That tie used to fall through to transport, so a
+mixing desk carrying a 5-pin DIN outranked a sequencer whose clock leaves over USB. Which socket a
+box happens to carry was never meant to decide who leads.
+
+What makes it narrow rather than a reversal is the guard: it applies **only** where two manifests
+have each already made the authored claim. Outside the preferred tier `kind` plays no part, and an
+unpreferred sequencer is ranked exactly as any other unpreferred box.
+
+**The behavioural cost is that §7.4 now has two sources of topology rather than one** — a person's
+claim, and one rule about what a machine is for — and the second is an inference of exactly the
+kind the `!canReceiveClock` paragraph below rejects. Adding a device of `kind: 'sequencer'` that
+claims `preferredSource` can now change which box an existing rig clocks from, without any
+manifest in that rig changing. The alternative on the table was to leave two honest claims decided
+by which socket a box happens to carry, and this is the trade that was taken; it is the first
+place a `kind` has been given meaning by the engine rather than by the picker.
 
 **No seed** — this should be stable across rerolls, since rerolling a pattern should not re-cable
 the rig.
