@@ -30,11 +30,11 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → Tracker Mini · Track 1 — *Tight one-shot kick, tuned down, no tail*
+- **`kick`** → Deluge · Track 1 — *Kit-row kick, bass lifted, edge from decimation*
   - p1 · exact `hard` · every section
 - **`sub`** → MC-101 · TONE Track 1 — *Sine sub, one note at a time, nothing above the fundamental*
   - p1 · exact `dark` · every section
-- **`bass-mid`** → Deluge · Track 1 — *Analog saw bass through the drive filter, crushed*
+- **`bass-mid`** → Digitakt II · Track 1 — *Repitched bass with the multi-mode filter opened by the envelope*
   - p2 · exact `dirty` · every section
 - **`clap`** → TR-1000 · HC — *Wide clap sitting on top of the snare*
   - p2 · exact `bright` · every section
@@ -67,6 +67,10 @@ None.
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
   - mixer: 1 part, no individual outs: one mono channel for all
+- **Digitakt II** — sampler · 1 part
+  - clock: sends clock · midi-din/usb
+  - audio: stereo main out · USB audio · audio in
+  - mixer: 1 part, no individual outs: one stereo channel for all
 - **ZOIA Euroburo** — fx-processor · 0 parts
   - clock: receives clock only · analog-clock/midi-din
   - audio: stereo main out · audio in
@@ -79,10 +83,10 @@ None.
   - clock: sends clock · usb/analog-clock
   - audio: no audio I/O
   - mixer: no parts assigned; nothing to patch
-- **Tracker Mini** — groovebox · 1 part
+- **Tracker Mini** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio · audio in
-  - mixer: 1 part, no individual outs: one stereo channel for all
+  - mixer: no parts assigned; nothing to patch
 - **MC-101** — groovebox · 3 parts
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio
@@ -119,9 +123,9 @@ which not every maker agrees with — the MIDI number is the form nothing disagr
 
 Where a role has more than one hook authored, rerolling the seed picks a different one.
 
-### `bass-mid` — Deluge · Track 1
+### `bass-mid` — Digitakt II · Track 1
 
-**Analog saw bass through the drive filter, crushed** — settings in Sound design
+**Repitched bass with the multi-mode filter opened by the envelope** — settings in Sound design
 
 2 bars in F minor.
 
@@ -156,9 +160,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 ## 5. Step programming
 
-### `kick` — Tracker Mini · Track 1
+### `kick` — Deluge · Track 1
 
-**Tight one-shot kick, tuned down, no tail** — settings in Sound design
+**Kit-row kick, bass lifted, edge from decimation** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -183,10 +187,10 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — Tracker Mini
+**On this box** — Deluge
 
-- `accent` → `volume` 100 on step 9
-  - ↳ hint: Hold [FX1], press (Up)/(Down)
+- `accent` → `velocity` 127 on step 9
+  - ↳ hint: Hold the note pad, turn (SELECT)
 
 ### `sub` — MC-101 · TONE Track 1
 
@@ -230,9 +234,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `downbeat` → `note-length` 12 on step 1
   - ↳ hint: SEQ mode: hold [SHIFT], press the pad
 
-### `bass-mid` — Deluge · Track 1
+### `bass-mid` — Digitakt II · Track 1
 
-**Analog saw bass through the drive filter, crushed** — settings in Sound design
+**Repitched bass with the multi-mode filter opened by the envelope** — settings in Sound design
 
 **Intro, Outro** — 32 steps, band 0
 
@@ -242,6 +246,11 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 ```
 - `downbeat` — 1, 17
 
+**On this box** — Digitakt II
+
+- `downbeat` → `velocity` 112, `note-length` 12 on steps 1, 17
+  - ↳ hint: Hold a [TRIG] key, turn DATA ENTRY
+
 **Build, Breakdown** — 32 steps, band 1
 
 ```
@@ -249,6 +258,11 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 17 x··· ···· x··· ····
 ```
 - `downbeat` — 1, 9, 17, 25
+
+**On this box** — Digitakt II
+
+- `downbeat` → `velocity` 112, `note-length` 12 on steps 1, 9, 17, 25
+  - ↳ hint: Hold a [TRIG] key, turn DATA ENTRY
 
 **Drop, Peak** — 32 steps, band 3
 
@@ -261,10 +275,10 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `offbeat` — 7, 11, 23, 27
 - `accent` — 31 (vel 110)
 
-**On this box** — Deluge
+**On this box** — Digitakt II
 
-- `offbeat` → `probability` 90 on steps 7, 11, 23, 27
-  - ↳ hint: Hold pad, turn (SELECT) anticlockwise
+- `downbeat` → `velocity` 112, `note-length` 12 on steps 1, 9, 17, 25
+  - ↳ hint: Hold a [TRIG] key, turn DATA ENTRY
 
 ### `clap` — TR-1000 · HC
 
@@ -557,6 +571,20 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `OUT · ENV` → `IN · VCF CUTOFF`
   - ↳ note: The filter closing across each hit
 
+### Digitakt II
+
+*Values below cite Digitakt II User Manual, OS 1.15A.*
+
+#### Track 1 — `bass-mid`: Repitched bass with the multi-mode filter opened by the envelope
+
+- **SRC MACHINE** `REPITCH`
+- **PLAY** `FORWARD`
+- **FLTR MACHINE** `MULTI-MODE`
+- **AMP MODE** `ADSR`
+- **LFO MODE** `TRG`
+- **FADE** `-20` (-64…63)
+  - ↳ cite: range manual — Digitakt II User Manual OS 1.15A, p.58
+
 ### Cascadia
 
 *Values below cite Intellijel Cascadia Manual, v1.1 (2023.04.18).*
@@ -593,27 +621,6 @@ Routing — played from MIDI IN or EXT IN PITCH/GATE — Cascadia has no sequenc
 
 - `VCO B · SQUARE` → `RING MOD · IN 2`
   - ↳ note: breaks the VCO B sine normal — a square through the ring modulator is harsher
-
-### Tracker Mini
-
-*Values below cite Polyend Tracker Mini Manual, 2.2.1b.*
-
-#### Track 1 — `kick`: Tight one-shot kick, tuned down, no tail
-
-- **PLAY MODE** `1-Shot`
-- **FILTER TYPE** `Low-pass`
-- **TUNE** `-3` St (-24…24 St)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.116
-- **CUTOFF** `74` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
-- **OVERDRIVE** `18` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
-- **ENV DECAY** `0.28` Sec (0…10 Sec)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.126
-- **SWING** `50` % (25…75 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.185
-  - ↳ note: 50% is no swing; set once, it applies across the whole pattern
-  - ↳ hint: Hold [FX1], press (Up)/(Down)
 
 ### MC-101
 
@@ -820,16 +827,17 @@ Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
 
 *Values below cite Deluge Official Guidebook, OS 4.1 (OLED) + community firmware release_1_2_1 (Chopin).*
 
-#### Track 1 — `bass-mid`: Analog saw bass through the drive filter, crushed
+#### Track 1 — `kick`: Kit-row kick, bass lifted, edge from decimation
 
-*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.217.*
+*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.219.*
 
-- **OSC TYPE** `Analog Saw`
-- **LPF MODE** `DRIVE`
-- **DECIMATION** `14` (0…50)
-- **BITCRUSH** `9` (0…50)
-- **EQ BASS AMOUNT** `29` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
+- **OSC TYPE** `Sample`
+- **REPEAT MODE** `ONCE`
+- **EQ BASS AMOUNT** `33` (0…50)
+  - ↳ note: 25 is neutral; above boosts
+- **EQ BASS FREQUENCY** `14` (0…50)
+- **DECIMATION** `6` (0…50)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
 - **SWING** `50` % (1…99 %)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
   - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip

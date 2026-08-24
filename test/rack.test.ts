@@ -702,10 +702,10 @@ describe('rack view', () => {
 
     // Every kind in the vocabulary is exercised by the authored boxes, so a renderer arm
     // that stopped working would show up here rather than only in Chrome.
-    // Ten: the TR-8S is the only box to author *two* screens — its main display and the separate
-    // value readout beside it — and Metropolix brings one more. The two panels with none are the
-    // Cascadia and the CRAVE, which genuinely have no display.
-    expect(count('rack-screen')).toBe(10)
+    // Eleven: the TR-8S is the only box to author *two* screens — its main display and the
+    // separate value readout beside it — and Metropolix and the Digitakt II bring one each. The
+    // two panels with none are the Cascadia and the CRAVE, which genuinely have no display.
+    expect(count('rack-screen')).toBe(11)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -727,7 +727,7 @@ describe('rack view', () => {
 
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(7)
+    expect(fields).toHaveLength(8)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

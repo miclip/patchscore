@@ -307,6 +307,7 @@ describe('the committed registry', () => {
       'empress-zoia-euroburo',
       'intellijel-metropolix',
       'roland-mc-101',
+      'elektron-digitakt-ii',
       'zoom-livetrak-l-8',
       'synthstrom-deluge',
       'behringer-crave',

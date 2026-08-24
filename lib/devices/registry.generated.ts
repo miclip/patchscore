@@ -6,6 +6,7 @@
 
 import type { Device } from '../core/device'
 import { device as device_behringer_crave } from './behringer-crave/index'
+import { device as device_elektron_digitakt_ii } from './elektron-digitakt-ii/index'
 import { device as device_empress_zoia_euroburo } from './empress-zoia-euroburo/index'
 import { device as device_intellijel_cascadia } from './intellijel-cascadia/index'
 import { device as device_intellijel_metropolix } from './intellijel-metropolix/index'
@@ -20,6 +21,7 @@ import { device as device_zoom_livetrak_l_8 } from './zoom-livetrak-l-8/index'
 /** Every device manifest, ordered by folder name (UTF-16 code unit). */
 export const DEVICES: readonly Device[] = [
   device_behringer_crave,
+  device_elektron_digitakt_ii,
   device_empress_zoia_euroburo,
   device_intellijel_cascadia,
   device_intellijel_metropolix,
@@ -35,6 +37,7 @@ export const DEVICES: readonly Device[] = [
 /** Folder names, in the same order. Useful for error messages that name a source. */
 export const DEVICE_FOLDERS: readonly string[] = [
   'behringer-crave',
+  'elektron-digitakt-ii',
   'empress-zoia-euroburo',
   'intellijel-cascadia',
   'intellijel-metropolix',

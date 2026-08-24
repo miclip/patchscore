@@ -161,6 +161,7 @@ describe('the kind filter', () => {
     // `intellijel-metropolix` falls between the Euroburo and the Tracker Mini.
     expect(kinds).toEqual([
       'semi-modular',
+      'sampler',
       'fx-processor',
       'sequencer',
       'groovebox',
