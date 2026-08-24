@@ -23,12 +23,14 @@ import { TRACKER_MINI_PANEL } from './panel'
  *
  * **Citation regime: legality is cited, authority never is.** Every *point* is taste and stays
  * `verified: false`, enums included; every *range* and every *option set* is the manual's own,
- * cited to the page carrying it (§3.2). One exception, of a different kind rather than a
- * loosening: a `text` param has no legality gate to carry a citation, because it states an
- * instruction rather than picking among legal values — so when the instruction is the manual's
- * own printed procedure, `verified` on the point is the only place that fact can go, and
- * `false` there would badge a documented procedure as a guess. `tm-pad-soft-chord`'s
- * `INSTRUMENT` is the only such param today. Both halves of the manual cooperate here: the instrument pages print a Range column
+ * cited to the page carrying it (§3.2). There are now no exceptions. There used to be one: the
+ * two chord recipes carried p.104's render-to-audio procedure as the `verified` of a `text`
+ * param's *point*, because a text param has no legality gate and that was the only slot the
+ * shape offered — which badged the reader's choice of sample with the manual's page. `sourceAudio`
+ * (§3/#101) separates the two claims properly, so the page sits on `prep`, where it is true, and
+ * the choice of recording is uncited like every other point here.
+ *
+ * Both halves of the manual cooperate on the ranges: the instrument pages print a Range column
  * (ch.6) and the step FX chapter prints a "Value Ranges" block per effect (ch.7). Neither states
  * which value suits a dark kick, so no point is ever cited.
  *
@@ -380,6 +382,9 @@ const SAMPLE_RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'track-sample',
     title: 'Tight one-shot kick, tuned down, no tail',
+    sourceAudio: {
+      need: 'A dry kick one-shot under 400 ms, attack intact and no room printed on it',
+    },
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
@@ -398,6 +403,11 @@ const SAMPLE_RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'track-sample',
     title: 'Long low kick, filter closed on the tail',
+    sourceAudio: {
+      need:
+        'A long kick one-shot with pitch in the tail, not a click — there has to be a note to ' +
+        'tune down',
+    },
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
@@ -419,6 +429,9 @@ const SAMPLE_RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'track-sample',
     title: 'Snappy snare, top end open',
+    sourceAudio: {
+      need: 'A snare one-shot with the crack still on it, dry, top end unrolled',
+    },
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'High-pass', FILTER_TYPES, 117),
@@ -440,6 +453,9 @@ const SAMPLE_RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'track-sample',
     title: 'Wide clap, pushed off centre',
+    sourceAudio: {
+      need: 'A stereo hand-clap one-shot — several hands, not one; its own width is what gets panned',
+    },
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       num('PANNING', 6, PAN, 116),
@@ -457,6 +473,9 @@ const SAMPLE_RECIPES: Recipe[] = [
     character: 'clean',
     voice: 'track-sample',
     title: 'Short closed hat, nudged off the grid',
+    sourceAudio: {
+      need: 'A closed hat one-shot under 150 ms, dry, nothing to trim off the end',
+    },
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'High-pass', FILTER_TYPES, 117),
@@ -477,6 +496,11 @@ const SAMPLE_RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'track-sample',
     title: 'Half-open hat, gated short',
+    sourceAudio: {
+      need:
+        'An open hat one-shot with a real tail — the release gates it short, so the tail has to ' +
+        'exist',
+    },
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
@@ -494,6 +518,9 @@ const SAMPLE_RECIPES: Recipe[] = [
     character: 'clean',
     voice: 'track-sample',
     title: 'Dry rim, dropped in and out',
+    sourceAudio: {
+      need: 'A rim or stick one-shot, dry and close to transient-only',
+    },
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       num('TUNE', 4, SEMITONES_24, 116, { unit: 'St' }),
@@ -510,6 +537,11 @@ const SAMPLE_RECIPES: Recipe[] = [
     character: 'clean',
     voice: 'track-sample',
     title: 'Steady ride with per-hit level drift',
+    sourceAudio: {
+      need:
+        'A ride one-shot with a second or more of shimmer; the per-hit level drift needs ' +
+        'something to move',
+    },
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Band-pass', FILTER_TYPES, 117),
@@ -527,6 +559,11 @@ const SAMPLE_RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'track-sample',
     title: 'Low tom, rolls into the fill',
+    sourceAudio: {
+      need:
+        'A low tom one-shot with an audible pitch, so tuning down leaves a note rather than a ' +
+        'thud',
+    },
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
@@ -544,6 +581,11 @@ const SAMPLE_RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'track-sample',
     title: 'Quiet shaker filling the gaps',
+    sourceAudio: {
+      need:
+        'A shaker, tick or brushed one-shot under 100 ms; it plays quiet, so it has to read ' +
+        'quiet',
+    },
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       num('PANNING', -22, PAN, 116),
@@ -551,10 +593,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       secs('ENV DECAY', 0.07, SECONDS_10, 126, { mood: [{ axis: 'density', amount: 0.04 }] }),
       swing(),
     ],
-    articulation: [
-      { slot: 'ghost', set: { volume: 30 } },
-      { slot: 'offbeat', set: { chance: 50 } },
-    ],
+    articulation: [{ slot: 'ghost', set: { volume: 30 } }],
     verified: false,
   },
   {
@@ -563,6 +602,11 @@ const SAMPLE_RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'track-sample',
     title: 'Beat-sliced vocal, crushed and reversed in',
+    sourceAudio: {
+      need:
+        'One or two bars of vocal at this tempo — a phrase, not a word. Beat Slice cuts it into ' +
+        '16, so evenly spaced syllables land on the grid',
+    },
     params: [
       pick('PLAY MODE', 'Beat Slice', PLAY_MODES, 127),
       num('NO OF SLICES', 16, { min: 1, max: 48 }, 133),
@@ -571,9 +615,15 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('FINETUNE', 30, FINE_CENTS, 116, { unit: 'c' }),
       swing(),
     ],
-    // p.196: Reverse Sample is one of several step FX that only exist for a sample instrument,
+    // Reverse Sample (p.196) is one of several step FX that exist only for a sample instrument,
     // which is why no `track-synth` recipe uses it.
-    articulation: [{ slot: 'first-hit', set: { 'reverse-sample': '<<<' }, hint: 'pick-fx' }],
+    //
+    // It was authored on `first-hit`, and #108's reachability check found that dead: only
+    // Industrial Techno emits `first-hit`, and only for `impact`, so a `vox-chop` never sees
+    // one. It moved rather than went, because `accent` is the honest translation of
+    // what was meant — the hit the variant leans on is exactly the slice worth turning around,
+    // and it is a gesture a tracker player makes. Reversing every downbeat would not be.
+    articulation: [{ slot: 'accent', set: { 'reverse-sample': '<<<' }, hint: 'pick-fx' }],
     verified: false,
   },
   /**
@@ -623,23 +673,21 @@ const SAMPLE_RECIPES: Recipe[] = [
     voice: 'track-sample',
     title: 'Rendered chord sample, filtered back and swelled',
     realisation: 'sampled-chord',
-    params: [
-      {
-        kind: 'text',
-        name: 'INSTRUMENT',
-        value: 'Chord sample(s) — yours, or rendered to audio here; one per chord shape played',
-        // The *procedure* is the manual's, printed in full on the page that also states why a
-        // triad would otherwise cost three tracks. The choice of sample is the reader's.
-        verified: cite(104),
-        note:
+    sourceAudio: {
+      need: 'Chord sample(s) — yours, or rendered to audio here; one per chord shape the hook plays',
+      prep: {
+        text:
           'Manual p.104, Rendering Tracks To Audio Chords: place the notes of one chord on ' +
           'separate tracks, Shift + D-Pad to select that range, [More] -> [Render Selection], ' +
-          'name it, then [Render & Load]. Replace the instrument on one track with the ' +
-          'rendered chord and free the others. One sample covers every chord of the same shape: ' +
-          'p.128, the step note sets the playback pitch, so placing a higher note transposes ' +
-          'the whole chord. Repeat only where the shape changes — the Hook phase lists which ' +
-          'samples this part needs and what to transpose each trigger by.',
+          'name it, then [Render & Load]. Replace the instrument on one track with the rendered ' +
+          'chord and free the others. One sample covers every chord of the same shape: p.128, ' +
+          'the step note sets the playback pitch, so placing a higher note transposes the whole ' +
+          'chord. Repeat only where the shape changes — the Hook phase lists which samples this ' +
+          'part needs and what to transpose each trigger by.',
+        verified: cite(104),
       },
+    },
+    params: [
       // p.104 step 8: "Ensure the note is set to the same default for the sample playback,
       // example C5." The chord sounds at the pitch it was rendered at, transposed by the step's
       // note — it does not re-voice, so the harmony moves as a block.
@@ -687,22 +735,22 @@ const SAMPLE_RECIPES: Recipe[] = [
     voice: 'track-sample',
     title: 'Rendered chord sample, struck short and filtered hard',
     realisation: 'sampled-chord',
-    params: [
-      {
-        kind: 'text',
-        name: 'INSTRUMENT',
-        value: 'Chord sample(s) — yours, or rendered to audio here; one per chord shape played',
-        verified: cite(104),
-        note:
+    sourceAudio: {
+      need: 'Chord sample(s) — yours, or rendered to audio here; one per chord shape the hook plays',
+      prep: {
+        text:
           'Manual p.104, Rendering Tracks To Audio Chords: place the notes of one chord on ' +
           'separate tracks, Shift + D-Pad to select that range, [More] -> [Render Selection], ' +
-          'name it, then [Render & Load]. Replace the instrument on one track with the ' +
-          'rendered chord and free the others. One sample covers every chord of the same shape: ' +
-          'p.128, the step note sets the playback pitch, so placing a higher note transposes ' +
-          'the whole chord. Transposition keeps the recorded voicing — it cannot invert or ' +
-          're-voice the chord, so a changed shape is a second sample. The Hook phase lists ' +
-          'which samples this part needs and the semitone offset to place on each trigger.',
+          'name it, then [Render & Load]. Replace the instrument on one track with the rendered ' +
+          'chord and free the others. One sample covers every chord of the same shape: p.128, ' +
+          'the step note sets the playback pitch, so placing a higher note transposes the whole ' +
+          'chord. Transposition keeps the recorded voicing — it cannot invert or re-voice the ' +
+          'chord, so a changed shape is a second sample. The Hook phase lists which samples this ' +
+          'part needs and the semitone offset to place on each trigger.',
+        verified: cite(104),
       },
+    },
+    params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
       num('CUTOFF', 68, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -22 }] }),
@@ -715,10 +763,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('OVERDRIVE', 18, PCT, 120, { unit: '%', mood: [{ axis: 'grit', amount: 20 }] }),
       swing(),
     ],
-    articulation: [
-      { slot: 'accent', set: { volume: 118 } },
-      { slot: 'first-hit', set: { 'gate-length': 18 } },
-    ],
+    articulation: [{ slot: 'accent', set: { volume: 118 } }],
     routing: 'Tracks 1-8 — costs no synth slot: the chord is in the sample, not in an engine',
     verified: false,
   },
@@ -728,6 +773,12 @@ const SAMPLE_RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'track-sample',
     title: 'Granular bed, slow grains, filtered back',
+    sourceAudio: {
+      need:
+        'A sustained tonal source, two seconds or longer — a held synth note, a field recording, ' +
+        'a feedback loop. Pitch matters; transients do not, because Granular re-reads the file ' +
+        'rather than playing it through',
+    },
     params: [
       pick('PLAY MODE', 'Granular', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
@@ -737,7 +788,6 @@ const SAMPLE_RECIPES: Recipe[] = [
       secs('ENV ATTACK', 1.8, SECONDS_10, 126),
       swing(),
     ],
-    articulation: [{ slot: 'first-hit', set: { 'low-pass': 55 } }],
     verified: false,
   },
 ]
@@ -816,8 +866,15 @@ export const device: Device = {
    * This device's own per-step FX names (ch.7), not §2.3's five: `perStep` is an open list
    * compared only against this device's own articulation keys. Each is one of the 37 step FX,
    * carrying its own printed page — Volume p.180, Panning p.181, Glide p.183, Micro Move p.186,
-   * Gate Length p.187, Chance p.188, Roll p.189, Random Volume p.195, Reverse Sample p.196,
-   * Low Pass Filter p.205.
+   * Gate Length p.187, Chance p.188, Roll p.189, Random Volume p.195, Reverse Sample p.196.
+   *
+   * **Low Pass Filter (p.205) is deliberately absent, and the box does it.** `perStep` is a
+   * validation table rather than a capability claim — nothing renders it, and it is only ever
+   * compared against this device's own articulation keys — so a name here that no recipe reaches
+   * for validates nothing. `tm-texture-soft` was its one user, on a `first-hit` slot #108 found
+   * dead, and the honest fix was to drop the gesture rather than move it onto a strike it was
+   * not written for. Authoring it on a reachable slot would bring the name back; keeping the
+   * name against nothing would only make the table look more complete than the recipes are.
    *
    * `sidechain` and `lfo` are both omitted. The master chain is saturation, limiter, space and
    * bass boost (p.269) with no sidechain at all.
@@ -854,7 +911,6 @@ export const device: Device = {
       'roll',
       'random-volume',
       'reverse-sample',
-      'low-pass',
     ],
   },
 

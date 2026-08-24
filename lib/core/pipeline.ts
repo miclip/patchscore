@@ -13,11 +13,13 @@ import {
   compareCodeUnits,
   resolveParams,
   resolvePatch,
+  resolveSourceAudio,
   selectPatterns,
   type BoundArticulation,
   type MoodState,
   type PatternSelection,
   type ResolvedPatchEntry,
+  type ResolvedSourceAudio,
 } from './resolver'
 import { assign, type Gap, type SearchReport } from './search'
 import { chooseHook, chooseKey, type HookChoice } from './harmony'
@@ -190,6 +192,12 @@ export type ResolvedRecipeRef = {
    * default it has no business knowing.
    */
   realisation: Realisation
+  /**
+   * §3/#101. What audio this recipe plays, when the voice does not make its own. Absent for
+   * every recipe whose voice generates its own sound, and absent — honestly — for a sample
+   * recipe nobody has authored it on yet.
+   */
+  sourceAudio?: ResolvedSourceAudio
   routing?: string
 }
 
@@ -320,6 +328,7 @@ export function resolve(input: ResolveInput): ResolveResult {
   const assignments: ResolvedAssignment[] = allocation.assignments.map((a) => {
     const request = requestById.get(a.requestId) as RoleRequest
     const bySection = patterns.get(a.requestId)
+    const sourceAudio = resolveSourceAudio(a.recipe)
 
     return {
       requestId: a.requestId,
@@ -337,6 +346,7 @@ export function resolve(input: ResolveInput): ResolveResult {
         character: a.recipeCharacter,
         outcome: a.outcome,
         realisation: realisationOf(a.recipe),
+        ...(sourceAudio === undefined ? {} : { sourceAudio }),
         ...(a.recipe.routing === undefined ? {} : { routing: a.recipe.routing }),
       },
       params: resolveParams(a.recipe, mood),

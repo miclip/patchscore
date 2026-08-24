@@ -221,6 +221,9 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'One-shot kick, played forward and left alone',
     verified: false,
+    sourceAudio: {
+      need: 'A dry kick one-shot with a defined attack and no room on it',
+    },
     params: [src('ONESHOT'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('AHD'), hold(24)],
     articulation: [art('downbeat', { velocity: 120 }, 'trig-params')],
   },
@@ -231,6 +234,11 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'Kick through the comb filter, tail chopped short',
     verified: false,
+    sourceAudio: {
+      need:
+        'A kick one-shot with grit already in it — off tape, off vinyl, through an overdriven ' +
+        'bus',
+    },
     params: [src('ONESHOT'), play('FORWARD'), fltr('COMB-'), ampMode('AHD'), hold(8)],
     articulation: [art('accent', { velocity: 127 }, 'trig-params')],
   },
@@ -241,6 +249,11 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'Sub sample repitched down, everything above it filtered off',
     verified: false,
+    sourceAudio: {
+      need:
+        'A clean low sustained tone with a stable, known pitch — REPITCH transposes it, so the ' +
+        'tuning has to be true before it moves',
+    },
     params: [src('REPITCH'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('AHD'), hold(96)],
     articulation: [art('downbeat', { 'note-length': 32 }, 'trig-params')],
   },
@@ -251,6 +264,11 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'Repitched bass with the multi-mode filter opened by the envelope',
     verified: false,
+    sourceAudio: {
+      need:
+        'A short bass note with harmonics above the fundamental; a filtered sine repitches into ' +
+        'nothing to bite on',
+    },
     params: [src('REPITCH'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('ADSR'), lfoMode('TRG'), fade(-20)],
     articulation: [art('downbeat', { velocity: 112, 'note-length': 12 }, 'trig-params')],
   },
@@ -261,6 +279,9 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'Snare one-shot, flat and forward',
     verified: false,
+    sourceAudio: {
+      need: 'A snare one-shot, crack intact and dry',
+    },
     params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), hold(20)],
     articulation: [art('backbeat', { velocity: 124 }, 'trig-params')],
   },
@@ -271,6 +292,9 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'Snare warped, with a retrig on the fill',
     verified: false,
+    sourceAudio: {
+      need: 'A snare one-shot with body for WERP to chew — a thin sample warps into a thinner one',
+    },
     params: [src('WERP'), play('FORWARD'), fltr('COMB+'), ampMode('AHD'), hold(16), vfad(-32)],
     articulation: [
       art('backbeat', { velocity: 118 }, 'trig-params'),
@@ -284,6 +308,9 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'Clap sitting over the snare, top end left in',
     verified: false,
+    sourceAudio: {
+      need: 'A stereo hand-clap one-shot, several hands rather than one',
+    },
     params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), hold(28)],
     articulation: [art('backbeat', { velocity: 110 }, 'trig-params')],
   },
@@ -294,6 +321,9 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'Closed hat, offbeats pulled back off the grid',
     verified: false,
+    sourceAudio: {
+      need: 'A closed hat one-shot under 150 ms, dry',
+    },
     params: [src('ONESHOT'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('AHD'), hold(4)],
     articulation: [art('offbeat', { velocity: 84, 'micro-timing': -2 }, 'micro-timing')],
   },
@@ -304,6 +334,11 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'Hat with ghosts thinned out by probability',
     verified: false,
+    sourceAudio: {
+      need:
+        'A closed hat one-shot that is already lo-fi — a sampled machine hat, not a studio ' +
+        'recording',
+    },
     params: [src('ONESHOT'), play('FORWARD'), fltr('COMB-'), ampMode('AHD'), hold(3)],
     articulation: [
       art('offbeat', { velocity: 88 }, 'trig-params'),
@@ -317,6 +352,9 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'Open hat let ring, filter out of the way',
     verified: false,
+    sourceAudio: {
+      need: 'An open hat one-shot with a real tail to hold open',
+    },
     params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), hold(72)],
     articulation: [art('offbeat', { velocity: 108, 'note-length': 16 }, 'trig-params')],
   },
@@ -327,6 +365,9 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'Quiet percussion, half of it not playing',
     verified: false,
+    sourceAudio: {
+      need: 'A shaker, tick or brushed one-shot under 100 ms',
+    },
     params: [src('ONESHOT'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('AHD'), hold(6)],
     articulation: [art('ghost', { velocity: 40, probability: 50 }, 'trig-params')],
   },
@@ -337,6 +378,9 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'Metallic hit through the resonant comb',
     verified: false,
+    sourceAudio: {
+      need: 'A struck metal one-shot — bell, spring, pipe, anvil; inharmonic is the point',
+    },
     params: [src('ONESHOT'), play('FORWARD'), fltr('COMB+'), ampMode('AHD'), hold(40)],
     articulation: [art('offbeat', { velocity: 96 }, 'trig-params')],
   },
@@ -347,10 +391,16 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'Sliced vocal, a different slice under each hit',
     verified: false,
+    sourceAudio: {
+      need:
+        'One or two bars of vocal with evenly spaced syllables, so the slice grid lands on them ' +
+        'rather than between them',
+    },
     params: [src('SLICE'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), hold(18)],
     // The obvious articulation here is a per-step sample or slice lock, and it is exactly what
-    // this model cannot carry: see `PER_STEP`. What is left is true and much smaller.
-    articulation: [art('first-hit', { velocity: 118 }, 'trig-params')],
+    // this model cannot carry: see `PER_STEP`. What was left was a velocity bump on `first-hit`,
+    // and #108's reachability check found that dead: only Industrial Techno emits `first-hit` at
+    // all, and only for `impact`. So this recipe articulates nothing, honestly.
   },
   {
     id: 'dt2-texture-soft',
@@ -359,6 +409,11 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'Looped texture stretched under the track, LFO free-running',
     verified: false,
+    sourceAudio: {
+      need:
+        'A sustained tonal source, two seconds or longer. STRETCH holds it under the whole bar, ' +
+        'so a loop point that clicks will click every bar',
+    },
     params: [src('STRETCH'), play('FORWARD LOOP'), fltr('LOWPASS 4'), ampMode('ADSR'), lfoMode('FRE'), fade(24)],
     articulation: [art('downbeat', { 'note-length': 64 }, 'trig-params')],
   },
@@ -369,6 +424,11 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'Sample played backwards into the change',
     verified: false,
+    sourceAudio: {
+      need:
+        'A sample with a long decaying tail — REVERSE turns that tail into the rise, so the tail ' +
+        'is the part that matters',
+    },
     params: [src('ONESHOT'), play('REVERSE'), fltr('MULTI-MODE'), ampMode('ADSR'), lfoMode('ONE'), fade(-48)],
     articulation: [art('last-hit', { velocity: 127, 'note-length': 48 }, 'trig-params')],
   },
@@ -379,6 +439,9 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'One-shot impact on the change, nothing else touched',
     verified: false,
+    sourceAudio: {
+      need: 'A one-shot with a big front — a crash, a gated slam, a reversed hit',
+    },
     params: [src('ONESHOT'), play('FORWARD'), fltr('LEGACY'), ampMode('AHD'), hold(110)],
     articulation: [art('first-hit', { velocity: 127 }, 'trig-params')],
   },
@@ -414,6 +477,11 @@ const recipes: Recipe[] = [
      * re-voice the chord, so a changed shape is a second sample (§4.1). The Hook phase lists
      * which samples the part needs and the semitone offset to place on each trigger.
      */
+    sourceAudio: {
+      need:
+        'Chord sample(s) — one per chord shape the hook plays; see Hook for which and for the ' +
+        'transposition on each trigger',
+    },
     params: [src('ONESHOT'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('AHD'), hold(22)],
     articulation: [art('accent', { velocity: 120, 'note-length': 8 }, 'trig-params')],
   },
@@ -431,6 +499,11 @@ const recipes: Recipe[] = [
      * lock the stab's note above sets out (p.53). Place the Hook phase's printed semitone offset
      * on each trigger; the chord moves as a block and keeps the voicing it was recorded with.
      */
+    sourceAudio: {
+      need:
+        'Sustained chord sample(s), two seconds or longer — one per chord shape the hook plays; ' +
+        'see Hook',
+    },
     params: [src('STRETCH'), play('FORWARD LOOP'), fltr('LOWPASS 4'), ampMode('ADSR'), lfoMode('FRE'), fade(32)],
     articulation: [art('downbeat', { 'note-length': 96 }, 'trig-params')],
   },

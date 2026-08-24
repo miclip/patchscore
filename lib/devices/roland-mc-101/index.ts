@@ -505,7 +505,6 @@ const DRUM_RECIPES: Recipe[] = [
       num('REVERB SEND', 0, PAD_SEND, { mood: [{ axis: 'space', amount: 24 }] }),
       shuffle(),
     ],
-    articulation: [{ slot: 'offbeat', set: { velocity: 82 }, hint: 'edit-step' }],
     verified: false,
   },
   {
@@ -541,7 +540,6 @@ const DRUM_RECIPES: Recipe[] = [
     ],
     articulation: [
       { slot: 'ghost', set: { velocity: 38, 'mute-probability': 48 }, hint: 'edit-step' },
-      { slot: 'offbeat', set: { velocity: 62 }, hint: 'weak-hit' },
     ],
     routing: 'MTE is a *mute* probability: 0 sounds every time, higher drops more hits',
     verified: false,
@@ -766,14 +764,17 @@ const TONE_RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'tone-track',
     title: 'Chopped vocal one-shot, sample rate pulled down',
-    params: [
-      {
-        kind: 'text',
-        name: 'INSTRUMENT',
-        value: 'Load the chop from the SD card — Sound Browser, WAVE FILE',
+    sourceAudio: {
+      need:
+        'A vocal one-shot per note — a word or a syllable, dry, so the bit crusher is the only ' +
+        'dirt on it',
+      prep: {
+        text: 'Load the chop from the SD card: Sound Browser, WAVE FILE.',
         verified: false,
-        hint: 'load-sample',
       },
+      hint: 'load-sample',
+    },
+    params: [
       pick('MONO/POLY', 'MONO', MONO_POLY, ref(45)),
       num('COARSE TUNE', -5, COARSE_TUNE, { unit: 'st', mood: [{ axis: 'darkness', amount: -4 }] }),
       num('FINE TUNE', -18, FINE_TUNE, { unit: 'c', mood: [{ axis: 'grit', amount: 14 }] }),

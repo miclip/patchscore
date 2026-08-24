@@ -213,6 +213,63 @@ describe('Tracker Mini manifest', () => {
     for (const key of SAMPLE_ONLY_FX) expect(usedOnSamples).toContain(key)
   })
 
+  /**
+   * §3/#101. **Every sample-playing recipe says what audio to load.**
+   *
+   * The engine cannot check this: nothing in the manifest says whether a voice plays a file or
+   * generates its own sound, and `voice: 'track-sample'` is not the answer — three of the synth
+   * twins sit on that pool too, because tracks 1-8 host synths as readily as tracks 9-16. What
+   * separates them is `PLAY MODE`, which is a sample-instrument parameter (p.127) and appears on
+   * no synth recipe. So the rule keys on that, and it is an authoring rule enforced here for the
+   * same reason the three-synth-slot cap is.
+   *
+   * Before #101, thirteen of these fifteen said nothing at all, and `tm-texture-soft` resolved a
+   * granular play mode, a filter, a grain length and a reverb send without ever naming what was
+   * being granulated.
+   */
+  it('says what audio to load on every sample-playing recipe (§3/#101)', () => {
+    const sampleRecipes = device.recipes.filter((r) =>
+      (r.params as AuthoredParam[]).some((p) => p.name === 'PLAY MODE'),
+    )
+    expect(sampleRecipes.length).toBeGreaterThan(10)
+    for (const recipe of sampleRecipes) {
+      expect(recipe.sourceAudio, recipe.id).toBeDefined()
+      // A phrase a reader can search their own folders with, not a category we invented.
+      expect((recipe.sourceAudio?.need ?? '').split(/\s+/).length, recipe.id).toBeGreaterThan(5)
+    }
+    // The other side of the rule: a synth patch has nothing to load and must not pretend to.
+    for (const recipe of device.recipes) {
+      if (!(recipe.params as AuthoredParam[]).some((p) => p.name === 'MODEL')) continue
+      expect(recipe.sourceAudio, recipe.id).toBeUndefined()
+    }
+  })
+
+  /**
+   * The one place on this box where a source has a *documented* preparation, and the reason
+   * `sourceAudio` splits its two claims. The procedure is p.104's, printed in full; which
+   * recording to feed it is the reader's and is cited nowhere, because no page states it.
+   */
+  it('cites the render procedure and never the choice of sample (§3/#101)', () => {
+    for (const id of ['tm-pad-soft-chord', 'tm-stab-hard-chord']) {
+      const recipe = device.recipes.find((r) => r.id === id) as Recipe
+      const source = recipe.sourceAudio
+      expect(source?.prep?.text, id).toContain('p.104')
+      expect(source?.prep?.verified, id).toEqual({
+        kind: 'manual',
+        source: 'Polyend Tracker Mini Manual 2.2.1b, p.104',
+      })
+      // Nowhere for a citation to attach to the need, by construction — the shape has no slot
+      // for one, which is the repair. Before this, the page sat on a text param's point.
+      expect(Object.keys(source ?? {}).sort()).toEqual(['need', 'prep'])
+    }
+    // And no `text` param survives anywhere on this box: `INSTRUMENT` was the only one.
+    for (const recipe of device.recipes) {
+      for (const param of recipe.params as AuthoredParam[]) {
+        expect(param.kind, recipe.id).not.toBe('text')
+      }
+    }
+  })
+
   // -------------------------------------------------------------------------
   // Content and citation discipline (§3.1, §3.2)
   // -------------------------------------------------------------------------

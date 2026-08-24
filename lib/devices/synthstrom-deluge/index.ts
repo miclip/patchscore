@@ -261,6 +261,9 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'track',
     title: 'Kit-row kick, bass lifted, edge from decimation',
+    sourceAudio: {
+      need: 'A dry kick one-shot with a defined attack, no room on it',
+    },
     params: [
       pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
       pick('REPEAT MODE', 'ONCE', REPEAT_MODES, cite(81)),
@@ -315,6 +318,9 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'track',
     title: 'Snare with the treble lifted, rolling on the fill',
+    sourceAudio: {
+      need: 'A snare one-shot with the crack still on it, dry',
+    },
     params: [
       pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
       num('EQ TREBLE AMOUNT', 34, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -7 }] }),
@@ -334,6 +340,9 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'track',
     title: 'Clap sitting back in the reverb',
+    sourceAudio: {
+      need: 'A stereo hand-clap one-shot, several hands rather than one',
+    },
     params: [
       pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
       num('REVERB AMOUNT', 19, Z50, cite(225), { mood: [{ axis: 'space', amount: 16 }] }),
@@ -349,6 +358,9 @@ const RECIPES: Recipe[] = [
     character: 'clean',
     voice: 'track',
     title: 'Dry rim, thinned out, dropped in and out',
+    sourceAudio: {
+      need: 'A rim or stick one-shot, dry and close to transient-only',
+    },
     params: [
       pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
       num('EQ BASS AMOUNT', 19, Z50, cite(219), { note: '25 is neutral; below cuts' }),
@@ -364,6 +376,9 @@ const RECIPES: Recipe[] = [
     character: 'clean',
     voice: 'track',
     title: 'Closed hat with the bass rolled off',
+    sourceAudio: {
+      need: 'A closed hat one-shot under 150 ms, dry',
+    },
     params: [
       pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
       pick('REPEAT MODE', 'CUT', REPEAT_MODES, cite(81)),
@@ -380,6 +395,9 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'track',
     title: 'Open hat filtered down, decaying into the bar',
+    sourceAudio: {
+      need: 'An open hat one-shot with a real tail to gate',
+    },
     params: [
       pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
       pick('LPF MODE', '24dB/Octave', LPF_MODES, cite(83)),
@@ -396,6 +414,9 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'track',
     title: 'Quiet percussion filling the gaps',
+    sourceAudio: {
+      need: 'A shaker, tick or brushed one-shot under 100 ms',
+    },
     params: [
       pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
       num('REVERB AMOUNT', 12, Z50, cite(225), { mood: [{ axis: 'space', amount: 14 }] }),
@@ -518,7 +539,6 @@ const RECIPES: Recipe[] = [
       num('EQ TREBLE AMOUNT', 22, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -8 }] }),
       swing(),
     ],
-    articulation: [{ slot: 'first-hit', set: { automation: 1 }, hint: 'automation-view' }],
     routing:
       'Needs the DX7 ENGINE community setting on; create with CUSTOM 1 + SYNTH. Documented as experimental.',
     verified: false,
@@ -529,6 +549,11 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'track',
     title: 'Crushed noise wash under the drums',
+    sourceAudio: {
+      need:
+        'A noise or air bed that loops without a seam — rain, tape hiss, room tone. It plays ' +
+        'under everything on LOOP, so a click at the loop point is audible every pass',
+    },
     params: [
       pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
       pick('REPEAT MODE', 'LOOP', REPEAT_MODES, cite(81)),
@@ -537,7 +562,6 @@ const RECIPES: Recipe[] = [
       num('EQ BASS AMOUNT', 16, Z50, cite(219)),
       swing(),
     ],
-    articulation: [{ slot: 'first-hit', set: { velocity: 70 } }],
     verified: false,
   },
 
@@ -564,6 +588,9 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'track',
     title: 'Downbeat impact, decimated, long reverb send',
+    sourceAudio: {
+      need: 'A one-shot with a big front — a crash, a gated slam',
+    },
     params: [
       pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
       num('DECIMATION', 20, Z50, cite(217), { mood: [{ axis: 'grit', amount: 14 }] }),

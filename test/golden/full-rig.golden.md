@@ -956,6 +956,8 @@ Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
 
 #### CC — `riser`: A sample played backwards into the change
 
+Source — A sample with a long decaying tail loaded into the Sample tone; a negative RATE plays it backwards, so the tail becomes the rise
+
 *Ranges cite manual — TR-8S Reference Manual eng01, p.31.*
 
 - **TONE** `Sample`
@@ -992,6 +994,8 @@ One setting for the whole song — set it once, not once per part below.
   - ↳ hint: Hold [SHIFT], turn (TEMPO)
 
 #### Track 1 — `kick`: Kit-row kick, bass lifted, edge from decimation
+
+Source — A dry kick one-shot with a defined attack, no room on it
 
 *Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.219.*
 

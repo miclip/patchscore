@@ -5,7 +5,7 @@ import type { Role } from './vocabulary'
 import type { Cite, ParamScope, Provenance, ResolvedParam, ResolvedRange } from './params'
 import { dominantRangeCite, hoistedParams, sameCite } from './params'
 import type { Pattern, PatternHit } from './template'
-import type { BoundArticulation, ResolvedPatchEntry } from './resolver'
+import type { BoundArticulation, ResolvedPatchEntry, ResolvedSourceAudio } from './resolver'
 import type { Gap } from './search'
 import {
   chordVoicings,
@@ -979,6 +979,49 @@ function paramLines(
 }
 
 /**
+ * §3/#101. What to load, before any of the knobs below mean anything.
+ *
+ * First in the part, ahead of routing and ahead of every parameter, because that is the order it
+ * happens at the machine: a filter cutoff on a sampler with nothing loaded is a setting with no
+ * subject. The `Source —` prefix mirrors the `Routing —` line that follows it, since the two are
+ * the same kind of line — an instruction about the part rather than a value to dial.
+ *
+ * **The need line carries no provenance mark and the procedure line does.** That asymmetry is
+ * the model's (`resolveSourceAudio`), not the renderer's: the choice of recording is nobody's
+ * documented claim, and the procedure for rendering one is the manual's. A mark on the first
+ * would be an unchecked-guess badge on honest guidance.
+ *
+ * The procedure is a bullet with its citation beneath, which is `paramLines`' shape exactly —
+ * a claim, its mark, and its evidence indented under it. It is not folded into the need line
+ * because they are two claims (§3), and a citation attached to the pair would be a citation
+ * attached to the half of it nobody checked.
+ */
+function sourceLines(
+  source: ResolvedSourceAudio,
+  device: Device | undefined,
+  options: Required<RenderOptions>,
+): Line[] {
+  const out: Line[] = [`Source — ${source.need}`]
+  if (source.prep === undefined) {
+    // Nothing documented to do, so the jog attaches to the need itself.
+    if (options.hints && source.hint !== undefined) {
+      out.push('')
+      subordinate(out, '', 'hint', hintText(device, source.hint))
+    }
+    return out
+  }
+  out.push('')
+  out.push(`- ${source.prep.text}${mark(source.prep.provenance)}`)
+  for (const cite of citeLines(source.prep.provenance, undefined)) {
+    subordinate(out, '  ', 'cite', cite)
+  }
+  if (options.hints && source.hint !== undefined) {
+    subordinate(out, '  ', 'hint', hintText(device, source.hint))
+  }
+  return out
+}
+
+/**
  * #107's heading, in words. Restated in `components/guide/phase-sound.tsx` for the web guide,
  * exactly as `fxText` and `realisationInstruction` are — and **local, not exported**: §8's two
  * renderers are siblings that share no code path, so the web guide reaching in here for a
@@ -1064,6 +1107,10 @@ function phaseSound(
       const realisation = realisationInstruction(a)
       if (realisation !== '') {
         out.push(realisation)
+        out.push('')
+      }
+      if (a.recipe.sourceAudio !== undefined) {
+        out.push(...sourceLines(a.recipe.sourceAudio, device, options))
         out.push('')
       }
       if (a.recipe.routing !== undefined) {

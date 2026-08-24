@@ -620,6 +620,41 @@ export function resolvePatch(recipe: Recipe): ResolvedPatchEntry[] {
   }))
 }
 
+/**
+ * §3/#101. The source audio, carried through for the renderer with the procedure's provenance
+ * already decided.
+ *
+ * **`need` carries no provenance, and that is a decision rather than an omission.** Invariant 4
+ * governs rendered *values* — a setting the resolver could have moved, with a range behind it and
+ * a page that could confirm it. "A sustained tonal source, two seconds or longer" is none of
+ * those: it is an instruction about content to obtain before you start, exactly as `routing` is
+ * an instruction about signal flow, and neither has a page or a range. Stamping it provisional
+ * would badge honest guidance as an unchecked guess, which is the opposite of what that mark
+ * means (§3.2).
+ *
+ * The `prep` procedure is a different claim and does carry one: p.104's render-to-audio steps are
+ * the manual's, and a preparation somebody worked out by ear is not. `verified` there is required
+ * on the authored shape, so no inheritance from the recipe is involved and mood never touches it —
+ * the same shape as a patch entry's, minus the default.
+ */
+export type ResolvedSourceAudio = {
+  need: string
+  prep?: { text: string; provenance: Provenance }
+  hint?: string
+}
+
+export function resolveSourceAudio(recipe: Recipe): ResolvedSourceAudio | undefined {
+  const source = recipe.sourceAudio
+  if (source === undefined) return undefined
+  return {
+    need: source.need,
+    ...(source.prep === undefined
+      ? {}
+      : { prep: { text: source.prep.text, provenance: citedProvenance(source.prep.verified) } }),
+    ...(source.hint === undefined ? {} : { hint: source.hint }),
+  }
+}
+
 // ---------------------------------------------------------------------------
 // §6.1 / §3.2 — mood application and provenance
 // ---------------------------------------------------------------------------

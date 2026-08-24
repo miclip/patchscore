@@ -1462,3 +1462,126 @@ describe('the guide cites the document the values came from (#89)', () => {
     }
   })
 })
+
+// ---------------------------------------------------------------------------
+// §3/#101 — source audio in Sound design
+// ---------------------------------------------------------------------------
+
+/**
+ * A sampler rig, small enough that the whole part is readable in one assertion. `PLAY MODE` is a
+ * plain param beside the source; the source is not a param, which is the point of the field.
+ */
+function samplerRig(source: Record<string, unknown>): ResolveResult {
+  const sampler = box('sampler', {
+    kind: 'sampler',
+    voices: [{ kind: 'fixed', id: 'trk', label: 'Track 1', roles: ['texture'], polyphony: 1 }],
+    hints: { 'load-it': 'Hold BROWSE, turn the dial' },
+    features: { perStep: ['velocity'] },
+    recipes: [
+      makeRecipe('s-texture-soft', 'texture', 'soft', 'trk', {
+        title: 'Granular bed',
+        sourceAudio: source as never,
+        articulation: undefined,
+      }),
+    ],
+  })
+  return resolve({
+    devices: [sampler],
+    template: withRoles([request({ id: 'r-tex', role: 'texture', character: 'soft' })]),
+    mood: moodState(),
+    seed: 1,
+  })
+}
+
+const NEED = 'A sustained tonal source, two seconds or longer'
+
+describe('source audio (§3/#101)', () => {
+  it('states what to load, above the routing and above every parameter', () => {
+    const doc = renderGuide(samplerRig({ need: NEED }))
+    const sound = doc.slice(doc.indexOf('## 6.'))
+    const at = sound.indexOf(`Source — ${NEED}`)
+    expect(at).toBeGreaterThan(-1)
+    // Before the first value line of the part: you cannot set a cutoff on a track holding nothing.
+    expect(at).toBeLessThan(sound.indexOf('- **TUNE**'))
+  })
+
+  /**
+   * The need carries no mark, and that is the model's decision rather than the renderer's
+   * (`resolveSourceAudio`). A provisional badge means "nobody checked"; there is no page anywhere
+   * that says which recording suits a soft texture, so there is nothing for a mark to be about,
+   * and printing one would read as an unchecked guess about a choice that is the reader's.
+   */
+  it('marks the need with nothing, because there is no claim to mark', () => {
+    const doc = renderGuide(samplerRig({ need: NEED }))
+    const line = doc.split('\n').find((l) => l.startsWith('Source — ')) as string
+    expect(line).toBe(`Source — ${NEED}`)
+    expect(line).not.toContain('·')
+  })
+
+  it('marks the procedure, because that one is the manual’s', () => {
+    const cite: Cite = { kind: 'manual', source: 'Sampler Manual, p.104' }
+    const doc = renderGuide(
+      samplerRig({ need: NEED, prep: { text: 'Render the tracks to audio', verified: cite } }),
+    )
+    const lines = doc.split('\n')
+    const at = lines.findIndex((l) => l.includes('Render the tracks to audio'))
+    expect(lines[at]).toContain('· manual')
+    expect(lines[at + 1]).toContain(SUBORDINATE.cite)
+    expect(lines[at + 1]).toContain('Sampler Manual, p.104')
+  })
+
+  it('says nobody checked a procedure somebody worked out by ear', () => {
+    const doc = renderGuide(
+      samplerRig({ need: NEED, prep: { text: 'Bounce it yourself', verified: false } }),
+    )
+    const line = doc.split('\n').find((l) => l.includes('Bounce it yourself')) as string
+    // §3.2's rule, unchanged: a provisional point has no citation to give and gets none.
+    expect(line).toBe('- Bounce it yourself')
+  })
+
+  it('puts the hint where a reader can suppress it (§8.1)', () => {
+    const source = { need: NEED, hint: 'load-it' }
+    const on = renderGuide(samplerRig(source), { hints: true })
+    const off = renderGuide(samplerRig(source), { hints: false })
+    expect(on).toContain(`${SUBORDINATE.hint} Hold BROWSE, turn the dial`)
+    expect(off).not.toContain('Hold BROWSE')
+  })
+
+  it('says nothing at all for a recipe that declares none', () => {
+    const doc = renderGuide(samplerRig(undefined as never))
+    expect(doc).not.toContain('Source —')
+  })
+
+  /**
+   * Invariant 5, at the point it would be easiest to break. We do not know the reader's library,
+   * so no recipe in the whole library may name a file — and this is the field that would tempt
+   * somebody to, because it is finally the right place to put one.
+   */
+  it('never names a file, anywhere in the library', () => {
+    for (const device of DEVICES) {
+      for (const recipe of device.recipes) {
+        const source = recipe.sourceAudio
+        if (source === undefined) continue
+        expect(source.need, recipe.id).not.toMatch(/\.(wav|aif{1,2}|mp3|flac|pti|ogg)\b/i)
+        expect(source.prep?.text ?? '', recipe.id).not.toMatch(/\.(wav|aif{1,2}|mp3|flac|pti)\b/i)
+      }
+    }
+  })
+
+  /**
+   * The library-wide authoring rule the engine cannot enforce. There is no per-recipe flag saying
+   * "this voice plays a file" — the manifest models pools and voices, not sound sources — so
+   * whether a recipe needs a source is a judgement its own device folder makes, and every device
+   * test that has one asserts it. What can be checked here is the other direction: a recipe that
+   * declares a source declares a usable one.
+   */
+  it('never declares an empty or one-word source', () => {
+    for (const device of DEVICES) {
+      for (const recipe of device.recipes) {
+        const source = recipe.sourceAudio
+        if (source === undefined) continue
+        expect(source.need.trim().split(/\s+/).length, recipe.id).toBeGreaterThan(3)
+      }
+    }
+  })
+})

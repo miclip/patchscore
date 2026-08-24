@@ -639,3 +639,85 @@ describe('pattern-global settings are set once per device, not once per part (#1
     expect(block).toBeLessThan(firstPart)
   })
 })
+
+// ---------------------------------------------------------------------------
+// §3/#101 — source audio, in both renderers
+// ---------------------------------------------------------------------------
+
+describe('source audio reaches both renderers, and says the same thing (§3/#101)', () => {
+  /**
+   * The drone study on the Tracker Mini — the exact guide #101 was reported against, where the
+   * one part granulated audio the guide never named. It is a one-part rig, so a missing line
+   * cannot hide behind eight others.
+   */
+  const tracker = resolve({
+    devices: DEVICES.filter((d) => d.id === 'polyend-tracker-mini'),
+    template: droneStudy,
+    mood: moodState({ darkness: 59, grit: 52 }),
+    seed: 1,
+  })
+
+  it('names the source in both, in the same words', () => {
+    const need = tracker.assignments[0]?.recipe.sourceAudio?.need
+    expect(need).toBeDefined()
+    for (const doc of [text(html(tracker)), renderGuide(tracker)]) {
+      // The prefix is written twice by design — once in `lib/core/render.ts`, once in
+      // `components/guide/phase-sound.tsx` — for the reason #107's heading is. So it is asserted
+      // twice too, in both renderers, since nothing else in the build compares them.
+      expect(doc).toContain(`Source — ${need as string}`)
+    }
+  })
+
+  it('says it before the parameters in both, because loading comes first', () => {
+    for (const doc of [text(html(tracker)), renderGuide(tracker)]) {
+      const source = doc.indexOf('Source — ')
+      expect(source).toBeGreaterThan(-1)
+      expect(source).toBeLessThan(doc.indexOf('PLAY MODE'))
+    }
+  })
+
+  /**
+   * The chord recipes are the migration case: p.104's procedure used to be the `verified` of a
+   * text param's *point*, which put the manual's page on the reader's choice of sample. It is now
+   * on `prep`, and both renderers have to print the page against the procedure and nothing
+   * against the need.
+   */
+  const chords = resolve({
+    devices: DEVICES.filter((d) => d.id === 'polyend-tracker-mini'),
+    template: industrialTechno,
+    mood: NEUTRAL_MOOD,
+    seed: 7,
+  })
+
+  it('puts the citation on the procedure and not on the need, in both', () => {
+    const stab = chords.assignments.find((a) => a.role === 'stab')
+    expect(stab?.recipe.sourceAudio?.prep?.provenance.state).toBe('authored')
+    for (const doc of [text(html(chords)), renderGuide(chords)]) {
+      expect(doc).toContain('Rendering Tracks To Audio Chords')
+      expect(doc).toContain('Polyend Tracker Mini Manual 2.2.1b, p.104')
+    }
+  })
+
+  it('never carries the old INSTRUMENT param, in either renderer', () => {
+    // The field it was standing in for exists now, so a reappearance would mean two places
+    // claiming the same thing and one of them saying it wrong (§3/#101).
+    for (const doc of [text(html(chords)), renderGuide(chords)]) {
+      expect(doc).not.toContain('INSTRUMENT')
+    }
+  })
+
+  it('leaves a synth part silent about source audio, in both', () => {
+    // A voice that makes its own sound has nothing to load, and the absence has to be an absence
+    // rather than an empty line or a "none" (invariant 5).
+    const synths = resolve({
+      devices: DEVICES.filter((d) => d.id === 'moog-subsequent-37'),
+      template: industrialTechno,
+      mood: NEUTRAL_MOOD,
+      seed: 1,
+    })
+    for (const a of synths.assignments) expect(a.recipe.sourceAudio, a.recipe.id).toBeUndefined()
+    for (const doc of [text(html(synths)), renderGuide(synths)]) {
+      expect(doc).not.toContain('Source —')
+    }
+  })
+})

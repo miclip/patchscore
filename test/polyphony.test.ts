@@ -286,13 +286,21 @@ describe('the Tracker Mini chord recipes (§12.4, production)', () => {
 
   it('names no sample, and cites the procedure for making one', () => {
     const { pad } = padOf(trackerOnly)
-    const instrument = pad?.params.find((p) => p.name === 'INSTRUMENT')
-    expect(instrument).toBeDefined()
+    // #101. This used to be an `INSTRUMENT` text param, which was the only slot the shape offered
+    // and made one claim while intending another: the p.104 citation sat on the *point*, badging
+    // the reader's choice of sample with the manual's page. `sourceAudio` splits the two, and the
+    // split is what this test now reads.
+    const source = pad?.recipe.sourceAudio
+    expect(source).toBeDefined()
     // Invariant 5, in the place it would be easiest to break: we do not know the reader's
     // library, so the recipe states the requirement instead of inventing a filename.
-    expect(String(instrument?.value)).not.toMatch(/\.(wav|pti)\b/i)
-    expect(instrument?.note).toContain('p.104')
-    expect(instrument?.provenance.state).toBe('authored')
+    expect(String(source?.need)).not.toMatch(/\.(wav|pti)\b/i)
+    // The need is taste and carries no provenance at all — there is no page that says which
+    // recording suits a soft pad, so there is nothing for a mark to be about.
+    expect(source).not.toHaveProperty('provenance')
+    // The procedure is the manual's, and that is where the citation goes.
+    expect(source?.prep?.text).toContain('p.104')
+    expect(source?.prep?.provenance.state).toBe('authored')
   })
 
   it('says in the guide that it costs no synth slot', () => {
