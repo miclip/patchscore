@@ -434,6 +434,39 @@ export const device: Device = {
   panel: TR_1000_PANEL,
 
   /**
+   * ## Why there is no `sampled-chord` pad or stab here (§12.4)
+   *
+   * The same answer as the TR-8S, reached down a different corridor, and the two together are
+   * what make it a fact about this class of box rather than about one manual's omissions.
+   *
+   * **Sustain passes.** p.64's sample block gives `HLD MODE  WHOLE, TIME, STEP` with *"WHOLE:
+   * The entire sample is played without any decrease in volume"*, and the box loads user samples.
+   * A chord loaded here will sustain.
+   *
+   * **Per-step transposition fails.** p.30 lists what motion records into steps — for RIM
+   * SHOT–RIDE CYMBAL, the `[TUNE]`, `[DECAY]` and `[CTRL]` knobs — and gives the exact per-step
+   * form: hold a step key, then *"use the [C1]–[C6/VALUE] knobs to record the motions of the
+   * controllers into the step."* The mechanism is there. What is missing is a semitone parameter
+   * at the end of it:
+   *
+   *  - `TUNE` in the instrument tables (pp.59-62) is *"Adjusts the tuning (pitch)"*, with no
+   *    semitone scale printed for it.
+   *  - `COARSE` is the semitone control — `-12St–12St`, *"Sets the pitch of the sample in
+   *    semitones"* (p.64) — and it lives on the **sample edit screen**, where p.42 puts it on the
+   *    `[C4]` knob alongside `SLICE NUM`, `SPEED`, `BPM SYNC` and `STRETCH`. That is an editor,
+   *    not one of the performance knobs p.30 records.
+   *  - KNOB ASSIGN (p.36) is the bridge that would settle it, and **the manual never says what
+   *    can be assigned**. It describes the mechanism — *"assign up to four parameters to a knob,
+   *    and set the minimum and maximum values per parameter"* — and prints no target list. Two
+   *    things would have to be true for the substitution to work and neither is on the page: that
+   *    `COARSE` is assignable at all, and what knob position corresponds to a given semitone.
+   *    Assuming the first is inventing a capability; assuming the second is inventing a value.
+   *
+   * So: holds a chord, cannot move it. `pad` and `stab` stay gaps on a TR-1000-only rig, which is
+   * what invariant 5 asks for — the hole is shown rather than filled with a chord that disagrees
+   * with the harmony from bar three onward.
+   */
+  /**
    * The ten tracks, in panel order (p.14). BD-HT are layer tracks and sound generators A and
    * B together; RS-RC are single tracks. Either way one track sounds one note, so polyphony
    * is 1 everywhere (§12.4: polyphony counts notes, never roles).

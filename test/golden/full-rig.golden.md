@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → CRAVE · Voice — *Envelope-swept kick with the pitch falling into it*
+- **`kick`** → Deluge · Track 1 — *Kit-row kick, bass lifted, edge from decimation*
   - p1 · exact `hard` · every section
 - **`sub`** → MC-101 · TONE Track 1 — *Sine sub, one note at a time, nothing above the fundamental*
   - p1 · exact `dark` · every section
@@ -44,15 +44,15 @@ glance whether the screen in front of you is the one the line is about.
   - p3 · exact `dark` · every section
 - **`open-hat`** → TR-8S · OH — *Open hat with the top rolled off*
   - p3 · exact `dark` · every section
-- **`stab`** → minilogue xd · Voice — *Four-voice stab with the filter snapping shut behind the chord*
+- **`stab`** → MC-101 · TONE Track 3 — *Short chord stab, played on the track*
   - p3 · exact `hard` · 3 notes at once on one polyphonic voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
-- **`pad`** → MC-101 · TONE Track 3 — *Slow polyphonic pad, opening under the drums*
-  - p4 · substituted — asked `dark`, authored `soft` · 3 notes at once on one polyphonic voice · every section
+- **`pad`** → minilogue xd · Voice — *Low pad with the filter shut down over the top of it*
+  - p4 · exact `dark` · 3 notes at once on one polyphonic voice · every section
 - **`riser`** → TR-8S · CC — *A sample played backwards into the change*
   - p4 · exact `bright` · Build, Breakdown
-- **`noise`** → Deluge · Track 1 — *Crushed noise wash under the drums*
+- **`noise`** → CRAVE · Voice — *Raw noise through the filter, oscillator out of the mix*
   - p5, optional · exact `dirty` · every section
 
 ### Gaps
@@ -141,9 +141,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - bar 2 · step 23 · len 2 · `Db2` (`C#2`) · 6th · MIDI 37
 - bar 2 · step 27 · len 4 · `C2` · 5th · MIDI 36
 
-### `pad` — MC-101 · TONE Track 3
+### `pad` — minilogue xd · Voice
 
-**Slow polyphonic pad, opening under the drums** — settings in Sound design
+**Low pad with the filter shut down over the top of it** — settings in Sound design
 
 8 bars in F minor.
 
@@ -151,9 +151,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - bar 5 · step 65 · len 32 · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
 - bar 7 · step 97 · len 32 · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`) · 7th 2nd 4th · MIDI 63 67 70
 
-### `stab` — minilogue xd · Voice
+### `stab` — MC-101 · TONE Track 3
 
-**Four-voice stab with the filter snapping shut behind the chord** — settings in Sound design
+**Short chord stab, played on the track** — settings in Sound design
 
 4 bars in F minor.
 
@@ -164,9 +164,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 ## 5. Step programming
 
-### `kick` — CRAVE · Voice
+### `kick` — Deluge · Track 1
 
-**Envelope-swept kick with the pitch falling into it** — settings in Sound design
+**Kit-row kick, bass lifted, edge from decimation** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -190,6 +190,11 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `downbeat` — 1, 5, 13
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
+
+**On this box** — Deluge
+
+- `accent` → `velocity` 127 on step 9
+  - ↳ hint: Hold the note pad, turn (SELECT)
 
 ### `sub` — MC-101 · TONE Track 1
 
@@ -417,9 +422,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `downbeat` — 13
 - `accent` — 15 (vel 106)
 
-### `stab` — minilogue xd · Voice
+### `stab` — MC-101 · TONE Track 3
 
-**Four-voice stab with the filter snapping shut behind the chord** — settings in Sound design
+**Short chord stab, played on the track** — settings in Sound design
 
 **Intro, Outro** — 32 steps, band 0
 
@@ -447,6 +452,11 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `offbeat` — 7, 11, 23
 - `accent` — 29 (vel 108)
 
+**On this box** — MC-101
+
+- `accent` → `velocity` 116, `note-length` 3 on step 29
+  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
+
 ### `impact` — TR-1000 · CC
 
 **Crash marking the top of a section** — settings in Sound design
@@ -468,9 +478,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `first-hit` → `accent` true on step 1
   - ↳ hint: ACCENT [STEP], then step keys
 
-### `pad` — MC-101 · TONE Track 3
+### `pad` — minilogue xd · Voice
 
-**Slow polyphonic pad, opening under the drums** — settings in Sound design
+**Low pad with the filter shut down over the top of it** — settings in Sound design
 
 **Intro, Outro** — no pattern authored for `pad` at any band (asked for band 0)
 
@@ -484,9 +494,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 1)
 
-### `noise` — Deluge · Track 1
+### `noise` — CRAVE · Voice
 
-**Crushed noise wash under the drums** — settings in Sound design
+**Raw noise through the filter, oscillator out of the mix** — settings in Sound design
 
 **Intro, Outro** — 32 steps, band 0
 
@@ -520,43 +530,40 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 *Values below cite CRAVE Quick Start Guide, BE_0718-AAJ_WW.*
 
-#### Voice — `kick`: Envelope-swept kick with the pitch falling into it
+#### Voice — `noise`: Raw noise through the filter, oscillator out of the mix
 
 *Ranges cite manual — CRAVE Quick Start Guide BE_0718-AAJ_WW, p.70.*
 
-- **FREQUENCY** `-2` (-5…5)
+- **FREQUENCY** `0` (-5…5)
 - **PULSE WIDTH** `50` % (5…95 %)
 - **OSC MOD** `0` (0…10)
-- **MIX** `-5` (-5…5)
+- **MIX** `5` (-5…5)
   - ↳ note: Negative is oscillator, positive is noise or external audio
-- **CUTOFF** `3.5` (0…10)
+- **CUTOFF** `6` (0…10)
   - ↳ note: 20 Hz to 20 kHz across the travel
-- **RESONANCE** `2` (0…10)
+- **RESONANCE** `4` (0…10)
 - **VCF MOD** `0` (0…10)
-- **VOLUME** `8` (0…10)
-- **VCO SHAPE** `reverse saw`
+- **VOLUME** `7` (0…10)
+- **VCO SHAPE** `pulse`
 - **VCO MOD SOURCE** `env/osc mod`
-- **VCO MOD DEST** `frequency`
+- **VCO MOD DEST** `width`
 - **VCF MODE** `low pass`
 - **VCF MOD SOURCE** `env`
 - **VCF MOD POLARITY** `positive`
 - **VCA MODE** `envelope`
 - **ATTACK** `0` (0…10)
   - ↳ note: 2 ms to 3 s across the travel
-- **DECAY** `2.5` (0…10)
+- **DECAY** `2` (0…10)
   - ↳ note: 2 ms to 5 s across the travel
 - **SUSTAIN** `0` (0…10)
   - ↳ note: 0 to 8 V across the travel
 - **SUSTAIN SWITCH** `off`
   - ↳ note: Off: the level decays after the attack
-- **GLIDE** `0` (0…10)
-  - ↳ cite: range manual — CRAVE Quick Start Guide BE_0718-AAJ_WW, p.71
-  - ↳ note: 0 to 2 s across the travel
 
 **Patch**
 
-- `OUT · ENV` → `IN · OSC FM`
-  - ↳ note: The pitch drop — envelope onto the oscillator, over the switch
+- `OUT · ENV` → `IN · VCF CUTOFF`
+  - ↳ note: The filter closing across each hit
 
 ### Cascadia
 
@@ -599,13 +606,13 @@ Routing — played from MIDI IN or EXT IN PITCH/GATE — Cascadia has no sequenc
 
 *Values below cite minilogue xd/minilogue xd module Owner's Manual, E 9.*
 
-#### Voice — `stab`: Four-voice stab with the filter snapping shut behind the chord
+#### Voice — `pad`: Low pad with the filter shut down over the top of it
 
 Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 
 *Ranges cite manual — minilogue xd Owner's Manual E 9, p.24.*
 
-- **PORTAMENTO** `0` (0…127)
+- **PORTAMENTO** `20` (0…127)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.17
 - **SWING** `0` % (-75…75 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.41
@@ -616,17 +623,17 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.17
   - ↳ note: Left at 0 — turning right crosses into DUO, which spends two voices on every key
 - **VCO 1 · WAVE** `SAW`
-- **VCO 1 · OCTAVE** `8'`
+- **VCO 1 · OCTAVE** `16'`
 - **VCO 1 · PITCH** `0` c (-1200…1200 c)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
-- **VCO 1 · SHAPE** `480` (0…1023)
+- **VCO 1 · SHAPE** `380` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
   - ↳ note: Shape, complexity, or duty cycle of the selected wave
-- **VCO 2 · WAVE** `SAW`
+- **VCO 2 · WAVE** `TRI`
 - **VCO 2 · OCTAVE** `8'`
-- **VCO 2 · PITCH** `9` c (-1200…1200 c)
+- **VCO 2 · PITCH** `-9` c (-1200…1200 c)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
-- **VCO 2 · SHAPE** `460` (0…1023)
+- **VCO 2 · SHAPE** `200` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
 - **VCO 2 · SYNC** `OFF`
   - ↳ note: Locks oscillator 2 to the phase of oscillator 1
@@ -636,47 +643,47 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.19
   - ↳ note: Oscillator 1 modulating the pitch of oscillator 2
 - **MULTI ENGINE · NOISE/VPM/USR** `NOISE`
-- **MULTI ENGINE · TYPE** `Peak`
-- **MULTI ENGINE · SHAPE** `500` Hz (110…880 Hz)
+- **MULTI ENGINE · TYPE** `Low`
+- **MULTI ENGINE · SHAPE** `400` Hz (10…21000 Hz)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.20
-  - ↳ note: BANDWIDTH — the peak filter width
-- **MIXER · VCO 1** `780` (0…1023)
+  - ↳ note: CUTOFF — the low-pass filter on the noise
+- **MIXER · VCO 1** `700` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
-- **MIXER · VCO 2** `620` (0…1023)
+- **MIXER · VCO 2** `540` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
-- **MIXER · MULTI** `180` (0…1023)
+- **MIXER · MULTI** `120` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
-- **CUTOFF** `560` (0…1023)
+- **CUTOFF** `300` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.23
   - ↳ note: Set too low and the patch may be barely audible
-- **RESONANCE** `520` (0…1023)
+- **RESONANCE** `180` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.23
 - **DRIVE** `50%`
   - ↳ note: The filter drive circuit, in three stages
 - **KEYTRACK** `50%`
   - ↳ note: 100% moves the cutoff with the key, centred on C4
-- **AMP EG · ATTACK** `0` (0…1023)
-- **AMP EG · DECAY** `300` (0…1023)
-- **AMP EG · SUSTAIN** `0` (0…1023)
-- **AMP EG · RELEASE** `240` (0…1023)
-- **EG · ATTACK** `0` (0…1023)
-- **EG · DECAY** `260` (0…1023)
-- **EG · INT** `62` % (-100…100 %)
+- **AMP EG · ATTACK** `620` (0…1023)
+- **AMP EG · DECAY** `760` (0…1023)
+- **AMP EG · SUSTAIN** `800` (0…1023)
+- **AMP EG · RELEASE** `780` (0…1023)
+- **EG · ATTACK** `500` (0…1023)
+- **EG · DECAY** `700` (0…1023)
+- **EG · INT** `-18` % (-100…100 %)
   - ↳ note: Negative applies the envelope downwards
 - **EG · TARGET** `CUTOFF`
 - **LFO · WAVE** `TRI`
 - **LFO · MODE** `NORMAL`
-- **LFO · RATE** `200` (0…1023)
+- **LFO · RATE** `110` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.25
-- **LFO · INT** `0` (0…511)
+- **LFO · INT** `70` (0…511)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.25
   - ↳ hint: Hold SHIFT, turn INT to invert
 - **LFO · TARGET** `CUTOFF`
-- **EFFECTS · DEL/REV/MOD** `DEL`
+- **EFFECTS · DEL/REV/MOD** `REV`
   - ↳ note: Selects which effect the two knobs below are setting; the other two keep their stored values
 - **EFFECTS · OFF/ON/SELECT** `ON`
   - ↳ hint: Hold SHIFT, flip to SELECT
-- **EFFECTS · DEPTH** `28` % (0…100 %)
+- **EFFECTS · DEPTH** `62` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
 
 ### MC-101
@@ -731,21 +738,19 @@ Routing — Keep the sub mono and dry — the reverb and delay sends stay at 0
   - ↳ note: One setting for the whole clip, not per step
   - ↳ hint: Hold [SHIFT], press PAD [CLIP]
 
-#### TONE Track 3 — `pad`: Slow polyphonic pad, opening under the drums
+#### TONE Track 3 — `stab`: Short chord stab, played on the track
 
 Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 
 *Ranges cite manual — MC-101 Reference Manual eng01, p.45.*
 
 - **MONO/POLY** `POLY`
-- **ATTACK** `34` (-64…63)
-- **RELEASE** `40` (-64…63)
-- **CUTOFF** `-12` (-64…63)
-- **VIB RATE** `-14` (-64…63)
-- **VIB DEPTH** `8` (-64…63)
-- **REVERB SEND** `68` (0…127)
-- **DELAY SEND** `24` (0…127)
-- **LEVEL** `92` (0…127)
+- **ATTACK** `-40` (-64…63)
+- **DECAY** `-26` (-64…63)
+- **RELEASE** `-34` (-64…63)
+- **CUTOFF** `20` (-64…63)
+- **RESONANCE** `10` (-64…63)
+- **DELAY SEND** `18` (0…127)
 - **SHUFFLE** `0` (-50…50)
   - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
   - ↳ note: One setting for the whole clip, not per step
@@ -890,16 +895,17 @@ Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
 
 *Values below cite Deluge Official Guidebook, OS 4.1 (OLED) + community firmware release_1_2_1 (Chopin).*
 
-#### Track 1 — `noise`: Crushed noise wash under the drums
+#### Track 1 — `kick`: Kit-row kick, bass lifted, edge from decimation
 
-*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.217.*
+*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.219.*
 
 - **OSC TYPE** `Sample`
-- **REPEAT MODE** `LOOP`
-- **BITCRUSH** `21` (0…50)
-- **DECIMATION** `13` (0…50)
-- **EQ BASS AMOUNT** `16` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
+- **REPEAT MODE** `ONCE`
+- **EQ BASS AMOUNT** `33` (0…50)
+  - ↳ note: 25 is neutral; above boosts
+- **EQ BASS FREQUENCY** `14` (0…50)
+- **DECIMATION** `6` (0…50)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
 - **SWING** `50` % (1…99 %)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
   - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip

@@ -576,8 +576,9 @@ const SAMPLE_RECIPES: Recipe[] = [
     verified: false,
   },
   /**
-   * §12.4's `sampled-chord`, and the only recipe here that is not a synth patch pretending to
-   * be one. p.104 is unambiguous: "Each track in Tracker Mini can handle one voice which can
+   * §12.4's `sampled-chord`, and the first of the two recipes here that are not a synth patch
+   * pretending to be one — the `stab` below is its twin, and everything this note establishes
+   * applies to it unchanged. p.104 is unambiguous: "Each track in Tracker Mini can handle one voice which can
    * play multiple notes, but not simultaneously... A triad would therefore need 3 tracks to play
    * the chord." A pad the template asks for as three simultaneous notes is therefore *not*
    * reachable by any patch on this box — `tm-pad-soft` is a VAP synth and one track of it sounds
@@ -659,6 +660,67 @@ const SAMPLE_RECIPES: Recipe[] = [
     routing: 'Tracks 1-8 — costs no synth slot: the chord is in the sample, not in an engine',
     verified: false,
   },
+  /**
+   * The stab, and the second recipe on this box that exists only because §12.4 split the note
+   * count from the way the notes are made.
+   *
+   * Everything the pad's note above says applies unchanged — p.104 for why a triad costs three
+   * tracks and for the render procedure that turns it into one, p.128 for the step note setting
+   * playback pitch so one recording covers the shape at every root. What differs is only the
+   * envelope and the play mode: a stab is struck and gone, so `1-Shot` rather than `Forward
+   * loop`, and the attack is at the floor rather than a second and a half.
+   *
+   * **Until this landed, `stab` was an honest gap on a Tracker-only rig and `pad` was not**,
+   * which was a difference between the two roles that nothing about the box justified. Both are
+   * three simultaneous notes on a machine whose every track sounds one (p.104); both are
+   * reachable the same way. The pad had a recipe because somebody wrote one, and that is not a
+   * reason. `test/polyphony.test.ts` recorded the gap and now records the assignment.
+   *
+   * It stays a substitute and says so. The chord transposes, so it follows the progression; it
+   * cannot re-voice or invert, so every occurrence is the shape that was recorded.
+   */
+  {
+    id: 'tm-stab-hard-chord',
+    role: 'stab',
+    character: 'hard',
+    voice: 'track-sample',
+    title: 'Rendered chord sample, struck short and filtered hard',
+    realisation: 'sampled-chord',
+    params: [
+      {
+        kind: 'text',
+        name: 'INSTRUMENT',
+        value: 'Chord sample(s) — yours, or rendered to audio here; one per chord shape played',
+        verified: cite(104),
+        note:
+          'Manual p.104, Rendering Tracks To Audio Chords: place the notes of one chord on ' +
+          'separate tracks, Shift + D-Pad to select that range, [More] -> [Render Selection], ' +
+          'name it, then [Render & Load]. Replace the instrument on one track with the ' +
+          'rendered chord and free the others. One sample covers every chord of the same shape: ' +
+          'p.128, the step note sets the playback pitch, so placing a higher note transposes ' +
+          'the whole chord. Transposition keeps the recorded voicing — it cannot invert or ' +
+          're-voice the chord, so a changed shape is a second sample. The Hook phase lists ' +
+          'which samples this part needs and the semitone offset to place on each trigger.',
+      },
+      pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
+      pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
+      num('CUTOFF', 68, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -22 }] }),
+      num('RESONANCE', 34, PCT, 117, { unit: '%', mood: [{ axis: 'grit', amount: 18 }] }),
+      num('TUNE', 0, SEMITONES_24, 116, { unit: 'St' }),
+      secs('ENV ATTACK', 0, SECONDS_10, 126),
+      secs('ENV DECAY', 0.32, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.12 }] }),
+      num('ENV SUSTAIN', 0, PCT, 126, { unit: '%' }),
+      secs('ENV RELEASE', 0.24, SECONDS_10, 126),
+      num('OVERDRIVE', 18, PCT, 120, { unit: '%', mood: [{ axis: 'grit', amount: 20 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'accent', set: { volume: 118 } },
+      { slot: 'first-hit', set: { 'gate-length': 18 } },
+    ],
+    routing: 'Tracks 1-8 — costs no synth slot: the chord is in the sample, not in an engine',
+    verified: false,
+  },
   {
     id: 'tm-texture-soft',
     role: 'texture',
@@ -731,6 +793,14 @@ export const device: Device = {
       roles: SAMPLE_POOL_ROLES,
       polyphony: 1,
     },
+    /**
+     * §12.4: **no `sampled-chord` recipe addresses this pool, and it is not an oversight.** The
+     * substitution needs a sample, and p.22 is explicit about which tracks can hold one: *"The
+     * first 8 can operate with sample instruments, synths and MIDI and tracks 9-16 are used for
+     * MIDI and synths."* A rendered chord is an instrument you load, so it can only go on
+     * `track-sample`. That is why the chord pad and the chord stab both name that pool and this
+     * one carries neither.
+     */
     {
       kind: 'pool',
       id: 'track-synth',

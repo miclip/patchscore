@@ -702,11 +702,12 @@ describe('rack view', () => {
 
     // Every kind in the vocabulary is exercised by the authored boxes, so a renderer arm
     // that stopped working would show up here rather than only in Chrome.
-    // Thirteen: the TR-8S is the only box to author *two* screens — its main display and the
-    // separate value readout beside it — and Metropolix and the Digitakt II bring one each. The
-    // two panels with none are the Cascadia and the CRAVE, which genuinely have no display.
-    // The minilogue xd brings the other pair: p.66 lists its main organic-EL display and the
-    // MULTI ENGINE's own 7-segment readout as two separate things, in two separate sections.
+    // Thirteen, from two boxes that author *two* screens each and the rest one apiece. The TR-8S
+    // draws its main display and the separate value readout beside it; the minilogue xd draws
+    // its main organic-EL display and the MULTI ENGINE's own 7-segment readout, which p.66 lists
+    // as two separate things in two separate sections. Metropolix and the Digitakt II bring one
+    // each. The two panels with none are the Cascadia and the CRAVE, which genuinely have no
+    // display.
     expect(count('rack-screen')).toBe(13)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —

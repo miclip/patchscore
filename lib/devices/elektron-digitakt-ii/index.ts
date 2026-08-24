@@ -389,6 +389,24 @@ const recipes: Recipe[] = [
      * three-note stab is not reachable by any patch on this box. The way out is a sample that is
      * already the chord — once it is loaded, the chord *is* one note as far as the track is
      * concerned, which is exactly what `sampled-chord` says.
+     *
+     * **The two things that make the substitution legitimate are both on the page**, and they
+     * are worth naming here because two other boxes in this library pass the first and fail the
+     * second (see the TR-8S and TR-1000 manifests):
+     *
+     *  1. *It sustains.* The Oneshot machine *"plays the sample linearly (forward, reversed, or
+     *     looped)"* (p.93); `FORWARD LOOP` holds a chord under a whole bar, and the pad below
+     *     uses it.
+     *  2. *It transposes per step.* TRIG PAGE 1 carries `NOTE` — *"Trig Note sets the pitch of
+     *     the note when trigged"* — and p.53 says outright that *"Trigs can be locked to other
+     *     settings on any step of the pattern by first pressing and holding a [TRIG] key, then
+     *     changing the settings."* So each trigger can carry its own pitch, and the chord
+     *     follows the progression. `TUNE` reaches the same place by hand: p.93 notes that
+     *     pressing and turning DATA ENTRY *"snap[s] parameter values to semitones"*.
+     *
+     * Transposition preserves the recorded voicing and nothing else: it cannot invert or
+     * re-voice the chord, so a changed shape is a second sample (§4.1). The Hook phase lists
+     * which samples the part needs and the semitone offset to place on each trigger.
      */
     params: [src('ONESHOT'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('AHD'), hold(22)],
     articulation: [art('accent', { velocity: 120, 'note-length': 8 }, 'trig-params')],
@@ -401,6 +419,12 @@ const recipes: Recipe[] = [
     title: 'Rendered chord sample, looped and swelled',
     verified: false,
     realisation: 'sampled-chord',
+    /**
+     * `FORWARD LOOP` is the sustain half of §12.4's bar, and `ADSR` is what holds it: the chord
+     * plays for as long as the trig's length. The transposition half is the same `NOTE` trig
+     * lock the stab's note above sets out (p.53). Place the Hook phase's printed semitone offset
+     * on each trigger; the chord moves as a block and keeps the voicing it was recorded with.
+     */
     params: [src('STRETCH'), play('FORWARD LOOP'), fltr('LOWPASS 4'), ampMode('ADSR'), lfoMode('FRE'), fade(32)],
     articulation: [art('downbeat', { 'note-length': 96 }, 'trig-params')],
   },

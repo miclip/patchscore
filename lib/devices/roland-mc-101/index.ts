@@ -915,6 +915,35 @@ export const device: Device = {
    * one hit at a time (p.17). The pool's `count` of 8 against a kit of 16 is the headroom
    * argument in the module JSDoc above, not a claim about the hardware.
    */
+  /**
+   * ## Two `sampled-chord` declines, for two different reasons (§12.4)
+   *
+   * **The drum pool: it can hold a chord and cannot move it.** User samples load onto a pad, so
+   * a rendered chord will sound. What a pad cannot do is follow a progression, and a chord
+   * pinned to one pitch plays the same chord under every degree — a drone that disagrees with
+   * the harmony rather than a pad. Three routes were checked and all three fail:
+   *
+   *  - **`Key Offset` is per pad, not per step.** Reference p.47 gives it as `-24–+24`, *"Shifts
+   *    the pitch in units of a semitone"* — the right units, in the wrong place: it is a kit
+   *    setting for the key, and nothing makes it step-lockable.
+   *  - **Motion recording reaches `Coarse Tune`, but only track-wide** (pp.27-28). A DRUM track
+   *    carries all sixteen pads, so motion-recording its Coarse Tune to follow the progression
+   *    would retune the kick and the clap on the same steps. That is worse than the gap it
+   *    fills: a gap says "your rig cannot do this", where this would say "do this" and be wrong.
+   *  - **Spending a second DRUM track on the chord is unrepresentable here**, and that is a fact
+   *    about the model rather than about the box. `Assignable` is a pure function of device data
+   *    (§2.2) — identical for every guide ever resolved — so "use one of the four tracks as a
+   *    second drum track this time" has nowhere to live. This manifest commits once to eight
+   *    pads plus three TONE tracks and every guide gets that shape. The Digitakt II records the
+   *    same limit from the other side, where `comfortableVoices: 12` stands in for tracks spent
+   *    on MIDI being audio tracks lost.
+   *
+   * **The TONE tracks decline for a different reason: they do not need a substitute.** That
+   * argument was already recorded on `mc101-stab-hard` before this pass and is not restated
+   * here — a TONE track *"can also be used as a pitched sampler"* (p.16), so the twin is real,
+   * and §7.1 would never choose it over the polyphonic recipe already sitting on that voice.
+   * Measured since: chosen in 0 of 24 (6 characters x 4 note counts) cases.
+   */
   voices: [
     { kind: 'pool', id: 'drum-pad', label: 'Drum Pad', count: 8, roles: DRUM_PAD_ROLES, polyphony: 1 },
     { kind: 'pool', id: 'tone-track', label: 'TONE Track', count: 3, roles: TONE_ROLES, polyphony: 4 },
