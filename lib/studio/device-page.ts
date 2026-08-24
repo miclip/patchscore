@@ -1,7 +1,7 @@
 import type { Character, Device, Role, Template } from '@/lib/core'
 import { CHARACTERS, ROLES, expand } from '@/lib/core'
 import { TEMPLATES } from '@/lib/templates'
-import { deviceHref, deviceLabel, templateHref } from './catalogue'
+import { deviceHref, deviceLabel, templateHref, plural } from './catalogue'
 import { coverage } from './coverage'
 import { auditDevice, rangeDocuments } from './provenance'
 import type { AuditCounts } from './provenance'
@@ -22,10 +22,6 @@ import type { AuditCounts } from './provenance'
 function andList(items: readonly string[]): string {
   if (items.length < 2) return items.join('')
   return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1] as string}`
-}
-
-function plural(n: number, one: string): string {
-  return `${n} ${n === 1 ? one : `${one}s`}`
 }
 
 /**
