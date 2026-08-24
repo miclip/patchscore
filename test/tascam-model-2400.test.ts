@@ -66,7 +66,13 @@ describe('the manifest', () => {
       expect(verified.source.startsWith(MANUAL)).toBe(true)
     }
     const audit = auditDevice(device)
-    expect(audit.findings).toHaveLength(0)
+    // One finding, and it is the module JSDoc's argument moved into the map (§2.6/#120): the
+    // manual proves this desk generates clock and cannot receive it, and says nothing at all
+    // about whether leading a rig is its job. `undocumented`, because somebody read it and it is
+    // silent — not `cited-against`, which would claim the manual argues the other way.
+    expect(audit.findings.map((f) => ('fact' in f ? `${f.kind} ${f.fact}` : f.kind))).toEqual([
+      'undocumented-capability clock.preferredSource',
+    ])
     expect(audit.counts.params).toBe(0)
   })
 })

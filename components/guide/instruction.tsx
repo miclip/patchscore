@@ -113,6 +113,16 @@ export function EvidenceMark({ evidence }: { evidence: CapabilityEvidence }) {
       </span>
     )
   }
+  // §2.6/#120. Their own words, and deliberately no ink of their own: giving these two states a
+  // drawn identity is #121's job, and inventing one here would be a rendering decision made by a
+  // type error. Reusing this class says only "not a citation", which is true of both.
+  if (evidence.kind === 'unread' || evidence.kind === 'cited-against') {
+    return (
+      <span className="prov prov-undocumented" title={evidence.reason}>
+        {evidence.kind}
+      </span>
+    )
+  }
   return (
     <span className="prov prov-cited" title={evidence.source}>
       {evidence.kind}
@@ -127,9 +137,18 @@ export function EvidenceMark({ evidence }: { evidence: CapabilityEvidence }) {
  */
 export function evidenceLines(evidence: CapabilityEvidence): string[] {
   if (evidence === false) return []
-  return evidence.kind === 'unknown'
-    ? [`undocumented — ${evidence.reason}`]
-    : [`value ${citeText(evidence)}`]
+  switch (evidence.kind) {
+    case 'unknown':
+      return [`undocumented — ${evidence.reason}`]
+    // §2.6/#120, and see the sibling in `lib/core/render.ts`: the floor that keeps a new state
+    // from arriving silently, not the rendering #121 is for.
+    case 'unread':
+      return [`unread — ${evidence.reason}`]
+    case 'cited-against':
+      return [`cited-against ${citeText(evidence.cite)} — ${evidence.reason}`]
+    default:
+      return [`value ${citeText(evidence)}`]
+  }
 }
 
 /**

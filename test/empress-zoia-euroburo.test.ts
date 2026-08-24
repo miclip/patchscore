@@ -68,13 +68,26 @@ describe('the manifest', () => {
     }
     const audit = auditDevice(device)
     expect(audit.counts.params).toBe(0)
-    // One finding, and it is #80's recorded non-claim rather than a debt. This manual documents no
-    // clock transmission at all, so it says nothing about leading a rig either — and
-    // `canSendClock: false` makes `preferredSource` unclaimable regardless (§7.4). Asserted
-    // exactly, so an *unchecked* finding here would still fail.
+    // Four findings and not one of them a debt this manifest can pay by reading harder.
+    //
+    // The first is #80's recorded non-claim: this manual documents no clock transmission at all,
+    // so it says nothing about leading a rig either — and `canSendClock: false` makes
+    // `preferredSource` unclaimable regardless (§7.4).
+    //
+    // The other three are #120's `unread`, and this box is why that state exists. ZOIA's LFOs and
+    // its ducking modules live in the module index, which is *not in `manuals/`* — so nobody read
+    // a document and came back empty, the document is out of reach. Asserted exactly and by kind:
+    // an `unchecked` finding here would be wrong (nobody is failing to open a book) and an
+    // `undocumented` one would report a missing manual as finished research, which is precisely
+    // the mistake #118 made and #120 fixed.
     expect(audit.findings.map((f) => ('fact' in f ? `${f.kind} ${f.fact}` : f.kind))).toEqual([
       'undocumented-capability clock.preferredSource',
+      'unread-capability features.lfo',
+      'unread-capability features.sidechain.fromExternalAudio',
+      'unread-capability features.sidechain.internal',
     ])
+    expect(audit.counts.unreadCapabilities).toBe(3)
+    expect(audit.counts.uncheckedCapabilities).toBe(0)
   })
 })
 

@@ -689,9 +689,11 @@ export const device: Device = {
     'features.sidechain.fromExternalAudio': owner(30),
     'features.sidechain.internal': cite(56),
     /**
-     * §2.6's third state, and the reason it exists. This is not "nobody checked" — the MOD block
-     * has been read closely enough to author a recipe from it (see `features` above). It is
-     * checked, and the answer is that the manual does not state the two things `LfoSpec` needs.
+     * §2.6's read-and-silent state, and the reason it exists — `unknown` in the strictest sense,
+     * which is why #120 left it exactly where it was while three states grew around it. This is
+     * not "nobody checked" and not "nobody could": the MOD block has been read closely enough to
+     * author a recipe from it (see `features` above), and the answer is that the manual does not
+     * state the two things `LfoSpec` needs.
      */
     /**
      * §7.4/#80. Not `owner(30)`, which is `clock.canSendClock` three lines above and would be

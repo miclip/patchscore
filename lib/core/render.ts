@@ -192,9 +192,20 @@ function evidenceMark(evidence: CapabilityEvidence): string {
 
 function evidenceLines(evidence: CapabilityEvidence): string[] {
   if (evidence === false) return []
-  return evidence.kind === 'unknown'
-    ? [`undocumented — ${evidence.reason}`]
-    : [`value ${citeText(evidence)}`]
+  switch (evidence.kind) {
+    case 'unknown':
+      return [`undocumented — ${evidence.reason}`]
+    // §2.6/#120. The floor, not a rendering: #121 is where capability evidence gets a considered
+    // place in the guide, and until it lands a state that reached a reader wearing another's word
+    // would be the failure that issue is about. So each says its own word and its own sentence,
+    // and `cited-against` says its page too, because having one is what makes it that state.
+    case 'unread':
+      return [`unread — ${evidence.reason}`]
+    case 'cited-against':
+      return [`cited-against ${citeText(evidence.cite)} — ${evidence.reason}`]
+    default:
+      return [`value ${citeText(evidence)}`]
+  }
 }
 
 /**

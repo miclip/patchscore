@@ -896,9 +896,26 @@ export const device: Device = {
    * `Clock Source`, and pp.7/46/55 for the volca-style sync pair, which overrides the MIDI
    * setting whenever a cable is in `SYNC IN`.
    *
-   * `preferredSource` is not claimed (§7.4). This box can drive a rig and its job is not to.
+   * `preferredSource` is not claimed (§7.4). This box can drive a rig and its job is not to —
+   * the pages behind that are in `capabilityEvidence` below, not in this comment (§2.6/#120).
    */
   clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb', 'sync'] },
+
+  /**
+   * §2.6/#22, §7.4/#80. **One entry, and it is about a field that is not here.**
+   *
+   * #80 asked every box in the library whether driving a rig is its job, and this manual answers
+   * with capabilities on both sides and no sentence choosing between them. That is the
+   * read-and-silent state rather than the answers-no one (#120): nothing here argues the box
+   * should be played by something else, and nothing here says it should lead.
+   */
+  capabilityEvidence: {
+    'clock.preferredSource': {
+      kind: 'unknown',
+      reason:
+        'p.58 gives the send half — with `Clock Source` set to `Internal` the TEMPO knob’s tempo "will be sent as MIDI timing clock data" — and p.46 the receive half, `Clock Source [Auto (USB), Auto (MIDI), Internal]`; both are capabilities and neither is a role, and the volca-style `SYNC OUT` pulse carries no start or stop at all (p.7, p.46, p.55)',
+    },
+  },
 
   /**
    * `OUTPUT L/MONO and R jacks` (p.66) is a stereo main and nothing else — the headphones jack

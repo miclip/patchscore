@@ -105,6 +105,22 @@ export const device: Device = {
   clock: { canSendClock: true, canReceiveClock: false, transport: ['midi-din', 'usb'] },
 
   /**
+   * §2.6/#22, §7.4/#80. **One entry, recording the non-claim the module JSDoc argues for.**
+   *
+   * The pages were in that comment and are now here, which is what #22 exists for and what #120
+   * made possible for a field that is deliberately absent. `unknown` and not `cited-against`:
+   * this manual has no opinion to cite. It proves two capabilities and never says what the desk
+   * is for, which is a different finding from the Cascadia’s manual arguing the other way.
+   */
+  capabilityEvidence: {
+    'clock.preferredSource': {
+      kind: 'unknown',
+      reason:
+        'p.45 and the p.74 block diagram prove the box generates MTC and MIDI clock at MIDI OUT and over USB at once, and p.5 and p.74 that MIDI IN is a keyboard pass-through to a computer — both already said by `canSendClock: true` and `canReceiveClock: false`; the word "synchronize" occurs once in the manual, describing a DAW following this box, and no page says this desk should lead every rig it is put in',
+    },
+  },
+
+  /**
    * `MAIN OUTPUT L/R` XLR out, eight `SUB OUTPUT` jacks on four assignable buses, twenty-two
    * analogue inputs in, and a USB audio interface of 24 out / 22 in (pp.70-71).
    */
