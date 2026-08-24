@@ -48,12 +48,17 @@ function patternedRoles(template: Template): Set<Role> {
 // The registry entries themselves
 // ---------------------------------------------------------------------------
 
-describe('the registry carries three directions (§4)', () => {
+describe('the registry carries five directions (§4)', () => {
   it('holds both new templates, in id order, reachable by id', () => {
+    // Five now: the two small-rig directions joined later and slot in by id, which is what the
+    // registry's UTF-16 ordering is for (§7.2). `small-rig-directions.test.ts` holds those two;
+    // this file stays the record of the pair that came in with #6.
     expect(TEMPLATES.map((t) => t.id)).toEqual([
       'ambient-dub',
+      'drone-study',
       'industrial-techno',
       'major-key-electro',
+      'relay',
     ])
     expect(templateById('ambient-dub')).toBe(ambientDub)
     expect(templateById('major-key-electro')).toBe(majorKeyElectro)
