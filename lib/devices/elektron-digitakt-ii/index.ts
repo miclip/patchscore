@@ -89,7 +89,13 @@ function cite(page: number): Cite {
 
 /** APPENDIX A.2, p.93. `MIDI` is the machine that makes a track a MIDI track (p.17). */
 const SRC_MACHINES = ['ONESHOT', 'WERP', 'STRETCH', 'REPITCH', 'SLICE', 'GRID', 'MIDI'] as const
-/** ONESHOT's `PLAY` (Play Mode), p.93. */
+/**
+ * ONESHOT's `PLAY` (Play Mode). p.93 introduces the parameter and stops at its description —
+ * *"Play Mode sets the play mode of the sample"* — and the four values are printed as bullets on
+ * **p.94**, which is what an option set has to cite. Checked by rendering both pages: the string
+ * `FORWARD LOOP` does not occur in p.93's text at all, and the earlier p.93 citation here was
+ * carried over from the adjacent `SRC MACHINE` list rather than read off the page.
+ */
 const PLAY_MODES = ['FORWARD', 'REVERSE', 'FORWARD LOOP', 'REVERSE LOOP'] as const
 /**
  * APPENDIX A.3, pp.104-108. Reproduced with the manual's own numbering erratum noted: it labels
@@ -179,7 +185,7 @@ function num(
 }
 
 const src = (m: (typeof SRC_MACHINES)[number]) => pick('SRC MACHINE', m, SRC_MACHINES, 93)
-const play = (m: (typeof PLAY_MODES)[number]) => pick('PLAY', m, PLAY_MODES, 93)
+const play = (m: (typeof PLAY_MODES)[number]) => pick('PLAY', m, PLAY_MODES, 94)
 const fltr = (m: (typeof FLTR_MACHINES)[number]) => pick('FLTR MACHINE', m, FLTR_MACHINES, 104)
 const ampMode = (m: (typeof AMP_MODES)[number]) => pick('AMP MODE', m, AMP_MODES, 56)
 const lfoMode = (m: (typeof LFO_MODES)[number]) => pick('LFO MODE', m, LFO_MODES, 58)
