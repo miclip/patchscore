@@ -297,8 +297,12 @@ body {
   padding-right: 4px;
 }
 
-/* Secondary by definition — it holds what a filter would otherwise have hidden. */
-.picker-kept-list {
+/*
+ * The chosen group sits above the catalogue and gets its own, smaller cap. It is short in normal
+ * use — a rig is a handful of boxes — and capping it stops someone who ticks the whole library
+ * from pushing the catalogue off the screen with their own selection.
+ */
+.picker-chosen-list {
   max-height: 12rem;
 }
 
@@ -308,7 +312,7 @@ body {
     max-height: 14rem;
   }
 
-  .picker-kept-list {
+  .picker-chosen-list {
     max-height: 9rem;
   }
 }
