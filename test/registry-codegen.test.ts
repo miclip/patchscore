@@ -314,8 +314,12 @@ describe('the committed registry', () => {
       'intellijel-cascadia',
       'roland-tr-8s',
       'roland-tr-1000',
-      // The only keyboard in the library, and by a distance the widest thing that is not a mixer.
+      // The two keyboards, and the widest things in the library that are not mixers. The
+      // Subsequent 37 and the Model 2400 are within a millimetre of each other and are not a
+      // tie: 680 against 680.5, so the order is decided by the numbers rather than by folder
+      // order, and a re-measurement of either could legitimately swap them.
       'korg-minilogue-xd',
+      'moog-subsequent-37',
       'tascam-model-2400',
     ])
   })

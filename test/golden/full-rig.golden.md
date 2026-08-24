@@ -34,7 +34,7 @@ glance whether the screen in front of you is the one the line is about.
   - p1 · exact `hard` · every section
 - **`sub`** → MC-101 · TONE Track 1 — *Sine sub, one note at a time, nothing above the fundamental*
   - p1 · exact `dark` · every section
-- **`bass-mid`** → MC-101 · TONE Track 2 — *Overdriven mid bass with a bit of slide between notes*
+- **`bass-mid`** → Subsequent 37 · Voice — *Mixer pushed past unity with feedback under it and MultiDrive on top*
   - p2 · exact `dirty` · every section
 - **`clap`** → TR-1000 · HC — *Wide clap sitting on top of the snare*
   - p2 · exact `bright` · every section
@@ -44,7 +44,7 @@ glance whether the screen in front of you is the one the line is about.
   - p3 · exact `dark` · every section
 - **`open-hat`** → TR-8S · OH — *Open hat with the top rolled off*
   - p3 · exact `dark` · every section
-- **`stab`** → MC-101 · TONE Track 3 — *Short chord stab, played on the track*
+- **`stab`** → MC-101 · TONE Track 2 — *Short chord stab, played on the track*
   - p3 · exact `hard` · 3 notes at once on one polyphonic voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
@@ -87,14 +87,18 @@ None.
   - clock: sends clock · midi-din/usb/sync
   - audio: stereo main out
   - mixer: 1 part, no individual outs: one stereo channel for all
+- **Subsequent 37** — synth · 1 part
+  - clock: sends clock · midi-din/usb
+  - audio: mono main out · audio in
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **Tracker Mini** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
-- **MC-101** — groovebox · 3 parts
+- **MC-101** — groovebox · 2 parts
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio
-  - mixer: 3 parts, no individual outs: one stereo channel for all
+  - mixer: 2 parts, no individual outs: one stereo channel for all
 - **TR-1000** — drum-machine · 2 parts
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
@@ -127,9 +131,9 @@ which not every maker agrees with — the MIDI number is the form nothing disagr
 
 Where a role has more than one hook authored, rerolling the seed picks a different one.
 
-### `bass-mid` — MC-101 · TONE Track 2
+### `bass-mid` — Subsequent 37 · Voice
 
-**Overdriven mid bass with a bit of slide between notes** — settings in Sound design
+**Mixer pushed past unity with feedback under it and MultiDrive on top** — settings in Sound design
 
 2 bars in F minor.
 
@@ -151,7 +155,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - bar 5 · step 65 · len 32 · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
 - bar 7 · step 97 · len 32 · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`) · 7th 2nd 4th · MIDI 63 67 70
 
-### `stab` — MC-101 · TONE Track 3
+### `stab` — MC-101 · TONE Track 2
 
 **Short chord stab, played on the track** — settings in Sound design
 
@@ -238,9 +242,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `downbeat` → `note-length` 12 on step 1
   - ↳ hint: SEQ mode: hold [SHIFT], press the pad
 
-### `bass-mid` — MC-101 · TONE Track 2
+### `bass-mid` — Subsequent 37 · Voice
 
-**Overdriven mid bass with a bit of slide between notes** — settings in Sound design
+**Mixer pushed past unity with feedback under it and MultiDrive on top** — settings in Sound design
 
 **Intro, Outro** — 32 steps, band 0
 
@@ -268,11 +272,6 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `ghost` — 4, 20 (all vel 50)
 - `offbeat` — 7, 11, 23, 27
 - `accent` — 31 (vel 110)
-
-**On this box** — MC-101
-
-- `accent` → `motion-sound` 96 on step 31
-  - ↳ hint: On EDIT STEP, press the [VALUE] dial
 
 ### `clap` — TR-1000 · HC
 
@@ -422,7 +421,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `downbeat` — 13
 - `accent` — 15 (vel 106)
 
-### `stab` — MC-101 · TONE Track 3
+### `stab` — MC-101 · TONE Track 2
 
 **Short chord stab, played on the track** — settings in Sound design
 
@@ -686,6 +685,120 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **EFFECTS · DEPTH** `62` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
 
+### Subsequent 37
+
+*Values below cite Subsequent 37 User's Manual.*
+
+#### Voice — `bass-mid`: Mixer pushed past unity with feedback under it and MultiDrive on top
+
+*Ranges cite manual — Subsequent 37 User's Manual, p.27.*
+
+- **SWING** `50` % (0…100 %)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.40
+  - ↳ note: 50 is straight; it swings the onboard arpeggiator and sequencer, nothing played from elsewhere
+  - ↳ hint: PRESET EDIT, ARPEGGIATOR, SWING
+- **GLIDE · ON** `OFF`
+  - ↳ note: Must be lit for any glide at all
+- **GLIDE · TYPE** `LCR`
+  - ↳ note: LCR is constant rate, LCT constant time, EXP fast then slowing
+- **GLIDE · OSC** `BOTH`
+- **GLIDE · TIME** `0` (0…10)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.21
+  - ↳ note: The panel calibration; this manual prints no glide time in seconds
+- **GLIDE · GATED** `OFF`
+  - ↳ note: On, the pitch only glides while a key is held
+- **GLIDE · LEGATO** `OFF`
+  - ↳ note: On, glide happens only between overlapping notes
+- **OSC 1 · OCTAVE** `16'`
+- **OSC 1 · WAVE** `SAWTOOTH`
+  - ↳ note: The knob is continuous; these are its four named points
+- **OSC 2 · OCTAVE** `16'`
+- **OSC 2 · WAVE** `NARROW PULSE`
+  - ↳ note: The knob is continuous; these are its four named points
+- **OSC · HARD SYNC** `OFF`
+  - ↳ note: Keep OSC 2 at or above OSC 1 or it barely sounds
+- **OSC · KB RESET** `OFF`
+  - ↳ note: A defined leading edge, at the cost of a click on hard attacks
+- **OSC · DUO MODE** `OFF`
+  - ↳ note: Off: one note at a time, both oscillators on the same key
+- **OSC · KB CTRL** `HI`
+  - ↳ note: Inert while DUO MODE is off; set so FREQUENCY keeps its semitone scale
+- **OSC 2 · FREQUENCY** `-0.5` st (-7…7 st)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.26
+  - ↳ note: Centre is unison with OSC 1; fully clockwise is a fifth
+- **OSC 2 · BEAT FREQ** `1` Hz (-3.5…3.5 Hz)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.26
+  - ↳ note: A constant beat rate at every pitch, unlike FREQUENCY
+- **MIXER · OSC 1** `8.5` (0…10)
+- **MIXER · SUB 1** `7.5` (0…10)
+  - ↳ note: Always a square, always an octave below OSC 1
+- **MIXER · OSC 2** `8` (0…10)
+- **MIXER · NOISE** `1.5` (0…10)
+  - ↳ note: Pink, not white
+- **MIXER · FDBK / EXT IN** `3` (0…10)
+  - ↳ note: With nothing in EXT IN this feeds the mixer output back into itself
+- **CUTOFF** `260` Hz (20…20000 Hz)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.28
+  - ↳ note: Fully down closes the filter completely
+- **RESONANCE** `6.5` (0…10)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.28
+  - ↳ hint: Above 7 the filter sings by itself
+- **MULTIDRIVE** `7.5` (0…10)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.28
+  - ↳ note: Tube-like warmth at the bottom, hard clipping at the top
+- **FILTER · SLOPE** `24`
+  - ↳ note: dB per octave: one, two, three or four poles
+- **FILTER · EG AMT** `2.5` (-5…5)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.28
+  - ↳ note: Bipolar: below centre the envelope pulls the cutoff down
+- **FILTER · KB TRACK** `0.5` (0…2)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.29
+  - ↳ note: 1.0 is 1:1 tracking centred on C3; 2.0 is 2:1
+- **ENV · KNOB SHIFT** `OFF`
+  - ↳ note: Unlit, or the eight knobs below are DELAY, HOLD, VEL AMT and KB TRACK instead
+- **FILTER EG · ATTACK** `2` ms (1…10000 ms)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.30
+- **FILTER EG · DECAY** `260` ms (1…10000 ms)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.30
+- **FILTER EG · SUSTAIN** `2` (0…10)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.31
+  - ↳ note: 0 to 100%, calibrated 1 to 10
+- **FILTER EG · RELEASE** `200` ms (1…10000 ms)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.31
+- **FILTER EG · LOOP** `OFF`
+  - ↳ note: On, the envelope repeats for as long as a note is held — a multistage LFO
+- **AMP EG · ATTACK** `2` ms (1…10000 ms)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.32
+- **AMP EG · DECAY** `500` ms (1…10000 ms)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.32
+- **AMP EG · SUSTAIN** `6.5` (0…10)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.32
+  - ↳ note: 0 to 100%, calibrated 1 to 10
+- **AMP EG · RELEASE** `180` ms (1…10000 ms)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.32
+- **AMP EG · MULTI TRIG** `ON`
+  - ↳ note: On, every note re-attacks even when you play legato
+- **AMP EG · LOOP** `OFF`
+  - ↳ note: Off on everything but a bed: looping the amplitude re-articulates a held note
+- **MOD 1 · SOURCE** `Saw`
+- **MOD 1 · HI RANGE** `OFF`
+  - ↳ note: On, the LFO runs ten times faster
+- **MOD 1 · SYNC** `OFF`
+  - ↳ note: Off, so RATE is in hertz rather than clock divisions
+- **MOD 1 · LFO RATE** `5.5` Hz (0.1…100 Hz)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.22
+- **MOD 1 · KB RESET** `OFF`
+  - ↳ note: On, the LFO restarts at zero on every note
+- **MOD 1 · PITCH AMT** `0` (-5…5)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.22
+- **MOD 1 · OSC** `BOTH`
+  - ↳ note: Which oscillator PITCH AMT reaches
+- **MOD 1 · FILTER AMT** `0` (-5…5)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.22
+- **MOD 1 · DEST** `OSC 2 WAVE`
+- **MOD 1 · MOD AMT** `1` (-5…5)
+  - ↳ cite: range manual — Subsequent 37 User's Manual, p.22
+
 ### MC-101
 
 *Values below cite MC-101 Reference Manual, eng01.*
@@ -714,31 +827,7 @@ Routing — Keep the sub mono and dry — the reverb and delay sends stay at 0
   - ↳ note: One setting for the whole clip, not per step
   - ↳ hint: Hold [SHIFT], press PAD [CLIP]
 
-#### TONE Track 2 — `bass-mid`: Overdriven mid bass with a bit of slide between notes
-
-*Ranges cite manual — MC-101 Reference Manual eng01, p.45.*
-
-- **MONO/POLY** `MONO`
-- **PORTAMENT** `ON`
-- **PORTA TIME** `18` (0…127)
-  - ↳ note: TONE is also selectable, deferring to the tone
-- **CUTOFF** `12` (-64…63)
-- **RESONANCE** `16` (-64…63)
-- **DECAY** `-14` (-64…63)
-- **MFX TYPE** `29 Overdrive`
-- **DRIVE** `62` (0…127)
-  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.63
-  - ↳ hint: Hold [SHIFT], press [SOUND]
-- **TONE** `74` (0…127)
-  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.63
-- **HIGH GAIN** `-4` dB (-15…15 dB)
-  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.63
-- **SHUFFLE** `0` (-50…50)
-  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
-  - ↳ note: One setting for the whole clip, not per step
-  - ↳ hint: Hold [SHIFT], press PAD [CLIP]
-
-#### TONE Track 3 — `stab`: Short chord stab, played on the track
+#### TONE Track 2 — `stab`: Short chord stab, played on the track
 
 Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 

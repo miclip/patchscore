@@ -59,7 +59,39 @@ The community docs are a **moving target**, unlike a PDF — `manuals/deluge-com
 | `Digitakt_User_Manual_ENG_OS1.51.pdf` | Elektron Digitakt | 242k chars, the original |
 | `CRAVE_QSG_BE_0718-AAJ_WW.pdf` | Behringer Crave | Quick-start, **multilingual worldwide edition** — only a fraction of its 248k chars is English. Documents the patchbay properly (jack names, directions, internal normals) but is not a parameter reference, so expect cited jacks and provisional knob values. |
 | `minilogue_xd_OM_E9.pdf` | Korg minilogue xd | 68pp, and it covers **both** the keyboard and the `xd module` — one document, two devices, so every dimension line names which. Korg publishes **no separate Parameter Guide**, which is the TR-1000 trap and is *not* one here: the Owner's Manual carries 109 bracketed ranges and every front-panel sound knob has one, `[0...1023]` for the continuous controls. Specifications is p.66, not p.65: 4-voice, 500 x 300 x 85 mm for the keyboard and 500 x 179 x 85 mm for the module. The front-panel parameters run pp.17-26, with VOICE MODE on pp.17-18. |
-| `Subsequent_37_Manual.pdf` | Moog Subsequent 37 | 2.4MB, ~100 documented ranges, from [Moog's CDN](https://cdn.inmusicbrands.com/Moog/Subsequent37/Subsequent_37_Manual_0.pdf). Moog's downloads page also carries a **Patch Guide** worth fetching before recipe authoring, since patch-level material is what recipes are. Two-note paraphonic, so it fails a triad — see #20. |
+| `Subsequent_37_Manual.pdf` | Moog Subsequent 37 | **The parameter source.** 63pp, 168k chars, from [Moog's CDN](https://cdn.inmusicbrands.com/Moog/Subsequent37/Subsequent_37_Manual_0.pdf). Printed folio equals PDF page index throughout, so a citation needs no offset. Two-note paraphonic, so it fails a triad — see #20. |
+| `Sub_37_Quickstart_Print.pdf` | Moog Subsequent 37 | **The panel drawing the manual does not have**, and the source of `panel.ts`'s geometry. A two-page poster from [Moog's CDN](https://cdn.inmusicbrands.com/Moog/Subsequent37/Sub_37_Quickstart_Print.pdf); its lower half is a flat, to-scale legend of the whole control surface. Also carries Moog's own acid recipe: *"Turn on Legato Glide, set Glide Type to EXP, and set the GLIDE TIME knob to 2."* The filename says `Sub_37` and the document says Subsequent 37 in its body, its panel artwork and its "Download the full Subsequent 37 Manual" footer — Moog reused the earlier filename. Cite it as **Subsequent 37 Quickstart Guide**. |
+
+### The Subsequent 37's "Patch Guide" is not a document
+
+Moog's downloads page lists a **Subsequent 37 Patch Guide**, and issue #20 and the earlier note
+above both took it for patch-level prose worth reading before authoring recipes. It is not. The
+download behind that name is
+[`All_Sounds_Subsequent_37_PD.zip`](https://cdn.inmusicbrands.com/Moog/Subsequent37/All_Sounds_Subsequent_37_PD.zip),
+65 KB of **81 `.syx` preset dumps** — patch *data*, not patch *writing*. There is no PDF in it and
+no prose anywhere. It is deliberately not in `manuals/`: nothing in it is citable under §3.1, since
+a 756-byte SysEx blob states no range, names no page, and would have to be decoded against a byte
+layout this manual never publishes.
+
+The preset names are the only human-readable thing in the archive (`PD BoilerBass`, `PD Spaz duo`,
+`PD SickSync`…), and they are not an option set either — the manual prints **no factory preset
+list**, so there is nothing to cite them against.
+
+What actually replaces it, for the "how do I make a sound" material recipes are: the **Quickstart
+poster** above. It is the only Moog document for this instrument that names settings.
+
+Two things about the manual worth knowing before authoring from it, both of which cost time here:
+
+- **It has no top-down panel view.** p.2 is a three-quarter perspective illustration and pp.13-34
+  carry nine isolated section drawings at two different scales. Butting them together produces
+  proportions that are guesswork wearing a page number, which is why `panel.ts` cites the poster.
+- **It contradicts itself in six places**, all recorded in the device folder rather than smoothed
+  over: the p.61 Dimensions line prints a width that does not convert (26.375" vs 68 cm); the
+  envelope minimum is 1 ms in the prose and `.1` ms on the silkscreen; SUSTAIN is 0-10 on the panel
+  and "calibrated 1 to 10" in the prose; the LFO has three ranges by CC 76 and two by pp.22-23;
+  `LFO KBTRACK` maxes at 100% on p.50 and 200% on p.52; and the NRPN `VALUE RANGE` column on p.58 is
+  corrupted for a block of rows. **Do not use that NRPN column as an authority for anything** — the
+  p.53-55 CC table is sound by contrast.
 
 ### Roland's split-manual pattern
 

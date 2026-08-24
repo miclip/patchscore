@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import { DeviceSchema, NEUTRAL_MOOD, expand, resolve } from '../lib/core/index'
 import type { Device, ResolvedPatchEntry, ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { TEMPLATES } from '../lib/templates/index'
+import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 import { Rack } from '../components/rack/rack'
 import {
   AUDIO_OMISSION,
@@ -36,6 +36,19 @@ import { makeRecipe } from './rigs'
 
 const template = TEMPLATES[0] as (typeof TEMPLATES)[number]
 const real = resolve({ devices: DEVICES, template, mood: NEUTRAL_MOOD, seed: 1 })
+
+/**
+ * A second full-registry rig, for the one assertion that needs an assignment carrying an
+ * internal patch list (§3.3). `industrial-techno` puts the Cascadia on `metallic` and the CRAVE
+ * on `noise`, and both of those recipes are patch lists; `ambient-dub` has no such assignment
+ * once the Subsequent 37 is in the registry to take its bass.
+ */
+const patchedRig = resolve({
+  devices: DEVICES,
+  template: industrialTechno,
+  mood: NEUTRAL_MOOD,
+  seed: 1,
+})
 
 function markup(result: ResolveResult | undefined): string {
   return renderToStaticMarkup(createElement(Rack, { result }))
@@ -595,12 +608,19 @@ describe('patch entries (§3.3)', () => {
     // *are* patch lists (§3.3), so the honest version of the test is that the entries arrive and
     // land on the right box — the path is exercised by real data rather than only by the fixture
     // below it.
-    const model = rackModel(real)
+    //
+    // **It resolves `patchedRig` rather than `real`, and that is not a workaround.** Which box
+    // wins a request is the objective's call and moves whenever the library gains a device: the
+    // Subsequent 37's arrival took `ambient-dub`'s bass off the Cascadia, and with it the only
+    // patched assignment in the rig this file otherwise uses. Pinning the assertion to a
+    // template that puts a semi-modular to work keeps it testing the renderer instead of
+    // testing which manifest happens to be cheapest this week.
+    const model = rackModel(patchedRig)
     const patched = model.panels.filter((p) => p.internalPatch.length > 0)
     expect(patched.length).toBeGreaterThan(0)
     for (const panel of patched) {
       // Every entry belongs to an assignment on that same panel. A patch point is inside one box.
-      const mine = real.assignments.filter((a) => a.deviceId === panel.deviceId)
+      const mine = patchedRig.assignments.filter((a) => a.deviceId === panel.deviceId)
       expect(panel.internalPatch.length).toBe(mine.reduce((n, a) => n + a.patch.length, 0))
       for (const entry of panel.internalPatch) {
         expect(entry.from.length).toBeGreaterThan(0)
@@ -609,7 +629,7 @@ describe('patch entries (§3.3)', () => {
     }
     // And still not drawn: no cable in the model begins and ends on one device. Intra-panel
     // routing is listed in the guide, not drawn, because a layout carries no jack positions.
-    expect(model.cables.every((c) => c.fromDeviceId !== c.toDeviceId)).toBe(true)
+    expect(rackModel(patchedRig).cables.every((c) => c.fromDeviceId !== c.toDeviceId)).toBe(true)
   })
 
   it('carries what a recipe does declare, on the right panel', () => {
@@ -702,13 +722,13 @@ describe('rack view', () => {
 
     // Every kind in the vocabulary is exercised by the authored boxes, so a renderer arm
     // that stopped working would show up here rather than only in Chrome.
-    // Thirteen, from two boxes that author *two* screens each and the rest one apiece. The TR-8S
+    // Fourteen, from two boxes that author *two* screens each and the rest one apiece. The TR-8S
     // draws its main display and the separate value readout beside it; the minilogue xd draws
     // its main organic-EL display and the MULTI ENGINE's own 7-segment readout, which p.66 lists
-    // as two separate things in two separate sections. Metropolix and the Digitakt II bring one
-    // each. The two panels with none are the Cascadia and the CRAVE, which genuinely have no
-    // display.
-    expect(count('rack-screen')).toBe(13)
+    // as two separate things in two separate sections. Metropolix, the Digitakt II and the
+    // Subsequent 37 bring one each — the Moog's is the LCD in its PROGRAMMING column. The two
+    // panels with none are the Cascadia and the CRAVE, which genuinely have no display.
+    expect(count('rack-screen')).toBe(14)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -719,20 +739,21 @@ describe('rack view', () => {
     // X/Y/Z aux attenuverter sliders. A sequencer's panel is mostly this one shape for the same
     // reason the Cascadia's is.
     expect(count('rack-fader')).toBe(119)
-    // Sixty-six: the TR-1000's sixteen step keys, the CRAVE's thirteen-note keyboard, and the
-    // minilogue xd's thirty-seven — twenty-two white in one grid and fifteen black in six
-    // clusters, because a keyboard drawn as an even row of rectangles stops reading as one. The
-    // TR-8S is why the count is worth a sentence — it has sixteen step buttons of its own and
-    // draws them as pads, because they are square backlit buttons rather than piano-profile
-    // keys. Four boxes with rows of switches, two authored shapes; the renderer has no opinion
-    // and the manifests decide.
-    expect(count('rack-key')).toBe(66)
+    // 103: the TR-1000's sixteen step keys, the CRAVE's thirteen-note keyboard, and thirty-seven
+    // each from the minilogue xd and the Subsequent 37 — twenty-two white in one grid and
+    // fifteen black in six clusters, because a keyboard drawn as an even row of rectangles stops
+    // reading as one. The two 37-key panels were authored independently and agree exactly, which
+    // is what two instruments with the same keybed should do. The TR-8S is why the count is
+    // worth a sentence — it has sixteen step buttons of its own and draws them as pads, because
+    // they are square backlit buttons rather than piano-profile keys. Five boxes with rows of
+    // switches, two authored shapes; the renderer has no opinion and the manifests decide.
+    expect(count('rack-key')).toBe(103)
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(9)
+    expect(fields).toHaveLength(10)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

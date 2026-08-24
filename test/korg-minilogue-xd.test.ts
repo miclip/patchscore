@@ -98,11 +98,18 @@ describe('minilogue xd manifest', () => {
     expect(device.maker).toBe('KORG')
   })
 
-  it('is the library first and only `synth`', () => {
-    // `synth` was in `DEVICE_KINDS` from the start with nothing behind it. This manifest does not
-    // widen the picker's filter - it fills an option that could previously only return nothing.
+  it('is the library first `synth`, and no longer its only one', () => {
+    // `synth` was in `DEVICE_KINDS` from the start with nothing behind it. This manifest did not
+    // widen the picker's filter - it filled an option that could previously only return nothing.
+    // The Subsequent 37 joined it later, which is the shape this assertion now holds: the kind
+    // has more than one box behind it, and this is the first of them in folder order.
     expect(device.kind).toBe('synth')
-    expect(DEVICES.filter((d) => d.kind === 'synth').map((d) => d.id)).toEqual(['korg-minilogue-xd'])
+    const synths = DEVICES.filter((d) => d.kind === 'synth').map((d) => d.id)
+    expect(synths.length).toBeGreaterThan(1)
+    expect(synths).toContain('korg-minilogue-xd')
+    // And the two are genuinely different instruments rather than a duplicate: four voices
+    // against two, stereo against mono.
+    expect(synths).toContain('moog-subsequent-37')
   })
 
   it('sends and receives clock, over all three transports the manual names', () => {

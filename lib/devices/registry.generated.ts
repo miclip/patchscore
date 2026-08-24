@@ -11,6 +11,7 @@ import { device as device_empress_zoia_euroburo } from './empress-zoia-euroburo/
 import { device as device_intellijel_cascadia } from './intellijel-cascadia/index'
 import { device as device_intellijel_metropolix } from './intellijel-metropolix/index'
 import { device as device_korg_minilogue_xd } from './korg-minilogue-xd/index'
+import { device as device_moog_subsequent_37 } from './moog-subsequent-37/index'
 import { device as device_polyend_tracker_mini } from './polyend-tracker-mini/index'
 import { device as device_roland_mc_101 } from './roland-mc-101/index'
 import { device as device_roland_tr_1000 } from './roland-tr-1000/index'
@@ -27,6 +28,7 @@ export const DEVICES: readonly Device[] = [
   device_intellijel_cascadia,
   device_intellijel_metropolix,
   device_korg_minilogue_xd,
+  device_moog_subsequent_37,
   device_polyend_tracker_mini,
   device_roland_mc_101,
   device_roland_tr_1000,
@@ -44,6 +46,7 @@ export const DEVICE_FOLDERS: readonly string[] = [
   'intellijel-cascadia',
   'intellijel-metropolix',
   'korg-minilogue-xd',
+  'moog-subsequent-37',
   'polyend-tracker-mini',
   'roland-mc-101',
   'roland-tr-1000',
