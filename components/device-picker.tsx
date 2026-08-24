@@ -40,6 +40,25 @@ export function DevicePicker({ selected, onToggle }: DevicePickerProps) {
   const kinds = useMemo(() => kindsPresent(DEVICES), [])
   const shown = useMemo(() => deviceView(DEVICES, selected, filter), [selected, filter])
 
+  /**
+   * Selected first, and above the scrolling catalogue rather than inside it.
+   *
+   * The list gained a height cap so it stopped pushing the guide down the page, and that put the
+   * two devices this page ships checked at rows 7 and 9 of 13 — below the fold, on a list about
+   * five rows tall. The page opened looking like an empty rig while two boxes were ticked out of
+   * sight, which is worse than the scrolling it fixed.
+   *
+   * Grouping rather than sorting, because sorting on every tick moves the list under a hand that
+   * is mid-burst: picking a rig is four or five ticks in a row, and the row you meant to hit next
+   * has moved. A row crossing between two groups is one shift and reads as intentional, which is
+   * what the retained group already did.
+   *
+   * `retained` still marks a selected device the current filter would hide — it changes how the
+   * row looks, not where it lives, since your own rig should not move because you typed.
+   */
+  const chosen = useMemo(() => shown.rows.filter((row) => row.selected), [shown])
+  const rest = useMemo(() => shown.rows.filter((row) => !row.selected), [shown])
+
   return (
     <section className="panel">
       <header>
@@ -108,20 +127,21 @@ export function DevicePicker({ selected, onToggle }: DevicePickerProps) {
        * the search read as broken at exactly the moment someone reached for it. Separating the
        * groups gives both: the filter visibly filters, and nothing selected disappears.
        */}
-      <fieldset className="picker-list">
-        {shown.rows.filter((row) => !row.retained).map((row) => pick(row, onToggle))}
-      </fieldset>
-
-      {shown.retained > 0 ? (
+      {chosen.length > 0 ? (
         <>
           <p className="note picker-kept">
-            Also selected, outside this filter — untick here to drop{' '}
-            {shown.retained === 1 ? 'it' : 'them'}.
+            Your rig — {chosen.length} selected. Untick to drop.
           </p>
-          <fieldset className="picker-list picker-kept-list">
-            {shown.rows.filter((row) => row.retained).map((row) => pick(row, onToggle))}
+          <fieldset className="picker-list picker-chosen-list">
+            {chosen.map((row) => pick(row, onToggle))}
           </fieldset>
         </>
+      ) : null}
+
+      <fieldset className="picker-list">{rest.map((row) => pick(row, onToggle))}</fieldset>
+
+      {rest.length === 0 && chosen.length > 0 && shown.matched > 0 ? (
+        <p className="empty">Everything matching that is already in your rig.</p>
       ) : null}
     </section>
   )
