@@ -107,3 +107,8 @@ export function deviceLabel(device: Device): string {
 export function deviceHref(device: Device): string {
   return `/devices/${device.id}`
 }
+
+/** `/directions/ambient-dub`. The device pages link here, so it lives beside `deviceHref`. */
+export function templateHref(template: Template): string {
+  return `/directions/${template.id}`
+}

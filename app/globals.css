@@ -455,7 +455,7 @@ body {
   overflow-wrap: anywhere;
 }
 
-/* ------------------------------------------------------------- device page */
+/* --------------------------------------------------------- catalogue pages */
 
 .masthead-actions a {
   color: var(--ink);
@@ -469,7 +469,7 @@ body {
   border-bottom-color: var(--accent);
 }
 
-.device-page .panel {
+.catalogue-page .panel {
   margin-top: 16px;
 }
 
@@ -478,6 +478,13 @@ body {
  * its value doubles the height of the block for nothing. The term column is content-width, so a
  * long value wraps under its own term rather than pushing the page sideways.
  */
+.catalogue-page h3 {
+  margin: 18px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--silkscreen);
+}
+
 .fact-list {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -1972,7 +1979,7 @@ button:active {
 
 /* ---------------------------------------------- #21 wide things scroll alone */
 /*
- * The container scrolls, never the page. The catalogue's device pages (#84) share these table
+ * The container scrolls, never the page. The catalogue's pages (#84) share these table
  * rules rather than restating them: a table of voices is the same wide thing as a step grid, and
  * two sets of table rules drift apart the first time one is restyled. A step grid is sixteen fixed cells wide and a phone
  * is not, and a grid that reflows is a grid whose step numbers stop lining up with the box.
@@ -1985,7 +1992,7 @@ button:active {
 }
 
 .guide table,
-.device-page table {
+.catalogue-page table {
   border-collapse: collapse;
   min-width: max-content;
   font-size: 13px;
@@ -1993,8 +2000,8 @@ button:active {
 
 .guide th,
 .guide td,
-.device-page th,
-.device-page td {
+.catalogue-page th,
+.catalogue-page td {
   padding: 5px 16px 5px 0;
   text-align: left;
   border-bottom: 1px solid var(--edge);
@@ -2002,7 +2009,7 @@ button:active {
 }
 
 .guide th,
-.device-page th {
+.catalogue-page th {
   font-size: 9.5px;
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -2012,8 +2019,8 @@ button:active {
 
 .guide td.numeric,
 .guide th.numeric,
-.device-page td.numeric,
-.device-page th.numeric {
+.catalogue-page td.numeric,
+.catalogue-page th.numeric {
   text-align: right;
 }
 

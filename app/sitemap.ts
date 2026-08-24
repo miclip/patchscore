@@ -2,11 +2,13 @@ import type { MetadataRoute } from 'next'
 
 import { SITE_ORIGIN } from '@/lib/studio/site'
 import { DEVICES } from '@/lib/devices/registry.generated'
-import { deviceHref } from '@/lib/studio/catalogue'
+import { TEMPLATES } from '@/lib/templates'
+import { deviceHref, templateHref } from '@/lib/studio/catalogue'
 
 /**
- * The root, the device index, and one entry per device (#84) — all of them from the registry, so
- * adding a manifest adds its page here without an edit (invariant 2).
+ * The root, both catalogue indexes, one entry per device and one per direction (#84). All of them
+ * are derived, from the registry and from `lib/templates`, so authoring a manifest or a template
+ * adds its page here without an edit (invariant 2).
  *
  * What is still absent is every permalinked guide, and that is the rule this file was written to
  * state. #44 settled that a guide is `canonical: '/'`, because a guide is a generated view of the
@@ -32,6 +34,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     ...DEVICES.map((device) => ({
       url: `${SITE_ORIGIN}${deviceHref(device)}`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
+    {
+      url: `${SITE_ORIGIN}/directions`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+    ...TEMPLATES.map((template) => ({
+      url: `${SITE_ORIGIN}${templateHref(template)}`,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),

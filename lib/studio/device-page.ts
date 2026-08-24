@@ -1,7 +1,8 @@
 import type { Character, Device, Role, Template } from '@/lib/core'
-import { CHARACTERS, NEUTRAL_MOOD, ROLES, expand, resolve } from '@/lib/core'
+import { CHARACTERS, ROLES, expand } from '@/lib/core'
 import { TEMPLATES } from '@/lib/templates'
-import { deviceHref, deviceLabel } from './catalogue'
+import { deviceHref, deviceLabel, templateHref } from './catalogue'
+import { coverage } from './coverage'
 import { auditDevice } from './provenance'
 import type { AuditCounts } from './provenance'
 
@@ -102,26 +103,17 @@ export type DevicePage = {
   directions: readonly DirectionFit[]
 }
 
-/**
- * The seed is fixed and the mood is neutral, because coverage is a property of the box and the
- * direction rather than of a roll. Seed permutes only among exactly equal costs (invariant 6),
- * so this is the same answer on every machine and in every build.
- */
-const COVERAGE_SEED = 1
-
 export function directionFit(device: Device, template: Template): DirectionFit {
-  const result = resolve({ devices: [device], template, mood: NEUTRAL_MOOD, seed: COVERAGE_SEED })
-  const required = template.roles.filter((r) => r.optional !== true)
-  const covered = new Set(result.assignments.map((a) => a.requestId))
+  const cover = coverage(device, template)
   return {
     templateId: template.id,
     name: template.name,
-    href: `/directions/${template.id}`,
-    requests: template.roles.length,
-    covered: result.assignments.length,
-    required: required.length,
-    requiredCovered: required.filter((r) => covered.has(r.id)).length,
-    roles: template.roles.filter((r) => covered.has(r.id)).map((r) => r.role),
+    href: templateHref(template),
+    requests: cover.requests,
+    covered: cover.covered,
+    required: cover.required,
+    requiredCovered: cover.requiredCovered,
+    roles: cover.roles,
   }
 }
 

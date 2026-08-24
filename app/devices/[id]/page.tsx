@@ -62,7 +62,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const kind = device.kind.replace(/-/g, ' ')
 
   return (
-    <main className="shell device-page">
+    <main className="shell catalogue-page device-page">
       <header className="masthead">
         <h1>{label}</h1>
         <p>{kind}</p>
