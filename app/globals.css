@@ -2352,6 +2352,17 @@ html {
     display: none !important;
   }
 
+  /*
+   * A catalogue page has no guide on it, so the rule above — "everything that is not the guide" —
+   * would hide the whole page and print a blank sheet. On these routes the panels *are* the
+   * document, the way the guide is on the studio, and a printed device page is a panel drawing
+   * and a parameter table someone can take to the machine.
+   */
+  .catalogue-page .masthead,
+  .catalogue-page .panel {
+    display: block !important;
+  }
+
   .shell,
   .columns {
     display: block;
