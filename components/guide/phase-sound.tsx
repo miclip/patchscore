@@ -5,6 +5,7 @@ import type {
   ResolvedAssignment,
   ResolvedParam,
   ResolvedPatchEntry,
+  ResolvedSourceAudio,
 } from '@/lib/core'
 import { citationSentence } from '@/lib/core'
 import { dominantRangeCite, hoistedParams } from '@/lib/core'
@@ -36,6 +37,41 @@ function realisationInstruction(a: ResolvedAssignment): string {
   return (
     `Polyphony — ${notes} sounding at once on this one voice. It needs a genuinely polyphonic ` +
     `voice, not ${n} separate ones.`
+  )
+}
+
+/**
+ * §3/#101. What to load, before any of the knobs below mean anything — the sibling of
+ * `sourceLines` in `lib/core/render.ts`, and hand-written to match it the way
+ * `realisationInstruction` above is.
+ *
+ * First in the part, ahead of routing and ahead of every parameter, because that is the order it
+ * happens at the machine. The need is a plain line with **no provenance mark**: the choice of
+ * recording is nobody's documented claim, and badging it provisional would read as an unchecked
+ * guess where there is nothing to check. The procedure below it is the manual's and carries one.
+ */
+function Source({ source, owner }: { source: ResolvedSourceAudio; owner: Device | undefined }) {
+  const hint = source.hint === undefined ? undefined : hintText(owner, source.hint)
+  return (
+    <>
+      {source.prep === undefined ? (
+        // Nothing documented to do, so the need itself takes the reserved hint column (#21).
+        <Instruction {...(hint === undefined ? {} : { hint })}>
+          <span className="quiet">Source — {source.need}</span>
+        </Instruction>
+      ) : (
+        <>
+          <p className="quiet">Source — {source.need}</p>
+          <Instruction
+            cites={citeLines(source.prep.provenance, undefined)}
+            {...(hint === undefined ? {} : { hint })}
+          >
+            <span>{source.prep.text}</span>
+            <ProvenanceMark provenance={source.prep.provenance} />
+          </Instruction>
+        </>
+      )}
+    </>
   )
 }
 
@@ -193,6 +229,10 @@ export function PhaseSound({
 
                 {realisationInstruction(a) === '' ? null : (
                   <p className="quiet">{realisationInstruction(a)}</p>
+                )}
+
+                {a.recipe.sourceAudio === undefined ? null : (
+                  <Source source={a.recipe.sourceAudio} owner={owner} />
                 )}
 
                 {a.recipe.routing === undefined ? null : (

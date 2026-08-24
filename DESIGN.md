@@ -432,12 +432,93 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   however many are heard). Mark `sampled-chord` only when the chord really is baked in; it is
   what lets a one-voice sampler carry a triad, and claiming it falsely produces a guide that says
   three notes and sounds one.
+- **`sourceAudio` says what audio the recipe plays, when the voice does not make its own.** A
+  generator-based recipe answers that in a parameter — the TR-1000 has an internal generator
+  selector, so `GEN 9X Bass Drum` is an enum with an options list and a manual page behind it. A
+  sampler's equivalent is a file on an SD card: no controlled vocabulary, no field in the manifest
+  schema, no page that says which recording suits a dark kick. So there was nowhere for the
+  question to live, every parameter that *did* exist resolved, and `tm-texture-soft` set a play
+  mode, a filter, a grain length, a cutoff, a reverb send and an attack without ever naming what
+  was being granulated (#101). It carries two claims and keeps them apart:
+
+  ```ts
+  sourceAudio: {
+    // What to load, in terms a reader can search their own library by. Taste, never cited —
+    // no page states it, which is the same reason no *point* on a sample recipe is cited.
+    need: 'A sustained tonal source, two seconds or longer — a held synth note, a field ' +
+          'recording, a feedback loop. Pitch matters; transients do not',
+    // A documented way to obtain or prepare it, when the manual prints one. `verified` is
+    // required here, as on a `JackSpec`: a procedure has a page or nobody checked it.
+    prep: { text: 'Manual p.104, Rendering Tracks To Audio Chords: ...', verified: cite(104) },
+    hint: 'load-sample',   // a key into this device's `hints` table, checked like an articulation's
+  }
+  ```
+
+  It is the same `range`/`value` and `options`/`value` split (§3.1, §3.2) arriving at a third
+  shape, and it dissolves a real tension: the Tracker Mini's chord recipes carried p.104's
+  procedure as the `verified` of a `text` param's *point*, because a text param has no legality
+  gate and that was the only slot the shape offered — which badged the reader's choice of sample
+  with the manual's page. The page now sits on the procedure, where it is true.
+
+  **`need` is prose and stays prose.** A closed vocabulary of source kinds would be a fifth shared
+  vocabulary (invariant 3) built out of the one thing we cannot enumerate — other people's sample
+  libraries — and it would be the wrong shape anyway: what a reader needs is a phrase they can
+  search their own folders with, not a category we invented. It names no device and no genre, and
+  travels device → renderer exactly as `routing` and `note` do.
+
+  **Whether a recipe needs one is an authoring rule, not a schema rule.** Nothing in the manifest
+  says whether a voice plays a file or generates its own sound, and a pool id is not the answer —
+  three of the Tracker Mini's synth recipes sit on `track-sample`, because tracks 1-8 host synths
+  as readily as tracks 9-16. So each device folder states the rule in its own terms (the Tracker
+  Mini keys on `PLAY MODE`, a sample-instrument parameter; the Digitakt II has no synth engine at
+  all and so declares one on every recipe) and its own test enforces it, exactly as the Tracker
+  Mini's three-synth-slot cap is enforced.
 - A recipe never authors hits, step counts or bar structure. If you catch yourself writing
   `hits: [1, 5, 9, 13]` inside a device folder, that pattern belongs to a template (§4.3) —
   four-on-the-floor is a property of the genre, not of the TR-1000.
 - Articulation addresses `PatternSlot`s, never absolute step numbers. `{ step: 13 }` is only
   correct for a 16-step pattern that happens to have a hit at 13; `{ slot: 'last-hit' }` survives
   every variant the density bands can select.
+- **An articulation slot no selectable variant emits is dead authoring, and it is checked** (#108).
+  Addressing by slot survives every variant; it does not guarantee that any variant *contains* the
+  slot. `tm-texture-soft` authored `{ slot: 'first-hit', set: { 'low-pass': 55 } }` and the only
+  direction requesting `texture` emits `downbeat`, `offbeat` and `accent` — so the entry was dead
+  from the day it was written, and nothing failed, because §7 step 8 correctly drops a slot with no
+  hits rather than inventing one for it. That silence is why the mistake is invisible, and the
+  systemic cause was narrow: `first-hit` and `last-hit` are emitted by exactly one direction, for
+  exactly one role each, and nine of the first fourteen findings were a device reaching for one of
+  those two on some other role.
+
+  The check lives in `lib/core/reachability.ts`, because reachability belongs to **neither layer**:
+  a device cannot see it without naming a template (invariant 3) and a template cannot see it at
+  all, so it can only be asked from outside both, by something handed both. It walks the resolver's
+  own `selectPatterns` at each of §12.2's three density detents rather than restating band
+  fallback, so it moves automatically if that policy does. "Reachable" therefore means *selected* —
+  `selectPattern` takes `candidates[0]`, so a variant that is never first at its band contributes
+  nothing, which is the whole difference between this and grepping a template for slot names.
+
+  It separates three facts and only one of them is a device-folder bug:
+
+  | finding | what it means | whose fix |
+  |---|---|---|
+  | dead slot | the role is patterned and the authored slot is not among what it emits | the device folder |
+  | unpatterned role | the role is requested and no direction authors a variant for it | nobody's yet |
+  | unrequested recipe | no direction asks for the role at all | a template (#81) |
+
+  The middle one is why an empty reachable set is never a finding: there is no variant for a slot
+  to be missing from, and Ambient Dub's `texture` says why a direction may honestly decline to
+  author one. It produces an asymmetry worth stating rather than smoothing over — the Tracker
+  Mini's chord `pad` keeps a `first-hit` entry while its chord `stab` lost one, because `stab` is
+  patterned and `pad` is not. Deleting the `pad`'s would destroy authoring on the strength of a
+  template nobody has written.
+
+  Two fixes are legitimate and a third is not. Removing the gesture is always honest. Moving it to
+  a reachable slot is honest when the musical claim survives the move — a flam on the hit the
+  variant leans on is the same gesture as a flam on the entry, where a flam on every backbeat is a
+  different part — and the TR-8S's `flam` and the Tracker Mini's `reverse-sample` moved for that
+  reason, each being the library's only user of a declared per-step lane. **Adding the slot to a
+  template to make the recipe right is not a fix**: a device folder does not get to author rhythm,
+  which is what §4.3 already says.
 - Every key in an `articulation.set` must appear in this device's `features.perStep`. Zod checks
   it inside the codegen (§9), so an articulation the box physically cannot do fails the build
   rather than a request.
@@ -1591,6 +1672,17 @@ them tells the user to do the wrong thing:
 | `no-recipe` | a capable assignable exists, nothing authored within character distance 2 | nothing to buy; we owe you authoring. Name the voice that could carry it |
 | `no-room` | capable and voiceable, but the objective ranked some other allocation higher | your rig cannot carry this arrangement as configured. Say what gave way |
 
+**A fourth meaning was proposed and rejected** (#101, #81). A sampler voice with no declared
+source could have been reported as a gap, and it would have needed no new field: the renderer
+above already has the voice for it — *could carry it — pick it by ear*. It is refused because
+`gap` is already carrying three unrelated situations under one word and one rendering, and #81 is
+the open work of pulling those apart; a fourth tenant makes that job harder. It would also say
+something false. A resolved recipe, with resolved parameters, on a voice that can carry the part,
+is not an absence: nothing is missing from the rig and nothing is missing from the library. What
+is missing is a *sentence in the recipe*, which is authoring metadata and belongs on the recipe —
+`sourceAudio` (§3). The test of whether something is a gap is whether a part failed to be made,
+not whether the guide has less to say about one than it should.
+
 **Three, because a reason answers "why did this part not get made" and there are three answers:**
 nothing could carry it, nothing is authored for what could, or something else won the voice. The
 *action* mostly follows from that and originally followed from it exactly — three reasons, three
@@ -1771,7 +1863,23 @@ Do not reorder.
    know (invariant 5). A polyphonic part's hook is unchanged
 5. **Step programming** — the selected template pattern per part (§4.3), rendered per device with
    that device's slot articulation bound to it (§7 step 8)
-6. **Sound design** — where the multi-note realisation becomes an *instruction* rather than a
+6. **Sound design** — opening with **what to load**, where the recipe declares a source (§3/#101).
+   `Source — a sustained tonal source, two seconds or longer …` goes first in the part, ahead of
+   routing and ahead of every parameter, because that is the order it happens at the machine: a
+   cutoff on a sampler track holding nothing is a setting with no subject. The prefix mirrors
+   `Routing —` below it, since the two are the same kind of line — an instruction about the part
+   rather than a value to dial.
+
+   **The need carries no provenance mark and the procedure below it does.** That asymmetry is the
+   model's rather than the renderer's: invariant 4 governs rendered *values* — something the
+   resolver could have moved, with a range behind it and a page that could confirm it — and "a
+   held synth note or a field recording" is none of those. It is an instruction about content to
+   obtain, exactly as `routing` is an instruction about signal flow. A provisional badge means
+   *nobody checked*; putting one on a choice that is the reader's would read as an unchecked
+   guess where there is nothing to check. The `prep` procedure is a different claim, is the
+   manual's when it has a page, and carries the mark and the citation accordingly
+
+   Then where the multi-note realisation becomes an *instruction* rather than a
    fact. "Load the chord sample(s) onto this one voice" is a step a reader will otherwise not
    take, and the plural is load-bearing: the instruction names no count, because the count is a
    property of the hook rather than of the recipe, so it points at phase 4 for which samples are

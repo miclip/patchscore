@@ -319,3 +319,40 @@ describe('Digitakt II manifest', () => {
     }
   })
 })
+
+/**
+ * §3/#101. Every audio machine on this box is a sample player — "Each audio track contains one
+ * sample" (p.17), and there is no synth engine anywhere in it — so *every* recipe here has to say
+ * what to load. That makes this the strictest form of the rule in the library, and the cheapest
+ * to state: no exceptions, no marker param to key on.
+ */
+describe('Digitakt II says what audio to load (§3/#101)', () => {
+  it('declares a source on every recipe, because every machine plays a file', () => {
+    expect(device.recipes.length).toBeGreaterThan(15)
+    for (const recipe of device.recipes) {
+      expect(recipe.sourceAudio, recipe.id).toBeDefined()
+      expect((recipe.sourceAudio?.need ?? '').split(/\s+/).length, recipe.id).toBeGreaterThan(5)
+    }
+  })
+
+  it('names no file and cites no page, because neither exists to name', () => {
+    for (const recipe of device.recipes) {
+      const source = recipe.sourceAudio
+      expect(source?.need, recipe.id).not.toMatch(/\.(wav|aif{1,2}|mp3|flac)\b/i)
+      // No documented preparation on this box: the machine reads whatever is in the slot, and
+      // there is no render-to-audio procedure like the Tracker Mini's p.104 to point at.
+      expect(source?.prep, recipe.id).toBeUndefined()
+    }
+  })
+
+  it('says the source in the guide, above the parameters', () => {
+    const result = resolve({
+      devices: [device],
+      template: TEMPLATES.find((t) => t.id === 'industrial-techno') as (typeof TEMPLATES)[number],
+      mood: NEUTRAL_MOOD,
+      seed: 3,
+    })
+    expect(result.assignments.length).toBeGreaterThan(0)
+    for (const a of result.assignments) expect(a.recipe.sourceAudio, a.recipe.id).toBeDefined()
+  })
+})

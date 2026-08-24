@@ -351,7 +351,13 @@ describe('MC-101 manifest', () => {
   it('addresses steps only by slot, and hints only through the device table', () => {
     const hintKeys = new Set(Object.keys(device.hints ?? {}))
     for (const recipe of device.recipes) {
-      expect(recipe.articulation?.length, recipe.id).toBeGreaterThan(0)
+      // Not "every recipe articulates something", which this used to assert. #108's reachability
+      // check found `mc101-rim-clean` articulating `offbeat` on a role whose variants emit only
+      // `backbeat`, `accent` and `ghost`, and removing a gesture no direction can fire leaves a
+      // recipe with nothing per-step to say. That is the honest state, not a hole: what a device
+      // may not do is *claim* a gesture, and an empty list claims none.
+      // `min(1).optional()`: absent or non-empty, never an empty list claiming to be a list.
+      expect(recipe.articulation?.length ?? 1, recipe.id).toBeGreaterThan(0)
       for (const entry of recipe.articulation ?? []) {
         if (entry.hint !== undefined) {
           expect(hintKeys, `${recipe.id} / ${entry.hint}`).toContain(entry.hint)

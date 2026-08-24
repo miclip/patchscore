@@ -427,7 +427,14 @@ const recipes: Recipe[] = [
       ...sends(20, 48, 100),
       shuffle(),
     ],
-    articulation: [{ slot: 'first-hit', set: { flam: true }, hint: 'flam' }],
+    // The flam lane, and this recipe is the only place in the library that reaches for it.
+    //
+    // It was authored on `first-hit`, which #108's reachability check found dead: only Industrial
+    // Techno emits that slot, and only for `impact`, so a `rim` never sees one. It
+    // moved to `accent` rather than going, because a flam on the hit the variant leans on is the
+    // oldest gesture in the instrument and needs no argument — where a flam on every backbeat
+    // would be a different part.
+    articulation: [{ slot: 'accent', set: { flam: true }, hint: 'flam' }],
     verified: false,
   },
   {
@@ -593,6 +600,11 @@ const recipes: Recipe[] = [
     character: 'bright',
     voice: 'cc',
     title: 'A sample played backwards into the change',
+    sourceAudio: {
+      need:
+        'A sample with a long decaying tail loaded into the Sample tone; a negative RATE plays ' +
+        'it backwards, so the tail becomes the rise',
+    },
     params: [
       tone(
         'Sample',
@@ -638,6 +650,11 @@ const recipes: Recipe[] = [
     character: 'soft',
     voice: 'rc',
     title: 'A loop tone held open under the pattern',
+    sourceAudio: {
+      need:
+        'A sustained tonal bed, two seconds or longer, loaded as a Loop tone — HOLD MODE Whole ' +
+        'plays the whole file, so the file is the part',
+    },
     params: [
       tone(
         'Loop',

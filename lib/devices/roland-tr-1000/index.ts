@@ -743,10 +743,7 @@ export const device: Device = {
         send('DLY', 10, 10),
         shuffle(),
       ],
-      articulation: [
-        { slot: 'fill', set: { substep: '1/3' }, hint: 'sub-step' },
-        { slot: 'last-hit', set: { accent: true }, hint: 'accent-step' },
-      ],
+      articulation: [{ slot: 'fill', set: { substep: '1/3' }, hint: 'sub-step' }],
       verified: false,
     },
 
@@ -767,7 +764,6 @@ export const device: Device = {
         send('DLY', 0),
         shuffle(),
       ],
-      articulation: [{ slot: 'offbeat', set: { 'alt-inst': true }, hint: 'alt-inst' }],
       verified: false,
     },
     {
@@ -786,10 +782,7 @@ export const device: Device = {
         send('DLY', 14, 14),
         shuffle(),
       ],
-      articulation: [
-        { slot: 'ghost', set: { weak: true }, hint: 'weak-step' },
-        { slot: 'offbeat', set: { 'alt-inst': true }, hint: 'alt-inst' },
-      ],
+      articulation: [{ slot: 'ghost', set: { weak: true }, hint: 'weak-step' }],
       verified: false,
     },
 
@@ -851,10 +844,7 @@ export const device: Device = {
         send('DLY', 0),
         shuffle(),
       ],
-      articulation: [
-        { slot: 'offbeat', set: { weak: true }, hint: 'weak-step' },
-        { slot: 'fill', set: { substep: '1/2' }, hint: 'sub-step' },
-      ],
+      articulation: [{ slot: 'offbeat', set: { weak: true }, hint: 'weak-step' }],
       verified: false,
     },
     {

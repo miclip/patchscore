@@ -42,6 +42,9 @@ const IMPLEMENTATION = [
   // §8's renderer is where a locale-aware formatter is most tempting — thousands separators on
   // a step number, a "nicely" formatted range — so it is scanned like the rest of the engine.
   'render.ts',
+  // #108's whole-library reachability walk. It orders slots and would be an easy place to sort
+  // "readably", and it is scanned for the same reason `arrangement.ts` is.
+  'reachability.ts',
   // §6.3's band trajectory. Derivation, not rendering, and it groups and orders sections —
   // exactly the shape of code where a "tidier" sort reaches for `localeCompare`.
   'arrangement.ts',

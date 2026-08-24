@@ -194,6 +194,69 @@ export const ArticulationEntrySchema = z.strictObject({
 })
 
 /**
+ * §3/#101. **What audio this recipe plays**, for a recipe whose voice does not make its own.
+ *
+ * A generator-based recipe answers this in a parameter: the TR-1000 has an internal generator
+ * selector, so `GEN 9X Bass Drum` is an enum with an options list and a manual page behind it.
+ * A sampler's equivalent is a file on an SD card. There is no controlled vocabulary to pick
+ * from, nothing in the manifest that could hold one, and no page that says which recording
+ * suits a dark kick — so the question has no parameter to live in, and every parameter that
+ * *does* exist resolves. `tm-texture-soft` set a play mode, a filter, a grain length, a cutoff,
+ * a reverb send and an attack, and never said what was being granulated.
+ *
+ * **This is not a fourth meaning of "gap" (#81), and that route was rejected on purpose.**
+ * A sampler voice with no declared source could have been reported as a gap, which would have
+ * needed no new field: §7.3's renderer already has the voice for it. But `gap` today collapses
+ * three unrelated situations — the hardware cannot, the recipe was never authored, the role is
+ * optional for the genre — into one word and one rendering, and #81 is the open work of pulling
+ * those three apart. A fourth tenant makes that job harder and says the wrong thing besides: a
+ * resolved recipe with resolved parameters on a voice that can carry the part is not an absence.
+ * Nothing is missing from the rig or from the library. What is missing is a *sentence in the
+ * recipe*, which is authoring metadata, and authoring metadata belongs on the recipe.
+ *
+ * **Two claims, kept apart, because they are checkable by different people.**
+ *
+ *     need   what to load        taste — never cited, because no page states it
+ *     prep   how to obtain it    the manual's own procedure, or nobody's
+ *
+ * This is the same split `range`/`value` makes for a numeric and `options`/`value` makes for an
+ * enum (§3.1, §3.2), arriving at the third shape that pushed on it. It also dissolves a real
+ * tension: the Tracker Mini's chord recipes carried p.104's render-to-audio procedure as the
+ * `verified` of a `text` param's *point*, because a text param has no legality gate and that was
+ * the only slot available — which badged the reader's choice of sample with the manual's page.
+ * Here the page goes on the procedure, where it is true, and the choice stays uncited.
+ *
+ * `verified` inside `prep` is **required**, not inherited: a procedure has a page or nobody
+ * checked it, exactly as a `JackSpec` does. There is no third state to inherit toward.
+ *
+ * `need` is prose and stays prose. A closed vocabulary of source kinds would be a fifth shared
+ * vocabulary (invariant 3) built out of the one thing we cannot enumerate — other people's
+ * sample libraries — and it would be the wrong shape anyway: what a reader needs is a phrase
+ * they can search their own folders with, not a category we invented. It names no device and no
+ * genre, and travels device → renderer exactly as `routing` and `note` do.
+ */
+export type SourceAudio = {
+  /**
+   * What to load, in terms a reader can search their own library by. Never cited: no page
+   * anywhere states which recording suits this part, which is the same reason no *point* value
+   * on a sample recipe is ever cited.
+   */
+  need: string
+  /** A documented way to obtain or prepare it, when the box's manual prints one. */
+  prep?: { text: string; verified: Verified }
+  /** A key into the device's `hints` table, checked at device level like an articulation's. */
+  hint?: string
+}
+
+export const SourceAudioSchema = z.strictObject({
+  need: z.string().min(1),
+  prep: z
+    .strictObject({ text: z.string().min(1), verified: VerifiedSchema })
+    .optional(),
+  hint: z.string().min(1).optional(),
+})
+
+/**
  * §12.4. How a recipe turns the notes a request asks for into sound.
  *
  * The request says *how many notes* the part needs; the recipe says *how this box makes them*,
@@ -260,6 +323,12 @@ export type Recipe = {
   title: string
   /** §12.4. How the notes are made. Omitted means `polyphonic-voice`. */
   realisation?: Realisation
+  /**
+   * §3/#101. What audio this recipe plays, when the voice does not make its own. Before `params`
+   * because that is the order it happens: a cutoff on a track with nothing loaded is a setting
+   * with no subject.
+   */
+  sourceAudio?: SourceAudio
   params: AuthoredParam[]
   patch?: PatchEntry[]
   articulation?: ArticulationEntry[]
@@ -275,6 +344,7 @@ export const RecipeSchema = z
     voice: z.string().min(1),
     title: z.string().min(1),
     realisation: RealisationSchema.optional(),
+    sourceAudio: SourceAudioSchema.optional(),
     params: z.array(AuthoredParamSchema),
     patch: z.array(PatchEntrySchema).min(1).optional(),
     articulation: z.array(ArticulationEntrySchema).min(1).optional(),
@@ -774,6 +844,16 @@ export const DeviceSchema = z
           }
         }
       })
+
+      // §3/#101. A source-audio hint is a key into this device's own table, checked here for the
+      // same reason an articulation's is: the table is device-level and the recipe references it.
+      if (recipe.sourceAudio?.hint !== undefined && !hintKeys.has(recipe.sourceAudio.hint)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `sourceAudio references hint '${recipe.sourceAudio.hint}', which this device does not author`,
+          path: ['recipes', i, 'sourceAudio', 'hint'],
+        })
+      }
 
       recipe.articulation?.forEach((entry, j) => {
         // §3: an articulation the box physically cannot do fails the build, not a request.
