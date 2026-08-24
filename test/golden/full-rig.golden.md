@@ -246,32 +246,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Mixer pushed past unity with feedback under it and MultiDrive on top** — settings in Sound design
 
-**Intro, Outro** — 32 steps, band 0
-
-```
- 1 x··· ···· ···· ····
-17 x··· ···· ···· ····
-```
-- `downbeat` — 1, 17
-
-**Build, Breakdown** — 32 steps, band 1
-
-```
- 1 x··· ···· x··· ····
-17 x··· ···· x··· ····
-```
-- `downbeat` — 1, 9, 17, 25
-
-**Drop, Peak** — 32 steps, band 3
-
-```
- 1 x··x ··x· x·x· ····
-17 x··x ··x· x·x· ··x·
-```
-- `downbeat` — 1, 9, 17, 25
-- `ghost` — 4, 20 (all vel 50)
-- `offbeat` — 7, 11, 23, 27
-- `accent` — 31 (vel 110)
+**The hook is the pattern** — see Hook above for its steps and note lengths. Nothing separate to program here.
 
 ### `clap` — TR-1000 · HC
 
@@ -425,36 +400,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Short chord stab, played on the track** — settings in Sound design
 
-**Intro, Outro** — 32 steps, band 0
-
-```
- 1 x··· ···· ···· ····
-17 ···· ···· ···· ····
-```
-- `downbeat` — 1
-
-**Build, Breakdown** — 32 steps, band 1
-
-```
- 1 x··· ···· ···· ····
-17 x··· ···· ···· ····
-```
-- `downbeat` — 1, 17
-
-**Drop, Peak** — 32 steps, band 3
-
-```
- 1 x··· ··x· ··x· ····
-17 x··· ··x· ···· x···
-```
-- `downbeat` — 1, 17
-- `offbeat` — 7, 11, 23
-- `accent` — 29 (vel 108)
-
-**On this box** — MC-101
-
-- `accent` → `velocity` 116, `note-length` 3 on step 29
-  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
+**The hook is the pattern** — see Hook above for its steps and note lengths. Nothing separate to program here.
 
 ### `impact` — TR-1000 · CC
 
@@ -481,11 +427,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Low pad with the filter shut down over the top of it** — settings in Sound design
 
-**Intro, Outro** — no pattern authored for `pad` at any band (asked for band 0)
-
-**Build, Breakdown** — no pattern authored for `pad` at any band (asked for band 1)
-
-**Drop, Peak** — no pattern authored for `pad` at any band (asked for band 3)
+**The hook is the pattern** — see Hook above for its steps and note lengths. Nothing separate to program here.
 
 ### `riser` — TR-8S · CC
 

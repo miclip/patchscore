@@ -1,5 +1,5 @@
 import type { AssignableKey, Occupancy } from './occupancy'
-import type { DeviceId, RecipeId, RequestId, SectionName } from './ids'
+import type { DeviceId, HookId, RecipeId, RequestId, SectionName } from './ids'
 import type { Score } from './objective'
 import type { Character, Role } from './vocabulary'
 import { realisationOf } from './device'
@@ -222,7 +222,38 @@ export type ResolvedAssignment = {
   params: ResolvedParam[]
   patch: ResolvedPatchEntry[]
   sections: SectionName[]
-  /** One entry per section this part occupies, in structure order. */
+  /**
+   * #100. The hook that **is** this part's rhythm, or `undefined` when nothing authored one for
+   * its role.
+   *
+   * One authority per part. A hook states steps, lengths and pitches; a variant states steps of
+   * its own, and the two disagreed on the page with nothing saying which to play — Drone Study's
+   * `texture` was three sustained notes in phase 4 and seven retriggers in phase 5, against an
+   * envelope with a 1.8 second attack. Where a hook resolved, it wins, and phase 5 points at it
+   * rather than programming a second, contradictory pattern.
+   *
+   * **By hook existence, not by role group.** The obvious rule — the hook wins for tonal or
+   * sustained roles — fixes neither reported case: `texture` is a `body` role and `bass-mid` a
+   * `low` one, and neither is `tonal`. What both share is an authored hook, which is also the
+   * only discriminator that needs no fifth shared vocabulary (invariant 3).
+   *
+   * Only a *resolved* hook takes authority. An unresolved one (§4.1's `unparsed-key` and
+   * `unspellable-note`) has no notes to play, so deferring to it would leave the part with no
+   * rhythm stated anywhere — invariant 5 in the other direction.
+   *
+   * Resolved rather than optional, for the same reason `recipe.realisation` is: both renderers
+   * have to branch on it, and an optional field is one a renderer can forget to read.
+   */
+  hookAuthority: HookId | undefined
+  /**
+   * One entry per section this part occupies, in structure order.
+   *
+   * Kept, and unchanged, when `hookAuthority` is set: pattern selection is a pure function of
+   * template and mood (§7 step 5) and the *band* it carries is still true — §8's arrangement
+   * phase groups sections by it, and dropping it would leave a single-part template like Drone
+   * Study with no energy map at all. It is the **grid** that must not be rendered for a deferred
+   * part, and both renderers read `hookAuthority` before they touch this.
+   */
   patterns: ResolvedSectionPattern[]
 }
 
@@ -237,11 +268,18 @@ export type ResolvedAssignment = {
  * renderer decides nothing (§7 step 10), and a version that moves for reasons the guide's
  * content cannot see would cry drift at links that did not drift.
  *
+ * **2** — #100. `hookAuthority` is a new resolver decision: where a hook resolved for a part's
+ * role, that hook is the part's rhythm and phase 5 no longer programs a variant against it. No
+ * *value* moved — the objective, the tie-breaks and every selection are byte-identical — but a
+ * link shared before this renders a materially different guide after it, which is precisely the
+ * drift the stamp exists to announce. The "renderer-only" exemption does not apply: the guide's
+ * content can see this one.
+ *
  * It lives beside `ResolveInput` because that is the contract it versions. `permalink.ts`
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
  */
-export const RESOLVER_VERSION = 1
+export const RESOLVER_VERSION = 2
 
 export type ResolveInput = {
   /** Effective devices: shared definition composed with the user's overlay (#16). */
@@ -324,6 +362,27 @@ export function resolve(input: ResolveInput): ResolveResult {
   // Steps 2, 3, 4, 6 and 7.
   const allocation = assign({ devices, template, mood, seed })
 
+  // Step 10, hoisted above steps 8 and 9 because #100 made them depend on it: whether a part
+  // defers to its hook is a fact about the *song*, and it has to be known before the part is
+  // built. The key is still a function of template and seed alone, so a rig change never moves
+  // it, and every pick here is salted per role rather than drawn from a stream — evaluation
+  // order carries no information, so hoisting moves no byte (invariant 6).
+  const key = chooseKey(template.id, template.keys, seed)
+  const hookRoles = [...new Set(template.hooks.map((h) => h.forRole))].sort(compareCodeUnits)
+  const hooks =
+    key === undefined
+      ? []
+      : hookRoles.flatMap((role) => chooseHook(template.hooks, role, key, seed) ?? [])
+
+  // #100. Which roles have a hook that actually resolved to notes, and which hook it is. By
+  // role, because that is what a hook is authored `forRole` — a template requesting one role
+  // twice would point both parts at the one hook, which is already what phase 4 renders.
+  const hookAuthorityByRole = new Map<Role, HookId>(
+    hooks.flatMap((choice) =>
+      choice.chosen.outcome === 'resolved' ? [[choice.forRole, choice.chosenId] as const] : [],
+    ),
+  )
+
   // Steps 8 and 9.
   const assignments: ResolvedAssignment[] = allocation.assignments.map((a) => {
     const request = requestById.get(a.requestId) as RoleRequest
@@ -352,6 +411,7 @@ export function resolve(input: ResolveInput): ResolveResult {
       params: resolveParams(a.recipe, mood),
       patch: resolvePatch(a.recipe),
       sections: a.sections,
+      hookAuthority: hookAuthorityByRole.get(a.role),
       patterns: a.sections.map((section) => {
         const selection: PatternSelection = bySection?.get(section) ?? {
           outcome: 'none',
@@ -368,15 +428,6 @@ export function resolve(input: ResolveInput): ResolveResult {
       }),
     }
   })
-
-  // Step 10. After assignment only because nothing above depends on it; the key is a function
-  // of template and seed alone, so a rig change never moves it.
-  const key = chooseKey(template.id, template.keys, seed)
-  const hookRoles = [...new Set(template.hooks.map((h) => h.forRole))].sort(compareCodeUnits)
-  const hooks =
-    key === undefined
-      ? []
-      : hookRoles.flatMap((role) => chooseHook(template.hooks, role, key, seed) ?? [])
 
   return {
     template,

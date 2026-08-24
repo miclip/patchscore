@@ -114,6 +114,15 @@ export const DensityBandSchema = z.union([
   z.literal(3),
 ])
 
+/**
+ * §4.3's grid: patterns are 16, 32 or 64 steps over 1, 2 or 4 bars, so a step is a sixteenth.
+ *
+ * Here rather than in a renderer because it is a fact about the *pattern grid*, and #105 gave it
+ * a second reader outside rendering: how many bars a part's pattern is, and therefore how a
+ * section that is not a whole number of them gets built.
+ */
+export const STEPS_PER_BAR = 16
+
 export const PATTERN_LENGTHS = [16, 32, 64] as const
 export type PatternLength = (typeof PATTERN_LENGTHS)[number]
 export const PatternLengthSchema = z.union([z.literal(16), z.literal(32), z.literal(64)])

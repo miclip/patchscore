@@ -1978,6 +1978,7 @@ button:active {
 .slots,
 .notes,
 .articulation,
+.chain-plan,
 .patch {
   list-style: none;
   margin: 10px 0 0;
@@ -2305,6 +2306,37 @@ h4 > .token-sep,
   margin: 4px 0 10px;
   font-size: 12.5px;
   color: var(--ink);
+}
+
+/* #105. The standing note that says the odd section lengths are the template's own. Prose, so
+ * it reads at the top of the phase rather than scanning as another list of values. */
+.out-of-phase {
+  margin: 0 0 18px;
+  font-size: 12.5px;
+  color: var(--ink);
+  max-width: 62ch;
+}
+
+.out-of-phase strong {
+  color: var(--silkscreen);
+  font-weight: 600;
+}
+
+/* One row per section that needs cutting short. Wraps like `.slots` does — the bar counts stay
+ * monospace and legible at arm's length (#21), and the row breaks rather than the page. */
+.chain-plan > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px 10px;
+  padding: 1px 0;
+  font-size: 12.5px;
+  min-width: 0;
+}
+
+.chain-plan strong {
+  color: var(--silkscreen);
+  font-weight: 600;
 }
 
 .sound-ref strong {

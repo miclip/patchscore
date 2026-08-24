@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 import Page, { generateMetadata } from '../app/page'
 import { Studio } from '../components/studio'
-import { decodeGuideInputs, encodeGuideInputs } from '../lib/core/index'
+import { FORMAT_VERSION, RESOLVER_VERSION, decodeGuideInputs, encodeGuideInputs } from '../lib/core/index'
 import type { GuideInputsV1 } from '../lib/core/index'
 import { CATALOGUE, DEFAULT_INPUTS, composeTemplate } from '../lib/studio/session'
 import { guideMeta, queryFromSearchParams, studioEntry } from '../lib/studio/entry'
@@ -31,10 +31,15 @@ import { SITE_DESCRIPTION, SITE_NAME } from '../lib/studio/site'
  * comparison below exact, since it is the same renderer the Studio-only tests use.
  */
 
-/** The link from #99, in full. Written out rather than re-encoded: the claim is about a URL. */
+/**
+ * The link from #99, in full. Written out rather than re-encoded: the claim is about a URL.
+ *
+ * The two stamps come from the constants, so a resolver bump (#100) moves this fixture with the
+ * engine instead of failing a test about `og:url`.
+ */
 const DRONE_QUERY =
-  'format=1&resolver=1&device=polyend-tracker-mini&template=drone-study' +
-  '&darkness=59&density=50&grit=52&swing=50&space=50&seed=1'
+  `format=${FORMAT_VERSION}&resolver=${RESOLVER_VERSION}&device=polyend-tracker-mini` +
+  '&template=drone-study&darkness=59&density=50&grit=52&swing=50&space=50&seed=1'
 
 /** What Next hands a server component, built the way Next builds it: repeats become arrays. */
 function paramsOf(query: string): SearchParams {
@@ -141,7 +146,11 @@ describe('#99 the server render honours the query string', () => {
     // where there is somebody to read it.
     expect(await pageMarkup(DRONE_QUERY.replace('polyend-tracker-mini', 'no-such-box'))).toBe(bare)
     // Missing the mood axes entirely: malformed, never neutral-by-default (§8.2).
-    expect(await pageMarkup('format=1&resolver=1&template=drone-study&seed=1')).toBe(bare)
+    expect(
+      await pageMarkup(
+        `format=${FORMAT_VERSION}&resolver=${RESOLVER_VERSION}&template=drone-study&seed=1`,
+      ),
+    ).toBe(bare)
     expect(await pageMarkup('nonsense')).toBe(bare)
   })
 })
@@ -218,14 +227,15 @@ describe('#99 the preview card comes from the same decode', () => {
     // order, and an older engine's stamp: all the same guide, all the same `og:url`.
     const shuffled =
       'seed=1&space=50&swing=50&grit=52&density=50&darkness=59' +
-      '&template=drone-study&device=polyend-tracker-mini&resolver=1&format=1'
+      `&template=drone-study&device=polyend-tracker-mini&resolver=${RESOLVER_VERSION}` +
+      `&format=${FORMAT_VERSION}`
     expect(ogUrl(await metaOf(shuffled))).toBe(ogUrl(await metaOf(DRONE_QUERY)))
 
     // A drifted link (§8.2) re-resolves under the current engine, so it canonicalises to the
     // current engine's URL too — the same guide the reader is actually being shown.
-    const drifted = DRONE_QUERY.replace('resolver=1', 'resolver=0')
+    const drifted = DRONE_QUERY.replace(`resolver=${RESOLVER_VERSION}`, 'resolver=0')
     expect(ogUrl(await metaOf(drifted))).toBe(ogUrl(await metaOf(DRONE_QUERY)))
-    expect(ogUrl(await metaOf(drifted))).toContain('resolver=1')
+    expect(ogUrl(await metaOf(drifted))).toContain(`resolver=${RESOLVER_VERSION}`)
   })
 
   it('names the root when there is no readable link, rather than inventing one', async () => {

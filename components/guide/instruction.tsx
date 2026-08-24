@@ -181,6 +181,9 @@ export function TokenList({
  */
 const SOUND_DESIGN_ANCHOR = `#phase-${GUIDE_PHASES.indexOf('Sound design') + 1}`
 
+/** Derived for the same reason `SOUND_DESIGN_ANCHOR` is. */
+const HOOK_ANCHOR = `#phase-${GUIDE_PHASES.indexOf('Hook') + 1}`
+
 /**
  * §8 puts Hook and Step programming before Sound design on purpose — write the line, then
  * design the sound that plays it. The cost is that a reader stopping at either phase has no
@@ -194,6 +197,28 @@ export function SoundRef({ title }: { title: string }) {
   return (
     <p className="sound-ref">
       <strong>{title}</strong> — settings in <a href={SOUND_DESIGN_ANCHOR}>Sound design</a>
+    </p>
+  )
+}
+
+/**
+ * #100. Phase 5 for a part whose hook is its rhythm.
+ *
+ * One authority per part: where a hook resolved, it *is* the pattern, and a step grid beside it
+ * was a second, contradictory instruction with nothing saying which to play. A pointer, not a
+ * restatement — the same steps printed twice are the same bug one edit away.
+ *
+ * The link earns more here than in the Markdown for the reason `SoundRef`'s does: Hook is the
+ * heading above this one on a laptop and a scroll away on the phone §10 says this is read on.
+ * It names no hook id, because phase 4 names none either.
+ */
+export function HookRef() {
+  return (
+    // `sound-ref` for the styling, which is right for it — both are one-line pointers out of the
+    // phase — and its own name beside it, because it points somewhere else entirely.
+    <p className="sound-ref hook-ref">
+      <strong>The hook is the pattern</strong> — see <a href={HOOK_ANCHOR}>Hook</a> for its steps
+      and note lengths. Nothing separate to program here.
     </p>
   )
 }

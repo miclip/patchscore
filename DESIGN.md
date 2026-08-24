@@ -1918,7 +1918,33 @@ Do not reorder.
    labelled `sample A`, `sample B` — a label to point at, never a filename, which we could not
    know (invariant 5). A polyphonic part's hook is unchanged
 5. **Step programming** — the selected template pattern per part (§4.3), rendered per device with
-   that device's slot articulation bound to it (§7 step 8)
+   that device's slot articulation bound to it (§7 step 8).
+
+   **Except where a hook resolved for that part's role, in which case the hook is the pattern**
+   and this phase prints a pointer to phase 4 rather than a grid (#100). One authority per part:
+   a hook states steps, lengths and pitches, a variant states steps of its own, and the two
+   disagreed on the page with nothing saying which to play — Drone Study's `texture` was three
+   sustained notes above and seven retriggers here, against a 1.8 second attack. The
+   discriminator is **whether a hook was authored for the role**, not which group the role is in:
+   `texture` is `body` and `bass-mid` is `low`, so a rule about tonal roles fixes neither case,
+   and hook existence needs no fifth shared vocabulary (invariant 3). Only a *resolved* hook
+   takes authority — an unresolved one has no notes, and deferring to it would leave the part
+   with no rhythm stated anywhere. Selection itself still runs: it is a pure function of template
+   and mood (§7 step 5) and the band it carries is what §6.3's trajectory reads, so a single-part
+   template keeps its energy map. It is the grid that is not rendered, not the decision that is
+   not made.
+
+   **Sections that are not a whole number of repeats are named, with the arithmetic** (#105).
+   Drone Study's sections are 9, 15, 21, 33, 18, 24 and 12 bars against a 16-bar cycle, a 16-bar
+   hook and 4-bar variants: nothing divides, and that is authored intent — out-of-phase
+   boundaries are "what stops 132 bars of one note reading as a loop". **The lengths are never
+   rounded.** What the guide owes the reader is the other half of that decision, because on a box
+   where you chain patterns in Song mode a 9-bar section made of a 4-bar pattern is not playable
+   as written: the phase opens by saying the lengths are deliberate and gives the rule — chain
+   full copies and cut the final one short, so 9 bars of a 4-bar pattern is 4 + 4 + 1 — and each
+   part lists the sections it cannot fill evenly. The unit is what that part actually repeats:
+   its variant, or its hook where the hook took authority above. A section shorter than one copy
+   is one copy stopped early, never "0 copies", which is a repeat count no box can be given
 6. **Sound design** — opening with **what to load**, where the recipe declares a source (§3/#101).
    `Source — a sustained tonal source, two seconds or longer …` goes first in the part, ahead of
    routing and ahead of every parameter, because that is the order it happens at the machine: a

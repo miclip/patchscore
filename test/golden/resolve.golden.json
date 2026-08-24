@@ -191,6 +191,7 @@
         "Build",
         "Drop"
       ],
+      "hookAuthority": null,
       "patterns": [
         {
           "section": "Intro",
@@ -543,6 +544,7 @@
         "Build",
         "Drop"
       ],
+      "hookAuthority": null,
       "patterns": [
         {
           "section": "Intro",
@@ -754,6 +756,7 @@
         "Build",
         "Drop"
       ],
+      "hookAuthority": null,
       "patterns": [
         {
           "section": "Intro",
@@ -841,6 +844,7 @@
         "Build",
         "Drop"
       ],
+      "hookAuthority": null,
       "patterns": [
         {
           "section": "Intro",
@@ -1075,6 +1079,7 @@
         "Build",
         "Drop"
       ],
+      "hookAuthority": null,
       "patterns": [
         {
           "section": "Intro",
@@ -1294,6 +1299,7 @@
         "Build",
         "Drop"
       ],
+      "hookAuthority": null,
       "patterns": [
         {
           "section": "Intro",
@@ -1486,6 +1492,7 @@
         "Build",
         "Drop"
       ],
+      "hookAuthority": null,
       "patterns": [
         {
           "section": "Intro",

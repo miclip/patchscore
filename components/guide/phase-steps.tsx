@@ -6,10 +6,12 @@ import type {
   PatternHit,
   ResolveResult,
   ResolvedAssignment,
+  SectionChain,
   SectionName,
 } from '@/lib/core'
-import { citeLines, hintText, num } from './format'
-import { Instruction, ProvenanceMark, SoundRef } from './instruction'
+import { chainPlan } from '@/lib/core'
+import { citeLines, count, hintText, num } from './format'
+import { HookRef, Instruction, ProvenanceMark, SoundRef } from './instruction'
 
 const ROW = 16
 
@@ -144,6 +146,10 @@ function slotSteps(hits: readonly PatternHit[]): string {
  * separators the moment a template spanned more than one band (§6.3).
  */
 export function mergeBlocks(a: ResolvedAssignment): Block[] {
+  // #100. A part whose hook is its rhythm has no blocks at all: a variant was selected for it
+  // (the band it asks for is what the arrangement phase reads) but none of it is played, so
+  // there is nothing here to merge and nothing to draw.
+  if (a.hookAuthority !== undefined) return []
   const merged = new Map<string, Block>()
   for (const entry of a.patterns) {
     const s = entry.selection
@@ -219,6 +225,64 @@ function BlockBody({
   )
 }
 
+/**
+ * #105. How one out-of-phase section is chained, in the order it is built.
+ *
+ * `full === 0` is its own sentence rather than "0 copies": a 9-bar section against a 16-bar hook
+ * is one copy stopped early, and no arithmetic makes that a repeat count. Worded as the Markdown
+ * sibling words it — the claim is about the box in front of somebody, and two wordings of it
+ * would be two chances to be wrong.
+ */
+function chainText(chain: SectionChain): string {
+  if (chain.full === 0) return `one copy cut to ${count(chain.remainder, 'bar')}`
+  const copies =
+    chain.full === 1
+      ? `1 copy of ${count(chain.unitBars, 'bar')}`
+      : `${num(chain.full)} copies of ${count(chain.unitBars, 'bar')}`
+  return `${copies}, then one cut to ${count(chain.remainder, 'bar')}`
+}
+
+/**
+ * #105's standing note, once at the top of the phase — the placement §8 gives phase 4's note
+ * conventions, and for the same reason: a paragraph repeated under twelve parts is a paragraph
+ * nobody reads under any of them.
+ *
+ * It says *deliberate* in as many words. Drone Study's sections are 9, 15, 21, 33, 18, 24 and 12
+ * bars against a 16-bar cycle, and that is the template's arrangement — out-of-phase boundaries
+ * are "what stops 132 bars of one note reading as a loop". Without this the numbers read as an
+ * arithmetic bug, and the reader's fix — rounding to 8 or 16 — would delete the arrangement.
+ */
+function OutOfPhase() {
+  return (
+    <p className="out-of-phase">
+      <strong>Not every section is a whole number of repeats, and that is deliberate.</strong> The
+      template puts section boundaries out of phase with the pattern and the harmonic cycle on
+      purpose, so the guide prints the lengths it was given and rounds nothing. In Song mode, chain
+      full copies and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
+    </p>
+  )
+}
+
+/** The sections one part cannot fill with whole copies. Nothing when they all divide. */
+function ChainPlan({ plan }: { plan: readonly SectionChain[] }) {
+  if (plan.length === 0) return null
+  return (
+    <ul className="chain-plan">
+      {plan.map((chain) => (
+        <li key={chain.section}>
+          <strong>{chain.section}</strong>
+          {/* Separators are markup, never a CSS gap: a gap is invisible to a screen reader, to
+              a copy-paste and to a test, which is how `kickclap` reached the page once. */}
+          <span className="token-sep">·</span>
+          <span className="mono">{count(chain.bars, 'bar')}</span>
+          <span className="token-sep">—</span>
+          <span className="quiet">{chainText(chain)}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 /** §8 phase 5. The selected template variant per part, with this device's articulation bound. */
 export function PhaseSteps({
   result,
@@ -231,8 +295,11 @@ export function PhaseSteps({
     return <p className="quiet">No parts assigned.</p>
   }
 
+  const plans = new Map(result.assignments.map((a) => [a.requestId, chainPlan(result, a)]))
+
   return (
     <>
+      {[...plans.values()].some((plan) => plan.length > 0) ? <OutOfPhase /> : null}
       {result.assignments.map((a) => (
         <section className="part" key={a.requestId}>
           <h4>
@@ -245,12 +312,16 @@ export function PhaseSteps({
           {/* Same reason as the hook phase: this one says what to play, not what it sounds
               like, so a reader stopping here would think the sound was missing. */}
           <SoundRef title={a.recipe.title} />
+          {a.hookAuthority === undefined ? null : <HookRef />}
           {mergeBlocks(a).map((block) => (
             <div className="block" key={block.sections.join(',')}>
               <h5>{block.sections.join(', ')}</h5>
               <BlockBody a={a} block={block} device={deviceById.get(a.deviceId)} />
             </div>
           ))}
+          {/* #105. After the programming, hooked or not: it is how what was just described gets
+              chained over the arrangement, so it cannot come before the thing being chained. */}
+          <ChainPlan plan={plans.get(a.requestId) ?? []} />
         </section>
       ))}
     </>
