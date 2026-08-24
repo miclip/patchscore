@@ -5,7 +5,10 @@ import {
   DeviceSchema,
   RecipeSchema,
   VoiceSpecSchema,
+  clockSourceSetupFact,
+  evidenceFor,
   expand,
+  jackFact,
   type Assignable,
   type Verified,
 } from '../lib/core/index'
@@ -182,12 +185,18 @@ describe('Device manifest (§2.3)', () => {
    */
   const JACK_CITE = { kind: 'manual', source: 'fixture manual p.25' } as const
 
+  /** §2.6/#22. The citation lives at `jacks[<id>]` now, and every declared jack needs one. */
+  function jackEvidence(...ids: string[]): Record<string, unknown> {
+    return Object.fromEntries(ids.map((id) => [jackFact(id), JACK_CITE]))
+  }
+
   function patchable(over: Record<string, unknown> = {}) {
     return device({
       jacks: [
-        { id: 'VCO A · SAW', direction: 'out', verified: JACK_CITE },
-        { id: 'VCF · IN', direction: 'in', verified: JACK_CITE },
+        { id: 'VCO A · SAW', direction: 'out' },
+        { id: 'VCF · IN', direction: 'in' },
       ],
+      capabilityEvidence: jackEvidence('VCO A · SAW', 'VCF · IN'),
       recipes: [recipe({ patch: [{ from: 'VCO A · SAW', to: 'VCF · IN' }] })],
       ...over,
     } as never)
@@ -232,9 +241,9 @@ describe('Device manifest (§2.3)', () => {
     // citation and the direction ambiguous rather than merely redundant.
     const dup = patchable({
       jacks: [
-        { id: 'VCO A · SAW', direction: 'out', verified: JACK_CITE },
-        { id: 'VCO A · SAW', direction: 'in', verified: JACK_CITE },
-        { id: 'VCF · IN', direction: 'in', verified: JACK_CITE },
+        { id: 'VCO A · SAW', direction: 'out' },
+        { id: 'VCO A · SAW', direction: 'in' },
+        { id: 'VCF · IN', direction: 'in' },
       ],
     })
     const parsed = DeviceSchema.safeParse(dup)
@@ -242,29 +251,32 @@ describe('Device manifest (§2.3)', () => {
     expect(JSON.stringify(parsed.success ? [] : parsed.error.issues)).toContain('must be unique')
   })
 
-  it('requires a jack declaration to carry a citation, `false` included (§3.3)', () => {
-    // `verified` is not optional here. A jack whose page nobody has found is a real state and
-    // says so; a jack with no claim at all is an omission the type should not permit.
+  it('requires every declared jack to carry evidence, `false` included (§2.6/#22)', () => {
+    // The claim did not become optional when it stopped being a field. A jack whose page nobody
+    // has found is a real state and says so; a jack with no entry at all is an omission, and the
+    // check moved from `JackSpecSchema` to `DeviceSchema` because that is where the map is in
+    // scope. Both halves are asserted here, because only the second one is new.
     expect(
       DeviceSchema.safeParse(
         patchable({
-          jacks: [
-            { id: 'VCO A · SAW', direction: 'out', verified: false },
-            { id: 'VCF · IN', direction: 'in', verified: JACK_CITE },
-          ],
+          capabilityEvidence: {
+            [jackFact('VCO A · SAW')]: false,
+            [jackFact('VCF · IN')]: JACK_CITE,
+          },
         }),
       ).success,
     ).toBe(true)
-    expect(
-      DeviceSchema.safeParse(
-        patchable({
-          jacks: [
-            { id: 'VCO A · SAW', direction: 'out' },
-            { id: 'VCF · IN', direction: 'in', verified: JACK_CITE },
-          ],
-        }),
-      ).success,
-    ).toBe(false)
+
+    const missing = DeviceSchema.safeParse(
+      patchable({ capabilityEvidence: { [jackFact('VCF · IN')]: JACK_CITE } }),
+    )
+    expect(missing.success).toBe(false)
+    expect(JSON.stringify(missing.success ? [] : missing.error.issues)).toContain(
+      'has no capabilityEvidence entry',
+    )
+
+    // And a jack list with no map at all, which is the shape every manifest had before #22.
+    expect(DeviceSchema.safeParse(patchable({ capabilityEvidence: undefined })).success).toBe(false)
   })
 
   it('accepts a fixed-voice device and a pool device', () => {

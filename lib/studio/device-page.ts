@@ -200,6 +200,48 @@ export function provenanceSentence(device: Device, counts: AuditCounts): string 
   return parts.join(' ')
 }
 
+/**
+ * §2.6/#22. **What this box claims about its own capability facts**, as a sentence.
+ *
+ * `clock`, `io`, `voices` and `features` are read off a manual exactly as a range is, and until
+ * #22 there was nowhere to say so — the TR-1000's nine page references lived in comments, which
+ * this page could not read and the audit could not count.
+ *
+ * All three states get words, and none of them borrows another's. **Cited** is the claim.
+ * **Unchecked** is `false`: authored, nothing checked against, work waiting. **Undocumented** is
+ * the finding — somebody went to the manual and it does not state the fact — and it is stated as
+ * an achievement rather than a debt, because that is what it is. Rolling it into "unchecked"
+ * would report finished research as a backlog and quietly invite somebody to do it again.
+ *
+ * A box that has cited nothing says so plainly instead of scoring zero out of nothing. Silence is
+ * not a debt here: invariant 4 is scoped to parameter values, and no manifest was ever asked to
+ * cite `io.usbAudio`.
+ */
+export function capabilitySentence(counts: AuditCounts): string {
+  if (counts.capabilityFacts === 0) {
+    return 'No capability facts on this box carry a citation yet — its clock, audio and voice claims are the manifest\u2019s own.'
+  }
+
+  const parts: string[] = []
+  const cited = counts.manualCapabilities + counts.observedCapabilities
+  parts.push(
+    `${cited} of ${plural(counts.capabilityFacts, 'capability fact')} cited to a document`,
+  )
+  if (counts.observedCapabilities > 0) {
+    parts.push(`${counts.observedCapabilities} of those observed on the unit`)
+  }
+  if (counts.uncheckedCapabilities > 0) {
+    parts.push(`${counts.uncheckedCapabilities} unchecked`)
+  }
+  const lead = `${parts.join(', ')}.`
+  if (counts.undocumentedCapabilities === 0) return lead
+  return (
+    `${lead} ${plural(counts.undocumentedCapabilities, 'fact')} ` +
+    `${counts.undocumentedCapabilities === 1 ? 'was' : 'were'} looked for and the manual does not state ` +
+    `${counts.undocumentedCapabilities === 1 ? 'it' : 'them'}.`
+  )
+}
+
 /** `Roland TR-1000 — Patchscore`. The maker is in it: people search for the box by both. */
 export function deviceTitle(device: Device): string {
   return `${deviceLabel(device)} — Patchscore`

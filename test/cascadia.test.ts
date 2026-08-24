@@ -1,6 +1,8 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import {
   DeviceSchema,
+  evidenceFor,
+  jackFact,
   NEUTRAL_MOOD,
   RecipeSchema,
   expand,
@@ -206,8 +208,11 @@ describe('Cascadia manifest', () => {
     expect(jacks.length).toBeGreaterThan(50)
     for (const j of jacks) {
       expect(j.id, j.id).toContain(' · ')
-      expect(j.verified, j.id).not.toBe(false)
-      expect((j.verified as { source: string }).source, j.id).toMatch(
+      // §2.6/#22. The page moved to `capabilityEvidence` at `jacks[<id>]`, where the audit and
+      // both renderers can reach it. The claim is unchanged and still required.
+      const evidence = evidenceFor(device, jackFact(j.id))
+      expect(evidence, j.id).not.toBe(false)
+      expect((evidence as { source: string }).source, j.id).toMatch(
         /^Intellijel Cascadia Manual v1\.1, p\.\d+$/,
       )
     }

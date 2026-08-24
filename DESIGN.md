@@ -234,6 +234,14 @@ export const device: Device = {
     'fine-adjust':     'Hold SHIFT while turning',
   },
 
+  // §2.6. Who checked the capability facts above, keyed by field path. Optional; silence is the
+  // honest default. Required for every declared jack and every declared clock setup.
+  capabilityEvidence: {
+    'clock.transport':  { kind: 'manual', source: "TR-1000 Owner's Manual (eng02), p.12" },
+    voices:             { kind: 'manual', source: "TR-1000 Owner's Manual (eng02), p.14" },
+    'features.lfo':     { kind: 'unknown', reason: 'the manual prints no target list' },
+  },
+
   manual: { title: 'TR-1000 Owner\'s Manual', edition: 'eng02' },
 
   recipes: [ /* §3 */ ],
@@ -368,6 +376,108 @@ device that motivated it, and the reason the list is otherwise unchanged since t
 7. Empress ZOIA Euroburo (`fx-processor`)
 
 Manuals for all seven are in `manuals/` (gitignored — copyright and size).
+
+---
+
+### 2.6 Capability provenance
+
+`clock`, `io`, `voices` and `features` are read off a manual exactly as a parameter range is, and
+until #22 there was nowhere to record it. The TR-1000's manifest carried **nine Owner's Manual
+page references for those facts in code comments**, where `npm run audit` could not see them and
+neither could a device page. Two of the nine were wrong, and nothing was in a position to notice:
+the clock comment cited p.33 for "sync settings" and p.33 is the backup procedure — p.30 is the
+synchronization chapter and p.31 carries the `Tempo Sync` setting.
+
+A device therefore declares an optional map, keyed by field path:
+
+```ts
+type UncheckedFact      = { kind: 'unknown'; reason: string }
+type CapabilityEvidence = Verified | UncheckedFact          // Cite | false | unknown
+
+// on the Device
+capabilityEvidence?: Record<string, CapabilityEvidence>
+```
+
+```ts
+capabilityEvidence: {
+  'clock.canSendClock':    owner(30),   // "Synchronizing with a MIDI device"
+  'clock.transport':       owner(12),   // the rear-panel connector tables
+  'io.individualOuts':     owner(12),
+  voices:                  owner(14),   // "each have 10 tracks (BD, SD, LT, HT, ...)"
+  'features.perStep':      owner('17-18'),
+  'features.lfo':          { kind: 'unknown', reason: 'p.71 gives DEST 1-3 as assignment slots…' },
+  'jacks[MIDI IN]':        owner(12),
+  'clock.sourceSetup[usb]': cite(54),
+}
+```
+
+**The paths are a closed vocabulary.** The scalar facts are enumerated in `CAPABILITY_FACTS`; the
+two keyed families — `jacks[<id>]` and `clock.sourceSetup[<transport>]` — are checked against the
+collections they index. An unrecognised path fails the build (§9). A citation on `jacks[MIDI 1N]`
+reads exactly like diligence and cites nothing at all, and a free-text key set makes that silent —
+the same class of mistake as a patch entry naming a jack the device does not declare, which §3.3
+has refused since it existed. Keyed by id and transport, never by index: an array position is an
+authoring accident, and a citation that silently re-points at the neighbouring socket is precisely
+what this exists to prevent.
+
+**Silence is the default and is not a debt.** Invariant 4 is scoped to parameter values and #22
+deliberately did not widen it: capability facts are ten or fifteen per box rather than eighty-five,
+and a wrong `individualOuts` produces one obviously bad routing line where a wrong `DECAY` hides
+among eighty-four plausible siblings. So an author cites what they checked, and the audit counts
+the claims that were actually made. A denominator of "every fact every device could cite" would be
+a debt this project never took on and would make fourteen honest manifests look delinquent.
+
+**Two facts are required, and they are the two that were fields.** Every declared jack (#103) and
+every declared clock setup (#104) has an entry, checked in `DeviceSchema` because that is where the
+map is in scope. Both are rendered at the machine — a reader patches the one and dials the other —
+and neither may go uncited. The check moved from the type to the schema; the discipline did not
+change.
+
+#### The third state
+
+`Verified` has two and neither is "somebody looked and the document does not say". `false` is
+*authored, nothing checked against* — nobody opened the book. `unknown` is finished work: it does
+not need doing again, and it is the strongest evidence there is that the box's own documentation is
+silent. Collapsing them loses the distinction in the direction that costs most, because the
+unchecked pile is the one an author works through. `reason` is required, so the state cannot be a
+shrug — "the manual never says what KNOB ASSIGN can target" is a finding; a bare `unknown` is
+giving up in a field that reads like diligence.
+
+The TR-1000's `features.lfo` is the case. The MOD block is documented well enough to author a
+recipe from, and `LfoSpec`'s `{ count, syncable, destinations[] }` still cannot hold it: `DEST 1-3`
+is three assignment slots for one LFO rather than three LFOs, and `TARGET`'s Value column is
+literally `-`. `features.*` paths are accepted whether or not the feature is declared, which is the
+point rather than a hole in the checking — evidence *about an absence* is what invariant 5 asks
+for.
+
+All three states reach a reader and none borrows another's words. In the guide every one is
+marked — `manual`, `unchecked`, `undocumented` — which is §8's mark-the-exception rule applied
+rather than overridden: a parameter goes unmarked when provisional because nine values in ten are,
+while a rig prints a handful of capability facts and every one of them is cited today, so the two
+quiet states *are* the exceptions. On a device page the sentence states them apart, and
+`undocumented` is worded as an achievement rather than a debt, because reporting finished research
+as a backlog invites somebody to do it twice.
+
+#### What was rejected
+
+**One `verified` on `Device`**, meaning "the structural facts were checked against this document"
+(#22's own first suggestion, and the cheapest). One field, no migration, and false in practice the
+moment it is written: the TR-1000's transports come off p.30, its jack list off p.12, its tracks off
+p.14 and its per-step gestures off pp.17-18. A single citation names one of those four and implies
+the other three — the recipe-level `verified` mistake of §3.1 with a wider blast radius.
+
+**Per-field `Verified`** on `clock`, `io`, `voices` and `features`. The most precise shape, and it
+roughly doubles the device schema surface for facts that almost never change. Worse, it makes every
+device answer for every field: `io.usbAudio` on a Eurorack module would need a slot filled in with
+`false` on fourteen manifests to say nothing at all. The map buys the same per-fact precision for
+one optional field, and lets silence stay silent.
+
+**`physical` and `panel` are deliberately not in the map.** Both already carry a required
+`verified` of their own (§10), because both are *drawn* rather than merely stated and neither is
+optional for the rack; moving them here would make a required claim optional.
+`comfortableVoices` is out for the opposite reason: it is a musical judgement about a box (§12.4),
+no page states it, and a slot to cite it in is an invitation to cite p.14 — which says ten, where
+the field says eight.
 
 ---
 
@@ -799,8 +909,7 @@ jacks?: {
   id: string                   // section-qualified: 'VCO A · FM 1'
   direction: 'in' | 'out'
   clock?: ClockTransport[]     // §10: this is the socket clock uses, over these transports
-  verified: Verified           // the page describing this jack. Once, however many cables use it.
-  note?: string
+  note?: string                // the page describing this jack lives at `jacks[<id>]` — §2.6
 }[]
 
 // on the Recipe
@@ -1853,8 +1962,9 @@ whole guide.
 
 So a manifest may declare `clock.sourceSetup`: per transport, the menu `path` and the `value` to
 select there, **in the box's own words** (`Config > MIDI > Clock Out`, not "the clock output
-setting" — §8 is read at the machine and that string is on a screen), with a required `verified`
-and an optional `note`. Per transport because the setting is: the same menu takes `USB` for a USB
+setting" — §8 is read at the machine and that string is on a screen), with an optional `note` and
+a **required entry in `capabilityEvidence` at `clock.sourceSetup[<transport>]`** (§2.6; it was a
+`verified` field until #22, and the requirement moved with it). Per transport because the setting is: the same menu takes `USB` for a USB
 rig, and printing the wrong option is worse than printing neither. Both renderers share the
 *lookup* — which entry matches has one right answer — and neither shares the sentence, which is
 §8's standing rule about ink.
@@ -2078,7 +2188,9 @@ Three guards:
   **build**, not a request
 - a `verified` audit script reporting provisional points, unverified ranges and mood-inert
   params separately (§3.2), so none of the three quietly accumulates, and splitting the cited
-  remainder into manual and observed so neither is read as the other
+  remainder into manual and observed so neither is read as the other — and, since #22, the
+  capability facts a manifest has spoken about (§2.6), split four ways rather than three because
+  `undocumented` is finished work and `unchecked` is not
 
 Authoring stays one folder; deployment stays static.
 

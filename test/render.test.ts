@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   GUIDE_PHASES,
+  clockSourceSetupFact,
+  evidenceFor,
   NEUTRAL_MOOD,
   SUBORDINATE,
   dominantRangeCite,
@@ -1653,11 +1655,13 @@ describe('the clock source is told how to emit (§7.4/#104)', () => {
     const usb = setups.find((s) => s.transport === 'usb')
     expect(usb?.path).toBe('Config > MIDI > Clock Out')
     expect(usb?.value).toBe('USB')
+    // §2.6/#22. The page for a menu path lives at `clock.sourceSetup[<transport>]` now, and
+    // `DeviceSchema` refuses a declared setup that has no entry.
     for (const setup of setups) {
-      expect(setup.verified, setup.transport).toEqual({
-        kind: 'manual',
-        source: 'Polyend Tracker Mini Manual 2.2.1b, p.54',
-      })
+      expect(
+        evidenceFor(device, clockSourceSetupFact(setup.transport)),
+        setup.transport,
+      ).toEqual({ kind: 'manual', source: 'Polyend Tracker Mini Manual 2.2.1b, p.54' })
     }
   })
 
