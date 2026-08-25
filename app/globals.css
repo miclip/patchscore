@@ -1020,7 +1020,6 @@ button:active {
 .rack-figure {
   margin: 0 0 14px;
   min-width: 0;
-  container-type: inline-size;
 }
 
 /*
@@ -1038,6 +1037,12 @@ button:active {
  *
  * None of this touches the full-size layer (a different container) or `<title>`/`<desc>`, so
  * nothing is lost to a screen reader and everything is one button away.
+ *
+ * The container is `.rack-frame` rather than `.rack-figure` because the frame is the element
+ * whose inline size *is* the drawing's width — the figure also holds the caption, and since #113
+ * capped the frame the two are no longer the same number. Measuring the figure would ask the
+ * ladder about a width the SVG is not being drawn at, and hand a one-box rig every label at two
+ * pixels: the exact smear the tiers exist to prevent.
  */
 @container (max-width: 1300px) {
   .rack-frame .rack-feature-label,
@@ -1072,6 +1077,31 @@ button:active {
   background:
     linear-gradient(180deg, var(--panel-2) 0 6px, var(--panel-0) 6px calc(100% - 6px), var(--panel-2) calc(100% - 6px) 100%);
   min-width: 0;
+  container-type: inline-size;
+}
+
+/*
+ * The ceiling on the fit (#113). `--rack-mm` is the layout width the model computed, so
+ * `1.5px` per millimetre is a cap on *scale*, and `max-width` can only ever take width away:
+ * a rack that fills its column is untouched, and one too small to fill it stops growing instead
+ * of magnifying into the space. See `OVERVIEW_MAX_PX_PER_MM` in `components/rack/model.ts` for
+ * where 1.5 comes from — the two have to move together.
+ *
+ * This squashes nothing and changes no proportion. Every panel is still drawn at its cited span
+ * in a single millimetre viewBox, which is all #21 asked for; panels still wrap onto rows rather
+ * than shrink, which is all #63 asked for. What changes is only how much of the page a rig with
+ * two boxes in it is allowed to claim.
+ *
+ * `content-box` against the file's border-box default, and only here: the frame's 10px of padding
+ * and its hairline are chrome around the drawing, not part of it. Under border-box the cap would
+ * be 22px of frame plus whatever was left for the SVG, so the scale would come out at 1.33 px/mm
+ * for a one-box rig and 1.43 for a two-box one — a ceiling that still drifts with the box count,
+ * which is the whole thing being fixed. Content-box makes the cap the drawing's width exactly,
+ * and it makes the container above measure the drawing rather than the drawing plus its frame.
+ */
+.rack-overview {
+  box-sizing: content-box;
+  max-width: calc(var(--rack-mm) * 1.5px);
 }
 
 .rack-svg {

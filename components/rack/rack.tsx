@@ -116,7 +116,15 @@ export function Rack({ result }: { result: ResolveResult | undefined }) {
       </header>
 
       <figure className="rack-figure">
-        <div className="rack-frame" style={{ ['--rack-mm' as string]: model.totalMm }}>
+        {/*
+          `rack-overview` is the scale ceiling (#113), and it is a second class rather than a
+          rule on `.rack-frame` because `.rack-frame` is shared with the device pages' single
+          panel, which sets no `--rack-mm` and has a ceiling of its own.
+        */}
+        <div
+          className="rack-frame rack-overview"
+          style={{ ['--rack-mm' as string]: model.totalMm }}
+        >
           <RackDiagram model={model} idPrefix="rack-inline" />
         </div>
         <figcaption className="rack-caption">

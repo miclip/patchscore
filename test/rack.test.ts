@@ -7,12 +7,15 @@ import type { Device, ResolvedPatchEntry, ResolveResult } from '../lib/core/inde
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 import { Rack } from '../components/rack/rack'
+import { PanelFigure } from '../components/rack/panel-figure'
 import {
   AUDIO_OMISSION,
   NARROW_PER_ROW,
+  OVERVIEW_MAX_PX_PER_MM,
   PANEL_GAP_MM,
   PANEL_HEIGHT_MM,
   RAIL_MM,
+  ROW_CAPS,
   MAX_CELL_ASPECT,
   cablePath,
   perRowForWidth,
@@ -20,6 +23,7 @@ import {
   sagFor,
   samplePath,
 } from '../components/rack/model'
+import type { RackModel } from '../components/rack/model'
 import { box, request, withRoles } from './rigs'
 import { makeRecipe } from './rigs'
 
@@ -1263,5 +1267,216 @@ describe('rack rows (#63)', () => {
     // arithmetic: there is no second scale for a renderer to get wrong.
     expect((html.match(/<svg/g) ?? []).length).toBe(1)
     expect(html).toContain(`The rack is on ${model.rows.length} rows of at most ${NARROW_PER_ROW} boxes`)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The scale ceiling (#113)
+// ---------------------------------------------------------------------------
+
+/**
+ * The width, in CSS pixels, the overview is actually drawn at when it is offered `availablePx`.
+ *
+ * This mirrors two lines of `globals.css` and has to keep mirroring them: `.rack-overview` is
+ * `content-box`, so its `max-width` is the SVG's own width with the frame's chrome outside it,
+ * and `.rack-svg` is `width: 100%` of that. `max-width` can only take width away, hence the min.
+ */
+function drawnPx(model: RackModel, availablePx: number): number {
+  return Math.min(availablePx, model.totalMm * OVERVIEW_MAX_PX_PER_MM)
+}
+
+/** The scale the drawing lands at: CSS pixels per real millimetre. */
+function pxPerMm(model: RackModel, availablePx: number): number {
+  return drawnPx(model, availablePx) / model.totalMm
+}
+
+/**
+ * The figure width the stylesheet's own container-query ladder is reasoned against — "at a
+ * 1100 px figure the whole 953 mm rack renders at about 1.2 px/mm". Using that number rather
+ * than a fresh one keeps this test and that comment talking about the same laptop.
+ */
+const LAPTOP_PX = 1100
+
+/** #21's primary reading context. An upper bound: the figure can never exceed the viewport. */
+const PHONE_PX = 390
+
+/** A rig of real devices, so the spans are cited ones rather than fixture ones. */
+function realRig(devices: readonly Device[]): ResolveResult {
+  return resolve({ devices: [...devices], template, mood: NEUTRAL_MOOD, seed: 1 })
+}
+
+/**
+ * The narrowest box in the registry — found rather than named, so it follows the library.
+ * Today it is the one the issue's repro link uses, and it is the worst case by construction:
+ * the smallest `totalMm` a one-box rig can have is the largest magnification a fit-to-width
+ * produces.
+ */
+const NARROWEST = DEVICES.reduce((a, b) =>
+  a.physical.panelSpanMm <= b.physical.panelSpanMm ? a : b,
+)
+
+describe('the rack scale ceiling (#113)', () => {
+  it('never draws the overview above the ceiling, at any rig size or viewport', () => {
+    for (const perRow of [3, 4, 5]) {
+      for (const n of [1, 2, 3, 4, 7, 11]) {
+        const model = rackModel(wideRig(n), { perRow })
+        for (const room of [PHONE_PX, 768, LAPTOP_PX, 1920, 4096]) {
+          expect(pxPerMm(model, room), `${n} boxes at ${room}px`).toBeLessThanOrEqual(
+            OVERVIEW_MAX_PX_PER_MM,
+          )
+        }
+      }
+    }
+  })
+
+  it('is not vacuous: the same one-box rig was drawn many times over the ceiling', () => {
+    // The repro in the issue — a lone Tracker Mini. Fitted to width and nothing else, a 130 mm
+    // box across a laptop column is drawn at over five times life size, and its figure is twice
+    // a screen tall. Both numbers are what the ceiling exists to remove.
+    const solo = rackModel(realRig([NARROWEST]), { perRow: 5 })
+    expect(solo.panels).toHaveLength(1)
+    expect(solo.totalMm).toBe(NARROWEST.physical.panelSpanMm)
+    const uncapped = LAPTOP_PX / solo.totalMm
+    expect(uncapped).toBeGreaterThan(5)
+    expect(uncapped).toBeGreaterThan(OVERVIEW_MAX_PX_PER_MM * 3)
+    // Capped, the whole figure — panel, rail and cable corridor — is well inside a laptop screen.
+    const capped = pxPerMm(solo, LAPTOP_PX)
+    expect(capped).toBe(OVERVIEW_MAX_PX_PER_MM)
+    expect(solo.heightMm * capped).toBeLessThan(500)
+    expect(solo.heightMm * uncapped).toBeGreaterThan(1000)
+  })
+
+  it('draws a box the same size however few boxes stand beside it', () => {
+    // The property the issue asks for in one line: "a two-box rig and a one-box rig should draw
+    // each panel at about the same size, with the one-box rig simply occupying less of the page".
+    // `wideRig`'s first box is 120 mm at every n, so it is the same panel each time.
+    const sizes = [1, 2, 3].map((n) => {
+      const model = rackModel(wideRig(n), { perRow: 5 })
+      const first = model.panels[0]
+      expect(first?.spanMm).toBe(120)
+      return {
+        panelPx: (first?.spanMm ?? 0) * pxPerMm(model, LAPTOP_PX),
+        figurePx: drawnPx(model, LAPTOP_PX),
+      }
+    })
+    // Same box, same size, in all three rigs — to the pixel, because all three are capped.
+    expect(new Set(sizes.map((s) => s.panelPx)).size).toBe(1)
+    expect(sizes[0]?.panelPx).toBe(120 * OVERVIEW_MAX_PX_PER_MM)
+    // And the page each claims grows with the rig rather than shrinking, which is the inversion.
+    expect(sizes[0]!.figurePx).toBeLessThan(sizes[1]!.figurePx)
+    expect(sizes[1]!.figurePx).toBeLessThan(sizes[2]!.figurePx)
+  })
+
+  it('keeps every proportion, because one scale multiplies every span', () => {
+    // #21's rule is that a wide box must look wide beside a narrow one. A ceiling is a change of
+    // scale, and a scale is shared: the ratio between any two drawn panels is the ratio between
+    // their cited spans, capped or not.
+    const cited = new Map(DEVICES.map((d) => [d.id, d.physical.panelSpanMm]))
+    for (const n of [2, 3, 5, DEVICES.length]) {
+      const model = rackModel(realRig(DEVICES.slice(0, n)), { perRow: 5 })
+      const scale = pxPerMm(model, LAPTOP_PX)
+      const widest = model.panels.reduce((a, b) => (a.spanMm >= b.spanMm ? a : b))
+      const narrowest = model.panels.reduce((a, b) => (a.spanMm <= b.spanMm ? a : b))
+      expect((widest.spanMm * scale) / (narrowest.spanMm * scale)).toBeCloseTo(
+        (cited.get(widest.deviceId) ?? 0) / (cited.get(narrowest.deviceId) ?? 1),
+        10,
+      )
+    }
+  })
+
+  it('never binds on a full rig, so #63 keeps the rack it wrapped', () => {
+    // The ceiling is meant to be invisible at the crowded end. At every row cap the full registry
+    // wants far more width than any screen has, so the cap takes nothing off it and the wrapped
+    // layout is exactly what it was.
+    for (const tier of ROW_CAPS) {
+      const model = rackModel(real, { perRow: tier.perRow })
+      expect(model.totalMm * OVERVIEW_MAX_PX_PER_MM, `perRow ${tier.perRow}`).toBeGreaterThan(1920)
+      expect(pxPerMm(model, LAPTOP_PX)).toBeLessThan(OVERVIEW_MAX_PX_PER_MM)
+      expect(drawnPx(model, LAPTOP_PX)).toBe(LAPTOP_PX)
+    }
+    // And the geometry the model produces is untouched by any of this: the ceiling is a CSS
+    // width, so `rackModel` neither reads it nor mentions it.
+    const source = readFileSync(new URL('../components/rack/model.ts', import.meta.url), 'utf8')
+    const body = source.slice(source.indexOf('export function rackModel'))
+    expect(body).not.toContain('OVERVIEW_MAX_PX_PER_MM')
+  })
+
+  it('is one ceiling at every width, phone included', () => {
+    // Not a desktop-only rule. A small rig is the same physical size on a phone as on a laptop,
+    // which is what "roughly consistent physical scale" has to mean if it means anything — and
+    // the figure still never exceeds the viewport, so the body cannot scroll sideways (#21).
+    const solo = rackModel(realRig([NARROWEST]), { perRow: NARROW_PER_ROW })
+    expect(drawnPx(solo, PHONE_PX)).toBe(drawnPx(solo, LAPTOP_PX))
+    expect(drawnPx(solo, PHONE_PX)).toBeLessThan(PHONE_PX)
+    // The other end is untouched: a full rig still wants more width than a phone has, so the
+    // viewport decides and #63's wrapping is what makes it fit. The ceiling takes nothing off it.
+    const full = rackModel(real, { perRow: NARROW_PER_ROW })
+    expect(full.rows.length).toBeGreaterThan(1)
+    expect(drawnPx(full, PHONE_PX)).toBe(PHONE_PX)
+  })
+
+  it('puts the ceiling on the overview and nowhere else', () => {
+    const html = markup(realRig([NARROWEST]))
+    expect(html).toContain('rack-frame rack-overview')
+    expect(html).toContain(`--rack-mm:${NARROWEST.physical.panelSpanMm}`)
+    // The device pages draw one panel through the same `.rack-frame`, with no `--rack-mm` and a
+    // ceiling of its own, so it must not pick this rule up.
+    const first = DEVICES[0] as Device
+    const figure = renderToStaticMarkup(
+      createElement(PanelFigure, { device: first, idPrefix: 'ceiling' }),
+    )
+    expect(figure).toContain('rack-frame')
+    expect(figure).not.toContain('rack-overview')
+    expect(figure).not.toContain('--rack-mm')
+  })
+})
+
+describe('the rack stylesheet ceiling (#113)', () => {
+  const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
+
+  function rule(selector: string): string {
+    const start = css.indexOf(`\n${selector} {`)
+    expect(start, `${selector} is missing entirely`).toBeGreaterThan(-1)
+    return css.slice(start, css.indexOf('}', start))
+  }
+
+  it('caps the overview at the millimetre scale the model exports', () => {
+    // Two files hold one number, so the test is that they hold the same one. Without this the
+    // stylesheet could drift off `OVERVIEW_MAX_PX_PER_MM` and every assertion above would still
+    // pass while the page magnified again.
+    expect(rule('.rack-overview')).toContain(
+      `max-width: calc(var(--rack-mm) * ${OVERVIEW_MAX_PX_PER_MM}px)`,
+    )
+    // Content-box, or the cap is the frame's chrome plus whatever is left and the scale drifts
+    // with the box count again — the thing being fixed.
+    expect(rule('.rack-overview')).toContain('box-sizing: content-box')
+  })
+
+  it('leaves the fit itself alone: nothing is squashed and nothing has a floor', () => {
+    // #21: the SVG still fills whatever width it is given, in a millimetre viewBox. The ceiling
+    // is a `max-width` and there is no `min-width` anywhere near it — a minimum panel width is
+    // exactly what #63 rejected.
+    expect(rule('.rack-svg')).toContain('width: 100%')
+    expect(rule('.rack-svg')).toContain('height: auto')
+    expect(rule('.rack-overview')).not.toContain('min-width')
+    expect(rule('.rack-frame')).not.toContain('max-width')
+  })
+
+  it('measures the drawing, not the drawing plus its frame', () => {
+    // The container-query ladder drops text by the scale it would be rendered at, so it has to
+    // be measuring the element the cap applies to. `.rack-figure` also holds the caption and is
+    // no longer that element.
+    expect(rule('.rack-frame')).toContain('container-type: inline-size')
+    expect(rule('.rack-figure')).not.toContain('container-type')
+  })
+
+  it('stays below the full-size layer, which is the one that claims to be readable', () => {
+    // The modal's `min-width` is stated there as the floor for a legible silkscreen. The overview
+    // is the other layer — a shape, with the legend carrying the words — so its ceiling has to sit
+    // under that floor. A ceiling raised past it would be the overview claiming to be both.
+    const modal = rule('.rack-modal-body .rack-svg')
+    const floor = Number(/min-width: calc\(var\(--rack-mm\) \* ([\d.]+)px\)/.exec(modal)?.[1])
+    expect(Number.isFinite(floor)).toBe(true)
+    expect(OVERVIEW_MAX_PX_PER_MM).toBeLessThan(floor)
   })
 })
