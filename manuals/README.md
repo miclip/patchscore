@@ -61,6 +61,13 @@ The community docs are a **moving target**, unlike a PDF — `manuals/deluge-com
 | `minilogue_xd_OM_E9.pdf` | Korg minilogue xd | 68pp, and it covers **both** the keyboard and the `xd module` — one document, two devices, so every dimension line names which. Korg publishes **no separate Parameter Guide**, which is the TR-1000 trap and is *not* one here: the Owner's Manual carries 109 bracketed ranges and every front-panel sound knob has one, `[0...1023]` for the continuous controls. Specifications is p.66, not p.65: 4-voice, 500 x 300 x 85 mm for the keyboard and 500 x 179 x 85 mm for the module. The front-panel parameters run pp.17-26, with VOICE MODE on pp.17-18. |
 | `Subsequent_37_Manual.pdf` | Moog Subsequent 37 | **The parameter source.** 63pp, 168k chars, from [Moog's CDN](https://cdn.inmusicbrands.com/Moog/Subsequent37/Subsequent_37_Manual_0.pdf). Printed folio equals PDF page index throughout, so a citation needs no offset. Two-note paraphonic, so it fails a triad — see #20. |
 | `Minitaur_Manual.pdf` | Moog Minitaur | 19pp, from the same [Moog CDN path](https://cdn.inmusicbrands.com/Moog/Minitaur/Minitaur_Manual.pdf) as the Subsequent 37. **Specified in physical units rather than encoder counts** — cutoff `20Hz to 20KHz`, envelope stages `1 msec to 30 sec`, OSC 2 `± 12 Semitones` — which is more useful than a 0-1023 scale and rarer. Dimensions given in mm directly: 222.3 x 130.2 x 79.4. One trap: `RESONANCE: 0 to Self-Oscillation` is a named endpoint and not a number, the same shape as the CRAVE's `lo/mix 1 to hi/mix 2`. |
+| `TR-6S_Manual_eng01_W.pdf` | Roland TR-6S | Owner's Manual, 41pp / 96k chars. [direct](https://static.roland.com/assets/media/pdf/TR-6S_Manual_eng01_W.pdf). **Note the `_Manual_` in the filename** — the TR-1000 and TR-8S owner's manuals are `TR-1000_eng02_W.pdf`, with no such segment, and guessing that shape here returns 403. The Parameter Manual has not been located; Roland's split-manual trap (#18) applies until it is. |
+| `TR-6S_Manual_eng02_W.pdf` | Roland TR-6S | Edition 02 of the same, adding the system-update section. |
+| `Mother_32_Users_Manual.pdf` | Moog Mother-32 | 73pp / 108k chars. [direct](https://cdn.inmusicbrands.com/Moog/Mother32/Mother_32_Users_Manual.pdf) |
+| `DFAM_Manual.pdf` | Moog DFAM | 44pp / 58k chars. [direct](https://cdn.inmusicbrands.com/Moog/DFAM/DFAM_Manual.pdf) |
+| `Matriarch_Manual_012023.pdf` | Moog Matriarch | 92pp / 143k chars. [direct](https://cdn.inmusicbrands.com/Moog/Matriarch/Matriarch_Manual_012023.pdf) |
+| `Grandmother_Manual_Version_2.pdf` | Moog Grandmother | 56pp / 77k chars. [direct](https://cdn.inmusicbrands.com/Moog/Grandmother/Grandmother_Manual_Version_2.pdf) |
+| `Subharmonicon_Manual.pdf` | Moog Subharmonicon | 58pp / 81k chars. [direct](https://cdn.inmusicbrands.com/Moog/Subharmonicon/Subharmonicon_Manual%20AMZ.pdf) — the source filename contains a URL-encoded space and a retailer suffix; saved here without either. |
 | `Sub_37_Quickstart_Print.pdf` | Moog Subsequent 37 | **The panel drawing the manual does not have**, and the source of `panel.ts`'s geometry. A two-page poster from [Moog's CDN](https://cdn.inmusicbrands.com/Moog/Subsequent37/Sub_37_Quickstart_Print.pdf); its lower half is a flat, to-scale legend of the whole control surface. Also carries Moog's own acid recipe: *"Turn on Legato Glide, set Glide Type to EXP, and set the GLIDE TIME knob to 2."* The filename says `Sub_37` and the document says Subsequent 37 in its body, its panel artwork and its "Download the full Subsequent 37 Manual" footer — Moog reused the earlier filename. Cite it as **Subsequent 37 Quickstart Guide**. |
 
 ### The Subsequent 37's "Patch Guide" is not a document
@@ -100,6 +107,15 @@ Roland ships an Owner's Manual that names the controls and a separate Reference 
 
 Filename casing is inconsistent between products: `TR-1000_reference_...` is lowercase, `MC-101_Reference_...` and `TR-8S_Reference_...` are capitalised. Roland returns **403, not 404**, for a filename that does not exist, so a wrong guess looks like a permissions problem rather than a typo.
 
+
+- **Neither Moog nor Roland has a filename convention, so search rather than guess.** All five Moog
+  semi-modulars live under `cdn.inmusicbrands.com/Moog/<Product>/` and every one names its file
+  differently: a plain name, a date (`Matriarch_Manual_012023`), a version
+  (`Grandmother_Manual_Version_2`), and a URL-encoded space with a retailer suffix
+  (`Subharmonicon_Manual%20AMZ.pdf`). Roland's TR-6S breaks the shape its own TR-1000 and TR-8S
+  share. Twelve guesses at these patterns produced one file; a web search produced the rest at
+  once. Guessing is the slow way.
+
 ## Known gaps
 
 - ~~**MC-101 Reference Manual**~~ — resolved 2026-08-24. It is here, and the direct URL above is
@@ -110,6 +126,8 @@ Filename casing is inconsistent between products: `TR-1000_reference_...` is low
   has to be fetched by hand from a browser. This is not a nicety: #80 had to leave the Cascadia's
   `clock.preferredSource` undecided until its manual was supplied by hand, because a decision with
   no page behind it is exactly what that field exists to prevent.
+- **Moog Labyrinth and Spectravox** — no CDN path found. Present on manual-scraper sites only,
+  which are not a citable source. Everything else in that family is here.
 - ~~**Deluge guidebook**~~ — resolved. It was an excerpt; the full 284pp guidebook and the
   community firmware docs are both here now.
 
