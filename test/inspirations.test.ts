@@ -24,8 +24,23 @@ import {
   type Template,
 } from '../lib/core/index'
 import { DEVICES, DEVICE_FOLDERS } from '../lib/devices/registry.generated'
-import { INSPIRATIONS, dancehall, inspirationById, reggae, shuffle } from '../lib/inspirations/index'
-import { TEMPLATES, ambientDub, industrialTechno, majorKeyElectro } from '../lib/templates/index'
+import {
+  INSPIRATIONS,
+  dancehall,
+  echo,
+  inspirationById,
+  ladder,
+  reggae,
+  shuffle,
+} from '../lib/inspirations/index'
+import {
+  TEMPLATES,
+  ambientDub,
+  droneStudy,
+  industrialTechno,
+  majorKeyElectro,
+  relay,
+} from '../lib/templates/index'
 
 /**
  * §5. Inspirations, the patch language, and the composition function.
@@ -38,6 +53,16 @@ import { TEMPLATES, ambientDub, industrialTechno, majorKeyElectro } from '../lib
  */
 
 const INSPIRATION_DIR = join(import.meta.dirname, '..', 'lib', 'inspirations')
+
+/** §7.2: compare by code unit, never by locale — `localeCompare` would reorder these on CI. */
+function byCodeUnit(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
+/** Both ids of a pair, for a failure message that says which pair failed. */
+function name2(pair: Inspiration[]): string {
+  return pair.map((i) => i.id).join(' + ')
+}
 const MOOD = moodState()
 
 function applied(template: Template, inspirations: Inspiration[]) {
@@ -47,6 +72,32 @@ function applied(template: Template, inspirations: Inspiration[]) {
   }
   return result
 }
+
+/**
+ * Every selection a person can actually make: nothing, any one influence, and every pair that
+ * does not refuse each other.
+ *
+ * Derived rather than listed, and the derivation is itself pinned below. A hand-written list of
+ * pairs was fine at three influences and is a staleness trap at five — the sweeps that use it
+ * would keep passing while quietly covering fewer and fewer of the combinations a user can reach.
+ * Conflict is a property of the *pair* (it is computed from what each one claims, before any
+ * template is consulted), so probing it against one template answers for all of them.
+ */
+function legalSelections(): Inspiration[][] {
+  const out: Inspiration[][] = [[]]
+  for (const [i, a] of INSPIRATIONS.entries()) {
+    out.push([a])
+    for (const b of INSPIRATIONS.slice(i + 1)) {
+      if (applyInspirations(industrialTechno, [a, b]).outcome === 'applied') out.push([a, b])
+    }
+  }
+  return out
+}
+
+const LEGAL_SELECTIONS = legalSelections()
+
+/** The pairs only, for the sweeps that have nothing to say about a single influence. */
+const LEGAL_PAIRS = LEGAL_SELECTIONS.filter((s) => s.length === 2)
 
 function refused(template: Template, inspirations: Inspiration[]) {
   const result = applyInspirations(template, inspirations)
@@ -73,14 +124,73 @@ function claimedSlots(inspiration: Inspiration): Set<string> {
 // ---------------------------------------------------------------------------
 
 describe('the inspiration registry (§5)', () => {
-  it('holds three, in id order, each parsing and reachable by id', () => {
-    expect(INSPIRATIONS.map((i) => i.id)).toEqual(['dancehall', 'reggae', 'shuffle'])
+  it('holds five, in id order, each parsing and reachable by id', () => {
+    expect(INSPIRATIONS.map((i) => i.id)).toEqual([
+      'dancehall',
+      'echo',
+      'ladder',
+      'reggae',
+      'shuffle',
+    ])
     for (const inspiration of INSPIRATIONS) {
       const parsed = InspirationSchema.safeParse(inspiration)
       expect(parsed.error?.issues ?? [], `${inspiration.id} failed InspirationSchema`).toEqual([])
     }
     expect(inspirationById('reggae')).toBe(reggae)
     expect(inspirationById('no-such-influence')).toBeUndefined()
+  })
+
+  it('knows exactly which pairs compose and which refuse, and it is not all of one', () => {
+    // The derivation `LEGAL_SELECTIONS` rests on, pinned so that adding a sixth influence has
+    // to be looked at rather than merely absorbed. Three of the five claim `bass-mid` — it is
+    // where an influence makes its strongest melodic claim — so those three refuse each other,
+    // and Dancehall and Reggae still refuse over the kick. Everything else composes.
+    const name = (pair: Inspiration[]) => pair.map((i) => i.id).join(' + ')
+    expect(LEGAL_PAIRS.map(name)).toEqual([
+      'dancehall + echo',
+      'dancehall + ladder',
+      'dancehall + shuffle',
+      'echo + shuffle',
+      'ladder + shuffle',
+      'reggae + shuffle',
+    ])
+    const refusing: string[] = []
+    for (const [i, a] of INSPIRATIONS.entries()) {
+      for (const b of INSPIRATIONS.slice(i + 1)) {
+        if (applyInspirations(industrialTechno, [a, b]).outcome === 'refused') {
+          refusing.push(name([a, b]))
+        }
+      }
+    }
+    expect(refusing).toEqual([
+      'dancehall + reggae',
+      'echo + ladder',
+      'echo + reggae',
+      'ladder + reggae',
+    ])
+  })
+
+  it('refuses the bass three by name, and picks no winner among them', () => {
+    for (const pair of [
+      [echo, ladder],
+      [echo, reggae],
+      [ladder, reggae],
+    ]) {
+      const result = refused(industrialTechno, pair)
+      expect(result.reason, name2(pair)).toBe('conflict')
+      expect(
+        result.conflicts.map((c) => [c.role, c.band]),
+        name2(pair),
+      ).toEqual([
+        ['bass-mid', 0],
+        ['bass-mid', 1],
+        ['bass-mid', 2],
+        ['bass-mid', 3],
+      ])
+      expect(result.detail, name2(pair)).toContain('bass-mid at band 0')
+      // Order changes nothing: a refusal, never a silent preference for whoever sorted first.
+      expect(refused(industrialTechno, [...pair].reverse())).toEqual(result)
+    }
   })
 
   it('ships a pair that composes as well as a pair that cannot', () => {
@@ -129,6 +239,79 @@ describe('the inspiration registry (§5)', () => {
             expect(hit.velocity as number, pattern.id).toBeGreaterThanOrEqual(100)
         }
       }
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// What the library actually reaches — direction by direction
+// ---------------------------------------------------------------------------
+
+/** Every `(role, band)` an inspiration replaces that this template authored something at. */
+function landedReplacements(template: Template, inspiration: Inspiration): string[] {
+  const result = applied(template, [inspiration])
+  return (inspiration.patch.replacePatterns ?? [])
+    .filter((p) => result.template.patterns.some((q) => q.id === p.id))
+    .map((p) => slotKey(p.forRole, p.band))
+    .sort(byCodeUnit)
+}
+
+/** Every band of one role, as `landedReplacements` spells it. */
+function everyBandOf(role: Role): string[] {
+  return [...DENSITY_BANDS].map((band) => slotKey(role, band)).sort(byCodeUnit)
+}
+
+describe('every direction has an influence that lands on its own material (§5.1)', () => {
+  /**
+   * The gap this half of the library was authored to close, kept as a test rather than as a
+   * memory of one measurement.
+   *
+   * An influence that only *adds* a part is not nothing, but it is not an influence on the
+   * direction either — it is a sidestick bolted to the side of something that was already
+   * finished. Before Echo and Ladder, Drone Study was in exactly that position: its one role is
+   * `texture`, no influence in the library claimed `texture`, and all three could do to it was
+   * hang an unrequested percussion part off a piece that asks for a single sustained note.
+   */
+  it('replaces something the direction already programs, for every direction', () => {
+    for (const template of TEMPLATES) {
+      const reaching = INSPIRATIONS.filter((i) => landedReplacements(template, i).length > 0)
+      expect(reaching.map((i) => i.id), template.id).not.toEqual([])
+    }
+  })
+
+  it('gives the one-part sustained direction an influence on the part it has', () => {
+    // Drone Study asks for `texture` and nothing else, so an influence that misses `texture`
+    // misses the direction entirely. Echo takes all four bands of it.
+    expect(landedReplacements(droneStudy, echo)).toEqual(everyBandOf('texture'))
+    const others = INSPIRATIONS.filter((i) => i.id !== 'echo')
+    for (const other of others) {
+      expect(landedReplacements(droneStudy, other), other.id).toEqual([])
+    }
+  })
+
+  it('gives the two-part melodic direction an influence on both of its parts', () => {
+    // Relay's `lead` was the one patterned role in the registry that no influence claimed, and
+    // its `bass-mid` had a single option. Ladder takes both, whole.
+    expect(landedReplacements(relay, ladder)).toEqual([
+      ...everyBandOf('bass-mid'),
+      ...everyBandOf('lead'),
+    ])
+    // ...and nothing about it went unhonoured on the way: every claim Ladder makes, Relay has.
+    expect(applied(relay, [ladder]).diagnostics).toEqual([])
+    // Echo reaches the same direction by the other half of its claim, so `bass-mid` now has two.
+    expect(landedReplacements(relay, echo)).toEqual(everyBandOf('bass-mid'))
+    expect(landedReplacements(relay, reggae)).toEqual(everyBandOf('bass-mid'))
+  })
+
+  it('leaves the tempo and the part list alone, because a technique is neither', () => {
+    // Reggae and Dancehall carry a BPM shift because the tempo is half of what those words
+    // mean. Echo and Ladder are ways of playing, so a shift here would be an extra opinion
+    // arriving unannounced — and neither adds a part, which is the other half of the same claim.
+    for (const technique of [echo, ladder]) {
+      expect(technique.patch.bpm, technique.id).toBeUndefined()
+      expect(technique.patch.addRoles, technique.id).toBeUndefined()
+      expect(technique.patch.addPatterns, technique.id).toBeUndefined()
+      expect(applied(relay, [technique]).template.bpm, technique.id).toEqual(relay.bpm)
     }
   })
 })
@@ -601,7 +784,7 @@ describe('composition is pure (§7, invariant 6)', () => {
 
   it('gives the same answer twice, for every template and every legal pair', () => {
     for (const template of TEMPLATES) {
-      for (const selection of [[reggae], [dancehall], [shuffle], [reggae, shuffle], [dancehall, shuffle]]) {
+      for (const selection of LEGAL_SELECTIONS) {
         const a = applyInspirations(template, selection)
         const b = applyInspirations(template, selection)
         expect(b).toEqual(a)
@@ -616,14 +799,7 @@ describe('composition is pure (§7, invariant 6)', () => {
 
 describe('every effective template is schema-valid (§4, §7)', () => {
   it('parses, for every template against every legal selection', () => {
-    const selections: Inspiration[][] = [
-      [],
-      [dancehall],
-      [reggae],
-      [shuffle],
-      [dancehall, shuffle],
-      [reggae, shuffle],
-    ]
+    const selections: Inspiration[][] = LEGAL_SELECTIONS
     for (const template of TEMPLATES) {
       for (const selection of selections) {
         const result = applied(template, selection)
@@ -650,9 +826,15 @@ describe('every effective template is schema-valid (§4, §7)', () => {
     }
   })
 
+  /**
+   * A full resolve against all fourteen boxes, once per (direction, selection) pair — 84 of them
+   * at five influences, and it grows with both registries. Past the 5s default, so the timeout is
+   * stated here rather than raised globally: this is the one sweep in the suite that is slow for
+   * a good reason, and every other test should still fail loudly if it hangs.
+   */
   it('still resolves on the full library, for every template and every legal pair', () => {
     for (const template of TEMPLATES) {
-      for (const selection of [[reggae], [dancehall], [shuffle], [reggae, shuffle]]) {
+      for (const selection of LEGAL_SELECTIONS) {
         const result = applied(template, selection)
         const resolved = resolve({
           devices: DEVICES,
@@ -664,5 +846,5 @@ describe('every effective template is schema-valid (§4, §7)', () => {
         expect(resolved.shortfalls.map((g) => `${g.requestId}: ${g.reason}`), where).toEqual([])
       }
     }
-  })
+  }, 30_000)
 })
