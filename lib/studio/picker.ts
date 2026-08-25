@@ -22,16 +22,18 @@ import type { Device, DeviceId, DeviceKind, Template, TemplateId } from '@/lib/c
  *  - *Roles fail.* Every template requests a kick, so 'kick' would return all of them. The few
  *    discriminating roles — acid, vox-chop — are not worth the false confidence the universal
  *    ones create.
- *  - *Section names fail too.* 'Intro', 'Outro' and 'Peak' each appear in two of the three
- *    templates authored, so a section search returns most of the list — which is the same
- *    failure as a universal role, just short of total. Ambient Dub happens to name its sections
- *    differently, and a field that discriminates only because one author chose unusual words is
- *    not a field worth searching.
- *  - *Keys pass.* 'major' finds Major-Key Electro and excludes the other two, 'dorian' finds
- *    Ambient Dub alone, 'minor' finds Industrial Techno. Real distinctions, already authored,
- *    each one genuinely narrowing the list.
+ *  - *Section names fail too.* 'Intro', 'Outro' and 'Peak' each appear in two directions, and
+ *    which two is an accident of authoring vocabulary rather than a fact about the music. Most
+ *    directions here name their sections in words nobody else uses, so the field discriminates
+ *    beautifully for those and not at all for the others — and a field that works only because
+ *    one author chose unusual words is not a field worth searching.
+ *  - *Keys pass.* 'major' finds Major-Key Electro and excludes every other one, 'dorian' finds
+ *    Ambient Dub alone, 'minor' finds Industrial Techno, 'lydian' finds Lydian House. Real
+ *    distinctions, already authored, each one genuinely narrowing the list — and each direction
+ *    added since has kept them exclusive, which is why the mode a direction offers is a content
+ *    decision and not only a musical one.
  *  - *BPM is not a term.* It is authored and numeric, so it does not belong in a text box. If
- *    direction filtering ever wants a tempo range that is a different control, and not at three
+ *    direction filtering ever wants a tempo range that is a different control, and not at seven
  *    templates.
  *
  * And the name carries most of the weight anyway: 'techno', 'dub', 'electro' are how a person

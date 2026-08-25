@@ -27,13 +27,18 @@ import { directionPage, rigFits } from '../lib/studio/direction-page'
 import DirectionPageRoute from '../app/directions/[id]/page'
 
 /**
- * Drone Study and Relay: the two directions a **one-box rig** can finish.
+ * Drone Study and Relay: the two directions a **one-voice rig** can finish.
  *
  * The three directions before them ask for nine, twelve and nine parts, and every one of them
  * is a rack. That left a shape untested rather than merely uncovered: the whole content layer had
  * only ever been asked "can this rig cover all of it", never "is this a complete piece when the
  * answer is one voice". These two are the second question, and they take two different routes to
  * it.
+ *
+ * Two more directions have joined them since, and they answer a *different* one-box question:
+ * a box with several voices playing several parts at the same time (#81). Those live in
+ * `simultaneous-directions.test.ts`, and the distinction is the point of keeping the files
+ * apart — "one box" and "one voice" turned out not to be the same claim.
  *
  *  - **Drone Study** asks for one `texture` and nothing else. Substance comes from the structure,
  *    the sixteen-bar cycle and the two authored hooks rather than from a request count.
@@ -93,8 +98,10 @@ describe('both directions are registered and parse (§4)', () => {
       'ambient-dub',
       'drone-study',
       'industrial-techno',
+      'lydian-house',
       'major-key-electro',
       'relay',
+      'weave',
     ])
     expect(templateById('drone-study')).toBe(droneStudy)
     expect(templateById('relay')).toBe(relay)
