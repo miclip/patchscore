@@ -57,6 +57,34 @@ export const PANEL_GAP_MM = 16
 export const PANEL_HEIGHT_MM = 170
 
 /**
+ * **The ceiling on the overview's scale, in CSS pixels per millimetre (#113).**
+ *
+ * "Fitted to width" is only half a rule, and the missing half is this one. The inline figure is
+ * a millimetre `viewBox` at `width: 100%`, so its scale is whatever the column gives it divided
+ * by `totalMm` — and `totalMm` shrinks as boxes are removed. Left uncapped that reads backwards:
+ * a lone 130 mm Tracker Mini in a 1100 px column draws at 8.5 px/mm, a wall of plastic, while
+ * the full fourteen-box registry draws the same panel at about 0.5. The fewer boxes in the rig,
+ * the bigger each one is drawn.
+ *
+ * A ceiling fixes the *lower* bound of that ratio and nothing else. It is not a squash and not a
+ * minimum panel width: at any given width every panel is still drawn at its cited span, so a
+ * one-box rig and a two-box rig draw that box at exactly the same size and the one-box rig simply
+ * occupies less of the page. #21 and #63 are both about the crowded end — do not squash, wrap
+ * instead of shrinking — and neither reaches this end, where there is nothing to be proportional
+ * *to*.
+ *
+ * 1.5 was chosen between two numbers already on the page rather than by taste:
+ *
+ * - **below the full-size layer's 1.7 px/mm** (`.rack-modal-body .rack-svg`), which is stated
+ *   there as the floor for a legible silkscreen. The overview is the other layer — a shape, with
+ *   the legend carrying the words — so its ceiling belongs under that floor rather than over it.
+ * - **above the ~1.2 px/mm** that `globals.css` cites as what a whole rack renders at across a
+ *   1100 px figure — the scale the container-query ladder was tuned against. So the cap never
+ *   binds on a rack that fills its column, only on one with too few boxes to fill it.
+ */
+export const OVERVIEW_MAX_PX_PER_MM = 1.5
+
+/**
  * Room under **each row** for the cables to hang in — the cable corridor.
  *
  * This is the layout decision the drawing turns on, so it is worth saying why. The first cut put
@@ -66,7 +94,11 @@ export const PANEL_HEIGHT_MM = 170
  * nothing occludes anything. It is also what a rack looks like from the front: the loom hangs.
  *
  * Height costs nothing here, because the diagram is fitted to width — adding room below does not
- * shrink the panels, it only makes the figure taller.
+ * shrink the panels, it only makes the figure taller. #113 is worth reading against that
+ * sentence: "fitted to width" says nothing about how far *up* the fit may go, and the figure's
+ * height rides on its width because the aspect is fixed by the viewBox. `OVERVIEW_MAX_PX_PER_MM`
+ * is the other half. The corridor is still free — it is a share of a bounded figure now, not of
+ * an unbounded one.
  *
  * With rows (#63) every row gets one, including the last: an inter-row cable approaches its
  * target's clock input socket from *underneath*, so the bottom row needs a corridor as much as
