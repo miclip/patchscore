@@ -772,9 +772,12 @@ describe('the panel (§10)', () => {
     // word. That held the drawing hostage to an engine limitation, and the matcher now requires
     // every word in a label to be an effect token or a qualifier. So the strip is drawn, whole,
     // and the assertion is the thing that actually matters.
-    // No assignments: this asks what the box declares about itself, which is routes 1 and 2
-    // only (#106). The parameter route is a per-guide fact now, and is asserted below
-    // against every recipe on the device — a stronger claim than any one guide could make.
+    // No assignments: this asks what the boxes declare about themselves with no guide in hand.
+    // Routes 1 and 2 answer as they always do, and the parameter route (#106, per-guide since)
+    // answers `unused` for every box that authors an effect parameter — which is why the
+    // assertion below matters as much as this one. Nothing on this device names an effect in a
+    // recipe either, so there is no capability for `unused` to speak for, and the box is absent
+    // from the list on both counts rather than on a technicality of how it was called.
     expect(fxSources(DEVICES, []).map((s) => s.deviceId)).not.toContain('moog-subsequent-37')
     const strip = (device.panel?.features ?? []).filter(
       (f) => f.kind === 'label' && f.text.includes('DELAY'),

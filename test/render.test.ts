@@ -1321,15 +1321,16 @@ describe('Master FX names what processes audio (§8 phase 7)', () => {
     ])
   })
 
-  it('does not read an effect off a recipe no part in this guide used (#106)', () => {
-    // The same box, offering a role the golden template never requests. Every parameter above is
-    // still authored on it and every one of them is real; none of them resolved into this guide,
-    // so Finishing has nothing to say about its effects. Before #106 this printed the identical
-    // sentence to the test above — the box's capabilities, in a section describing the guide.
+  it('names an idle box without naming a control on it (#106)', () => {
+    // The same box, offering a role the golden template never requests. Every parameter on it is
+    // real and none of them resolved into this guide, so the section has no control to give.
     //
-    // This is also the shape of the residual false negative the module doc warns about: the rig
-    // now reads as processing no audio, which is a claim about the rack rather than the guide.
-    // Pinned here so a later fix to that sentence fails visibly instead of drifting.
+    // Two failures are pinned in one test, because the fix for either one is the other. Before
+    // #106 this printed the same sentence as the test above — `DELAY SEND` and `REVERB SEND`,
+    // named as though a page below set them, which is the box's capabilities wearing a per-guide
+    // sentence. The narrowing that fixed that then dropped the box out of the section entirely,
+    // and a rig whose only effects are on this box read as "Nothing in this rig processes audio"
+    // — true of the guide, false of the rack the reader is standing at.
     const idle = box('C-idle', {
       name: 'Idle Box',
       voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['lead'], polyphony: 1 }],
@@ -1345,7 +1346,67 @@ describe('Master FX names what processes audio (§8 phase 7)', () => {
     const block = fxBlock(idle)
     expect(block.join('\n')).not.toContain('SEND')
     expect(block).toEqual([
-      'Nothing in this rig processes audio. The master chain is yours at the desk.',
+      'The Idle Box carries effects, though no part in this guide reaches them; ' +
+        'nothing else in this rig processes audio.',
+    ])
+  })
+
+  it('says the same of a box this guide gave a part that touches no effect', () => {
+    // Not the idle case: this box is in the guide, with a part on the page. The part it got sets
+    // no effect, and the recipe that would have is not the one that resolved. "No part in this
+    // guide reaches them" is a claim about the effects rather than about the box being idle,
+    // which is why the predicate is "none of its effect parameters resolved" and not "it has no
+    // assignment".
+    const quiet = box('C-quiet', {
+      name: 'Quiet Box',
+      // `acid`, for the reason the send box above uses it: the golden rig cannot play it, so
+      // this box gets the part and its `dirty` recipe is the one that resolves.
+      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['acid'], polyphony: 1 }],
+      recipes: [
+        makeRecipe('quiet-acid', 'acid', 'dirty', 'v'),
+        makeRecipe('quiet-acid-soft', 'acid', 'soft', 'v', {
+          params: [
+            { kind: 'numeric', name: 'REVERB SEND', value: 8, range: { min: 0, max: 100, verified: false } },
+          ],
+        }),
+      ],
+    })
+    const result = resolve({
+      devices: [...GOLDEN_DEVICES, quiet],
+      template: GOLDEN_TEMPLATE,
+      mood: GOLDEN_MOOD,
+      seed: GOLDEN_SEED,
+    })
+    // The premise, asserted rather than assumed: the box is in the guide, and no effect
+    // parameter of its reached the page. Without this the sentence below could be the idle one.
+    const mine = result.assignments.filter((a) => a.deviceId === 'C-quiet')
+    expect(mine.length).toBeGreaterThan(0)
+    expect(mine.flatMap((a) => a.params.map((p) => p.name))).not.toContain('REVERB SEND')
+    expect(masterFx(renderGuide(result))).toEqual([
+      'The Quiet Box carries effects, though no part in this guide reaches them; ' +
+        'nothing else in this rig processes audio.',
+    ])
+  })
+
+  it('does not add the idle clause to a box the panel already speaks for', () => {
+    // The clause exists to stop a box disappearing, not to qualify one already named. This box
+    // is silkscreened `CHORUS` and its unresolved `REVERB SEND` adds nothing to that — a second,
+    // weaker clause under a panel label would say "it has effects" twice, the second time in
+    // words that sound like a retraction.
+    const panelled = box('C-panel', {
+      name: 'Panel Box',
+      panel: panel('CHORUS'),
+      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['lead'], polyphony: 1 }],
+      recipes: [
+        makeRecipe('panel-lead', 'lead', 'hard', 'v', {
+          params: [
+            { kind: 'numeric', name: 'REVERB SEND', value: 8, range: { min: 0, max: 100, verified: false } },
+          ],
+        }),
+      ],
+    })
+    expect(fxBlock(panelled)).toEqual([
+      'The Panel Box carries CHORUS on the panel; nothing else in this rig processes audio.',
     ])
   })
 
