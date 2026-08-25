@@ -262,6 +262,19 @@ export function Studio({ initialInputs }: StudioProps) {
   return (
     <main className="shell">
       <header className="masthead">
+        {/*
+          The full mark, and only here. The nav badge is the tiled drawing because it has to work
+          at 28px; this one carries the cable, the knob and the stave, which need about 64px before
+          they say anything. The studio is the one page with room for it.
+
+          Its charcoal panel sits close in value to `--panel-0`, which reads as a problem and is
+          not one: the off-white jacks, knob ring and stave lines carry the shape, and the panel is
+          the negative space they define. Checked on the real background at 64, 96 and 128px.
+
+          `alt=""` for the reason the nav badge has it — the `h1` beside it says the name.
+        */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="masthead-mark" src="/patchscore-mark.png" width={64} height={64} alt="" />
         <h1>Patchscore</h1>
         <p>Your hardware, a direction, one seed — a guide with real parameter values.</p>
         <div className="masthead-actions">

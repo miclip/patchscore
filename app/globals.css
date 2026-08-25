@@ -83,6 +83,26 @@ body {
   max-width: 1180px;
   margin: 0 auto;
   padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/*
+ * The mark sits beside the links rather than above them, so the nav stays one row at every width
+ * and costs no vertical space on a phone — #21 makes 390px a reading context, and a header that
+ * grows a second row there pushes the guide down for no information.
+ *
+ * `flex-shrink: 0` because the `ul` beside it wraps: without it the mark is the thing that gives,
+ * and a logo squeezed to 19px is worse than a link set on two lines. No 44px floor here — it is
+ * not a target, which is the point of it not being a link.
+ */
+.site-nav-mark {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: block;
 }
 
 .site-nav ul {
@@ -132,6 +152,21 @@ body {
   gap: 8px 14px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--edge);
+}
+
+/*
+ * `align-self: center` because the masthead aligns on the baseline, and an image has none worth
+ * aligning to — left alone it hangs its bottom edge on the text baseline and sits too low.
+ *
+ * `flex-shrink: 0` for the reason the nav mark has it: the `p` beside it wraps, and a mark
+ * squeezed at 390px is worse than a description on three lines.
+ */
+.masthead-mark {
+  align-self: center;
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  display: block;
 }
 
 .masthead h1 {

@@ -43,6 +43,21 @@ export function SiteNav() {
   return (
     <nav className="site-nav" aria-label="Site">
       {/*
+        The mark, and deliberately **not a fourth link**. `NAV_LINKS` above is what the tests
+        assert against, so a hand-written anchor beside it is the drift this component exists to
+        prevent — and the list already carries Studio → `/`, so a linked logo would be a second
+        route to the same page for a reader tabbing through.
+
+        `alt=""` for the same reason: every page states its own name in an `h1`, so announcing it
+        again here is noise to anyone who cannot see it. It is decoration, and says so.
+
+        `/icon.png` rather than a second copy of the artwork: Next serves `app/icon.png` at that
+        route already, and the tiled drawing is the one built to survive being small — the full
+        mark's stave dissolves below about 64px, which is most of the sizes a header uses.
+      */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="site-nav-mark" src="/icon.png" width={28} height={28} alt="" />
+      {/*
         A list, so a screen reader is told how many ways out there are before reading the first
         one. Three items is small enough that this reads as pedantry and large enough that the
         count is worth having; the alternative — bare links in a div — is what `masthead-actions`
