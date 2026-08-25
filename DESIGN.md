@@ -552,6 +552,27 @@ worry about inventing a state for a single device stands and was answered by wai
 arrived together, both from real data, and the second one — `unread` — is the normal state of every
 box whose manual nobody here can open.
 
+**What a reader sees of all this** (#121). Storing evidence and auditing it is not the same as
+showing it, and the gap between the two was wide enough to be worth a rule.
+
+- **The device page names the facts, not only the count.** Its `Provenance` section reported
+  *how many* facts were unchecked, unstated, unread or cited against, and never *which* — so a
+  reader learned that three facts on this box are unstated and could not tell whether one of them
+  is the clock topology they are about to rely on. The paths are printed verbatim
+  (`clock.preferredSource`), grouped by state, in the manifest's own vocabulary: a friendlier
+  rewrite would be the page inventing a second name for a field that already has one. The
+  *reasons* stay off this page — each is a paragraph, and four stacked is #35's failure moved to
+  a new surface — and reach a reader in the guide, once, where the fact is being acted on.
+- **The states are drawn apart.** #120 added `unread` and `cited-against` and deliberately left
+  them wearing `undocumented`'s ink, because inventing an identity for them there would have been
+  a rendering decision made by a type error. They have their own now: `cited-against` is drawn
+  solid and struck through, in `.prov-cited`'s family because it is the only non-claim with a
+  page, and `unread` is the dimmest of the five because it is the only one where nobody has read
+  anything and the block is a missing *file*.
+- **The counted states are all spoken.** The page's capability sentence counted five states and
+  named three, so a box with three `unread` facts reported "0 of 5 cited" and accounted for two of
+  the five. A report whose numbers do not add up is worse than no report.
+
 ---
 
 ## 3. Layer 2 — Recipes
@@ -2014,6 +2035,46 @@ guess which claim it believes.
 
 **No seed** — this should be stable across rerolls, since rerolling a pattern should not re-cable
 the rig.
+
+#### Why this box (#121)
+
+The phase named a box and a transport and never said what the answer rested on, so **two
+different claims reached a reader in identical words**: "the Tracker Mini's manual calls it the
+centre piece of a setup" and "nothing here claims that job, so `polyend-` sorted before
+`roland-`". The first is a person's judgement. The second is a tie-break that exists to make the
+answer deterministic and, by the paragraph above, explicitly not to make it right. Printing the
+second in the voice of the first is invariant 5's failure with the sign flipped — not an invented
+value, but an invented confidence.
+
+So `ClockSource` carries `claims`: how many *eligible* boxes claimed the field. `clockSourceBasis`
+turns that into the three words the guide speaks, and the renderer speaks them and derives
+nothing (§8):
+
+- **`claimed`** (one) — *its manual says leading a rig is its job.*
+- **`contested`** (more than one) — *N boxes here claim that job, so transport, then name,
+  settled it.* §7.4 has no basis to rank two honest claims and this is where it says so out loud;
+  the repair is for one manifest to stop claiming it, and a reader cannot ask for that repair from
+  a line that reads like advice.
+- **`tie-break`** (none) — *nothing here claims that job, so transport, then name, settled it.*
+
+Three rules on the ink, all of them #35's lesson:
+
+- **One line per rig, never one per candidate.** The eight boxes that were asked and declined are
+  the device pages' business. Hoisted the way #107 hoisted pattern-global params — the repetition
+  goes, the outlier never does.
+- **The evidence shown is the chosen box's own**, at `clock.preferredSource`, and only that one.
+  It carries its state's mark and one `↳ cite:` line beneath, labelled `claim` rather than
+  `value`, because nobody dials this field. Where a manifest recorded nothing there, the guide
+  prints no mark and no citation: nobody wrote down a reading, so the guide claims none.
+- **The reason is printed here and nowhere else.** This is the one place a capability fact's
+  reason reaches a reader in the guide, and it earns the space because it is the finding — "no
+  page states that leading a rig is its job" is information, and rendering nothing in its place
+  implies a confidence the guide does not have. §8.1's eight-word rule governs *hints*; a `↳ cite:`
+  has always carried pages.
+
+Both renderers say all of this, in their own words (§8's standing rule about ink): the page is
+what somebody is holding at the rack (#21), so a fact that reaches only the Markdown reaches
+nobody.
 
 **Occupied-assignable count is not a ranking key, and used to be the first one.** The reasoning
 was that the busiest box is the one you are standing at, which is a guess about the *session*

@@ -4,7 +4,7 @@ import { TEMPLATES } from '@/lib/templates'
 import { deviceHref, deviceLabel, templateHref, plural } from './catalogue'
 import { coverage } from './coverage'
 import { auditDevice, rangeDocuments } from './provenance'
-import type { AuditCounts } from './provenance'
+import type { AuditCounts, AuditFinding } from './provenance'
 
 /**
  * #84. Everything a device page states, computed from the manifest and the resolver.
@@ -102,11 +102,72 @@ export type DevicePage = {
   characters: readonly Character[]
   provenance: AuditCounts
   /**
+   * §2.6/#121. **Which** capability facts are not a supporting citation, grouped by state.
+   *
+   * The counts above say how many, and #121 is the issue that a count is not a location: a reader
+   * told "three facts on this box were looked for and not found" has no way to learn whether that
+   * is the clock topology they are about to rely on or something they will never touch. Empty
+   * when every fact this manifest speaks to is cited, which is the common case and prints nothing.
+   */
+  capabilityGaps: readonly CapabilityGap[]
+  /**
    * Every direction, in template order, with what this box alone covers of it. Empty for a box
    * with no assignables: three rows of "0 of 12" say the same thing three times, and the page
    * says it once in prose instead.
    */
   directions: readonly DirectionFit[]
+}
+
+/**
+ * §2.6/#121. One non-citation state and the field paths it covers on this box.
+ *
+ * Paths rather than prose, and the manifest's own paths rather than a friendly rewrite: a reader
+ * deciding whether `clock.preferredSource` matters to them is the case this exists for, and
+ * "the clock topology" would be this page inventing a name for a field the manifest already
+ * names. §10's rule about values applies — they render monospace, because they are identifiers.
+ *
+ * The *reasons* stay on the facts and are not printed here. Each one is a paragraph (the
+ * Deluge's runs to four clauses across three page references), and four of them stacked is #35's
+ * failure moved to a new page. The reason reaches a reader in the guide, once, where the fact is
+ * being acted on.
+ */
+export type CapabilityGap = {
+  kind: 'cited-against' | 'undocumented' | 'unread' | 'unchecked'
+  /** Code unit order (§7.2), inherited from the audit — never manifest key order. */
+  facts: readonly string[]
+}
+
+/**
+ * Most work behind the finding first, least last. Not alphabetical and not the audit's order:
+ * `cited-against` is a document answering no and `unchecked` is a book nobody opened, and a
+ * reader scanning this block should meet them in that order rather than in the order `c` sorts
+ * before `u`.
+ */
+const CAPABILITY_GAP_ORDER = ['cited-against', 'undocumented', 'unread', 'unchecked'] as const
+
+const GAP_KIND_OF: Record<string, CapabilityGap['kind']> = {
+  'cited-against-capability': 'cited-against',
+  'undocumented-capability': 'undocumented',
+  'unread-capability': 'unread',
+  'unchecked-capability': 'unchecked',
+}
+
+export function capabilityGaps(findings: readonly AuditFinding[]): CapabilityGap[] {
+  const byKind = new Map<CapabilityGap['kind'], string[]>()
+  for (const finding of findings) {
+    // The parameter findings share the array and carry no `fact`; they are the other coordinate
+    // system (§2.6) and belong to the tables above, not here.
+    if (!('fact' in finding)) continue
+    const kind = GAP_KIND_OF[finding.kind]
+    if (kind === undefined) continue
+    const facts = byKind.get(kind) ?? []
+    facts.push(finding.fact)
+    byKind.set(kind, facts)
+  }
+  return CAPABILITY_GAP_ORDER.flatMap((kind) => {
+    const facts = byKind.get(kind)
+    return facts === undefined ? [] : [{ kind, facts }]
+  })
 }
 
 export function directionFit(device: Device, template: Template): DirectionFit {
@@ -207,15 +268,26 @@ export function provenanceSentence(device: Device, counts: AuditCounts): string 
  * #22 there was nowhere to say so — the TR-1000's nine page references lived in comments, which
  * this page could not read and the audit could not count.
  *
- * All three states get words, and none of them borrows another's. **Cited** is the claim.
+ * Every state gets words, and none of them borrows another's. **Cited** is the claim.
  * **Unchecked** is `false`: authored, nothing checked against, work waiting. **Undocumented** is
  * the finding — somebody went to the manual and it does not state the fact — and it is stated as
  * an achievement rather than a debt, because that is what it is. Rolling it into "unchecked"
  * would report finished research as a backlog and quietly invite somebody to do it again.
+ * **Unread** is the missing file and **cited-against** is the document answering no, both from
+ * #120.
+ *
+ * **The two #120 states used to be counted and not spoken**, which made the arithmetic here
+ * silently wrong: `capabilityFacts` includes them, so a box with three `unread` facts reported
+ * "0 of 5 cited" and accounted for two of the five. A sentence whose numbers do not add up is a
+ * worse report than a missing sentence, and it is the same class of error #121 is about — the
+ * count reaching a reader as though it were the whole finding.
  *
  * A box that has cited nothing says so plainly instead of scoring zero out of nothing. Silence is
  * not a debt here: invariant 4 is scoped to parameter values, and no manifest was ever asked to
  * cite `io.usbAudio`.
+ *
+ * §2.6/#121: **which** facts these numbers are about is `DevicePage.capabilityGaps`, beneath. A
+ * count is not a location, and this sentence has never been able to be one.
  */
 export function capabilitySentence(counts: AuditCounts): string {
   if (counts.capabilityFacts === 0) {
@@ -229,6 +301,12 @@ export function capabilitySentence(counts: AuditCounts): string {
   )
   if (counts.observedCapabilities > 0) {
     parts.push(`${counts.observedCapabilities} of those observed on the unit`)
+  }
+  if (counts.citedAgainstCapabilities > 0) {
+    parts.push(`${counts.citedAgainstCapabilities} cited against`)
+  }
+  if (counts.unreadCapabilities > 0) {
+    parts.push(`${counts.unreadCapabilities} on a document nobody here can open`)
   }
   if (counts.uncheckedCapabilities > 0) {
     parts.push(`${counts.uncheckedCapabilities} unchecked`)
@@ -271,6 +349,8 @@ export function deviceDescription(device: Device, page: Omit<DevicePage, 'descri
 
 export function devicePage(device: Device): DevicePage {
   const assignables = expand(device).length
+  // One audit, two readings of it: the counts for the sentence, the facts for the block under it.
+  const audit = auditDevice(device)
   const partial: Omit<DevicePage, 'description'> = {
     device,
     href: deviceHref(device),
@@ -279,7 +359,8 @@ export function devicePage(device: Device): DevicePage {
     voices: voiceLines(device),
     roles: rolesCovered(device),
     characters: CHARACTERS.filter((c) => device.recipes.some((r) => r.character === c)),
-    provenance: auditDevice(device).counts,
+    provenance: audit.counts,
+    capabilityGaps: capabilityGaps(audit.findings),
     // Template order, which is the authored order of `lib/templates`.
     directions: assignables === 0 ? [] : TEMPLATES.map((t) => directionFit(device, t)),
   }

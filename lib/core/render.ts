@@ -1,5 +1,5 @@
 import type { CapabilityEvidence, Device } from './device'
-import { clockJackNotes, clockSourceSetup, rangeDocuments } from './device'
+import { clockJackNotes, clockSourceSetup, evidenceFor, rangeDocuments } from './device'
 import type { DeviceId, SectionName } from './ids'
 import type { Role } from './vocabulary'
 import type { Cite, ParamScope, Provenance, ResolvedParam, ResolvedRange } from './params'
@@ -15,7 +15,7 @@ import {
   type ResolvedHook,
   type ResolvedNote,
 } from './harmony'
-import type { ResolveResult, ResolvedAssignment } from './pipeline'
+import { clockSourceBasis, type ClockSource, type ResolveResult, type ResolvedAssignment } from './pipeline'
 import { GUIDE_PHASES } from './guide'
 import { bandTrajectory, chainPlan, type BandGroup, type SectionChain } from './arrangement'
 import { fxSources, type FxSource } from './fx'
@@ -190,21 +190,26 @@ function evidenceMark(evidence: CapabilityEvidence): string {
   return evidence.kind === 'unknown' ? ' · undocumented' : ` · ${evidence.kind}`
 }
 
-function evidenceLines(evidence: CapabilityEvidence): string[] {
+/**
+ * §2.6/#120/#121. Each state says its own word and its own sentence, and `cited-against` says its
+ * page too, because having one is what makes it that state. A state that reached a reader wearing
+ * another's word would be the failure #121 is about.
+ *
+ * `label` is what the *citation* is a citation of, and it exists because "value" is a lie on some
+ * of them: `clock.preferredSource` is a claim about the box's job, not a value anybody dials.
+ * Defaulted, so every existing caller keeps the word it had.
+ */
+function evidenceLines(evidence: CapabilityEvidence, label = 'value'): string[] {
   if (evidence === false) return []
   switch (evidence.kind) {
     case 'unknown':
       return [`undocumented — ${evidence.reason}`]
-    // §2.6/#120. The floor, not a rendering: #121 is where capability evidence gets a considered
-    // place in the guide, and until it lands a state that reached a reader wearing another's word
-    // would be the failure that issue is about. So each says its own word and its own sentence,
-    // and `cited-against` says its page too, because having one is what makes it that state.
     case 'unread':
       return [`unread — ${evidence.reason}`]
     case 'cited-against':
       return [`cited-against ${citeText(evidence.cite)} — ${evidence.reason}`]
     default:
-      return [`value ${citeText(evidence)}`]
+      return [`${label} ${citeText(evidence)}`]
   }
 }
 
@@ -507,6 +512,39 @@ function mixerText(device: Device, parts: number): string {
   )
 }
 
+/**
+ * §7.4/#121. **Why this box** — one line, once per guide, under the clock-source instruction.
+ *
+ * The rig phase named a box and a transport and never said what the answer rested on, so a
+ * deterministic fallback and a person's judgement reached the reader in identical words. They are
+ * not the same claim: `claimed` is somebody's manual saying leading a rig is this box's job, and
+ * `tie-break` is nobody saying anything and the name deciding. Printing the second as the first
+ * is invariant 5's failure — a confidence the guide does not have.
+ *
+ * **Hoisted, never per fact** (#35, #107). One line for the rig, not one per candidate: the eight
+ * boxes that were asked and declined are the device pages' business, and repeating a citation
+ * beside every box is the 14%-of-the-guide mistake #35 records. §8.1's eight-word rule is about
+ * *hints*; this is the instruction line and its `↳ cite:`, which carry pages by design.
+ */
+function clockBasisText(source: ClockSource): string {
+  switch (clockSourceBasis(source)) {
+    case 'claimed':
+      return 'Why this box — its manual says leading a rig is its job'
+    // Two honest claims, and §7.4 has no basis to rank them. Saying so is the whole point: the
+    // repair is for one manifest to stop claiming it, and a reader cannot ask for that repair
+    // from a line that reads like advice.
+    case 'contested':
+      return (
+        // `count` would say "2 boxs" — English, and this file is not internationalised. The
+        // plural is unconditional: `contested` is two or more by definition.
+        `Why this box — ${num(source.claims)} boxes here claim that job, ` +
+        'so transport, then name, settled it'
+      )
+    default:
+      return 'Why this box — nothing here claims that job, so transport, then name, settled it'
+  }
+}
+
 function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[] {
   const out: Line[] = []
   const source = result.clockSource
@@ -532,6 +570,27 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
         `carrying ${count(source.occupiedAssignables, 'part')}. ${sync}`,
     )
 
+    const sourceDevice = result.devices.find((d) => d.id === source.deviceId)
+
+    /**
+     * §7.4/#121. The basis, and — where the manifest recorded one — what it read when it decided.
+     *
+     * The evidence shown is the **chosen box's own**, at `clock.preferredSource`, and only that
+     * one. A manifest that recorded nothing there prints no mark and no citation, which is the
+     * honest rendering rather than a hole: nobody wrote down a reading, so the guide claims none.
+     * `claim`, not `value` — this citation is for what the box is *for*, and no reader dials it.
+     */
+    out.push('')
+    const preference =
+      sourceDevice === undefined ? undefined : evidenceFor(sourceDevice, 'clock.preferredSource')
+    out.push(
+      `- ${clockBasisText(source)}` +
+        `${preference === undefined ? '' : evidenceMark(preference)}`,
+    )
+    if (preference !== undefined) {
+      for (const cite of evidenceLines(preference, 'claim')) subordinate(out, '  ', 'cite', cite)
+    }
+
     /**
      * #104. The setting that makes the instruction above possible.
      *
@@ -541,7 +600,6 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
      * renderer names no box and knows no menu, so a device that declares none prints nothing
      * here and a device that declares one gets its own words.
      */
-    const sourceDevice = result.devices.find((d) => d.id === source.deviceId)
     const setup =
       sourceDevice === undefined ? undefined : clockSourceSetup(sourceDevice, source.transport)
     if (setup !== undefined) {

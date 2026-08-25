@@ -615,6 +615,37 @@ body {
 }
 
 /*
+ * §2.6/#121. The field paths behind the counts, grouped by state.
+ *
+ * **Stacked below 640px, two columns above it** (#21). The `dt` is an uppercase tracked label and
+ * the `dd` is a run of dotted identifiers, and side by side at 390px the label takes a third of
+ * the line and the paths break mid-word down the rest. §21's rule is that values stay legible at
+ * arm's length rather than shrinking to fit, so the label takes its own line and the paths get
+ * the full width. `overflow-wrap` is inherited from `.fact-list dd`; nothing here scrolls
+ * sideways, so the page body still cannot.
+ */
+.capability-gaps {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  margin-top: 10px;
+}
+
+.capability-gaps dd {
+  margin-bottom: 8px;
+}
+
+@media (min-width: 640px) {
+  .capability-gaps {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 6px 16px;
+  }
+
+  .capability-gaps dd {
+    margin-bottom: 0;
+  }
+}
+
+/*
  * §3.2's counts, said in a sentence. Full ink and full size: it is the reason to trust the page,
  * and a dim 12px note is where a reader's eye goes last.
  */
@@ -1884,6 +1915,32 @@ button:active {
   color: var(--ink-dim);
   background: transparent;
   border: 1px dashed var(--edge-strong);
+  cursor: help;
+}
+
+/*
+ * §2.6/#120/#121. The two states #120 added and left undrawn, because drawing them was this
+ * issue's job and a state wearing another's ink is the failure #121 is about.
+ *
+ * `unread` is the *dimmest* of the five and deliberately so: it is the only one where nobody has
+ * read anything, and it is blocked on a missing file rather than on an author's afternoon.
+ * `cited-against` is the opposite end — the document answers, and answers no — so it is drawn
+ * solid like `.prov-cited`, which is the family it belongs to, and tinted away from it so a
+ * reader cannot mistake evidence *against* a claim for evidence for one.
+ */
+.prov-unread {
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px dotted var(--edge);
+  cursor: help;
+}
+
+.prov-cited-against {
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid var(--edge-strong);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
   cursor: help;
 }
 

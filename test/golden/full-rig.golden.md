@@ -63,6 +63,9 @@ None.
 
 **Clock source** — Tracker Mini over `midi-din`, carrying 0 parts. Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8, which cannot receive clock and run free.
 
+- Why this box — 2 boxes here claim that job, so transport, then name, settled it · manual
+  - ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.283
+
 - On the Tracker Mini, set `Config > MIDI > Clock Out` to `MIDI Out jack` · manual
   - ↳ note: Off, USB, MIDI Out jack, USB + MIDI Out jack — clock leaves only by the routing set here
   - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.54
