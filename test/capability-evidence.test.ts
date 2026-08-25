@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   CAPABILITY_FACTS,
+  CONTENT_FACT,
   CapabilityEvidenceSchema,
   DeviceSchema,
   clockJackNotes,
@@ -129,8 +130,17 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
 
   it('accepts every scalar fact in the closed list', () => {
     for (const fact of CAPABILITY_FACTS) {
+      // §2.6/#111. `content` is the one path whose citation needs a declaration beside it: the
+      // field is a positive claim about what the box ships, so a page with nothing behind it is
+      // refused there (`test/device-content.test.ts`). Every other path accepts a citation on
+      // its own, declared or not — `features.*` and `clock.preferredSource` deliberately so.
+      const declaring =
+        fact === CONTENT_FACT ? { content: { kind: 'user-supplied' } as const } : {}
       const parsed = DeviceSchema.safeParse(
-        patchable({ capabilityEvidence: { [jackFact('VCF · IN')]: CITE, [fact]: CITE } }),
+        patchable({
+          ...declaring,
+          capabilityEvidence: { [jackFact('VCF · IN')]: CITE, [fact]: CITE },
+        }),
       )
       expect(parsed.success, fact).toBe(true)
     }

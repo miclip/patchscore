@@ -659,16 +659,49 @@ export const device: Device = {
   io: { main: 'stereo', individualOuts: 0, audioIn: true, usbAudio: false },
 
   /**
-   * §2.6/#22. **One entry, and it records a decision rather than a citation.**
+   * §2.6/#111. **The card the box ships with arrives loaded, and §2.1 is titled "Factory
+   * Library".**
+   *
+   * PDF page 18, printed p.12: "The Deluge is supplied with a formatted SD card loaded with the
+   * factory library. Samples are streamed directly from the SD card when in use, making it an
+   * integral part of the device." The File Structure drawing below it annotates each folder, and
+   * the annotations are the finding: `SAMPLES/ARTISTS` is "Supplied artist samples" and
+   * `SAMPLES/DRUMS` is "Supplied drum samples", against `CLIPS`, `RECORD` and `RESAMPLE` marked
+   * user files or initially empty. The card is not blank and the guidebook says which two folders
+   * are ours.
+   *
+   * **This was recorded `unknown` on a search of the guidebook, and the answer was in a drawing.**
+   * The reasoning was that the book enumerates synth presets, not samples, and that p.309 says
+   * only where samples must live (`/Samples`) — both true, and neither is this page. `pdftotext`
+   * returns the folder names without the annotations that give them meaning, which is the fourth
+   * fact in this pass to live where a text dump cannot reach it. The page was rendered.
+   *
+   * Not `enumerable`: the drawing prints example filenames for KITS and SYNTHS (`000 TR-808.XML`
+   * through `042 Phil Elverum.XML`) and none at all for the two sample folders, and those two are
+   * what a `sourceAudio` recipe here loads — every one of them is a Sample oscillator.
+   */
+  content: {
+    kind: 'shipped-library',
+    library: 'a factory library on the supplied SD card',
+    location: 'SAMPLES/ARTISTS and SAMPLES/DRUMS',
+    reason: 'p.12 marks both folders as supplied samples and never names one of them',
+  },
+
+  /**
+   * §2.6/#22. **Two entries: one page, and one finding that is not a page.**
    *
    * This manifest's pages are otherwise still in the comments above — the TR-1000 is the one that
-   * has migrated, and its map is the worked example. The exception is here because #80 asked a
-   * question of this guidebook that the guidebook does not answer, and `unknown` exists so that
-   * finding can be written down instead of reading as silence. Not `cited-against` (#120): this
-   * guidebook does not answer in the other direction either, it hedges and then documents both
-   * directions at equal length. See the `clock` comment for what was read and rejected.
+   * has migrated, and its map is the worked example. `content` is here because §2.6/#111 requires
+   * it of any box a recipe loads audio onto, and it is a citation because the guidebook answers.
+   * `clock.preferredSource` is the opposite case: #80 asked a question this guidebook does not
+   * answer, and `unknown` exists so that finding can be written down instead of reading as
+   * silence. Not `cited-against` (#120): the guidebook does not answer in the other direction
+   * either, it hedges and then documents both directions at equal length. See the `clock` comment
+   * for what was read and rejected.
    */
   capabilityEvidence: {
+    // §2.6/#111. §2.1 Factory Library, and the File Structure drawing beneath it — see `content`.
+    content: cite(12),
     'clock.preferredSource': {
       kind: 'unknown',
       reason:

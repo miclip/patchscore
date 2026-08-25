@@ -549,7 +549,34 @@ export const device: Device = {
    * the box is for, and the answer it gives is "a drum machine and sampler". See the `clock`
    * comment.
    */
+  /**
+   * §2.6/#111. **This box ships a library nobody has listed, which is `shipped-library`.**
+   *
+   * p.70 §13.6: the storage opens on two directories, and "a wide array of factory samples are
+   * available in the write protected FACTORY directory"; p.84 adds that they cannot be erased and
+   * spend none of the 20 GB user area.
+   *
+   * **`unknown` was wrong here and it is worth saying why, because it looked careful.** The
+   * reading did not run out — it answered. The box arrives with usable sample content in a place
+   * a reader can open and browse. What no *document* does is print the filenames, and that is a
+   * limit on the manual rather than on what anybody knows about the box; recording it as unknown
+   * told a reader nothing was established when the useful half was.
+   *
+   * **`enumerable` was the other wrong answer**, and it failed the opposite way: it promises a
+   * reader entries they can look up, and there is no list to look them up in. That is what
+   * `shipped-library` is for — the content and its place are established, the names are not —
+   * and it is why the eighteen recipes here still describe their audio in `sourceAudio.need`
+   * rather than naming a file. `reason` is that fact said to a reader rather than to us.
+   */
+  content: {
+    kind: 'shipped-library',
+    library: 'a wide array of factory samples',
+    location: 'the write-protected FACTORY directory on the +Drive',
+    reason: 'p.70 says the directory is there and no page lists a single filename',
+  },
+
   capabilityEvidence: {
+    content: cite(70),
     'clock.preferredSource': {
       kind: 'unknown',
       reason:

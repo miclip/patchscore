@@ -896,7 +896,40 @@ export const device: Device = {
    * why the rest of this box's capability pages are still in comments, and the `clock` comment
    * for what the Reference Manual's p.44 actually shows.
    */
+  /**
+   * §2.6/#111. **This box ships a library nobody has listed, which is `shipped-library`.**
+   *
+   * Owner's p.7, on the SD card slot: the unit arrives with the included card fitted behind a
+   * protector, and "the SD card contains various data (settings, sounds, samples, etc.) for this
+   * unit". Owner's p.8's overview diagram draws it the same way — a Preset block holding Drum Kit
+   * and Tone, an SD Card block holding Audio Data and Project Data, a Browser/Load arrow feeding
+   * the clips. Reference p.20's Sound Browser "lets you load sounds or sample files into a
+   * project", and p.34 lists `WAVE FILE: Load a sample file from the SD card`, which is the
+   * procedure `mc-vox-chop` tells a reader to follow.
+   *
+   * So the reading finished: a reader is not starting from an empty card, and the browser is
+   * where they look. It was recorded `unread` and then `unknown`, and both understated it —
+   * `unread` names a document nobody can open, and both books are in `manuals/` and were opened;
+   * `unknown` says the reading ran out, and it did not. What no document does is enumerate the
+   * audio data, which is a limit on the manual rather than on what is established about the box.
+   *
+   * Owner's p.8 is a diagram, so it was rendered rather than extracted — the same rule the
+   * Tracker Mini's p.34 needed.
+   */
+  content: {
+    kind: 'shipped-library',
+    library: 'preset tones and drum kits, and the audio data on the included SD card',
+    location: 'the Sound Browser, and WAVE FILE for a sample on the card',
+    // Sentence-initial in the rendered notice, so it reads as one — the other four begin with a
+    // page number, which is this project's ordinary way to open a sentence.
+    reason: "The Owner's Manual says the card holds sounds and samples and names none of them",
+  },
+
   capabilityEvidence: {
+    content: {
+      kind: 'manual',
+      source: "MC-101 Owner's Manual eng02, p.7 (SD card slot)",
+    },
     'clock.preferredSource': {
       kind: 'unknown',
       reason:

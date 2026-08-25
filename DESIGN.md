@@ -573,6 +573,148 @@ showing it, and the gap between the two was wide enough to be worth a rule.
   named three, so a box with three `unread` facts reported "0 of 5 cited" and accounted for two of
   the five. A report whose numbers do not add up is worse than no report.
 
+**`content` is the first field whose *absence* is a rendered state** (#111). §3's `sourceAudio`
+answers "what audio does this recipe play" in prose, which is right for a box whose content is
+genuinely the reader's and wrong for one that ships a named library — and nothing in the model
+decided which case a box was in, so a recipe on a box nobody here owns asserted *bring your own*
+on no evidence. That is #101's own failure mode one level up, except the hole is in **our
+knowledge** rather than in the rig, and it is the default for every device the #57 backlog adds.
+
+```ts
+content?:
+  | { kind: 'enumerable'; library: string }    // 'the GEN generator list' — a printed list
+  | { kind: 'shipped-library'; library: string; location: string; reason: string }
+  | { kind: 'user-supplied' }                  // the box ships nothing usable for these parts
+```
+
+- **enumerable** is the TR-1000's `GEN` shape one level out: a document **prints the names**, the
+  list is the legality claim and carries the page, and the choice within it is taste and stays
+  uncited (§3.2). `library` names the list so a guide can point at it once per device rather than
+  describe it once per part. A recipe on such a box **may not carry `sourceAudio`** — see the
+  guard below.
+- **shipped-library** is the box arriving with factory content that **no document enumerates**. A
+  page establishes the content and says where it lives; no page anywhere prints the filenames.
+  `library` is what a reader recognises, `location` is where they go on the box, and `reason` says
+  why a recipe here still describes its audio in prose. All five sampling devices are this.
+- **user-supplied** is a positive claim and no device in the library has earned it:
+  `DeviceSchema` requires a `manual` or `observed` citation at `content`, and establishing that a
+  box ships *nothing* usable means proving an absence. Declaring any of the three on `false`,
+  `unknown`, `unread` or `cited-against` fails the build — those four support an *absence* — and so
+  does a citation at `content` with no declaration behind it, which is the Cascadia's lesson in the
+  other direction.
+- **unknown is not a fourth `kind`, because it is a reading rather than a declaration.** It lives
+  in `capabilityEvidence` at `content` as one of #120's three reasoned states — which is why #111
+  waited on #22 rather than inventing a second provenance mechanism beside it. **The three are
+  not interchangeable here and the first passes got each of them wrong in turn**, so the bar for
+  each is worth stating:
+  - `unknown` — the documents were opened and the reading ran out.
+  - `unread` — a **specific named document** needed to answer cannot be opened. "Documented
+    somewhere outside this book" names no document and is not this state; it is a reading that
+    stopped.
+  - `cited-against` — the document answers **no** to the claim the field would make, as the
+    Cascadia's does about leading a rig. A manual saying the box ships fifty factory packs answers
+    *yes*; that is a `shipped-library` declaration, not this and not `unknown`.
+
+  None of the three is a place to put a box whose library is established. A finished reading that
+  found a library belongs in the declaration, and the three states are for what is left over.
+
+**`enumerable` and `shipped-library` promise different things, and `DeviceSchema` keeps them
+apart.** A declaration of `enumerable` beside any recipe carrying `sourceAudio` fails the build,
+reported at the recipe: prose describing audio is exactly what referencing an entry replaces, so a
+box doing both is a shipped library wearing the wrong name. This is not a hypothetical rule. All
+five sampling devices were declared `enumerable` for four commits while every recipe on them
+described its audio in prose — the declaration promising a reader entries they could look up, the
+parts below handing them a description — and nothing caught it, because both halves are
+individually well-formed. The pair is checkable and nothing else is. `shipped-library` deliberately
+carries no such rule: no document lists its entries, so prose is the only honest thing a recipe
+there can say, and `reason` is where the manifest says so to the reader.
+
+**A box a recipe loads audio onto cannot stay silent, and that requirement is the whole of #111.**
+Representing unknown as the *absence* of a field left the state sayable but not required, so a
+manifest could still reach a reader with a `sourceAudio.need` and nothing behind it — which is the
+confident *bring your own* on no evidence that the field was added to end. So `DeviceSchema`
+demands an entry at `content` from any device with a `sourceAudio` recipe, and refuses `false`
+there: `false` is a real state everywhere else, where the field beside it is a claim somebody made,
+but an entry here exists only to say something about a declaration that is absent, and one with no
+reason is §2.6's shrug wearing a field name. Every unknown that reaches a reader therefore carries
+a reason somebody wrote. Silence stays available, and is the ordinary case, for a box whose voices
+generate their own sound: it was never asked, so it owes nothing.
+
+The schema asks of the device's **authored** recipes, because a schema cannot see a guide; the
+renderer asks the narrower question about the parts a reader was actually given. So an unused
+sample recipe obliges the manifest and still prints nothing on a page that did not assign it.
+
+`contentNotice(device, recipes)` decides which state a guide is looking at, once, for both
+renderers (#33 — the decision is shared, the sentences are each renderer's own), and §8 phase 6
+prints it **once per device, above that device's parts**. The unsettled state prints one sentence
+per *finding* rather than one over all of them: "nobody here has checked" is true of an uncited
+fixture and a lie about a box somebody read and could not finish reading. Its one silence is a device
+no assigned part loads anything onto, and that silence does not depend on the manifest: a box that declares a
+whole library still says nothing in a guide that asked nothing of it. The unknown sentence sits on
+the box rather than on the part because `Source — <need>` is true — it says what the part needs —
+and what was never true is what a reader inferred from it in the silence above.
+
+**What the pass over the library found.** Five devices author `sourceAudio` recipes; all five ship
+a library nobody has listed, and all five declare `shipped-library`:
+
+| device | library | where a reader looks | what was read |
+|---|---|---|---|
+| Digitakt II | a wide array of factory samples | the write-protected FACTORY directory on the +Drive | p.70 §13.6 — the +Drive opens on FACTORY and INCOMING, "a wide array of factory samples are available in the write protected FACTORY directory"; p.84, they cannot be erased |
+| Tracker Mini | 50 factory genre-based sample packs | `/Samples/FactoryPacks` on the microSD card | p.34's microSD card structure — "Tracker Mini comes with 50 factory genre-based packs installed onto the microSD card" |
+| MC-101 | preset tones and drum kits, and the SD card's audio data | the Sound Browser, and WAVE FILE for a sample on the card | Owner's p.7 — the included card "contains various data (settings, sounds, samples, etc.)"; p.8's overview draws Preset Drum Kit/Tone beside SD Card Audio Data; Reference p.20's Sound Browser |
+| TR-8S | preset samples supplied in the box | the SAMPLE screen, preset entries marked `P` | Reference p.38's screen legend — "P Preset: Samples originally in the TR-8S", example `Prog.Trance Bass`; p.39, preset samples cannot be deleted |
+| Deluge | a factory library on the supplied SD card | `SAMPLES/ARTISTS` and `SAMPLES/DRUMS` | printed p.12 §2.1 Factory Library — "supplied with a formatted SD card loaded with the factory library"; the File Structure drawing annotates both folders as supplied samples, against `CLIPS`, `RECORD` and `RESAMPLE` marked user files or initially empty |
+
+**A shipped library is neither `unknown` nor `enumerable`, and this pass made both mistakes** —
+first `unread`, then `unknown`, then `enumerable`, each of which looked like diligence. The reading
+did not run out on any of the five: it answered, and a reader can open and browse what it found.
+What no *document* does is print the filenames, which is a limit on the manual rather than on what
+is established about the box — and promising a list to compensate is the same error facing the
+other way.
+
+**So the guide must never print "Not established" over a box with a library, and must never print
+the printed-list sentence over one either.** Both are asserted as the rendered strings in both
+renderers rather than only as states — a state test would pass against a renderer printing the
+wrong sentence, and the sentence is the whole of what a reader standing at the machine gets.
+`test/device-content.test.ts` runs it against the **real manifests**, because a fixture cannot
+catch a device folder regressing to the careful-looking answer.
+
+The set of boxes it checks is **derived from the manifests, not hand-listed**: a literal list covers
+the devices somebody remembered, and it is the wrong list the moment a sixth box declares a library.
+A device can declare one without authoring a single `sourceAudio` recipe, so the source-audio
+enumeration would not catch it either. The declarations expected today are asserted separately, so a
+new one is loud in review rather than silently absorbed, and the render assertions run over the
+subset whose parts actually load audio, since a box whose recipes never reach its library correctly
+prints nothing.
+
+A negative like that needs a control, or it would pass just as well against a renderer that had
+lost the sentence entirely — and **the control is a fixture, deliberately, not a real device.**
+Pointing it at the Deluge, the last box still unknown, made it a test that fails the day somebody
+*settles* the Deluge: a control that punishes the work it is watching, which is how a test stops
+being read. What is controlled for is a property of the renderer, so it is asserted against a
+manifest the test file owns and holds in that state on purpose.
+
+`library` is therefore named as a reader finds it **on the box** — a directory, a folder and a
+count, a browser, a screen icon — and `location` is the place they go, which is the half no
+`Source` line could ever carry. The `enumerable` branch of both renderers is unreachable for a
+valid manifest today: the notice prints only where an assigned part loads audio, and that is
+exactly what an enumerable box may not have, so the TR-1000's `GEN` list is named by each recipe's
+own cited enum instead. The branch stays because the state is real in the model.
+
+**The library still has no `user-supplied` device**, which is itself a finding: #111 named the
+Tracker Mini as the one genuinely user-supplied box, and it ships fifty packs.
+
+**Four of these five facts live where `pdftotext` cannot reach them**, which is why CLAUDE.md's
+rendering rule is load-bearing rather than fussy. #111 concluded the Mini was user-supplied from
+that manual, having found every `.wav` in it to be an export filename and "Sample packs located in
+sub-folders" to be about organising your own content — and the FactoryPacks annotation sits one
+line below that sentence, inside the drawing. The TR-8S is the same trap: its sample chapter reads
+as being about the reader's own files end to end, and the sentence that says otherwise is a legend
+beside a screen shot. The MC-101's p.8 is a third diagram, and the Deluge's p.12 file structure is
+a fourth — the folder names extract, the annotations that give them meaning do not, and this box
+stayed `unknown` on a search of a guidebook that answers on that page. Every page named above was
+rendered and read.
+
 ---
 
 ## 3. Layer 2 — Recipes

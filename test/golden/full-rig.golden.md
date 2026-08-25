@@ -858,6 +858,11 @@ One setting for the whole pattern — set it once, not once per part below.
 
 *Values below cite TR-8S Reference Manual eng01.*
 
+**Content**
+
+- Ships preset samples supplied in the box — look in the SAMPLE screen, where preset entries are marked P and user imports U. p.38 legends the icon and shows one example name, and no page prints the list, so the Source line below says what the part needs rather than naming a file. · manual
+  - ↳ cite: claim manual — TR-8S Reference Manual eng01, p.38
+
 **Pattern-wide**
 
 One setting for the whole pattern — set it once, not once per part below.
@@ -934,6 +939,11 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
 ### Deluge
 
 *Values below cite Deluge Official Guidebook OS 4.1 (OLED) and Deluge community firmware release_1_2_1, community_features.md.*
+
+**Content**
+
+- Ships a factory library on the supplied SD card — look in SAMPLES/ARTISTS and SAMPLES/DRUMS. p.12 marks both folders as supplied samples and never names one of them, so the Source line below says what the part needs rather than naming a file. · manual
+  - ↳ cite: claim manual — Deluge Official Guidebook OS 4.1 (OLED), p.12
 
 **Song-wide**
 
