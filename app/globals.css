@@ -20,6 +20,18 @@
   /* One saturated accent for live signal. Not acid green. */
   --accent: #ff6a3d;
   --accent-dim: #7d3520;
+  /*
+   * §3.3's voice-control runs. Cool against the accent's orange, so sync and notes separate at a
+   * glance, and the two note cables separate from each other.
+   *
+   * **Colour is not load-bearing here, and it must not become so.** Both ends of every voice cable
+   * are drawn into a socket labelled with its own silkscreen, the rack callout names each run by
+   * device and jack, and the figure's accessible description says the same thing in a sentence. A
+   * reader who cannot tell cyan from lavender loses nothing but speed. That is the standard to hold
+   * if a third signal kind is ever drawn — add the words first, not a third hue.
+   */
+  --voice-cable: #56c5ef;
+  --voice-cable-gate: #b7a2e3;
 
   --font-label: ui-sans-serif, "Inter", "Helvetica Neue", Arial, system-ui, sans-serif;
   --font-value: ui-monospace, "SF Mono", "JetBrains Mono", "Roboto Mono", Menlo, monospace;
@@ -1358,6 +1370,45 @@ button:active {
 }
 
 /*
+ * §3.3's voice-control runs. Same two strokes as the clock cable and the same physics, drawn in a
+ * second colour so the two readings never depend on tracing a cable to its ends: sync is one
+ * colour, notes are another.
+ *
+ * Thinner than the clock cable by a hair, and that is on purpose rather than decorative. Two voice
+ * cables land on the same box within 22 mm of each other, so they are the pair most likely to be
+ * read as one thick line; a narrower core keeps them apart, and it also keeps the clock cable —
+ * the one you patch once and forget — as the heaviest thing in the frame.
+ *
+ * A dead socket has no cable, so nothing here styles one. `.rack-jack[data-live='no']` already
+ * draws an unlit ring, which is what a hole with nothing in it looks like.
+ */
+.rack-voice-cable-casing {
+  fill: none;
+  stroke: #08090a;
+  stroke-width: 6.4;
+  stroke-linecap: round;
+}
+
+.rack-voice-cable-core {
+  fill: none;
+  stroke: var(--voice-cable);
+  stroke-width: 3.2;
+  stroke-linecap: round;
+}
+
+.rack-voice-cable[data-signal='gate'] .rack-voice-cable-core {
+  stroke: var(--voice-cable-gate);
+}
+
+.rack-voice-cable-end {
+  fill: var(--voice-cable);
+}
+
+.rack-voice-cable[data-signal='gate'] .rack-voice-cable-end {
+  fill: var(--voice-cable-gate);
+}
+
+/*
  * §10's quality floor names the cable animation as the thing to gate. It is opt-in rather than
  * opt-out: the dash pattern that makes a draw-on possible lives INSIDE the no-preference query,
  * so with reduced motion — or in any engine that does not run the animation — the cable is a
@@ -1365,16 +1416,34 @@ button:active {
  */
 @media (prefers-reduced-motion: no-preference) {
   .rack-cable-core,
-  .rack-cable-casing {
+  .rack-cable-casing,
+  .rack-voice-cable-core,
+  .rack-voice-cable-casing {
     /* `pathLength="1"` on the path, so one dash pattern draws any cable at any scale. */
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
     animation: rack-draw 900ms ease-out forwards;
   }
 
+  /*
+   * The voice runs draw a beat after the clock run rather than with it. Patching order at a rack
+   * is sync first, notes second, and the stagger says so without a word of copy — but only for a
+   * reader who asked for motion. Under `prefers-reduced-motion` every cable is simply there, and
+   * the drawing is complete without the animation ever having run (#21).
+   */
+  .rack-voice-cable-core,
+  .rack-voice-cable-casing {
+    animation-delay: 300ms;
+  }
+
   .rack-cable-end {
     opacity: 0;
     animation: rack-plug 260ms ease-out 820ms forwards;
+  }
+
+  .rack-voice-cable-end {
+    opacity: 0;
+    animation: rack-plug 260ms ease-out 1120ms forwards;
   }
 }
 
@@ -2634,11 +2703,15 @@ html {
 @media print {
   /*
     The palette is repointed at its **tokens**, not overridden selector by selector.
-    Every panel, rule and label in the app already draws from these six, so inverting them here
-    inverts the whole guide at once — and, more importantly, keeps inverting it when somebody
+    Every panel, rule and label in the app already draws from the tokens below, so inverting them
+    here inverts the whole guide at once — and, more importantly, keeps inverting it when somebody
     adds a component next month without thinking about paper. A print stylesheet built from a
     list of selectors is a list that goes stale silently, which is the specific way print
     stylesheets rot: nobody prints during development.
+
+    This sentence used to say "these six" and the block had grown to ten before anybody noticed,
+    which is the same rot one scale down: a count in a comment is a list of one. It is deliberately
+    not "these twelve" now. Add a token to `:root` and add it here; the paragraph stays true.
 
     The first draft of this did override `body` alone, and the result was a white page carrying
     dark cards and light-grey headings — "Song", "Gaps", "Rig integration" were nearly invisible.
@@ -2665,6 +2738,9 @@ html {
     --ink-dim: #444;
     --accent: #000;
     --accent-dim: #777;
+    /* Paper has no hues to spare: two greys, still two weights apart. */
+    --voice-cable: #555;
+    --voice-cable-gate: #888;
   }
 
   :root,

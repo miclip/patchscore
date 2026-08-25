@@ -3,6 +3,7 @@ import {
   DEVICE_KINDS,
   DeviceKindSchema,
   DeviceSchema,
+  JackSignalKindSchema,
   RecipeSchema,
   VoiceSpecSchema,
   clockSourceSetupFact,
@@ -193,8 +194,8 @@ describe('Device manifest (§2.3)', () => {
   function patchable(over: Record<string, unknown> = {}) {
     return device({
       jacks: [
-        { id: 'VCO A · SAW', direction: 'out' },
-        { id: 'VCF · IN', direction: 'in' },
+        { id: 'VCO A · SAW', direction: 'out', signal: ['audio'] },
+        { id: 'VCF · IN', direction: 'in', signal: ['audio'] },
       ],
       capabilityEvidence: jackEvidence('VCO A · SAW', 'VCF · IN'),
       recipes: [recipe({ patch: [{ from: 'VCO A · SAW', to: 'VCF · IN' }] })],
@@ -241,14 +242,129 @@ describe('Device manifest (§2.3)', () => {
     // citation and the direction ambiguous rather than merely redundant.
     const dup = patchable({
       jacks: [
-        { id: 'VCO A · SAW', direction: 'out' },
-        { id: 'VCO A · SAW', direction: 'in' },
-        { id: 'VCF · IN', direction: 'in' },
+        { id: 'VCO A · SAW', direction: 'out', signal: ['audio'] },
+        { id: 'VCO A · SAW', direction: 'in', signal: ['audio'] },
+        { id: 'VCF · IN', direction: 'in', signal: ['audio'] },
       ],
     })
     const parsed = DeviceSchema.safeParse(dup)
     expect(parsed.success).toBe(false)
     expect(JSON.stringify(parsed.success ? [] : parsed.error.issues)).toContain('must be unique')
+  })
+
+  it('accepts a signal list naming two kinds one socket really carries (§3.3)', () => {
+    // What the list is for. A DC-coupled input the manual offers for audio-rate modulation is
+    // both things at once, and so is a ring modulator input; neither is an author hedging.
+    const two = patchable({
+      jacks: [
+        { id: 'VCO A · SAW', direction: 'out', signal: ['audio'] },
+        { id: 'VCF · IN', direction: 'in', signal: ['audio', 'cv'] },
+      ],
+    })
+    const parsed = DeviceSchema.safeParse(two)
+    expect(parsed.success ? [] : parsed.error.issues).toEqual([])
+  })
+
+  it('rejects a jack with no signal at all (§3.3)', () => {
+    // Required, like `direction`: a socket whose signal nobody stated is a socket every consumer
+    // has to guess about, and §10 is the record of what guessing produces.
+    const empty = patchable({
+      jacks: [
+        { id: 'VCO A · SAW', direction: 'out', signal: [] },
+        { id: 'VCF · IN', direction: 'in', signal: ['audio'] },
+      ],
+    })
+    expect(DeviceSchema.safeParse(empty).success).toBe(false)
+  })
+
+  it('rejects a signal list repeating one kind (§3.3)', () => {
+    // A repeat says nothing the singleton did not, and would render twice at the machine.
+    const dup = patchable({
+      jacks: [
+        { id: 'VCO A · SAW', direction: 'out', signal: ['audio', 'audio'] },
+        { id: 'VCF · IN', direction: 'in', signal: ['audio'] },
+      ],
+    })
+    const parsed = DeviceSchema.safeParse(dup)
+    expect(parsed.success).toBe(false)
+    expect(JSON.stringify(parsed.success ? [] : parsed.error.issues)).toContain('twice')
+  })
+
+  it('keeps pitch-cv and cv as two separate kinds (§3.3)', () => {
+    // The split exists so a consumer matching an output's kinds against an input's cannot make an
+    // LFO a legal source for a note socket. Both are legal values and neither is the other, and a
+    // pitch jack carries `pitch-cv` alone — labelling it both would put the shared `cv` member
+    // straight back and undo the reason for the member.
+    const pitched = patchable({
+      jacks: [
+        { id: 'VCO A · SAW', direction: 'out', signal: ['pitch-cv'] },
+        { id: 'VCF · IN', direction: 'in', signal: ['cv'] },
+      ],
+    })
+    const parsed = DeviceSchema.safeParse(pitched)
+    expect(parsed.success ? [] : parsed.error.issues).toEqual([])
+    expect(JackSignalKindSchema.safeParse('pitch-cv').success).toBe(true)
+    expect(JackSignalKindSchema.safeParse('pitch').success).toBe(false)
+    expect(JackSignalKindSchema.safeParse('cv').success).toBe(true)
+  })
+
+  it('rejects anything outside the closed signal vocabulary (§3.3)', () => {
+    const bogus = patchable({
+      jacks: [
+        { id: 'VCO A · SAW', direction: 'out', signal: ['line-level'] },
+        { id: 'VCF · IN', direction: 'in', signal: ['audio'] },
+      ],
+    })
+    expect(DeviceSchema.safeParse(bogus).success).toBe(false)
+  })
+
+  it("refuses a clock-carrying jack whose signal list omits 'clock' (§3.3)", () => {
+    // `signal` and `clock` answer different questions — what is in the cable, and which wire
+    // protocol carries it — and this is the one place they are not free of each other. A
+    // manifest telling the rack this socket takes tempo and telling a signal-aware consumer it
+    // does not is worse than either answer on its own.
+    const contradiction = patchable({
+      jacks: [
+        { id: 'VCO A · SAW', direction: 'out', signal: ['audio'] },
+        { id: 'VCF · IN', direction: 'in', signal: ['audio'] },
+        { id: 'MIDI IN', direction: 'in', signal: ['midi'], clock: ['midi-din'] },
+      ],
+      capabilityEvidence: jackEvidence('VCO A · SAW', 'VCF · IN', 'MIDI IN'),
+    })
+    const parsed = DeviceSchema.safeParse(contradiction)
+    expect(parsed.success).toBe(false)
+    const issues = JSON.stringify(parsed.success ? [] : parsed.error.issues)
+    expect(issues).toContain("does not include 'clock'")
+  })
+
+  it('accepts the same jack once its signal list says it carries clock (§3.3)', () => {
+    // And both fields stay: `midi` is the notes, `clock` the tempo, `midi-din` the wire.
+    const ok = patchable({
+      jacks: [
+        { id: 'VCO A · SAW', direction: 'out', signal: ['audio'] },
+        { id: 'VCF · IN', direction: 'in', signal: ['audio'] },
+        { id: 'MIDI IN', direction: 'in', signal: ['clock', 'midi'], clock: ['midi-din'] },
+      ],
+      capabilityEvidence: jackEvidence('VCO A · SAW', 'VCF · IN', 'MIDI IN'),
+    })
+    const parsed = DeviceSchema.safeParse(ok)
+    expect(parsed.success ? [] : parsed.error.issues).toEqual([])
+  })
+
+  it("allows a jack to carry 'clock' with no transport established yet (§3.3)", () => {
+    // The converse is deliberately unchecked. A box can have a socket somebody has read as a
+    // clock output while the transport question is still open — the Cascadia's `MIDI CLK` is
+    // exactly that today — and refusing it would push authors into inventing a transport.
+    const noTransport = patchable({
+      jacks: [
+        { id: 'VCO A · SAW', direction: 'out', signal: ['audio'] },
+        { id: 'VCF · IN', direction: 'in', signal: ['audio'] },
+        { id: 'MIDI CLK', direction: 'out', signal: ['clock'] },
+      ],
+      capabilityEvidence: jackEvidence('VCO A · SAW', 'VCF · IN', 'MIDI CLK'),
+    })
+    const parsed = DeviceSchema.safeParse(noTransport)
+    expect(parsed.success ? [] : parsed.error.issues).toEqual([])
   })
 
   it('requires every declared jack to carry evidence, `false` included (§2.6/#22)', () => {

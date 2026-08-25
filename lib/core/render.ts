@@ -15,7 +15,14 @@ import {
   type ResolvedHook,
   type ResolvedNote,
 } from './harmony'
-import { clockSourceBasis, type ClockSource, type ResolveResult, type ResolvedAssignment } from './pipeline'
+import {
+  clockSourceBasis,
+  type ClockSource,
+  type InterDevicePatch,
+  type ResolveResult,
+  type ResolvedAssignment,
+  type VoiceControlSource,
+} from './pipeline'
 import { GUIDE_PHASES } from './guide'
 import { bandTrajectory, chainPlan, type BandGroup, type SectionChain } from './arrangement'
 import { fxSources, type FxSource } from './fx'
@@ -649,6 +656,105 @@ function clockBasisText(source: ClockSource): string {
   }
 }
 
+/**
+ * §3.3/#121. **Why this box sends the notes** — the same discipline as `clockBasisText` above, for
+ * the same reason: a deterministic fallback and a person's judgement must not reach a reader in
+ * identical words, because the fallback is the one that then reads like advice.
+ *
+ * `clock-source` is the key this pass has and §7.4 does not, and it is the one that means the most
+ * to somebody standing at a rack: the box already driving the tempo is the box the cables are
+ * already going to.
+ */
+function voiceBasisText(source: VoiceControlSource): string {
+  switch (source.basis) {
+    case 'clock-source':
+      return 'Why this box sends them — it is already the clock source, so the cables run from where the tempo does'
+    case 'claimed':
+      return 'Why this box sends them — its manual says leading a rig is its job'
+    case 'contested':
+      return (
+        `Why this box sends them — ${num(source.claims)} boxes here claim that job, ` +
+        'so the names settled it'
+      )
+    default:
+      return 'Why this box sends them — nothing here claims that job, so the names settled it'
+  }
+}
+
+/**
+ * §3.3. **What to patch so a box actually plays**, and what to do when nothing can.
+ *
+ * Both device names and both jack ids on every line, because the reader is at a rack looking for a
+ * silkscreen and "patch pitch and gate" is not an instruction. The ids are section-qualified
+ * exactly as the panel prints them, which is why they are in backticks rather than in prose.
+ *
+ * Three outcomes, three different things to say (§7.3). `no-target` says nothing at all — a rig of
+ * grooveboxes is not missing a cable — and the other two are gaps a reader can act on, so they get
+ * words rather than an absence.
+ */
+function voiceControl(patch: InterDevicePatch): Line[] {
+  if (patch.outcome === 'no-target') return []
+  const out: Line[] = []
+  const source = patch.source
+
+  const routed = patch.targets.filter((t) => t.outcome === 'routed')
+  if (source !== undefined && routed.length > 0) {
+    out.push(
+      `**Voice control** — ${source.deviceName} sends the notes, ` +
+        `${count(routed.length * 2, 'cable')} in all. Patch each pair before you play anything:`,
+    )
+    out.push('')
+    for (const target of routed) {
+      for (const cable of target.cables) {
+        out.push(
+          `- ${cable.signal === 'gate' ? 'gate' : 'pitch'}: ` +
+            `${cable.fromDeviceName} \`${cable.fromJack}\` → ` +
+            `${cable.toDeviceName} \`${cable.toJack}\``,
+        )
+      }
+    }
+    out.push('')
+    out.push(`- ${voiceBasisText(source)}`)
+  }
+
+  // The gaps. Named per box, because which box is unplayable is the whole content of the sentence.
+  const exhausted = patch.targets.filter((t) => t.outcome === 'source-exhausted')
+  if (exhausted.length > 0 && source !== undefined) {
+    out.push('')
+    out.push(
+      `**Not driven** — ${source.deviceName} offers ` +
+        `${count(source.candidates, 'pitch-and-gate pair')} and this rig needs more. ` +
+        `${list(exhausted.map((t) => t.deviceName))} ` +
+        `${exhausted.length === 1 ? 'is' : 'are'} left unpatched:`,
+    )
+    out.push('')
+    for (const target of exhausted) {
+      out.push(
+        `- ${target.deviceName} \`${target.pitchJack}\` and \`${target.gateJack}\` — ` +
+          'nothing to plug in. Play it from its own keyboard or sequencer.',
+      )
+    }
+  }
+
+  const orphaned = patch.targets.filter((t) => t.outcome === 'no-compatible-source')
+  if (orphaned.length > 0) {
+    out.push('')
+    out.push(
+      '**No voice control** — nothing in this rig sends a note and a gate together. ' +
+        `${list(orphaned.map((t) => t.deviceName))} ` +
+        `${orphaned.length === 1 ? 'takes' : 'take'} one:`,
+    )
+    out.push('')
+    for (const target of orphaned) {
+      out.push(
+        `- ${target.deviceName} \`${target.pitchJack}\` and \`${target.gateJack}\` — ` +
+          'play it from its own keyboard or sequencer, or add a box that can drive it.',
+      )
+    }
+  }
+  return out
+}
+
 function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[] {
   const out: Line[] = []
   const source = result.clockSource
@@ -722,6 +828,14 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
     }
   }
   out.push('')
+
+  // §3.3. After the clock and before the per-box list, which is the order somebody patches a rack
+  // in: sync first, then the cables that make a box play, then what each box's own outputs do.
+  const voice = voiceControl(result.interDevicePatch)
+  if (voice.length > 0) {
+    out.push(...voice)
+    out.push('')
+  }
 
   // One block per box rather than a table plus a second list keyed by name. Two renderings of
   // the same three devices made the reader join them by eye, on the phase whose whole job is

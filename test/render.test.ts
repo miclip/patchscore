@@ -178,7 +178,12 @@ describe('provenance (invariant 4, §3.2)', () => {
 
     expect(bullets.length).toBeGreaterThan(0)
     for (const line of bullets) {
-      const at = line.indexOf(' · ')
+      // `lastIndexOf`, not `indexOf`: the provenance separator and the separator inside a
+      // section-qualified jack id (§3.3) are the same three characters, so a patch bullet reads
+      // `` - `VCO · SUB` → `VCF · IN` · manual `` and the first ` · ` on the line is inside a
+      // socket name. Unambiguous to a reader, because the ids are backticked; not to a splitter
+      // scanning forwards. The mark is always last, so scan from the end.
+      const at = line.lastIndexOf(' · ')
       if (at === -1) continue
       // Mood never touches patch or articulation, so `derived` cannot arise there (§3.2): the
       // only mark either can carry is the citation kind.

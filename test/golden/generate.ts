@@ -39,6 +39,11 @@ export function serialise(result: ResolveResult): string {
       score: result.score,
       search: result.search,
       clockSource: result.clockSource ?? null,
+      // §3.3. The rig's own wiring, pinned for the same reason the clock source is: it is decided
+      // by the resolver and only rendered downstream, so a drift here is a drift in the guide's
+      // instructions. Written whole — the outcome word as well as the cables, since "nothing here
+      // can drive this box" is an answer and an empty `cables` array is not one.
+      interDevicePatch: result.interDevicePatch,
       assignments: result.assignments.map((a) => ({
         requestId: a.requestId,
         role: a.role,

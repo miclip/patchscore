@@ -92,6 +92,123 @@ export type Assignable = {
 export type ClockTransport = string
 export const ClockTransportSchema = z.string().min(1)
 
+/**
+ * §3.3. **What a cable plugged into this socket is carrying.** The semantic vocabulary, not the
+ * connector and not the protocol: `midi` is a MIDI stream whether the hole is a 5-pin DIN, a
+ * 3.5mm TRS or a USB port, and `clock` is tempo whether it arrives as MIDI Clock or as pulses.
+ *
+ * **Closed, where `ClockTransport` above is open, and the difference is not an inconsistency.**
+ * A transport is a piece of engineering a manufacturer can invent — DIN sync, USB, whatever ships
+ * next year — so a closed union guessed here would reject a legal manifest. What a cable *means*
+ * is not like that: these seven are the vocabulary hardware manuals themselves use, and a socket
+ * outside them is a signal nobody in this project could describe to a reader standing at the
+ * machine. If one turns up, adding a member is the honest change and the compiler will name every
+ * place that has to think about it — which is exactly what an open `string` would have hidden.
+ *
+ * **The members are meant to be disjoint**, so a list means "this hole really does carry two
+ * different things", never "the author could not choose". Disjoint is not the same as unrelated —
+ * see the note on `pitch-cv` below, which is a kind plain `cv` inputs accept and not one they
+ * share:
+ *
+ *     audio     a signal meant to be heard
+ *     cv        a continuous level that controls something: an envelope, an LFO, a modulation
+ *     pitch-cv  a continuous level that *is* a note: 1V/oct, or whatever scaling the box tracks
+ *     gate      a sustained on/off whose *duration* matters
+ *     trigger   a momentary pulse whose duration does not
+ *     clock     a periodic pulse train carrying tempo
+ *     midi      MIDI messages, over any of its three physical carriers
+ *
+ * `gate`, `trigger` and `clock` are one waveform electrically and three different things to the
+ * reader — which of the three is written next to the hole is the whole question when somebody is
+ * deciding what to patch, and collapsing them would put the guide back to guessing. The real
+ * two-kind cases are the ones this being a list exists for: a DC-coupled input the manual itself
+ * offers for audio-rate modulation is `['cv', 'audio']`, and a socket whose meaning a setting
+ * chooses — the TR-1000's `TRG IN`, where p.32's `Trig In` decides whether arriving pulses are
+ * clock or triggers — is `['clock', 'trigger']`, the same socket the `clock` list is plural for.
+ *
+ * **`pitch-cv` is separate from `cv`, and a pitch jack does not also carry `cv`.** Electrically
+ * they are one thing, and this vocabulary is not electrical. The case that decides it is a
+ * consumer matching an output's kinds against an input's: with one `cv` member, an LFO output and
+ * a 1V/oct pitch input share it, so the LFO reads as a legal thing to plug into the note socket.
+ * That is invariant 5's failure in its usual shape — a plausible answer to a question the data
+ * could not actually answer — and it is worse than the authoring cost of splitting the member,
+ * because a reader standing at the machine is *told* to make the patch.
+ *
+ * So the split is real, and the rule for authoring it is **what the voltage means, not how it is
+ * scaled**: `pitch-cv` is the socket a note's pitch enters or leaves by. The Cascadia's
+ * `VCF · FM 2` is the jack that tests it — p.49 says it "accepts 1 V/oct signals" and is "ideal
+ * for tracking keyboards", and it is still `cv`, because what arrives there is a filter cutoff
+ * however it is scaled. 1V/oct is evidence for `pitch-cv` and not the definition of it.
+ *
+ * **A consumer matching these must not use raw set overlap, and that is not something this type
+ * can enforce.** Disjointness fixes the false positive above and creates the mirror false
+ * negative: a keyboard CV output is `['pitch-cv']`, a filter FM input is `['cv']`, and patching
+ * the first into the second is a real and useful cable that no longer shares a member. Pitch is
+ * usable wherever plain control voltage is wanted; the reverse is what must be refused. So what
+ * routing needs is a *compatibility relation* with `pitch-cv` accepted by `cv` one-way — not
+ * intersection — and building it on intersection instead would trade this slice's false positives
+ * for false negatives and look correct while doing it.
+ */
+export type JackSignalKind =
+  | 'audio'
+  | 'cv'
+  | 'pitch-cv'
+  | 'gate'
+  | 'trigger'
+  | 'clock'
+  | 'midi'
+export const JackSignalKindSchema = z.enum([
+  'audio',
+  'cv',
+  'pitch-cv',
+  'gate',
+  'trigger',
+  'clock',
+  'midi',
+])
+
+/**
+ * §3.3. **Whether one kind of signal may arrive at a socket that accepts another.** Not equality,
+ * and emphatically not set intersection.
+ *
+ * Intersection is the obvious implementation and it is wrong in both directions at once. With a
+ * single `cv` member it made an LFO output a legal source for a note socket; splitting
+ * `pitch-cv` out fixes that and creates the mirror error, because a keyboard's pitch output and
+ * a filter FM input now share no member at all while the cable between them is real and useful.
+ *
+ * So there is one asymmetric rule and it is the whole content of this function: **a note voltage
+ * is accepted where plain control voltage is wanted, and never the reverse.** Pitch is CV put to
+ * a particular use, so an input asking for CV can have it; an input asking for a note cannot be
+ * fed an envelope, which is the failure the member exists to prevent.
+ *
+ * Everything else is exact match. That is deliberate rather than unfinished — `gate` into
+ * `trigger` looks like a second candidate for a one-way rule and is not one, because a socket
+ * documented as a trigger input responds to the edge and discards the duration, so feeding it a
+ * gate silently loses the thing that made it a gate. If a box's own manual says a socket takes
+ * either, the socket says so by declaring both kinds, which is what the list on `JackSpec` is for.
+ */
+export function jackSignalAccepts(into: JackSignalKind, from: JackSignalKind): boolean {
+  if (into === from) return true
+  return into === 'cv' && from === 'pitch-cv'
+}
+
+/**
+ * §3.3. Whether a cable leaving an output that carries `from` may arrive at an input that accepts
+ * `to`. True when **any** kind on the output is accepted by **any** kind on the input, by the
+ * one-way relation above.
+ *
+ * `some`/`some` rather than a subset test: a jack's list is what the socket *can* carry, not what
+ * every cable in it does carry at once, so one usable pairing is enough to make the cable legal.
+ * A passive multiple declaring five kinds is the case that settles it — it is a legal destination
+ * for any of the five, and requiring containment would refuse all of them.
+ */
+export function compatibleJackSignals(
+  from: readonly JackSignalKind[],
+  to: readonly JackSignalKind[],
+): boolean {
+  return from.some((out) => to.some((into) => jackSignalAccepts(into, out)))
+}
+
 // ---------------------------------------------------------------------------
 // §2.6 Capability provenance
 // ---------------------------------------------------------------------------
@@ -595,6 +712,24 @@ export type JackSpec = {
   /** A cable leaves an `out` and arrives at an `in`. Checked, per patch entry. */
   direction: 'in' | 'out'
   /**
+   * §3.3. **What this socket carries**, in the semantic vocabulary of `JackSignalKind`.
+   *
+   * Required, and for the same reason `direction` is: it is a property of the hole that the page
+   * describing the hole already states, so it costs one more word beside a citation the manifest
+   * was writing anyway — and every consumer that does not have it has to guess. §10 is the
+   * standing lesson. The rack derived `CLK OUT` and `CLK IN` from two booleans and was wrong on
+   * both boxes whose manuals could check it, because a renderer answering a question the data
+   * cannot answer is invariant 5's fault in a new place. "Is this an audio hole or a CV hole" is
+   * that question again, one field earlier.
+   *
+   * It is not separately cited, again like `direction`: the jack's one entry at `jacks[<id>]`
+   * (§2.6) is the page that says this socket exists and what it does, and those are not two
+   * pages. A jack whose signal an author could not settle from that page is a jack that should
+   * not be declared with a guess in this field — a wrong `audio` here reads exactly like a read
+   * manual, which is the failure mode CLAUDE.md's cited-wrong-range note is about.
+   */
+  signal: JackSignalKind[]
+  /**
    * §10/#103. **This is the socket clock uses on this box, over this transport.**
    *
    * Set it and the rack's clock cable is drawn into a jack the manual prints; leave it off and
@@ -617,6 +752,16 @@ export type JackSpec = {
    * same socket — and ids are unique per device, so a single-valued field would have forced a
    * coin-flip between two true answers. The reverse is what must not happen, and is checked: two
    * *jacks* claiming the same transport in the same direction leaves the rack choosing.
+   *
+   * **`signal` did not replace this, and the two are not the same claim.** `signal: ['clock']`
+   * says a reader plugging in here is carrying tempo; `clock` says *which wire protocol* that
+   * tempo arrives over, and that is what selects a socket once a rig has resolved a transport.
+   * Folding them together would either lose the transport — putting the cable in the wrong hole
+   * on every box that syncs two ways, which is the defect this field was added to fix — or push
+   * transports into the semantic vocabulary and reopen it. So they stay apart, and the schema
+   * checks the one implication that must hold: a jack with `clock` carries `clock` in `signal`.
+   * The converse is deliberately unchecked — a jack can be known to carry clock while nobody has
+   * yet established the transport, which is the Cascadia's `MIDI / CV · MIDI CLK` today.
    */
   clock?: ClockTransport[]
   /** Anything a name alone would mislead a reader about. */
@@ -630,12 +775,53 @@ export type JackSpec = {
  * field, and one lookup now answers "who checked this?" for a socket, a menu path, a transport
  * and a track count alike.
  */
-export const JackSpecSchema = z.strictObject({
-  id: z.string().min(1),
-  direction: z.enum(['in', 'out']),
-  clock: z.array(ClockTransportSchema).min(1).optional(),
-  note: z.string().min(1).optional(),
-})
+export const JackSpecSchema = z
+  .strictObject({
+    id: z.string().min(1),
+    direction: z.enum(['in', 'out']),
+    signal: z.array(JackSignalKindSchema).min(1),
+    clock: z.array(ClockTransportSchema).min(1).optional(),
+    note: z.string().min(1).optional(),
+  })
+  .superRefine((jack, ctx) => {
+    /**
+     * §3.3. **A repeated kind is an authoring slip, not emphasis.** The list is plural for a
+     * socket that carries two *different* things; `['cv', 'cv']` says nothing the singleton did
+     * not and would render a duplicate label at the machine.
+     */
+    const seen = new Set<JackSignalKind>()
+    jack.signal.forEach((kind, i) => {
+      if (seen.has(kind)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `jack '${jack.id}' lists signal '${kind}' twice`,
+          path: ['signal', i],
+        })
+      }
+      seen.add(kind)
+    })
+
+    /**
+     * §3.3. **A jack that carries clock says so in its signal list.**
+     *
+     * The two fields answer different questions (see `clock` above) and this is the one place
+     * they are not free of each other: `clock: ['midi-din']` is a claim that tempo arrives here,
+     * so a `signal` omitting `clock` contradicts the field beside it. Left unchecked, a consumer
+     * reading `signal` — the vocabulary the rest of the project is meant to route on — would be
+     * told this socket carries notes and no tempo, while `clock` told the rack the opposite. One
+     * manifest saying two things is worse than either answer.
+     *
+     * Membership, not position: nothing else in this file gives an order within a jack's lists a
+     * meaning, and a rule the data does not need is a rule authors trip over for no reason.
+     */
+    if (jack.clock !== undefined && !seen.has('clock')) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `jack '${jack.id}' carries clock over ${jack.clock.map((t) => `'${t}'`).join(', ')} but its signal list does not include 'clock'`,
+        path: ['signal'],
+      })
+    }
+  })
 
 /**
  * §3.3. A patchable device's recipe is a patch list plus knob positions.

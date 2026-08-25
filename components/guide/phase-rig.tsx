@@ -1,6 +1,12 @@
-import type { ClockSource, DeviceId, ResolveResult } from '@/lib/core'
+import type {
+  ClockSource,
+  DeviceId,
+  InterDevicePatch,
+  ResolveResult,
+  VoiceControlSource,
+} from '@/lib/core'
 import { clockJackNotes, clockSourceBasis, clockSourceSetup, evidenceFor } from '@/lib/core'
-import { clockParts, count, ioText, mixerText, syncText } from './format'
+import { clockParts, count, ioText, list, mixerText, syncText } from './format'
 import { EvidenceMark, evidenceLines } from './instruction'
 
 /**
@@ -25,6 +31,106 @@ function basisText(source: ClockSource): string {
     default:
       return 'nothing here claims that job, so transport, then name, settled it'
   }
+}
+
+/**
+ * §3.3/#121. **Why this box sends the notes**, in this renderer's own words — the same standing
+ * rule as `basisText` above: one right answer, two hand-written vocabularies. And the same reason
+ * for existing at all, which is that a deterministic tie-break must not reach a reader looking
+ * like somebody's judgement.
+ */
+function voiceBasisText(source: VoiceControlSource): string {
+  switch (source.basis) {
+    case 'clock-source':
+      return 'it already sends the clock, so the cables run from where the tempo does'
+    case 'claimed':
+      return 'its manual says leading a rig is its job'
+    case 'contested':
+      return `${count(source.claims, 'box', 'boxes')} here claim that job, so the names settled it`
+    default:
+      return 'nothing here claims that job, so the names settled it'
+  }
+}
+
+/**
+ * §3.3. **The cables that make a box play**, and the honest version when there are none.
+ *
+ * Both device names and both jack ids on every row, monospaced, because the reader is at a rack
+ * hunting for a silkscreen and "patch pitch and gate" is not an instruction. Three outcomes get
+ * three different blocks: `no-target` renders nothing, since a rig of grooveboxes is not missing a
+ * cable, and the two gaps get words rather than an absence (§7.3, invariant 5).
+ */
+function VoiceControl({ patch }: { patch: InterDevicePatch }) {
+  if (patch.outcome === 'no-target') return null
+  const routed = patch.targets.filter((t) => t.outcome === 'routed')
+  const exhausted = patch.targets.filter((t) => t.outcome === 'source-exhausted')
+  const orphaned = patch.targets.filter((t) => t.outcome === 'no-compatible-source')
+  const source = patch.source
+
+  return (
+    <>
+      {source === undefined || routed.length === 0 ? null : (
+        <div className="callout">
+          <p>
+            <strong>Voice control</strong> — {source.deviceName} sends the notes.{' '}
+            {count(routed.length * 2, 'cable')}, and nothing plays until they are in.
+          </p>
+          <dl className="box-facts">
+            {routed.flatMap((target) =>
+              target.cables.map((cable) => (
+                <div key={`${cable.fromJack}->${cable.toDeviceId}:${cable.toJack}`}>
+                  <dt>{cable.signal === 'gate' ? 'gate' : 'pitch'}</dt>
+                  <dd>
+                    {cable.fromDeviceName} <span className="mono">{cable.fromJack}</span> →{' '}
+                    {cable.toDeviceName} <span className="mono">{cable.toJack}</span>
+                  </dd>
+                </div>
+              )),
+            )}
+          </dl>
+          {/* Not "Why this box" — the clock block already asks that, about a different
+              decision, and two lines opening the same way on one page is the readability
+              problem #35 is about. */}
+          <p>Why this box sends them — {voiceBasisText(source)}</p>
+        </div>
+      )}
+
+      {exhausted.length === 0 || source === undefined ? null : (
+        <div className="callout">
+          <p>
+            <strong>Not driven</strong> — {source.deviceName} offers{' '}
+            {count(source.candidates, 'pitch-and-gate pair')} and this rig wants more.{' '}
+            {list(exhausted.map((t) => t.deviceName))}{' '}
+            {exhausted.length === 1 ? 'is' : 'are'} left unpatched.
+          </p>
+          {exhausted.map((target) => (
+            <p className="subordinate note" key={target.deviceId}>
+              {target.deviceName} <span className="mono">{target.pitchJack}</span> and{' '}
+              <span className="mono">{target.gateJack}</span> — nothing to plug in. Play it from its
+              own keyboard or sequencer.
+            </p>
+          ))}
+        </div>
+      )}
+
+      {orphaned.length === 0 ? null : (
+        <div className="callout">
+          <p>
+            <strong>No voice control</strong> — nothing in this rig sends a note and a gate
+            together. {list(orphaned.map((t) => t.deviceName))}{' '}
+            {orphaned.length === 1 ? 'takes' : 'take'} one.
+          </p>
+          {orphaned.map((target) => (
+            <p className="subordinate note" key={target.deviceId}>
+              {target.deviceName} <span className="mono">{target.pitchJack}</span> and{' '}
+              <span className="mono">{target.gateJack}</span> — play it from its own keyboard or
+              sequencer, or add a box that can drive it.
+            </p>
+          ))}
+        </div>
+      )}
+    </>
+  )
 }
 
 /**
@@ -128,6 +234,13 @@ export function PhaseRig({
           ))}
         </div>
       )}
+
+      {/*
+        §3.3. After the clock and before the per-box list, which is the order somebody patches a
+        rack in: sync first, then the cables that make a box play, then what each box's own
+        outputs do.
+      */}
+      <VoiceControl patch={result.interDevicePatch} />
 
       <ul className="boxes">
         {result.devices.map((device) => {

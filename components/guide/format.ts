@@ -31,6 +31,20 @@ export function num(value: number): string {
  * until the rack started counting boxes, and '4 boxs' shipped for a while because the default
  * looked total and was not. Pass the plural when the word needs one.
  */
+/**
+ * `a`, `a and b`, `a, b, and c`. The serial comma is deliberate: `pitch, gate and clock` reads as
+ * two items on a phone at a rack, and this list is read at a rack.
+ *
+ * A second copy of the one in `lib/core/render.ts`, which is this directory's standing rule rather
+ * than an oversight — `lib/core` cannot import from `components`, and `count` has lived in both for
+ * the same reason. The shapes are trivial and the wording is the point.
+ */
+export function list(items: readonly string[]): string {
+  if (items.length <= 1) return items[0] ?? ''
+  if (items.length === 2) return `${items[0]} and ${items[1]}`
+  return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`
+}
+
 export function count(n: number, singular: string, plural?: string): string {
   if (n === 1) return `${num(n)} ${singular}`
   return `${num(n)} ${plural ?? `${singular}s`}`

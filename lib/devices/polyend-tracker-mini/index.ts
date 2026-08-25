@@ -1117,6 +1117,7 @@ export const device: Device = {
     {
       id: 'MIDI Out',
       direction: 'out',
+      signal: ['clock', 'midi'],
       clock: ['midi-din'],
       // The Type B detail, on the jack it is about. p.13's callout: "3.5mm jack to 5 Pin MIDI.
       // Adapter (Type B) supplied", restated at p.284: "Tracker Mini uses a TRS to Type B MIDI
@@ -1127,6 +1128,7 @@ export const device: Device = {
     {
       id: 'MIDI In',
       direction: 'in',
+      signal: ['clock', 'midi'],
       clock: ['midi-din'],
       note: '3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284)',
     },

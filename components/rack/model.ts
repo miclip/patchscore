@@ -3,8 +3,11 @@ import type {
   Device,
   DeviceId,
   DeviceKind,
+  InterDevicePatch,
   IoSpec,
+  JackSignalKind,
   PanelLayout,
+  PatchCable,
   ResolveResult,
   Verified,
 } from '@/lib/core'
@@ -197,6 +200,17 @@ const MAIN_JACK_LABELS: Record<IoSpec['main'], string[]> = {
 const OUT_START_MM = JACK_SIDE_MM + 22
 const OUT_PITCH_MM = 11
 
+/**
+ * §3.3. Voice sockets are pitched at twice the audio row's, because they are the only sockets on
+ * this rail whose silkscreen is a *word* rather than a character: `L`, `R` and `1`..`10` come off
+ * `io`, and `MIDI GATE`, `ENV GATE`, `OSC CV` come off a declared jack. At 11 mm two of those
+ * labels overlap; at 22 mm a nine-character name clears its neighbour.
+ *
+ * The labels are hidden below a 1300 px container anyway, so this buys nothing on a phone and
+ * costs nothing there either — the sockets still sit where the cables land.
+ */
+const VOICE_PITCH_MM = OUT_PITCH_MM * 2
+
 /** Voice-field layout, all mm. */
 const CELL_GAP_MM = 3
 const CELL_ASPECT = 0.78
@@ -249,9 +263,29 @@ export type Point = { x: number; y: number }
 export type PanelJack = {
   id: string
   label?: string
-  kind: 'clock-out' | 'clock-in' | 'main-out' | 'individual-out'
+  /**
+   * `voice-out` and `voice-in` are §3.3's pitch and gate sockets, kept as their own kinds rather
+   * than folded into the clock pair. They are a different claim: a clock socket is drawn from two
+   * booleans and a resolved transport, and these are drawn from a jack the manifest declares by
+   * name with a page, which is why they are the first sockets on this rail whose label is never
+   * invented and never absent.
+   */
+  kind: 'clock-out' | 'clock-in' | 'main-out' | 'individual-out' | 'voice-out' | 'voice-in'
   /** Panel-local, mm. */
   at: Point
+  /**
+   * §3.3. Whether a cable in this drawing actually lands here.
+   *
+   * Set on voice sockets only, and `false` is the interesting value: a target the pass could not
+   * feed still gets its pitch and gate holes drawn, with nothing plugged into them. That is the
+   * picture of `no-compatible-source` and `source-exhausted` — "this box takes a note and a gate,
+   * and nothing here is sending one" — and it is the drawing keeping invariant 5 rather than
+   * quietly omitting the sockets and looking like a box that does not take them.
+   *
+   * Clock sockets leave this undefined; the diagram derives their liveness from `clockRole`,
+   * which it has done since #103 and which says the same thing one level up.
+   */
+  live?: boolean
 }
 
 /**
@@ -350,7 +384,8 @@ export type PathSeg =
 export type CableGeometry = { start: Point; segs: readonly PathSeg[] }
 
 /**
- * Clock only. There is no audio cable type and that is deliberate — see `AUDIO_OMISSION`.
+ * The clock run §7.4 decided. `VoiceCable` below is the other kind this figure draws; there is no
+ * audio cable type and that is deliberate — see `AUDIO_OMISSION`.
  */
 export type ClockCable = {
   fromDeviceId: DeviceId
@@ -373,8 +408,41 @@ export type ClockCable = {
 }
 
 /**
+ * §3.3. A voice-control cable: one of the two runs that make a box play.
+ *
+ * **A separate array from `cables`, not a `kind` on one union**, and that is a deliberate choice
+ * rather than an omission. The two are different facts with different authorities: §7.4 decides
+ * exactly one clock topology for a rig, and §3.3 allocates note-and-gate pairs from one source
+ * outward. A single list would make "how many clock cables" a filter rather than a length, on the
+ * one question this drawing existed to answer first. The *machinery* is shared — same sag, same
+ * gutters, same corridor lanes, same lane accounting, so a clock cable and a pitch cable never
+ * draw on top of each other — which is the part that had to be common.
+ *
+ * It carries both jack ids because the reader is standing at a rack looking for a silkscreen, and
+ * `signal` because pitch and gate are two cables to the same box and telling them apart is the
+ * whole job.
+ */
+export type VoiceCable = {
+  fromDeviceId: DeviceId
+  toDeviceId: DeviceId
+  fromName: string
+  toName: string
+  /** The kind in the cable — `pitch-cv` or `gate` (§3.3). */
+  signal: JackSignalKind
+  /** Section-qualified, exactly as the panel prints it. */
+  fromJack: string
+  toJack: string
+  from: Point
+  to: Point
+  routing: 'same-row' | 'inter-row'
+  path: CableGeometry
+  d: string
+}
+
+/**
  * Said beside the legend, not buried in a comment, because a rack drawing that shows only clock
- * looks incomplete and the reader deserves to know it is incomplete *on purpose*.
+ * and voice control looks incomplete and the reader deserves to know it is incomplete *on
+ * purpose*.
  *
  * The resolver assigns a part to an *assignable* — a voice on a box (§2.2). It never names a
  * destination device or a mixer channel, because the authored rig has no such endpoint to name:
@@ -383,10 +451,10 @@ export type ClockCable = {
  * "never invent an assignment to fill a hole" wearing a different hat.
  */
 export const AUDIO_OMISSION =
-  'Clock only. Audio paths are not drawn: the resolver assigns parts to voices, not to a ' +
-  'destination box or mixer channel, so there is no authored endpoint to cable to — and ' +
-  'inventing one would be a plausible fiction. The output jacks are drawn; what they run to ' +
-  'is yours. The guide’s rig phase lists each box’s outputs in words.'
+  'Clock and voice control only. Audio paths are not drawn: the resolver assigns parts to ' +
+  'voices, not to a destination box or mixer channel, so there is no authored endpoint to cable ' +
+  'to — and inventing one would be a plausible fiction. The output jacks are drawn; what they ' +
+  'run to is yours. The guide’s rig phase lists each box’s outputs in words.'
 
 /** Said on the page, because a drawing should state what it is and is not claiming. */
 export const SCALE_CAVEAT =
@@ -565,13 +633,105 @@ function clockLabel(
   )?.id
 }
 
+/**
+ * §3.3. **The pitch and gate sockets this rig actually uses on this box**, in cable order.
+ *
+ * Which jacks, from the pass and only from the pass: the `fromJack` of every cable leaving this
+ * box, the `toJack` of every cable arriving, and — for a target the pass could not feed — the
+ * pitch and gate sockets it *named* and could not cable, drawn dead. Nothing here is derived from
+ * a capability the way the clock pair is, so nothing here can be a socket the manifest did not
+ * declare by name.
+ *
+ * **Placed inboard of the clock sockets, marching inward**, so the geometry reads the way the
+ * clock geometry does: notes leave a box on the right and arrive on the left, and a cable crosses
+ * the gap between panels rather than the face of one. `jacksFor` reserves the rail room they take
+ * before it lays out the audio outs, so an audio socket displaced by them is *counted* — it lands
+ * in `hiddenJacks` the way an audio socket that never fit always has.
+ *
+ * **A voice socket itself is never hidden, and there is no accounting for one that will not fit.**
+ * That asymmetry is deliberate: a hidden socket with a cable drawn into it is a lie, and a hidden
+ * socket whose cable is also dropped is a rig the guide told you to patch and the drawing denies.
+ * So they are always drawn. What keeps that safe is a bound rather than a check — the pass hands a
+ * box at most one input pair, and at most one output pair per section it declares, and the widest
+ * case in the library is the Metropolix's four outputs on a 172.7 mm panel. A box with enough
+ * sections to march these into the audio row would overlap sockets silently. `test/voice-control-
+ * render.test.ts` asserts no two sockets share a position across every rig the library can build;
+ * nothing asserts it for a rig it cannot.
+ *
+ * A source bundle nobody was allocated is **not** drawn. A dead socket says "this box takes a note
+ * and nothing is sending one", which is a gap; a spare output says "there is capacity here", which
+ * is a different sentence and not one this drawing is making yet.
+ */
+function voiceJacksFor(device: Device, patch: InterDevicePatch, span: number, rise: number) {
+  const y = rise + RAIL_MM / 2
+  const outs: string[] = []
+  const ins: { id: string; live: boolean }[] = []
+
+  for (const target of patch.targets) {
+    for (const c of target.cables) {
+      if (c.fromDeviceId === device.id && !outs.includes(c.fromJack)) outs.push(c.fromJack)
+      if (c.toDeviceId === device.id && !ins.some((i) => i.id === c.toJack)) {
+        ins.push({ id: c.toJack, live: true })
+      }
+    }
+    // The named-but-uncabled case. `outcome` is what distinguishes it from a target that got its
+    // two cables, and the sockets are the ones the pass chose before it looked for a source.
+    if (target.deviceId !== device.id || target.outcome === 'routed') continue
+    for (const id of [target.pitchJack, target.gateJack]) {
+      if (!ins.some((i) => i.id === id)) ins.push({ id, live: false })
+    }
+  }
+
+  /**
+   * **The label is the silkscreen, so the section prefix comes off — unless taking it off makes
+   * the panel ambiguous.**
+   *
+   * `id` stays whole: it is what a cable names and what a test matches on. But the string beside
+   * the hole should be the string printed beside the hole, and §3.3 qualifies ids by section
+   * *precisely because* a bare name repeats — `MIDI / CV · MIDI PITCH` is not silkscreened
+   * anywhere, `MIDI PITCH` is.
+   *
+   * The Metropolix is why this is not an unconditional strip. Its four track outputs silkscreen a
+   * bare `PITCH` or `GATE`, and the track number is a column header printed above them. This rail
+   * has no column headers, so stripping would draw two sockets labelled `PITCH` with nothing to
+   * tell a reader which is track 1 — the drawing inheriting an ambiguity from a panel feature it
+   * does not reproduce. Where the bare name repeats on one panel, the qualified id is what is
+   * printed, because being long is a smaller failure than being ambiguous at the machine.
+   */
+  const bare = (id: string) => {
+    const at = id.indexOf(' · ')
+    return at < 0 ? id : id.slice(at + 3)
+  }
+  const all = [...ins.map((i) => i.id), ...outs]
+  const silkscreen = (id: string) =>
+    all.filter((other) => bare(other) === bare(id)).length > 1 ? id : bare(id)
+
+  return [
+    ...ins.map((entry, i) => ({
+      id: entry.id,
+      label: silkscreen(entry.id),
+      kind: 'voice-in' as const,
+      at: { x: JACK_SIDE_MM + (i + 1) * VOICE_PITCH_MM, y },
+      live: entry.live,
+    })),
+    ...outs.map((id, i) => ({
+      id,
+      label: silkscreen(id),
+      kind: 'voice-out' as const,
+      at: { x: span - JACK_SIDE_MM - (i + 1) * VOICE_PITCH_MM, y },
+      live: true,
+    })),
+  ]
+}
+
 function jacksFor(
   device: Device,
   span: number,
   rise: number,
+  voice: readonly PanelJack[],
   transport?: ClockTransport,
 ): { jacks: PanelJack[]; hidden: number } {
-  const jacks: PanelJack[] = []
+  const jacks: PanelJack[] = [...voice]
   const y = rise + RAIL_MM / 2
 
   // Out on the right, in on the left, so a cable crosses the gap between panels rather than the
@@ -607,7 +767,19 @@ function jacksFor(
   const mains = MAIN_JACK_LABELS[device.io.main]
   const individuals = Array.from({ length: device.io.individualOuts }, (_, i) => `${i + 1}`)
   const wanted = [...mains, ...individuals]
-  const room = Math.max(0, Math.floor((span - OUT_START_MM - JACK_SIDE_MM - 9) / OUT_PITCH_MM) + 1)
+
+  // §3.3. The voice sockets are placed first and the audio row starts clear of them, at both ends.
+  // Reserving rather than overlaying, because a socket drawn under another socket is worse than a
+  // socket counted in `hiddenJacks` — and `hiddenJacks` is already the honest answer for a rail
+  // that ran out of room. A box with no voice cables reserves nothing and lays out exactly as it
+  // did before this existed.
+  const voiceIns = voice.filter((j) => j.kind === 'voice-in').length
+  const voiceOuts = voice.filter((j) => j.kind === 'voice-out').length
+  const start = OUT_START_MM + voiceIns * VOICE_PITCH_MM
+  const room = Math.max(
+    0,
+    Math.floor((span - start - JACK_SIDE_MM - 9 - voiceOuts * VOICE_PITCH_MM) / OUT_PITCH_MM) + 1,
+  )
   const shown = wanted.slice(0, room)
 
   shown.forEach((label, i) => {
@@ -615,7 +787,7 @@ function jacksFor(
       id: i < mains.length ? `main-${label}` : `out-${label}`,
       label,
       kind: i < mains.length ? 'main-out' : 'individual-out',
-      at: { x: OUT_START_MM + OUT_PITCH_MM * i, y },
+      at: { x: start + OUT_PITCH_MM * i, y },
     })
   })
 
@@ -759,7 +931,11 @@ export function soloPanel(device: Device): RackPanel {
   const span = device.physical.panelSpanMm
   const layout = device.panel
   const rise = layout?.panelRiseMm ?? PANEL_HEIGHT_MM
-  const { jacks, hidden: hiddenJacks } = jacksFor(device, span, rise)
+  // §3.3. No rig, so no voice sockets — the same reasoning as the unlit cells and the isolated
+  // clock role above. Which pitch and gate holes a reader patches is a fact about a *rig*: it
+  // comes from the pass's allocation, and a device page that drew them would be claiming an
+  // allocation nobody made.
+  const { jacks, hidden: hiddenJacks } = jacksFor(device, span, rise, [])
   const { banks, hidden: hiddenCells } = banksFor(
     device,
     new Set<string>(),
@@ -820,6 +996,17 @@ export type RackModel = {
   /** The same panels, grouped. `rows.length` is 1 for a rig that fits the cap. */
   rows: readonly RackRow[]
   cables: readonly ClockCable[]
+  /**
+   * §3.3. The voice-control runs, kept apart from `cables` — see `VoiceCable` for why. Empty when
+   * the pass routed nothing, which is not the same as the pass having nothing to say: the targets
+   * it could not feed are in `voicePatch.targets`, and their sockets are on the panels, drawn dead.
+   */
+  voiceCables: readonly VoiceCable[]
+  /**
+   * §3.3. The pass's own answer, carried through so the drawing's caption and the guide's rig
+   * phase say the same thing about the same rig. The renderer decides nothing (§8).
+   */
+  voicePatch: InterDevicePatch
   /** The per-row cap this layout was built with, so a caller can say what it is showing. */
   perRow: number
   /** Figure width in mm: the widest row, plus whatever cable gutters were reserved. */
@@ -878,6 +1065,24 @@ export function rackModel(result: ResolveResult, options: RackLayoutOptions = {}
   }
 
   const source = result.clockSource
+
+  /**
+   * §3.3. The voice sockets, per box, computed once and read twice — by the run planner, which
+   * needs their offsets before the gutters exist, and by the panels, which draw them. The same
+   * split the clock pair already has (`localOut`/`localIn` against `outAt`/`inAt`), and for the
+   * same reason: two places computing one socket's position is two places for it to drift.
+   */
+  const voiceJacksByDevice = new Map<DeviceId, PanelJack[]>(
+    result.devices.map((device) => [
+      device.id,
+      voiceJacksFor(
+        device,
+        result.interDevicePatch,
+        device.physical.panelSpanMm,
+        device.panel?.panelRiseMm ?? PANEL_HEIGHT_MM,
+      ),
+    ]),
+  )
 
   // Bottom-aligned within a row, so every panel's rail on that row — and therefore every clock
   // socket on it — is on one line, the way boxes of different depths sit on one desk.
@@ -942,21 +1147,76 @@ export function rackModel(result: ResolveResult, options: RackLayoutOptions = {}
    * (invariant 6's reasoning, applied to layout).
    */
   const sourceIndex = placed.findIndex((p) => clockOf(p.device).role === 'source')
-  type Run = { fromIndex: number; toIndex: number; side?: 'left' | 'right' }
-  const runs: Run[] = []
+
+  /**
+   * §3.3. Clock and voice runs are planned **together**, in one list, because the thing they have
+   * to share is the frame: the gutters they route down are reserved from a count of runs, and the
+   * corridor lanes are divided among the runs that use them. Planned separately, a clock cable and
+   * a pitch cable would each be told it was the only run in its corridor and would draw on top of
+   * the other — which is the one failure the lane machinery exists to prevent.
+   *
+   * `kind` is what keeps them apart in the output, and `fromX`/`toX` are what let the side choice
+   * below be one piece of arithmetic instead of two: the clock pair is a box's edges, a voice pair
+   * is a named socket on the rail, and the choice only ever needed the numbers.
+   */
+  type Run = {
+    kind: 'clock' | 'voice'
+    fromIndex: number
+    toIndex: number
+    fromX: number
+    toX: number
+    side?: 'left' | 'right'
+    cable?: PatchCable
+  }
+  const planned: Omit<Run, 'side'>[] = []
+
   const from = placed[sourceIndex]
   if (from !== undefined) {
     placed.forEach((target, toIndex) => {
       if (clockOf(target.device).role !== 'receiver') return
-      if (target.row === from.row) {
-        runs.push({ fromIndex: sourceIndex, toIndex })
-        return
-      }
-      const toLeft = localOut(from) + localIn(target)
-      const toRight = bandMm - localOut(from) + (bandMm - localIn(target))
-      runs.push({ fromIndex: sourceIndex, toIndex, side: toLeft <= toRight ? 'left' : 'right' })
+      planned.push({
+        kind: 'clock',
+        fromIndex: sourceIndex,
+        toIndex,
+        fromX: localOut(from),
+        toX: localIn(target),
+      })
     })
   }
+
+  // Voice runs, in the pass's own order: targets in `deviceId` order, pitch then gate. A cable
+  // whose endpoints are not both on this rack is dropped rather than drawn to nowhere — it cannot
+  // happen from `resolve`, since the pass reads the same device list, and a caller assembling a
+  // model by hand gets the honest answer instead of a crash.
+  for (const target of result.interDevicePatch.targets) {
+    for (const c of target.cables) {
+      const fromIndex = placed.findIndex((p) => p.device.id === c.fromDeviceId)
+      const toIndex = placed.findIndex((p) => p.device.id === c.toDeviceId)
+      const fromPlaced = placed[fromIndex]
+      const toPlaced = placed[toIndex]
+      if (fromPlaced === undefined || toPlaced === undefined) continue
+      const fromJack = voiceJacksByDevice.get(c.fromDeviceId)?.find((j) => j.id === c.fromJack)
+      const toJack = voiceJacksByDevice.get(c.toDeviceId)?.find((j) => j.id === c.toJack)
+      if (fromJack === undefined || toJack === undefined) continue
+      planned.push({
+        kind: 'voice',
+        fromIndex,
+        toIndex,
+        fromX: fromPlaced.localX + fromJack.at.x,
+        toX: toPlaced.localX + toJack.at.x,
+        cable: c,
+      })
+    }
+  }
+
+  const runs: Run[] = planned.map((run) => {
+    const a = placed[run.fromIndex]
+    const b = placed[run.toIndex]
+    if (a === undefined || b === undefined || a.row === b.row) return run
+    const toLeft = run.fromX + run.toX
+    const toRight = bandMm - run.fromX + (bandMm - run.toX)
+    return { ...run, side: toLeft <= toRight ? 'left' : 'right' }
+  })
 
   const routed = runs.filter((r) => r.side !== undefined)
   const gutterMm = (lanes: number) => (lanes === 0 ? 0 : GUTTER_MARGIN_MM + lanes * GUTTER_LANE_MM)
@@ -974,7 +1234,13 @@ export function rackModel(result: ResolveResult, options: RackLayoutOptions = {}
     const rise = layout?.panelRiseMm ?? PANEL_HEIGHT_MM
     const xMm = leftGutterMm + p.localX
 
-    const { jacks, hidden: hiddenJacks } = jacksFor(device, span, rise, source?.transport)
+    const { jacks, hidden: hiddenJacks } = jacksFor(
+      device,
+      span,
+      rise,
+      voiceJacksByDevice.get(device.id) ?? [],
+      source?.transport,
+    )
     const { banks, hidden: hiddenCells } = banksFor(
       device,
       occupiedByDevice.get(device.id) ?? new Set<string>(),
@@ -1058,7 +1324,42 @@ export function rackModel(result: ResolveResult, options: RackLayoutOptions = {}
     return leftGutterMm + bandMm + ((taken + 1) * rightGutterMm) / (of + 1)
   }
 
+  /**
+   * The shared half: where a run starts, where it ends, and the geometry between them.
+   *
+   * Same row is the hanging bézier this drawing has always used. Different rows is a routed run
+   * down into this row's corridor, out to a gutter, down (or up) the side of the frame, along the
+   * corridor *under* the target row, and up into the socket.
+   *
+   * Under, always. A cable arriving from above would have to cross the target's own face to reach
+   * a jack on its bottom rail — which is the thing the bottom rail exists to prevent.
+   *
+   * One function for both kinds, because a pitch cable and a clock cable are the same physical
+   * object in the same frame and any difference between how they route would be a difference the
+   * drawing invented.
+   */
+  const geometryFor = (run: Run, at: Point, to: Point) => {
+    if (run.side === undefined) return sagCurve(at, to)
+    const leave = laneY(placed[run.fromIndex]?.row ?? 0)
+    const channel = channelX(run.side)
+    const arrive = laneY(placed[run.toIndex]?.row ?? 0)
+    return routedPath([
+      at,
+      { x: at.x, y: leave },
+      { x: channel, y: leave },
+      { x: channel, y: arrive },
+      { x: to.x, y: arrive },
+      to,
+    ])
+  }
+
+  const jackPoint = (panel: RackPanel, id: string): Point | undefined => {
+    const jack = panel.jacks.find((j) => j.id === id)
+    return jack === undefined ? undefined : { x: panel.xMm + jack.at.x, y: panel.topMm + jack.at.y }
+  }
+
   const cables: ClockCable[] = runs.flatMap((run) => {
+    if (run.kind !== 'clock') return []
     const sourcePanel = panels[run.fromIndex]
     const target = panels[run.toIndex]
     if (sourcePanel === undefined || target === undefined) return []
@@ -1071,30 +1372,10 @@ export function rackModel(result: ResolveResult, options: RackLayoutOptions = {}
     const at = sourcePanel.outAt
     const to = target.inAt
 
-    /**
-     * Same row: the hanging bézier, unchanged. Different rows: down into this row's corridor,
-     * out to a gutter, down (or up) the side of the frame, along the corridor *under* the target
-     * row, and up into its clock input socket.
-     *
-     * Under, always. A cable arriving from above would have to cross the target's own face to
-     * reach a jack on its bottom rail — which is the thing the bottom rail exists to prevent.
-     */
-    const path =
-      run.side === undefined
-        ? sagCurve(at, to)
-        : (() => {
-            const leave = laneY(sourcePanel.row)
-            const channel = channelX(run.side)
-            const arrive = laneY(target.row)
-            return routedPath([
-              at,
-              { x: at.x, y: leave },
-              { x: channel, y: leave },
-              { x: channel, y: arrive },
-              { x: to.x, y: arrive },
-              to,
-            ])
-          })()
+    // Geometry is `geometryFor`, shared with the voice runs below — see its comment. It used to be
+    // written out here, and a second copy beside the voice cables would have been two answers to
+    // how a cable gets from one row to another.
+    const path = geometryFor(run, at, to)
 
     return [
       {
@@ -1114,10 +1395,53 @@ export function rackModel(result: ResolveResult, options: RackLayoutOptions = {}
     ]
   })
 
+  /**
+   * Voice runs are built after the clock run and take their corridor lanes after it, so within a
+   * row the clock cable keeps the lane it had.
+   *
+   * **Across rows it does move, and that is the sharing working rather than a bug.** Lane pitch is
+   * the reserved band divided by the number of runs using it, and gutter width is a count of runs
+   * routed down each side — both computed over clock *and* voice runs together, because the
+   * alternative is two cables drawing on top of each other. So an inter-row voice cable widens the
+   * gutter, shifts every panel right, and re-divides the corridor: measured on a Metropolix +
+   * Cascadia + CRAVE rig wrapped to one box per row, the left gutter goes 28 mm to 64 mm, the
+   * figure 376 mm to 412 mm, and the clock cable's `d` changes. Every current rig at the default
+   * per-row cap is same-row throughout and none of that fires.
+   */
+
+  const voiceCables: VoiceCable[] = runs.flatMap((run) => {
+    if (run.kind !== 'voice' || run.cable === undefined) return []
+    const fromPanel = panels[run.fromIndex]
+    const toPanel = panels[run.toIndex]
+    if (fromPanel === undefined || toPanel === undefined) return []
+    const at = jackPoint(fromPanel, run.cable.fromJack)
+    const to = jackPoint(toPanel, run.cable.toJack)
+    if (at === undefined || to === undefined) return []
+    const path = geometryFor(run, at, to)
+    return [
+      {
+        fromDeviceId: fromPanel.deviceId,
+        toDeviceId: toPanel.deviceId,
+        fromName: fromPanel.name,
+        toName: toPanel.name,
+        signal: run.cable.signal,
+        fromJack: run.cable.fromJack,
+        toJack: run.cable.toJack,
+        from: at,
+        to,
+        routing: run.side === undefined ? ('same-row' as const) : ('inter-row' as const),
+        path,
+        d: pathD(path),
+      },
+    ]
+  })
+
   return {
     panels,
     rows,
     cables,
+    voiceCables,
+    voicePatch: result.interDevicePatch,
     perRow,
     totalMm,
     frontPanelMm: panels.reduce((sum, p) => sum + p.spanMm, 0),

@@ -1,4 +1,11 @@
-import type { CapabilityEvidence, Device, JackSpec, PatchEntry, Recipe } from '../../core/device'
+import type {
+  CapabilityEvidence,
+  Device,
+  JackSignalKind,
+  JackSpec,
+  PatchEntry,
+  Recipe,
+} from '../../core/device'
 import { jackFact } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, Cite } from '../../core/params'
 import type { Role } from '../../core/vocabulary'
@@ -172,11 +179,12 @@ const JACK_EVIDENCE: Record<string, CapabilityEvidence> = {}
 function jack<Id extends string>(
   id: Id,
   direction: JackSpec['direction'],
+  signal: JackSignalKind[],
   page: number,
   note?: string,
 ): JackSpec & { id: Id } {
   JACK_EVIDENCE[jackFact(id)] = cite(page)
-  return { id, direction, ...(note === undefined ? {} : { note }) }
+  return { id, direction, signal, ...(note === undefined ? {} : { note }) }
 }
 
 /**
@@ -195,113 +203,138 @@ function jack<Id extends string>(
  */
 const JACKS = [
   // §1 MIDI / CV (pp.17-21). Every jack in this section is an output.
-  jack('MIDI / CV · MIDI PITCH', 'out', 17),
-  jack('MIDI / CV · MIDI CC', 'out', 18),
-  jack('MIDI / CV · MIDI LFO', 'out', 19),
-  jack('MIDI / CV · MIDI CLK', 'out', 20),
-  jack('MIDI / CV · MIDI VEL', 'out', 21),
-  jack('MIDI / CV · MIDI MOD', 'out', 21),
-  jack('MIDI / CV · MIDI GATE', 'out', 21),
-  jack('MIDI / CV · MIDI TRIG', 'out', 21),
+  //
+  // **None of them carries `midi`**, which is worth saying because the section's name suggests
+  // otherwise: these eight are the pitch, CV, gate, trigger and clock this box *derives* from an
+  // incoming MIDI stream, and the MIDI ports themselves are on the back panel and not declared
+  // here. `signal` describes what is in the cable, not where the box learned it, so `MIDI PITCH`
+  // is `pitch-cv` — 1.A calls it a "1V/octave CV output with a 10 octave range (±5V)" — and the
+  // rest are the plain control voltages and pulses their own pages describe.
+  jack('MIDI / CV · MIDI PITCH', 'out', ['pitch-cv'], 17),
+  jack('MIDI / CV · MIDI CC', 'out', ['cv'], 18),
+  jack('MIDI / CV · MIDI LFO', 'out', ['cv'], 19),
+  jack('MIDI / CV · MIDI CLK', 'out', ['clock'], 20),
+  jack('MIDI / CV · MIDI VEL', 'out', ['cv'], 21),
+  jack('MIDI / CV · MIDI MOD', 'out', ['cv'], 21),
+  jack('MIDI / CV · MIDI GATE', 'out', ['gate'], 21),
+  jack('MIDI / CV · MIDI TRIG', 'out', ['trigger'], 21),
 
   // §2 VCO A (p.25). Every jack in this section is an input; the waveforms leave via the mixer.
-  jack('VCO A · PITCH', 'in', 25),
-  jack('VCO A · PWM', 'in', 25),
-  jack('VCO A · FM 1', 'in', 25),
-  jack('VCO A · IM', 'in', 25),
-  jack('VCO A · FM 2', 'in', 25),
-  jack('VCO A · SYNC', 'in', 25),
+  jack('VCO A · PITCH', 'in', ['pitch-cv'], 25),
+  jack('VCO A · PWM', 'in', ['cv'], 25),
+  /**
+   * **`FM 1` and `FM 2` are the same kind of input and do not carry the same signal list**, which
+   * looks like an oversight and is the pages being honest. 2.C describes FM 1 as an exponential
+   * FM input and says nothing about what rate it takes or what feeds it by default; 2.E says
+   * FM 2 "uses VCO B's Sine Wave output as the FM 2 source" if nothing is patched, and that is a
+   * waveform, named on the page. So `audio` is read for FM 2 and would be inference for FM 1 —
+   * audio-rate FM through this socket certainly works, but the manual discusses it in a DETAILS
+   * chapter about FM in general rather than beside this jack. Adding it here on that basis is
+   * exactly the move CLAUDE.md's cited-wrong-range note is about: it would render as a read page.
+   */
+  jack('VCO A · FM 1', 'in', ['cv'], 25),
+  jack('VCO A · IM', 'in', ['cv'], 25),
+  jack('VCO A · FM 2', 'in', ['audio', 'cv'], 25),
+  jack('VCO A · SYNC', 'in', ['audio'], 25),
 
   // §3 VCO B (p.27). The four outputs carry only waveform glyphs on the panel; these are the
   // manual's names for them.
-  jack('VCO B · PITCH', 'in', 27),
-  jack('VCO B · SYNC', 'in', 27),
-  jack('VCO B · SINE', 'out', 27),
-  jack('VCO B · TRIANGLE', 'out', 27),
-  jack('VCO B · SAW', 'out', 27),
-  jack('VCO B · SQUARE', 'out', 27),
+  jack('VCO B · PITCH', 'in', ['pitch-cv'], 27),
+  jack('VCO B · SYNC', 'in', ['audio'], 27),
+  jack('VCO B · SINE', 'out', ['audio', 'cv'], 27),
+  jack('VCO B · TRIANGLE', 'out', ['audio', 'cv'], 27),
+  jack('VCO B · SAW', 'out', ['audio', 'cv'], 27),
+  jack('VCO B · SQUARE', 'out', ['audio', 'cv'], 27),
 
   // §4 ENVELOPE A (pp.32-33)
-  jack('ENVELOPE A · GATE', 'in', 32),
-  jack('ENVELOPE A · CTRL', 'in', 32),
-  jack('ENVELOPE A · RETRIG', 'in', 33),
-  jack('ENVELOPE A · EOH', 'out', 33),
-  jack('ENVELOPE A · EOA', 'out', 33),
-  jack('ENVELOPE A · ENV A', 'out', 33),
+  jack('ENVELOPE A · GATE', 'in', ['gate'], 32),
+  jack('ENVELOPE A · CTRL', 'in', ['cv'], 32),
+  jack('ENVELOPE A · RETRIG', 'in', ['trigger'], 33),
+  jack('ENVELOPE A · EOH', 'out', ['gate', 'trigger'], 33),
+  jack('ENVELOPE A · EOA', 'out', ['gate', 'trigger'], 33),
+  jack('ENVELOPE A · ENV A', 'out', ['cv'], 33),
 
   // §5 ENVELOPE B (p.39). The first three are modulation inputs for the sliders above them.
-  jack('ENVELOPE B · RISE', 'in', 39),
-  jack('ENVELOPE B · FALL', 'in', 39),
-  jack('ENVELOPE B · SHAPE', 'in', 39),
-  jack('ENVELOPE B · GATE/SYNC', 'in', 39),
-  jack('ENVELOPE B · EOF', 'out', 39),
-  jack('ENVELOPE B · ENV B', 'out', 39),
+  jack('ENVELOPE B · RISE', 'in', ['cv'], 39),
+  jack('ENVELOPE B · FALL', 'in', ['cv'], 39),
+  jack('ENVELOPE B · SHAPE', 'in', ['cv'], 39),
+  jack('ENVELOPE B · GATE/SYNC', 'in', ['gate', 'trigger', 'clock'], 39),
+  jack('ENVELOPE B · EOF', 'out', ['gate', 'trigger'], 39),
+  jack('ENVELOPE B · ENV B', 'out', ['cv'], 39),
 
   // §6 LINE IN (p.40)
-  jack('LINE IN · LINE IN', 'out', 40, 'an output: it taps the back panel input after the LEVEL slider'),
+  jack('LINE IN · LINE IN', 'out', ['audio'], 40, 'an output: it taps the back panel input after the LEVEL slider'),
 
   // §7 MIXER (p.43)
-  jack('MIXER · IN 1', 'in', 43),
-  jack('MIXER · IN 2', 'in', 43),
-  jack('MIXER · VCO A TRI', 'out', 43),
-  jack('MIXER · VCO A SAW', 'out', 43),
-  jack('MIXER · SUB', 'out', 43, 'panel silkscreen is SUB; p.43 calls it VCO A PULSE OUT, which p.42 contradicts'),
-  jack('MIXER · NOISE', 'out', 43),
-  jack('MIXER · MIXER', 'out', 43),
+  jack('MIXER · IN 1', 'in', ['audio'], 43),
+  jack('MIXER · IN 2', 'in', ['audio'], 43),
+  jack('MIXER · VCO A TRI', 'out', ['audio'], 43),
+  jack('MIXER · VCO A SAW', 'out', ['audio'], 43),
+  jack('MIXER · SUB', 'out', ['audio'], 43, 'panel silkscreen is SUB; p.43 calls it VCO A PULSE OUT, which p.42 contradicts'),
+  jack('MIXER · NOISE', 'out', ['audio'], 43),
+  jack('MIXER · MIXER', 'out', ['audio'], 43),
 
   // §8 VCF (p.49). LP4 and HP4 are live whatever MODE selects; VCF carries the selected mode.
-  jack('VCF · FM 1', 'in', 49),
-  jack('VCF · FM 2', 'in', 49),
-  jack('VCF · FM 3', 'in', 49),
-  jack('VCF · Q', 'in', 49),
-  jack('VCF · IN', 'in', 49),
-  jack('VCF · LP4', 'out', 49),
-  jack('VCF · HP4', 'out', 49),
-  jack('VCF · VCF', 'out', 49),
+  jack('VCF · FM 1', 'in', ['cv'], 49),
+  /**
+   * **1V/oct and still `cv`, deliberately.** 8.B says this input "accepts 1 V/oct signals" and is
+   * "ideal for tracking keyboards", which is the strongest case in this manifest for `pitch-cv`
+   * on a jack that is not one. It stays `cv` because the member is about what the voltage means
+   * and not how it is scaled: what arrives here is a filter cutoff. Patching a keyboard's pitch
+   * output into it is a real cable — and the reason a router has to treat `pitch-cv` as something
+   * a `cv` input accepts, rather than intersecting the two lists.
+   */
+  jack('VCF · FM 2', 'in', ['cv'], 49),
+  jack('VCF · FM 3', 'in', ['cv'], 49),
+  jack('VCF · Q', 'in', ['cv'], 49),
+  jack('VCF · IN', 'in', ['audio'], 49),
+  jack('VCF · LP4', 'out', ['audio'], 49),
+  jack('VCF · HP4', 'out', ['audio'], 49),
+  jack('VCF · VCF', 'out', ['audio'], 49),
 
   // §9 WAVE FOLDER (p.51). No output of its own — it leaves at OUTPUT CONTROL · FOLD.
-  jack('WAVE FOLDER · FOLD', 'in', 51),
-  jack('WAVE FOLDER · IN', 'in', 51),
+  jack('WAVE FOLDER · FOLD', 'in', ['cv'], 51),
+  jack('WAVE FOLDER · IN', 'in', ['audio'], 51),
 
   // §10 VCA A (p.53). Also no output of its own; OUTPUT CONTROL · VCA A is where it leaves.
-  jack('VCA A · AUX IN', 'in', 53),
-  jack('VCA A · IN', 'in', 53),
-  jack('VCA A · LEVEL', 'in', 53),
+  jack('VCA A · AUX IN', 'in', ['audio'], 53),
+  jack('VCA A · IN', 'in', ['audio'], 53),
+  jack('VCA A · LEVEL', 'in', ['cv'], 53),
 
   // §11 PUSH GATE (p.54)
-  jack('PUSH GATE · GATE OUT', 'out', 54),
+  jack('PUSH GATE · GATE OUT', 'out', ['gate'], 54),
 
   // §12 UTILITIES — the sections these recipes use (pp.56, 58, 62, 65, 68, 70)
-  jack('S&H · TRIG', 'in', 56),
-  jack('S&H · IN', 'in', 56),
-  jack('S&H · OUT', 'out', 56),
-  jack('SLEW / ENV FOLLOW · IN', 'in', 58),
-  jack('SLEW / ENV FOLLOW · OUT', 'out', 58),
-  jack('LFO X / Y / Z · LFO X', 'out', 62),
-  jack('LFO X / Y / Z · LFO Y', 'out', 62),
-  jack('LFO X / Y / Z · LFO Z', 'out', 62),
-  jack('LFO X / Y / Z · RATE CV', 'in', 62),
-  jack('INVERT · IN', 'in', 65),
-  jack('INVERT · OUT', 'out', 65),
-  jack('RING MOD · IN 1', 'in', 68),
-  jack('RING MOD · IN 2', 'in', 68),
-  jack('RING MOD · OUT', 'out', 68),
-  jack('VCA B / LPF · IN', 'in', 70),
-  jack('VCA B / LPF · CV IN', 'in', 70),
-  jack('VCA B / LPF · VCA B OUT', 'out', 70),
-  jack('VCA B / LPF · LPF B OUT', 'out', 70),
+  jack('S&H · TRIG', 'in', ['trigger', 'clock'], 56),
+  jack('S&H · IN', 'in', ['audio', 'cv'], 56),
+  jack('S&H · OUT', 'out', ['cv'], 56),
+  jack('SLEW / ENV FOLLOW · IN', 'in', ['audio', 'cv'], 58),
+  jack('SLEW / ENV FOLLOW · OUT', 'out', ['cv'], 58),
+  jack('LFO X / Y / Z · LFO X', 'out', ['cv'], 62),
+  jack('LFO X / Y / Z · LFO Y', 'out', ['cv'], 62),
+  jack('LFO X / Y / Z · LFO Z', 'out', ['cv'], 62),
+  jack('LFO X / Y / Z · RATE CV', 'in', ['cv'], 62),
+  jack('INVERT · IN', 'in', ['cv'], 65),
+  jack('INVERT · OUT', 'out', ['cv'], 65),
+  jack('RING MOD · IN 1', 'in', ['audio', 'cv'], 68),
+  jack('RING MOD · IN 2', 'in', ['audio', 'cv'], 68),
+  jack('RING MOD · OUT', 'out', ['audio', 'cv'], 68),
+  jack('VCA B / LPF · IN', 'in', ['audio'], 70),
+  jack('VCA B / LPF · CV IN', 'in', ['cv'], 70),
+  jack('VCA B / LPF · VCA B OUT', 'out', ['audio'], 70),
+  jack('VCA B / LPF · LPF B OUT', 'out', ['audio'], 70),
 
   // §13 I/O CONTROL (pp.71-74)
-  jack('EXT IN · PITCH', 'in', 71),
-  jack('EXT IN · GATE', 'in', 71),
-  jack('EXT IN · TRIG', 'in', 72),
-  jack('I/O CONTROL · FX IN', 'in', 73),
-  jack('I/O CONTROL · FX MIX', 'out', 73),
-  jack('OUTPUT CONTROL · FOLD', 'out', 74),
-  jack('OUTPUT CONTROL · VCA A', 'out', 74),
-  jack('OUTPUT CONTROL · MAIN 1', 'in', 74),
-  jack('OUTPUT CONTROL · MAIN 2', 'in', 74),
-  jack('OUTPUT CONTROL · MAIN', 'out', 74),
+  jack('EXT IN · PITCH', 'in', ['pitch-cv'], 71),
+  jack('EXT IN · GATE', 'in', ['gate'], 71),
+  jack('EXT IN · TRIG', 'in', ['trigger'], 72),
+  jack('I/O CONTROL · FX IN', 'in', ['audio'], 73),
+  jack('I/O CONTROL · FX MIX', 'out', ['audio'], 73),
+  jack('OUTPUT CONTROL · FOLD', 'out', ['audio'], 74),
+  jack('OUTPUT CONTROL · VCA A', 'out', ['audio'], 74),
+  jack('OUTPUT CONTROL · MAIN 1', 'in', ['audio'], 74),
+  jack('OUTPUT CONTROL · MAIN 2', 'in', ['audio'], 74),
+  jack('OUTPUT CONTROL · MAIN', 'out', ['audio'], 74),
   // `satisfies` rather than a type annotation: an annotation would widen every `id` above back to
   // `string` and take `CascadiaJack` with it. This still fails the build if an entry is not a
   // `JackSpec`, which is the only thing the annotation was buying.

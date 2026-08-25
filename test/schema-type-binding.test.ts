@@ -7,6 +7,8 @@ import {
   DeviceSchema,
   HarmonySchema,
   HookSchema,
+  JackSignalKindSchema,
+  JackSpecSchema,
   NumericRangeSchema,
   PanelFeatureSchema,
   PanelLayoutSchema,
@@ -26,6 +28,8 @@ import {
   type Device,
   type Harmony,
   type Hook,
+  type JackSignalKind,
+  type JackSpec,
   type NumericRange,
   type PanelFeature,
   type PanelLayout,
@@ -80,6 +84,18 @@ describe('schemas and types stay in step', () => {
 
     expectTypeOf<ArticulationEntry>().toExtend<z.infer<typeof ArticulationEntrySchema>>()
     expectTypeOf<z.infer<typeof ArticulationEntrySchema>>().toExtend<ArticulationEntry>()
+
+    // §3.3. `JackSignalKind` spells its members twice — once as a union the code reads, once as a
+    // `z.enum` the boundary runs — and a member added to one and not the other is the exact drift
+    // this file exists to catch. No count here on purpose: the binding holds however many members
+    // there are, and a number in a comment beside it is one more thing to forget to update. `JackSpec` is bound beside it for the reason `PatchEntry`
+    // is: it gained a required field, and a nested binding through `Device` would compile just as
+    // happily with that field missing from one side.
+    expectTypeOf<JackSignalKind>().toExtend<z.infer<typeof JackSignalKindSchema>>()
+    expectTypeOf<z.infer<typeof JackSignalKindSchema>>().toExtend<JackSignalKind>()
+
+    expectTypeOf<JackSpec>().toExtend<z.infer<typeof JackSpecSchema>>()
+    expectTypeOf<z.infer<typeof JackSpecSchema>>().toExtend<JackSpec>()
 
     expectTypeOf<Recipe>().toExtend<z.infer<typeof RecipeSchema>>()
     expectTypeOf<z.infer<typeof RecipeSchema>>().toExtend<Recipe>()
