@@ -67,8 +67,26 @@ const cascade: Device = {
           mood: [{ axis: 'grit', amount: 24 }],
         },
       ],
-      patch: [{ from: 'OSC1 SUB', to: 'FILTER IN', note: 'short cable' }],
+      patch: [{ from: 'VCO · SUB', to: 'VCF · IN', note: 'short cable' }],
     }),
+  ],
+  /**
+   * §3.3. The two the recipe patches, plus a note input and a gate input — which make this the
+   * rig's voice-control *target* and put `interDevicePatch` into the golden bytes.
+   *
+   * The audio pair is here as much as the control pair: it is what proves the bundle rule selects
+   * on kind and section rather than on presence, since a box with four jacks still offers exactly
+   * one note-and-gate section to route into — `EXT IN`, and not `VCF` or `VCO`.
+   *
+   * Section-qualified because §3.3 says ids are, and because the routing pass pairs on the section
+   * prefix: an unqualified id declares no section and forms no bundle at all, which is exactly what
+   * these four did for one revision while the golden file quietly recorded `no-target`.
+   */
+  jacks: [
+    { id: 'EXT IN · GATE', direction: 'in', signal: ['gate'] },
+    { id: 'EXT IN · PITCH', direction: 'in', signal: ['pitch-cv'] },
+    { id: 'VCF · IN', direction: 'in', signal: ['audio'] },
+    { id: 'VCO · SUB', direction: 'out', signal: ['audio'] },
   ],
 }
 
@@ -85,6 +103,26 @@ const tracker: Device = {
     { kind: 'pool', id: 'track', label: 'Track', count: 4, roles: ['pad', 'sub', 'texture'], polyphony: 4 },
   ],
   comfortableVoices: 3,
+  /**
+   * §3.3. The rig's voice-control *source*, and a second ordering trap in the same spirit as the
+   * device ids above.
+   *
+   * **Two gate outputs in one section, `TRK · GATE B` and `TRK · GATE a`.** By UTF-16 code unit
+   * that is the order they sort in (`B` 0x42 < `a` 0x61); ICU collation puts `GATE a` first. One
+   * section yields one bundle, so the code-unit sort inside `TRK` is what decides which gate the
+   * guide names — the same discrimination the device ids make for the assignment search, now made
+   * for the routing pass (§7.2).
+   *
+   * `CLK · OUT` is deliberately here and deliberately never routed: §7.4 decides the one clock
+   * cable this rig gets, a bundle member has to be a single-purpose socket, and its section has no
+   * note output in any case. Two independent reasons it cannot become a third cable.
+   */
+  jacks: [
+    { id: 'CLK · OUT', direction: 'out', signal: ['clock'], clock: ['midi-din'] },
+    { id: 'TRK · GATE B', direction: 'out', signal: ['gate'] },
+    { id: 'TRK · GATE a', direction: 'out', signal: ['gate'] },
+    { id: 'TRK · PITCH', direction: 'out', signal: ['pitch-cv'] },
+  ],
   features: { perStep: ['velocity', 'probability'] },
   recipes: [
     // Two pad recipes, `clean` and `dirty`, both exactly sqrt(2) from the requested `dark`

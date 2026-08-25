@@ -493,16 +493,19 @@ export const device: Device = {
   jacks: [
     // p.12, MIDI connectors: `OUT1 connector or DIN SYNC 1 connector`, `IN connector`. Named
     // with the section, as §3.3 requires — a bare `IN` is unresolvable on a box with this many.
-    { id: 'MIDI OUT1', direction: 'out', clock: ['midi-din'] },
-    { id: 'MIDI IN', direction: 'in', clock: ['midi-din'] },
+    { id: 'MIDI OUT1', direction: 'out', signal: ['clock', 'midi'], clock: ['midi-din'] },
+    { id: 'MIDI IN', direction: 'in', signal: ['clock', 'midi'], clock: ['midi-din'] },
     {
       id: 'DIN SYNC 1',
       direction: 'out',
+      // DIN sync is clock and run/stop and nothing else — no notes travel over it, which is why
+      // `midi` is absent here and present on MIDI OUT1, the connector this shares.
+      signal: ['clock'],
       clock: ['din-sync'],
       note: 'The same connector as MIDI OUT1, switched to DIN SYNC',
     },
     // p.12: "Use this jack to output synchronization signals to an external device."
-    { id: 'CLK OUT', direction: 'out', clock: ['analog-clock'] },
+    { id: 'CLK OUT', direction: 'out', signal: ['clock'], clock: ['analog-clock'] },
     /**
      * p.12 describes `TRG IN` only as "Connect a device that has a TRIGGER OUT jack here" — it
      * is p.32 that makes it a clock input, and it is a *setting*, not a property of the hole:
@@ -516,6 +519,10 @@ export const device: Device = {
     {
       id: 'TRG IN',
       direction: 'in',
+      // The two-kind case `signal` is a list for, and the same socket as the `clock` list below:
+      // p.12 documents it as a trigger input, p.32's `Trig In = Sync` makes arriving pulses the
+      // clock instead. One hole, two meanings, and a setting chooses.
+      signal: ['trigger', 'clock'],
       clock: ['analog-clock', 'trigger'],
       note: 'Set Trig In = Sync (Owner’s Manual p.32) or the pulses are not treated as clock',
     },

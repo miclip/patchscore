@@ -1,4 +1,10 @@
-import type { CapabilityEvidence, Device, PatchEntry, Recipe } from '../../core/device'
+import type {
+  CapabilityEvidence,
+  Device,
+  JackSignalKind,
+  PatchEntry,
+  Recipe,
+} from '../../core/device'
 import { jackFact } from '../../core/device'
 import type { AuthoredParam, Cite } from '../../core/params'
 import { CRAVE_PANEL } from './panel'
@@ -141,11 +147,12 @@ const JACK_EVIDENCE: Record<string, CapabilityEvidence> = {}
 function jack<Id extends string>(
   id: Id,
   direction: 'in' | 'out',
+  signal: JackSignalKind[],
   page: number,
   note?: string,
-): { id: Id; direction: 'in' | 'out'; note?: string } {
+): { id: Id; direction: 'in' | 'out'; signal: JackSignalKind[]; note?: string } {
   JACK_EVIDENCE[jackFact(id)] = cite(page)
-  return { id, direction, ...(note === undefined ? {} : { note }) }
+  return { id, direction, signal, ...(note === undefined ? {} : { note }) }
 }
 
 /**
@@ -156,41 +163,83 @@ function jack<Id extends string>(
  */
 const JACKS = [
   // Input Section, items 40-57 (p.21).
-  jack('IN · OSC CV', 'in', 21, 'Oscillator pitch CV, at 1V/octave'),
-  jack('IN · OSC FM', 'in', 21),
-  jack('IN · OSC MOD', 'in', 21),
-  jack('IN · VCF CUTOFF', 'in', 21),
-  jack('IN · VCF RES', 'in', 21),
-  jack('IN · MIX 1', 'in', 21, 'Connected internally to VC MIX, not to the synth signal path'),
-  jack('IN · MIX 2', 'in', 21, 'Connected internally to VC MIX, not to the synth signal path'),
-  jack('IN · VC MIX', 'in', 21, 'The control voltage for the VC MIX crossfade'),
-  jack('IN · MULTIPLE', 'in', 21, 'Passed out to both MULTIPLE outputs'),
-  jack('IN · MIX CV', 'in', 21),
-  jack('IN · EXT AUDIO', 'in', 21, 'Displaces the noise generator in the MIX control'),
-  jack('IN · TEMPO', 'in', 21),
-  jack('IN · PLAY/STOP', 'in', 21, 'A trigger input: more than 3.2 V'),
-  jack('IN · RESET', 'in', 21, 'A trigger input: more than 3.2 V'),
-  jack('IN · HOLD', 'in', 21, 'A trigger input: more than 3.2 V'),
-  jack('IN · ENV GATE', 'in', 21, 'A trigger input: more than 3.2 V'),
-  jack('IN · VCA CV', 'in', 21),
-  jack('IN · LFO RATE', 'in', 21),
+  jack('IN · OSC CV', 'in', ['pitch-cv'], 21, 'Oscillator pitch CV, at 1V/octave'),
+  jack('IN · OSC FM', 'in', ['cv'], 21),
+  jack('IN · OSC MOD', 'in', ['cv'], 21),
+  jack('IN · VCF CUTOFF', 'in', ['cv'], 21),
+  jack('IN · VCF RES', 'in', ['cv'], 21),
+  jack('IN · MIX 1', 'in', ['cv'], 21, 'Connected internally to VC MIX, not to the synth signal path'),
+  jack('IN · MIX 2', 'in', ['cv'], 21, 'Connected internally to VC MIX, not to the synth signal path'),
+  jack('IN · VC MIX', 'in', ['cv'], 21, 'The control voltage for the VC MIX crossfade'),
+  /**
+   * **Five signal kinds, because the patchbay list says "any signal".** MULTIPLE is a passive
+   * split: whatever arrives leaves at both outputs, so naming one kind would be a guess dressed
+   * as a reading, and naming two would be the same guess with a hedge. The five are every kind
+   * a 3.5 mm patch cable on this box can carry; `midi` is the one that is genuinely absent,
+   * because the MIDI ports are the rear DIN and USB and not part of the patchbay.
+   *
+   * This is the honest shape for a signal-agnostic utility, and the list is the reason the field
+   * can hold it. `OUT · MULTIPLE 1` and `2` carry the same five for the same sentence.
+   */
+  jack(
+    'IN · MULTIPLE',
+    'in',
+    ['audio', 'cv', 'gate', 'trigger', 'clock'],
+    21,
+    'Passed out to both MULTIPLE outputs',
+  ),
+  jack('IN · MIX CV', 'in', ['cv'], 21),
+  jack('IN · EXT AUDIO', 'in', ['audio'], 21, 'Displaces the noise generator in the MIX control'),
+  /**
+   * The patchbay list gives this jack four words — "TEMPO - sequencer tempo" — and `clock` is
+   * what a socket that sets a sequencer's tempo carries. Worth knowing that this box's own
+   * `clock.transport` is `['midi-din', 'usb']` and names no analog transport, so the manifest now
+   * says a hole takes tempo over a wire the clock spec does not offer. That gap is real and older
+   * than this field: declaring `analog-clock` is a capability claim and wants its own page, so it
+   * is not made here. The field surfacing it is the field working.
+   */
+  jack('IN · TEMPO', 'in', ['clock'], 21),
+  jack('IN · PLAY/STOP', 'in', ['trigger'], 21, 'A trigger input: more than 3.2 V'),
+  jack('IN · RESET', 'in', ['trigger'], 21, 'A trigger input: more than 3.2 V'),
+  jack('IN · HOLD', 'in', ['trigger'], 21, 'A trigger input: more than 3.2 V'),
+  /**
+   * `gate`, not `trigger`, and the note beside it is why the distinction is worth having. The
+   * electrical spec is the same 3.2 V threshold as PLAY/STOP, RESET and HOLD — but what this one
+   * drives is the envelope, and the envelope's SUSTAIN is "held for as long as the key is held".
+   * A duration that matters is the definition of a gate; the other three fire and are done.
+   */
+  jack('IN · ENV GATE', 'in', ['gate'], 21, 'A trigger input: more than 3.2 V'),
+  jack('IN · VCA CV', 'in', ['cv'], 21),
+  jack('IN · LFO RATE', 'in', ['cv'], 21),
 
   // Output Section, items 58-72 (p.21). The two MULTIPLE outputs are numbered left to right.
-  jack('OUT · MULTIPLE 1', 'out', 21, 'Copy of the MULTIPLE input'),
-  jack('OUT · MULTIPLE 2', 'out', 21, 'Another copy of the MULTIPLE input'),
-  jack('OUT · OSC PULSE', 'out', 21),
-  jack('OUT · OSC SAW', 'out', 21, 'Reverse sawtooth'),
-  jack('OUT · ENV', 'out', 21, 'Unipolar: 0 to 8 V'),
-  jack('OUT · NOISE', 'out', 21),
-  jack('OUT · VCA/LINE', 'out', 70, 'The line-level audio output, 3.5 mm TS unbalanced'),
-  jack('OUT · PHONES', 'out', 70, 'TRS, not TS like the rest of the patchbay'),
-  jack('OUT · LFO TRI', 'out', 21),
-  jack('OUT · LFO SQU', 'out', 21),
-  jack('OUT · VC MIX', 'out', 21, 'The VC MIX crossfade result'),
-  jack('OUT · ASSIGN', 'out', 21, 'What it carries is set in the SHIFT layer; see ASSIGN MODE'),
-  jack('OUT · KB CV', 'out', 21),
-  jack('OUT · GATE', 'out', 21, 'Unipolar: 0 / +5 V'),
-  jack('OUT · VCF', 'out', 21, 'The filter output, ahead of the VCA'),
+  jack(
+    'OUT · MULTIPLE 1',
+    'out',
+    ['audio', 'cv', 'gate', 'trigger', 'clock'],
+    21,
+    'Copy of the MULTIPLE input',
+  ),
+  jack(
+    'OUT · MULTIPLE 2',
+    'out',
+    ['audio', 'cv', 'gate', 'trigger', 'clock'],
+    21,
+    'Another copy of the MULTIPLE input',
+  ),
+  jack('OUT · OSC PULSE', 'out', ['audio'], 21),
+  jack('OUT · OSC SAW', 'out', ['audio'], 21, 'Reverse sawtooth'),
+  jack('OUT · ENV', 'out', ['cv'], 21, 'Unipolar: 0 to 8 V'),
+  jack('OUT · NOISE', 'out', ['audio'], 21),
+  jack('OUT · VCA/LINE', 'out', ['audio'], 70, 'The line-level audio output, 3.5 mm TS unbalanced'),
+  jack('OUT · PHONES', 'out', ['audio'], 70, 'TRS, not TS like the rest of the patchbay'),
+  jack('OUT · LFO TRI', 'out', ['cv'], 21),
+  jack('OUT · LFO SQU', 'out', ['cv'], 21),
+  jack('OUT · VC MIX', 'out', ['cv'], 21, 'The VC MIX crossfade result'),
+  jack('OUT · ASSIGN', 'out', ['cv'], 21, 'What it carries is set in the SHIFT layer; see ASSIGN MODE'),
+  jack('OUT · KB CV', 'out', ['pitch-cv'], 21),
+  jack('OUT · GATE', 'out', ['gate'], 21, 'Unipolar: 0 / +5 V'),
+  jack('OUT · VCF', 'out', ['audio'], 21, 'The filter output, ahead of the VCA'),
 ] as const
 
 /** Every declared jack id, as a union of literals. `cable()` takes it. */

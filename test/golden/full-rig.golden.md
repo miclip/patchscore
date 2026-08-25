@@ -70,6 +70,15 @@ None.
   - ↳ note: Off, USB, MIDI Out jack, USB + MIDI Out jack — clock leaves only by the routing set here
   - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.54
 
+**Voice control** — Metropolix sends the notes, 4 cables in all. Patch each pair before you play anything:
+
+- pitch: Metropolix `TRK 1 · PITCH` → CRAVE `IN · OSC CV`
+- gate: Metropolix `TRK 1 · GATE` → CRAVE `IN · ENV GATE`
+- pitch: Metropolix `TRK 2 · PITCH` → Cascadia `EXT IN · PITCH`
+- gate: Metropolix `TRK 2 · GATE` → Cascadia `EXT IN · GATE`
+
+- Why this box sends them — its manual says leading a rig is its job
+
 - **CRAVE** — semi-modular · 1 part
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in

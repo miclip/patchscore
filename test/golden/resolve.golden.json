@@ -124,6 +124,46 @@
     "occupiedAssignables": 3,
     "claims": 0
   },
+  "interDevicePatch": {
+    "outcome": "routed",
+    "source": {
+      "deviceId": "B-tracker",
+      "deviceName": "Golden Tracker",
+      "basis": "clock-source",
+      "claims": 0,
+      "candidates": 1,
+      "ranked": 1
+    },
+    "targets": [
+      {
+        "deviceId": "A-cascade",
+        "deviceName": "Golden Cascade",
+        "pitchJack": "EXT IN · PITCH",
+        "gateJack": "EXT IN · GATE",
+        "outcome": "routed",
+        "cables": [
+          {
+            "signal": "pitch-cv",
+            "fromDeviceId": "B-tracker",
+            "fromDeviceName": "Golden Tracker",
+            "fromJack": "TRK · PITCH",
+            "toDeviceId": "A-cascade",
+            "toDeviceName": "Golden Cascade",
+            "toJack": "EXT IN · PITCH"
+          },
+          {
+            "signal": "gate",
+            "fromDeviceId": "B-tracker",
+            "fromDeviceName": "Golden Tracker",
+            "fromJack": "TRK · GATE B",
+            "toDeviceId": "A-cascade",
+            "toDeviceName": "Golden Cascade",
+            "toJack": "EXT IN · GATE"
+          }
+        ]
+      }
+    ]
+  },
   "assignments": [
     {
       "requestId": "r-kick",
@@ -747,8 +787,8 @@
       ],
       "patch": [
         {
-          "from": "OSC1 SUB",
-          "to": "FILTER IN",
+          "from": "VCO · SUB",
+          "to": "VCF · IN",
           "note": "short cable",
           "provenance": {
             "state": "authored",

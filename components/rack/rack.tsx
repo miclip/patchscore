@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ResolveResult } from '@/lib/core'
-import { citeText, count } from '../guide/format'
+import { citeText, count, list } from '../guide/format'
 import { RackDiagram } from './diagram'
 import { RackFullscreen } from './fullscreen'
 import { AUDIO_OMISSION, NARROW_PER_ROW, ROW_CAPS, SCALE_CAVEAT, rackModel } from './model'
@@ -112,7 +112,10 @@ export function Rack({ result }: { result: ResolveResult | undefined }) {
     <section className="panel span-2 rack-section">
       <header>
         <h2>Rack</h2>
-        <p className="note">Clock routing, drawn to relative panel width</p>
+        <p className="note">
+          {model.voiceCables.length === 0 ? 'Clock routing' : 'Clock and voice-control routing'},
+          drawn to relative panel width
+        </p>
       </header>
 
       <figure className="rack-figure">
@@ -159,6 +162,40 @@ export function Rack({ result }: { result: ResolveResult | undefined }) {
           {model.cables.length === 0
             ? 'Nothing else in this rig can sync to it.'
             : `${count(model.cables.length, 'cable')} drawn; sync each of those boxes to it.`}
+        </p>
+      )}
+
+      {/*
+        §3.3. The voice-control runs, in words, beside the drawing. Three outcomes and three
+        sentences, because the two ways of having no cables mean opposite things: a rig of
+        grooveboxes is missing nothing, and a synth nothing can drive is a gap a reader can act on.
+        The dead sockets on the panels are the same fact drawn; this is it said.
+      */}
+      {model.voicePatch.outcome === 'no-target' ? null : model.voiceCables.length === 0 ? (
+        <p className="callout">
+          <strong>No voice-control cables</strong> —{' '}
+          {list(model.voicePatch.targets.map((t) => t.deviceName))}{' '}
+          {model.voicePatch.targets.length === 1 ? 'takes' : 'take'} a note and a gate, and nothing
+          in this rig sends one. Their pitch and gate sockets are drawn empty rather than left off.
+        </p>
+      ) : (
+        <p className="callout">
+          <strong>Voice control</strong> — {model.voicePatch.source?.deviceName} sends pitch and
+          gate.{' '}
+          {model.voiceCables.map((cable) => (
+            <span key={`${cable.fromJack}->${cable.toDeviceId}:${cable.toJack}`}>
+              <span className="mono">{cable.fromJack}</span> to {cable.toName}{' '}
+              <span className="mono">{cable.toJack}</span>
+              {'. '}
+            </span>
+          ))}
+          {model.voicePatch.targets.some((t) => t.outcome === 'source-exhausted')
+            ? `No pair left for ${list(
+                model.voicePatch.targets
+                  .filter((t) => t.outcome === 'source-exhausted')
+                  .map((t) => t.deviceName),
+              )} — those sockets are drawn empty.`
+            : null}
         </p>
       )}
 

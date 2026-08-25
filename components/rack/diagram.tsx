@@ -1,5 +1,6 @@
 import type { PanelFeature } from '@/lib/core'
-import type { ClockCable, PanelJack, RackModel, RackPanel } from './model'
+import { list } from '../guide/format'
+import type { ClockCable, PanelJack, RackModel, RackPanel, VoiceCable } from './model'
 import { RAIL_MM } from './model'
 
 /**
@@ -36,7 +37,9 @@ function Jack({ jack, live }: { jack: PanelJack; live: boolean }) {
   const { x, y } = jack.at
   // Clock jacks sit on the bottom rail, so their silkscreen goes above them; the audio rail is
   // mid-panel and labels below. Either way the label never lands on the socket.
-  const above = jack.kind === 'clock-in' || jack.kind === 'clock-out'
+  // Rail sockets label above, mid-panel audio labels below. Either way the label never lands on
+  // the socket — and the voice pair is on the rail, so it labels the way the clock pair does.
+  const above = jack.kind !== 'main-out' && jack.kind !== 'individual-out'
   return (
     <g className="rack-jack" data-kind={jack.kind} data-live={live ? 'yes' : 'no'}>
       <circle className="rack-jack-ring" cx={x} cy={y} r={JACK_R} vectorEffect="non-scaling-stroke" />
@@ -300,9 +303,16 @@ export function Panel({ panel }: { panel: RackPanel }) {
         <Jack
           key={jack.id}
           jack={jack}
+          /*
+           * §3.3. A voice socket carries its own answer, because the model knows whether a cable
+           * landed there and the drawing does not: a target the pass could not feed has its pitch
+           * and gate holes drawn dead, which is the picture of the gap. Clock sockets keep the
+           * derivation from `clockRole` they have had since #103 — same question, one level up.
+           */
           live={
-            (jack.kind === 'clock-out' && panel.clockRole === 'source') ||
-            (jack.kind === 'clock-in' && panel.clockRole === 'receiver')
+            jack.live ??
+            ((jack.kind === 'clock-out' && panel.clockRole === 'source') ||
+              (jack.kind === 'clock-in' && panel.clockRole === 'receiver'))
           }
         />
       ))}
@@ -378,6 +388,26 @@ function Cable({ cable }: { cable: ClockCable }) {
   )
 }
 
+/**
+ * §3.3. A voice-control cable, drawn with the same two strokes and the same draw-on as the clock
+ * cable, and a different class so CSS can tell them apart. Kept a separate component rather than a
+ * prop on `Cable`, so the markup a test reads says which kind of cable it found — `rack-cable`
+ * matched the clock run exactly before this existed, and it still does.
+ *
+ * `data-signal` carries `pitch-cv` or `gate`: two cables run to the same box, and which is which
+ * is the only thing a reader at the rack needs from the drawing.
+ */
+function VoiceRun({ cable }: { cable: VoiceCable }) {
+  return (
+    <g className="rack-voice-cable" data-signal={cable.signal}>
+      <path className="rack-voice-cable-casing" d={cable.d} pathLength={1} />
+      <path className="rack-voice-cable-core" d={cable.d} pathLength={1} />
+      <circle className="rack-voice-cable-end" cx={cable.from.x} cy={cable.from.y} r={2.2} />
+      <circle className="rack-voice-cable-end" cx={cable.to.x} cy={cable.to.y} r={2.2} />
+    </g>
+  )
+}
+
 function summary(model: RackModel): string {
   if (model.panels.length === 0) return 'An empty rack.'
   const names = model.panels.map((p) => `${p.name} (${p.spanMm} by ${p.riseMm} mm)`).join(', ')
@@ -395,7 +425,34 @@ function summary(model: RackModel): string {
     model.isolated.length === 0
       ? ''
       : ` Not on the clock: ${model.isolated.map((p) => p.name).join(', ')}.`
-  return `A rack of ${names}, drawn to relative width.${rows} ${clock}${isolated}`
+  /**
+   * §3.3. The screen-reader sentence for the voice runs, and the one place the drawing has to say
+   * out loud what the three outcomes mean. A sighted reader sees a dead socket; this is that same
+   * fact in words, and it is the accessible path rather than a summary of it.
+   */
+  const voice =
+    model.voicePatch.outcome === 'no-target'
+      ? ''
+      : model.voiceCables.length === 0
+        ? ` No voice-control cables are drawn: ${list(
+            model.voicePatch.targets.map((t) => t.deviceName),
+          )} ${model.voicePatch.targets.length === 1 ? 'takes' : 'take'} a note and a gate, and ` +
+          'nothing in this rig sends one. Their pitch and gate sockets are drawn empty.'
+        : ` ${model.voicePatch.source?.deviceName ?? 'A box here'} sends pitch and gate: ` +
+          list(
+            model.voiceCables.map(
+              (c) => `${c.fromJack} to ${c.toName} ${c.toJack}`,
+            ),
+          ) +
+          '.' +
+          (model.voicePatch.targets.some((t) => t.outcome === 'source-exhausted')
+            ? ` It has no pair left for ${list(
+                model.voicePatch.targets
+                  .filter((t) => t.outcome === 'source-exhausted')
+                  .map((t) => t.deviceName),
+              )}, whose pitch and gate sockets are drawn empty.`
+            : '')
+  return `A rack of ${names}, drawn to relative width.${rows} ${clock}${isolated}${voice}`
 }
 
 export function RackDiagram({ model, idPrefix }: { model: RackModel; idPrefix: string }) {
@@ -446,6 +503,14 @@ export function RackDiagram({ model, idPrefix }: { model: RackModel; idPrefix: s
       ))}
       {model.cables.map((cable) => (
         <Cable key={`${cable.fromDeviceId}->${cable.toDeviceId}`} cable={cable} />
+      ))}
+      {/*
+        §3.3. After the clock runs, so a pitch cable reads as lying over the sync cable rather than
+        under it — the sync cable is the one you patch once and forget, and the note cables are the
+        ones a reader is tracing.
+      */}
+      {model.voiceCables.map((cable) => (
+        <VoiceRun key={`${cable.fromJack}->${cable.toDeviceId}:${cable.toJack}`} cable={cable} />
       ))}
     </svg>
   )

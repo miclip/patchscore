@@ -53,7 +53,7 @@ const AGAINST = {
 
 function patchable(over: Record<string, unknown> = {}) {
   return device({
-    jacks: [{ id: 'VCF · IN', direction: 'in' }],
+    jacks: [{ id: 'VCF · IN', direction: 'in', signal: ['audio'] }],
     capabilityEvidence: { [jackFact('VCF · IN')]: CITE },
     recipes: [recipe()],
     ...over,

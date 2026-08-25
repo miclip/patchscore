@@ -2,8 +2,8 @@ import type { AssignableKey, Occupancy } from './occupancy'
 import type { DeviceId, HookId, RecipeId, RequestId, SectionName } from './ids'
 import type { Score } from './objective'
 import type { Character, Role } from './vocabulary'
-import { realisationOf } from './device'
-import type { Assignable, Device, Realisation } from './device'
+import { compatibleJackSignals, realisationOf } from './device'
+import type { Assignable, Device, JackSignalKind, JackSpec, Realisation } from './device'
 import type { RoleRequest, Template } from './template'
 import type { ResolvedParam } from './params'
 import {
@@ -203,6 +203,363 @@ function occupiedCounts(assignments: readonly ResolvedAssignment[]): Map<DeviceI
 }
 
 // ---------------------------------------------------------------------------
+// §3.3 Inter-device patching — the rig's voice-control source
+// ---------------------------------------------------------------------------
+
+/**
+ * §3.3. One proposed cable between two boxes: what it carries, and both ends by id, name and
+ * silkscreen.
+ *
+ * Both device ids **and** both device names, which looks redundant and is not. The id is what a
+ * later pass or a permalink matches on; the name is what the guide prints and what the reader is
+ * looking at on the box in front of them. `ResolvedAssignment` carries the same pair for the same
+ * reason, and a renderer that looked a name up from the id would be a second place the rig can be
+ * got wrong (§8: the renderer decides nothing).
+ */
+export type PatchCable = {
+  /** The kind actually being carried, which is the output's, not the input's. */
+  signal: JackSignalKind
+  fromDeviceId: DeviceId
+  fromDeviceName: string
+  fromJack: string
+  toDeviceId: DeviceId
+  toDeviceName: string
+  toJack: string
+}
+
+/**
+ * §3.3/§7.4. What the choice of source rested on, in the shape `ClockSourceBasis` established:
+ *
+ *  - `clock-source` — the rig's clock already runs from this box, so the topology points here
+ *    before anything else does. Not a judgement about the box; a judgement about the rig, already
+ *    made, and not worth contradicting with a second cable out of somewhere else.
+ *  - `claimed` — one eligible box said driving a rig is its job (`clock.preferredSource`).
+ *  - `contested` — more than one said so, and §7.4's reasoning holds here too: there is no basis
+ *    to rank two honest claims, so the ids settled it and the guide says so.
+ *  - `tie-break` — nobody claimed anything. Deterministic, and not advice.
+ *
+ * Stored rather than derived, unlike `ClockSourceBasis` — and the difference is the point. There,
+ * the word is a pure function of a count the result already carries, so disagreement is
+ * impossible. Here it names *which of four keys actually decided*, which no count on this type can
+ * recover; deriving it would mean a second copy of the sort, free to drift.
+ */
+export type VoiceControlBasis = 'clock-source' | 'claimed' | 'contested' | 'tie-break'
+
+/**
+ * §3.3. **A section's pitch-and-gate pair** — the unit this pass allocates.
+ *
+ * Paired by the section its ids are qualified with (§3.3: `VCO A · FM 1`, the part before the
+ * separator), because a note and the gate that sounds it leave a box together or not at all. The
+ * Metropolix is the case that makes this concrete: its four outputs are two tracks, and `TRK 1`'s
+ * pitch belongs with `TRK 1`'s gate. Pairing on kind alone would have produced the cross product —
+ * four pairings of two tracks, two of them splicing one track's pitch to the other's gate, which
+ * is not a thing anybody patches.
+ *
+ * **One bundle per section**, taking the first of each kind by code unit where a section declares
+ * more than one. A section is a functional block on a panel; two gate jacks inside one are
+ * alternatives, not two independent voices.
+ *
+ * A jack whose id carries no separator declares no section, so it is its own section and pairs
+ * with nothing. That is the honest reading of §3.3 — ids *are* section-qualified — and it means an
+ * unqualified fixture forms no bundles rather than forming accidental ones.
+ */
+type Bundle = { section: string; pitch: JackSpec; gate: JackSpec }
+
+/** The part before the first ` · `; the whole id when there is no separator. */
+function jackSection(id: string): string {
+  const at = id.indexOf(' · ')
+  return at < 0 ? id : id.slice(0, at)
+}
+
+/**
+ * §3.3. **A socket whose only declared job is this kind.**
+ *
+ * The exactly-one-kind rule is what makes "primary voice-control" a definition rather than a hope,
+ * and it is doing real work on the boxes in `lib/devices/`. The Cascadia declares five gate
+ * outputs; three of them are `['gate', 'trigger']` end-of-stage outputs whose page says they are
+ * triggers by default and gates only if a global setting is changed. Ranked on membership alone,
+ * `ENVELOPE A · EOA` sorts first and the guide tells a reader to play a synth from an
+ * end-of-attack pulse.
+ *
+ * A single-purpose socket is also how this pass **stays out of the clock's way** without a special
+ * case for it: a hole that carries clock as well as gate carries more than one kind, so it is
+ * never a bundle member, and the cable §7.4 already decided is never restated here.
+ */
+function soleKind(jacks: readonly JackSpec[], direction: 'in' | 'out', kind: JackSignalKind) {
+  return jacks
+    .filter((j) => j.direction === direction && j.signal.length === 1 && j.signal[0] === kind)
+    .sort((a, b) => compareCodeUnits(a.id, b.id))
+}
+
+/** Every section on this box that declares both a note socket and a gate socket, section-ordered. */
+function bundles(device: Device, direction: 'in' | 'out'): Bundle[] {
+  const jacks = device.jacks ?? []
+  const pitches = soleKind(jacks, direction, 'pitch-cv')
+  const gates = soleKind(jacks, direction, 'gate')
+  const sections = [...new Set(pitches.map((p) => jackSection(p.id)))].sort(compareCodeUnits)
+
+  return sections.flatMap((section) => {
+    const pitch = pitches.find((p) => jackSection(p.id) === section)
+    const gate = gates.find((g) => jackSection(g.id) === section)
+    return pitch === undefined || gate === undefined ? [] : [{ section, pitch, gate }]
+  })
+}
+
+/**
+ * §3.3. One assigned box this pass routes voice control into.
+ *
+ * `outcome` is explicit rather than inferable from `cables.length`, because the three ways a
+ * target can come away empty-handed are three different things to a reader (§7.3):
+ *
+ *  - `routed` — it got its two cables.
+ *  - `no-compatible-source` — nothing in this rig offers a note-and-gate pair at all. Buy a
+ *    sequencer.
+ *  - `source-exhausted` — something does, and the box driving the rig ran out of them. A
+ *    Metropolix has two tracks and a third synth is one track short. That is a fact about supply,
+ *    and telling somebody "nothing here can drive this" instead would send them shopping for the
+ *    thing they already own.
+ */
+export type VoiceControlTarget = {
+  deviceId: DeviceId
+  deviceName: string
+  /** The sockets this pass routes *to*, chosen before any source was looked at. */
+  pitchJack: string
+  gateJack: string
+  outcome: 'routed' | 'no-compatible-source' | 'source-exhausted'
+  /** Two cables when routed — pitch then gate — and none otherwise. */
+  cables: PatchCable[]
+}
+
+/**
+ * §3.3. **One box drives voice control for the whole rig**, and this is which.
+ *
+ * One rather than a best source per target, and that repair is why this type exists. Choosing per
+ * target let two boxes that each take pitch and gate be proposed as each other's source: every
+ * cable individually true, the pair a rig nobody builds. A rig has one sequencer in the sense that
+ * matters here, so the pass picks it once and allocates outward.
+ */
+export type VoiceControlSource = {
+  deviceId: DeviceId
+  deviceName: string
+  basis: VoiceControlBasis
+  /**
+   * §7.4/#121's count, one tier deeper: how many *eligible source boxes* claimed
+   * `clock.preferredSource`. Carried rather than re-derived, for the reason the renderer decides
+   * nothing (§8) — "2 boxes here claim that job" is a fact about the ranking that produced this
+   * answer, and a renderer recomputing it would be a second copy of the key list.
+   */
+  claims: number
+  /** The section pairs this box offers — the supply the allocation draws on. */
+  candidates: number
+  /** Eligible bundles ranked across the whole rig, this box's included. Rendered, never ranked. */
+  ranked: number
+}
+
+/**
+ * §3.3. The pass's whole answer.
+ *
+ * Three outcomes rather than a list that may be empty, because the two empty cases mean opposite
+ * things to a reader and §7.3's discipline is that a gap says what its absence *means*:
+ *
+ *  - `no-target` — nothing assigned in this rig takes external pitch and gate, the source box
+ *    aside. A rig of grooveboxes, and nothing is missing.
+ *  - `no-compatible-pair` — something does, and nothing here can drive it. That is a gap, and a
+ *    reader can act on it.
+ *  - `routed` — at least one target got its two cables.
+ */
+export type InterDevicePatch = {
+  outcome: 'routed' | 'no-compatible-pair' | 'no-target'
+  /** `undefined` when nothing in the rig offers a note-and-gate pair. */
+  source: VoiceControlSource | undefined
+  /** By `deviceId`, UTF-16 code unit (§7.2). */
+  targets: VoiceControlTarget[]
+}
+
+function cable(from: Device, fromJack: JackSpec, to: Device, toJack: JackSpec): PatchCable {
+  return {
+    // The output's kind. A `['cv']` input fed by a `['pitch-cv']` output is carrying pitch, and
+    // saying `cv` because that is what the socket asked for would lose exactly the thing the
+    // one-way relation was built to keep.
+    signal: fromJack.signal[0] as JackSignalKind,
+    fromDeviceId: from.id,
+    fromDeviceName: from.name,
+    fromJack: fromJack.id,
+    toDeviceId: to.id,
+    toDeviceName: to.name,
+    toJack: toJack.id,
+  }
+}
+
+/**
+ * §3.3. **The rig's voice-control cables: one source box, allocated outward.**
+ *
+ * Scope, deliberately narrow: pitch and gate, between boxes declaring single-purpose sockets for
+ * both in one section. Audio is not here — §8 already tells the reader where the outputs go, and
+ * `io` rather than `jacks` is what says so. Clock is not here either, and cannot be: §7.4 decides
+ * one clock cable for the whole rig and a multi-kind socket is not a bundle member.
+ *
+ * **Four steps, in this order:**
+ *
+ *  1. Build every box's section-paired output bundles and rank them all together.
+ *  2. The winner's *device* is the rig's voice-control source. One box, not one per target.
+ *  3. Targets are the assigned boxes with a section-paired input bundle, **minus the source** — a
+ *     box does not patch into itself, and the exclusion is also what stops the mutual proposal
+ *     that made choosing per target wrong.
+ *  4. Allocate the source's bundles, in ranked order, to targets in `deviceId` order, one bundle
+ *     each and none reused. Two tracks drive two synths; the third synth is told the source ran
+ *     out rather than told nothing can drive it.
+ *
+ * **Ranking, in order** — the first key is the rig's own topology, the second is the only key that
+ * means anything, and the rest exist to make the answer deterministic rather than right:
+ *
+ *  1. the resolved clock source, because the box already driving the rig is the box the reader is
+ *     standing at, and proposing notes out of a different box than the tempo is a rig nobody built;
+ *  2. `clock.preferredSource` — §2.3's manifest judgement, reused rather than duplicated, since
+ *     "my job is to drive a rig" is the same claim whether the cable carries tempo or notes;
+ *  3. `deviceId`, then the pitch jack, then the gate jack, by UTF-16 code unit (§7.2). The jack
+ *     keys are what order one box's own sections, so `TRK 1` is allocated before `TRK 2`.
+ *
+ * **What depends on the assignment, and what must not.** The *target* list does: a voice-control
+ * cable into a box carrying no part is a cable to nowhere, so the pass reads `assignments`. The
+ * *source* choice and the ranking do not, and that is §7.4's rule ("rerolling a pattern should not
+ * re-cable the rig") kept as far as it can be kept — no load, no seed, no occupancy anywhere below.
+ * A reroll can still change this result by moving a part onto a different box, which is a real
+ * change to the rig and not a re-cabling of an unchanged one.
+ *
+ * **A source need not be assigned.** A sequencer that took no part is the most ordinary thing in
+ * the world to drive another box with, and requiring an assignment would refuse the obvious rig
+ * while accepting stranger ones.
+ *
+ * Pure: devices, assignments and the clock source in, no seed, no mood, no `Math.random`.
+ */
+export function routeVoiceControl(
+  devices: readonly Device[],
+  assignments: readonly ResolvedAssignment[],
+  clockSource: ClockSource | undefined,
+): InterDevicePatch {
+  const eligible = devices.flatMap((device) =>
+    bundles(device, 'out').map((bundle) => ({ device, ...bundle })),
+  )
+  // #121's key list, one tier deeper. Counted over the *eligible* boxes, as §7.4 counts over the
+  // boxes that could send clock, so the number reports what was actually ranked.
+  const claims = new Set(
+    eligible.filter((b) => b.device.clock.preferredSource === true).map((b) => b.device.id),
+  ).size
+
+  const ranked = [...eligible].sort((a, b) => {
+    const byClock =
+      Number(b.device.id === clockSource?.deviceId) - Number(a.device.id === clockSource?.deviceId)
+    if (byClock !== 0) return byClock
+    const byPreferred =
+      Number(b.device.clock.preferredSource === true) -
+      Number(a.device.clock.preferredSource === true)
+    if (byPreferred !== 0) return byPreferred
+    const byDevice = compareCodeUnits(a.device.id, b.device.id)
+    if (byDevice !== 0) return byDevice
+    const byPitch = compareCodeUnits(a.pitch.id, b.pitch.id)
+    return byPitch !== 0 ? byPitch : compareCodeUnits(a.gate.id, b.gate.id)
+  })
+
+  const winner = ranked[0]
+  const sourceDevice = winner?.device
+  const supply = ranked.filter((b) => b.device.id === sourceDevice?.id)
+
+  const assigned = new Set<DeviceId>(assignments.map((a) => a.deviceId))
+  const targets: VoiceControlTarget[] = []
+  let next = 0
+
+  for (const device of [...devices].sort((a, b) => compareCodeUnits(a.id, b.id))) {
+    if (!assigned.has(device.id) || device.id === sourceDevice?.id) continue
+    const into = bundles(device, 'in')[0]
+    if (into === undefined) continue
+
+    /**
+     * Allocation, in target order: the next unused bundle, if this box can take it.
+     *
+     * **`compatibleJackSignals` is the criterion, not `===`**, and this is the one place the pass
+     * asks the question the relation exists to answer. Both ends are single-purpose sockets today,
+     * so a `pitch-cv` output against a `pitch-cv` input is the only pairing that arises and the
+     * check passes on every manifest in the library — the same standing as the schema's
+     * clock-transport check, which no current device fails either.
+     *
+     * **Being straight about its reach:** target selection still requires a single-purpose
+     * `pitch-cv` input (see `bundles`), so the relation's one interesting arm — a `pitch-cv` output
+     * accepted at a `cv` input — is not reachable from here today, and this is equivalent to
+     * equality. It is written as the relation anyway because this is the place that has to ask, and
+     * an equality test here would be the *wrong question* silently: the day a target whose note
+     * socket is documented only as `CV IN` is admitted, equality refuses a cable that belongs and
+     * nothing fails. The refusal that is live right now is the other direction, and it is enforced
+     * a step earlier by `soleKind` rather than here.
+     *
+     * A bundle that does not fit is **not consumed**. The target says nothing can drive it, which
+     * is true of this source's pairs, and the next target gets the pair rather than inheriting a
+     * hole.
+     */
+    const offered = sourceDevice === undefined ? undefined : supply[next]
+    const usable =
+      offered !== undefined &&
+      compatibleJackSignals(offered.pitch.signal, into.pitch.signal) &&
+      compatibleJackSignals(offered.gate.signal, into.gate.signal)
+    const bundle = usable ? offered : undefined
+    if (bundle !== undefined) next++
+
+    targets.push({
+      deviceId: device.id,
+      deviceName: device.name,
+      pitchJack: into.pitch.id,
+      gateJack: into.gate.id,
+      outcome:
+        bundle !== undefined
+          ? 'routed'
+          : // Nothing offered a pair at all, or one was offered and this box cannot take it —
+            // both are "nothing here can drive this". `source-exhausted` is reserved for the
+            // supply running out, which is a different sentence to a reader.
+            sourceDevice === undefined || offered !== undefined
+              ? 'no-compatible-source'
+              : 'source-exhausted',
+      cables:
+        bundle === undefined || sourceDevice === undefined
+          ? []
+          : [
+              cable(sourceDevice, bundle.pitch, device, into.pitch),
+              cable(sourceDevice, bundle.gate, device, into.gate),
+            ],
+    })
+  }
+
+  return {
+    outcome:
+      targets.length === 0
+        ? 'no-target'
+        : targets.some((t) => t.outcome === 'routed')
+          ? 'routed'
+          : 'no-compatible-pair',
+    // Reported whenever the rig has one, targets or not: "this box would drive the rig and nothing
+    // here takes pitch and gate" is a more useful thing to hand a renderer than silence.
+    source:
+      sourceDevice === undefined
+        ? undefined
+        : {
+            deviceId: sourceDevice.id,
+            deviceName: sourceDevice.name,
+            basis:
+              sourceDevice.id === clockSource?.deviceId
+                ? 'clock-source'
+                : sourceDevice.clock.preferredSource !== true
+                  ? 'tie-break'
+                  : claims > 1
+                    ? 'contested'
+                    : 'claimed',
+            claims,
+            candidates: supply.length,
+            ranked: ranked.length,
+          },
+    targets,
+  }
+}
+
+
+// ---------------------------------------------------------------------------
 // Output
 // ---------------------------------------------------------------------------
 
@@ -339,7 +696,7 @@ export type ResolvedAssignment = {
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
  */
-export const RESOLVER_VERSION = 3
+export const RESOLVER_VERSION = 4
 
 export type ResolveInput = {
   /** Effective devices: shared definition composed with the user's overlay (#16). */
@@ -394,6 +751,14 @@ export type ResolveResult = {
   search: SearchReport
   /** `undefined` when nothing in the rig can send clock (§7.4). */
   clockSource: ClockSource | undefined
+  /**
+   * §3.3. The primary voice-control cables between boxes, with an outcome of its own rather than
+   * a list that may be empty — see `InterDevicePatch`.
+   *
+   * Beside `clockSource` because they are the same kind of fact and answer to the same reader: the
+   * rig's wiring, decided once here so §8 can render it and decide nothing.
+   */
+  interDevicePatch: InterDevicePatch
   /**
    * §7 step 5's output for **every** request, including the ones that became shortfalls. Pattern
    * selection depends only on template + mood, so it is meaningful whether or not the rig
@@ -490,6 +855,8 @@ export function resolve(input: ResolveInput): ResolveResult {
     }
   })
 
+  const clockSource = selectClockSource(devices, occupiedCounts(assignments))
+
   return {
     template,
     devices,
@@ -499,7 +866,10 @@ export function resolve(input: ResolveInput): ResolveResult {
     occupancy: allocation.occupancy,
     score: allocation.score,
     search: allocation.search,
-    clockSource: selectClockSource(devices, occupiedCounts(assignments)),
+    clockSource,
+    // §3.3. After the clock source, and reading it: the box already driving the rig is the first
+    // ranking key, so this cannot be hoisted above the line that decides which box that is.
+    interDevicePatch: routeVoiceControl(devices, assignments, clockSource),
     patterns,
   }
 }

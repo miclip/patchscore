@@ -26,7 +26,7 @@ opened.
 | `Deluge-Guidebook-4p0.pdf` | Official Guidebook, OS 4.0, numeric display. 391k chars, 82 ranges. Kept for cases the OLED edition words differently. | [direct](https://synthstrom-audible-deluge.s3.us-east-2.amazonaws.com/Deluge-Guidebook-4p0.pdf) |
 | `deluge-community/` | **Community firmware docs, pinned to `release_1_2_1` (Chopin).** 23 menu docs + 10 feature docs, 222k chars. See below. | [repo](https://github.com/SynthstromAudible/DelugeFirmware) |
 | `Polyend-Tracker-Mini-Manual-2v2v1b.pdf` | Manual, 344pp. Appears complete. | polyend.com (downloads page blocks automated fetch) |
-| `cascadia_manual_v1.1_2023.04.18.pdf` | Manual v1.1, 2023-04-18. | intellijel.com |
+| `cascadia_manual_v1.1_2023.04.18.pdf` | Manual v1.1, 2023-04-18. | [direct](https://intellijel.com/downloads/manuals/cascadia_manual_v1.1_2023.04.18.pdf), confirmed 2026-08-25 |
 | `model-2400_om_e_vc.pdf` | Owner's Manual. | [docs](https://tascam.com/us/product/model_2400/docs) |
 | `ZEBU_Manual_Rrev2_Web_ENG.pdf` | ZOIA Euroburo manual, rev2. | empresseffects.com |
 
@@ -53,11 +53,11 @@ The community docs are a **moving target**, unlike a PDF — `manuals/deluge-com
 | `MC-101_update_eng08_W.pdf` | Roland MC-101 | Later firmware features |
 | `TR-8S_eng03_W.pdf` | Roland TR-8S | Owner's Manual. Refers to a Reference Manual **8 times** — do not author from this alone. |
 | `TR-8S_Reference_eng01_W.pdf` | Roland TR-8S | The Reference Manual, 140k chars. Capital `R` again. |
-| `metropolix_manual_v1.6_2025.09.24.pdf` | Intellijel Metropolix | 339k chars, v1.6 |
+| `metropolix_manual_v1.6_2025.09.24.pdf` | Intellijel Metropolix | 205pp, 339k chars, v1.6. Printed folio = PDF page − 1. Front panel figure printed 17, OUTPUTS printed 18, INPUTS printed 19 — and the **silkscreen jack names exist only in the figure**, which `pdftotext` drops entirely; render printed 17 to read them. [direct](https://intellijel.com/downloads/manuals/metropolix_manual_v1.6_2025.09.24.pdf), confirmed 2026-08-25 |
 | `Zoom_LiveTrak_L-8_E_02.pdf` | Zoom LiveTrak L-8 | 91k chars, English edition |
 | `Digitakt-II_User_Manual_ENG_OS1.15A.pdf` | Elektron Digitakt II | 292k chars |
 | `Digitakt_User_Manual_ENG_OS1.51.pdf` | Elektron Digitakt | 242k chars, the original |
-| `CRAVE_QSG_BE_0718-AAJ_WW.pdf` | Behringer Crave | Quick-start, **multilingual worldwide edition** — only a fraction of its 248k chars is English. Documents the patchbay properly (jack names, directions, internal normals) but is not a parameter reference, so expect cited jacks and provisional knob values. |
+| `CRAVE_QSG_BE_0718-AAJ_WW.pdf` | Behringer Crave | Quick-start, **multilingual worldwide edition** — only a fraction of its 275k chars is English. Documents the patchbay properly (jack names, directions, internal normals) but is not a parameter reference, so expect cited jacks and provisional knob values. The MusicTribe CDN link that was circulating now returns 500; the copy in use came from the [Internet Archive mirror](https://archive.org/download/Behringer_Crave_quick_start_guide/Behringer_Crave_quick_start_guide.pdf) (26pp). **Caveat:** that copy puts the patchbay list on PDF page 9, while this repo's Crave jacks cite p.21 and p.70 — the content matches, the pagination does not, so somebody should establish which edition the existing page numbers refer to before trusting them. |
 | `minilogue_xd_OM_E9.pdf` | Korg minilogue xd | 68pp, and it covers **both** the keyboard and the `xd module` — one document, two devices, so every dimension line names which. Korg publishes **no separate Parameter Guide**, which is the TR-1000 trap and is *not* one here: the Owner's Manual carries 109 bracketed ranges and every front-panel sound knob has one, `[0...1023]` for the continuous controls. Specifications is p.66, not p.65: 4-voice, 500 x 300 x 85 mm for the keyboard and 500 x 179 x 85 mm for the module. The front-panel parameters run pp.17-26, with VOICE MODE on pp.17-18. |
 | `Subsequent_37_Manual.pdf` | Moog Subsequent 37 | **The parameter source.** 63pp, 168k chars, from [Moog's CDN](https://cdn.inmusicbrands.com/Moog/Subsequent37/Subsequent_37_Manual_0.pdf). Printed folio equals PDF page index throughout, so a citation needs no offset. Two-note paraphonic, so it fails a triad — see #20. |
 | `Minitaur_Manual.pdf` | Moog Minitaur | 19pp, from the same [Moog CDN path](https://cdn.inmusicbrands.com/Moog/Minitaur/Minitaur_Manual.pdf) as the Subsequent 37. **Specified in physical units rather than encoder counts** — cutoff `20Hz to 20KHz`, envelope stages `1 msec to 30 sec`, OSC 2 `± 12 Semitones` — which is more useful than a 0-1023 scale and rarer. Dimensions given in mm directly: 222.3 x 130.2 x 79.4. One trap: `RESONANCE: 0 to Self-Oscillation` is a named endpoint and not a number, the same shape as the CRAVE's `lo/mix 1 to hi/mix 2`. |
@@ -121,9 +121,15 @@ Filename casing is inconsistent between products: `TR-1000_reference_...` is low
 - ~~**MC-101 Reference Manual**~~ — resolved 2026-08-24. It is here, and the direct URL above is
   confirmed working; Roland publishes it on the same `static.roland.com` path as the TR-1000 and
   TR-8S references, which the support page does not link to directly.
-- **Manuals nobody has found a direct URL for.** Intellijel publishes none for the Cascadia or the
-  Metropolix, and polyend.com returns **403 to any automated request**, so the Tracker Mini manual
-  has to be fetched by hand from a browser. This is not a nicety: #80 had to leave the Cascadia's
+- ~~**Intellijel publishes no direct URL**~~ — wrong, resolved 2026-08-25. Both live under
+  `https://intellijel.com/downloads/manuals/<filename>`, using exactly the filenames recorded
+  above: [metropolix](https://intellijel.com/downloads/manuals/metropolix_manual_v1.6_2025.09.24.pdf)
+  (200, 205pp, 339k chars — matches the count in the table) and
+  [cascadia](https://intellijel.com/downloads/manuals/cascadia_manual_v1.1_2023.04.18.pdf) (200,
+  8.5MB). The `/downloads/manuals/` segment is the load-bearing part; `/wp-content/uploads/…` and
+  `/support/manuals/…` both return 404 as HTML.
+- **polyend.com returns 403 to any automated request**, so the Tracker Mini manual has to be
+  fetched by hand from a browser. This is not a nicety: #80 had to leave the Cascadia's
   `clock.preferredSource` undecided until its manual was supplied by hand, because a decision with
   no page behind it is exactly what that field exists to prevent.
 - **Moog Labyrinth and Spectravox** — no CDN path found. Present on manual-scraper sites only,

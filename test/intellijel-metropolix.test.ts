@@ -319,11 +319,43 @@ describe('Metropolix manifest', () => {
     }
   })
 
-  it('declares no jacks and no hints, because both exist to be referenced by recipes', () => {
-    // The twelve front-panel jacks are real and are described on pp.18-19. Declaring them would
-    // be a list nothing can point at — the same call the LiveTrak L-8 and the Euroburo record.
-    expect(device.jacks).toBeUndefined()
+  it('declares no hints, because hints exist to be referenced by recipes', () => {
+    // Unchanged reasoning, and the half of the old pair that is still true: there are no recipes,
+    // so a hints table would be a list nothing can point at — the same call the LiveTrak L-8 and
+    // the Euroburo record.
     expect(device.hints).toBeUndefined()
+  })
+
+  it('declares the two track sections and nothing else, now that routing points at jacks', () => {
+    // `jacks` was absent on the same argument as `hints` until inter-device routing (§3.3) started
+    // reading pitch and gate sockets with no recipe anywhere in sight. This box's entire job is to
+    // be that source, so the reason expired rather than being overruled.
+    //
+    // Four jacks, not twelve: §3.3 declares sections whole, and these are `TRK 1` and `TRK 2`
+    // whole. The other eight wait for something to point at them — see the module JSDoc for the
+    // `CLK` naming decision that blocks two of them.
+    expect(device.jacks?.map((j) => j.id)).toEqual([
+      'TRK 1 · PITCH',
+      'TRK 1 · GATE',
+      'TRK 2 · PITCH',
+      'TRK 2 · GATE',
+    ])
+
+    // Single-kind, which is what lets them be a primary voice-control bundle at all: a 1V/oct
+    // output is `pitch-cv` and nothing else, a +5V gate is `gate` and nothing else (p.18).
+    expect(device.jacks?.map((j) => j.signal)).toEqual([
+      ['pitch-cv'],
+      ['gate'],
+      ['pitch-cv'],
+      ['gate'],
+    ])
+    expect(device.jacks?.every((j) => j.direction === 'out')).toBe(true)
+
+    // The id is the silkscreen (§3.3), and the panel prints `TRK 1` as a column header over a bare
+    // `PITCH`. The manual's prose says `TRACK 1 PITCH OUT` — spelled out, with a suffix the panel
+    // does not carry — and that string is deliberately not the id.
+    expect(JSON.stringify(device.jacks)).not.toContain('TRACK 1')
+    expect(JSON.stringify(device.jacks)).not.toContain('PITCH OUT')
   })
 
   it('addresses no steps and authors no patterns (§4.3)', () => {

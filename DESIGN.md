@@ -1144,6 +1144,7 @@ patch points, cited once each, and a recipe references them by name:
 jacks?: {
   id: string                   // section-qualified: 'VCO A · FM 1'
   direction: 'in' | 'out'
+  signal: JackSignalKind[]     // what a cable in this socket carries. Required.
   clock?: ClockTransport[]     // §10: this is the socket clock uses, over these transports
   note?: string                // the page describing this jack lives at `jacks[<id>]` — §2.6
 }[]
@@ -1196,6 +1197,126 @@ hole speaking two protocols, as `TRG IN` does — while two jacks claiming one t
 direction is refused, because that would leave the renderer choosing which socket a reader should
 patch. A device that declares none gets a socket with no label, which is the honest rendering of
 "this box syncs, and nobody has read its rear panel yet" — true of twelve of the fourteen.
+
+**`signal` is the semantic cable vocabulary; `clock` stays the clock transport selector.** They
+sit next to each other and answer different questions, and the split is the point:
+
+```
+signal   what is in the cable          audio, cv, pitch-cv, gate, trigger, clock, midi
+clock    which wire protocol carries   'midi-din', 'din-sync', 'analog-clock', 'usb', …
+```
+
+`signal: ['clock']` says a reader plugging in here is carrying tempo. `clock: ['midi-din']` says
+*over MIDI DIN*, which is what selects a socket once a rig has resolved a transport — the whole
+point of #103, since the TR-1000 takes clock at `MIDI IN` over `midi-din` and at `TRG IN` over
+`analog-clock`. Folding the two together would either lose the transport, putting the cable in the
+wrong hole on every box that syncs two ways, or push transports into the semantic vocabulary and
+reopen it. So both stay, and the schema checks the one implication that must hold: **a jack with
+`clock` carries `clock` in `signal`**, because a manifest telling the rack a socket takes tempo
+while telling a signal-aware consumer it does not is worse than either answer alone. The converse
+is deliberately unchecked — a socket can be read as a clock output while the transport question is
+still open, which is the Cascadia's `MIDI / CV · MIDI CLK` today.
+
+**`JackSignalKind` is closed where `ClockTransport` is open, and that is not an inconsistency.** A
+transport is engineering a manufacturer can invent, so a closed union guessed here would reject a
+legal manifest. What a cable *means* is not like that: `audio`, `cv`, `gate`, `trigger`, `clock`,
+`pitch-cv` and `midi` are the vocabulary the manuals themselves use, and a socket outside them is
+a signal nobody could describe to a reader standing at the machine. If one turns up, adding a member is the
+honest change, and the compiler names every place that has to think about it — which an open
+`string` would have hidden.
+
+The members are meant to be **disjoint**, so a list means "this hole really does carry two
+different things" and never "the author could not choose". `gate`, `trigger` and `clock` are one
+waveform electrically and three different things to the reader, and which of the three is beside
+the hole is the entire question when somebody is deciding what to patch. The real plural cases
+earn it: a DC-coupled input the manual itself offers for audio-rate modulation is `['cv', 'audio']`
+(the Cascadia's ring modulator inputs, in its own words on p.68), a socket whose meaning a setting
+chooses is `['clock', 'trigger']` (the TR-1000's `TRG IN`, where p.32's `Trig In` decides), and a
+passive multiple whose manual says "any signal entered here" carries all five analog kinds and not
+`midi` (the Crave's `MULTIPLE`).
+
+**`pitch-cv` is separate from `cv`, and a pitch jack does not also carry `cv`.** Electrically they
+are one thing, and this vocabulary is not electrical. What decides it is a consumer matching an
+output's kinds against an input's: with a single `cv` member, an LFO output and a 1V/oct pitch
+input share it, so the LFO reads as a legal thing to plug into the note socket — invariant 5's
+failure in its usual shape, a plausible answer to a question the data could not answer, and worse
+than the authoring cost of the split because the reader is *told* to make the patch.
+
+The rule for authoring the split is **what the voltage means, not how it is scaled**: `pitch-cv` is
+the socket a note's pitch enters or leaves by. `VCF · FM 2` on the Cascadia is the jack that tests
+it — p.49 says it "accepts 1 V/oct signals" and is "ideal for tracking keyboards", and it stays
+`cv`, because what arrives there is a filter cutoff however it is scaled. 1V/oct is evidence for
+`pitch-cv`, not the definition of it.
+
+**A consumer matching these must not use raw set overlap.** Disjointness fixes the false positive
+above and creates the mirror false negative: a keyboard CV output is `['pitch-cv']`, a filter FM
+input is `['cv']`, and patching the first into the second is a real and useful cable that no longer
+shares a member. Pitch is usable wherever plain control voltage is wanted; the reverse is what must
+be refused. So routing wants a **compatibility relation** — `pitch-cv` accepted by `cv`, one way —
+and not an intersection. Building it on intersection would trade this section's false positives for
+false negatives and look correct while doing it. The type system cannot enforce that; this
+paragraph is the place it is written down.
+
+**Required, for the reason `direction` is required.** It is a property of the hole that the page
+describing the hole already states, so it costs one word beside a citation the manifest was
+writing anyway — and every consumer that does not have it has to guess. §10 is the standing
+lesson: the rack derived `CLK OUT` and `CLK IN` from two booleans and was wrong on both boxes
+whose manuals could check it. "Is this an audio hole or a CV hole" is that same question one field
+earlier. It is not separately cited, again like `direction`: the jack's one entry at `jacks[<id>]`
+(§2.6) is the page that says this socket exists and what it does, and those are not two pages. So
+a jack whose signal an author cannot settle from that page must not be declared with a guess here
+— a wrong `audio` reads exactly like a read manual.
+
+**This is not a fifth shared vocabulary** (invariant 3). That invariant is about the join between
+templates and devices: templates never name a device, devices never name a genre, and the closed
+unions that cross that line are `Role`, `Character`, `MoodAxis` and `PatternSlot`. `signal` never
+crosses it. No template mentions a jack, a socket or a signal kind; it is device data, read by the
+device layer and by §10's rack, on the same side of the contract as `direction` and `polyphony`.
+
+**What reads `signal` today: the voice-control pass** (`routeVoiceControl`, §7). **A rig gets one
+voice-control source**, chosen once and allocated outward — not a best source per target. Four
+steps: build every box's section-paired output bundles and rank them all together; the winner's
+*device* is the rig's source; targets are the *assigned* boxes with a section-paired input bundle,
+minus the source; then the source's bundles are allocated to targets in `deviceId` order, one each
+and none reused.
+
+**Choosing per target was wrong, and the way it was wrong is instructive.** Two boxes that each
+take pitch and gate — a Cascadia and a CRAVE — were proposed as each other's source in the same
+result. Every cable was individually true and the pair was a rig nobody builds. Excluding the
+chosen source from its own target list is what removes it, and it also states the obvious thing the
+per-target shape never did: a box does not patch into itself.
+
+**A bundle is a section's pitch-and-gate pair**, paired on the section its ids are qualified with,
+because a note and the gate that sounds it leave a box together or not at all. Pairing on kind
+alone gives the cross product: the Metropolix's four track outputs become four pairings, two of
+them splicing one track's pitch to the other track's gate. It is also what puts the cable in the
+right hole at the other end — `ENVELOPE A · GATE` is a single-purpose gate input on the Cascadia
+and sorts *ahead* of `EXT IN · GATE`, so on kind alone a reader would be told to patch the note into
+one section and its gate into another. `ENVELOPE A` has no note input, so it forms no bundle. An id
+with no separator declares no section and pairs with nothing, which is the honest reading of "ids
+are section-qualified" and makes an unqualified fixture form no bundles rather than accidental ones.
+
+**Single-purpose** — exactly one declared kind — is what makes "primary" a definition rather than a
+hope, and it is what keeps this pass out of §7.4's way with no special case: a socket carrying clock
+as well as gate carries more than one kind, so the one clock cable §7.4 decides is never restated
+here. It also matters on real hardware: the Cascadia declares five gate outputs, three of them
+`['gate', 'trigger']` end-of-stage pulses, and membership alone would have told somebody to play a
+synth from an end-of-attack trigger.
+
+**Ranking** is the resolved clock source, then `clock.preferredSource`, then `deviceId` and the jack
+ids by code unit (§7.2) — the first key because the box already driving the rig is the box the
+reader is standing at, the second because "my job is to drive a rig" is the same claim whether the
+cable carries tempo or notes, and the rest to be deterministic rather than right. The jack keys also
+order one box's own sections, so `TRK 1` is allocated before `TRK 2`. Pure: no seed, no mood, no
+occupancy, so a reroll re-cables nothing unless it moves a part onto a different box.
+
+Outcomes are explicit rather than inferable from an empty list, because the empty cases mean
+different things (§7.3). On the patch: `routed`, `no-compatible-pair` (something takes pitch and
+gate and nothing here can drive it — a gap a reader can act on), `no-target` (a rig of grooveboxes,
+missing nothing). On a target: `routed`, `no-compatible-source`, and `source-exhausted` — a
+Metropolix has two tracks, so a third synth is one track short, and telling somebody nothing can
+drive it would send them shopping for the thing they already own. Audio is not in scope: §8 already
+says where the outputs go, and `io` rather than `jacks` is what says it.
 
 **A position would hang on a jack declaration**, and that is a second reason to have the list.
 §10's rack draws inter-device cables and cannot draw a cable between two jacks on one panel,
