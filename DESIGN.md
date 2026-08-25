@@ -2421,10 +2421,20 @@ Do not reorder.
    `DELAY SEND` and `REVERB SEND` in its recipes, when only the reverb send resolved and the
    delay send appears nowhere the reader can act on. `kind` and panel labels stay device-level,
    because what the box *is* and what is silkscreened on it are true of the hardware in front of
-   you whether or not this guide gave it a part. The remaining cost is a narrower false negative
-   than the original: a box whose only evidence is its parameters, idle in this guide, leaves the
-   section — and where it is the only candidate the section says nothing in the rig processes
-   audio, which reads as a claim about the rack rather than about the guide. Not yet solved
+   you whether or not this guide gave it a part
+
+   That narrowing cost a false negative of its own, and closing it is the rest of the rule. A box
+   whose only evidence is its parameters and whose parameters this guide never reaches used to
+   leave the section entirely — and where it was the only candidate the section printed *Nothing
+   in this rig processes audio*, which is a claim about the **rack** and is false of a rack
+   holding a Tracker Mini. Two facts were sharing one sentence. They no longer do: such a box
+   stays in the list carrying `unused` evidence and reads *carries effects, though no part in
+   this guide reaches them* — named, with the reason nothing is set on it, and **with no
+   parameter named**, which is what keeps #106 fixed. The capability decides which sentence
+   prints; it never reaches the page as a control the reader would go looking for and not find.
+   `unused` is emitted only when nothing else speaks for the box, so a `MASTER FX` silkscreen is
+   never followed by a weaker restatement of itself. *Nothing in this rig processes audio* now
+   means what it says — no box in the rig has effects at all
 
 **Terminology.** Clock roles are `canSendClock` / `canReceiveClock` and the guide says *clock
 source* and *sync to it*. Never master/slave. "Master FX" and "master bus" stay — that is the

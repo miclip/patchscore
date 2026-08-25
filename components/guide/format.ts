@@ -260,8 +260,12 @@ export function fxText(source: FxSource, device: Device | undefined): string {
       opening = `is ${noun}${device === undefined ? '' : ` (${ioText(device)})`}`
     } else if (evidence.kind === 'panel') {
       clauses.push(`${andList(evidence.labels)} on the panel`)
-    } else {
+    } else if (evidence.kind === 'recipe') {
       clauses.push(`${andList(evidence.params)} in its recipes`)
+    } else {
+      // Nameless by construction (`FxEvidence`): the effects are on the box, the controls are
+      // not in this document, and naming one here is the #106 regression wearing a hedge.
+      clauses.push('effects, though no part in this guide reaches them')
     }
   }
   const carries = clauses.length === 0 ? undefined : `carries ${clauses.join(', and ')}`

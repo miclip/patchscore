@@ -982,6 +982,7 @@ Source — A dry kick one-shot with a defined attack, no room on it
 What processes audio in this rig:
 
 - ZOIA Euroburo — is an effects unit (stereo main out · audio in)
+- Tracker Mini — carries effects, though no part in this guide reaches them
 - MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and DELAY SEND and REVERB SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 - TR-8S — carries REVERB, DELAY and MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes

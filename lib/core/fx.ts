@@ -43,11 +43,19 @@ import type { ResolvedAssignment } from './pipeline'
  * silkscreened on it, are true of the hardware standing in front of you whether or not this
  * guide gave it a part.
  *
- * The cost is a narrower false negative than the one #59 fixed: a device whose only FX evidence
- * is its parameters, given no part in this guide, now leaves the section entirely — and in a rig
- * where it is the only candidate, the section says nothing here processes audio. That reads as a
- * claim about the rack rather than about the guide. It is the honest direction of the two, and
- * it is not yet a solved sentence.
+ * **The idle box, and what route 3 does when it finds nothing.** Narrowing route 3 to what
+ * resolved left a false negative of its own: a device whose only FX evidence is its parameters,
+ * given no part here, left the section entirely — and where it was the only candidate the
+ * section printed "Nothing in this rig processes audio". That is a claim about the *rack*, and
+ * it is false of a rack holding a Tracker Mini. Two different facts — "this guide gave that box
+ * no part" and "nothing here can process audio at all" — had one sentence between them.
+ *
+ * They have two now. A box that authors an effect parameter somewhere in its library and has
+ * none of them resolved into this guide stays in the section carrying `unused` evidence: named,
+ * with the reason nothing is set on it, and with **no parameter named**. That last part is what
+ * keeps #106 fixed — the capability decides which sentence prints, and never reaches the page as
+ * a control the reader would go looking for and not find. "Nothing in this rig processes audio"
+ * now means what it says: no box here has effects at all.
  */
 
 /**
@@ -158,6 +166,21 @@ export type FxEvidence =
    * guide does is not evidence about this guide.
    */
   | { kind: 'recipe'; params: string[] }
+  /**
+   * The box sets effect parameters somewhere in its library and this guide reaches none of them
+   * — it was given no part, or given parts whose recipes touch no effect. The other half of the
+   * sentence route 3 used to swallow whole.
+   *
+   * **Nameless on purpose.** The parameters are real on the hardware and absent from this
+   * document, and printing them here is precisely the #106 false positive. What this variant
+   * carries is that the box has effects; what it withholds is any control to go looking for.
+   *
+   * Emitted only when it is the whole story. A box already named by `unit` or `panel` is
+   * already in the section, and a second, weaker clause under a `MASTER FX` silkscreen would
+   * restate that claim in worse words. So `unused` never shares an evidence array — which is
+   * what lets both renderers print it as a clause standing alone.
+   */
+  | { kind: 'unused' }
 
 export type FxSource = {
   deviceId: DeviceId
@@ -213,6 +236,21 @@ function resolvedEffectParams(
 }
 
 /**
+ * Does this box set an effect parameter anywhere in its authored library — the *capability*
+ * question, asked once, and only to choose between two rack-level sentences.
+ *
+ * It reads `device.recipes`, which is the read #106 took out of the evidence path, so the
+ * difference is worth being exact about. #106's fault was a capability fact printed as a
+ * per-guide one: "carries DELAY SEND and REVERB SEND in its recipes" named two controls the
+ * reader could not find anywhere in the document. Nothing this answer decides reaches the page
+ * as a parameter name. It decides only whether "nothing in this rig processes audio" is true of
+ * the rack — and of a rack holding a box with a reverb send in its library, it is not.
+ */
+function authorsEffectParam(device: Device): boolean {
+  return device.recipes.some((recipe) => recipe.params.some((param) => isEffectParam(param.name)))
+}
+
+/**
  * In the rig's own order — the same order phase 3 lists the rig in, so a reader meets the boxes
  * twice in one sequence. A device with no evidence is absent rather than present-and-empty:
  * "nothing here processes audio" is one claim about the rig, not one claim per box.
@@ -221,7 +259,9 @@ function resolvedEffectParams(
  * capability-shaped answer by omitting an argument, which is precisely the mistake this call
  * signature exists to make impossible; both renderers hold a whole `ResolveResult` and have
  * nothing to lose by passing it. Pass `[]` deliberately to ask what a box declares about itself
- * with no guide in hand — that answer carries routes 1 and 2 only, and says so by construction.
+ * with no guide in hand: routes 1 and 2 answer as they always do, and route 3 answers `unused`
+ * for every box with an effect parameter in its library — which is the honest answer to "what
+ * does this guide set", asked of no guide.
  */
 export function fxSources(
   devices: readonly Device[],
@@ -238,6 +278,7 @@ export function fxSources(
     if (labels.length > 0) evidence.push({ kind: 'panel', labels })
     const params = resolved.get(device.id) ?? []
     if (params.length > 0) evidence.push({ kind: 'recipe', params })
+    if (evidence.length === 0 && authorsEffectParam(device)) evidence.push({ kind: 'unused' })
     if (evidence.length > 0) sources.push({ deviceId: device.id, name: device.name, evidence })
   }
   return sources

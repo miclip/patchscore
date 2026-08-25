@@ -13,7 +13,7 @@ import {
 } from '../lib/core/index'
 import type { ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { TEMPLATES, droneStudy, industrialTechno } from '../lib/templates/index'
+import { TEMPLATES, droneStudy, industrialTechno, relay } from '../lib/templates/index'
 import { DEFAULT_INPUTS } from '../lib/studio/session'
 import { readFileSync } from 'node:fs'
 import { applyInspirations } from '../lib/core/index'
@@ -551,11 +551,54 @@ describe("Finishing's Master FX says the same thing in both renderers (#59)", ()
     }
   })
 
+  it('names a box this guide never reaches the effects of, rather than emptying the section (#59)', () => {
+    // The Tracker Mini under `relay`, which is a shipped rig and not a constructed one: it gets
+    // two parts, both synth voices, and neither sets a send. Both sends are real on the box and
+    // neither reaches the page, so #106's narrowing dropped the only candidate out of the
+    // section and this rig printed "Nothing in this rig processes audio" — a claim about the
+    // *rack*, made about a rack holding a box with a reverb send in its library.
+    //
+    // What replaced it names the box and no control on it. Naming one would be #106 again: the
+    // reader would go looking for a `REVERB SEND` that appears on no page of this guide.
+    const idleFx = resolve({
+      devices: DEVICES.filter((d) => d.id === 'polyend-tracker-mini'),
+      template: relay,
+      mood: NEUTRAL_MOOD,
+      seed: 1,
+    })
+    // The premise, asserted rather than assumed. If `relay` ever resolves a send on this box
+    // this test is testing nothing, and should say so here rather than passing vacuously.
+    expect(idleFx.assignments.length).toBeGreaterThan(0)
+    const resolved = idleFx.assignments.flatMap((a) => a.params.map((p) => p.name))
+    expect(resolved.filter((n) => n.includes('SEND'))).toEqual([])
+    const authored = idleFx.devices.flatMap((d) => d.recipes.flatMap((r) => r.params.map((p) => p.name)))
+    expect(authored).toContain('REVERB SEND')
+
+    const sentence =
+      'The Tracker Mini carries effects, though no part in this guide reaches them; ' +
+      'nothing else in this rig processes audio.'
+    for (const doc of [text(html(idleFx)), renderGuide(idleFx)]) {
+      const section = master(doc)
+      expect(section).toContain(sentence)
+      expect(section).not.toContain('Nothing in this rig processes audio')
+      expect(section).not.toContain('SEND')
+    }
+  })
+
   it('says nothing processes audio for a rig where nothing does', () => {
     // The Cascadia has a wave folder and a soft clip — sound design, one voice at a time — and
     // no effect. Naming either under Master FX would be inventing a chain (invariant 5).
     const line = 'Nothing in this rig processes audio. The master chain is yours at the desk.'
     expect(fxSources(sparse.devices, sparse.assignments)).toEqual([])
+    // Since #59's second half the sentence is a claim about the *rack* — it prints only where no
+    // box in the rig has effects at all, rather than where none of them reached this guide. So
+    // the premise is that the Cascadia authors no effect parameter anywhere, not merely that
+    // this guide set none.
+    const authored = sparse.devices.flatMap((d) =>
+      d.recipes.flatMap((r) => r.params.map((param) => param.name)),
+    )
+    const anyEffect = /\b(BITCRUSH|CHORUS|DECIMATION|DELAY|DLY|ECHO|FLANGER|FX|PHASER|REVERB|RVB)\b/i
+    expect(authored.filter((name) => anyEffect.test(name))).toEqual([])
     expect(master(text(html(sparse)))).toContain(line)
     expect(master(renderGuide(sparse))).toContain(line)
   })
