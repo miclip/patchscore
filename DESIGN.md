@@ -2072,6 +2072,34 @@ Determinism has three axes and the tests must cover all three:
 
 "Reroll" changes the seed. `Math.random()` appears nowhere in the resolver.
 
+**The default seed is derived from the inputs, not a constant and not a draw** (#127).
+`lib/studio/session.ts` used to hand the resolver `seed: 1` whenever nobody had chosen one, which
+meant the entire library shared a single arbitrary starting point: every visitor to every rig saw
+the first guide seed 1 happens to produce, and the variety this whole section exists to serve was
+invisible on first contact. `derivedSeed` hashes the selected device ids and the template id —
+FNV-1a over UTF-16 code units, the same `hash32` the resolver salts its own streams with — and
+folds the result into `[SEED_MIN, SEED_MAX]`, the domain `lib/core/permalink.ts` and
+`components/seed-field.tsx` share. Only the *default* is derived; an explicit seed from a link,
+from storage, or from Reroll wins untouched.
+
+Three properties make that safe, and each of them fails silently rather than loudly:
+
+- **It is still deterministic** (invariant 6). The device list is copied and sorted by code unit
+  before it is serialized, so ticking two boxes in either order is one rig with one seed rather
+  than two identities with two permalinks; the serialization carries labels and per-id length
+  prefixes, so `['ab','c']` and `['a','bc']` cannot hash alike. Nothing reads the clock, the URL,
+  or storage.
+- **The server and the client still render the same first frame** (§9, #99). The seed is a pure
+  function of two fields of the inputs both sides hold before either renders.
+- **`/` stays cacheable and its preview card stays stable.** Randomising server-side per request
+  was considered and turned down: it would make a bare link render a different guide — and a
+  different OG card — on every fetch, with crawlers indexing one arbitrary result, for variety the
+  Reroll control already provides on demand. The accepted cost is that a given rig and direction
+  still look the same to everyone, which is exactly what Reroll is for.
+
+The mood and the inspirations are deliberately outside the hash: folding them in would reroll the
+guide under the hand dragging a knob.
+
 ### 7.3 Gaps and shortfalls
 
 Unfilled roles surface honestly, with a suggestion of what would fill them. **Two axes, and they
