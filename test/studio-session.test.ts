@@ -18,6 +18,7 @@ import {
   bootstrapStudio,
   copyStudioLink,
   createStudioSync,
+  derivedSeed,
   syncStudio,
   withAxis,
   withDevice,
@@ -26,6 +27,7 @@ import {
 } from '../lib/studio/session'
 import type { DownloadFile, StudioEnv, SyncReport } from '../lib/studio/session'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { SEED_MAX, SEED_MIN } from '../lib/core/index'
 
 /**
  * Build step 10 (#12): the browser half of the studio, with the browser injected.
@@ -940,4 +942,127 @@ describe('the starter example (#61)', () => {
   })
 
 
+})
+
+// ---------------------------------------------------------------------------
+// The derived default seed (#127)
+// ---------------------------------------------------------------------------
+
+describe('the default seed is derived from the rig and the direction (#127)', () => {
+  /**
+   * The landing default, pinned to a number rather than recomputed.
+   *
+   * A test that called `derivedSeed` with the same arguments would agree with any change to the
+   * derivation, which is the one thing this must not do: the hash has to give the same answer on
+   * a laptop and on CI, today and in a year, or a permalink minted now renders a different guide
+   * later. So the expected value is committed, and moving it is a deliberate edit to a golden
+   * number rather than a silent re-derivation. If this line fails, either the serialization
+   * changed — invariant 6, look hard — or the landing rig did, which is #61's constant.
+   */
+  const LANDING_SEED = 886660323
+
+  it('pins the landing default to a committed value', () => {
+    expect(derivedSeed(['polyend-tracker-mini', 'roland-tr-1000'], 'industrial-techno')).toBe(
+      LANDING_SEED,
+    )
+    expect(DEFAULT_INPUTS.seed).toBe(LANDING_SEED)
+    // And it is no longer the constant every rig in the library used to share.
+    expect(DEFAULT_INPUTS.seed).not.toBe(1)
+  })
+
+  it('does not depend on the order the devices were ticked', () => {
+    // The rig is a set. Ticking the Tracker Mini first and ticking the TR-1000 first are the
+    // same rig, and two seeds would be two identities with two permalinks.
+    expect(derivedSeed(['roland-tr-1000', 'polyend-tracker-mini'], 'industrial-techno')).toBe(
+      LANDING_SEED,
+    )
+
+    // Not just the pair: every ordering of a wider rig, on every direction this build ships.
+    const four = CATALOGUE.devices.slice(0, 4)
+    const orderings = [
+      four,
+      [...four].reverse(),
+      [four[1], four[3], four[0], four[2]] as string[],
+      [four[2], four[0], four[3], four[1]] as string[],
+    ]
+    for (const templateId of CATALOGUE.templates) {
+      const seeds = new Set(orderings.map((order) => derivedSeed(order, templateId)))
+      expect(seeds.size).toBe(1)
+    }
+  })
+
+  it('sorts by code unit, not by locale', () => {
+    // `-` is code unit 45 and `b` is 98, so a code-unit sort puts `a-b` first. ICU collation
+    // ignores the punctuation and can order these the other way, which is exactly the kind of
+    // difference that shows up on CI and nowhere else (CLAUDE.md, "two rules easy to break").
+    const sorted = derivedSeed(['a-b', 'ab'], 'industrial-techno')
+    const reversed = derivedSeed(['ab', 'a-b'], 'industrial-techno')
+    expect(sorted).toBe(reversed)
+    expect(sorted).toBe(derivedSeed(['a-b', 'ab'].slice().sort(), 'industrial-techno'))
+  })
+
+  it('does not mutate the caller\'s list', () => {
+    // `sort` sorts in place, and the array handed in is the studio's own `inputs.devices`.
+    const devices = ['roland-tr-1000', 'polyend-tracker-mini']
+    derivedSeed(devices, 'industrial-techno')
+    expect(devices).toEqual(['roland-tr-1000', 'polyend-tracker-mini'])
+  })
+
+  it('cannot be pushed out of the seed field\'s domain', () => {
+    // `components/seed-field.tsx` and `lib/core/permalink.ts` share this range. A derived
+    // default outside it is a disagreement with no error path: a link the app minted itself
+    // that the app then refuses to read.
+    const rigs: readonly string[][] = [
+      [],
+      [CATALOGUE.devices[0] as string],
+      [...CATALOGUE.devices],
+      ['\u0000', '\uffff', 'a'.repeat(500)],
+    ]
+    for (const devices of rigs) {
+      for (const templateId of [...CATALOGUE.templates, '', 'no-such-direction']) {
+        const seed = derivedSeed(devices, templateId)
+        expect(Number.isInteger(seed)).toBe(true)
+        expect(seed).toBeGreaterThanOrEqual(SEED_MIN)
+        expect(seed).toBeLessThanOrEqual(SEED_MAX)
+      }
+    }
+  })
+
+  it('gives each rig and direction its own starting point', () => {
+    // The point of #127: one arbitrary seed shared by the whole library made the variety the
+    // engine exists for invisible. Collisions are possible in principle — this is a 32-bit hash
+    // folded into a billion — but not between the pairs a visitor actually meets first.
+    const seeds = new Set<number>()
+    for (const templateId of CATALOGUE.templates) {
+      seeds.add(derivedSeed(DEFAULT_INPUTS.devices, templateId))
+      seeds.add(derivedSeed([CATALOGUE.devices[0] as string], templateId))
+      seeds.add(derivedSeed([...CATALOGUE.devices], templateId))
+    }
+    expect(seeds.size).toBe(CATALOGUE.templates.length * 3)
+  })
+
+  it('serializes unambiguously, so two different rigs cannot hash alike', () => {
+    // Length prefixes are what buy this. Concatenated, both of these are `abc`.
+    expect(derivedSeed(['ab', 'c'], 'industrial-techno')).not.toBe(
+      derivedSeed(['a', 'bc'], 'industrial-techno'),
+    )
+    // And the labels are what keep the device list from running into the template id.
+    expect(derivedSeed(['a'], 'bc')).not.toBe(derivedSeed(['a', 'b'], 'c'))
+  })
+
+  it('leaves an explicit seed alone, wherever it came from', () => {
+    // Only the *default* moves. A link carrying a seed still wins, and so does a reroll.
+    const explicit = encodeGuideInputs({ ...DEFAULT_INPUTS, seed: 4242 }, CATALOGUE)
+    const { env } = fakeBrowser({ search: `?${explicit}` })
+    expect(bootstrapStudio(env).inputs.seed).toBe(4242)
+    expect(withSeed(DEFAULT_INPUTS, 7).seed).toBe(7)
+  })
+
+  it('is the same answer every time it is asked', () => {
+    // Invariant 6 at its narrowest: no hidden state, nothing accumulating between calls.
+    const once = derivedSeed(DEFAULT_INPUTS.devices, DEFAULT_INPUTS.templateId)
+    for (let i = 0; i < 50; i++) {
+      expect(derivedSeed(DEFAULT_INPUTS.devices, DEFAULT_INPUTS.templateId)).toBe(once)
+    }
+  })
 })

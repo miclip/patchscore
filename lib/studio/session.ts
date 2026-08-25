@@ -2,11 +2,14 @@ import {
   DENSITY_DETENTS,
   FORMAT_VERSION,
   INSPIRATION_CAP,
+  SEED_MAX,
+  SEED_MIN,
   applyInspirations,
   NEUTRAL_MOOD,
   decodeGuideInputs,
   encodeGuideInputs,
   guideInputsFrom,
+  hash32,
   loadStudio,
   saveStudio,
   studioDoc,
@@ -100,10 +103,57 @@ const LANDING_TEMPLATE: TemplateId = 'industrial-techno'
 const LANDING_DEVICES: readonly DeviceId[] = ['polyend-tracker-mini', 'roland-tr-1000']
 
 /**
- * A constant, not a draw and not a read. The server and the client must render the same first
- * frame, so this may not depend on the URL, on storage, or on the clock — and "the app picks a
- * different guide every time you reload" is a worse default than one shared starting point with
- * a Reroll button next to it.
+ * The seed a rig and a direction get when nobody has chosen one (#127).
+ *
+ * **Derived from the inputs, not a constant and not a draw.** `seed: 1` meant every visitor who
+ * had not touched the seed field saw the same guide for a given rig — and, worse, the *whole
+ * library* shared one arbitrary starting point, so the variety the engine exists for was
+ * invisible on first contact. A hash of the rig and the direction gives every pair its own
+ * character while keeping every property a constant had:
+ *
+ * - **Deterministic** (invariant 6). Same devices and direction, same seed, on any machine and
+ *   in any year: FNV-1a over UTF-16 code units, and integer arithmetic the whole way. Nothing
+ *   here reads the clock, the URL, storage, or `Math.random`.
+ * - **The same first frame on the server and the client.** It is a pure function of two fields
+ *   of the inputs both sides already hold before either renders (#99).
+ * - **Cacheable, with a stable preview card.** A per-request random seed was considered and
+ *   turned down in #127: it would make `/` uncacheable and give a bare link a different OG card
+ *   on every fetch, for variety the Reroll button already provides on demand.
+ *
+ * Three details are load-bearing, and each of them fails silently rather than loudly:
+ *
+ * - **Device order must not matter.** A rig is a set; ticking the Tracker Mini before the TR-1000
+ *   is the same rig as the reverse, and would otherwise be a second identity with a second
+ *   permalink. The list is *copied* before sorting — `sort` mutates, and `inputs.devices` is not
+ *   ours — and ordered by UTF-16 code unit rather than `localeCompare`, which varies by platform
+ *   and ambient locale.
+ * - **Length prefixes, so the serialization is unambiguous.** Without them `['ab','c']` and
+ *   `['a','bc']` hash the same, and a device id containing the separator would collide with a
+ *   different rig. Labels for the same reason: the device list and the template id cannot run
+ *   into each other.
+ * - **The result stays inside the seed field's domain.** `SEED_MIN`/`SEED_MAX` are shared with
+ *   `components/seed-field.tsx` and `lib/core/permalink.ts`; a derived default outside that range
+ *   would be a disagreement with no error path — the field could not show it and the permalink
+ *   validator would reject a link the app itself minted.
+ *
+ * The mood and the inspirations are deliberately *not* in the hash. Dragging a knob would
+ * otherwise reroll the guide underneath the hand doing the dragging, which is the reroll
+ * control's job and not a knob's.
+ */
+export function derivedSeed(devices: readonly DeviceId[], templateId: TemplateId): number {
+  const ordered = [...devices].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+  const serialized = [
+    `devices:${ordered.length}`,
+    ...ordered.map((id) => `${id.length}:${id}`),
+    `template:${templateId.length}:${templateId}`,
+  ].join('|')
+  return SEED_MIN + (hash32(serialized) % (SEED_MAX - SEED_MIN + 1))
+}
+
+/**
+ * Not a draw and not a read: `seed` aside, every field here is a constant, and the seed is a pure
+ * function of two of them (see `derivedSeed`). The server and the client must render the same
+ * first frame, so nothing here may depend on the URL, on storage, or on the clock.
  */
 export const DEFAULT_INPUTS: GuideInputsV1 = {
   version: FORMAT_VERSION,
@@ -112,7 +162,10 @@ export const DEFAULT_INPUTS: GuideInputsV1 = {
   inspirations: [],
   // §6.3: density's neutral is the middle detent — no lean, sections as authored.
   mood: { ...NEUTRAL_MOOD, density: DENSITY_DETENTS[1] },
-  seed: 1,
+  seed: derivedSeed(
+    CATALOGUE.devices.filter((id) => LANDING_DEVICES.includes(id)),
+    LANDING_TEMPLATE,
+  ),
 }
 
 // ---------------------------------------------------------------------------
