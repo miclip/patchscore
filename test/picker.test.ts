@@ -249,9 +249,11 @@ describe('direction search matches name and authored keys only', () => {
   })
 
   it('does not match section names, which are even less discriminating', () => {
-    // 'Intro', 'Outro' and 'Peak' are each shared by two of the three templates authored, so a
-    // section search would return most of the list and look broken. The field set is the claim:
-    // name and keys, and no third thing quietly joining them later.
+    // 'Intro', 'Outro' and 'Peak' are each shared by two templates, and which two is an accident
+    // of what those authors happened to call a section — three of the seven directions name their
+    // sections in vocabulary nobody else uses. A field that discriminates only because one author
+    // chose unusual words is not a field worth searching, whichever way the count goes. The field
+    // set is the claim: name and keys, and no third thing quietly joining them later.
     for (const template of TEMPLATES) {
       expect(templateFields(template)).toEqual([template.name, ...template.keys])
     }

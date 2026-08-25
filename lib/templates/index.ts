@@ -3,8 +3,10 @@ import type { Template } from '../core/template'
 import { ambientDub } from './ambient-dub'
 import { droneStudy } from './drone-study'
 import { industrialTechno } from './industrial-techno'
+import { lydianHouse } from './lydian-house'
 import { majorKeyElectro } from './major-key-electro'
 import { relay } from './relay'
+import { weave } from './weave'
 
 /**
  * The template registry. Hand-written and static, unlike `lib/devices/registry.generated.ts`.
@@ -24,11 +26,13 @@ export const TEMPLATES: readonly Template[] = [
   ambientDub,
   droneStudy,
   industrialTechno,
+  lydianHouse,
   majorKeyElectro,
   relay,
+  weave,
 ]
 
-export { ambientDub, droneStudy, industrialTechno, majorKeyElectro, relay }
+export { ambientDub, droneStudy, industrialTechno, lydianHouse, majorKeyElectro, relay, weave }
 
 const BY_ID: ReadonlyMap<TemplateId, Template> = new Map(TEMPLATES.map((t) => [t.id, t]))
 

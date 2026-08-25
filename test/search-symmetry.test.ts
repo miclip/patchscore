@@ -1083,9 +1083,9 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    */
   /**
    * The timeout is not a workaround. This runs `TEMPLATES.length * SEEDS.length` exhaustive
-   * searches over the whole registry — forty of them today at fourteen devices and five
+   * searches over the whole registry — fifty-six of them today at fourteen devices and seven
    * directions, about 1.4s on a developer machine and several times that on a CI runner sharing
-   * a core with the other fifty-two test files. It first went red on `LANG=C.UTF-8` at the
+   * a core with the other test files. It first went red on `LANG=C.UTF-8` at the
    * default 5s, which reads like a locale failure and is not one.
    *
    * The cost grows on both axes this file already warns about: a device that serves more tonal
