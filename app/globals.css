@@ -154,6 +154,21 @@ body {
   border-bottom: 1px solid var(--edge);
 }
 
+/*
+ * `align-self: center` because the masthead aligns on the baseline, and an image has none worth
+ * aligning to — left alone it hangs its bottom edge on the text baseline and sits too low.
+ *
+ * `flex-shrink: 0` for the reason the nav mark has it: the `p` beside it wraps, and a mark
+ * squeezed at 390px is worse than a description on three lines.
+ */
+.masthead-mark {
+  align-self: center;
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  display: block;
+}
+
 .masthead h1 {
   margin: 0;
   font-size: 19px;
