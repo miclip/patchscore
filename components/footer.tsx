@@ -23,10 +23,6 @@ export function Footer(props: FeedbackContext) {
 
   return (
     <footer className="footer">
-      <p className="footer-line">
-        No LLM. Every value comes from authored device data and a deterministic resolver, so the
-        same rig, direction and seed always produce the same guide.
-      </p>
       {/*
         The catalogue is reachable from here and from a search result, and from nowhere else.
         Seventeen authored pages that only a crawler could find is most of #84's value thrown
