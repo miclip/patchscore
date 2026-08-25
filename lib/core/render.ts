@@ -1,5 +1,5 @@
-import type { CapabilityEvidence, Device } from './device'
-import { clockJackNotes, clockSourceSetup, evidenceFor, rangeDocuments } from './device'
+import type { CapabilityEvidence, ContentNotice, Device } from './device'
+import { clockJackNotes, clockSourceSetup, contentNotice, evidenceFor, rangeDocuments } from './device'
 import type { DeviceId, SectionName } from './ids'
 import type { Role } from './vocabulary'
 import type { Cite, ParamScope, Provenance, ResolvedParam, ResolvedRange } from './params'
@@ -1227,6 +1227,110 @@ function sourceLines(
 }
 
 /**
+ * §2.6/#111. **What this box plays, said once above its parts**, in this renderer's own words —
+ * the same arrangement #107's scope heading below sits in. `contentNotice` decides *which* of
+ * the three states the box is in; the sentences are written here and again in
+ * `components/guide/phase-sound.tsx`, and `test/device-content.test.ts` asserts all of them in
+ * both, because two copies of a sentence is exactly the thing that drifts.
+ *
+ * **The unsettled state says four different things, because #120's states are four different
+ * findings and one sentence over them would be false of most.** "Nobody here has checked" is true
+ * of `false` and of a fixture that reached here uncited, and a lie about every box somebody read
+ * and could not finish reading — which is all five real devices. `evidenceMark` and the cite line
+ * below already say which state it is; this says what a reader should do about it, and a reading
+ * that ran out, a document nobody can open and a document answering no do not lead to the same
+ * next move.
+ *
+ * All of them do the work #111 was filed for, and they do it *here* rather than on the part:
+ * `Source — <need>` is a true and useful line — it says what the part needs — and what was never
+ * true is the thing a reader inferred from it in the silence above, that the box ships nothing
+ * and the file is therefore theirs to find. Rewriting the part's line would have put the
+ * qualification on every part instead of once on the box, and would have made a genuinely
+ * user-supplied recipe read as a doubt about the recipe rather than about us.
+ */
+function contentText(notice: ContentNotice): string {
+  switch (notice.state) {
+    // **Promises entries a reader can look up, and the schema is what makes that safe to say.**
+    // `DeviceSchema` refuses `enumerable` beside any `sourceAudio` recipe, so a box in this state
+    // has parts that name entries from the printed list rather than describing audio in prose.
+    //
+    // No device reaches this branch today, and not because none is enumerable: the notice prints
+    // only where an assigned part loads audio, and such a part is exactly what this state may not
+    // have. The TR-1000's `GEN` list is named by each recipe's own cited enum instead. Kept
+    // because the state is real in the model and a hand-built fixture must render honestly.
+    case 'enumerable':
+      return (
+        `Ships ${notice.library}. The parts below name entries from it, so there is nothing ` +
+        'here to go and find.'
+      )
+    // **Says what is on the box and where, and does not promise a list.** The four devices that
+    // were declared `enumerable` for four commits are all here: a page establishes the content
+    // and no page prints the filenames, so a reader is pointed at the place and the `Source`
+    // line below still describes what the part needs. `reason` is the manifest saying why that
+    // pairing is the manual's limit rather than an omission of ours.
+    case 'shipped-library':
+      return (
+        `Ships ${notice.library} — look in ${notice.location}. ${notice.reason}, so the ` +
+        'Source line below says what the part needs rather than naming a file.'
+      )
+    case 'user-supplied':
+      return (
+        'You supply it. This box ships no factory content for these parts, so each Source ' +
+        'line below names what to load.'
+      )
+    default:
+      return unsettledText(notice.evidence)
+  }
+}
+
+/**
+ * The four unsettled findings, each with its own instruction. Kept apart from `contentText`
+ * because the web guide needs the identical split and the two are compared line for line.
+ */
+function unsettledText(evidence: CapabilityEvidence | undefined): string {
+  if (evidence !== undefined && evidence !== false) {
+    switch (evidence.kind) {
+      case 'cited-against':
+        // A document answering *no* to the claim the field would make. No real device is in this
+        // state: the five that ship content and do not enumerate it declare `shipped-library`,
+        // because a manual saying "fifty factory packs" answers yes and then stops. Worded for
+        // what the state means rather than for that case, which is how the first pass got it
+        // wrong — it was written to mean "ships content nobody has listed", which is a
+        // declaration and not a non-claim at all.
+        return (
+          'Not established — a document here answers against it, and the reading is below. ' +
+          'A Source line says what a part needs, not that you have to supply it.'
+        )
+      case 'unread':
+        return (
+          'Not established — the document that would say is not in `manuals/`. A Source line ' +
+          'below says what a part needs, not that you have to supply it.'
+        )
+      case 'unknown':
+        return (
+          'Not established — the manual was read and does not say. A Source line below says ' +
+          'what a part needs, not that you have to supply it.'
+        )
+    }
+  }
+  return (
+    'Not established. Nobody here has checked whether this box ships usable content, so a ' +
+    'Source line below says what a part needs — not that you have to supply it.'
+  )
+}
+
+function contentLines(notice: ContentNotice): Line[] {
+  const evidence = notice.evidence
+  const out: Line[] = ['', '**Content**', '']
+  out.push(`- ${contentText(notice)}${evidence === undefined ? '' : evidenceMark(evidence)}`)
+  if (evidence !== undefined) {
+    // `claim`, not `value`: what this box ships is a fact about the box, and no reader dials it.
+    for (const cite of evidenceLines(evidence, 'claim')) subordinate(out, '  ', 'cite', cite)
+  }
+  return out
+}
+
+/**
  * #107's heading, in words. Restated in `components/guide/phase-sound.tsx` for the web guide,
  * exactly as `fxText` and `realisationInstruction` are — and **local, not exported**: §8's two
  * renderers are siblings that share no code path, so the web guide reaching in here for a
@@ -1287,6 +1391,14 @@ function phaseSound(
       out.push('')
       out.push(`*${cites}*`)
     }
+    // §2.6/#111. Before the settings, for the reason a part's `Source` line comes before its
+    // parameters: a cutoff on a box with nothing loaded is a setting with no subject, and
+    // whether there *is* anything to load is the box's question, not the part's.
+    const content = contentNotice(
+      device,
+      mine.map((a) => a.recipe),
+    )
+    if (content !== undefined) out.push(...contentLines(content))
     // #107. Above the parts, because that is the order it is done at the box: set the one
     // control the pattern shares, then work through the voices.
     const hoist = hoistedParams(mine.map((a) => a.params))

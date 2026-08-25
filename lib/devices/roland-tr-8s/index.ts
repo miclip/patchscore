@@ -738,7 +738,33 @@ export const device: Device = {
    * pages are still in the comments around it — the TR-1000 is the manifest that has migrated
    * them — and this entry exists because #80 needed the non-claim to be visible as a non-claim.
    */
+  /**
+   * §2.6/#111. **This box ships a library nobody has listed, and the sample chapter's
+   * prose hides it while its screen legend states it outright.**
+   *
+   * Reference p.38, "Icons appearing in the SAMPLE screen": `P Preset: Samples originally in the
+   * TR-8S`, beside `U User: Imported samples` and `L Loop`. The example screen on that page is a
+   * preset one, `SAMPLE P BASS / Prog.Trance Bass`, and p.39 says preset samples cannot be
+   * deleted. A reader scrolling the SAMPLE screen is looking straight at the library.
+   *
+   * The surrounding prose reads the other way and is what a text dump returns: SAMPLE Import
+   * (p.37), assigning an *imported user sample* to an instrument (p.37-38), SAMPLE Delete (p.39),
+   * OPTIMIZE on the *user* sample area (p.40) — a chapter apparently about the reader's own files
+   * end to end. The legend is a graphic beside a screen shot, the third fact in this pass to live
+   * where `pdftotext` cannot reach it, so the page was rendered.
+   *
+   * The INST table this manifest cites throughout is the ACB tone parameter reference — the same
+   * distinction CLAUDE.md draws about `SNAPPY` — and is not this list.
+   */
+  content: {
+    kind: 'shipped-library',
+    library: 'preset samples supplied in the box',
+    location: 'the SAMPLE screen, where preset entries are marked P and user imports U',
+    reason: 'p.38 legends the icon and shows one example name, and no page prints the list',
+  },
+
   capabilityEvidence: {
+    content: cite(38),
     'clock.preferredSource': {
       kind: 'unknown',
       reason:

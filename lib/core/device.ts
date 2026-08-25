@@ -272,6 +272,114 @@ export const CapabilityEvidenceSchema = z.union([
  * the common case, and "the manual states what this box can do and never what it is for" is
  * evidence about that omission rather than an empty slot.
  */
+/**
+ * §2.6/#111. **What audio this box plays, and whether anybody has established it.**
+ *
+ * Four states, and before this only two were sayable. `sourceAudio.need` (§3/#101) answers
+ * "what audio" in prose, which is right for a box whose content is genuinely the reader's and
+ * wrong for one that ships a named library — and nothing in the model decided which case a box
+ * was in. A recipe on a box nobody here owns therefore asserted *bring your own* on no evidence
+ * at all, which is #101's own failure mode one level up: every field that exists resolves, so
+ * the hole is invisible. This hole is in **our knowledge**, not in the rig.
+ *
+ * It gets worse rather than better on its own. The device backlog (#57) is mostly boxes nobody
+ * here owns, so unknown is the default state for every device added from here on.
+ *
+ * ## The three states a manifest can declare
+ *
+ *  - `enumerable` — the box ships a **named list a document prints**, and a recipe *references*
+ *    an entry from it rather than describing what to load, exactly as the TR-1000's `GEN` does:
+ *    the options list is the legality claim and carries the page, the selected value is taste
+ *    and stays uncited (§3.2). `library` names the list so the guide can point at it once per
+ *    device instead of once per part. A recipe on such a box **may not carry `sourceAudio`** —
+ *    prose describing audio is the thing referencing replaces, so a box doing both is the state
+ *    below wearing this one's name, and `DeviceSchema` refuses the pair.
+ *  - `shipped-library` — the box **arrives with factory content and no document enumerates it**.
+ *    A page establishes the content exists and says where it lives; no page anywhere prints the
+ *    filenames. `library` is what a reader recognises (a directory, a count of packs, a browser
+ *    screen), `location` is where they go on the box, and `reason` says why a recipe here still
+ *    describes its audio in prose instead of naming an entry.
+ *  - `user-supplied` — the box ships nothing usable for these parts, so every recipe's audio is
+ *    a file the reader makes or loads. **No device in the library is in this state.** #111
+ *    nominated the Tracker Mini for it and the manual says the opposite: p.34 is a drawing of
+ *    the card's default structure, annotated with fifty factory packs. Establishing this one is
+ *    the expensive direction — it means proving an absence — which is why the guide's most
+ *    confident sentence hangs off it and why nothing has earned it yet.
+ *
+ * ## Why `shipped-library` is not one of the other three
+ *
+ * It was written as each of them first, and every one of those was wrong in a way that looked
+ * careful:
+ *
+ *  - not `enumerable` — no page names a file, so a recipe cannot reference a list. Saying it
+ *    ships one would promise a reader entries they can look up and find nothing.
+ *  - not `user-supplied` — a stock unit *has* the content, and telling that owner to go and
+ *    source their own sustained tonal source is wrong and unhelpful.
+ *  - not `unknown` — the reading finished. The manual answers, and it answers *yes*; what it
+ *    declines to do is enumerate. Recording that as unknown tells a reader nothing is
+ *    established about content the box demonstrably ships.
+ *  - not `cited-against` — that state is a document answering **no** to the claim the field
+ *    would make. A manual saying "fifty factory genre-based packs" answers yes and then stops.
+ *
+ * It is also the more useful answer at the machine: `location` points at where to look **on this
+ * box** — a folder, a browser, a screen icon — instead of describing audio in the abstract.
+ *
+ * ## The fourth state is the absence of this field, and it is not a `kind`
+ *
+ * `unknown` is deliberately **not** a member of the union. A manifest that has not
+ * established the answer has made no claim, and a claim of not-knowing is still a field somebody
+ * has to remember to write — which is exactly how the state stayed invisible. Absence is the
+ * default, and `contentNotice` below turns it into a sentence a reader sees.
+ *
+ * Where somebody *did* the work and came back empty, the reason belongs in `capabilityEvidence`
+ * at `content` as an `unknown`, `unread` or `cited-against` fact — the same slot and the same
+ * three states a reasoned non-claim about the clock uses (§2.6/#120). Each has a bar and they
+ * are not interchangeable: `unread` needs a **specific named document** nobody here can open,
+ * `unknown` is documents opened and the reading running out, `cited-against` is a document
+ * answering no. "Documented somewhere else" names no document and is a reading that stopped.
+ * That is the whole reason
+ * this waited on #22: doing it first would have meant inventing a second provenance mechanism
+ * beside the one #22 is for.
+ *
+ * **This is not a fifth shared vocabulary** (invariant 3). Nothing in a template names a content
+ * kind and nothing joins on one; it travels device → renderer exactly as `unit` and `note` do.
+ */
+export const CONTENT_FACT = 'content'
+
+export type DeviceContent =
+  /** `'the GEN generator list'` — a printed list, referenced by a cited enum in a recipe. */
+  | { kind: 'enumerable'; library: string }
+  /** Factory content a reader can browse but no document lists — the whole sampling library. */
+  | {
+      kind: 'shipped-library'
+      /** What a reader recognises it as: a directory, a count of packs, a browser screen. */
+      library: string
+      /** Where they go on the box to find it — a path, a screen, a card. */
+      location: string
+      /** Why a recipe still describes its audio rather than naming an entry from this. */
+      reason: string
+    }
+  /** No factory content usable for a part; every recipe's audio is the reader's own file. */
+  | { kind: 'user-supplied' }
+
+export const DeviceContentSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('enumerable'),
+    library: z.string().min(1, 'an enumerable content library needs a name a reader can look up'),
+  }),
+  z.strictObject({
+    kind: z.literal('shipped-library'),
+    library: z.string().min(1, 'a shipped library needs a name a reader recognises on the box'),
+    location: z.string().min(1, 'a shipped library needs the place a reader goes to find it'),
+    // Required, and the point of the state: a reader is being handed prose instead of a named
+    // entry, and this is the sentence saying that is the manual's limit and not an omission here.
+    reason: z
+      .string()
+      .min(1, 'a shipped library needs a reason no recipe can reference an enumerated entry'),
+  }),
+  z.strictObject({ kind: z.literal('user-supplied') }),
+])
+
 export const CAPABILITY_FACTS = [
   'clock.canSendClock',
   'clock.canReceiveClock',
@@ -286,6 +394,7 @@ export const CAPABILITY_FACTS = [
   'features.sidechain.internal',
   'features.sidechain.fromExternalAudio',
   'features.lfo',
+  CONTENT_FACT,
 ] as const
 
 export type CapabilityFact = (typeof CAPABILITY_FACTS)[number]
@@ -346,6 +455,97 @@ export function requiredEvidence(device: Device, path: string): CapabilityEviden
       reason: 'no evidence recorded for this fact',
     }
   )
+}
+
+/**
+ * Is this piece of evidence a citation *for* the fact, as opposed to one of the four ways of
+ * having no claim? `false` is "authored, nothing checked against"; `unknown`, `unread` and
+ * `cited-against` all support an *absence* (§2.6/#120). Only `manual` and `observed` say yes.
+ */
+export function isCite(evidence: CapabilityEvidence): evidence is Cite {
+  return evidence !== false && (evidence.kind === 'manual' || evidence.kind === 'observed')
+}
+
+/**
+ * §2.6/#111. **What a guide should say about this box's content, once, above its parts** — or
+ * nothing, when there is nothing to say.
+ *
+ * The decision lives here and the *words* live in each renderer, which is the same arrangement
+ * `hoistedParams` and `dominantRangeCite` already sit in (#33): one right answer to which of the
+ * four states a box is in, two hand-written vocabularies around it. Both renderers must reach the same
+ * verdict, and a second copy of this reasoning would let one of them be quietly wrong about the
+ * box in front of somebody.
+ *
+ * **When it returns nothing: no assigned part loads anything.** A Moog with three self-generating
+ * voices has no content to ship or to lack, and a box whose sample recipes all went unassigned is
+ * not being asked to load anything *in this guide*. Printing there would be a hole invented to
+ * fill (invariant 5), and it would bury the boxes where the state matters under the ones where it
+ * does not. It is the only silence, and it does not depend on what the manifest recorded: a box
+ * that declares a library still says nothing in a guide that asked nothing of it.
+ *
+ * **When it returns `shipped-library`.** The box arrives with content and no document lists it,
+ * which is every sampling device in this library. A reader is told what is already on the box
+ * and where to look for it, and the `Source` line below still says what the part needs — that
+ * pairing is the honest one, and it is what `reason` on the declaration exists to explain.
+ *
+ * **When it returns `unknown`.** Somebody asked and did not settle it, and the *reason* they
+ * did not is carried through to the reader — the manual is silent, the document that would
+ * answer is not here, or the reading came back against the claim. It never returns an unknown
+ * with nothing behind it for a box a recipe loads audio onto: `DeviceSchema` requires an entry
+ * at `content` from any device with a `sourceAudio` recipe, and refuses `false` there, so an
+ * unreasoned shrug cannot reach a reader in the first place. That requirement is #111 — a
+ * sentence reading as *bring your own* on no evidence is a confident claim about our own
+ * knowledge that nobody made.
+ *
+ * `recipes` is what is actually *assigned* in this guide, not the device's whole library — the
+ * question is about the parts a reader is being asked to build, so a box with one unused sample
+ * recipe owes its manifest an entry (`DeviceSchema` asks of the authored recipes, because a
+ * schema cannot see a guide) and still says nothing on a page that did not assign it.
+ *
+ * The two branches that produce an unknown with no evidence at all are unreachable for any
+ * manifest that has been through `DeviceSchema` — a declaration needs its citation, and a
+ * source-audio device needs an entry. They fall to `unknown` rather than throwing for the reason
+ * `requiredEvidence` does: a hand-built fixture reaching a renderer should render honestly, not
+ * crash the page somebody is holding at the machine.
+ */
+/**
+ * The one field `contentNotice` reads of a recipe, structurally — an authored `Recipe` and the
+ * renderer's `ResolvedRecipeRef` (§7 step 9) both satisfy it, and the resolver strips everything
+ * else on the way through. Naming the whole `Recipe` here would have made the Markdown renderer,
+ * which never sees one, unable to ask the question.
+ */
+type LoadsAudio = { sourceAudio?: unknown }
+
+export type ContentNotice =
+  | { state: 'enumerable'; library: string; evidence: Cite }
+  | { state: 'shipped-library'; library: string; location: string; reason: string; evidence: Cite }
+  | { state: 'user-supplied'; evidence: Cite }
+  | { state: 'unknown'; evidence: CapabilityEvidence | undefined }
+
+export function contentNotice(
+  device: Device,
+  recipes: readonly LoadsAudio[],
+): ContentNotice | undefined {
+  if (!recipes.some((recipe) => recipe.sourceAudio !== undefined)) return undefined
+  const evidence = evidenceFor(device, CONTENT_FACT)
+  const content = device.content
+  if (content !== undefined && evidence !== undefined && isCite(evidence)) {
+    switch (content.kind) {
+      case 'enumerable':
+        return { state: 'enumerable', library: content.library, evidence }
+      case 'shipped-library':
+        return {
+          state: 'shipped-library',
+          library: content.library,
+          location: content.location,
+          reason: content.reason,
+          evidence,
+        }
+      case 'user-supplied':
+        return { state: 'user-supplied', evidence }
+    }
+  }
+  return { state: 'unknown', evidence }
 }
 
 // ---------------------------------------------------------------------------
@@ -1145,6 +1345,12 @@ export type Device = {
   comfortableVoices?: number
   features?: DeviceFeatures
   /**
+   * §2.6/#111. What audio this box plays — see `DeviceContent`. Optional, and the omission is
+   * the third state: absent means nobody here has established the answer, and the guide says so
+   * rather than defaulting to *bring your own*.
+   */
+  content?: DeviceContent
+  /**
    * §2.6/#22. **Who checked the capability facts above, keyed by field path.**
    *
    * Optional, and silence is the honest default — an author cites what they checked. Required in
@@ -1172,6 +1378,7 @@ export const DeviceSchema = z
     voices: z.array(VoiceSpecSchema),
     comfortableVoices: z.int().min(1).optional(),
     features: DeviceFeaturesSchema.optional(),
+    content: DeviceContentSchema.optional(),
     capabilityEvidence: z
       .record(z.string().min(1), CapabilityEvidenceSchema)
       .refine((m) => Object.keys(m).length > 0, {
@@ -1367,6 +1574,107 @@ export const DeviceSchema = z
           code: 'custom',
           message: `jack '${jack.id}' has no capabilityEvidence entry at '${jackFact(jack.id)}' (§2.6)`,
           path: ['capabilityEvidence', jackFact(jack.id)],
+        })
+      }
+    }
+
+    /**
+     * §2.6/#111. **A content declaration is a positive claim and carries a citation; a citation
+     * with no declaration behind it is refused.**
+     *
+     * Both halves matter and they fail in opposite directions. "This box ships no factory
+     * content" is exactly the kind of capability fact #22 exists to give a page to, and it is
+     * the more expensive one to establish — the Tracker Mini's took a 344-page manual and the
+     * unit in hand — so declaring it uncited would put the guide's most confident sentence on
+     * nobody's reading. The reverse is the Cascadia's lesson (#120) in the other direction: a
+     * `Cite` at a path whose field is absent reads as evidence *for* a claim nobody made. The
+     * three reasoned states are how a manifest records finished work that came back empty, and
+     * they are accepted here precisely because they support the absence rather than a claim.
+     */
+    const contentEvidence = evidence[CONTENT_FACT]
+    if (device.content !== undefined) {
+      if (contentEvidence === undefined || !isCite(contentEvidence)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `content is declared '${device.content.kind}' with no citation at '${CONTENT_FACT}'; establishing it is a positive claim (§2.6/#111)`,
+          path: ['capabilityEvidence', CONTENT_FACT],
+        })
+      }
+    } else if (contentEvidence !== undefined && isCite(contentEvidence)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `'${CONTENT_FACT}' carries a citation but no content is declared; a reading that supports no claim is 'cited-against' (§2.6/#111)`,
+        path: ['capabilityEvidence', CONTENT_FACT],
+      })
+    }
+
+    /**
+     * §2.6/#111. **`false` says nothing here that the omission does not**, so it is refused at
+     * this one path.
+     *
+     * Everywhere else `false` is a real state — "authored, nothing checked against" — and it is
+     * worth recording because the *field* is a claim somebody made. `content` is the other way
+     * round: the claim is the declaration, and an entry exists here only to say something about
+     * a declaration that is absent. An entry that adds no reason to that absence is the shrug
+     * §2.6 refuses, wearing a field name.
+     */
+    if (contentEvidence === false) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `'${CONTENT_FACT}' is 'false', which says nothing the omission does not; record why with 'unknown', 'unread' or 'cited-against' (§2.6/#111)`,
+        path: ['capabilityEvidence', CONTENT_FACT],
+      })
+    }
+
+    /**
+     * §2.6/#111. **A box a recipe tells you to load something onto has to have been asked the
+     * question**, and silence is not an answer it may give.
+     *
+     * This is the whole of #111 as a build failure. `sourceAudio.need` is prose that reads as
+     * *bring your own*, and on a box nobody here has checked that is a confident claim about our
+     * own knowledge which nobody made. Silence stays available — and is the ordinary case — for
+     * a box whose voices generate their own sound: it was never asked, so it owes nothing.
+     *
+     * Keyed on the device's **authored** recipes rather than on what a guide assigns, because a
+     * schema cannot see a guide. The renderer's `contentNotice` asks the narrower question about
+     * the parts a reader was actually given, which is why an unused sample recipe obliges the
+     * manifest here and still prints nothing there.
+     */
+    if (device.recipes.some((recipe) => recipe.sourceAudio !== undefined)) {
+      if (contentEvidence === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `a recipe on this device declares sourceAudio, so '${CONTENT_FACT}' must say what this box ships — a declaration with its citation, or why it is not settled (§2.6/#111)`,
+          path: ['capabilityEvidence', CONTENT_FACT],
+        })
+      }
+
+      /**
+       * §2.6/#111. **`enumerable` is a printed list a recipe names an entry from, and prose
+       * describing audio is the thing that referencing replaces.** A box claiming both is
+       * `shipped-library` wearing the wrong name.
+       *
+       * This is the rule the library got wrong for four commits, and it went wrong silently: the
+       * five sampling devices were declared `enumerable` while every recipe on them still
+       * described its audio in `sourceAudio.need`, so the declaration promised a reader entries
+       * they could look up and the parts below handed them a prose description instead. Nothing
+       * caught it because both halves are individually well-formed. The declaration is a claim
+       * about the *document* — that a page prints the names — and the recipes are the evidence
+       * for or against it being usable, so the pair is checkable here and nowhere else.
+       *
+       * `shipped-library` deliberately does not carry this rule: no document lists its entries,
+       * so prose is the only honest thing a recipe there can say, and `reason` is where the
+       * manifest says so.
+       */
+      const declared = device.content
+      if (declared !== undefined && declared.kind === 'enumerable') {
+        device.recipes.forEach((recipe, i) => {
+          if (recipe.sourceAudio === undefined) return
+          ctx.addIssue({
+            code: 'custom',
+            message: `content is declared 'enumerable', so a recipe names an entry from ${declared.library} rather than describing audio in sourceAudio; a library no document lists is 'shipped-library' (§2.6/#111)`,
+            path: ['recipes', i, 'sourceAudio'],
+          })
         })
       }
     }

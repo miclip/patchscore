@@ -382,6 +382,11 @@ One chord shape throughout, so one sample, transposed where the chord moves.
 
 *Values below cite Polyend Tracker Mini Manual 2.2.1b.*
 
+**Content**
+
+- Ships 50 factory genre-based sample packs — look in /Samples/FactoryPacks on the microSD card. p.34 names the folder and the count, and no page lists what is in a pack, so the Source line below says what the part needs rather than naming a file. · manual
+  - ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.34
+
 **Pattern-wide**
 
 One setting for the whole pattern — set it once, not once per part below.

@@ -8,10 +8,10 @@ import type {
   ResolvedSourceAudio,
 } from '@/lib/core'
 import { citationSentence } from '@/lib/core'
-import { dominantRangeCite, hoistedParams } from '@/lib/core'
-import type { ParamScope, ScopedParams } from '@/lib/core'
+import { contentNotice, dominantRangeCite, hoistedParams } from '@/lib/core'
+import type { CapabilityEvidence, ContentNotice, ParamScope, ScopedParams } from '@/lib/core'
 import { citeLines, citeText, count, hintText, num } from './format'
-import { Instruction, ParamLine, ProvenanceMark } from './instruction'
+import { EvidenceMark, Instruction, ParamLine, ProvenanceMark, evidenceLines } from './instruction'
 
 /**
  * §12.4, and an instruction rather than a note: the two realisations are two different things to
@@ -133,6 +133,94 @@ function Params({
 }
 
 /**
+ * §2.6/#111. **What this box plays, said once above its parts**, in this view's own words — the
+ * sibling of `contentText`/`unsettledText` in `lib/core/render.ts`, hand-written to match them
+ * the way `realisationInstruction` above is. `contentNotice` decides which state the box is in;
+ * the sentences are each renderer's own, and `test/device-content.test.ts` asserts them in both.
+ *
+ * The unsettled state says four different things because #120's states are four different
+ * findings: "nobody here has checked" is a lie about every one of them, since each is somebody
+ * who did check. The mark beside the line says which state; this says what to do about it.
+ *
+ * A box that ships content nobody has listed is **not** one of those findings — it declares
+ * `shipped-library` above, and gets the place to look rather than a doubt.
+ *
+ * All of them belong on the box rather than on the part. `Source — <need>` is true — it says what
+ * the part needs — and what was never true is what a reader inferred from it in the silence
+ * above: that the box ships nothing, so the file is theirs to go and find.
+ */
+function contentText(notice: ContentNotice): string {
+  switch (notice.state) {
+    case 'enumerable':
+      return (
+        `Ships ${notice.library}. The parts below name entries from it, so there is nothing ` +
+        'here to go and find.'
+      )
+    case 'shipped-library':
+      return (
+        `Ships ${notice.library} — look in ${notice.location}. ${notice.reason}, so the ` +
+        'Source line below says what the part needs rather than naming a file.'
+      )
+    case 'user-supplied':
+      return (
+        'You supply it. This box ships no factory content for these parts, so each Source ' +
+        'line below names what to load.'
+      )
+    default:
+      return unsettledText(notice.evidence)
+  }
+}
+
+function unsettledText(evidence: CapabilityEvidence | undefined): string {
+  if (evidence !== undefined && evidence !== false) {
+    switch (evidence.kind) {
+      case 'cited-against':
+        return (
+          'Not established — a document here answers against it, and the reading is below. ' +
+          'A Source line says what a part needs, not that you have to supply it.'
+        )
+      case 'unread':
+        return (
+          'Not established — the document that would say is not in `manuals/`. A Source line ' +
+          'below says what a part needs, not that you have to supply it.'
+        )
+      case 'unknown':
+        return (
+          'Not established — the manual was read and does not say. A Source line below says ' +
+          'what a part needs, not that you have to supply it.'
+        )
+    }
+  }
+  return (
+    'Not established. Nobody here has checked whether this box ships usable content, so a ' +
+    'Source line below says what a part needs — not that you have to supply it.'
+  )
+}
+
+function ContentBlock({ notice }: { notice: ContentNotice }) {
+  return (
+    <div className="callout">
+      <p>
+        <strong>Content</strong> — {contentText(notice)}{' '}
+        {notice.evidence === undefined ? null : <EvidenceMark evidence={notice.evidence} />}
+      </p>
+      {/*
+        Visible, not only in the mark's title attribute: a reader on a phone at the rack has no
+        hover, and a printed guide has no attributes at all. `claim`, not `value` — what a box
+        ships is a fact about the box and nobody dials it.
+      */}
+      {notice.evidence === undefined
+        ? null
+        : evidenceLines(notice.evidence, 'claim').map((cite) => (
+            <p className="subordinate cite" key={cite}>
+              {cite}
+            </p>
+          ))}
+    </div>
+  )
+}
+
+/**
  * #107's heading and its reason, hand-written to match the Markdown renderer word for word — the
  * same arrangement `realisationInstruction` above already lives under. The two renderers share no
  * code path by design (#33), so importing the sentence from `lib/core/render.ts` would make this
@@ -196,19 +284,31 @@ export function PhaseSound({
       const mine = result.assignments.filter((a) => a.deviceId === device.id)
       // Once per device, not once per part: #107's answer is a fact about the device, and
       // recomputing it inside the part loop would ask the same question five times.
-      return { device, mine, hoist: hoistedParams(mine.map((a) => a.params)) }
+      return {
+        device,
+        mine,
+        hoist: hoistedParams(mine.map((a) => a.params)),
+        content: contentNotice(
+          device,
+          mine.map((a) => a.recipe),
+        ),
+      }
     })
     .filter((entry) => entry.mine.length > 0)
 
   return (
     <>
-      {carrying.map(({ device, mine, hoist }) => (
+      {carrying.map(({ device, mine, hoist, content }) => (
         <section className="device" key={device.id}>
           <h4>{device.name}</h4>
           {/* The markdown renderer's own sentence, so the two cannot say different things. */}
           {citationSentence(device) === undefined ? null : (
             <p className="quiet">{citationSentence(device)}</p>
           )}
+
+          {/* §2.6/#111, before the settings: whether there is anything to load is the box's
+              question, and a cutoff on a box with nothing loaded is a setting with no subject. */}
+          {content === undefined ? null : <ContentBlock notice={content} />}
 
           {/* #107, above the parts: the order it is done at the box — set the one control the
               pattern shares, then work through the voices. */}
