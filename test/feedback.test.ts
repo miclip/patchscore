@@ -181,9 +181,8 @@ describe('the footer', () => {
     expect(markup(CONTEXT)).toBe(markup(CONTEXT))
   })
 
-  it('says there is no LLM and links the repository', () => {
+  it('links the repository', () => {
     const html = markup(CONTEXT)
-    expect(html).toContain('No LLM')
     expect(html).toContain(`href="${REPOSITORY_URL}"`)
   })
 

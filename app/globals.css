@@ -209,11 +209,6 @@ body {
   font-size: 13px;
 }
 
-.footer-line {
-  margin: 0;
-  max-width: 62ch;
-}
-
 .footer-links {
   display: flex;
   flex-wrap: wrap;
