@@ -120,7 +120,8 @@
     "deviceId": "B-tracker",
     "deviceName": "Golden Tracker",
     "transport": "midi-din",
-    "occupiedAssignables": 3
+    "occupiedAssignables": 3,
+    "claims": 0
   },
   "assignments": [
     {

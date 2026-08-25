@@ -1,7 +1,31 @@
-import type { DeviceId, ResolveResult } from '@/lib/core'
-import { clockJackNotes, clockSourceSetup } from '@/lib/core'
-import { count, ioText, mixerText } from './format'
+import type { ClockSource, DeviceId, ResolveResult } from '@/lib/core'
+import { clockJackNotes, clockSourceBasis, clockSourceSetup, evidenceFor } from '@/lib/core'
+import { clockParts, count, ioText, mixerText, syncText } from './format'
 import { EvidenceMark, evidenceLines } from './instruction'
+
+/**
+ * §7.4/#121. **Why this box** — the basis of the clock-source answer, in this renderer's own
+ * words (the standing rule in this directory: one right answer, two hand-written vocabularies).
+ *
+ * Without it a deterministic fallback and a person's judgement reach a reader in identical words,
+ * and the fallback is the one that then reads like advice. §8 says this page is what somebody is
+ * holding at the rack, so it is the renderer that matters most for it.
+ *
+ * One line for the rig, never one per candidate (#35, #107). The boxes that were asked and
+ * declined are the device pages' business.
+ */
+function basisText(source: ClockSource): string {
+  switch (clockSourceBasis(source)) {
+    case 'claimed':
+      return 'its manual says leading a rig is its job'
+    // Two honest claims, and §7.4 has no basis to rank them — so the guide says which keys did,
+    // rather than implying a judgement nobody made.
+    case 'contested':
+      return `${count(source.claims, 'box', 'boxes')} here claim that job, so transport, then name, settled it`
+    default:
+      return 'nothing here claims that job, so transport, then name, settled it'
+  }
+}
 
 /**
  * §8 phase 3. One block per box rather than a table plus a second list keyed by name: two
@@ -38,6 +62,15 @@ export function PhaseRig({
       ? undefined
       : clockSourceSetup(sourceDevice, source.transport)
 
+  /**
+   * §7.4/#121. What the chosen box's manifest recorded when it decided whether leading a rig is
+   * its job — **its own entry only**, at `clock.preferredSource`. A manifest that recorded
+   * nothing there gets no mark and no citation: nobody wrote down a reading, so the page claims
+   * none, which is invariant 5 rather than a hole.
+   */
+  const preference =
+    sourceDevice === undefined ? undefined : evidenceFor(sourceDevice, 'clock.preferredSource')
+
   return (
     <>
       {source === undefined ? (
@@ -50,8 +83,28 @@ export function PhaseRig({
         <p className="callout">
           <strong>Clock source</strong> — {source.deviceName} over{' '}
           <span className="mono">{source.transport}</span>, carrying{' '}
-          {count(source.occupiedAssignables, 'part')}. Sync everything else to it.
+          {count(source.occupiedAssignables, 'part')}. {syncText(result.devices, source.deviceId)}
         </p>
+      )}
+
+      {source === undefined ? null : (
+        <div className="callout">
+          <p>
+            Why this box — {basisText(source)}{' '}
+            {preference === undefined ? null : <EvidenceMark evidence={preference} />}
+          </p>
+          {/*
+            The citation is *visible*, not only in the mark's title attribute — a reader on a
+            phone at the rack has no hover, and a printed guide has no attributes at all.
+          */}
+          {preference === undefined
+            ? null
+            : evidenceLines(preference, 'claim').map((cite) => (
+                <p className="subordinate cite" key={cite}>
+                  {cite}
+                </p>
+              ))}
+        </div>
       )}
 
       {setup === undefined || source === undefined ? null : (
@@ -79,6 +132,7 @@ export function PhaseRig({
       <ul className="boxes">
         {result.devices.map((device) => {
           const parts = occupied.get(device.id) ?? 0
+          const clock = clockParts(device)
           return (
             <li key={device.id}>
               <div className="box-head">
@@ -90,9 +144,21 @@ export function PhaseRig({
               <dl className="box-facts">
                 <div>
                   <dt>clock</dt>
+                  {/*
+                    #121. Four states, not two — this said `receives clock only` for a mixer whose
+                    manual never mentions MIDI, and then named the transports it would arrive on.
+                    The claim and the wire are decided together in `clockParts` for that reason,
+                    and rendered apart so §10's rule about prose and identifiers survives: a box
+                    with no clock at all names no wire.
+                  */}
                   <dd>
-                    {device.clock.canSendClock ? 'sends clock' : 'receives clock only'} ·{' '}
-                    <span className="mono">{device.clock.transport.join('/')}</span>
+                    {clock.claim}
+                    {clock.transport === undefined ? null : (
+                      <>
+                        {' · '}
+                        <span className="mono">{clock.transport}</span>
+                      </>
+                    )}
                   </dd>
                 </div>
                 {/*

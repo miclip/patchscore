@@ -61,6 +61,9 @@ These parts are not in the guide below.
 
 **Clock source** — Tracker Mini over `midi-din`, carrying 4 parts. Sync everything else to it.
 
+- Why this box — its manual says leading a rig is its job · manual
+  - ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.283
+
 - On the Tracker Mini, set `Config > MIDI > Clock Out` to `MIDI Out jack` · manual
   - ↳ note: Off, USB, MIDI Out jack, USB + MIDI Out jack — clock leaves only by the routing set here
   - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.54

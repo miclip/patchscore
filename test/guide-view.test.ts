@@ -865,3 +865,90 @@ describe('#112 the guide heading links the direction', () => {
     expect(rule).toContain('border-bottom')
   })
 })
+
+// ---------------------------------------------------------------------------
+// #121 the clock topology, on the page as well as in the Markdown
+// ---------------------------------------------------------------------------
+
+/**
+ * #33/#121. **Two facts the page had lost, both of them about boxes that cannot obey the
+ * instruction above them.**
+ *
+ * "Sync everything else to it" was printed unconditionally, so a rig holding a box with no clock
+ * input got an instruction that is false of it and no word about which one — the reader finds out
+ * at the machine, holding a rig where something is drifting. And the per-box line collapsed four
+ * states to two, which made a mixer whose manual never mentions MIDI read as `receives clock
+ * only` *and* named the transports the clock would arrive on. Naming a wire implies a clock
+ * travels on it.
+ *
+ * Both were live against the real library rather than hypothetical: the Model 2400 sends and
+ * cannot receive, and the LiveTrak L-8 does neither. This file is where they belong, because the
+ * check is not "the page says a string" — it is that the page and the Markdown, which share no
+ * ink by design, state the same topology.
+ */
+describe('#121 the page states the clock topology the Markdown states', () => {
+  const rigOf = (...ids: string[]) =>
+    resolve({
+      devices: DEVICES.filter((d) => ids.includes(d.id)),
+      template: industrialTechno,
+      mood: NEUTRAL_MOOD,
+      seed: 18,
+    })
+
+  const fullPage = text(html(real))
+  const fullMd = renderGuide(real)
+
+  it('renders all four clock states, and the same four the Markdown renders', () => {
+    for (const state of [
+      'sends clock, cannot receive',
+      'receives clock only',
+      'no clock in or out',
+    ]) {
+      expect(fullMd).toContain(state)
+      expect(fullPage).toContain(state)
+    }
+    // `sends clock` alone is asserted last and by count, because it is a prefix of
+    // `sends clock, cannot receive` — a renderer that had only the two-state branch left would
+    // still contain it, which is exactly how this went unnoticed.
+    expect(occurrences(fullPage, 'no clock in or out')).toBe(
+      occurrences(fullMd, 'no clock in or out'),
+    )
+  })
+
+  /**
+   * The specific shape of the bug. A box with no clock at all must name no transport — the
+   * two-state branch printed `receives clock only · midi-din/usb` for a desk that does neither.
+   */
+  it('names no transport for a box with no clock at all', () => {
+    const l8 = DEVICES.find((d) => d.id === 'zoom-livetrak-l-8')
+    expect(l8?.clock.canSendClock).toBe(false)
+    expect(l8?.clock.canReceiveClock).toBe(false)
+    expect(fullPage).not.toContain('no clock in or out ·')
+    expect(fullPage).not.toContain(`receives clock only · ${l8?.clock.transport.join('/')}`)
+  })
+
+  it('names the boxes that cannot be synced, as the Markdown does', () => {
+    expect(fullMd).toContain('except Model 2400 and Zoom LiveTrak L-8')
+    // The page's own punctuation — `andList` has no Oxford comma and `list` does — and the same
+    // two boxes, which is the fact the two renderers have to agree on.
+    expect(fullPage).toContain('Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8')
+    expect(fullPage).toContain('which cannot receive clock and run free')
+  })
+
+  it('says one box runs free rather than run free', () => {
+    const page = text(html(rigOf('roland-tr-1000', 'zoom-livetrak-l-8')))
+    expect(page).toContain('except Zoom LiveTrak L-8, which cannot receive clock and runs free')
+    expect(page).not.toContain('and run free')
+  })
+
+  /**
+   * And the sentence stays plain where every box can obey it. An exception clause on a rig with
+   * no exception is the mirror of the bug above: ink that says a thing the rig does not do.
+   */
+  it('adds no exception clause when every other box can receive clock', () => {
+    const page = text(html(rigOf('polyend-tracker-mini', 'roland-tr-1000')))
+    expect(page).toContain('Sync everything else to it.')
+    expect(page).not.toContain('except')
+    expect(page).not.toContain('runs free')
+  })
+})

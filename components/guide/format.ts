@@ -170,6 +170,59 @@ export function adviceText(gap: Gap, deviceById: Map<DeviceId, Device>): string 
 // Phase 3 — rig integration
 // ---------------------------------------------------------------------------
 
+/**
+ * §7.4/#121. **Four states, not two.** This view collapsed them to `sends clock` /
+ * `receives clock only`, which is wrong about two boxes in the library and wrong about the wire
+ * as well: a mixer whose manual never mentions MIDI was told it receives clock, over transports
+ * the page then named. Restated from `lib/core/render.ts` the way `ioText` and `mixerText` are —
+ * the branch is the same four facts, the sentence is written twice.
+ *
+ * **Transports are suppressed where the box has no clock at all.** Naming a wire implies a clock
+ * travels on it, and for a box that neither sends nor receives, none does.
+ */
+export type ClockParts = { claim: string; transport?: string }
+
+export function clockParts(device: Device): ClockParts {
+  const { canSendClock, canReceiveClock, transport } = device.clock
+  const claim = canSendClock
+    ? canReceiveClock
+      ? 'sends clock'
+      : 'sends clock, cannot receive'
+    : canReceiveClock
+      ? 'receives clock only'
+      : 'no clock in or out'
+  // Split rather than joined, so §10 survives: the claim is prose and the transports are
+  // identifiers, and one face for both is exactly what §10 forbids. They are still decided
+  // together, here, because whether a wire may be named at all depends on the claim.
+  if (!canSendClock && !canReceiveClock) return { claim }
+  return { claim, transport: transport.join('/') }
+}
+
+/** The same four states as one string, for the tests and for anything without two slots. */
+export function clockText(device: Device): string {
+  const parts = clockParts(device)
+  return parts.transport === undefined ? parts.claim : `${parts.claim} · ${parts.transport}`
+}
+
+/**
+ * §7.4/#121. "Sync everything else to it" is an instruction, and **some boxes cannot obey it**.
+ *
+ * A device that does not receive clock runs free whatever the source is doing, and the page said
+ * so nowhere — it printed the bare instruction and left a reader to discover the exception at the
+ * machine, holding a rig where two boxes are drifting. Naming them costs one clause.
+ *
+ * The source itself is excluded: it is not synced to anything, so it is not an exception to
+ * being synced.
+ */
+export function syncText(devices: readonly Device[], sourceId: DeviceId): string {
+  const deaf = devices.filter((d) => d.id !== sourceId && !d.clock.canReceiveClock)
+  if (deaf.length === 0) return 'Sync everything else to it.'
+  return (
+    `Sync everything else to it, except ${andList(deaf.map((d) => d.name))}, ` +
+    `which cannot receive clock and ${deaf.length === 1 ? 'runs' : 'run'} free.`
+  )
+}
+
 export function ioText(device: Device): string {
   const parts: string[] = []
   // §2.3: `main: 'none'` is a box with no audio bus at all. It may still have the other three,

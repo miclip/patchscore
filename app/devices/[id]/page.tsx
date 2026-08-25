@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -7,12 +8,27 @@ import { PanelFigure } from '@/components/rack/panel-figure'
 import type { Device } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceHref, deviceLabel } from '@/lib/studio/catalogue'
+import type { CapabilityGap } from '@/lib/studio/device-page'
 import {
   capabilitySentence,
   clockText,
   devicePage,
   provenanceSentence,
 } from '@/lib/studio/device-page'
+
+/**
+ * §2.6/#121. What each non-citation state is, in a reader's words rather than the audit's.
+ *
+ * The audit's vocabulary is built for a report — `unchecked-capability` beside a device id — and
+ * these are label text on a page somebody reads once. The states themselves are #120's and are
+ * unchanged; this names them.
+ */
+const GAP_LABEL: Record<CapabilityGap['kind'], string> = {
+  'cited-against': 'Read, answers no',
+  undocumented: 'Read, does not say',
+  unread: 'Document not read',
+  unchecked: 'Not checked',
+}
 
 /**
  * #84. One device, everything the library holds about it.
@@ -239,6 +255,25 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             column for: a fact somebody looked for and the manual does not print.
           */}
           <p className="provenance-lead">{capabilitySentence(page.provenance)}</p>
+          {/*
+            §2.6/#121. **Which** facts, not only how many. The sentence above can count and cannot
+            point, and a reader told three facts on this box are unstated has no way to learn
+            whether one of them is the clock topology they are about to rely on.
+
+            Field paths verbatim and monospace (§10): `clock.preferredSource` is the manifest's own
+            name for the thing, and a friendlier rewrite would be this page inventing a second
+            vocabulary for a field that already has one. Nothing prints when every fact is cited.
+          */}
+          {page.capabilityGaps.length === 0 ? null : (
+            <dl className="fact-list capability-gaps">
+              {page.capabilityGaps.map((gap) => (
+                <Fragment key={gap.kind}>
+                  <dt>{GAP_LABEL[gap.kind]}</dt>
+                  <dd className="mono">{gap.facts.join(', ')}</dd>
+                </Fragment>
+              ))}
+            </dl>
+          )}
           <p className="note">
             Panel span: {' '}
             {device.physical.verified === false

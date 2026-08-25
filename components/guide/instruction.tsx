@@ -113,13 +113,21 @@ export function EvidenceMark({ evidence }: { evidence: CapabilityEvidence }) {
       </span>
     )
   }
-  // §2.6/#120. Their own words, and deliberately no ink of their own: giving these two states a
-  // drawn identity is #121's job, and inventing one here would be a rendering decision made by a
-  // type error. Reusing this class says only "not a citation", which is true of both.
-  if (evidence.kind === 'unread' || evidence.kind === 'cited-against') {
+  // §2.6/#120/#121. Their own ink, which #120 deliberately left to this issue. They are not two
+  // spellings of `undocumented`: `unread` is work blocked on a *file* nobody here can unblock by
+  // reading harder, and `cited-against` is the one non-claim with a page — the document answers,
+  // and answers no. Drawing all three the same made the strongest of them look like the weakest.
+  if (evidence.kind === 'unread') {
     return (
-      <span className="prov prov-undocumented" title={evidence.reason}>
-        {evidence.kind}
+      <span className="prov prov-unread" title={evidence.reason}>
+        unread
+      </span>
+    )
+  }
+  if (evidence.kind === 'cited-against') {
+    return (
+      <span className="prov prov-cited-against" title={`${evidence.cite.source} — ${evidence.reason}`}>
+        cited against
       </span>
     )
   }
@@ -134,20 +142,22 @@ export function EvidenceMark({ evidence }: { evidence: CapabilityEvidence }) {
  * The subordinate lines one piece of capability evidence earns. A citation names its page; an
  * `undocumented` fact states what the manual does not say, because a bare "undocumented" is the
  * shrug §2.6 refuses; an unchecked fact has nothing to add that the mark did not already say.
+ *
+ * `label` is what the citation is a citation *of* (#121). "value" is a lie on some of them:
+ * `clock.preferredSource` is a claim about the box's job and nobody dials it. Defaulted, so every
+ * caller that was naming a value keeps the word it had.
  */
-export function evidenceLines(evidence: CapabilityEvidence): string[] {
+export function evidenceLines(evidence: CapabilityEvidence, label = 'value'): string[] {
   if (evidence === false) return []
   switch (evidence.kind) {
     case 'unknown':
       return [`undocumented — ${evidence.reason}`]
-    // §2.6/#120, and see the sibling in `lib/core/render.ts`: the floor that keeps a new state
-    // from arriving silently, not the rendering #121 is for.
     case 'unread':
       return [`unread — ${evidence.reason}`]
     case 'cited-against':
       return [`cited-against ${citeText(evidence.cite)} — ${evidence.reason}`]
     default:
-      return [`value ${citeText(evidence)}`]
+      return [`${label} ${citeText(evidence)}`]
   }
 }
 

@@ -75,6 +75,36 @@ export type ClockSource = {
    * clock source; it has no part in choosing that source. See `selectClockSource`.
    */
   occupiedAssignables: number
+  /**
+   * §7.4/#121. **How many eligible boxes claimed `clock.preferredSource`** — 0, 1, or more.
+   *
+   * Carried rather than re-derived, for the reason the renderer decides nothing (§8): "why this
+   * box" is a fact about the ranking that produced the answer, and a renderer that recomputed it
+   * would be a second copy of §7.4's key list, free to drift from the sort three lines above.
+   * Rendered, never ranked — like `occupiedAssignables`, and for the same reason.
+   */
+  claims: number
+}
+
+/**
+ * §7.4/#121. What the answer above **rests on**, which is not the same question as what it is.
+ *
+ *  - `claimed` — one box said driving a rig is its job, and it is this one. A judgement, and a
+ *    person's.
+ *  - `contested` — more than one said so. §7.4 has no basis to rank two honest claims and does
+ *    not pretend to: the transport and the name settled it, and the guide says which.
+ *  - `tie-break` — nobody claimed it. The answer is deterministic and it is not a judgement, and
+ *    printing it as though it were is the failure #121 named: an alphabetical fallback wearing
+ *    the clothes of advice.
+ *
+ * Derived here rather than stored as a fourth field, so there is exactly one place the three
+ * words are decided and no way for `claims` and a `basis` string to disagree.
+ */
+export type ClockSourceBasis = 'claimed' | 'contested' | 'tie-break'
+
+export function clockSourceBasis(source: ClockSource): ClockSourceBasis {
+  if (source.claims === 0) return 'tie-break'
+  return source.claims === 1 ? 'claimed' : 'contested'
 }
 
 function transportRank(device: Device): number {
@@ -119,6 +149,12 @@ function transportRank(device: Device): number {
  * rerolls in a way that the assignment deliberately is not — and dropping load makes that
  * strictly truer, since the assignment can no longer reach it at all.
  *
+ * **It records what it ranked on** (#121). `claims` counts the eligible boxes that claimed the
+ * field, which is the difference between "its manual says this is its job" and "nothing here
+ * claims the job, so the name settled it". The guide printed the second as though it were the
+ * first for as long as the count was not carried; the decision is unchanged and only its basis
+ * is now legible.
+ *
  * Returns `undefined` when nothing in the rig can send clock — a real rig, and a fact the guide has
  * to state rather than paper over by nominating a device that cannot do it.
  */
@@ -128,6 +164,10 @@ export function selectClockSource(
 ): ClockSource | undefined {
   const capable = devices.filter((d) => d.clock.canSendClock)
   if (capable.length === 0) return undefined
+  // #121. Counted over the *eligible* boxes, not over the rig: a manifest cannot claim the field
+  // without `canSendClock` (the schema refuses it), so the two lists agree today — and counting
+  // the eligible ones is what the sort below actually ranked, which is what the guide reports.
+  const claims = capable.reduce((n, d) => n + Number(d.clock.preferredSource === true), 0)
 
   const ranked = [...capable].sort((a, b) => {
     const byPreferred = Number(b.clock.preferredSource === true) - Number(a.clock.preferredSource === true)
@@ -144,6 +184,7 @@ export function selectClockSource(
     deviceName: winner.name,
     transport: (TRANSPORT_PREFERENCE[rank] ?? winner.clock.transport[0] ?? '') as string,
     occupiedAssignables: occupied.get(winner.id) ?? 0,
+    claims,
   }
 }
 
