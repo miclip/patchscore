@@ -183,7 +183,10 @@ describe('two notes are one assignable, and the line is drawn at three', () => {
     expect(result.shortfalls).toEqual([])
     const [stab] = result.assignments
     expect(stab?.notes).toBe(2)
-    expect(stab?.assignable.polyphony).toBe(2)
+    // One assignable, and #40 makes that worth asserting rather than assuming: a two-note part
+    // on a two-note voice must not be spread across two voices when one will hold it.
+    expect(stab?.assignables).toHaveLength(1)
+    expect(stab?.assignables[0]?.polyphony).toBe(2)
     expect(expand(device)).toHaveLength(1)
   })
 
@@ -332,9 +335,11 @@ describe('two parts cannot both have the voice', () => {
     const held = new Map<string, string>()
     for (const a of result.assignments) {
       for (const section of a.sections) {
-        const key = `${assignableKey(a.assignable as Assignable)} ${section}`
-        expect(held.get(key), `${key} taken twice`).toBeUndefined()
-        held.set(key, a.requestId)
+        for (const voice of a.assignables) {
+          const key = `${assignableKey(voice as Assignable)} ${section}`
+          expect(held.get(key), `${key} taken twice`).toBeUndefined()
+          held.set(key, a.requestId)
+        }
       }
     }
     expect(held.size).toBeGreaterThan(0)

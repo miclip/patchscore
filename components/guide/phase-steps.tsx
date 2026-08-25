@@ -10,7 +10,7 @@ import type {
   SectionName,
 } from '@/lib/core'
 import { chainPlan } from '@/lib/core'
-import { citeLines, count, hintText, num } from './format'
+import { citeLines, count, hintText, num, voicesLabel } from './format'
 import { HookRef, Instruction, ProvenanceMark, SoundRef } from './instruction'
 
 const ROW = 16
@@ -306,7 +306,7 @@ export function PhaseSteps({
             <span className="role mono">{a.role}</span>
             <span className="token-sep">—</span>
             <span className="quiet">
-              {a.deviceName} · {a.assignable.label}
+              {a.deviceName} · {voicesLabel(a)}
             </span>
           </h4>
           {/* Same reason as the hook phase: this one says what to play, not what it sounds

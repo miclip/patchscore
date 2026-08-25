@@ -42,12 +42,12 @@ glance whether the screen in front of you is the one the line is about.
   - p2 · exact `dirty` · every section
 - **`open-hat`** → TR-1000 · OH — *Dull open hat, more air than sizzle*
   - p3 · exact `dark` · every section
-- **`stab`** → Tracker Mini · Track 2 — *Rendered chord sample, struck short and filtered hard*
-  - p3 · exact `hard` · 3 notes from one sampled chord · every section
+- **`stab`** → Tracker Mini · Track 2, Track 3 and Track 4 — *Single-note sample struck short, one note per track*
+  - p3 · exact `hard` · 3 notes stacked one per voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
-- **`pad`** → Tracker Mini · Track 3 — *Rendered chord sample, filtered back and swelled*
-  - p4 · substituted — asked `dark`, authored `soft` · 3 notes from one sampled chord · every section
+- **`pad`** → Tracker Mini · Track 5, Track 6 and Track 7 — *Slow detuned pad, long swell*
+  - p4 · substituted — asked `dark`, authored `soft` · 3 notes stacked one per voice · every section
 
 ### Gaps
 
@@ -68,7 +68,7 @@ Industrial Techno is finished without these.
 
 ## 3. Rig integration
 
-**Clock source** — Tracker Mini over `midi-din`, carrying 4 parts. Sync everything else to it.
+**Clock source** — Tracker Mini over `midi-din`, carrying 8 parts. Sync everything else to it.
 
 - Why this box — its manual says leading a rig is its job · manual
   - ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.283
@@ -77,12 +77,12 @@ Industrial Techno is finished without these.
   - ↳ note: Off, USB, MIDI Out jack, USB + MIDI Out jack — clock leaves only by the routing set here
   - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.54
 
-- **Tracker Mini** — groovebox · 4 parts
+- **Tracker Mini** — groovebox · 8 parts
   - clock: sends clock · midi-din/usb
   - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284) · manual
     - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.13
   - audio: stereo main out · USB audio · audio in
-  - mixer: 4 parts, no individual outs: one stereo channel for all
+  - mixer: 8 parts, no individual outs: one stereo channel for all
 - **TR-1000** — drum-machine · 5 parts
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
@@ -113,47 +113,64 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - bar 2 · step 23 · len 2 · `Db2` (`C#2`) · 6th · MIDI 37
 - bar 2 · step 27 · len 4 · `C2` · 5th · MIDI 36
 
-### `pad` — Tracker Mini · Track 3
+### `pad` — Tracker Mini · Track 5, Track 6 and Track 7
 
-**Rendered chord sample, filtered back and swelled** — settings in Sound design
+**Slow detuned pad, long swell** — settings in Sound design
 
 8 bars in F minor.
 
-Sampled chord — you trigger a sample, you do not play these notes.
+Stacked chord — 3 voices, one note each. There is no chord to play on any one of them.
 
-2 chord shapes, so 2 samples. A sample transposes as a block, keeping its shape, so one recording covers that shape at every root. A separate sample is needed only where the shape changes — a different quality, or a different inversion.
+Lowest note to the lowest voice: **Track 5** takes the bottom of every chord and **Track 7** the top. Hold that order and the voicing keeps its shape as the progression moves; cross the voices over and the chord changes character between bars with nothing here saying so.
 
-**Samples to obtain or render** — 2 chord shapes
+**Track 5** — lowest note
 
-- sample A · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60 · shape 0-3-7
-- sample B · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68 · shape 0-4-7
+- bar 1 · step 1 · len 64 · `F3` · root · MIDI 53
+- bar 5 · step 65 · len 32 · `Db4` (`C#4`) · 6th · MIDI 61
+- bar 7 · step 97 · len 32 · `Eb4` (`D#4`) · 7th · MIDI 63
 
-**Trigger** — one step event per chord, and the sample sounds all of it
+**Track 6** — note 2 from the bottom
 
-- bar 1 · step 1 · len 64 · sample A · as recorded · `F3` `Ab3` (`G#3`) `C4`
-- bar 5 · step 65 · len 32 · sample B · as recorded · `Db4` (`C#4`) `F4` `Ab4` (`G#4`)
-- bar 7 · step 97 · len 32 · sample B · +2 st · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`)
+- bar 1 · step 1 · len 64 · `Ab3` (`G#3`) · 3rd · MIDI 56
+- bar 5 · step 65 · len 32 · `F4` · root · MIDI 65
+- bar 7 · step 97 · len 32 · `G4` · 2nd · MIDI 67
 
-### `stab` — Tracker Mini · Track 2
+**Track 7** — highest note
 
-**Rendered chord sample, struck short and filtered hard** — settings in Sound design
+- bar 1 · step 1 · len 64 · `C4` · 5th · MIDI 60
+- bar 5 · step 65 · len 32 · `Ab4` (`G#4`) · 3rd · MIDI 68
+- bar 7 · step 97 · len 32 · `Bb4` (`A#4`) · 4th · MIDI 70
+
+### `stab` — Tracker Mini · Track 2, Track 3 and Track 4
+
+**Single-note sample struck short, one note per track** — settings in Sound design
 
 4 bars in F minor.
 
-Sampled chord — you trigger a sample, you do not play these notes.
+Stacked chord — 3 voices, one note each. There is no chord to play on any one of them.
 
-One chord shape throughout, so one sample, transposed where the chord moves.
+Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and **Track 4** the top. Hold that order and the voicing keeps its shape as the progression moves; cross the voices over and the chord changes character between bars with nothing here saying so.
 
-**Samples to obtain or render** — 1 chord shape
+**Track 2** — lowest note
 
-- sample A · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60 · shape 0-3-7
+- bar 1 · step 1 · len 2 · `F3` · root · MIDI 53
+- bar 1 · step 11 · len 1 · `F3` · root · MIDI 53
+- bar 3 · step 33 · len 2 · `F3` · root · MIDI 53
+- bar 4 · step 49 · len 3 · `C4` · 5th · MIDI 60
 
-**Trigger** — one step event per chord, and the sample sounds all of it
+**Track 3** — note 2 from the bottom
 
-- bar 1 · step 1 · len 2 · sample A · as recorded · `F3` `Ab3` (`G#3`) `C4`
-- bar 1 · step 11 · len 1 · sample A · as recorded · `F3` `Ab3` (`G#3`) `C4`
-- bar 3 · step 33 · len 2 · sample A · as recorded · `F3` `Ab3` (`G#3`) `C4`
-- bar 4 · step 49 · len 3 · sample A · +7 st · `C4` `Eb4` (`D#4`) `G4`
+- bar 1 · step 1 · len 2 · `Ab3` (`G#3`) · 3rd · MIDI 56
+- bar 1 · step 11 · len 1 · `Ab3` (`G#3`) · 3rd · MIDI 56
+- bar 3 · step 33 · len 2 · `Ab3` (`G#3`) · 3rd · MIDI 56
+- bar 4 · step 49 · len 3 · `Eb4` (`D#4`) · 7th · MIDI 63
+
+**Track 4** — highest note
+
+- bar 1 · step 1 · len 2 · `C4` · 5th · MIDI 60
+- bar 1 · step 11 · len 1 · `C4` · 5th · MIDI 60
+- bar 3 · step 33 · len 2 · `C4` · 5th · MIDI 60
+- bar 4 · step 49 · len 3 · `G4` · 2nd · MIDI 67
 
 ## 5. Step programming
 
@@ -352,9 +369,9 @@ One chord shape throughout, so one sample, transposed where the chord moves.
 - `offbeat` → `weak` true on steps 3, 7, 11
   - ↳ hint: Hold [SHIFT], press step keys
 
-### `stab` — Tracker Mini · Track 2
+### `stab` — Tracker Mini · Track 2, Track 3 and Track 4
 
-**Rendered chord sample, struck short and filtered hard** — settings in Sound design
+**Single-note sample struck short, one note per track** — settings in Sound design
 
 **The hook is the pattern** — see Hook above for its steps and note lengths. Nothing separate to program here.
 
@@ -379,9 +396,9 @@ One chord shape throughout, so one sample, transposed where the chord moves.
 - `first-hit` → `accent` true on step 1
   - ↳ hint: ACCENT [STEP], then step keys
 
-### `pad` — Tracker Mini · Track 3
+### `pad` — Tracker Mini · Track 5, Track 6 and Track 7
 
-**Rendered chord sample, filtered back and swelled** — settings in Sound design
+**Slow detuned pad, long swell** — settings in Sound design
 
 **The hook is the pattern** — see Hook above for its steps and note lengths. Nothing separate to program here.
 
@@ -436,58 +453,55 @@ Routing — Synth Track n is panel track n+8 — costs one of the three project 
 - **FILTER RESONANCE** `18` % (0…100 %)
 - **AMP ENV RELEASE** `0.35` Sec (0…10 Sec)
 
-#### Track 2 — `stab`: Rendered chord sample, struck short and filtered hard
+#### Track 2, Track 3 and Track 4 — `stab`: Single-note sample struck short, one note per track
 
-Polyphony — 3 notes, already inside the sample. Load the chord sample(s) onto this one voice rather than spreading the notes across 3. One sample covers its chord shape at any root; a different shape needs its own — see Hook.
+Polyphony — 3 notes, one on each of 3 voices. **Every voice takes these same settings**: it is one sound played 3 times over, not 3 sounds, and a difference between them is a difference you will hear inside the chord. Which voice takes which note is in Hook.
 
-Source — Chord sample(s) — yours, or rendered to audio here; one per chord shape the hook plays
+Source — A single-note tonal sample — one pitch, with a front edge. Yours, or one note rendered here; it does not need to be a chord and should not be one
 
-- Manual p.104, Rendering Tracks To Audio Chords: place the notes of one chord on separate tracks, Shift + D-Pad to select that range, [More] -> [Render Selection], name it, then [Render & Load]. Replace the instrument on one track with the rendered chord and free the others. One sample covers every chord of the same shape: p.128, the step note sets the playback pitch, so placing a higher note transposes the whole chord. Transposition keeps the recorded voicing — it cannot invert or re-voice the chord, so a changed shape is a second sample. The Hook phase lists which samples this part needs and the semitone offset to place on each trigger. · manual
-  - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.104
+- One sample covers the whole chord: manual p.128, the step note sets the playback pitch, so the same instrument placed on three tracks at three notes sounds three notes. Load it on each track of the stack and put the notes the Hook phase lists against each one. Nothing has to be re-recorded when the chord changes quality, which is the difference between this and a rendered chord. · manual
+  - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.128
 
-Routing — Tracks 1-8 — costs no synth slot: the chord is in the sample, not in an engine
+Routing — Tracks 1-8 — costs no synth slot, and one loaded sample serves every track of the stack
 
 *Ranges cite manual — Polyend Tracker Mini Manual 2.2.1b, p.126.*
 
 - **PLAY MODE** `1-Shot`
 - **FILTER TYPE** `Low-pass`
-- **CUTOFF** `68` % (0…100 %)
+- **CUTOFF** `66` % (0…100 %)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
-- **RESONANCE** `34` % (0…100 %)
+- **RESONANCE** `30` % (0…100 %)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
 - **TUNE** `0` St (-24…24 St)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.116
 - **ENV ATTACK** `0` Sec (0…10 Sec)
-- **ENV DECAY** `0.32` Sec (0…10 Sec)
+- **ENV DECAY** `0.3` Sec (0…10 Sec)
 - **ENV SUSTAIN** `0` % (0…100 %)
-- **ENV RELEASE** `0.24` Sec (0…10 Sec)
-- **OVERDRIVE** `18` % (0…100 %)
+- **ENV RELEASE** `0.2` Sec (0…10 Sec)
+- **OVERDRIVE** `16` % (0…100 %)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
 
-#### Track 3 — `pad`: Rendered chord sample, filtered back and swelled
+#### Track 5, Track 6 and Track 7 — `pad`: Slow detuned pad, long swell
 
-Polyphony — 3 notes, already inside the sample. Load the chord sample(s) onto this one voice rather than spreading the notes across 3. One sample covers its chord shape at any root; a different shape needs its own — see Hook.
+Polyphony — 3 notes, one on each of 3 voices. **Every voice takes these same settings**: it is one sound played 3 times over, not 3 sounds, and a difference between them is a difference you will hear inside the chord. Which voice takes which note is in Hook.
 
-Source — Chord sample(s) — yours, or rendered to audio here; one per chord shape the hook plays
+Routing — Tracks 1-8 — costs one of the three project synth slots
 
-- Manual p.104, Rendering Tracks To Audio Chords: place the notes of one chord on separate tracks, Shift + D-Pad to select that range, [More] -> [Render Selection], name it, then [Render & Load]. Replace the instrument on one track with the rendered chord and free the others. One sample covers every chord of the same shape: p.128, the step note sets the playback pitch, so placing a higher note transposes the whole chord. Repeat only where the shape changes — the Hook phase lists which samples this part needs and what to transpose each trigger by. · manual
-  - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.104
+*Ranges cite manual — Polyend Tracker Mini Manual 2.2.1b, p.158.*
 
-Routing — Tracks 1-8 — costs no synth slot: the chord is in the sample, not in an engine
-
-*Ranges cite manual — Polyend Tracker Mini Manual 2.2.1b, p.126.*
-
-- **PLAY MODE** `Forward loop`
-- **FILTER TYPE** `Low-pass`
-- **CUTOFF** `44` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
-- **TUNE** `-2` St (-24…24 St)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.116
-- **ENV ATTACK** `1.4` Sec (0…10 Sec)
-- **ENV RELEASE** `2.2` Sec (0…10 Sec)
-- **ENV SUSTAIN** `84` % (0…100 %)
-- **REVERB SEND** `30` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
+- **MODEL** `VAP`
+- **FILTER TYPE** `Low Pass SVF 12dB`
+- **OSC MIX** `0` % (-100…100 %)
+- **SHAPE 1** `28` (0…100)
+- **SHAPE 2** `34` (0…100)
+- **DETUNE** `14` c (0…100 c)
+- **FILTER CUTOFF** `2400` Hz (20…20000 Hz)
+- **AMP ENV ATTACK** `1.2` Sec (0…10 Sec)
+  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.159
+- **AMP ENV RELEASE** `2.4` Sec (0…10 Sec)
+  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.159
+- **VOICE VOLUME** `86` % (0…200 %)
+  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.161
 
 ### TR-1000
 
@@ -613,7 +627,7 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 
 What processes audio in this rig:
 
-- Tracker Mini — carries REVERB SEND in its recipes
+- Tracker Mini — carries effects, though no part in this guide reaches them
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 
 **Arrangement variations**

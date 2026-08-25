@@ -128,6 +128,15 @@ export function withRoles(roles: RoleRequest[], over: Partial<Template> = {}): T
  *
  * `desugarPools` is round-tripped against the pooled device in `test/search-symmetry.test.ts`
  * rather than assumed - an oracle nobody checks is just a second opinion.
+ *
+ * **It is no longer an equivalence for a request of more than one note (#40), and a fixture that
+ * needs one has to know that.** Stacking is gated on `kind: 'pool'` precisely because pool members
+ * are interchangeable and fixed voices are not, so a desugared device cannot stack and a pooled
+ * one can. Where a multi-note request *could* be stacked the two searches will legitimately
+ * disagree, and the disagreement is the gate working rather than the prune failing. Every
+ * multi-note fixture in `search-symmetry.test.ts` today asks for more notes than its pools have
+ * members, so no stack exists on either side and the comparison holds; the next one that does not
+ * has to compare against `bruteForceBest`, which models stacking, instead of against this.
  */
 export function desugarPools(device: Device): Device {
   if (!device.voices.some((voice) => voice.kind === 'pool')) return device
@@ -178,21 +187,26 @@ export function desugarPools(device: Device): Device {
 
 export function keys(score: Score) {
   const v = score as unknown as number[]
-  const tail = v.length - 6
+  const tail = v.length - 7
   return {
     misses: v.slice(0, tail),
     crowdOverflow: v[tail] as number,
     optionalMisses: v[tail + 1] as number,
     sampledChords: v[tail + 2] as number,
-    recipeDistance: v[tail + 3] as number,
-    roleFitPenalty: v[tail + 4] as number,
-    idleDevices: v[tail + 5] as number,
+    stackedChords: v[tail + 3] as number,
+    recipeDistance: v[tail + 4] as number,
+    roleFitPenalty: v[tail + 5] as number,
+    idleDevices: v[tail + 6] as number,
   }
 }
 
+/**
+ * Where a request landed, as assignable keys. Plural since #40: a stacked chord names one key
+ * per voice, joined with `+` in the order the assignment carries them.
+ */
 export function placement(result: AssignmentResult, requestId: string): string | undefined {
   const found = result.assignments.find((a) => a.requestId === requestId)
-  return found === undefined ? undefined : assignableKey(found.assignable)
+  return found === undefined ? undefined : found.assignables.map(assignableKey).join('+')
 }
 
 // ---------------------------------------------------------------------------
@@ -208,6 +222,18 @@ export function placement(result: AssignmentResult, requestId: string): string |
  * all eight ways to put a part on an eight-track pool, and the pruned search must still agree
  * with it on `Score`.
  */
+/** Every `k`-subset of `items`, in index order. Naive on purpose: this is the oracle. */
+function combinations<T>(items: readonly T[], k: number): T[][] {
+  if (k === 0) return [[]]
+  const out: T[][] = []
+  for (let i = 0; i <= items.length - k; i++) {
+    for (const rest of combinations(items.slice(i + 1), k - 1)) {
+      out.push([items[i] as T, ...rest])
+    }
+  }
+  return out
+}
+
 export function bruteForceBest(devices: Device[], t: Template, seedlessMood = moodState()): Score {
   const owners = devices.flatMap((d) => expand(d).map((a) => ({ a, d })))
   const requests = [...t.roles].sort(
@@ -215,7 +241,16 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
   )
   const maxPriority = requests.reduce((m, r) => Math.max(m, r.priority), 0)
 
-  type Cand = { a: Assignable; distance: number; sampledChord: number; fit: number }
+  /**
+   * §12.4/#40. `voices` is plural, and the oracle enumerates **every** combination a stack could
+   * take rather than the canonical one the search picks.
+   *
+   * That is the whole reason this is worth having twice. `chooseStackMembers` takes exactly one
+   * member set per pool per node, on a dominance argument; this enumerates all `C(count, notes)`
+   * of them and scores each. If the argument is wrong, the oracle finds the better set and the
+   * two `Score`s diverge — which is a failing test rather than a guide nobody can explain.
+   */
+  type Cand = { voices: Assignable[]; distance: number; sampledChord: number; stacked: number; fit: number }
   const cands: Cand[][] = []
   const sections: string[][] = []
   for (const r of requests) {
@@ -237,11 +272,49 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
       const res = resolveRecipe(d, a, r.role, want, notes)
       if (res.outcome === 'unvoiced') continue
       list.push({
-        a,
+        voices: [a],
         distance: quantiseDistance(res.distanceSq),
         sampledChord: notes > 1 && res.recipe.realisation === 'sampled-chord' ? 1 : 0,
+        stacked: 0,
         fit: a.roles.indexOf(r.role),
       })
+    }
+    // The stacked route, restated independently: `notes` members of one pool, one note each, on a
+    // `polyphonic-voice` recipe, where the pool's own polyphony does not already reach the count.
+    if (notes > 1) {
+      const pools = new Map<string, { members: Assignable[]; d: Device }>()
+      for (const { a, d } of owners) {
+        if (a.poolId === undefined) continue
+        if (!a.roles.includes(r.role)) continue
+        const group = `${a.deviceId}\u0000${a.poolId}`
+        const seen = pools.get(group)
+        if (seen === undefined) pools.set(group, { members: [a], d })
+        else seen.members.push(a)
+      }
+      for (const { members, d } of pools.values()) {
+        const rep = members[0] as Assignable
+        if (rep.polyphony >= notes) continue
+        if (members.length < notes) continue
+        const usable = d.recipes.filter(
+          (x) =>
+            x.role === r.role &&
+            x.voice === (rep.poolId ?? rep.voiceId) &&
+            (x.realisation ?? 'polyphonic-voice') === 'polyphonic-voice',
+        )
+        if (usable.length === 0) continue
+        const res = resolveRecipe(d, rep, r.role, want, 1)
+        if (res.outcome === 'unvoiced') continue
+        if ((res.recipe.realisation ?? 'polyphonic-voice') !== 'polyphonic-voice') continue
+        for (const combo of combinations(members, notes)) {
+          list.push({
+            voices: combo,
+            distance: quantiseDistance(res.distanceSq),
+            sampledChord: 0,
+            stacked: 1,
+            fit: rep.roles.indexOf(r.role),
+          })
+        }
+      }
     }
     cands.push(list)
   }
@@ -255,6 +328,7 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
     let optionalMisses = 0
     let recipeDistance = 0
     let sampledChords = 0
+    let stackedChords = 0
     let roleFitPenalty = 0
     const byDevice = new Map<string, Set<string>>()
     requests.forEach((r, i) => {
@@ -266,10 +340,13 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
       }
       recipeDistance += c.distance
       sampledChords += c.sampledChord
+      stackedChords += c.stacked
       roleFitPenalty += c.fit
-      const set = byDevice.get(c.a.deviceId) ?? new Set<string>()
-      set.add(assignableKey(c.a))
-      byDevice.set(c.a.deviceId, set)
+      for (const v of c.voices) {
+        const set = byDevice.get(v.deviceId) ?? new Set<string>()
+        set.add(assignableKey(v))
+        byDevice.set(v.deviceId, set)
+      }
     })
     let crowdOverflow = 0
     let idleDevices = 0
@@ -285,6 +362,7 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
       crowdOverflow,
       optionalMisses,
       sampledChords,
+      stackedChords,
       recipeDistance,
       roleFitPenalty,
       idleDevices,
@@ -299,9 +377,16 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
     }
     const r = requests[i] as RoleRequest
     for (const c of cands[i] ?? []) {
-      const key = assignableKey(c.a)
-      const used = occupied.get(key) ?? new Set<string>()
-      if ((sections[i] ?? []).some((s) => used.has(s))) continue
+      const keys = c.voices.map(assignableKey)
+      // Every voice of the candidate has to be free in every section, not just the first.
+      if (
+        keys.some((key) => {
+          const used = occupied.get(key)
+          return used !== undefined && (sections[i] ?? []).some((s) => used.has(s))
+        })
+      ) {
+        continue
+      }
       if (
         r.distinct === true &&
         requests.some(
@@ -309,19 +394,26 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
             j < i &&
             other.distinct === true &&
             other.role === r.role &&
-            chosen[j]?.a.deviceId === c.a.deviceId,
+            (chosen[j]?.voices[0] as Assignable | undefined)?.deviceId ===
+              (c.voices[0] as Assignable).deviceId,
         )
       ) {
         continue
       }
-      const added = (sections[i] ?? []).filter((s) => !used.has(s))
-      for (const s of added) used.add(s)
-      occupied.set(key, used)
+      const added = keys.map((key) => {
+        const used = occupied.get(key) ?? new Set<string>()
+        occupied.set(key, used)
+        const fresh = (sections[i] ?? []).filter((s) => !used.has(s))
+        for (const s of fresh) used.add(s)
+        return { key, used, fresh }
+      })
       chosen[i] = c
       rec(i + 1)
       chosen[i] = null
-      for (const s of added) used.delete(s)
-      if (used.size === 0) occupied.delete(key)
+      for (const { key, used, fresh } of added) {
+        for (const s of fresh) used.delete(s)
+        if (used.size === 0) occupied.delete(key)
+      }
     }
     chosen[i] = null
     rec(i + 1)

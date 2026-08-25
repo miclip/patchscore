@@ -6,7 +6,7 @@ import {
   type ResolvedAssignment,
   type Shortfall,
 } from '@/lib/core'
-import { adviceText, count, num } from './format'
+import { adviceText, count, isStacked, num, voicesLabel } from './format'
 
 /** §3.5. Why this recipe, in the one case where the answer is not "it matched". */
 function recipeWhy(a: ResolvedAssignment) {
@@ -36,6 +36,9 @@ function recipeWhy(a: ResolvedAssignment) {
  */
 function realisationText(a: ResolvedAssignment): string {
   if (a.notes <= 1) return ''
+  if (isStacked(a)) {
+    return `${count(a.notes, 'note')} stacked one per voice`
+  }
   if (a.recipe.realisation === 'sampled-chord') {
     return `${count(a.notes, 'note')} from one sampled chord`
   }
@@ -87,7 +90,7 @@ export function PhaseVoices({
                   →
                 </span>
                 <span className="where">
-                  {a.deviceName} · {a.assignable.label}
+                  {a.deviceName} · {voicesLabel(a)}
                 </span>
                 <span className="recipe-title">{a.recipe.title}</span>
               </div>

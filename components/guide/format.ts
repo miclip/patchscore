@@ -147,7 +147,22 @@ function polyphonyShortfall(notes: number, roleVoices: Gap['capable']): string {
     ceiling <= 1
       ? 'every voice here is monophonic'
       : `the most any voice here can sound is ${count(ceiling, 'note')}`
-  return `needs ${count(notes, 'note')} at once and ${short}`
+  // #40/#128: and what to do about it, which depends on whether there are voices enough to
+  // hand-stack across. Written out by hand to match the Markdown renderer word for word — §8
+  // keeps the sentences twice on purpose; see `polyphonyShortfall` there for the reasoning.
+  const asked = `needs ${count(notes, 'note')} at once`
+  const voices = roleVoices.length
+  if (voices < notes) {
+    const plays =
+      voices === 1 ? 'only one voice here plays it at all' : `only ${num(voices)} voices here play it at all`
+    return `${asked}; ${short}, and ${plays} — nothing here to spread it across`
+  }
+  const across = voices === notes ? `all ${num(voices)}` : `${num(notes)} of the ${num(voices)}`
+  return (
+    `${asked}; ${short} — stack it by hand across ${across} voices here that play it, one note ` +
+    `each; they are separate voices rather than one pool, so set them alike or the chord will ` +
+    `not blend`
+  )
 }
 
 /**
@@ -311,15 +326,53 @@ export function mixerText(device: Device, parts: number): string {
 // §12.4's count, recomputed for display
 // ---------------------------------------------------------------------------
 
-/** An assignable occupied in any section counts once, never once per section. */
-export function occupiedCounts(assignments: { deviceId: DeviceId; assignable: { voiceId: string } }[]) {
+/**
+ * An assignable occupied in any section counts once, never once per section — and every voice of
+ * a stacked part counts (§12.4/#40), so a triad across three tracks is three voices.
+ */
+export function occupiedCounts(
+  assignments: { deviceId: DeviceId; assignables: readonly { voiceId: string }[] }[],
+) {
   const byDevice = new Map<DeviceId, Set<string>>()
   for (const a of assignments) {
     const set = byDevice.get(a.deviceId) ?? new Set<string>()
-    set.add(a.assignable.voiceId)
+    for (const assignable of a.assignables) set.add(assignable.voiceId)
     byDevice.set(a.deviceId, set)
   }
   return new Map([...byDevice].map(([id, set]) => [id, set.size]))
+}
+
+// ---------------------------------------------------------------------------
+// §12.4/#40 Where a part lives, when that is more than one voice
+// ---------------------------------------------------------------------------
+
+/**
+ * "Tracks 3, 4 and 5" rather than "Track 3 (+2)": the reader is going to walk to the box and
+ * touch all three, and a count is not a thing you can touch. No `Intl.ListFormat` — two joins
+ * and nothing to drift (§7.2).
+ */
+export function voicesLabel(assignment: { assignables: readonly { label: string }[] }): string {
+  const labels = assignment.assignables.map((a) => a.label)
+  if (labels.length === 1) return labels[0] as string
+  const last = labels[labels.length - 1] as string
+  return `${labels.slice(0, -1).join(', ')} and ${last}`
+}
+
+/** §12.4/#40. Whether this part is a chord spread across several voices, one note each. */
+export function isStacked(assignment: { assignables: readonly unknown[] }): boolean {
+  return assignment.assignables.length > 1
+}
+
+/** Notes low to high, and a total order: see the Markdown renderer's `lowToHigh`. */
+export function lowToHigh(notes: readonly ResolvedNote[]): ResolvedNote[] {
+  return [...notes].sort((a, b) => a.midi - b.midi || a.degree - b.degree || a.len - b.len)
+}
+
+/** Which note of the chord this voice of the stack takes. */
+export function stackPosition(index: number, width: number): string {
+  if (index === 0) return 'lowest note'
+  if (index === width - 1) return 'highest note'
+  return `note ${num(index + 1)} from the bottom`
 }
 
 // ---------------------------------------------------------------------------

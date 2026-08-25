@@ -225,7 +225,7 @@ describe('pipeline ordering (§7)', () => {
       deviceName: 'Box a-drum',
       recipe: { id: 'drum-kick-hard', outcome: 'exact', routing: 'Keep out of the analog FX path' },
     })
-    expect(assignableKey(a.assignable)).toBe('a-drum/bd')
+    expect(a.assignables.map(assignableKey)).toEqual(['a-drum/bd'])
     expect(a.sections).toEqual(['Intro', 'Build', 'Drop'])
     expect(a.patterns.map((p) => p.section)).toEqual(['Intro', 'Build', 'Drop'])
   })

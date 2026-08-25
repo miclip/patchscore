@@ -66,7 +66,9 @@ describe('Metropolix manifest', () => {
     const a = resolve({ devices: without, template, mood: NEUTRAL_MOOD, seed: 1 })
     const b = resolve({ devices: DEVICES, template, mood: NEUTRAL_MOOD, seed: 1 })
     const placements = (r: typeof a) =>
-      r.assignments.map((x) => `${x.requestId}:${x.deviceId}:${x.assignable.voiceId}`).sort()
+      r.assignments
+        .map((x) => `${x.requestId}:${x.deviceId}:${x.assignables.map((v) => v.voiceId).join('+')}`)
+        .sort()
     expect(placements(b)).toEqual(placements(a))
     expect(b.shortfalls.map((g) => g.requestId).sort()).toEqual(a.shortfalls.map((g) => g.requestId).sort())
     // Nothing is ever assigned to it, on any template or seed.

@@ -760,7 +760,7 @@ describe('the pruning is doing something (§7.1)', () => {
 
 function placements(devices: Device[], t: Template, seed: number): string[] {
   return assign({ devices, template: t, mood: moodState(), seed })
-    .assignments.map((a) => assignableKey(a.assignable))
+    .assignments.flatMap((a) => a.assignables.map(assignableKey))
     .sort()
 }
 
@@ -833,7 +833,7 @@ describe('the representative it keeps (§7.1)', () => {
       }),
     ])
     const result = assign({ devices: [pool4, fixedBox], template: t, mood: moodState(), seed: 1 })
-    const chosen = result.assignments.map((a) => assignableKey(a.assignable))
+    const chosen = result.assignments.flatMap((a) => a.assignables.map(assignableKey))
     expect(chosen.length).toBe(2)
     // Both on one voice: the occupied member won on `idleDevices` and it was still available.
     expect(new Set(chosen).size).toBe(1)
@@ -881,8 +881,8 @@ describe('the prune is deterministic (invariant 6)', () => {
         const once = assign({ devices, template: t, mood: moodState(), seed: 3 })
         const twice = assign({ devices, template: t, mood: moodState(), seed: 3 })
         expect(JSON.stringify(once.score)).toBe(JSON.stringify(twice.score))
-        expect(once.assignments.map((a) => assignableKey(a.assignable))).toEqual(
-          twice.assignments.map((a) => assignableKey(a.assignable)),
+        expect(once.assignments.flatMap((a) => a.assignables.map(assignableKey))).toEqual(
+          twice.assignments.flatMap((a) => a.assignables.map(assignableKey)),
         )
       }
     }

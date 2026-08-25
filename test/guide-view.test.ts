@@ -242,7 +242,7 @@ describe('the two renderers agree about the facts', () => {
     const out = html(real)
     const markdown = renderGuide(real)
     for (const a of real.assignments) {
-      for (const text of [a.role, a.deviceName, a.assignable.label, a.recipe.title]) {
+      for (const text of [a.role, a.deviceName, ...a.assignables.map((v) => v.label), a.recipe.title]) {
         expect(out).toContain(text)
         expect(markdown).toContain(text)
       }
@@ -729,8 +729,14 @@ describe('source audio reaches both renderers, and says the same thing (§3/#101
    * on `prep`, and both renderers have to print the page against the procedure and nothing
    * against the need.
    */
+  // #40: the chord recipes are what a *crowded* Tracker reaches for. With tracks to spare the
+  // same box plays the chord across three of them instead, so the rig here has to be short of
+  // tracks for the sampled route — and thus its `prep` citation — to be on the page at all.
   const chords = resolve({
-    devices: DEVICES.filter((d) => d.id === 'polyend-tracker-mini'),
+    devices: DEVICES.filter((d) => d.id === 'polyend-tracker-mini').map((d) => ({
+      ...d,
+      comfortableVoices: 6,
+    })),
     template: industrialTechno,
     mood: NEUTRAL_MOOD,
     seed: 7,

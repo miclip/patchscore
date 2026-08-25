@@ -167,15 +167,23 @@ function gapFor(result: AssignmentResult, requestId: string) {
 
 describe('compareScore (§7.1)', () => {
   it('compares element by element, first difference deciding', () => {
+    // Tail keys, in order: crowdOverflow, optionalMisses, sampledChords, stackedChords,
+    // recipeDistance, roleFitPenalty, idleDevices (§7.1, seven since #40).
     // One miss at priority 1 is worse than any number of misses at priority 2.
-    expect(compareScore([1, 0, 0, 0, 0, 0, 0] as Score, [0, 9, 0, 0, 0, 0, 0] as Score)).toBe(1)
+    expect(
+      compareScore([1, 0, 0, 0, 0, 0, 0, 0] as Score, [0, 9, 0, 0, 0, 0, 0, 0] as Score),
+    ).toBe(1)
     // Crowding outranks optional misses.
-    expect(compareScore([0, 1, 0, 0, 0, 0] as Score, [0, 0, 9, 0, 0, 0] as Score)).toBe(1)
+    expect(compareScore([1, 0, 0, 0, 0, 0, 0] as Score, [0, 9, 0, 0, 0, 0, 0] as Score)).toBe(1)
+    // A chord from a sample is worse than a chord stacked across voices (#40).
+    expect(compareScore([0, 0, 1, 0, 0, 0, 0] as Score, [0, 0, 0, 9, 0, 0, 0] as Score)).toBe(1)
+    // Both of those outrank recipe quality.
+    expect(compareScore([0, 0, 0, 1, 0, 0, 0] as Score, [0, 0, 0, 0, 9000, 0, 0] as Score)).toBe(1)
     // Recipe quality outranks role fit.
-    expect(compareScore([0, 0, 0, 1000, 0, 0] as Score, [0, 0, 0, 0, 9, 0] as Score)).toBe(1)
+    expect(compareScore([0, 0, 0, 0, 1000, 0, 0] as Score, [0, 0, 0, 0, 0, 9, 0] as Score)).toBe(1)
     // Idle devices rank last and are nearly cosmetic.
-    expect(compareScore([0, 0, 0, 0, 0, 3] as Score, [0, 0, 0, 0, 1, 0] as Score)).toBe(-1)
-    expect(compareScore([0, 0, 0, 0, 0, 0] as Score, [0, 0, 0, 0, 0, 0] as Score)).toBe(0)
+    expect(compareScore([0, 0, 0, 0, 0, 0, 3] as Score, [0, 0, 0, 0, 0, 1, 0] as Score)).toBe(-1)
+    expect(compareScore([0, 0, 0, 0, 0, 0, 0] as Score, [0, 0, 0, 0, 0, 0, 0] as Score)).toBe(0)
   })
 })
 
@@ -249,9 +257,31 @@ describe('gap reasons (§7.3)', () => {
     const t = withRoles([
       request({ id: 'r-pad', role: 'pad', character: 'dark', polyphony: 6 }),
     ])
-    const result = assign({ devices: [tracker], template: t, mood: moodState(), seed: 1 })
-    // The tracker declares `pad` but only 4-note polyphony, so the rig genuinely cannot.
+    // #40 narrowed what "nothing in the rig can meet" means, so the fixture had to narrow with
+    // it: a pool wide enough to share six notes out *can* meet them, one note per track. This
+    // pool has three tracks of four notes, so neither route reaches six and the gap is honest.
+    const narrow = box('b-narrow', {
+      kind: 'groovebox',
+      voices: [
+        {
+          kind: 'pool',
+          id: 'track',
+          label: 'Track',
+          count: 3,
+          roles: ['pad'],
+          polyphony: 4,
+        },
+      ],
+      recipes: [makeRecipe('track-pad-dark', 'pad', 'dark', 'track')],
+    })
+    const result = assign({ devices: [narrow], template: t, mood: moodState(), seed: 1 })
     expect(gapFor(result, 'r-pad')?.reason).toBe('no-capable-voice')
+
+    // And the other half, which is the change itself: eight tracks *can* share six notes out, so
+    // the same request on the same recipe is a part rather than a gap (§12.4/#40).
+    const wide = assign({ devices: [tracker], template: t, mood: moodState(), seed: 1 })
+    expect(gapFor(wide, 'r-pad')).toBeUndefined()
+    expect(wide.assignments[0]?.assignables).toHaveLength(6)
   })
 
   it('no-recipe: capable but nothing authored - the fix is authoring, and it names the voice', () => {
@@ -910,7 +940,7 @@ function occupiedByDevice(result: AssignmentResult): Map<string, Set<string>> {
   const out = new Map<string, Set<string>>()
   for (const a of result.assignments) {
     const set = out.get(a.deviceId) ?? new Set<string>()
-    set.add(assignableKey(a.assignable))
+    for (const voice of a.assignables) set.add(assignableKey(voice))
     out.set(a.deviceId, set)
   }
   return out
@@ -1050,8 +1080,8 @@ describe('node cap (§7.1)', () => {
   it('is deterministic under the cap too', () => {
     const a = assign({ devices: [tracker], template: t, mood: moodState(), seed: 4, nodeCap: 3 })
     const b = assign({ devices: [tracker], template: t, mood: moodState(), seed: 4, nodeCap: 3 })
-    expect(a.assignments.map((x) => assignableKey(x.assignable))).toEqual(
-      b.assignments.map((x) => assignableKey(x.assignable)),
+    expect(a.assignments.map((x) => x.assignables.map(assignableKey).join('+'))).toEqual(
+      b.assignments.map((x) => x.assignables.map(assignableKey).join('+')),
     )
   })
 })
@@ -1071,7 +1101,11 @@ describe('determinism (invariant 6)', () => {
     const once = assign({ devices: [drumBox, tracker], template: t, mood: moodState(), seed: 99 })
     const twice = assign({ devices: [drumBox, tracker], template: t, mood: moodState(), seed: 99 })
     const shape = (r: AssignmentResult) => ({
-      assignments: r.assignments.map((a) => [a.requestId, assignableKey(a.assignable), a.recipe.id]),
+      assignments: r.assignments.map((a) => [
+        a.requestId,
+        a.assignables.map(assignableKey).join('+'),
+        a.recipe.id,
+      ]),
       gaps: r.shortfalls.map((g) => [g.requestId, g.reason]),
       score: r.score,
       occupancy: [...r.occupancy].map(([k, m]) => [k, [...m]]),

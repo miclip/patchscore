@@ -120,7 +120,10 @@ describe('a triad on a monophonic voice', () => {
     expect(result.assignments).toHaveLength(1)
     expect(result.assignments[0]?.recipe.id).toBe('smp-pad')
     // The voice did not become polyphonic to make this work (§2.2).
-    expect(result.assignments[0]?.assignable.polyphony).toBe(1)
+    // One voice, and #40 makes that worth pinning: a fixed voice is not a pool, so there is
+    // nothing to stack across and the sampled route is the only one there is.
+    expect(result.assignments[0]?.assignables).toHaveLength(1)
+    expect(result.assignments[0]?.assignables[0]?.polyphony).toBe(1)
     expect(keys(result.score).sampledChords).toBe(1)
   })
 
@@ -251,12 +254,203 @@ describe('a real polyphonic voice is preferred', () => {
 })
 
 // ---------------------------------------------------------------------------
+// §12.4/#40 — a chord stacked across several monophonic voices
+// ---------------------------------------------------------------------------
+
+/**
+ * A pool of monophonic voices with a `polyphonic-voice` pad recipe. The Tracker Mini case,
+ * minimally: nothing here can sound three notes and the pool can share them out.
+ */
+function monoPool(id = 'a-pool', count = 4): Device {
+  return box(id, {
+    kind: 'groovebox',
+    voices: [{ kind: 'pool', id: 'track', label: 'Track', count, roles: ['pad'], polyphony: 1 }],
+    recipes: [makeRecipe('pool-pad', 'pad', 'dark', 'track')],
+  })
+}
+
+describe('a chord stacked across several voices (§12.4/#40)', () => {
+  it('spreads the notes across the pool rather than reporting a gap', () => {
+    const result = assign({ devices: [monoPool()], template: triad, mood: moodState(), seed: 1 })
+
+    expect(result.shortfalls).toHaveLength(0)
+    expect(result.assignments).toHaveLength(1)
+    const pad = result.assignments[0]
+    expect(pad?.assignables).toHaveLength(3)
+    // Nothing became polyphonic to make this work, which is the invariant §12.4 turns on.
+    expect(pad?.assignables.every((v) => v.polyphony === 1)).toBe(true)
+    // The lowest three ordinals, in reading order: the canonical member set.
+    expect(pad?.assignables.map((v) => v.ordinal)).toEqual([1, 2, 3])
+    // One recipe for the whole stack — it is one sound played three times, not three sounds.
+    expect(pad?.recipe.id).toBe('pool-pad')
+    expect(keys(result.score).stackedChords).toBe(1)
+    expect(keys(result.score).sampledChords).toBe(0)
+  })
+
+  it('occupies every voice it takes, so occupancy holds one request under three keys', () => {
+    const result = assign({ devices: [monoPool()], template: triad, mood: moodState(), seed: 1 })
+    // §4.2's inversion, as data. The map is still `assignable -> section -> request`; what is new
+    // is one request id appearing under three assignable keys.
+    const holders = [...result.occupancy].map(([key, bySection]) => [key, [...bySection.values()]])
+    expect(holders).toHaveLength(3)
+    expect(holders.every(([, requests]) => (requests as string[]).every((r) => r === 'r-pad'))).toBe(
+      true,
+    )
+  })
+
+  it('charges every voice against comfortableVoices (§12.4), and is not softened', () => {
+    // Four tracks, comfortable with two. A stacked triad occupies three, so it overflows by one —
+    // #40 named this explicitly as the thing not to soften to make the feature look better.
+    const tight = { ...monoPool(), comfortableVoices: 2 }
+    const result = assign({ devices: [tight], template: triad, mood: moodState(), seed: 1 })
+    expect(keys(result.score).crowdOverflow).toBe(1)
+    // And it is still worth taking: crowding one voice beats missing the part outright.
+    expect(result.assignments[0]?.assignables).toHaveLength(3)
+  })
+
+  it('refuses a pool too narrow to go round', () => {
+    // Two tracks, three notes. There is no member set, so the request is a gap and the gap says
+    // it is about the note count rather than about the role.
+    const result = assign({ devices: [monoPool('a-pool', 2)], template: triad, mood: moodState(), seed: 1 })
+    expect(result.assignments).toHaveLength(0)
+    expect(result.shortfalls[0]).toMatchObject({ reason: 'no-capable-voice', because: 'polyphony' })
+  })
+
+  it('refuses fixed voices, however many of them declare the role', () => {
+    // **The gate, and the argument for it.** Pool members are interchangeable by construction —
+    // `roles`, `polyphony` and the recipe key are all per-pool (§2.2) — so every voice of a stack
+    // provably runs the same patch. Three *fixed* voices are three separately authored timbres,
+    // and handing them a triad would produce three sounds at three pitches rather than a chord.
+    // This is §12.4's drum-machine worry, answered without a tonal-role list and without a device
+    // declaration: fungibility is the property stacking needs and `kind: 'pool'` is the claim
+    // that the voices have it (invariant 3).
+    const three = box('a-three', {
+      kind: 'drum-machine',
+      voices: [
+        { kind: 'fixed', id: 'lt', label: 'LT', roles: ['pad'], polyphony: 1 },
+        { kind: 'fixed', id: 'mt', label: 'MT', roles: ['pad'], polyphony: 1 },
+        { kind: 'fixed', id: 'ht', label: 'HT', roles: ['pad'], polyphony: 1 },
+      ],
+      recipes: [
+        makeRecipe('lt-pad', 'pad', 'dark', 'lt'),
+        makeRecipe('mt-pad', 'pad', 'dark', 'mt'),
+        makeRecipe('ht-pad', 'pad', 'dark', 'ht'),
+      ],
+    })
+    const result = assign({ devices: [three], template: triad, mood: moodState(), seed: 1 })
+    expect(result.assignments).toHaveLength(0)
+    expect(result.shortfalls[0]).toMatchObject({ reason: 'no-capable-voice', because: 'polyphony' })
+  })
+
+  it('refuses to stack a chord sample, which would put the whole chord on each voice', () => {
+    // The two routes stay distinct all the way down, which is also why they are two `Score` keys.
+    const sampledPool = box('a-pool', {
+      kind: 'sampler',
+      voices: [
+        { kind: 'pool', id: 'track', label: 'Track', count: 4, roles: ['pad'], polyphony: 1 },
+      ],
+      recipes: [makeRecipe('pool-pad', 'pad', 'dark', 'track', { realisation: 'sampled-chord' })],
+    })
+    const result = assign({ devices: [sampledPool], template: triad, mood: moodState(), seed: 1 })
+    // Carried, but by the sampled route on one voice — never by three voices each sounding a chord.
+    expect(result.assignments[0]?.assignables).toHaveLength(1)
+    expect(keys(result.score).sampledChords).toBe(1)
+    expect(keys(result.score).stackedChords).toBe(0)
+  })
+
+  it('never stacks a voice that can sound the chord on its own', () => {
+    // Strictly dominated: same recipe, same character, three voices occupied instead of one. It is
+    // refused at the gate rather than merely ranked last, so the search never branches on it.
+    const poly = box('a-pool', {
+      kind: 'synth',
+      voices: [
+        { kind: 'pool', id: 'track', label: 'Track', count: 4, roles: ['pad'], polyphony: 3 },
+      ],
+      recipes: [makeRecipe('pool-pad', 'pad', 'dark', 'track')],
+    })
+    const result = assign({ devices: [poly], template: triad, mood: moodState(), seed: 1 })
+    expect(result.assignments[0]?.assignables).toHaveLength(1)
+    expect(keys(result.score).stackedChords).toBe(0)
+  })
+})
+
+describe('what a stack ranks below, and what it ranks above (§7.1/#40)', () => {
+  it('loses to a genuine polyphonic voice, which is the binding requirement', () => {
+    // The pool's id sorts first, so a tie broken by `deviceId` (§7.2) would hand it the pad. Only
+    // the `stackedChords` key can produce the other answer.
+    const result = assign({
+      devices: [monoPool('a-pool'), polysynth('z-polysynth')],
+      template: triad,
+      mood: moodState(),
+      seed: 1,
+    })
+    expect(result.assignments[0]?.deviceId).toBe('z-polysynth')
+    expect(result.assignments[0]?.assignables).toHaveLength(1)
+    expect(keys(result.score).stackedChords).toBe(0)
+  })
+
+  it('beats a chord sample, and that ordering is the musical claim #40 left open', () => {
+    // The sampler's id sorts first *and* its character is exact; the pool's is exact too, so the
+    // only key that can decide is the pair `sampledChords` / `stackedChords`, in that order.
+    //
+    // The argument, in one line: a stack plays the voicing the hook wrote and follows a change of
+    // chord quality, where a sample can only transpose what was recorded. What a stack spends is
+    // voices, and `crowdOverflow` prices those two keys above — so charging it again here would
+    // price one cost twice, and preferring the sample would be paying for shape it cannot deliver.
+    const result = assign({
+      devices: [sampler('a-sampler'), monoPool('z-pool')],
+      template: triad,
+      mood: moodState(),
+      seed: 1,
+    })
+    expect(result.assignments[0]?.deviceId).toBe('z-pool')
+    expect(result.assignments[0]?.assignables).toHaveLength(3)
+    expect(keys(result.score).sampledChords).toBe(0)
+    expect(keys(result.score).stackedChords).toBe(1)
+  })
+
+  it('loses to a chord sample once the voices cost more than the shape', () => {
+    // The other half of the same ranking, and the reason it is not a preference for stacking: put
+    // the pool under crowding pressure and the sample's one voice wins, because `crowdOverflow`
+    // outranks both compromises. The trade is priced, not assumed.
+    const tight = { ...monoPool('z-pool'), comfortableVoices: 1 }
+    const result = assign({
+      devices: [sampler('a-sampler'), tight],
+      template: triad,
+      mood: moodState(),
+      seed: 1,
+    })
+    expect(result.assignments[0]?.deviceId).toBe('a-sampler')
+    expect(keys(result.score).sampledChords).toBe(1)
+    expect(keys(result.score).stackedChords).toBe(0)
+  })
+
+  it('never outranks a miss: a stacked chord beats an unmade part', () => {
+    const result = assign({ devices: [monoPool()], template: triad, mood: moodState(), seed: 1 })
+    expect(result.shortfalls).toHaveLength(0)
+    expect(keys(result.score).stackedChords).toBe(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // The production slice: a real device, a real template, a real chord sample
 // ---------------------------------------------------------------------------
 
 describe('the Tracker Mini chord recipes (§12.4, production)', () => {
+  const tracker = DEVICES.find((d) => d.id === 'polyend-tracker-mini') as Device
   const trackerOnly = DEVICES.filter((d) => d.id === 'polyend-tracker-mini')
   const only = (id: string) => DEVICES.filter((d) => d.id === id)
+
+  /**
+   * #40. **The same box twice, differing only in how many voices it is comfortable spending.**
+   *
+   * With `comfortableVoices` at its authored 12 there are tracks to spare, so §7.1 plays the
+   * chord across three of them. Tighten it and the third track costs more than the chord sample's
+   * fixed shape, so the box renders the chord instead. That is not a quirk of the ranking: it is
+   * the manual's own reason for the render procedure, which ends "Remove the other track samples
+   * to free them up" (p.104). The engine arrives at the trade the box's documentation describes.
+   */
+  const crowded: Device[] = [{ ...tracker, comfortableVoices: 6 }]
 
   function padOf(devices: readonly Device[]) {
     const result = resolve({
@@ -268,24 +462,42 @@ describe('the Tracker Mini chord recipes (§12.4, production)', () => {
     return { result, pad: result.assignments.find((a) => a.role === 'pad') }
   }
 
-  it('carries the industrial pad on a Tracker-only rig, from the sampled-chord recipe', () => {
+  it('plays the chord across three tracks when the box has tracks to spare', () => {
     const { pad } = padOf(trackerOnly)
-    // Before the split this was a gap: the template asks for three simultaneous notes and every
-    // track on this box sounds one (manual p.104). Nothing about the box changed — the recipe
-    // now says how the three are made.
+    // The manual's own method: "To create chords, multiple tracks would be used when each track
+    // represents a note. A triad would therefore need 3 tracks" (p.103). The recipe is the VAP
+    // synth patch, unchanged — what changed is that a request may now name three voices.
+    expect(pad?.recipe.id).toBe('tm-pad-soft-synth')
+    expect(pad?.recipe.realisation).toBe('polyphonic-voice')
+    expect(pad?.notes).toBe(3)
+    expect(pad?.assignables).toHaveLength(3)
+    // Every voice of the stack is one note of the chord, and none of them became polyphonic to
+    // make this work (§2.2 — the invariant this whole file defends).
+    expect(pad?.assignables.every((v) => v.polyphony === 1)).toBe(true)
+    // One pool, one device: a stack never spans two boxes or two pools.
+    expect(new Set(pad?.assignables.map((v) => v.poolId)).size).toBe(1)
+    expect(new Set(pad?.assignables.map((v) => v.deviceId)).size).toBe(1)
+    // Consecutive from the lowest free ordinal, which is the canonical member set.
+    expect(pad?.assignables.map((v) => v.ordinal)).toEqual([2, 3, 4])
+  })
+
+  it('renders the chord to a sample instead once tracks are scarce', () => {
+    const { pad } = padOf(crowded)
+    // Crowding outranks both compromises (§7.1), so a box short of tracks buys the sample's
+    // fixed shape to get two tracks back — and says so rather than spending them silently.
     expect(pad?.recipe.id).toBe('tm-pad-soft-chord')
     expect(pad?.recipe.realisation).toBe('sampled-chord')
     // Authored `soft`, asked for `dark`: a substitution the guide states, and the honest price
     // of the recipe sitting on the same (role, character, voice) as its VAP neighbour.
     expect(pad?.recipe.outcome).toBe('substituted')
-    expect(pad?.notes).toBe(3)
-    expect(pad?.assignable.polyphony).toBe(1)
+    expect(pad?.assignables).toHaveLength(1)
+    expect(pad?.assignables[0]?.polyphony).toBe(1)
     // Sample playback, so it is on the pool that can load one. Tracks 9-16 cannot (p.22).
-    expect(pad?.assignable.poolId).toBe('track-sample')
+    expect(pad?.assignables[0]?.poolId).toBe('track-sample')
   })
 
   it('names no sample, and cites the procedure for making one', () => {
-    const { pad } = padOf(trackerOnly)
+    const { pad } = padOf(crowded)
     // #101. This used to be an `INSTRUMENT` text param, which was the only slot the shape offered
     // and made one claim while intending another: the p.104 citation sat on the *point*, badging
     // the reader's choice of sample with the manual's page. `sourceAudio` splits the two, and the
@@ -304,8 +516,22 @@ describe('the Tracker Mini chord recipes (§12.4, production)', () => {
   })
 
   it('says in the guide that it costs no synth slot', () => {
-    const { pad } = padOf(trackerOnly)
+    const { pad } = padOf(crowded)
     expect(pad?.recipe.routing).toContain('no synth slot')
+  })
+
+  it('costs one synth slot for the stack, not one per track (p.103)', () => {
+    // The figure on p.103 puts `C5 02`, `E5 02` and `G5 02` on Tracks 1-3 — the same instrument
+    // number on all three — so a stack is one instrument played from several tracks. Were it
+    // otherwise, three tracks of VAP would spend all three of the project's synth slots (p.32,
+    // p.146) and a stacked pad and a stacked stab could not coexist. They do, below.
+    const { result } = padOf(trackerOnly)
+    const pad = result.assignments.find((a) => a.role === 'pad')
+    const stab = result.assignments.find((a) => a.role === 'stab')
+    expect(pad?.assignables).toHaveLength(3)
+    expect(stab?.assignables).toHaveLength(3)
+    // And the stab's route spends none at all, because a sample instrument is not a synth.
+    expect(stab?.recipe.routing).toContain('costs no synth slot')
   })
 
   it('loses the pad to a genuinely polyphonic voice when the rig has one', () => {
@@ -322,7 +548,7 @@ describe('the Tracker Mini chord recipes (§12.4, production)', () => {
     // to be an honest gap here and the pad did not, which was a difference between two roles
     // that nothing about the machine justified — the pad had a recipe because somebody had
     // written one. Both are now reachable the same documented way (p.104, p.128).
-    const { result } = padOf(trackerOnly)
+    const { result } = padOf(crowded)
     expect(result.shortfalls.find((g) => g.role === 'stab')).toBeUndefined()
     const stab = result.assignments.find((a) => a.role === 'stab')
     expect(stab?.recipe.id).toBe('tm-stab-hard-chord')
@@ -399,7 +625,11 @@ describe('the boxes that can hold a chord and cannot move it (§12.4)', () => {
     expect(gap.because).toBe('contended')
     expect(gap.detail).toContain('TONE Track')
     // Nothing was quietly handed to a drum pad instead.
-    expect(result.assignments.every((a) => a.assignable.poolId !== 'drum-pad' || a.role !== 'pad')).toBe(true)
+    expect(
+      result.assignments.every(
+        (a) => a.role !== 'pad' || a.assignables.every((v) => v.poolId !== 'drum-pad'),
+      ),
+    ).toBe(true)
   })
 
   it('adds no sampled substitute to a voice that is genuinely polyphonic', () => {
@@ -425,8 +655,10 @@ describe('the boxes that can hold a chord and cannot move it (§12.4)', () => {
       seed: 18,
     })
     const pad = result.assignments.find((a) => a.role === 'pad')
-    expect(pad?.assignable.deviceId).toBe('korg-minilogue-xd')
-    expect(pad?.assignable.polyphony).toBeGreaterThanOrEqual(3)
+    expect(pad?.deviceId).toBe('korg-minilogue-xd')
+    // One voice, not three: a genuine polyphonic voice outranks stacking as well as sampling.
+    expect(pad?.assignables).toHaveLength(1)
+    expect(pad?.assignables[0]?.polyphony).toBeGreaterThanOrEqual(3)
   })
 })
 
@@ -522,8 +754,17 @@ describe('two recipes, one voice, different polyphony demands', () => {
 })
 
 describe('the guide says which realisation the reader got', () => {
+  const tracker = DEVICES.find((d) => d.id === 'polyend-tracker-mini') as Device
   const trackerOnly = DEVICES.filter((d) => d.id === 'polyend-tracker-mini')
+  // #40: the box has to be short of tracks before it prefers the sample to playing the chord.
+  // Same device, one field changed — see the production describe above for why that is the axis.
   const sampled = resolve({
+    devices: [{ ...tracker, comfortableVoices: 6 }],
+    template: industrialTechno,
+    mood: moodState(),
+    seed: 18,
+  })
+  const stacked = resolve({
     devices: trackerOnly,
     template: industrialTechno,
     mood: moodState(),
@@ -562,6 +803,26 @@ describe('the guide says which realisation the reader got', () => {
       expect(text).toContain('It needs a genuinely polyphonic voice, not 3 separate ones')
       expect(text).not.toContain('sampled chord')
     }
+  })
+
+  it('tells the reader which voice takes which note when the chord is stacked', () => {
+    const md = renderGuide(stacked)
+    const view = html(stacked)
+    for (const text of [md, view]) {
+      // Phase 2 — where it went, and that it is one note per voice rather than three each.
+      expect(text).toContain('3 notes stacked one per voice')
+      // Phase 6 — the instruction that stops three voices being three different sounds.
+      expect(text).toContain('one on each of 3 voices')
+      expect(text).toContain('not 3 sounds')
+      // Phase 4 — the half a reader cannot work out: which voice takes which note.
+      expect(text).toContain('Stacked chord')
+      expect(text).toContain('one note each')
+      expect(text).toContain('takes the bottom of every chord')
+      // And it must not tell them to load a chord, which is the other realisation entirely.
+      expect(text).not.toContain('you trigger a sample')
+    }
+    // The voices named, in reading order, in the phase that says where the part lives.
+    expect(md).toContain('Tracker Mini · Synth Track 2, Synth Track 3 and Synth Track 4')
   })
 
   it('says nothing at all about realisation for a one-note part', () => {
@@ -631,10 +892,12 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
     // taxonomy point survives it.
     const { result, gap } = gapFor(rig('polyend-tracker-mini'), 'pad')
     expect(gap).toBeUndefined()
-    expect(result.assignments.find((a) => a.role === 'pad')?.recipe.id).toBe('tm-pad-soft-chord')
+    // #40: and it is carried by *playing* the chord across three tracks now, which is a second
+    // route to the same conclusion. The taxonomy point is about the box, not about which route.
+    expect(result.assignments.find((a) => a.role === 'pad')?.recipe.id).toBe('tm-pad-soft-synth')
     const stab = gapFor(rig('polyend-tracker-mini'), 'stab')
     expect(stab.gap).toBeUndefined()
-    expect(stab.result.assignments.find((a) => a.role === 'stab')?.recipe.id).toBe('tm-stab-hard-chord')
+    expect(stab.result.assignments.find((a) => a.role === 'stab')?.recipe.id).toBe('tm-stab-hard-note')
   })
 
   it('says the two things differently, in Markdown and in the app', () => {
@@ -659,7 +922,11 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
       renderGuide(shortOfNotes),
       renderToStaticMarkup(createElement(Guide, { result: shortOfNotes, seed: 1 })),
     ]) {
-      expect(text).toContain('needs 3 notes at once and every voice here is monophonic')
+      expect(text).toContain('needs 3 notes at once; every voice here is monophonic')
+      // #40/#128: and what to do about it. The CRAVE has one voice for a three-note part, so
+      // there is nothing to hand-stack across, and the line says that rather than trailing off.
+      expect(text).toContain('only one voice here plays it at all')
+      expect(text).toContain('nothing here to spread it across')
     }
 
     // **Asserted per gap line, not per document.** A one-voice rig gaps a dozen parts for
@@ -675,7 +942,7 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
         .split('\n')
         .find((l) => l.startsWith(`- \`${role}\``)) as string
     expect(lineFor(shortOfNotes, 'stab')).toContain(
-      'needs 3 notes at once and every voice here is monophonic',
+      'needs 3 notes at once; every voice here is monophonic',
     )
     expect(lineFor(shortOfNotes, 'stab')).not.toContain('nothing in your rig plays this part')
     // `stab` rather than `pad`, which used to be this rig's `no-such-role` line and since #81
@@ -684,6 +951,43 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
     // A drum machine declares no `stab` either, and that one the song does need.
     expect(lineFor(noRole, 'stab')).toContain('nothing in your rig plays this part')
     expect(lineFor(noRole, 'stab')).not.toContain('monophonic')
+  })
+
+  it('tells a rig with voices enough but no pool to stack it by hand (#40, #51)', () => {
+    // The case the resolver deliberately does *not* automate: three separately authored voices
+    // that each play the role, on three boxes. Stacking them is exactly what a person would do,
+    // and exactly what the engine must not do for them — three fixed voices are three timbres
+    // (see `canStackNotes`), so the choice belongs to whoever can hear them. The line therefore
+    // says to do it, says how, and warns about the part the engine could not have handled.
+    const mono = (id: string) =>
+      box(id, {
+        kind: 'synth',
+        voices: [{ kind: 'fixed', id: 'voice', label: 'Voice', roles: ['pad'], polyphony: 1 }],
+        recipes: [makeRecipe(`${id}-pad`, 'pad', 'dark', 'voice')],
+      })
+    const t = withRoles([
+      request({ id: 'r-pad', role: 'pad', character: 'dark', priority: 1, polyphony: 3 }),
+    ])
+    const result = resolve({
+      devices: [mono('a-one'), mono('b-two'), mono('c-three')],
+      template: t,
+      mood: moodState(),
+      seed: 1,
+    })
+    // Still a gap: invariant 5 — the guide does not invent an assignment it cannot make coherent.
+    expect(result.assignments).toHaveLength(0)
+    expect(result.shortfalls[0]).toMatchObject({ reason: 'no-capable-voice', because: 'polyphony' })
+
+    for (const text of [
+      renderGuide(result),
+      renderToStaticMarkup(createElement(Guide, { result, seed: 1 })),
+    ]) {
+      expect(text).toContain('needs 3 notes at once; every voice here is monophonic')
+      expect(text).toContain('stack it by hand across all 3 voices here that play it, one note each')
+      expect(text).toContain('separate voices rather than one pool')
+      // The other branch's sentence must not appear: there is plenty to spread it across.
+      expect(text).not.toContain('nothing here to spread it across')
+    }
   })
 
   it('names the real ceiling when the role voices are not all monophonic', () => {
@@ -704,7 +1008,7 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
     const md = renderGuide(result)
     const view = renderToStaticMarkup(createElement(Guide, { result, seed: 1 }))
     for (const text of [md, view]) {
-      expect(text).toContain('needs 5 notes at once and the most any voice here can sound is 4 notes')
+      expect(text).toContain('needs 5 notes at once; the most any voice here can sound is 4 notes')
       expect(text).not.toContain('monophonic')
     }
   })
@@ -715,8 +1019,11 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
 // ---------------------------------------------------------------------------
 
 describe('the industrial pad hook on a Tracker-only rig (i–VI–VII)', () => {
+  const tracker = DEVICES.find((d) => d.id === 'polyend-tracker-mini') as Device
+  // #40: crowded, so the pad is the *sampled* chord. With tracks to spare the same box stacks it
+  // instead, and that rendering has its own describe below.
   const sampled = resolve({
-    devices: DEVICES.filter((d) => d.id === 'polyend-tracker-mini'),
+    devices: [{ ...tracker, comfortableVoices: 6 }],
     template: industrialTechno,
     mood: moodState(),
     seed: 18,

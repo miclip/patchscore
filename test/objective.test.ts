@@ -6,12 +6,12 @@ import type { Score } from '../lib/core/index'
  * are the resolver's, so there is nothing to execute here - only the shape to pin down.
  */
 describe('Score (§7.1)', () => {
-  it('is a variadic miss prefix followed by exactly six fixed keys', () => {
-    // No priority levels: the six tail keys alone are a valid vector.
-    expectTypeOf<[number, number, number, number, number, number]>().toExtend<Score>()
+  it('is a variadic miss prefix followed by exactly seven fixed keys', () => {
+    // Seven since #40 added `stackedChords`. No priority levels: the tail alone is a vector.
+    expectTypeOf<[number, number, number, number, number, number, number]>().toExtend<Score>()
     // Two priority levels.
     expectTypeOf<
-      [number, number, number, number, number, number, number, number]
+      [number, number, number, number, number, number, number, number, number]
     >().toExtend<Score>()
     // Anything shorter than the tail cannot be a Score.
     expectTypeOf<[number, number]>().not.toExtend<Score>()

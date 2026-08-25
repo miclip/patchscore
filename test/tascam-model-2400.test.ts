@@ -32,7 +32,8 @@ const without = resolve({ devices: [tr1000], template, mood: NEUTRAL_MOOD, seed:
 
 function placements(result: typeof with2400): string[] {
   return result.assignments.map(
-    (a) => `${a.requestId}=${a.assignable.deviceId}/${a.assignable.voiceId}`,
+    // #40: every voice, joined — a part spread across a pool must not read as one voice.
+    (a) => `${a.requestId}=${a.assignables.map((v) => `${v.deviceId}/${v.voiceId}`).join('+')}`,
   )
 }
 

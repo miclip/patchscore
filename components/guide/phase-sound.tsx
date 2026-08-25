@@ -10,7 +10,7 @@ import type {
 import { citationSentence } from '@/lib/core'
 import { contentNotice, dominantRangeCite, hoistedParams } from '@/lib/core'
 import type { CapabilityEvidence, ContentNotice, ParamScope, ScopedParams } from '@/lib/core'
-import { citeLines, citeText, count, hintText, num } from './format'
+import { citeLines, citeText, count, hintText, isStacked, num, voicesLabel } from './format'
 import { EvidenceMark, Instruction, ParamLine, ProvenanceMark, evidenceLines } from './instruction'
 
 /**
@@ -27,6 +27,13 @@ function realisationInstruction(a: ResolvedAssignment): string {
   if (a.notes <= 1) return ''
   const notes = count(a.notes, 'note')
   const n = num(a.notes)
+  if (isStacked(a)) {
+    return (
+      `Polyphony — ${notes}, one on each of ${n} voices. Every voice takes these same settings: ` +
+      `it is one sound played ${n} times over, not ${n} sounds, and a difference between them is ` +
+      `a difference you will hear inside the chord. Which voice takes which note is in Hook.`
+    )
+  }
   if (a.recipe.realisation === 'sampled-chord') {
     return (
       `Polyphony — ${notes}, already inside the sample. Load the chord sample(s) onto this one ` +
@@ -322,7 +329,7 @@ export function PhaseSound({
             return (
               <div className="recipe" key={a.requestId}>
                 <h5>
-                  <span>{a.assignable.label}</span>
+                  <span>{voicesLabel(a)}</span>
                   <span className="role mono">{a.role}</span>
                   <span className="recipe-title">{a.recipe.title}</span>
                 </h5>
