@@ -89,7 +89,7 @@ describe('the registry carries five directions (§4)', () => {
     for (const template of [ambientDub, majorKeyElectro]) {
       const result = resolve({ devices: DEVICES, template, mood: NEUTRAL, seed: 7 })
       expect(
-        result.gaps.map((g) => `${g.requestId}: ${g.reason}`),
+        result.shortfalls.map((g) => `${g.requestId}: ${g.reason}`),
         `${template.id} has a hole nothing in the rig explains`,
       ).toEqual([])
       expect(result.assignments).toHaveLength(template.roles.length)

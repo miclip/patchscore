@@ -1522,9 +1522,11 @@
       ]
     }
   ],
-  "gaps": [
+  "shortfalls": [
     {
       "requestId": "r-snare",
+      "kind": "unauthored",
+      "rationale": null,
       "role": "snare",
       "character": "hard",
       "priority": 3,
@@ -1548,6 +1550,8 @@
     },
     {
       "requestId": "r-tom-2",
+      "kind": "rig-limit",
+      "rationale": null,
       "role": "tom",
       "character": "hard",
       "priority": 3,
@@ -1572,6 +1576,8 @@
     },
     {
       "requestId": "r-acid",
+      "kind": "not-needed",
+      "rationale": "this fixture is the shape it is without an acid line",
       "role": "acid",
       "character": "dirty",
       "priority": 4,
@@ -1585,6 +1591,8 @@
     },
     {
       "requestId": "r-tex",
+      "kind": "not-needed",
+      "rationale": "texture here is a bonus and not the piece",
       "role": "texture",
       "character": "dark",
       "priority": 4,

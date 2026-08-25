@@ -48,9 +48,11 @@ export const shuffle: Inspiration = {
         priority: 4,
         character: 'soft',
         sustain: 'continuous',
-        // §4.4. Dropped without complaint on a rig with nothing left: the lilt is already in
-        // the hat, and this only thickens it.
+        // §4.4. Dropped without complaint on a rig with nothing left, and #81's other half:
+        // said to the reader too, so a rig that has nothing spare is not told it is short a
+        // part. Both claims, because they are two.
         optional: true,
+        inessential: { reason: 'the hats already carry the lilt; this only thickens it' },
       },
     ],
 

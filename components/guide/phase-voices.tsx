@@ -1,4 +1,11 @@
-import type { Device, DeviceId, ResolveResult, ResolvedAssignment } from '@/lib/core'
+import {
+  shortfallsOfKind,
+  type Device,
+  type DeviceId,
+  type ResolveResult,
+  type ResolvedAssignment,
+  type Shortfall,
+} from '@/lib/core'
 import { adviceText, count, num } from './format'
 
 /** §3.5. Why this recipe, in the one case where the answer is not "it matched". */
@@ -38,12 +45,17 @@ function realisationText(a: ResolvedAssignment): string {
 /**
  * §8 phase 2, and the gaps of §7.3.
  *
- * The heading is **Gaps**, matching the Markdown renderer and saying what the section is. It
- * was briefly "Advice", which was a misreading: the instruction was that a gap should *read*
- * as advice rather than as an error — a `no-recipe` gap naming the voice that could carry the
- * part is useful, the same fact in a red error box is discouraging and wrong. That is the tone
- * of the lines, not the name of the section. A reader who has to ask what "Advice" means has
- * been told nothing, and softening the word is the opposite of invariant 5's honesty.
+ * The first heading is **Gaps**, matching the Markdown renderer and saying what the section is.
+ * It was briefly "Advice", which was a misreading: the instruction was that a gap should *read*
+ * as advice rather than as an error — a line naming the voice that could carry the part is
+ * useful, the same fact in a red error box is discouraging and wrong. That is the tone of the
+ * lines, not the name of the section. A reader who has to ask what "Advice" means has been told
+ * nothing, and softening the word is the opposite of invariant 5's honesty.
+ *
+ * **Three headings since #81**, because `Gaps` was carrying three unrelated situations and a
+ * reader could not tell which one a line was. What is under `Gaps` now is only the kind the
+ * word is honest about: this rig cannot make this part. An unwritten recipe is ours to fix and
+ * says so, and a part the direction never needed is not an absence at all.
  */
 export function PhaseVoices({
   result,
@@ -53,11 +65,18 @@ export function PhaseVoices({
   deviceById: Map<DeviceId, Device>
 }) {
   const sectionCount = result.template.structure.length
+  // §7.3/#81. Three lists, so the reader is never left working out which of the three kinds of
+  // absence a line is: the rig cannot, we have not, or the direction does not need it.
+  const limits = shortfallsOfKind(result.shortfalls, 'rig-limit')
+  const unauthored = shortfallsOfKind(result.shortfalls, 'unauthored')
+  const notNeeded = shortfallsOfKind(result.shortfalls, 'not-needed')
 
   return (
     <>
       {result.assignments.length === 0 ? (
-        <p className="quiet">No parts assigned. Every one is listed under Gaps.</p>
+        <p className="quiet">
+          No parts assigned. Every part this direction asks for is accounted for below.
+        </p>
       ) : (
         <ul className="parts">
           {result.assignments.map((a) => (
@@ -84,28 +103,68 @@ export function PhaseVoices({
       )}
 
       <h4>Gaps</h4>
-      {result.gaps.length === 0 ? (
+      {limits.length === 0 ? (
         <p className="quiet">None.</p>
       ) : (
         <>
           <p className="quiet">
-            These parts are not in the guide below. Each line says what would close it.
+            This rig cannot make these parts. They are not in the guide below, and each line says
+            what would close it.
           </p>
-          <ul className="advice">
-            {result.gaps.map((gap) => (
-              <li key={gap.requestId}>
-                <span className="role mono">{gap.role}</span>
-                <span className="mono quiet">{gap.character}</span>
-                <span className="quiet">
-                  p{num(gap.priority)}
-                  {gap.optional ? ', optional' : ''}
-                </span>
-                <span className="advice-text">{adviceText(gap, deviceById)}</span>
-              </li>
-            ))}
-          </ul>
+          <ShortfallList
+            shortfalls={limits}
+            sentence={(gap) => adviceText(gap, deviceById)}
+          />
+        </>
+      )}
+
+      {unauthored.length === 0 ? null : (
+        <>
+          <h4>Waiting on us</h4>
+          <p className="quiet">
+            Your rig can make these. Nobody has written the recipe yet, so they are not in the
+            guide below — that is our backlog, not a limit of your boxes.
+          </p>
+          <ShortfallList
+            shortfalls={unauthored}
+            sentence={(gap) => adviceText(gap, deviceById)}
+          />
+        </>
+      )}
+
+      {notNeeded.length === 0 ? null : (
+        <>
+          <h4>Not needed for this direction</h4>
+          <p className="quiet">{result.template.name} is finished without these.</p>
+          <ShortfallList shortfalls={notNeeded} sentence={(gap) => gap.rationale} />
         </>
       )}
     </>
+  )
+}
+
+/**
+ * The same five facts in the same order under all three headings, so what separates the sections
+ * is the heading and the sentence. Reuses `.advice` and `.role`, which #21 already sized for
+ * 390px — a fourth list style would be a fourth thing to verify at that width for no gain.
+ */
+function ShortfallList<T extends Shortfall>({
+  shortfalls,
+  sentence,
+}: {
+  shortfalls: readonly T[]
+  sentence: (shortfall: T) => string
+}) {
+  return (
+    <ul className="advice">
+      {shortfalls.map((shortfall) => (
+        <li key={shortfall.requestId}>
+          <span className="role mono">{shortfall.role}</span>
+          <span className="mono quiet">{shortfall.character}</span>
+          <span className="quiet">p{num(shortfall.priority)}</span>
+          <span className="advice-text">{sentence(shortfall)}</span>
+        </li>
+      ))}
+    </ul>
   )
 }

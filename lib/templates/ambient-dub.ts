@@ -278,10 +278,12 @@ export const ambientDub: Template = {
       character: 'soft',
       sustain: 'transient',
       sections: ['Swell', 'Recede'],
+      inessential: { reason: 'the swell can happen by hand across a part already sounding' },
     },
 
     // §4.4. `optional` removes this from the miss objective entirely: filled if it fits,
-    // dropped without complaint if the rig has nothing left.
+    // dropped without complaint if the rig has nothing left — and §4.4's other half since #81,
+    // saying so to the reader as well as to the objective.
     {
       id: 'r-ghost-perc',
       role: 'ghost-perc',
@@ -289,6 +291,7 @@ export const ambientDub: Template = {
       character: 'clean',
       sustain: 'continuous',
       optional: true,
+      inessential: { reason: 'dub is mostly space, and this is the first thing to go' },
     },
   ],
 

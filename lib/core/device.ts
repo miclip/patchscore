@@ -705,13 +705,15 @@ export const ArticulationEntrySchema = z.strictObject({
  * *does* exist resolves. `tm-texture-soft` set a play mode, a filter, a grain length, a cutoff,
  * a reverb send and an attack, and never said what was being granulated.
  *
- * **This is not a fourth meaning of "gap" (#81), and that route was rejected on purpose.**
+ * **This is not a fourth kind of shortfall (#81), and that route was rejected on purpose.**
  * A sampler voice with no declared source could have been reported as a gap, which would have
- * needed no new field: §7.3's renderer already has the voice for it. But `gap` today collapses
- * three unrelated situations — the hardware cannot, the recipe was never authored, the role is
- * optional for the genre — into one word and one rendering, and #81 is the open work of pulling
- * those three apart. A fourth tenant makes that job harder and says the wrong thing besides: a
- * resolved recipe with resolved parameters on a voice that can carry the part is not an absence.
+ * needed no new field: §7.3's renderer already has the voice for it. At the time, `gap` was
+ * collapsing three unrelated situations — the hardware cannot, the recipe was never authored, the
+ * role is one the direction is finished without — into one word and one rendering, and a fourth
+ * tenant would have made pulling them apart harder. #81 has since done that, and the three are
+ * now `rig-limit`, `unauthored` and `not-needed`; this is still not one of them, because it says
+ * the wrong thing: a resolved recipe with resolved parameters on a voice that can carry the part
+ * is not an absence.
  * Nothing is missing from the rig or from the library. What is missing is a *sentence in the
  * recipe*, which is authoring metadata, and authoring metadata belongs on the recipe.
  *

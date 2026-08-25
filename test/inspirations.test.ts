@@ -403,7 +403,7 @@ describe('applying one inspiration (§5)', () => {
     // neither knows nor cares that it was patched.
     const result = applied(ambientDub, [reggae])
     const resolved = resolve({ devices: DEVICES, template: result.template, mood: MOOD, seed: 7 })
-    expect(resolved.gaps).toEqual([])
+    expect(resolved.shortfalls).toEqual([])
     expect(resolved.assignments).toHaveLength(result.template.roles.length)
   })
 
@@ -661,7 +661,7 @@ describe('every effective template is schema-valid (§4, §7)', () => {
           seed: 7,
         })
         const where = `${template.id} + [${selection.map((i) => i.id).join(', ')}]`
-        expect(resolved.gaps.map((g) => `${g.requestId}: ${g.reason}`), where).toEqual([])
+        expect(resolved.shortfalls.map((g) => `${g.requestId}: ${g.reason}`), where).toEqual([])
       }
     }
   })

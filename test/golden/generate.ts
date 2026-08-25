@@ -62,8 +62,15 @@ export function serialise(result: ResolveResult): string {
           articulation: p.articulation,
         })),
       })),
-      gaps: result.gaps.map((g) => ({
+      shortfalls: result.shortfalls.map((g) => ({
         requestId: g.requestId,
+        // #81. What the absence *means*, above the search's reason for it. Pinned because the
+        // three used to be one word: a kind quietly changing is exactly the drift that would
+        // otherwise show up only as a reader being told the wrong thing.
+        kind: g.kind,
+        // Authored on the one kind that has one (§4.4). `null` elsewhere rather than absent, so
+        // the field is in the bytes and a variant that grows one shows as a diff.
+        rationale: g.kind === 'not-needed' ? g.rationale : null,
         role: g.role,
         character: g.character,
         priority: g.priority,

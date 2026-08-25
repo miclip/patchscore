@@ -128,7 +128,10 @@ export function template(over: Partial<Template> = {}): Template {
         priority: 4,
         character: 'dark',
         sustain: 'continuous',
+        // §4.4/#81: `optional` is a claim about the objective, `inessential` a claim to the
+        // reader, and the schema requires the second wherever the first is made.
         optional: true,
+        inessential: { reason: 'the fixture is still the fixture without it' },
       },
       {
         id: 'r-riser',

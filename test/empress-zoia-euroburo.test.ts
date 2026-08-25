@@ -98,8 +98,8 @@ describe('zero assignables (§2.4)', () => {
 
   it('leaves every assignment in a real rig exactly where it was', () => {
     expect(placements(withZoia)).toEqual(placements(without))
-    expect(withZoia.gaps.map((g) => `${g.role}/${g.character}`)).toEqual(
-      without.gaps.map((g) => `${g.role}/${g.character}`),
+    expect(withZoia.shortfalls.map((g) => `${g.role}/${g.character}`)).toEqual(
+      without.shortfalls.map((g) => `${g.role}/${g.character}`),
     )
   })
 

@@ -433,7 +433,7 @@ describe('a selection survives the whole loop (§8.2)', () => {
       seed: decoded.inputs.seed,
     })
     expect(result.song.bpm).toBe(application.template.bpm.default)
-    expect(result.gaps).toEqual([])
+    expect(result.shortfalls).toEqual([])
   })
 
   it('reapplies against a different direction without being reselected', () => {

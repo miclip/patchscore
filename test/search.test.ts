@@ -158,7 +158,7 @@ const templates: [string, Template][] = [
 
 
 function gapFor(result: AssignmentResult, requestId: string) {
-  return result.gaps.find((g) => g.requestId === requestId)
+  return result.shortfalls.find((g) => g.requestId === requestId)
 }
 
 // ---------------------------------------------------------------------------
@@ -335,7 +335,7 @@ describe('rig fixtures (§7.1, obligation 2)', () => {
     expect(placement(result, 'r-kick')).toBe('a-drum/bd')
     expect(placement(result, 'r-snare')).toBe('a-drum/sd')
     expect(placement(result, 'r-hat')).toBe('a-drum/ch')
-    expect(result.gaps).toEqual([])
+    expect(result.shortfalls).toEqual([])
   })
 
   it('two boxes: the sub goes to the tracker, because the drum box cannot voice it', () => {
@@ -461,7 +461,7 @@ describe('occupancy (§4.2)', () => {
       request({ id: 'r-b', role: 'kick', sustain: 'transient', sections: ['Drop'] }),
     ])
     const result = assign({ devices: [drumBox], template: t, mood: moodState(), seed: 1 })
-    expect(result.gaps).toEqual([])
+    expect(result.shortfalls).toEqual([])
     expect([...(result.occupancy.get('a-drum/bd') ?? new Map())]).toEqual([
       ['Build', 'r-a'],
       ['Drop', 'r-b'],
@@ -475,7 +475,7 @@ describe('occupancy (§4.2)', () => {
     ])
     const result = assign({ devices: [drumBox], template: t, mood: moodState(), seed: 1 })
     expect(result.assignments).toHaveLength(1)
-    expect(result.gaps).toHaveLength(1)
+    expect(result.shortfalls).toHaveLength(1)
   })
 
   it('counts an assignable occupied in any section once, for crowding (§12.4)', () => {
@@ -537,8 +537,8 @@ describe('distinct (§12.6)', () => {
     const result = assign({ devices: [twinA], template: t, mood: moodState(), seed: 1 })
     expect(result.assignments).toHaveLength(1)
     // Not silently collapsed onto the same box: it becomes a gap like any other.
-    expect(result.gaps).toHaveLength(1)
-    const gap = result.gaps[0]
+    expect(result.shortfalls).toHaveLength(1)
+    const gap = result.shortfalls[0]
     expect(gap).toMatchObject({ reason: 'no-room', because: 'distinct' })
     expect(gap?.reason === 'no-room' && gap.detail).toBe(
       'this tom must sit on a different device from the other tom, and only 1 in your rig can carry it',
@@ -929,7 +929,7 @@ function refusedForNoReason(
   result: AssignmentResult,
   devices: Device[],
   t: Template,
-  gap: AssignmentResult['gaps'][number],
+  gap: AssignmentResult['shortfalls'][number],
 ): string | undefined {
   if (gap.reason !== 'no-room') return undefined
   const request = t.roles.find((r) => r.id === gap.requestId)
@@ -973,7 +973,7 @@ describe('the gap enum is complete (§7.3)', () => {
       for (const [tName, t] of templates) {
         for (const seed of seeds) {
           const result = assign({ devices, template: t, mood: moodState(), seed })
-          for (const gap of result.gaps) {
+          for (const gap of result.shortfalls) {
             const refused = refusedForNoReason(result, devices, t, gap)
             expect(
               refused === undefined
@@ -993,7 +993,7 @@ describe('the gap enum is complete (§7.3)', () => {
       for (const [tName, t] of templates) {
         for (const seed of seeds) {
           const result = assign({ devices, template: t, mood: moodState(), seed })
-          for (const gap of result.gaps) {
+          for (const gap of result.shortfalls) {
             if (gap.reason !== 'no-room' || gap.optional) continue
             expect(`${rigName} / ${tName} / ${gap.requestId}: ${gap.because}`).not.toContain(
               'crowding',
@@ -1008,7 +1008,7 @@ describe('the gap enum is complete (§7.3)', () => {
     for (const [, devices] of rigs) {
       for (const [, t] of templates) {
         const result = assign({ devices, template: t, mood: moodState(), seed: 1 })
-        for (const gap of result.gaps) {
+        for (const gap of result.shortfalls) {
           expect(GAP_REASONS).toContain(gap.reason)
           if (gap.reason !== 'no-room') continue
           expect(NO_ROOM_CAUSES).toContain(gap.because)
@@ -1044,7 +1044,7 @@ describe('node cap (§7.1)', () => {
     expect(result.search.nodes).toBeLessThanOrEqual(3)
     // The greedy answer is still a real, complete answer.
     expect(result.assignments).toHaveLength(3)
-    expect(result.gaps).toEqual([])
+    expect(result.shortfalls).toEqual([])
   })
 
   it('is deterministic under the cap too', () => {
@@ -1072,7 +1072,7 @@ describe('determinism (invariant 6)', () => {
     const twice = assign({ devices: [drumBox, tracker], template: t, mood: moodState(), seed: 99 })
     const shape = (r: AssignmentResult) => ({
       assignments: r.assignments.map((a) => [a.requestId, assignableKey(a.assignable), a.recipe.id]),
-      gaps: r.gaps.map((g) => [g.requestId, g.reason]),
+      gaps: r.shortfalls.map((g) => [g.requestId, g.reason]),
       score: r.score,
       occupancy: [...r.occupancy].map(([k, m]) => [k, [...m]]),
     })

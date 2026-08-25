@@ -41,8 +41,8 @@ export type RigFit = {
   href: string
   covered: number
   requests: number
-  required: number
-  requiredCovered: number
+  essential: number
+  essentialCovered: number
   roles: readonly Role[]
 }
 
@@ -82,8 +82,8 @@ export function rigFits(template: Template, devices: readonly Device[] = DEVICES
       href: deviceHref(device),
       covered: cover.covered,
       requests: cover.requests,
-      required: cover.required,
-      requiredCovered: cover.requiredCovered,
+      essential: cover.essential,
+      essentialCovered: cover.essentialCovered,
       roles: cover.roles,
     }
   })

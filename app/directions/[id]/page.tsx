@@ -180,9 +180,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             <li key={fit.deviceId}>
               <Link href={fit.href}>{fit.label}</Link>
               <span className="sub mono">
-                {fit.requiredCovered} of {plural(fit.required, 'required part')}
-                {fit.covered > fit.requiredCovered
-                  ? `, ${fit.covered} of ${fit.requests} including optional`
+                {fit.essentialCovered} of {plural(fit.essential, 'essential part')}
+                {fit.covered > fit.essentialCovered
+                  ? `, ${fit.covered} of ${fit.requests} including what this direction can do without`
                   : ''}
               </span>
               <span className="sub mono">

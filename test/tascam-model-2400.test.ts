@@ -81,8 +81,8 @@ describe('zero assignables (§2.4)', () => {
   it('expands to nothing and moves no assignment', () => {
     expect(expand(device)).toHaveLength(0)
     expect(placements(with2400)).toEqual(placements(without))
-    expect(with2400.gaps.map((g) => `${g.role}/${g.character}`)).toEqual(
-      without.gaps.map((g) => `${g.role}/${g.character}`),
+    expect(with2400.shortfalls.map((g) => `${g.role}/${g.character}`)).toEqual(
+      without.shortfalls.map((g) => `${g.role}/${g.character}`),
     )
   })
 

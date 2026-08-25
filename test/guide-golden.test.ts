@@ -95,11 +95,27 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
     }
   })
 
-  it('pins all three gap reasons, which only a rig too small ever shows at once (§7.3)', () => {
+  it('pins all three shortfall states, which only a rig too small ever shows at once (§7.3)', () => {
+    // #81. The three headings are the finding, not decoration: a limit of the boxes, a recipe
+    // we have not written, and a part the direction is finished without are three different
+    // things to do about it. One rig shows all three at once only because it is too small for
+    // the direction, which is exactly why this fixture is the one that pins them.
     const one = guideText('tr-1000')
+
+    expect(one).toContain('### Gaps')
+    expect(one).toContain('This rig cannot make these parts.')
     expect(one).toContain('nothing in your rig plays this part')
-    expect(one).toContain('capable but unauthored')
     expect(one).toContain('no room')
+
+    expect(one).toContain('### Waiting on us')
+    expect(one).toContain('Nobody has written the recipe yet')
+
+    expect(one).toContain('### Not needed for this direction')
+    expect(one).toContain('Industrial Techno is finished without these.')
+
+    // The one word all three used to collapse into. Its absence is the regression guard: a
+    // renderer that went back to one undifferentiated list would print it again.
+    expect(one).not.toContain('capable but unauthored')
   })
 
   it('renders nothing as derived, because the fixtures hold every knob centred (§6.1)', () => {

@@ -636,8 +636,8 @@ describe('pool symmetry breaking does not change the optimum (§7.1)', () => {
           // The count of parts placed is not implied by the score - two allocations can tie
           // on the vector - so it is asserted separately.
           expect(pruned.assignments.length).toBe(explored.assignments.length)
-          expect(pruned.gaps.map((g) => g.requestId).sort()).toEqual(
-            explored.gaps.map((g) => g.requestId).sort(),
+          expect(pruned.shortfalls.map((g) => g.requestId).sort()).toEqual(
+            explored.shortfalls.map((g) => g.requestId).sort(),
           )
         }
       })
@@ -941,8 +941,8 @@ describe('nothing distinguishes two members of one pool (§7.1)', () => {
     ])
     const result = assign({ devices: [pool4], template: t, mood: moodState(), seed: 1 })
     expect(result.assignments.length).toBe(1)
-    expect(result.gaps).toHaveLength(1)
-    expect(result.gaps[0]).toMatchObject({ reason: 'no-room', because: 'distinct' })
+    expect(result.shortfalls).toHaveLength(1)
+    expect(result.shortfalls[0]).toMatchObject({ reason: 'no-room', because: 'distinct' })
   })
 
   it('holds for crowding, which counts occupied assignables and not which ones', () => {

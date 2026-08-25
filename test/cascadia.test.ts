@@ -113,7 +113,7 @@ describe('Cascadia manifest', () => {
     // both have recipes: a Cascadia stab is a real sound, it is just a one-note one. Declaring
     // nothing would have produced "nothing in your rig plays this part", which is less true.
     for (const role of ['pad', 'stab']) {
-      const gap = result.gaps.find((g) => g.role === role)
+      const gap = result.shortfalls.find((g) => g.role === role)
       expect(gap?.reason, role).toBe('no-capable-voice')
       if (gap?.reason !== 'no-capable-voice') throw new Error(`${role}: wrong gap kind`)
       expect(gap.because, role).toBe('polyphony')

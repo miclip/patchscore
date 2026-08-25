@@ -84,13 +84,13 @@ describe('zero assignables (§2.4)', () => {
     // shifts the last key of the `Score` vector by a fixed amount on *every* candidate and can
     // therefore never change which assignment wins.
     expect(placements(withL8)).toEqual(placements(without))
-    expect(withL8.gaps.map((g) => `${g.role}/${g.character}`)).toEqual(
-      without.gaps.map((g) => `${g.role}/${g.character}`),
+    expect(withL8.shortfalls.map((g) => `${g.role}/${g.character}`)).toEqual(
+      without.shortfalls.map((g) => `${g.role}/${g.character}`),
     )
   })
 
   it('is never named as a gap, because it is in no request’s reachable set', () => {
-    for (const gap of withL8.gaps) expect(JSON.stringify(gap)).not.toContain(device.id)
+    for (const gap of withL8.shortfalls) expect(JSON.stringify(gap)).not.toContain(device.id)
   })
 
   it('draws no voice field, so the rack has no empty region to fill', () => {
