@@ -320,18 +320,18 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           </header>
           {/*
             A real resolve, not a role-name match: character distance, polyphony and distinctness
-            all decide this, and a list of role names can see none of them. Required and optional
-            are counted apart — an optional request is filled if it fits and dropped if it does
-            not (§4.4), so one fraction would understate a box that covers what a direction needs.
+            all decide this, and a list of role names can see none of them. The essential parts
+            are counted apart — a direction declares which requests it can be itself without
+            (§4.4), so one fraction would understate a box that covers everything it needs.
           */}
           <ul className="coverage-list">
             {page.directions.map((fit) => (
               <li key={fit.templateId}>
                 <Link href={fit.href}>{fit.name}</Link>
                 <span className="sub mono">
-                  {fit.requiredCovered} of {fit.required} required parts
-                  {fit.covered > fit.requiredCovered
-                    ? `, ${fit.covered} of ${fit.requests} including optional`
+                  {fit.essentialCovered} of {fit.essential} essential parts
+                  {fit.covered > fit.essentialCovered
+                    ? `, ${fit.covered} of ${fit.requests} including what the direction can do without`
                     : ''}
                 </span>
                 {fit.roles.length === 0 ? null : (

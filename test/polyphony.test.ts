@@ -116,7 +116,7 @@ describe('a triad on a monophonic voice', () => {
     const device = sampler()
     const result = assign({ devices: [device], template: triad, mood: moodState(), seed: 1 })
 
-    expect(result.gaps).toHaveLength(0)
+    expect(result.shortfalls).toHaveLength(0)
     expect(result.assignments).toHaveLength(1)
     expect(result.assignments[0]?.recipe.id).toBe('smp-pad')
     // The voice did not become polyphonic to make this work (§2.2).
@@ -133,10 +133,10 @@ describe('a triad on a monophonic voice', () => {
     })
 
     expect(result.assignments).toHaveLength(0)
-    expect(result.gaps).toHaveLength(1)
+    expect(result.shortfalls).toHaveLength(1)
     // Nothing in the rig reaches three notes by any route, so the fix is buying, not authoring.
-    expect(result.gaps[0]).toMatchObject({ requestId: 'r-pad', reason: 'no-capable-voice' })
-    expect(result.gaps[0]?.capable).toEqual([])
+    expect(result.shortfalls[0]).toMatchObject({ requestId: 'r-pad', reason: 'no-capable-voice' })
+    expect(result.shortfalls[0]?.capable).toEqual([])
   })
 
   it('still carries a one-note part on the same recipe, uncharged', () => {
@@ -181,7 +181,7 @@ describe('a real polyphonic voice is preferred', () => {
     })
 
     // A chord sample is a fill, not a gap: it is the right notes, held less flexibly.
-    expect(result.gaps).toHaveLength(0)
+    expect(result.shortfalls).toHaveLength(0)
     expect(result.assignments.find((a) => a.requestId === 'r-pad')?.deviceId).toBe('a-sampler')
     expect(keys(result.score).sampledChords).toBe(1)
   })
@@ -245,7 +245,7 @@ describe('a real polyphonic voice is preferred', () => {
 
   it('never outranks a miss: a chord sample beats an unmade part', () => {
     const result = assign({ devices: [sampler()], template: triad, mood: moodState(), seed: 1 })
-    expect(result.gaps).toHaveLength(0)
+    expect(result.shortfalls).toHaveLength(0)
     expect(keys(result.score).sampledChords).toBe(1)
   })
 })
@@ -323,7 +323,7 @@ describe('the Tracker Mini chord recipes (§12.4, production)', () => {
     // that nothing about the machine justified — the pad had a recipe because somebody had
     // written one. Both are now reachable the same documented way (p.104, p.128).
     const { result } = padOf(trackerOnly)
-    expect(result.gaps.find((g) => g.role === 'stab')).toBeUndefined()
+    expect(result.shortfalls.find((g) => g.role === 'stab')).toBeUndefined()
     const stab = result.assignments.find((a) => a.role === 'stab')
     expect(stab?.recipe.id).toBe('tm-stab-hard-chord')
     // Read back off the manifest rather than the assignment: `ResolvedRecipeRef` is the
@@ -374,7 +374,7 @@ describe('the boxes that can hold a chord and cannot move it (§12.4)', () => {
       const result = only(id)
       for (const role of ['pad', 'stab']) {
         expect(result.assignments.find((a) => a.role === role), `${id} ${role}`).toBeUndefined()
-        expect(result.gaps.find((g) => g.role === role), `${id} ${role}`).toBeDefined()
+        expect(result.shortfalls.find((g) => g.role === role), `${id} ${role}`).toBeDefined()
       }
     }
   })
@@ -393,7 +393,7 @@ describe('the boxes that can hold a chord and cannot move it (§12.4)', () => {
     // That is the shape of the decline: the capacity exists and the capability does not.
     const result = only('roland-mc-101')
     expect(result.assignments.find((a) => a.role === 'pad')).toBeUndefined()
-    const gap = result.gaps.find((g) => g.role === 'pad')
+    const gap = result.shortfalls.find((g) => g.role === 'pad')
     expect(gap?.reason).toBe('no-room')
     if (gap?.reason !== 'no-room') throw new Error('expected no-room')
     expect(gap.because).toBe('contended')
@@ -588,7 +588,7 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
       mood: moodState(),
       seed: 18,
     })
-    return { result, gap: result.gaps.find((g) => g.role === role) }
+    return { result, gap: result.shortfalls.find((g) => g.role === role) }
   }
 
   it('calls the TR-1000 pad `no-such-role` — the box does not do pads at all', () => {
@@ -678,8 +678,12 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
       'needs 3 notes at once and every voice here is monophonic',
     )
     expect(lineFor(shortOfNotes, 'stab')).not.toContain('nothing in your rig plays this part')
-    expect(lineFor(noRole, 'pad')).toContain('nothing in your rig plays this part')
-    expect(lineFor(noRole, 'pad')).not.toContain('monophonic')
+    // `stab` rather than `pad`, which used to be this rig's `no-such-role` line and since #81
+    // is not a line about the rig at all: this direction declares it is finished without a pad,
+    // so its absence is reported as the direction's own judgement whatever the rig could do.
+    // A drum machine declares no `stab` either, and that one the song does need.
+    expect(lineFor(noRole, 'stab')).toContain('nothing in your rig plays this part')
+    expect(lineFor(noRole, 'stab')).not.toContain('monophonic')
   })
 
   it('names the real ceiling when the role voices are not all monophonic', () => {
@@ -694,7 +698,7 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
       request({ id: 'r-pad', role: 'pad', character: 'dark', priority: 1, polyphony: 5 }),
     ])
     const result = resolve({ devices: [four], template: t, mood: moodState(), seed: 1 })
-    const gap = result.gaps[0]
+    const gap = result.shortfalls[0]
     expect(gap).toMatchObject({ reason: 'no-capable-voice', because: 'polyphony' })
 
     const md = renderGuide(result)

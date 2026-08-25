@@ -180,7 +180,7 @@ describe('two notes are one assignable, and the line is drawn at three', () => {
 
   it('carries a two-note part inside that one assignable', () => {
     const result = rig([ask({ id: 'r-stab', role: 'stab', character: 'hard', polyphony: 2 })])
-    expect(result.gaps).toEqual([])
+    expect(result.shortfalls).toEqual([])
     const [stab] = result.assignments
     expect(stab?.notes).toBe(2)
     expect(stab?.assignable.polyphony).toBe(2)
@@ -190,7 +190,7 @@ describe('two notes are one assignable, and the line is drawn at three', () => {
   it('calls a three-note stab a `polyphony` gap, not a missing role', () => {
     const result = rig([ask({ id: 'r-stab', role: 'stab', character: 'hard', polyphony: 3 })])
     expect(result.assignments).toEqual([])
-    const [gap] = result.gaps
+    const [gap] = result.shortfalls
     expect(gap?.reason).toBe('no-capable-voice')
     if (gap?.reason !== 'no-capable-voice') throw new Error('wrong gap')
     // The distinction §7.3 exists to draw: this box plays stabs, it does not play three-note
@@ -210,13 +210,13 @@ describe('two notes are one assignable, and the line is drawn at three', () => {
 
     for (const notes of [1, 2]) {
       const result = rig([ask({ id: 'r-pad', role: 'pad', polyphony: notes })])
-      expect(result.gaps, `pad at ${notes}`).toEqual([])
+      expect(result.shortfalls, `pad at ${notes}`).toEqual([])
       expect(result.assignments[0]?.notes, `pad at ${notes}`).toBe(notes)
     }
     for (const notes of [3, 4]) {
       const result = rig([ask({ id: 'r-pad', role: 'pad', polyphony: notes })])
       expect(result.assignments, `pad at ${notes}`).toEqual([])
-      const [gap] = result.gaps
+      const [gap] = result.shortfalls
       expect(gap?.reason, `pad at ${notes}`).toBe('no-capable-voice')
       if (gap?.reason !== 'no-capable-voice') throw new Error('wrong gap')
       expect(gap.because, `pad at ${notes}`).toBe('polyphony')
@@ -230,7 +230,7 @@ describe('two notes are one assignable, and the line is drawn at three', () => {
     // technique rather than a bass with the release turned up: p.31's LOOP, "a multistage LFO",
     // over an OSC 2 that has left the keyboard.
     const result = rig([ask({ id: 'r-texture', role: 'texture', character: 'soft' })])
-    expect(result.gaps).toEqual([])
+    expect(result.shortfalls).toEqual([])
     const recipe = device.recipes.find((r) => r.id === result.assignments[0]?.recipe?.id)
     if (recipe === undefined) throw new Error('no texture recipe')
     expect(recipe.role).toBe('texture')
@@ -256,7 +256,7 @@ describe('two notes are one assignable, and the line is drawn at three', () => {
     // The gap that comes back is `no-room`, which is a true sentence about a rig; before the
     // role was declared it was `no-such-role`, which was a false one about the hardware.
     const result = resolve({ devices: [device], template: ambientDub, mood: NEUTRAL_MOOD, seed: 1 })
-    const gap = result.gaps.find((g) => g.requestId === 'r-texture')
+    const gap = result.shortfalls.find((g) => g.requestId === 'r-texture')
     expect(gap?.reason).toBe('no-room')
   })
 
@@ -267,7 +267,7 @@ describe('two notes are one assignable, and the line is drawn at three', () => {
     // transient over an independent pitched body, and no note count would fix it.
     for (const role of ['kick', 'closed-hat', 'snare'] as const) {
       const result = rig([ask({ id: 'r', role, polyphony: 1 })])
-      const [gap] = result.gaps
+      const [gap] = result.shortfalls
       expect(gap?.reason, role).toBe('no-capable-voice')
       if (gap?.reason !== 'no-capable-voice') throw new Error('wrong gap')
       expect(gap.because, role).toBe('no-such-role')
@@ -286,7 +286,7 @@ describe('two notes are one assignable, and the line is drawn at three', () => {
       seed: 3,
     })
     const causes = new Map(
-      result.gaps.map((g) => [g.requestId, g.reason === 'no-capable-voice' ? g.because : g.reason]),
+      result.shortfalls.map((g) => [g.requestId, g.reason === 'no-capable-voice' ? g.because : g.reason]),
     )
     expect(causes.get('r-stab')).toBe('polyphony')
     expect(causes.get('r-pad')).toBe('polyphony')
@@ -313,8 +313,8 @@ describe('two parts cannot both have the voice', () => {
     ])
     expect(result.assignments).toHaveLength(1)
     expect(result.assignments[0]?.requestId).toBe('r-bass')
-    expect(result.gaps.map((g) => g.requestId)).toEqual(['r-acid', 'r-lead'])
-    for (const gap of result.gaps) {
+    expect(result.shortfalls.map((g) => g.requestId)).toEqual(['r-acid', 'r-lead'])
+    for (const gap of result.shortfalls) {
       expect(gap.reason).toBe('no-room')
       if (gap.reason !== 'no-room') throw new Error('wrong gap')
       expect(gap.because).toBe('contended')

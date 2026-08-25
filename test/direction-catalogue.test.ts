@@ -107,7 +107,7 @@ describe('coverage', () => {
         const fromDevice = directionFit(device, template)
         expect(fromDirection, `${device.id}/${template.id}`).toBeDefined()
         expect(fromDirection?.covered).toBe(fromDevice.covered)
-        expect(fromDirection?.requiredCovered).toBe(fromDevice.requiredCovered)
+        expect(fromDirection?.essentialCovered).toBe(fromDevice.essentialCovered)
         expect(fromDirection?.roles).toEqual(fromDevice.roles)
       }
     }

@@ -250,8 +250,11 @@ describe('what one box covers of a direction', () => {
     const result = resolve({ devices: [TR], template, mood: NEUTRAL_MOOD, seed: 1 })
     expect(fit.covered).toBe(result.assignments.length)
     expect(fit.requests).toBe(template.roles.length)
-    expect(fit.required).toBe(template.roles.filter((r) => r.optional !== true).length)
-    expect(fit.requiredCovered).toBeLessThanOrEqual(fit.required)
+    // §4.4/#81: the essential count is what the direction cannot be itself without, which is
+    // not the same set as "not optional" — every optional request is inessential, not the
+    // other way round.
+    expect(fit.essential).toBe(template.roles.filter((r) => r.inessential === undefined).length)
+    expect(fit.essentialCovered).toBeLessThanOrEqual(fit.essential)
     expect(fit.covered).toBeLessThanOrEqual(fit.requests)
     // The roles it carried, in template request order rather than in assignment order.
     expect(fit.roles.length).toBe(fit.covered)

@@ -399,7 +399,8 @@ export const majorKeyElectro: Template = {
 
     // §4.4. `optional` removes this from the miss objective entirely: filled if it fits,
     // dropped without complaint if the rig has nothing left. An electro track survives losing
-    // its open hat; it does not survive losing its snare.
+    // its open hat; it does not survive losing its snare — which since #81 is said in the data
+    // rather than only here, because it is the reader who needs telling.
     {
       id: 'r-open-hat',
       role: 'open-hat',
@@ -407,6 +408,7 @@ export const majorKeyElectro: Template = {
       character: 'bright',
       sustain: 'continuous',
       optional: true,
+      inessential: { reason: 'electro survives losing its open hat; it does not survive losing its snare' },
     },
   ],
 

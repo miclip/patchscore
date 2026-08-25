@@ -68,7 +68,7 @@ describe('Metropolix manifest', () => {
     const placements = (r: typeof a) =>
       r.assignments.map((x) => `${x.requestId}:${x.deviceId}:${x.assignable.voiceId}`).sort()
     expect(placements(b)).toEqual(placements(a))
-    expect(b.gaps.map((g) => g.requestId).sort()).toEqual(a.gaps.map((g) => g.requestId).sort())
+    expect(b.shortfalls.map((g) => g.requestId).sort()).toEqual(a.shortfalls.map((g) => g.requestId).sort())
     // Nothing is ever assigned to it, on any template or seed.
     for (const t of TEMPLATES) {
       for (const seed of [1, 7, 18]) {

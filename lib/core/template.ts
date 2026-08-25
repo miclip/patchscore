@@ -54,6 +54,22 @@ export type RoleRequest = {
   /** §4.4. Removed from the miss objective entirely: filled if it fits, dropped if not. */
   optional?: boolean
   /**
+   * §4.4/#81. **The direction saying it is still itself without this part.** Absent means the
+   * song needs it; present means the song is finished without it, and the reason says why in
+   * the words a producer would use.
+   *
+   * Reporting only. It changes what the guide *says* about an absence (§7.3's `not-needed`
+   * shortfall) and never what the resolver *does* — no `Score` key, no candidate filtering.
+   * That is the whole point of keeping it apart from `optional`: `optional` tells the search
+   * not to spend a voice on this, and this tells the reader not to go looking for a box. A
+   * direction may want both ("if there is room, take it") or only this one ("try hard, but a
+   * rig without it is not short of anything").
+   *
+   * The reason is required because a bare flag is an author shrugging in a field that reads
+   * like a musical judgement — the same discipline §2.6 applies to a capability fact.
+   */
+  inessential?: { reason: string }
+  /**
    * §12.4. A *minimum note count*, matched against the assignable's `polyphony`. A number, not
    * a device name, so it does not breach invariant 3.
    */
@@ -74,6 +90,13 @@ export const RoleRequestSchema = z
     sustain: SustainSchema,
     sections: z.array(z.string().min(1)).min(1).optional(),
     optional: z.boolean().optional(),
+    inessential: z
+      .strictObject({
+        reason: z
+          .string()
+          .min(1, 'a request the direction can do without needs a reason saying why (§4.4)'),
+      })
+      .optional(),
     polyphony: z.int().min(1).optional(),
     distinct: z.boolean().optional(),
   })
@@ -93,6 +116,18 @@ export const RoleRequestSchema = z
         code: 'custom',
         message: 'a continuous request occupies every section and must not list any (§4.2)',
         path: ['sections'],
+      })
+    }
+    // §4.4/#81. `optional` already says the song survives without this part — that is what
+    // "dropped without complaint" means — so an `optional` request with no `inessential` is a
+    // template asserting both halves of a contradiction, and the guide would report its absence
+    // as a hole in a rig on the template's own authority that it is not one. One direction of
+    // implication only: a request may be inessential and still worth the search's effort.
+    if (r.optional === true && r.inessential === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'an optional request is one the direction can do without: say so, with a reason (§4.4)',
+        path: ['inessential'],
       })
     }
   })

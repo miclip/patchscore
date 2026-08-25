@@ -217,14 +217,14 @@ describe('gaps read as advice, but are named Gaps (#33)', () => {
   it('names every gap under Gaps, and never as an error', () => {
     const out = html(real)
     expect(out).toContain('>Gaps<')
-    for (const gap of real.gaps) expect(out).toContain(`>${gap.role}</span>`)
+    for (const gap of real.shortfalls) expect(out).toContain(`>${gap.role}</span>`)
     for (const word of ['error', 'failure', 'failed', 'invalid']) {
       expect(out.toLowerCase()).not.toContain(word)
     }
   })
 
   it('names the voices that could carry an unauthored part', () => {
-    const unauthored = real.gaps.filter((g) => g.reason === 'no-recipe' && g.capable.length > 0)
+    const unauthored = real.shortfalls.filter((g) => g.reason === 'no-recipe' && g.capable.length > 0)
     if (unauthored.length === 0) return
     const out = html(real)
     for (const gap of unauthored) {
@@ -258,12 +258,12 @@ describe('the two renderers agree about the facts', () => {
     for (const result of [real, sparse]) {
       const out = html(result)
       const markdown = renderGuide(result)
-      for (const gap of result.gaps) {
+      for (const gap of result.shortfalls) {
         expect(out).toContain(gap.role)
         expect(markdown).toContain(gap.role)
       }
     }
-    expect(sparse.gaps.length).toBeGreaterThan(0)
+    expect(sparse.shortfalls.length).toBeGreaterThan(0)
   })
 })
 

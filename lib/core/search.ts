@@ -131,6 +131,69 @@ export type Gap =
   | (GapBase & { reason: 'no-recipe' })
   | (GapBase & { reason: 'no-room'; because: NoRoomCause; detail: string })
 
+/**
+ * §7.3/#81. **What an absence means, above why the search produced it.**
+ *
+ * `reason` answers "why did this part not get made", which is a fact about the allocation.
+ * `kind` answers the question a reader actually has — *is my track missing something, and whose
+ * job is the fix* — and the two are not the same axis. One word carried all three answers and
+ * one list rendered them, so a groovebox that had just been handed eight parts of a finished
+ * techno track was told it had four holes: one of them our unwritten recipe and three of them
+ * garnish the direction never needed.
+ *
+ *  - `rig-limit` — the rig cannot make this part, by role, by note count, or because something
+ *    else won the voice. Permanent and honest, and the only kind a reader can act on by
+ *    changing hardware or arrangement.
+ *  - `unauthored` — a voice here could carry it and nobody has written the recipe. **Ours**, and
+ *    it must never read as a limit of the reader's box (§3.5, #31).
+ *  - `not-needed` — the direction declared it is still itself without this part (§4.4). Not a
+ *    hole: the track is finished.
+ *
+ * `not-needed` wins over the other two where both apply, and that ordering is the fix rather
+ * than a shortcut. A direction saying the song is complete without a pad has answered the
+ * reader's question — nothing is missing — whatever the search then found about voices. Nothing
+ * is lost by it: the `Gap` fields survive underneath, so a `not-needed` shortfall still records
+ * `no-recipe` for anyone counting the authoring backlog.
+ */
+export const SHORTFALL_KINDS = ['rig-limit', 'unauthored', 'not-needed'] as const
+export type ShortfallKind = (typeof SHORTFALL_KINDS)[number]
+
+/**
+ * A gap plus what it means. `rationale` is on the one kind whose account is **authored** rather
+ * than computed: the other two carry mandatory `because`/`detail`/`roleVoices` already, and
+ * "the song does not need this" is a musical claim only a person can make. Required on the
+ * variant rather than optional everywhere, so a template cannot dismiss a part with a shrug —
+ * the same discipline as §2.6's evidence states and `ResolvedParam.provenance`.
+ */
+export type Shortfall =
+  | (Gap & { kind: 'rig-limit' })
+  | (Gap & { kind: 'unauthored' })
+  | (Gap & { kind: 'not-needed'; rationale: string })
+
+/**
+ * The three kinds, narrowed. Shared by both renderers — unlike the sentences they print, which
+ * §8 keeps written out twice on purpose, a filter has no wording to drift.
+ */
+export function shortfallsOfKind<K extends ShortfallKind>(
+  shortfalls: readonly Shortfall[],
+  kind: K,
+): Extract<Shortfall, { kind: K }>[] {
+  return shortfalls.filter((s): s is Extract<Shortfall, { kind: K }> => s.kind === kind)
+}
+
+/**
+ * §7.3. Pure in `(gap, request)`: the kind is a reading of the search's finding against the
+ * direction's own declaration, and nothing about the rig enters that reads the other way round
+ * (invariant 3).
+ */
+export function shortfallOf(gap: Gap, request: RoleRequest): Shortfall {
+  if (request.inessential !== undefined) {
+    return { ...gap, kind: 'not-needed', rationale: request.inessential.reason }
+  }
+  if (gap.reason === 'no-recipe') return { ...gap, kind: 'unauthored' }
+  return { ...gap, kind: 'rig-limit' }
+}
+
 /** §7.1: "If the cap is hit, fall back to the greedy result **and log it** — no silent truncation." */
 export type SearchReport = {
   /** Nodes visited before the search finished or hit the cap. */
@@ -144,7 +207,13 @@ export type AssignmentResult = {
   assignments: Assignment[]
   occupancy: Occupancy
   score: Score
-  gaps: Gap[]
+  /**
+   * §7.3. Every request that produced no part, each tagged with what its absence means. There
+   * is deliberately no `gaps` field beside this one: a list of unfilled requests under that
+   * name is what let three meanings render as one, and a reader of this type now has to say
+   * which of them it is talking about.
+   */
+  shortfalls: Shortfall[]
   search: SearchReport
 }
 
@@ -1095,13 +1164,15 @@ export function assign(input: AssignInput): AssignmentResult {
 
   // Second pass: gaps are classified against the *finished* allocation, so "the LT is
   // carrying sub" can name a request that was decided after this one.
-  const gaps = unfilled.map((index) => classify(ctx, state, index))
+  const shortfalls = unfilled.map((index) =>
+    shortfallOf(classify(ctx, state, index), ctx.requests[index] as RoleRequest),
+  )
 
   return {
     assignments,
     occupancy: state.occupancy,
     score: scoreOf(ctx, state),
-    gaps,
+    shortfalls,
     search: {
       nodes: outcome.nodes,
       nodeCap: ctx.nodeCap,

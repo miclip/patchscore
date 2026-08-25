@@ -245,10 +245,28 @@ export const GOLDEN_TEMPLATE: Template = {
     // Two toms on two boxes, which this rig cannot satisfy: one becomes a `distinct` gap (§12.6).
     { id: 'r-tom-1', role: 'tom', priority: 3, character: 'hard', sustain: 'continuous', distinct: true },
     { id: 'r-tom-2', role: 'tom', priority: 3, character: 'hard', sustain: 'continuous', distinct: true },
-    // Nothing in the rig declares `acid`: a `no-capable-voice` gap.
-    { id: 'r-acid', role: 'acid', priority: 4, character: 'bright', sustain: 'continuous', optional: true },
-    // Capable but unauthored: a `no-recipe` gap naming the tracker's tracks.
-    { id: 'r-tex', role: 'texture', priority: 4, character: 'dark', sustain: 'continuous', optional: true },
+    // Nothing in the rig declares `acid`: a `no-capable-voice` reason, reported as `not-needed`
+    // because the direction says so first (§7.3). Both facts are in the golden bytes, which is
+    // the point — the kind is what the reader is told and the reason is still what happened.
+    {
+      id: 'r-acid',
+      role: 'acid',
+      priority: 4,
+      character: 'bright',
+      sustain: 'continuous',
+      optional: true,
+      inessential: { reason: 'this fixture is the shape it is without an acid line' },
+    },
+    // Capable but unauthored: a `no-recipe` reason, likewise under `not-needed`.
+    {
+      id: 'r-tex',
+      role: 'texture',
+      priority: 4,
+      character: 'dark',
+      sustain: 'continuous',
+      optional: true,
+      inessential: { reason: 'texture here is a bonus and not the piece' },
+    },
     // Transient: occupies Build only (§4.2).
     { id: 'r-snare', role: 'snare', priority: 3, character: 'hard', sustain: 'transient', sections: ['Build'] },
   ],

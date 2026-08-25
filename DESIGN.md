@@ -1476,7 +1476,7 @@ Devices contribute `articulation` (§3), addressed by `PatternSlot` — which is
 named in invariant 3's shared vocabulary. Slots are how a device says "accent the accents at
 velocity 110, put cycle-2 on the last hit" without knowing which variant it was handed.
 
-### 4.4 Priority is ascending: 1 is most important
+### 4.4 Priority is ascending, and three claims a request makes separately
 
 `priority: 1` on kick and `priority: 4` on texture means 1 outranks 4, and §7.1's original
 "requests ordered by priority descending" plus `MISS[priority]` said the opposite. The template
@@ -1484,6 +1484,37 @@ data is what people author against, so it wins. Everywhere: **requests are order
 priority number, most important first**, and one miss at priority 1 is worse than any number of
 misses at priority 2 (§7.1). `optional: true` removes a request from the miss objective entirely —
 filled if it fits, dropped without complaint if not.
+
+**Three separate claims, each stated by the template itself.** They read alike and they answer
+different questions, so deriving any one from another is what #81 was filed about:
+
+| field | the claim | who reads it |
+|---|---|---|
+| `priority` | how much it costs to miss this, relative to the rest | the objective (§7.1) |
+| `optional` | the search need not spend a voice on this | the objective (§7.1) |
+| `inessential: { reason }` | the direction is still itself without this part | the guide (§7.3) |
+
+`priority` is the one a reader kept being asked to interpret, and it cannot answer. A low number
+is not a claim that the song needs the part and a high one is not a claim that it does not: p4 on
+a riser and p4 on a second tom are the same cost and opposite musical statements, so a threshold
+drawn over priority reports one of them wrongly whichever way it is drawn. `optional` is closer
+and still not it — it is an instruction to the *search*, and a direction may reasonably try hard
+for a part it is finished without ("take it if there is room") or insist on one it would survive
+losing.
+
+So the third claim is declared explicitly, and it is **reporting only**: `inessential` has no
+`Score` key, filters no candidate, and moves no assignment. It changes what §7.3 *says* about an
+absence and nothing else. The reason is mandatory rather than a bare flag — the same discipline
+§2.6 applies to a capability fact — because "the song does not need this" is a musical judgement,
+and an author who will not say why in a producer's words has not made it. The guide prints that
+sentence, so a shrug would be visible to somebody standing at a machine.
+
+One implication holds, in one direction: **`optional: true` requires `inessential`**, and the
+schema rejects the pair without it. "Dropped without complaint if it does not fit" already
+concedes the song survives without the part, so an optional request that will not say so asserts
+both halves of a contradiction — and the guide would report its absence as a hole in the reader's
+rig, on the authority of a template that knows it is not one. The converse is free: a request may
+be inessential and still worth every bit of the search's effort.
 
 ---
 
@@ -1728,7 +1759,7 @@ Pure functions, fully unit-testable, no React.
 
 ```
 input:  { devices: Device[], template: Template, mood: MoodState, seed: number }
-output: { assignments: Assignment[], gaps: Gap[], guide: GuideDocument }
+output: { assignments: Assignment[], shortfalls: Shortfall[], guide: GuideDocument }
 ```
 
 **The resolver takes effective objects, never ids and never patch instructions.** A `Device`
@@ -2041,11 +2072,18 @@ Determinism has three axes and the tests must cover all three:
 
 "Reroll" changes the seed. `Math.random()` appears nowhere in the resolver.
 
-### 7.3 Gaps
+### 7.3 Gaps and shortfalls
 
-Unfilled roles surface honestly, with a suggestion of what would fill them. Every gap carries a
-**reason**, computed after the search, because the three are different failures and collapsing
-them tells the user to do the wrong thing:
+Unfilled roles surface honestly, with a suggestion of what would fill them. **Two axes, and they
+are not the same question.** A `Gap`'s `reason` answers *why did this part not get made*, which is
+a fact about the winning allocation. A `Shortfall`'s `kind` answers *is my track missing
+something, and whose job is the fix*, which is what a reader actually asked. The resolver computes
+the reason, then reads it against the direction's own declaration to get the kind — so the output
+field is `shortfalls`, and there is deliberately no `gaps` beside it: a list of unfilled requests
+under that name is what let three meanings render as one (#81).
+
+Every gap carries a **reason**, computed after the search, because the three are different
+failures and collapsing them tells the user to do the wrong thing:
 
 | reason | meaning | the action |
 |---|---|---|
@@ -2056,9 +2094,9 @@ them tells the user to do the wrong thing:
 **A fourth meaning was proposed and rejected** (#101, #81). A sampler voice with no declared
 source could have been reported as a gap, and it would have needed no new field: the renderer
 above already has the voice for it — *could carry it — pick it by ear*. It is refused because
-`gap` is already carrying three unrelated situations under one word and one rendering, and #81 is
-the open work of pulling those apart; a fourth tenant makes that job harder. It would also say
-something false. A resolved recipe, with resolved parameters, on a voice that can carry the part,
+`gap` was at that point carrying three unrelated situations under one word and one rendering; the
+kinds below are #81 pulling those apart, and a fourth tenant would have made that job harder. It
+would also say something false. A resolved recipe, with resolved parameters, on a voice that can carry the part,
 is not an absence: nothing is missing from the rig and nothing is missing from the library. What
 is missing is a *sentence in the recipe*, which is authoring metadata and belongs on the recipe —
 `sourceAudio` (§3). The test of whether something is a gap is whether a part failed to be made,
@@ -2148,6 +2186,56 @@ prefer a voice it cannot describe over one it can.
 
 No new `Score` key for any of this. Inserting into a lexicographic tuple silently reorders every
 key beneath it, which is exactly why §12.6 chose a flag on the request over a `Score` insertion.
+
+#### Shortfall kinds: what the absence means
+
+A reason is a fact about the search, and not yet an answer for somebody holding the page. The
+distance between the two is what #81 was filed about: an MC-101 handed eight parts of a finished
+techno track was told it had four holes — one a recipe we have not written, three of them garnish
+the direction never wanted. So every unfilled request carries a `kind` as well as a reason:
+
+| kind | what it means | whose fix |
+|---|---|---|
+| `rig-limit` | the rig cannot make this part — by role, by note count, or because something else won the voice | the reader's, by changing the rig or the arrangement |
+| `unauthored` | a voice here could carry it and nobody has written the recipe | **ours** (§3.5, #31), and it must never read as a limit of the reader's box |
+| `not-needed` | the direction declared it is still itself without this part (§4.4) | nobody's — the track is finished |
+
+```ts
+Shortfall =
+  | (Gap & { kind: 'rig-limit' })
+  | (Gap & { kind: 'unauthored' })
+  | (Gap & { kind: 'not-needed'; rationale: string })
+```
+
+`kind` is a pure function of `(gap, request)`. Nothing about the rig enters it that reads the
+other way round, so invariant 3 still holds: a template learns nothing about what a device can do.
+
+`rationale` is on the one variant whose account is **authored** rather than computed — §4.4's
+reason, carried through. The other two already carry mandatory `because`/`detail`/`roleVoices`,
+and "the song does not need this" is a claim only a person can make. It sits on the variant rather
+than being optional everywhere, the same discipline as `ResolvedParam.provenance` (invariant 4):
+a template cannot dismiss a part with a shrug.
+
+The rest of the mapping is minimal — `no-recipe` becomes `unauthored`, every other reason
+`rig-limit` — because those two kinds are the two halves of "whose fix", and `no-room` and
+`no-capable-voice` share that answer even though they do not share a sentence.
+
+**`not-needed` wins where more than one applies**, and that precedence is the answer rather than a
+shortcut. Where a direction says the song is complete without a pad, the reader's question is
+settled — nothing is missing — whatever the search then found about voices. It costs nothing,
+because the `Gap` fields survive underneath: a `not-needed` shortfall still records `no-recipe`
+for anyone counting the authoring backlog, and `no-capable-voice` for anyone counting what the rig
+cannot do. The visible consequence is that an inessential part a rig genuinely cannot make reads
+as *not needed* rather than as a limit, which is the honest reading of two true statements — the
+box cannot, and it does not have to.
+
+**§8 renders the three under three headings**, never one list: `Gaps` ("This rig cannot make these
+parts"), `Waiting on us`, and `Not needed for this direction`. `Gaps` prints "None." when empty,
+because that is the one worth reassuring somebody about; the other two are simply absent, since an
+absent heading says the same thing in less space. The per-line sentence no longer names the state
+— the heading above has said it once for every line underneath — and neither does the `optional`
+tag, because §4.4 makes every optional request inessential, so it could only appear under a
+heading that has already said it.
 
 ### 7.4 Clock source
 
@@ -2778,7 +2866,7 @@ every key beneath it, which makes the lexicographic objective fragile to exactly
 late tuning §12.3 was written to eliminate; `distinct` is a local authoring statement, made by
 the person who knows whether two toms are meant to be two boxes. Semantics: requests sharing a
 role and carrying `distinct: true` may not be assigned to the same `deviceId`. If the rig cannot
-satisfy it, the surplus requests become ordinary gaps (§7.3) rather than being silently
+satisfy it, the surplus requests become ordinary shortfalls (§7.3) rather than being silently
 collapsed. Default is `false`, so templates that do not care are unaffected.
 
 ### Still open

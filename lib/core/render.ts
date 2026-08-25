@@ -7,7 +7,7 @@ import { dominantRangeCite, hoistedParams, sameCite } from './params'
 import type { Pattern, PatternHit } from './template'
 import { STEPS_PER_BAR } from './template'
 import type { BoundArticulation, ResolvedPatchEntry, ResolvedSourceAudio } from './resolver'
-import type { Gap } from './search'
+import { shortfallsOfKind, type Gap, type Shortfall } from './search'
 import {
   chordVoicings,
   enharmonicAlternative,
@@ -400,7 +400,15 @@ function polyphonyShortfall(notes: number, roleVoices: Gap['capable']): string {
   return `needs ${count(notes, 'note')} at once and ${short}`
 }
 
-/** §7.3. Said in words, because a reason code is not an answer to "why is there no kick". */
+/**
+ * §7.3. Said in words, because a reason code is not an answer to "why is there no kick".
+ *
+ * The `not-needed` kind has no branch here and cannot reach this function: its account is the
+ * template's authored sentence, printed under its own heading. The `unauthored` line no longer
+ * carries "capable but unauthored" either — the heading above it says that once, for every line
+ * under it, and repeating the state in each line is how #123 collapsed three states back into
+ * one word.
+ */
 function gapText(gap: Gap, deviceById: Map<DeviceId, Device>): string {
   if (gap.reason === 'no-room') return `no room (${gap.because}) — ${gap.detail}`
   if (gap.reason === 'no-capable-voice') {
@@ -411,15 +419,14 @@ function gapText(gap: Gap, deviceById: Map<DeviceId, Device>): string {
   }
   // §3.5's `unvoiced`, which is fixed by authoring a recipe rather than by buying a box — so
   // the assignables that *could* have carried it are the useful half of the answer.
-  const capable = capableText(gap.capable, deviceById)
-  return `capable but unauthored — ${capable} could carry it, dial it by ear`
+  return `${capableText(gap.capable, deviceById)} could carry it, dial it by ear`
 }
 
 function phaseVoiceAssignment(result: ResolveResult, deviceById: Map<DeviceId, Device>): Line[] {
   const out: Line[] = []
 
   if (result.assignments.length === 0) {
-    out.push('No parts assigned. Every one is listed below.')
+    out.push('No parts assigned. Every part this direction asks for is accounted for below.')
   } else {
     // Per part, not a five-column table. This is read on a phone at arm's length beside a box:
     // a table that needs horizontal scrolling hides the column you were reading, while a bullet
@@ -440,23 +447,60 @@ function phaseVoiceAssignment(result: ResolveResult, deviceById: Map<DeviceId, D
   }
 
   out.push('')
+  // §7.3/#81. Three headings, because the three kinds are three different things to do about
+  // them — and a reader who has to work out which of the three a line is talking about has been
+  // told the thing the old single list was hiding.
   out.push('### Gaps')
   out.push('')
-  if (result.gaps.length === 0) {
+  const limits = shortfallsOfKind(result.shortfalls, 'rig-limit')
+  if (limits.length === 0) {
     out.push('None.')
-    return out
+  } else {
+    // Invariant 5: shown, never filled by inventing an assignment.
+    out.push('This rig cannot make these parts. They are not in the guide below.')
+    out.push('')
+    for (const gap of limits) out.push(shortfallLine(gap, gapText(gap, deviceById)))
   }
-  // Invariant 5: shown, never filled by inventing an assignment.
-  out.push('These parts are not in the guide below.')
-  out.push('')
-  for (const gap of result.gaps) {
-    const optional = gap.optional ? ' *(optional)*' : ''
+
+  // Both sections below are omitted when empty rather than printing "None." three times: an
+  // absent heading says the same thing in less space, and only `Gaps` is worth reassuring
+  // somebody about.
+  const unauthored = shortfallsOfKind(result.shortfalls, 'unauthored')
+  if (unauthored.length > 0) {
+    out.push('')
+    out.push('### Waiting on us')
+    out.push('')
     out.push(
-      `- \`${gap.role}\` \`${gap.character}\` (p${num(gap.priority)})${optional} — ` +
-        `${gapText(gap, deviceById)}`,
+      'Your rig can make these. Nobody has written the recipe yet, so they are not in the ' +
+        'guide below — that is our backlog, not a limit of your boxes.',
     )
+    out.push('')
+    for (const gap of unauthored) out.push(shortfallLine(gap, gapText(gap, deviceById)))
+  }
+
+  const notNeeded = shortfallsOfKind(result.shortfalls, 'not-needed')
+  if (notNeeded.length > 0) {
+    out.push('')
+    out.push('### Not needed for this direction')
+    out.push('')
+    out.push(`${result.template.name} is finished without these.`)
+    out.push('')
+    for (const gap of notNeeded) out.push(shortfallLine(gap, gap.rationale))
   }
   return out
+}
+
+/**
+ * One line per unfilled request, identical in all three sections: same five facts in the same
+ * order, so the difference between the sections is the heading and the sentence and nothing
+ * else. `optional` is not printed — every optional request is `inessential` by §4.4, so the tag
+ * could only ever appear under a heading that has already said it.
+ */
+function shortfallLine(shortfall: Shortfall, sentence: string): string {
+  return (
+    `- \`${shortfall.role}\` \`${shortfall.character}\` ` +
+    `(p${num(shortfall.priority)}) — ${sentence}`
+  )
 }
 
 // ---------------------------------------------------------------------------

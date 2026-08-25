@@ -382,7 +382,7 @@ describe('industrial-techno resolves (§7)', () => {
       capped: result.search.capped,
       filled: result.assignments.map((a) => a.requestId).sort(),
       gaps: Object.fromEntries(
-        result.gaps
+        result.shortfalls
           .map((g) => [g.requestId, g.reason === 'no-room' ? `no-room/${g.because}` : g.reason])
           .sort(([a], [b]) => ((a as string) < (b as string) ? -1 : 1)),
       ),
@@ -456,7 +456,7 @@ describe('industrial-techno resolves (§7)', () => {
       mood: moodState(),
       seed: 7,
     })
-    for (const gap of result.gaps) {
+    for (const gap of result.shortfalls) {
       if (gap.reason === 'no-capable-voice') expect(gap.capable).toEqual([])
       else expect(gap.capable.length, `${gap.requestId} names nothing capable`).toBeGreaterThan(0)
     }

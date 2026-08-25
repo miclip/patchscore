@@ -668,17 +668,54 @@ describe('gaps (invariant 5, §7.3)', () => {
   const result = golden()
   const doc = renderGuide(result)
 
-  it('lists every gap with a reason, and never as an assignment', () => {
+  it('lists every unfilled request, and never as an assignment', () => {
     const body = phaseBody(doc, 2).join('\n')
-    expect(result.gaps.length).toBeGreaterThan(0)
-    for (const gap of result.gaps) expect(body).toContain(`\`${gap.role}\``)
-    expect(body).toContain('These parts are not in the guide below.')
+    expect(result.shortfalls.length).toBeGreaterThan(0)
+    for (const gap of result.shortfalls) expect(body).toContain(`\`${gap.role}\``)
+  })
+
+  /**
+   * #81. The fixture reaches all three, which is why it is the one asserted here: a rig limit
+   * (`tom`, contended), an unwritten recipe (`snare`) and two parts the direction declared it is
+   * finished without (`acid`, `texture`).
+   *
+   * Asserted as three sections rather than three sentences, because the defect was never a
+   * missing word — it was one heading over three unrelated situations, so a reader of a line
+   * could not tell whose problem it was. The heading is what carries that, and each line says
+   * only the specific thing.
+   */
+  it('separates the three things an absence can mean, under three headings (§7.3)', () => {
+    const body = phaseBody(doc, 2).join('\n')
+    const section = (heading: string) =>
+      body.split(`### ${heading}`)[1]?.split('\n### ')[0] ?? ''
+
+    expect(section('Gaps')).toContain('This rig cannot make these parts')
+    expect(section('Gaps')).toContain('`tom`')
+    // The backlog section says whose job it is, and never that the box fell short.
+    expect(section('Waiting on us')).toContain('our backlog, not a limit of your boxes')
+    expect(section('Waiting on us')).toContain('`snare`')
+    expect(section('Waiting on us')).not.toContain('cannot')
+    // Not a hole: the direction's own sentence, not a diagnosis of the rig.
+    expect(section('Not needed for this direction')).toContain('Golden Techno is finished without')
+    expect(section('Not needed for this direction')).toContain('texture here is a bonus')
+
+    // And no line appears under two headings, which is the collapse this replaced.
+    for (const role of ['tom', 'snare', 'texture']) {
+      const headings = ['Gaps', 'Waiting on us', 'Not needed for this direction'].filter((h) =>
+        section(h).includes(`\`${role}\``),
+      )
+      expect(headings, `${role} is in ${headings.length} sections`).toHaveLength(1)
+    }
   })
 
   it('distinguishes "buy a box" from "author a recipe"', () => {
     const body = phaseBody(doc, 2).join('\n')
-    expect(body).toContain('nothing in your rig plays this part')
-    expect(body).toContain('capable but unauthored')
+    // The `no-such-role` sentence needs a rig-limit gap of its own, and this fixture's is
+    // `acid` — which the direction excuses, so the sentence is asserted where it is said.
+    expect(body).toContain('the Golden Drum LT is carrying tom')
+    expect(body).toContain('could carry it, dial it by ear')
+    // "capable but unauthored" is gone from the line: the heading above it says that once.
+    expect(body).not.toContain('capable but unauthored')
   })
 
   it('reports a band fallback rather than letting the density knob look broken (§6.3)', () => {

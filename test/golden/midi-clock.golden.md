@@ -51,11 +51,20 @@ glance whether the screen in front of you is the one the line is about.
 
 ### Gaps
 
-These parts are not in the guide below.
+None.
 
-- `metallic` `dark` (p3) — capable but unauthored — Tracker Mini (16 voices), TR-1000 RS/CC/RC could carry it, dial it by ear
-- `riser` `bright` (p4) — capable but unauthored — Tracker Mini (16 voices) could carry it, dial it by ear
-- `noise` `dirty` (p5) *(optional)* — capable but unauthored — Tracker Mini (16 voices), TR-1000 OH/CC could carry it, dial it by ear
+### Waiting on us
+
+Your rig can make these. Nobody has written the recipe yet, so they are not in the guide below — that is our backlog, not a limit of your boxes.
+
+- `metallic` `dark` (p3) — Tracker Mini (16 voices), TR-1000 RS/CC/RC could carry it, dial it by ear
+
+### Not needed for this direction
+
+Industrial Techno is finished without these.
+
+- `riser` `bright` (p4) — a part already playing can lift the eight bars into a drop
+- `noise` `dirty` (p5) — grit is a bonus, and the drums already bring some
 
 ## 3. Rig integration
 

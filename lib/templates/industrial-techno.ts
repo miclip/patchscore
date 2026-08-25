@@ -389,6 +389,11 @@ export const industrialTechno: Template = {
 
     // §12.4: a minimum note count, not a device name. A rig that cannot voice three notes at
     // once gets an honest gap here rather than a pad that is secretly monophonic.
+    //
+    // §4.4/#81: and it is not a gap worth reporting as one. Eight parts of this list is a
+    // finished techno track — the pad is depth on top of it, wanted where there is a voice
+    // going spare and never missed where there is not. Still not `optional`: where a rig can
+    // carry it the search should spend a voice on it rather than treat it as a bonus.
     {
       id: 'r-pad',
       role: 'pad',
@@ -396,9 +401,12 @@ export const industrialTechno: Template = {
       character: 'dark',
       sustain: 'continuous',
       polyphony: 3,
+      inessential: { reason: 'the hats and the room carry the air here; a held pad is extra' },
     },
 
     // §4.2. Transitional: four bars of lift, not a voice owned for the whole track.
+    // §4.4: and a transition can be played by a part that is already sounding, so a rig without
+    // a spare voice for one is not short of anything.
     {
       id: 'r-riser',
       role: 'riser',
@@ -406,6 +414,7 @@ export const industrialTechno: Template = {
       character: 'bright',
       sustain: 'transient',
       sections: ['Build', 'Breakdown'],
+      inessential: { reason: 'a part already playing can lift the eight bars into a drop' },
     },
     {
       id: 'r-impact',
@@ -417,7 +426,9 @@ export const industrialTechno: Template = {
     },
 
     // §4.4. `optional` removes this from the miss objective entirely: filled if it fits,
-    // dropped without complaint if the rig has nothing left.
+    // dropped without complaint if the rig has nothing left — which is why it also has to say
+    // the song is finished without it (#81). Both halves, because they are two claims: do not
+    // spend a voice on this, and do not tell a reader their rig is short one.
     {
       id: 'r-noise',
       role: 'noise',
@@ -425,6 +436,7 @@ export const industrialTechno: Template = {
       character: 'dirty',
       sustain: 'continuous',
       optional: true,
+      inessential: { reason: 'grit is a bonus, and the drums already bring some' },
     },
   ],
 

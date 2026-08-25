@@ -21,7 +21,7 @@ import {
   type ResolvedPatchEntry,
   type ResolvedSourceAudio,
 } from './resolver'
-import { assign, type Gap, type SearchReport } from './search'
+import { assign, type SearchReport, type Shortfall } from './search'
 import { chooseHook, chooseKey, type HookChoice } from './harmony'
 
 /**
@@ -368,14 +368,15 @@ export type ResolveResult = {
   /** §7 step 10. */
   song: ResolvedSong
   assignments: ResolvedAssignment[]
-  gaps: Gap[]
+  /** §7.3. Unfilled requests, each tagged with what its absence means (#81). */
+  shortfalls: Shortfall[]
   occupancy: Occupancy
   score: Score
   search: SearchReport
   /** `undefined` when nothing in the rig can send clock (§7.4). */
   clockSource: ClockSource | undefined
   /**
-   * §7 step 5's output for **every** request, including the ones that became gaps. Pattern
+   * §7 step 5's output for **every** request, including the ones that became shortfalls. Pattern
    * selection depends only on template + mood, so it is meaningful whether or not the rig
    * could carry the part — and "we had a band-2 kick and nothing to play it on" is a more
    * useful gap than "no kick".
@@ -475,7 +476,7 @@ export function resolve(input: ResolveInput): ResolveResult {
     devices,
     song: { bpm: template.bpm.default, key, keys: template.keys, hooks },
     assignments,
-    gaps: allocation.gaps,
+    shortfalls: allocation.shortfalls,
     occupancy: allocation.occupancy,
     score: allocation.score,
     search: allocation.search,

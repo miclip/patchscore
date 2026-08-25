@@ -214,7 +214,7 @@ describe('four voices are one assignable, not four (§12.4)', () => {
 
   it('carries a four-note part inside that one assignable', () => {
     const result = rig([ask({ id: 'r-pad', role: 'pad', polyphony: 4 })])
-    expect(result.gaps).toEqual([])
+    expect(result.shortfalls).toEqual([])
     expect(result.assignments).toHaveLength(1)
     const [pad] = result.assignments
     expect(pad?.notes).toBe(4)
@@ -236,7 +236,7 @@ describe('four voices are one assignable, not four (§12.4)', () => {
   it('calls a five-note part a `polyphony` gap, naming the voice that fell short', () => {
     const result = rig([ask({ id: 'r-pad', role: 'pad', polyphony: 5 })])
     expect(result.assignments).toEqual([])
-    const [gap] = result.gaps
+    const [gap] = result.shortfalls
     expect(gap?.reason).toBe('no-capable-voice')
     if (gap?.reason !== 'no-capable-voice') throw new Error('wrong gap')
     // Not `no-such-role`: the box plays pads, it plays four notes of one (§7.3).
@@ -257,8 +257,8 @@ describe('two parts cannot both have the voice', () => {
     ])
     expect(result.assignments).toHaveLength(1)
     expect(result.assignments[0]?.requestId).toBe('r-pad')
-    expect(result.gaps.map((g) => g.requestId)).toEqual(['r-stab', 'r-lead'])
-    for (const gap of result.gaps) {
+    expect(result.shortfalls.map((g) => g.requestId)).toEqual(['r-stab', 'r-lead'])
+    for (const gap of result.shortfalls) {
       expect(gap.reason).toBe('no-room')
       if (gap.reason !== 'no-room') throw new Error('wrong gap')
       // `contended`, not `crowding`: there is one voice and something else has it.

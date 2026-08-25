@@ -12,9 +12,10 @@ import { NEUTRAL_MOOD, resolve } from '@/lib/core'
  * distance, §12.4 polyphony and §12.6 distinctness, and a list of role names can see none of
  * those: a rig of monophonic tracks declares `pad` and still cannot play one.
  *
- * The counts are two, kept apart. A template's optional requests are filled if they fit and
- * dropped if they do not (§4.4), so one fraction over every request understates a box that
- * covers everything a direction actually needs.
+ * The counts are two, kept apart. A direction declares which of its requests it can be itself
+ * without (§4.4), so one fraction over every request understates a box that covers everything
+ * the direction actually needs — which was #81's complaint about this table: a groovebox that
+ * makes a finished techno track read as 8/12.
  */
 export type Coverage = {
   deviceId: string
@@ -23,9 +24,14 @@ export type Coverage = {
   requests: number
   /** Requests this box was assigned. */
   covered: number
-  /** Requests that are not optional. */
-  required: number
-  requiredCovered: number
+  /**
+   * Requests the direction cannot be itself without — everything without an `inessential`
+   * declaration (§4.4). Not the same set as "not `optional`", and the name says which: `optional`
+   * is the objective's word for a request the search need not spend a voice on, and #81 is what
+   * happens when one word answers both questions.
+   */
+  essential: number
+  essentialCovered: number
   /** The roles it carried, in template request order. */
   roles: readonly Role[]
 }
@@ -39,15 +45,15 @@ export const COVERAGE_SEED = 1
 
 export function coverage(device: Device, template: Template): Coverage {
   const result = resolve({ devices: [device], template, mood: NEUTRAL_MOOD, seed: COVERAGE_SEED })
-  const required = template.roles.filter((request) => request.optional !== true)
+  const essential = template.roles.filter((request) => request.inessential === undefined)
   const filled = new Set(result.assignments.map((a) => a.requestId))
   return {
     deviceId: device.id,
     templateId: template.id,
     requests: template.roles.length,
     covered: result.assignments.length,
-    required: required.length,
-    requiredCovered: required.filter((request) => filled.has(request.id)).length,
+    essential: essential.length,
+    essentialCovered: essential.filter((request) => filled.has(request.id)).length,
     roles: template.roles.filter((request) => filled.has(request.id)).map((r) => r.role),
   }
 }

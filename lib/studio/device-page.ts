@@ -83,8 +83,8 @@ export type DirectionFit = {
   href: string
   requests: number
   covered: number
-  required: number
-  requiredCovered: number
+  essential: number
+  essentialCovered: number
   /** The roles this box carried, in template request order. */
   roles: readonly Role[]
 }
@@ -178,8 +178,8 @@ export function directionFit(device: Device, template: Template): DirectionFit {
     href: templateHref(template),
     requests: cover.requests,
     covered: cover.covered,
-    required: cover.required,
-    requiredCovered: cover.requiredCovered,
+    essential: cover.essential,
+    essentialCovered: cover.essentialCovered,
     roles: cover.roles,
   }
 }

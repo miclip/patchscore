@@ -74,7 +74,7 @@ function report(template: Template, devices: readonly Device[], seed = 7) {
   return {
     filled: result.assignments.map((a) => a.requestId).sort(),
     gaps: Object.fromEntries(
-      result.gaps
+      result.shortfalls
         .map((g) => [g.requestId, g.reason === 'no-room' ? `no-room/${g.because}` : g.reason])
         .sort(([a], [b]) => ((a as string) < (b as string) ? -1 : 1)),
     ),
@@ -419,7 +419,7 @@ describe('both directions finish on one box', () => {
     const result = resolve({ devices: [box('behringer-crave')], template: relay, mood: NEUTRAL, seed: 7 })
     const bass = result.assignments.find((a) => a.requestId === 'r-bass-mid')
     expect(bass?.recipe?.character).toBe('dirty')
-    expect(result.gaps).toEqual([])
+    expect(result.shortfalls).toEqual([])
     // And it is genuinely a substitution rather than a miss: three of the four author it exactly.
     const exact = ONE_BOX_RIGS.filter((id) =>
       box(id).recipes.some((r) => r.role === 'bass-mid' && r.character === 'dark'),
@@ -489,8 +489,8 @@ describe('the /directions page for each', () => {
     for (const template of [droneStudy, relay]) {
       const fits = rigFits(template)
       expect(fits).toHaveLength(DEVICES.length)
-      const complete = fits.filter((f) => f.requiredCovered === template.roles.length)
-      const none = fits.filter((f) => f.requiredCovered === 0)
+      const complete = fits.filter((f) => f.essentialCovered === f.essential)
+      const none = fits.filter((f) => f.essentialCovered === 0)
       expect(complete.length, `${template.id} complete`).toBeGreaterThanOrEqual(ONE_BOX_RIGS.length)
       expect(none.length, `${template.id} covers nothing`).toBeGreaterThan(0)
       expect(complete.length + none.length, `${template.id}`).toBeLessThanOrEqual(DEVICES.length)

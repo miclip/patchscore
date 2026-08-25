@@ -63,12 +63,42 @@ describe('RoleRequest (§4)', () => {
   })
 
   it('carries optional and distinct as plain booleans, defaulting to absent (§4.4, §12.6)', () => {
-    expect(RoleRequestSchema.safeParse(request({ optional: true })).success).toBe(true)
+    const excused = { reason: 'the fixture is still the fixture without it' }
+    expect(RoleRequestSchema.safeParse(request({ optional: true, inessential: excused })).success).toBe(
+      true,
+    )
     expect(RoleRequestSchema.safeParse(request({ distinct: true })).success).toBe(true)
     expect(RoleRequestSchema.safeParse(request({ distinct: 'yes' as never })).success).toBe(false)
     const parsed = RoleRequestSchema.parse(request())
     expect(parsed.optional).toBeUndefined()
     expect(parsed.distinct).toBeUndefined()
+    expect(parsed.inessential).toBeUndefined()
+  })
+
+  /**
+   * §4.4/#81. The two are one implication, not one field: `optional` says the search need not
+   * spend a voice, `inessential` says the reader is not short of anything. A request may make
+   * the second claim alone — try hard, but do not report the absence as a hole — and may not
+   * make the first without it, because "dropped without complaint" already asserts it.
+   */
+  it('requires an optional request to say the direction can do without it, with a reason (§4.4)', () => {
+    expect(RoleRequestSchema.safeParse(request({ optional: true })).success).toBe(false)
+    expect(
+      RoleRequestSchema.safeParse(request({ optional: true, inessential: { reason: '' } })).success,
+    ).toBe(false)
+    expect(
+      RoleRequestSchema.safeParse(request({ optional: true, inessential: { reason: 'garnish' } }))
+        .success,
+    ).toBe(true)
+    // The other direction is legal and is the interesting half: essential to nobody, still
+    // worth a voice if the rig has one going spare.
+    expect(RoleRequestSchema.safeParse(request({ inessential: { reason: 'garnish' } })).success).toBe(
+      true,
+    )
+    // A bare flag would be an author shrugging in a field that reads like a musical judgement.
+    expect(
+      RoleRequestSchema.safeParse(request({ inessential: true as never })).success,
+    ).toBe(false)
   })
 
   it('makes a transient request name its sections and a continuous one not (§4.2)', () => {

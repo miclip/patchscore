@@ -188,7 +188,7 @@ describe('pipeline ordering (§7)', () => {
       patterns: [kickPattern(), kickPattern({ id: 'p-pad-b2', forRole: 'pad' })],
     })
     const result = run({ template: t })
-    expect(result.gaps.map((g) => g.requestId)).toEqual(['r-pad'])
+    expect(result.shortfalls.map((g) => g.requestId)).toEqual(['r-pad'])
     // ...and the pad still has its rhythm selected, so the gap can say what was lost.
     // Build is energy 0.5, so band 2 is the band asked for and the fixture's variant is exact.
     expect(result.patterns.get('r-pad')?.get('Build')).toMatchObject({
@@ -207,7 +207,7 @@ describe('pipeline ordering (§7)', () => {
     const shape = (r: ResolveResult) =>
       JSON.stringify([...r.patterns].map(([id, m]) => [id, [...m].map(([s, sel]) => [s, sel])]))
     // Different rigs, different assignment outcomes, identical rhythms.
-    expect(onDrum.gaps).not.toEqual(onTracker.gaps)
+    expect(onDrum.shortfalls).not.toEqual(onTracker.shortfalls)
     expect(shape(onDrum)).toBe(shape(onTracker))
   })
 
@@ -258,7 +258,7 @@ describe('pipeline ordering (§7)', () => {
     const shape = (r: ResolveResult) =>
       JSON.stringify({
         assignments: r.assignments,
-        gaps: r.gaps,
+        gaps: r.shortfalls,
         score: r.score,
         clockSource: r.clockSource,
       })
@@ -440,7 +440,7 @@ describe('gaps reach the result (§7.3)', () => {
       ],
     })
     const result = run({ template: t })
-    const byId = new Map(result.gaps.map((g) => [g.requestId, g]))
+    const byId = new Map(result.shortfalls.map((g) => [g.requestId, g]))
     expect(byId.get('r-acid')?.reason).toBe('no-capable-voice')
     expect(byId.get('r-tom')?.reason).toBe('no-recipe')
     expect(byId.get('r-tom')?.capable.map((c) => c.voiceId)).toEqual(['lt'])
