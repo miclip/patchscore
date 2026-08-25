@@ -826,6 +826,77 @@ const SAMPLE_RECIPES: Recipe[] = [
    * It stays a substitute and says so. The chord transposes, so it follows the progression; it
    * cannot re-voice or invert, so every occurrence is the shape that was recorded.
    */
+  /**
+   * §12.4/#40. **The played stab, and the twin that makes the choice a choice.**
+   *
+   * `tm-stab-hard-chord` immediately below is the same part on the same voice and asks a
+   * different thing of it: one note, with the chord already inside the sample. This one asks for
+   * the chord to be *played* — which on a box whose every track sounds one note (p.103) means
+   * three tracks with one note each, the method that page prescribes and the one the resolver
+   * now builds. So the pair is the sampled and the stacked realisation of one hard stab, and
+   * §7.1 chooses between them on stated grounds instead of on which one happens to exist.
+   *
+   * **It is a sample recipe and not a synth one, and that is the load-bearing part.** A stack of
+   * three needs three voices, and three voices running a synth patch would look like three of
+   * the project's three synth slots (p.32, p.146) — which would make a stacked stab and a
+   * stacked pad mutually exclusive on this box. Two things settle it, and only the first is
+   * about this recipe. The manual's own chord figure on p.103 puts `C5 02`, `E5 02` and `G5 02`
+   * on Tracks 1, 2 and 3 — *the same instrument number on all three* — so a stack is one
+   * instrument played from several tracks and costs one slot however wide it is. And this recipe
+   * costs none at all, because a sample instrument is not a synth. The stack does not need an
+   * engine; it needs something that plays a note.
+   *
+   * **What it needs is a sample of one note, and that is a weaker requirement than the chord
+   * sample's, not a stronger one.** p.128: the step's note sets the playback pitch. So one
+   * single-pitch tonal sample, placed on three tracks at three notes, sounds the actual chord —
+   * every quality, every inversion, every voicing the hook writes, with nothing recorded per
+   * shape. The chord sample can only transpose what was recorded. That is the whole of why
+   * §7.1 prefers the stack, and it is visible here as one field: `sourceAudio.need` asks for a
+   * note where its twin asks for a chord per shape.
+   *
+   * `PLAY MODE` is `1-Shot` and the envelope is the stab — attack at the floor, no sustain — for
+   * the reason its twin gives: a stab is struck and gone. `TUNE` stays at 0 because the pitch is
+   * the step's business here, and moving the sample under it would put the three tracks' notes
+   * somewhere other than where the Hook phase says they are.
+   */
+  {
+    id: 'tm-stab-hard-note',
+    role: 'stab',
+    character: 'hard',
+    voice: 'track-sample',
+    title: 'Single-note sample struck short, one note per track',
+    sourceAudio: {
+      need:
+        'A single-note tonal sample — one pitch, with a front edge. Yours, or one note rendered ' +
+        'here; it does not need to be a chord and should not be one',
+      prep: {
+        text:
+          'One sample covers the whole chord: manual p.128, the step note sets the playback ' +
+          'pitch, so the same instrument placed on three tracks at three notes sounds three ' +
+          'notes. Load it on each track of the stack and put the notes the Hook phase lists ' +
+          'against each one. Nothing has to be re-recorded when the chord changes quality, ' +
+          'which is the difference between this and a rendered chord.',
+        verified: cite(128),
+      },
+    },
+    params: [
+      pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
+      pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
+      num('CUTOFF', 66, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -22 }] }),
+      num('RESONANCE', 30, PCT, 117, { unit: '%', mood: [{ axis: 'grit', amount: 16 }] }),
+      num('TUNE', 0, SEMITONES_24, 116, { unit: 'St' }),
+      secs('ENV ATTACK', 0, SECONDS_10, 126),
+      secs('ENV DECAY', 0.3, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.1 }] }),
+      num('ENV SUSTAIN', 0, PCT, 126, { unit: '%' }),
+      secs('ENV RELEASE', 0.2, SECONDS_10, 126),
+      num('OVERDRIVE', 16, PCT, 120, { unit: '%', mood: [{ axis: 'grit', amount: 20 }] }),
+      swing(),
+    ],
+    articulation: [{ slot: 'accent', set: { volume: 118 } }],
+    routing:
+      'Tracks 1-8 — costs no synth slot, and one loaded sample serves every track of the stack',
+    verified: false,
+  },
   {
     id: 'tm-stab-hard-chord',
     role: 'stab',

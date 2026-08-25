@@ -8,11 +8,14 @@ import type { RoleRequest, Template } from './template'
 import {
   assignableKey,
   canCarryNotes,
+  canStackNotes,
   compareCodeUnits,
   expand,
+  poolWidth,
   resolveCharacter,
   resolveRecipe,
   sectionsFor,
+  stackRecipes,
   type MoodState,
 } from './resolver'
 // §7.2's one seeded stream, shared with §4.1's hook and key choice. See `seed.ts`.
@@ -47,14 +50,26 @@ export type Assignment = {
   role: Role
   /** The character asked for, after §6.2 resolved the template pinning against mood. */
   character: Character
-  assignable: Assignable
+  /**
+   * §4.2/§12.4/#40. **The voices carrying this part, and there may be more than one.** One for
+   * every part that fits on a single voice; `polyphony` of them, all from one pool on one device,
+   * for a chord stacked one note per voice.
+   *
+   * Plural rather than one-plus-an-optional-rest, and that is the point of the shape: a renderer
+   * that reads `assignables[0]` and stops has written a bug a reviewer can see, where one reading
+   * `assignable` and ignoring a `stackedWith` beside it would have printed one track of three and
+   * looked complete. Never empty, and in the canonical order the reader should enter them in —
+   * lowest note to the lowest voice.
+   */
+  assignables: readonly Assignable[]
+  /** Every member of `assignables` is on this device: a stack never spans two boxes (§12.4). */
   deviceId: DeviceId
   recipe: Recipe
   /** Never 'unvoiced' — an unvoiced request is a gap, not an assignment. */
   outcome: 'exact' | 'substituted'
   /** The character actually authored, which for 'substituted' is not the one asked for. */
   recipeCharacter: Character
-  /** The sections this request occupies on this assignable (§4.2). */
+  /** The sections this request occupies on each of `assignables` (§4.2). */
   sections: SectionName[]
 }
 
@@ -245,6 +260,16 @@ export type AssignmentResult = {
  * 86,722. A device that can serve many roles adds branching at every level of the search, so
  * sizing the bound against how many boxes are in `lib/devices/` would size it against the wrong
  * variable.
+ *
+ * **Re-measured at #40, and the headroom is down to 18%.** A sweep of 24 seeds x every template
+ * on the full rig tops out at **110,288** nodes before stacking and **127,125** after it, both on
+ * `industrial-techno` seed 18 — so multi-assignable stacking costs about 15%, and the library
+ * having grown since the figures above costs a great deal more. The cap is deliberately *not*
+ * raised again here: #78 is the issue arguing that raising it treats the symptom, it has been
+ * right twice, and a third raise on the back of a feature commit is exactly how a stopgap becomes
+ * the design. What the number means practically is that the next device of any size may push a
+ * worst-case seed into the greedy fallback — which `SearchReport` reports rather than hides, and
+ * which is the signal #78 should be picked up on.
  */
 export const DEFAULT_NODE_CAP = 150_000
 
@@ -284,21 +309,62 @@ export function quantiseDistance(distanceSq: number): number {
 // Precomputation
 // ---------------------------------------------------------------------------
 
-type Candidate = {
-  assignable: Assignable
-  key: AssignableKey
-  recipe: Recipe
-  outcome: 'exact' | 'substituted'
-  recipeCharacter: Character
-  distance: number
+/**
+ * §7.1. The four keys a candidate contributes that are properties of the *candidate* rather than
+ * of where the rest of the assignment landed, in `Score` order. Shared by `Candidate` and
+ * `StackPlan` so the suffix bound can take a lexicographic minimum over both without either
+ * having to be materialised into the other.
+ */
+type Cost = {
   /**
    * §12.4. 1 when a request needing more than one note is being filled from a chord sample
    * rather than a real polyphonic voice. A one-note request is never charged: the recipe's
    * realisation makes no difference to it, and `scoreRecipes` does not rank on it there either.
    */
   sampledChord: number
+  /**
+   * §12.4/#40. 1 when the notes are spread across several voices of one pool rather than sounded
+   * by one voice. Ranked below `sampledChord` — see `Score.stackedChords` for why that way round.
+   */
+  stacked: number
+  distance: number
   /** §7.1: the role's index within `voice.roles`. An authoring hint, ranked accordingly. */
   roleFit: number
+}
+
+type Candidate = Cost & {
+  /**
+   * The voices this candidate occupies, in canonical order. One for an ordinary candidate,
+   * `notes` for a stack (§12.4/#40) — and never empty.
+   */
+  assignables: readonly Assignable[]
+  keys: readonly AssignableKey[]
+  /** Shared by every member: a stack is one pool on one device. */
+  deviceId: DeviceId
+  recipe: Recipe
+  outcome: 'exact' | 'substituted'
+  recipeCharacter: Character
+}
+
+/**
+ * §12.4/#40. A stack, before it knows *which* members it gets.
+ *
+ * Everything the objective charges a stack for is a property of the `(device, pool, role,
+ * character)` it belongs to and not of the ordinals it ends up on — recipes key on `poolId`
+ * (§2.2), and so therefore do `distance`, `outcome` and `roleFit`. So the plan is precomputed
+ * once per request per pool exactly like a single candidate, and only the member list is chosen
+ * at the node, where occupancy is known. See `materialiseStacks`.
+ */
+type StackPlan = Cost & {
+  deviceId: DeviceId
+  poolId: string
+  /** Every member of the pool, in `comparePoolMembers` order. */
+  members: readonly Assignable[]
+  /** Simultaneous notes the request asked for, which is how many members a stack takes. */
+  width: number
+  recipe: Recipe
+  outcome: 'exact' | 'substituted'
+  recipeCharacter: Character
 }
 
 type Ctx = {
@@ -325,6 +391,15 @@ type Ctx = {
   capable: Assignable[][]
   /** Capable, and with a usable recipe. The candidate pool before occupancy and `distinct`. */
   voiceable: Candidate[][]
+  /**
+   * §12.4/#40. Stack plans per request — one per `(device, pool)` that can spread this request's
+   * notes across its members. Empty for every one-note request, and for every pool whose own
+   * polyphony already covers the count (`canStackNotes` refuses that as strictly dominated).
+   *
+   * Kept apart from `voiceable` rather than folded into it because a plan is not yet a candidate:
+   * which members it gets depends on occupancy, so it is materialised per node.
+   */
+  stacks: StackPlan[][]
   /** Devices a request could legally occupy, ignoring occupancy — for the idle lower bound. */
   suffixReach: Set<DeviceId>[]
   /**
@@ -351,6 +426,7 @@ type SuffixFloor = {
   misses: readonly number[]
   optionalMisses: number
   sampledChords: number
+  stackedChords: number
   recipeDistance: number
   roleFitPenalty: number
 }
@@ -372,8 +448,8 @@ type SuffixFloor = {
  * `misses` (or `optionalMisses`), and both of those outrank every key a candidate can charge.
  * So the choice is only ever "the best candidate, or a forced miss when there are none".
  */
-function cheapestCandidate(candidates: readonly Candidate[]): Candidate | undefined {
-  let best: Candidate | undefined
+function cheapestCandidate(candidates: readonly Cost[]): Cost | undefined {
+  let best: Cost | undefined
   for (const candidate of candidates) {
     if (best === undefined) {
       best = candidate
@@ -381,6 +457,10 @@ function cheapestCandidate(candidates: readonly Candidate[]): Candidate | undefi
     }
     if (candidate.sampledChord !== best.sampledChord) {
       if (candidate.sampledChord < best.sampledChord) best = candidate
+      continue
+    }
+    if (candidate.stacked !== best.stacked) {
+      if (candidate.stacked < best.stacked) best = candidate
       continue
     }
     if (candidate.distance !== best.distance) {
@@ -395,6 +475,7 @@ function cheapestCandidate(candidates: readonly Candidate[]): Candidate | undefi
 function buildSuffixFloor(
   requests: readonly RoleRequest[],
   voiceable: readonly Candidate[][],
+  stacks: readonly StackPlan[][],
   missSlots: number,
 ): SuffixFloor[] {
   const floors: SuffixFloor[] = new Array(requests.length + 1)
@@ -402,6 +483,7 @@ function buildSuffixFloor(
     misses: new Array<number>(missSlots).fill(0),
     optionalMisses: 0,
     sampledChords: 0,
+    stackedChords: 0,
     recipeDistance: 0,
     roleFitPenalty: 0,
   }
@@ -411,10 +493,14 @@ function buildSuffixFloor(
     const misses = [...ahead.misses]
     let optionalMisses = ahead.optionalMisses
     let sampledChords = ahead.sampledChords
+    let stackedChords = ahead.stackedChords
     let recipeDistance = ahead.recipeDistance
     let roleFitPenalty = ahead.roleFitPenalty
 
-    const best = cheapestCandidate(voiceable[i] ?? [])
+    // Stack plans enter the floor alongside the singles, costed as though every member were
+    // free. That is the same relaxation the rest of this bound makes — occupancy dropped, so a
+    // request's option set can only widen and its minimum can only fall.
+    const best = cheapestCandidate([...(voiceable[i] ?? []), ...(stacks[i] ?? [])])
     if (best === undefined) {
       // No candidate before occupancy is no candidate after it: `orderedCandidates` only ever
       // filters this list down. The miss is forced, so the bound may charge for it outright —
@@ -423,10 +509,18 @@ function buildSuffixFloor(
       else misses[request.priority - 1] = (misses[request.priority - 1] ?? 0) + 1
     } else {
       sampledChords += best.sampledChord
+      stackedChords += best.stacked
       recipeDistance += best.distance
       roleFitPenalty += best.roleFit
     }
-    floors[i] = { misses, optionalMisses, sampledChords, recipeDistance, roleFitPenalty }
+    floors[i] = {
+      misses,
+      optionalMisses,
+      sampledChords,
+      stackedChords,
+      recipeDistance,
+      roleFitPenalty,
+    }
   }
   return floors
 }
@@ -439,6 +533,11 @@ function buildCtx(input: AssignInput): Ctx {
   const assignables: Assignable[] = []
   const comfortable = new Map<DeviceId, number>()
   const deviceIds: DeviceId[] = []
+  // §12.4/#40. Pool members, grouped by the pool they belong to, for stack planning below.
+  // Insertion order is device order then the order `expand` emits pools in, so iterating this is
+  // as deterministic as iterating `assignables` (§7.2) — and the members inside each group are
+  // sorted into canonical order once, here, rather than at every node.
+  const poolMembers = new Map<string, Assignable[]>()
   for (const device of devices) {
     deviceById.set(device.id, device)
     const expanded = expand(device)
@@ -448,8 +547,15 @@ function buildCtx(input: AssignInput): Ctx {
     for (const assignable of expanded) {
       assignables.push(assignable)
       assignableOwner.set(assignableKey(assignable), device)
+      const poolId = assignable.poolId
+      if (poolId === undefined) continue
+      const group = poolGroupKey(assignable, poolId)
+      const members = poolMembers.get(group)
+      if (members === undefined) poolMembers.set(group, [assignable])
+      else members.push(assignable)
     }
   }
+  for (const members of poolMembers.values()) members.sort(comparePoolMembers)
 
   // §4.4: ascending priority, most important first. Ties by request id in UTF-16 order (§7.2),
   // so the traversal does not depend on authoring order within one priority level.
@@ -462,6 +568,7 @@ function buildCtx(input: AssignInput): Ctx {
   const roleOnly: Assignable[][] = []
   const capable: Assignable[][] = []
   const voiceable: Candidate[][] = []
+  const stacks: StackPlan[][] = []
   const reach: Set<DeviceId>[] = []
 
   for (const request of requests) {
@@ -476,10 +583,17 @@ function buildCtx(input: AssignInput): Ctx {
     const notes = request.polyphony ?? 1
     const plays = assignables.filter((a) => a.roles.includes(request.role))
     roleOnly.push(plays)
+    // §12.4/#40: capability now has a second route as well as a second question. A pool member
+    // that cannot sound a triad alone is capable if `notes` of its siblings can share it out —
+    // so a rig of monophonic tracks is no longer told it cannot play a pad, and the gap it does
+    // produce is about the recipe rather than about the box.
     const fits = plays.filter((a) => {
       const owner = assignableOwner.get(assignableKey(a))
       if (owner === undefined) return false
-      return canCarryNotes(owner, a, request.role, notes)
+      return (
+        canCarryNotes(owner, a, request.role, notes) ||
+        canStackNotes(owner, a, request.role, notes)
+      )
     })
     capable.push(fits)
 
@@ -494,18 +608,56 @@ function buildCtx(input: AssignInput): Ctx {
       // chord sample lands here too when no *usable* recipe survives the character filter.
       if (resolution.outcome === 'unvoiced') continue
       candidates.push({
-        assignable,
-        key,
+        assignables: [assignable],
+        keys: [key],
+        deviceId: assignable.deviceId,
         recipe: resolution.recipe,
         outcome: resolution.outcome,
         recipeCharacter: resolution.character,
         distance: quantiseDistance(resolution.distanceSq),
         sampledChord: notes > 1 && realisationOf(resolution.recipe) === 'sampled-chord' ? 1 : 0,
+        stacked: 0,
         roleFit: assignable.roles.indexOf(request.role),
       })
     }
     voiceable.push(candidates)
-    reach.push(new Set(candidates.map((c) => c.assignable.deviceId)))
+
+    // §12.4/#40. One plan per pool that could spread this request. `canStackNotes` holds the
+    // gate — a pool, wide enough, with a `polyphonic-voice` recipe, and not already polyphonic
+    // enough to do it on one voice — and it is asked of a representative member because every
+    // one of the answers is a per-pool fact (§2.2).
+    const plans: StackPlan[] = []
+    if (notes > 1) {
+      for (const members of poolMembers.values()) {
+        const representative = members[0]
+        if (representative === undefined) continue
+        const owner = deviceById.get(representative.deviceId)
+        if (owner === undefined) continue
+        if (!representative.roles.includes(request.role)) continue
+        if (!canStackNotes(owner, representative, request.role, notes)) continue
+        const best = stackRecipes(owner, representative, request.role, character)[0]
+        // No usable recipe at this character is a `no-recipe` gap, exactly as for a single.
+        if (best === undefined) continue
+        plans.push({
+          deviceId: representative.deviceId,
+          poolId: representative.poolId as string,
+          members,
+          width: notes,
+          recipe: best.recipe,
+          outcome: best.distanceSq === 0 ? 'exact' : 'substituted',
+          recipeCharacter: best.recipe.character,
+          distance: quantiseDistance(best.distanceSq),
+          sampledChord: 0,
+          stacked: 1,
+          roleFit: representative.roles.indexOf(request.role),
+        })
+      }
+    }
+    stacks.push(plans)
+
+    reach.push(
+      new Set([...candidates.map((c) => c.deviceId), ...plans.map((p) => p.deviceId)]),
+    )
   }
 
   // Suffix unions: which devices any *remaining* request could still reach. `suffixReach[i]`
@@ -522,7 +674,7 @@ function buildCtx(input: AssignInput): Ctx {
   // produces a vector of the same shape and `compareScore` never compares ragged tuples.
   const missSlots = requests.reduce((max, r) => Math.max(max, r.priority), 0)
 
-  const suffixFloor = buildSuffixFloor(requests, voiceable, missSlots)
+  const suffixFloor = buildSuffixFloor(requests, voiceable, stacks, missSlots)
 
   return {
     template,
@@ -536,6 +688,7 @@ function buildCtx(input: AssignInput): Ctx {
     roleOnly,
     capable,
     voiceable,
+    stacks,
     suffixReach,
     suffixFloor,
     missSlots,
@@ -553,6 +706,7 @@ type State = {
   optionalMisses: number
   recipeDistance: number
   sampledChords: number
+  stackedChords: number
   roleFitPenalty: number
   /** Occupied assignables per device — one entry per assignable occupied in >= 1 section. */
   occupiedByDevice: Map<DeviceId, Set<AssignableKey>>
@@ -566,6 +720,7 @@ function emptyState(ctx: Ctx): State {
     optionalMisses: 0,
     recipeDistance: 0,
     sampledChords: 0,
+    stackedChords: 0,
     roleFitPenalty: 0,
     occupiedByDevice: new Map(ctx.devices.map((d) => [d.id, new Set<AssignableKey>()])),
     occupancy: new Map(),
@@ -605,6 +760,7 @@ function scoreOf(ctx: Ctx, state: State): Score {
     crowdOverflow(ctx, state),
     state.optionalMisses,
     state.sampledChords,
+    state.stackedChords,
     state.recipeDistance,
     state.roleFitPenalty,
     idleDevices(ctx, state),
@@ -668,40 +824,58 @@ function lowerBound(ctx: Ctx, state: State, next: number): Score {
     crowdOverflow(ctx, state),
     state.optionalMisses + floor.optionalMisses,
     state.sampledChords + floor.sampledChords,
+    state.stackedChords + floor.stackedChords,
     state.recipeDistance + floor.recipeDistance,
     state.roleFitPenalty + floor.roleFitPenalty,
     floorIdle,
   ] as unknown as Score
 }
 
+/**
+ * §4.2/#40. Every key the candidate occupies gets the same request id in every section the
+ * request needs — which is where the one-request-to-many-assignables mapping actually happens,
+ * and it needed no new shape to express (see `occupancy.ts`).
+ *
+ * `occupiedByDevice` gains one entry per member, so a stacked triad costs three against
+ * `comfortableVoices`. That is deliberate and #40 named it as the thing not to soften: three
+ * tracks really are spent, and a pad that costs as much as three parts is a true statement about
+ * a monophonic box.
+ */
 function apply(ctx: Ctx, state: State, index: number, candidate: Candidate): void {
   const request = ctx.requests[index] as RoleRequest
-  let bySection = state.occupancy.get(candidate.key)
-  if (bySection === undefined) {
-    bySection = new Map()
-    state.occupancy.set(candidate.key, bySection)
+  const sections = ctx.sections[index] ?? []
+  for (const key of candidate.keys) {
+    let bySection = state.occupancy.get(key)
+    if (bySection === undefined) {
+      bySection = new Map()
+      state.occupancy.set(key, bySection)
+    }
+    for (const section of sections) bySection.set(section, request.id)
+    state.occupiedByDevice.get(candidate.deviceId)?.add(key)
   }
-  for (const section of ctx.sections[index] ?? []) bySection.set(section, request.id)
-  state.occupiedByDevice.get(candidate.assignable.deviceId)?.add(candidate.key)
   state.recipeDistance += candidate.distance
   state.sampledChords += candidate.sampledChord
+  state.stackedChords += candidate.stacked
   state.roleFitPenalty += candidate.roleFit
   state.chosen[index] = candidate
 }
 
 function undo(ctx: Ctx, state: State, index: number, candidate: Candidate): void {
-  const bySection = state.occupancy.get(candidate.key)
-  if (bySection !== undefined) {
-    for (const section of ctx.sections[index] ?? []) bySection.delete(section)
+  const sections = ctx.sections[index] ?? []
+  for (const key of candidate.keys) {
+    const bySection = state.occupancy.get(key)
+    if (bySection === undefined) continue
+    for (const section of sections) bySection.delete(section)
     if (bySection.size === 0) {
-      state.occupancy.delete(candidate.key)
+      state.occupancy.delete(key)
       // Only now does the assignable stop being occupied, and only then can the device's
       // occupied count fall. §12.4 counts assignables, not sections.
-      state.occupiedByDevice.get(candidate.assignable.deviceId)?.delete(candidate.key)
+      state.occupiedByDevice.get(candidate.deviceId)?.delete(key)
     }
   }
   state.recipeDistance -= candidate.distance
   state.sampledChords -= candidate.sampledChord
+  state.stackedChords -= candidate.stacked
   state.roleFitPenalty -= candidate.roleFit
   state.chosen[index] = null
 }
@@ -734,7 +908,7 @@ function violatesDistinct(ctx: Ctx, state: State, index: number, candidate: Cand
     const taken = state.chosen[i]
     if (taken === null || taken === undefined) continue
     if (other.distinct !== true || other.role !== request.role) continue
-    if (taken.assignable.deviceId === candidate.assignable.deviceId) return true
+    if (taken.deviceId === candidate.deviceId) return true
   }
   return false
 }
@@ -754,13 +928,21 @@ function distinctBlocked(ctx: Ctx, state: State, index: number, candidate: Candi
     const taken = state.chosen[i]
     if (taken === null || taken === undefined) continue
     if (other.distinct !== true || other.role !== request.role) continue
-    if (taken.assignable.deviceId === candidate.assignable.deviceId) return true
+    if (taken.deviceId === candidate.deviceId) return true
   }
   return false
 }
 
+/** §4.2. Free in every section this request needs, on **every** voice the candidate takes. */
 function isFree(ctx: Ctx, state: State, index: number, candidate: Candidate): boolean {
-  const bySection = state.occupancy.get(candidate.key)
+  for (const key of candidate.keys) {
+    if (!keyIsFree(ctx, state, index, key)) return false
+  }
+  return true
+}
+
+function keyIsFree(ctx: Ctx, state: State, index: number, key: AssignableKey): boolean {
+  const bySection = state.occupancy.get(key)
   if (bySection === undefined) return true
   // §4.2: conflict is same section, same assignable. Two transient requests in disjoint
   // sections share a voice quite legally, which is the whole reason occupancy is per-section.
@@ -840,7 +1022,7 @@ function poolGroupKey(assignable: Assignable, poolId: string): string {
 function breakPoolSymmetry(state: State, candidates: Candidate[]): Candidate[] {
   let hasPool = false
   for (const candidate of candidates) {
-    if (candidate.assignable.poolId !== undefined) {
+    if (soleAssignable(candidate).poolId !== undefined) {
       hasPool = true
       break
     }
@@ -849,25 +1031,109 @@ function breakPoolSymmetry(state: State, candidates: Candidate[]): Candidate[] {
 
   const representative = new Map<string, Candidate>()
   for (const candidate of candidates) {
-    const poolId = candidate.assignable.poolId
+    const assignable = soleAssignable(candidate)
+    const poolId = assignable.poolId
     if (poolId === undefined) continue
-    if (isOccupiedAnywhere(state, candidate.key)) continue
-    const group = poolGroupKey(candidate.assignable, poolId)
+    if (isOccupiedAnywhere(state, candidate.keys[0] as AssignableKey)) continue
+    const group = poolGroupKey(assignable, poolId)
     const current = representative.get(group)
     if (
       current === undefined ||
-      comparePoolMembers(candidate.assignable, current.assignable) < 0
+      comparePoolMembers(assignable, soleAssignable(current)) < 0
     ) {
       representative.set(group, candidate)
     }
   }
 
   return candidates.filter((candidate) => {
-    const poolId = candidate.assignable.poolId
+    const assignable = soleAssignable(candidate)
+    const poolId = assignable.poolId
     if (poolId === undefined) return true
-    if (isOccupiedAnywhere(state, candidate.key)) return true
-    return representative.get(poolGroupKey(candidate.assignable, poolId)) === candidate
+    if (isOccupiedAnywhere(state, candidate.keys[0] as AssignableKey)) return true
+    return representative.get(poolGroupKey(assignable, poolId)) === candidate
   })
+}
+
+/**
+ * The one voice a single-voice candidate takes. Stacks are canonical by construction (see
+ * `chooseStackMembers`) and never reach `breakPoolSymmetry`, so this is total where it is called.
+ */
+function soleAssignable(candidate: Candidate): Assignable {
+  return candidate.assignables[0] as Assignable
+}
+
+// ---------------------------------------------------------------------------
+// §12.4/#40 Stacks
+// ---------------------------------------------------------------------------
+
+/**
+ * Which members of the pool this stack takes, or `undefined` when too few are free.
+ *
+ * **One member set per plan per node, not every combination**, and that is a bound decision of
+ * the same kind as `DEFAULT_NODE_CAP` rather than an oversight. Enumerating the subsets would be
+ * `C(8, 3) = 56` branches per pool per request on a Tracker Mini, re-explored at every level
+ * below — the exact blow-up `breakPoolSymmetry` exists to prevent — for a choice that is, in
+ * almost every case, provably not a choice at all.
+ *
+ * Two orderings, and they are picked for different reasons:
+ *
+ *  - **Already-occupied members first.** A member busy in some *other* section costs no new
+ *    occupied assignable, where a never-occupied one costs one — so reuse can only help
+ *    `crowdOverflow`, which outranks `stackedChords`, and it leaves a fully-free member for a
+ *    later request rather than consuming it. Weakly dominant, so preferring it cannot lose the
+ *    optimum on this request.
+ *  - **Then lowest ordinal.** Among never-occupied members this is exactly
+ *    `breakPoolSymmetry`'s argument, unchanged: pool members are interchangeable in everything
+ *    the objective and the constraints can see, so taking the lowest `n` is a canonicalisation
+ *    and not a loss.
+ *
+ * **Where it is a restriction rather than a canonicalisation**, stated rather than glossed: two
+ * members already occupied in *different* sections are distinguishable, and choosing between
+ * them by ordinal could in principle cost a later transient request its voice. That needs a
+ * request of more than one note that is also `transient`, which no template authors today —
+ * a continuous request occupies every section, so every member occupied anywhere is already
+ * excluded by `keyIsFree` and the whole question is empty. It is written down here because the
+ * day a template does author one, this is the comment that says what to re-derive.
+ */
+function chooseStackMembers(
+  ctx: Ctx,
+  state: State,
+  index: number,
+  plan: StackPlan,
+): Assignable[] | undefined {
+  const eligible = plan.members.filter((m) => keyIsFree(ctx, state, index, assignableKey(m)))
+  if (eligible.length < plan.width) return undefined
+  const taken = [...eligible]
+    .sort((a, b) => {
+      const busyA = isOccupiedAnywhere(state, assignableKey(a)) ? 0 : 1
+      const busyB = isOccupiedAnywhere(state, assignableKey(b)) ? 0 : 1
+      return busyA - busyB || comparePoolMembers(a, b)
+    })
+    .slice(0, plan.width)
+  // Re-sorted into reading order whatever order they were picked in, because the guide hands the
+  // lowest note to the lowest voice (§8 phase 4) and that instruction has to be stable.
+  return taken.sort(comparePoolMembers)
+}
+
+function materialiseStacks(ctx: Ctx, state: State, index: number): Candidate[] {
+  const out: Candidate[] = []
+  for (const plan of ctx.stacks[index] ?? []) {
+    const members = chooseStackMembers(ctx, state, index, plan)
+    if (members === undefined) continue
+    out.push({
+      assignables: members,
+      keys: members.map(assignableKey),
+      deviceId: plan.deviceId,
+      recipe: plan.recipe,
+      outcome: plan.outcome,
+      recipeCharacter: plan.recipeCharacter,
+      distance: plan.distance,
+      sampledChord: plan.sampledChord,
+      stacked: plan.stacked,
+      roleFit: plan.roleFit,
+    })
+  }
+  return out
 }
 
 /**
@@ -884,7 +1150,17 @@ function orderedCandidates(ctx: Ctx, state: State, index: number): Candidate[] {
   )
   // Symmetry breaking runs on the legal set, not on the whole pool: a member excluded here by
   // occupancy or by `distinct` is not a candidate to be represented by anything.
-  const legal = breakPoolSymmetry(state, free)
+  //
+  // Stacks are appended after it rather than passed through it: they are already canonical in
+  // their pool (`chooseStackMembers`), and a stack is not a pool member that could stand in for
+  // one. `isFree` holds for them by construction; `distinct` (§12.6) still has to be asked,
+  // because a stack names a device like anything else.
+  const legal = [
+    ...breakPoolSymmetry(state, free),
+    ...materialiseStacks(ctx, state, index).filter(
+      (c) => !violatesDistinct(ctx, state, index, c),
+    ),
+  ]
   if (legal.length < 2) return legal
 
   const scored = legal.map((candidate) => {
@@ -894,11 +1170,19 @@ function orderedCandidates(ctx: Ctx, state: State, index: number): Candidate[] {
     return { candidate, score }
   })
 
+  // §7.2's `(score, deviceId, voiceId)`, with the width of the candidate as a final tie-break so
+  // the order is total even in principle: a single and a stack starting on the same voice always
+  // differ on `stackedChords` and so never reach it, but a sort that depends on input order for
+  // its answer is not a sort this file is allowed to have.
   scored.sort(
     (a, b) =>
       compareScore(a.score, b.score) ||
-      compareCodeUnits(a.candidate.assignable.deviceId, b.candidate.assignable.deviceId) ||
-      compareCodeUnits(a.candidate.assignable.voiceId, b.candidate.assignable.voiceId),
+      compareCodeUnits(a.candidate.deviceId, b.candidate.deviceId) ||
+      compareCodeUnits(
+        (a.candidate.assignables[0] as Assignable).voiceId,
+        (b.candidate.assignables[0] as Assignable).voiceId,
+      ) ||
+      a.candidate.assignables.length - b.candidate.assignables.length,
   )
 
   // Permute within exactly-equal-score runs only. Everything else keeps the deterministic
@@ -1050,7 +1334,9 @@ function classify(ctx: Ctx, state: State, index: number): Gap {
     return { ...base, reason: 'no-recipe', capable }
   }
 
-  const named = voiceable.map((c) => c.assignable)
+  // Every voice every candidate would have taken, stacks flattened: "could have carried this
+  // part" is a claim about voices, and a stack's three are three of them.
+  const named = voiceable.flatMap((c) => [...c.assignables])
   const free = firstWhere(voiceable, (c) => isFree(ctx, state, index, c))
 
   const freeAndLegal = firstWhere(
@@ -1058,7 +1344,7 @@ function classify(ctx: Ctx, state: State, index: number): Gap {
     (c) => isFree(ctx, state, index, c) && !distinctBlocked(ctx, state, index, c),
   )
   if (freeAndLegal !== undefined) {
-    const deviceId = freeAndLegal.assignable.deviceId
+    const deviceId = freeAndLegal.deviceId
     const occupied = state.occupiedByDevice.get(deviceId)?.size ?? 0
     return {
       ...base,
@@ -1082,30 +1368,39 @@ function classify(ctx: Ctx, state: State, index: number): Gap {
 
   // Every candidate is occupied. Name the first one and what it is carrying.
   const blocker = voiceable[0] as Candidate
-  const holderId = firstOccupant(ctx, state, index, blocker)
-  const holder = ctx.requests.find((r) => r.id === holderId)
-  const deviceName = ctx.deviceById.get(blocker.assignable.deviceId)?.name ?? blocker.assignable.deviceId
+  const held = firstOccupant(ctx, state, index, blocker)
+  const holder = ctx.requests.find((r) => r.id === held?.request)
+  const deviceName = ctx.deviceById.get(blocker.deviceId)?.name ?? blocker.deviceId
+  const label = held?.assignable.label ?? (blocker.assignables[0] as Assignable).label
   return {
     ...base,
     reason: 'no-room',
     capable: named,
     because: 'contended',
-    detail: `the ${deviceName} ${blocker.assignable.label} is carrying ${holder?.role ?? holderId ?? 'another part'}`,
+    detail: `the ${deviceName} ${label} is carrying ${holder?.role ?? held?.request ?? 'another part'}`,
   }
 }
 
-/** The request already holding the first section of this candidate that we needed. */
+/**
+ * The first voice of this candidate that is already taken, and by which request — scanning the
+ * candidate's voices in order, then the sections we needed. For a stack, naming the member that
+ * is actually blocked beats naming the first one and hoping it is the same voice.
+ */
 function firstOccupant(
   ctx: Ctx,
   state: State,
   index: number,
   candidate: Candidate,
-): RequestId | undefined {
-  const bySection = state.occupancy.get(candidate.key)
-  if (bySection === undefined) return undefined
-  for (const section of ctx.sections[index] ?? []) {
-    const holder = bySection.get(section)
-    if (holder !== undefined) return holder
+): { assignable: Assignable; request: RequestId } | undefined {
+  for (let i = 0; i < candidate.keys.length; i++) {
+    const bySection = state.occupancy.get(candidate.keys[i] as AssignableKey)
+    if (bySection === undefined) continue
+    for (const section of ctx.sections[index] ?? []) {
+      const holder = bySection.get(section)
+      if (holder !== undefined) {
+        return { assignable: candidate.assignables[i] as Assignable, request: holder }
+      }
+    }
   }
   return undefined
 }
@@ -1153,8 +1448,8 @@ export function assign(input: AssignInput): AssignmentResult {
       requestId: request.id,
       role: request.role,
       character: ctx.wanted[index] as Character,
-      assignable: candidate.assignable,
-      deviceId: candidate.assignable.deviceId,
+      assignables: candidate.assignables,
+      deviceId: candidate.deviceId,
       recipe: candidate.recipe,
       outcome: candidate.outcome,
       recipeCharacter: candidate.recipeCharacter,

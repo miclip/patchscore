@@ -106,6 +106,7 @@
     0,
     2,
     0,
+    0,
     4242,
     1,
     0
@@ -133,15 +134,17 @@
       "notes": 1,
       "deviceId": "a-drum",
       "deviceName": "Golden Drum",
-      "assignable": {
-        "deviceId": "a-drum",
-        "voiceId": "bd",
-        "label": "BD",
-        "roles": [
-          "kick"
-        ],
-        "polyphony": 1
-      },
+      "assignables": [
+        {
+          "deviceId": "a-drum",
+          "voiceId": "bd",
+          "label": "BD",
+          "roles": [
+            "kick"
+          ],
+          "polyphony": 1
+        }
+      ],
       "recipe": {
         "id": "drum-kick-hard",
         "title": "hard kick",
@@ -490,19 +493,21 @@
       "notes": 1,
       "deviceId": "B-tracker",
       "deviceName": "Golden Tracker",
-      "assignable": {
-        "deviceId": "B-tracker",
-        "voiceId": "track-1",
-        "poolId": "track",
-        "label": "Track 1",
-        "ordinal": 1,
-        "roles": [
-          "pad",
-          "sub",
-          "texture"
-        ],
-        "polyphony": 4
-      },
+      "assignables": [
+        {
+          "deviceId": "B-tracker",
+          "voiceId": "track-1",
+          "poolId": "track",
+          "label": "Track 1",
+          "ordinal": 1,
+          "roles": [
+            "pad",
+            "sub",
+            "texture"
+          ],
+          "polyphony": 4
+        }
+      ],
       "recipe": {
         "id": "tracker-sub-dirty",
         "title": "dirty sub",
@@ -663,16 +668,18 @@
       "notes": 1,
       "deviceId": "A-cascade",
       "deviceName": "Golden Cascade",
-      "assignable": {
-        "deviceId": "A-cascade",
-        "voiceId": "voice",
-        "label": "Voice",
-        "roles": [
-          "bass-mid",
-          "lead"
-        ],
-        "polyphony": 1
-      },
+      "assignables": [
+        {
+          "deviceId": "A-cascade",
+          "voiceId": "voice",
+          "label": "Voice",
+          "roles": [
+            "bass-mid",
+            "lead"
+          ],
+          "polyphony": 1
+        }
+      ],
       "recipe": {
         "id": "cascade-bassmid-dark",
         "title": "dark bass-mid",
@@ -794,15 +801,17 @@
       "notes": 1,
       "deviceId": "a-drum",
       "deviceName": "Golden Drum",
-      "assignable": {
-        "deviceId": "a-drum",
-        "voiceId": "ch",
-        "label": "CH",
-        "roles": [
-          "closed-hat"
-        ],
-        "polyphony": 1
-      },
+      "assignables": [
+        {
+          "deviceId": "a-drum",
+          "voiceId": "ch",
+          "label": "CH",
+          "roles": [
+            "closed-hat"
+          ],
+          "polyphony": 1
+        }
+      ],
       "recipe": {
         "id": "drum-hat-dirty",
         "title": "dirty closed-hat",
@@ -1029,19 +1038,21 @@
       "notes": 3,
       "deviceId": "B-tracker",
       "deviceName": "Golden Tracker",
-      "assignable": {
-        "deviceId": "B-tracker",
-        "voiceId": "track-2",
-        "poolId": "track",
-        "label": "Track 2",
-        "ordinal": 2,
-        "roles": [
-          "pad",
-          "sub",
-          "texture"
-        ],
-        "polyphony": 4
-      },
+      "assignables": [
+        {
+          "deviceId": "B-tracker",
+          "voiceId": "track-2",
+          "poolId": "track",
+          "label": "Track 2",
+          "ordinal": 2,
+          "roles": [
+            "pad",
+            "sub",
+            "texture"
+          ],
+          "polyphony": 4
+        }
+      ],
       "recipe": {
         "id": "tracker-pad-ice",
         "title": "dirty pad",
@@ -1249,19 +1260,21 @@
       "notes": 3,
       "deviceId": "B-tracker",
       "deviceName": "Golden Tracker",
-      "assignable": {
-        "deviceId": "B-tracker",
-        "voiceId": "track-3",
-        "poolId": "track",
-        "label": "Track 3",
-        "ordinal": 3,
-        "roles": [
-          "pad",
-          "sub",
-          "texture"
-        ],
-        "polyphony": 4
-      },
+      "assignables": [
+        {
+          "deviceId": "B-tracker",
+          "voiceId": "track-3",
+          "poolId": "track",
+          "label": "Track 3",
+          "ordinal": 3,
+          "roles": [
+            "pad",
+            "sub",
+            "texture"
+          ],
+          "polyphony": 4
+        }
+      ],
       "recipe": {
         "id": "tracker-pad-ice",
         "title": "dirty pad",
@@ -1469,16 +1482,18 @@
       "notes": 1,
       "deviceId": "a-drum",
       "deviceName": "Golden Drum",
-      "assignable": {
-        "deviceId": "a-drum",
-        "voiceId": "lt",
-        "label": "LT",
-        "roles": [
-          "tom",
-          "sub"
-        ],
-        "polyphony": 1
-      },
+      "assignables": [
+        {
+          "deviceId": "a-drum",
+          "voiceId": "lt",
+          "label": "LT",
+          "roles": [
+            "tom",
+            "sub"
+          ],
+          "polyphony": 1
+        }
+      ],
       "recipe": {
         "id": "drum-tom-hard",
         "title": "hard tom",

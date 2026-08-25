@@ -322,7 +322,9 @@ describe('Relay hands one voice back and forth (§4.2)', () => {
     for (const device of singleVoiced) {
       const result = resolve({ devices: [device], template: relay, mood: NEUTRAL, seed: 7 })
       if (result.assignments.length !== relay.roles.length) continue
-      const used = new Set(result.assignments.map((a) => assignableKey(a.assignable as Assignable)))
+      const used = new Set(
+        result.assignments.flatMap((a) => a.assignables.map((v) => assignableKey(v as Assignable))),
+      )
       expect(used.size, `${device.id} spread the two parts over ${used.size} voices`).toBe(1)
       checked += 1
     }

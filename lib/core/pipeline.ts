@@ -188,12 +188,15 @@ export function selectClockSource(
   }
 }
 
-/** §12.4. One per assignable occupied in at least one section, never one per section. */
+/**
+ * §12.4. One per assignable occupied in at least one section, never one per section — and, since
+ * #40, every voice of a stacked part, so a triad across three tracks counts three.
+ */
 function occupiedCounts(assignments: readonly ResolvedAssignment[]): Map<DeviceId, number> {
   const byDevice = new Map<DeviceId, Set<AssignableKey>>()
   for (const a of assignments) {
     const set = byDevice.get(a.deviceId) ?? new Set<AssignableKey>()
-    set.add(assignableKey(a.assignable))
+    for (const assignable of a.assignables) set.add(assignableKey(assignable))
     byDevice.set(a.deviceId, set)
   }
   return new Map([...byDevice].map(([id, set]) => [id, set.size]))
@@ -255,7 +258,15 @@ export type ResolvedAssignment = {
    * worth saying when there is more than one note in the chord.
    */
   notes: number
-  assignable: Assignable
+  /**
+   * §4.2/§12.4/#40. The voices carrying this part, in the order the reader should enter them —
+   * lowest note to the lowest voice. One for most parts; `notes` of them, all from one pool on
+   * one device, for a chord stacked one note per voice.
+   *
+   * Plural even where it is one, so a renderer cannot print a third of a stacked part and look
+   * finished. Both renderers branch on `length > 1`; nothing else needs to know.
+   */
+  assignables: readonly Assignable[]
   deviceId: DeviceId
   deviceName: string
   recipe: ResolvedRecipeRef
@@ -316,11 +327,19 @@ export type ResolvedAssignment = {
  * drift the stamp exists to announce. The "renderer-only" exemption does not apply: the guide's
  * content can see this one.
  *
+ * **3** — #40. A request of more than one note may now be filled by **stacking** several
+ * monophonic voices of one pool, one note each, and `Score` gained a `stackedChords` key to rank
+ * that below a voice that sounds the whole chord itself. This is a change to what the resolver
+ * *decides*: a Tracker-Mini-only rig that was handed a chord sample for its pad is now handed
+ * three tracks, and a rig that had an honest `polyphony` gap may now have a part. Values moved,
+ * assignments moved, and a permalink shared before this would replay the old answer under a
+ * stamp that claimed it was current.
+ *
  * It lives beside `ResolveInput` because that is the contract it versions. `permalink.ts`
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
  */
-export const RESOLVER_VERSION = 2
+export const RESOLVER_VERSION = 3
 
 export type ResolveInput = {
   /** Effective devices: shared definition composed with the user's overlay (#16). */
@@ -438,7 +457,7 @@ export function resolve(input: ResolveInput): ResolveResult {
       priority: request.priority,
       optional: request.optional === true,
       notes: request.polyphony ?? 1,
-      assignable: a.assignable,
+      assignables: a.assignables,
       deviceId: a.deviceId,
       deviceName: deviceById.get(a.deviceId)?.name ?? a.deviceId,
       recipe: {

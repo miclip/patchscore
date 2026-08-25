@@ -377,9 +377,14 @@ describe('Tracker Mini manifest', () => {
   // Content and citation discipline (§3.1, §3.2)
   // -------------------------------------------------------------------------
 
-  it('carries 15-20 recipes on distinct (role, character, voice, realisation) keys (§3)', () => {
+  it('carries 15-21 recipes on distinct (role, character, voice, realisation) keys (§3)', () => {
+    // The upper bound moved from 20 to 21 with `tm-stab-hard-note` (#40). It is a guideline about
+    // authoring effort — "roughly 15-20 recipes covers a device well" — not a fact about the box,
+    // and the one it makes room for is the second half of a pair the ranking needs both halves of:
+    // a stab that is *played* across three tracks beside the one that is *loaded* as a chord.
+    // The bound that is a fact about the box is the synth-slot one below, and that has not moved.
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(20)
+    expect(device.recipes.length).toBeLessThanOrEqual(21)
 
     const keys = device.recipes.map(
       (r) => `${r.role}\u0000${r.character}\u0000${r.voice}\u0000${realisationOf(r)}`,

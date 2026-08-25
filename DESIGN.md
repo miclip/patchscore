@@ -1419,6 +1419,27 @@ type Occupancy = Map<AssignableKey, Map<SectionName, RequestId>>
 `Assignable` stays a pure function of the device. `Occupancy` is built by the search (§7.1), read
 by the crowding key of the objective, and consumed by the renderer.
 
+**The mapping is many assignables to one request (#40).** Each `(assignable, section)` still holds
+exactly one request, which is the half that makes conflict decidable and which has not moved. What
+changed is the inverse: one request id may appear under *several* assignable keys, because a chord
+can be stacked across several monophonic voices of one pool, one note each (§12.4). The type above
+already expressed that — only the invariant read off it was narrower than the shape — so nothing
+here is new syntax. What did have to change is every consumer that treated the inverse as a
+function:
+
+- **An `Assignment` names `assignables`, plural**, never one voice plus an optional rest. A
+  renderer that reads `assignables[0]` and stops has written a visible bug, where one ignoring a
+  `stackedWith` field beside a singular `assignable` would have printed one track of three and
+  looked finished.
+- **`comfortableVoices` counts three of them for a stacked triad**, which is §12.4's rule applied
+  rather than excepted.
+- **Gap classification, `distinct` (§12.6) and pool symmetry breaking (§7.1)** were each re-read
+  against the plural shape. `distinct` compares `deviceId` and a stack is one device, so it needed
+  nothing; the other two did.
+
+Order within `assignables` is meaning, not incidental: lowest note to the lowest voice, which is
+what §8 phase 4 prints and what keeps a voicing from crossing over as a progression moves.
+
 Beyond solving the riser problem, this lets the step-programming section render
 "LT enters at Build, out through Breakdown" from data rather than hand-written prose per template.
 
@@ -1833,6 +1854,7 @@ type Score = [
   crowdOverflow:  number,         // sum over devices of max(0, occupiedAssignables - comfortable)
   optionalMisses: number,         // unfilled requests marked optional
   sampledChords:  number,         // multi-note requests filled from a chord sample (§12.4)
+  stackedChords:  number,         // multi-note requests spread across a pool, one note each (#40)
   recipeDistance: number,         // sum of §3.4 distances, x1000 and rounded to an integer
   roleFitPenalty: number,         // sum of the role's index within voice.roles
   idleDevices:    number,         // devices with zero occupied assignables
@@ -2160,13 +2182,21 @@ the two halves have opposite fixes:
 | because | the sentence says | the fix |
 |---|---|---|
 | `no-such-role` | "nothing in your rig plays this part" | buy something |
-| `polyphony` | "needs 3 notes at once and every voice here is monophonic" | author a `sampled-chord` recipe, or ask for fewer notes |
+| `polyphony` | "needs 3 notes at once and every voice here is monophonic — stack it by hand across 3 of the 4 voices that play it, one note each" | play it across the voices by hand, author a `sampled-chord` recipe, or ask for fewer notes |
 
 A rig full of monophonic tracks *does* play pads. Told the first sentence, its owner goes
 shopping for a pad machine when what they need is one chord sample. The `polyphony` case carries
 the assignables that declare the role, so the shortfall is measured off the rig rather than
 assumed: where those voices are not all monophonic the sentence names the real ceiling — "the
 most any voice here can sound is 4 notes" — because the monophonic wording would simply be false.
+
+**And it names what to do, which #40 required and #128 is the discipline for.** Since stacking
+landed the resolver spreads a chord across a *pool* on its own, so a surviving `polyphony` gap is
+one of two situations with different advice, told apart by counting the voices that declare the
+role: enough of them, but separately authored rather than interchangeable, so the reader can play
+the chord across them by hand and the sentence says so; or fewer of them than the chord has notes,
+so there is nothing to spread it across and the sentence says *that* instead. Neither is "buy a
+pad machine", and neither is silence.
 
 Those role-declaring voices are carried **separately from `capable`**, which means one thing at
 every reason: the assignables that could have carried the part. In a `polyphony` gap they could
@@ -2430,11 +2460,13 @@ Phased, in this order. The sequence reflects how a real session unfolds at the m
 Do not reorder.
 
 1. **Song** — BPM, key, hook, harmonic cycle, bar-count energy map
-2. **Voice assignment** — which role lives on which device and voice, and why. For a part of
-   more than one note, *how* those notes are made (§12.4) is one of the facts: "3 notes at once
-   on one polyphonic voice" and "3 notes from one sampled chord" are different things to do, and
-   the reader has to be told which one they got. A one-note part says nothing about realisation,
-   because there is nothing to say
+2. **Voice assignment** — which role lives on which device and voice*s*, and why. For a part of
+   more than one note, *how* those notes are made (§12.4) is one of the facts: "3 notes at once on
+   one polyphonic voice", "3 notes from one sampled chord" and "3 notes stacked one per voice" are
+   three different things to do, and the reader has to be told which one they got. A stacked part
+   names every voice it takes — "Tracker Mini · Track 4, Track 5 and Track 6" — because the reader
+   is going to walk to the box and touch all three, and a count is not a thing you can touch. A
+   one-note part says nothing about realisation, because there is nothing to say
 3. **Rig integration** — clock source, MIDI routing, audio outs, mixer channels
 4. **Hook** — written before sound design. A part carried by a `sampled-chord` recipe (§12.4) is
    rendered as **two lists rather than one**: the chord shapes, as content to obtain or render
@@ -2446,7 +2478,17 @@ Do not reorder.
    different inversion. Each trigger prints its transposition (`as recorded`, `+2 st`) and the
    chord that results, so the reader can check the move rather than infer it. Samples are
    labelled `sample A`, `sample B` — a label to point at, never a filename, which we could not
-   know (invariant 5). A polyphonic part's hook is unchanged
+   know (invariant 5).
+
+   A part **stacked** across several voices (#40) is rendered **by voice rather than by chord**:
+   one block per voice, listing the notes that voice plays. The same data as a per-chord table and
+   far more usable, because on a tracker you fill one track top to bottom and then move to the
+   next — a reader following a per-chord list would enter one note, jump two columns, enter one
+   note and jump back. The assignment rule is stated once and then relied on: lowest note to the
+   lowest voice. That is musical rather than tidy — hold it and the voicing keeps its shape as the
+   progression moves; cross the voices and the chord changes character between bars with nothing
+   on the page saying so. A chord with more notes than the part has voices is reported, not
+   truncated (invariant 5). A polyphonic part's hook is unchanged
 5. **Step programming** — the selected template pattern per part (§4.3), rendered per device with
    that device's slot articulation bound to it (§7 step 8).
 
@@ -2792,9 +2834,12 @@ distance > role fit > idle) is validated by a hand-authored rig fixture set that
 outcomes rather than cost numbers.
 
 **12.4 — Polyphony: notes within one role, never role capacity.** See §2.2, §4 and §7.1. One
-assignable serves exactly one request per section. `polyphony` is a minimum-note-count constraint
-on candidacy. Multitimbrality is modelled by pools, not by polyphony. `comfortableVoices` counts
-*occupied assignables* — one per assignable occupied in at least one section.
+assignable serves exactly one request per section — the direction that has never moved. The
+converse *has*: since #40 one request may be served by several assignables of one pool, one note
+each (see the stacking note below). `polyphony` on an assignable is still simultaneous notes within
+one voice; the note count on a request is still a count of notes and not of voices. Multitimbrality
+is modelled by pools, not by polyphony. `comfortableVoices` counts *occupied assignables* — one per
+assignable occupied in at least one section, and every voice of a stack is one of them.
 
 *Worked example, and the case that proves the demand belongs to the recipe:* the Tracker Mini
 sounds one note per track — "Each track in Tracker Mini can handle one voice which can play
@@ -2844,40 +2889,63 @@ exactly one assignable. Candidacy asks the recipe, not the voice alone; `Score` 
 real voice even at the cost of a character substitution. `Assignable.polyphony` does not move —
 it is still simultaneous notes, and a sampler playing a chord sample is still monophonic.
 
-*Recommendation — defer multi-assignable stacking to a follow-up.* Issue #40 asked for a rig of
-monophonic voices to be able to hold a pad or a stab, and observed that a tracker plays a chord
-across three tracks. Stacking N assignables under one request is one way to get there. It is not
-what is built above, and the recommendation is that it stays unbuilt for now, for a reason that
-is about scope rather than about merit: **the reported failure is fixed without it.** A
-`sampled-chord` recipe carries the pad on a one-note track, and it does so entirely inside the
-existing model — one request, one assignable, occupancy untouched, `crowdOverflow` counting what
-it always counted. Nothing above widens the load-bearing shape of §4.2, and that is the property
-worth keeping until something genuinely needs it spent.
+*Built — multi-assignable stacking, and the ordering the paragraph below used to defer.* A request
+of `n` notes may be satisfied by **`n` assignables of one pool on one device**, each carrying one
+note of the chord. This is the third of §12.4's three realisations, and it was the one left
+unbuilt: the sampled-chord route above made the reported pad resolvable, which is not the same
+thing as building the mechanism, and #40 was reopened for saying so.
 
-Stacking is still worth doing, and #40 should not be closed on the strength of the pad alone.
-It is the answer for a role with **no chord sample authored** — Tracker `stab` today, which is an
-honest `polyphony` gap (§7.3) precisely because nobody has recorded a stab chord and no amount of
-recipe work changes that a single track sounds one note. What it needs, and none of it is
-incidental:
+**The gate is `kind: 'pool'`, and that is the argument rather than a convenience.** Pool members
+are interchangeable by construction — `roles`, `polyphony` and the recipe key are all per-pool
+(§2.2) — so every voice of a stack provably runs the same patch, which is what makes the result
+one chord rather than three sounds. Three *fixed* voices are three separately authored timbres; a
+TR-1000's LT, MT and HT handed a triad would produce three differently tuned toms. That answers
+the drum-machine worry this section used to raise without a tonal-role list and without a device
+declaration: fungibility is exactly the property stacking needs, `kind: 'pool'` is exactly the
+claim that the voices have it, and neither is a fifth shared vocabulary (invariant 3). Two further
+conditions: enough members to go round, and a `polyphonic-voice` recipe — stacking a chord sample
+would put the whole chord on each of three voices. A pool whose own polyphony already reaches the
+count is refused outright rather than ranked last, because stacking it is strictly dominated.
 
-- **A deliberate `Assignment` / `Occupancy` shape.** Occupancy is keyed per assignable per
-  section and an assignment names exactly one; a stacked part names several, and every consumer
-  of that shape — gap classification, the `distinct` rule (§12.6), pool symmetry breaking
-  (§7.1) — has to be re-read against it rather than assumed to survive.
-- **Crowding accounting.** §12.4 counts *occupied assignables*, so a stacked triad costs three.
-  That is probably right and is certainly not obvious: it makes one pad on a tracker as expensive
-  as three separate parts, which is a real musical claim about the box and needs to be argued,
-  not defaulted.
-- **Per-note track rendering.** The guide would have to say which note goes on which track, in
-  both renderers, and §8 phase 5's per-part step programming currently addresses one voice.
-- **Ranking fixtures.** At minimum: a genuine polyphonic voice must beat stacking. A part that
-  can be played on one voice should never be spread across three, whatever else is true.
+**`Score` gains `stackedChords`, ranked below `sampledChords` — so a stack is the preferred
+compromise of the two.** That ordering is the musical question this section deferred, and it is
+decided with the fixtures in front of it (`test/polyphony.test.ts`). The argument: a stack plays
+the voicing the hook authored, follows a progression through a change of chord quality, and can be
+inverted or re-voiced — none of which a chord sample can do, since transposition preserves shape.
+What a stack spends is *voices*, and `crowdOverflow` prices those two keys above. So charging the
+stack again below would price one cost twice, and preferring the sample would be paying for shape
+it cannot deliver. Both still sit below a genuine polyphonic voice, which is the requirement #40
+made binding.
 
-**The ordering between `sampled-chord` and stacking is deliberately not decided here.** Both
-sit below a real polyphonic voice; which of the two comes next is a musical question — a chord
-sample is one recording with fixed shape, a stack is three voices spent — and answering it in
-advance of building either the fixtures or the mechanism would be exactly the unfalsifiable
-weighting §7.1 exists to refuse. Decide it with a fixture in front of you.
+The consequence is a trade the box's own documentation describes. On a Tracker-Mini-only rig with
+tracks to spare, `pad` and `stab` are each played across three tracks. Tighten `comfortableVoices`
+and the same box reaches for the chord samples instead — which is precisely why p.104's render
+procedure ends "Remove the other track samples to free them up". Crowding outranking both
+compromises is what produces that, and neither realisation had to know about the other.
+
+**Crowding is not softened.** §12.4 counts *occupied assignables*, so a stacked triad costs three.
+It makes one pad on a tracker as expensive as three separate parts, which is a true statement
+about a monophonic box and is asserted rather than assumed.
+
+**One member set per pool per node, not every combination.** Which members a stack takes is chosen
+at the node, since it depends on occupancy: already-occupied members first (a member busy in
+another section costs no new occupied assignable, so reuse can only help `crowdOverflow` and
+leaves a fully-free member for a later request — weakly dominant), then lowest ordinal, which
+among never-occupied members is `breakPoolSymmetry`'s existing argument unchanged. Enumerating the
+`C(count, n)` subsets would be 56 branches per pool per request on a Tracker Mini, re-explored at
+every level below. Where this is a *restriction* rather than a canonicalisation is stated in the
+code and is worth repeating: two members occupied in *different* sections are distinguishable, so
+choosing between them by ordinal could in principle cost a later transient request its voice. That
+needs a request of more than one note that is also `transient`, which no template authors — a
+continuous request occupies every section, so every member occupied anywhere is already excluded.
+The brute-force oracle in `test/rigs.ts` enumerates all the subsets and is the check on this.
+
+**The guide says which realisation the reader got, and which voice takes which note.** §8 phase 4
+renders a stacked hook **by voice rather than by chord**: on a tracker you fill one track top to
+bottom and then move to the next, so a per-chord table would have a reader entering one note,
+jumping two columns, entering one note and jumping back. Phase 6 states the instruction that stops
+three voices becoming three sounds — every voice takes the same settings. Both renderers, written
+out twice per §8.
 
 **12.5 — Section-transition patterns: fills are out of v1; `Pattern` stays flat.** See §4.3.
 One variant per request per section; change happens at section boundaries only. A bar offset (or

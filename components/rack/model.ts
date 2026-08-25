@@ -868,7 +868,7 @@ export function rackModel(result: ResolveResult, options: RackLayoutOptions = {}
   const patchByDevice = new Map<DeviceId, { from: string; to: string; note?: string }[]>()
   for (const assignment of result.assignments) {
     const set = occupiedByDevice.get(assignment.deviceId) ?? new Set<string>()
-    set.add(assignment.assignable.voiceId)
+    for (const assignable of assignment.assignables) set.add(assignable.voiceId)
     occupiedByDevice.set(assignment.deviceId, set)
 
     if (assignment.patch.length === 0) continue

@@ -322,7 +322,7 @@ describe('panel contents', () => {
     const occupied = new Map<string, Set<string>>()
     for (const a of real.assignments) {
       const set = occupied.get(a.deviceId) ?? new Set<string>()
-      set.add(a.assignable.voiceId)
+      for (const voice of a.assignables) set.add(voice.voiceId)
       occupied.set(a.deviceId, set)
     }
     for (const panel of model.panels) {

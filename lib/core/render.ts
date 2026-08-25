@@ -319,8 +319,36 @@ function phaseSong(result: ResolveResult): Line[] {
  * between a chord you *load* and a chord you *play*, which is not a nuance — the two are
  * different actions at the machine.
  */
+/**
+ * §12.4/#40. Where a part lives, when that may be more than one voice.
+ *
+ * "Tracks 3, 4 and 5" rather than "Track 3 (+2)": the reader is going to walk to the box and
+ * touch all three, and a count is not a thing you can touch. `and` before the last, because this
+ * is read aloud in the head at arm's length and a bare comma list reads as an abbreviation.
+ */
+function voicesLabel(assignment: ResolvedAssignment): string {
+  const labels = assignment.assignables.map((a) => a.label)
+  if (labels.length === 1) return labels[0] as string
+  // §7.2: no `Intl.ListFormat`, no locale anywhere. Two joins and nothing to drift.
+  const last = labels[labels.length - 1] as string
+  return `${labels.slice(0, -1).join(', ')} and ${last}`
+}
+
+/** Device and voices, the pair every phase heading opens with. */
+function whereText(assignment: ResolvedAssignment): string {
+  return `${assignment.deviceName} · ${voicesLabel(assignment)}`
+}
+
+/** §12.4/#40. Whether this part is a chord spread across several voices, one note each. */
+function isStacked(assignment: ResolvedAssignment): boolean {
+  return assignment.assignables.length > 1
+}
+
 function realisationText(assignment: ResolvedAssignment): string {
   if (assignment.notes <= 1) return ''
+  if (isStacked(assignment)) {
+    return `${count(assignment.notes, 'note')} stacked one per voice`
+  }
   if (assignment.recipe.realisation === 'sampled-chord') {
     return `${count(assignment.notes, 'note')} from one sampled chord`
   }
@@ -336,6 +364,14 @@ function realisationInstruction(assignment: ResolvedAssignment): string {
   if (assignment.notes <= 1) return ''
   const notes = count(assignment.notes, 'note')
   const n = num(assignment.notes)
+  if (isStacked(assignment)) {
+    return (
+      `Polyphony — ${notes}, one on each of ${n} voices. **Every voice takes these same ` +
+      `settings**: it is one sound played ${n} times over, not ${n} sounds, and a difference ` +
+      `between them is a difference you will hear inside the chord. Which voice takes which ` +
+      `note is in Hook.`
+    )
+  }
   if (assignment.recipe.realisation === 'sampled-chord') {
     return (
       `Polyphony — ${notes}, already inside the sample. Load the chord sample(s) onto this one ` +
@@ -386,10 +422,22 @@ function capableText(
 /**
  * §7.3, §12.4. The `polyphony` half of `no-capable-voice`, said in a way a reader can act on.
  *
- * The shortfall is stated rather than the fix, and it is measured off the rig rather than
- * assumed: "every voice here is monophonic" is the Tracker Mini case and is common, but a rig
- * whose pad voices top out at four notes is a different sentence and saying the monophonic one
- * would be false. The general form names the real ceiling.
+ * The shortfall is measured off the rig rather than assumed: "every voice here is monophonic" is
+ * common but a rig whose pad voices top out at four notes is a different sentence, and saying the
+ * monophonic one would be false. The general form names the real ceiling.
+ *
+ * **And it names what to do (#40, #128).** The resolver stacks a chord across a *pool* on its
+ * own, so a surviving `polyphony` gap is one of two situations with different advice, told apart
+ * by counting the voices that declare the role:
+ *
+ *  - **Enough voices, not interchangeable.** Three monosynths, or three named voices on one box.
+ *    The reader can play the chord across them exactly as the engine would across a pool. It is
+ *    not automated because separately authored voices each sound different (see `canStackNotes`),
+ *    which is a reason to leave the choice to the person who can hear them — and a reason the
+ *    sentence has to warn that they need matching.
+ *  - **Not enough voices.** Hand-stacking is not available either, and saying so is the whole of
+ *    the honest answer. Counting them is the only way to tell the reader which case they are in
+ *    without going and looking.
  */
 function polyphonyShortfall(notes: number, roleVoices: Gap['capable']): string {
   const ceiling = roleVoices.reduce((most, a) => Math.max(most, a.polyphony), 0)
@@ -397,7 +445,19 @@ function polyphonyShortfall(notes: number, roleVoices: Gap['capable']): string {
     ceiling <= 1
       ? 'every voice here is monophonic'
       : `the most any voice here can sound is ${count(ceiling, 'note')}`
-  return `needs ${count(notes, 'note')} at once and ${short}`
+  const asked = `needs ${count(notes, 'note')} at once`
+  const voices = roleVoices.length
+  if (voices < notes) {
+    const plays =
+      voices === 1 ? 'only one voice here plays it at all' : `only ${num(voices)} voices here play it at all`
+    return `${asked}; ${short}, and ${plays} — nothing here to spread it across`
+  }
+  const across = voices === notes ? `all ${num(voices)}` : `${num(notes)} of the ${num(voices)}`
+  return (
+    `${asked}; ${short} — stack it by hand across ${across} voices here that play it, one note ` +
+    `each; they are separate voices rather than one pool, so set them alike or the chord will ` +
+    `not blend`
+  )
 }
 
 /**
@@ -436,7 +496,7 @@ function phaseVoiceAssignment(result: ResolveResult, deviceById: Map<DeviceId, D
         a.sections.length === result.template.structure.length
           ? 'every section'
           : a.sections.join(', ')
-      const where = `${a.deviceName} · ${a.assignable.label}`
+      const where = whereText(a)
       const realisation = realisationText(a)
       out.push(`- **\`${a.role}\`** → ${where} — *${a.recipe.title}*`)
       out.push(
@@ -856,6 +916,100 @@ function sampledHookLines(hook: ResolvedHook, framed: boolean): Line[] {
   return out
 }
 
+/**
+ * §12.4/#40. The hook, for a part stacked across several monophonic voices.
+ *
+ * **Oriented by voice, not by chord**, and that is the whole design of it. A per-chord table
+ * ("bar 1: Track 3 = F2, Track 4 = Ab2, Track 5 = C3") is the same data and is unusable at the
+ * machine: on a tracker you fill one track top to bottom and then move to the next, so a reader
+ * following a per-chord list would enter one note, jump two columns, enter one note, jump back.
+ * One block per voice is the order the notes actually get typed in.
+ *
+ * The assignment rule is stated once and then relied on — lowest note to the lowest voice — for
+ * the reason it matters musically rather than for tidiness: keep it and the voicing holds its
+ * shape as the progression moves, break it and the inner voices cross and the chord changes
+ * character between bars without anything in the guide saying so.
+ */
+function stackPosition(index: number, width: number): string {
+  if (index === 0) return 'lowest note'
+  if (index === width - 1) return 'highest note'
+  return `note ${num(index + 1)} from the bottom`
+}
+
+/**
+ * Notes low to high, and a total order rather than a nearly-total one: two notes of one chord can
+ * share a pitch (a doubled root an authored octave apart resolves to two `midi` values, but a
+ * unison does not), so `degree` and `len` finish the comparison. No `localeCompare` (invariant 6).
+ */
+function lowToHigh(notes: readonly ResolvedNote[]): ResolvedNote[] {
+  return [...notes].sort(
+    (a, b) => a.midi - b.midi || a.degree - b.degree || a.len - b.len,
+  )
+}
+
+function stackedHookLines(
+  hook: ResolvedHook,
+  framed: boolean,
+  carriedBy: ResolvedAssignment,
+): Line[] {
+  const out: Line[] = []
+  const voices = carriedBy.assignables
+  const width = voices.length
+  const chords = chordsOf(hook).map((chord) => ({ step: chord.step, notes: lowToHigh(chord.notes) }))
+
+  out.push(
+    `Stacked chord — ${count(width, 'voice')}, one note each. There is no chord to play on ` +
+      'any one of them.',
+  )
+  out.push('')
+  out.push(
+    `Lowest note to the lowest voice: **${(voices[0] as { label: string }).label}** takes the ` +
+      `bottom of every chord and **${(voices[width - 1] as { label: string }).label}** the top. ` +
+      'Hold that order and the voicing keeps its shape as the progression moves; cross the ' +
+      'voices over and the chord changes character between bars with nothing here saying so.',
+  )
+  out.push('')
+  // Invariant 5. A hook with more notes in a chord than the part has voices is a template and a
+  // request disagreeing, and the honest thing is to say which notes have nowhere to go rather
+  // than to drop them off the end of the list.
+  const surplus = chords.filter((chord) => chord.notes.length > width)
+  if (surplus.length > 0) {
+    out.push(
+      `${count(surplus.length, 'chord')} in this hook ${surplus.length === 1 ? 'has' : 'have'} ` +
+        `more notes than this part has voices, so its top ${count(1, 'note')} and above are not ` +
+        `placed below. The part asks for ${count(carriedBy.notes, 'note')}; the hook writes ` +
+        `${num(Math.max(...surplus.map((c) => c.notes.length)))}.`,
+    )
+    out.push('')
+  }
+
+  for (let i = 0; i < width; i++) {
+    const voice = voices[i] as { label: string }
+    out.push(`**${voice.label}** — ${stackPosition(i, width)}`)
+    out.push('')
+    const mine = chords
+      .map((chord) => ({ step: chord.step, note: chord.notes[i] }))
+      .filter((entry): entry is { step: number; note: ResolvedNote } => entry.note !== undefined)
+    if (mine.length === 0) {
+      // A voice with nothing to play is said, not omitted: a missing block reads as a mistake.
+      out.push('Nothing — every chord in this hook has fewer notes than that.')
+      out.push('')
+      continue
+    }
+    for (const { step, note } of mine) {
+      const where = framed ? `bar ${num(barOf(step))} · step ${num(step)}` : `step ${num(step)}`
+      out.push(
+        `- ${where} · len ${num(note.len)} · ${spelling(note)} · ` +
+          `${degreeName(note.degree)} · MIDI ${num(note.midi)}`,
+      )
+    }
+    out.push('')
+  }
+  // The trailing blank is the caller's job everywhere else in this file.
+  if (out[out.length - 1] === '') out.pop()
+  return out
+}
+
 function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined): Line[] {
   const out: Line[] = []
 
@@ -863,10 +1017,7 @@ function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined
   // template-internal identifier that means nothing to somebody standing at a box — and not
   // how many hooks were authored or which one the seed took, which is our machinery rather
   // than their information. The reroll fact worth having is stated once, up in the intro.
-  const where =
-    carriedBy === undefined
-      ? 'unassigned'
-      : `${carriedBy.deviceName} · ${carriedBy.assignable.label}`
+  const where = carriedBy === undefined ? 'unassigned' : whereText(carriedBy)
   out.push(`### \`${choice.forRole}\` — ${where}`)
   out.push('')
 
@@ -899,6 +1050,14 @@ function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined
   // transposition, which covers every root of its own shape and no other shape at all.
   if (carriedBy?.recipe.realisation === 'sampled-chord') {
     out.push(...sampledHookLines(hook, framed))
+    return out
+  }
+
+  // §12.4/#40. And the other way of not playing a chord on one voice: several voices, one note
+  // each. The list below would tell the reader to enter three notes on a voice that sounds one,
+  // and say nothing about which voice gets which — which is the half they cannot work out.
+  if (carriedBy !== undefined && isStacked(carriedBy)) {
+    out.push(...stackedHookLines(hook, framed, carriedBy))
     return out
   }
 
@@ -1175,7 +1334,7 @@ function phaseSteps(
   }
 
   for (const a of result.assignments) {
-    out.push(`### \`${a.role}\` — ${a.deviceName} · ${a.assignable.label}`)
+    out.push(`### \`${a.role}\` — ${whereText(a)}`)
     out.push('')
     // Same reason as phase 4: this phase says what to play and not what it sounds like, so a
     // reader stopping here would think the sound was missing.
@@ -1458,7 +1617,7 @@ function phaseSound(
     }
     for (const a of mine) {
       out.push('')
-      out.push(`#### ${a.assignable.label} — \`${a.role}\`: ${a.recipe.title}`)
+      out.push(`#### ${voicesLabel(a)} — \`${a.role}\`: ${a.recipe.title}`)
       out.push('')
       // §12.4, and an instruction rather than a note: the two realisations are two different
       // things to do at the box, and doing the wrong one produces the wrong number of sounds.
@@ -1648,12 +1807,15 @@ function roleList(roles: readonly Role[]): string {
 // The document
 // ---------------------------------------------------------------------------
 
-/** §12.4's count, recomputed for display: an assignable occupied in any section counts once. */
+/**
+ * §12.4's count, recomputed for display: an assignable occupied in any section counts once, and
+ * every voice of a stacked part counts (#40) — three tracks for one pad really are three voices.
+ */
 function occupiedCounts(result: ResolveResult): Map<DeviceId, number> {
   const byDevice = new Map<DeviceId, Set<string>>()
   for (const a of result.assignments) {
     const set = byDevice.get(a.deviceId) ?? new Set<string>()
-    set.add(a.assignable.voiceId)
+    for (const assignable of a.assignables) set.add(assignable.voiceId)
     byDevice.set(a.deviceId, set)
   }
   return new Map([...byDevice].map(([id, set]) => [id, set.size]))

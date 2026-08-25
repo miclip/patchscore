@@ -1,7 +1,19 @@
 import type { HookChoice, ResolveResult, ResolvedAssignment, ResolvedHook, ResolvedNote } from '@/lib/core'
 import { Fragment } from 'react'
 import { chordVoicings, enharmonicAlternative } from '@/lib/core'
-import { barOf, chordsOf, count, degreeName, gridFits, lenText, num } from './format'
+import {
+  barOf,
+  chordsOf,
+  count,
+  degreeName,
+  gridFits,
+  isStacked,
+  lenText,
+  lowToHigh,
+  num,
+  stackPosition,
+  voicesLabel,
+} from './format'
 import { SoundRef } from './instruction'
 
 /**
@@ -164,6 +176,117 @@ function SampledHook({ hook, framed }: { hook: ResolvedHook; framed: boolean }) 
   )
 }
 
+/**
+ * §12.4/#40. The hook, for a part stacked across several monophonic voices, one note each.
+ *
+ * **Oriented by voice rather than by chord**, which is the whole design. A per-chord table is the
+ * same data and unusable at the machine: on a tracker you fill one track top to bottom and then
+ * move to the next, so a reader following a per-chord list would enter one note, jump two
+ * columns, enter one note, jump back. One block per voice is the order the notes get typed in.
+ *
+ * The assignment rule is stated once and then relied on — lowest note to the lowest voice —
+ * because it is musical rather than tidy: hold it and the voicing keeps its shape as the
+ * progression moves; cross the voices and the chord changes character between bars.
+ *
+ * Hand-written to match `stackedHookLines` in `lib/core/render.ts` word for word. The two
+ * renderers share no code path (§8), so the only thing keeping them in step is that.
+ */
+function StackedHook({
+  hook,
+  framed,
+  carriedBy,
+}: {
+  hook: ResolvedHook
+  framed: boolean
+  carriedBy: ResolvedAssignment
+}) {
+  const voices = carriedBy.assignables
+  const width = voices.length
+  const chords = chordsOf(hook).map((chord) => ({ step: chord.step, notes: lowToHigh(chord.notes) }))
+  const surplus = chords.filter((chord) => chord.notes.length > width)
+
+  return (
+    <>
+      <p className="callout">
+        Stacked chord — {count(width, 'voice')}, one note each. There is no chord to play on any
+        one of them.
+      </p>
+      <p className="quiet">
+        Lowest note to the lowest voice:{' '}
+        <strong>{(voices[0] as { label: string }).label}</strong> takes the bottom of every chord
+        and <strong>{(voices[width - 1] as { label: string }).label}</strong> the top. Hold that
+        order and the voicing keeps its shape as the progression moves; cross the voices over and
+        the chord changes character between bars with nothing here saying so.
+      </p>
+      {/*
+        Invariant 5. A chord with more notes than the part has voices is a template and a request
+        disagreeing, and the honest thing is to say which notes have nowhere to go rather than to
+        drop them off the end of a list.
+      */}
+      {surplus.length === 0 ? null : (
+        <p className="callout">
+          {count(surplus.length, 'chord')} in this hook {surplus.length === 1 ? 'has' : 'have'}{' '}
+          more notes than this part has voices, so its top {count(1, 'note')} and above are not
+          placed below. The part asks for {count(carriedBy.notes, 'note')}; the hook writes{' '}
+          {num(Math.max(...surplus.map((c) => c.notes.length)))}.
+        </p>
+      )}
+      {voices.map((voice, i) => {
+        const mine = chords
+          .map((chord) => ({ step: chord.step, note: chord.notes[i] }))
+          .filter((entry): entry is { step: number; note: ResolvedNote } => entry.note !== undefined)
+        return (
+          <Fragment key={voice.voiceId}>
+            <h5>
+              {voice.label} — {stackPosition(i, width)}
+            </h5>
+            {mine.length === 0 ? (
+              // A voice with nothing to play is said, not omitted: a missing block reads as a bug.
+              <p className="quiet">Nothing — every chord in this hook has fewer notes than that.</p>
+            ) : (
+              <ul className="notes">
+                {mine.map(({ step, note }) => (
+                  <li key={step}>
+                    {framed ? (
+                      <>
+                        <span className="pos">
+                          <span className="quiet">bar </span>
+                          <span className="mono">{num(barOf(step))}</span>
+                        </span>
+                        <span className="token-sep"> · </span>
+                      </>
+                    ) : null}
+                    <span className="pos">
+                      <span className="quiet">step </span>
+                      <span className="mono">{num(step)}</span>
+                    </span>
+                    <span className="token-sep"> · </span>
+                    <span className="pos">
+                      <span className="quiet">len </span>
+                      <span className="mono">{num(note.len)}</span>
+                    </span>
+                    <span className="token-sep"> · </span>
+                    <ChordNotes notes={[note]} />
+                    <span className="token-sep"> · </span>
+                    <span className="degrees">
+                      <span className="degree">{degreeName(note.degree)}</span>
+                    </span>
+                    <span className="token-sep"> · </span>
+                    <span className="pos">
+                      <span className="quiet">MIDI </span>
+                      <span className="mono">{num(note.midi)}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Fragment>
+        )
+      })}
+    </>
+  )
+}
+
 function HookBlock({
   choice,
   carriedBy,
@@ -188,7 +311,7 @@ function HookBlock({
           <>
             <span className="token-sep">—</span>
             <span className="quiet">
-              {carriedBy.deviceName} · {carriedBy.assignable.label}
+              {carriedBy.deviceName} · {voicesLabel(carriedBy)}
             </span>
           </>
         )}
@@ -218,6 +341,14 @@ function HookBlock({
           */}
           {carriedBy?.recipe.realisation === 'sampled-chord' ? (
             <SampledHook hook={choice.chosen.hook} framed={framed} />
+          ) : /*
+              §12.4/#40. The other way of not playing a chord on one voice: several voices, one
+              note each. The list below would tell the reader to enter three notes on a voice that
+              sounds one, and say nothing about which voice gets which — the half they cannot work
+              out for themselves.
+            */
+          carriedBy !== undefined && isStacked(carriedBy) ? (
+            <StackedHook hook={choice.chosen.hook} framed={framed} carriedBy={carriedBy} />
           ) : (
           <>
           {/*

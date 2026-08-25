@@ -48,7 +48,8 @@ export function serialise(result: ResolveResult): string {
         notes: a.notes,
         deviceId: a.deviceId,
         deviceName: a.deviceName,
-        assignable: a.assignable,
+        // #40: plural, and the whole list — a stacked chord is several voices.
+        assignables: a.assignables,
         recipe: a.recipe,
         params: a.params,
         patch: a.patch,

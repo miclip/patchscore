@@ -219,7 +219,10 @@ describe('four voices are one assignable, not four (§12.4)', () => {
     const [pad] = result.assignments
     expect(pad?.notes).toBe(4)
     // The whole claim in one line: four notes, one voice, and no second voice involved.
-    expect(pad?.assignable.polyphony).toBe(4)
+    // One assignable, and #40 makes that worth asserting: a genuine polyphonic voice must beat
+    // stacking, so a four-note voice holding a triad stays one voice.
+    expect(pad?.assignables).toHaveLength(1)
+    expect(pad?.assignables[0]?.polyphony).toBe(4)
     expect(expand(device)).toHaveLength(1)
   })
 
@@ -280,9 +283,11 @@ describe('two parts cannot both have the voice', () => {
     const held = new Map<string, string>()
     for (const a of result.assignments) {
       for (const section of a.sections) {
-        const key = `${assignableKey(a.assignable as Assignable)} ${section}`
-        expect(held.get(key), `${key} taken twice`).toBeUndefined()
-        held.set(key, a.requestId)
+        for (const voice of a.assignables) {
+          const key = `${assignableKey(voice as Assignable)} ${section}`
+          expect(held.get(key), `${key} taken twice`).toBeUndefined()
+          held.set(key, a.requestId)
+        }
       }
     }
     // Not vacuous: the box did take a part, and only one at a time.

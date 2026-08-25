@@ -10,7 +10,7 @@ import {
   type MoodAxis,
   type Role,
 } from './vocabulary'
-import { realisationRank, requiredVoicePolyphony } from './device'
+import { realisationOf, realisationRank, requiredVoicePolyphony } from './device'
 import type {
   ArticulationEntry,
   Assignable,
@@ -453,6 +453,87 @@ export function canCarryNotes(
   if (assignable.polyphony >= notes) return true
   return recipesFor(device, assignable, role).some(
     (recipe) => requiredVoicePolyphony(recipe, notes) <= assignable.polyphony,
+  )
+}
+
+/**
+ * §12.4/#40. How many interchangeable voices the pool this assignable belongs to has — 1 for a
+ * `fixed` voice, which is a pool of itself.
+ *
+ * `Assignable` carries its own ordinal but not its pool's size, and deliberately: the ordinal is
+ * an identity and the size is a fact about the device. So the count is read back off `voices`
+ * rather than duplicated onto every member, where the two could disagree.
+ */
+export function poolWidth(device: Device, assignable: Assignable): number {
+  if (assignable.poolId === undefined) return 1
+  for (const voice of device.voices) {
+    if (voice.kind === 'pool' && voice.id === assignable.poolId) return voice.count
+  }
+  return 1
+}
+
+/**
+ * §12.4/#40. Whether `notes` simultaneous notes can be had from this pool by **stacking** —
+ * `notes` of its members playing the same patch, one note of the chord each, which is the
+ * method the Polyend manual itself prescribes (p.103: "To create chords, multiple tracks would
+ * be used when each track represents a note. A triad would therefore need 3 tracks").
+ *
+ * Three conditions, and each of them is the gate rather than a convenience:
+ *
+ *  - **A pool, never a set of fixed voices.** This is the gate #40 asked to be argued. Pool
+ *    members are *interchangeable by construction* — `roles`, `polyphony` and the recipe key are
+ *    all per-pool (§2.2) — so every voice in a stack provably runs the same patch, which is what
+ *    makes the result one chord rather than three sounds. Three fixed voices are three
+ *    individually authored timbres; a TR-1000's LT, MT and HT handed a triad would produce three
+ *    differently tuned toms, not a pad. That also answers §12.4's drum-machine worry without a
+ *    tonal-role list and without a device declaration: fungibility is exactly the property
+ *    stacking needs, `kind: 'pool'` is exactly the claim that the voices have it, and neither
+ *    needs a fifth shared vocabulary (invariant 3).
+ *  - **Enough members to go round.** A four-note chord on a three-track pool is not a stack.
+ *  - **A `polyphonic-voice` recipe.** Each voice plays *one* note, so the recipe only ever needs
+ *    polyphony 1 — but stacking a `sampled-chord` recipe is meaningless: it would put the whole
+ *    chord on each of three voices. So the sampled route and the stacked route stay distinct all
+ *    the way down, which is also why they are two `Score` keys and not one.
+ *
+ * Character is not consulted, for the reason `canCarryNotes` gives: this is the rig question
+ * §7.3 asks before the authoring question.
+ *
+ * A voice whose own polyphony already reaches `notes` is refused here. Stacking it would be
+ * strictly dominated — same recipe, same character, `stackedChords` charged and three voices
+ * occupied instead of one — so it is not a branch worth giving the search.
+ */
+export function canStackNotes(
+  device: Device,
+  assignable: Assignable,
+  role: Role,
+  notes: number,
+): boolean {
+  if (notes <= 1) return false
+  if (assignable.polyphony >= notes) return false
+  if (assignable.poolId === undefined) return false
+  if (poolWidth(device, assignable) < notes) return false
+  return recipesFor(device, assignable, role).some(
+    (recipe) =>
+      realisationOf(recipe) === 'polyphonic-voice' &&
+      requiredVoicePolyphony(recipe, 1) <= assignable.polyphony,
+  )
+}
+
+/**
+ * §12.4/#40. The recipes one voice of a stack may run: scored for **one note**, because that is
+ * all it plays, with the sampled-chord route excluded for the reason `canStackNotes` gives.
+ *
+ * Filtering after `scoreRecipes` rather than inside it keeps one sort: at `notes = 1` realisation
+ * does not decide above character, so removing entries cannot reorder the ones that remain.
+ */
+export function stackRecipes(
+  device: Device,
+  assignable: Assignable,
+  role: Role,
+  want: Character,
+): { recipe: Recipe; distanceSq: number }[] {
+  return scoreRecipes(device, assignable, role, want, 1).filter(
+    (x) => realisationOf(x.recipe) === 'polyphonic-voice',
   )
 }
 
