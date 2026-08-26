@@ -1063,8 +1063,8 @@ What processes audio in this rig:
 
 Sections that program identically, part for part — build one and copy it:
 
-- **band 0** — Intro, Outro
-- **band 1** — Build, Breakdown
-- **band 3** — Drop, Peak
+- **band 0** — Intro, Outro · 9 parts, 14 strikes
+- **band 1** — Build, Breakdown · 9 parts, 27 strikes
+- **band 3** — Drop, Peak · 10 parts, 73 strikes
 
 `pad` and `riser` have no pattern authored at any band, so nothing here varies for them.

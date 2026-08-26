@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
 import type { BandGroup, FxSource, ResolveResult, Role } from '@/lib/core'
 import { bandTrajectory, fxSources, sidechainReading } from '@/lib/core'
-import { fxText, num, sidechainSentences } from './format'
+import { count, fxText, num, sidechainSentences } from './format'
 import { TokenList } from './instruction'
 
 /** `kick`, `kick and sub`, `kick, sub and clap` — the Markdown sibling joins the same way. */
@@ -20,9 +20,31 @@ function RoleList({ roles }: { roles: readonly Role[] }) {
   )
 }
 
+/**
+ * #152's summary, the Markdown sibling of `programsText`. First of the notes for the same
+ * reason: it describes the group, and everything after it qualifies the group.
+ *
+ * Each count is `mono`, word included, because these are values a reader compares down the
+ * column — §8 wants numbers legible at arm's length, and `9 parts` above `10 parts` in
+ * proportional type does not line up. `count` is `format.ts`'s, the same helper the Markdown
+ * sibling uses from `render.ts`: the wording is the thing that must not drift, and pluralising
+ * by hand in two places is how it would.
+ */
+function GroupPrograms({ programs }: { programs: BandGroup['programs'] }) {
+  if (programs.parts === 0) return null
+  return (
+    <span className="quiet">
+      {' · '}
+      <span className="mono">{count(programs.parts, 'part')}</span>,{' '}
+      <span className="mono">{count(programs.strikes, 'strike')}</span>
+    </span>
+  )
+}
+
 function GroupNotes({ group }: { group: BandGroup }) {
   return (
     <>
+      <GroupPrograms programs={group.programs} />
       {group.fallbacks.map((f) => (
         <span className="quiet" key={`fallback-${num(f.usedBand)}`}>
           {' · '}

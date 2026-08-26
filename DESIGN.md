@@ -2926,6 +2926,24 @@ Do not reorder.
    Deliberately not a second copy of phases 1–3 — it printed the device list, a bars-and-energy
    table and every role under every section heading, and all three already exist above it.
 
+   **Each group is sized, because the band number alone is not actionable** (#152). A line
+   reading `band 3 — Drop, Peak` labels the group and says nothing a reader can act on: whether
+   band 3 is the busy one or the empty one is a property of the template, which authors each
+   band's variants freely, and the number does not carry it. So each group states the parts and
+   the strikes it asks for — `9 parts, 27 strikes` against `10 parts, 73 strikes` — which makes
+   two lines comparable at a glance and is what the label was failing to do. On a one-part
+   direction it is the density arc made legible: Drone Study runs 1 strike at band 0 to 7 at
+   band 3, where four bare labels said nothing. Counted from the pattern that **plays**, so a
+   part that fell back contributes what it fell back to; parts silent here contribute nothing
+   and are reported separately.
+
+   **An aggregate, never a roll-call**, and **no cycle length**. Per-role strike counts are
+   phase 5's subject and it prints the grids themselves. A cycle length was tried and removed:
+   phase 1 counts a section's bars and phase 5 a pattern's length, so a third number in bars
+   would put three meanings of "how long" in one guide — #142 is the record of what two of them
+   already cost a reader — and a group-level maximum is the least defensible of the three, since
+   nobody programs the longest cycle, only their own part's.
+
    **Master FX names what processes audio, and nothing declares that.** There is no
    `features.fx`: the block reads three things a device already says about itself — `kind`
    (an `fx-processor` or a `mixer-recorder` *is* the processing), panel labels naming an effect

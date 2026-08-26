@@ -160,6 +160,79 @@ describe('bandTrajectory separates the two kinds of silence (invariant 5)', () =
   })
 })
 
+describe('bandTrajectory sizes each group, so the band label means something (#152)', () => {
+  it('counts the parts and the strikes of what plays', () => {
+    // The scenario's five parts are four roles — it asks for `pad` twice.
+    const [intro, build, drop] = golden().groups
+    expect(intro?.programs).toEqual({ parts: 5, strikes: 8 })
+    expect(build?.programs).toEqual({ parts: 5, strikes: 8 })
+    expect(drop?.programs).toEqual({ parts: 5, strikes: 9 })
+  })
+
+  it('reports no cycle length, which phase 1 and phase 5 already count differently', () => {
+    // It briefly reported the group's longest cycle in bars. That is a third meaning of "how
+    // long" in one guide — phase 1 counts a section's bars, phase 5 a pattern's length — and
+    // #142 is the record of what two of them already cost a reader. Pinned so it stays gone.
+    for (const g of golden().groups) {
+      expect(Object.keys(g.programs).sort()).toEqual(['parts', 'strikes'])
+    }
+  })
+
+  it('is what separates two groups the band label alone renders alike', () => {
+    // Build asks band 2 and Drop asks band 3, and before #152 that was the entire visible
+    // difference between the two lines. The hat is the part that moves — `p-hat-b1`'s one hit
+    // in Build against `p-hat-b2-drop`'s two — and the strike count is where a reader sees it.
+    const [, build, drop] = golden().groups
+    expect(drop?.programs.strikes).toBeGreaterThan(build?.programs.strikes ?? 0)
+  })
+
+  it('counts the band that played, never the band that was asked for', () => {
+    // Intro asks band 0 and the scenario authors nothing there, so every part falls back. A
+    // summary counting the label's band would report an empty section; what a reader has to
+    // punch in is whatever came back.
+    const [intro] = golden().groups
+    expect(intro?.band).toBe(0)
+    expect(intro?.fallbacks.length).toBeGreaterThan(0)
+    expect(intro?.programs.strikes).toBe(8)
+  })
+
+  it('leaves a part silent here out of the count, where `silent` already reports it', () => {
+    const t = withStructure(
+      [
+        { name: 'Intro', bars: 16, energy: 0.5 },
+        { name: 'Drop', bars: 32, energy: 0.5 },
+      ],
+      {
+        roles: GOLDEN_TEMPLATE.roles.filter((r) => r.id === 'r-kick'),
+        patterns: GOLDEN_TEMPLATE.patterns
+          .filter((p) => p.forRole === 'kick')
+          .map((p) => ({ ...p, sections: ['Drop' as SectionName] })),
+      },
+    )
+    const [intro, drop] = bandTrajectory(run(t)).groups
+    // The kick is silent in Intro and plays in Drop. One part, counted once, in one group.
+    expect(intro?.silent).toEqual(['kick'])
+    expect(intro?.programs).toEqual({ parts: 0, strikes: 0 })
+    expect(drop?.programs).toMatchObject({ parts: 1 })
+  })
+
+  it('reports zeros for a group with nothing playing, rather than an invented size', () => {
+    const empty = bandTrajectory(
+      resolve({ devices: [], template: GOLDEN_TEMPLATE, mood: GOLDEN_MOOD, seed: GOLDEN_SEED }),
+    )
+    expect(empty.groups[0]?.programs).toEqual({ parts: 0, strikes: 0 })
+  })
+
+  it('keeps every count an integer, so nothing here can drift across platforms', () => {
+    // Both are plain counts (invariant 6). Nothing here divides, and nothing should start to.
+    for (const g of golden().groups) {
+      for (const n of [g.programs.parts, g.programs.strikes]) {
+        expect(Number.isInteger(n)).toBe(true)
+      }
+    }
+  })
+})
+
 describe('bandTrajectory carries no per-part fact the band does not make true', () => {
   it('derives which sections a part occupies nowhere — that is phase 2 (§8)', () => {
     // It briefly carried "parts that come and go", which was `a.sections` copied verbatim out

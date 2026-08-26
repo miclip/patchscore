@@ -37,6 +37,44 @@ export type BandGroup = {
   silent: Role[]
   /** Roles this group programs differently from the first group asking the same band. */
   differsOn: Role[]
+  /**
+   * What this group actually asks the reader to program (#152).
+   *
+   * A bare `band 3` labels the group without saying anything a reader can act on: nothing in
+   * the number says whether band 3 is the busy one or the empty one, and the answer is a
+   * property of the template, which authors each band's variants freely. Two counts make two
+   * groups comparable at a glance — *2 parts, 6 strikes* against *6 parts, 48 strikes* — which
+   * is the whole of what the label was failing to do.
+   *
+   * Counted from the patterns that actually play, so a part that fell back to another band
+   * contributes what it fell back to rather than what was asked for. Parts with nothing
+   * authored here contribute nothing and are reported separately by `silent`.
+   *
+   * Deliberately an aggregate and not a roll-call. Per-role strike counts are phase 5's
+   * subject and it prints the grids themselves; repeating them here is how this section grew
+   * into a second copy of the guide the last time, which is what the module docstring is
+   * about.
+   */
+  programs: BandProgramming
+}
+
+/**
+ * The size of one group's programming job, in template-owned facts.
+ *
+ * Both are plain counts, so nothing here can drift across platforms (invariant 6).
+ *
+ * **A cycle length is deliberately not among them.** It was, and it collided: phase 1 counts a
+ * section's bars and phase 5 counts a pattern's length, so a third number in bars — the longest
+ * cycle in the group — put three different meanings of "how long" in one guide. #142 is the
+ * record of what that costs a reader, and a group-level maximum is the least defensible of the
+ * three anyway, since nobody programs the longest cycle: they program each part's own. Phase 5
+ * has the per-part length, where it is actionable.
+ */
+export type BandProgramming = {
+  /** Parts with a pattern that plays here. Excludes `silent` parts and `unpatterned` roles. */
+  parts: number
+  /** Total hits across those parts, one cycle each: how much there is to punch in. */
+  strikes: number
 }
 
 export type BandTrajectory = {
@@ -113,11 +151,19 @@ export function bandTrajectory(result: ResolveResult): BandTrajectory {
 
     const fallbacks = new Map<DensityBand, Role[]>()
     const silent: Role[] = []
+    // #152. Accumulated over the same walk, from the pattern that plays rather than the one
+    // asked for — a group whose every part fell back to band 2 programs band 2's strikes, and
+    // a summary counting the band on the label would be describing patterns nobody plays.
+    const programs: BandProgramming = { parts: 0, strikes: 0 }
     for (const part of section.parts) {
       const s = part.entry.selection
       if (s.outcome === 'none') {
         if (!alwaysSilent.has(part.role)) silent.push(part.role)
-      } else if (s.outcome === 'fallback') {
+        continue
+      }
+      programs.parts += 1
+      programs.strikes += s.pattern.hits.length
+      if (s.outcome === 'fallback') {
         fallbacks.set(s.usedBand, [...(fallbacks.get(s.usedBand) ?? []), part.role])
       }
     }
@@ -149,6 +195,7 @@ export function bandTrajectory(result: ResolveResult): BandTrajectory {
       })),
       silent: unique(silent),
       differsOn: unique(differsOn),
+      programs,
     })
   }
 
