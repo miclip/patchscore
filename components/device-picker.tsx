@@ -67,8 +67,7 @@ export function DevicePicker({ selected, onToggle }: DevicePickerProps) {
    * #138. Derived from the selected devices in registry order, so the cables follow the list
    * rather than a second ordering of their own.
    */
-  const listRef = useRef<HTMLDivElement | null>(null)
-  const scrollRef = useRef<HTMLFieldSetElement | null>(null)
+  const listRef = useRef<HTMLFieldSetElement | null>(null)
   const bay = useMemo(
     () => patchbay(chosen.map((row) => row.item)),
     [chosen],
@@ -146,13 +145,10 @@ export function DevicePicker({ selected, onToggle }: DevicePickerProps) {
         <p className="note picker-kept">Your rig — {chosen.length} selected. Untick to drop.</p>
       ) : null}
 
-      {/* The overlay wraps the list *and* the sentence under it, because the `out` jack lives at
-          the end of that sentence and a cable has to reach it. */}
-      <div className="patch-area" ref={listRef}>
-        <fieldset className="picker-list" ref={scrollRef}>
-          {[...chosen, ...rest].map((row) => pick(row, onToggle, ids, bay))}
-        </fieldset>
-        <PatchCables bay={bay} areaRef={listRef} scrollRef={scrollRef} />
+      <fieldset className="picker-list" ref={listRef}>
+        {[...chosen, ...rest].map((row) => pick(row, onToggle, ids, bay))}
+        <PatchCables bay={bay} listRef={listRef} />
+      </fieldset>
 
       {/*
         §8's accessible path, and the reason the drawing above may be `aria-hidden`: a sighted
@@ -178,13 +174,16 @@ export function DevicePicker({ selected, onToggle }: DevicePickerProps) {
         have wanted to run through text in this component. Given its own row the cable comes
         down the lane and across open space, and the label reads as silkscreen (§10).
       */}
-      {bay.source === undefined ? null : (
-        <p className="patch-out-row">
-          <span className="patch-out" data-jack="__out" aria-hidden="true" />
-          <span className="patch-out-label mono">out — to the guide</span>
-        </p>
-      )}
-      </div>
+      {/*
+        Where the rig leaves for the guide, and the start of the page's own chain: `out` runs to
+        the Direction, and the Direction on to an Inspiration when one is chosen. Marked for the
+        page-level overlay rather than this one — the device cables belong to the list and scroll
+        with it, and this run crosses panels.
+      */}
+      <p className="patch-out-row">
+        <span className="patch-out" data-chain="out" aria-hidden="true" />
+        <span className="patch-out-label mono">out — to the guide</span>
+      </p>
 
       {rest.length === 0 && chosen.length > 0 && shown.matched > 0 ? (
         <p className="empty">Everything matching that is already in your rig.</p>

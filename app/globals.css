@@ -3152,3 +3152,34 @@ html {
 .patch-legend {
   padding-left: 46px;
 }
+
+/*
+ * #138's page chain: `out` -> Direction -> Inspiration.
+ *
+ * Positioned over `.columns` rather than inside a panel, because it crosses three of them and
+ * must not scroll with any one. It runs down the page's left margin, so it is *over* the cards
+ * in paint order and still crosses nothing: behind them, only stubs in the gaps were visible,
+ * which reads as a broken cable rather than a hidden one.
+ */
+.columns {
+  position: relative;
+}
+
+.patch-chain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 2;
+}
+
+.columns > .panel {
+  position: relative;
+  z-index: 1;
+}
+
+/* One colour: this run is not a device cable and should not read as one. */
+.patch-chain-core {
+  stroke: var(--voice-cable, #56c5ef);
+}

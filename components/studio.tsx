@@ -27,6 +27,7 @@ import {
 } from '@/lib/studio/session'
 import type { Bootstrap, StudioNotice, SyncReport, SyncScheduler } from '@/lib/studio/session'
 import { DevicePicker } from './device-picker'
+import { PatchChain } from './patch-chain'
 import { Footer } from './footer'
 import { GenrePicker } from './genre-picker'
 import { GuideArea } from './guide-area'
@@ -155,6 +156,8 @@ export function Studio({ initialInputs }: StudioProps) {
    * so this cannot write the defaults over a link either.
    */
   const sync = useRef<SyncScheduler | undefined>(undefined)
+  /** #138's chain overlay measures against this, since the run crosses three panels. */
+  const columnsRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     const scheduler = createStudioSync(browserEnv(), onSynced)
     sync.current = scheduler
@@ -304,7 +307,10 @@ export function Studio({ initialInputs }: StudioProps) {
         </div>
       )}
 
-      <div className="columns">
+      {/* #138. The chain runs `out` -> Direction -> Inspiration across three panels, so its
+          overlay sits here rather than in any one of them. */}
+      <div className="columns" ref={columnsRef}>
+        <PatchChain areaRef={columnsRef} />
         <DevicePicker selected={inputs.devices} onToggle={toggleDevice} />
         <GenrePicker selected={inputs.templateId} onSelect={selectTemplate} />
         <SeedField seed={inputs.seed} onChange={setSeed} />
