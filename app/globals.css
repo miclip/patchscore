@@ -2931,3 +2931,121 @@ html {
     margin: 14mm;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * #138 — the picker's patch cables
+ *
+ * A visual layer over the existing rows. `.pick`'s grid was tuned by #112 for two 44px
+ * targets in two columns, so the jack is taken out of flow into the list's left gutter
+ * rather than added as a third column, where it would have re-run that layout.
+ * ------------------------------------------------------------------------ */
+
+.picker-list {
+  position: relative;
+  padding-left: 20px;
+}
+
+.pick {
+  position: relative;
+}
+
+/* A ring when free, filled when patched — the whole vocabulary, and it stays legible small. */
+.pick-jack {
+  position: absolute;
+  left: -14px;
+  top: 18px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--edge-2, #4a4f57);
+  background: var(--panel);
+  z-index: 1;
+}
+
+.pick-jack[data-patched='source'] {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.pick-jack[data-patched='clock'],
+.pick-jack[data-patched='audio'],
+.pick-jack[data-patched='either'] {
+  border-color: var(--text-2, #9aa1ab);
+  background: var(--text-2, #9aa1ab);
+}
+
+/* Free means nothing runs to it. Left hollow on purpose — the same empty socket the rack
+   draws, which is invariant 5 in a drawing rather than a sentence. */
+.pick-jack[data-patched='free'] {
+  background: transparent;
+}
+
+.patchbay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.patch-cable-casing {
+  fill: none;
+  stroke: #08090a;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.patch-cable-core {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+/* The runs cross the row faces, so they are held back from competing with the names under
+   them. Enough to follow a cable, not enough to fight the text — §8 reads this at a rack. */
+.patch-cable {
+  opacity: 0.75;
+}
+
+/* Kind lives in the dash, not the hue: the forced-colours block below removes hue entirely,
+   and the channel that survives has to be the one carrying meaning. */
+@media (prefers-reduced-motion: no-preference) {
+  .patch-cable {
+    animation: patch-draw 260ms ease-out both;
+  }
+}
+
+@keyframes patch-draw {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Under forced colours every cable hue collapses, so the dash is all that is left to tell a
+   clock run from an audio one. Casing and core are given system colours and the core keeps its
+   dash — deliberately not `stroke: currentColor` on both, which would erase the jacket. */
+@media (forced-colors: active) {
+  .patch-cable-casing {
+    stroke: Canvas;
+  }
+
+  .patch-cable-core {
+    stroke: CanvasText !important;
+  }
+
+  /* Filled means patched, a ring means free — and that distinction has to survive here too.
+     Setting only the border left every jack a hollow ring under forced colours, so the one
+     piece of state the socket carries was lost in exactly the mode that needs it most.
+     `CanvasText` fills; `Canvas` leaves the ring open. */
+  .pick-jack {
+    border-color: CanvasText;
+    background: CanvasText;
+  }
+
+  .pick-jack[data-patched='free'] {
+    background: Canvas;
+  }
+}
