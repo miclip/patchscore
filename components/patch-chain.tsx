@@ -187,6 +187,19 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
   useEffect(() => {
     const area = areaRef.current
     if (area === null) return
+    /**
+     * Reflow is deferred a frame; **scroll is not**.
+     *
+     * A scroll listener runs before the frame is painted, so writing the path there lands in the
+     * same frame the rows move in. Going through `requestAnimationFrame` instead means measuring
+     * *after* the browser has already composited the scrolled content — the cable is then a frame
+     * behind by construction, however cheap the measure is, and that is the wobble left over once
+     * the React re-render was gone.
+     *
+     * The work is a handful of `getBoundingClientRect` calls and some attribute writes, which is
+     * within a frame's budget. Resize and reflow keep the frame throttle: those are bursty, not
+     * scroll-linked, and nothing is chasing them.
+     */
     const schedule = () => {
       if (frame.current !== undefined) cancelAnimationFrame(frame.current)
       frame.current = requestAnimationFrame(measure)
@@ -194,19 +207,19 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
     const observer = new ResizeObserver(schedule)
     observer.observe(area)
     window.addEventListener('resize', schedule)
-    window.addEventListener('scroll', schedule, { passive: true })
+    window.addEventListener('scroll', measure, { passive: true })
     /**
      * Each picker list scrolls independently, and this overlay sits outside all of them, so a
      * socket moves under a cable that has no idea. Scrolling the Direction list left the run
      * pointing where the row used to be — reported, and the reason these listeners exist.
      */
     const scrollers = [...area.querySelectorAll<HTMLElement>('.picker-list')]
-    for (const el of scrollers) el.addEventListener('scroll', schedule, { passive: true })
+    for (const el of scrollers) el.addEventListener('scroll', measure, { passive: true })
     return () => {
       observer.disconnect()
       window.removeEventListener('resize', schedule)
-      window.removeEventListener('scroll', schedule)
-      for (const el of scrollers) el.removeEventListener('scroll', schedule)
+      window.removeEventListener('scroll', measure)
+      for (const el of scrollers) el.removeEventListener('scroll', measure)
       if (frame.current !== undefined) cancelAnimationFrame(frame.current)
     }
   }, [measure, areaRef])
