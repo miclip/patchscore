@@ -2158,8 +2158,7 @@ function phaseFinishing(result: ResolveResult): Line[] {
  * section wants the size before the caveats.
  */
 function programsText(p: BandGroup['programs']): string {
-  const parts = `${num(p.parts)} ${p.parts === 1 ? 'part' : 'parts'}`
-  return `${parts}, ${num(p.strikes)} ${p.strikes === 1 ? 'strike' : 'strikes'}`
+  return `${count(p.parts, 'part')}, ${count(p.strikes, 'strike')}`
 }
 
 /** The per-group notes, in one order both renderers share. */
