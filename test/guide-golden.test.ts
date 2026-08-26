@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { GUIDE_NAMES, guidePath, guideText } from './golden/guides'
+import { GUIDE_NAMES, TECHNO_GUIDE_NAMES, guidePath, guideText } from './golden/guides'
 
 /**
  * §8's rendered output, pinned as bytes against the real device library.
@@ -86,7 +86,11 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
     // The one fact this phase owns: which sections program identically. Six sections collapse
     // to three lines, which is three patterns to program instead of six — and it is only
     // visible at real scale, where two sections happen to share a band.
-    for (const name of GUIDE_NAMES) {
+    //
+    // Industrial Techno's three fixtures only: the section *names* are the template's, so a
+    // fixture on another template would have to be excused from this assertion one line at a
+    // time, and an assertion with an exception per fixture stops being one.
+    for (const name of TECHNO_GUIDE_NAMES) {
       const doc = guideText(name)
       const arrangement = doc.slice(doc.indexOf('**Arrangement variations**'))
       expect(arrangement, name).toContain('- **band 0** — Intro, Outro')
@@ -134,19 +138,77 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
 
   it('still renders every value it has, rather than passing by rendering nothing', () => {
     // The obvious way to make the test above pass by accident.
-    for (const name of GUIDE_NAMES) {
+    //
+    // Ten is a *scale* floor, and only the techno fixtures are at that scale: a rig of one box
+    // carrying one part has five values to render and is not failing by having them. It gets its
+    // own floor below rather than a weakened shared one, which would stop discriminating for the
+    // three fixtures the number was chosen for.
+    for (const name of TECHNO_GUIDE_NAMES) {
       const values = soundDesign(guideText(name)).filter((l) => l.startsWith('- **'))
       expect(values.length, name).toBeGreaterThan(10)
     }
+    const one = soundDesign(guideText('deluge-drone-study')).filter((l) => l.startsWith('- **'))
+    expect(one.length).toBeGreaterThan(0)
+  })
+
+  it('pins sections that do not divide the pattern, which no techno fixture can (§6.3)', () => {
+    // Drone Study runs 9, 15, 21, 33, 18, 24 and 12 bars against a 16-bar cycle, so phase 5 has
+    // to say where each copy is cut and say why the arithmetic is untidy. Industrial Techno's
+    // sections divide, so all three files above render only the easy case — this sentence and
+    // this shape of section line appear in no other committed guide, which is the whole reason
+    // this fixture is here.
+    const doc = guideText('deluge-drone-study')
+    expect(doc).toContain('**Not every section is a whole number of repeats, and that is')
+    expect(doc).toContain('- **Tilt** · 21 bars — 1 copy of 16 bars, then one cut to 5 bars')
+    expect(doc).toContain('- **Settle** · 9 bars — one copy cut to 9 bars')
+    expect(doc).toContain('- **Vast** · 33 bars — 2 copies of 16 bars, then one cut to 1 bar')
+
+    for (const name of TECHNO_GUIDE_NAMES) {
+      expect(guideText(name), name).not.toContain('Not every section is a whole number')
+    }
+  })
+
+  it('pins one box that fills the direction, which is a pairing no other fixture has', () => {
+    // Neither half is new on its own — `full-rig` also reaches §7.3's `None.`, and `tr-1000` is
+    // also a single box being told there is nothing else to sync to. The *pairing* is: one box,
+    // every request filled, no shortfall of any kind. `tr-1000` is the small rig that cannot
+    // carry the direction; this is the small rig that can, and between them they are §7.3's two
+    // answers at the same scale.
+    const doc = guideText('deluge-drone-study')
+    const filled = '### Gaps\n\nNone.'
+    const oneBox = 'Nothing else is here to sync to it.'
+
+    expect(doc).toContain('Deluge')
+    expect(doc).toContain(filled)
+    expect(doc).toContain(oneBox)
+    expect(doc).not.toContain('This rig cannot make these parts.')
+    expect(doc).not.toContain('### Waiting on us')
+    expect(doc).not.toContain('nothing in your rig plays this part')
+
+    // The pairing, not either half, is what would stop being pinned if this file were dropped.
+    for (const name of TECHNO_GUIDE_NAMES) {
+      const other = guideText(name)
+      expect(other.includes(filled) && other.includes(oneBox), name).toBe(false)
+    }
+  })
+
+  it('lets the hook stand as the whole of step programming (#100)', () => {
+    // The deferral itself is pinned three times over in `full-rig` and `midi-clock`. What is
+    // only true here is that it is the *entire* phase: one part, deferring, with nothing else in
+    // the phase for a regression to hide behind.
+    const doc = guideText('deluge-drone-study')
+    expect(doc).toContain('**The hook is the pattern**')
+    expect(doc).toContain('Nothing separate to program here.')
   })
 
   it('pins a flat key, so #32s enharmonic reading is covered by real bytes', () => {
     // Seed 18 resolves F minor. If a later change to the seeded pick moved the key, this fails
     // loudly rather than the fixtures quietly ceasing to cover the enharmonic at all.
-    for (const name of GUIDE_NAMES) {
+    for (const name of TECHNO_GUIDE_NAMES) {
       const doc = guideText(name)
       expect(doc, name).toContain('**Key** F minor')
       expect(doc, name).toMatch(/`[A-G]b\d` \(`[A-G]#\d`\)/)
     }
   })
+
 })

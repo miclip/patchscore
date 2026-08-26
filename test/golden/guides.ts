@@ -1,9 +1,9 @@
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve as resolvePath } from 'node:path'
-import { moodState, renderGuide, resolve, type Device } from '../../lib/core/index'
+import { moodState, renderGuide, resolve, type Device, type Template } from '../../lib/core/index'
 import { DEVICES } from '../../lib/devices/registry.generated'
-import { industrialTechno } from '../../lib/templates/index'
+import { droneStudy, industrialTechno } from '../../lib/templates/index'
 
 /**
  * §8's output, pinned as bytes against the **real** device library and the real template.
@@ -17,7 +17,9 @@ import { industrialTechno } from '../../lib/templates/index'
  * identically, a device whose every point is provisional. A hand-built rig small enough to read
  * is a rig too small to show any of that.
  *
- * Three rigs, chosen to differ in the thing §8 is worst at:
+ * Four fixtures, chosen to differ in the thing §8 is worst at. The first three are the same
+ * template on three rigs; the fourth is the one that changes template, for the reason given
+ * under it:
  *
  *  - **full-rig** — every registry device, the rig that fills most parts and exercises pool
  *    voices, merged section blocks, a resolved hook and — since #49 — a real patch list.
@@ -29,6 +31,33 @@ import { industrialTechno } from '../../lib/templates/index'
  *    added, being a source whose manual prints neither a clock-output menu nor a note on its MIDI
  *    jacks — which was the state these fixtures exist to prevent, since a renderer change that
  *    drops either moves not one byte of the other file.
+ *  - **deluge-drone-study** — the Deluge alone, against Drone Study rather than Industrial
+ *    Techno, for three things and no others:
+ *
+ *      1. **One box that fills the direction.** `tr-1000` is the small rig that cannot carry the
+ *         direction; this is the small rig that can, and between them they pin §7.3's two answers
+ *         at the same scale. Neither half of that is new alone — `full-rig` also renders `### Gaps`
+ *         followed by `None.`, and `tr-1000` is also told there is nothing else to sync its clock
+ *         to — but no other fixture pairs them, and the pairing is what a one-box owner actually
+ *         holds: every part placed, on the only box in the room.
+ *      2. **Sections that do not divide the pattern.** Drone Study's sections run 9, 15, 21, 33,
+ *         18, 24 and 12 bars against a 16-bar harmonic cycle, so phase 5 opens with "Not every
+ *         section is a whole number of repeats, and that is deliberate" and every section line
+ *         has to say where the copy is cut — `21 bars — 1 copy of 16 bars, then one cut to 5
+ *         bars`. Industrial Techno's sections divide, so all three files above render that
+ *         arithmetic's easy case and none of them renders the sentence at all. This is the one
+ *         reason that is true nowhere else in this directory.
+ *      3. **Hook authority as the whole of step programming (#100).** `texture` resolves to
+ *         `drone-hook-upper`, so phase 5 says **The hook is the pattern** and defers instead of
+ *         restating the steps. The deferral itself is *not* unique — `full-rig` and `midi-clock`
+ *         each pin three of them — but here it is the entire phase, with nothing else in it for a
+ *         regression to hide behind.
+ *
+ *    Nothing else about this fixture is load-bearing. Its key is not F minor, which is a
+ *    consequence of running a second template on the shared seed rather than a reason to keep the
+ *    file: §4's enharmonic reading is pinned by the three techno guides and by `harmony.test.ts`,
+ *    and a fixture that also claimed it would be a claim on bytes nobody would think to check
+ *    when this file changed for one of the three reasons above.
  *
  * **`full-rig` used to be the third case and #80 changed that**, which is worth recording because
  * it looks like a fixture losing its purpose. It resolved onto `usb`, because the Metropolix was
@@ -44,6 +73,8 @@ import { industrialTechno } from '../../lib/templates/index'
  *
  * Seed 18 because it resolves `F minor` — the key whose third is `Eb`, so #32's enharmonic
  * reading (`Eb2` beside `D#2`) is exercised by the committed bytes and not by a unit test alone.
+ * One seed across all four, so no fixture has a seed of its own to explain; what it resolves to
+ * under a second template is a consequence of that and not a thing this directory pins.
  */
 
 const SEED = 18
@@ -51,8 +82,11 @@ const SEED = 18
 /** Every knob centred. See above: these fixtures are about rendering, not about mood. */
 const MOOD = moodState()
 
-function guide(devices: readonly Device[]): string {
-  return renderGuide(resolve({ devices, template: industrialTechno, mood: MOOD, seed: SEED }))
+type Fixture = { devices: readonly Device[]; template: Template }
+
+function guide(fixture: Fixture): string {
+  const { devices, template } = fixture
+  return renderGuide(resolve({ devices, template, mood: MOOD, seed: SEED }))
 }
 
 const TR_1000 = DEVICES.filter((d) => d.id === 'roland-tr-1000')
@@ -69,14 +103,29 @@ const MIDI_CLOCK = DEVICES.filter(
   (d) => d.id === 'polyend-tracker-mini' || d.id === 'roland-tr-1000',
 )
 
-export const GUIDE_NAMES = ['full-rig', 'tr-1000', 'midi-clock'] as const
+/** The one box that can carry a tonal part alone. See `deluge-drone-study` above. */
+const DELUGE = DEVICES.filter((d) => d.id === 'synthstrom-deluge')
+
+export const GUIDE_NAMES = ['full-rig', 'tr-1000', 'midi-clock', 'deluge-drone-study'] as const
 export type GuideName = (typeof GUIDE_NAMES)[number]
 
+/**
+ * The three fixtures that render **Industrial Techno**, and so the three a six-section, F-minor,
+ * band-0-through-3 assertion is allowed to speak for.
+ *
+ * Named rather than derived, because the alternative — a test filtering `GUIDE_NAMES` by reading
+ * each fixture's own template — would make the assertion agree with whatever the fixture does,
+ * which is the one thing a fixture test must not do. Adding a fifth fixture on a fourth template
+ * leaves this list alone and the techno assertions keep meaning what they meant.
+ */
+export const TECHNO_GUIDE_NAMES = ['full-rig', 'tr-1000', 'midi-clock'] as const
+
 /** The rendered guide for one fixture name. Pure — the same bytes on every call. */
-const RIGS: Record<GuideName, readonly Device[]> = {
-  'full-rig': DEVICES,
-  'tr-1000': TR_1000,
-  'midi-clock': MIDI_CLOCK,
+const RIGS: Record<GuideName, Fixture> = {
+  'full-rig': { devices: DEVICES, template: industrialTechno },
+  'tr-1000': { devices: TR_1000, template: industrialTechno },
+  'midi-clock': { devices: MIDI_CLOCK, template: industrialTechno },
+  'deluge-drone-study': { devices: DELUGE, template: droneStudy },
 }
 
 export function guideText(name: GuideName): string {
