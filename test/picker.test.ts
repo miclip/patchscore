@@ -114,6 +114,8 @@ describe('device search matches name, maker and kind', () => {
     expect(ids(devices({ query: 'semi modular' }).rows)).toEqual([
       'behringer-crave',
       'intellijel-cascadia',
+      'moog-dfam',
+      'moog-mother-32',
     ])
   })
 

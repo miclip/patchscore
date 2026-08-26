@@ -490,6 +490,50 @@ describe('clock source (§7.4)', () => {
     expect(chosen?.occupiedAssignables).toBe(1)
   })
 
+  /**
+   * §7.4. **Ranked on what the box can send, not on everything it declares.**
+   *
+   * This ranked `clock.transport` — both directions at once — and the Mother-32 is the box that
+   * showed what that costs. It receives clock over MIDI DIN and sends only pulses at
+   * `OUT · ASSIGN`, so the undirected list ranked it at `midi-din` and the guide printed
+   * "Clock source — Mother-32 over `midi-din`. Sync everything else to it." over a socket the
+   * instrument does not have.
+   */
+  describe('ranks on send transports (§7.4)', () => {
+    const asymmetric = (id: string): Device =>
+      box(id, {
+        clock: {
+          canSendClock: true,
+          canReceiveClock: true,
+          transport: ['midi-din', 'analog-clock'],
+          sendTransport: ['analog-clock'],
+          receiveTransport: ['midi-din', 'analog-clock'],
+        },
+      })
+
+    it('names the transport a box can actually send on, not one it can only receive', () => {
+      const chosen = selectClockSource([asymmetric('a')], new Map())
+      expect(chosen).toMatchObject({ deviceId: 'a', transport: 'analog-clock' })
+    })
+
+    it('does not let a receive-only midi-din outrank a real midi-din sender', () => {
+      // 'a' sorts first by id and carries `midi-din` in `transport`, but only inbound. Ranking on
+      // the undirected list elected it and then named a wire it has no socket for.
+      const chosen = selectClockSource([asymmetric('a'), usb('z-usb')], new Map())
+      expect(chosen).toMatchObject({ deviceId: 'z-usb', transport: 'usb' })
+    })
+
+    it('falls back to the winner\'s own send transport when the preference list ranks none of them', () => {
+      // `TRANSPORT_PREFERENCE` knows `midi-din` and `usb`. A box that sends only over
+      // `analog-clock` ranks past the end of it, and the fallback must still be a wire the box
+      // can send on — reading `clock.transport[0]` here would reintroduce the whole defect at the
+      // one line that survives the ranking.
+      expect(TRANSPORT_PREFERENCE).not.toContain('analog-clock')
+      const chosen = selectClockSource([asymmetric('a')], new Map())
+      expect(chosen?.transport).toBe('analog-clock')
+    })
+  })
+
   it('breaks a tie on transport, midi-din over usb', () => {
     // 'a-usb' sorts first by id and still loses to the din box.
     const chosen = selectClockSource([usb('a-usb'), din('z-din')], new Map([['a-usb', 2], ['z-din', 2]]))

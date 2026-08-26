@@ -677,6 +677,145 @@ describe('branch-and-bound optimality (§7.1, obligation 3)', () => {
     }
   }
 
+  /**
+   * §7.1/#78. **The live suffix floor, against the oracle, on the shape that made it necessary.**
+   *
+   * The floor the search bounds with used to be static: every remaining request costed against
+   * its full candidate list with occupancy dropped. That is admissible and, once the library
+   * reached sixteen devices, nearly vacuous on `roleFitPenalty` — with that many boxes almost
+   * every role sits at index 0 on *some* box, so the floor let all the remaining requests take a
+   * zero at once and bounded nothing. `industrial-techno` needed 195,951 nodes against a 150,000
+   * cap and fell back to greedy. Recomputing the floor against the occupancy the search has
+   * actually built takes the same case to 66,155.
+   *
+   * The new bound is admissible because occupancy only ever grows within a descent, so a
+   * candidate that is taken now is taken in every completion below — but "obviously monotone" is
+   * how an inadmissible bound gets written, so it is checked against brute force here.
+   *
+   * **These rigs are built to make the floor bite rather than to be realistic.** Several
+   * one-voice boxes each covering many roles is exactly the shape that defeats the static floor:
+   * every request has a zero-cost option on paper, and almost none of them can have it. A rig of
+   * one big multi-voice box would prove much less, which is why the existing cases above are not
+   * enough on their own.
+   */
+  describe('the live suffix floor is admissible (#78)', () => {
+    /** One voice, many roles — a Mother-32 or a DFAM, reduced to what the search sees. */
+    function narrow(id: string, roles: Role[]): Device {
+      return box(id, {
+        voices: [{ kind: 'fixed', id: 'voice', label: 'Voice', roles, polyphony: 1 }],
+        comfortableVoices: 1,
+        recipes: roles.map((role) => makeRecipe(`${id}-${role}`, role, 'hard', 'voice')),
+      })
+    }
+
+    const contended = [
+      narrow('a-one', ['kick', 'snare', 'tom', 'noise', 'metallic']),
+      narrow('b-two', ['kick', 'snare', 'tom', 'noise', 'metallic']),
+      narrow('c-three', ['kick', 'snare', 'tom', 'metallic']),
+      narrow('d-four', ['snare', 'tom', 'noise']),
+    ]
+    /** Five requests over four single-voice boxes: one of them cannot be filled at all. */
+    const oversubscribed = withRoles([
+      request({ id: 'r-kick', role: 'kick', priority: 1 }),
+      request({ id: 'r-snare', role: 'snare', priority: 1 }),
+      request({ id: 'r-tom', role: 'tom', priority: 2 }),
+      request({ id: 'r-noise', role: 'noise', priority: 2 }),
+      request({ id: 'r-metallic', role: 'metallic', priority: 3 }),
+    ])
+    /** Exactly as many requests as voices, so every one is forced onto a different box. */
+    const exact = withRoles([
+      request({ id: 'r-kick', role: 'kick', priority: 1 }),
+      request({ id: 'r-snare', role: 'snare', priority: 1 }),
+      request({ id: 'r-tom', role: 'tom', priority: 2 }),
+      request({ id: 'r-noise', role: 'noise', priority: 2 }),
+    ])
+
+    for (const [name, t] of [
+      ['more requests than voices', oversubscribed],
+      ['exactly as many requests as voices', exact],
+    ] as const) {
+      it(`matches brute force on ${name}, on every seed`, () => {
+        const optimum = bruteForceBest(contended, t)
+        for (const seed of [0, 1, 2, 3, 5, 8, 13, 21, 34, 55]) {
+          const result = assign({ devices: contended, template: t, mood: moodState(), seed })
+          expect(result.search.capped, `seed ${seed}`).toBe(false)
+          expect(result.score, `seed ${seed}`).toEqual(optimum)
+        }
+      })
+    }
+
+    it('charges a forced miss once the last candidate is taken, and is still right about it', () => {
+      // The half of the gain that is not `roleFitPenalty`: the static floor could only charge a
+      // miss for a request with no candidates *at all*, so a request whose every candidate had
+      // been consumed cost the bound nothing. Five requests over four voices means at least one
+      // miss in every completion, and the oracle agrees on which key it lands.
+      const optimum = bruteForceBest(contended, oversubscribed)
+      const result = assign({ devices: contended, template: oversubscribed, mood: moodState(), seed: 1 })
+      expect(result.score).toEqual(optimum)
+      expect(result.shortfalls).toHaveLength(1)
+    })
+
+    /**
+     * **The case with teeth, and the reason the rigs above are not enough on their own.**
+     *
+     * In a rig where the locally-best first choice is also globally right, the search finds the
+     * optimum before it prunes anything, and *no* bound — however wrong — can change the answer.
+     * Every case above is that shape, which was checked by deliberately overcharging the floor
+     * and watching them all still pass.
+     *
+     * This one is not. `a-shared` is the only home for the snare and the exact-character home for
+     * the kick, so taking the kick there first is a trap: it costs the snare its only voice and a
+     * whole point on `misses`, which outranks every key below. The optimum sends the kick to
+     * `b-kick` and pays 1414 on `recipeDistance` instead, and reaching it *requires* backtracking
+     * past the first thing the ordering offers. An inadmissible floor prunes that recovery and
+     * the search comes back with the miss.
+     */
+    it('recovers the optimum from a first choice that is locally best and globally wrong', () => {
+      const shared = box('a-shared', {
+        voices: [{ kind: 'fixed', id: 'voice', label: 'Voice', roles: ['kick', 'snare'], polyphony: 1 }],
+        comfortableVoices: 1,
+        recipes: [
+          makeRecipe('sh-kick', 'kick', 'hard', 'voice'),
+          makeRecipe('sh-snare', 'snare', 'hard', 'voice'),
+        ],
+      })
+      // `dirty` against a `hard` request substitutes at distance 2; `soft` would be refused
+      // outright as the opposed character, which would leave the kick nowhere else to go.
+      const kickOnly = box('b-kick', {
+        voices: [{ kind: 'fixed', id: 'voice', label: 'Voice', roles: ['kick'], polyphony: 1 }],
+        comfortableVoices: 1,
+        recipes: [makeRecipe('bk-kick', 'kick', 'dirty', 'voice')],
+      })
+      const trap = withRoles([
+        request({ id: 'r-kick', role: 'kick', priority: 1, character: 'hard' }),
+        request({ id: 'r-snare', role: 'snare', priority: 1, character: 'hard' }),
+      ])
+      const devices = [shared, kickOnly]
+      const optimum = bruteForceBest(devices, trap)
+      // Pinned, so a future change that makes the trap stop being a trap fails here rather than
+      // quietly turning this case back into one of the toothless ones above.
+      expect(keys(optimum).misses).toEqual([0])
+      expect(keys(optimum).recipeDistance).toBeGreaterThan(0)
+
+      for (const seed of [0, 1, 2, 3, 5, 8, 13, 21]) {
+        const result = assign({ devices, template: trap, mood: moodState(), seed })
+        expect(result.search.capped, `seed ${seed}`).toBe(false)
+        expect(result.score, `seed ${seed}`).toEqual(optimum)
+        expect(placement(result, 'r-kick'), `seed ${seed}`).toBe('b-kick/voice')
+        expect(result.shortfalls, `seed ${seed}`).toHaveLength(0)
+      }
+    })
+
+    it('prunes rather than enumerating, or the cases above would prove only that it is slow', () => {
+      // Non-vacuity. Four boxes over five requests is 5^5 = 3125 leaves before the miss branch is
+      // counted; a search visiting anything near that is not bounding at all. The figure is a
+      // ceiling with room in it, not a pin — it exists to fail if pruning is ever switched off.
+      const result = assign({ devices: contended, template: oversubscribed, mood: moodState(), seed: 1 })
+      expect(result.search.capped).toBe(false)
+      expect(result.search.nodes).toBeLessThan(400)
+    })
+  })
+
   it('actually exercises a shrinking idle count, or it would prove nothing', () => {
     const t = templates[1]?.[1] as Template
     const result = assign({

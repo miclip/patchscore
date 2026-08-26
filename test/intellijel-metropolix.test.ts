@@ -207,7 +207,15 @@ describe('Metropolix manifest', () => {
         (d) => d.clock.canSendClock && d.clock.preferredSource !== true,
       )
       expect(unpreferred.length).toBeGreaterThan(4)
-      expect(unpreferred.every((d) => d.clock.transport.includes('midi-din'))).toBe(true)
+      // **Every one of them carries `midi-din` except the DFAM, and that exception strengthens
+      // this rather than weakening it.** That box has no MIDI connector at all: its only clock
+      // transport is `analog-clock`, which `TRANSPORT_PREFERENCE` does not rank, so it sorts
+      // *below* this module's `usb` rather than above it. The premise the case needs is that no
+      // unpreferred box outranks the Metropolix on transport, and the DFAM is the one box that
+      // could not do so even in principle.
+      const midi = unpreferred.filter((d) => d.clock.transport.includes('midi-din'))
+      expect(unpreferred.filter((d) => !midi.includes(d)).map((d) => d.id)).toEqual(['moog-dfam'])
+      expect(midi.length).toBeGreaterThan(4)
       expect(unpreferred.some((d) => d.id < device.id)).toBe(true)
 
       const heavy = new Map(unpreferred.map((d, i) => [d.id, unpreferred.length - i]))
@@ -264,7 +272,12 @@ describe('Metropolix manifest', () => {
       // the one other box that claims the same preference, which is why the full rig no longer
       // resolves here.
       const others = DEVICES.filter((d) => d.id !== device.id && d.clock.canSendClock)
-      expect(others.every((d) => d.clock.transport.includes('midi-din'))).toBe(true)
+      // The DFAM is excluded by the same reasoning as the case above: `analog-clock` is its only
+      // transport, it is unranked by `TRANSPORT_PREFERENCE`, and it therefore cannot outrank this
+      // module's `usb` on the transport key whatever else is true of it.
+      expect(
+        others.filter((d) => !d.clock.transport.includes('midi-din')).map((d) => d.id),
+      ).toEqual(['moog-dfam'])
       // Without the authored preference it would lose the rig on exactly that.
       const unclaimed = { ...device, clock: { ...device.clock, preferredSource: undefined } }
       const rig = DEVICES.map((d) => (d.id === device.id ? unclaimed : d))
@@ -290,17 +303,26 @@ describe('Metropolix manifest', () => {
       'accum',
       'cv',
     ])
-    // **A per-device open list (§2.3), and this one overlaps the rest of the library by nothing
-    // at all.** Not even `gate` and `pitch`: on the drum machines a per-step lane is `velocity`,
+    // **A per-device open list (§2.3), and this one overlapped the rest of the library by nothing
+    // at all until the DFAM arrived.** On the drum machines a per-step lane is `velocity`,
     // `accent`, `substep`, `flam`; here it is an override of the pitch and gate the sequencer
-    // itself generates. Three manifests declaring `perStep` and no key in common between this one
-    // and any of them is the clearest evidence the field was right to be open rather than a
-    // fifth shared vocabulary.
+    // itself generates — no key in common, which was the clearest evidence the field was right to
+    // be open rather than a fifth shared vocabulary.
+    //
+    // **`pitch` is now shared with exactly one other box, and the reason is real.** The DFAM is
+    // the library's second analog step sequencer, and its eight steps have a PITCH knob each
+    // (p.22 of that manual) — the same idea as this module's per-step pitch override, arrived at
+    // independently and named the same thing. That is what an open list is *supposed* to do when
+    // two boxes genuinely share a concept: it lets them agree without anyone having to promote
+    // the word into shared vocabulary. `gate` is still this module's alone.
     const others = new Set(
       DEVICES.filter((d) => d.id !== device.id).flatMap((d) => d.features?.perStep ?? []),
     )
     expect(others.size).toBeGreaterThan(10)
-    expect((device.features?.perStep ?? []).filter((k) => others.has(k))).toEqual([])
+    expect((device.features?.perStep ?? []).filter((k) => others.has(k))).toEqual(['pitch'])
+    const dfam = DEVICES.find((d) => d.id === 'moog-dfam')
+    expect(dfam?.features?.perStep).toContain('pitch')
+    expect(dfam?.features?.perStep).not.toContain('gate')
   })
 
   it('cannot turn any of those lanes into an instruction, and the manifest says so', () => {

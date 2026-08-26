@@ -1151,13 +1151,105 @@ export const ClockSourceSetupSchema = z.strictObject({
   note: z.string().min(1).optional(),
 })
 
+/**
+ * §2.3/§7.4. **Clock is directional, and on some boxes the two directions are different wires.**
+ *
+ * `transport` used to be the whole answer: one list, read as "this is how clock moves in and out
+ * of this box". That is true of almost everything, and false in a way nothing could express of
+ * the Mother-32 — it *receives* clock over MIDI DIN and over an analog clock at `IN · TEMPO`, and
+ * *sends* it only as pulses out of `OUT · ASSIGN`. It has no MIDI output of any kind. The two
+ * sets do not merely differ, they do not intersect.
+ *
+ * Declaring one list for both directions made the guide print a falsehood, and not a subtle one.
+ * §7.4 ranks transports `midi-din > usb` when it picks a source, reading that ranking off the
+ * undirected list — so a rig with the Mother-32 as its highest-ranked sender was told **"Clock
+ * source — Mother-32 over `midi-din`. Sync everything else to it."** over a socket the box does
+ * not have. That is invariant 5's failure in the one place a reader cannot check it against the
+ * panel: a capability stated with a wire that does not exist.
+ *
+ * **`transport` keeps its meaning — every transport this box carries clock on, in any direction**
+ * — and the two optional fields below narrow it per direction. That is what makes this change
+ * cost nothing at the twelve manifests that were already symmetric: they omit both fields and
+ * mean exactly what they meant before. A box states an asymmetry only when it has one, and the
+ * schema then holds `transport` to being the union of the two, so the undirected list can never
+ * drift into naming a transport neither direction uses.
+ *
+ * **Read through `sendTransports` / `receiveTransports`, never off these fields.** The defaults
+ * are two rules (an absent list means all of `transport`; a `false` capability means none at
+ * all), and a consumer that reimplements them is the way this asymmetry gets lost again.
+ */
 export type ClockSpec = {
   canSendClock: boolean
   canReceiveClock: boolean
+  /** Every transport this box carries clock on, **in either direction**. */
   transport: ClockTransport[]
+  /**
+   * The subset of `transport` clock can *leave* by. Omitted when that is all of them, which is
+   * the common case and the reason this is not a required field.
+   */
+  sendTransport?: ClockTransport[]
+  /** The subset of `transport` clock can *arrive* by. Omitted when that is all of them. */
+  receiveTransport?: ClockTransport[]
   preferredSource?: boolean
   /** §7.4/#104. How to make this box emit clock, per transport. */
   sourceSetup?: ClockSourceSetup[]
+}
+
+/**
+ * §7.4. The transports clock can **leave** this box by, and the only sound way to ask.
+ *
+ * Three states folded into one answer: a box that cannot send clock sends over nothing whatever
+ * its `transport` list says, a box that declared `sendTransport` means that list, and a box that
+ * declared none means all of `transport`. Every one of those is a rule about defaults rather than
+ * data, which is exactly why it lives here once instead of at each of the five call sites that
+ * need it.
+ */
+export function sendTransports(device: Device): readonly ClockTransport[] {
+  if (!device.clock.canSendClock) return []
+  return device.clock.sendTransport ?? device.clock.transport
+}
+
+/** §7.4. The transports clock can **arrive** at this box by. The mirror of `sendTransports`. */
+export function receiveTransports(device: Device): readonly ClockTransport[] {
+  if (!device.clock.canReceiveClock) return []
+  return device.clock.receiveTransport ?? device.clock.transport
+}
+
+/** §7.4. Can this box follow a clock arriving over `transport`? */
+export function canFollow(device: Device, transport: string): boolean {
+  return receiveTransports(device).includes(transport)
+}
+
+/**
+ * §8/§10. **Which wires an inventory line may name, and whether it has to say which way.**
+ *
+ * Three renderers print this — `lib/core/render.ts`'s rig inventory, `components/guide/format.ts`
+ * and `lib/studio/device-page.ts` — and by the standing rule they each write their own *words*.
+ * The four cases below are not words: they are one question with one right answer, and the same
+ * thing `clockSourceSetup` is shared for. Restating them three times is how the box that needed
+ * the distinction ends up described correctly in one place and wrongly in the other two.
+ *
+ * `both` is the overwhelmingly common answer and keeps the rendering that existed before
+ * directions did — one list, no labels, because with the two directions equal a label would be
+ * noise on every device in the library but one.
+ */
+export type ClockWires =
+  | { kind: 'none' }
+  | { kind: 'both'; transport: readonly ClockTransport[] }
+  | { kind: 'split'; send: readonly ClockTransport[]; receive: readonly ClockTransport[] }
+
+export function clockWires(device: Device): ClockWires {
+  const send = sendTransports(device)
+  const receive = receiveTransports(device)
+  // Naming a wire implies a clock travels on it, so a box with neither capability names none.
+  if (send.length === 0 && receive.length === 0) return { kind: 'none' }
+  // One-directional: the claim beside this already says which way ("receives clock only"), so the
+  // list needs no label — and it is that direction's list, never the undirected one.
+  if (send.length === 0) return { kind: 'both', transport: receive }
+  if (receive.length === 0) return { kind: 'both', transport: send }
+  const same =
+    send.length === receive.length && send.every((t) => receive.includes(t))
+  return same ? { kind: 'both', transport: send } : { kind: 'split', send, receive }
 }
 
 /**
@@ -1251,6 +1343,8 @@ export const ClockSpecSchema = z
     canSendClock: z.boolean(),
     canReceiveClock: z.boolean(),
     transport: z.array(ClockTransportSchema).min(1),
+    sendTransport: z.array(ClockTransportSchema).min(1).optional(),
+    receiveTransport: z.array(ClockTransportSchema).min(1).optional(),
     preferredSource: z.boolean().optional(),
     sourceSetup: z.array(ClockSourceSetupSchema).min(1).optional(),
   })
@@ -1258,6 +1352,43 @@ export const ClockSpecSchema = z
     message: 'clock.preferredSource requires canSendClock',
     path: ['preferredSource'],
   })
+  // A direction's transport list without the capability describes a state that cannot exist, and
+  // the same refusal `preferredSource` and `sourceSetup` already get: the alternative is a field
+  // silently ignored, which is how a manifest comes to say something the engine never reads.
+  .refine((c) => !(c.sendTransport !== undefined && !c.canSendClock), {
+    message: 'clock.sendTransport requires canSendClock',
+    path: ['sendTransport'],
+  })
+  .refine((c) => !(c.receiveTransport !== undefined && !c.canReceiveClock), {
+    message: 'clock.receiveTransport requires canReceiveClock',
+    path: ['receiveTransport'],
+  })
+  // `transport` stays the union, so a per-direction list can only ever *narrow* it. Without this
+  // a manifest could send over a transport it never declared, and every consumer that still reads
+  // the undirected list — the device page, the jack checks — would be reasoning from a short list.
+  .refine((c) => (c.sendTransport ?? []).every((t) => c.transport.includes(t)), {
+    message: 'every clock.sendTransport must appear in clock.transport',
+    path: ['sendTransport'],
+  })
+  .refine((c) => (c.receiveTransport ?? []).every((t) => c.transport.includes(t)), {
+    message: 'every clock.receiveTransport must appear in clock.transport',
+    path: ['receiveTransport'],
+  })
+  // The other half of "union": with both directions stated, a transport in neither is one no
+  // clock can travel on, which makes `transport` a claim about a wire nothing uses. Only checked
+  // when both are declared — with one absent it defaults to all of `transport` and the union is
+  // total by construction.
+  .refine(
+    (c) =>
+      c.sendTransport === undefined ||
+      c.receiveTransport === undefined ||
+      c.transport.every((t) => c.sendTransport?.includes(t) || c.receiveTransport?.includes(t)),
+    {
+      message:
+        'clock.transport must be the union of sendTransport and receiveTransport: a transport in neither carries no clock',
+      path: ['transport'],
+    },
+  )
   // #104. The same three checks `JackSpec.clock` gets, for the same reason: a setup naming a
   // transport this box does not carry can never be reached, one on a box that cannot send clock
   // describes a state that does not exist, and two for one transport leaves the renderer picking
@@ -1266,8 +1397,12 @@ export const ClockSpecSchema = z
     message: 'clock.sourceSetup requires canSendClock',
     path: ['sourceSetup'],
   })
-  .refine((c) => (c.sourceSetup ?? []).every((s) => c.transport.includes(s.transport)), {
-    message: 'every clock.sourceSetup transport must appear in clock.transport',
+  // **A send transport, not merely a declared one** (§7.4/#104). A `sourceSetup` is the switch
+  // that makes this box *emit* over a transport, so naming one it can only receive on describes a
+  // menu item that turns on an output the box does not have. Before directions existed this could
+  // only be checked against the undirected list, which is the weaker claim.
+  .refine((c) => (c.sourceSetup ?? []).every((s) => (c.sendTransport ?? c.transport).includes(s.transport)), {
+    message: 'every clock.sourceSetup transport must be one this box can send over',
     path: ['sourceSetup'],
   })
   .refine(
@@ -1676,24 +1811,33 @@ export const DeviceSchema = z
      * which of the box's jacks the reader should patch — a decision that belongs in the manifest
      * beside its citation.
      */
-    const transports = new Set(device.clock.transport)
     const clockSockets = new Set<string>()
+    /**
+     * **Checked against the transports that direction actually carries** (§7.4). A jack is a
+     * socket in one direction, so an `out` claiming a transport the box can only receive on is a
+     * clock output that does not exist — the same fiction as an unbacked `CLK OUT`, one level
+     * down. Against the undirected list this was uncheckable: the Mother-32's `MIDI IN` and a
+     * fictional `MIDI OUT` would both have passed, because `midi-din` is on the box.
+     */
+    const sendable = new Set(sendTransports(device))
+    const receivable = new Set(receiveTransports(device))
     ;(device.jacks ?? []).forEach((jack, i) => {
       if (jack.clock === undefined) return
-      const capable =
-        jack.direction === 'out' ? device.clock.canSendClock : device.clock.canReceiveClock
+      const outward = jack.direction === 'out'
+      const capable = outward ? device.clock.canSendClock : device.clock.canReceiveClock
       if (!capable) {
         ctx.addIssue({
           code: 'custom',
-          message: `jack '${jack.id}' carries clock ${jack.direction} on a device that cannot ${jack.direction === 'out' ? 'send' : 'receive'} clock`,
+          message: `jack '${jack.id}' carries clock ${jack.direction} on a device that cannot ${outward ? 'send' : 'receive'} clock`,
           path: ['jacks', i, 'clock'],
         })
       }
+      const carried = outward ? sendable : receivable
       jack.clock.forEach((transport, j) => {
-        if (!transports.has(transport)) {
+        if (capable && !carried.has(transport)) {
           ctx.addIssue({
             code: 'custom',
-            message: `jack '${jack.id}' carries clock over '${transport}', which this device does not declare in clock.transport`,
+            message: `jack '${jack.id}' carries clock ${jack.direction} over '${transport}', which this device does not ${outward ? 'send' : 'receive'} over`,
             path: ['jacks', i, 'clock', j],
           })
         }

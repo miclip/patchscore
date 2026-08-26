@@ -1,5 +1,5 @@
 import type { Character, Device, Role, Template } from '@/lib/core'
-import { CHARACTERS, ROLES, expand } from '@/lib/core'
+import { CHARACTERS, ROLES, clockWires, expand } from '@/lib/core'
 import { TEMPLATES } from '@/lib/templates'
 import { deviceHref, deviceLabel, templateHref, plural } from './catalogue'
 import { coverage } from './coverage'
@@ -38,7 +38,7 @@ function andList(items: readonly string[]): string {
  * two agree for every device in the registry, which is what keeps a restatement honest.
  */
 export function clockText(device: Device): string {
-  const { canSendClock, canReceiveClock, transport } = device.clock
+  const { canSendClock, canReceiveClock } = device.clock
   const claim = canSendClock
     ? canReceiveClock
       ? 'sends clock'
@@ -46,8 +46,13 @@ export function clockText(device: Device): string {
     : canReceiveClock
       ? 'receives clock only'
       : 'no clock in or out'
-  if (!canSendClock && !canReceiveClock) return claim
-  return `${claim} · ${transport.join('/')}`
+  // A box whose two directions run on different wires says so here too. The device page is the
+  // one view read with no rig around it, so it is the only place the whole asymmetry is visible
+  // at once — the guide only ever shows the transport its rig resolved.
+  const wires = clockWires(device)
+  if (wires.kind === 'none') return claim
+  if (wires.kind === 'both') return `${claim} · ${wires.transport.join('/')}`
+  return `${claim} · out: ${wires.send.join('/')} · in: ${wires.receive.join('/')}`
 }
 
 /** What this box covers at which characters, ordered by the shared vocabulary (§3.4). */

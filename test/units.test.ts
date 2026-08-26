@@ -56,7 +56,38 @@ import { DEVICES } from '../lib/devices/registry.generated'
  * `semitones` became `st`, and `% duty` became `%`. Both were the manual's own wording, and both
  * would have been a *third* spelling of something the library already spells two ways.
  */
-const REVIEWED_UNITS = ['%', '% travel', 'Bits', 'Hz', 'Sec', 'St', 'V', 'c', 'dB', 'ms', 'st', '°']
+/**
+ * The 2026-08-25 addition when the DFAM landed:
+ *
+ *  - **`% travel from centre`** — a bipolar knob position, on a control with a detented centre and
+ *    `(-)` / `(+)` printed at its ends. p.16 of that manual: "All AMOUNT knobs on DFAM are
+ *    bipolar, meaning that they have both positive (+) and negative (–) modulation values
+ *    available."
+ *
+ *    **Weighed against reusing `% travel`, and it is not the `St`/`st` drift this list warns
+ *    about.** That drift is one meaning with two spellings. This is a second meaning: `% travel`
+ *    runs 0-100 from an end stop, and this runs -100 to +100 from a centre. Folding them would
+ *    make `VCF EG AMOUNT` read `50 % travel` at the one setting that manual flags twice as the
+ *    trap — p.15 and p.19 both warn that a centred AMOUNT knob makes its DECAY knob "appear to
+ *    have no function" — where `0 % travel from centre` says it outright. The alternative
+ *    spelling considered and rejected was a bare `%`, which on this library's other devices means
+ *    a number the box itself displays.
+ */
+const REVIEWED_UNITS = [
+  '%',
+  '% travel',
+  '% travel from centre',
+  'Bits',
+  'Hz',
+  'Sec',
+  'St',
+  'V',
+  'c',
+  'dB',
+  'ms',
+  'st',
+  '°',
+]
 
 function unitsInUse(): string[] {
   const seen = new Set<string>()

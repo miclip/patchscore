@@ -2,7 +2,7 @@ import type { AssignableKey, Occupancy } from './occupancy'
 import type { DeviceId, HookId, RecipeId, RequestId, SectionName } from './ids'
 import type { Score } from './objective'
 import type { Character, Role } from './vocabulary'
-import { compatibleJackSignals, realisationOf } from './device'
+import { canFollow, compatibleJackSignals, realisationOf, sendTransports } from './device'
 import type { Assignable, Device, JackSignalKind, JackSpec, Realisation } from './device'
 import type { RoleRequest, Template } from './template'
 import type { ResolvedParam } from './params'
@@ -107,10 +107,20 @@ export function clockSourceBasis(source: ClockSource): ClockSourceBasis {
   return source.claims === 1 ? 'claimed' : 'contested'
 }
 
+/**
+ * §7.4. Ranked over the transports clock can **leave** by, which is the only list that means
+ * anything here: this function exists to answer "what wire will the tempo be on", and the answer
+ * is a property of the source's output.
+ *
+ * It read `clock.transport` — both directions at once — until the Mother-32 made the difference
+ * visible. That box receives over `midi-din` and sends only over `analog-clock`, so the
+ * undirected list ranked it at `midi-din` and the guide named a socket the box does not have.
+ */
 function transportRank(device: Device): number {
+  const sends = sendTransports(device)
   for (let i = 0; i < TRANSPORT_PREFERENCE.length; i++) {
     const preferred = TRANSPORT_PREFERENCE[i] as string
-    if (device.clock.transport.includes(preferred)) return i
+    if (sends.includes(preferred)) return i
   }
   return TRANSPORT_PREFERENCE.length
 }
@@ -179,10 +189,15 @@ export function selectClockSource(
 
   const winner = ranked[0] as Device
   const rank = transportRank(winner)
+  // The fallback is the winner's own first *send* transport, for a box whose only output is a
+  // transport `TRANSPORT_PREFERENCE` does not rank — `analog-clock` on the Mother-32 today. The
+  // undirected list here would reintroduce the whole defect at the one line that survives the
+  // ranking, so it is deliberately not reachable from this function.
+  const sends = sendTransports(winner)
   return {
     deviceId: winner.id,
     deviceName: winner.name,
-    transport: (TRANSPORT_PREFERENCE[rank] ?? winner.clock.transport[0] ?? '') as string,
+    transport: (TRANSPORT_PREFERENCE[rank] ?? sends[0] ?? '') as string,
     occupiedAssignables: occupied.get(winner.id) ?? 0,
     claims,
   }

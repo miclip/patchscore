@@ -11,7 +11,7 @@ import type {
   ResolveResult,
   Verified,
 } from '@/lib/core'
-import { expand } from '@/lib/core'
+import { expand, receiveTransports } from '@/lib/core'
 import { occupiedCounts } from '../guide/format'
 
 /**
@@ -1041,8 +1041,12 @@ export type RackLayoutOptions = {
  */
 function isolationReason(device: Device, transport: string): string | undefined {
   if (!device.clock.canReceiveClock) return 'cannot receive clock'
-  if (!device.clock.transport.includes(transport)) {
-    return `no ${transport} — this box has ${device.clock.transport.join(', ')}`
+  // The box's *receive* transports, not everything it declares. A box that sends over one wire
+  // and takes clock on another — the Mother-32 — would otherwise look reachable over the wire it
+  // can only transmit on, which is the same conflation §7.4's source selection had.
+  const receives = receiveTransports(device)
+  if (!receives.includes(transport)) {
+    return `no ${transport} — this box takes clock on ${receives.join(', ')}`
   }
   return undefined
 }
