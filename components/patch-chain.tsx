@@ -100,10 +100,28 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
       const el = area.querySelector<HTMLElement>(`[data-chain="${name}"]`)
       if (el === null) return undefined
       const r = el.getBoundingClientRect()
-      // A row scrolled out of its own list has a position but nothing to point at; skip it
-      // rather than run a cable to where it would be.
       if (r.width === 0 && r.height === 0) return undefined
-      return { x: r.left - box.left + r.width / 2, y: r.top - box.top + r.height / 2 }
+      const point = { x: r.left - box.left + r.width / 2, y: r.top - box.top + r.height / 2 }
+      /**
+       * **Clamped to the list the socket lives in.**
+       *
+       * Every picker list scrolls on its own (`max-height` on `.picker-list`), and a row scrolled
+       * out of one still has a position — one *outside* its list. Drawing to it left the cable
+       * ending in blank space several rows below the socket it claimed to reach, which is what
+       * the report showed.
+       *
+       * Clamping runs it to the list's edge and no further, so it reads as passing behind the
+       * list rather than as missing its socket. The same answer the device cables reached by a
+       * different route: there `overflow` does it, because that overlay is inside the list.
+       */
+      const scroller = el.closest<HTMLElement>('.picker-list')
+      if (scroller !== null) {
+        const s = scroller.getBoundingClientRect()
+        const top = s.top - box.top
+        const bottom = s.bottom - box.top
+        point.y = Math.min(Math.max(point.y, top), bottom)
+      }
+      return point
     }
 
     const out = at('out')
@@ -179,10 +197,18 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
     observer.observe(area)
     window.addEventListener('resize', schedule)
     window.addEventListener('scroll', schedule, { passive: true })
+    /**
+     * Each picker list scrolls independently, and this overlay sits outside all of them, so a
+     * socket moves under a cable that has no idea. Scrolling the Direction list left the run
+     * pointing where the row used to be — reported, and the reason these listeners exist.
+     */
+    const scrollers = [...area.querySelectorAll<HTMLElement>('.picker-list')]
+    for (const el of scrollers) el.addEventListener('scroll', schedule, { passive: true })
     return () => {
       observer.disconnect()
       window.removeEventListener('resize', schedule)
       window.removeEventListener('scroll', schedule)
+      for (const el of scrollers) el.removeEventListener('scroll', schedule)
       if (frame.current !== undefined) cancelAnimationFrame(frame.current)
     }
   }, [measure, areaRef])
