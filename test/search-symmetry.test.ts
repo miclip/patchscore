@@ -1046,10 +1046,11 @@ describe('the real registry searches exhaustively (§7.1)', () => {
   })
 
   /**
-   * The case that decides whether the finding above is a product problem or a headroom problem.
-   *
-   * Every template the app can actually run still searches exhaustively at the shipped cap, so no
-   * guide anybody generates today is a greedy fallback.
+   * The case that decides whether the finding above is a product problem or a headroom problem,
+   * and **the measurement deliverable of #78**. Every template the app can actually run still
+   * searches exhaustively at the shipped cap, so no guide anybody generates today is a greedy
+   * fallback — and the worst case is now asserted *with a margin* rather than merely bounded by
+   * the cap, because a test that passes at 149,999 says nothing until the day it says everything.
    *
    * ## This test has fired once, and the warning it left was accurate
    *
@@ -1059,49 +1060,119 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    *
    * It was one recipe, not a handful. Adding a single `sampled-chord` stab to the Tracker Mini
    * took the worst case over these seeds to 51,606 against the old 50,000 cap and dropped 8 of
-   * these 24 cases to greedy — and the guide it degraded was worse in a way a reader would see:
+   * those 24 cases to greedy — and the guide it degraded was worse in a way a reader would see:
    * the golden full rig's `pad` came out as a *substitution* (asked `dark`, got `soft`) under the
    * fallback, where the exhaustive answer is an exact `dark` match. `DEFAULT_NODE_CAP` was raised
    * to 150,000 rather than the content being dropped; the reasoning, the timing and the #78
-   * stopgap framing are on the constant itself.
+   * stopgap framing are on the constant itself. **Raising it a third time is closed (#78).**
    *
-   * **The number the next reader needs is not the cap, it is the curve.** The full *twelve*-device
-   * rig measured 33,142 nodes worst case on this template, uncapped. One further device — 19
-   * recipes over 6 tonal roles — took seed 18 to 86,722, a 2.6x jump from a 1/13th increase in
-   * boxes. Growth tracks **recipes x supported roles**, because a device that can serve many
-   * tonal roles adds branching at every level of the search; it does not track how many folders
-   * are under `lib/devices/`. Size the fix against that.
+   * ## Today's measurement: 18 devices, 7 directions, nothing capped, 11.6% left
    *
-   * So the same warning, with today's numbers: 150,000 leaves ~73% headroom over the 86,722 that
-   * forced the raise, and ~41% over the worst seen in a wider sweep (88,596, across 40 seeds x 3
-   * templates). Real room, and still a constant standing in for a bound.
-   * The next device that serves five or six tonal roles is the one to watch, and this is again
-   * where it will be noticed.
+   * Worst case per direction, over seeds 0..23:
    *
-   * Nothing here asserts an exact node count, for the reason the smoke alarm above gives. What is
-   * asserted is the property that matters: real inputs, real cap, exhaustive.
+   *     industrial-techno    132,615   seed 9     <-- the entire worst case
+   *     ambient-dub           17,877   seed 0
+   *     weave                  3,611   seed 12
+   *     major-key-electro      2,308   seed 13
+   *     lydian-house             310   seed 0
+   *     relay                     28   seed 0
+   *     drone-study               14   seed 0
+   *
+   * One direction is the whole problem and the gap to the second-worst is a factor of seven, so
+   * "the worst case" in this file means `industrial-techno` and has for as long as the file has
+   * existed. Registry prefixes never cap either, and the cost arrives in two steps rather than
+   * accumulating: `roland-tr-8s` takes the prefix worst to 86,020 and `synthstrom-deluge` to
+   * 132,615. The two mixers on the end of the registry add exactly nothing, having no voices.
+   *
+   * ## What eats the remaining 17,385 nodes: the one thing that was measured
+   *
+   * **Polyphony.** Measured by adding a synthetic nineteenth device to this registry — one fixed
+   * voice, eleven tonal roles, seventeen recipes, no wider than the four Moog semi-modulars
+   * already shipped — and varying nothing but its polyphony:
+   *
+   *     polyphony 1    caps, 24 of 168 rigs — every seed of industrial-techno
+   *     polyphony 2    caps, 24 of 168
+   *     polyphony 3+   42,421 worst case — a 68% *cut* below the 132,615 baseline
+   *
+   * So `polyphony: 3` and above **correlates with** a large drop rather than a rise, on this
+   * probe, reproducibly — `npm run bench:search` prints the table.
+   *
+   * **Why it goes in that direction is an unproven hypothesis and is written down as one.** It
+   * may be that a voice able to host several requests completes a strong solution early, giving
+   * `liveFloor` a tighter incumbent to prune against, while a voice that can host one adds a
+   * branch at every level and improves no incumbent — but that is read off node counts, no bound
+   * was traced to confirm it, and invariant 5 does not stop applying because the subject is our
+   * own engine. The `DEFAULT_NODE_CAP` comment says the same at more length.
+   *
+   * What the table does **not** license, and must not be read into it: that a device is expensive
+   * for being wide, or that the cost tracks voice count. Neither was measured.
+   *
+   * On the question #135 deferred behind this issue: a Subharmonicon is six oscillators into one
+   * filter and one VCA, which by this repo's own convention — the DFAM's "three sources are not
+   * three voices", the Matriarch's paraphonic `polyphony: 4` — is one voice at `polyphony: 6`,
+   * and the table above says that shape fits with room to spare. Whether some other modelling of
+   * it fits is a question for the probe, run against the shape actually being authored.
    */
+
   /**
-   * The timeout is not a workaround. This runs `TEMPLATES.length * SEEDS.length` exhaustive
-   * searches over the whole registry — fifty-six of them today at fourteen devices and seven
-   * directions, about 1.4s on a developer machine and several times that on a CI runner sharing
-   * a core with the other test files. It first went red on `LANG=C.UTF-8` at the
+   * Seeds 0..23, deliberately wider than the eight `SEEDS` the oracle rigs above use. The worst
+   * seed moves as the library grows — it was 18 when the DFAM landed, 5 at the TR-8S prefix, and
+   * is 9 today — so a sparse list hides the peak, which is the one thing this sweep exists to
+   * find. The oracle tests keep the short list on purpose: they brute-force every rig, and
+   * widening them buys minutes and nothing else.
+   */
+  const CAP_SWEEP_SEEDS = Array.from({ length: 24 }, (_, i) => i)
+
+  /**
+   * The worst case measured on this tree, and a band around it.
+   *
+   * The band is the point of this test, not the cap. Asserting only `capped === false` passes at
+   * 149,999, which is how this test came to fire on the strength of a single authored recipe: it
+   * was true right up until it was catastrophic. Five percent either side fires while there is
+   * still somewhere to go.
+   *
+   *  - **Over the ceiling** — something got more expensive. Re-measure, read the mono-voice
+   *    paragraph above, and do not reach for `DEFAULT_NODE_CAP`; that is closed (#78).
+   *  - **Under the floor** — something got cheaper. Good news, and a stale comment: re-measure,
+   *    move the band down, and keep the alarm's sensitivity.
+   */
+  const WORST_CASE_NODES = 132_615
+  const WORST_CASE_MARGIN = 0.05
+  const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
+  const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))
+
+  /**
+   * The timeout is not a workaround. This runs `TEMPLATES.length * CAP_SWEEP_SEEDS.length`
+   * exhaustive searches over the whole registry — 168 of them today at eighteen devices and
+   * seven directions, about eight seconds on a developer machine and several times that on a CI
+   * runner sharing a core with the other test files. It first went red on `LANG=C.UTF-8` at the
    * default 5s, which reads like a locale failure and is not one.
    *
    * The cost grows on both axes this file already warns about: a device that serves more tonal
    * roles makes each search deeper, and every direction authored adds a whole column of them.
    * Whoever raises the number next should read that as the same signal the node cap gives.
    */
-  it('leaves every shipped template inside the shipped cap', () => {
+  it('leaves every shipped template inside the shipped cap, with room to spare', () => {
+    let worst = { nodes: -1, where: '' }
+
     for (const template of TEMPLATES) {
-      for (const seed of SEEDS) {
+      for (const seed of CAP_SWEEP_SEEDS) {
         const result = assign({ devices: [...DEVICES], template, mood: moodState(), seed })
         const where = `${template.id} seed ${seed}`
         expect(result.search.capped, where).toBe(false)
         expect(result.search.method, where).toBe('exhaustive')
+        if (result.search.nodes > worst.nodes) worst = { nodes: result.search.nodes, where }
       }
     }
-  }, 30_000)
+
+    // Node counts are exactly reproducible (invariant 6), so this is a real two-sided assertion
+    // rather than a flaky one — the same rig on the same seed visits the same nodes everywhere.
+    const found = `worst case is ${worst.nodes} on ${worst.where}, recorded ${WORST_CASE_NODES}`
+    expect(worst.nodes, `${found} — over the recorded band`).toBeLessThanOrEqual(WORST_CASE_CEILING)
+    expect(worst.nodes, `${found} — under the recorded band`).toBeGreaterThanOrEqual(
+      WORST_CASE_FLOOR,
+    )
+  }, 120_000)
 
   it('is deterministic on the real registry, whatever the seed', () => {
     const t = realistic(10)

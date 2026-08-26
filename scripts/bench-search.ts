@@ -29,6 +29,8 @@ import {
   type RoleRequest,
   type Template,
 } from '../lib/core/index'
+import { DEVICES } from '../lib/devices/registry.generated'
+import { TEMPLATES } from '../lib/templates/index'
 import { device as tr1000 } from '../lib/devices/roland-tr-1000/index'
 import { device as trackerMini } from '../lib/devices/polyend-tracker-mini/index'
 import { device as deluge } from '../lib/devices/synthstrom-deluge/index'
@@ -192,7 +194,148 @@ function realRigs(): void {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// #78: where the headroom actually is
+// ---------------------------------------------------------------------------
+
+/**
+ * The tables above isolate pool size, which is what #27 was about. This section is #78's
+ * question instead: on the shipped registry and the shipped directions, how close to
+ * `DEFAULT_NODE_CAP` are we, and what shape of device closes the gap?
+ *
+ * It exists because the numbers in `lib/core/search.ts` and `test/search-symmetry.test.ts` were
+ * being carried in prose from one commit to the next, and #78's complaint is precisely that
+ * nobody knows where the edge is. Anything asserted in either place is re-derived here.
+ */
+
+/** Seeds 0..23. The worst seed moves with the library, so a sparse list hides the peak. */
+const SWEEP_SEEDS = Array.from({ length: 24 }, (_, i) => i)
+
+function group(n: number): string {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+/** Worst case and capped count over one direction, on a given rig. */
+function sweepOne(
+  devices: readonly Device[],
+  template: Template,
+): { nodes: number; seed: number; capped: number } {
+  let out = { nodes: -1, seed: -1, capped: 0 }
+  for (const seed of SWEEP_SEEDS) {
+    const result = assign({ devices: [...devices], template, mood: moodState(), seed })
+    if (result.search.capped) out.capped++
+    if (result.search.nodes > out.nodes) out = { ...out, nodes: result.search.nodes, seed }
+  }
+  return out
+}
+
+/** The same, over every shipped direction. */
+function sweep(devices: readonly Device[]): { nodes: number; where: string; capped: number } {
+  let out = { nodes: -1, where: '', capped: 0 }
+  for (const template of TEMPLATES) {
+    const one = sweepOne(devices, template)
+    out.capped += one.capped
+    if (one.nodes > out.nodes) {
+      out = { ...out, nodes: one.nodes, where: `${template.id} seed ${one.seed}` }
+    }
+  }
+  return out
+}
+
+/**
+ * The probe device: one fixed voice, a tonal role list no wider than the Moog semi-modulars
+ * already shipped, and `polyphony` as the only variable. Deliberately *not* authored under
+ * `lib/devices/` — it is a measurement instrument, and adding a folder to ask a question about
+ * the search would put a fictional box in the product (invariant 5).
+ */
+const PROBE_ROLES: Role[] = [
+  'bass-mid',
+  'lead',
+  'stab',
+  'acid',
+  'arp',
+  'texture',
+  'metallic',
+  'noise',
+  'sub',
+  'pad',
+  'kick',
+]
+
+function probe(polyphony: number): Device {
+  return {
+    id: `probe-poly-${polyphony}`,
+    name: `Probe (polyphony ${polyphony})`,
+    maker: 'Bench',
+    kind: 'semi-modular',
+    clock: { canSendClock: true, canReceiveClock: true, transport: ['midi-din'] },
+    io: { main: 'mono', individualOuts: 0, audioIn: true, usbAudio: false },
+    physical: { panelSpanMm: 318, verified: { kind: 'manual', source: 'Bench fixture p.1' } },
+    voices: [{ kind: 'fixed', id: 'voice', label: 'Voice', roles: PROBE_ROLES, polyphony }],
+    comfortableVoices: 1,
+    // ~1.5 characters per role, the density the shipped Moog folders sit at.
+    recipes: PROBE_ROLES.flatMap((role, i) =>
+      (i % 2 === 0 ? (['dark', 'hard'] as Character[]) : (['dark'] as Character[])).map(
+        (character) => ({
+          id: `probe-${role}-${character}`,
+          role,
+          character,
+          voice: 'voice',
+          title: `${character} ${role}`,
+          params: [
+            {
+              kind: 'numeric' as const,
+              name: 'LEVEL',
+              value: 64,
+              range: {
+                min: 0,
+                max: 127,
+                verified: { kind: 'manual' as const, source: 'Bench fixture p.1' },
+              },
+            },
+          ],
+          verified: { kind: 'manual' as const, source: 'Bench fixture p.1' },
+        }),
+      ),
+    ),
+  }
+}
+
+function headroom(): void {
+  console.log(`\nHEADROOM (#78)   ${DEVICES.length} devices, ${TEMPLATES.length} directions,`)
+  console.log(`                 seeds 0..23, node cap ${group(DEFAULT_NODE_CAP)}`)
+
+  const base = sweep(DEVICES)
+  const pct = (((DEFAULT_NODE_CAP - base.nodes) / DEFAULT_NODE_CAP) * 100).toFixed(1)
+  console.log(
+    `\nshipped registry   worst ${group(base.nodes).padStart(9)}  ${base.where}` +
+      `   capped ${base.capped}   headroom ${pct}%`,
+  )
+
+  console.log('\nper direction, worst over the seeds')
+  const perDirection = TEMPLATES.map((template) => ({
+    id: template.id,
+    ...sweepOne(DEVICES, template),
+  })).sort((a, b) => (a.nodes > b.nodes ? -1 : a.nodes < b.nodes ? 1 : 0))
+  for (const row of perDirection) {
+    console.log(`  ${row.id.padEnd(20)} ${group(row.nodes).padStart(9)}  seed ${row.seed}`)
+  }
+
+  // What closes the gap: one more voice, and `polyphony` decides whether it fits.
+  console.log('\none more device — a single fixed voice, 11 tonal roles, polyphony varying')
+  for (const polyphony of [1, 2, 3, 6]) {
+    const withProbe = sweep([...DEVICES, probe(polyphony)])
+    const verdict = withProbe.capped > 0 ? `CAPS (${withProbe.capped} rigs)` : 'fits'
+    console.log(
+      `  polyphony ${String(polyphony).padEnd(2)}  worst ${group(withProbe.nodes).padStart(9)}` +
+        `  ${withProbe.where.padEnd(26)} ${verdict}`,
+    )
+  }
+}
+
 table('explore')
 table('break')
 realRigs()
+headroom()
 console.log()
