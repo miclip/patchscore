@@ -2138,8 +2138,9 @@ TR-1000 alone; TR-1000 + Tracker Mini; Deluge alone; Deluge + Cascadia; everythi
 asserts a *relative* claim ("the sub goes to the Deluge, not the LT") rather than a cost number,
 so the tests survive a re-ordering of the lower keys and fail loudly on a wrong one.
 
-Requests ordered by **ascending** priority (§4.4), DFS with branch-and-bound, node cap ~50k. If
-the cap is hit, fall back to the greedy result **and log it** — no silent truncation.
+Requests ordered by **ascending** priority (§4.4), DFS with branch-and-bound, node cap 150,000
+(`DEFAULT_NODE_CAP`, and the constant carries its own history — it was ~50k for the first three
+devices). If the cap is hit, fall back to the greedy result **and log it** — no silent truncation.
 
 **Bounding is per key, and one key is not monotone.** Branch-and-bound needs a lower bound on the
 final score of a partial assignment. Misses, crowding, recipe distance and role fit only grow as
@@ -2236,6 +2237,29 @@ growth is about 1.4× per added one-voice device, so any raise that survived the
 in flight would have been ~3.3×, and trimming the device that exposed it was rejected too — with a
 single role it still needed 148,372 nodes, so the smallest voice-bearing device the schema allows
 had already consumed the headroom.
+
+**Re-measured at eighteen devices for #78, and the headroom is 11.6%**: the same sweep tops out at
+**132,615** nodes on `industrial-techno` seed 9 with nothing capped. One direction is the whole of
+that worst case — the second-worst is `ambient-dub` at 17,877 — and
+`test/search-symmetry.test.ts` now asserts the 132,615 inside a five-percent band, so a move in it
+fails loudly while there is still room rather than silently at the cap.
+
+The one thing measured about what closes the remaining 17,385 nodes is **polyphony**. The probe in
+`scripts/bench-search.ts` adds a nineteenth device — one fixed voice, eleven tonal roles, no wider
+than the Moog semi-modulars already shipped — and varies nothing else: at `polyphony` 1 and 2 it
+caps every seed of `industrial-techno`, and at 3 and above the same device leaves a worst case of
+**42,421**, a 68% cut below the baseline. `polyphony: 3+` therefore *correlates with* a large drop
+rather than a rise, reproducibly — `npm run bench:search` prints the table.
+
+**Why it behaves that way is an unproven hypothesis, recorded as one.** The plausible reading is
+that a voice able to host several requests completes a strong solution early, giving `liveFloor` a
+tighter incumbent to prune against, while a monophonic voice adds a branch at every level and
+improves no incumbent — but that is inferred from node counts, no bound was traced to confirm it,
+and invariant 5 applies to claims about the engine as much as to a rendered guide. Whoever picks up
+the bound work should treat it as the first thing to confirm or refute, not as a premise. Nor does
+the table license the wider readings: that a device is expensive for being wide, or that cost
+tracks voice count, was not measured. Size the next device by running the probe against its actual
+shape.
 
 `test/search.test.ts` checks it against `bruteForceBest` on rigs shaped to make it bite — several
 one-voice boxes contending for the same few assignables, including one where the locally-best

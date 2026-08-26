@@ -286,9 +286,37 @@ export type AssignmentResult = {
  * at **66,155 nodes with nothing capped** — a 66% cut on the worst case, and the whole sweep runs
  * in about four and a half seconds.
  *
- * The two figures to size the next device against: **66,155** worst case over the shipped
- * templates at sixteen devices, and **58,869** for the `full-rig` guide fixture, which used to be
- * capped outright.
+ * ## Re-measured for #78 at eighteen devices, and the headroom is 11.6%
+ *
+ * Seven shipped directions x seeds 0..23, 168 rigs, **nothing capped**. The worst case is
+ * `industrial-techno` seed 9 at **132,615** nodes, and it is the whole of the worst case — the
+ * second-worst direction is `ambient-dub` at 17,877, a factor of seven below it.
+ * `test/search-symmetry.test.ts` asserts the 132,615 inside a five-percent band, so the next move
+ * in it is loud while there is still somewhere to go, rather than silent until the cap.
+ *
+ * **The one thing measured about what closes the remaining 17,385 nodes is polyphony.** The probe
+ * in `scripts/bench-search.ts` adds a nineteenth device — one fixed voice, eleven tonal roles, no
+ * wider than the Moog semi-modulars already shipped — and varies nothing but `polyphony`:
+ *
+ *     polyphony 1    caps, 24 of 168 rigs — every seed of industrial-techno
+ *     polyphony 2    caps, 24 of 168
+ *     polyphony 3+   42,421 worst case — a 68% *cut* below the 132,615 baseline
+ *
+ * So `polyphony: 3` and above **correlates with** a large drop rather than a rise, on this probe,
+ * reproducibly: `npm run bench:search` prints the table.
+ *
+ * **Why it goes in that direction is an unproven hypothesis, and is recorded here as one.** The
+ * plausible reading is that a voice able to host several requests completes a strong solution
+ * early, giving `liveFloor` a tighter incumbent to prune against, while a voice that can host one
+ * adds a branch at every level and improves no incumbent. That is inferred from node counts. It
+ * has not been instrumented, no bound was traced to confirm it, and invariant 5 does not stop
+ * applying because the subject is our own engine rather than a rendered guide. Whoever picks up
+ * the bound work should treat it as the first thing to confirm or refute, not as a premise.
+ *
+ * What does not follow from the table above, and must not be read into it: that a device is
+ * expensive for being wide, or that the cost tracks voice count. Neither was measured here.
+ * Sizing the next device means running the probe against its actual shape, and the answer if it
+ * does not fit is a tighter bound rather than a third raise of the constant below.
  */
 export const DEFAULT_NODE_CAP = 150_000
 
