@@ -492,7 +492,26 @@ export function chordsOf(hook: ResolvedHook): Chord[] {
   return [...byStep].map(([step, notes]) => ({ step, notes }))
 }
 
-/** One `len` when the chord agrees, otherwise each. */
-export function lenText(notes: readonly ResolvedNote[]): string {
-  return [...new Set(notes.map((n) => n.len))].map(num).join('/')
+/**
+ * #142. **A note's duration, in the unit that reads at a glance and the one you can enter.**
+ *
+ * Steps first, because that is the number a step field takes and the unit the position on the
+ * same line is already counted in; bars in brackets, because past about a bar a step count stops
+ * meaning anything at a rack with your hands busy (§8). The gloss decomposes and never divides —
+ * 24 steps is `1 bar 8 steps`, never `1.5 bars` and never `0.375 bars`. Under a bar there is no
+ * gloss: the number already reads, and a bracket restating it is noise on every drum row.
+ *
+ * Hand-written to match `durationText` in `lib/core/render.ts`, like everything else here.
+ */
+export function durationText(len: number): string {
+  if (len < STEPS_PER_BAR) return count(len, 'step')
+  const bars = Math.floor(len / STEPS_PER_BAR)
+  const rest = len % STEPS_PER_BAR
+  const gloss = rest === 0 ? count(bars, 'bar') : `${count(bars, 'bar')} ${count(rest, 'step')}`
+  return `${count(len, 'step')} (${gloss})`
+}
+
+/** One duration when the chord agrees, otherwise each. Note order, so it never reshuffles. */
+export function durationsText(notes: readonly ResolvedNote[]): string {
+  return [...new Set(notes.map((n) => n.len))].map(durationText).join(' / ')
 }

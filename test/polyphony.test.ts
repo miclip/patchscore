@@ -1100,11 +1100,15 @@ describe('the industrial pad hook on a Tracker-only rig (i–VI–VII)', () => {
     expect(padBlock).toBeDefined()
     const triggers = padBlock
       .split('\n')
-      .filter((l) => /^- bar \d+ · step \d+ · len \d+ · sample [A-Z] · /.test(l))
+      .filter((l) => /^- bar \d+ · step \d+ · sample [A-Z] · /.test(l))
+    // #142. No duration on these rows, and that is the Tracker Mini's own answer rather than a
+    // formatting choice: the box has no note-length field, so a number here would be a value to
+    // enter into something that does not exist. The three chords abut and the last runs to the
+    // end of the pattern, so there is no `OFF` to place either.
     expect(triggers).toEqual([
-      '- bar 1 · step 1 · len 64 · sample A · as recorded · `F3` `Ab3` (`G#3`) `C4`',
-      '- bar 5 · step 65 · len 32 · sample B · as recorded · `Db4` (`C#4`) `F4` `Ab4` (`G#4`)',
-      '- bar 7 · step 97 · len 32 · sample B · +2 st · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`)',
+      '- bar 1 · step 1 · sample A · as recorded · `F3` `Ab3` (`G#3`) `C4`',
+      '- bar 5 · step 65 · sample B · as recorded · `Db4` (`C#4`) `F4` `Ab4` (`G#4`)',
+      '- bar 7 · step 97 · sample B · +2 st · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`)',
     ])
   })
 
@@ -1135,7 +1139,9 @@ describe('the industrial pad hook on a Tracker-only rig (i–VI–VII)', () => {
       expect(text).not.toContain('Samples to obtain or render')
     }
     const md = renderGuide(played)
-    expect(md).toContain('- bar 1 · step 1 · len 64 · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60')
+    expect(md).toContain(
+      '- bar 1 · step 1 · sounds for 64 steps (4 bars) · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60',
+    )
   })
 
   it('collapses repeats of one shape onto a single sample, at 0 semitones', () => {

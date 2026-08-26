@@ -1330,7 +1330,34 @@ export const device: Device = {
    * it — but no page states that either way, so this is a reading of the jack list rather than an
    * answer the document gives.
    */
+  /**
+   * §2.6/#142. **Nothing on this box sets how long a step sounds**, and p.22 says so by
+   * enumerating rather than by omission — which is the difference between a finding and an
+   * assumption. STEP CONTROLS: *"Each Sequencer step (1—8) features a PITCH knob, a VELOCITY
+   * knob, and an LED that indicates the currently active step."* Two knobs and a light. No gate,
+   * no length, no tie, no rest.
+   *
+   * What ends the note is the amplitude envelope, which is decay-only — there is no sustain stage
+   * for a gate to release. p.21: *"The third and final Envelope Generator in your DFAM is
+   * dedicated to modulating the Output volume of the VCA. The Decay time of this EG is set using
+   * the VCA DECAY knob."* One knob for all eight steps.
+   *
+   * Both pages are in the citation because the claim needs both halves and neither carries it
+   * alone: p.22 establishes that a step has no duration, p.21 names what decides it instead. The
+   * first reading cited p.20 — the VCA section's opening — and quoted the knob from p.21, which
+   * is a page reference and a fact from two different pages (§2.5).
+   *
+   * A step's velocity nudges it (p.22: *"steps with higher Velocity values may cause the Envelope
+   * Generators to have slightly longer Decay times"*), and that is a side effect of level rather
+   * than a duration anybody enters. It is not what this field is about.
+   */
+  noteDuration: {
+    kind: 'trigger',
+    reason: 'the VCA envelope decides, and `VCA DECAY` is the one knob that sets it',
+  },
+
   capabilityEvidence: {
+    noteDuration: { kind: 'manual', source: 'Moog DFAM Owner’s Manual, p.21, p.22' },
     ...JACK_EVIDENCE,
     'clock.preferredSource': {
       kind: 'unknown',

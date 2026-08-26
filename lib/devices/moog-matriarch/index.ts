@@ -1516,7 +1516,20 @@ export const device: Device = {
    * `INSTRUMENT IN` and none of its 33 outputs is an envelope follower or a rectifier, so nothing
    * on it can derive a control voltage from an incoming signal and duck to it.
    */
+  /**
+   * §2.6/#142. The Grandmother's answer on a bigger panel — REST, TIE and RATCHET are the three
+   * things a step can carry besides its note, and none is a length. p.48: *"Press the green TIE
+   * button to enter a Tie for the current sequence step. A Tie is used to string two or more
+   * individual sequence steps together as if they were played legato-style."*
+   *
+   * The Arp Gate Length in the MIDI CC table is a *different* control for a different thing — how
+   * long the arpeggiator holds each note it plays — and citing it here would answer a question
+   * about the sequencer with a fact about the arpeggiator.
+   */
+  noteDuration: { kind: 'tied-steps', control: 'TIE' },
+
   capabilityEvidence: {
+    noteDuration: cite(48),
     ...JACK_EVIDENCE,
     'clock.preferredSource': {
       kind: 'unknown',

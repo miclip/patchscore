@@ -1223,7 +1223,30 @@ export const device: Device = {
    * receive-clock setting at all — following an external clock is per-section, on the SYNC
    * buttons.
    */
+  /**
+   * §2.6/#142. The step sequencer ties, exactly as the semi-modulars do. p.17, Step Sequencer
+   * Basics: *"After entering a note, pressing the TIE button will tie (connect) your previous note
+   * to the next note you play"*, and the sentence that settles the state is two lines below it —
+   * *"if you play the same note as the previous one using a tie, you will effectively double the
+   * length of the note."* Stacking ties is the whole of how a longer note is entered.
+   *
+   * **p.17 and not p.16**, which is where the panel's `LATCH / TIE` button lives and which says
+   * only what the button becomes in record mode. The first reading cited it and quoted p.17,
+   * which is a page reference and a fact from two different pages — §2.5's failure exactly.
+   *
+   * **The arpeggiator's GATE LENGTH is not this**, and the page that proves it is the page it is
+   * printed on. p.40 puts `ARPEGGIATOR (PRESET EDIT 1.1)` and `SEQUENCER (PRESET EDIT 1.2)` one
+   * above the other: GATE LENGTH is in the first — *"specifies how long the arpeggiator's gate
+   * stays on for each note"*, `OFF` to `100%`, default 50% — and the second holds `MOD DST`,
+   * `SEQ MOD AMT` and no gate length at all. Its neighbour SWING *is* described as swinging
+   * "your sequence data", which is suggestive and is not a printed claim about GATE LENGTH.
+   * Reading it as a sequencer gate length would be the cited-range-wrong-scale trap in CLAUDE.md,
+   * one field over.
+   */
+  noteDuration: { kind: 'tied-steps', control: 'TIE' },
+
   capabilityEvidence: {
+    noteDuration: cite(17),
     'clock.preferredSource': {
       kind: 'unknown',
       reason:

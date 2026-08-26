@@ -293,8 +293,12 @@ export function HookRef() {
     // `sound-ref` for the styling, which is right for it — both are one-line pointers out of the
     // phase — and its own name beside it, because it points somewhere else entirely.
     <p className="sound-ref hook-ref">
+      {/*
+        #142: "steps and note lengths" was true of a piano roll and false of a tracker, where
+        phase 4 prints no lengths because the box has no field for them.
+      */}
       <strong>The hook is the pattern</strong> — see <a href={HOOK_ANCHOR}>Hook</a> for its steps
-      and note lengths. Nothing separate to program here.
+      and what each one carries. Nothing separate to program here.
     </p>
   )
 }

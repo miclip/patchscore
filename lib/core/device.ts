@@ -497,6 +497,142 @@ export const DeviceContentSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('user-supplied') }),
 ])
 
+
+// ---------------------------------------------------------------------------
+// §2.6/#142 How a box expresses note duration
+// ---------------------------------------------------------------------------
+
+/**
+ * §2.6/#142. **How this box says how long a note lasts** — the fact the Hook phase had no way
+ * to ask for, and the absence three separate defects grew out of.
+ *
+ * ## Why the phase needed a device fact and not a format
+ *
+ * Every other phase in §8 is device-specific by design. Sound design cites a page and gives a
+ * value on the actual box; step programming names the track; the rig phase names the sockets on
+ * the reader's own panels. The Hook phase printed `step · len · degree · MIDI` and handed the
+ * device-specific half over as homework, because `hookLines` consulted exactly two things about
+ * the carrying part — `recipe.realisation` and whether it was stacked — and **both are
+ * properties of the recipe**. It asked nothing about the device, and it could not: nothing on
+ * `Device` said how a note ends.
+ *
+ * #142 reported that absence three times over, once per symptom:
+ *
+ *  - `len 128` collided with the Tracker Mini's cited `LENGTH 640 ms` in phase 6, for the same
+ *    part — because nothing knew the box already had a parameter by that name.
+ *  - `len` described a field the Tracker Mini does not have — because nothing knew how that box
+ *    ends a note.
+ *  - `len 128` was eight bars printed as arithmetic — because nothing knew the reader was
+ *    entering steps into a tracker rather than drawing a piano roll.
+ *
+ * ## Device-level, not per voice
+ *
+ * How a note ends is a property of the *pattern editor*, and every box in the library has one of
+ * those. The Tracker Mini's two pools are two kinds of track in one tracker; the TR-8S's eleven
+ * voices are eleven triggers in one step sequencer. A per-voice override is the right shape the
+ * day a box genuinely holds two answers at once, and no manifest here does — the escape hatch is
+ * a keyed fact family (`jackFact`'s shape), not a fifth vocabulary.
+ *
+ * **This is not shared template vocabulary** (invariant 3). It travels device → renderer exactly
+ * as `unit`, `note` and `content` do, and no template names a note-duration kind or joins on one.
+ *
+ * ## The states
+ *
+ *  - **`per-note-value`** — the box carries a length on each note. `control` is what sets it,
+ *    named the way the box names it, so the guide can point at it instead of describing it: a
+ *    field on a screen (`LEN`), a knob turned while a step is selected (`GATE LENGTH`), or a
+ *    gesture on a grid (the note's extent). A reader gets a duration on every note *and* where it
+ *    goes.
+ *  - **`tied-steps`** — a note is one step long and nothing sets a length; a **tie** joins it to
+ *    the next step, and stacking ties is how anything longer is entered. `control` is what the
+ *    tie is called. This is the whole Moog sequencer family and it is not `per-note-value` in
+ *    disguise: there is no value, only a count of steps you join, and a reader told to "set the
+ *    length" on a Grandmother would look for a control that does not exist.
+ *  - **`until-next`** — there is no length field. A note runs until the next note on that voice,
+ *    or until an explicit note-off entered in the pattern; `noteOff` is what that value is called.
+ *    Durations are not printed for these boxes, because a printed duration is an instruction to
+ *    enter something, and there is nothing to enter. What is printed instead is where the
+ *    note-offs go, which is the same fact turned into the reader's own gesture.
+ *  - **`gate`** — duration is a gate, and its length comes from somewhere that is not the
+ *    pattern: a knob, a held key, a voltage on a cable. `source` names it. The duration still
+ *    prints — how long the note should last is a real instruction on these boxes — but it prints
+ *    beside a sentence saying no step holds it.
+ *  - **`trigger`** — a step fires the sound and the sound's own decay is its length. Nothing to
+ *    set, so nothing is printed. `reason` says what does decide it, because "there is no length"
+ *    is a claim a reader will want a word of support for while holding the box.
+ *
+ * ## The fifth state is the absence of this field
+ *
+ * Exactly as `content` does it (§2.6/#111), and for the same reason: a claim of not-knowing is
+ * still a field somebody has to remember to write. Absence is the default, `noteDurationNotice`
+ * turns it into a sentence a reader sees, and the *reason* lives in `capabilityEvidence` at
+ * `noteDuration` as one of #120's three reasoned non-claims.
+ */
+export const NOTE_DURATION_FACT = 'noteDuration'
+
+export type NoteDuration =
+  /** A length carried per note — `'LEN'`, `'GATE LENGTH'`, the note's extent on a grid. */
+  | {
+      kind: 'per-note-value'
+      /** What sets it, named the way the box names it. Not a description of what it does. */
+      control: string
+      /**
+       * What it is measured in, **only where the manual states it**. Optional on purpose: the
+       * Crave's quick-start names the knob and ranges nothing, and inventing a scale to fill this
+       * would be the invented claim §3.1 exists to refuse. Absent, the guide names the control
+       * and stops.
+       */
+      unit?: string
+    }
+  /** One step per note, joined by ties — the Moog sequencers. */
+  | {
+      kind: 'tied-steps'
+      /** What the tie is called on this box, exactly as printed — `'TIE'`. */
+      control: string
+    }
+  /** No length field: the next note ends this one, or an explicit note-off does. */
+  | {
+      kind: 'until-next'
+      /** What the note-off value is called on this box, exactly as printed — `'OFF'`. */
+      noteOff: string
+    }
+  /** Duration is a gate whose length is set somewhere other than the pattern. */
+  | {
+      kind: 'gate'
+      /** What holds the gate — a knob, a key, a cable. Named as the reader would name it. */
+      source: string
+    }
+  /** A step is a trigger; the sound's own decay is its length. */
+  | {
+      kind: 'trigger'
+      /** What decides how long it sounds instead, since nothing the reader enters does. */
+      reason: string
+    }
+
+export const NoteDurationSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('per-note-value'),
+    control: z.string().min(1, 'a per-note length needs the control the box names'),
+    unit: z.string().min(1, 'a stated unit is a claim; omit it rather than writing none').optional(),
+  }),
+  z.strictObject({
+    kind: z.literal('tied-steps'),
+    control: z.string().min(1, 'a tied-steps box needs the name of its tie'),
+  }),
+  z.strictObject({
+    kind: z.literal('until-next'),
+    noteOff: z.string().min(1, 'an until-next box needs the name of its note-off value'),
+  }),
+  z.strictObject({
+    kind: z.literal('gate'),
+    source: z.string().min(1, 'a gate needs the thing that holds it named'),
+  }),
+  z.strictObject({
+    kind: z.literal('trigger'),
+    reason: z.string().min(1, 'a trigger needs what decides its length instead'),
+  }),
+])
+
 export const CAPABILITY_FACTS = [
   'clock.canSendClock',
   'clock.canReceiveClock',
@@ -512,6 +648,7 @@ export const CAPABILITY_FACTS = [
   'features.sidechain.fromExternalAudio',
   'features.lfo',
   CONTENT_FACT,
+  NOTE_DURATION_FACT,
 ] as const
 
 export type CapabilityFact = (typeof CAPABILITY_FACTS)[number]
@@ -663,6 +800,115 @@ export function contentNotice(
     }
   }
   return { state: 'unknown', evidence }
+}
+
+/**
+ * §2.6/#142. **What the Hook phase should say about how this box ends a note** — the one
+ * decision, made here so both renderers reach the same verdict about the box in front of
+ * somebody.
+ *
+ * The same arrangement `contentNotice` sits in, and for the same reason (#33): one right answer
+ * to which state a device is in, two hand-written vocabularies around it. A second copy of this
+ * reasoning would let the Markdown guide and the page disagree about a device the reader is
+ * holding.
+ *
+ * **It always returns something**, unlike `contentNotice`, and the difference is real rather
+ * than an inconsistency. Content says nothing when no assigned part loads anything — a box can
+ * genuinely have no content question. Every part with a hook has notes with durations in them,
+ * so the question is always live once a hook renders at all, and the honest answer where nobody
+ * has established it is a sentence saying so rather than silence that reads as *there is nothing
+ * to know here*.
+ *
+ * `undefined` for the device is the unassigned part — a hook whose role nothing in the rig
+ * carries. It resolves to `unknown` with no evidence, which is what the renderers already say
+ * about that part in another way.
+ */
+export type NoteDurationNotice =
+  | { state: 'per-note-value'; control: string; unit: string | undefined; evidence: Cite }
+  | { state: 'tied-steps'; control: string; evidence: Cite }
+  | { state: 'until-next'; noteOff: string; evidence: Cite }
+  | { state: 'gate'; source: string; evidence: Cite }
+  | { state: 'trigger'; reason: string; evidence: Cite }
+  | { state: 'unknown'; evidence: CapabilityEvidence | undefined }
+
+export function noteDurationNotice(device: Device | undefined): NoteDurationNotice {
+  if (device === undefined) return { state: 'unknown', evidence: undefined }
+  const evidence = evidenceFor(device, NOTE_DURATION_FACT)
+  const duration = device.noteDuration
+  if (duration !== undefined && evidence !== undefined && isCite(evidence)) {
+    switch (duration.kind) {
+      case 'per-note-value':
+        return {
+          state: 'per-note-value',
+          control: duration.control,
+          unit: duration.unit,
+          evidence,
+        }
+      case 'tied-steps':
+        return { state: 'tied-steps', control: duration.control, evidence }
+      case 'until-next':
+        return { state: 'until-next', noteOff: duration.noteOff, evidence }
+      case 'gate':
+        return { state: 'gate', source: duration.source, evidence }
+      case 'trigger':
+        return { state: 'trigger', reason: duration.reason, evidence }
+    }
+  }
+  return { state: 'unknown', evidence }
+}
+
+/**
+ * §2.6/#142. **Does a duration printed beside a note tell this reader to do anything?**
+ *
+ * The one question both renderers ask of the notice, and it is deliberately not a fifth state on
+ * it: a printed duration is an *instruction to enter something*, so it belongs where there is
+ * something to enter and is noise where there is not.
+ *
+ *  - `per-note-value` — yes. There is a field and this is what goes in it.
+ *  - `gate` — yes. Nothing in a step holds it, but how long the note should last is still the
+ *    instruction; a reader sets a knob or holds a key to that length.
+ *  - `until-next` — no. The duration is a consequence of where the *next* note sits, and #142
+ *    reported it printed as though it were an instruction. `noteOffSteps` renders the same fact
+ *    as the gesture the reader actually makes.
+ *  - `trigger` — no. The sound's own decay decides, and a number here would be a value to enter
+ *    into a field that does not exist.
+ *  - `tied-steps` — yes, and it is the number that matters most there: the duration in steps is
+ *    exactly how many steps the reader ties together.
+ *  - `unknown` — **yes**, and this is the one that looks wrong and is not. The duration is a
+ *    musical fact about the hook, true whatever box plays it (§4.1). Withholding it because we
+ *    have not established how *this* box takes it would drop authored content over a gap in our
+ *    own knowledge — invariant 5 backwards. What is withheld instead is the device claim.
+ */
+export function printsNoteDuration(notice: NoteDurationNotice): boolean {
+  return notice.state !== 'until-next' && notice.state !== 'trigger'
+}
+
+/**
+ * §2.6/#142. **Where the note-offs go on a box that has no length field**, in step order.
+ *
+ * On an `until-next` box a note runs until the next note on that voice. So a note whose sustain
+ * ends exactly where the next one starts needs nothing entered between them — which is the whole
+ * of Drone Study on a Tracker Mini, three notes at steps 1, 129 and 193 and nothing else — and a
+ * note that stops short of the next one needs a note-off placed at the step it ends on.
+ *
+ * `notes` is one voice's notes, in any order; `steps` is the pattern's length in sixteenths. A
+ * note running to or past the end of the pattern gets no note-off: there is no step to put it on,
+ * and the pattern ending is what stops it.
+ *
+ * Sorted and de-duplicated, so two notes ending on one step produce one gesture. Pure
+ * arithmetic on authored values — no locale, no float, nothing to drift across platforms
+ * (invariant 6).
+ */
+export function noteOffSteps(notes: readonly { step: number; len: number }[], steps: number): number[] {
+  const ends = new Set<number>()
+  const starts = new Set(notes.map((n) => n.step))
+  for (const note of notes) {
+    const end = note.step + note.len
+    if (end > steps) continue
+    if (starts.has(end)) continue
+    ends.add(end)
+  }
+  return [...ends].sort((a, b) => a - b)
 }
 
 // ---------------------------------------------------------------------------
@@ -1674,6 +1920,12 @@ export type Device = {
    */
   content?: DeviceContent
   /**
+   * §2.6/#142. How this box says how long a note lasts — see `NoteDuration`. Optional, and the
+   * omission is the fifth state: absent means nobody here has established the answer, and the
+   * Hook phase says so rather than printing a step count as though it were a field to fill in.
+   */
+  noteDuration?: NoteDuration
+  /**
    * §2.6/#22. **Who checked the capability facts above, keyed by field path.**
    *
    * Optional, and silence is the honest default — an author cites what they checked. Required in
@@ -1702,6 +1954,7 @@ export const DeviceSchema = z
     comfortableVoices: z.int().min(1).optional(),
     features: DeviceFeaturesSchema.optional(),
     content: DeviceContentSchema.optional(),
+    noteDuration: NoteDurationSchema.optional(),
     capabilityEvidence: z
       .record(z.string().min(1), CapabilityEvidenceSchema)
       .refine((m) => Object.keys(m).length > 0, {
@@ -2009,6 +2262,61 @@ export const DeviceSchema = z
           })
         })
       }
+    }
+
+    /**
+     * §2.6/#142. **A note-duration declaration is a positive claim and carries a citation**, and
+     * a citation with no declaration behind it is refused — the `content` rules above, applied
+     * to the fact the Hook phase reads. Both halves fail in the same two directions and for the
+     * same reasons, so the wording follows them deliberately rather than inventing a second
+     * dialect for a second fact.
+     */
+    const durationEvidence = evidence[NOTE_DURATION_FACT]
+    if (device.noteDuration !== undefined) {
+      if (durationEvidence === undefined || !isCite(durationEvidence)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `noteDuration is declared '${device.noteDuration.kind}' with no citation at '${NOTE_DURATION_FACT}'; how a box ends a note is read off its manual (§2.6/#142)`,
+          path: ['capabilityEvidence', NOTE_DURATION_FACT],
+        })
+      }
+    } else if (durationEvidence !== undefined && isCite(durationEvidence)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `'${NOTE_DURATION_FACT}' carries a citation but no noteDuration is declared; a reading that supports no claim is 'cited-against' (§2.6/#142)`,
+        path: ['capabilityEvidence', NOTE_DURATION_FACT],
+      })
+    }
+
+    /** `false` says nothing the omission does not, exactly as at `content` (§2.6/#111). */
+    if (durationEvidence === false) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `'${NOTE_DURATION_FACT}' is 'false', which says nothing the omission does not; record why with 'unknown', 'unread' or 'cited-against' (§2.6/#142)`,
+        path: ['capabilityEvidence', NOTE_DURATION_FACT],
+      })
+    }
+
+    /**
+     * §2.6/#142. **A box a guide can ask to play a part has to have been asked how it ends a
+     * note**, and silence is not an answer it may give.
+     *
+     * The `sourceAudio` rule above in the other key. Any recipe at all is the trigger, not a
+     * tonal one: a schema cannot see a guide, so it cannot know which parts get hooks, and the
+     * roles that do are not a closed set — #100 found that `texture` and `bass-mid` both carry
+     * one while neither is `tonal`. A box with no recipes carries no part and owes nothing, which
+     * is the mixers and the ZOIA.
+     *
+     * A declaration answers it; so does any of #120's three reasoned non-claims. What cannot
+     * reach a reader is a hook printing a duration on a box nobody asked the question about,
+     * with the guide silent about which of the five states that is.
+     */
+    if (device.recipes.length > 0 && durationEvidence === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `this device carries parts, so '${NOTE_DURATION_FACT}' must say how it ends a note — a declaration with its citation, or why it is not settled (§2.6/#142)`,
+        path: ['capabilityEvidence', NOTE_DURATION_FACT],
+      })
     }
 
     for (const setup of device.clock.sourceSetup ?? []) {

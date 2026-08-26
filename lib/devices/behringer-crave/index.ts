@@ -863,7 +863,21 @@ export const device: Device = {
    * other direction, it never raises it. It documents a clock coming *in* and no way for one to
    * leave, and the field is not claimable in any case with `canSendClock: false`.
    */
+  /**
+   * §2.6/#142. p.16, control (24): *"TEMPO/GATE LENGTH - this knob controls the sequencer tempo.
+   * During step editing, it also controls the GATE length."* One knob, two jobs, and the second
+   * one is per-step — control (29) confirms it by listing GATE LENGTH among what the
+   * OCTAVE/LOCATION LEDs display.
+   *
+   * **`unit` is deliberately absent.** The quick-start names the knob and ranges nothing, here or
+   * in the Specifications pages, and a scale invented to fill the field would be exactly the
+   * claim §3.1 refuses. The guide names the control and stops, which is all this document
+   * supports.
+   */
+  noteDuration: { kind: 'per-note-value', control: 'GATE LENGTH' },
+
   capabilityEvidence: {
+    noteDuration: cite(16),
     ...JACK_EVIDENCE,
     'clock.preferredSource': {
       kind: 'unknown',

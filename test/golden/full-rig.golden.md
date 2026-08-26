@@ -181,13 +181,16 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 2 bars in F minor.
 
-- bar 1 · step 1 · len 3 · `F1` · root · MIDI 29
-- bar 1 · step 7 · len 2 · `F1` · root · MIDI 29
-- bar 1 · step 11 · len 3 · `Bb1` (`A#1`) · 4th · MIDI 34
-- bar 1 · step 15 · len 2 · `F1` · root · MIDI 29
-- bar 2 · step 17 · len 3 · `F1` · root · MIDI 29
-- bar 2 · step 23 · len 2 · `Db2` (`C#2`) · 6th · MIDI 37
-- bar 2 · step 27 · len 4 · `C2` · 5th · MIDI 36
+A step is one note long and nothing here sets a length: `TIE` joins a note to the next step, and stacking those is how anything longer is entered. · manual
+- ↳ cite: claim manual — Subsequent 37 User's Manual, p.17
+
+- bar 1 · step 1 · sounds for 3 steps · `F1` · root · MIDI 29
+- bar 1 · step 7 · sounds for 2 steps · `F1` · root · MIDI 29
+- bar 1 · step 11 · sounds for 3 steps · `Bb1` (`A#1`) · 4th · MIDI 34
+- bar 1 · step 15 · sounds for 2 steps · `F1` · root · MIDI 29
+- bar 2 · step 17 · sounds for 3 steps · `F1` · root · MIDI 29
+- bar 2 · step 23 · sounds for 2 steps · `Db2` (`C#2`) · 6th · MIDI 37
+- bar 2 · step 27 · sounds for 4 steps · `C2` · 5th · MIDI 36
 
 ### `pad` — minilogue xd · Voice
 
@@ -195,9 +198,12 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 8 bars in F minor.
 
-- bar 1 · step 1 · len 64 · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
-- bar 5 · step 65 · len 32 · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
-- bar 7 · step 97 · len 32 · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`) · 7th 2nd 4th · MIDI 63 67 70
+How this box sets a note’s length is not established here, so the durations below are the part rather than a field to fill in. · unread
+- ↳ cite: unread — the minilogue xd manual is not in `manuals/`; no document here was opened for it
+
+- bar 1 · step 1 · sounds for 64 steps (4 bars) · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
+- bar 5 · step 65 · sounds for 32 steps (2 bars) · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
+- bar 7 · step 97 · sounds for 32 steps (2 bars) · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`) · 7th 2nd 4th · MIDI 63 67 70
 
 ### `stab` — MC-101 · TONE Track 2
 
@@ -205,10 +211,13 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 4 bars in F minor.
 
-- bar 1 · step 1 · len 2 · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
-- bar 1 · step 11 · len 1 · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
-- bar 3 · step 33 · len 2 · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
-- bar 4 · step 49 · len 3 · `C4` `Eb4` (`D#4`) `G4` · 5th 7th 2nd · MIDI 60 63 67
+Note length is set per note here — `LEN`. · manual
+- ↳ cite: claim manual — MC-101 Reference Manual eng01, p.22
+
+- bar 1 · step 1 · sounds for 2 steps · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
+- bar 1 · step 11 · sounds for 1 step · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
+- bar 3 · step 33 · sounds for 2 steps · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
+- bar 4 · step 49 · sounds for 3 steps · `C4` `Eb4` (`D#4`) `G4` · 5th 7th 2nd · MIDI 60 63 67
 
 ## 5. Step programming
 
@@ -290,7 +299,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Mixer pushed past unity with feedback under it and MultiDrive on top** — settings in Sound design
 
-**The hook is the pattern** — see Hook above for its steps and note lengths. Nothing separate to program here.
+**The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
 ### `clap` — TR-1000 · HC
 
@@ -444,7 +453,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Short chord stab, played on the track** — settings in Sound design
 
-**The hook is the pattern** — see Hook above for its steps and note lengths. Nothing separate to program here.
+**The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
 ### `impact` — TR-1000 · CC
 
@@ -471,7 +480,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 **Low pad with the filter shut down over the top of it** — settings in Sound design
 
-**The hook is the pattern** — see Hook above for its steps and note lengths. Nothing separate to program here.
+**The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
 ### `riser` — TR-8S · CC
 

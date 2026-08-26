@@ -720,6 +720,73 @@ a fourth — the folder names extract, the annotations that give them meaning do
 stayed `unknown` on a search of a guidebook that answers on that page. Every page named above was
 rendered and read.
 
+### 2.7 How a box expresses note duration
+
+A second device fact in the same shape, and it exists because §8's Hook phase had none. `hookLines`
+consulted `recipe.realisation` and whether the part was stacked — both properties of the **recipe**
+— and asked nothing about the **device**, because the model had nothing to ask. #142 reported that
+absence three times over without naming it once:
+
+- `len 128` collided with the Tracker Mini's cited `LENGTH 640 ms` in phase 6, for the same part.
+  The one that looked like a parameter was not, and the one that was measured something else.
+- `len` described a field the Tracker Mini does not have. Its pattern rows are note, instrument,
+  volume and two FX slots; a note runs until the next note on the track. What the guide printed as
+  an instruction was a consequence of where the *next* note sat.
+- `len 128` is eight bars, printed as arithmetic for somebody standing at a rack with their hands
+  busy — while the same line already converted the *position* into bars.
+
+So `Device.noteDuration` says how the box in front of the reader ends a note, cited at
+`noteDuration` in `capabilityEvidence` like every other capability fact (§2.6). Five kinds:
+
+| kind | the gesture | in the library |
+|---|---|---|
+| `per-note-value` | a length carried on each note — `control` names what sets it, `unit` only where a manual states one | Digitakt II `LEN`, MC-101 `LEN`, Mother-32 and Crave `GATE LENGTH`, the Deluge's start pad + end pad |
+| `tied-steps` | one step per note; `control` is the tie that joins it to the next | Grandmother, Matriarch, Subsequent 37 — all `TIE` |
+| `until-next` | no length field; the next note ends this one, or `noteOff` does | Tracker Mini, `OFF` |
+| `gate` | a gate held from somewhere that is not the pattern | Cascadia |
+| `trigger` | a step fires the sound and its own envelope is the length | TR-1000, TR-8S, DFAM |
+
+**The fifth state is the absence of the field**, exactly as `content` does it and for the same
+reason: a claim of not-knowing is still a field somebody has to remember to write. The *reason*
+lives in `capabilityEvidence` as one of #120's three reasoned states — the minilogue xd is `unread`,
+because its manual is not in `manuals/` at all.
+
+**A box a guide can ask to play something has to have been asked.** `DeviceSchema` demands an entry
+from any device with a recipe, and refuses `false` there — the `sourceAudio` rule of §2.6 in another
+key. *Any* recipe is the trigger rather than a tonal one: a schema cannot see a guide, so it cannot
+know which parts get hooks, and #100 found that `texture` and `bass-mid` both carry one while
+neither is `tonal`. A box with no recipes carries no part and owes nothing, which is the mixers and
+the ZOIA.
+
+`noteDurationNotice(device)` decides the state once for both renderers (#33), and
+`printsNoteDuration` answers the one question they both ask of it: **does a duration printed beside
+a note tell this reader to do anything?** It does under `per-note-value`, `tied-steps` and `gate` —
+and under the unsettled state too, which looks wrong and is not: a duration is a musical fact about
+the hook (§4.1), true whatever plays it, and withholding it over a gap in *our* knowledge would drop
+authored content. What is withheld there is the claim about the box. It does not under `until-next`
+or `trigger`, where a number would be a value to enter into a field that does not exist.
+
+`until-next` renders the same fact as the gesture instead: a note whose sustain ends before the next
+note starts gets a note-off row at the step it ends on, **interleaved with the notes in the order
+they are typed in**, because on a tracker a note-off is entered exactly the way a note is. A note
+running to or past the end of the pattern gets none — there is no step to put it on, and the
+pattern ending is what stops it. Drone Study on a Tracker Mini therefore reads as three notes at
+steps 1, 129 and 193 and nothing between them, which is the instruction, where before it read as a
+description of a score.
+
+**`HookNote.len` is sustain**, in sixteenth steps from the note's own step, and §4.1 says so.
+It is not distance-to-the-next-note and not a gate percentage; the three would each imply a
+different rendering, and the field being undefined is plausibly how all of this accumulated on it.
+
+**The unit decomposes and never divides.** `128 steps (8 bars)`, `24 steps (1 bar 8 steps)`,
+`6 steps` — steps first because that is the number a step field takes and the unit the position on
+the same line is counted in, bars in brackets because past about a bar a step count stops meaning
+anything. Under a bar there is no gloss at all. No length becomes `0.375 bars`.
+
+The word is **`sounds for`**, not `len`. The collision #142 reported is not hypothetical: `LENGTH`,
+`HOLD` and `SUSTAIN` are all cited parameter names in the library today, so the hook may borrow
+none of them.
+
 ---
 
 ## 3. Layer 2 — Recipes
@@ -1500,6 +1567,18 @@ no device, so it does not touch invariant 3.
 **Resolution emits concrete notes, not pitch classes plus offsets.** The guide is read standing at
 the machine. `degree 5, octave offset 0` is something to work out; `G2` is something to play, and
 §8 exists to be actionable at the box.
+
+**`HookNote.len` is how long the note sounds**, in sixteenth steps counted from its own `step`.
+Written down because it was not: `step`, `degree` and `octave` each had a sentence and `len` had a
+lower bound, and #142 found three separate defects that had accumulated on the field the guide
+prints most prominently. It is **sustain**, and the two things it is not would each imply a
+different rendering — not distance-to-the-next-note (a note may stop well before the next one
+starts; that is a rest, authored by making `len` short), and not a gate percentage or any device's
+own length value. It is musical time, true of the hook whatever plays it, and it names no device:
+**how a box takes it is `Device.noteDuration`'s job** (§2.7). A template states the music; the
+device states the gesture. Overlap is legal — two notes at one step are a chord, and a `len`
+running past the next note's `step` is a line that overlaps itself — and whether the carrying voice
+can *play* that is §7.1's question, exactly as range and polyphony are kept out of this layer.
 
 #### The convention is not universal on hardware, and we are not fixing that here
 
@@ -2689,6 +2768,14 @@ Do not reorder.
    progression moves; cross the voices and the chord changes character between bars with nothing
    on the page saying so. A chord with more notes than the part has voices is reported, not
    truncated (invariant 5). A polyphonic part's hook is unchanged
+
+   **All three renderings ask the carrying device how it ends a note** (§2.7) — the sampled one,
+   the stacked one and the plain list — because it is the same question in all three, and
+   answering it three times is how the first two came to disagree about a box. The device fact
+   decides whether a duration prints at all, what sentence sits above the notes, and where the
+   note-offs go. It is stated once per part, above the rows it governs, with the page it was read
+   from. A part nothing carries gets no such sentence: every one of them says *this box*, and
+   there is no box.
 5. **Step programming** — the selected template pattern per part (§4.3), rendered per device with
    that device's slot articulation bound to it (§7 step 8).
 

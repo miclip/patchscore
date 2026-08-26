@@ -1484,7 +1484,25 @@ export const device: Device = {
    * mentioning the clock output only in passing, and they are more than that. The finding holds;
    * the sentence supporting it did not, and the reason below says what those pages say.
    */
+  /**
+   * §2.6/#142. **This box has no sequencer of its own, so nothing it owns sets a note's length —
+   * the gate that plays it does.** p.83 on Envelope B: *"The attack portion of the envelope is
+   * triggered by the rising edge of a gate signal sent to the GATE/SYNC [5.D] input. The envelope
+   * holds (sustains) its maximum value for as long as the gate signal is high, then triggers the
+   * release stage when the gate signal goes low."*
+   *
+   * The same reading #120 recorded at `clock.preferredSource`, one field over: this is an
+   * instrument something else plays. p.39 names the default sources when nothing is patched — the
+   * MIDI GATE, the GATE CV input, or the front-panel MANUAL GATE button — so the answer to "how
+   * long is the note" is always somewhere other than this panel.
+   */
+  noteDuration: {
+    kind: 'gate',
+    source: 'the gate that plays it holds it, from MIDI, a patched gate, or the MANUAL GATE button',
+  },
+
   capabilityEvidence: {
+    noteDuration: cite(83),
     ...JACK_EVIDENCE,
     'clock.preferredSource': {
       kind: 'cited-against',

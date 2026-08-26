@@ -575,7 +575,25 @@ export const device: Device = {
     reason: 'p.70 says the directory is there and no page lists a single filename',
   },
 
+  /**
+   * §2.6/#142. p.53, the TRIG page: *"LEN — Trig Length sets the length of the note trig."* One
+   * of the eight trig parameters, beside `NOTE`, `VEL` and `PROB`, and parameter-lockable like
+   * the rest of them.
+   *
+   * The unit comes off p.43, which is where the manual states what its values mean rather than
+   * that they exist: *"A LEN value of 1/16 adds a sixteenth note and advances the sequencer one
+   * step. 1/8 adds an eighth note and advances the sequencer two steps."* Both pages are in the
+   * citation, because the claim this field makes needs both halves and neither page carries it
+   * alone.
+   */
+  noteDuration: {
+    kind: 'per-note-value',
+    control: 'LEN',
+    unit: 'note divisions — 1/16 is one step',
+  },
+
   capabilityEvidence: {
+    noteDuration: { kind: 'manual', source: `${MANUAL}, p.43, p.53` },
     content: cite(70),
     'clock.preferredSource': {
       kind: 'unknown',

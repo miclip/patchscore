@@ -17,7 +17,7 @@ import {
   type Score,
   type Template,
 } from '../lib/core/index'
-import { template } from './fixtures'
+import { FIXTURE_DURATION, template, withNoteDuration } from './fixtures'
 
 /**
  * Rig builders, `Score` readers and the brute-force oracle, shared by every test that searches.
@@ -69,6 +69,9 @@ export function box(id: string, over: Partial<Device>): Device {
     voices: [],
     recipes: [],
     ...over,
+    // §2.6/#142. Merged, not replaced — `withNoteDuration` says why.
+    noteDuration: 'noteDuration' in over ? over.noteDuration : FIXTURE_DURATION,
+    capabilityEvidence: withNoteDuration(over, FIXTURE_DURATION),
   }
 }
 

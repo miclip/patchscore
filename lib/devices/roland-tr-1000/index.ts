@@ -680,7 +680,23 @@ export const device: Device = {
    * (§12.4) and no page states it; a slot to cite it in would only invite citing p.14, which
    * says ten.
    */
+  /**
+   * §2.6/#142. **A step on this box fires an instrument; nothing about it is a length.** The
+   * per-step gestures the Owner's Manual enumerates (pp.17-18, cited at `features.perStep`) are
+   * sub steps, flams, alternates and accents — no gate, no length, no tie. What ends the sound is
+   * the instrument's own envelope, and `DECAY` is the parameter that sets it (Reference p.59,
+   * where every recipe below already cites it).
+   *
+   * Worth stating rather than leaving absent, because the Hook phase would otherwise print a
+   * duration beside a drum voice and imply there is somewhere to put it.
+   */
+  noteDuration: {
+    kind: 'trigger',
+    reason: "the instrument's own envelope ends it, and `DECAY` is what sets that",
+  },
+
   capabilityEvidence: {
+    noteDuration: cite(59),
     'clock.canSendClock': owner(30),
     'clock.canReceiveClock': owner(30),
     'clock.transport': owner(12),

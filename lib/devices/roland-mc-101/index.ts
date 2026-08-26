@@ -925,7 +925,21 @@ export const device: Device = {
     reason: "The Owner's Manual says the card holds sounds and samples and names none of them",
   },
 
+  /**
+   * §2.6/#142. p.22, the STEP EDIT screen: four values per note on knobs C1-C4, and the fourth is
+   * *"LEN: Specifies the length of the note."* The screen shot on the same page shows it beside
+   * `NOTE`, `VEL` and `STA`, so a reader knows which of four numbers to reach for.
+   *
+   * **`unit` is absent** because the page states none. It prints a value (`0.80`) and no scale,
+   * and reading a unit off one screenshot would be the invented claim §3.1 refuses.
+   *
+   * One answer for both pools. The drum pads and the tone tracks are edited on the same STEP EDIT
+   * screen with the same four knobs; nothing on p.22 splits by track type, so nothing here does.
+   */
+  noteDuration: { kind: 'per-note-value', control: 'LEN' },
+
   capabilityEvidence: {
+    noteDuration: ref(22),
     content: {
       kind: 'manual',
       source: "MC-101 Owner's Manual eng02, p.7 (SD card slot)",

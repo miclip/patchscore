@@ -699,7 +699,26 @@ export const device: Device = {
    * either, it hedges and then documents both directions at equal length. See the `clock` comment
    * for what was read and rejected.
    */
+  /**
+   * §2.6/#142. **A note's length is its extent on the grid, and you set it with two pads.** p.48:
+   * *"Note lengths can be set when entering clip notes by pressing the note START [PAD] + END
+   * [PAD] on the same row"*, with the extension pads dimly lit to show the length and a press on
+   * one of them shortening it.
+   *
+   * `per-note-value` even though there is no numeric field, and the distinction is not worth a
+   * sixth state: the note carries a length of its own, the reader sets it per note, and the unit
+   * is the grid's own step — which is the unit the hook is already printed in. What `control`
+   * names here is the gesture rather than a screen label, because that is what this box gives a
+   * reader to point at.
+   */
+  noteDuration: {
+    kind: 'per-note-value',
+    control: 'the note’s extent on the grid — hold its start pad and press its end pad',
+    unit: 'grid steps at the current zoom',
+  },
+
   capabilityEvidence: {
+    noteDuration: cite(48),
     // §2.6/#111. §2.1 Factory Library, and the File Structure drawing beneath it — see `content`.
     content: cite(12),
     'clock.preferredSource': {
