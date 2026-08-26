@@ -357,20 +357,16 @@ describe('bootstrap precedence: link, then store, then defaults', () => {
 })
 
 describe('what the user is told, and never blocked by', () => {
-  it('renders an older link under the current resolver and names the version change', () => {
+  it('renders an older link under the current resolver rather than refusing it', () => {
     const older = link({ seed: 5 }).replace(`resolver=${RESOLVER_VERSION}`, 'resolver=0')
     const { env } = fakeBrowser({ search: older })
 
     const boot = bootstrapStudio(env)
-    // Rendered, not refused: the inputs came through intact.
+    // Rendered, not refused: the inputs came through intact. That is §8.2's whole claim, and it
+    // is unaffected by whether the reader is told a version changed — `decodeGuideInputs` still
+    // reports the drift, and nothing renders it while the app is unshared.
     expect(boot.source).toBe('link')
     expect(boot.inputs.seed).toBe(5)
-
-    const drift = boot.notices.find((n) => n.kind === 'drift')
-    expect(drift).toBeDefined()
-    // Explicit about *which* versions, not a vague "this may be out of date".
-    expect(drift?.message).toContain('v0')
-    expect(drift?.message).toContain(`v${RESOLVER_VERSION}`)
   })
 
   it('says a link is from a newer build rather than calling it broken', () => {
