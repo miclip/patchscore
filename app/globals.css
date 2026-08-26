@@ -3183,3 +3183,56 @@ html {
 .patch-chain-core {
   stroke: var(--voice-cable, #56c5ef);
 }
+
+/* ---------------------------------------------------------------------------
+ * #138 — plain-checkbox mode
+ *
+ * The preference is a stylesheet switch, not a second component tree: the control underneath is
+ * the same `input[type=checkbox]` either way, which is the whole reason this can be a preference
+ * rather than a fork. `appearance: auto` hands the browser its own control back, so plain mode
+ * gets the platform's checkbox — including whatever the reader's OS does for high contrast —
+ * rather than an imitation of one.
+ *
+ * Set by an inline script before first paint, so nothing flashes.
+ * ------------------------------------------------------------------------ */
+
+:root[data-jacks='plain'] .pick-jack {
+  appearance: auto;
+  -webkit-appearance: auto;
+  width: 15px;
+  height: 15px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  accent-color: var(--accent);
+}
+
+/* The indent follows the control, as it did before the socket grew it to 18px. */
+:root[data-jacks='plain'] .sub {
+  padding-left: 25px;
+}
+
+/* No sockets means nothing for a cable to land in. The sentence stays: it says in words what
+   the cables drew, and it was always the accessible path rather than a caption. */
+:root[data-jacks='plain'] .patchbay,
+:root[data-jacks='plain'] .patch-chain,
+:root[data-jacks='plain'] .patch-out-row {
+  display: none;
+}
+
+:root[data-jacks='plain'] .pick {
+  padding-left: 12px;
+}
+
+/* The preferences page's own row. */
+.pref .sub {
+  display: block;
+  padding-left: 28px;
+  margin: 2px 0 0;
+}
+
+/* No cables means no lane for the legend to clear. */
+:root[data-jacks='plain'] .patch-legend {
+  padding-left: 0;
+}

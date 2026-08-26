@@ -43,6 +43,16 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
   const frame = useRef<number | undefined>(undefined)
 
   const measure = useCallback(() => {
+    /**
+     * Plain-checkbox mode draws nothing, so it measures nothing either (#138). Read here in an
+     * effect rather than during render: the server cannot know a per-browser preference, and
+     * reading it in render would mismatch hydration. CSS already hides the overlay; this stops
+     * a `ResizeObserver` and a measure pass running for something nobody can see.
+     */
+    if (document.documentElement.getAttribute('data-jacks') === 'plain') {
+      setLinks([])
+      return
+    }
     const area = areaRef.current
     if (area === null) {
       setLinks([])
