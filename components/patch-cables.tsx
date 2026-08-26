@@ -50,30 +50,58 @@ const DASH: Record<PatchKind, string | undefined> = {
 type Jack = { deviceId: string; x: number; y: number }
 type Drawn = { deviceId: string; kind: PatchKind; hue: number; d: string }
 
-export function PatchCables({ bay, listRef }: { bay: Patchbay; listRef: React.RefObject<HTMLElement | null> }) {
+export function PatchCables({
+  bay,
+  areaRef,
+  scrollRef,
+}: {
+  bay: Patchbay
+  /** The positioning context: the list *and* the sentence carrying the `out` jack. */
+  areaRef: React.RefObject<HTMLElement | null>
+  /** The inner list, which scrolls; cables are recomputed when it does. */
+  scrollRef: React.RefObject<HTMLElement | null>
+}) {
   const [size, setSize] = useState<{ w: number; h: number } | undefined>(undefined)
   const [cables, setCables] = useState<Drawn[]>([])
   const frame = useRef<number | undefined>(undefined)
 
   const measure = useCallback(() => {
-    const list = listRef.current
-    if (list === null || bay.source === undefined) {
+    const area = areaRef.current
+    if (area === null || bay.source === undefined) {
       setCables([])
       return
     }
-    // The list scrolls (`max-height` on `.picker-list`), and an absolutely positioned child
-    // scrolls with its content — so positions are measured against the *scroll* origin, not the
-    // visible box. Without `scrollTop` every cable slides as soon as the list is scrolled.
-    const box = list.getBoundingClientRect()
+    /**
+     * Rects for both, so the arithmetic is viewport-relative and the inner list's scroll is
+     * already in the numbers. An earlier version added `scrollTop` because the overlay lived
+     * *inside* the scrolling list and had to be in content coordinates; the overlay is now in
+     * the non-scrolling wrapper, so adding it again would double-count and slide every cable.
+     */
+    const box = area.getBoundingClientRect()
+    /**
+     * The list scrolls, so a row can be outside it. Its socket still has a position, and drawing
+     * to that position sends the cable out of the list and down through the legend — which is
+     * what it did. A run to a socket you cannot see is not followable anyway, so it is not
+     * drawn: the cable stops existing rather than escaping, and reappears on scroll.
+     *
+     * `out` sits below the list by design and is exempt.
+     */
+    const clip = scrollRef.current?.getBoundingClientRect()
+    const visible = (r: DOMRect, id: string) =>
+      id === '__out' ||
+      clip === undefined ||
+      (r.top >= clip.top - 2 && r.bottom <= clip.bottom + 2)
+
     const jacks = new Map<string, Jack>()
-    for (const el of list.querySelectorAll<HTMLElement>('[data-jack]')) {
+    for (const el of area.querySelectorAll<HTMLElement>('[data-jack]')) {
       const id = el.dataset['jack']
       if (id === undefined) continue
       const r = el.getBoundingClientRect()
+      if (!visible(r, id)) continue
       jacks.set(id, {
         deviceId: id,
-        x: r.left - box.left + list.scrollLeft + r.width / 2,
-        y: r.top - box.top + list.scrollTop + r.height / 2,
+        x: r.left - box.left + r.width / 2,
+        y: r.top - box.top + r.height / 2,
       })
     }
     const from = jacks.get(bay.source.deviceId)
@@ -113,9 +141,30 @@ export function PatchCables({ bay, listRef }: { bay: Patchbay; listRef: React.Re
         d: `M ${r(from.x)} ${r(from.y)} C ${r(from.x + bow)} ${r(c1y)}, ${r(to.x + bow)} ${r(c2y)}, ${r(to.x)} ${r(to.y)}`,
       })
     })
-    setSize({ w: list.scrollWidth, h: list.scrollHeight })
+    /**
+     * The rig's own run to `out`: the clock source is what leaves for the guide, and giving the
+     * drawing a single terminus is what makes the section read as a patchbay rather than a menu.
+     * Drawn first so it sits under the star.
+     */
+    const out = jacks.get('__out')
+    if (out !== undefined) {
+      /**
+       * Down the lane, then across — not a diagonal. A straight run to `out` cut through every
+       * line of the legend, so the route keeps to the cable lane until it is level with the jack
+       * and only then turns. Both controls sit in the lane, which is what makes the corner.
+       */
+      const lane = from.x - 20
+      drawn.unshift({
+        deviceId: '__out',
+        kind: 'clock',
+        hue: 24,
+        d: `M ${r(from.x)} ${r(from.y)} C ${r(lane)} ${r(from.y + (out.y - from.y) * 0.55)}, ${r(lane)} ${r(out.y)}, ${r(out.x)} ${r(out.y)}`,
+      })
+    }
+
+    setSize({ w: box.width, h: box.height })
     setCables(drawn)
-  }, [bay, listRef])
+  }, [bay, areaRef, scrollRef])
 
   // Layout effect so the first paint has cables, not a flash of none.
   useLayoutEffect(() => {
@@ -123,7 +172,8 @@ export function PatchCables({ bay, listRef }: { bay: Patchbay; listRef: React.Re
   }, [measure])
 
   useEffect(() => {
-    const list = listRef.current
+    const list = areaRef.current
+    const scroller = scrollRef.current
     if (list === null) return
     const schedule = () => {
       if (frame.current !== undefined) cancelAnimationFrame(frame.current)
@@ -133,12 +183,15 @@ export function PatchCables({ bay, listRef }: { bay: Patchbay; listRef: React.Re
     observer.observe(list)
     for (const el of list.querySelectorAll('[data-jack]')) observer.observe(el)
     window.addEventListener('resize', schedule)
+    // The list scrolls under a fixed overlay, so every cable moves when it does.
+    scroller?.addEventListener('scroll', schedule, { passive: true })
     return () => {
       observer.disconnect()
       window.removeEventListener('resize', schedule)
+      scroller?.removeEventListener('scroll', schedule)
       if (frame.current !== undefined) cancelAnimationFrame(frame.current)
     }
-  }, [measure, listRef])
+  }, [measure, areaRef, scrollRef])
 
   if (size === undefined || cables.length === 0) return null
 

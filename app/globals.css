@@ -2973,40 +2973,63 @@ html {
  *
  * **It replaces the checkbox visually and *is* the checkbox to the app.** Selecting a device is
  * patching it in, so one control says that once rather than a tick box with an ornament beside
- * it. `appearance: none` changes the paint and nothing else: it is still `input[type=checkbox]`,
- * still named by its wrapping label, still in the focus order, still inside `.pick-choose`'s
- * 44px target (#112). #138's constraint was that cables must be drawn *around* the real control,
- * never in place of it — this is that constraint, met by restyling rather than replacing.
+ * it. `appearance: none` changes the paint and nothing else: still `input[type=checkbox]`, still
+ * named by its wrapping label, still in the focus order, still inside `.pick-choose`'s 44px
+ * target (#112). #138's constraint was that cables be drawn *around* the real control, never in
+ * place of it — restyling meets it where a div would not.
  *
- * The form is the rack's own jack: border is the bezel, background is the hole. Checked seats a
- * plug in it — an inset ring, so the state is a **shape** change and not only a colour one
- * (WCAG 1.4.1), which also means it survives a palette with no hue.
+ * **A ring with a centre dot**, which is the reference's form and reads as a socket at this size
+ * where a plain bezel reads as a bullet. The ring is the border, the gap and dot are one radial
+ * gradient. State is a shape *and* colour change, so it does not depend on hue alone
+ * (WCAG 1.4.1).
  */
-.pick-jack {
+.pick-jack,
+.patch-out {
   appearance: none;
   -webkit-appearance: none;
   border-radius: 50%;
-  border: 2px solid #4a5158;
-  background: #000;
+  border: 2px solid var(--jack-ring, #4a5158);
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--jack-ring, #4a5158) 0 2.4px,
+    #0b0c0e 2.4px 100%
+  );
   cursor: pointer;
 }
 
 .pick-jack:checked {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 3px var(--accent);
+  --jack-ring: var(--accent);
+  background: radial-gradient(circle at 50% 50%, var(--accent) 0 4px, #0b0c0e 4px 100%);
 }
 
-/* The clock source is the one box nothing runs *to*. A brighter bezel says it is the origin
-   without inventing a second shape for it. */
+/* The clock source is the one box nothing runs *to*; a halo says it is the origin without
+   inventing a second shape for it. */
 .pick-jack[data-patched='source'] {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 3px var(--accent), 0 0 0 2px var(--accent-dim, rgba(255, 106, 61, 0.35));
+  box-shadow: 0 0 0 2px var(--accent-dim, rgba(255, 106, 61, 0.3));
 }
 
 /* Focus must stay obvious once the browser's own ring is gone with `appearance`. */
-.pick-jack:focus-visible {
+.pick-jack:focus-visible,
+.patch-out:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+
+/*
+ * The `out` jack: where the rig leaves for the guide.
+ *
+ * The reference has exactly one of these and patches the current selection to it, which is what
+ * makes the page read as a patchbay rather than a menu. It is not a control — nothing toggles —
+ * so it is a `span`, and it is `aria-hidden`: the sentence it sits beside already says what it
+ * draws.
+ */
+.patch-out {
+  display: inline-block;
+  vertical-align: middle;
+  width: 14px;
+  height: 14px;
+  margin-left: 6px;
+  cursor: default;
 }
 
 .patchbay {
@@ -3074,17 +3097,45 @@ html {
    * given system colours explicitly and the plug stays an inset ring — a shape, which survives
    * a two-colour palette where a hue would not.
    */
-  .pick-jack {
+  /*
+   * Gradients are not reliable here, so the dot goes and the two states fall back to an empty
+   * ring against a filled one — still a shape difference, which is what has to survive.
+   */
+  .pick-jack,
+  .patch-out {
     border-color: CanvasText;
     background: Canvas;
   }
 
   .pick-jack:checked {
-    border-color: CanvasText;
-    box-shadow: inset 0 0 0 3px CanvasText;
+    background: CanvasText;
   }
+}
 
-  .pick-jack[data-patched='source'] {
-    box-shadow: inset 0 0 0 3px CanvasText;
-  }
+/* The overlay's positioning context: the scrolling list plus the sentence that carries `out`. */
+.patch-area {
+  position: relative;
+}
+
+/*
+ * The `out` row. Its own line, because every route to an inline jack crossed the legend text.
+ * Indented to the cable lane so the run arrives horizontally rather than cutting a corner.
+ */
+.patch-out-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  padding-left: 46px;
+}
+
+.patch-out-label {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+/* Indented to clear the cable lane. The run to `out` passes down the left edge, and at the
+   default indent it clipped the first character of two lines. */
+.patch-legend {
+  padding-left: 46px;
 }
