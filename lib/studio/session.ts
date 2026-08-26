@@ -207,11 +207,15 @@ export type StudioEnv = {
 // ---------------------------------------------------------------------------
 
 /**
- * Things the user is told, and none of them stop the guide rendering. §8.2 and invariant 5 both
- * land in the same place here: a link that drifted still resolves, and it says so.
+ * Things the user is told, and none of them stop the guide rendering.
+ *
+ * A link made by an older resolver is deliberately NOT among them. `decodeGuideInputs` still
+ * reports `drift` and §8.2's reasoning still holds — the inputs are intact and the guide is
+ * re-worked with the current engine — but nothing has been shared yet, so there is no reader
+ * for whom that sentence is the difference between trusting the page and not. The detection
+ * stays; the notice is what a public build wants, not this one.
  */
 export type NoticeKind =
-  | 'drift'
   | 'link-dropped-fields'
   | 'link-unreadable'
   | 'link-newer'
@@ -284,15 +288,6 @@ export function bootstrapStudio(
   if (search !== '' && search !== '?') {
     const decoded = decodeGuideInputs(search, catalogue)
     if (decoded.ok) {
-      if (decoded.drift) {
-        notices.push({
-          kind: 'drift',
-          message:
-            `This link was made with generator v${decoded.resolver.encoded}; ` +
-            `this is v${decoded.resolver.current}. The guide has been worked out again with the ` +
-            `current one, so it may differ from the guide that was shared.`,
-        })
-      }
       if (decoded.dropped.length > 0) {
         // The other half of forward compatibility. The link worked, which is the point — but
         // part of it did not survive the trip, and the user is told rather than left to wonder
