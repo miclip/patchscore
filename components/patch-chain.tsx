@@ -145,7 +145,7 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
        * instead pulled the curve diagonally and its shoulder clipped the panel headings.
        *
        * **Except when the channel is on the far side of the socket's own label.** `out` carries
-       * "out — to the guide" immediately to its right and the legend directly above, so both a
+       * its own label immediately to its right and the legend directly above, so both a
        * horizontal exit and an upward one crossed text. Downward clears the card in a few pixels.
        */
       return lane > a.x

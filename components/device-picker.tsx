@@ -182,7 +182,7 @@ export function DevicePicker({ selected, onToggle }: DevicePickerProps) {
       */}
       <p className="patch-out-row">
         <span className="patch-out" data-chain="out" aria-hidden="true" />
-        <span className="patch-out-label mono">out — to the guide</span>
+        <span className="patch-out-label mono">out</span>
       </p>
 
       {rest.length === 0 && chosen.length > 0 && shown.matched > 0 ? (
