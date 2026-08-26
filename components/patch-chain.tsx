@@ -22,6 +22,21 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
  *
  * Nothing here is focusable or clickable, and the whole overlay is `aria-hidden`: every link it
  * draws is already stated by the controls it runs between.
+ *
+ * ## Why the geometry is written imperatively
+ *
+ * **React owns which cables exist; the frame loop owns where they are.** That split is the whole
+ * reason this keeps up with a scroll.
+ *
+ * `PatchCables` does no JavaScript at all while the device list scrolls — its overlay is *inside*
+ * that list, so the compositor moves it with the rows for free. This one cannot be inside any of
+ * the three lists it spans, so it has to follow them by hand, and the first version did that
+ * through `setState`: a measure, a render and a reconcile on every scroll frame. It visibly
+ * lagged the content, which the device cables never do, and that difference was the report.
+ *
+ * Path data is now written straight onto the elements inside the `requestAnimationFrame`
+ * callback. State changes only when a link appears or disappears — selecting a Direction, or a
+ * first Inspiration — which happens on a click, not on a frame.
  */
 
 type Point = { x: number; y: number }
@@ -75,24 +90,20 @@ function columnBands(area: HTMLElement, box: DOMRect): Band[] {
 }
 
 export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement | null> }) {
-  const [size, setSize] = useState<{ w: number; h: number } | undefined>(undefined)
-  const [links, setLinks] = useState<{ id: string; d: string }[]>([])
+  const svgRef = useRef<SVGSVGElement | null>(null)
+  const paths = useRef(new Map<string, SVGPathElement>())
   const frame = useRef<number | undefined>(undefined)
+  /** Only which links exist — never where. Changes on a click, never on a frame. */
+  const [ids, setIds] = useState<readonly string[]>([])
 
   const measure = useCallback(() => {
-    /**
-     * Plain-checkbox mode draws nothing, so it measures nothing either (#138). Read here in an
-     * effect rather than during render: the server cannot know a per-browser preference, and
-     * reading it in render would mismatch hydration. CSS already hides the overlay; this stops
-     * a `ResizeObserver` and a measure pass running for something nobody can see.
-     */
-    if (document.documentElement.getAttribute('data-jacks') === 'plain') {
-      setLinks([])
-      return
-    }
     const area = areaRef.current
-    if (area === null) {
-      setLinks([])
+    const svg = svgRef.current
+    if (area === null) return
+    // Plain-checkbox mode draws nothing, so it measures nothing either (#138). Read here in an
+    // effect rather than during render: the server cannot know a per-browser preference.
+    if (document.documentElement.getAttribute('data-jacks') === 'plain') {
+      setIds((prev) => (prev.length === 0 ? prev : []))
       return
     }
     const box = area.getBoundingClientRect()
@@ -107,19 +118,16 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
        *
        * Every picker list scrolls on its own (`max-height` on `.picker-list`), and a row scrolled
        * out of one still has a position — one *outside* its list. Drawing to it left the cable
-       * ending in blank space several rows below the socket it claimed to reach, which is what
-       * the report showed.
+       * ending in blank space several rows below the socket it claimed to reach.
        *
        * Clamping runs it to the list's edge and no further, so it reads as passing behind the
-       * list rather than as missing its socket. The same answer the device cables reached by a
+       * list rather than as missing its socket. The same answer the device cables reach by a
        * different route: there `overflow` does it, because that overlay is inside the list.
        */
       const scroller = el.closest<HTMLElement>('.picker-list')
       if (scroller !== null) {
         const s = scroller.getBoundingClientRect()
-        const top = s.top - box.top
-        const bottom = s.bottom - box.top
-        point.y = Math.min(Math.max(point.y, top), bottom)
+        point.y = Math.min(Math.max(point.y, s.top - box.top), s.bottom - box.top)
       }
       return point
     }
@@ -128,17 +136,8 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
     const direction = at('direction')
     const inspiration = at('inspiration')
     const bands = columnBands(area, box)
-    const drawn: { id: string; d: string }[] = []
-    const run = (id: string, a: Point, b: Point) => {
-      /**
-       * Down an empty channel, outside the panels.
-       *
-       * Drawn first *behind* the cards, on the theory that a run passing under a panel reads
-       * like a loom behind a rack. It does not: at 390px only three short stubs showed in the
-       * gaps, which reads as a broken cable rather than a hidden one. Out in a channel it is one
-       * continuous run, and it crosses no text — it leaves each socket through the row's own
-       * cable lane, which is padding.
-       */
+
+    const geometry = (a: Point, b: Point): string => {
       const lane = laneBetween(a, b, bands)
       /**
        * Controls level with their own endpoints, so the run leaves each socket *horizontally*,
@@ -146,45 +145,44 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
        * instead pulled the curve diagonally and its shoulder clipped the panel headings.
        *
        * **Except when the channel is on the far side of the socket's own label.** `out` carries
-       * "out — to the guide" immediately to its right, so a run heading right left the socket
-       * straight through its own caption. Where the lane is not on the side the run leaves from,
-       * it leaves vertically instead and turns once it is clear.
+       * "out — to the guide" immediately to its right and the legend directly above, so both a
+       * horizontal exit and an upward one crossed text. Downward clears the card in a few pixels.
        */
-      const away = lane > a.x
-      drawn.push({
-        id,
-        d: away
-          ? // Down and out of the panel before turning. `out` sits at the foot of the Devices
-            // card with its own label to the right and the legend directly above, so both the
-            // horizontal exit and the upward one crossed text. Downward clears the card in a few
-            // pixels, and the run reaches the channel under it.
-            `M ${r(a.x)} ${r(a.y)} C ${r(a.x)} ${r(a.y + 46)}, ${r(lane)} ${r(b.y + 46)}, ${r(b.x)} ${r(b.y)}`
-          : `M ${r(a.x)} ${r(a.y)} C ${r(lane)} ${r(a.y)}, ${r(lane)} ${r(b.y)}, ${r(b.x)} ${r(b.y)}`,
-      })
+      return lane > a.x
+        ? `M ${r(a.x)} ${r(a.y)} C ${r(a.x)} ${r(a.y + 46)}, ${r(lane)} ${r(b.y + 46)}, ${r(b.x)} ${r(b.y)}`
+        : `M ${r(a.x)} ${r(a.y)} C ${r(lane)} ${r(a.y)}, ${r(lane)} ${r(b.y)}, ${r(b.x)} ${r(b.y)}`
     }
-    if (out !== undefined && direction !== undefined) run('out-direction', out, direction)
+
+    const next: { id: string; d: string }[] = []
+    if (out !== undefined && direction !== undefined) {
+      next.push({ id: 'out-direction', d: geometry(out, direction) })
+    }
     if (direction !== undefined && inspiration !== undefined) {
-      run('direction-inspiration', direction, inspiration)
+      next.push({ id: 'direction-inspiration', d: geometry(direction, inspiration) })
     }
-    /**
-     * Written only when they actually change. `useLayoutEffect` runs `measure` and `measure`
-     * sets state, so an unconditional write re-renders, re-measures and never stops — which is
-     * exactly what it did. Comparing first makes the effect idempotent rather than relying on a
-     * dependency list to be exhaustive.
-     */
-    setSize((prev) =>
-      prev !== undefined && prev.w === box.width && prev.h === box.height
+
+    // Membership through React; geometry straight onto the element. Comparing first means a
+    // scroll frame does no state work at all, which is the point of the split.
+    setIds((prev) =>
+      prev.length === next.length && prev.every((id, i) => id === next[i]?.id)
         ? prev
-        : { w: box.width, h: box.height },
+        : next.map((l) => l.id),
     )
-    setLinks((prev) =>
-      prev.length === drawn.length && prev.every((l, i) => l.d === drawn[i]?.d) ? prev : drawn,
-    )
+    if (svg !== null) {
+      svg.setAttribute('width', r(box.width))
+      svg.setAttribute('height', r(box.height))
+      svg.setAttribute('viewBox', `0 0 ${r(box.width)} ${r(box.height)}`)
+    }
+    for (const link of next) {
+      for (const suffix of ['casing', 'core']) {
+        paths.current.get(`${link.id}:${suffix}`)?.setAttribute('d', link.d)
+      }
+    }
   }, [areaRef])
 
   useLayoutEffect(() => {
     measure()
-  }, [measure])
+  }, [measure, ids])
 
   useEffect(() => {
     const area = areaRef.current
@@ -213,21 +211,26 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
     }
   }, [measure, areaRef])
 
-  if (size === undefined || links.length === 0) return null
+  if (ids.length === 0) return null
 
   return (
-    <svg
-      className="patch-chain"
-      width={size.w}
-      height={size.h}
-      viewBox={`0 0 ${r(size.w)} ${r(size.h)}`}
-      aria-hidden="true"
-      focusable="false"
-    >
-      {links.map((l) => (
-        <g className="patch-cable" key={l.id} data-kind="chain">
-          <path className="patch-cable-casing" d={l.d} />
-          <path className="patch-cable-core patch-chain-core" d={l.d} />
+    <svg className="patch-chain" ref={svgRef} aria-hidden="true" focusable="false">
+      {ids.map((id) => (
+        <g className="patch-cable" key={id} data-kind="chain">
+          <path
+            className="patch-cable-casing"
+            ref={(el) => {
+              if (el === null) paths.current.delete(`${id}:casing`)
+              else paths.current.set(`${id}:casing`, el)
+            }}
+          />
+          <path
+            className="patch-cable-core patch-chain-core"
+            ref={(el) => {
+              if (el === null) paths.current.delete(`${id}:core`)
+              else paths.current.set(`${id}:core`, el)
+            }}
+          />
         </g>
       ))}
     </svg>
