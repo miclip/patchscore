@@ -3059,8 +3059,15 @@ html {
   opacity: 0.75;
 }
 
-/* Kind lives in the dash, not the hue: the forced-colours block below removes hue entirely,
-   and the channel that survives has to be the one carrying meaning. */
+/* The stripe sits on the core and is the same width, so it replaces rather than overlays. */
+.patch-cable-stripe {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: butt;
+}
+
+/* Kind lives in the line's continuity, not the hue: the forced-colours block below removes hue
+   entirely, and the channel that survives has to be the one carrying meaning. */
 @media (prefers-reduced-motion: no-preference) {
   .patch-cable {
     animation: patch-draw 260ms ease-out both;
@@ -3086,6 +3093,12 @@ html {
 
   .patch-cable-core {
     stroke: CanvasText !important;
+  }
+
+  /* Painted in the background instead of a second tone, the stripe cuts the core into a dash —
+     the same geometry saying the same thing in the one channel this mode leaves. */
+  .patch-cable-stripe {
+    stroke: Canvas !important;
   }
 
   /* Filled means patched, a ring means free — and that distinction has to survive here too.

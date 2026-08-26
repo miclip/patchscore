@@ -40,11 +40,39 @@ import type { Patchbay, PatchKind } from '@/lib/studio/patchbay'
  * are shorter and stiffer than the rack's on purpose.
  */
 
-/** Kind lives here, in the channel that survives a palette with no hue. */
+/**
+ * Kind lives in the line's **continuity**, which is a stronger fit than three arbitrary dash
+ * patterns were:
+ *
+ *  - `clock` — a plain unbroken run. Settled, and one thing.
+ *  - `audio` — unbroken but **striped**, the way audio cable is printed. Settled, and the other
+ *    thing. A stripe rather than a dash because a dashed line reads as a diagram and a striped
+ *    one reads as a cable.
+ *  - `either` — **broken**. Nothing is settled, and a run that is not continuous is the honest
+ *    shape for "your call which you patch".
+ *
+ * So continuity carries certainty and the stripe carries which kind, instead of three patterns a
+ * reader has to memorise.
+ */
 const DASH: Record<PatchKind, string | undefined> = {
   clock: undefined,
-  audio: '7 5',
+  audio: undefined,
   either: '1 5 7 5',
+}
+
+/**
+ * The stripe: a second path dashed over the core, filling every other segment.
+ *
+ * **The same geometry is a stripe or a dash depending only on what colour it is given**, and
+ * that is what keeps the forced-colours argument intact. Painted in a second tone of the
+ * cable's own hue it reads as printed insulation; painted in the page's background — which is
+ * what the forced-colours block does — it cuts the core into a dashed line instead. Audio stays
+ * distinguishable from clock in a palette with no hue at all, without a second mechanism.
+ */
+const STRIPE: Record<PatchKind, string | undefined> = {
+  clock: undefined,
+  audio: '6 6',
+  either: undefined,
 }
 
 type Jack = { deviceId: string; x: number; y: number }
@@ -215,6 +243,14 @@ export function PatchCables({
             strokeDasharray={DASH[c.kind]}
             style={{ stroke: `hsl(${String(c.hue)} 70% 62%)` }}
           />
+          {STRIPE[c.kind] === undefined ? null : (
+            <path
+              className="patch-cable-stripe"
+              d={c.d}
+              strokeDasharray={STRIPE[c.kind]}
+              style={{ stroke: `hsl(${String(c.hue)} 55% 34%)` }}
+            />
+          )}
         </g>
       ))}
     </svg>
