@@ -1655,6 +1655,29 @@ const HOOK_IS_THE_PATTERN =
   'Nothing separate to program here.'
 
 /**
+ * §4.3/§8. What phase 5 says for a part whose hook is held and whose variants say where it is
+ * struck again (`RoleRequest.reArticulatesHook`).
+ *
+ * Two authorities on one part, said in one sentence, which is the whole reason this may print a
+ * grid where `HOOK_IS_THE_PATTERN` may not: the hook owns *which note and how long*, the steps
+ * below own *where it is lifted and struck again*. Neither restates the other, so there is
+ * nothing for a reader to have to choose between — which was #100's actual complaint.
+ *
+ * It names the map's length in bars because the chain plan below is counted in the **hook's**
+ * bars, not the variant's: on Drone Study that is a 16-bar cycle over a 4-bar map, and a reader
+ * given "1 copy of 16 bars" with a 4-bar grid above it and nothing joining them would reasonably
+ * dial the wrong one.
+ */
+function reArticulationHeadline(pattern: { length: number }): string {
+  const bars = pattern.length / STEPS_PER_BAR
+  return (
+    '**The hook is the notes; the steps below are where they are struck again** — see Hook ' +
+    `above for what to play and how long each note is held. This map is ${count(bars, 'bar')} ` +
+    'long and repeats inside the hook; the chain lengths below are counted in the hook.'
+  )
+}
+
+/**
  * #105. How one out-of-phase section is chained, in the order it is built.
  *
  * `full === 0` is its own sentence rather than "0 copies": a 9-bar section against a 16-bar
@@ -1719,15 +1742,27 @@ function phaseSteps(
     // #100. Before the blocks, and instead of them: a variant was still selected for this part
     // (the band it asks for is what §8's arrangement phase reads), but the hook is what gets
     // played, so printing a grid here would restate the contradiction this replaced.
-    if (a.hookAuthority !== undefined) {
+    // #100 and its second half. A deferred part prints a pointer and no grid; a deferred part
+    // whose direction says the variants re-articulate the hook prints both, because there the
+    // grid is not a competing rhythm but the map of where the held note is struck again (§4.3).
+    const deferred = a.hookAuthority !== undefined
+    const blocks = deferred && !a.reArticulatesHook ? [] : mergeBlocks(a, deviceById, options)
+    if (deferred) {
       out.push('')
-      out.push(HOOK_IS_THE_PATTERN)
-    } else {
-      for (const { sections, block } of mergeBlocks(a, deviceById, options)) {
-        out.push('')
-        out.push(`**${sections.join(', ')}** — ${block.headline}`)
-        out.push(...block.body)
-      }
+      // The sentence needs a length, so it needs a pattern; a re-articulating part whose every
+      // section came back `none` has no map to describe and falls back to the pointer rather
+      // than to a sentence about a grid that is not there (invariant 5).
+      const first = a.patterns.find((p) => p.selection.outcome !== 'none')?.selection
+      out.push(
+        a.reArticulatesHook && first !== undefined && first.outcome !== 'none'
+          ? reArticulationHeadline(first.pattern)
+          : HOOK_IS_THE_PATTERN,
+      )
+    }
+    for (const { sections, block } of blocks) {
+      out.push('')
+      out.push(`**${sections.join(', ')}** — ${block.headline}`)
+      out.push(...block.body)
     }
     // #105. After the programming, hooked or not: it is how what was just described gets
     // chained over the arrangement, so it cannot come before the thing being chained.

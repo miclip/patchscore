@@ -147,8 +147,10 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
       const values = soundDesign(guideText(name)).filter((l) => l.startsWith('- **'))
       expect(values.length, name).toBeGreaterThan(10)
     }
-    const one = soundDesign(guideText('deluge-drone-study')).filter((l) => l.startsWith('- **'))
-    expect(one.length).toBeGreaterThan(0)
+    for (const name of ['deluge-drone-study', 'tracker-mini-drone-study'] as const) {
+      const one = soundDesign(guideText(name)).filter((l) => l.startsWith('- **'))
+      expect(one.length, name).toBeGreaterThan(0)
+    }
   })
 
   it('pins sections that do not divide the pattern, which no techno fixture can (§6.3)', () => {
@@ -163,6 +165,11 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
     expect(doc).toContain('- **Settle** · 9 bars — one copy cut to 9 bars')
     expect(doc).toContain('- **Vast** · 33 bars — 2 copies of 16 bars, then one cut to 1 bar')
 
+    // True of the other Drone Study fixture too — same direction, same arithmetic — and false of
+    // every techno one, whose sections divide.
+    expect(guideText('tracker-mini-drone-study')).toContain(
+      '- **Tilt** · 21 bars — 1 copy of 16 bars, then one cut to 5 bars',
+    )
     for (const name of TECHNO_GUIDE_NAMES) {
       expect(guideText(name), name).not.toContain('Not every section is a whole number')
     }
@@ -193,12 +200,55 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
   })
 
   it('lets the hook stand as the whole of step programming (#100)', () => {
-    // The deferral itself is pinned three times over in `full-rig` and `midi-clock`. What is
-    // only true here is that it is the *entire* phase: one part, deferring, with nothing else in
-    // the phase for a regression to hide behind.
-    const doc = guideText('deluge-drone-study')
-    expect(doc).toContain('**The hook is the pattern**')
-    expect(doc).toContain('Nothing separate to program here.')
+    // Where the hook carries its own rhythm the pointer still *replaces* the grid, and these two
+    // are where that is pinned — three deferred parts each, none of them claiming its variants
+    // re-articulate anything (§4.3).
+    //
+    // `tr-1000` is excluded and is not an exception being carved out: a drum machine carries no
+    // tonal part, so nothing in that guide is hooked and there is no deferral to pin. It is
+    // asserted the other way below.
+    for (const name of ['full-rig', 'midi-clock'] as const) {
+      const doc = guideText(name)
+      expect(doc, name).toContain('**The hook is the pattern**')
+      expect(doc, name).toContain('Nothing separate to program here.')
+      expect(doc, name).not.toContain('where they are struck again')
+    }
+    // The one rig here with no hooked part at all: neither sentence, and every part keeps its grid.
+    const drums = guideText('tr-1000')
+    expect(drums).not.toContain('**The hook is the pattern**')
+    expect(drums).not.toContain('where they are struck again')
+  })
+
+  it('lets the band reach a deferred part where the direction says it should (§4.3)', () => {
+    // The shape that exists in these two files and nowhere else: a part whose hook owns the notes
+    // and whose variant owns where they are struck again, so phase 5 carries a pointer *and* a
+    // grid. Both Drone Study fixtures, because the sentence is the renderer's and the grid under
+    // it is the direction's — a change to either shows here before it shows to a reader.
+    for (const name of ['deluge-drone-study', 'tracker-mini-drone-study'] as const) {
+      const doc = guideText(name)
+      expect(doc, name).toContain('**The hook is the notes; the steps below are where they are')
+      expect(doc, name).toContain('This map is 4 bars long and repeats inside the hook')
+      // The grid itself, and the band it came from: the two things #100 dropped here.
+      expect(doc, name).toContain('64 steps, band 3')
+      expect(doc, name).toContain('- `accent` — 49 (vel 104)')
+      // And never the sentence that replaces a grid — printing both would be the guide saying
+      // there is nothing to program directly above the thing to program.
+      expect(doc, name).not.toContain('Nothing separate to program here.')
+    }
+  })
+
+  it('pins the envelope note beside the grid it is about, which one fixture does (§3)', () => {
+    // `tm-texture-soft` fades in over 1.8 Sec and the band-3 map re-strikes faster than that.
+    // The recipe says so rather than the template capping the band, and this is the only guide in
+    // the directory carrying both halves — the note in phase 6 and the strikes in phase 5.
+    const doc = guideText('tracker-mini-drone-study')
+    expect(doc).toContain('**ENV ATTACK** `1.8` Sec')
+    expect(doc).toContain('Re-strikes closer together than 1.8 Sec smear into the note before')
+    expect(doc).toContain('64 steps, band 3')
+
+    // The Deluge renders the same direction and carries no such note, so the pairing is this
+    // fixture's alone: dropping it would leave the note pinned by no committed bytes at all.
+    expect(guideText('deluge-drone-study')).not.toContain('Re-strikes closer together')
   })
 
   it('pins a flat key, so #32s enharmonic reading is covered by real bytes', () => {

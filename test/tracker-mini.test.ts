@@ -6,6 +6,8 @@ import {
   expand,
   moodState,
   realisationOf,
+  renderGuide,
+  resolve,
   resolveParams,
   resolveRecipe,
   type AuthoredParam,
@@ -16,6 +18,7 @@ import {
   SYNTH_SLOTS,
   device,
 } from '../lib/devices/polyend-tracker-mini/index'
+import { TEMPLATES } from '../lib/templates/index'
 import { auditDevice } from '../scripts/audit-verified'
 
 const CITE_PREFIX = 'Polyend Tracker Mini Manual 2.2.1b, p.'
@@ -371,6 +374,62 @@ describe('Tracker Mini manifest', () => {
       if (release?.kind !== 'numeric') throw new Error(`${recipe.id}: ENV RELEASE is numeric`)
       expect(release.range).toEqual({ min: 0, max: 10, verified: { kind: 'manual', source: `${CITE_PREFIX}126` } })
     }
+  })
+
+  /**
+   * §4.3. **A fade-in longer than the gap between strikes is *stated*, not capped.**
+   *
+   * `tm-texture-soft` fades in over 1.8 Sec and the directions that request `texture` re-strike
+   * it as often as their busiest band says to, which at the top of the range is faster than the
+   * fade-in completes. Every strike after the first therefore begins while the last one is still
+   * rising: the part swells rather than articulating, and the busiest band sounds much like the
+   * sparsest one.
+   *
+   * Three things could answer that and only one of them is right here. **Capping the band** would
+   * put a device's envelope in charge of a direction's rhythm, which is invariant 3 backwards.
+   * **A cross-layer authoring check** — device attack against template inter-strike gap, in
+   * `reachability.ts`'s spirit — would be a real check of a fact nobody can act on: the attack is
+   * what makes this recipe a bed, the step map is what makes the part a part, and neither is the
+   * defect. So the answer is the guide's: **the recipe says what the interaction is**, and the
+   * reader standing at the box, holding both halves, decides.
+   *
+   * Asserted three ways, because the sentence is worthless if any one of them lapses: it carries
+   * its own value so prose and knob cannot drift apart, it names no direction (invariant 3), and
+   * it actually reaches a reader — a note the renderer drops settles nothing.
+   */
+  it('states what a fast re-strike does to its slow fade-in, and names no direction (§4.3)', () => {
+    const recipe = device.recipes.find((r) => r.id === 'tm-texture-soft') as Recipe
+    const attack = (recipe.params as AuthoredParam[]).find((p) => p.name === 'ENV ATTACK')
+    if (attack?.kind !== 'numeric') throw new Error('tm-texture-soft: ENV ATTACK is numeric')
+
+    // Slow enough for the interaction to be real. A fade-in of a few hundredths would make the
+    // sentence below true of nothing, and the test would then be pinning prose to a non-event.
+    expect(attack.value).toBeGreaterThan(1)
+    const note = attack.note
+    expect(note, 'the slow fade-in says nothing about being re-struck').toBeDefined()
+    // The number in the sentence is the number being dialled: moving one moves the other, or
+    // this fails. A note quoting a value the param no longer holds is worse than no note.
+    expect(note).toContain(`${attack.value} Sec`)
+
+    // Generic, and that is the load-bearing half. The gap between strikes is a property of the
+    // direction (§4.3), which this folder may not name and cannot see, so the sentence has to
+    // hold for any part at all — including one nobody has authored yet.
+    for (const template of TEMPLATES) {
+      for (const needle of [template.id, template.name]) {
+        expect(note?.toLowerCase(), needle).not.toContain(needle.toLowerCase())
+      }
+    }
+
+    // And it reaches the page. Searched across the real directions rather than pinned to one,
+    // because which recipe a direction takes is the resolver's business (§7) and pinning it
+    // would make this fail on an unrelated objective change instead of on the thing it is about.
+    const guides = TEMPLATES.flatMap((template) =>
+      [1, 7].map((seed) => resolve({ devices: [device], template, mood: moodState(), seed })),
+    ).filter((result) => result.assignments.some((a) => a.recipe.id === 'tm-texture-soft'))
+    expect(guides.length, 'no direction places tm-texture-soft on this box alone').toBeGreaterThan(
+      0,
+    )
+    for (const result of guides) expect(renderGuide(result)).toContain(note)
   })
 
   // -------------------------------------------------------------------------

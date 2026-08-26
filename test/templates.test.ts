@@ -196,6 +196,96 @@ describe('invariant 3 — a template never names a device', () => {
 })
 
 // ---------------------------------------------------------------------------
+// §4.3 — which directions say their variants re-articulate a hook
+// ---------------------------------------------------------------------------
+
+/**
+ * The review, recorded. Thirteen requests in the library have **both** a hook and variants, so
+ * thirteen times over a direction has to answer what its variants are against its hook: the map
+ * of where a held note is struck again, or a rhythm of their own. #100 answered "a rhythm" for all
+ * thirteen and silenced the two that were maps.
+ *
+ * Every one of the thirteen was read, and the answer is the direction's own prose in each case:
+ *
+ *  - **`drone-study` `r-texture`** — flagged. "A re-articulation map: the places the player lifts
+ *    and re-strikes a note that is otherwise continuous", against hooks of three notes held four
+ *    and eight bars each.
+ *  - **`weave` `r-sub`** — flagged. "Where the low note is struck again rather than held", and its
+ *    hooks say "the rhythm of the part is in the variants, and the pitch of it is here".
+ *  - **`major-key-electro` `r-lead`** — *not* flagged, and it is the closest call in the library:
+ *    its variants are commented "the hook says which notes; this says how often the part speaks",
+ *    which is nearly this flag's sentence. But `electro-hook-lead-1` places notes on steps 1, 11,
+ *    17, 27, 33, 43, 49, 59 and `electro-lead-b2` strikes 1, 11, 17, 27 — the hook already
+ *    *carries* that rhythm, its notes are 4 to 8 steps long, and none of them is held across the
+ *    next strike. There is no held note to re-articulate, so the two really are one instruction
+ *    written twice and #100 is right about it.
+ *  - **`major-key-electro` `r-arp`** — not flagged, on the template's own words: the arp hook is
+ *    "one note per step, so it lines up with the arp's own variants hit for hit".
+ *  - **`ambient-dub` `r-bass-mid`** — not flagged. Its two hooks disagree about the reading, and a
+ *    part whose semantics depended on which one the seed picked would be a guide that changes
+ *    meaning on a reroll.
+ *  - **`industrial-techno` `r-bass-mid` / `r-stab`, `lydian-house` `r-bass-mid` / `r-stab`,
+ *    `relay` `r-bass-mid` / `r-lead`, `major-key-electro` `r-vox-chop`** — not flagged. Every hook
+ *    here is a figure with its own rhythm and note lengths of one to eight steps that end before
+ *    the next strike. Two grids on one part is exactly what #100 removed.
+ *
+ * Pinned as an exact set rather than a lower bound, in both directions. A flag appearing on a
+ * fourteenth request is a musical claim nobody reviewed; a flag disappearing takes the density
+ * knob off a part with it, silently, which is the failure this whole change exists to undo.
+ */
+const RE_ARTICULATING = ['drone-study/r-texture', 'weave/r-sub'] as const
+
+describe('re-articulated hooks (§4.3)', () => {
+  it('carries the flag on exactly the reviewed requests, and on no others', () => {
+    const flagged = TEMPLATES.flatMap((t) =>
+      t.roles.filter((r) => r.reArticulatesHook === true).map((r) => `${t.id}/${r.id}`),
+    )
+    expect(flagged.sort()).toEqual([...RE_ARTICULATING].sort())
+  })
+
+  it('is authored only where the direction has both halves to join (§4.3)', () => {
+    // The schema enforces this, so it is asserted here against the real library rather than
+    // against a fixture: a flag with no hook to hold the note, or no variant to place the
+    // strikes, changes nothing the guide prints and would be an author writing a no-op.
+    for (const template of TEMPLATES) {
+      const hooked = new Set(template.hooks.map((h) => h.forRole))
+      const patterned = new Set(template.patterns.map((p) => p.forRole))
+      for (const request of template.roles) {
+        if (request.reArticulatesHook !== true) continue
+        const where = `${template.id}/${request.id}`
+        expect(hooked, where).toContain(request.role)
+        expect(patterned, where).toContain(request.role)
+      }
+    }
+  })
+
+  it('rejects a flag with nothing to join, so the no-op cannot be authored', () => {
+    // Both halves of the schema rule, from the direction that actually has both: strip its hooks,
+    // then its variants, and each removal alone must fail validation.
+    const drone = templateById('drone-study') as Template
+    expect(TemplateSchema.safeParse(drone).success).toBe(true)
+    expect(TemplateSchema.safeParse({ ...drone, hooks: [] }).success).toBe(false)
+    expect(TemplateSchema.safeParse({ ...drone, patterns: [] }).success).toBe(false)
+  })
+
+  it('leaves every other request untouched, so absent stays the default (§4.3)', () => {
+    // `reArticulatesHook: false` is not representable — the schema takes `true` only — and this is
+    // the guard that nobody starts writing it as a way of saying "no". Two spellings of the
+    // default is how a two-valued field comes to mean three things.
+    for (const template of TEMPLATES) {
+      for (const request of template.roles) {
+        const flagged = RE_ARTICULATING.includes(
+          `${template.id}/${request.id}` as (typeof RE_ARTICULATING)[number],
+        )
+        expect(request.reArticulatesHook, `${template.id}/${request.id}`).toBe(
+          flagged ? true : undefined,
+        )
+      }
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
 // §4.3 / §6.3 — band coverage
 // ---------------------------------------------------------------------------
 

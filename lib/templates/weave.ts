@@ -418,7 +418,23 @@ export const weave: Template = {
    */
   roles: [
     { id: 'r-kick', role: 'kick', priority: 1, character: 'hard', sustain: 'continuous' },
-    { id: 'r-sub', role: 'sub', priority: 1, character: 'dark', sustain: 'continuous' },
+    /**
+     * §4.3. `reArticulatesHook`, on the same reading Drone Study's `texture` gets it on, and this
+     * file already argued both halves before the flag existed: the variants are "a
+     * re-articulation map as much as a rhythm: where the low note is struck again rather than
+     * held", and the hooks are "three notes, one per chord, each held until the next one
+     * starts — the rhythm of the part is in the variants, and the pitch of it is here". That is
+     * the flag's meaning in the template's own words, so leaving it off would have #100 silence
+     * the one pitched part's rhythm in a direction that is otherwise all percussion.
+     */
+    {
+      id: 'r-sub',
+      role: 'sub',
+      priority: 1,
+      character: 'dark',
+      sustain: 'continuous',
+      reArticulatesHook: true,
+    },
 
     // The lead voice of the piece — the module comment's claim, and this is where it is true in
     // the data: the toms are at the top of the second tier, with the widest band range and the

@@ -79,6 +79,39 @@ export type RoleRequest = {
    * same `deviceId`. Surplus requests become ordinary gaps rather than silently collapsing.
    */
   distinct?: boolean
+  /**
+   * §4.3/§8. **This part's variants say *where the hook's note is struck again*, not a rhythm of
+   * their own.** Absent — the usual case — means the two would be competing instructions, and
+   * #100's rule stands: where a hook resolved it is the pattern, and phase 5 points at it.
+   *
+   * The flag exists because #100 was right about the contradiction and wrong about the cost. A
+   * hook and a variant on one part *are* two instructions and the guide must not print both as
+   * grids; but on a part whose hook is a held note, the variant was never a competing rhythm —
+   * it is the map of where the note is lifted and re-struck, which is the only rhythmic decision
+   * such a part contains. Silencing it left the density knob changing nothing a listener could
+   * hear on those parts, and left the reader a band number in the arrangement phase with nothing
+   * behind it.
+   *
+   * **Authored, never derived, and that is the whole design.** The obvious derivation — compare
+   * the hook's note lengths to the variant's strike gaps — was tried and abandoned: it flips
+   * *within one role of one direction* between two hooks the seed chooses freely (Ambient Dub's
+   * `bass-mid`, where hook 1 reads as a map and hook 2 as a grid), so which semantics the guide
+   * used would have depended on a reroll. It also called Major-Key Electro's `arp` a held note
+   * being re-struck, when that template says in as many words that its arp hook is "one note per
+   * step, so it lines up with the arp's own variants hit for hit". Whether a part is a held note
+   * being re-articulated is a musical fact about the direction, so the direction states it.
+   *
+   * On the *request* rather than on each `Pattern`, for two reasons. All four bands of a role
+   * answer the question identically — a role whose band 0 was a map and whose band 3 was a grid
+   * would be incoherent, and per-variant authoring invites exactly that — and this sits beside
+   * `character` and `sustain`, where the part's musical intent already lives. Where a direction
+   * requests one role twice, each request answers for itself.
+   *
+   * Meaningless without both a hook and variants for the role, so `TemplateSchema` requires
+   * both: a flag that changes nothing is an author writing something that does nothing, which
+   * is the same discipline `sustain`/`sections` and `optional`/`inessential` are held to.
+   */
+  reArticulatesHook?: true
 }
 
 export const RoleRequestSchema = z
@@ -99,6 +132,9 @@ export const RoleRequestSchema = z
       .optional(),
     polyphony: z.int().min(1).optional(),
     distinct: z.boolean().optional(),
+    // `true` only. `false` would be a second way to write the default, and two spellings of
+    // "no" is how a field comes to mean three things.
+    reArticulatesHook: z.literal(true).optional(),
   })
   .superRefine((r, ctx) => {
     if (r.sustain === 'transient' && r.sections === undefined) {
@@ -410,7 +446,40 @@ export const TemplateSchema = z
         }
       })
     })
+    // §4.3/§8. `reArticulatesHook` says where the hook's held note is struck again, so it needs
+    // both halves to be true of anything: a hook for the role to hold the note, and variants for
+    // the role to place the strikes. Missing either, the flag changes nothing the guide prints,
+    // and a field that silently does nothing is worse than an absent one — the author believes
+    // the part re-articulates and no page says so.
+    const hookedRoles = new Set(t.hooks.map((h) => h.forRole))
+    const patternedRoles = new Set(t.patterns.map((p) => p.forRole))
+    t.roles.forEach((request, i) => {
+      if (request.reArticulatesHook !== true) return
+      if (!hookedRoles.has(request.role)) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            `request '${request.id}' re-articulates a hook, but no hook is authored for ` +
+            `'${request.role}' (§4.3)`,
+          path: ['roles', i, 'reArticulatesHook'],
+        })
+      }
+      if (!patternedRoles.has(request.role)) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            `request '${request.id}' re-articulates a hook, but no variant is authored for ` +
+            `'${request.role}' to place the strikes (§4.3)`,
+          path: ['roles', i, 'reArticulatesHook'],
+        })
+      }
+    })
     // Deliberately not checked: several variants may be eligible for the same
     // (role, band, section). §4.1 says the seed picks among multiple authored hooks, and §6.3
     // never says a band holds exactly one variant, so rejecting that would forbid legal data.
+    //
+    // Also deliberately not checked: whether the hook's notes are *long enough* to span the
+    // variant's strikes. That derivation is what `reArticulatesHook` exists instead of — it is
+    // unstable across a seeded hook choice, so enforcing it would reject authoring the direction
+    // means and accept authoring it does not.
   })

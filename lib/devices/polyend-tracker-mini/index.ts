@@ -996,7 +996,23 @@ const SAMPLE_RECIPES: Recipe[] = [
       unscaled('POSITION LFO AMOUNT', '28%', {
         note: 'Small amounts stay pad-like; larger ones sweep wider and glitchier',
       }),
-      secs('ENV ATTACK', 1.8, SECONDS_10, 126),
+      // **A fade-in this long is a claim about how often the part may be struck**, and the note
+      // is where that claim gets said out loud. 1.8 Sec is most of two bars at the tempi a bed
+      // like this sits at, so a part re-striking faster than the fade-in never reaches full
+      // level: each strike swells into the one before it and the re-articulation stops being
+      // audible as one. That is not a defect in either layer — a long attack is what makes this
+      // a bed, and a step map that re-strikes is what makes it a part rather than a held chord —
+      // so the recipe states the interaction and leaves the trade to the reader standing at the
+      // box, who is the only one holding both halves.
+      //
+      // Said generically, and it has to be: the number of strikes in a bar is a property of the
+      // direction (§4.3), which this folder cannot name (invariant 3) and cannot see. What it
+      // can state is its own envelope's consequence, in terms of any part at all.
+      secs('ENV ATTACK', 1.8, SECONDS_10, 126, {
+        note:
+          'Re-strikes closer together than 1.8 Sec smear into the note before rather than ' +
+          'articulating — shorten it if the part strikes faster',
+      }),
       // The other half of #102: a part that gets retriggered needs a level to hold at and a tail
       // to leave on. Without them the reader sets a 1.8 Sec fade-in and nothing about what
       // happens after. Same pair, same page, as the soft pad above.

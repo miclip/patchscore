@@ -744,13 +744,32 @@ export type ResolvedAssignment = {
    */
   hookAuthority: HookId | undefined
   /**
+   * §4.3/§8. **The direction's answer to what this part's variants mean against its hook**, from
+   * the request (`RoleRequest.reArticulatesHook`), which is where the musical fact is authored.
+   *
+   * Only meaningful together with `hookAuthority`: it says the variant places the strikes *inside*
+   * the hook's held notes, so phase 5 may print both without printing a contradiction. Where it
+   * is false — every part in the library but two — #100 stands unchanged and the grid is not
+   * rendered at all.
+   *
+   * Carried on the assignment rather than left for a renderer to look up on `result.template`,
+   * for the reason `hookAuthority` is: both renderers have to branch on it, and a fact one of
+   * them derives for itself is a fact the two can come to disagree about.
+   */
+  reArticulatesHook: boolean
+  /**
    * One entry per section this part occupies, in structure order.
    *
    * Kept, and unchanged, when `hookAuthority` is set: pattern selection is a pure function of
    * template and mood (§7 step 5) and the *band* it carries is still true — §8's arrangement
    * phase groups sections by it, and dropping it would leave a single-part template like Drone
-   * Study with no energy map at all. It is the **grid** that must not be rendered for a deferred
-   * part, and both renderers read `hookAuthority` before they touch this.
+   * Study with no energy map at all.
+   *
+   * Whether the **grid** is rendered for a deferred part is then decided by `reArticulatesHook`:
+   * without it the grid would be a second rhythm competing with the hook and is not rendered
+   * (#100); with it the grid is where the hook's held note is struck again, and printing it is
+   * the only way the band reaches the part at all. Both renderers read the two fields together
+   * before they touch this.
    */
   patterns: ResolvedSectionPattern[]
 }
@@ -781,11 +800,20 @@ export type ResolvedAssignment = {
  * assignments moved, and a permalink shared before this would replay the old answer under a
  * stamp that claimed it was current.
  *
+ * **5** — §4.3/§8. `reArticulatesHook` is the second half of #100. That change gave every hooked
+ * part's rhythm to its hook, which was right where the two competed and wrong where the variant
+ * was never a rhythm — a map of where a held note is struck again. A direction may now say which
+ * of the two its variants are, and phase 5 prints the strikes for the parts that say so. No value
+ * moved and no assignment moved; what moved is that on those parts the density knob now changes
+ * what the guide tells a reader to play, where before it changed only a band label in the
+ * arrangement phase. A permalink shared before this replays as a materially different guide, so
+ * the stamp announces it — the same reading that bumped this to 2, for the same field.
+ *
  * It lives beside `ResolveInput` because that is the contract it versions. `permalink.ts`
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
  */
-export const RESOLVER_VERSION = 4
+export const RESOLVER_VERSION = 5
 
 export type ResolveInput = {
   /** Effective devices: shared definition composed with the user's overlay (#16). */
@@ -927,6 +955,7 @@ export function resolve(input: ResolveInput): ResolveResult {
       patch: resolvePatch(a.recipe),
       sections: a.sections,
       hookAuthority: hookAuthorityByRole.get(a.role),
+      reArticulatesHook: request.reArticulatesHook === true,
       patterns: a.sections.map((section) => {
         const selection: PatternSelection = bySection?.get(section) ?? {
           outcome: 'none',

@@ -2,7 +2,7 @@ import { Fragment } from 'react'
 import type { ReactNode } from 'react'
 import type { CapabilityEvidence, Cite, Provenance, ResolvedParam } from '@/lib/core'
 import { GUIDE_PHASES } from '@/lib/core'
-import { citeLines, citeText, num, rangeText, valueParts } from './format'
+import { citeLines, citeText, count, num, rangeText, valueParts } from './format'
 
 /**
  * §8.1's layout primitive, and the reason this view is not converted Markdown.
@@ -299,6 +299,27 @@ export function HookRef() {
       */}
       <strong>The hook is the pattern</strong> — see <a href={HOOK_ANCHOR}>Hook</a> for its steps
       and what each one carries. Nothing separate to program here.
+    </p>
+  )
+}
+
+/**
+ * §4.3/§8. The sibling of `HookRef` for a part whose direction says its variants re-articulate the
+ * hook (`RoleRequest.reArticulatesHook`): the hook owns which note and how long, the grid below
+ * owns where it is lifted and struck again. Two authorities, one sentence, nothing restated — so
+ * unlike `HookRef` this one is followed by the grid rather than replacing it.
+ *
+ * Worded as the Markdown sibling words it, including the bar length and the note about what the
+ * chain plan counts: the claim is about the box in front of somebody, and two wordings of it
+ * would be two chances to be wrong.
+ */
+export function ReArticulationRef({ bars }: { bars: number }) {
+  return (
+    <p className="sound-ref hook-ref">
+      <strong>The hook is the notes; the steps below are where they are struck again</strong> — see{' '}
+      <a href={HOOK_ANCHOR}>Hook</a> for what to play and how long each note is held. This map is{' '}
+      {count(bars, 'bar')} long and repeats inside the hook; the chain lengths below are counted in
+      the hook.
     </p>
   )
 }

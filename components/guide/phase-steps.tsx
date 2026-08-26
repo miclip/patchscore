@@ -9,9 +9,9 @@ import type {
   SectionChain,
   SectionName,
 } from '@/lib/core'
-import { chainPlan } from '@/lib/core'
+import { STEPS_PER_BAR, chainPlan } from '@/lib/core'
 import { citeLines, count, hintText, num, voicesLabel } from './format'
-import { HookRef, Instruction, ProvenanceMark, SoundRef } from './instruction'
+import { HookRef, Instruction, ProvenanceMark, ReArticulationRef, SoundRef } from './instruction'
 
 const ROW = 16
 
@@ -146,10 +146,14 @@ function slotSteps(hits: readonly PatternHit[]): string {
  * separators the moment a template spanned more than one band (§6.3).
  */
 export function mergeBlocks(a: ResolvedAssignment): Block[] {
-  // #100. A part whose hook is its rhythm has no blocks at all: a variant was selected for it
-  // (the band it asks for is what the arrangement phase reads) but none of it is played, so
-  // there is nothing here to merge and nothing to draw.
-  if (a.hookAuthority !== undefined) return []
+  // #100 and its second half (§4.3). A part whose hook is its rhythm has no blocks at all: a
+  // variant was selected for it (the band it asks for is what the arrangement phase reads) but
+  // none of it is played, so there is nothing here to merge and nothing to draw.
+  //
+  // Unless the direction says the variants re-articulate the hook, in which case the grid *is*
+  // played — it is where the held note is struck again — and suppressing it is what left the
+  // density knob changing nothing a listener could hear on those parts.
+  if (a.hookAuthority !== undefined && !a.reArticulatesHook) return []
   const merged = new Map<string, Block>()
   for (const entry of a.patterns) {
     const s = entry.selection
@@ -283,6 +287,17 @@ function ChainPlan({ plan }: { plan: readonly SectionChain[] }) {
   )
 }
 
+/**
+ * Which of the two pointers a deferred part gets (§4.3). A re-articulating part whose every
+ * section came back `none` has no map to describe, so it falls back to the plain pointer rather
+ * than to a sentence about a grid that is not there (invariant 5).
+ */
+function HookPointer({ a }: { a: ResolvedAssignment }) {
+  const first = a.patterns.find((p) => p.selection.outcome !== 'none')?.selection
+  if (!a.reArticulatesHook || first === undefined || first.outcome === 'none') return <HookRef />
+  return <ReArticulationRef bars={first.pattern.length / STEPS_PER_BAR} />
+}
+
 /** §8 phase 5. The selected template variant per part, with this device's articulation bound. */
 export function PhaseSteps({
   result,
@@ -312,7 +327,7 @@ export function PhaseSteps({
           {/* Same reason as the hook phase: this one says what to play, not what it sounds
               like, so a reader stopping here would think the sound was missing. */}
           <SoundRef title={a.recipe.title} />
-          {a.hookAuthority === undefined ? null : <HookRef />}
+          {a.hookAuthority === undefined ? null : <HookPointer a={a} />}
           {mergeBlocks(a).map((block) => (
             <div className="block" key={block.sections.join(',')}>
               <h5>{block.sections.join(', ')}</h5>
