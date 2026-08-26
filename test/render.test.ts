@@ -589,7 +589,12 @@ describe('at-the-machine layout (§8, §10)', () => {
         resolve({ devices: GOLDEN_DEVICES, template: t, mood: GOLDEN_MOOD, seed: GOLDEN_SEED }),
       ),
     ).join('\n')
-    expect(arrangement).toContain('- **band 3** — Drop · every part plays band 2')
+    // The clause, not its position: #152's size summary is the first note, so the fallback
+    // clause no longer abuts the label. What this test is about is that one clause stands in
+    // for a roll-call of every part, and that is unchanged.
+    expect(arrangement).toContain('- **band 3** — Drop · ')
+    expect(arrangement).toContain('· every part plays band 2')
+    expect(arrangement).not.toContain('`kick` plays band 2')
   })
 
   it('words the two kinds of silence differently, and hoists only the permanent one', () => {

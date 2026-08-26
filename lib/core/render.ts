@@ -2150,9 +2150,24 @@ function phaseFinishing(result: ResolveResult): Line[] {
   return out
 }
 
+/**
+ * #152's summary: what the band on the label actually asks for.
+ *
+ * First of the notes because it describes the group, where every note after it qualifies the
+ * group — a fallback, a silence, a difference from its twin. A reader scanning for the big
+ * section wants the size before the caveats.
+ */
+function programsText(p: BandGroup['programs']): string {
+  const parts = `${num(p.parts)} ${p.parts === 1 ? 'part' : 'parts'}`
+  return `${parts}, ${num(p.strikes)} ${p.strikes === 1 ? 'strike' : 'strikes'}`
+}
+
 /** The per-group notes, in one order both renderers share. */
 function groupNotes(group: BandGroup): string[] {
   const notes: string[] = []
+  // A group with nothing playing has no size to report: `no parts` on the label already says
+  // it, and "0 parts, 0 strikes over 0 bars" would be three ways of repeating that.
+  if (group.programs.parts > 0) notes.push(programsText(group.programs))
   for (const f of group.fallbacks) {
     notes.push(
       f.all

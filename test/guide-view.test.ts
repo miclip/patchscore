@@ -365,6 +365,24 @@ describe("Finishing's band trajectory says the same thing in both renderers (§6
     }
   })
 
+  it('sizes each group the same way in both (#152)', () => {
+    // The size summary is a sentence, so it is written twice — and #82 is the standing record
+    // of what two copies of one sentence cost when only a test keeps them honest. This is that
+    // test: the counts come from `bandTrajectory`, and neither renderer may state them its own
+    // way. Asserted on every group that has parts, not on one sampled line.
+    const view = text(html(real))
+    const md = arrangement(renderGuide(real))
+    const sized = bandTrajectory(real).groups.filter((g) => g.programs.parts > 0)
+    expect(sized.length).toBeGreaterThan(1)
+    for (const { programs: p } of sized) {
+      const phrase =
+        `${String(p.parts)} ${p.parts === 1 ? 'part' : 'parts'}, ` +
+        `${String(p.strikes)} ${p.strikes === 1 ? 'strike' : 'strikes'}`
+      expect(md, phrase).toContain(phrase)
+      expect(view, phrase).toContain(phrase)
+    }
+  })
+
   it('names the same parts outside the trajectory', () => {
     const view = text(html(real))
     const md = arrangement(renderGuide(real))

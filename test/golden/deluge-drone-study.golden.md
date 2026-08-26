@@ -179,7 +179,7 @@ The Deluge carries DELAY AMOUNT and REVERB AMOUNT in its recipes; it is the only
 
 Sections that program identically, part for part — build one and copy it:
 
-- **band 0** — Settle, Hush
-- **band 1** — Gather, Give
-- **band 2** — Tilt, Turn
-- **band 3** — Vast
+- **band 0** — Settle, Hush · 1 part, 1 strike
+- **band 1** — Gather, Give · 1 part, 2 strikes
+- **band 2** — Tilt, Turn · 1 part, 4 strikes
+- **band 3** — Vast · 1 part, 7 strikes

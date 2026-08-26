@@ -20,9 +20,30 @@ function RoleList({ roles }: { roles: readonly Role[] }) {
   )
 }
 
+/**
+ * #152's summary, the Markdown sibling of `programsText`. First of the notes for the same
+ * reason: it describes the group, and everything after it qualifies the group.
+ *
+ * The counts are `mono` because they are values a reader compares between lines — §8 wants
+ * numbers legible at arm's length, and two strike counts in proportional type do not line up.
+ */
+function GroupPrograms({ programs }: { programs: BandGroup['programs'] }) {
+  if (programs.parts === 0) return null
+  return (
+    <span className="quiet">
+      {' · '}
+      <span className="mono">{num(programs.parts)}</span>{' '}
+      {programs.parts === 1 ? 'part' : 'parts'},{' '}
+      <span className="mono">{num(programs.strikes)}</span>{' '}
+      {programs.strikes === 1 ? 'strike' : 'strikes'}
+    </span>
+  )
+}
+
 function GroupNotes({ group }: { group: BandGroup }) {
   return (
     <>
+      <GroupPrograms programs={group.programs} />
       {group.fallbacks.map((f) => (
         <span className="quiet" key={`fallback-${num(f.usedBand)}`}>
           {' · '}
