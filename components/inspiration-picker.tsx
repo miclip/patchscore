@@ -99,6 +99,7 @@ export function InspirationPicker({
                   type="checkbox"
                   className="pick-jack"
                   data-chain={on ? 'inspiration' : undefined}
+                  data-chain-key={inspiration.id}
                   checked={on}
                   aria-describedby={subId}
                   // At the cap the unchosen are disabled rather than silently ignored, so the

@@ -109,7 +109,9 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
     const box = area.getBoundingClientRect()
     const at = (name: string): Point | undefined => {
       const el = area.querySelector<HTMLElement>(`[data-chain="${name}"]`)
-      if (el === null) return undefined
+      return el === null ? undefined : pointOf(el, box)
+    }
+    function pointOf(el: HTMLElement, box: DOMRect): Point | undefined {
       const r = el.getBoundingClientRect()
       if (r.width === 0 && r.height === 0) return undefined
       const point = { x: r.left - box.left + r.width / 2, y: r.top - box.top + r.height / 2 }
@@ -132,9 +134,25 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
       return point
     }
 
+    /**
+     * Every selected inspiration, not just the first.
+     *
+     * §5 caps inspirations at two — *"Two influences make a track; three make a mess"* — and this
+     * read one, with `querySelector`. A second selection is legitimate and was silently left
+     * uncabled: the picker said "2 of 2 selected" and the drawing disagreed with it.
+     *
+     * Keyed by the inspiration's own id rather than by position, so deselecting the first of two
+     * does not renumber the second and shuffle the paths under React's refs.
+     */
+    const inspirations: { key: string; point: Point }[] = []
+    for (const el of area.querySelectorAll<HTMLElement>('[data-chain="inspiration"]')) {
+      const point = pointOf(el, box)
+      const key = el.dataset['chainKey']
+      if (point !== undefined && key !== undefined) inspirations.push({ key, point })
+    }
+
     const out = at('out')
     const direction = at('direction')
-    const inspiration = at('inspiration')
     const bands = columnBands(area, box)
 
     const geometry = (a: Point, b: Point): string => {
@@ -157,8 +175,10 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
     if (out !== undefined && direction !== undefined) {
       next.push({ id: 'out-direction', d: geometry(out, direction) })
     }
-    if (direction !== undefined && inspiration !== undefined) {
-      next.push({ id: 'direction-inspiration', d: geometry(direction, inspiration) })
+    if (direction !== undefined) {
+      for (const { key, point } of inspirations) {
+        next.push({ id: `direction-inspiration:${key}`, d: geometry(direction, point) })
+      }
     }
 
     // Membership through React; geometry straight onto the element. Comparing first means a
