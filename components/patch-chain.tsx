@@ -26,16 +26,53 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 
 type Point = { x: number; y: number }
 
+/** How far left of a column's edge the run sits when both ends are in that column. */
+const LANE_INSET = 8
+
 /**
- * The margin the chain runs down, in pixels from the left of `.columns`.
+ * The vertical strip a run travels down, chosen from the layout rather than assumed.
  *
- * Fixed rather than derived from the sockets, because the three panels indent differently and a
- * run that stepped in and out at each one would read as three cables rather than one.
+ * A fixed page margin was the first attempt and it is right for exactly one layout. Above 900px
+ * `.columns` becomes two, and on a phone held sideways that is the layout you get: `out` sits in
+ * the left column and the Direction in the right, so routing via the far-left margin swept both
+ * runs across the whole page and through the panels between. The screenshot of it is the reason
+ * this function exists.
  *
- * Far enough left to clear the cards: at 13 the curve's shoulder sat inside them and clipped the
- * first letter of every panel heading — `DIRECTION`, `SEED`, `INSPIRATIONS`.
+ * The rule is the same one a person stringing a rack would use — go down the nearest empty
+ * channel:
+ *
+ *  - **Ends in different columns** — the gutter *between* them, which is empty by construction.
+ *  - **Ends in the same column** — just outside that column's left edge, which is the page
+ *    margin for the left column and the same gutter for the right.
+ *
+ * In a single column both ends share the one band and it reduces to the page margin, which is
+ * what the fixed constant used to do. Measured from the panels themselves, so a change to the
+ * breakpoint or the gap needs no change here.
  */
-const LANE_X = 5
+function laneBetween(a: Point, b: Point, bands: readonly Band[]): number {
+  const bandA = bands.find((n) => a.x >= n.left && a.x <= n.right)
+  const bandB = bands.find((n) => b.x >= n.left && b.x <= n.right)
+  if (bandA !== undefined && bandB !== undefined && bandA !== bandB) {
+    const [first, second] = bandA.left < bandB.left ? [bandA, bandB] : [bandB, bandA]
+    return (first.right + second.left) / 2
+  }
+  const band = bandA ?? bandB
+  return Math.max(4, (band?.left ?? LANE_INSET) - LANE_INSET)
+}
+
+type Band = { left: number; right: number }
+
+/** The distinct column bands, deduplicated: full-width panels and a column share one entry. */
+function columnBands(area: HTMLElement, box: DOMRect): Band[] {
+  const seen = new Map<string, Band>()
+  for (const panel of area.querySelectorAll<HTMLElement>(':scope > .panel')) {
+    const r = panel.getBoundingClientRect()
+    const band = { left: r.left - box.left, right: r.right - box.left }
+    seen.set(`${String(Math.round(band.left))}:${String(Math.round(band.right))}`, band)
+  }
+  // Widest first, so a full-width panel never shadows the narrower column a socket is really in.
+  return [...seen.values()].sort((x, y) => x.right - x.left - (y.right - y.left))
+}
 
 export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement | null> }) {
   const [size, setSize] = useState<{ w: number; h: number } | undefined>(undefined)
@@ -72,26 +109,39 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
     const out = at('out')
     const direction = at('direction')
     const inspiration = at('inspiration')
+    const bands = columnBands(area, box)
     const drawn: { id: string; d: string }[] = []
     const run = (id: string, a: Point, b: Point) => {
       /**
-       * Down the page's left margin, outside the panels entirely.
+       * Down an empty channel, outside the panels.
        *
        * Drawn first *behind* the cards, on the theory that a run passing under a panel reads
        * like a loom behind a rack. It does not: at 390px only three short stubs showed in the
-       * gaps, which reads as a broken cable rather than a hidden one. Out in the margin it is
-       * one continuous run, and it still crosses no text — it leaves each socket through the
-       * row's own cable lane, which is padding.
+       * gaps, which reads as a broken cable rather than a hidden one. Out in a channel it is one
+       * continuous run, and it crosses no text — it leaves each socket through the row's own
+       * cable lane, which is padding.
        */
-      const lane = LANE_X
+      const lane = laneBetween(a, b, bands)
       /**
        * Controls level with their own endpoints, so the run leaves each socket *horizontally*,
-       * drops through the margin and enters the next one horizontally. Offsetting them along the
-       * span instead pulled the curve diagonally and its shoulder clipped the panel headings.
+       * travels the channel and enters the next one horizontally. Offsetting them along the span
+       * instead pulled the curve diagonally and its shoulder clipped the panel headings.
+       *
+       * **Except when the channel is on the far side of the socket's own label.** `out` carries
+       * "out — to the guide" immediately to its right, so a run heading right left the socket
+       * straight through its own caption. Where the lane is not on the side the run leaves from,
+       * it leaves vertically instead and turns once it is clear.
        */
+      const away = lane > a.x
       drawn.push({
         id,
-        d: `M ${r(a.x)} ${r(a.y)} C ${r(lane)} ${r(a.y)}, ${r(lane)} ${r(b.y)}, ${r(b.x)} ${r(b.y)}`,
+        d: away
+          ? // Down and out of the panel before turning. `out` sits at the foot of the Devices
+            // card with its own label to the right and the legend directly above, so both the
+            // horizontal exit and the upward one crossed text. Downward clears the card in a few
+            // pixels, and the run reaches the channel under it.
+            `M ${r(a.x)} ${r(a.y)} C ${r(a.x)} ${r(a.y + 46)}, ${r(lane)} ${r(b.y + 46)}, ${r(b.x)} ${r(b.y)}`
+          : `M ${r(a.x)} ${r(a.y)} C ${r(lane)} ${r(a.y)}, ${r(lane)} ${r(b.y)}, ${r(b.x)} ${r(b.y)}`,
       })
     }
     if (out !== undefined && direction !== undefined) run('out-direction', out, direction)
