@@ -648,7 +648,9 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 
 **Sidechain**
 
-- TR-1000 — internal, from external audio
+The TR-1000 ducks from its own parts.
+
+Nothing here ducks to another box, so a rig-wide pump is built box by box.
 
 **Master FX**
 

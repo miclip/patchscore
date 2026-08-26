@@ -22,14 +22,20 @@ import { EvidenceMark, evidenceLines } from './instruction'
  */
 function basisText(source: ClockSource): string {
   switch (clockSourceBasis(source)) {
+    // #144 leaves this one alone: it asserts no comparison. "Its manual says leading a rig is its
+    // job" is a fact about this box, true whether it was ranked against ten others or none.
     case 'claimed':
       return 'its manual says leading a rig is its job'
     // Two honest claims, and §7.4 has no basis to rank them — so the guide says which keys did,
     // rather than implying a judgement nobody made.
     case 'contested':
       return `${count(source.claims, 'box', 'boxes')} here claim that job, so transport, then name, settled it`
+    // #144. Two tie-breaks named, and at a rig with one box that can send clock neither ran —
+    // the sort was over a list of one. `eligible` is the count this sentence always rested on.
     default:
-      return 'nothing here claims that job, so transport, then name, settled it'
+      return source.eligible === 1
+        ? 'it is the only box here that can send clock'
+        : 'nothing here claims that job, so transport, then name, settled it'
   }
 }
 
@@ -47,8 +53,13 @@ function voiceBasisText(source: VoiceControlSource): string {
       return 'its manual says leading a rig is its job'
     case 'contested':
       return `${count(source.claims, 'box', 'boxes')} here claim that job, so the names settled it`
+    // #144, one tier down and the same branch of the rule: `ranked` counts every note-and-gate
+    // pair in the rig and `candidates` counts this box's, so they are equal exactly when no other
+    // box offered one, and "the names settled it" is a comparison with nothing on the other side.
     default:
-      return 'nothing here claims that job, so the names settled it'
+      return source.ranked === source.candidates
+        ? 'it is the only box here that sends a note and a gate together'
+        : 'nothing here claims that job, so the names settled it'
   }
 }
 

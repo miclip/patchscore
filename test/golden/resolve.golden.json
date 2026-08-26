@@ -122,7 +122,8 @@
     "deviceName": "Golden Tracker",
     "transport": "midi-din",
     "occupiedAssignables": 3,
-    "claims": 0
+    "claims": 0,
+    "eligible": 2
   },
   "interDevicePatch": {
     "outcome": "routed",

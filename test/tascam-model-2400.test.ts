@@ -10,6 +10,7 @@ import {
 import { device } from '../lib/devices/tascam-model-2400/index'
 import { device as l8 } from '../lib/devices/zoom-livetrak-l-8/index'
 import { device as tr1000 } from '../lib/devices/roland-tr-1000/index'
+import { device as tr8s } from '../lib/devices/roland-tr-8s/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 import { auditDevice } from '../scripts/audit-verified'
@@ -151,14 +152,34 @@ describe('the first box that sends clock and cannot receive it', () => {
     const rig = resolve({ devices: [tr1000, device], template, mood: NEUTRAL_MOOD, seed: 1 })
     expect(rig.clockSource?.deviceId).not.toBe(device.id)
     const doc = renderGuide(rig)
-    expect(doc).toContain('except Model 2400')
+    expect(doc).toContain('Model 2400')
     expect(doc).toContain('cannot receive clock')
+
+    // #144. This rig is two boxes and the only box that is not the source is this one, so
+    // "everything else" is exactly the box being exempted — "sync everything else to it, except
+    // Model 2400" is an instruction to sync nothing, in the grammar of an instruction to do
+    // something. The exemption still has to name the box; the lead-in is what changed.
+    expect(doc).toContain('Nothing else here can follow it: Model 2400')
+    expect(doc).not.toContain('Sync everything else')
+
+    // And the `except` form is still the one a rig with a real follower gets, or the assertion
+    // above would be pinning the absence of a sentence no rig ever prints.
+    const following = resolve({
+      devices: [tr1000, device, tr8s],
+      template,
+      mood: NEUTRAL_MOOD,
+      seed: 1,
+    })
+    expect(renderGuide(following)).toContain(
+      'Sync everything else to it, except Model 2400, which cannot receive clock and runs free',
+    )
 
     // And the clause is absent when nothing in the rig is deaf, or the assertion above would
     // pass on a sentence the renderer prints unconditionally.
     const hearing = resolve({ devices: [tr1000], template, mood: NEUTRAL_MOOD, seed: 1 })
     expect(renderGuide(hearing)).not.toContain('cannot receive clock')
-    expect(renderGuide(hearing)).toContain('Sync everything else to it.')
+    // One box: there is no "everything else" to address at all (#144).
+    expect(renderGuide(hearing)).toContain('Nothing else is here to sync to it.')
   })
 
   it('wins it when nothing else can send, and says it is carrying nothing', () => {

@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
 import type { BandGroup, FxSource, ResolveResult, Role } from '@/lib/core'
-import { bandTrajectory, fxSources } from '@/lib/core'
-import { fxText, num } from './format'
+import { bandTrajectory, fxSources, sidechainReading } from '@/lib/core'
+import { fxText, num, sidechainSentences } from './format'
 import { TokenList } from './instruction'
 
 /** `kick`, `kick and sub`, `kick, sub and clap` — the Markdown sibling joins the same way. */
@@ -54,7 +54,7 @@ function GroupNotes({ group }: { group: BandGroup }) {
 
 /** §8 phase 7. Sidechain, master FX, arrangement variations — what happens once it plays. */
 export function PhaseFinishing({ result }: { result: ResolveResult }) {
-  const duckers = result.devices.filter((d) => d.features?.sidechain !== undefined)
+  const sidechain = sidechainSentences(sidechainReading(result.devices))
   const fx = fxSources(result.devices, result.assignments)
   const byId = new Map(result.devices.map((d) => [d.id, d]))
   const only = fx[0] as FxSource | undefined
@@ -63,28 +63,9 @@ export function PhaseFinishing({ result }: { result: ResolveResult }) {
   return (
     <>
       <h4>Sidechain</h4>
-      {duckers.length === 0 ? (
-        <p className="quiet">
-          No device in this rig has a sidechain.
-        </p>
-      ) : (
-        <ul className="boxes flat">
-          {duckers.map((device) => {
-            const spec = device.features?.sidechain
-            const kinds: string[] = []
-            if (spec?.internal === true) kinds.push('internal')
-            if (spec?.fromExternalAudio === true) kinds.push('from external audio')
-            return (
-              <li key={device.id}>
-                <strong>{device.name}</strong>{' '}
-                <span className="quiet">
-                  {kinds.length === 0 ? 'declared, no source listed' : kinds.join(', ')}
-                </span>
-              </li>
-            )
-          })}
-        </ul>
-      )}
+      {sidechain.map((sentence) => (
+        <p key={sentence}>{sentence}</p>
+      ))}
 
       {/* "Master FX" and "master bus" stay: that is the master-copy sense, universal in music
           production and not half of a pair. */}
@@ -94,10 +75,16 @@ export function PhaseFinishing({ result }: { result: ResolveResult }) {
           Nothing in this rig processes audio. The master chain is yours at the desk.
         </p>
       ) : only !== undefined && fx.length === 1 ? (
+        // #144, the same shape as the sidechain block above. "Nothing else in this rig processes
+        // audio" is a claim about the other boxes, and at a rig of one there are none for it to
+        // be about — it reads as though the reader were being told something about a rack, when
+        // the whole rack is the box in front of them. State the rig's size instead.
         <p>
           The <strong>{only.name}</strong>{' '}
-          <span className="quiet">{fxText(only, byId.get(only.deviceId))}</span>; nothing else in
-          this rig processes audio.
+          <span className="quiet">{fxText(only, byId.get(only.deviceId))}</span>
+          {result.devices.length === 1
+            ? '; it is the only box here, so that is the whole master chain.'
+            : '; nothing else in this rig processes audio.'}
         </p>
       ) : (
         <>

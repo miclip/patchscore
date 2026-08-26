@@ -1,6 +1,5 @@
 import type { CapabilityEvidence, ContentNotice, Device, NoteDurationNotice } from './device'
 import {
-  canFollow,
   clockJackNotes,
   clockSourceSetup,
   clockWires,
@@ -27,7 +26,9 @@ import {
   type ResolvedNote,
 } from './harmony'
 import {
+  clockFollowing,
   clockSourceBasis,
+  type ClockFollowing,
   type ClockSource,
   type InterDevicePatch,
   type ResolveResult,
@@ -37,6 +38,13 @@ import {
 import { GUIDE_PHASES } from './guide'
 import { bandTrajectory, chainPlan, type BandGroup, type SectionChain } from './arrangement'
 import { fxSources, type FxSource } from './fx'
+import {
+  noDuckers,
+  pumpIsBoxByBox,
+  sidechainReading,
+  type Ducker,
+  type SidechainReading,
+} from './sidechain'
 
 /**
  * §8. The resolved guide as Markdown.
@@ -635,6 +643,55 @@ function mixerText(device: Device, parts: number): string {
 }
 
 /**
+ * §7.4/#121/#144. **"Sync everything else to it"**, and the two rigs where that is not a sentence.
+ *
+ * #121 added the exception clause: a box that cannot take a clock over *the transport this rig
+ * resolved* runs free whatever the source is doing, and naming it here beats leaving a reader to
+ * discover it at the machine, staring at a box with no socket for the cable in their hand.
+ *
+ * #144 is the layer under that. The instruction addresses *everything else*, and both renderers
+ * printed it without ever asking whether "everything else" had members:
+ *
+ *  - **One box in the rig.** There is no rack to sync. The guide told somebody standing in front
+ *    of a single Deluge to go and cable up boxes they do not own.
+ *  - **Every other box exempted.** "Sync everything else to it, except A and B" over a rig of
+ *    exactly A and B is an instruction to sync nothing, written in the grammar of an instruction
+ *    to do something — and it is the harder of the two to catch, because every word in it is
+ *    individually true.
+ *
+ * So the sentence is chosen by `followers`, never printed and then qualified. The exemptions are
+ * still named in both of the last two cases: a reader wants to know *which* box runs free far
+ * more than they want the clause to be short.
+ *
+ * Restated in `components/guide/format.ts` for the web guide, from the same `ClockFollowing`:
+ * one right answer, two hand-written vocabularies, which is the standing rule for every sentence
+ * in §8. `test/guide-view.test.ts` holds the two copies to the same facts.
+ */
+function syncText(following: ClockFollowing, transport: string): string {
+  if (following.alone) return 'Nothing else is here to sync to it.'
+  const clauses: string[] = []
+  if (following.deaf.length > 0) {
+    clauses.push(
+      `${list(following.deaf.map((d) => d.name))}, which cannot receive clock and ` +
+        `${following.deaf.length === 1 ? 'runs' : 'run'} free`,
+    )
+  }
+  if (following.unwired.length > 0) {
+    clauses.push(
+      `${list(following.unwired.map((d) => d.name))}, which ` +
+        `${following.unwired.length === 1 ? 'has' : 'have'} no \`${transport}\` input and ` +
+        `${following.unwired.length === 1 ? 'runs' : 'run'} free`,
+    )
+  }
+  // Each clause carries its own "runs free" rather than one shared tail. With both kinds present
+  // a shared tail would have to reach back across two different reasons, and a reader skimming at
+  // the machine would have to hold the whole sentence to know which boxes it covers.
+  if (following.followers.length === 0) return `Nothing else here can follow it: ${clauses.join(', and ')}.`
+  if (clauses.length === 0) return 'Sync everything else to it.'
+  return `Sync everything else to it, except ${clauses.join(', and ')}.`
+}
+
+/**
  * §7.4/#121. **Why this box** — one line, once per guide, under the clock-source instruction.
  *
  * The rig phase named a box and a transport and never said what the answer rested on, so a
@@ -650,6 +707,10 @@ function mixerText(device: Device, parts: number): string {
  */
 function clockBasisText(source: ClockSource): string {
   switch (clockSourceBasis(source)) {
+    // #144 leaves this one alone, and the reason is the whole rule: it asserts no comparison.
+    // "Its manual says leading a rig is its job" is a fact about this box, true whether it was
+    // ranked against ten others or against none. Only a sentence claiming that something was
+    // *settled* needs candidates to have settled it against.
     case 'claimed':
       return 'Why this box — its manual says leading a rig is its job'
     // Two honest claims, and §7.4 has no basis to rank them. Saying so is the whole point: the
@@ -662,8 +723,14 @@ function clockBasisText(source: ClockSource): string {
         `Why this box — ${num(source.claims)} boxes here claim that job, ` +
         'so transport, then name, settled it'
       )
+    // #144. "Transport, then name, settled it" names two tie-breaks, and at a rig with one box
+    // that can send clock neither of them ran: the sort was over a list of one and nothing was
+    // compared. `eligible` is the count of boxes that could have been ranked, which is the fact
+    // this sentence rests on and the one it never had.
     default:
-      return 'Why this box — nothing here claims that job, so transport, then name, settled it'
+      return source.eligible === 1
+        ? 'Why this box — it is the only box here that can send clock'
+        : 'Why this box — nothing here claims that job, so transport, then name, settled it'
   }
 }
 
@@ -687,8 +754,16 @@ function voiceBasisText(source: VoiceControlSource): string {
         `Why this box sends them — ${num(source.claims)} boxes here claim that job, ` +
         'so the names settled it'
       )
+    // #144, the same rule one tier down, and the same branch of it: only this one asserts that a
+    // ranking happened. `ranked` counts every note-and-gate pair offered anywhere in the rig and
+    // `candidates` counts this box's, so they are equal exactly when no other box offered one —
+    // and "the names settled it" is then a comparison with nothing on the other side. The two
+    // branches above are untouched, because "it is already the clock source" and "its manual says
+    // so" are facts about this box that hold however many others were asked.
     default:
-      return 'Why this box sends them — nothing here claims that job, so the names settled it'
+      return source.ranked === source.candidates
+        ? 'Why this box sends them — it is the only box here that sends a note and a gate together'
+        : 'Why this box sends them — nothing here claims that job, so the names settled it'
   }
 }
 
@@ -775,38 +850,12 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
     out.push('**Clock** — nothing in this rig can send clock. Every box here has to receive one,')
     out.push('so the clock has to come from something outside it.')
   } else {
-    // §7.4. "Sync everything else to it" is an instruction, and some boxes cannot obey it —
-    // a box that cannot take a clock over *the transport this rig resolved* runs free no matter
-    // what the source is doing. Naming them here beats leaving the reader to discover it at the
-    // machine, staring at a box with no socket for the cable in their hand.
-    //
-    // **Per transport, not per capability.** This read `!canReceiveClock` and so answered a
-    // different question — can this box follow *anything* — which is the right answer only when
-    // every box speaks every wire. The rack's `isolationReason` has always asked the narrower
-    // question, so the diagram and the sentence beside it could disagree; now they agree.
-    const others = result.devices.filter((d) => d.id !== source.deviceId)
-    const deaf = others.filter((d) => !d.clock.canReceiveClock)
-    const unwired = others.filter((d) => d.clock.canReceiveClock && !canFollow(d, source.transport))
-    const clauses: string[] = []
-    if (deaf.length > 0) {
-      clauses.push(
-        `${list(deaf.map((d) => d.name))}, which cannot receive clock and ` +
-          `${deaf.length === 1 ? 'runs' : 'run'} free`,
-      )
-    }
-    if (unwired.length > 0) {
-      clauses.push(
-        `${list(unwired.map((d) => d.name))}, which ${unwired.length === 1 ? 'has' : 'have'} ` +
-          `no \`${source.transport}\` input and ${unwired.length === 1 ? 'runs' : 'run'} free`,
-      )
-    }
-    const sync =
-      clauses.length === 0
-        ? 'Sync everything else to it.'
-        : `Sync everything else to it, except ${clauses.join(', and ')}.`
+    // §7.4/#144. "Sync everything else to it" is an instruction with a subject, and the subject
+    // has to exist. `clockFollowing` decides who is in it; this writes the sentence.
     out.push(
       `**Clock source** — ${source.deviceName} over \`${source.transport}\`, ` +
-        `carrying ${count(source.occupiedAssignables, 'part')}. ${sync}`,
+        `carrying ${count(source.occupiedAssignables, 'part')}. ` +
+        `${syncText(clockFollowing(result.devices, source.deviceId, source.transport), source.transport)}`,
     )
 
     const sourceDevice = result.devices.find((d) => d.id === source.deviceId)
@@ -2006,21 +2055,10 @@ function phaseFinishing(result: ResolveResult): Line[] {
 
   out.push('**Sidechain**')
   out.push('')
-  const duckers = result.devices.filter((d) => d.features?.sidechain !== undefined)
-  if (duckers.length === 0) {
-    out.push('No device in this rig has a sidechain.')
-  } else {
-    for (const device of duckers) {
-      const spec = device.features?.sidechain
-      if (spec === undefined) continue
-      const kinds: string[] = []
-      if (spec.internal) kinds.push('internal')
-      if (spec.fromExternalAudio) kinds.push('from external audio')
-      const sources = kinds.length === 0 ? 'declared, no source listed' : kinds.join(', ')
-      out.push(`- ${device.name} — ${sources}`)
-    }
+  for (const sentence of sidechainSentences(sidechainReading(result.devices))) {
+    out.push(sentence)
+    out.push('')
   }
-  out.push('')
 
   out.push('**Master FX**')
   out.push('')
@@ -2031,9 +2069,16 @@ function phaseFinishing(result: ResolveResult): Line[] {
     out.push('Nothing in this rig processes audio. The master chain is yours at the desk.')
   } else if (fx.length === 1) {
     const only = fx[0] as FxSource
+    // #144, the same shape a third time. "Nothing else in this rig processes audio" is a claim
+    // about the other boxes, and at a rig of one there are none for it to be about — it reads as
+    // though the reader were being told something about a rack, when the whole rack is the box
+    // they are holding. The fact worth stating there is the rig's size, so state that instead.
     out.push(
-      `The ${only.name} ${fxText(only, byId.get(only.deviceId))}; ` +
-        'nothing else in this rig processes audio.',
+      result.devices.length === 1
+        ? `The ${only.name} ${fxText(only, byId.get(only.deviceId))}; ` +
+            'it is the only box here, so that is the whole master chain.'
+        : `The ${only.name} ${fxText(only, byId.get(only.deviceId))}; ` +
+            'nothing else in this rig processes audio.',
     )
   } else {
     out.push('What processes audio in this rig:')
@@ -2093,6 +2138,68 @@ function groupNotes(group: BandGroup): string[] {
 function andList(items: readonly string[]): string {
   if (items.length < 2) return items.join('')
   return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1] as string}`
+}
+
+/**
+ * §8 phase 7's sidechain sentences, built only from what `sidechain.ts` derived. Restated in
+ * `components/guide/format.ts` for the web guide exactly as `fxText` and `mixerText` are: the
+ * grouping is decided once, in `sidechain.ts`, and each renderer writes its own words from it.
+ *
+ * At most three sentences, and they are ordered by what the reader can act on: the cable first,
+ * the boxes that need no cable second, and an undocumented trigger last. A box appears in
+ * exactly one of them, so nothing here says the same thing twice (#35).
+ */
+function sidechainSentences(reading: SidechainReading): string[] {
+  if (noDuckers(reading)) return ['No box in this rig has a sidechain.']
+  const out: string[] = []
+  const external = reading.fromOtherBoxes
+  const first = external[0]
+  if (reading.alone && first !== undefined) {
+    // One box, and its trigger arrives on a cable from a box that is not here. Saying "patch
+    // the box you want it to follow" at a rig of one is #144's shape: an instruction the rack
+    // in front of the reader cannot carry out.
+    out.push(
+      first.alsoSelf
+        ? `The ${first.name} ducks from its own parts, or from audio at its input — and it is ` +
+            'the only box here to feed that input.'
+        : `The ${first.name} ducks from audio at its input, and nothing else is here to feed it.`,
+    )
+  } else if (external.length > 0) {
+    out.push(
+      `The ${andList(external.map((d) => d.name))} can duck to another box: patch the box you ` +
+        `want ${external.length === 1 ? 'it' : 'each'} to follow into its audio in.`,
+    )
+    const both = external.filter((d) => d.alsoSelf)
+    if (both.length > 0) {
+      out.push(
+        `The ${andList(both.map((d) => d.name))} can also duck from ` +
+          `${both.length === 1 ? 'its' : 'their'} own parts.`,
+      )
+    }
+  }
+  const self = reading.selfOnly
+  if (self.length > 0) {
+    const one = self.length === 1
+    const only = external.length === 0 ? '' : ' only'
+    out.push(
+      reading.alone && one
+        ? `The ${(self[0] as Ducker).name} ducks from its own parts, and it is the only box here.`
+        : `The ${andList(self.map((d) => d.name))} ${one ? 'ducks' : 'duck'} from ` +
+            `${one ? 'its' : 'their'} own parts${only}.`,
+    )
+  }
+  if (pumpIsBoxByBox(reading)) {
+    out.push('Nothing here ducks to another box, so a rig-wide pump is built box by box.')
+  }
+  const unstated = reading.unstated
+  if (unstated.length > 0) {
+    const one = unstated.length === 1
+    out.push(
+      `The ${andList(unstated.map((d) => d.name))} ${one ? 'declares' : 'declare'} a sidechain ` +
+        `and ${one ? 'documents' : 'document'} no trigger for it.`,
+    )
+  }
+  return out
 }
 
 /**

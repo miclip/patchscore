@@ -52,6 +52,9 @@ const IMPLEMENTATION = [
   // a string, and a case fold is the same trap as a sort: `I` folds differently under a Turkish
   // locale, so a rig would be told it had effects on one machine and none on another.
   'fx.ts',
+  // §8 phase 7's other derivation, added beside `fx.ts` for the same reason: it groups the
+  // rig's boxes and the order it hands the renderers is the order the sentences name them in.
+  'sidechain.ts',
   // §8.2's permalink codec. It is not the resolver, but it decides the *inputs* the resolver
   // runs on — including the order device ids are written in — and a locale-dependent sort there
   // would hand two platforms two different rigs from one link, which invariant 6 would then

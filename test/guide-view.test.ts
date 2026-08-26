@@ -503,14 +503,19 @@ describe("Finishing's Master FX says the same thing in both renderers (#59)", ()
   })
 
   it('names the TR-1000 panel effects rather than claiming the rig has none', () => {
+    // #144. One box, so "nothing else in this rig processes audio" is a claim about other boxes
+    // that are not there — the reader is holding the whole rack. What is worth saying instead is
+    // the rig's size, which is also what makes the sentence an answer rather than a hedge.
     const sentence =
       'The TR-1000 carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, ' +
-      'and DLY SEND and RVB SEND in its recipes; nothing else in this rig processes audio.'
+      'and DLY SEND and RVB SEND in its recipes; it is the only box here, so that is the whole ' +
+      'master chain.'
     expect(master(text(html(tr)))).toContain(sentence)
     expect(master(renderGuide(tr))).toContain(sentence)
     // The sentence this replaced, in both renderers.
     for (const doc of [text(html(tr)), renderGuide(tr)]) {
       expect(doc).not.toContain('No effects unit or mixer in this rig')
+      expect(doc).not.toContain('nothing else in this rig processes audio')
     }
   })
 
@@ -591,9 +596,10 @@ describe("Finishing's Master FX says the same thing in both renderers (#59)", ()
     const authored = idleFx.devices.flatMap((d) => d.recipes.flatMap((r) => r.params.map((p) => p.name)))
     expect(authored).toContain('REVERB SEND')
 
+    // #144, again: this rig is one box, so the "nothing else" half had nothing to be about.
     const sentence =
       'The Tracker Mini carries effects, though no part in this guide reaches them; ' +
-      'nothing else in this rig processes audio.'
+      'it is the only box here, so that is the whole master chain.'
     for (const doc of [text(html(idleFx)), renderGuide(idleFx)]) {
       const section = master(doc)
       expect(section).toContain(sentence)
@@ -1003,9 +1009,23 @@ describe('#121 the page states the clock topology the Markdown states', () => {
   })
 
   it('says one box runs free rather than run free', () => {
+    // #144. Two boxes, one of them the source, so the exempted box *is* "everything else" — the
+    // page cannot open with "sync everything else to it" and then except the whole of it. The
+    // singular agreement is what this test is for and it survives the change of lead-in.
     const page = text(html(rigOf('roland-tr-1000', 'zoom-livetrak-l-8')))
-    expect(page).toContain('except Zoom LiveTrak L-8, which cannot receive clock and runs free')
+    expect(page).toContain(
+      'Nothing else here can follow it: Zoom LiveTrak L-8, which cannot receive clock and runs free',
+    )
     expect(page).not.toContain('and run free')
+    expect(page).not.toContain('Sync everything else')
+
+    // And the `except` form still carries the singular where a follower is actually present, or
+    // the assertion above would have quietly taken that wording's only coverage with it.
+    const following = text(html(rigOf('roland-tr-1000', 'zoom-livetrak-l-8', 'roland-tr-8s')))
+    expect(following).toContain(
+      'Sync everything else to it, except Zoom LiveTrak L-8, which cannot receive clock and runs free',
+    )
+    expect(following).not.toContain('and run free')
   })
 
   /**
@@ -1022,10 +1042,17 @@ describe('#121 the page states the clock topology the Markdown states', () => {
    */
   it('names a box that receives clock but not over this rig\'s transport, in its own words', () => {
     const page = text(html(rigOf('polyend-tracker-mini', 'intellijel-metropolix')))
-    expect(page).toContain('Sync everything else to it, except Metropolix')
+    // #144: the Metropolix is the whole of "everything else" here, so the lead-in changes and the
+    // clause — the thing this test exists for — does not.
+    expect(page).toContain('Nothing else here can follow it: Metropolix')
     expect(page).toContain('has no `midi-din` input and runs free')
     // The other clause must not appear: this box is not deaf.
     expect(page).not.toContain('cannot receive clock')
+
+    // The same clause under the `except` lead-in, in a rig that has a follower to sync.
+    const following = text(html(rigOf('polyend-tracker-mini', 'intellijel-metropolix', 'roland-tr-1000')))
+    expect(following).toContain('Sync everything else to it, except Metropolix')
+    expect(following).toContain('has no `midi-din` input and runs free')
   })
 
   it('says the two reasons separately when a rig has both', () => {
