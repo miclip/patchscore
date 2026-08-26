@@ -325,13 +325,23 @@ describe('the committed registry', () => {
       'intellijel-cascadia',
       'roland-tr-8s',
       'roland-tr-1000',
-      // The two keyboards, and the widest things in the library that are not mixers. The
+      // The three keyboards, and the widest things in the library that are not mixers. The
       // Subsequent 37 and the Model 2400 are within a millimetre of each other and are not a
       // tie: 680 against 680.5, so the order is decided by the numbers rather than by folder
       // order, and a re-measurement of either could legitimately swap them.
       'korg-minilogue-xd',
+      // 584.2 mm, and the only span in this list taken from a manufacturer's *imperial* figure
+      // over the metric one printed beside it: p.54's DIMS line reads `23" (54.82cm)`, and 23"
+      // is 58.42 cm. See `moog-grandmother/panel.ts` for the drawing that settles it. The
+      // Subsequent 37 has the mirror-image defect and resolves the other way, which is why this
+      // list is worth reading beside those two files rather than on its own.
+      'moog-grandmother',
       'moog-subsequent-37',
       'tascam-model-2400',
+      // 812.8 mm, and the widest thing in the library — a 49-key synthesiser is wider than a
+      // 24-channel mixer desk. The only Moog dimension line here whose imperial and metric
+      // figures both convert cleanly, which is why it needed no tie-break at all.
+      'moog-matriarch',
     ])
   })
 })

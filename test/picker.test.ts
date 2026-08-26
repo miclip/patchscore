@@ -115,6 +115,8 @@ describe('device search matches name, maker and kind', () => {
       'behringer-crave',
       'intellijel-cascadia',
       'moog-dfam',
+      'moog-grandmother',
+      'moog-matriarch',
       'moog-mother-32',
     ])
   })

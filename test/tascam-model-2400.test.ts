@@ -185,12 +185,23 @@ describe('I/O', () => {
 })
 
 describe('the panel (§10)', () => {
-  it('is the widest thing in the rack, and cited to a dimensioned drawing', () => {
+  it('is the widest mixer in the rack, and cited to a dimensioned drawing', () => {
     expect(device.physical.panelSpanMm).toBe(680.5)
-    const widest = [...DEVICES].sort(
-      (a, b) => b.physical.panelSpanMm - a.physical.panelSpanMm,
-    )[0]
-    expect(widest?.id).toBe('tascam-model-2400')
+    // **It was the widest thing in the library until the Matriarch landed**, and the assertion
+    // narrowed rather than being deleted: 680.5 mm is still the widest *mixer*, and that is the
+    // claim this file can make on its own. A 49-key synthesiser at 812.8 mm is wider than a
+    // rackmount desk, which is a fact about keyboards rather than about this manifest — the
+    // Matriarch's own file cites p.90 for it.
+    const widestMixer = [...DEVICES]
+      .filter((d) => d.kind === 'mixer-recorder')
+      .sort((a, b) => b.physical.panelSpanMm - a.physical.panelSpanMm)[0]
+    expect(widestMixer?.id).toBe('tascam-model-2400')
+    // And it is still wider than everything that is not a keyboard, which is what the rack's
+    // relative-width claim is actually about here.
+    const widerStillNotAKeyboard = DEVICES.filter(
+      (d) => d.physical.panelSpanMm > 680.5 && (d.panel?.features ?? []).every((f) => f.kind !== 'grid' || f.shape !== 'key'),
+    )
+    expect(widerStillNotAKeyboard).toEqual([])
   })
 
   it('matches both the specifications and the drawing on aspect', () => {

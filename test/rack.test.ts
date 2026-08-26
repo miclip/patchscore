@@ -137,12 +137,15 @@ describe('rack geometry (§10)', () => {
     const model = rackModel(real, { perRow: DEVICES.length })
     const rails = new Set(model.panels.map((p) => p.topMm + p.riseMm))
     expect(rails.size).toBe(1)
-    // Not vacuous: these are genuinely different depths, bar one group of three. The MC-101, the
+    // Not vacuous: these are genuinely different depths, bar two groups. The MC-101, the
     // Mother-32 and the DFAM all stand 133 mm deep — the two Moogs because they are the same 60 HP
-    // enclosure, the Roland by coincidence — and each figure is read off its own maker's dimension
-    // table rather than copied across. Still asserted as an exact count rather than
-    // `toBeGreaterThan(1)`: a rise silently dropped to a shared default is what this line catches.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 2)
+    // enclosure, the Roland by coincidence — and the Grandmother and the Matriarch share 361.9 mm
+    // because they are the same case in two widths: both manuals print `14 1/4" (36.19cm) Deep`,
+    // and both figures were measured off their own manual's plan view rather than copied across.
+    // That second pair is worth the sentence, because a shared rise arrived at twice from two
+    // documents looks exactly like the bug this line exists to catch. Still an exact count rather
+    // than `toBeGreaterThan(1)`: a rise silently dropped to a shared default is the real target.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 3)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -896,7 +899,15 @@ describe('rack view', () => {
     // eight GATE TYPE switches (slider-shaped, and drawn as what they look like), and the three
     // X/Y/Z aux attenuverter sliders. A sequencer's panel is mostly this one shape for the same
     // reason the Cascadia's is.
-    expect(count('rack-fader')).toBe(119)
+    // 122: plus the Grandmother's three, which are the first faders in the library that are
+    // *single* controls rather than a bank — its ENVELOPE SUSTAIN, and the PITCH and MOD sliders
+    // on the Left-Hand Controller. p.54 calls the second one a "Mod Wheel"; both of the manual's
+    // panel figures draw a vertical fader, and the drawing is what the manifest models.
+    // 126: plus the Matriarch's four — *two* SUSTAIN sliders, because it has two envelopes, and
+    // the same PITCH and MOD pair. Its left-hand controller measures the same as the
+    // Grandmother's to about a millimetre off a different manual, which is the two boxes sharing
+    // one assembly; the second SUSTAIN is the only new shape.
+    expect(count('rack-fader')).toBe(126)
     // 103: the TR-1000's sixteen step keys, the CRAVE's thirteen-note keyboard, and thirty-seven
     // each from the minilogue xd and the Subsequent 37 — twenty-two white in one grid and
     // fifteen black in six clusters, because a keyboard drawn as an even row of rectangles stops
@@ -905,13 +916,22 @@ describe('rack view', () => {
     // worth a sentence — it has sixteen step buttons of its own and draws them as pads, because
     // they are square backlit buttons rather than piano-profile keys. Five boxes with rows of
     // switches, two authored shapes; the renderer has no opinion and the manifests decide.
-    expect(count('rack-key')).toBe(103)
+    // 184: plus the Matriarch's forty-nine — 29 white in one grid and 20 black in eight clusters,
+    // C to C over four octaves. Its 11.95 mm black-key width is *identical* to the Grandmother's,
+    // measured independently off a different manual at a different scale, which is the same keybed
+    // part in two lengths.
+    // 135: plus the Grandmother's thirty-two — nineteen white in one grid and thirteen black in
+    // five clusters, which is where its gaps fall (E-F and B-C, three times) and therefore what
+    // fixes its range at C to G. p.54 says `32 Full-Size Keys` and the drawn keyboard decodes to
+    // exactly that, which is the check that its 584.2 mm span is the right one of the two figures
+    // printed on that line.
+    expect(count('rack-key')).toBe(184)
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(12)
+    expect(fields).toHaveLength(14)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {
