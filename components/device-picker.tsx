@@ -210,9 +210,12 @@ function pick(
   const subId = `${idPrefix}-${device.id}-sub`
 
   /**
-   * The socket a cable lands in. A ring when nothing is patched and filled when something is —
-   * the entire vocabulary of the reference, and it stays legible small. Drawn only for selected
-   * rows, because an unselected box is not in the rig and has nothing running to it.
+   * The socket a cable lands in — **and it is the checkbox**, not an ornament beside one.
+   *
+   * Selecting a device is patching it in, so one control should say that once. The input keeps
+   * its type, its label association, its focus order and its 44px target (#112); only its
+   * painted form changes. `data-patched` distinguishes the clock source from a box a cable
+   * reaches, which `:checked` alone cannot say.
    */
   const patched =
     bay.source?.deviceId === device.id
@@ -221,12 +224,12 @@ function pick(
 
   return (
     <div className="pick" key={device.id} data-retained={row.retained ? 'yes' : 'no'}>
-      {row.selected ? (
-        <span className="pick-jack" data-jack={device.id} data-patched={patched ?? 'free'} aria-hidden="true" />
-      ) : null}
       <label className="pick-choose">
         <input
           type="checkbox"
+          className="pick-jack"
+          data-jack={device.id}
+          data-patched={patched ?? 'free'}
           checked={row.selected}
           aria-describedby={subId}
           onChange={(event) => onToggle(device.id, event.target.checked)}

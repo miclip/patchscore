@@ -98,9 +98,12 @@ export function PatchCables({ bay, listRef }: { bay: Patchbay; listRef: React.Re
        * separate by eye rather than overlapping — the same reason VCV's slack differs per cable.
        */
       const span = Math.abs(to.y - from.y)
-      // Clamped to the row's cable lane. A wider arc reads better in isolation and crosses the
-      // device name, which is the trade §8 settles in the text's favour.
-      const bow = Math.min(20, 9 + span * 0.07) + (i % 3) * 4
+      /**
+       * The bow goes **left**, into the row's cable lane, because the socket is now the checkbox
+       * and everything to its right is text. Bowing right crossed the device names; bowing left
+       * hangs the run off the panel edge the way a loom does, and touches nothing.
+       */
+      const bow = -(Math.min(22, 10 + span * 0.07) + (i % 3) * 5)
       const c1y = from.y + (to.y - from.y) * 0.18
       const c2y = from.y + (to.y - from.y) * 0.82
       drawn.push({

@@ -491,11 +491,18 @@ body {
   color: var(--silkscreen);
 }
 
+/*
+ * 18px, up from 15px, and the reason is the socket: a bezel with a visible hole in it needs
+ * more room than a tick to read as one at arm's length. #21's rule is unchanged — the target is
+ * still the label's 44px and still decoupled from this — only the drawn size moved.
+ *
+ * Sized here rather than in `.pick-jack`, because `.pick input` already owned it and two rules
+ * sizing one control is two places to change it. See `.sub`'s indent, which follows this number.
+ */
 .pick input {
   margin: 0;
-  accent-color: var(--accent);
-  width: 15px;
-  height: 15px;
+  width: 18px;
+  height: 18px;
   flex: none;
 }
 
@@ -507,14 +514,14 @@ body {
 
 /*
  * The metadata line spans the whole row and indents to clear the checkbox, so it still reads as
- * belonging to the name above it. 25px is the checkbox (15px) plus `.pick-choose`'s gap (10px);
+ * belonging to the name above it. 28px is the socket (18px) plus `.pick-choose`'s gap (10px);
  * it is a magic number because the alternative is a third grid column that exists only to hold
  * an indent.
  */
 .pick .sub {
   grid-column: 1 / -1;
   grid-row: 2;
-  padding-left: 25px;
+  padding-left: 28px;
   color: var(--ink-dim);
   font-size: 12px;
   min-width: 0;
@@ -2962,35 +2969,44 @@ html {
 }
 
 /*
- * A socket, on the panel — the rack's `.rack-jack-ring` / `.rack-jack-hole` treatment in two
- * box-model properties instead of two circles: the border is the bezel, the background is the
- * hole. Same colours, so the picker and the rack draw the same object.
+ * The checkbox, painted as a socket.
  *
- * **Live lights the ring; the hole stays black.** That is the rack's vocabulary and this had
- * its own — a disc that filled when patched — which is one claim said two ways, the failure
- * #138 warns about in as many words. A hole you can see is also what makes it read as a socket
- * rather than a bullet.
+ * **It replaces the checkbox visually and *is* the checkbox to the app.** Selecting a device is
+ * patching it in, so one control says that once rather than a tick box with an ornament beside
+ * it. `appearance: none` changes the paint and nothing else: it is still `input[type=checkbox]`,
+ * still named by its wrapping label, still in the focus order, still inside `.pick-choose`'s
+ * 44px target (#112). #138's constraint was that cables must be drawn *around* the real control,
+ * never in place of it — this is that constraint, met by restyling rather than replacing.
  *
- * Inside the row, because that is where a socket is on real hardware, and out of flow, because
- * `.pick`'s two-column grid is #112's and its two 44px targets are not to be re-run. The row's
- * left padding makes the panel for it to sit on.
+ * The form is the rack's own jack: border is the bezel, background is the hole. Checked seats a
+ * plug in it — an inset ring, so the state is a **shape** change and not only a colour one
+ * (WCAG 1.4.1), which also means it survives a palette with no hue.
  */
 .pick-jack {
-  position: absolute;
-  left: 15px;
-  top: 17px;
-  width: 11px;
-  height: 11px;
+  appearance: none;
+  -webkit-appearance: none;
   border-radius: 50%;
-  border: 1.5px solid #4a5158;
+  border: 2px solid #4a5158;
   background: #000;
-  z-index: 1;
+  cursor: pointer;
 }
 
-/* Binary, like the rack's `data-live`. What kind of run it is and which run it is are the
-   cable's job; a four-state jack would say the same thing a second time. */
-.pick-jack:not([data-patched='free']) {
+.pick-jack:checked {
   border-color: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+
+/* The clock source is the one box nothing runs *to*. A brighter bezel says it is the origin
+   without inventing a second shape for it. */
+.pick-jack[data-patched='source'] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--accent), 0 0 0 2px var(--accent-dim, rgba(255, 106, 61, 0.35));
+}
+
+/* Focus must stay obvious once the browser's own ring is gone with `appearance`. */
+.pick-jack:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .patchbay {
@@ -3053,14 +3069,22 @@ html {
      Setting only the border left every jack a hollow ring under forced colours, so the one
      piece of state the socket carries was lost in exactly the mode that needs it most.
      `CanvasText` fills; `Canvas` leaves the ring open. */
-  /* The bezel is the only thing that can carry state here: a black hole and a filled disc are
-     the same shape once the palette is two colours. Ring lit means patched, as above. */
+  /*
+   * `appearance: none` controls are the classic thing that vanishes here, so the socket is
+   * given system colours explicitly and the plug stays an inset ring — a shape, which survives
+   * a two-colour palette where a hue would not.
+   */
   .pick-jack {
-    border-color: GrayText;
+    border-color: CanvasText;
     background: Canvas;
   }
 
-  .pick-jack:not([data-patched='free']) {
+  .pick-jack:checked {
     border-color: CanvasText;
+    box-shadow: inset 0 0 0 3px CanvasText;
+  }
+
+  .pick-jack[data-patched='source'] {
+    box-shadow: inset 0 0 0 3px CanvasText;
   }
 }
