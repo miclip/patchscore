@@ -2942,42 +2942,55 @@ html {
 
 .picker-list {
   position: relative;
-  padding-left: 20px;
 }
 
+/*
+ * The row gains a **cable lane** down its left edge: enough panel for the socket and for a run
+ * to arc in without reaching the text.
+ *
+ * Drawn first with a narrow lane and the cables bowed across the row faces, which is what the
+ * reference does — and looking at it settled that the reference's case is not ours. There the
+ * cables cross module artwork; here they crossed the checkbox and clipped the device names to
+ * "roovebox" and "ecipes". §8 reads this at a rack in poor light, so the text wins and the
+ * cables get their own lane.
+ *
+ * Padding, not a third grid column: the columns are #112's and both 44px targets are untouched.
+ */
 .pick {
   position: relative;
+  padding-left: 46px;
 }
 
-/* A ring when free, filled when patched — the whole vocabulary, and it stays legible small. */
+/*
+ * A socket, on the panel — the rack's `.rack-jack-ring` / `.rack-jack-hole` treatment in two
+ * box-model properties instead of two circles: the border is the bezel, the background is the
+ * hole. Same colours, so the picker and the rack draw the same object.
+ *
+ * **Live lights the ring; the hole stays black.** That is the rack's vocabulary and this had
+ * its own — a disc that filled when patched — which is one claim said two ways, the failure
+ * #138 warns about in as many words. A hole you can see is also what makes it read as a socket
+ * rather than a bullet.
+ *
+ * Inside the row, because that is where a socket is on real hardware, and out of flow, because
+ * `.pick`'s two-column grid is #112's and its two 44px targets are not to be re-run. The row's
+ * left padding makes the panel for it to sit on.
+ */
 .pick-jack {
   position: absolute;
-  left: -14px;
-  top: 18px;
-  width: 9px;
-  height: 9px;
+  left: 15px;
+  top: 17px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
-  border: 1.5px solid var(--edge-2, #4a4f57);
-  background: var(--panel);
+  border: 1.5px solid #4a5158;
+  background: #000;
   z-index: 1;
 }
 
-.pick-jack[data-patched='source'] {
+/* Binary, like the rack's `data-live`. What kind of run it is and which run it is are the
+   cable's job; a four-state jack would say the same thing a second time. */
+.pick-jack:not([data-patched='free']) {
   border-color: var(--accent);
-  background: var(--accent);
-}
-
-.pick-jack[data-patched='clock'],
-.pick-jack[data-patched='audio'],
-.pick-jack[data-patched='either'] {
-  border-color: var(--text-2, #9aa1ab);
-  background: var(--text-2, #9aa1ab);
-}
-
-/* Free means nothing runs to it. Left hollow on purpose — the same empty socket the rack
-   draws, which is invariant 5 in a drawing rather than a sentence. */
-.pick-jack[data-patched='free'] {
-  background: transparent;
 }
 
 .patchbay {
@@ -3040,12 +3053,14 @@ html {
      Setting only the border left every jack a hollow ring under forced colours, so the one
      piece of state the socket carries was lost in exactly the mode that needs it most.
      `CanvasText` fills; `Canvas` leaves the ring open. */
+  /* The bezel is the only thing that can carry state here: a black hole and a filled disc are
+     the same shape once the palette is two colours. Ring lit means patched, as above. */
   .pick-jack {
-    border-color: CanvasText;
-    background: CanvasText;
+    border-color: GrayText;
+    background: Canvas;
   }
 
-  .pick-jack[data-patched='free'] {
-    background: Canvas;
+  .pick-jack:not([data-patched='free']) {
+    border-color: CanvasText;
   }
 }

@@ -98,7 +98,9 @@ export function PatchCables({ bay, listRef }: { bay: Patchbay; listRef: React.Re
        * separate by eye rather than overlapping — the same reason VCV's slack differs per cable.
        */
       const span = Math.abs(to.y - from.y)
-      const bow = Math.min(64, 22 + span * 0.16) + (i % 3) * 9
+      // Clamped to the row's cable lane. A wider arc reads better in isolation and crosses the
+      // device name, which is the trade §8 settles in the text's favour.
+      const bow = Math.min(20, 9 + span * 0.07) + (i % 3) * 4
       const c1y = from.y + (to.y - from.y) * 0.18
       const c2y = from.y + (to.y - from.y) * 0.82
       drawn.push({
