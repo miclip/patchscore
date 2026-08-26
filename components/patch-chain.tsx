@@ -93,6 +93,22 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
   const svgRef = useRef<SVGSVGElement | null>(null)
   const paths = useRef(new Map<string, SVGPathElement>())
   const frame = useRef<number | undefined>(undefined)
+  /**
+   * What was last written, so a scroll frame writes only what actually moved.
+   *
+   * Every write into the document dirties layout, and the next frame's `getBoundingClientRect`
+   * then forces a synchronous reflow to answer — read, write, read, write, at scroll frequency.
+   * That is the jitter, and it is why these caches exist rather than as micro-optimisation.
+   */
+  const lastBox = useRef<string | undefined>(undefined)
+  const lastPath = useRef(new Map<string, string>())
+  /**
+   * Column bands are a property of the *layout*, not of any list's scroll position: panels do
+   * not move when rows inside one of them scroll. Measuring all seven of them on every scroll
+   * event was the bulk of the per-frame read cost, so they are cached and refreshed only when
+   * something actually reflows.
+   */
+  const bandsRef = useRef<Band[] | undefined>(undefined)
   /** Only which links exist — never where. Changes on a click, never on a frame. */
   const [ids, setIds] = useState<readonly string[]>([])
 
@@ -153,7 +169,8 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
 
     const out = at('out')
     const direction = at('direction')
-    const bands = columnBands(area, box)
+    if (bandsRef.current === undefined) bandsRef.current = columnBands(area, box)
+    const bands = bandsRef.current
 
     const geometry = (a: Point, b: Point): string => {
       const lane = laneBetween(a, b, bands)
@@ -188,12 +205,16 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
         ? prev
         : next.map((l) => l.id),
     )
-    if (svg !== null) {
+    const boxKey = `${r(box.width)}x${r(box.height)}`
+    if (svg !== null && boxKey !== lastBox.current) {
+      lastBox.current = boxKey
       svg.setAttribute('width', r(box.width))
       svg.setAttribute('height', r(box.height))
       svg.setAttribute('viewBox', `0 0 ${r(box.width)} ${r(box.height)}`)
     }
     for (const link of next) {
+      if (lastPath.current.get(link.id) === link.d) continue
+      lastPath.current.set(link.id, link.d)
       for (const suffix of ['casing', 'core']) {
         paths.current.get(`${link.id}:${suffix}`)?.setAttribute('d', link.d)
       }
@@ -221,6 +242,9 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
      * scroll-linked, and nothing is chasing them.
      */
     const schedule = () => {
+      // A reflow is the one thing that can move the columns, so the bands are dropped here and
+      // nowhere else. Scrolling a list cannot move a panel.
+      bandsRef.current = undefined
       if (frame.current !== undefined) cancelAnimationFrame(frame.current)
       frame.current = requestAnimationFrame(measure)
     }
