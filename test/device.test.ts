@@ -318,6 +318,94 @@ describe('Device manifest (§2.3)', () => {
     expect(DeviceSchema.safeParse(bogus).success).toBe(false)
   })
 
+  /**
+   * §2.3/§7.4. **Clock is directional, and `transport` alone could not say so.**
+   *
+   * The Mother-32 receives clock over MIDI DIN and sends it only as pulses at `OUT · ASSIGN`; it
+   * has no MIDI output of any kind. With one list for both directions §7.4 ranked it at
+   * `midi-din` and the guide named a socket the box does not have. These are the rules that keep
+   * the two lists from drifting back into meaning nothing.
+   */
+  describe('directional clock transports (§2.3)', () => {
+    const clocked = (clock: Record<string, unknown>) => DeviceSchema.safeParse(device({ clock } as never))
+
+    it('takes a box whose two directions run on different wires', () => {
+      const parsed = clocked({
+        canSendClock: true,
+        canReceiveClock: true,
+        transport: ['midi-din', 'analog-clock'],
+        sendTransport: ['analog-clock'],
+        receiveTransport: ['midi-din', 'analog-clock'],
+      })
+      expect(parsed.success).toBe(true)
+    })
+
+    it('leaves a symmetric box exactly as it was, with both fields omitted', () => {
+      // The whole point of making these optional: twelve manifests said what they meant before
+      // directions existed and still do. A required field here would have been a rewrite of every
+      // one of them to state something none of them needed to distinguish.
+      expect(clocked({ canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'] }).success).toBe(true)
+    })
+
+    it('refuses a direction list without the capability it describes', () => {
+      // The same refusal `preferredSource` and `sourceSetup` already get. A field the engine
+      // would never read is how a manifest comes to claim something nothing acts on.
+      expect(
+        clocked({ canSendClock: false, canReceiveClock: true, transport: ['usb'], sendTransport: ['usb'] }).success,
+      ).toBe(false)
+      expect(
+        clocked({ canSendClock: true, canReceiveClock: false, transport: ['usb'], receiveTransport: ['usb'] }).success,
+      ).toBe(false)
+    })
+
+    it('refuses a direction that widens `transport` rather than narrowing it', () => {
+      // `transport` stays the complete list, so everything still reading it — the device page,
+      // the jack cross-checks — is reasoning from the whole box and not from half of it.
+      expect(
+        clocked({
+          canSendClock: true,
+          canReceiveClock: true,
+          transport: ['midi-din'],
+          sendTransport: ['analog-clock'],
+        }).success,
+      ).toBe(false)
+    })
+
+    it('refuses a transport that neither direction carries', () => {
+      // Only checkable with both lists present; with one absent it defaults to all of
+      // `transport` and the union is total by construction.
+      expect(
+        clocked({
+          canSendClock: true,
+          canReceiveClock: true,
+          transport: ['midi-din', 'usb', 'analog-clock'],
+          sendTransport: ['analog-clock'],
+          receiveTransport: ['midi-din'],
+        }).success,
+      ).toBe(false)
+    })
+
+    it('refuses a sourceSetup for a transport the box can only receive on', () => {
+      // #104's setup is the switch that makes a box *emit*. Against the undirected list this
+      // could not be caught: `midi-din` is on the box, just not on its output.
+      const parsed = clocked({
+        canSendClock: true,
+        canReceiveClock: true,
+        transport: ['midi-din', 'analog-clock'],
+        sendTransport: ['analog-clock'],
+        receiveTransport: ['midi-din', 'analog-clock'],
+        sourceSetup: [{ transport: 'midi-din', path: 'SETUP > CLOCK', value: 'On' }],
+      })
+      expect(parsed.success).toBe(false)
+      // Asserted on the message, because this fixture also trips §2.6's "every setup has an
+      // evidence entry" rule — and a refusal for the wrong reason is a test that stops testing
+      // this one the moment the evidence is filled in.
+      expect(
+        parsed.success ? [] : parsed.error.issues.map((i) => i.message),
+      ).toContain('every clock.sourceSetup transport must be one this box can send over')
+    })
+  })
+
   it("refuses a clock-carrying jack whose signal list omits 'clock' (§3.3)", () => {
     // `signal` and `clock` answer different questions — what is in the cable, and which wire
     // protocol carries it — and this is the one place they are not free of each other. A

@@ -137,8 +137,12 @@ describe('rack geometry (§10)', () => {
     const model = rackModel(real, { perRow: DEVICES.length })
     const rails = new Set(model.panels.map((p) => p.topMm + p.riseMm))
     expect(rails.size).toBe(1)
-    // Not vacuous: every one of these boxes is a genuinely different depth.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length)
+    // Not vacuous: these are genuinely different depths, bar one group of three. The MC-101, the
+    // Mother-32 and the DFAM all stand 133 mm deep — the two Moogs because they are the same 60 HP
+    // enclosure, the Roland by coincidence — and each figure is read off its own maker's dimension
+    // table rather than copied across. Still asserted as an exact count rather than
+    // `toBeGreaterThan(1)`: a rise silently dropped to a shared default is what this line catches.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 2)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -162,7 +166,12 @@ describe('rack geometry (§10)', () => {
     expect(model.rightGutterMm).toBe(0)
     expect(model.totalMm).toBe(expected - PANEL_GAP_MM)
     const spans = model.panels.reduce((sum, p) => sum + p.spanMm, 0)
-    expect(model.totalMm).toBe(spans + PANEL_GAP_MM * (model.panels.length - 1))
+    // The same total reached a second way, and the reason this one is not exact: the model
+    // accumulates span-then-gap panel by panel, while this multiplies the gap out. Both are
+    // right, and with a span like the Mother-32's 319.3 in the sum they differ in the last bit
+    // of a double. Six decimal places of a millimetre is a nanometre — far below any geometry
+    // this file claims, and still tight enough to fail on a genuinely wrong total.
+    expect(model.totalMm).toBeCloseTo(spans + PANEL_GAP_MM * (model.panels.length - 1), 6)
     expect(model.frontPanelMm).toBe(spans)
   })
 
@@ -902,7 +911,7 @@ describe('rack view', () => {
 
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(10)
+    expect(fields).toHaveLength(12)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

@@ -9,6 +9,7 @@ import {
   moodState,
   citationSentence,
   rangeDocuments,
+  receiveTransports,
   renderGuide,
   resolve,
   type AuthoredParam,
@@ -826,19 +827,45 @@ describe('rig integration (§7.4)', () => {
 
     // And absent when nothing in the rig is deaf, or the loop above is checking a sentence the
     // renderer prints unconditionally.
-    const hearing = DEVICES.filter((d) => d.clock.canReceiveClock)
+    //
+    // **Every box that can follow *over the resolved transport*, not merely every box that can
+    // receive** (§7.4). Filtering on the capability alone left the Metropolix in — it is not deaf,
+    // it has `usb` and `analog-clock` and no MIDI DIN at all, every MIDI socket it can reach being
+    // an accessory — so this rig kept an exemption clause and the assertion below was reading a
+    // sentence that was still qualified. Filtered by receive transport, and the source's transport
+    // pinned rather than assumed, so the rig genuinely is one where everything follows.
+    const hearing = DEVICES.filter((d) => receiveTransports(d).includes('midi-din'))
     expect(hearing.some((d) => d.clock.canSendClock)).toBe(true)
-    const clean = phaseBody(
-      renderGuide(resolve({ devices: hearing, template, mood: NEUTRAL_MOOD, seed: 1 })),
-      3,
-    ).join('\n')
-    expect(clean).not.toContain('cannot receive clock')
-    expect(clean).toContain('Sync everything else to it.')
+    const clean = resolve({ devices: hearing, template, mood: NEUTRAL_MOOD, seed: 1 })
+    expect(clean.clockSource?.transport).toBe('midi-din')
+    const cleanBody = phaseBody(renderGuide(clean), 3).join('\n')
+    expect(cleanBody).not.toContain('cannot receive clock')
+    expect(cleanBody).not.toContain('runs free')
+    expect(cleanBody).toContain('Sync everything else to it.')
   })
 
-  // The exemption clause must not appear when it is not true of anything in the rig.
-  it('says plain "Sync everything else to it" when every other box can follow', () => {
-    expect(phaseBody(renderGuide(golden()), 3).join('\n')).toContain('Sync everything else to it.')
+  /**
+   * §7.4. **The second reason a box cannot obey "sync to it": the wire, not the capability.**
+   *
+   * The golden fixture is exactly this case and always was — `A-cascade` receives clock over
+   * `usb` and nothing else, while the rig resolves `midi-din` — and the guide said "Sync
+   * everything else to it." flat, because the clause was written against `canReceiveClock` and
+   * the Cascade answers that `true`. The rack's `isolationReason` had asked the narrower question
+   * since it was written, so the diagram drew the box as unreachable while the sentence above it
+   * said to sync it. One of the two was wrong about the fixture for as long as both existed.
+   *
+   * This is not a Mother-32 problem. It is what made the Mother-32's asymmetry worth a schema
+   * change rather than a comment: the shipped registry has a box with no MIDI DIN at all (the
+   * Metropolix, whose every MIDI socket is an accessory), and the full rig was telling a reader
+   * to sync it over MIDI DIN.
+   */
+  it('exempts a box that receives clock but not over the transport this rig resolved', () => {
+    const body = phaseBody(renderGuide(golden()), 3).join('\n')
+    expect(body).toContain('Golden Cascade')
+    expect(body).toContain('has no `midi-din` input and runs free')
+    // Not the deaf clause: this box receives clock perfectly well, over a wire this rig is not
+    // using. Saying "cannot receive clock" about it would be a different claim, and false.
+    expect(body).not.toContain('cannot receive clock')
   })
 
   it('derives mixer channels from declared outs alone', () => {

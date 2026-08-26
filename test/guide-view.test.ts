@@ -58,6 +58,23 @@ const real = resolve({
 })
 
 /**
+ * #107's two scopes, pinned to the two boxes that declare them: the Tracker Mini's `SWING` is
+ * authored pattern-wide and the Deluge's song-wide, and no other device in the library declares
+ * the second. Two devices rather than the whole registry, because the whole registry does not
+ * reliably *use* the Deluge: `industrial-techno`'s kick is an exact tie across several boxes —
+ * every key of the `Score` vector is equal — so which one takes it is decided by §7.2's seeded
+ * permutation over the tied set. That permutation is a function of the catalogue, so adding any
+ * unrelated device can leave the Deluge idle and quietly empty this assertion of its subject.
+ * Naming the two boxes makes the rig say what it is testing, and survives the next device.
+ */
+const bothScopes = resolve({
+  devices: DEVICES.filter((d) => d.id === 'polyend-tracker-mini' || d.id === 'synthstrom-deluge'),
+  template: industrialTechno,
+  mood: NEUTRAL_MOOD,
+  seed: 1,
+})
+
+/**
  * One box, one voice, twelve requests: a rig that is mostly holes. The full library fills every
  * request the golden template makes, so a gap assertion needs a rig that does not.
  */
@@ -663,9 +680,10 @@ describe('pattern-global settings are set once per device, not once per part (#1
     // copies of a sentence drift, and nothing else in the build would notice: the Markdown side
     // is pinned byte for byte by the goldens while the web side is pinned by nothing at all.
     //
-    // `real` rather than the landing rig, because it is the only one carrying both scopes — the
-    // Deluge's `SWING` is authored song-wide and no landing device declares that value.
-    const both = [text(html(real)), renderGuide(real)]
+    // `bothScopes` rather than the landing rig or `real`: the landing rig carries only the
+    // pattern-wide half, and `real` carries the song-wide half only when a seeded tie happens
+    // to land the kick on the Deluge. See the rig's own note above.
+    const both = [text(html(bothScopes)), renderGuide(bothScopes)]
     for (const doc of both) {
       expect(doc).toContain('Pattern-wide')
       expect(doc).toContain('One setting for the whole pattern — set it once, not once per part below.')
@@ -991,10 +1009,38 @@ describe('#121 the page states the clock topology the Markdown states', () => {
   })
 
   /**
+   * §7.4. **The second reason a box cannot obey "sync to it", and it is not a capability.**
+   *
+   * A box can receive clock perfectly well and still have no socket for *this rig's* wire. The
+   * Metropolix is the library's case and not a contrived one: it declares `usb` and
+   * `analog-clock` and no MIDI DIN at all, because every MIDI socket it can reach is an
+   * accessory you buy. In a rig clocked over MIDI DIN it is as unreachable as a box with no
+   * clock input, and the guide told the reader to sync it anyway.
+   *
+   * Kept apart from the deaf clause on purpose. "Cannot receive clock" is false about this box,
+   * and a reader who believes it goes looking for a fault in the wrong place.
+   */
+  it('names a box that receives clock but not over this rig\'s transport, in its own words', () => {
+    const page = text(html(rigOf('polyend-tracker-mini', 'intellijel-metropolix')))
+    expect(page).toContain('Sync everything else to it, except Metropolix')
+    expect(page).toContain('has no `midi-din` input and runs free')
+    // The other clause must not appear: this box is not deaf.
+    expect(page).not.toContain('cannot receive clock')
+  })
+
+  it('says the two reasons separately when a rig has both', () => {
+    const page = text(html(rigOf('polyend-tracker-mini', 'intellijel-metropolix', 'zoom-livetrak-l-8')))
+    expect(page).toContain('Zoom LiveTrak L-8, which cannot receive clock and runs free')
+    expect(page).toContain('Metropolix, which has no `midi-din` input and runs free')
+  })
+
+  /**
    * And the sentence stays plain where every box can obey it. An exception clause on a rig with
    * no exception is the mirror of the bug above: ink that says a thing the rig does not do.
    */
-  it('adds no exception clause when every other box can receive clock', () => {
+  it('adds no exception clause when every other box can follow over this transport', () => {
+    // Both boxes take clock over `midi-din`, which is what this rig resolves — the assertion is
+    // about the transport now, not only about the capability.
     const page = text(html(rigOf('polyend-tracker-mini', 'roland-tr-1000')))
     expect(page).toContain('Sync everything else to it.')
     expect(page).not.toContain('except')

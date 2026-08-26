@@ -173,6 +173,11 @@ export const device: Device = {
 
   clock: {
     canSendClock: true, canReceiveClock: true, transport: ['midi-din', 'usb'],
+    // §2.3. `transport` is every wire this box carries clock on, **in either direction**, and on
+    // almost every box that is the whole answer. Where the two directions differ, two optional
+    // subsets say which is which; both omitted means symmetric, which is what this box is.
+    //   sendTransport: ['analog-clock'],              // the Mother-32: pulses at OUT · ASSIGN
+    //   receiveTransport: ['midi-din', 'analog-clock'],  // and it takes MIDI clock as well
     // §7.4/#104. Optional, and only for a box whose clock output is behind a setting. Per
     // transport, in the box's own words, with a page. The Tracker Mini's reads
     //   { transport: 'midi-din', path: 'Config > MIDI > Clock Out',
@@ -2088,8 +2093,43 @@ final value, so wherever the comparison stops it stops in the bound's favour or 
 | `major-key-electro`, worst of eight seeds | 15,580 | 2,298 — exhaustive |
 | synthetic 12 roles, whole registry | beyond 380,000 | ~2,000 — exhaustive |
 
-**This replaces pool-ordinal symmetry breaking as the thing that keeps a realistic rig out of the
-greedy fallback**, and the claim below has to be read in that light. The fixture that motivated
+#### The floor is recomputed against live occupancy (#78)
+
+**Precomputing it once stopped being good enough at sixteen devices, and the key it stopped
+bounding was `roleFitPenalty`.** That key is the role's index within `voice.roles`; with a library
+that size, almost every role sits at index 0 on *some* box, so a floor that drops occupancy lets
+every remaining request take a zero at once. `industrial-techno`'s optimum is 17. A floor of 0
+against an optimum of 17 prunes nothing, and the search went to 195,951 nodes against a 150,000
+cap and fell back to greedy on all twenty-four of its seeds — losing `recipeDistance` 0 against
+1,414, which is the difference between every part getting its exact character and one not.
+
+So the floor is now built **per node, against the occupancy the search has actually made**, taking
+each remaining request's cheapest candidate that is still free. Admissible for one reason:
+occupancy only ever grows within a descent, so a candidate taken now is taken in every completion
+below, and every completion must fill each remaining request from something free *now*.
+Restricting a minimisation's domain can only raise the minimum, so this is `≥lex` the static floor
+term by term and therefore summed — strictly better, never wrong. A request whose candidates have
+all been taken is charged an outright miss, which the static floor could only do for a request
+with no candidates at all.
+
+Two deliberate optimisms remain, both the safe direction: `distinct` is not consulted, and stack
+plans are costed as though their members were free, because which members a plan gets is decided
+per node.
+
+**Measured, over seven templates by twenty-four seeds at sixteen devices**: worst case 195,951 →
+**66,155** nodes, capped in 24 of 168 rigs → **none**. The `full-rig` guide fixture went from
+capped-and-greedy to exhaustive in 58,869. Raising the cap was measured and rejected instead: the
+growth is about 1.4× per added one-voice device, so any raise that survived the five-device issue
+in flight would have been ~3.3×, and trimming the device that exposed it was rejected too — with a
+single role it still needed 148,372 nodes, so the smallest voice-bearing device the schema allows
+had already consumed the headroom.
+
+`test/search.test.ts` checks it against `bruteForceBest` on rigs shaped to make it bite — several
+one-voice boxes contending for the same few assignables, including one where the locally-best
+first choice is globally wrong and the optimum is only reachable by backtracking.
+
+**The suffix bound replaces pool-ordinal symmetry breaking as the thing that keeps a realistic rig
+out of the greedy fallback**, and the claim below has to be read in that light. The fixture that motivated
 symmetry breaking — eight parts over an eight-track pool — used to hit the cap with the ordinals
 left in; it now finishes in 45 nodes with them left in, because the suffix bound alone is enough.
 Scaling does not bring the cap back: 24 tracks and 24 parts is 325 nodes.
@@ -2418,6 +2458,41 @@ heading that has already said it.
 
 ### 7.4 Clock source
 
+#### Clock is directional
+
+`ClockSpec` carried **one** transport list for both directions, and read as "this is how clock
+moves in and out of this box". That is true of almost every box and false of one: the Mother-32
+receives clock over MIDI DIN and over an analog clock at `IN · TEMPO`, and sends it only as pulses
+out of `OUT · ASSIGN`. It has no MIDI output of any kind. The two sets do not merely differ, they
+do not intersect.
+
+The ranking below reads a transport off the source, so with one list it read the wrong one: a rig
+choosing that box printed **"Clock source — Mother-32 over `midi-din`. Sync everything else to
+it."** over a socket the instrument does not have. That is invariant 5's failure in the one place
+a reader cannot check it against the panel — there is no socket there to check — and it took the
+box's `sourceSetup` down with it, since #104's entry is per transport and the only one authored
+was for `analog-clock`. The guide named a clock source and printed no way to turn it on.
+
+So `clock.sendTransport` and `clock.receiveTransport` (§2.3), both optional subsets of
+`transport`, which keeps its meaning as **every wire the box carries clock on in either
+direction**. Three rules hold them honest, all in `DeviceSchema`: a direction list requires the
+capability it describes, it may only narrow `transport`, and with both declared their union must
+be all of `transport` — a wire in neither carries no clock. `sourceSetup` now has to name a
+**send** transport, which is a check the undirected list could not make.
+
+**Optional, because the asymmetry is rare and stating it should be.** Every manifest that was
+symmetric omits both fields and means exactly what it meant before. Read them through
+`sendTransports` / `receiveTransports` and never off the fields: the defaults are rules, not data,
+and a consumer that reimplements them is how the distinction gets lost again.
+
+**It was never only about the Mother-32.** The shipped registry already had a box with no MIDI DIN
+at all — the Metropolix, whose every MIDI socket is an accessory you buy — and the full rig was
+telling a reader to sync it over MIDI DIN. §10's `isolationReason` had asked the narrow question
+since it was written, so the rack drew that box as unreachable while the sentence above it said to
+sync it. One of the two had been wrong for as long as both existed.
+
+#### Ranking
+
 `canSendClock`, then **one semantic key and two tie-breaks**:
 
 1. `clock.preferredSource` (§2.3) — the manifest's own topology judgement, "this box's job in a
@@ -2428,8 +2503,12 @@ heading that has already said it.
    is not even eligible. Nor does §2.3's `sequencer` kind make it derivable — a sequencer following
    a DAW is still a follower — and `groovebox` least of all: the library has four, and #80 found
    that one of them qualifies.
-2. Transport preference (`midi-din` > `usb`).
+2. Transport preference (`midi-din` > `usb`), over the transports the box can **send** on.
 3. `deviceId` ascending by UTF-16 code unit (§7.2).
+
+Where a box sends only on a transport the preference list does not rank — `analog-clock` today —
+the answer is that box's own first send transport. Never `transport[0]`: that is the undirected
+list, and it is the line the whole defect above would come back through.
 
 Keys 2 and 3 exist to make the answer **deterministic**, not to make it right. Only key 1 carries
 a judgement, and it is a person's.

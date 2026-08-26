@@ -1,7 +1,7 @@
 import type { Device } from '@/lib/core'
 import type { DeviceId } from '@/lib/core'
 import type { Cite, Provenance, ResolvedParam, ResolvedRange } from '@/lib/core'
-import { STEPS_PER_BAR, sameCite } from '@/lib/core'
+import { STEPS_PER_BAR, canFollow, clockWires, sameCite } from '@/lib/core'
 import type { Gap, ResolvedHook, ResolvedNote } from '@/lib/core'
 import type { FxSource } from '@/lib/core'
 
@@ -209,10 +209,17 @@ export function adviceText(gap: Gap, deviceById: Map<DeviceId, Device>): string 
  * **Transports are suppressed where the box has no clock at all.** Naming a wire implies a clock
  * travels on it, and for a box that neither sends nor receives, none does.
  */
-export type ClockParts = { claim: string; transport?: string }
+export type ClockParts = {
+  claim: string
+  /** Both directions, on one list. Present unless the box has no clock, or the two differ. */
+  transport?: string
+  /** The two directions, when they are not the same wires. See `clockWires`. */
+  send?: string
+  receive?: string
+}
 
 export function clockParts(device: Device): ClockParts {
-  const { canSendClock, canReceiveClock, transport } = device.clock
+  const { canSendClock, canReceiveClock } = device.clock
   const claim = canSendClock
     ? canReceiveClock
       ? 'sends clock'
@@ -221,16 +228,28 @@ export function clockParts(device: Device): ClockParts {
       ? 'receives clock only'
       : 'no clock in or out'
   // Split rather than joined, so §10 survives: the claim is prose and the transports are
-  // identifiers, and one face for both is exactly what §10 forbids. They are still decided
-  // together, here, because whether a wire may be named at all depends on the claim.
-  if (!canSendClock && !canReceiveClock) return { claim }
-  return { claim, transport: transport.join('/') }
+  // identifiers, and one face for both is exactly what §10 forbids. The direction labels a split
+  // box needs are prose too, so they are the component's to write and never baked in here.
+  const wires = clockWires(device)
+  if (wires.kind === 'none') return { claim }
+  if (wires.kind === 'both') return { claim, transport: wires.transport.join('/') }
+  return { claim, send: wires.send.join('/'), receive: wires.receive.join('/') }
 }
 
-/** The same four states as one string, for the tests and for anything without two slots. */
+/**
+ * The same four states as one string, for the tests and for anything without two slots.
+ *
+ * **Both wire shapes, not just the shared one.** This read `parts.transport` alone, so a box
+ * whose two directions differ — the only field that can be absent while wires exist — came back
+ * as a bare claim with the transports silently dropped. Nothing caught it: this export has no
+ * callers today, and the sweep in `device-catalogue.test.ts` was pinning the other two
+ * restatements against the guide while this one drifted beside them.
+ */
 export function clockText(device: Device): string {
   const parts = clockParts(device)
-  return parts.transport === undefined ? parts.claim : `${parts.claim} · ${parts.transport}`
+  if (parts.transport !== undefined) return `${parts.claim} · ${parts.transport}`
+  if (parts.send !== undefined) return `${parts.claim} · out: ${parts.send} · in: ${parts.receive}`
+  return parts.claim
 }
 
 /**
@@ -243,13 +262,36 @@ export function clockText(device: Device): string {
  * The source itself is excluded: it is not synced to anything, so it is not an exception to
  * being synced.
  */
-export function syncText(devices: readonly Device[], sourceId: DeviceId): string {
-  const deaf = devices.filter((d) => d.id !== sourceId && !d.clock.canReceiveClock)
-  if (deaf.length === 0) return 'Sync everything else to it.'
-  return (
-    `Sync everything else to it, except ${andList(deaf.map((d) => d.name))}, ` +
-    `which cannot receive clock and ${deaf.length === 1 ? 'runs' : 'run'} free.`
-  )
+export function syncText(
+  devices: readonly Device[],
+  sourceId: DeviceId,
+  transport: string,
+): string {
+  const others = devices.filter((d) => d.id !== sourceId)
+  const deaf = others.filter((d) => !d.clock.canReceiveClock)
+  // The second reason, and it did not exist as a category until clock became directional: a box
+  // that takes clock happily, but not on the wire this rig resolved. The rack's `isolationReason`
+  // has always drawn this distinction; the sentence beside it collapsed both into "cannot receive
+  // clock", which is wrong about a box that receives fine over another transport.
+  const unwired = others.filter((d) => d.clock.canReceiveClock && !canFollow(d, transport))
+  const clauses: string[] = []
+  if (deaf.length > 0) {
+    clauses.push(
+      `${andList(deaf.map((d) => d.name))}, which cannot receive clock and ` +
+        `${deaf.length === 1 ? 'runs' : 'run'} free`,
+    )
+  }
+  if (unwired.length > 0) {
+    clauses.push(
+      `${andList(unwired.map((d) => d.name))}, which ${unwired.length === 1 ? 'has' : 'have'} ` +
+        `no \`${transport}\` input and ${unwired.length === 1 ? 'runs' : 'run'} free`,
+    )
+  }
+  if (clauses.length === 0) return 'Sync everything else to it.'
+  // Each clause carries its own "runs free" rather than one shared tail. With both kinds present
+  // a shared tail would have to reach back across two different reasons, and a reader skimming at
+  // the machine would have to hold the whole sentence to know which boxes it covers.
+  return `Sync everything else to it, except ${clauses.join(', and ')}.`
 }
 
 export function ioText(device: Device): string {

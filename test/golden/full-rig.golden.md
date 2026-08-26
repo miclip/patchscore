@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → Deluge · Track 1 — *Kit-row kick, bass lifted, edge from decimation*
+- **`kick`** → DFAM · Voice — *Square kick with the pitch envelope doing the whole thump*
   - p1 · exact `hard` · every section
 - **`sub`** → MC-101 · TONE Track 1 — *Sine sub, one note at a time, nothing above the fundamental*
   - p1 · exact `dark` · every section
@@ -61,7 +61,7 @@ None.
 
 ## 3. Rig integration
 
-**Clock source** — Tracker Mini over `midi-din`, carrying 0 parts. Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8, which cannot receive clock and run free.
+**Clock source** — Tracker Mini over `midi-din`, carrying 0 parts. Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8, which cannot receive clock and run free, and Metropolix and DFAM, which have no `midi-din` input and run free.
 
 - Why this box — 2 boxes here claim that job, so transport, then name, settled it · manual
   - ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.283
@@ -78,6 +78,10 @@ None.
 - gate: Metropolix `TRK 2 · GATE` → Cascadia `EXT IN · GATE`
 
 - Why this box sends them — its manual says leading a rig is its job
+
+**Not driven** — Metropolix offers 2 pitch-and-gate pairs and this rig needs more. DFAM is left unpatched:
+
+- DFAM `IN · VCO 1 CV` and `IN · RUN / STOP` — nothing to plug in. Play it from its own keyboard or sequencer.
 
 - **CRAVE** — semi-modular · 1 part
   - clock: receives clock only · midi-din/usb
@@ -103,6 +107,16 @@ None.
   - clock: sends clock · midi-din/usb/sync
   - audio: stereo main out
   - mixer: 1 part, no individual outs: one stereo channel for all
+- **DFAM** — semi-modular · 1 part
+  - clock: sends clock · analog-clock
+  - audio: mono main out · audio in
+  - mixer: 1 part, no individual outs: one mono channel for all
+- **Mother-32** — semi-modular · 0 parts
+  - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
+  - MIDI IN: The only MIDI connector on the box: input only, 5-pin DIN, on the front panel · manual
+    - ↳ cite: value manual — Moog Mother-32 User Manual (Version 2), p.54
+  - audio: mono main out · audio in
+  - mixer: no parts assigned; nothing to patch
 - **Subsequent 37** — synth · 1 part
   - clock: sends clock · midi-din/usb
   - audio: mono main out · audio in
@@ -125,10 +139,10 @@ None.
   - clock: sends clock · midi-din/usb/trigger
   - audio: stereo main out · 6 individual outs · USB audio · audio in
   - mixer: 3 parts, 6 individual outs: one channel each
-- **Deluge** — groovebox · 1 part
+- **Deluge** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: stereo main out · audio in
-  - mixer: 1 part, no individual outs: one stereo channel for all
+  - mixer: no parts assigned; nothing to patch
 - **Model 2400** — mixer-recorder · 0 parts
   - clock: sends clock, cannot receive · midi-din/usb
   - audio: stereo main out · 8 individual outs · USB audio · audio in
@@ -186,9 +200,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 ## 5. Step programming
 
-### `kick` — Deluge · Track 1
+### `kick` — DFAM · Voice
 
-**Kit-row kick, bass lifted, edge from decimation** — settings in Sound design
+**Square kick with the pitch envelope doing the whole thump** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -213,10 +227,12 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — Deluge
+**On this box** — DFAM
 
-- `accent` → `velocity` 127 on step 9
-  - ↳ hint: Hold the note pad, turn (SELECT)
+- `accent` → `velocity` 88 on step 9
+  - ↳ hint: Turn that step’s VELOCITY knob
+- `ghost` → `velocity` 34 on steps 8, 16
+  - ↳ hint: Turn that step’s VELOCITY knob
 
 ### `sub` — MC-101 · TONE Track 1
 
@@ -645,6 +661,53 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **EFFECTS · DEPTH** `62` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
 
+### DFAM
+
+*Values below cite Moog DFAM Owner’s Manual.*
+
+#### Voice — `kick`: Square kick with the pitch envelope doing the whole thump
+
+Routing — Plays its own 8-step analog sequencer. Clock it at ADV / CLOCK — one step per rising edge, and the TEMPO knob is then ignored. No patch cable: the VCO envelope is normalled to both oscillators and VCO 1 EG AMOUNT is the only thing that decides how far the pitch falls
+
+- **VCO 1 FREQUENCY** `22` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCO 1 WAVE** `SQUARE`
+- **VCO 1 LEVEL** `82` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCO 2 FREQUENCY** `50` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCO 2 WAVE** `TRIANGLE`
+- **VCO 2 LEVEL** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **NOISE / EXT LEVEL** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCF** `LP`
+- **CUTOFF** `320` Hz (20…20000 Hz)
+  - ↳ cite: range manual — Moog DFAM Owner’s Manual, p.18
+- **RESONANCE** `34` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCF DECAY** `90` ms (10…10000 ms)
+  - ↳ cite: range manual — Moog DFAM Owner’s Manual, p.19
+- **VCF EG AMOUNT** `26` % travel from centre (-100…100 % travel from centre)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCA EG** `FAST`
+- **VCA DECAY** `26` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCO DECAY** `16` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCO 1 EG AMOUNT** `46` % travel from centre (-100…100 % travel from centre)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCO 2 EG AMOUNT** `0` % travel from centre (-100…100 % travel from centre)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **SEQ PITCH MOD** `VCO 1&2`
+- **HARD SYNC** `OFF`
+- **1→2 FM AMOUNT** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **NOISE / VCF MOD** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VOLUME** `76` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+
 ### Subsequent 37
 
 *Values below cite Subsequent 37 User's Manual.*
@@ -945,38 +1008,6 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
   - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
   - ↳ hint: INST Edit > DelaySend
 
-### Deluge
-
-*Values below cite Deluge Official Guidebook OS 4.1 (OLED) and Deluge community firmware release_1_2_1, community_features.md.*
-
-**Content**
-
-- Ships a factory library on the supplied SD card — look in SAMPLES/ARTISTS and SAMPLES/DRUMS. p.12 marks both folders as supplied samples and never names one of them, so the Source line below says what the part needs rather than naming a file. · manual
-  - ↳ cite: claim manual — Deluge Official Guidebook OS 4.1 (OLED), p.12
-
-**Song-wide**
-
-One setting for the whole song — set it once, not once per part below.
-
-- **SWING** `50` % (1…99 %)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
-  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
-  - ↳ hint: Hold [SHIFT], turn (TEMPO)
-
-#### Track 1 — `kick`: Kit-row kick, bass lifted, edge from decimation
-
-Source — A dry kick one-shot with a defined attack, no room on it
-
-*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.219.*
-
-- **OSC TYPE** `Sample`
-- **REPEAT MODE** `ONCE`
-- **EQ BASS AMOUNT** `33` (0…50)
-  - ↳ note: 25 is neutral; above boosts
-- **EQ BASS FREQUENCY** `14` (0…50)
-- **DECIMATION** `6` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
-
 ## 7. Finishing
 
 **Sidechain**
@@ -995,7 +1026,7 @@ What processes audio in this rig:
 - MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and DELAY SEND and REVERB SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 - TR-8S — carries REVERB, DELAY and MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
-- Deluge — carries DECIMATION in its recipes
+- Deluge — carries effects, though no part in this guide reaches them
 - Model 2400 — is a mixer and recorder (stereo main out · 8 individual outs · USB audio · audio in)
 - Zoom LiveTrak L-8 — is a mixer and recorder (stereo main out · USB audio · audio in)
 

@@ -310,6 +310,17 @@ describe('the committed registry', () => {
       'elektron-digitakt-ii',
       'zoom-livetrak-l-8',
       'synthstrom-deluge',
+      // **A real tie, and the first one in this list that is not a coincidence.** The DFAM and
+      // the Mother-32 are the same 60 HP Moog enclosure — p.7 of the DFAM manual calls it "an
+      // addition to the Mother-32 family" — and their two manuals print the same width in
+      // different units, 12.57 inches against 31.93 cm. Both round to 319.3 mm, so `Array.sort`'s
+      // stability keeps registry order, which is folder order.
+      'moog-dfam',
+      'moog-mother-32',
+      // 319.3 against the CRAVE's 320: not a tie, and seven tenths of a millimetre apart. All
+      // three are cited — the two Moogs to Moog's own tables, the CRAVE's to Behringer's — so the
+      // order here is decided by the numbers, and a re-measurement could swap them without any
+      // citation becoming wrong.
       'behringer-crave',
       'intellijel-cascadia',
       'roland-tr-8s',

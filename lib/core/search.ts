@@ -270,6 +270,25 @@ export type AssignmentResult = {
  * the design. What the number means practically is that the next device of any size may push a
  * worst-case seed into the greedy fallback — which `SearchReport` reports rather than hides, and
  * which is the signal #78 should be picked up on.
+ *
+ * ## That signal fired, and #78 was picked up rather than the cap raised again
+ *
+ * The Moog DFAM did it: one voice and fifteen role-slots, *smaller* than the TR-1000's twenty-six,
+ * and it took `industrial-techno`'s worst seed from 108,608 nodes to **195,951**. Every seed of
+ * that template capped — 24 of the 168 rigs in a sweep of seven templates by twenty-four seeds —
+ * and greedy was strictly worse on all 24, losing `recipeDistance` 0 against 1,414: the exhaustive
+ * answer gives every one of the twelve parts an exact character and the fallback does not.
+ *
+ * The cap did **not** move, and trimming the device was measured and rejected: with a single role
+ * it still took the same seed to 148,372, so the smallest voice-bearing device the schema allows
+ * had consumed the remaining headroom. The bound was the problem, exactly as the paragraph above
+ * said it would be. `liveFloor` replaced the static suffix floor and the same sweep now tops out
+ * at **66,155 nodes with nothing capped** — a 66% cut on the worst case, and the whole sweep runs
+ * in about four and a half seconds.
+ *
+ * The two figures to size the next device against: **66,155** worst case over the shipped
+ * templates at sixteen devices, and **58,869** for the `full-rig` guide fixture, which used to be
+ * capped outright.
  */
 export const DEFAULT_NODE_CAP = 150_000
 
@@ -405,8 +424,27 @@ type Ctx = {
   /**
    * The cheapest the *remaining* requests can possibly be on the additive keys. `suffixFloor[i]`
    * covers requests i..n-1, and `suffixFloor[n]` is all zeroes so the leaf bound stays exact.
+   *
+   * Kept as the static fallback and as the thing `liveFloor` is measured against. See
+   * `ladder` below for why it stopped being the bound the search actually uses.
    */
   suffixFloor: SuffixFloor[]
+  /**
+   * §7.1/#78. Each request's candidates, **pre-sorted into the order `cheapestCandidate` picks
+   * from**, so the live floor can take the first one still free instead of re-minimising.
+   *
+   * The sort is total and deterministic — the four cost keys, then `deviceId`, then `voiceId` by
+   * code unit (§7.2) — because a ladder whose order depended on input order would make the bound,
+   * and therefore the node count, depend on it too.
+   */
+  ladder: readonly Candidate[][]
+  /**
+   * The lexicographic cheapest stack plan per request, or `undefined`. Stacks stay static in the
+   * floor: which members a plan gets is decided per node, so testing one for freeness here would
+   * mean materialising it, and treating it as always available is the *optimistic* direction —
+   * which is the safe one for a lower bound.
+   */
+  stackFloor: readonly (Cost | undefined)[]
   missSlots: number
   seed: number
   nodeCap: number
@@ -470,6 +508,83 @@ function cheapestCandidate(candidates: readonly Cost[]): Cost | undefined {
     if (candidate.roleFit < best.roleFit) best = candidate
   }
   return best
+}
+
+/**
+ * §7.1/#78. **The floor, recomputed against the occupancy the search has actually built.**
+ *
+ * `buildSuffixFloor` costs every remaining request against its *static* candidate list, with
+ * occupancy dropped. That is admissible and it was, by the time the library reached sixteen
+ * devices, very nearly vacuous on the key that decides these searches. `roleFitPenalty` is the
+ * role's index within `voice.roles`, and with sixteen boxes almost every role sits at index 0 on
+ * *some* box — so the static floor let all twelve remaining requests take a zero simultaneously
+ * and contributed nothing. The optimum for `industrial-techno` is 17. A bound of 0 against an
+ * optimum of 17 prunes nothing, which is why the node count grew the way it did.
+ *
+ * **What makes the live version admissible is that occupancy only ever grows.** `apply` adds to
+ * it and `undo` removes exactly what it added, so within one descent nothing a request cannot
+ * reach now becomes reachable deeper. Every completion of this partial state must therefore fill
+ * each remaining request from a candidate that is free *now*, and the cheapest of those is a
+ * floor on what that request will pay. Restricting a minimisation's domain can only raise the
+ * minimum, so this floor is `>=lex` the static one term by term — and lexicographic order on
+ * non-negative integer vectors is compatible with addition, so it is `>=lex` summed. It is a
+ * strictly better bound and never a wrong one.
+ *
+ * **A request with nothing free is charged an outright miss**, and that is the other half of the
+ * gain. The static floor could only charge a forced miss when a request had no candidates at
+ * all; this one charges whenever they have all been taken, on `misses`, the key that outranks
+ * everything below it.
+ *
+ * Two deliberate optimisms, both the safe direction for a lower bound: `distinct` (§12.6) is not
+ * consulted, and stack plans are costed as though their members were free. Ignoring a constraint
+ * can only widen a request's options and lower its minimum.
+ */
+function liveFloor(ctx: Ctx, state: State, from: number): SuffixFloor {
+  const misses = new Array<number>(ctx.missSlots).fill(0)
+  let optionalMisses = 0
+  let sampledChords = 0
+  let stackedChords = 0
+  let recipeDistance = 0
+  let roleFitPenalty = 0
+
+  for (let j = from; j < ctx.requests.length; j++) {
+    const request = ctx.requests[j] as RoleRequest
+    // The ladder is in `cheapestCandidate` order, so the first free entry *is* the cheapest free
+    // one. Usually that is the first entry and the walk stops immediately.
+    let best: Cost | undefined
+    for (const candidate of ctx.ladder[j] ?? []) {
+      if (isFree(ctx, state, j, candidate)) {
+        best = candidate
+        break
+      }
+    }
+    const stack = ctx.stackFloor[j]
+    if (stack !== undefined && (best === undefined || compareCost(stack, best) < 0)) best = stack
+
+    if (best === undefined) {
+      if (request.optional === true) optionalMisses += 1
+      else misses[request.priority - 1] = (misses[request.priority - 1] ?? 0) + 1
+      continue
+    }
+    sampledChords += best.sampledChord
+    stackedChords += best.stacked
+    recipeDistance += best.distance
+    roleFitPenalty += best.roleFit
+  }
+
+  return { misses, optionalMisses, sampledChords, stackedChords, recipeDistance, roleFitPenalty }
+}
+
+/**
+ * `cheapestCandidate`'s comparison, as a comparator. One definition, so the ladder's sort order
+ * and the stack-versus-single choice in `liveFloor` cannot drift apart from the minimisation
+ * `buildSuffixFloor` still does.
+ */
+function compareCost(a: Cost, b: Cost): number {
+  if (a.sampledChord !== b.sampledChord) return a.sampledChord - b.sampledChord
+  if (a.stacked !== b.stacked) return a.stacked - b.stacked
+  if (a.distance !== b.distance) return a.distance - b.distance
+  return a.roleFit - b.roleFit
 }
 
 function buildSuffixFloor(
@@ -691,6 +806,21 @@ function buildCtx(input: AssignInput): Ctx {
     stacks,
     suffixReach,
     suffixFloor,
+    // #78. The ladder is sorted once here, not per node: the candidate lists are static, so the
+    // order they are searched in is too. `deviceId` then `voiceId` after the four cost keys makes
+    // it total, so the bound cannot depend on the order `voiceable` happened to be built in.
+    ladder: voiceable.map((list) =>
+      [...list].sort(
+        (a, b) =>
+          compareCost(a, b) ||
+          compareCodeUnits(a.deviceId, b.deviceId) ||
+          compareCodeUnits(
+            (a.assignables[0] as Assignable).voiceId,
+            (b.assignables[0] as Assignable).voiceId,
+          ),
+      ),
+    ),
+    stackFloor: stacks.map((list) => cheapestCandidate(list)),
     missSlots,
     seed,
     nodeCap: input.nodeCap ?? DEFAULT_NODE_CAP,
@@ -806,7 +936,10 @@ function scoreOf(ctx: Ctx, state: State): Score {
  * exactly — the bound stays tight where it decides the incumbent.
  */
 function lowerBound(ctx: Ctx, state: State, next: number): Score {
-  const floor = ctx.suffixFloor[next] as SuffixFloor
+  // #78. The live floor, not `ctx.suffixFloor[next]`. It is `>=lex` the static one term by term
+  // — see `liveFloor` — so nothing that used to prune stops pruning, and a great deal that used
+  // to survive no longer does.
+  const floor = liveFloor(ctx, state, next)
   const reachable = ctx.suffixReach[next] ?? new Set<DeviceId>()
   let unreachableIdle = 0
   let reachableIdle = 0

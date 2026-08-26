@@ -189,7 +189,8 @@ export function PhaseRig({
         <p className="callout">
           <strong>Clock source</strong> — {source.deviceName} over{' '}
           <span className="mono">{source.transport}</span>, carrying{' '}
-          {count(source.occupiedAssignables, 'part')}. {syncText(result.devices, source.deviceId)}
+          {count(source.occupiedAssignables, 'part')}.{' '}
+          {syncText(result.devices, source.deviceId, source.transport)}
         </p>
       )}
 
@@ -270,6 +271,19 @@ export function PhaseRig({
                       <>
                         {' · '}
                         <span className="mono">{clock.transport}</span>
+                      </>
+                    )}
+                    {/*
+                      A box whose two directions run on different wires — the Mother-32 sends
+                      only over `analog-clock` and takes clock over `midi-din` too. The labels
+                      are prose and stay here; which wires they name is `clockWires`' answer.
+                    */}
+                    {clock.send === undefined ? null : (
+                      <>
+                        {' · out: '}
+                        <span className="mono">{clock.send}</span>
+                        {' · in: '}
+                        <span className="mono">{clock.receive}</span>
                       </>
                     )}
                   </dd>

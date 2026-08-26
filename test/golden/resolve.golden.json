@@ -112,7 +112,7 @@
     0
   ],
   "search": {
-    "nodes": 23,
+    "nodes": 22,
     "nodeCap": 150000,
     "capped": false,
     "method": "exhaustive"

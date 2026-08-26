@@ -1,5 +1,13 @@
 import type { CapabilityEvidence, ContentNotice, Device } from './device'
-import { clockJackNotes, clockSourceSetup, contentNotice, evidenceFor, rangeDocuments } from './device'
+import {
+  canFollow,
+  clockJackNotes,
+  clockSourceSetup,
+  clockWires,
+  contentNotice,
+  evidenceFor,
+  rangeDocuments,
+} from './device'
 import type { DeviceId, SectionName } from './ids'
 import type { Role } from './vocabulary'
 import type { Cite, ParamScope, Provenance, ResolvedParam, ResolvedRange } from './params'
@@ -765,16 +773,34 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
     out.push('so the clock has to come from something outside it.')
   } else {
     // §7.4. "Sync everything else to it" is an instruction, and some boxes cannot obey it —
-    // a device that does not receive clock runs free no matter what the source is doing.
-    // Naming them here beats leaving the reader to discover it at the machine.
-    const deaf = result.devices.filter(
-      (d) => d.id !== source.deviceId && !d.clock.canReceiveClock,
-    )
+    // a box that cannot take a clock over *the transport this rig resolved* runs free no matter
+    // what the source is doing. Naming them here beats leaving the reader to discover it at the
+    // machine, staring at a box with no socket for the cable in their hand.
+    //
+    // **Per transport, not per capability.** This read `!canReceiveClock` and so answered a
+    // different question — can this box follow *anything* — which is the right answer only when
+    // every box speaks every wire. The rack's `isolationReason` has always asked the narrower
+    // question, so the diagram and the sentence beside it could disagree; now they agree.
+    const others = result.devices.filter((d) => d.id !== source.deviceId)
+    const deaf = others.filter((d) => !d.clock.canReceiveClock)
+    const unwired = others.filter((d) => d.clock.canReceiveClock && !canFollow(d, source.transport))
+    const clauses: string[] = []
+    if (deaf.length > 0) {
+      clauses.push(
+        `${list(deaf.map((d) => d.name))}, which cannot receive clock and ` +
+          `${deaf.length === 1 ? 'runs' : 'run'} free`,
+      )
+    }
+    if (unwired.length > 0) {
+      clauses.push(
+        `${list(unwired.map((d) => d.name))}, which ${unwired.length === 1 ? 'has' : 'have'} ` +
+          `no \`${source.transport}\` input and ${unwired.length === 1 ? 'runs' : 'run'} free`,
+      )
+    }
     const sync =
-      deaf.length === 0
+      clauses.length === 0
         ? 'Sync everything else to it.'
-        : `Sync everything else to it, except ${list(deaf.map((d) => d.name))}, ` +
-          `which cannot receive clock and ${deaf.length === 1 ? 'runs' : 'run'} free.`
+        : `Sync everything else to it, except ${clauses.join(', and ')}.`
     out.push(
       `**Clock source** — ${source.deviceName} over \`${source.transport}\`, ` +
         `carrying ${count(source.occupiedAssignables, 'part')}. ${sync}`,
@@ -852,9 +878,16 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
       : device.clock.canReceiveClock
         ? 'receives clock only'
         : 'no clock in or out'
-    const clock = device.clock.canSendClock || device.clock.canReceiveClock
-      ? [clockText, device.clock.transport.join('/')].join(' · ')
-      : clockText
+    // #103. The wires, and — for a box whose two directions differ — which way each one goes.
+    // The Mother-32 is why the labelled form exists: one list read "sends clock ·
+    // midi-din/analog-clock" on a box with no MIDI output at all.
+    const wires = clockWires(device)
+    const clock =
+      wires.kind === 'none'
+        ? clockText
+        : wires.kind === 'both'
+          ? [clockText, wires.transport.join('/')].join(' · ')
+          : [clockText, `out: ${wires.send.join('/')}`, `in: ${wires.receive.join('/')}`].join(' · ')
 
     out.push(`- **${device.name}** — ${device.kind} · ${count(parts, 'part')}`)
     out.push(`  - clock: ${clock}`)

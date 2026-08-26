@@ -16,6 +16,7 @@ import {
   provenanceSentence,
   rolesCovered,
 } from '../lib/studio/device-page'
+import { clockText as guideClockText } from '../components/guide/format'
 import { auditDevice, citedDocument, rangeDocuments } from '../lib/studio/provenance'
 import { PanelFigure } from '../components/rack/panel-figure'
 import { soloPanel } from '../components/rack/model'
@@ -129,6 +130,13 @@ describe('what the page says about a device', () => {
 
   it('says the same about clock as the rendered guide does', () => {
     // A restatement of `lib/core/render.ts`'s four cases, so something has to hold them together.
+    //
+    // **All three restatements, not two.** `components/guide/format.ts` carries a third copy for
+    // the React side, and it was pinned by nothing — so when clock became directional it kept
+    // reading the shared-wire field alone and returned a bare claim for a split box, dropping the
+    // transports entirely. It has no callers today, which is exactly why the drift was silent and
+    // exactly why it belongs in this sweep: the next thing to import it would have inherited the
+    // bug rather than discovered it.
     const result = resolve({
       devices: [...DEVICES],
       template: TEMPLATES[0] as (typeof TEMPLATES)[number],
@@ -138,6 +146,7 @@ describe('what the page says about a device', () => {
     const guide = renderGuide(result)
     for (const device of DEVICES) {
       expect(guide, device.id).toContain(`clock: ${clockText(device)}`)
+      expect(guideClockText(device), device.id).toBe(clockText(device))
     }
   })
 
