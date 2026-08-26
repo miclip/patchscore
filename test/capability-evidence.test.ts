@@ -525,14 +525,18 @@ describe('the library after the migration', () => {
     expect(evidenceFor(tr1000, 'features.perStep')).toMatchObject({
       source: expect.stringContaining('p.17-18'),
     })
-    // Two documents, so two paths. One citation covering both booleans would have named one
-    // book and implied the other.
-    expect(evidenceFor(tr1000, 'features.sidechain.fromExternalAudio')).toMatchObject({
-      source: expect.stringContaining('Owner’s Manual'),
-    })
-    expect(evidenceFor(tr1000, 'features.sidechain.internal')).toMatchObject({
-      source: expect.stringContaining('Reference Manual'),
-    })
+    // Both halves come off Reference p.56, whose SIDE CHAIN `SOURCE` row enumerates the trigger
+    // and is exhaustive. The external half used to cite Owner's p.30 and used to say `true`:
+    // that page lists "Apply a side chain" among the things you can do *to* EXTERNAL IN audio,
+    // which is the signal being ducked rather than the trigger the field records.
+    for (const path of ['features.sidechain.internal', 'features.sidechain.fromExternalAudio']) {
+      expect(evidenceFor(tr1000, path), path).toMatchObject({
+        source: expect.stringContaining('Reference Manual'),
+      })
+      expect(evidenceFor(tr1000, path), path).toMatchObject({
+        source: expect.stringContaining('p.56'),
+      })
+    }
     // No page cites `comfortableVoices`, and there is no slot to try. p.14 says ten; eight is a
     // musical judgement (§12.4).
     expect(evidenceFor(tr1000, 'comfortableVoices' as never)).toBeUndefined()

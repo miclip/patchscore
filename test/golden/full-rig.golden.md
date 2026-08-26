@@ -1041,10 +1041,9 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
 
 **Sidechain**
 
-- Cascadia — from external audio
-- TR-1000 — internal, from external audio
-- TR-8S — internal
-- Deluge — internal
+The Cascadia can duck to another box: patch the box you want it to follow into its audio in.
+
+The TR-1000, TR-8S and Deluge duck from their own parts only.
 
 **Master FX**
 

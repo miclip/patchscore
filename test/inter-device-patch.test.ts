@@ -340,6 +340,9 @@ describe('one voice-control source per rig (§3.3)', () => {
       transport: 'midi-din',
       occupiedAssignables: 0,
       claims: 0,
+      // #144. Two boxes here can send clock; this pass reads neither field, and a fixture that
+      // said `1` would be describing a different rig from the one it built.
+      eligible: 2,
     })
     expect(byClock.source?.deviceId).toBe('a-plain')
     expect(byClock.source?.basis).toBe('clock-source')

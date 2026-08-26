@@ -1,9 +1,10 @@
 import type { Device } from '@/lib/core'
 import type { DeviceId } from '@/lib/core'
 import type { Cite, Provenance, ResolvedParam, ResolvedRange } from '@/lib/core'
-import { STEPS_PER_BAR, canFollow, clockWires, sameCite } from '@/lib/core'
+import { STEPS_PER_BAR, clockFollowing, clockWires, sameCite } from '@/lib/core'
 import type { Gap, ResolvedHook, ResolvedNote } from '@/lib/core'
-import type { FxSource } from '@/lib/core'
+import type { FxSource, SidechainReading } from '@/lib/core'
+import { noDuckers, pumpIsBoxByBox } from '@/lib/core'
 
 /**
  * #33. The web guide's formatting, kept free of JSX so it can be tested directly.
@@ -253,27 +254,32 @@ export function clockText(device: Device): string {
 }
 
 /**
- * §7.4/#121. "Sync everything else to it" is an instruction, and **some boxes cannot obey it**.
+ * §7.4/#121/#144. **"Sync everything else to it"**, and the two rigs where that is not a sentence.
  *
- * A device that does not receive clock runs free whatever the source is doing, and the page said
- * so nowhere — it printed the bare instruction and left a reader to discover the exception at the
- * machine, holding a rig where two boxes are drifting. Naming them costs one clause.
+ * #121 added the exception clause: a box that does not receive clock — or receives it, but not
+ * over the wire this rig resolved — runs free whatever the source is doing, and the page said so
+ * nowhere. It printed the bare instruction and left a reader to discover the exception at the
+ * machine, holding a rig where two boxes are drifting.
  *
- * The source itself is excluded: it is not synced to anything, so it is not an exception to
- * being synced.
+ * #144 is the layer under that: the instruction addresses *everything else*, and this printed it
+ * without asking whether "everything else" had members. At a one-box rig it has none, so the page
+ * told somebody holding a single Deluge to cable up a rack they do not own. At a rig where every
+ * other box is exempted, "sync everything else to it, except A and B" over a rig of exactly A and
+ * B says *sync nothing* in the grammar of an instruction — the harder of the two to catch,
+ * because every word of it is individually true.
+ *
+ * The split itself is `clockFollowing`'s, decided once for both renderers; the words are this
+ * file's, which is the standing rule here. Restated from `lib/core/render.ts` exactly as `ioText`
+ * and `mixerText` are, and `test/guide-view.test.ts` holds the two to the same facts.
  */
 export function syncText(
   devices: readonly Device[],
   sourceId: DeviceId,
   transport: string,
 ): string {
-  const others = devices.filter((d) => d.id !== sourceId)
-  const deaf = others.filter((d) => !d.clock.canReceiveClock)
-  // The second reason, and it did not exist as a category until clock became directional: a box
-  // that takes clock happily, but not on the wire this rig resolved. The rack's `isolationReason`
-  // has always drawn this distinction; the sentence beside it collapsed both into "cannot receive
-  // clock", which is wrong about a box that receives fine over another transport.
-  const unwired = others.filter((d) => d.clock.canReceiveClock && !canFollow(d, transport))
+  const following = clockFollowing(devices, sourceId, transport)
+  if (following.alone) return 'Nothing else is here to sync to it.'
+  const { deaf, unwired } = following
   const clauses: string[] = []
   if (deaf.length > 0) {
     clauses.push(
@@ -287,10 +293,15 @@ export function syncText(
         `no \`${transport}\` input and ${unwired.length === 1 ? 'runs' : 'run'} free`,
     )
   }
-  if (clauses.length === 0) return 'Sync everything else to it.'
   // Each clause carries its own "runs free" rather than one shared tail. With both kinds present
   // a shared tail would have to reach back across two different reasons, and a reader skimming at
-  // the machine would have to hold the whole sentence to know which boxes it covers.
+  // the machine would have to hold the whole sentence to know which boxes it covers. That holds
+  // in the nothing-can-follow sentence too, which is why it names the boxes rather than stopping
+  // at "nothing else here can follow it".
+  if (following.followers.length === 0) {
+    return `Nothing else here can follow it: ${clauses.join(', and ')}.`
+  }
+  if (clauses.length === 0) return 'Sync everything else to it.'
   return `Sync everything else to it, except ${clauses.join(', and ')}.`
 }
 
@@ -312,6 +323,70 @@ export function ioText(device: Device): string {
 export function andList(items: readonly string[]): string {
   if (items.length < 2) return items.join('')
   return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1] as string}`
+}
+
+/**
+ * §8 phase 7's sidechain sentences. Restated from `lib/core/render.ts` exactly as `fxText` and
+ * `mixerText` are: `lib/core/sidechain.ts` decides which boxes duck to what, and each renderer
+ * writes the sentences from that grouping. `test/guide-view.test.ts` holds the two to the same
+ * facts.
+ *
+ * Prose rather than a list, because the old list was the problem: one line per box reading
+ * `internal` said the same word for a box you can patch a trigger into and a box you cannot,
+ * and never said where the cable goes. Ordered by what the reader can act on — the cable first,
+ * the boxes needing no cable second, an undocumented trigger last.
+ */
+export function sidechainSentences(reading: SidechainReading): string[] {
+  if (noDuckers(reading)) return ['No box in this rig has a sidechain.']
+  const out: string[] = []
+  const external = reading.fromOtherBoxes
+  const first = external[0]
+  if (reading.alone && first !== undefined) {
+    // One box: there is no other box to patch in, so the instruction would name a cable the
+    // reader cannot make (#144's shape, one section up).
+    out.push(
+      first.alsoSelf
+        ? `The ${first.name} ducks from its own parts, or from audio at its input — and it is ` +
+            'the only box here to feed that input.'
+        : `The ${first.name} ducks from audio at its input, and nothing else is here to feed it.`,
+    )
+  } else if (external.length > 0) {
+    out.push(
+      `The ${andList(external.map((d) => d.name))} can duck to another box: patch the box you ` +
+        `want ${external.length === 1 ? 'it' : 'each'} to follow into its audio in.`,
+    )
+    const both = external.filter((d) => d.alsoSelf)
+    if (both.length > 0) {
+      out.push(
+        `The ${andList(both.map((d) => d.name))} can also duck from ` +
+          `${both.length === 1 ? 'its' : 'their'} own parts.`,
+      )
+    }
+  }
+  const self = reading.selfOnly
+  const alone = self[0]
+  if (self.length > 0 && alone !== undefined) {
+    const one = self.length === 1
+    const only = external.length === 0 ? '' : ' only'
+    out.push(
+      reading.alone && one
+        ? `The ${alone.name} ducks from its own parts, and it is the only box here.`
+        : `The ${andList(self.map((d) => d.name))} ${one ? 'ducks' : 'duck'} from ` +
+            `${one ? 'its' : 'their'} own parts${only}.`,
+    )
+  }
+  if (pumpIsBoxByBox(reading)) {
+    out.push('Nothing here ducks to another box, so a rig-wide pump is built box by box.')
+  }
+  const unstated = reading.unstated
+  if (unstated.length > 0) {
+    const one = unstated.length === 1
+    out.push(
+      `The ${andList(unstated.map((d) => d.name))} ${one ? 'declares' : 'declare'} a sidechain ` +
+        `and ${one ? 'documents' : 'document'} no trigger for it.`,
+    )
+  }
+  return out
 }
 
 /**

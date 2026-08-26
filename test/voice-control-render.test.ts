@@ -9,6 +9,7 @@ import { Rack } from '../components/rack/rack'
 import { rackModel } from '../components/rack/model'
 import { device as cascadia } from '../lib/devices/intellijel-cascadia/index'
 import { device as crave } from '../lib/devices/behringer-crave/index'
+import { device as dfam } from '../lib/devices/moog-dfam/index'
 import { device as metropolix } from '../lib/devices/intellijel-metropolix/index'
 import { device as trackerMini } from '../lib/devices/polyend-tracker-mini/index'
 import { TEMPLATES } from '../lib/templates/index'
@@ -268,6 +269,39 @@ describe('both rig renderers instruct the reader (§3.3)', () => {
     // And not the clock block's own opening, which asks a different question. Two lines starting
     // the same way on one page is the readability problem #35 is about.
     expect(md.match(/Why this box —/g) ?? []).toHaveLength(1)
+  })
+
+  /**
+   * #144, one tier below the clock block and the same rule: a sentence may not assert a
+   * comparison the rig never held. "Nothing here claims that job, so the names settled it" says a
+   * ranking by name decided, and a rig where exactly one box offers a note-and-gate pair ranked
+   * nothing — the sort ran over a list of one.
+   *
+   * `ranked` counts every pair offered anywhere in the rig and `candidates` counts the source's,
+   * so the two are equal exactly in that case. Real manifests, not a fixture: the DFAM takes
+   * pitch and gate and offers none, and the CRAVE offers the rig's only pair while not being the
+   * clock source, so the old sentence's `tie-break` branch is genuinely what this rig reaches.
+   */
+  it('does not say the names settled it where only one box offered a pair (#144)', () => {
+    const sole = run([crave, dfam])
+    const source = sole.interDevicePatch.source
+    expect(sole.interDevicePatch.outcome).toBe('routed')
+    expect(source).toMatchObject({ deviceId: 'behringer-crave', basis: 'tie-break' })
+    expect(source?.ranked).toBe(source?.candidates)
+
+    for (const doc of [renderGuide(sole), text(guideHtml(sole))]) {
+      expect(doc).toContain(
+        'it is the only box here that sends a note and a gate together',
+      )
+      expect(doc).not.toContain('so the names settled it')
+    }
+
+    // And the tie-break sentence is still what a rig with something to rank gets, or the absence
+    // above would be pinning a sentence no rig ever prints. Two boxes offer a pair here and
+    // neither claims the job, so the ids are what actually decided.
+    const ranked = run([crave, cascadia, dfam])
+    const against = ranked.interDevicePatch.source
+    expect(against?.ranked).toBeGreaterThan(against?.candidates ?? 0)
   })
 
   it('says the same facts on the page, in the page’s own words', () => {

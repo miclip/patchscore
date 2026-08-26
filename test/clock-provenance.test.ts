@@ -60,8 +60,19 @@ const pick = (...ids: string[]) => DEVICES.filter((d) => ids.includes(d.id))
  */
 const CLAIMED = pick('polyend-tracker-mini', 'roland-tr-1000')
 
-/** No claim anywhere. One box, and it is the source because it is the only candidate. */
-const TIE_BREAK = pick('roland-tr-1000')
+/**
+ * No claim anywhere, and **two boxes eligible**, which is what makes it a tie-break at all.
+ *
+ * It was one box until #144, and the comment beside it said so — "one box, and it is the source
+ * because it is the only candidate". That is the defect stated in the fixture's own words: with a
+ * single candidate the sort ran over a list of one, and the sentence this rig was pinning claimed
+ * that transport and then name had settled something. Both boxes send over `midi-din`, so the
+ * transport key ties and the name key genuinely decides — `roland-tr-1000` before `roland-tr-8s`.
+ */
+const TIE_BREAK = pick('roland-tr-1000', 'roland-tr-8s')
+
+/** #144. The one-box rig the fixture above used to be, kept as its own case rather than lost. */
+const SOLE = pick('roland-tr-1000')
 
 /**
  * Two honest claims — the Metropolix and the Tracker Mini, the library's only two. §7.4 has no
@@ -96,6 +107,47 @@ describe('§7.4/#121 the guide says what the clock source rests on', () => {
       'Why this box — nothing here claims that job, so transport, then name, settled it',
     )
     expect(tieBreak).not.toContain('its manual says leading a rig is its job')
+  })
+
+  /**
+   * #144. **A tie-break needs something to break a tie against.**
+   *
+   * "Nothing here claims that job, so transport, then name, settled it" is three facts, and at a
+   * rig with one box that can send clock the last two are false: nothing was compared, because
+   * there was nothing to compare it with. The reader is holding the whole rack and can see that,
+   * which is what makes the sentence worse than merely redundant — it describes a deliberation
+   * over boxes they do not own.
+   *
+   * Asserted in both renderers, and asserted as an absence as well as a presence: a renderer that
+   * simply appended a new sentence would still contain the old one and pass on `toContain` alone.
+   */
+  it('says a sole candidate was the only candidate, not that a tie-break settled it (#144)', () => {
+    expect(result(SOLE).clockSource?.eligible).toBe(1)
+    expect(result(TIE_BREAK).clockSource?.eligible).toBe(2)
+
+    for (const doc of [guide(SOLE), text(SOLE)]) {
+      expect(doc).toContain('Why this box — it is the only box here that can send clock')
+      expect(doc).not.toContain('settled it')
+      // And the evidence still lands: the basis changed, not the box's own reading of itself.
+      expect(doc).toContain('no page states that leading a rig is its job')
+    }
+  })
+
+  /**
+   * #144's boundary, and the reason the rule is about *comparison* rather than about rig size. A
+   * sole candidate that claims the job keeps the claimed sentence unchanged: "its manual says
+   * leading a rig is its job" is a fact about the box, true whether it was ranked against ten
+   * others or against none. Only a sentence saying something was *settled* needs candidates to
+   * have settled it against — so this rig, one box and eligible of one, is left exactly alone.
+   */
+  it('leaves a sole candidate’s claim alone, because a claim asserts no comparison (#144)', () => {
+    const sole = pick('polyend-tracker-mini')
+    expect(result(sole).clockSource).toMatchObject({ eligible: 1, claims: 1 })
+    for (const doc of [guide(sole), text(sole)]) {
+      expect(doc).toContain('Why this box — its manual says leading a rig is its job')
+      expect(doc).not.toContain('settled it')
+      expect(doc).not.toContain('only box here that can send clock')
+    }
   })
 
   it('names two claims as two claims rather than ranking them (Markdown)', () => {

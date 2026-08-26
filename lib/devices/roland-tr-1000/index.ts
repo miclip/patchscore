@@ -646,7 +646,24 @@ export const device: Device = {
       'weak',
       'alt-inst',
     ],
-    sidechain: { internal: true, fromExternalAudio: true },
+
+    /**
+     * **`fromExternalAudio` was `true` and it was the page read backwards.** The field records
+     * where the *trigger* comes from, which is the TR-8S comment's point and this box's trap in
+     * the same words: Owner's p.30 lists "Apply a side chain" among the things you can do to the
+     * audio arriving at EXTERNAL IN, so external audio there is the signal being **ducked**,
+     * never the thing doing the ducking. The trigger is enumerated on the other page and the
+     * enumeration is exhaustive — Reference p.56's SIDE CHAIN `SOURCE`, *"Selects the instrument
+     * that is used as the trigger for the side chain effect"*, values `OFF, BD (A,B)–RC`, every
+     * one of them one of this box's own instruments. Reference p.36 says it again in prose:
+     * *"You can use the pattern (note data) of one track to automatically control the volume of
+     * another track"*.
+     *
+     * The cost of the old value was a sentence a reader could act on and get nothing from: §8
+     * phase 7 offered a cable into EXTERNAL IN to pump the rig off this box, and there is no
+     * such feature.
+     */
+    sidechain: { internal: true, fromExternalAudio: false },
   },
 
   /**
@@ -670,11 +687,13 @@ export const device: Device = {
    *   p.30    the synchronization chapter: receives MIDI clock, drives MIDI devices, and
    *           "the output can be set to the DIN sync protocol"
    *
-   * `features.sidechain` is split across two documents and therefore across two paths, which is
-   * the case the map's per-fact keying exists for: the external half is p.30's "Apply a side
-   * chain" to EXTERNAL IN audio, and the internal half is the Reference Manual's SIDE CHAIN
-   * block, whose `SOURCE  OFF, BD (A,B)–RC` selects the instrument that triggers it. One
-   * citation covering both booleans would have named one book and implied the other.
+   * `features.sidechain` was split across two documents and no longer is, and the split was the
+   * shape of the error. The external half cited Owner's p.30 — "Apply a side chain", one item in
+   * a list of things you can do *to* EXTERNAL IN audio — for a field that records where the
+   * trigger comes from. The Reference Manual's SIDE CHAIN block answers both halves at once and
+   * exhaustively: `SOURCE  OFF, BD (A,B)–RC` is the instrument that triggers it, and external
+   * audio is not among the values. Two paths, one page — and the per-fact keying is what let one
+   * of them be corrected without disturbing the other.
    *
    * `comfortableVoices` is deliberately not here. Eight is a musical judgement about this box
    * (§12.4) and no page states it; a slot to cite it in would only invite citing p.14, which
@@ -709,8 +728,8 @@ export const device: Device = {
     voices: owner(14),
 
     'features.perStep': owner('17-18'),
-    'features.sidechain.fromExternalAudio': owner(30),
     'features.sidechain.internal': cite(56),
+    'features.sidechain.fromExternalAudio': cite(56),
     /**
      * §2.6's read-and-silent state, and the reason it exists — `unknown` in the strictest sense,
      * which is why #120 left it exactly where it was while three states grew around it. This is

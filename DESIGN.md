@@ -2622,7 +2622,12 @@ nothing (§8):
   settled it.* §7.4 has no basis to rank two honest claims and this is where it says so out loud;
   the repair is for one manifest to stop claiming it, and a reader cannot ask for that repair from
   a line that reads like advice.
-- **`tie-break`** (none) — *nothing here claims that job, so transport, then name, settled it.*
+- **`tie-break`** (none) — *nothing here claims that job, so transport, then name, settled it* —
+  **except where the box was the only candidate**, which is #144 below. `ClockSource.eligible`
+  carries how many boxes were eligible at all, and where that is one the line reads *it is the
+  only box here that can send clock*: nothing was ranked, so nothing was settled. `claimed` and
+  `contested` are untouched by that rule and the difference is the rule itself — a claim asserts
+  no comparison, and `contested` cannot arise below two candidates.
 
 Three rules on the ink, all of them #35's lesson:
 
@@ -2880,6 +2885,44 @@ Do not reorder.
    `unused` is emitted only when nothing else speaks for the box, so a `MASTER FX` silkscreen is
    never followed by a weaker restatement of itself. *Nothing in this rig processes audio* now
    means what it says — no box in the rig has effects at all
+
+#### A statement has to have referents (#144)
+
+**A sentence may name a set only where the rig has members of it.** §8 is read *at the machine*,
+and a reader standing in front of one box can see the whole rack — which is what makes this class
+of defect worse than clumsy rather than merely verbose. It reached four sentences, in three
+phases, and not one of them failed a test, because every assertion in the suite had been written
+against a rig large enough for the sentence to be true. A Deluge alone on `drone-study` read:
+
+- *Sync everything else to it.* — there is no everything else. And one step less obviously, *sync
+  everything else to it, except A and B* over a rig of exactly A and B is an instruction to sync
+  nothing, written in the grammar of an instruction to do something. §7.4 now carries
+  `clockFollowing`, which splits the rig into `followers`, `deaf` and `unwired`; the sentence is
+  chosen by whether `followers` has members, never printed and then qualified. The exempted boxes
+  are still named in every branch — a reader wants to know *which* box runs free far more than
+  they want the clause to be short
+- *Why this box — nothing here claims that job, so transport, then name, settled it* — two
+  tie-breaks named, over a field of one candidate, neither of which ran. See the `eligible` rule
+  above, and its sibling one tier down in §3.3: *nothing here claims that job, so the names
+  settled it* has the same defect where `VoiceControlSource.ranked` equals `candidates`, meaning
+  no other box offered a note-and-gate pair at all
+- *nothing else in this rig processes audio* — a claim about the other boxes, made to a reader who
+  owns none. A one-box rig reads *it is the only box here, so that is the whole master chain*,
+  which is the fact worth stating in its place rather than an absence of one
+- *Deluge — internal* under Sidechain — the field printed where an answer belongs. `lib/core/
+  sidechain.ts` groups the rig by *where a trigger can come from*: boxes that can duck to another
+  box's audio and have a jack for it to arrive at, boxes whose only documented trigger is one of
+  their own parts, and boxes that declare the feature with neither. The one-box rig gets the
+  honest version of the first group rather than an instruction to patch a box that is not there,
+  and a multi-box rig where nothing can duck to anything else is told a rig-wide pump is built box
+  by box — which is the fact `internal` was hiding, since the same word covered a box you can
+  patch a trigger into and a box you cannot. Boxes declaring no sidechain are not listed as having
+  none: a missing `features.sidechain` is an absence of documentation as often as an absence of
+  capability (invariant 5)
+
+The derivations live in `lib/core/` — `clockFollowing` in `pipeline.ts`, `sidechain.ts` beside
+`fx.ts` — and each renderer writes its own sentences from them, which is §8's standing rule about
+ink and the reason the two cannot drift on *which* boxes a sentence covers.
 
 **Terminology.** Clock roles are `canSendClock` / `canReceiveClock` and the guide says *clock
 source* and *sync to it*. Never master/slave. "Master FX" and "master bus" stay — that is the

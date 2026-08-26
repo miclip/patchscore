@@ -84,6 +84,20 @@ export type ClockSource = {
    * Rendered, never ranked — like `occupiedAssignables`, and for the same reason.
    */
   claims: number
+  /**
+   * §7.4/#144. **How many boxes were eligible at all** — how many declare `canSendClock`.
+   *
+   * `claims` says what the ranking's one semantic key found; this says whether there was
+   * anything to rank. The two are different questions and only the second one can be zero-sum:
+   * with one eligible box the sort ran over a list of one, nothing was compared, and "transport,
+   * then name, settled it" names two tie-breaks that never fired. That sentence is #144's shape
+   * — a statement whose subject (the boxes it was ranked against) has no referents in this rig.
+   *
+   * Carried rather than re-derived for the reason `claims` is: the renderer decides nothing, and
+   * a renderer recomputing `canSendClock` over the rig would be a second copy of the eligibility
+   * filter three lines below, free to drift from it.
+   */
+  eligible: number
 }
 
 /**
@@ -200,6 +214,66 @@ export function selectClockSource(
     transport: (TRANSPORT_PREFERENCE[rank] ?? sends[0] ?? '') as string,
     occupiedAssignables: occupied.get(winner.id) ?? 0,
     claims,
+    eligible: capable.length,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// §7.4/#144 Who can actually follow the source
+// ---------------------------------------------------------------------------
+
+/**
+ * §7.4/#144. **The rig split by whether it can obey "sync everything else to it".**
+ *
+ * The instruction has a subject — *everything else* — and both renderers were writing it without
+ * ever asking whether that subject had members. At a rig of one box it has none, and the guide
+ * told a reader standing in front of a single Deluge to sync a rack that is not there. The same
+ * sentence fails one step less obviously at a rig where every other box is exempted: "sync
+ * everything else to it, except A and B" over a rig of exactly A and B says *sync nothing*, in
+ * words that read like an instruction to do something.
+ *
+ * So the split is computed once, here, and each renderer writes its own sentences from it — the
+ * standing rule `fx.ts` and `sidechain.ts` already follow, and the reason it matters here is that
+ * the two renderers previously each carried their own copy of `deaf`/`unwired` and could have
+ * drifted on which boxes were exempt.
+ *
+ * **`followers` is not `others` minus the two exemption lists, spelled differently.** It is the
+ * positive predicate, computed the same way the exemptions are, so a future third exemption
+ * cannot be added to the clauses and silently left out of the count that decides which sentence
+ * gets printed. The three lists partition `others` today and a test holds them to it.
+ */
+export type ClockFollowing = {
+  /** Boxes that can take this rig's clock, on the transport this rig actually resolved. */
+  followers: readonly Device[]
+  /** Boxes that receive no clock on any wire, so they run free whatever the source does. */
+  deaf: readonly Device[]
+  /** Boxes that receive clock, but not over this rig's transport. */
+  unwired: readonly Device[]
+  /**
+   * One box in the rig. There is no "everything else" to address, and — unlike an empty
+   * `followers` with a non-empty rig — nothing to name as an exception either.
+   */
+  alone: boolean
+}
+
+export function clockFollowing(
+  devices: readonly Device[],
+  sourceId: DeviceId,
+  transport: string,
+): ClockFollowing {
+  // The source itself is excluded throughout: it is not synced to anything, so it is neither a
+  // follower nor an exception to being one.
+  const others = devices.filter((d) => d.id !== sourceId)
+  return {
+    followers: others.filter((d) => d.clock.canReceiveClock && canFollow(d, transport)),
+    deaf: others.filter((d) => !d.clock.canReceiveClock),
+    // The second exemption, and it did not exist as a category until clock became directional: a
+    // box that takes clock happily, but not on the wire this rig resolved. The rack's
+    // `isolationReason` has always drawn this distinction; the sentence beside it used to
+    // collapse both into "cannot receive clock", which is wrong about a box that receives fine
+    // over another transport.
+    unwired: others.filter((d) => d.clock.canReceiveClock && !canFollow(d, transport)),
+    alone: others.length === 0,
   }
 }
 
