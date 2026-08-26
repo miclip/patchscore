@@ -105,13 +105,22 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 2 bars in F minor.
 
-- bar 1 · step 1 · len 3 · `F1` · root · MIDI 29
-- bar 1 · step 7 · len 2 · `F1` · root · MIDI 29
-- bar 1 · step 11 · len 3 · `Bb1` (`A#1`) · 4th · MIDI 34
-- bar 1 · step 15 · len 2 · `F1` · root · MIDI 29
-- bar 2 · step 17 · len 3 · `F1` · root · MIDI 29
-- bar 2 · step 23 · len 2 · `Db2` (`C#2`) · 6th · MIDI 37
-- bar 2 · step 27 · len 4 · `C2` · 5th · MIDI 36
+No note-length field on this box — a note runs until the next note on the same voice, and `OFF` is how you stop one sooner. The rows below are what you enter, in the order you enter them. · manual
+- ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.105
+
+- bar 1 · step 1 · `F1` · root · MIDI 29
+- bar 1 · step 4 · `OFF`
+- bar 1 · step 7 · `F1` · root · MIDI 29
+- bar 1 · step 9 · `OFF`
+- bar 1 · step 11 · `Bb1` (`A#1`) · 4th · MIDI 34
+- bar 1 · step 14 · `OFF`
+- bar 1 · step 15 · `F1` · root · MIDI 29
+- bar 2 · step 17 · `F1` · root · MIDI 29
+- bar 2 · step 20 · `OFF`
+- bar 2 · step 23 · `Db2` (`C#2`) · 6th · MIDI 37
+- bar 2 · step 25 · `OFF`
+- bar 2 · step 27 · `C2` · 5th · MIDI 36
+- bar 2 · step 31 · `OFF`
 
 ### `pad` — Tracker Mini · Track 5, Track 6 and Track 7
 
@@ -119,27 +128,30 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 8 bars in F minor.
 
+No note-length field on this box — a note runs until the next note on the same voice, and `OFF` is how you stop one sooner. The rows below are what you enter, in the order you enter them. · manual
+- ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.105
+
 Stacked chord — 3 voices, one note each. There is no chord to play on any one of them.
 
 Lowest note to the lowest voice: **Track 5** takes the bottom of every chord and **Track 7** the top. Hold that order and the voicing keeps its shape as the progression moves; cross the voices over and the chord changes character between bars with nothing here saying so.
 
 **Track 5** — lowest note
 
-- bar 1 · step 1 · len 64 · `F3` · root · MIDI 53
-- bar 5 · step 65 · len 32 · `Db4` (`C#4`) · 6th · MIDI 61
-- bar 7 · step 97 · len 32 · `Eb4` (`D#4`) · 7th · MIDI 63
+- bar 1 · step 1 · `F3` · root · MIDI 53
+- bar 5 · step 65 · `Db4` (`C#4`) · 6th · MIDI 61
+- bar 7 · step 97 · `Eb4` (`D#4`) · 7th · MIDI 63
 
 **Track 6** — note 2 from the bottom
 
-- bar 1 · step 1 · len 64 · `Ab3` (`G#3`) · 3rd · MIDI 56
-- bar 5 · step 65 · len 32 · `F4` · root · MIDI 65
-- bar 7 · step 97 · len 32 · `G4` · 2nd · MIDI 67
+- bar 1 · step 1 · `Ab3` (`G#3`) · 3rd · MIDI 56
+- bar 5 · step 65 · `F4` · root · MIDI 65
+- bar 7 · step 97 · `G4` · 2nd · MIDI 67
 
 **Track 7** — highest note
 
-- bar 1 · step 1 · len 64 · `C4` · 5th · MIDI 60
-- bar 5 · step 65 · len 32 · `Ab4` (`G#4`) · 3rd · MIDI 68
-- bar 7 · step 97 · len 32 · `Bb4` (`A#4`) · 4th · MIDI 70
+- bar 1 · step 1 · `C4` · 5th · MIDI 60
+- bar 5 · step 65 · `Ab4` (`G#4`) · 3rd · MIDI 68
+- bar 7 · step 97 · `Bb4` (`A#4`) · 4th · MIDI 70
 
 ### `stab` — Tracker Mini · Track 2, Track 3 and Track 4
 
@@ -147,30 +159,45 @@ Lowest note to the lowest voice: **Track 5** takes the bottom of every chord and
 
 4 bars in F minor.
 
+No note-length field on this box — a note runs until the next note on the same voice, and `OFF` is how you stop one sooner. The rows below are what you enter, in the order you enter them. · manual
+- ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.105
+
 Stacked chord — 3 voices, one note each. There is no chord to play on any one of them.
 
 Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and **Track 4** the top. Hold that order and the voicing keeps its shape as the progression moves; cross the voices over and the chord changes character between bars with nothing here saying so.
 
 **Track 2** — lowest note
 
-- bar 1 · step 1 · len 2 · `F3` · root · MIDI 53
-- bar 1 · step 11 · len 1 · `F3` · root · MIDI 53
-- bar 3 · step 33 · len 2 · `F3` · root · MIDI 53
-- bar 4 · step 49 · len 3 · `C4` · 5th · MIDI 60
+- bar 1 · step 1 · `F3` · root · MIDI 53
+- bar 1 · step 3 · `OFF`
+- bar 1 · step 11 · `F3` · root · MIDI 53
+- bar 1 · step 12 · `OFF`
+- bar 3 · step 33 · `F3` · root · MIDI 53
+- bar 3 · step 35 · `OFF`
+- bar 4 · step 49 · `C4` · 5th · MIDI 60
+- bar 4 · step 52 · `OFF`
 
 **Track 3** — note 2 from the bottom
 
-- bar 1 · step 1 · len 2 · `Ab3` (`G#3`) · 3rd · MIDI 56
-- bar 1 · step 11 · len 1 · `Ab3` (`G#3`) · 3rd · MIDI 56
-- bar 3 · step 33 · len 2 · `Ab3` (`G#3`) · 3rd · MIDI 56
-- bar 4 · step 49 · len 3 · `Eb4` (`D#4`) · 7th · MIDI 63
+- bar 1 · step 1 · `Ab3` (`G#3`) · 3rd · MIDI 56
+- bar 1 · step 3 · `OFF`
+- bar 1 · step 11 · `Ab3` (`G#3`) · 3rd · MIDI 56
+- bar 1 · step 12 · `OFF`
+- bar 3 · step 33 · `Ab3` (`G#3`) · 3rd · MIDI 56
+- bar 3 · step 35 · `OFF`
+- bar 4 · step 49 · `Eb4` (`D#4`) · 7th · MIDI 63
+- bar 4 · step 52 · `OFF`
 
 **Track 4** — highest note
 
-- bar 1 · step 1 · len 2 · `C4` · 5th · MIDI 60
-- bar 1 · step 11 · len 1 · `C4` · 5th · MIDI 60
-- bar 3 · step 33 · len 2 · `C4` · 5th · MIDI 60
-- bar 4 · step 49 · len 3 · `G4` · 2nd · MIDI 67
+- bar 1 · step 1 · `C4` · 5th · MIDI 60
+- bar 1 · step 3 · `OFF`
+- bar 1 · step 11 · `C4` · 5th · MIDI 60
+- bar 1 · step 12 · `OFF`
+- bar 3 · step 33 · `C4` · 5th · MIDI 60
+- bar 3 · step 35 · `OFF`
+- bar 4 · step 49 · `G4` · 2nd · MIDI 67
+- bar 4 · step 52 · `OFF`
 
 ## 5. Step programming
 
@@ -237,7 +264,7 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 
 **Wide detuned reese, filter well down** — settings in Sound design
 
-**The hook is the pattern** — see Hook above for its steps and note lengths. Nothing separate to program here.
+**The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
 ### `clap` — TR-1000 · HC
 
@@ -373,7 +400,7 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 
 **Single-note sample struck short, one note per track** — settings in Sound design
 
-**The hook is the pattern** — see Hook above for its steps and note lengths. Nothing separate to program here.
+**The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
 ### `impact` — TR-1000 · CC
 
@@ -400,7 +427,7 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 
 **Slow detuned pad, long swell** — settings in Sound design
 
-**The hook is the pattern** — see Hook above for its steps and note lengths. Nothing separate to program here.
+**The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
 ## 6. Sound design
 

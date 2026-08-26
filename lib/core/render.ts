@@ -1,4 +1,4 @@
-import type { CapabilityEvidence, ContentNotice, Device } from './device'
+import type { CapabilityEvidence, ContentNotice, Device, NoteDurationNotice } from './device'
 import {
   canFollow,
   clockJackNotes,
@@ -6,6 +6,9 @@ import {
   clockWires,
   contentNotice,
   evidenceFor,
+  noteDurationNotice,
+  noteOffSteps,
+  printsNoteDuration,
   rangeDocuments,
 } from './device'
 import type { DeviceId, SectionName } from './ids'
@@ -970,10 +973,35 @@ function chordsOf(hook: ResolvedHook): Chord[] {
   return [...byStep].map(([step, notes]) => ({ step, notes }))
 }
 
-/** One `len` when the chord agrees, otherwise each. */
-function lenText(notes: readonly ResolvedNote[]): string {
+/**
+ * #142. **A note's duration, in the unit that reads at a glance and the one you can enter.**
+ *
+ * Steps first, because that is the number that goes into a step field and the one the position on
+ * the same line is counted in. Bars in brackets, because past about a bar the step count stops
+ * meaning anything: `6 steps` is six sixteenths and reads instantly, `128 steps` is arithmetic
+ * somebody is doing at a rack with their hands busy (§8), and the same line already converts the
+ * *position* into bars while leaving the length raw.
+ *
+ * **The gloss decomposes; it never divides.** 24 steps is `1 bar 8 steps`, not `1.5 bars` and
+ * never `0.375 bars` — which is what a length shorter than a bar would have become under any
+ * format that reached for a fraction. Under a bar there is no gloss at all: the number already
+ * reads, and a bracket saying so is noise on every line of every drum part.
+ */
+function durationText(len: number): string {
+  if (len < STEPS_PER_BAR) return count(len, 'step')
+  const bars = Math.floor(len / STEPS_PER_BAR)
+  const rest = len % STEPS_PER_BAR
+  const gloss = rest === 0 ? count(bars, 'bar') : `${count(bars, 'bar')} ${count(rest, 'step')}`
+  return `${count(len, 'step')} (${gloss})`
+}
+
+/**
+ * One duration when the chord agrees, otherwise each — `lenText` with #142's unit and #142's
+ * word. Insertion order, which is note order, so the same chord prints the same way every time.
+ */
+function durationsText(notes: readonly ResolvedNote[]): string {
   const lens = [...new Set(notes.map((n) => n.len))]
-  return lens.map(num).join('/')
+  return lens.map(durationText).join(' / ')
 }
 
 function spelling(note: ResolvedNote): string {
@@ -991,6 +1019,116 @@ const NOTE_CONVENTION = [
   '',
   'Where a role has more than one hook authored, rerolling the seed picks a different one.',
 ]
+
+/**
+ * §2.6/#142. **How the box in front of the reader ends a note**, in one sentence above the notes
+ * it governs.
+ *
+ * The words are here and the *decision* is `noteDurationNotice` in `lib/core/device.ts`, which is
+ * the arrangement `contentNotice` and `hoistedParams` already sit in (#33): one right answer,
+ * two hand-written vocabularies. `components/guide/phase-hook.tsx` restates these, and
+ * `test/guide-view.test.ts` asserts both copies rather than trusting the duplication.
+ *
+ * Every state is a sentence a reader can act on, `unknown` included. That one says outright that
+ * the durations below are the *part* and not a field to fill in, which is the sentence #142's
+ * reporter had to work out for themselves from a line reading `len 128`.
+ */
+function noteDurationText(notice: NoteDurationNotice): string {
+  switch (notice.state) {
+    case 'per-note-value':
+      return (
+        `Note length is set per note here — \`${notice.control}\`` +
+        `${notice.unit === undefined ? '' : `, in ${notice.unit}`}.`
+      )
+    case 'tied-steps':
+      return (
+        'A step is one note long and nothing here sets a length: ' +
+        `\`${notice.control}\` joins a note to the next step, and stacking those is how ` +
+        'anything longer is entered.'
+      )
+    case 'until-next':
+      return (
+        'No note-length field on this box — a note runs until the next note on the same voice, ' +
+        `and \`${notice.noteOff}\` is how you stop one sooner. The rows below are what you enter, ` +
+        'in the order you enter them.'
+      )
+    case 'gate':
+      return `Length here is a gate rather than a value in the pattern: ${notice.source}.`
+    case 'trigger':
+      return `A step is a trigger, not a note with a length: ${notice.reason}.`
+    case 'unknown':
+      return (
+        'How this box sets a note’s length is not established here, so the durations below ' +
+        'are the part rather than a field to fill in.'
+      )
+  }
+}
+
+function noteDurationLines(notice: NoteDurationNotice): Line[] {
+  const out: Line[] = []
+  const evidence = notice.evidence
+  out.push(`${noteDurationText(notice)}${evidence === undefined ? '' : evidenceMark(evidence)}`)
+  if (evidence !== undefined) {
+    // `claim`, not `value`: how a box ends a note is a fact about the box, and nobody dials it.
+    for (const cite of evidenceLines(evidence, 'claim')) subordinate(out, '', 'cite', cite)
+  }
+  out.push('')
+  return out
+}
+
+/**
+ * #142. **The note-off rows, interleaved with the notes in the order they are typed in.**
+ *
+ * On an `until-next` box the rows below are the pattern: a reader fills one voice top to bottom,
+ * and a note-off is entered exactly the way a note is. Listing them separately would be a second
+ * list to cross-reference against the first while holding a box, which is the failure #40 already
+ * fixed one level up for stacked voices.
+ *
+ * `undefined` for every other state, because there is nothing to place.
+ */
+function noteOffRows(
+  notice: NoteDurationNotice,
+  notes: readonly ResolvedNote[],
+  hook: ResolvedHook,
+  framed: boolean,
+): { step: number; line: string }[] {
+  if (notice.state !== 'until-next') return []
+  return noteOffSteps(notes, hook.bars * STEPS_PER_BAR).map((step) => ({
+    step,
+    line: `- ${whereOf(step, framed)} · \`${notice.noteOff}\``,
+  }))
+}
+
+/** The position half of a row, the one place it is spelled. */
+function whereOf(step: number, framed: boolean): string {
+  return framed ? `bar ${num(barOf(step))} · step ${num(step)}` : `step ${num(step)}`
+}
+
+/**
+ * #142. Rows and note-off rows in one list, in step order — the order they are typed in.
+ *
+ * A stable merge rather than a sort of the concatenation: `Array.prototype.sort` is only
+ * guaranteed stable within one call, and two rows landing on one step must always come out in the
+ * same order or invariant 6 is a coin toss. Ties keep the note ahead of the note-off, which is
+ * also the only order that could be played — though `noteOffSteps` already drops an off that
+ * lands on a note's step, so a tie here is a hand-built fixture rather than a hook.
+ */
+function merged(
+  rows: readonly { step: number; line: string }[],
+  offs: readonly { step: number; line: string }[],
+): string[] {
+  const out: string[] = []
+  let i = 0
+  for (const off of offs) {
+    while (i < rows.length && (rows[i] as { step: number }).step <= off.step) {
+      out.push((rows[i] as { line: string }).line)
+      i++
+    }
+    out.push(off.line)
+  }
+  for (; i < rows.length; i++) out.push((rows[i] as { line: string }).line)
+  return out
+}
 
 /**
  * §12.4. The hook, for a part whose recipe puts the chord inside a sample.
@@ -1015,7 +1153,11 @@ function transposeText(semitones: number): string {
   return `${semitones > 0 ? '+' : '-'}${num(Math.abs(semitones))} st`
 }
 
-function sampledHookLines(hook: ResolvedHook, framed: boolean): Line[] {
+function sampledHookLines(
+  hook: ResolvedHook,
+  framed: boolean,
+  notice: NoteDurationNotice,
+): Line[] {
   const out: Line[] = []
   const voicings = chordVoicings(hook)
 
@@ -1051,15 +1193,18 @@ function sampledHookLines(hook: ResolvedHook, framed: boolean): Line[] {
   const triggers = voicings
     .flatMap((voicing) => voicing.at.map((occurrence) => ({ voicing, occurrence })))
     .sort((a, b) => a.occurrence.step - b.occurrence.step)
-  for (const { voicing, occurrence } of triggers) {
-    const where = framed
-      ? `bar ${num(barOf(occurrence.step))} · step ${num(occurrence.step)}`
-      : `step ${num(occurrence.step)}`
-    out.push(
-      `- ${where} · len ${lenText(occurrence.notes)} · sample ${voicing.label} · ` +
-        `${transposeText(occurrence.semitones)} · ${occurrence.notes.map(spelling).join(' ')}`,
-    )
-  }
+  const rows = triggers.map(({ voicing, occurrence }) => ({
+    step: occurrence.step,
+    line:
+      `- ${whereOf(occurrence.step, framed)}` +
+      (printsNoteDuration(notice) ? ` · sounds for ${durationsText(occurrence.notes)}` : '') +
+      ` · sample ${voicing.label} · ${transposeText(occurrence.semitones)} · ` +
+      occurrence.notes.map(spelling).join(' '),
+  }))
+  // #142. A sample on an `until-next` box is stopped by the same gesture a note is, so the
+  // note-offs belong in this list too — a trigger list that ended a sample by omission would be
+  // the score-not-instruction failure in the one phase that already knew better.
+  for (const row of merged(rows, noteOffRows(notice, hook.notes, hook, framed))) out.push(row)
   return out
 }
 
@@ -1098,6 +1243,7 @@ function stackedHookLines(
   hook: ResolvedHook,
   framed: boolean,
   carriedBy: ResolvedAssignment,
+  notice: NoteDurationNotice,
 ): Line[] {
   const out: Line[] = []
   const voices = carriedBy.assignables
@@ -1143,13 +1289,23 @@ function stackedHookLines(
       out.push('')
       continue
     }
-    for (const { step, note } of mine) {
-      const where = framed ? `bar ${num(barOf(step))} · step ${num(step)}` : `step ${num(step)}`
-      out.push(
-        `- ${where} · len ${num(note.len)} · ${spelling(note)} · ` +
-          `${degreeName(note.degree)} · MIDI ${num(note.midi)}`,
-      )
-    }
+    const rows = mine.map(({ step, note }) => ({
+      step,
+      line:
+        `- ${whereOf(step, framed)}` +
+        (printsNoteDuration(notice) ? ` · sounds for ${durationText(note.len)}` : '') +
+        ` · ${spelling(note)} · ${degreeName(note.degree)} · MIDI ${num(note.midi)}`,
+    }))
+    // #142. Note-offs are computed **per voice**, from that voice's own notes: on a stack it is
+    // the next note *on this track* that ends this one, and asking the whole hook would place an
+    // off where a neighbouring voice happens to move.
+    const offs = noteOffRows(
+      notice,
+      mine.map(({ note }) => note),
+      hook,
+      framed,
+    )
+    for (const row of merged(rows, offs)) out.push(row)
     out.push('')
   }
   // The trailing blank is the caller's job everywhere else in this file.
@@ -1157,7 +1313,11 @@ function stackedHookLines(
   return out
 }
 
-function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined): Line[] {
+function hookLines(
+  choice: HookChoice,
+  carriedBy: ResolvedAssignment | undefined,
+  device: Device | undefined,
+): Line[] {
   const out: Line[] = []
 
   // The heading says what the part is and where it lives. Not the hook's id — that is a
@@ -1191,12 +1351,22 @@ function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined
   out.push(`${num(hook.bars)} bars in ${hook.key}.`)
   out.push('')
 
+  // #142. The device fact, above the notes it governs. Every rendering below reads it — the
+  // sampled one, the stacked one and the plain list — because "how does this box end a note" is
+  // the same question in all three, and answering it three times is how the first two came to
+  // disagree with each other about a box.
+  const notice = noteDurationNotice(device)
+  // Not for a part nothing carries. Every sentence `noteDurationText` has says *this box*, and
+  // there is no box — the line above has already said so. The durations still print, because they
+  // are the part rather than a claim about hardware.
+  if (carriedBy !== undefined) out.push(...noteDurationLines(notice))
+
   // §12.4. A part carried by a `sampled-chord` recipe is not played note by note, and the
   // ordinary rendering below would tell its reader to enter three notes on a voice that sounds
   // one. It also says nothing about what has to be recorded: a sample follows a progression by
   // transposition, which covers every root of its own shape and no other shape at all.
   if (carriedBy?.recipe.realisation === 'sampled-chord') {
-    out.push(...sampledHookLines(hook, framed))
+    out.push(...sampledHookLines(hook, framed, notice))
     return out
   }
 
@@ -1204,25 +1374,26 @@ function hookLines(choice: HookChoice, carriedBy: ResolvedAssignment | undefined
   // each. The list below would tell the reader to enter three notes on a voice that sounds one,
   // and say nothing about which voice gets which — which is the half they cannot work out.
   if (carriedBy !== undefined && isStacked(carriedBy)) {
-    out.push(...stackedHookLines(hook, framed, carriedBy))
+    out.push(...stackedHookLines(hook, framed, carriedBy, notice))
     return out
   }
 
   // One labelled line per chord, rather than a table: a labelled line survives wrapping on a
   // phone, where a table's header scrolls away from its body.
-  for (const chord of chordsOf(hook)) {
-    const where = framed ? `bar ${num(barOf(chord.step))} · step ${num(chord.step)}` : `step ${num(chord.step)}`
-    out.push(
-      `- ${where} · len ${lenText(chord.notes)} · ` +
-        `${chord.notes.map(spelling).join(' ')} · ` +
-        `${chord.notes.map((n) => degreeName(n.degree)).join(' ')} · ` +
-        `MIDI ${chord.notes.map((n) => num(n.midi)).join(' ')}`,
-    )
-  }
+  const rows = chordsOf(hook).map((chord) => ({
+    step: chord.step,
+    line:
+      `- ${whereOf(chord.step, framed)}` +
+      (printsNoteDuration(notice) ? ` · sounds for ${durationsText(chord.notes)}` : '') +
+      ` · ${chord.notes.map(spelling).join(' ')} · ` +
+      `${chord.notes.map((n) => degreeName(n.degree)).join(' ')} · ` +
+      `MIDI ${chord.notes.map((n) => num(n.midi)).join(' ')}`,
+  }))
+  for (const row of merged(rows, noteOffRows(notice, hook.notes, hook, framed))) out.push(row)
   return out
 }
 
-function phaseHook(result: ResolveResult): Line[] {
+function phaseHook(result: ResolveResult, deviceById: Map<DeviceId, Device>): Line[] {
   const out: Line[] = []
   if (result.song.hooks.length === 0) {
     // §4.1 / invariant 5: omit rather than invent — and say that is what happened.
@@ -1234,7 +1405,14 @@ function phaseHook(result: ResolveResult): Line[] {
   const byRole = new Map(result.assignments.map((a) => [a.role, a]))
   for (const choice of result.song.hooks) {
     out.push('')
-    out.push(...hookLines(choice, byRole.get(choice.forRole)))
+    const carriedBy = byRole.get(choice.forRole)
+    out.push(
+      ...hookLines(
+        choice,
+        carriedBy,
+        carriedBy === undefined ? undefined : deviceById.get(carriedBy.deviceId),
+      ),
+    )
   }
   return out
 }
@@ -1420,8 +1598,11 @@ function mergeBlocks(
  * It names no hook id — phase 4 does not either (that is our machinery, not the reader's), and
  * the part is identified by the heading this line sits under.
  */
+// #142: "steps and note lengths" was true of a piano roll and false of a tracker, where phase 4
+// prints no lengths because the box has no field for them. What phase 4 carries beside a step is
+// now the device's own answer, so this points at the rows rather than naming their columns.
 const HOOK_IS_THE_PATTERN =
-  '**The hook is the pattern** — see Hook above for its steps and note lengths. ' +
+  '**The hook is the pattern** — see Hook above for its steps and what each one carries. ' +
   'Nothing separate to program here.'
 
 /**
@@ -2002,7 +2183,7 @@ export function renderGuide(result: ResolveResult, options: RenderOptions = {}):
     phaseSong(result),
     phaseVoiceAssignment(result, deviceById),
     phaseRig(result, occupied),
-    phaseHook(result),
+    phaseHook(result, deviceById),
     phaseSteps(result, deviceById, settings),
     phaseSound(result, deviceById, settings),
     phaseFinishing(result),

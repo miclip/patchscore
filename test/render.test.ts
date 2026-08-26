@@ -347,7 +347,7 @@ describe('hook notes (#32, §4.1)', () => {
 
   it('puts a chord on one line, framed by bar, with the degree named rather than numbered', () => {
     const eFlat = body.find((l) => l.includes('`Eb3`')) as string
-    expect(eFlat).toBe('- bar 1 · step 1 · len 1 · `Eb3` (`D#3`) · 7th · MIDI 51')
+    expect(eFlat).toBe('- bar 1 · step 1 · sounds for 1 step · `Eb3` (`D#3`) · 7th · MIDI 51')
   })
 
   it('groups notes that share a step into one chord instead of listing them separately', () => {

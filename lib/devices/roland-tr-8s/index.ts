@@ -763,7 +763,19 @@ export const device: Device = {
     reason: 'p.38 legends the icon and shows one example name, and no page prints the list',
   },
 
+  /**
+   * §2.6/#142. The TR-1000's answer on the older box: a step triggers an instrument and carries
+   * no length. The instrument's own `DECAY` decides how long it sounds (Reference p.30, the page
+   * every recipe below cites for it), and the per-step material the manual documents — sub steps,
+   * flams, accents — adds gestures rather than durations.
+   */
+  noteDuration: {
+    kind: 'trigger',
+    reason: "the instrument's own envelope ends it, and `DECAY` is what sets that",
+  },
+
   capabilityEvidence: {
+    noteDuration: cite(30),
     content: cite(38),
     'clock.preferredSource': {
       kind: 'unknown',

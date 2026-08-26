@@ -26,8 +26,14 @@ const CITE = { kind: 'manual', source: 'fixture manual p.7' } as const
 const OBSERVED = { kind: 'observed', source: 'fixture unit, firmware 1.11' } as const
 
 /** Spelling out ten zeroes at every call site would bury the one number each test is about. */
+/**
+ * §2.6/#142. The shared `device()` fixture declares one cited capability fact — `noteDuration`,
+ * which `DeviceSchema` requires of any device carrying recipes — so that pair is part of the
+ * baseline here rather than something every param-counting test restates. Overridable, like
+ * everything else: a test about capability counting passes its own.
+ */
 function counts(over: Partial<AuditCounts>): AuditCounts {
-  return { ...ZERO_COUNTS, ...over }
+  return { ...ZERO_COUNTS, capabilityFacts: 1, manualCapabilities: 1, ...over }
 }
 
 /** Guards the fixtures themselves: an audit over data that would not build proves nothing. */
@@ -295,6 +301,10 @@ describe('totals', () => {
         manualRanges: 1,
         observedRanges: 1,
         unverifiedRanges: 1,
+        // Three devices, each carrying the fixture's one cited `noteDuration` — the point of
+        // this test is that the counts add, and the capability pair adds like the rest.
+        capabilityFacts: 3,
+        manualCapabilities: 3,
       }),
     )
   })

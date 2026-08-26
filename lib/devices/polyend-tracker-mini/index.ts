@@ -1169,8 +1169,34 @@ export const device: Device = {
     reason: 'p.34 names the folder and the count, and no page lists what is in a pack',
   },
 
+  /**
+   * §2.6/#142. **There is no note-length field on this box, and #142 found the guide printing
+   * one.**
+   *
+   * A step event has four components — note, instrument, volume and two FX slots (p.100, and the
+   * pattern rows on p.104 show them: `C5 02 ---- P 25`). None of them is a length. What ends a
+   * note is the next note on the same track, because *"each track in Tracker Mini can handle one
+   * voice which can play multiple notes, but not simultaneously"* (p.104) — the same monophony
+   * #40's stacked rendering already relies on — or one of the three special note commands, which
+   * p.105 introduces as *"not used for applying a note sound, but ... used for controlling how a
+   * note ends"*.
+   *
+   * **`OFF` of the three, and it is worth saying why**, because `CUT` and `FAD` sit beside it on
+   * the same page and would each be a different instruction. `OFF` *"will act as 'Note-Off' and
+   * trigger the release phase of the envelope"* — it ends the note and lets the sound do what it
+   * was designed to do, which is what a hook means by a note stopping. `CUT` *"will immediately
+   * stop the audio sound"* and `FAD` fades it: both are edits to the sound rather than the end of
+   * a note, and printing either would be this manifest choosing an effect on the reader's behalf.
+   *
+   * The citation is p.105, the page that names the command and says what it is for. p.100 and
+   * p.104 are in this comment rather than in a second entry because §2.6 keys evidence by field
+   * and this field has one page that answers it; the other two establish the absence it rests on.
+   */
+  noteDuration: { kind: 'until-next', noteOff: 'OFF' },
+
   capabilityEvidence: {
     content: cite(34),
+    noteDuration: cite(105),
 
     [jackFact('MIDI Out')]: cite(13),
     [jackFact('MIDI In')]: cite(13),

@@ -289,14 +289,23 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
   })
 
   it('refuses an empty map rather than treating it as silence', () => {
-    const bare = device({ recipes: [recipe()], capabilityEvidence: {} } as never)
+    // Built with neither recipes nor a `noteDuration`, so the fixture adds nothing of its own
+    // (§2.6/#142) and the map really is empty — which is the thing this rule is about.
+    const bare = device({ recipes: [], noteDuration: undefined, capabilityEvidence: {} } as never)
     expect(DeviceSchema.safeParse(bare).success).toBe(false)
   })
 })
 
 describe('the audit can see capability facts now (§2.6/#22)', () => {
+  /**
+   * No recipes and no `noteDuration`, so the fixture's own declaration and citation are out of
+   * the way (§2.6/#142) and the counts below are exactly the facts each test declares. Both are
+   * irrelevant here — these are capability counts, and a recipe would only add to the other four.
+   */
   function audited(evidence: Record<string, CapabilityEvidence>) {
-    return auditDevice(patchable({ capabilityEvidence: evidence }) as unknown as Device)
+    return auditDevice(
+      patchable({ capabilityEvidence: evidence, recipes: [], noteDuration: undefined }) as unknown as Device,
+    )
   }
 
   it('counts each state apart, and the six add up', () => {
@@ -391,7 +400,9 @@ describe('the audit can see capability facts now (§2.6/#22)', () => {
     expect(spoke.some((l) => l.includes('gaps'))).toBe(true)
 
     // A row of zeros in a debt table reads as a debt, and silence is not one (§2.6).
-    const silent = auditDevice(device({ recipes: [recipe()] }) as unknown as Device)
+    const silent = auditDevice(
+      device({ recipes: [], noteDuration: undefined }) as unknown as Device,
+    )
     expect(countsBlock('x', silent.counts).some((l) => l.includes('caps'))).toBe(false)
     expect(countsBlock('x', silent.counts).some((l) => l.includes('gaps'))).toBe(false)
   })

@@ -1,20 +1,125 @@
-import type { HookChoice, ResolveResult, ResolvedAssignment, ResolvedHook, ResolvedNote } from '@/lib/core'
+import type {
+  Device,
+  HookChoice,
+  NoteDurationNotice,
+  ResolveResult,
+  ResolvedAssignment,
+  ResolvedHook,
+  ResolvedNote,
+} from '@/lib/core'
 import { Fragment } from 'react'
-import { chordVoicings, enharmonicAlternative } from '@/lib/core'
+import {
+  STEPS_PER_BAR,
+  chordVoicings,
+  enharmonicAlternative,
+  noteDurationNotice,
+  noteOffSteps,
+  printsNoteDuration,
+} from '@/lib/core'
 import {
   barOf,
   chordsOf,
   count,
   degreeName,
+  durationText,
+  durationsText,
   gridFits,
   isStacked,
-  lenText,
   lowToHigh,
   num,
   stackPosition,
   voicesLabel,
 } from './format'
-import { SoundRef } from './instruction'
+import { EvidenceMark, SoundRef, evidenceLines } from './instruction'
+
+/**
+ * §2.6/#142. **How the box in front of the reader ends a note**, above the notes it governs.
+ *
+ * Hand-written to match `noteDurationText` in `lib/core/render.ts` word for word — the same
+ * arrangement `scopeHeading` and `realisationInstruction` sit under. `noteDurationNotice` decides
+ * which of the five states the box is in; the words are each renderer's own, and
+ * `test/guide-view.test.ts` asserts both copies because two copies of a sentence is exactly the
+ * thing that drifts.
+ */
+function noteDurationText(notice: NoteDurationNotice): string {
+  switch (notice.state) {
+    case 'per-note-value':
+      return (
+        `Note length is set per note here — ${notice.control}` +
+        `${notice.unit === undefined ? '' : `, in ${notice.unit}`}.`
+      )
+    case 'tied-steps':
+      return (
+        'A step is one note long and nothing here sets a length: ' +
+        `${notice.control} joins a note to the next step, and stacking those is how ` +
+        'anything longer is entered.'
+      )
+    case 'until-next':
+      return (
+        'No note-length field on this box — a note runs until the next note on the same voice, ' +
+        `and ${notice.noteOff} is how you stop one sooner. The rows below are what you enter, ` +
+        'in the order you enter them.'
+      )
+    case 'gate':
+      return `Length here is a gate rather than a value in the pattern: ${notice.source}.`
+    case 'trigger':
+      return `A step is a trigger, not a note with a length: ${notice.reason}.`
+    case 'unknown':
+      return (
+        'How this box sets a note\u2019s length is not established here, so the durations below ' +
+        'are the part rather than a field to fill in.'
+      )
+  }
+}
+
+function NoteDurationBlock({ notice }: { notice: NoteDurationNotice }) {
+  return (
+    <div className="callout">
+      <p>
+        {noteDurationText(notice)}{' '}
+        {notice.evidence === undefined ? null : <EvidenceMark evidence={notice.evidence} />}
+      </p>
+      {/*
+        Visible, not only in the mark's title: a reader on a phone at the rack has no hover, and a
+        printed guide has no attributes at all. `claim`, not `value` — how a box ends a note is a
+        fact about the box and nobody dials it.
+      */}
+      {notice.evidence === undefined
+        ? null
+        : evidenceLines(notice.evidence, 'claim').map((cite) => (
+            <p className="subordinate cite" key={cite}>
+              {cite}
+            </p>
+          ))}
+    </div>
+  )
+}
+
+/**
+ * #142. A note-off row, entered exactly the way a note row is — see `noteOffRows` in the Markdown
+ * renderer for why they are interleaved rather than listed apart.
+ */
+function NoteOffRow({ step, framed, label }: { step: number; framed: boolean; label: string }) {
+  return (
+    <li>
+      {framed ? (
+        <>
+          <span className="pos">
+            <span className="quiet">bar </span>
+            <span className="mono">{num(barOf(step))}</span>
+          </span>
+          <span className="token-sep"> · </span>
+        </>
+      ) : null}
+      <span className="pos">
+        <span className="quiet">step </span>
+        <span className="mono">{num(step)}</span>
+      </span>
+      <span className="token-sep"> · </span>
+      <span className="mono note-off">{label}</span>
+    </li>
+  )
+}
 
 /**
  * #32, stated once near the notes rather than repeated per note: three representations of one
@@ -63,6 +168,28 @@ function ChordNotes({ notes }: { notes: readonly ResolvedNote[] }) {
 }
 
 /**
+ * #142. Note rows and note-off rows in one list, in the order they are typed in — the React half
+ * of `merged` in `lib/core/render.ts`, and stable for the same reason: two rows on one step must
+ * always come out the same way round.
+ */
+function mergedRows(
+  rows: readonly { step: number; node: React.ReactNode }[],
+  offs: readonly { step: number; node: React.ReactNode }[],
+): React.ReactNode[] {
+  const out: React.ReactNode[] = []
+  let i = 0
+  for (const off of offs) {
+    while (i < rows.length && (rows[i] as { step: number }).step <= off.step) {
+      out.push((rows[i] as { node: React.ReactNode }).node)
+      i++
+    }
+    out.push(off.node)
+  }
+  for (; i < rows.length; i++) out.push((rows[i] as { node: React.ReactNode }).node)
+  return out
+}
+
+/**
  * §12.4. The hook, for a part whose recipe puts the chord inside a sample.
  *
  * Two lists rather than one, because there are two different things to do and they happen at
@@ -79,7 +206,15 @@ function ChordNotes({ notes }: { notes: readonly ResolvedNote[] }) {
  * grouping behind them is `chordVoicings`, computed once in `lib/core` so the page and the
  * screen cannot disagree about which chords are the same chord.
  */
-function SampledHook({ hook, framed }: { hook: ResolvedHook; framed: boolean }) {
+function SampledHook({
+  hook,
+  framed,
+  notice,
+}: {
+  hook: ResolvedHook
+  framed: boolean
+  notice: NoteDurationNotice
+}) {
   const voicings = chordVoicings(hook)
   const triggers = voicings
     .flatMap((voicing) => voicing.at.map((occurrence) => ({ voicing, occurrence })))
@@ -134,43 +269,62 @@ function SampledHook({ hook, framed }: { hook: ResolvedHook; framed: boolean }) 
 
       <h5>Trigger — one step event per chord, and the sample sounds all of it</h5>
       <ul className="notes">
-        {triggers.map(({ voicing, occurrence }) => (
-          <li key={occurrence.step}>
-            {framed ? (
-              <>
+        {mergedRows(
+          triggers.map(({ voicing, occurrence }) => ({
+            step: occurrence.step,
+            node: (
+              <li key={occurrence.step}>
+                {framed ? (
+                  <>
+                    <span className="pos">
+                      <span className="quiet">bar </span>
+                      <span className="mono">{num(barOf(occurrence.step))}</span>
+                    </span>
+                    <span className="token-sep"> · </span>
+                  </>
+                ) : null}
                 <span className="pos">
-                  <span className="quiet">bar </span>
-                  <span className="mono">{num(barOf(occurrence.step))}</span>
+                  <span className="quiet">step </span>
+                  <span className="mono">{num(occurrence.step)}</span>
+                </span>
+                {printsNoteDuration(notice) ? (
+                  <>
+                    <span className="token-sep"> · </span>
+                    <span className="pos">
+                      <span className="quiet">sounds for </span>
+                      <span className="mono">{durationsText(occurrence.notes)}</span>
+                    </span>
+                  </>
+                ) : null}
+                <span className="token-sep"> · </span>
+                <span className="pos">
+                  <span className="quiet">sample </span>
+                  <span className="mono">{voicing.label}</span>
                 </span>
                 <span className="token-sep"> · </span>
-              </>
-            ) : null}
-            <span className="pos">
-              <span className="quiet">step </span>
-              <span className="mono">{num(occurrence.step)}</span>
-            </span>
-            <span className="token-sep"> · </span>
-            <span className="pos">
-              <span className="quiet">len </span>
-              <span className="mono">{lenText(occurrence.notes)}</span>
-            </span>
-            <span className="token-sep"> · </span>
-            <span className="pos">
-              <span className="quiet">sample </span>
-              <span className="mono">{voicing.label}</span>
-            </span>
-            <span className="token-sep"> · </span>
-            <span className="pos">
-              {occurrence.semitones === 0 ? (
-                <span className="quiet">as recorded</span>
-              ) : (
-                <span className="mono">{transposeText(occurrence.semitones)}</span>
-              )}
-            </span>
-            <span className="token-sep"> · </span>
-            <ChordNotes notes={occurrence.notes} />
-          </li>
-        ))}
+                <span className="pos">
+                  {occurrence.semitones === 0 ? (
+                    <span className="quiet">as recorded</span>
+                  ) : (
+                    <span className="mono">{transposeText(occurrence.semitones)}</span>
+                  )}
+                </span>
+                <span className="token-sep"> · </span>
+                <ChordNotes notes={occurrence.notes} />
+              </li>
+            ),
+          })),
+          // #142. A sample on an `until-next` box is stopped by the same gesture a note is, so
+          // the note-offs belong in this list too.
+          notice.state !== 'until-next'
+            ? []
+            : noteOffSteps(hook.notes, hook.bars * STEPS_PER_BAR).map((step) => ({
+                step,
+                node: (
+                  <NoteOffRow key={`off-${step}`} step={step} framed={framed} label={notice.noteOff} />
+                ),
+              })),
+        )}
       </ul>
     </>
   )
@@ -195,10 +349,12 @@ function StackedHook({
   hook,
   framed,
   carriedBy,
+  notice,
 }: {
   hook: ResolvedHook
   framed: boolean
   carriedBy: ResolvedAssignment
+  notice: NoteDurationNotice
 }) {
   const voices = carriedBy.assignables
   const width = voices.length
@@ -245,39 +401,66 @@ function StackedHook({
               <p className="quiet">Nothing — every chord in this hook has fewer notes than that.</p>
             ) : (
               <ul className="notes">
-                {mine.map(({ step, note }) => (
-                  <li key={step}>
-                    {framed ? (
-                      <>
+                {mergedRows(
+                  mine.map(({ step, note }) => ({
+                    step,
+                    node: (
+                      <li key={step}>
+                        {framed ? (
+                          <>
+                            <span className="pos">
+                              <span className="quiet">bar </span>
+                              <span className="mono">{num(barOf(step))}</span>
+                            </span>
+                            <span className="token-sep"> · </span>
+                          </>
+                        ) : null}
                         <span className="pos">
-                          <span className="quiet">bar </span>
-                          <span className="mono">{num(barOf(step))}</span>
+                          <span className="quiet">step </span>
+                          <span className="mono">{num(step)}</span>
+                        </span>
+                        {printsNoteDuration(notice) ? (
+                          <>
+                            <span className="token-sep"> · </span>
+                            <span className="pos">
+                              <span className="quiet">sounds for </span>
+                              <span className="mono">{durationText(note.len)}</span>
+                            </span>
+                          </>
+                        ) : null}
+                        <span className="token-sep"> · </span>
+                        <ChordNotes notes={[note]} />
+                        <span className="token-sep"> · </span>
+                        <span className="degrees">
+                          <span className="degree">{degreeName(note.degree)}</span>
                         </span>
                         <span className="token-sep"> · </span>
-                      </>
-                    ) : null}
-                    <span className="pos">
-                      <span className="quiet">step </span>
-                      <span className="mono">{num(step)}</span>
-                    </span>
-                    <span className="token-sep"> · </span>
-                    <span className="pos">
-                      <span className="quiet">len </span>
-                      <span className="mono">{num(note.len)}</span>
-                    </span>
-                    <span className="token-sep"> · </span>
-                    <ChordNotes notes={[note]} />
-                    <span className="token-sep"> · </span>
-                    <span className="degrees">
-                      <span className="degree">{degreeName(note.degree)}</span>
-                    </span>
-                    <span className="token-sep"> · </span>
-                    <span className="pos">
-                      <span className="quiet">MIDI </span>
-                      <span className="mono">{num(note.midi)}</span>
-                    </span>
-                  </li>
-                ))}
+                        <span className="pos">
+                          <span className="quiet">MIDI </span>
+                          <span className="mono">{num(note.midi)}</span>
+                        </span>
+                      </li>
+                    ),
+                  })),
+                  // #142. Per voice, from this voice's own notes: on a stack it is the next note
+                  // *on this track* that ends this one.
+                  notice.state !== 'until-next'
+                    ? []
+                    : noteOffSteps(
+                        mine.map(({ note }) => note),
+                        hook.bars * STEPS_PER_BAR,
+                      ).map((step) => ({
+                        step,
+                        node: (
+                          <NoteOffRow
+                            key={`off-${step}`}
+                            step={step}
+                            framed={framed}
+                            label={notice.noteOff}
+                          />
+                        ),
+                      })),
+                )}
               </ul>
             )}
           </Fragment>
@@ -290,12 +473,18 @@ function StackedHook({
 function HookBlock({
   choice,
   carriedBy,
+  device,
 }: {
   choice: HookChoice
   carriedBy: ResolvedAssignment | undefined
+  device: Device | undefined
 }) {
   // A hook authored against a different grid gets no bar framing rather than a wrong one.
   const framed = choice.chosen.outcome === 'resolved' && gridFits(choice.chosen.hook)
+  // #142. The device fact every rendering below reads — the sampled one, the stacked one and the
+  // plain list. Answering "how does this box end a note" three times is how the first two came to
+  // disagree with each other about a box.
+  const notice = noteDurationNotice(device)
 
   return (
     <section className="hook">
@@ -335,12 +524,18 @@ function HookBlock({
             <span className="mono">{choice.chosen.hook.key}</span>.
           </p>
           {/*
+            Not for a part nothing carries: every sentence `noteDurationText` has says *this
+            box*, and there is no box — the line above has already said so. The durations still
+            print, because they are the part rather than a claim about hardware.
+          */}
+          {carriedBy === undefined ? null : <NoteDurationBlock notice={notice} />}
+          {/*
             §12.4: a part carried by a `sampled-chord` recipe is not played note by note, and the
             ordinary rendering below would tell its reader to enter three notes on a voice that
             sounds one — and imply the progression follows, which it does not.
           */}
           {carriedBy?.recipe.realisation === 'sampled-chord' ? (
-            <SampledHook hook={choice.chosen.hook} framed={framed} />
+            <SampledHook hook={choice.chosen.hook} framed={framed} notice={notice} />
           ) : /*
               §12.4/#40. The other way of not playing a chord on one voice: several voices, one
               note each. The list below would tell the reader to enter three notes on a voice that
@@ -348,7 +543,12 @@ function HookBlock({
               out for themselves.
             */
           carriedBy !== undefined && isStacked(carriedBy) ? (
-            <StackedHook hook={choice.chosen.hook} framed={framed} carriedBy={carriedBy} />
+            <StackedHook
+              hook={choice.chosen.hook}
+              framed={framed}
+              carriedBy={carriedBy}
+              notice={notice}
+            />
           ) : (
           <>
           {/*
@@ -357,7 +557,10 @@ function HookBlock({
             scroll sideways, and a hook that scrolls is worse than a hook that wraps.
           */}
           <ul className="notes">
-            {chordsOf(choice.chosen.hook).map((chord) => (
+            {mergedRows(
+              chordsOf(choice.chosen.hook).map((chord) => ({
+              step: chord.step,
+              node: (
               <li key={chord.step}>
                 {/*
                   Cells joined by a real separator, the same ` · ` the Markdown uses. The row
@@ -375,10 +578,12 @@ function HookBlock({
                     <span className="quiet">step </span>
                     <span className="mono">{num(chord.step)}</span>
                   </span>,
-                  <span className="pos" key="len">
-                    <span className="quiet">len </span>
-                    <span className="mono">{lenText(chord.notes)}</span>
-                  </span>,
+                  printsNoteDuration(notice) ? (
+                    <span className="pos" key="duration">
+                      <span className="quiet">sounds for </span>
+                      <span className="mono">{durationsText(chord.notes)}</span>
+                    </span>
+                  ) : null,
                   <span className="chord" key="chord">
                     {chord.notes.map((note, i) => {
                       const enharmonic = enharmonicAlternative(note)
@@ -414,7 +619,25 @@ function HookBlock({
                     </Fragment>
                   ))}
               </li>
-            ))}
+              ),
+              })),
+              notice.state !== 'until-next'
+                ? []
+                : noteOffSteps(
+                    choice.chosen.hook.notes,
+                    choice.chosen.hook.bars * STEPS_PER_BAR,
+                  ).map((step) => ({
+                    step,
+                    node: (
+                      <NoteOffRow
+                        key={`off-${step}`}
+                        step={step}
+                        framed={framed}
+                        label={notice.noteOff}
+                      />
+                    ),
+                  })),
+            )}
           </ul>
           </>
           )}
@@ -436,12 +659,21 @@ export function PhaseHook({ result }: { result: ResolveResult }) {
   }
 
   const byRole = new Map(result.assignments.map((a) => [a.role, a]))
+  const deviceById = new Map(result.devices.map((d) => [d.id, d]))
   return (
     <>
       <NoteConvention />
-      {result.song.hooks.map((choice) => (
-        <HookBlock key={choice.forRole} choice={choice} carriedBy={byRole.get(choice.forRole)} />
-      ))}
+      {result.song.hooks.map((choice) => {
+        const carriedBy = byRole.get(choice.forRole)
+        return (
+          <HookBlock
+            key={choice.forRole}
+            choice={choice}
+            carriedBy={carriedBy}
+            device={carriedBy === undefined ? undefined : deviceById.get(carriedBy.deviceId)}
+          />
+        )
+      })}
     </>
   )
 }

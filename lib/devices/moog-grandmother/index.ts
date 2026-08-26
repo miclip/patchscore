@@ -1387,7 +1387,26 @@ export const device: Device = {
    * and none of its sixteen outputs is an envelope follower or a rectifier, so nothing on it can
    * derive a control voltage from an incoming signal and duck to it.
    */
+  /**
+   * §2.6/#142. **A sequencer step is a note, a rest or a tie, and none of the three is a
+   * length.** p.27 enumerates it rather than leaving it to be inferred: *"Each step can be
+   * entered as a Note or a Rest, and individual steps can also be entered with a Tie and/or an
+   * Accent."* The ARP/SEQ panel drawn beside that sentence carries RATE, MODE, DIRECTION and
+   * OCT/SEQ — there is no gate-length control on it, and a guide that named one would send
+   * somebody hunting the front of a Grandmother for a knob Moog did not put there.
+   *
+   * p.30 is what a tie *does*: *"a tie is used to string two individual notes together
+   * musically"*, and the note beneath it — *"if the same note is tied together multiple times in
+   * a row, it will be heard during playback as if that one note is being held continuously."*
+   * Both pages, because the claim needs the absence and the gesture and neither page has both.
+   *
+   * **The manual does not say what proportion of a step the sequencer's gate occupies**, and
+   * nothing here pretends otherwise. p.29's GATE OUT is about the jack, not about a value.
+   */
+  noteDuration: { kind: 'tied-steps', control: 'TIE' },
+
   capabilityEvidence: {
+    noteDuration: { kind: 'manual', source: 'Moog Grandmother User’s Manual (Version 2), p.27, p.30' },
     ...JACK_EVIDENCE,
     'clock.preferredSource': {
       kind: 'unknown',

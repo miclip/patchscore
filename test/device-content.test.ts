@@ -333,7 +333,12 @@ describe('a content declaration is a positive claim and carries a page (§2.6/#1
     })
     expect(DeviceSchema.safeParse(unused).success).toBe(false)
     expect(
-      DeviceSchema.safeParse({ ...unused, capabilityEvidence: { [CONTENT_FACT]: UNREAD } }).success,
+      DeviceSchema.safeParse({
+        ...unused,
+        // A raw spread, so it replaces the fixture's map outright — `noteDuration` is restated
+        // because this box carries recipes and §2.6/#142 asks every such box the question.
+        capabilityEvidence: { [CONTENT_FACT]: UNREAD, noteDuration: CITE },
+      }).success,
     ).toBe(true)
   })
 
@@ -341,7 +346,9 @@ describe('a content declaration is a positive claim and carries a page (§2.6/#1
     // Not a second provenance mechanism beside #22's — that is why #111 waited on it.
     expect(CAPABILITY_FACTS).toContain(CONTENT_FACT)
     const audit = auditDevice(loader({ capabilityEvidence: { [CONTENT_FACT]: UNREAD } }))
-    expect(audit.counts.capabilityFacts).toBe(1)
+    // Two facts: this one, and the `noteDuration` every fixture box carries (§2.6/#142). What
+    // this test is about is the *unread* count, which is content's alone.
+    expect(audit.counts.capabilityFacts).toBe(2)
     expect(audit.counts.unreadCapabilities).toBe(1)
     expect(audit.counts.uncheckedCapabilities).toBe(0)
     expect(audit.findings).toContainEqual({

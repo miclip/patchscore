@@ -239,6 +239,30 @@ export const HarmonySchema = z.strictObject({
  * A scale degree within the key, plus an octave offset. Steps are 1-based, and so is `degree`:
  * 1 is the tonic and 5 is the fifth. The upper bound is left open because a hook may reach an
  * extension (a ninth is degree 9) rather than being confined to one octave of the scale.
+ *
+ * ## `len` is **how long the note sounds**, in sixteenth steps, counted from its own `step`
+ *
+ * Written down here because it was not, and #142 found three separate defects that had
+ * accumulated on the one field the guide prints most prominently: `step`, `degree` and `octave`
+ * each had a sentence and `len` had `z.int().min(1)`.
+ *
+ * It is **sustain**, and the two things it is not are the ones that would each imply a different
+ * rendering:
+ *
+ *  - **Not distance-to-the-next-note.** A note may stop well before the next one starts — that
+ *    is a rest, and it is authored by making `len` short rather than by moving the next step.
+ *    Drone Study's three notes happen to abut exactly (1+128 = 129, 129+64 = 193), which is what
+ *    a held line looks like and not a rule the field encodes.
+ *  - **Not a gate percentage or a device's own length value.** It is musical time, true of the
+ *    hook whatever plays it (§4.1), and it names no device — invariant 3 holds. **How a box
+ *    takes it is `Device.noteDuration`'s job** (§2.6/#142): a tracker has no length field and
+ *    gets note-offs, a drum voice has no length at all and gets neither, and a box with a `LEN`
+ *    field gets told which field. A template states the music; the device states the gesture.
+ *
+ * Overlap is legal and meaningful: two notes at one step are a chord, and a note whose `len`
+ * runs past the next note's `step` is a line that overlaps itself. Whether the carrying voice can
+ * *play* that is §7.1's question and not this field's — §4.1 keeps range and polyphony policy out
+ * of this layer, exactly as it keeps MIDI clamping out of `ResolvedNote.midi`.
  */
 export type HookNote = { step: number; degree: number; octave: number; len: number }
 
@@ -246,6 +270,7 @@ export const HookNoteSchema = z.strictObject({
   step: z.int().min(1),
   degree: z.int().min(1),
   octave: z.int(),
+  /** Sixteenth steps of sustain, from this note's own `step`. See above — it is not a gap. */
   len: z.int().min(1),
 })
 

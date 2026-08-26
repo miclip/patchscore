@@ -909,7 +909,19 @@ export const device: Device = {
    * read-and-silent state rather than the answers-no one (#120): nothing here argues the box
    * should be played by something else, and nothing here says it should lead.
    */
+
   capabilityEvidence: {
+    /**
+     * §2.6/#120/#142. `unread`, and it is the state's ordinary case rather than an edge one: the
+     * minilogue xd's manual is not in `manuals/` at all. Nobody here has opened the document that
+     * would answer whether its 16-step sequencer carries a note length, so the reading is blocked
+     * on a file rather than on an author's afternoon — and recording it as `unknown` would render
+     * a missing document as a finished finding.
+     */
+    noteDuration: {
+      kind: 'unread',
+      reason: "the minilogue xd manual is not in `manuals/`; no document here was opened for it",
+    },
     'clock.preferredSource': {
       kind: 'unknown',
       reason:

@@ -1,4 +1,11 @@
-import type { AuthoredParam, Device, Recipe, Template } from '../lib/core/index'
+import type {
+  AuthoredParam,
+  CapabilityEvidence,
+  Cite,
+  Device,
+  Recipe,
+  Template,
+} from '../lib/core/index'
 
 /**
  * Minimal valid data for every authored shape. Tests clone these and break one thing at a
@@ -68,8 +75,48 @@ export function device(over: Partial<Device> = {}): Device {
     manual: { title: 'Fixture Owner Manual', edition: 'eng02' },
     recipes: [recipe()],
     ...over,
+    // §2.6/#142. A device with recipes owes an answer at `noteDuration`, so the shared fixture
+    // declares one — a drum machine's, matching `kind` above — and `withNoteDuration` pairs it
+    // with the citation the schema asks for. `noteDuration: undefined` suppresses both.
+    noteDuration: 'noteDuration' in over ? over.noteDuration : FIXTURE_DURATION,
+    capabilityEvidence: withNoteDuration(over, FIXTURE_DURATION),
   }
 }
+
+/**
+ * §2.6/#142. The evidence map a fixture ends up with — **merged rather than replaced**, which is
+ * the one place these builders do not behave like a plain spread, and it has to be.
+ *
+ * `DeviceSchema` requires an entry at `noteDuration` from any device carrying recipes, and these
+ * fixtures carry one by default. A test overriding `capabilityEvidence` to say something about
+ * *jacks* is not saying anything about note duration, and under a plain spread it would silently
+ * drop the baseline and fail on a rule it was not testing.
+ *
+ * Injected **exactly where the declaration is**, which is the pairing `DeviceSchema` checks: a
+ * citation with no declaration behind it is refused as loudly as the reverse. A fixture passing
+ * `noteDuration: undefined` therefore gets neither, which is how a test builds a manifest that
+ * has said nothing at all. `capabilityEvidence: undefined` explicitly still means none.
+ */
+export function withNoteDuration(
+  over: Partial<Device>,
+  fallback: Device['noteDuration'],
+): Record<string, CapabilityEvidence> | undefined {
+  const own = 'capabilityEvidence' in over ? over.capabilityEvidence : undefined
+  if ('capabilityEvidence' in over && own === undefined) return undefined
+  const declared = 'noteDuration' in over ? over.noteDuration : fallback
+  if (declared === undefined) return own
+  return { noteDuration: FIXTURE_CITE, ...own }
+}
+
+/** The declaration those fixtures carry. A drum machine's answer, to match the fixture's kind. */
+export const FIXTURE_DURATION = {
+  kind: 'trigger',
+  reason: "the instrument's own envelope ends it",
+} as const
+
+/** The citation those baseline entries carry. Nothing reads it; it only has to be a `Cite`. */
+export const FIXTURE_CITE: Cite = { kind: 'manual', source: 'Fixture p.1' }
+
 
 export function poolDevice(over: Partial<Device> = {}): Device {
   return device({

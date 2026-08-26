@@ -1492,7 +1492,36 @@ export const device: Device = {
    * `features.sidechain.*` is the other reading: this box takes external audio and has no envelope
    * follower, so nothing on it can duck to what is coming in, and no page discusses it either way.
    */
+  /**
+   * §2.6/#142. **A length you set per step, and it is a fraction of the step rather than a
+   * duration.** p.25: *"Gate Length is set per-step and determines the duration that a note is
+   * held relative to the length of its step (from 1/8 - 8/8)"* — and the top of the travel is a
+   * tie: *"the longest duration (clockwise) acts as a 'Tie'. This means that a note is held
+   * through to the next step."*
+   *
+   * The unit is the whole point of writing it out rather than saying "gate length". A hook asking
+   * for eight bars cannot be entered as a number here; it is eight bars of tied steps, and a
+   * reader who is told the field exists and not what it is measured in will look for a value that
+   * does not exist. `per-note-value` rather than `tied-steps` because there *is* a per-step value
+   * with a stated range — the tie is one end of it, not the only gesture.
+   *
+   * **`SUSTAIN` rides with it, and the manual bolds the pairing itself** on the same page:
+   * *"IMPORTANT: Make sure the SUSTAIN switch is set to ON for different Gate Lengths to sound
+   * correctly."* It is not a second scale in CLAUDE.md's sense — it does not change what 5/8
+   * means — but a gate length entered with that switch off does not sound, so printing the value
+   * without it is printing an instruction that fails silently at the machine. It travels in the
+   * unit because that is what reaches the reader; the page carries both.
+   */
+  noteDuration: {
+    kind: 'per-note-value',
+    control: 'GATE LENGTH',
+    unit:
+      'eighths of its own step, 1/8 to 8/8 — full clockwise ties it to the next, ' +
+      'and `SUSTAIN` must be ON for any of it to sound',
+  },
+
   capabilityEvidence: {
+    noteDuration: cite(25),
     ...JACK_EVIDENCE,
     'clock.preferredSource': {
       kind: 'unknown',
