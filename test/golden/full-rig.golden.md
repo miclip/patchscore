@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → DFAM · Voice — *Square kick with the pitch envelope doing the whole thump*
+- **`kick`** → Grandmother · Voice — *Kick with the envelope cabled to Oscillator 1’s pitch*
   - p1 · exact `hard` · every section
 - **`sub`** → MC-101 · TONE Track 1 — *Sine sub, one note at a time, nothing above the fundamental*
   - p1 · exact `dark` · every section
@@ -79,10 +79,6 @@ None.
 
 - Why this box sends them — its manual says leading a rig is its job
 
-**Not driven** — Metropolix offers 2 pitch-and-gate pairs and this rig needs more. DFAM is left unpatched:
-
-- DFAM `IN · VCO 1 CV` and `IN · RUN / STOP` — nothing to plug in. Play it from its own keyboard or sequencer.
-
 - **CRAVE** — semi-modular · 1 part
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
@@ -107,10 +103,26 @@ None.
   - clock: sends clock · midi-din/usb/sync
   - audio: stereo main out
   - mixer: 1 part, no individual outs: one stereo channel for all
-- **DFAM** — semi-modular · 1 part
+- **DFAM** — semi-modular · 0 parts
   - clock: sends clock · analog-clock
   - audio: mono main out · audio in
+  - mixer: no parts assigned; nothing to patch
+- **Grandmother** — semi-modular · 1 part
+  - clock: sends clock · midi-din/usb/analog-clock
+  - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per the Global Settings (p.37) · manual
+    - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
+  - MIDI OUT: Everything originating on this box, MIDI Clock included when the Global Setting sends it (p.37) · manual
+    - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
+  - audio: mono main out · audio in
   - mixer: 1 part, no individual outs: one mono channel for all
+- **Matriarch** — semi-modular · 0 parts
+  - clock: sends clock · midi-din/usb/analog-clock
+  - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per Global Setting 1.5 (p.64) · manual
+    - ↳ cite: value manual — Moog Matriarch Manual (012023), p.59
+  - MIDI OUT: Everything originating here, MIDI Clock included — on by default per Global Setting 1.6 (p.64) · manual
+    - ↳ cite: value manual — Moog Matriarch Manual (012023), p.59
+  - audio: stereo main out · audio in
+  - mixer: no parts assigned; nothing to patch
 - **Mother-32** — semi-modular · 0 parts
   - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
   - MIDI IN: The only MIDI connector on the box: input only, 5-pin DIN, on the front panel · manual
@@ -200,9 +212,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 ## 5. Step programming
 
-### `kick` — DFAM · Voice
+### `kick` — Grandmother · Voice
 
-**Square kick with the pitch envelope doing the whole thump** — settings in Sound design
+**Kick with the envelope cabled to Oscillator 1’s pitch** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -227,12 +239,10 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — DFAM
+**On this box** — Grandmother
 
-- `accent` → `velocity` 88 on step 9
-  - ↳ hint: Turn that step’s VELOCITY knob
-- `ghost` → `velocity` 34 on steps 8, 16
-  - ↳ hint: Turn that step’s VELOCITY knob
+- `accent` → `accent` true on step 9
+  - ↳ hint: REC mode, then TAP adds an accent
 
 ### `sub` — MC-101 · TONE Track 1
 
@@ -661,52 +671,62 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **EFFECTS · DEPTH** `62` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
 
-### DFAM
+### Grandmother
 
-*Values below cite Moog DFAM Owner’s Manual.*
+*Values below cite Moog Grandmother User’s Manual (Version 2).*
 
-#### Voice — `kick`: Square kick with the pitch envelope doing the whole thump
+#### Voice — `kick`: Kick with the envelope cabled to Oscillator 1’s pitch
 
-Routing — Plays its own 8-step analog sequencer. Clock it at ADV / CLOCK — one step per rising edge, and the TEMPO knob is then ignored. No patch cable: the VCO envelope is normalled to both oscillators and VCO 1 EG AMOUNT is the only thing that decides how far the pitch falls
+Routing — Played from its own 32-note keyboard, from the arpeggiator or the 256-step sequencer, or over MIDI IN. Two cables: + ENV OUT to OSCILLATORS 1 PITCH IN for the drop — there is no normalled envelope-to-pitch route on this box — and KB VEL OUT to CUTOFF IN, without which p.30 says the accent is inaudible
 
-- **VCO 1 FREQUENCY** `22` % travel (0…100 % travel)
+- **OSCILLATOR 1 OCTAVE** `32'`
+- **OSCILLATOR 1 WAVEFORM** `TRIANGLE`
+- **OSCILLATOR 2 OCTAVE** `16'`
+- **OSCILLATOR 2 WAVEFORM** `TRIANGLE`
+- **SYNC** `OFF`
+- **OSCILLATOR 2 FREQUENCY** `0` st (-7…7 st)
+  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.12
+  - ↳ hint: 12 o’clock is unison with Oscillator 1
+- **OSCILLATOR 1** `82` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **VCO 1 WAVE** `SQUARE`
-- **VCO 1 LEVEL** `82` % travel (0…100 % travel)
+  - ↳ hint: Past 1 o’clock the mixer starts to overdrive
+- **OSCILLATOR 2** `0` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **VCO 2 FREQUENCY** `50` % travel (0…100 % travel)
+- **NOISE** `0` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **VCO 2 WAVE** `TRIANGLE`
-- **VCO 2 LEVEL** `0` % travel (0…100 % travel)
+- **CUTOFF** `120` Hz (10…20000 Hz)
+  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.16
+- **RESONANCE** `30` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **NOISE / EXT LEVEL** `0` % travel (0…100 % travel)
+  - ↳ hint: Past 3 o’clock the ladder self-oscillates
+- **ENVELOPE AMT** `66` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **VCF** `LP`
-- **CUTOFF** `320` Hz (20…20000 Hz)
-  - ↳ cite: range manual — Moog DFAM Owner’s Manual, p.18
-- **RESONANCE** `34` % travel (0…100 % travel)
+  - ↳ hint: 12 o’clock is off; either way from there
+- **KBD TRACK** `OFF`
+- **ATTACK** `0` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **VCF DECAY** `90` ms (10…10000 ms)
-  - ↳ cite: range manual — Moog DFAM Owner’s Manual, p.19
-- **VCF EG AMOUNT** `26` % travel from centre (-100…100 % travel from centre)
+- **DECAY** `14` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **VCA EG** `FAST`
-- **VCA DECAY** `26` % travel (0…100 % travel)
+- **SUSTAIN** `0` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **VCO DECAY** `16` % travel (0…100 % travel)
+- **RELEASE** `12` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **VCO 1 EG AMOUNT** `46` % travel from centre (-100…100 % travel from centre)
+- **VCA MODE** `ENV`
+- **VOLUME** `78` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **VCO 2 EG AMOUNT** `0` % travel from centre (-100…100 % travel from centre)
+- **MIX** `0` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **SEQ PITCH MOD** `VCO 1&2`
-- **HARD SYNC** `OFF`
-- **1→2 FM AMOUNT** `0` % travel (0…100 % travel)
+  - ↳ hint: Fully clockwise is reverb only, no dry
+- **GLIDE** `0` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **NOISE / VCF MOD** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **VOLUME** `76` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
+
+**Patch**
+
+- `ENVELOPE · + ENV OUT` → `OSCILLATORS · 1 PITCH IN`
+  - ↳ note: The pitch drop — a short DECAY makes it a click, a longer one a boom
+- `ARP/SEQ · KB VEL OUT` → `FILTER · CUTOFF IN` · manual
+  - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.30
+  - ↳ note: Makes a sequencer accent audible — the accent envelope only exists at this jack
 
 ### Subsequent 37
 
@@ -1022,6 +1042,7 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
 What processes audio in this rig:
 
 - ZOIA Euroburo — is an effects unit (stereo main out · audio in)
+- Matriarch — carries effects, though no part in this guide reaches them
 - Tracker Mini — carries effects, though no part in this guide reaches them
 - MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and DELAY SEND and REVERB SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
