@@ -16,6 +16,7 @@
     "gen:registry": "tsx scripts/gen-registry.ts",
     "check:registry": "tsx scripts/gen-registry.ts --check",
     "prebuild": "tsx scripts/gen-registry.ts",
+    "guide": "tsx scripts/guide.ts",
     "audit": "tsx scripts/audit-verified.ts",
     "bench:search": "tsx scripts/bench-search.ts",
     "verify": "npm run typecheck && npm run test",
