@@ -62,6 +62,14 @@ export function serialise(result: ResolveResult): string {
         // #100. A seeded decision like the key and the hook choice: which part defers to its
         // hook is exactly the kind of drift this file exists to catch.
         hookAuthority: a.hookAuthority ?? null,
+        // §4.3. The other half of that decision: whether a deferred part still prints its grid.
+        // Every assignment here is `false`, because the fixture direction authors a hook for a
+        // role it neither requests nor patterns — and the field is written anyway, so a template
+        // edit that turned one true shows as a diff instead of as nothing. The `true` case is
+        // pinned where it is *readable*, in the two Drone Study guide fixtures; reshaping this
+        // scenario to carry a re-articulating part would add a lead voice, a hook and four
+        // variants to an object whose every element is here for one stated discrimination.
+        reArticulatesHook: a.reArticulatesHook,
         patterns: a.patterns.map((p) => ({
           section: p.section,
           selection: p.selection,

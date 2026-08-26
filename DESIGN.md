@@ -1702,6 +1702,40 @@ Devices contribute `articulation` (§3), addressed by `PatternSlot` — which is
 named in invariant 3's shared vocabulary. Slots are how a device says "accent the accents at
 velocity 110, put cycle-2 on the last hit" without knowing which variant it was handed.
 
+**A direction says whether its variants are a rhythm or a re-articulation map**, on the request:
+`reArticulatesHook?: true`. It matters only where the role also has a hook, and it decides what
+§8's phase 5 prints for that part.
+
+A hook states steps, lengths and pitches; a variant states steps of its own. #100 read that as one
+contradiction and gave the part to its hook everywhere — correctly where the hook carries its own
+rhythm, and wrongly where the hook is a *held note* and the variant is the map of where it is
+lifted and struck again. On those parts there is one note sounding at any moment, the variant
+competes with nothing, and silencing it removed the only rhythmic decision the direction contains.
+It also took the density knob with it: the guide then differed between the two ends of the knob
+only in the band label §8's arrangement phase prints, with nothing behind it.
+
+**Authored, never derived.** The obvious derivation — compare the hook's note lengths against the
+variant's strike gaps — was implemented, measured across the whole library, and rejected: it flips
+*within one role of one direction* between two hooks the seed picks freely (Ambient Dub's
+`bass-mid`), so which semantics the guide used would depend on a reroll; and it calls Major-Key
+Electro's `arp` a held note being re-struck, where that template says its arp hook is "one note per
+step, so it lines up with the arp's own variants hit for hit". Whether a part is a held note being
+re-articulated is a musical fact about the direction, so the direction states it and the engine
+derives nothing.
+
+On the **request** rather than on each `Pattern`: all four bands of a role answer the question the
+same way — a role whose band 0 was a map and whose band 3 was a grid would be incoherent — and it
+belongs beside `character` and `sustain`, where a part's musical intent already lives. It is
+meaningless without both a hook and variants for the role, so `TemplateSchema` requires both; a
+flag that changes nothing printed is an author writing a no-op, the same discipline
+`sustain`/`sections` and `optional`/`inessential` are held to.
+
+Two requests in the library carry it — Drone Study's `texture` and Weave's `sub`, both of which
+argued for it in prose before the field existed — out of the thirteen that have a hook and variants
+both. `test/templates.test.ts` records the reading of all thirteen and pins the set exactly, in
+both directions: a fourteenth is a musical claim nobody reviewed, and a vanished one takes the
+density knob off a part silently.
+
 ### 4.4 Priority is ascending, and three claims a request makes separately
 
 `priority: 1` on kick and `priority: 4` on texture means 1 outranks 4, and §7.1's original
@@ -2797,6 +2831,22 @@ Do not reorder.
    and mood (§7 step 5) and the band it carries is what §6.3's trajectory reads, so a single-part
    template keeps its energy map. It is the grid that is not rendered, not the decision that is
    not made.
+
+   **And except where the direction says the variants re-articulate that hook** (§4.3's
+   `reArticulatesHook`), in which case the pointer comes *with* the grid rather than instead of
+   it: the hook owns which note and how long, the steps own where it is lifted and struck again.
+   Two authorities on one part, said in one sentence, so nothing is restated and there is nothing
+   for a reader to choose between — which was #100's actual complaint. The sentence names the
+   map's length in bars, because the chain plan below it is counted in the **hook's** bars: on
+   Drone Study that is a 16-bar cycle over a 4-bar map, and a reader handed both with no relation
+   between them would reasonably dial the wrong one. A re-articulating part whose every section
+   came back `none` has no map to describe and falls back to the plain pointer rather than to a
+   sentence about a grid that is not there (invariant 5).
+
+   This is the half of #100 that had to come back. Without it the density knob moved nothing a
+   reader could act on for those parts — the same three sections, the same silence, a different
+   band label in phase 7 — and on a one-part direction that is the whole guide unaffected by its
+   own arrangement.
 
    **Sections that are not a whole number of repeats are named, with the arithmetic** (#105).
    Drone Study's sections are 9, 15, 21, 33, 18, 24 and 12 bars against a 16-bar cycle, a 16-bar

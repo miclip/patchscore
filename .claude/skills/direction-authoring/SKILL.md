@@ -12,51 +12,69 @@ a trap because the trap is live.
 
 ---
 
-## 0. Read this first: a hook silences its own band variants
+## 0. Read this first: a hook and its band variants, and which one plays
 
-**A role with a resolved hook does not play its step variants.** #100 made the hook the sole
-authority wherever one resolves, and that was right — two phases were describing incompatible music
-for one part with nothing saying which to play. But `chooseHook(hooks, role, key, seed)`
-(`lib/core/harmony.ts:327`) **takes no band**, and `Hook` has no `band` field. So for that role:
+**A role can have both a hook and step variants, and the direction has to say what the variants
+are.** They are one of two things, and the answer decides whether the density knob does anything
+for that part:
 
-- every band variant you author becomes unreachable in the rendered guide;
-- the density knob changes nothing a listener would hear;
-- the section energy arc renders and does not play.
+- **a rhythm of their own** — the default, and true wherever the hook is a figure with its own
+  timing. The two would be competing instructions, so the hook wins: phase 5 prints
+  `**The hook is the pattern**` and no grid (#100). Your band variants are then unreachable in the
+  rendered guide, the density knob changes nothing a listener would hear, and the section energy
+  arc renders without playing.
+- **a re-articulation map** — where the hook is a *held note* and the variants say where it is
+  lifted and struck again. Declare it on the request: **`reArticulatesHook: true`** (§4.3). Phase 5
+  then prints a pointer *and* the grid, and the knob moves what the reader plays.
 
-Precisely what happens, because the halves matter:
+Precisely what each does, because the halves matter:
 
 | where | what |
 |---|---|
-| `lib/core/pipeline.ts:895`, stamped at `:929` | a **resolved** hook puts `hookAuthority` on the assignment |
-| `lib/core/render.ts:1722` and `components/guide/phase-steps.tsx:152` | phase 5 prints `**The hook is the pattern**` **instead of** the grid, the band line and the device articulation |
-| `lib/core/arrangement.ts:62` and `:75` | the band *number* still drives phase 7's arrangement grouping and trajectory — selection deliberately still runs |
-| `lib/core/arrangement.ts:203` | #105's chaining unit becomes the hook's bars, not the variant's |
+| `lib/core/pipeline.ts:895`, stamped at `:929` | a **resolved** hook puts `hookAuthority` on the assignment; the request's flag is carried beside it as `reArticulatesHook` |
+| `lib/core/render.ts:1722` and `components/guide/phase-steps.tsx:152` | phase 5 prints the pointer **instead of** the grid — or, with the flag, the re-articulation sentence **above** the grid, the band line and the device articulation |
+| `lib/core/arrangement.ts:62` and `:75` | the band *number* drives phase 7's arrangement grouping and trajectory either way — selection always runs |
+| `lib/core/arrangement.ts:203` | #105's chaining unit is the hook's bars for any deferred part, flagged or not, which is why the flagged sentence names the map's own length in bars |
 
-So the variant's **hits are dead and its band is not**. An unresolved hook takes no authority — the
-map at `lib/core/pipeline.ts:895` keeps only `outcome === 'resolved'`, and
-`test/hook-authority.test.ts:95` pins it — so this only bites where the hook actually resolves.
+An unresolved hook takes no authority at all — the map at `lib/core/pipeline.ts:895` keeps only
+`outcome === 'resolved'`, and `test/hook-authority.test.ts` pins it — so none of this bites where
+the hook fails to resolve.
 
-**Writing a hook and a band arc for one role today is writing one of them for nothing, and nothing
-tells you.** Drone Study is the proof: a template built around *"one strike in four bars at band 0,
-seven at band 3"* and a `0 1 2 3 2 1 0` arc called *"the only symmetric band vector in the
-registry"* — all of it inert, because the same part also has a hook. It is a one-part template, so
-that is the whole guide.
+**The flag is authored, and it is a musical claim you have to be able to defend.** It is not "I
+would like my bands back". Two requests in the library carry it and both argued for it in prose
+before the field existed:
 
-**And you must author the dead variants anyway.** `test/templates.test.ts:203` (*"authors all four
-bands for every role that has any pattern at all"*) and `:288` (*"gets busier as the band rises, and
-never by editing hits"*) apply to every patterned role, hooked or not. There is no exemption for
-hook-authority roles.
+- `drone-study` `r-texture` — *"a re-articulation map: the places the player lifts and re-strikes a
+  note that is otherwise continuous"*, against hooks of three notes held four and eight bars each.
+- `weave` `r-sub` — *"where the low note is struck again rather than held"*, and its hooks say *"the
+  rhythm of the part is in the variants, and the pitch of it is here"*.
 
-So, until #143 is fixed, decide per role:
+The closest call that is **not** flagged is `major-key-electro` `r-lead`, and it is worth reading
+before you reach for this: its variants are commented *"the hook says which notes; this says how
+often the part speaks"*, which is nearly the flag's own sentence — but `electro-hook-lead-1` places
+notes on steps 1, 11, 17, 27… and `electro-lead-b2` strikes 1, 11, 17, 27, so the hook already
+carries that rhythm and none of its 4-to-8-step notes is held across the next strike. No held note,
+nothing to re-articulate, one instruction written twice. `test/templates.test.ts` records the
+reading of all thirteen hooked-and-patterned requests and pins the flagged set exactly, so adding
+one means editing that list and saying why.
+
+Do not try to derive it. Comparing hook note lengths against variant strike gaps was implemented
+and rejected (§4.3): it flips within one role between two hooks the seed picks freely, so the
+guide's meaning would change on a reroll.
+
+**You must author all four bands either way.** `test/templates.test.ts` (*"authors all four bands
+for every role that has any pattern at all"* and *"gets busier as the band rises, and never by
+editing hits"*) applies to every patterned role, hooked, flagged or neither.
+
+So, decide per role:
 
 - **hook, no variants** — legitimate. `lib/templates/ambient-dub.ts` declines to pattern `pad`,
   `texture` and `sweep`, and invariant 5 does the rest: nothing authored, nothing invented. Say in
   the file that you meant it.
 - **variants, no hook** — the density knob works. This is what every percussion role does.
-- **both** — you are writing one of them for nothing. If you do it anyway, say in the file which
-  half is currently inert and why, so the next reader does not spend an afternoon on it.
-
-When #143 lands, this section becomes the rule that replaces it rather than a warning.
+- **both, hook is a figure** — the variants are inert by design. Say in the file which half is
+  inert and why, so the next reader does not spend an afternoon on it.
+- **both, hook is a held note** — `reArticulatesHook: true`, and say in the file what the map is.
 
 ---
 
@@ -166,6 +184,18 @@ npm run guide -- --devices polyend-tracker-mini,roland-tr-1000 --template ambien
 npm run guide -- --devices synthstrom-deluge --template drone-study --mood density=87
 ```
 
+**Then run it at both ends of the density knob and diff the two**, which is the check §0 exists
+for — a direction whose guides differ only in a band label is a direction whose knob does nothing:
+
+```bash
+npm run guide -- --devices polyend-tracker-mini --template drone-study --mood density=0   > /tmp/a.md
+npm run guide -- --devices polyend-tracker-mini --template drone-study --mood density=100 > /tmp/b.md
+diff /tmp/a.md /tmp/b.md
+```
+
+What you want to see is phase 5 changing — different strikes, a different band line — and not only
+phase 7's *Arrangement variations* grouping.
+
 stdout is the guide and nothing else, so it diffs and greps; the seed and rig go to stderr. Device
 order does not matter and the default seed matches the browser's. The fit numbers you want are in
 phase 2 — the three shortfall headings above.
@@ -238,9 +268,11 @@ recipe on the device.
 
 ## Done when
 
-- [ ] No role has both a resolved hook and band variants you expect a listener to hear — or the file
-      says which half is inert and why.
+- [ ] Every role with both a resolved hook and band variants has answered §0: either
+      `reArticulatesHook: true` with the musical claim written in the file, or the file says which
+      half is inert and why.
 - [ ] Every patterned role has four bands, strictly busier each step.
+- [ ] The two density guides diffed, and phase 5 moves — not only phase 7's band grouping.
 - [ ] The direction declares what it is still itself without, each with a reason a producer would say.
 - [ ] Section lengths that do not divide are deliberate and the file says so.
 - [ ] Rendered against at least one **single box** with `npm run guide`, and the fit is in the commit.

@@ -237,6 +237,7 @@
         "Drop"
       ],
       "hookAuthority": null,
+      "reArticulatesHook": false,
       "patterns": [
         {
           "section": "Intro",
@@ -592,6 +593,7 @@
         "Drop"
       ],
       "hookAuthority": null,
+      "reArticulatesHook": false,
       "patterns": [
         {
           "section": "Intro",
@@ -806,6 +808,7 @@
         "Drop"
       ],
       "hookAuthority": null,
+      "reArticulatesHook": false,
       "patterns": [
         {
           "section": "Intro",
@@ -896,6 +899,7 @@
         "Drop"
       ],
       "hookAuthority": null,
+      "reArticulatesHook": false,
       "patterns": [
         {
           "section": "Intro",
@@ -1133,6 +1137,7 @@
         "Drop"
       ],
       "hookAuthority": null,
+      "reArticulatesHook": false,
       "patterns": [
         {
           "section": "Intro",
@@ -1355,6 +1360,7 @@
         "Drop"
       ],
       "hookAuthority": null,
+      "reArticulatesHook": false,
       "patterns": [
         {
           "section": "Intro",
@@ -1550,6 +1556,7 @@
         "Drop"
       ],
       "hookAuthority": null,
+      "reArticulatesHook": false,
       "patterns": [
         {
           "section": "Intro",

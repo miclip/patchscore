@@ -47,11 +47,16 @@ import { droneStudy, industrialTechno } from '../../lib/templates/index'
  *         bars`. Industrial Techno's sections divide, so all three files above render that
  *         arithmetic's easy case and none of them renders the sentence at all. This is the one
  *         reason that is true nowhere else in this directory.
- *      3. **Hook authority as the whole of step programming (#100).** `texture` resolves to
- *         `drone-hook-upper`, so phase 5 says **The hook is the pattern** and defers instead of
- *         restating the steps. The deferral itself is *not* unique — `full-rig` and `midi-clock`
- *         each pin three of them — but here it is the entire phase, with nothing else in it for a
- *         regression to hide behind.
+ *      3. **A deferred part that still has a grid (§4.3).** `texture` resolves to
+ *         `drone-hook-upper`, so the hook owns the notes — and Drone Study declares
+ *         `reArticulatesHook`, so phase 5 prints the strike map under the pointer rather than
+ *         instead of it. That shape exists nowhere else in this directory: `full-rig` and
+ *         `midi-clock` pin three plain deferrals each, where the pointer *replaces* the grid.
+ *
+ *         It was the opposite claim until §4.3's flag landed — this file pinned the deferral as
+ *         the *whole* of the phase, which is what #100 made it and what left the density knob
+ *         with nothing to move here. `tracker-mini-drone-study` now pins the same shape on a box
+ *         whose envelope has something to say about it.
  *
  *    Nothing else about this fixture is load-bearing. Its key is not F minor, which is a
  *    consequence of running a second template on the shared seed rather than a reason to keep the
@@ -106,7 +111,30 @@ const MIDI_CLOCK = DEVICES.filter(
 /** The one box that can carry a tonal part alone. See `deluge-drone-study` above. */
 const DELUGE = DEVICES.filter((d) => d.id === 'synthstrom-deluge')
 
-export const GUIDE_NAMES = ['full-rig', 'tr-1000', 'midi-clock', 'deluge-drone-study'] as const
+/**
+ * §4.3/§8. The fifth fixture, and the one that pins **a band reaching the part**.
+ *
+ * Drone Study's `texture` carries `reArticulatesHook`, so phase 5 prints the hook pointer *and*
+ * the strike map — the only shape in this directory where a deferred part still has a grid.
+ * `deluge-drone-study` cannot pin it: same direction, but a golden holds one mood, and what makes
+ * this shape worth bytes is that the grid is what the density knob moves. Two fixtures on the same
+ * direction would pin the same three sections at the same band and neither would say so.
+ *
+ * The Tracker Mini rather than the Deluge for the half that is a *device* claim: `tm-texture-soft`
+ * fades in over 1.8 Sec, and phase 6's note under `ENV ATTACK` — that re-strikes closer together
+ * than the fade-in smear rather than articulate — is the guide-side answer to the envelope
+ * question this grid raises. The note and the grid it is about are only ever on the same page
+ * here, and a renderer change that dropped either would move no byte of any other file.
+ */
+const TRACKER_MINI = DEVICES.filter((d) => d.id === 'polyend-tracker-mini')
+
+export const GUIDE_NAMES = [
+  'full-rig',
+  'tr-1000',
+  'midi-clock',
+  'deluge-drone-study',
+  'tracker-mini-drone-study',
+] as const
 export type GuideName = (typeof GUIDE_NAMES)[number]
 
 /**
@@ -126,6 +154,7 @@ const RIGS: Record<GuideName, Fixture> = {
   'tr-1000': { devices: TR_1000, template: industrialTechno },
   'midi-clock': { devices: MIDI_CLOCK, template: industrialTechno },
   'deluge-drone-study': { devices: DELUGE, template: droneStudy },
+  'tracker-mini-drone-study': { devices: TRACKER_MINI, template: droneStudy },
 }
 
 export function guideText(name: GuideName): string {

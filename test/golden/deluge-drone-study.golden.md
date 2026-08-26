@@ -85,7 +85,50 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 
 **DX7 bed sent to the reverb and the delay** — settings in Sound design
 
-**The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
+**The hook is the notes; the steps below are where they are struck again** — see Hook above for what to play and how long each note is held. This map is 4 bars long and repeats inside the hook; the chain lengths below are counted in the hook.
+
+**Settle, Hush** — 64 steps, band 0
+
+```
+ 1 x··· ···· ···· ····
+17 ···· ···· ···· ····
+33 ···· ···· ···· ····
+49 ···· ···· ···· ····
+```
+- `downbeat` — 1
+
+**Gather, Give** — 64 steps, band 1
+
+```
+ 1 x··· ···· ···· ····
+17 ···· ···· ···· ····
+33 x··· ···· ···· ····
+49 ···· ···· ···· ····
+```
+- `downbeat` — 1, 33
+
+**Tilt, Turn** — 64 steps, band 2
+
+```
+ 1 x··· ···· ···· ····
+17 ··x· ···· ···· ····
+33 x··· ···· ···· ····
+49 ··x· ···· ···· ····
+```
+- `downbeat` — 1, 33
+- `offbeat` — 19, 51
+
+**Vast** — 64 steps, band 3
+
+```
+ 1 x··· ···· ··x· ····
+17 x··· ···· ··x· ····
+33 x··· ···· ···· ····
+49 x·x· ···· ···· ····
+```
+- `downbeat` — 1, 17, 33
+- `offbeat` — 11, 27, 51
+- `accent` — 49 (vel 104)
 
 - **Settle** · 9 bars — one copy cut to 9 bars
 - **Gather** · 15 bars — one copy cut to 15 bars

@@ -215,9 +215,25 @@ export const droneStudy: Template = {
    * only works on paper.
    *
    * `continuous`, so it occupies all seven sections — there is nothing to hand the voice to.
+   *
+   * **`reArticulatesHook`, and this is the direction it exists for.** The header above says the
+   * variants are "a re-articulation map: the places the player lifts and re-strikes a note that
+   * is otherwise continuous", and the hooks below are three notes in sixteen bars, held four and
+   * eight bars each. So the two layers cannot be competing rhythms: there is one note sounding
+   * at any moment and the only question the variants answer is when it is struck again. Without
+   * the flag #100 gives the whole of phase 5 to the hook, and this direction — whose one part is
+   * the whole guide — loses the only rhythmic decision it contains, along with everything the
+   * density knob does.
    */
   roles: [
-    { id: 'r-texture', role: 'texture', priority: 1, character: 'soft', sustain: 'continuous' },
+    {
+      id: 'r-texture',
+      role: 'texture',
+      priority: 1,
+      character: 'soft',
+      sustain: 'continuous',
+      reArticulatesHook: true,
+    },
   ],
 
   patterns: PATTERNS,

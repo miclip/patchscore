@@ -71,10 +71,16 @@ describe('sections that are not whole repeats (#105)', () => {
     // nothing about a section that divides.
   })
 
-  it('measures against the hook where the hook is the pattern (#100)', () => {
+  it('measures against the hook wherever a hook took authority (#100, §4.3)', () => {
     const result = drone()
     const part = result.assignments[0]
     expect(part?.hookAuthority).toBeDefined()
+
+    // §4.3 did not move this, and the choice is deliberate. This part now *also* prints its 4-bar
+    // strike map (`reArticulatesHook`), so there are two candidate units on the page — and the
+    // chain is still counted in the hook, because the hook is what the reader builds and repeats;
+    // the map repeats inside it. Phase 5's sentence states that relation for exactly this reason.
+    expect(part?.reArticulatesHook).toBe(true)
 
     // Sixteen bars, so a section shorter than one copy is one copy stopped early — never
     // "0 copies", which is a repeat count no box can be given.
