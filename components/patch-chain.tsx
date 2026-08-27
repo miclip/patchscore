@@ -213,11 +213,23 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
       svg.setAttribute('viewBox', `0 0 ${r(box.width)} ${r(box.height)}`)
     }
     for (const link of next) {
+      const casing = paths.current.get(`${link.id}:casing`)
+      const core = paths.current.get(`${link.id}:core`)
+      /**
+       * **Cache only what was actually written.**
+       *
+       * On first mount `ids` is empty, so the overlay is not rendered and these are undefined —
+       * yet the geometry is already computed, because computing it is how `ids` gets filled. An
+       * earlier version recorded that first result anyway and the write silently no-opped; the
+       * pass after the elements existed then matched the cache, skipped, and left the paths with
+       * no `d` at all. The cable appeared only once a scroll moved the geometry far enough to
+       * differ, which is exactly how it was reported.
+       */
+      if (casing === undefined || core === undefined) continue
       if (lastPath.current.get(link.id) === link.d) continue
       lastPath.current.set(link.id, link.d)
-      for (const suffix of ['casing', 'core']) {
-        paths.current.get(`${link.id}:${suffix}`)?.setAttribute('d', link.d)
-      }
+      casing.setAttribute('d', link.d)
+      core.setAttribute('d', link.d)
     }
   }, [areaRef])
 
