@@ -241,14 +241,32 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
     // `tm-texture-soft` fades in over 1.8 Sec and the band-3 map re-strikes faster than that.
     // The recipe says so rather than the template capping the band, and this is the only guide in
     // the directory carrying both halves — the note in phase 6 and the strikes in phase 5.
+    //
+    // **#155 moved the arithmetic between those two halves.** The note used to quote 1.8 Sec back
+    // and leave the sum to the reader; phase 5 now states the tightest re-strike against the map
+    // it sits under, and the note points at it. So this pins the *pair* rather than one sentence:
+    // the value in phase 6, the derived interval in phase 5, and the note joining them.
     const doc = guideText('tracker-mini-drone-study')
-    expect(doc).toContain('**ENV ATTACK** `1.8` Sec')
-    expect(doc).toContain('Re-strikes closer together than 1.8 Sec smear into the note before')
+    expect(doc).toContain('**ENVELOPE \u00b7 ATTACK** `1.8` Sec')
+    expect(doc).toContain('set it to the tightest re-strike Step programming prints, or shorter')
     expect(doc).toContain('64 steps, band 3')
+    // The half the note now points at, in committed bytes: 2 steps at 72 BPM against a 1.8 Sec
+    // fade-in is the conflict #155 reported, and it is the guide that answers it now.
+    expect(doc).toContain('- tightest re-strike — `0.42` Sec · derived from 2 steps at 72 BPM')
 
-    // The Deluge renders the same direction and carries no such note, so the pairing is this
-    // fixture's alone: dropping it would leave the note pinned by no committed bytes at all.
-    expect(guideText('deluge-drone-study')).not.toContain('Re-strikes closer together')
+    // The Deluge renders the same direction and carries no such note, so the *note* is this
+    // fixture's alone: dropping it would leave it pinned by no committed bytes at all. The
+    // re-strike line is not — it is the renderer's, and it appears there too, because `texture`
+    // re-articulates its hook whatever box is playing it.
+    expect(guideText('deluge-drone-study')).not.toContain('is deliberate — repeats run together')
+    expect(guideText('deluge-drone-study')).toContain('- tightest re-strike — ')
+
+    // And the scope, in committed bytes: the techno fixtures have no re-articulating part, so
+    // none of their drum maps carries a line. This is what keeps the #155 scope from widening
+    // back out unnoticed — a fixture with no line in it is the only proof the gate is real.
+    for (const name of TECHNO_GUIDE_NAMES) {
+      expect(guideText(name), name).not.toContain('tightest re-strike')
+    }
   })
 
   it('pins a flat key, so #32s enharmonic reading is covered by real bytes', () => {

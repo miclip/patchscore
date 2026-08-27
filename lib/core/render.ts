@@ -16,6 +16,7 @@ import type { Cite, ParamScope, Provenance, ResolvedParam, ResolvedRange } from 
 import { dominantRangeCite, hoistedParams, sameCite } from './params'
 import type { Pattern, PatternHit } from './template'
 import { STEPS_PER_BAR } from './template'
+import { reStrikesHeldNote, tightestReStrike } from './timing'
 import type { BoundArticulation, ResolvedPatchEntry, ResolvedSourceAudio } from './resolver'
 import { shortfallsOfKind, type Gap, type Shortfall } from './search'
 import {
@@ -1539,6 +1540,45 @@ function slotSteps(hits: readonly PatternHit[]): string {
     .join(', ')
 }
 
+/**
+ * #155. **The tightest re-strike this map contains, at this guide's tempo.**
+ *
+ * `tm-texture-soft` carried a note saying that re-strikes closer together than its 1.8 Sec
+ * fade-in smear into the note before, and left the reader to work out whether this part was one
+ * of them — arithmetic over a tempo and a strike map that are both already printed on the page.
+ * The guide does it here instead.
+ *
+ * **Only where the map re-strikes a held note** — a resolved hook *and* the direction's
+ * `reArticulatesHook` (§4.3/#100), which is `reStrikesHeldNote`'s whole job. That is the scope
+ * the fact actually has. On a part whose hook owns the note and whose steps say where it
+ * is lifted and struck again, the interval between two strikes is the thing an envelope has to
+ * fit inside, and a reader deciding an attack needs it. On a kick or a hat it is a restatement
+ * of the grid directly above it in a slower unit — every drum map in every guide would carry a
+ * line saying its sixteenths are a sixteenth apart, which is noise on a page §8 says is read
+ * standing at a rack. The line goes where the question exists.
+ *
+ * **Stated, never enforced.** #143 settled that a device's envelope must not cap a direction's
+ * strike rate: that puts the box in charge of the genre, which is invariant 3 backwards. So this
+ * is a fact about the rhythm and names no device and no parameter — the reader holding both
+ * halves is the one who decides which to move.
+ *
+ * The derivation is printed beside the answer rather than badged, because it *is* the provenance
+ * and it is two numbers long. `Provenance` is not borrowed for it: that vocabulary means an
+ * authored point moved by a mood axis, and this is neither.
+ *
+ * Nothing is printed when the map has no re-strike to measure. That is not a gap being hidden
+ * (invariant 5) — a map with one strike has no interval, so there is no value being withheld.
+ */
+function reStrikeLines(pattern: Pattern, bpm: number, reArticulates: boolean): Line[] {
+  if (!reArticulates) return []
+  const tightest = tightestReStrike(pattern, bpm)
+  if (tightest === undefined) return []
+  return [
+    `- tightest re-strike — \`${num(tightest.seconds)}\` Sec ` +
+      `· derived from ${count(tightest.steps, 'step')} at ${num(bpm)} BPM`,
+  ]
+}
+
 function articulationLines(
   entries: readonly BoundArticulation[],
   device: Device | undefined,
@@ -1572,6 +1612,7 @@ function stepBlock(
   entry: ResolvedAssignment['patterns'][number],
   deviceById: Map<DeviceId, Device>,
   options: Required<RenderOptions>,
+  bpm: number,
 ): StepBlock {
   const { selection } = entry
   if (selection.outcome === 'none') {
@@ -1591,7 +1632,14 @@ function stepBlock(
       : `band ${num(selection.usedBand)}`
   const { pattern } = selection
 
-  const body: Line[] = ['', '```', ...gridRows(pattern), '```', ...slotLines(pattern)]
+  const body: Line[] = [
+    '',
+    '```',
+    ...gridRows(pattern),
+    '```',
+    ...slotLines(pattern),
+    ...reStrikeLines(pattern, bpm, reStrikesHeldNote(a)),
+  ]
   if (entry.articulation.length > 0) {
     body.push('')
     // Labelled, because a bare second list under the slot list reads as more of the same
@@ -1639,10 +1687,11 @@ function mergeBlocks(
   a: ResolvedAssignment,
   deviceById: Map<DeviceId, Device>,
   options: Required<RenderOptions>,
+  bpm: number,
 ): { sections: SectionName[]; block: StepBlock }[] {
   const merged = new Map<string, { sections: SectionName[]; block: StepBlock }>()
   for (const entry of a.patterns) {
-    const block = stepBlock(a, entry, deviceById, options)
+    const block = stepBlock(a, entry, deviceById, options, bpm)
     const key = `${block.headline}\n${block.body.join('\n')}`
     const existing = merged.get(key)
     if (existing === undefined) merged.set(key, { sections: [entry.section], block })
@@ -1760,7 +1809,7 @@ function phaseSteps(
     // whose direction says the variants re-articulate the hook prints both, because there the
     // grid is not a competing rhythm but the map of where the held note is struck again (§4.3).
     const deferred = a.hookAuthority !== undefined
-    const blocks = deferred && !a.reArticulatesHook ? [] : mergeBlocks(a, deviceById, options)
+    const blocks = deferred && !a.reArticulatesHook ? [] : mergeBlocks(a, deviceById, options, result.song.bpm)
     if (deferred) {
       out.push('')
       // The sentence needs a length, so it needs a pattern; a re-articulating part whose every

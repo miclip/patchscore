@@ -367,11 +367,11 @@ describe('Tracker Mini manifest', () => {
 
       // A part that gets retriggered needs a level to hold at and a tail to leave on, not just
       // a fade-in. Both cited to p.126, which prints "Range 0-100%" and "Range 0-10 Seconds".
-      const sustain = by('ENV SUSTAIN')
-      if (sustain?.kind !== 'numeric') throw new Error(`${recipe.id}: ENV SUSTAIN is numeric`)
+      const sustain = by('ENVELOPE \u00b7 SUSTAIN')
+      if (sustain?.kind !== 'numeric') throw new Error(`${recipe.id}: ENVELOPE \u00b7 SUSTAIN is numeric`)
       expect(sustain.range).toEqual({ min: 0, max: 100, verified: { kind: 'manual', source: `${CITE_PREFIX}126` } })
-      const release = by('ENV RELEASE')
-      if (release?.kind !== 'numeric') throw new Error(`${recipe.id}: ENV RELEASE is numeric`)
+      const release = by('ENVELOPE \u00b7 RELEASE')
+      if (release?.kind !== 'numeric') throw new Error(`${recipe.id}: ENVELOPE \u00b7 RELEASE is numeric`)
       expect(release.range).toEqual({ min: 0, max: 10, verified: { kind: 'manual', source: `${CITE_PREFIX}126` } })
     }
   })
@@ -393,23 +393,53 @@ describe('Tracker Mini manifest', () => {
    * defect. So the answer is the guide's: **the recipe says what the interaction is**, and the
    * reader standing at the box, holding both halves, decides.
    *
-   * Asserted three ways, because the sentence is worthless if any one of them lapses: it carries
-   * its own value so prose and knob cannot drift apart, it names no direction (invariant 3), and
-   * it actually reaches a reader — a note the renderer drops settles nothing.
+   * Asserted several ways, because the sentence is worthless if any one of them lapses: it
+   * carries its own value so prose and knob cannot drift apart, it **poses no unresolved
+   * comparison** (#155), it says which outcome is deliberate and what to do for the other, it
+   * names no direction (invariant 3), and it actually reaches a reader — a note the renderer
+   * drops settles nothing.
+   *
+   * **#155 changed what the note is for, not how much it may say.** The defect was never the
+   * word count or the digits: it was the *shape*. "Re-strikes closer together than 1.8 Sec smear
+   * … shorten it if the part strikes faster" hands a reader a conditional and no way to evaluate
+   * it, over a tempo and a strike map printed two headings away. Phase 5 evaluates it now.
+   *
+   * So what is owed here is the half phase 5 cannot state: **which of the two outcomes the value
+   * is chosen for**, and where to go for the other one. A long attack is the recipe, not a
+   * hazard — the bed is the point — so the note says the value is deliberate first and gives the
+   * reader who wants distinct hits an action second. The value stays quoted because the sentence
+   * turns on *which* value is deliberate, and that is the one number this folder can state
+   * without seeing the part: its own. `test/timing.test.ts` holds the arithmetic and its scope;
+   * this holds the division of labour between them.
    */
   it('states what a fast re-strike does to its slow fade-in, and names no direction (§4.3)', () => {
     const recipe = device.recipes.find((r) => r.id === 'tm-texture-soft') as Recipe
-    const attack = (recipe.params as AuthoredParam[]).find((p) => p.name === 'ENV ATTACK')
-    if (attack?.kind !== 'numeric') throw new Error('tm-texture-soft: ENV ATTACK is numeric')
+    const attack = (recipe.params as AuthoredParam[]).find((p) => p.name === 'ENVELOPE \u00b7 ATTACK')
+    if (attack?.kind !== 'numeric') throw new Error('tm-texture-soft: ENVELOPE \u00b7 ATTACK is numeric')
 
     // Slow enough for the interaction to be real. A fade-in of a few hundredths would make the
     // sentence below true of nothing, and the test would then be pinning prose to a non-event.
     expect(attack.value).toBeGreaterThan(1)
     const note = attack.note
     expect(note, 'the slow fade-in says nothing about being re-struck').toBeDefined()
+
     // The number in the sentence is the number being dialled: moving one moves the other, or
     // this fails. A note quoting a value the param no longer holds is worse than no note.
     expect(note).toContain(`${attack.value} Sec`)
+
+    // #155. **No unresolved comparison.** This is the defect itself, pinned by its shape rather
+    // than by a word count: a conditional the reader has to evaluate from numbers printed
+    // somewhere else is the thing phase 5 exists to have already done.
+    expect(note, 'the note poses a comparison phase 5 now resolves').not.toMatch(
+      /closer together than|if the part strikes|faster than/i,
+    )
+
+    // Both halves of what is left. Which outcome the value is for, and the action for the other
+    // one — a note that says only "deliberate" tells a reader who wants distinct hits nothing.
+    expect(note, 'the note does not say the value is a choice').toMatch(/deliberate/i)
+    expect(note, 'the note gives no action for the other outcome').toMatch(/set it to/i)
+    // And it sends them to the phase that did the arithmetic, rather than restating it here.
+    expect(note).toContain('Step programming')
 
     // Generic, and that is the load-bearing half. The gap between strikes is a property of the
     // direction (§4.3), which this folder may not name and cannot see, so the sentence has to
@@ -430,6 +460,134 @@ describe('Tracker Mini manifest', () => {
       0,
     )
     for (const result of guides) expect(renderGuide(result)).toContain(note)
+  })
+
+  /**
+   * #154. **Two envelopes on this box, and the name has to say which one.**
+   *
+   * The Tracker Mini prints Attack/Decay/Sustain/Release twice, on pages that are not the same
+   * control:
+   *
+   *  - **p.126**, chapter 6's Envelope page — *"sample based parameters that affect the shape of
+   *    the instrument sound over time"*. Its four controls are printed plainly as `Attack`,
+   *    `Decay`, `Sustain`, `Release`; p.125 heads the page `Envelope` and shows it as the
+   *    instrument automation `Type`. Attack/Decay/Release `0-10 Seconds`, Sustain `0-100%`.
+   *  - **p.156 (FAT)** and **p.159 (VAP)**, the synth engines' own parameter tables, whose
+   *    `Function` column carries `Amplifier Env` beside a second envelope on the same page —
+   *    `Filter Env` on p.156, `Envelope 1` and `Envelope 2` on p.159. **Every one of them is
+   *    printed at `0.00-10 Sec` / `0.00-100%`**, so on a synth instrument the range distinguishes
+   *    nothing and only the `Function` can.
+   *
+   * `ENV ATTACK` used to sit on the p.126 side. It is not what any control on this box is called,
+   * and against p.159 it reads equally as three of them — which is what a reader standing at the
+   * machine actually hit. The fix is the one `CLAUDE.md` already records for the TR-8S's tone
+   * category and the minilogue xd's switch position: **carry the discriminator in the data**, so
+   * the pairing cannot come apart. Here it is the name itself, in the library's `SECTION · STAGE`
+   * form — `ENVELOPE · ATTACK` is p.126's page and control, `AMP ENV ATTACK` is the engine
+   * tables' `Amplifier Env → Attack`. Every word of both is printed on the page it cites.
+   *
+   * **A bare stage name is not enough and is rejected below.** It is p.126's control verbatim, but
+   * it locates nothing: on a box whose engine tables carry three more `Attack` rows, an unqualified
+   * `ATTACK` is the same failure #154 reported wearing a shorter name. Every other multi-envelope
+   * device in the library qualifies — `AMP EG · ATTACK`, `FILTER EG · ATTACK`, `ENVELOPE A ·
+   * ATTACK` — and this box is not the exception.
+   *
+   * Pinned by cited page rather than by voice, because `onBothPools` puts every synth recipe on
+   * `track-sample` as well (tracks 1-8 host synths); the split is which page the value was read
+   * off, and that is the thing that must not drift.
+   */
+  it('names its two envelopes apart, each on the page it was read off (#154)', () => {
+    const ENV_STAGES: string[] = ['ATTACK', 'DECAY', 'SUSTAIN', 'RELEASE']
+    /**
+     * p.125-126: the sample instrument's one envelope, named as those pages name it. `\u00b7` is
+     * U+00B7, the separator the library already uses for `AMP EG \u00b7 ATTACK` and its kin —
+     * written escaped here because this test is about exact bytes in a name.
+     */
+    const SAMPLE_PREFIX = 'ENVELOPE \u00b7 '
+    /** The engine tables' `Amplifier Env` row, which sits beside another envelope on its page. */
+    const ENGINE_PREFIX = 'AMP ENV '
+    const ENGINE_PAGES = ['156', '159']
+
+    const envelopeParams = device.recipes.flatMap((recipe) =>
+      (recipe.params as AuthoredParam[])
+        .filter((p) => ENV_STAGES.some((stage) => p.name.endsWith(stage)))
+        .map((p) => ({ recipe: recipe.id, param: p })),
+    )
+    expect(envelopeParams.length).toBeGreaterThan(0)
+
+    const sample: string[] = []
+    const engine: string[] = []
+
+    for (const { recipe, param } of envelopeParams) {
+      // The name that exists on neither page. This is the regression #154 reported.
+      expect(param.name, `${recipe}: no control on this box is called '${param.name}'`).not.toMatch(
+        /^ENV /,
+      )
+      // Printed, but unlocated — see the note above. Three engine rows answer to it as well.
+      expect(
+        ENV_STAGES,
+        `${recipe}: '${param.name}' names a stage without saying which envelope`,
+      ).not.toContain(param.name)
+
+      if (param.kind !== 'numeric') throw new Error(`${recipe}: ${param.name} is numeric`)
+      const cite = param.range.verified
+      if (cite === false || cite === undefined)
+        throw new Error(`${recipe}: ${param.name} cites no page`)
+      const page = cite.source.slice(CITE_PREFIX.length)
+
+      if (param.name.startsWith(ENGINE_PREFIX)) {
+        // `Amplifier Env` is a row in an engine's table. p.126 has no such row.
+        expect(ENGINE_PAGES, `${recipe}: ${param.name}`).toContain(page)
+        expect(ENV_STAGES, `${recipe}: ${param.name}`).toContain(
+          param.name.slice(ENGINE_PREFIX.length),
+        )
+        engine.push(`${recipe}/${param.name}`)
+      } else {
+        // p.126's envelope. An engine page here would mean a value read off the wrong one of two
+        // printed scales — the hazard `CLAUDE.md` names, on its third device.
+        expect(param.name, `${recipe}: ${param.name}`).toMatch(
+          new RegExp(`^${SAMPLE_PREFIX}(${ENV_STAGES.join('|')})$`),
+        )
+        expect(page, `${recipe}: ${param.name} is p.126's control, not an engine's`).toBe('126')
+        sample.push(`${recipe}/${param.name}`)
+      }
+    }
+
+    // Both halves are populated, or the loop above proves nothing about telling them apart.
+    expect(sample.length).toBeGreaterThan(0)
+    expect(engine.length).toBeGreaterThan(0)
+
+    // p.126's ranges, verbatim: three times `0-10 Seconds` and a `0-100%`.
+    for (const { recipe, param } of envelopeParams) {
+      if (param.kind !== 'numeric' || !param.name.startsWith(SAMPLE_PREFIX)) continue
+      const stage = param.name.slice(SAMPLE_PREFIX.length)
+      const expected = stage === 'SUSTAIN' ? { min: 0, max: 100 } : { min: 0, max: 10 }
+      expect(param.range, `${recipe}: ${param.name}`).toEqual({
+        ...expected,
+        verified: { kind: 'manual', source: `${CITE_PREFIX}126` },
+      })
+      expect(param.unit, `${recipe}: ${param.name}`).toBe(stage === 'SUSTAIN' ? '%' : 'Sec')
+    }
+  })
+
+  /**
+   * #154, the other half. **No recipe may hold both envelopes at once.**
+   *
+   * A recipe mixing `ENVELOPE · ATTACK` (p.126) with `AMP ENV ATTACK` (p.156/p.159) would print
+   * two rows a reader has to disambiguate by a page number they cannot see — and would mean the
+   * device folder had stopped tracking which instrument type the recipe is for. Sample recipes
+   * take the p.126 envelope; synth recipes take their engine's `Amplifier Env`.
+   */
+  it("never mixes p.126's envelope with an engine's Amplifier Env in one recipe (#154)", () => {
+    for (const recipe of device.recipes) {
+      const names = (recipe.params as AuthoredParam[]).map((p) => p.name)
+      const sample = names.filter((n) => n.startsWith('ENVELOPE \u00b7 '))
+      const engine = names.filter((n) => n.startsWith('AMP ENV '))
+      expect(
+        sample.length === 0 || engine.length === 0,
+        `${recipe.id}: carries both ${sample.join(', ')} and ${engine.join(', ')}`,
+      ).toBe(true)
+    }
   })
 
   // -------------------------------------------------------------------------
@@ -693,7 +851,7 @@ describe('time parameters (§6.1)', () => {
   it('moves a decay by hundredths rather than rounding it to a whole second', () => {
     const kick = device.recipes.find((r) => r.id === 'tm-kick-hard') as Recipe
     const at = (density: number) =>
-      resolveParams(kick, moodState({ density })).find((p) => p.name === 'ENV DECAY')?.value
+      resolveParams(kick, moodState({ density })).find((p) => p.name === 'ENVELOPE \u00b7 DECAY')?.value
 
     // Authored 0.28, moved -0.09 at full density. A step of 1 would give 0 at every setting.
     expect(at(0)).toBe(0.37)

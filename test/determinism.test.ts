@@ -100,6 +100,10 @@ const IMPLEMENTATION = [
   // §8.2's stored studio. Same argument as the codec above: it decides the inputs, including
   // the device order a saved rig comes back in.
   'studio-store.ts',
+  // #155's re-strike arithmetic. It is the only module in the engine that divides, and the
+  // result is printed as a decimal — so it is the obvious place for a `toFixed` or an `Intl`
+  // number formatter to be reached for the next time somebody wants two decimal places.
+  'timing.ts',
   // §8's phase order. Scanned rather than excluded with the other declaration-only modules:
   // it is read by renderers, which is where locale formatting creeps in, and a module that
   // costs nothing to scan is never the one worth leaving out of a ban.

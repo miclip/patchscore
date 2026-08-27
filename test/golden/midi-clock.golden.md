@@ -461,7 +461,7 @@ Source — A dry kick one-shot under 400 ms, attack intact and no room printed o
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
 - **OVERDRIVE** `18` % (0…100 %)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
-- **ENV DECAY** `0.28` Sec (0…10 Sec)
+- **ENVELOPE · DECAY** `0.28` Sec (0…10 Sec)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.126
 
 #### Synth Track 1 — `bass-mid`: Wide detuned reese, filter well down
@@ -501,10 +501,10 @@ Routing — Tracks 1-8 — costs no synth slot, and one loaded sample serves eve
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
 - **TUNE** `0` St (-24…24 St)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.116
-- **ENV ATTACK** `0` Sec (0…10 Sec)
-- **ENV DECAY** `0.3` Sec (0…10 Sec)
-- **ENV SUSTAIN** `0` % (0…100 %)
-- **ENV RELEASE** `0.2` Sec (0…10 Sec)
+- **ENVELOPE · ATTACK** `0` Sec (0…10 Sec)
+- **ENVELOPE · DECAY** `0.3` Sec (0…10 Sec)
+- **ENVELOPE · SUSTAIN** `0` % (0…100 %)
+- **ENVELOPE · RELEASE** `0.2` Sec (0…10 Sec)
 - **OVERDRIVE** `16` % (0…100 %)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
 

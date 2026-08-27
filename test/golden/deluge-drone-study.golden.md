@@ -106,6 +106,7 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 49 ···· ···· ···· ····
 ```
 - `downbeat` — 1, 33
+- tightest re-strike — `6.67` Sec · derived from 32 steps at 72 BPM
 
 **Tilt, Turn** — 64 steps, band 2
 
@@ -117,6 +118,7 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 ```
 - `downbeat` — 1, 33
 - `offbeat` — 19, 51
+- tightest re-strike — `2.92` Sec · derived from 14 steps at 72 BPM
 
 **Vast** — 64 steps, band 3
 
@@ -129,6 +131,7 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 - `downbeat` — 1, 17, 33
 - `offbeat` — 11, 27, 51
 - `accent` — 49 (vel 104)
+- tightest re-strike — `0.42` Sec · derived from 2 steps at 72 BPM
 
 - **Settle** · 9 bars — one copy cut to 9 bars
 - **Gather** · 15 bars — one copy cut to 15 bars

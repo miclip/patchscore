@@ -489,7 +489,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('TUNE', -3, SEMITONES_24, 116, { unit: 'St' }),
       num('CUTOFF', 74, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -16 }] }),
       num('OVERDRIVE', 18, PCT, 120, { unit: '%', mood: [{ axis: 'grit', amount: 22 }] }),
-      secs('ENV DECAY', 0.28, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.09 }] }),
+      secs('ENVELOPE · DECAY', 0.28, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.09 }] }),
       swing(),
     ],
     articulation: [{ slot: 'accent', set: { volume: 100 }, hint: 'pick-fx' }],
@@ -514,7 +514,7 @@ const SAMPLE_RECIPES: Recipe[] = [
         mood: [{ axis: 'darkness', amount: -3 }],
       }),
       num('CUTOFF', 46, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -14 }] }),
-      secs('ENV DECAY', 0.62, SECONDS_10, 126),
+      secs('ENVELOPE · DECAY', 0.62, SECONDS_10, 126),
       num('REVERB SEND', 8, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 18 }] }),
       swing(),
     ],
@@ -535,7 +535,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('FILTER TYPE', 'High-pass', FILTER_TYPES, 117),
       num('CUTOFF', 22, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: 12 }] }),
       num('TUNE', 2, SEMITONES_24, 116, { unit: 'St' }),
-      secs('ENV DECAY', 0.3, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.1 }] }),
+      secs('ENVELOPE · DECAY', 0.3, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.1 }] }),
       num('DELAY SEND', 12, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 24 }] }),
       swing(),
     ],
@@ -559,7 +559,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('PANNING', 6, PAN, 116),
       num('FINETUNE', 22, FINE_CENTS, 116, { unit: 'c' }),
       num('REVERB SEND', 26, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 26 }] }),
-      secs('ENV RELEASE', 0.4, SECONDS_10, 126),
+      secs('ENVELOPE · RELEASE', 0.4, SECONDS_10, 126),
       swing(),
     ],
     articulation: [{ slot: 'backbeat', set: { panning: 8 } }],
@@ -578,7 +578,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'High-pass', FILTER_TYPES, 117),
       num('CUTOFF', 34, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: 10 }] }),
-      secs('ENV DECAY', 0.09, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.03 }] }),
+      secs('ENVELOPE · DECAY', 0.09, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.03 }] }),
       num('PANNING', -12, PAN, 116),
       swing(),
     ],
@@ -603,7 +603,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
       num('CUTOFF', 58, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -18 }] }),
-      secs('ENV RELEASE', 0.24, SECONDS_10, 126),
+      secs('ENVELOPE · RELEASE', 0.24, SECONDS_10, 126),
       num('BIT DEPTH', 12, BITS, 120, { unit: 'Bits', mood: [{ axis: 'grit', amount: -4 }] }),
       swing(),
     ],
@@ -623,7 +623,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       num('TUNE', 4, SEMITONES_24, 116, { unit: 'St' }),
       num('PANNING', 18, PAN, 116),
-      secs('ENV DECAY', 0.11, SECONDS_10, 126),
+      secs('ENVELOPE · DECAY', 0.11, SECONDS_10, 126),
       swing(),
     ],
     articulation: [{ slot: 'ghost', set: { chance: 65 }, hint: 'pick-fx' }],
@@ -644,7 +644,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Band-pass', FILTER_TYPES, 117),
       num('CUTOFF', 62, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -12 }] }),
-      secs('ENV RELEASE', 0.9, SECONDS_10, 126),
+      secs('ENVELOPE · RELEASE', 0.9, SECONDS_10, 126),
       num('REVERB SEND', 16, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 20 }] }),
       swing(),
     ],
@@ -667,7 +667,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
       num('TUNE', -5, SEMITONES_24, 116, { unit: 'St' }),
       num('CUTOFF', 52, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -15 }] }),
-      secs('ENV DECAY', 0.44, SECONDS_10, 126),
+      secs('ENVELOPE · DECAY', 0.44, SECONDS_10, 126),
       swing(),
     ],
     articulation: [{ slot: 'fill', set: { roll: 2 }, hint: 'pick-fx' }],
@@ -688,7 +688,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       num('PANNING', -22, PAN, 116),
       num('FINETUNE', -14, FINE_CENTS, 116, { unit: 'c' }),
-      secs('ENV DECAY', 0.07, SECONDS_10, 126, { mood: [{ axis: 'density', amount: 0.04 }] }),
+      secs('ENVELOPE · DECAY', 0.07, SECONDS_10, 126, { mood: [{ axis: 'density', amount: 0.04 }] }),
       swing(),
     ],
     articulation: [{ slot: 'ghost', set: { volume: 30 } }],
@@ -793,13 +793,13 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
       num('CUTOFF', 44, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -18 }] }),
       num('TUNE', -2, SEMITONES_24, 116, { unit: 'St' }),
-      secs('ENV ATTACK', 1.4, SECONDS_10, 126),
-      secs('ENV RELEASE', 2.2, SECONDS_10, 126),
+      secs('ENVELOPE · ATTACK', 1.4, SECONDS_10, 126),
+      secs('ENVELOPE · RELEASE', 2.2, SECONDS_10, 126),
       // The sustained level of the chord while the step holds it. Instrument Volume is *not*
       // authored anywhere in this file — p.116 prints its range as "-inf dB to 24.00 dB" and
       // `NumericRange` rightly refuses a non-finite bound — so the level that can be stated
       // honestly is the envelope's, which p.126 prints as a plain 0-100%.
-      num('ENV SUSTAIN', 84, PCT, 126, { unit: '%' }),
+      num('ENVELOPE · SUSTAIN', 84, PCT, 126, { unit: '%' }),
       num('REVERB SEND', 30, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 24 }] }),
       swing(),
     ],
@@ -885,10 +885,10 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('CUTOFF', 66, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -22 }] }),
       num('RESONANCE', 30, PCT, 117, { unit: '%', mood: [{ axis: 'grit', amount: 16 }] }),
       num('TUNE', 0, SEMITONES_24, 116, { unit: 'St' }),
-      secs('ENV ATTACK', 0, SECONDS_10, 126),
-      secs('ENV DECAY', 0.3, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.1 }] }),
-      num('ENV SUSTAIN', 0, PCT, 126, { unit: '%' }),
-      secs('ENV RELEASE', 0.2, SECONDS_10, 126),
+      secs('ENVELOPE · ATTACK', 0, SECONDS_10, 126),
+      secs('ENVELOPE · DECAY', 0.3, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.1 }] }),
+      num('ENVELOPE · SUSTAIN', 0, PCT, 126, { unit: '%' }),
+      secs('ENVELOPE · RELEASE', 0.2, SECONDS_10, 126),
       num('OVERDRIVE', 16, PCT, 120, { unit: '%', mood: [{ axis: 'grit', amount: 20 }] }),
       swing(),
     ],
@@ -925,10 +925,10 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('CUTOFF', 68, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -22 }] }),
       num('RESONANCE', 34, PCT, 117, { unit: '%', mood: [{ axis: 'grit', amount: 18 }] }),
       num('TUNE', 0, SEMITONES_24, 116, { unit: 'St' }),
-      secs('ENV ATTACK', 0, SECONDS_10, 126),
-      secs('ENV DECAY', 0.32, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.12 }] }),
-      num('ENV SUSTAIN', 0, PCT, 126, { unit: '%' }),
-      secs('ENV RELEASE', 0.24, SECONDS_10, 126),
+      secs('ENVELOPE · ATTACK', 0, SECONDS_10, 126),
+      secs('ENVELOPE · DECAY', 0.32, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.12 }] }),
+      num('ENVELOPE · SUSTAIN', 0, PCT, 126, { unit: '%' }),
+      secs('ENVELOPE · RELEASE', 0.24, SECONDS_10, 126),
       num('OVERDRIVE', 18, PCT, 120, { unit: '%', mood: [{ axis: 'grit', amount: 20 }] }),
       swing(),
     ],
@@ -1008,16 +1008,29 @@ const SAMPLE_RECIPES: Recipe[] = [
       // Said generically, and it has to be: the number of strikes in a bar is a property of the
       // direction (§4.3), which this folder cannot name (invariant 3) and cannot see. What it
       // can state is its own envelope's consequence, in terms of any part at all.
-      secs('ENV ATTACK', 1.8, SECONDS_10, 126, {
+      //
+      // **#155 replaced the arithmetic with an action.** The note used to say that re-strikes
+      // closer together than 1.8 Sec smear, and leave the reader to work out at the machine
+      // whether theirs did — a sum over a tempo and a strike map the guide was already printing
+      // two headings apart. Phase 5 does that sum now, so what is owed here is the half phase 5
+      // cannot state: **which of the two outcomes is wanted**, and what to do to get the other
+      // one. A long attack is not a defect to be warned about, it is the recipe — the bed is the
+      // point — so the note says the value is deliberate first, and gives the reader who wants
+      // distinct hits somewhere to go second.
+      //
+      // The value is quoted back, and that is deliberate too: the sentence turns on which value
+      // is deliberate, so prose and knob must not be able to drift apart. That is the one number
+      // this folder can state without seeing the part, because it is its own.
+      secs('ENVELOPE · ATTACK', 1.8, SECONDS_10, 126, {
         note:
-          'Re-strikes closer together than 1.8 Sec smear into the note before rather than ' +
-          'articulating — shorten it if the part strikes faster',
+          '1.8 Sec is deliberate — repeats run together into one continuous bed. For distinct ' +
+          'hits, set it to the tightest re-strike Step programming prints, or shorter',
       }),
       // The other half of #102: a part that gets retriggered needs a level to hold at and a tail
       // to leave on. Without them the reader sets a 1.8 Sec fade-in and nothing about what
       // happens after. Same pair, same page, as the soft pad above.
-      num('ENV SUSTAIN', 84, PCT, 126, { unit: '%' }),
-      secs('ENV RELEASE', 2.2, SECONDS_10, 126),
+      num('ENVELOPE · SUSTAIN', 84, PCT, 126, { unit: '%' }),
+      secs('ENVELOPE · RELEASE', 2.2, SECONDS_10, 126),
       swing(),
     ],
     verified: false,

@@ -9,7 +9,7 @@ import type {
   SectionChain,
   SectionName,
 } from '@/lib/core'
-import { STEPS_PER_BAR, chainPlan } from '@/lib/core'
+import { STEPS_PER_BAR, chainPlan, reStrikesHeldNote, tightestReStrike } from '@/lib/core'
 import { citeLines, count, hintText, num, voicesLabel } from './format'
 import { HookRef, Instruction, ProvenanceMark, ReArticulationRef, SoundRef } from './instruction'
 
@@ -171,14 +171,54 @@ export function mergeBlocks(a: ResolvedAssignment): Block[] {
   return [...merged.values()]
 }
 
+/**
+ * #155. **The tightest re-strike this map contains, at this guide's tempo.**
+ *
+ * See `reStrikeLines` in `lib/core/render.ts` for why this is stated and never enforced: a
+ * device's envelope must not cap a direction's strike rate (#143, invariant 3), so this names no
+ * device and no parameter and leaves the reader holding both halves to decide which to move.
+ *
+ * Only where the map re-strikes a held note — `reStrikesHeldNote`, the same predicate the
+ * Markdown sibling uses, so the two cannot come to different readings of a two-part condition.
+ * See it for why an unresolved hook is excluded, and the Markdown sibling for why a drum map is.
+ *
+ * Renders nothing when the map has no re-strike to measure — one strike has no interval, so
+ * there is no value being withheld (invariant 5).
+ */
+function ReStrike({
+  pattern,
+  bpm,
+  reArticulates,
+}: {
+  pattern: Pattern
+  bpm: number
+  reArticulates: boolean
+}) {
+  if (!reArticulates) return null
+  const tightest = tightestReStrike(pattern, bpm)
+  if (tightest === undefined) return null
+  return (
+    <li>
+      <span className="slot">tightest re-strike</span>
+      <span className="token-sep">—</span>
+      <span className="mono">{num(tightest.seconds)} Sec</span>
+      <span className="quiet">
+        · derived from {count(tightest.steps, 'step')} at {num(bpm)} BPM
+      </span>
+    </li>
+  )
+}
+
 function BlockBody({
   a,
   block,
   device,
+  bpm,
 }: {
   a: ResolvedAssignment
   block: Block
   device: Device | undefined
+  bpm: number
 }) {
   const { selection } = block.entry
   if (selection.outcome === 'none') {
@@ -215,6 +255,14 @@ function BlockBody({
             <span className="mono">{slotSteps(hits)}</span>
           </li>
         ))}
+        {/* #155. The arithmetic the guide was leaving to the reader. Worded exactly as the
+            Markdown sibling words it — two wordings of one claim are two chances to be wrong —
+            and inside the same list, because it is another fact about this map. */}
+        <ReStrike
+          pattern={selection.pattern}
+          bpm={bpm}
+          reArticulates={reStrikesHeldNote(a)}
+        />
       </ul>
 
       {block.entry.articulation.length === 0 ? null : (
@@ -331,7 +379,12 @@ export function PhaseSteps({
           {mergeBlocks(a).map((block) => (
             <div className="block" key={block.sections.join(',')}>
               <h5>{block.sections.join(', ')}</h5>
-              <BlockBody a={a} block={block} device={deviceById.get(a.deviceId)} />
+              <BlockBody
+                a={a}
+                block={block}
+                device={deviceById.get(a.deviceId)}
+                bpm={result.song.bpm}
+              />
             </div>
           ))}
           {/* #105. After the programming, hooked or not: it is how what was just described gets

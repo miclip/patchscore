@@ -2956,6 +2956,58 @@ Do not reorder.
    part lists the sections it cannot fill evenly. The unit is what that part actually repeats:
    its variant, or its hook where the hook took authority above. A section shorter than one copy
    is one copy stopped early, never "0 copies", which is a repeat count no box can be given
+
+   **A re-articulating map states its tightest re-strike, derived (#155).** A line reading
+   `tightest re-strike — 0.42 Sec · derived from 2 steps at 72 BPM` sits under the slot list. It was a note on a device recipe before: `tm-texture-soft` fades in over 1.8
+   Sec and said so in prose, then left the reader to work out at the machine whether *their* part
+   struck faster than that — a sum over a tempo and a strike map the guide was already printing
+   two headings apart. The guide holds both numbers, so the guide does the sum.
+
+   **Only on the blocks that pose the question**, which is **a resolved hook *and*
+   `reArticulatesHook`** — `reStrikesHeldNote` in `lib/core/timing.ts`, called by both renderers
+   so neither can come to its own reading of a two-part condition.
+
+   Both halves are needed and only one of them is obvious. `reArticulatesHook` is carried from
+   the request, so it stays true when the hook it refers to resolved to nothing (§4.1's
+   `unparsed-key`) — and with no hook there are no held notes, so the grid is the part's own
+   ordinary rhythm and a timing line would be measuring the gap between two strikes of a note
+   nothing is holding. The other half is unobservable through a renderer today: a part with a
+   resolved hook that does *not* re-articulate it renders no grid at all (#100), so there is
+   nothing for a line to hang off, which is exactly the sort of clause that rots unnoticed. It is
+   pinned on the predicate rather than on rendered bytes for that reason. On a part whose hook owns the note and whose steps say where it is lifted and
+   struck again, the interval between two strikes is the thing an envelope has to fit inside, and
+   a reader choosing an attack needs it. On a kick or a hat the same number is the grid directly
+   above it restated in a slower unit: every drum map in every guide would carry a line saying
+   its sixteenths are a sixteenth apart, which is noise on a page §8 says is read standing at a
+   rack with hands busy. The scope is the question, not the arithmetic — the arithmetic is
+   available for any map, and `lib/core/timing.ts` computes it for any map, but a guide that
+   answers questions nobody asked is longer without being more useful.
+
+   **Stated, never enforced, and that is the whole design.** #143 settled the direction: capping
+   a band to fit an envelope would put a device in charge of a direction's rhythm, which is
+   invariant 3 backwards. So the line names no device and no parameter — it is a property of the
+   tempo and the step map alone, which is why it can live in `lib/core/timing.ts` and be true of
+   every direction on every box. The recipe keeps the consequence ("struck again before this
+   completes, the part swells instead of articulating") and drops the arithmetic, because the
+   half a device folder cannot see is the part. The reader holds both halves and decides which
+   to move.
+
+   **Per band, because that is the grain the fact has.** A single number per guide would be
+   wrong: Drone Study's `texture` is 6.67 Sec apart in the quiet sections and 0.42 Sec apart in
+   the loud ones. The wrap is counted — a map loops, so the distance from the last strike round
+   to the first is a real interval, and a map hitting only its first and last step would
+   otherwise be reported as becalmed. Nothing is printed where a map strikes once: that is not a
+   gap being hidden (invariant 5), because an interval between one strike and nothing does not
+   exist. The derivation is printed beside the answer rather than badged — `Provenance` means an
+   authored point moved by a mood axis, and this is neither.
+
+   **What the recipe keeps is the half phase 5 cannot state:** which of the two outcomes its
+   value is chosen for. `tm-texture-soft`'s note reads *"1.8 Sec is deliberate — repeats run
+   together into one continuous bed. For distinct hits, set it to the tightest re-strike Step
+   programming prints, or shorter"*. A long attack is the recipe rather than a hazard, so the
+   note says the value is deliberate first and gives the reader who wants the other outcome an
+   action second. It quotes its own value, because the sentence turns on *which* value is
+   deliberate — and that is the one number a device folder can state without seeing the part
 6. **Sound design** — opening with **what to load**, where the recipe declares a source (§3/#101).
    `Source — a sustained tonal source, two seconds or longer …` goes first in the part, ahead of
    routing and ahead of every parameter, because that is the order it happens at the machine: a
