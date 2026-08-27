@@ -11,14 +11,17 @@ import type { Role } from '../../core/vocabulary'
  * **Source**: `manuals/Minitaur_Manual.pdf`, 19 PDF pages, © 2012 Moog Music, from
  * [Moog's CDN](https://cdn.inmusicbrands.com/Moog/Minitaur/Minitaur_Manual.pdf) — the same path
  * the Subsequent 37 manual came from. PDF pages 17-19 are a **firmware v2.1 addendum** bound
- * onto the back of the original document; nothing below cites them except where it says so.
+ * onto the back of the original document, describing firmware v2.0 and later. Its pages carry no
+ * printed folio, so the few citations that reach it name the PDF page and say `(unnumbered)` —
+ * see `addendum()`. Two things below depend on it and could not be authored honestly without
+ * it: the `DECAY/RELEASE MODE` param, and what actually happens to a note above the box's range.
  *
  * ## The page offset here is not an offset, it is a spread
  *
- * `manuals/README.md` records the Metropolix as printed folio = PDF page − 1 and the Mother-32
- * as the same. This document is laid out differently and the usual arithmetic does not apply to
- * it: the page box is **792 × 612 pt, landscape letter**, and every PDF page carries **two
- * printed pages side by side**. So
+ * `manuals/README.md` records the Metropolix as printed folio = PDF page − 1, and the Mother-32
+ * carries the same offset in its own manifest rather than in the README. This document is laid
+ * out differently again and neither arithmetic applies: the page box is **792 × 612 pt,
+ * landscape letter**, and every PDF page carries **two printed pages side by side**. So
  *
  *     printed 2N-3 (left) and printed 2N-2 (right)  are both on  PDF page N
  *     printed p                                     is on        PDF page floor((p + 3) / 2)
@@ -53,7 +56,9 @@ import type { Role } from '../../core/vocabulary'
  * *panel* prints it — a reader setting `AMPLIFIER DECAY/RELEASE` to `0.4 s` is setting it by ear
  * against a stated end-to-end range, and the note on each such param says so. Two knobs carry a
  * centre detent worth naming instead of a number, and the panel marks both with `−` and `+`:
- * `VCO 2 FREQ` (centre is unison, p.9) and `EG AMOUNT` (centre is no envelope, p.13).
+ * `VCO 2 FREQ` (centre is unison, p.9) and `EG AMOUNT`, whose centre is no envelope at all —
+ * that one is Appendix E's `-100% TO +100%` on p.29, since p.13 describes what positive and
+ * negative settings *do* without ever stating what sits between them.
  *
  * The one landmark the manual does give for an unmarked knob is a good one and is used below:
  * *"The VCOs begin to clip the filter at about 2 o'clock creating more aggressive sounds"*
@@ -75,30 +80,37 @@ import type { Role } from '../../core/vocabulary'
  * `receiveTransport` is omitted, which means all of them. `sendTransport` is moot: §2.3's
  * `sendTransports()` returns nothing for a box that cannot send, whatever the list says.
  *
- * ## No panel, and the aspect check is why
+ * ## No panel, and both figures in this document fail the aspect check
  *
  * §10 wants a drawn panel and printed p.6 has a fully-labelled front-panel figure, so this
- * looked like the DFAM case. It is not. The skill's rule is to **check the aspect before
- * believing either number**, and this figure fails it:
+ * looked like the DFAM case. It is not. `PanelLayout`'s rule is to **check the aspect before
+ * believing either number**, and both figures fail it.
  *
- *     drawn panel border, measured at 300 dpi     1184.5 x 748.0 px    aspect 1.5836
- *     222.3 / 130.2  (width / depth, the top face)                     aspect 1.7074
- *     222.3 /  79.4  (width / height)                                  aspect 2.7997
- *     130.2 /  79.4  (depth / height)                                  aspect 1.6398
+ *     front panel, p.6    284.26 x 179.49 pt   aspect 1.5837   against 222.3/130.2 = 1.7074
+ *     back panel,  p.18   285.29 x  70.28 pt   aspect 4.0595   against 222.3/ 79.4 = 2.7997
  *
- * No pair of the specification's three dimensions (p.30) produces the drawn aspect, and the
- * scale factors disagree by 8% between the axes — 2.216 in/px horizontally against 2.053
- * vertically. A drawing that were to scale would give one factor. This one is an illustration
- * in the OVERVIEW chapter rather than the DFAM's 1:1 blank patch sheet, and there is no second
- * document here to fall back on the way the Subsequent 37 falls back on its Quickstart poster.
+ * No pair of the specification's three dimensions (p.30) produces either aspect. The front
+ * figure's scale factors also disagree between the axes — 2.2168 against 2.0562, a ratio of real
+ * millimetres to drawn ones, which a figure drawn to scale would give as one number. The back
+ * figure is stretched by a factor of 1.45.
  *
- * Backing out a rise from the drawn aspect would give 222.3 / 1.5836 = 140.4 mm, which is deeper
- * than the whole box; assuming instead that the top face is inset from the stated depth would
- * give about 120.8 mm, which is a number no page states and which `PanelLayout.verified` would
- * then have to cite. Both are estimates wearing a measurement's clothes, and §10's standard is
- * explicit that a panel with estimated coordinates is worse than no panel at all, because it
- * looks exactly like the ones that were done properly. So `panel` is omitted and the rack falls
- * back to the generated panel built from the jacks and voice below.
+ * **The two together are the proof, and one alone would not have been.** Both figures are the
+ * same column width to within a point, and both are wrong by different factors — which is what
+ * artwork scaled to fit a column looks like, and is not what a drawing to scale looks like.
+ * These are illustrations in the OVERVIEW and INPUT/OUTPUT chapters rather than the DFAM's 1:1
+ * blank patch sheet, and there is no second document in `manuals/` to fall back on the way the
+ * Subsequent 37 falls back on its Quickstart poster. The box does ship a printed Getting Started
+ * guide (p.4's packing list) which nobody here has obtained; if it carries a to-scale panel this
+ * decision is worth revisiting.
+ *
+ * Backing a rise out of the drawn aspect would give 222.3 / 1.5837 = 140.4 mm. That is not
+ * self-evidently absurd — a sloped top face is longer than the footprint it sits on, and 140.4
+ * against a 130.2 mm depth implies a rise of about 52 mm on a box 79.4 mm tall, which is a
+ * plausible wedge. It is still an inference, and `PanelLayout.verified` is required, so it would
+ * have to cite a page that states it. No page does. §10's standard is explicit that a panel with
+ * estimated coordinates is worse than no panel at all, because it looks exactly like the ones
+ * that were measured. So `panel` is omitted and the rack falls back to the generated panel built
+ * from the jacks and voice below.
  *
  * ## The manual contradicts itself about octave naming, on one page
  *
@@ -112,16 +124,42 @@ import type { Role } from '../../core/vocabulary'
  *
  * ## What this box cannot be given, and why the role list is short
  *
- * **MIDI notes 0-72** (p.5, p.9): it sounds nothing above C5. That is a real ceiling and the
- * engine has no field for it — `Assignable` carries `roles` and `polyphony` and no pitch range —
- * so the protection here is the role list rather than a capability check. `lead` is deliberately
- * **not** offered: a lead hook authored at `baseOctave` 4 or 5 would resolve to notes this box
- * silently will not play, and a guide that assigns a part the hardware drops is worse than a
- * guide that reports a gap (invariant 5). The five roles below all sit in the bottom two octaves
- * where a bass synth belongs, so the ceiling cannot be reached from any of them.
+ * **MIDI notes 0-72** (p.5, p.9, and p.25's chart prints `NOTE NUMBER | NO | 0-72`). The highest
+ * pitch is C5, 523.25 Hz.
  *
- * That is a finding rather than a workaround, and it is filed as one: a voice's **pitch range**
- * is as real a constraint as its polyphony, and nothing in §2.2 can say it.
+ * **What happens above that is not silence, and an earlier draft of this comment said it was.**
+ * The addendum (PDF p.17) documents the behaviour outright: *"if you play a note which is above
+ * C5, the Minitaur will play the equivalent pitch (C, D, E etc.) in its top octave, instead of
+ * always playing the highest C for all notes above C5."* So from v2.0 the box **folds** an
+ * over-range note into its top octave by pitch class, and before that it **clamped** every one
+ * of them to the top C. Either way it sounds a note. The damage a guide does by handing this box
+ * a part it cannot reach is **a wrong octave, or a line collapsed onto one pitch** — not a
+ * missing part, which is what the first version of this paragraph claimed.
+ *
+ * **`lead` is still not offered, and the reason is musical rather than protective.** It is a
+ * monophonic analog *bass* synth; a lead belongs on something that can carry one. The range
+ * corroborates it — all three authored lead hooks sit at `baseOctave: 4` and exceed MIDI 72 in
+ * seven of the eight keys their templates offer — but the role list is not a guard, and calling
+ * it one was wrong twice over: it does not describe what the hardware does, and it does not hold.
+ *
+ * **`stab` is a real uncovered hole, and it is recorded rather than quietly left.** Two of the
+ * three authored stab hooks also sit at `baseOctave: 4`. Resolved through every key their
+ * templates offer, `house-hook-stab-1` puts eleven of its twelve notes above 72 in A lydian and
+ * `house-hook-stab-2` puts all twelve over, the top by thirteen semitones — five of nine
+ * hook-and-key combinations breach. Nothing in the engine can stop it: `chooseHook` takes no
+ * `Device`, hooks are resolved from the template alone, and `ResolvedNote.midi` is deliberately
+ * unclamped. So a rig that puts the industrial-techno or lydian-house stab here will print notes
+ * this box folds down an octave.
+ *
+ * The role stays, because refusing `stab` on the strength of two hooks in one direction would
+ * cost every rig that pairs this box with a direction whose stab sits where a bass synth can
+ * play it — and the header's own later sentence is the honest general statement: **a voice's
+ * pitch range is as real a constraint as its polyphony, and nothing in §2.2 can say it.** That
+ * is a finding filed against the model, not a fact about this box.
+ *
+ * A second mismatch sits on the same path and is already narrated where a reader meets it: all
+ * three stab hooks are chordal, three notes on one step, against a voice with `polyphony: 1`.
+ * `minitaur-stab-hard`'s `routing` says so in as many words.
  *
  * ## No sequencer, and the guide's phase 5 assumes one
  *
@@ -142,6 +180,25 @@ function cite(page: number): Cite {
   return { kind: 'manual', source: `Moog Minitaur Manual, p.${page}` }
 }
 
+/**
+ * The **v2.1 addendum** bound onto the back of the same file, PDF pages 17-19.
+ *
+ * Its pages carry no printed folio, so there is no number a reader can see at the bottom of the
+ * sheet and the citation names the PDF page instead — stated as such rather than dressed as a
+ * printed page. It is a different document by a different date and the distinction matters:
+ * everything it describes is firmware v2.0 or later, and a box on earlier firmware behaves as
+ * the body of the manual says.
+ */
+function addendum(pdfPage: number): Cite {
+  return {
+    kind: 'manual',
+    source: `Moog Minitaur Firmware v2.1 Addendum, PDF p.${pdfPage} (unnumbered)`,
+  }
+}
+
+/** The addendum page carrying DECAY & RELEASE MODES and WRAP TOP OCTAVE BEHAVIOR. */
+const ADDENDUM_MODES = addendum(17)
+
 /** §2.6/#22. Jack citations are recorded here and merged into `capabilityEvidence` below. */
 const JACK_EVIDENCE: Record<string, CapabilityEvidence> = {}
 
@@ -151,6 +208,14 @@ const JACK_EVIDENCE: Record<string, CapabilityEvidence> = {}
  * Ids are qualified with the panel's own bracket legends, which printed p.18's figure draws as
  * headers over groups of sockets: `AUDIO` over `OUT` and `IN`, and `CONTROLLER INPUTS` over
  * `PITCH CV`, `FILTER CV`, `VOLUME CV` and `GATE`. §3.3 wants the panel's word and that is it.
+ *
+ * **A jack's `capabilityEvidence` page says the socket exists and what it is for; anything a
+ * `note` adds from elsewhere names its own page.** p.18 describes all six sockets and their
+ * bracket grouping, which is what the entry at `jacks[<id>]` claims — but the voltage scaling,
+ * the connector types and the envelope behaviour are on pp.10, 13, 15, 17 and 30, and a note
+ * that carried them silently read as though p.18 had said all of it. That is CLAUDE.md's
+ * cited-wrong-range failure one field over: the citation is right and the prose beside it
+ * reaches past what the page supports.
  *
  * The qualifier also decides something load-bearing, exactly as it did on the Mother-32: the
  * pitch input and the gate input have to land in **one** section for §7's voice-control pass to
@@ -182,12 +247,36 @@ function jack(
  * that socket *"USB MIDI IN-OUT"*.
  */
 const JACKS: readonly JackSpec[] = [
-  jack('AUDIO · OUT', 'out', ['audio'], 18, 'Unbalanced line level, 1/4" TS'),
-  jack('AUDIO · IN', 'in', ['audio'], 18, 'Mixes with the VCOs ahead of the filter; +4dBu line level'),
-  jack('CONTROLLER INPUTS · PITCH CV', 'in', ['pitch-cv'], 18, 'Both oscillators, at 1V/octave; 0 to +5 V'),
-  jack('CONTROLLER INPUTS · FILTER CV', 'in', ['cv'], 18, 'Adds to the CUTOFF setting, about one octave per volt'),
-  jack('CONTROLLER INPUTS · VOLUME CV', 'in', ['cv'], 18, '0 V silences it; +5 V is the level the VOLUME knob is set to'),
-  jack('CONTROLLER INPUTS · GATE', 'in', ['gate'], 18, 'A +5 V trigger; fires both envelopes and overrides MIDI triggering'),
+  jack('AUDIO · OUT', 'out', ['audio'], 18, 'Unbalanced line level; 1/4" TS (p.30)'),
+  jack('AUDIO · IN', 'in', ['audio'], 18, 'Mixes with the VCOs ahead of the filter; +4dBu line level, 1/4" TS (p.30)'),
+  jack(
+    'CONTROLLER INPUTS · PITCH CV',
+    'in',
+    ['pitch-cv'],
+    18,
+    '0 to +5 V. Controls both oscillators at 1 V per octave (p.10), unless the input has been re-mapped (addendum PDF p.18)',
+  ),
+  jack(
+    'CONTROLLER INPUTS · FILTER CV',
+    'in',
+    ['cv'],
+    18,
+    '0 to +5 V. Adds to the CUTOFF setting, about one octave per volt (p.13). The one controller input the addendum’s CV re-mapping does not cover',
+  ),
+  jack(
+    'CONTROLLER INPUTS · VOLUME CV',
+    'in',
+    ['cv'],
+    18,
+    '0 to +5 V: 0 V silences it and +5 V is the level the VOLUME knob is set to (p.17), unless the input has been re-mapped (addendum PDF p.18)',
+  ),
+  jack(
+    'CONTROLLER INPUTS · GATE',
+    'in',
+    ['gate'],
+    18,
+    'A +5 V trigger. Fires both envelopes together and overrides MIDI triggering while applied (p.15), unless the input has been re-mapped (addendum PDF p.18)',
+  ),
 ]
 
 // ---------------------------------------------------------------------------
@@ -265,7 +354,10 @@ function pick(
 /** Both oscillator switches offer the same two shapes: Sawtooth (LED off) or Square (LED on). */
 const WAVES = ['Sawtooth', 'Square'] as const
 
-/** printed p.11's `RELEASE` switch, and p.15's description of what it does to both envelopes. */
+/**
+ * The two panel switches Appendix E lists as `On/Off`: `GLIDE` (p.11) and `RELEASE` (p.15).
+ * p.11 carries the GLIDE switch and the MIX section; the RELEASE switch is described on p.15.
+ */
 const ON_OFF = ['On', 'Off'] as const
 
 // Ranges, every one from Appendix E on printed p.29 unless noted.
@@ -274,15 +366,35 @@ const PERCENT = { min: 0, max: 100 }
 const BIPOLAR_PERCENT = { min: -100, max: 100 }
 /** `OSCILLATOR 2 Frequency: ± 12 Semitones`, corroborated as "+/-1 octave" on p.9. */
 const SEMITONES = { min: -12, max: 12 }
+/** `FINE TUNE: ± 1 Semitone`, described on p.10 as "approximately +/-1 semitone". */
+const FINE_TUNE_ST = { min: -1, max: 1 }
 /** `CUTOFF: 20Hz to 20KHz`, and the only range this panel also silkscreens (p.6). */
 const CUTOFF_HZ = { min: 20, max: 20000 }
-/** `ATTACK / DECAY / RELEASE TIME: 1 msec to 30 sec`, written in seconds. */
-const SECONDS = { min: 0.001, max: 30 }
+/**
+ * `ATTACK / DECAY / RELEASE TIME: 1 msec to 30 sec`, written in **milliseconds**.
+ *
+ * Milliseconds rather than seconds, and the reason is arithmetic rather than taste: §3.2's mood
+ * grid defaults to `step: 1` when a param declares none, so a value in seconds is rounded to the
+ * nearest whole second the moment any mood offset is non-zero — which would turn a 90 ms
+ * amplifier decay into 0. In milliseconds the default grid is already the right resolution and
+ * every authored value here is a whole number. The manual's own phrasing is "1 msec to 30 sec",
+ * so this is the unit it states first.
+ */
+const MILLISECONDS = { min: 1, max: 30000 }
 /** `LFO RATE WITH RATE LED: 0.01 to 100Hz`. */
 const LFO_HZ = { min: 0.01, max: 100 }
 
-/** The note that travels with every time in seconds, since the knob prints no scale. */
+/** The note that travels with every time, since the knob prints no scale. */
 const TIME_NOTE = '1 ms fully anticlockwise to 30 s fully clockwise; set it by ear'
+
+/** Both `DECAY/RELEASE` knobs carry this: one knob, two segments, and a mode that swaps them. */
+const DECAY_RELEASE_NOTE =
+  'One knob for both segments. In Mode 1 the RELEASE switch decides whether you hear the ' +
+  'release at all; in Mode 2 it decides which of the two the knob is editing — see ' +
+  '`DECAY/RELEASE MODE`'
+
+/** Addendum, PDF p.17. */
+const DECAY_RELEASE_MODES = ['MODE 1', 'MODE 2'] as const
 
 /**
  * The eight controls every recipe sets, in panel order: the two oscillators and their levels,
@@ -301,6 +413,19 @@ function core(
   egAmount: number,
 ): AuthoredParam[] {
   return [
+    /**
+     * §3.1. The twenty-second control on the panel, and the one a recipe cannot leave out.
+     *
+     * It detunes **both** oscillators against everything else in the rig by up to a semitone,
+     * and p.10 says it "does not transmit MIDI" — nor receive it, so the panel is the only place
+     * it can be set and nothing else on the box will move it back. A recipe that omitted it
+     * would be leaving the whole voice wherever the last patch left it, which is precisely what
+     * the note on `core()` warns about.
+     */
+    num('FINE TUNE', 0, FINE_TUNE_ST, cite(29), {
+      unit: 'st',
+      note: 'Centred is in tune. Adjusts both oscillators together, and neither sends nor receives MIDI (p.10)',
+    }),
     pick('OSCILLATOR 1', wave1, WAVES, cite(9), {
       note: 'The switch LED is off for Sawtooth and on for Square',
     }),
@@ -322,7 +447,20 @@ function core(
     }),
     num('CUTOFF', cutoffHz, CUTOFF_HZ, cite(29), {
       unit: 'Hz',
-      mood: [{ axis: 'darkness', amount: -1200 }],
+      /**
+       * **Scaled to the authored value, because the control is logarithmic and the offset is
+       * not.** §6's `amount` is the offset at full deflection, so one flat figure cannot serve a
+       * knob whose printed scale runs 20Hz, 80Hz, 320Hz, 1.2KHz, 5KHz, 20KHz — a step that is a
+       * gentle nudge at 5 kHz slams a 320 Hz recipe onto the 20 Hz floor. A flat −1200 did
+       * exactly that to eleven of the fifteen recipes below.
+       *
+       * Forty percent of the authored point keeps the *musical* size of the move constant across
+       * the panel: full darkness always takes the filter down by roughly the same fraction of an
+       * octave wherever it started. The Mother-32 reaches the same shape from the other end, by
+       * hand-authoring a darkness figure per recipe from −25 to −1400 against the same 20 Hz to
+       * 20 kHz range; deriving it keeps the fifteen recipes here from drifting apart.
+       */
+      mood: [{ axis: 'darkness', amount: -Math.round(cutoffHz * 0.4) }],
       note: 'The one knob on this panel with a printed scale: 20Hz, 80Hz, 320Hz, 1.2KHz, 5KHz, 20KHz',
     }),
     travel('RES', res, {
@@ -347,22 +485,44 @@ function envelopes(
   release: (typeof ON_OFF)[number],
 ): AuthoredParam[] {
   return [
-    num('FILTER ATTACK', fAttack, SECONDS, cite(29), { unit: 's', note: TIME_NOTE }),
-    num('FILTER DECAY/RELEASE', fDecay, SECONDS, cite(29), {
-      unit: 's',
-      note: 'One knob for both segments — which one you hear is the RELEASE switch below',
+    num('FILTER ATTACK', fAttack, MILLISECONDS, cite(29), { unit: 'ms', note: TIME_NOTE }),
+    num('FILTER DECAY/RELEASE', fDecay, MILLISECONDS, cite(29), {
+      unit: 'ms',
+      note: DECAY_RELEASE_NOTE,
     }),
     num('FILTER SUSTAIN', fSustain, PERCENT, cite(29), { unit: '%' }),
-    num('AMPLIFIER ATTACK', aAttack, SECONDS, cite(29), { unit: 's', note: TIME_NOTE }),
-    num('AMPLIFIER DECAY/RELEASE', aDecay, SECONDS, cite(29), {
-      unit: 's',
-      mood: [{ axis: 'density', amount: 0.05 }],
-      note: 'One knob for both segments — which one you hear is the RELEASE switch below',
+    num('AMPLIFIER ATTACK', aAttack, MILLISECONDS, cite(29), { unit: 'ms', note: TIME_NOTE }),
+    num('AMPLIFIER DECAY/RELEASE', aDecay, MILLISECONDS, cite(29), {
+      unit: 'ms',
+      // Scaled to the authored point for the same reason `CUTOFF` is: a flat offset that suits a
+      // 1.5 s pad tail is most of a 90 ms stab. Half the value at full deflection.
+      mood: [{ axis: 'density', amount: Math.round(aDecay * 0.5) }],
+      note: DECAY_RELEASE_NOTE,
     }),
     num('AMPLIFIER SUSTAIN', aSustain, PERCENT, cite(29), { unit: '%' }),
     pick('RELEASE', release, ON_OFF, cite(29), {
-      // p.15: the switch is the whole of the release stage on this box.
-      note: 'On, the release time equals the decay time; off, the envelope stops dead at note-off',
+      // p.15 for what the switch does to both envelopes; the mode it depends on is the param
+      // below, and `DECAY_RELEASE_NOTE` explains the pairing.
+      note: 'In Mode 1: on, the release time equals the decay time; off, the envelope stops dead at note-off',
+    }),
+    /**
+     * §3.2/CLAUDE.md. **The switch that decides what `DECAY/RELEASE` means, carried as a param
+     * so the pairing cannot come apart.**
+     *
+     * The v2.1 addendum (PDF p.17, unnumbered) documents two modes. In **Mode 1** the two
+     * segments are linked and the knob sets both, which is what the values above assume. In
+     * **Mode 2** they are independent and the `RELEASE ON/OFF` switch changes *which segment the
+     * knob is editing* — lit edits release, dark edits decay — so the same knob position means a
+     * different envelope.
+     *
+     * Mode 1 is the factory default (addendum PDF p.18), so an untouched box matches the values
+     * above. It is reachable from the panel alone by holding `RELEASE ON/OFF` for a second, and
+     * the addendum notes the choice is "remembered on power-down" — so a reader whose box has
+     * been switched has no indication, which is exactly why it travels with the value. The TR-8S
+     * and the minilogue xd both solved the same shape the same way.
+     */
+    pick('DECAY/RELEASE MODE', 'MODE 1', DECAY_RELEASE_MODES, ADDENDUM_MODES, {
+      note: 'Hold RELEASE ON/OFF for one second to toggle; remembered on power-down. Mode 1 links decay and release, which is what the times above assume',
     }),
   ]
 }
@@ -400,8 +560,11 @@ function glide(on: (typeof ON_OFF)[number], rate: number): AuthoredParam[] {
 /** The output stage. Appendix E lists `MASTER VOLUME` with no range, so it is percent of travel. */
 function out(volume: number): AuthoredParam[] {
   return [
-    travel('VOLUME / 🎧', volume, {
-      note: 'Post-VCA, and it sets the headphone level at the same time (p.17)',
+    travel('VOLUME', volume, {
+      // The panel silkscreens `VOLUME / <headphone pictogram>`. The word is taken and the
+      // pictogram described, rather than reproduced as an emoji: it would be the only emoji in a
+      // parameter name in the library, and §8 has this read at arm's length in poor light.
+      note: 'Panelled `VOLUME` beside a headphone pictogram — one knob sets the output and the headphones together (p.17)',
     }),
   ]
 }
@@ -432,7 +595,7 @@ const recipes: Recipe[] = [
     routing: 'One VCO only — VCO 2 is down, so there is nothing to beat against and the pitch is dead still.',
     params: [
       ...core('Square', 'Square', 0, 100, 0, 80, 5, 0),
-      ...envelopes(0.001, 0.4, 100, 0.005, 0.6, 100, 'Off'),
+      ...envelopes(1, 400, 100, 5, 600, 100, 'Off'),
       ...mod(0.5, 0, 0),
       ...glide('Off', 0),
       ...out(70),
@@ -447,7 +610,7 @@ const recipes: Recipe[] = [
     title: 'Square fundamental, filter open enough to keep the edge honest',
     params: [
       ...core('Square', 'Square', 0, 100, 0, 320, 0, 0),
-      ...envelopes(0.001, 0.3, 100, 0.003, 0.5, 100, 'Off'),
+      ...envelopes(1, 300, 100, 3, 500, 100, 'Off'),
       ...mod(0.5, 0, 0),
       ...glide('Off', 0),
       ...out(70),
@@ -462,7 +625,7 @@ const recipes: Recipe[] = [
     title: 'Short sub with the filter envelope snapping shut behind it',
     params: [
       ...core('Square', 'Sawtooth', 0, 100, 0, 80, 20, 45),
-      ...envelopes(0.001, 0.12, 0, 0.001, 0.18, 0, 'Off'),
+      ...envelopes(1, 120, 0, 1, 180, 0, 'Off'),
       ...mod(0.5, 0, 0),
       ...glide('Off', 0),
       ...out(72),
@@ -477,7 +640,7 @@ const recipes: Recipe[] = [
     title: 'Slow swell, no transient at all',
     params: [
       ...core('Square', 'Square', 0, 95, 0, 200, 0, 20),
-      ...envelopes(0.6, 1.5, 90, 0.8, 2, 95, 'On'),
+      ...envelopes(600, 1500, 90, 800, 2000, 95, 'On'),
       ...mod(0.2, 0, 4),
       ...glide('Off', 0),
       ...out(68),
@@ -496,7 +659,7 @@ const recipes: Recipe[] = [
       'VCO 2 is one semitone sharp rather than in unison — the beat is what fills the mid, and it costs nothing.',
     params: [
       ...core('Sawtooth', 'Sawtooth', 1, 85, 70, 320, 25, 55),
-      ...envelopes(0.001, 0.25, 20, 0.002, 0.35, 30, 'Off'),
+      ...envelopes(1, 250, 20, 2, 350, 30, 'Off'),
       ...mod(0.5, 0, 0),
       ...glide('Off', 0),
       ...out(70),
@@ -513,7 +676,7 @@ const recipes: Recipe[] = [
       'Both levels are pushed past the point p.11 says the VCOs start clipping the filter. That clipping is the sound here, not a fault.',
     params: [
       ...core('Sawtooth', 'Sawtooth', -12, 95, 95, 320, 40, 50),
-      ...envelopes(0.001, 0.3, 25, 0.002, 0.4, 35, 'Off'),
+      ...envelopes(1, 300, 25, 2, 400, 35, 'Off'),
       ...mod(0.5, 0, 0),
       ...glide('Off', 0),
       ...out(65),
@@ -528,7 +691,7 @@ const recipes: Recipe[] = [
     title: 'Octave-down square, filter low and static',
     params: [
       ...core('Square', 'Square', -12, 80, 80, 200, 10, 10),
-      ...envelopes(0.001, 0.5, 60, 0.005, 0.6, 60, 'On'),
+      ...envelopes(1, 500, 60, 5, 600, 60, 'On'),
       ...mod(0.4, 0, 0),
       ...glide('Off', 0),
       ...out(70),
@@ -543,7 +706,7 @@ const recipes: Recipe[] = [
     title: 'One sawtooth, no resonance, nothing in the way',
     params: [
       ...core('Sawtooth', 'Square', 0, 100, 0, 1200, 0, 25),
-      ...envelopes(0.001, 0.3, 40, 0.002, 0.4, 45, 'Off'),
+      ...envelopes(1, 300, 40, 2, 400, 45, 'Off'),
       ...mod(0.5, 0, 0),
       ...glide('Off', 0),
       ...out(70),
@@ -562,7 +725,7 @@ const recipes: Recipe[] = [
       'Glide is on and the rate is short — p.11 offers EXP as the Taurus curve, "fast and then slows as it approaches the target note", but that is a MIDI-only setting (CC# 92) and cannot be reached from the panel.',
     params: [
       ...core('Sawtooth', 'Sawtooth', 0, 90, 0, 320, 78, 70),
-      ...envelopes(0.001, 0.14, 0, 0.001, 0.22, 0, 'Off'),
+      ...envelopes(1, 140, 0, 1, 220, 0, 'Off'),
       ...mod(0.5, 0, 0),
       ...glide('On', 12),
       ...out(68),
@@ -577,7 +740,7 @@ const recipes: Recipe[] = [
     title: 'Thinner line, cutoff up and the envelope doing the shape',
     params: [
       ...core('Sawtooth', 'Square', 0, 80, 0, 1200, 65, 60),
-      ...envelopes(0.001, 0.1, 0, 0.001, 0.16, 0, 'Off'),
+      ...envelopes(1, 100, 0, 1, 160, 0, 'Off'),
       ...mod(0.5, 0, 0),
       ...glide('On', 8),
       ...out(68),
@@ -592,7 +755,7 @@ const recipes: Recipe[] = [
     title: 'Every note the same length, filter slammed shut behind each one',
     params: [
       ...core('Sawtooth', 'Sawtooth', 0, 95, 0, 200, 70, 85),
-      ...envelopes(0.001, 0.08, 0, 0.001, 0.12, 0, 'Off'),
+      ...envelopes(1, 80, 0, 1, 120, 0, 'Off'),
       ...mod(0.5, 0, 0),
       ...glide('Off', 0),
       ...out(70),
@@ -611,7 +774,7 @@ const recipes: Recipe[] = [
       'One note is all this is — the box is monophonic, so a stab here is a single pitch and the rig has to find its chord elsewhere.',
     params: [
       ...core('Sawtooth', 'Sawtooth', 7, 90, 60, 320, 45, 75),
-      ...envelopes(0.001, 0.06, 0, 0.001, 0.09, 0, 'Off'),
+      ...envelopes(1, 60, 0, 1, 90, 0, 'Off'),
       ...mod(0.5, 0, 0),
       ...glide('Off', 0),
       ...out(70),
@@ -626,7 +789,7 @@ const recipes: Recipe[] = [
     title: 'A fifth apart and both oscillators overdriving the filter',
     params: [
       ...core('Sawtooth', 'Square', 7, 95, 95, 200, 55, 70),
-      ...envelopes(0.001, 0.07, 0, 0.001, 0.1, 0, 'Off'),
+      ...envelopes(1, 70, 0, 1, 100, 0, 'Off'),
       ...mod(0.5, 0, 0),
       ...glide('Off', 0),
       ...out(64),
@@ -645,7 +808,7 @@ const recipes: Recipe[] = [
       'There is no envelope route to the oscillators on this box: `EG AMOUNT` reaches the filter and nothing reaches pitch, so this is a filter thump rather than the pitch-drop kick a synth with a pitch envelope makes. It is solid and it is low; it will not click.',
     params: [
       ...core('Square', 'Square', 0, 100, 0, 80, 55, 90),
-      ...envelopes(0.001, 0.05, 0, 0.001, 0.09, 0, 'Off'),
+      ...envelopes(1, 50, 0, 1, 90, 0, 'Off'),
       ...mod(0.5, 0, 0),
       ...glide('Off', 0),
       ...out(75),
@@ -660,7 +823,7 @@ const recipes: Recipe[] = [
     title: 'Longer thump with the filter barely open',
     params: [
       ...core('Square', 'Square', 0, 100, 0, 20, 40, 70),
-      ...envelopes(0.001, 0.09, 0, 0.001, 0.14, 0, 'Off'),
+      ...envelopes(1, 90, 0, 1, 140, 0, 'Off'),
       ...mod(0.5, 0, 0),
       ...glide('Off', 0),
       ...out(75),
@@ -720,9 +883,12 @@ export const device: Device = {
     'features.lfo': cite(16),
     'features.perStep': {
       kind: 'cited-against',
-      cite: cite(9),
+      // p.29, not p.9. p.9 says the box responds to MIDI, which is a positive statement about
+      // input — a box can do that and still have a sequencer. The negative is Appendix E's
+      // synth-engine list, which is exhaustive and contains no sequencer.
+      cite: cite(29),
       reason:
-        'there is no sequencer and no arpeggiator to have per-step lanes. p.9 opens by saying the box "responds to MIDI messages on both DIN and USB MIDI Inputs", the contents list no sequencer chapter, and Appendix E’s synth engine section (p.29) lists oscillators, filter, envelopes and modulation and nothing else',
+        'there is no sequencer and no arpeggiator to have per-step lanes. Appendix E’s SYNTH ENGINE list runs Oscillator Section, Filter Section, Envelope Generator Section (x2), Modulation Section and Performance Controls and stops; the contents list carries no sequencer chapter; and p.9 describes every note as arriving over DIN or USB MIDI',
     },
     'features.sidechain.internal': {
       kind: 'cited-against',
@@ -737,9 +903,11 @@ export const device: Device = {
     },
     noteDuration: {
       kind: 'cited-against',
-      cite: cite(9),
+      // p.14 carries both halves in one sentence — "The EGs are started by a Gate or MIDI Note
+      // message" — where p.9 carries only the MIDI half and never mentions the Gate input.
+      cite: cite(14),
       reason:
-        'note length is set by whatever is driving the box, because nothing on the box sets it: there is no sequencer with a gate-length lane, and p.9 describes every note as arriving as a MIDI message or a Gate voltage whose duration is the sender’s',
+        'note length is set by whatever is driving the box, because nothing on the box sets it: there is no sequencer with a gate-length lane, and p.14 has the envelopes started by "a Gate or MIDI Note message", both of which carry their duration from the sender (p.9 for MIDI, p.15 for the GATE jack)',
     },
   },
   manual: { title: 'Minitaur Manual', edition: '©2012 Moog Music' },

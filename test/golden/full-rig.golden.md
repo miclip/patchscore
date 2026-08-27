@@ -32,7 +32,7 @@ glance whether the screen in front of you is the one the line is about.
 
 - **`kick`** → Grandmother · Voice — *Kick with the envelope cabled to Oscillator 1’s pitch*
   - p1 · exact `hard` · every section
-- **`sub`** → MC-101 · TONE Track 1 — *Sine sub, one note at a time, nothing above the fundamental*
+- **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
 - **`bass-mid`** → Subsequent 37 · Voice — *Mixer pushed past unity with feedback under it and MultiDrive on top*
   - p2 · exact `dirty` · every section
@@ -44,7 +44,7 @@ glance whether the screen in front of you is the one the line is about.
   - p3 · exact `dark` · every section
 - **`open-hat`** → TR-8S · OH — *Open hat with the top rolled off*
   - p3 · exact `dark` · every section
-- **`stab`** → MC-101 · TONE Track 2 — *Short chord stab, played on the track*
+- **`stab`** → MC-101 · TONE Track 1 — *Short chord stab, played on the track*
   - p3 · exact `hard` · 3 notes at once on one polyphonic voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
@@ -78,6 +78,10 @@ None.
 - gate: Metropolix `TRK 2 · GATE` → Cascadia `EXT IN · GATE`
 
 - Why this box sends them — its manual says leading a rig is its job
+
+**Not driven** — Metropolix offers 2 pitch-and-gate pairs and this rig needs more. Minitaur is left unpatched:
+
+- Minitaur `CONTROLLER INPUTS · PITCH CV` and `CONTROLLER INPUTS · GATE` — nothing to plug in. Play it from its own keyboard or sequencer.
 
 - **CRAVE** — semi-modular · 1 part
   - clock: receives clock only · midi-din/usb
@@ -123,6 +127,10 @@ None.
     - ↳ cite: value manual — Moog Matriarch Manual (012023), p.59
   - audio: stereo main out · audio in
   - mixer: no parts assigned; nothing to patch
+- **Minitaur** — synth · 1 part
+  - clock: receives clock only · midi-din/usb
+  - audio: mono main out · audio in
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **Mother-32** — semi-modular · 0 parts
   - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
   - MIDI IN: The only MIDI connector on the box: input only, 5-pin DIN, on the front panel · manual
@@ -139,10 +147,10 @@ None.
     - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.13
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
-- **MC-101** — groovebox · 2 parts
+- **MC-101** — groovebox · 1 part
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio
-  - mixer: 2 parts, no individual outs: one stereo channel for all
+  - mixer: 1 part, no individual outs: one stereo channel for all
 - **TR-1000** — drum-machine · 2 parts
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
@@ -205,7 +213,7 @@ How this box sets a note’s length is not established here, so the durations be
 - bar 5 · step 65 · sounds for 32 steps (2 bars) · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
 - bar 7 · step 97 · sounds for 32 steps (2 bars) · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`) · 7th 2nd 4th · MIDI 63 67 70
 
-### `stab` — MC-101 · TONE Track 2
+### `stab` — MC-101 · TONE Track 1
 
 **Short chord stab, played on the track** — settings in Sound design
 
@@ -253,9 +261,9 @@ Note length is set per note here — `LEN`. · manual
 - `accent` → `accent` true on step 9
   - ↳ hint: REC mode, then TAP adds an accent
 
-### `sub` — MC-101 · TONE Track 1
+### `sub` — Minitaur · Voice
 
-**Sine sub, one note at a time, nothing above the fundamental** — settings in Sound design
+**One oscillator under the filter, nothing above it** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -263,11 +271,6 @@ Note length is set per note here — `LEN`. · manual
  1 x··· ···· ···· ····
 ```
 - `downbeat` — 1
-
-**On this box** — MC-101
-
-- `downbeat` → `note-length` 12 on step 1
-  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
 
 **Build, Breakdown** — 16 steps, band 1
 
@@ -277,11 +280,6 @@ Note length is set per note here — `LEN`. · manual
 - `downbeat` — 1, 9
 - `offbeat` — 15
 
-**On this box** — MC-101
-
-- `downbeat` → `note-length` 12 on steps 1, 9
-  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
-
 **Drop, Peak** — 16 steps, band 3
 
 ```
@@ -289,11 +287,6 @@ Note length is set per note here — `LEN`. · manual
 ```
 - `downbeat` — 1
 - `offbeat` — 3, 7, 11, 15
-
-**On this box** — MC-101
-
-- `downbeat` → `note-length` 12 on step 1
-  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
 
 ### `bass-mid` — Subsequent 37 · Voice
 
@@ -449,7 +442,7 @@ Note length is set per note here — `LEN`. · manual
 - `downbeat` — 13
 - `accent` — 15 (vel 106)
 
-### `stab` — MC-101 · TONE Track 2
+### `stab` — MC-101 · TONE Track 1
 
 **Short chord stab, played on the track** — settings in Sound design
 
@@ -737,6 +730,60 @@ Routing — Played from its own 32-note keyboard, from the arpeggiator or the 25
   - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.30
   - ↳ note: Makes a sequencer accent audible — the accent envelope only exists at this jack
 
+### Minitaur
+
+*Values below cite Moog Minitaur Manual.*
+
+#### Voice — `sub`: One oscillator under the filter, nothing above it
+
+Routing — One VCO only — VCO 2 is down, so there is nothing to beat against and the pitch is dead still.
+
+*Ranges cite manual — Moog Minitaur Manual, p.29.*
+
+- **FINE TUNE** `0` st (-1…1 st)
+  - ↳ note: Centred is in tune. Adjusts both oscillators together, and neither sends nor receives MIDI (p.10)
+- **OSCILLATOR 1** `Square`
+  - ↳ note: The switch LED is off for Sawtooth and on for Square
+- **OSCILLATOR 2** `Square`
+- **VCO 2 FREQ** `0` st (-12…12 st)
+  - ↳ note: Centre is unison with VCO 1; the panel marks only − and +
+- **VCO 1 LVL** `100` % (0…100 %)
+  - ↳ hint: Past 2 o’clock it clips the filter
+- **VCO 2 LVL** `0` % (0…100 %)
+  - ↳ note: The VCOs begin to clip the filter at about 2 o’clock, which is where grit pushes them
+- **CUTOFF** `80` Hz (20…20000 Hz)
+  - ↳ note: The one knob on this panel with a printed scale: 20Hz, 80Hz, 320Hz, 1.2KHz, 5KHz, 20KHz
+- **RES** `5` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: p.29 gives this range as "0 to Self-Oscillation" — a named endpoint, not a number, so this is percent of travel
+- **EG AMOUNT** `0` % (-100…100 %)
+  - ↳ note: How much the filter envelope adds to or subtracts from CUTOFF; centre is none
+- **FILTER ATTACK** `1` ms (1…30000 ms)
+  - ↳ note: 1 ms fully anticlockwise to 30 s fully clockwise; set it by ear
+- **FILTER DECAY/RELEASE** `400` ms (1…30000 ms)
+  - ↳ note: One knob for both segments. In Mode 1 the RELEASE switch decides whether you hear the release at all; in Mode 2 it decides which of the two the knob is editing — see `DECAY/RELEASE MODE`
+- **FILTER SUSTAIN** `100` % (0…100 %)
+- **AMPLIFIER ATTACK** `5` ms (1…30000 ms)
+  - ↳ note: 1 ms fully anticlockwise to 30 s fully clockwise; set it by ear
+- **AMPLIFIER DECAY/RELEASE** `600` ms (1…30000 ms)
+  - ↳ note: One knob for both segments. In Mode 1 the RELEASE switch decides whether you hear the release at all; in Mode 2 it decides which of the two the knob is editing — see `DECAY/RELEASE MODE`
+- **AMPLIFIER SUSTAIN** `100` % (0…100 %)
+- **RELEASE** `Off`
+  - ↳ note: In Mode 1: on, the release time equals the decay time; off, the envelope stops dead at note-off
+- **DECAY/RELEASE MODE** `MODE 1`
+  - ↳ note: Hold RELEASE ON/OFF for one second to toggle; remembered on power-down. Mode 1 links decay and release, which is what the times above assume
+- **LFO RATE** `0.5` Hz (0.01…100 Hz)
+- **VCO LFO AMT** `0` % (0…100 %)
+  - ↳ note: Up to ±1 octave of pitch at full travel (p.16)
+- **VCF LFO AMT** `0` % (0…100 %)
+  - ↳ note: Up to ±5 octaves of cutoff at full travel (p.16)
+- **GLIDE** `Off`
+- **GLIDE RATE** `0` % (0…100 %)
+  - ↳ note: Instantaneous fully anticlockwise to extremely long fully clockwise (p.11)
+- **VOLUME** `70` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: Panelled `VOLUME` beside a headphone pictogram — one knob sets the output and the headphones together (p.17)
+
 ### Subsequent 37
 
 *Values below cite Subsequent 37 User's Manual.*
@@ -855,31 +902,7 @@ Routing — Played from its own 32-note keyboard, from the arpeggiator or the 25
 
 *Values below cite MC-101 Reference Manual eng01 and MC-101 Update eng08.*
 
-#### TONE Track 1 — `sub`: Sine sub, one note at a time, nothing above the fundamental
-
-Routing — Keep the sub mono and dry — the reverb and delay sends stay at 0
-
-*Ranges cite manual — MC-101 Reference Manual eng01, p.45.*
-
-- **MONO/POLY** `MONO`
-- **OCT SHIFT** `-1` (-3…3)
-- **CUTOFF** `-34` (-64…63)
-- **RESONANCE** `-18` (-64…63)
-- **ATTACK** `-20` (-64…63)
-- **RELEASE** `-24` (-64…63)
-- **MFX TYPE** `04 Low Boost`
-- **BOOST FREQUENCY** `63`
-- **BOOST GAIN** `5` dB (0…12 dB)
-  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.54
-  - ↳ hint: Hold [SHIFT], press [SOUND]
-- **BOOST WIDTH** `NARROW`
-- **REVERB SEND** `0` (0…127)
-- **SHUFFLE** `0` (-50…50)
-  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
-  - ↳ note: One setting for the whole clip, not per step
-  - ↳ hint: Hold [SHIFT], press PAD [CLIP]
-
-#### TONE Track 2 — `stab`: Short chord stab, played on the track
+#### TONE Track 1 — `stab`: Short chord stab, played on the track
 
 Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 
@@ -1052,7 +1075,7 @@ What processes audio in this rig:
 - ZOIA Euroburo — is an effects unit (stereo main out · audio in)
 - Matriarch — carries effects, though no part in this guide reaches them
 - Tracker Mini — carries effects, though no part in this guide reaches them
-- MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and DELAY SEND and REVERB SEND in its recipes
+- MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and DELAY SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 - TR-8S — carries REVERB, DELAY and MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
 - Deluge — carries effects, though no part in this guide reaches them

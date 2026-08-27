@@ -317,8 +317,35 @@ export type AssignmentResult = {
  * expensive for being wide, or that the cost tracks voice count. Neither was measured here.
  * Sizing the next device means running the probe against its actual shape, and the answer if it
  * does not fit is a tighter bound rather than a third raise of the constant below.
+ *
+ * ## The third raise, made anyway, and what was measured before making it
+ *
+ * The paragraph above says the answer is a tighter bound rather than a third raise. **This is
+ * the third raise**, 150,000 to 200,000, and it is recorded as the deliberate exception it is
+ * rather than slipped in — the argument against it has been right twice and is not retracted.
+ *
+ * What made it defensible here is a number the previous two raises did not have. A capped search
+ * reports the cap, not its true cost, so "it capped" says nothing about how far past the line the
+ * work goes. Re-run with the cap lifted to 20,000,000, the nineteenth device's worst case is:
+ *
+ *     industrial-techno, seed 9, nineteen devices    165,785 nodes    463 ms
+ *     the same sweep at eighteen devices             132,615 nodes    361 ms
+ *
+ * **A 10% overshoot of the old constant, not a blow-up.** The DFAM went to 195,951 against a
+ * 150,000 cap and every seed of the template capped; this is one template, nine of twenty-four
+ * seeds, and 102 ms. 200,000 clears the measured worst case by 21%.
+ *
+ * The cost is latency and it is small here — but it is **not** small on the device §8 and §10
+ * say this is read on. Resolution runs client-side and 463 ms on this laptop is plausibly two
+ * seconds or more on a mid-range phone. Nobody has measured that, and it is the cheapest useful
+ * measurement left.
+ *
+ * This buys time and nothing else. #159 records why the cost stopped tracking difficulty — node
+ * count is non-monotonic, and forcing `industrial-techno`'s two polyphonic requests to one note
+ * each *raises* the eighteen-device worst case to 147,280 — and #160 asks whether the search
+ * should be a solver rather than a hand-rolled bound. Neither is closed by this constant moving.
  */
-export const DEFAULT_NODE_CAP = 150_000
+export const DEFAULT_NODE_CAP = 200_000
 
 // ---------------------------------------------------------------------------
 // §7.1 The objective

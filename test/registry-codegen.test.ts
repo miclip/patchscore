@@ -308,6 +308,8 @@ describe('the committed registry', () => {
       'intellijel-metropolix',
       'roland-mc-101',
       'elektron-digitakt-ii',
+      // 222.3 mm — p.30's `8.75"`, the smallest of the Moogs by some way.
+      'moog-minitaur',
       'zoom-livetrak-l-8',
       'synthstrom-deluge',
       // **A real tie, and the first one in this list that is not a coincidence.** The DFAM and
