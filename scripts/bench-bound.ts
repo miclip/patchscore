@@ -56,6 +56,13 @@
  * identical across all 168 shipped searches and across 16,000 generated ones
  * (`test/search-matching-floor.test.ts`), which is what a tighter admissible bound is supposed
  * to do and what had to be shown before the counts above could be re-recorded.
+ *
+ * **4. The Subharmonicon (#135) — not a bound change, a bigger library.** The precondition moved
+ * 8,309 → 9,006 on this direction and seed, purely because there is a twentieth device to search
+ * over. The two figures are not comparable as a speed measurement and are not offered as one;
+ * this entry exists so the next reader knows why the constant below is not the number the (3)
+ * block above ends on. The whole sweep's worst case, which is on seed 21 rather than seed 9, is
+ * recorded in `test/search-symmetry.test.ts` and moved 8,309 → 9,507.
  */
 
 import { assign, moodState } from '../lib/core/index'
@@ -65,7 +72,7 @@ import { industrialTechno } from '../lib/templates/index'
 const WARMUPS = 3
 const RUNS = 7
 const LIFTED = 20_000_000
-const EXPECTED_NODES = 8_309
+const EXPECTED_NODES = 9_006
 
 function once(): { ms: number; nodes: number } {
   const started = performance.now()

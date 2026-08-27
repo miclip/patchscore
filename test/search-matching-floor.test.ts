@@ -885,12 +885,16 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * the old search walked. It does, on every one of the 168 searches in
    * `test/search-bound.test.ts`'s matrix; this pins the one that matters most.
    *
-   * 165,785 is the figure that runs through all of this work — the worst case in that matrix, the
+   * 165,785 was the figure that ran through all of this work — the worst case in that matrix, the
    * precondition in `scripts/bench-bound.ts`, and the measurement `DEFAULT_NODE_CAP` was last
    * raised against. It belongs to the *unrepaired* floor, so re-recording the matrix for the
-   * repaired search leaves it untouched. It moves only when a device or a direction moves.
+   * repaired search leaves it untouched. It moves only when a device or a direction moves, and
+   * the Subharmonicon is a device moving: **165,785 → 221,573**, a rise of 33.7% on a floor with
+   * no matching repair to protect it, against 14.4% on the repaired one over the same rig. Both
+   * numbers grew for the same reason and the gap between the two growth rates is the repair
+   * doing its job on a larger library.
    */
-  it('walks the recorded 165,785 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 221,573 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -898,7 +902,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(165_785)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(221_573)
     // And the repaired floor is emphatically not walking it.
     expect(assign(input).search.nodes).toBeLessThan(20_000)
   })

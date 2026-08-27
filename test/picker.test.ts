@@ -118,6 +118,7 @@ describe('device search matches name, maker and kind', () => {
       'moog-grandmother',
       'moog-matriarch',
       'moog-mother-32',
+      'moog-subharmonicon',
     ])
   })
 
