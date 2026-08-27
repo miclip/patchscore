@@ -29,6 +29,43 @@ const GOLDEN_FILE = join(HERE, 'golden', 'resolve.golden.json')
 // `localeCompare()` with no argument genuinely changes answer under it.
 const HOSTILE_LOCALE = 'tr_TR.UTF-8'
 
+/**
+ * §7.1. **`search.nodes` is not guide content, and invariant 6 is not about it.**
+ *
+ * The invariant is that the same inputs and seed produce the same *guide*: the same parts on the
+ * same voices with the same values, on any platform. `nodes` is how hard the search worked to
+ * get there. A sharper admissible bound reaches an identical answer from fewer nodes — that is
+ * the definition of one — so pinning the count here would make every bound improvement look like
+ * a determinism failure, and would tempt whoever hit it to regenerate a golden that had not
+ * actually changed.
+ *
+ * So it is masked on **both** sides, and the committed bytes keep the count they were written
+ * with. Everything else stays a byte comparison, because that is what the invariant claims.
+ *
+ * The count is not going unwatched. It is pinned exactly, per direction and per seed, in
+ * `test/search-bound.test.ts`, and the pre-repair figure it is measured against is pinned in
+ * `test/search-matching-floor.test.ts` — both of which say a change there is a failure to
+ * explain rather than a number to re-record. This masks one field that is measured better
+ * elsewhere; it does not stop measuring it.
+ *
+ * Anchored on the enclosing `"search": {`, so it can only ever match that one field. A bare
+ * `"nodes"` would be a licence for the mask to spread the day something else grows the key.
+ *
+ * **One consequence to know about before it surprises somebody.** The committed golden keeps the
+ * count it was written with, and the resolver no longer walks that many nodes, so
+ * `npm run gen:golden` produces a one-line diff on `"nodes"` and nothing else. That diff is
+ * meaningless in either direction — commit it or discard it, no test moves — and a diff that
+ * reaches any *other* line is the thing this file exists to catch. Which is the whole point of
+ * masking rather than re-recording: the golden's job is to pin the guide, and a number that
+ * changes every time the bound improves was never guide content.
+ */
+const NODE_COUNT = /("search": \{\n\s*"nodes": )\d+/
+const MASK = '<masked: pinned in test/search-bound.test.ts>'
+
+function maskNodeCount(text: string): string {
+  return text.replace(NODE_COUNT, `$1${MASK}`)
+}
+
 // ---------------------------------------------------------------------------
 // The locale and randomness ban (§7.2)
 // ---------------------------------------------------------------------------
@@ -116,10 +153,26 @@ describe('no locale-dependent or random API in the resolver (§7.2)', () => {
 // ---------------------------------------------------------------------------
 
 describe('golden resolver fixture (invariant 6, obligation 1)', () => {
-  it('matches the committed bytes exactly', () => {
+  it('matches the committed bytes exactly, but for the node count', () => {
     // Not a structural comparison: invariant 6 is a claim about bytes, so this compares bytes.
     // Regenerate with `npm run gen:golden` and review the diff — never to make a test pass.
-    expect(goldenText()).toBe(readFileSync(GOLDEN_FILE, 'utf8'))
+    // `search.nodes` is masked on both sides and only there; `maskNodeCount` says why.
+    expect(maskNodeCount(goldenText())).toBe(maskNodeCount(readFileSync(GOLDEN_FILE, 'utf8')))
+  })
+
+  it('masks the node count and nothing else', () => {
+    // The mask is the one place this file stops comparing bytes, so what it covers is asserted
+    // rather than trusted. A mask that quietly matched nothing would make the test above pass
+    // for the wrong reason; one that matched too much would hide a real drift.
+    const committed = readFileSync(GOLDEN_FILE, 'utf8')
+    const masked = maskNodeCount(committed)
+    const found = /("search": \{\n\s*"nodes": )(\d+)/.exec(committed)
+    expect(found, 'the golden has no search.nodes to mask — has its shape moved?').not.toBeNull()
+    // Putting the count back has to reproduce the committed file exactly, which is the whole
+    // claim: the mask covers that number and not one byte more.
+    const restored = masked.replace(MASK, (found as RegExpExecArray)[2] as string)
+    expect(restored).toBe(committed)
+    expect(masked.split(MASK).length - 1, 'the mask fired more than once').toBe(1)
   })
 
   it('is stable across repeated resolves in one process', () => {
@@ -146,7 +199,7 @@ describe('golden resolver fixture (invariant 6, obligation 1)', () => {
     })
     expect(child.error).toBeUndefined()
     expect(child.status, child.stderr).toBe(0)
-    expect(child.stdout).toBe(readFileSync(GOLDEN_FILE, 'utf8'))
+    expect(maskNodeCount(child.stdout)).toBe(maskNodeCount(readFileSync(GOLDEN_FILE, 'utf8')))
   })
 
   it('actually runs the child in the hostile locale, or it proves nothing', () => {

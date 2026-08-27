@@ -1117,9 +1117,10 @@ describe('the real registry searches exhaustively (§7.1)', () => {
   /**
    * Seeds 0..23, deliberately wider than the eight `SEEDS` the oracle rigs above use. The worst
    * seed moves as the library grows — it was 18 when the DFAM landed, 5 at the TR-8S prefix, and
-   * is 9 today — so a sparse list hides the peak, which is the one thing this sweep exists to
-   * find. The oracle tests keep the short list on purpose: they brute-force every rig, and
-   * widening them buys minutes and nothing else.
+   * 9 until #78's matching repair took `industrial-techno` out of first place entirely — so a
+   * sparse list hides the peak, which is the one thing this sweep exists to find. The oracle
+   * tests keep the short list on purpose: they brute-force every rig, and widening them buys
+   * minutes and nothing else.
    */
   const CAP_SWEEP_SEEDS = Array.from({ length: 24 }, (_, i) => i)
 
@@ -1132,28 +1133,35 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * still somewhere to go.
    *
    *  - **Over the ceiling** — something got more expensive. Re-measure, read the mono-voice
-   *    paragraph above, and do not reach for `DEFAULT_NODE_CAP`; #78 is closed and #159 and #160
-   *    are where the cost problem lives now.
+   *    paragraph above, and do not reach for `DEFAULT_NODE_CAP`; #159 and #160 are where the
+   *    cost problem lives now.
    *  - **Under the floor** — something got cheaper. Good news, and a stale comment: re-measure,
    *    move the band down, and keep the alarm's sensitivity.
    *
-   * **Moved for the Minitaur**, from 132,615 at eighteen devices to the figure below at
-   * nineteen. `DEFAULT_NODE_CAP` was raised with it, 150,000 to 200,000, which the cap's own
-   * docstring argues against and records as a deliberate exception — the deciding measurement
-   * was that the true uncapped worst case is 165,785, a 10% overshoot rather than a blow-up.
-   * That is the one number a capped run cannot give you, since it reports the cap.
+   * **Moved for #78's matching repair**, and this is the "under the floor" case being taken at
+   * its word. `liveFloor` learned that two remaining requests may be costed against one voice
+   * and that §4.2 will not let both have it; `industrial-techno` seed 9 fell from 165,785 nodes
+   * to 8,309, and the worst case in the whole sweep is now `ambient-dub` seed 2 — the one
+   * direction the repair does nothing for, because its contested voices are always free to break.
+   *
+   * The peak therefore dropped 6.4x while the direction that produces it changed, which is worth
+   * saying plainly: **this band no longer watches `industrial-techno` at all.** The per-direction
+   * rows in `test/search-bound.test.ts` do, and the 165,785 figure is still pinned there against
+   * the unrepaired floor. Before it: 165,785, and `DEFAULT_NODE_CAP` was raised to 200,000 to
+   * clear it, which the cap's own docstring records as a deliberate exception.
    */
-  const WORST_CASE_NODES = 165_785
+  const WORST_CASE_NODES = 25_798
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))
 
   /**
    * The timeout is not a workaround. This runs `TEMPLATES.length * CAP_SWEEP_SEEDS.length`
-   * exhaustive searches over the whole registry — 168 of them today at eighteen devices and
-   * seven directions, about eight seconds on a developer machine and several times that on a CI
-   * runner sharing a core with the other test files. It first went red on `LANG=C.UTF-8` at the
-   * default 5s, which reads like a locale failure and is not one.
+   * exhaustive searches over the whole registry — 168 of them today at nineteen devices and
+   * seven directions. It first went red on `LANG=C.UTF-8` at the default 5s, which reads like a
+   * locale failure and is not one, and while #78's repair has bought a great deal of headroom
+   * back the timeout stays: a CI runner sharing a core is what it was raised for, not the
+   * node count.
    *
    * The cost grows on both axes this file already warns about: a device that serves more tonal
    * roles makes each search deeper, and every direction authored adds a whole column of them.
