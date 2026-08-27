@@ -313,6 +313,40 @@ export type AssignmentResult = {
  * applying because the subject is our own engine rather than a rendered guide. Whoever picks up
  * the bound work should treat it as the first thing to confirm or refute, not as a premise.
  *
+ * ## Where the nodes actually go, measured — and it is not redundant work
+ *
+ * #159 proposed two ways to make this search cheaper and both are now closed by measurement.
+ * Decomposition first (`npm run bench:decomposition`, #163): the nineteen-device rig is one
+ * branching component at every point of the mood grid, so splitting the requests never fires on
+ * the rig that costs the time. Memoising on canonical state second, and that one is worth
+ * reading carefully, because the promising number was misleading.
+ *
+ * `npm run bench:search-shape` divides the nodes. On `industrial-techno` seed 9, the worst case
+ * above:
+ *
+ *     visited   165,785
+ *     bounded   143,270   86.4%   abandoned by `lowerBound` on arrival, never expanded
+ *     expanded   22,515
+ *     leaves          7   complete assignments reached, in the whole run
+ *
+ * The same probe measures **65.9%** of those nodes arriving at a canonical state already seen,
+ * which reads like an argument for a cache. It is not. Those are repeated arrivals at *pruned*
+ * states, not at solved sub-problems — a cache of completions has almost nothing to answer them
+ * with when the run produces seven completions. Built and measured directly, a state memo saved
+ * **0.4%** of nodes at **2.2x** the wall clock, and disagreed with the traversal wherever the cap
+ * fired on one side and not the other, which is an invariant 6 failure and blocks it regardless
+ * of speed. The prototype is at `origin/spike/search-memo-measured`; it is deliberately not in
+ * the tree, because unreachable code that is known to disagree with the search is a hazard in the
+ * file people read to understand the search.
+ *
+ * Every direction sits between 82% and 90% bounded, so this is the shape of the search rather
+ * than one direction's accident.
+ *
+ * **So the cost is `lowerBound`, evaluated at nodes that never expand**, and anything meant to
+ * make this cheaper should be measured against that. A sharper bound prunes the same nodes
+ * earlier; a cheaper one pays less per node for the same pruning; either attacks the 86%. Caching
+ * and splitting attack the 14%, which is why neither paid.
+ *
  * What does not follow from the table above, and must not be read into it: that a device is
  * expensive for being wide, or that the cost tracks voice count. Neither was measured here.
  * Sizing the next device means running the probe against its actual shape, and the answer if it
@@ -1401,7 +1435,31 @@ function snapshot(ctx: Ctx, state: State): Solution {
   return { score: scoreOf(ctx, state), chosen: [...state.chosen] }
 }
 
-function search(ctx: Ctx): { best: Solution | undefined; nodes: number; capped: boolean } {
+/**
+ * §7.1/#159. An optional observer on the DFS, and the **only** thing the shipped traversal does
+ * differently when one is attached: two calls at points it already passes through.
+ *
+ * It exists because #159 asked two questions about this search that could not be answered from
+ * the outside — how often a state is reached twice, and where the nodes actually go — and the
+ * answers pointed somewhere neither of that issue's proposals did. `SearchReport` carries what a
+ * *guide* needs; this carries what a person changing the search needs, and only when asked.
+ *
+ * Never reachable from `assign`. `measureSearchShape` is the one way in and is named so nobody
+ * arrives at it by accident.
+ */
+type SearchProbe = {
+  /** Every node, at the point `nodes` is incremented, before the bound is consulted. */
+  onNode: (index: number, state: State) => void
+  /** The node was abandoned by `lowerBound` without expanding. */
+  onBounded: () => void
+  /** A complete assignment was reached. */
+  onLeaf: () => void
+}
+
+function search(
+  ctx: Ctx,
+  probe?: SearchProbe,
+): { best: Solution | undefined; nodes: number; capped: boolean } {
   const state = emptyState(ctx)
   let best: Solution | undefined
   let nodes = 0
@@ -1416,10 +1474,15 @@ function search(ctx: Ctx): { best: Solution | undefined; nodes: number; capped: 
       return
     }
     nodes++
+    probe?.onNode(index, state)
 
-    if (best !== undefined && compareScore(lowerBound(ctx, state, index), best.score) >= 0) return
+    if (best !== undefined && compareScore(lowerBound(ctx, state, index), best.score) >= 0) {
+      probe?.onBounded()
+      return
+    }
 
     if (index === ctx.requests.length) {
+      probe?.onLeaf()
       const score = scoreOf(ctx, state)
       if (best === undefined || compareScore(score, best.score) < 0) best = snapshot(ctx, state)
       return
@@ -1442,6 +1505,169 @@ function search(ctx: Ctx): { best: Solution | undefined; nodes: number; capped: 
 
   dfs(0)
   return { best, nodes, capped }
+}
+
+// ---------------------------------------------------------------------------
+// §7.1/#159 Measuring the shape of a search
+// ---------------------------------------------------------------------------
+
+/**
+ * A canonical spelling of everything the *remaining* search can depend on at one node.
+ *
+ * Two nodes with the same string are the same sub-problem: the suffix explores identically from
+ * both, so one is work the other already did. That is the question #159 item 2 asked, and this
+ * is what answers it — it is a measuring instrument, not a cache key, and nothing consults it to
+ * decide anything.
+ *
+ * Three parts, and each is exactly what a rule downstream actually reads:
+ *
+ *  - **`index`**, because the same occupancy at two depths faces different requests.
+ *  - **Occupancy per assignable per section, without the request ids stored in it.** `keyIsFree`
+ *    asks which sections of an assignable are taken and never by whom, so carrying the holder
+ *    would split states the search cannot tell apart.
+ *  - **The prior same-role `distinct` device choices** (§12.6), carried by hand because a device
+ *    can be busy from a request that rule does not touch, and as a *set* because
+ *    `violatesDistinct` asks membership and never a count or an order.
+ *
+ * `occupiedByDevice` is deliberately absent: every `AssignableKey` is `${deviceId}/${voiceId}`,
+ * so the per-device counts `crowdOverflow` reads are a function of the occupancy already here.
+ * `derivedOccupiedCounts` rebuilds them and the probe checks that against the live map at every
+ * node, so the redundancy is verified rather than asserted.
+ *
+ * Pieces are length-prefixed as `<length>:<text>` rather than joined by a separator. Picking a
+ * character no id could contain is not available: `DeviceId`, `RequestId` and `SectionName` are
+ * bare `string`, and `AssignInput` takes device objects a caller may build at runtime (#4). A
+ * spelling that is unambiguous only while the data stays polite would silently merge two states.
+ */
+function piece(text: string): string {
+  return `${String(text.length)}:${text}`
+}
+
+function canonicalState(ctx: Ctx, state: State, index: number): string {
+  const parts: string[] = [piece(String(index))]
+
+  const keys = [...state.occupancy.keys()].sort(compareCodeUnits)
+  for (const key of keys) {
+    const sections = state.occupancy.get(key)
+    if (sections === undefined || sections.size === 0) continue
+    const names = [...sections.keys()].sort(compareCodeUnits)
+    parts.push(piece(key), piece(String(names.length)))
+    for (const name of names) parts.push(piece(name))
+  }
+
+  // §12.6. Only the requests the rule relates, and only the device each landed on.
+  parts.push(piece('|distinct'))
+  const distinct = new Set<string>()
+  for (let i = 0; i < index; i++) {
+    const request = ctx.requests[i] as RoleRequest
+    if (request.distinct !== true) continue
+    const taken = state.chosen[i]
+    if (taken === null || taken === undefined) continue
+    distinct.add(`${request.role}/${taken.deviceId}`)
+  }
+  for (const entry of [...distinct].sort(compareCodeUnits)) parts.push(piece(entry))
+
+  return parts.join('')
+}
+
+/** The per-device occupied counts, rebuilt from occupancy alone. See `canonicalState`. */
+function derivedOccupiedCounts(ctx: Ctx, state: State): Map<DeviceId, number> {
+  const counts = new Map<DeviceId, number>(ctx.deviceIds.map((id) => [id, 0]))
+  for (const [key, sections] of state.occupancy) {
+    if (sections.size === 0) continue
+    const deviceId = key.slice(0, key.indexOf('/'))
+    counts.set(deviceId, (counts.get(deviceId) ?? 0) + 1)
+  }
+  return counts
+}
+
+/** §7.1/#159. Where a search's nodes go, and how much of it is work already done. */
+export type SearchShape = {
+  /** Nodes visited. Equal to `search.nodes` by construction — the probe sits at the increment. */
+  visited: number
+  /** Nodes `lowerBound` abandoned without expanding. */
+  bounded: number
+  /** Nodes that went on to expand children. */
+  expanded: number
+  /** Complete assignments reached. */
+  leaves: number
+  /** Distinct canonical states among the nodes visited. */
+  unique: number
+  /** Arrivals at a state already seen — what a memo on this key could have answered. */
+  repeats: number
+  /** Nodes at which `occupiedByDevice` was confirmed derivable from occupancy. */
+  checks: number
+  /** The ordinary report for the same run, so a probe run is comparable to a shipped one. */
+  search: SearchReport
+}
+
+/**
+ * §7.1's search, run once with the probe attached, on exactly the `AssignInput` a guide uses.
+ *
+ * `nodeCap` is honoured, so measuring a worst case means lifting it deliberately rather than
+ * getting a silent report of the cap. Nothing in the pipeline calls this; `assign` does not know
+ * it exists.
+ *
+ * **What it found, and why the search is the shape it is.** On `industrial-techno` seed 9 over
+ * the nineteen-device rig — §7.1's worst case — 86.4% of nodes are abandoned by `lowerBound` on
+ * arrival, and a complete assignment is reached **seven times** in 165,785 nodes. Of the 22,508
+ * nodes that do expand, 62 ever find a completion beneath them.
+ *
+ * That reinterprets the 65.9% state-repeat rate this same probe measures. The repeats are real,
+ * but they are repeated arrivals at *pruned* states rather than at solved sub-problems, so a
+ * cache of completions has almost nothing to answer them with — which is what the prototype at
+ * `origin/spike/search-memo-measured` measured directly, saving 0.4% of nodes at 2.2x the wall
+ * clock. The cost of this search is `lowerBound`, evaluated at nodes that never expand. Anything
+ * meant to make it cheaper should be measured against that rather than against redundant work.
+ */
+export function measureSearchShape(input: AssignInput): SearchShape {
+  const ctx = buildCtx(input)
+  const seen = new Set<string>()
+  let visited = 0
+  let bounded = 0
+  let leaves = 0
+  let repeats = 0
+  let checks = 0
+
+  const outcome = search(ctx, {
+    onNode: (index, state) => {
+      visited++
+      const key = canonicalState(ctx, state, index)
+      if (seen.has(key)) repeats++
+      else seen.add(key)
+
+      // The claim `canonicalState` rests on, checked rather than asserted.
+      const derived = derivedOccupiedCounts(ctx, state)
+      for (const id of ctx.deviceIds) {
+        if ((derived.get(id) ?? 0) !== (state.occupiedByDevice.get(id)?.size ?? 0)) {
+          throw new Error(`occupiedByDevice is not derivable from occupancy at ${id}`)
+        }
+      }
+      checks++
+    },
+    onBounded: () => {
+      bounded++
+    },
+    onLeaf: () => {
+      leaves++
+    },
+  })
+
+  return {
+    visited,
+    bounded,
+    expanded: visited - bounded,
+    leaves,
+    unique: seen.size,
+    repeats,
+    checks,
+    search: {
+      nodes: outcome.nodes,
+      nodeCap: ctx.nodeCap,
+      capped: outcome.capped,
+      method: outcome.capped ? 'greedy' : 'exhaustive',
+    },
+  }
 }
 
 /**
