@@ -112,6 +112,7 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 49 ···· ···· ···· ····
 ```
 - `downbeat` — 1, 33
+- tightest re-strike — `6.67` Sec · derived from 32 steps at 72 BPM
 
 **Tilt, Turn** — 64 steps, band 2
 
@@ -123,6 +124,7 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 ```
 - `downbeat` — 1, 33
 - `offbeat` — 19, 51
+- tightest re-strike — `2.92` Sec · derived from 14 steps at 72 BPM
 
 **Vast** — 64 steps, band 3
 
@@ -135,6 +137,7 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 - `downbeat` — 1, 17, 33
 - `offbeat` — 11, 27, 51
 - `accent` — 49 (vel 104)
+- tightest re-strike — `0.42` Sec · derived from 2 steps at 72 BPM
 
 - **Settle** · 9 bars — one copy cut to 9 bars
 - **Gather** · 15 bars — one copy cut to 15 bars
@@ -191,10 +194,10 @@ Source — A sustained tonal source, two seconds or longer — a held synth note
   - ↳ note: In pattern steps — the screen prints it as 16 steps: one sweep per 16-step pattern
 - **POSITION LFO AMOUNT** `28%`
   - ↳ note: Small amounts stay pad-like; larger ones sweep wider and glitchier
-- **ENV ATTACK** `1.8` Sec (0…10 Sec)
-  - ↳ note: Re-strikes closer together than 1.8 Sec smear into the note before rather than articulating — shorten it if the part strikes faster
-- **ENV SUSTAIN** `84` % (0…100 %)
-- **ENV RELEASE** `2.2` Sec (0…10 Sec)
+- **ENVELOPE · ATTACK** `1.8` Sec (0…10 Sec)
+  - ↳ note: 1.8 Sec is deliberate — repeats run together into one continuous bed. For distinct hits, set it to the tightest re-strike Step programming prints, or shorter
+- **ENVELOPE · SUSTAIN** `84` % (0…100 %)
+- **ENVELOPE · RELEASE** `2.2` Sec (0…10 Sec)
 
 ## 7. Finishing
 

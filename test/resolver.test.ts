@@ -1078,7 +1078,7 @@ describe('resolved ranges (#29, §8)', () => {
 describe('neutral mood is inert (§6.1, NEUTRAL_MOOD)', () => {
   const secs = (over: Record<string, unknown> = {}) =>
     numericParam({
-      name: 'ENV DECAY',
+      name: 'DECAY',
       value: 0.28,
       unit: 'Sec',
       range: { min: 0, max: 10, verified: MANUAL },
