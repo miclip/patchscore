@@ -1110,8 +1110,15 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * On the question #135 deferred behind this issue: a Subharmonicon is six oscillators into one
    * filter and one VCA, which by this repo's own convention — the DFAM's "three sources are not
    * three voices", the Matriarch's paraphonic `polyphony: 4` — is one voice at `polyphony: 6`,
-   * and the table above says that shape fits with room to spare. Whether some other modelling of
-   * it fits is a question for the probe, run against the shape actually being authored.
+   * and the table above says that shape fits with room to spare.
+   *
+   * **That is now measured against the real manifest rather than the probe, and it holds.** The
+   * Subharmonicon landed as one `polyphony: 6` voice over fourteen roles with nineteen recipes,
+   * and the sweep moved 8,309 → 9,507, a rise of 14.4% for the twentieth device. Nothing capped,
+   * the peak moved from `industrial-techno` seed 9 to `industrial-techno` seed 21, and the band
+   * below moved with it. #135's own rule was to measure against what is actually authored,
+   * because the Grandmother fit "on projection" using a DFAM-shaped clone and turned out
+   * materially bigger; this time the projection and the measurement agree.
    */
 
   /**
@@ -1146,6 +1153,12 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * 8,309, and the peak moved to `ambient-dub` seed 2 at 25,798 — read at the time as the one
    * direction the repair could do nothing for.
    *
+   * **Moved a third time for the Subharmonicon**, and this one is the "over the ceiling" case
+   * being read as what it is rather than as a regression: a device landed, the sweep grew 14.4%
+   * to 9,507 on `industrial-techno` seed 21, nothing capped, and the band moved up to match. The
+   * paragraph above is what says that is expected — the cost grows with recipes over tonal roles,
+   * and this box adds nineteen recipes over fourteen roles.
+   *
    * The second move says that reading was wrong. The repair was skipping `ambient-dub` because
    * its buckets were gated on `sustain === 'continuous'`, and one of the direction's nine
    * requests is transient; the gate is now §4.2's actual rule, that the members' sections
@@ -1157,14 +1170,14 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * `test/search-matching-floor.test.ts` against the deliberately unrepaired floor, and the
    * per-direction rows in `test/search-bound.test.ts` watch every direction this band does not.
    */
-  const WORST_CASE_NODES = 8_309
+  const WORST_CASE_NODES = 9_507
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))
 
   /**
    * The timeout is not a workaround. This runs `TEMPLATES.length * CAP_SWEEP_SEEDS.length`
-   * exhaustive searches over the whole registry — 168 of them today at nineteen devices and
+   * exhaustive searches over the whole registry — 168 of them today at twenty devices and
    * seven directions. It first went red on `LANG=C.UTF-8` at the default 5s, which reads like a
    * locale failure and is not one, and while #78's repair has bought a great deal of headroom
    * back the timeout stays: a CI runner sharing a core is what it was raised for, not the

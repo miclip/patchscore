@@ -25,10 +25,18 @@ import { TEMPLATES } from '../lib/templates/index'
  *  - **Anything else.** A failure. A bound that returns a different value at the same node
  *    without being provably tighter is a different bound, whether it prunes more or less.
  *
- * The figures below were re-recorded when `liveFloor` gained the one-step matching repair (#78).
+ * The figures below were re-recorded when `liveFloor` gained the one-step matching repair (#78),
+ * and again when the Subharmonicon landed (#135) — the first of the three reasons above, the
+ * library moving. Every row rose: `industrial-techno` 8,309 → 9,507 at its peak, `weave`
+ * 4,803 → 5,461, `ambient-dub` 759 → 806, and the two flat directions by one node each. That is
+ * a twentieth device serving fourteen roles with nineteen recipes, which is the growth curve
+ * `DEFAULT_NODE_CAP` describes rather than a bound that changed.
+ *
  * The pre-repair row for `industrial-techno` peaked at 165,785 nodes on seed 9 against 8,309
- * now; that number is pinned in `test/search-matching-floor.test.ts` against the deliberately
- * unrepaired floor, so the before and the after are both still measured.
+ * after the repair; that number is pinned in `test/search-matching-floor.test.ts` against the
+ * deliberately unrepaired floor, so the before and the after are both still measured. It moved
+ * to 221,573 with the same device, which is the unrepaired floor growing exactly as this matrix
+ * did and is why that file re-records alongside this one.
  *
  * **`ambient-dub` was re-recorded a second time**, at 25,798 → 759, when the repair's buckets
  * stopped being about `sustain` and became about sections: a bucket is now any set of requests
@@ -55,32 +63,30 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      677, 690, 759, 690, 677, 752, 705, 690, 677, 690, 677, 751, 719, 690, 677, 751, 690, 677,
-      690, 677, 690, 677, 691, 677
+      718, 732, 806, 732, 718, 798, 748, 732, 718, 732, 718, 797, 763, 732, 718, 797, 732, 718, 732,
+      718, 732, 718, 733, 718
     ],
     'drone-study': [
-      14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-      14
+      15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15
     ],
     'industrial-techno': [
-      6265, 6524, 6260, 6546, 6260, 7483, 6260, 6511, 6646, 8309, 6265, 6546, 7001, 6540, 7002,
-      7205, 6511, 6260, 6524, 6645, 7569, 6261, 7208, 6261
+      7512, 7823, 7933, 9277, 7506, 9028, 7512, 8539, 7913, 9006, 7509, 7801, 7507, 8883, 7933, 9006,
+      7801, 7505, 8217, 8391, 8200, 9507, 8217, 7507
     ],
     'lydian-house': [
-      279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279,
-      279, 279, 279, 279, 279, 279
+      295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295,
+      295, 295, 295, 295, 295
     ],
     'major-key-electro': [
-      1753, 1722, 1746, 1724, 1726, 1722, 1726, 1726, 1979, 1721, 1753, 1724, 2103, 2409, 1901,
-      2127, 1703, 1746, 1703, 1977, 1721, 1726, 1946, 1703
+      2032, 2005, 2277, 2003, 2027, 2002, 2032, 2277, 2195, 2002, 2610, 1983, 2029, 2003, 2278, 2002,
+      1983, 2008, 2169, 2028, 2169, 2029, 2169, 1983
     ],
     relay: [
-      29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-      29
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31
     ],
-    weave: [
-      4535, 4589, 4535, 4591, 4535, 4625, 4535, 4589, 4803, 4589, 4535, 4591, 4803, 4587, 4535,
-      4716, 4589, 4535, 4589, 4791, 4589, 4535, 4704, 4535
+    'weave': [
+      5171, 5229, 5449, 5267, 5171, 5227, 5171, 5369, 5171, 5227, 5171, 5227, 5171, 5267, 5461, 5227,
+      5227, 5171, 5229, 5171, 5229, 5171, 5229, 5171
     ],
   }
 

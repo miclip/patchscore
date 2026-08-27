@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → Grandmother · Voice — *Kick with the envelope cabled to Oscillator 1’s pitch*
+- **`kick`** → Deluge · Track 1 — *Kit-row kick, bass lifted, edge from decimation*
   - p1 · exact `hard` · every section
 - **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
@@ -111,14 +111,14 @@ None.
   - clock: sends clock · analog-clock
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **Grandmother** — semi-modular · 1 part
+- **Grandmother** — semi-modular · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per the Global Settings (p.37) · manual
     - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
   - MIDI OUT: Everything originating on this box, MIDI Clock included when the Global Setting sends it (p.37) · manual
     - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
   - audio: mono main out · audio in
-  - mixer: 1 part, no individual outs: one mono channel for all
+  - mixer: no parts assigned; nothing to patch
 - **Matriarch** — semi-modular · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per Global Setting 1.5 (p.64) · manual
@@ -136,6 +136,12 @@ None.
   - MIDI IN: The only MIDI connector on the box: input only, 5-pin DIN, on the front panel · manual
     - ↳ cite: value manual — Moog Mother-32 User Manual (Version 2), p.54
   - audio: mono main out · audio in
+  - mixer: no parts assigned; nothing to patch
+- **Subharmonicon** — semi-modular · 0 parts
+  - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
+  - IN · MIDI IN: A 3.5 mm socket fed by the supplied five-pin DIN adapter (MIDI Type A). Takes clock, note data and CCs. MIDI clock overrides the internal clock *and* anything at IN · CLOCK · manual
+    - ↳ cite: value manual — Moog Subharmonicon Manual, p.37
+  - audio: mono main out
   - mixer: no parts assigned; nothing to patch
 - **Subsequent 37** — synth · 1 part
   - clock: sends clock · midi-din/usb
@@ -159,10 +165,10 @@ None.
   - clock: sends clock · midi-din/usb/trigger
   - audio: stereo main out · 6 individual outs · USB audio · audio in
   - mixer: 3 parts, 6 individual outs: one channel each
-- **Deluge** — groovebox · 0 parts
+- **Deluge** — groovebox · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: stereo main out · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, no individual outs: one stereo channel for all
 - **Model 2400** — mixer-recorder · 0 parts
   - clock: sends clock, cannot receive · midi-din/usb
   - audio: stereo main out · 8 individual outs · USB audio · audio in
@@ -229,9 +235,9 @@ Note length is set per note here — `LEN`. · manual
 
 ## 5. Step programming
 
-### `kick` — Grandmother · Voice
+### `kick` — Deluge · Track 1
 
-**Kick with the envelope cabled to Oscillator 1’s pitch** — settings in Sound design
+**Kit-row kick, bass lifted, edge from decimation** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -256,10 +262,10 @@ Note length is set per note here — `LEN`. · manual
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — Grandmother
+**On this box** — Deluge
 
-- `accent` → `accent` true on step 9
-  - ↳ hint: REC mode, then TAP adds an accent
+- `accent` → `velocity` 127 on step 9
+  - ↳ hint: Hold the note pad, turn (SELECT)
 
 ### `sub` — Minitaur · Voice
 
@@ -673,63 +679,6 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **EFFECTS · DEPTH** `62` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
 
-### Grandmother
-
-*Values below cite Moog Grandmother User’s Manual (Version 2).*
-
-#### Voice — `kick`: Kick with the envelope cabled to Oscillator 1’s pitch
-
-Routing — Played from its own 32-note keyboard, from the arpeggiator or the 256-step sequencer, or over MIDI IN. Two cables: + ENV OUT to OSCILLATORS 1 PITCH IN for the drop — there is no normalled envelope-to-pitch route on this box — and KB VEL OUT to CUTOFF IN, without which p.30 says the accent is inaudible
-
-- **OSCILLATOR 1 OCTAVE** `32'`
-- **OSCILLATOR 1 WAVEFORM** `TRIANGLE`
-- **OSCILLATOR 2 OCTAVE** `16'`
-- **OSCILLATOR 2 WAVEFORM** `TRIANGLE`
-- **SYNC** `OFF`
-- **OSCILLATOR 2 FREQUENCY** `0` st (-7…7 st)
-  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.12
-  - ↳ hint: 12 o’clock is unison with Oscillator 1
-- **OSCILLATOR 1** `82` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: Past 1 o’clock the mixer starts to overdrive
-- **OSCILLATOR 2** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **NOISE** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **CUTOFF** `120` Hz (10…20000 Hz)
-  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.16
-- **RESONANCE** `30` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: Past 3 o’clock the ladder self-oscillates
-- **ENVELOPE AMT** `66` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: 12 o’clock is off; either way from there
-- **KBD TRACK** `OFF`
-- **ATTACK** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **DECAY** `14` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **SUSTAIN** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **RELEASE** `12` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **VCA MODE** `ENV`
-- **VOLUME** `78` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **MIX** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: Fully clockwise is reverb only, no dry
-- **GLIDE** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-
-**Patch**
-
-- `ENVELOPE · + ENV OUT` → `OSCILLATORS · 1 PITCH IN`
-  - ↳ note: The pitch drop — a short DECAY makes it a click, a longer one a boom
-- `ARP/SEQ · KB VEL OUT` → `FILTER · CUTOFF IN` · manual
-  - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.30
-  - ↳ note: Makes a sequencer accent audible — the accent envelope only exists at this jack
-
 ### Minitaur
 
 *Values below cite Moog Minitaur Manual.*
@@ -1060,6 +1009,38 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
   - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
   - ↳ hint: INST Edit > DelaySend
 
+### Deluge
+
+*Values below cite Deluge Official Guidebook OS 4.1 (OLED) and Deluge community firmware release_1_2_1, community_features.md.*
+
+**Content**
+
+- Ships a factory library on the supplied SD card — look in SAMPLES/ARTISTS and SAMPLES/DRUMS. p.12 marks both folders as supplied samples and never names one of them, so the Source line below says what the part needs rather than naming a file. · manual
+  - ↳ cite: claim manual — Deluge Official Guidebook OS 4.1 (OLED), p.12
+
+**Song-wide**
+
+One setting for the whole song — set it once, not once per part below.
+
+- **SWING** `50` % (1…99 %)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
+  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
+  - ↳ hint: Hold [SHIFT], turn (TEMPO)
+
+#### Track 1 — `kick`: Kit-row kick, bass lifted, edge from decimation
+
+Source — A dry kick one-shot with a defined attack, no room on it
+
+*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.219.*
+
+- **OSC TYPE** `Sample`
+- **REPEAT MODE** `ONCE`
+- **EQ BASS AMOUNT** `33` (0…50)
+  - ↳ note: 25 is neutral; above boosts
+- **EQ BASS FREQUENCY** `14` (0…50)
+- **DECIMATION** `6` (0…50)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
+
 ## 7. Finishing
 
 **Sidechain**
@@ -1078,7 +1059,7 @@ What processes audio in this rig:
 - MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and DELAY SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 - TR-8S — carries REVERB, DELAY and MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
-- Deluge — carries effects, though no part in this guide reaches them
+- Deluge — carries DECIMATION in its recipes
 - Model 2400 — is a mixer and recorder (stereo main out · 8 individual outs · USB audio · audio in)
 - Zoom LiveTrak L-8 — is a mixer and recorder (stereo main out · USB audio · audio in)
 
