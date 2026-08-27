@@ -1716,15 +1716,22 @@ export const device: Device = {
    * §10. 319.3 mm across, cheeks included — the same enclosure as the Mother-32 and the DFAM, and
    * p.9 says so: "As with Mother-32 and DFAM, Subharmonicon conforms to the 60HP Eurorack format;
    * features aluminum rails, finished wood side pieces". p.58's `SIZE (WxDxH)` gives
-   * `12.57" x 4.21" x 5.24"`. See `panel.ts` for the aspect check that picks the right two of the
-   * three, and for the second check this box's drawing allowed that the DFAM's did not.
+   * `12.57" x 4.21" x 5.24"`. The drawn unit measures 532.0000 x 225.9336 pt off the vector
+   * paths of printed p.50, an aspect of 2.35467 against 2.40075 for this pair and 2.98690 for
+   * the depth, so the pair is the one §2.3 asks for. See `panel.ts` for that check in full, and
+   * for the second one this box's drawing allowed that the DFAM's did not: its metal panel
+   * proper is faithful to 0.20% of Eurorack's 60HP x 3U.
    */
   physical: {
     panelSpanMm: 319.3,
     verified: cite(58),
   },
 
-  /** §10. A simplified original drawing of the panel, read off p.50 (see `panel.ts`). */
+  /**
+   * §10. A simplified original drawing of the panel, measured off printed p.50's **vector paths**
+   * rather than a render of them — `pdfimages` reports no raster image on that page. See
+   * `panel.ts` for the method and for what the first, rasterised, pass got wrong.
+   */
   panel: SUBHARMONICON_PANEL,
 
   /** §3.3. Declared once, cited once, referenced by the recipes above. */
