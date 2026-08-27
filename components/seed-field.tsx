@@ -16,14 +16,19 @@ import { SEED_MAX, SEED_MIN } from '@/lib/core'
  * The bounds come from `lib/core/permalink.ts` rather than being written here. A field that
  * accepts a seed a permalink would reject — or the reverse — is a disagreement with no error
  * anywhere, and it only shows up as a link that silently will not load.
+ *
+ * **A row, not a panel** (#161). The seed lives in `SongPanel` beside key and tempo, because
+ * those three are what §8's phase 1 prints and what a person means by "what song am I making?".
+ * It stays its own file because the reroll rule above is a rule about *this control* and would
+ * be harder to find inside a panel that does three things.
  */
 
-export type SeedFieldProps = {
+export type SeedRowProps = {
   seed: number
   onChange: (seed: number) => void
 }
 
-export function SeedField({ seed, onChange }: SeedFieldProps) {
+export function SeedRow({ seed, onChange }: SeedRowProps) {
   const [typed, setTyped] = useState<string | null>(null)
 
   function onFieldChange(event: ChangeEvent<HTMLInputElement>) {
@@ -36,15 +41,10 @@ export function SeedField({ seed, onChange }: SeedFieldProps) {
   }
 
   return (
-    <section className="panel">
-      <header>
-        <h2>Seed</h2>
-        <p className="note">Same inputs, same seed, same guide (invariant 6)</p>
-      </header>
-
-      <div className="seed-row">
+    <>
+      <div className="seed-row song-row">
         <label className="knob-label" htmlFor="seed">
-          value
+          seed
         </label>
         <input
           id="seed"
@@ -68,10 +68,10 @@ export function SeedField({ seed, onChange }: SeedFieldProps) {
           Reroll
         </button>
       </div>
-      <p className="knob-hint" style={{ textAlign: 'left', marginTop: '8px' }}>
-        Rerolling re-picks the key, the hooks and how parts land on your boxes. The clock
-        source does not change.
+      <p className="knob-hint song-hint">
+        Rerolling re-picks the hooks and how parts land on your boxes, and the key where you have
+        not chosen one. The clock source does not change.
       </p>
-    </section>
+    </>
   )
 }

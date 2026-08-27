@@ -3,7 +3,10 @@ import type { DeviceId } from './ids'
 import { INSPIRATION_CAP } from './inspiration'
 import { MoodStateSchema } from './resolver'
 import {
+  BPM_MAX,
+  BPM_MIN,
   FORMAT_VERSION,
+  KEY_MAX_LENGTH,
   PERMALINK_ID,
   SEED_MAX,
   SEED_MIN,
@@ -159,6 +162,11 @@ export function studioDoc(inputs: GuideInputsV1, rig?: StoredRigV1): StudioDocV1
       inspirations: [...inputs.inspirations],
       mood: { ...inputs.mood },
       seed: inputs.seed,
+      // Written only when set (#161). `strictObject` would take an explicit `undefined`, but a
+      // key present with no value is a second spelling of unset, and JSON drops it on the way to
+      // disk anyway — so there would be one shape in memory and another on reload.
+      ...(inputs.bpm === undefined ? {} : { bpm: inputs.bpm }),
+      ...(inputs.key === undefined ? {} : { key: inputs.key }),
     },
   }
 }
@@ -176,6 +184,8 @@ export function guideInputsFrom(doc: StudioDocV1): GuideInputsV1 {
     inspirations: [...doc.inputs.inspirations],
     mood: { ...doc.inputs.mood },
     seed: doc.inputs.seed,
+    ...(doc.inputs.bpm === undefined ? {} : { bpm: doc.inputs.bpm }),
+    ...(doc.inputs.key === undefined ? {} : { key: doc.inputs.key }),
   }
 }
 
@@ -249,6 +259,18 @@ const ScoreInputsSchema = z.strictObject({
   inspirations: z.array(z.string().regex(PERMALINK_ID)).max(INSPIRATION_CAP),
   mood: MoodStateSchema,
   seed: z.number().int().min(SEED_MIN).max(SEED_MAX),
+  /**
+   * #161's two, **optional exactly as #16's later fields will be**: a document already on disk
+   * predates them and stays valid, which is what optional buys and what a bumped
+   * `STUDIO_DOC_VERSION` would have thrown away for nothing.
+   *
+   * The key is bounded and not parsed, on disk exactly as on the wire: one this build cannot
+   * read is carried and reported by the resolver rather than costing the reader their whole
+   * studio (§5.6). The bound is here as well as in `checkGuideInputs` for the reason the id
+   * regex is — a stored value that could not survive a permalink is already broken.
+   */
+  bpm: z.number().int().min(BPM_MIN).max(BPM_MAX).optional(),
+  key: z.string().max(KEY_MAX_LENGTH).optional(),
 })
 
 const StudioDocSchema = z.strictObject({

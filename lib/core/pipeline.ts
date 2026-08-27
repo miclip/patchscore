@@ -22,7 +22,8 @@ import {
   type ResolvedSourceAudio,
 } from './resolver'
 import { assign, type SearchReport, type Shortfall } from './search'
-import { chooseHook, chooseKey, type HookChoice } from './harmony'
+import { chooseHook, chooseKey, parseKey, type HookChoice } from './harmony'
+import type { InspirationDiagnostic } from './inspiration'
 
 /**
  * §7. The resolver, composed end to end. Pure functions, no React, and nothing imported from
@@ -815,6 +816,31 @@ export type ResolvedAssignment = {
  */
 export const RESOLVER_VERSION = 5
 
+/**
+ * #161. The two decisions the user may take back off the direction: tempo and key. Both
+ * absolute, both sticky, both `undefined` for "follow the direction" — which is not a default
+ * standing in for a missing value but the state every guide was in before this existed.
+ *
+ * **This does not move `RESOLVER_VERSION`.** §7's rule is that the stamp tracks the engine: a
+ * bump says a link's *own* inputs now resolve to different bytes. These widen the input set
+ * instead. A link carrying neither override resolves exactly as it did — that is asserted, not
+ * assumed (`test/pipeline.test.ts`) — and a link carrying one could not have been written by a
+ * build that had no field to write it in. `FORMAT_VERSION` is the stamp that moves, because
+ * what changed is which fields exist.
+ */
+export type SongOverrides = {
+  /**
+   * Absolute BPM. Used as given, including outside the template's range, which is reported
+   * rather than blocked — see `bpm-outside-range`.
+   */
+  bpm?: number | undefined
+  /**
+   * Any key `parseKey` accepts, including one `template.keys` does not list. Hooks resolve
+   * against it like any other key; an unreadable one is reported and the seed's pick stands.
+   */
+  key?: string | undefined
+}
+
 export type ResolveInput = {
   /** Effective devices: shared definition composed with the user's overlay (#16). */
   devices: readonly Device[]
@@ -822,21 +848,48 @@ export type ResolveInput = {
   template: Template
   mood: MoodState
   seed: number
+  /**
+   * #161's fourth layer, applied on top of the effective template. Omitted or all-`undefined`
+   * is the pre-#161 behaviour byte for byte.
+   */
+  overrides?: SongOverrides | undefined
 }
+
+/**
+ * Where a song value came from (#161). `'template'` covers both "the direction's default" and
+ * "the seed's pick from the direction's keys" — they are the same thing to a reader, and both
+ * move on a reroll. `'user'` means they set it, and a reroll will not touch it.
+ *
+ * The renderers need this rather than deriving it: "a reroll may pick F minor" is *false* under
+ * a user-set key, and a renderer comparing the key against `keys` cannot tell a user who chose
+ * the key the seed would have picked from a seed that picked it.
+ */
+export type SongValueSource = 'template' | 'user'
 
 /**
  * §7 step 10 / §4.1, and §8's opening phase. What the seed settled about the song itself,
  * before any of it reaches a device.
  */
 export type ResolvedSong = {
-  /** `bpm.default`. Nothing in the design gives the seed a tempo to pick, so it does not. */
+  /**
+   * The user's tempo where they set one, and `bpm.default` otherwise. Nothing in the design
+   * gives the *seed* a tempo to pick, so it still does not — a reroll never moves this.
+   */
   bpm: number
+  /** #161. Whether the tempo above is the direction's or the user's. */
+  bpmSource: SongValueSource
   /**
    * The key everything else resolved against. `undefined` only for a template authoring no
    * keys at all, which validation forbids and an effective template could still reach (§5) —
    * reported rather than guessed (invariant 5).
    */
   key: string | undefined
+  /**
+   * #161. Whether the key above is the user's. A key that could not be read leaves this
+   * `'template'` — the seed's pick is what resolved, and saying otherwise would describe a guide
+   * that was not rendered.
+   */
+  keySource: SongValueSource
   /** Every key the template offers, so the alternatives a reroll could reach are visible. */
   keys: readonly string[]
   /**
@@ -846,6 +899,37 @@ export type ResolvedSong = {
    * the renderer answers from `assignments`.
    */
   hooks: HookChoice[]
+  /**
+   * #161. What the overrides did that their face value does not say: a tempo outside the
+   * effective range, a key the direction does not offer, a key that could not be read. Empty
+   * for a guide that set neither, which is every guide before #161.
+   *
+   * Beside the values rather than at the top of `ResolveResult` because they are statements
+   * *about these two fields*, and typed as `InspirationDiagnostic` so the one findings display
+   * (#158) can show them next to §5's without a second shape to reconcile.
+   */
+  diagnostics: readonly InspirationDiagnostic[]
+}
+
+/**
+ * #161's findings, split by the value each one is about, so both §8 phase-1 renderers attach a
+ * finding to the fact it qualifies rather than to a list at the bottom of the phase.
+ *
+ * Here rather than in either renderer for the reason `bandTrajectory` is in `lib/core`: the two
+ * guides share no *ink*, but a derived fact written twice is a fact one of the copies can be
+ * wrong about. Which value a diagnostic is about is engine knowledge — it follows from the kind
+ * — so the engine says it once.
+ */
+export function songFindings(song: ResolvedSong): { bpm: string[]; key: string[] } {
+  const bpm: string[] = []
+  const key: string[] = []
+  for (const finding of song.diagnostics) {
+    if (finding.kind === 'bpm-outside-range') bpm.push(finding.detail)
+    else if (finding.kind === 'key-not-offered' || finding.kind === 'key-unreadable') {
+      key.push(finding.detail)
+    }
+  }
+  return { bpm, key }
 }
 
 export type ResolveResult = {
@@ -889,6 +973,76 @@ export type ResolveResult = {
 // §7 The pipeline
 // ---------------------------------------------------------------------------
 
+/**
+ * §7 step 10 with #161's fourth layer on top: base direction, then inspirations (§5, already
+ * applied by the caller), then the user's tempo, then the user's key.
+ *
+ * The order matters in one direction only. Inspirations move the range and the default together
+ * and leave `keys` untouched, so what the user's tempo is *compared against* is the shifted
+ * range — which is why this reads `template.bpm` after composition rather than the base
+ * direction's. Neither override feeds back into composition: they are read after it and change
+ * nothing an inspiration decided.
+ *
+ * Nothing here is seeded. A tempo the user typed is not a thing to pick among, and a key they
+ * chose replaces the pick rather than biasing it — so a reroll moves the key only where they
+ * left it to the direction.
+ */
+function resolveSong(
+  template: Template,
+  seed: number,
+  overrides: SongOverrides | undefined,
+): {
+  bpm: number
+  bpmSource: SongValueSource
+  key: string | undefined
+  keySource: SongValueSource
+  diagnostics: InspirationDiagnostic[]
+} {
+  const diagnostics: InspirationDiagnostic[] = []
+
+  const bpm = overrides?.bpm ?? template.bpm.default
+  if (overrides?.bpm !== undefined && (bpm < template.bpm.min || bpm > template.bpm.max)) {
+    diagnostics.push({
+      kind: 'bpm-outside-range',
+      bpm,
+      min: template.bpm.min,
+      max: template.bpm.max,
+      detail:
+        `${String(bpm)} BPM is ${bpm < template.bpm.min ? 'below' : 'above'} the ` +
+        `${String(template.bpm.min)}–${String(template.bpm.max)} '${template.name}' offers, and ` +
+        `the patterns do not change with the tempo`,
+    })
+  }
+
+  const bpmSource: SongValueSource = overrides?.bpm === undefined ? 'template' : 'user'
+  const seeded = () => ({
+    bpm,
+    bpmSource,
+    key: chooseKey(template.id, template.keys, seed),
+    keySource: 'template' as const,
+    diagnostics,
+  })
+
+  const wanted = overrides?.key
+  if (wanted === undefined) return seeded()
+  if (parseKey(wanted) === undefined) {
+    diagnostics.push({
+      kind: 'key-unreadable',
+      key: wanted,
+      detail: `'${wanted}' is not a key this build can read, so the direction's own key stands`,
+    })
+    return seeded()
+  }
+  if (!template.keys.includes(wanted)) {
+    diagnostics.push({
+      kind: 'key-not-offered',
+      key: wanted,
+      detail: `'${template.name}' does not offer ${wanted}, and the hooks were resolved in it`,
+    })
+  }
+  return { bpm, bpmSource, key: wanted, keySource: 'user', diagnostics }
+}
+
 export function resolve(input: ResolveInput): ResolveResult {
   const { devices, template, mood, seed } = input
   const deviceById = new Map(devices.map((d) => [d.id, d]))
@@ -910,7 +1064,8 @@ export function resolve(input: ResolveInput): ResolveResult {
   // built. The key is still a function of template and seed alone, so a rig change never moves
   // it, and every pick here is salted per role rather than drawn from a stream — evaluation
   // order carries no information, so hoisting moves no byte (invariant 6).
-  const key = chooseKey(template.id, template.keys, seed)
+  const song = resolveSong(template, seed, input.overrides)
+  const key = song.key
   const hookRoles = [...new Set(template.hooks.map((h) => h.forRole))].sort(compareCodeUnits)
   const hooks =
     key === undefined
@@ -978,7 +1133,15 @@ export function resolve(input: ResolveInput): ResolveResult {
   return {
     template,
     devices,
-    song: { bpm: template.bpm.default, key, keys: template.keys, hooks },
+    song: {
+      bpm: song.bpm,
+      bpmSource: song.bpmSource,
+      key,
+      keySource: song.keySource,
+      keys: template.keys,
+      hooks,
+      diagnostics: song.diagnostics,
+    },
     assignments,
     shortfalls: allocation.shortfalls,
     occupancy: allocation.occupancy,

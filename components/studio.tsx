@@ -17,6 +17,9 @@ import {
   CATALOGUE,
   bootstrapStudio,
   composeTemplate,
+  songOverrides,
+  withBpm,
+  withKey,
   copyStudioLink,
   createStudioSync,
   withAxis,
@@ -33,7 +36,7 @@ import { GenrePicker } from './genre-picker'
 import { GuideArea } from './guide-area'
 import { InspirationPicker } from './inspiration-picker'
 import { MoodPanel } from './mood-panel'
-import { SeedField } from './seed-field'
+import { SongPanel } from './song-panel'
 
 /**
  * Build step 8 (#10) and build step 10 (#12). The whole input surface, the single place
@@ -210,8 +213,16 @@ export function Studio({ initialInputs }: StudioProps) {
     () =>
       template === undefined
         ? undefined
-        : resolve({ devices, template, mood: inputs.mood, seed: inputs.seed }),
-    [devices, template, inputs.mood, inputs.seed],
+        : resolve({
+            devices,
+            template,
+            mood: inputs.mood,
+            seed: inputs.seed,
+            // #161. No control writes these yet; a permalink or a stored studio can carry them,
+            // and the guide has to render what the inputs say whatever put them there.
+            overrides: songOverrides(inputs),
+          }),
+    [devices, template, inputs.mood, inputs.seed, inputs.bpm, inputs.key],
   )
 
   const onCopy = useCallback(() => {
@@ -260,6 +271,19 @@ export function Studio({ initialInputs }: StudioProps) {
 
   function setSeed(seed: number) {
     setInputs((current) => withSeed(current, seed))
+  }
+
+  /**
+   * #161. Neither of these claims the page as the visitor's own (#61): choosing a tempo or a key
+   * is taste on the example in front of them, the same as turning a knob or rerolling, where
+   * changing a box or the direction is answering the question the note asks.
+   */
+  function setBpm(bpm: number | undefined) {
+    setInputs((current) => withBpm(current, bpm))
+  }
+
+  function setKey(key: string | undefined) {
+    setInputs((current) => withKey(current, key))
   }
 
   return (
@@ -313,13 +337,31 @@ export function Studio({ initialInputs }: StudioProps) {
         <PatchChain areaRef={columnsRef} />
         <DevicePicker selected={inputs.devices} onToggle={toggleDevice} />
         <GenrePicker selected={inputs.templateId} onSelect={selectTemplate} />
-        <SeedField seed={inputs.seed} onChange={setSeed} />
+        {/*
+          #161. The panel beside INSPIRATIONS, holding the three facts §8's phase 1 opens with.
+          It reads the *effective* direction — the one inspirations produced — because that is
+          the range a tempo is judged against and the key list a reader is choosing from.
+        */}
+        <SongPanel
+          seed={inputs.seed}
+          onSeed={setSeed}
+          range={template?.bpm}
+          keys={template?.keys ?? []}
+          bpm={inputs.bpm}
+          songKey={inputs.key}
+          resolved={result === undefined ? undefined : { bpm: result.song.bpm, key: result.song.key }}
+          onBpm={setBpm}
+          onKey={setKey}
+        />
 
         <InspirationPicker
           inspirations={INSPIRATIONS}
           selected={inputs.inspirations}
           onToggle={toggleInspiration}
           application={application}
+          // #161. The resolver's findings about the song, shown in the one findings display
+          // rather than in a second one of their own.
+          songDiagnostics={result?.song.diagnostics ?? []}
         />
 
         <MoodPanel mood={inputs.mood} onChange={setAxis} />

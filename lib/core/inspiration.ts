@@ -219,6 +219,13 @@ export const InspirationSchema = z
 /**
  * Something an inspiration asked for that this template could not give it. Every one of these
  * is a *no-op that would otherwise be silent*, which is the only reason the type exists.
+ *
+ * #161 adds three kinds that no inspiration produces: the ones the resolver reports about the
+ * user's own tempo and key. They live in this union rather than in a second one because they
+ * are the same fact addressed to the same reader — *this input did not do what its face value
+ * says* — and because the display that shows them (#158) already reads exactly this type. A
+ * parallel type would buy a truer name and cost every consumer a second list to merge, agree
+ * with and order. `groupDiagnostics` needs nothing new for them: only `no-such-target` groups.
  */
 export type InspirationDiagnostic =
   | {
@@ -238,6 +245,25 @@ export type InspirationDiagnostic =
   | { kind: 'role-already-patterned'; inspirationId: InspirationId; role: Role; detail: string }
   | { kind: 'role-already-requested'; inspirationId: InspirationId; role: Role; detail: string }
   | { kind: 'bpm-clamped'; detail: string }
+  /**
+   * #161. The user's tempo sits outside the *effective* range — the direction's, already moved
+   * by any inspirations. Reported, never blocked: nothing downstream reads `bpm` except the
+   * rendered guide, so the range is the direction author's taste rather than a boundary, and
+   * playing industrial-techno at 70 is a thing a person may mean.
+   */
+  | { kind: 'bpm-outside-range'; bpm: number; min: number; max: number; detail: string }
+  /**
+   * #161. The user's key parses and is used, and the direction does not list it. `keys` is a
+   * curated list, not a gate (§4) — so this is worth saying and not worth refusing.
+   */
+  | { kind: 'key-not-offered'; key: string; detail: string }
+  /**
+   * #161. A key `parseKey` cannot read, so the seed's pick stands. Every input boundary
+   * (`checkGuideInputs`) rejects one before it gets here, which is exactly why the resolver
+   * says so out loud rather than trusting that: silently ignoring a key someone set is the
+   * failure invariant 5 exists to prevent.
+   */
+  | { kind: 'key-unreadable'; key: string; detail: string }
 
 /**
  * §5.4's diagnostics, collapsed for reading.

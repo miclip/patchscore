@@ -1,11 +1,21 @@
 import type { ResolveResult } from '@/lib/core'
+import { songFindings } from '@/lib/core'
 import { num } from './format'
 import { ProgressionTable, SectionTable } from './song-tables'
 
-/** §8 phase 1. BPM, key, hook harmony, and the bar-count energy map. */
+/**
+ * §8 phase 1. BPM, key, hook harmony, and the bar-count energy map.
+ *
+ * #161. Two of these three facts can now come from the reader rather than from the direction,
+ * and the difference is worth ink: `a reroll may pick F minor` is false of a key they chose, and
+ * a finding about the tempo belongs under the tempo rather than in a list at the foot of the
+ * phase. Which finding is about which value is decided in `lib/core` (`songFindings`), like
+ * every other derived fact both guides read — what is written twice here is the wording.
+ */
 export function PhaseSong({ result }: { result: ResolveResult }) {
   const { template, song } = result
   const others = song.keys.filter((k) => k !== song.key)
+  const findings = songFindings(song)
   const totalBars = template.structure.reduce((sum, s) => sum + s.bars, 0)
 
   return (
@@ -16,8 +26,14 @@ export function PhaseSong({ result }: { result: ResolveResult }) {
           <dd>
             <span className="mono">{num(song.bpm)}</span>{' '}
             <span className="quiet">
+              {song.bpmSource === 'user' ? 'you set this; ' : null}
               template range <span className="mono">{num(template.bpm.min)}…{num(template.bpm.max)}</span>
             </span>
+            {findings.bpm.map((note) => (
+              <span className="song-finding" key={note}>
+                {note}
+              </span>
+            ))}
           </dd>
         </div>
         <div>
@@ -29,11 +45,22 @@ export function PhaseSong({ result }: { result: ResolveResult }) {
             ) : (
               <>
                 <span className="mono">{song.key}</span>
-                {others.length === 0 ? null : (
+                {song.keySource === 'user' ? (
+                  <span className="quiet">
+                    {' '}
+                    you set this
+                    {song.keys.length === 0 ? null : `; template offers ${song.keys.join(', ')}`}
+                  </span>
+                ) : others.length === 0 ? null : (
                   <span className="quiet"> a reroll may pick {others.join(', ')}</span>
                 )}
               </>
             )}
+            {findings.key.map((note) => (
+              <span className="song-finding" key={note}>
+                {note}
+              </span>
+            ))}
           </dd>
         </div>
         <div>

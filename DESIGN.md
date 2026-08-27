@@ -1864,9 +1864,17 @@ A claim the template cannot honour is *reported*, never dropped:
 | `role-already-patterned` | the template programs that role itself, so added variants did not apply |
 | `role-already-requested` | the template already asks for that part, so it was not added twice |
 | `bpm-clamped` | the shift would have gone below `MIN_EFFECTIVE_BPM`, so it was held there |
+| `bpm-outside-range` | the user's tempo sits outside the effective range; it is used anyway (§5.6) |
+| `key-not-offered` | the user's key is not one the direction lists; it is used anyway (§5.6) |
+| `key-unreadable` | the user's key does not parse, so the direction's own key stands (§5.6) |
 
 A toggle that visibly does nothing is the failure §6.3 warns about, and an inspiration that
 silently does nothing is the same bug wearing a different hat.
+
+The last three come from the **resolver**, not from an inspiration, and share this type
+deliberately: they are the same fact addressed to the same reader — *this input did not do what
+its face value says* — and one display shows them together. A parallel type would buy a truer
+name and cost every consumer a second list to merge and order.
 
 ### 5.5 Composition
 
@@ -1897,6 +1905,70 @@ to put prose, and prose belongs beside the guide, not inside the genre.
 
 **Sequencing note:** inspirations multiply the test surface across every template. Land one
 template end-to-end first, then add inspirations against it.
+
+### 5.6 The song a user asks for, on top of the one the direction offers
+
+[#161](https://github.com/miclip/patchscore/issues/161). Tempo and key are inputs, not decisions
+taken for the user. They compose with this section's patching in one fixed order:
+
+```
+base direction
+  + inspirations (§5)   -> effective template: bpm range shifted, keys copied untouched
+  + the user's tempo    -> absolute, sticky, reported when outside the effective range
+  + the user's key      -> used if it parses, reported when the direction does not offer it
+```
+
+The order matters in one direction only. Inspirations move `min`, `max` and `default` together
+and never touch `keys`, so what a user's tempo is *compared against* is the shifted range —
+`resolve` therefore reads `template.bpm` after composition, not the base direction's. Neither
+override feeds back: they are read after composition and change nothing an inspiration decided.
+
+**Unset is a state, not a missing value.** It means *follow the direction*: the authored default,
+moved by inspirations exactly as before this existed. Every permalink written before #161 is in
+that state, which is why widening the input set here did not move `RESOLVER_VERSION` (§8.2).
+
+**Once set, sticky.** Changing direction or adding an inspiration never moves a number the user
+typed. If it now sits outside what the direction offers, they are told.
+
+**The range is advisory, never a boundary.** Nothing downstream reads `bpm` — hooks resolve in
+steps and bars, bands come from section energy, swing is a mood axis — so `min`/`max` is the
+direction author's taste, and industrial techno at 70 is a thing a person may mean. Going outside
+is *reported*, exactly as §6.3's band fallback and `bpm-clamped` are, and never blocked
+(invariant 5). The report says the rest of it too: patterns do not adapt to tempo, so a
+four-on-the-floor kick at 70 is techno played slowly rather than a different genre.
+
+`MIN_EFFECTIVE_BPM` is untouched by all of this. It guards a *template spec* against composed
+inspiration shifts; the user's own number has its own guard — a whole number 1–999 — and that one
+is a typo bound rather than taste. Neither bounds the other.
+
+**Key is the same shape, with `keys` as a curated list rather than a gate** (§4). `parseKey`
+accepts any `<A-G><#|b> <mode>` whose mode the engine knows, and the hooks resolve against it, so
+a direction can be taken into a mode it does not offer — said out loud, not refused. A key that
+does not parse is the one case the seed's pick stands, and that is reported too.
+
+**The parse gate sits on the controls, not on the boundaries.** `withKey` — and any picker built
+on it — refuses a key it cannot read, because there is nothing honest to store. A permalink and a
+stored studio *carry* one: both are hand-editable and arrive from anywhere, and refusing there
+costs the reader the entire guide over one field the resolver can report and work around. So the
+boundaries bound the key's length and nothing else, and `key-unreadable` is what the reader sees.
+Blocking a whole guide is the one response invariant 5 rules out.
+
+**Both kinds of finding share one display.** §5.4's diagnostics and these are the same fact for
+the same reader, so the findings list built for §5.4 shows them together, under a heading that is
+true of both: an unhonoured claim was *not applied*, where a tempo outside the range was.
+
+**The guide says which of the two decided each value.** `ResolvedSong` carries a source per
+value — `'template'` for the direction's default and for the seed's pick from its keys, `'user'`
+for a value somebody set — and both §8 phase-1 renderers read it. It is not derivable: a reader
+may choose the very key the seed would have picked, and a renderer comparing against `keys`
+cannot tell the two apart. What it buys is one sentence not being printed — *a reroll may pick F
+minor* is false of a chosen key, and it is exactly the claim someone would act on, rerolling
+after a key they already have. Each finding is printed under the value it qualifies, in both
+guides; which value that is comes from `songFindings` in `lib/core`, so the two cannot disagree.
+
+**Stored absolute, not as an offset from the effective default.** An offset's whole purpose is to
+stay valid when the range moves under it, and once out-of-range is legal there is nothing left to
+keep valid. Absolute is also the number the musician is thinking in.
 
 ---
 
@@ -2018,7 +2090,8 @@ has no energy to quantise and is an error, not a default band.
 Pure functions, fully unit-testable, no React.
 
 ```
-input:  { devices: Device[], template: Template, mood: MoodState, seed: number }
+input:  { devices: Device[], template: Template, mood: MoodState, seed: number,
+          overrides?: { bpm?: number, key?: string } }        // §5.6
 output: { assignments: Assignment[], shortfalls: Shortfall[], guide: GuideDocument }
 ```
 
@@ -3050,7 +3123,14 @@ instruction alone, never invent one.
 ### 8.2 Persistence
 
 `localStorage` plus a URL-encoded permalink. **Inputs only, never resolved output** —
-devices, template, inspirations, five mood ints, seed. That packs to roughly 40 bytes.
+devices, template, inspirations, five mood ints, seed, and §5.6's two optional song overrides.
+That packs to roughly 40 bytes.
+
+The overrides are the first **optional** fields in the format, and the reason `FORMAT_VERSION`
+is 2. Absent means unset, which is a real state rather than a default standing in for a missing
+value — so a v1 link opens unchanged, read as a guide that follows its direction, and only the
+stamp it re-encodes with differs. A v1 link that hand-edits them in has them dropped and
+reported: a field the link's own format does not have is not a field of that link.
 
 Consequence: old links drift when the resolver changes — same inputs, same seed, different guide.
 This is a real and accepted violation of invariant 6 as originally stated, and is why invariant 6
@@ -3129,6 +3209,20 @@ socket. Under, always — a cable arriving from above would have to cross the ta
 reach a jack on its bottom rail, which is the thing the bottom rail exists to prevent. A cable
 between two boxes on one row still just hangs. A gutter is only reserved when a cable uses it, so a rig that fits on
 one row is laid out to the millimetre as it was before rows existed.
+
+**The `Song` panel** (#161) holds seed, key and tempo, mirroring §8's phase 1 rather than
+grouping by what was left over. Tempo is typed first and dragged second: the number is the
+accessible path, the precise one, and the only one that can express the out-of-range tempo §5.6
+allows. A slider is added only where it can be honest — a range with room in it, holding a value
+it can point at — because one that cannot represent the current value either lies about where the
+value is or drags it back inside on first touch. Key is the direction's curated list plus an
+`Other…` typed affordance: a select alone hides that any parseable key resolves (§4), a bare
+field turns the common case into a spelling exercise at the machine, and a direction authoring
+one key drops the select entirely and keeps the typed field. A stored key the engine *cannot*
+read drops to the typed field too, marked invalid and naming the key the guide is actually in —
+offering it as a selected option would name a key the guide is not in and hide the text that
+needs fixing. Both controls carry a reset, because "follow the direction" is a state and not the
+absence of one.
 
 **The voice field is packed by cell shape, not only by cell area.** The one region a panel hands
 to the resolver (`kind: 'voices'`, §2.3) is filled with one cell per assignable, and the column

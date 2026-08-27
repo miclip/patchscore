@@ -12,6 +12,7 @@ import {
   type Recipe,
   type ResolveInput,
   type ResolveResult,
+  type SongOverrides,
   type Role,
   type RoleRequest,
   type Template,
@@ -169,6 +170,8 @@ describe('resolve signature (§7)', () => {
       template: Template
       mood: MoodState
       seed: number
+      // #161. Values, like everything else here: a tempo and a key, never a picker's state.
+      overrides?: SongOverrides | undefined
     }>()
   })
 })
@@ -732,5 +735,137 @@ describe('clock source ranks on semantics, not on load (§7.4)', () => {
     const heavy = new Map(instruments.map((d, i) => [d.id, instruments.length - i]))
     const first = [...instruments].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0]
     expect(selectClockSource(instruments, heavy)?.deviceId).toBe(first?.id)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #161 The song overrides
+// ---------------------------------------------------------------------------
+
+/**
+ * The fourth layer: base direction, inspirations, then the user's tempo and key. The resolver
+ * receives an *effective* template, so what these tests supply as `template` is what §5 already
+ * produced — which is why the range compared against below is the template's own.
+ *
+ * The load-bearing test is the first one. `RESOLVER_VERSION` did not move for this change, and
+ * the claim that buys is that a guide with neither override set is the guide it was before:
+ * every permalink ever shared carries neither.
+ */
+describe('song overrides (#161)', () => {
+  it('resolves identically whether the overrides are absent or present-and-unset', () => {
+    const both = scene({ hooks: template().hooks })
+    const bare = run({ template: both })
+    expect(run({ template: both, overrides: undefined })).toEqual(bare)
+    expect(run({ template: both, overrides: {} })).toEqual(bare)
+    expect(run({ template: both, overrides: { bpm: undefined, key: undefined } })).toEqual(bare)
+    expect(bare.song.bpm).toBe(both.bpm.default)
+    expect(bare.song.diagnostics).toEqual([])
+  })
+
+  it('takes the tempo as given, absolute rather than an offset from the default', () => {
+    const result = run({ overrides: { bpm: 140 } })
+    expect(result.song.bpm).toBe(140)
+    // In range, so there is nothing to report: 130-142 on the fixture.
+    expect(result.song.diagnostics).toEqual([])
+  })
+
+  it('renders a tempo outside the direction and reports it, rather than clamping or refusing', () => {
+    const result = run({ overrides: { bpm: 70 } })
+    expect(result.song.bpm).toBe(70)
+    const [only, ...rest] = result.song.diagnostics
+    expect(rest).toEqual([])
+    expect(only?.kind).toBe('bpm-outside-range')
+    if (only?.kind !== 'bpm-outside-range') return
+    expect({ bpm: only.bpm, min: only.min, max: only.max }).toEqual({ bpm: 70, min: 130, max: 142 })
+    expect(only.detail).toContain('below')
+    // The caveat #161 asks for in the copy: the patterns do not follow the tempo.
+    expect(only.detail).toContain('do not change with the tempo')
+    expect(only.detail).toContain('130–142')
+  })
+
+  it('reports above the range too, and says which side', () => {
+    const above = run({ overrides: { bpm: 200 } }).song.diagnostics[0]
+    expect(above?.kind).toBe('bpm-outside-range')
+    expect(above?.detail).toContain('above')
+  })
+
+  it('says nothing at the edges of the range, which are inside it', () => {
+    expect(run({ overrides: { bpm: 130 } }).song.diagnostics).toEqual([])
+    expect(run({ overrides: { bpm: 142 } }).song.diagnostics).toEqual([])
+  })
+
+  it('compares the tempo against the effective range, not the direction it started as', () => {
+    // What an inspiration hands the resolver: the range shifted, the default moved with it.
+    const shifted = scene({ bpm: { min: 90, max: 102, default: 94 } })
+    expect(run({ template: shifted, overrides: { bpm: 140 } }).song.diagnostics[0]?.kind).toBe(
+      'bpm-outside-range',
+    )
+    // The same 140 against the unshifted direction is unremarkable.
+    expect(run({ overrides: { bpm: 140 } }).song.diagnostics).toEqual([])
+  })
+
+  it('uses the chosen key and leaves the alternatives visible', () => {
+    const t = scene({ hooks: template().hooks })
+    const result = run({ template: t, overrides: { key: 'F minor' } })
+    expect(result.song.key).toBe('F minor')
+    // `keys` is the direction's list, untouched: it is what the guide prints as the alternatives.
+    expect(result.song.keys).toEqual(['F minor', 'A minor'])
+    expect(result.song.diagnostics).toEqual([])
+  })
+
+  it('takes a direction into a key it does not offer, resolves the hooks in it, and says so', () => {
+    const t = scene({ hooks: template().hooks })
+    const result = run({ template: t, overrides: { key: 'C# dorian' } })
+    expect(result.song.key).toBe('C# dorian')
+
+    const hook = result.song.hooks[0]
+    expect(hook?.chosen.outcome).toBe('resolved')
+    if (hook?.chosen.outcome !== 'resolved') return
+    // Not merely accepted — the notes are the ones that key produces.
+    expect(hook.chosen.hook.key).toBe('C# dorian')
+
+    const [only] = result.song.diagnostics
+    expect(only?.kind).toBe('key-not-offered')
+    expect(only?.detail).toContain('C# dorian')
+  })
+
+  it('keeps the direction key when handed one it cannot read, and never silently', () => {
+    const t = scene({ hooks: template().hooks })
+    const result = run({ template: t, overrides: { key: 'H sharp lydian' } })
+    // The seed's pick, exactly as with no override at all.
+    expect(result.song.key).toBe(run({ template: t }).song.key)
+    expect(result.song.diagnostics[0]?.kind).toBe('key-unreadable')
+  })
+
+  it('does not let the seed move a key the user set, where it moves one they did not', () => {
+    const t = scene({ hooks: template().hooks })
+    const seeds = [1, 2, 3, 4, 5, 6, 7, 8]
+    const picked = new Set(seeds.map((seed) => run({ template: t, seed }).song.key))
+    // The fixture authors two keys, and the seed reaches both — otherwise the next line proves
+    // nothing about stickiness.
+    expect(picked.size).toBe(2)
+
+    const set = new Set(
+      seeds.map((seed) => run({ template: t, seed, overrides: { key: 'A minor' } }).song.key),
+    )
+    expect([...set]).toEqual(['A minor'])
+  })
+
+  it('leaves the tempo out of the seed entirely, set or unset', () => {
+    const bare = new Set([1, 2, 3, 4, 5].map((seed) => run({ seed }).song.bpm))
+    expect([...bare]).toEqual([134])
+    const set = new Set([1, 2, 3, 4, 5].map((seed) => run({ seed, overrides: { bpm: 88 } }).song.bpm))
+    expect([...set]).toEqual([88])
+  })
+
+  it('changes nothing but the song: the same assignments, patterns and score', () => {
+    // #161's claim that the range is advisory. Nothing downstream reads `bpm`, so a tempo far
+    // outside it must not move a part, a pattern or a cost.
+    const bare = run()
+    const moved = run({ overrides: { bpm: 70, key: 'A minor' } })
+    expect(moved.assignments).toEqual(bare.assignments)
+    expect(moved.patterns).toEqual(bare.patterns)
+    expect(moved.score).toEqual(bare.score)
+    expect(moved.shortfalls).toEqual(bare.shortfalls)
   })
 })

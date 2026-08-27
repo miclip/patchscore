@@ -28,6 +28,7 @@ import {
 import {
   clockFollowing,
   clockSourceBasis,
+  songFindings,
   type ClockFollowing,
   type ClockSource,
   type InterDevicePatch,
@@ -301,16 +302,29 @@ function phaseSong(result: ResolveResult): Line[] {
   const { template, song } = result
   const out: Line[] = []
 
+  const findings = songFindings(song)
+  const range = `template range ${num(template.bpm.min)}…${num(template.bpm.max)}`
+
+  // #161. `bpmSource` rather than a comparison against the range: a user may set the tempo the
+  // direction would have chosen anyway, and it is still theirs and still survives a reroll.
   out.push(
-    `- **BPM** ${num(song.bpm)} (template range ${num(template.bpm.min)}…${num(template.bpm.max)})`,
+    `- **BPM** ${num(song.bpm)} (${song.bpmSource === 'user' ? `you set this; ${range}` : range})`,
   )
+  for (const note of findings.bpm) subordinate(out, '  ', 'note', note)
+
   if (song.key === undefined) {
     out.push('- **Key** — this template has none, so the hooks below have no notes')
+  } else if (song.keySource === 'user') {
+    // Never "a reroll may pick": a reroll will not touch a key somebody chose, and telling them
+    // otherwise sends them rerolling after a key they already have.
+    const offered = song.keys.length === 0 ? '' : `; template offers ${song.keys.join(', ')}`
+    out.push(`- **Key** ${song.key} (you set this${offered})`)
   } else {
     const others = song.keys.filter((k) => k !== song.key)
     const alternatives = others.length === 0 ? '' : ` (a reroll may pick ${others.join(', ')})`
     out.push(`- **Key** ${song.key}${alternatives}`)
   }
+  for (const note of findings.key) subordinate(out, '  ', 'note', note)
   out.push(`- **Harmonic cycle** ${num(template.harmony.cycleBars)} bars`)
   out.push('')
 

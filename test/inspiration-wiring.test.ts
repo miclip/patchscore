@@ -10,6 +10,7 @@ import {
   applyInspirations,
   decodeGuideInputs,
   encodeGuideInputs,
+  groupDiagnostics,
   guideInputsFrom,
   loadStudio,
   resolve,
@@ -26,6 +27,7 @@ import type {
 import { DEVICES } from '../lib/devices/registry.generated'
 import { INSPIRATIONS, dancehall, reggae, shuffle } from '../lib/inspirations/index'
 import { ambientDub, industrialTechno } from '../lib/templates/index'
+import { resolveEntry } from '../lib/studio/entry'
 import {
   CATALOGUE,
   DEFAULT_INPUTS,
@@ -335,7 +337,9 @@ describe('the inspiration panel (§5)', () => {
         }),
       ),
     )
-    expect(rendered).toContain('Not applied here')
+    // One findings list for §5.4's and §5.6's alike (#161), under a heading that is true of
+    // both: an unhonoured claim was not applied, where a tempo outside the range was.
+    expect(rendered).toContain('Findings')
     // Grouped, not enumerated: the model records one `no-such-target` per band, and four lines
     // differing by a digit read as a fault in the app rather than a fact about the direction.
     // "at any band" is also the stronger claim, and the one a reader can act on.
@@ -450,5 +454,124 @@ describe('a selection survives the whole loop (§8.2)', () => {
     if (application?.outcome !== 'applied') throw new Error('expected an application')
     expect(application.template.bpm.default).toBe(ambientDub.bpm.default - 40)
     expect(application.template.patterns.some((p) => p.id.startsWith('reggae-kick-'))).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #161 The song's findings, in the same display
+// ---------------------------------------------------------------------------
+
+/**
+ * §5.6 reported end to end: `resolve` produces a finding about the user's own tempo or key, and
+ * the panel a reader is looking at shows it.
+ *
+ * The point of these is **symmetry**, not sampling. A diagnostic the model produces and the
+ * renderer drops is worse than one that was never produced: the guide then claims a tempo or a
+ * key with nothing anywhere saying what it did. So each case asserts the exact sentence the
+ * resolver wrote is on the page, and the merged case asserts the *counts* match — nothing added,
+ * nothing quietly lost between the two lists.
+ */
+describe('the song findings reach the page (#161)', () => {
+  /** Entity-decoded, because the details are English and hold apostrophes and dashes. */
+  function readable(html: string): string {
+    return text(html)
+      .replace(/&#x27;|&#39;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+  }
+
+  /** The findings list on its own, so the notes above it are not counted as findings. */
+  function findingItems(html: string): string[] {
+    const start = html.indexOf('<ul class="inspiration-diagnostics">')
+    if (start === -1) return []
+    const end = html.indexOf('</ul>', start)
+    return [...html.slice(start, end).matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g)].map((m) => m[1] ?? '')
+  }
+
+  function panelFor(over: Partial<GuideInputsV1>) {
+    const state = inputs(over)
+    const result = resolveEntry(state)
+    expect(result).toBeDefined()
+    const html = renderToStaticMarkup(
+      createElement(InspirationPicker, {
+        inspirations: INSPIRATIONS,
+        selected: state.inspirations,
+        onToggle: () => undefined,
+        application: composeTemplate(state),
+        songDiagnostics: result?.song.diagnostics ?? [],
+      }),
+    )
+    return { result, html, shown: readable(html), items: findingItems(html) }
+  }
+
+  const techno = { templateId: industrialTechno.id, inspirations: [] as string[] }
+
+  it('shows a tempo outside the direction, and still resolves that tempo', () => {
+    const { result, shown, items } = panelFor({ ...techno, bpm: 70 })
+    expect(result?.song.bpm).toBe(70)
+
+    const [finding, ...rest] = result?.song.diagnostics ?? []
+    expect(finding?.kind).toBe('bpm-outside-range')
+    expect(rest).toEqual([])
+    // The renderer's sentence is the model's sentence, not a second wording of it.
+    expect(shown).toContain(finding?.detail)
+    expect(items.length).toBe(1)
+  })
+
+  it('shows a key the direction does not offer, and resolves the hooks in it', () => {
+    const unoffered = 'C# dorian'
+    expect(industrialTechno.keys).not.toContain(unoffered)
+
+    const { result, shown, items } = panelFor({ ...techno, key: unoffered })
+    expect(result?.song.key).toBe(unoffered)
+
+    const [finding] = result?.song.diagnostics ?? []
+    expect(finding?.kind).toBe('key-not-offered')
+    expect(shown).toContain(finding?.detail)
+    expect(items.length).toBe(1)
+  })
+
+  it("shows a key it cannot read, and draws the guide in the direction's own key", () => {
+    // The case that used to cost the reader the whole guide. A hand-edited link keeps its guide.
+    const { result, shown, items } = panelFor({ ...techno, key: 'H minor' })
+    expect(industrialTechno.keys).toContain(result?.song.key)
+
+    const [finding] = result?.song.diagnostics ?? []
+    expect(finding?.kind).toBe('key-unreadable')
+    expect(shown).toContain(finding?.detail)
+    expect(items.length).toBe(1)
+  })
+
+  it('shows the influence findings and the song findings in one list, losing neither', () => {
+    // Shuffle on Ambient Dub is §5.4's case — a hat that is not there and a shaker the template
+    // programs itself — and the tempo and key are §5.6's, all at once.
+    const state = inputs({
+      templateId: ambientDub.id,
+      inspirations: ['shuffle'],
+      bpm: 200,
+      key: 'H minor',
+    })
+    const application = composeTemplate(state)
+    expect(application?.outcome).toBe('applied')
+    if (application?.outcome !== 'applied') return
+
+    const { result, shown, items } = panelFor(state)
+    const fromInfluences = groupDiagnostics(application.diagnostics)
+    const fromSong = result?.song.diagnostics ?? []
+    expect(fromInfluences.length).toBeGreaterThan(0)
+    expect(fromSong.length).toBe(2)
+
+    // Nothing added, nothing dropped: the list is exactly the two sets.
+    expect(items.length).toBe(fromInfluences.length + fromSong.length)
+    for (const one of fromInfluences) expect(shown).toContain(one.detail)
+    for (const one of fromSong) expect(shown).toContain(one.detail)
+  })
+
+  it('says nothing when there is nothing to say', () => {
+    const { result, items } = panelFor(techno)
+    expect(result?.song.diagnostics).toEqual([])
+    expect(items).toEqual([])
   })
 })

@@ -20,8 +20,12 @@ import {
   createStudioSync,
   derivedSeed,
   syncStudio,
+  songOverrides,
   withAxis,
+  withBpm,
   withDevice,
+  withInspiration,
+  withKey,
   withSeed,
   withTemplate,
 } from '../lib/studio/session'
@@ -370,7 +374,9 @@ describe('what the user is told, and never blocked by', () => {
   })
 
   it('says a link is from a newer build rather than calling it broken', () => {
-    const { env } = fakeBrowser({ search: link().replace('format=1', 'format=2') })
+    const { env } = fakeBrowser({
+      search: link().replace(`format=${FORMAT_VERSION}`, `format=${FORMAT_VERSION + 1}`),
+    })
     const boot = bootstrapStudio(env)
     expect(boot.notices.map((n) => n.kind)).toEqual(['link-newer'])
     expect(boot.notices[0]?.message).toContain('newer')
@@ -1060,5 +1066,148 @@ describe('the default seed is derived from the rig and the direction (#127)', ()
     for (let i = 0; i < 50; i++) {
       expect(derivedSeed(DEFAULT_INPUTS.devices, DEFAULT_INPUTS.templateId)).toBe(once)
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #161 Tempo and key, held by the session
+// ---------------------------------------------------------------------------
+
+/**
+ * The two settings the studio makes *for* the user until #161's controls land. Nothing here
+ * builds a control; what it pins is that once a value is in the inputs it survives everything
+ * else the studio can do to them, on the URL and on disk.
+ *
+ * Sticky is the whole design: changing direction or adding an influence must not move a number
+ * somebody typed. `resolve` reports it if it now sits outside what the direction offers.
+ */
+describe('the song overrides the session carries (#161)', () => {
+  const other = CATALOGUE.inspirations[0]
+  const set = withKey(withBpm(DEFAULT_INPUTS, 70), 'C# dorian')
+
+  it('starts unset, so a first visit is the guide it was before', () => {
+    expect(DEFAULT_INPUTS.bpm).toBeUndefined()
+    expect(DEFAULT_INPUTS.key).toBeUndefined()
+    expect(songOverrides(DEFAULT_INPUTS)).toEqual({ bpm: undefined, key: undefined })
+  })
+
+  it('sets each one, and hands each one back', () => {
+    expect(withBpm(DEFAULT_INPUTS, 140).bpm).toBe(140)
+    expect(withKey(DEFAULT_INPUTS, 'A minor').key).toBe('A minor')
+    expect(songOverrides(set)).toEqual({ bpm: 70, key: 'C# dorian' })
+
+    // Cleared back to "follow the direction" — absent, not present-and-undefined.
+    const cleared = withKey(withBpm(set, undefined), undefined)
+    expect(Object.hasOwn(cleared, 'bpm')).toBe(false)
+    expect(Object.hasOwn(cleared, 'key')).toBe(false)
+    expect(cleared).toEqual(DEFAULT_INPUTS)
+  })
+
+  it('answers an impossible edit with no edit, rather than with a different one', () => {
+    // The typo guard, not taste: 1-999. A clamp would be the studio choosing a tempo.
+    for (const bpm of [0, -1, 1000, 1.5, Number.NaN]) {
+      expect(withBpm(set, bpm)).toBe(set)
+    }
+    for (const key of ['H minor', 'A', 'a minor', '']) {
+      expect(withKey(set, key)).toBe(set)
+    }
+  })
+
+  it('keeps both across every other edit the studio can make', () => {
+    const direction = CATALOGUE.templates.find((id) => id !== set.templateId) as string
+    const device = CATALOGUE.devices.find((id) => !set.devices.includes(id)) as string
+
+    const moved = [
+      withTemplate(set, direction),
+      withDevice(set, device, true),
+      withSeed(set, 12345),
+      withAxis(set, 'density', 100),
+      ...(other === undefined ? [] : [withInspiration(set, other, true)]),
+    ]
+    // Changing direction is exactly the case where a range moves under the number. It stays.
+    for (const inputs of moved) expect(songOverrides(inputs)).toEqual({ bpm: 70, key: 'C# dorian' })
+    expect(moved[0]?.templateId).toBe(direction)
+  })
+
+  it('survives the URL: written, read back, and resolved from the link', () => {
+    const { env, state } = fakeBrowser()
+    syncStudio(env, set, undefined)
+    expect(state.replaceCalls[0]).toContain('bpm=70')
+    expect(state.replaceCalls[0]).toContain('key=C%23%20dorian')
+
+    const back = decodeGuideInputs(state.search, CATALOGUE)
+    expect(back.ok).toBe(true)
+    if (back.ok) expect(back.inputs).toEqual(set)
+  })
+
+  it('survives a reload: stored, and read back off the document', () => {
+    const doc = studioDoc(set)
+    expect(guideInputsFrom(doc)).toEqual(set)
+
+    const { env, state } = fakeBrowser()
+    syncStudio(env, set, undefined)
+    const loaded = loadStudio(env.storage, CATALOGUE)
+    expect(loaded.status).toBe('ok')
+    if (loaded.status !== 'ok') return
+    expect(guideInputsFrom(loaded.doc)).toEqual(set)
+    expect(state.stored).toContain('"bpm":70')
+  })
+
+  it('leaves a studio stored before #161 valid, with both unset', () => {
+    // The reason `STUDIO_DOC_VERSION` did not move: the fields are optional, so a document
+    // already on disk is still a document this build reads.
+    const { env } = fakeBrowser()
+    syncStudio(env, DEFAULT_INPUTS, undefined)
+    const stored = JSON.parse(loadStudioText(env)) as { inputs: Record<string, unknown> }
+    expect(Object.hasOwn(stored.inputs, 'bpm')).toBe(false)
+    expect(Object.hasOwn(stored.inputs, 'key')).toBe(false)
+
+    const loaded = loadStudio(env.storage, CATALOGUE)
+    expect(loaded.status).toBe('ok')
+    if (loaded.status !== 'ok') return
+    expect(guideInputsFrom(loaded.doc)).toEqual(DEFAULT_INPUTS)
+  })
+
+  it('opens a link that carries them, from cold', () => {
+    const { env } = fakeBrowser({ search: `?${encodeGuideInputs(set, CATALOGUE)}` })
+    const boot = bootstrapStudio(env)
+    expect(boot.inputs).toEqual(set)
+    expect(boot.notices).toEqual([])
+  })
+})
+
+/** The stored JSON, read back through the same storage the env writes to. */
+function loadStudioText(env: StudioEnv): string {
+  const storage = env.storage()
+  return storage?.getItem(STUDIO_STORAGE_KEY) ?? ''
+}
+
+/**
+ * #161. The one asymmetry in the key's handling, and it is deliberate: the controls refuse what
+ * they cannot read, the boundaries carry it. A link and a stored studio are hand-editable and
+ * arrive from anywhere, so refusing there costs a reader their whole guide over one field that
+ * the resolver can report and work around (§5.6).
+ */
+describe('an unreadable key keeps its guide (#161)', () => {
+  const hostile = { ...DEFAULT_INPUTS, key: 'H minor' }
+
+  it('is refused by the setter, which is the parse gate the controls sit behind', () => {
+    expect(withKey(DEFAULT_INPUTS, 'H minor')).toBe(DEFAULT_INPUTS)
+  })
+
+  it('opens from a link instead of falling back to the defaults', () => {
+    const { env } = fakeBrowser({ search: `?${encodeGuideInputs(hostile, CATALOGUE)}` })
+    const boot = bootstrapStudio(env)
+    expect(boot.inputs).toEqual(hostile)
+    expect(boot.notices).toEqual([])
+  })
+
+  it('loads from storage instead of being reported as a corrupt studio', () => {
+    const { env } = fakeBrowser()
+    syncStudio(env, hostile, undefined)
+    const loaded = loadStudio(env.storage, CATALOGUE)
+    expect(loaded.status).toBe('ok')
+    if (loaded.status !== 'ok') return
+    expect(guideInputsFrom(loaded.doc).key).toBe('H minor')
   })
 })

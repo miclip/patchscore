@@ -8,6 +8,7 @@ import {
   RESOLVER_VERSION,
   FORMAT_VERSION,
   GuideInputsError,
+  KEY_MAX_LENGTH,
   SEED_MAX,
   decodeGuideInputs,
   encodeGuideInputs,
@@ -263,11 +264,15 @@ describe('version mismatch is preserved, never silent', () => {
   })
 
   it('refuses a wire format it cannot read, and says which', () => {
-    const result = decodeGuideInputs(canonical.replace('format=1', 'format=2'), GOLDEN)
+    const ahead = FORMAT_VERSION + 1
+    const result = decodeGuideInputs(
+      canonical.replace(`format=${FORMAT_VERSION}`, `format=${ahead}`),
+      GOLDEN,
+    )
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.reason).toBe('unsupported-version')
-    expect(result.format).toEqual({ encoded: 2, current: FORMAT_VERSION })
+    expect(result.format).toEqual({ encoded: ahead, current: FORMAT_VERSION })
   })
 })
 
@@ -337,7 +342,10 @@ describe('forward compatibility: a link from a later build', () => {
   it('still refuses a format version it cannot read, unknown fields or not', () => {
     // Ignoring unknown *fields* is safe. Ignoring an unknown *format* is not: the fields we do
     // recognise may not mean what we think they mean.
-    const decoded = decodeGuideInputs(future.replace('format=1', 'format=2'), GOLDEN)
+    const decoded = decodeGuideInputs(
+      future.replace(`format=${FORMAT_VERSION}`, `format=${FORMAT_VERSION + 1}`),
+      GOLDEN,
+    )
     expect(decoded.ok).toBe(false)
     if (!decoded.ok) expect(decoded.reason).toBe('unsupported-version')
   })
@@ -372,7 +380,7 @@ describe('backward compatibility: a link from this build, read later', () => {
 
   it('says which format it is, so a later decoder can branch on it', () => {
     const encoded = encodeGuideInputs(goldenInputs(), GOLDEN)
-    expect(encoded.startsWith('format=1&')).toBe(true)
+    expect(encoded.startsWith(`format=${FORMAT_VERSION}&`)).toBe(true)
   })
 })
 
@@ -447,5 +455,184 @@ describe('encode -> decode -> resolve -> renderGuide is byte-identical', () => {
     const mood: MoodState = { darkness: 0, density: 87, grit: 100, swing: 33, space: 66 }
     const decoded = roundTrip(goldenInputs({ mood }), GOLDEN)
     expect(decoded.mood).toEqual(mood)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #161 The two song overrides on the wire
+// ---------------------------------------------------------------------------
+
+/**
+ * The format's first optional fields, and the reason `FORMAT_VERSION` moved to 2.
+ *
+ * Two properties carry the weight: a link that sets neither is byte-identical to the v1 link for
+ * the same guide but for the stamp, and a v1 link still opens — with both unset, which is what
+ * "unset" already means. Everything else here is the codec being strict about values that reach
+ * the guide.
+ */
+describe('song overrides on the wire (#161)', () => {
+  const canonical = encodeGuideInputs(goldenInputs({ seed: 3 }), GOLDEN)
+
+  it('writes nothing at all when neither is set', () => {
+    expect(canonical).not.toContain('bpm=')
+    expect(canonical).not.toContain('key=')
+    // The whole difference between this and the v1 link for the same guide.
+    expect(canonical.replace(`format=${FORMAT_VERSION}`, 'format=1')).toBe(
+      `format=1&resolver=${RESOLVER_VERSION}&device=A-cascade&device=B-tracker&device=a-drum` +
+        `&template=golden-techno&darkness=50&density=50&grit=50&swing=50&space=50&seed=3`,
+    )
+  })
+
+  it('writes each one only when set, in a fixed place', () => {
+    expect(encodeGuideInputs(goldenInputs({ seed: 3, bpm: 140 }), GOLDEN)).toBe(
+      canonical.replace('&seed=3', '&bpm=140&seed=3'),
+    )
+    expect(encodeGuideInputs(goldenInputs({ seed: 3, key: 'A minor' }), GOLDEN)).toBe(
+      canonical.replace('&seed=3', '&key=A%20minor&seed=3'),
+    )
+    expect(encodeGuideInputs(goldenInputs({ seed: 3, bpm: 70, key: 'C# dorian' }), GOLDEN)).toBe(
+      canonical.replace('&seed=3', '&bpm=70&key=C%23%20dorian&seed=3'),
+    )
+  })
+
+  it('escapes the key, because a `#` in a URL is a fragment and would truncate the link', () => {
+    const encoded = encodeGuideInputs(goldenInputs({ key: 'F# lydian' }), GOLDEN)
+    expect(encoded).toContain('key=F%23%20lydian')
+    expect(encoded).not.toContain('#')
+    // And it is the only value in the format that needs it: every other one is an id or an int.
+    for (const pair of encoded.split('&')) {
+      const [name, value] = [pair.slice(0, pair.indexOf('=')), pair.slice(pair.indexOf('=') + 1)]
+      if (name === 'key') continue
+      expect(/^[A-Za-z0-9-]*$/.test(value)).toBe(true)
+    }
+  })
+
+  it('round-trips both, including a key the direction does not offer', () => {
+    for (const over of [
+      { bpm: 70 },
+      { key: 'A minor' },
+      { bpm: 999, key: 'Bb locrian' },
+      { bpm: 1, key: 'C# dorian' },
+    ]) {
+      const inputs = goldenInputs(over)
+      const decoded = decodeGuideInputs(encodeGuideInputs(inputs, GOLDEN), GOLDEN)
+      expect(decoded.ok).toBe(true)
+      if (!decoded.ok) return
+      expect(decoded.inputs).toEqual(inputs)
+    }
+  })
+
+  it('reads absence as unset rather than as a value, on both fields', () => {
+    const decoded = decodeGuideInputs(canonical, GOLDEN)
+    expect(decoded.ok).toBe(true)
+    if (!decoded.ok) return
+    expect(decoded.inputs.bpm).toBeUndefined()
+    expect(decoded.inputs.key).toBeUndefined()
+    // Absent, not present-and-undefined: one state, one spelling, on the wire and in memory.
+    expect(Object.hasOwn(decoded.inputs, 'bpm')).toBe(false)
+    expect(Object.hasOwn(decoded.inputs, 'key')).toBe(false)
+  })
+
+  it('opens a v1 link, with both overrides unset', () => {
+    const v1 = canonical.replace(`format=${FORMAT_VERSION}`, 'format=1')
+    const decoded = decodeGuideInputs(v1, GOLDEN)
+    expect(decoded.ok).toBe(true)
+    if (!decoded.ok) return
+    expect(decoded.inputs).toEqual(goldenInputs({ seed: 3 }))
+    expect(decoded.dropped).toEqual([])
+    // Re-encoding canonicalises it into this build's format, as it does with everything else.
+    expect(encodeGuideInputs(decoded.inputs, GOLDEN)).toBe(canonical)
+  })
+
+  it('drops the overrides from a v1 link that hand-edited them in, and says it did', () => {
+    // A field the link's own format does not have is not a field of that link. v1 had no `bpm`,
+    // so a v1 decoder dropped it, and honouring it here would resolve a tempo under rules the
+    // link does not claim to follow.
+    const v1 = `${canonical.replace(`format=${FORMAT_VERSION}`, 'format=1')}&bpm=70&key=A%20minor`
+    const decoded = decodeGuideInputs(v1, GOLDEN)
+    expect(decoded.ok).toBe(true)
+    if (!decoded.ok) return
+    expect(decoded.inputs.bpm).toBeUndefined()
+    expect(decoded.inputs.key).toBeUndefined()
+    expect(decoded.dropped).toEqual(['bpm', 'key'])
+  })
+
+  it('refuses a tempo outside the typo guard, in both directions and off the integers', () => {
+    for (const bpm of [0, -1, 1000, 1.5]) {
+      expect(() => encodeGuideInputs(goldenInputs({ bpm }), GOLDEN)).toThrow(GuideInputsError)
+      const decoded = decodeGuideInputs(`${canonical}&bpm=${String(bpm)}`, GOLDEN)
+      expect(decoded.ok).toBe(false)
+      // A negative or fractional one never reaches the range check: the format writes neither.
+      if (!decoded.ok) expect(['out-of-range', 'malformed']).toContain(decoded.reason)
+    }
+  })
+
+  it('carries a key it cannot read rather than refusing the whole guide', () => {
+    // A link is hand-editable and arrives from anywhere. `parseKey` gates the *controls*; here
+    // the honest answer is the guide with the direction's own key and a line saying why, not a
+    // reader in front of nothing (§5.6, invariant 5).
+    for (const key of ['H minor', 'A', 'a minor', 'A  minor', 'A Minor', 'A klingon', '']) {
+      const inputs = goldenInputs({ key })
+      const decoded = decodeGuideInputs(encodeGuideInputs(inputs, GOLDEN), GOLDEN)
+      expect(decoded.ok).toBe(true)
+      if (!decoded.ok) return
+      expect(decoded.inputs.key).toBe(key)
+    }
+  })
+
+  it('bounds how long a key may be, which is the one thing about it that is corruption', () => {
+    const long = 'A minor'.padEnd(KEY_MAX_LENGTH + 1, '!')
+    expect(() => encodeGuideInputs(goldenInputs({ key: long }), GOLDEN)).toThrow(GuideInputsError)
+    const decoded = decodeGuideInputs(`${canonical}&key=${encodeURIComponent(long)}`, GOLDEN)
+    expect(decoded.ok).toBe(false)
+    if (!decoded.ok) expect(decoded.reason).toBe('out-of-range')
+  })
+
+  it('refuses a tempo that is not a number at all', () => {
+    const decoded = decodeGuideInputs(`${canonical}&bpm=fast`, GOLDEN)
+    expect(decoded.ok).toBe(false)
+    if (!decoded.ok) expect(decoded.reason).toBe('malformed')
+  })
+
+  it('refuses a second copy of either, like every other scalar', () => {
+    for (const twice of ['&bpm=70&bpm=80', '&key=A%20minor&key=F%20minor']) {
+      const decoded = decodeGuideInputs(`${canonical}${twice}`, GOLDEN)
+      expect(decoded.ok).toBe(false)
+      if (!decoded.ok) expect(decoded.reason).toBe('malformed')
+    }
+  })
+
+  it('carries them into the guide: encode -> decode -> resolve -> render is byte-identical', () => {
+    const template = templateById(REGISTRY.templates[0] as string)
+    expect(template).toBeDefined()
+    if (template === undefined) return
+
+    const state: GuideInputsV1 = {
+      version: FORMAT_VERSION,
+      devices: REGISTRY.devices,
+      templateId: template.id,
+      inspirations: [],
+      mood: NEUTRAL_MOOD,
+      seed: 20260827,
+      bpm: 70,
+      key: 'C# dorian',
+    }
+    const decoded = decodeGuideInputs(encodeGuideInputs(state, REGISTRY), REGISTRY)
+    expect(decoded.ok).toBe(true)
+    if (!decoded.ok) return
+
+    const render = (inputs: GuideInputsV1) =>
+      renderGuide(
+        resolve({
+          devices: DEVICES,
+          template,
+          mood: inputs.mood,
+          seed: inputs.seed,
+          overrides: { bpm: inputs.bpm, key: inputs.key },
+        }),
+      )
+    expect(render(decoded.inputs)).toBe(render(state))
+    // And the guide really is a different one, or the equality above proves nothing.
+    expect(render(state)).not.toBe(render({ ...state, bpm: undefined, key: undefined }))
   })
 })

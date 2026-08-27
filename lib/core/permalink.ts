@@ -8,8 +8,8 @@ import { RESOLVER_VERSION } from './pipeline'
 /**
  * §8.2. The permalink: the whole input state of a guide, as a string you can read.
  *
- * **Inputs only, never resolved output.** Devices, template, inspirations, five mood ints, seed —
- * and nothing the resolver produced. §8.2 considered and rejected encoding the output so old
+ * **Inputs only, never resolved output.** Devices, template, inspirations, five mood ints, seed,
+ * and #161's two optional song overrides — and nothing the resolver produced. §8.2 considered and rejected encoding the output so old
  * links freeze: it is orders of magnitude past any sane URL budget, and it would freeze bugs into
  * shared links as firmly as it freezes intent.
  *
@@ -77,7 +77,49 @@ import { RESOLVER_VERSION } from './pipeline'
  *
  * Never bumped for a resolver change. That is `RESOLVER_VERSION`.
  */
-export const FORMAT_VERSION = 1
+export const FORMAT_VERSION = 2
+
+/**
+ * Formats this build can turn into inputs. **v1 is readable, not merely tolerated**: it is v2
+ * minus two optional fields, and v2 reads a v1 link as one with both of them unset — which is
+ * exactly what "unset" means (follow the direction), so nothing is guessed and no v1 link dies
+ * for a field it predates.
+ *
+ * A v1 link that carries `bpm` or `key` is a hand-edit of a format that had no such fields. Those
+ * keys are dropped and *reported* under v1, which is what a v1 decoder did with them, rather than
+ * honoured under rules the link does not claim to follow.
+ *
+ * Everything is re-encoded at `FORMAT_VERSION`. Canonicalisation has one output, and a v1 link
+ * opened and re-shared is a link this build wrote.
+ */
+export const READABLE_FORMATS: ReadonlySet<number> = new Set([1, FORMAT_VERSION])
+
+/**
+ * The tempo override's domain, and the reason it has one: a mechanical guardrail against a typo,
+ * not taste. #161 is explicit that the *direction's* range is advisory — going outside it is
+ * legal and reported — so the only job left here is stopping a slipped keypress rendering a guide
+ * at 900,000 BPM.
+ *
+ * Unrelated to `MIN_EFFECTIVE_BPM` (§5), which guards a *template spec* against composed
+ * inspiration shifts. Different value, different job, and neither one bounds the other.
+ */
+export const BPM_MIN = 1
+export const BPM_MAX = 999
+
+/**
+ * The key's only bound, and it is a corruption guard rather than a spelling rule.
+ *
+ * **A key this build cannot read is carried, not refused.** `parseKey` is the gate on the way
+ * *in* — `withKey` and any control refuse what they cannot read, so nothing here writes one —
+ * but a link or a stored studio is hand-editable and arrives from anywhere, and rejecting the
+ * whole guide over one unreadable field would put a reader in front of nothing at all when the
+ * honest answer is a guide with the direction's own key and a line saying why (`key-unreadable`,
+ * §5.6). That is invariant 5: reported, never blocked.
+ *
+ * The length still has to stop somewhere, for the same reason `BPM_MAX` does. The longest key
+ * the engine can read is well inside this.
+ */
+export const KEY_MAX_LENGTH = 32
 
 /**
  * The seed's domain, shared with `components/seed-field.tsx`, which imports it: a permalink that
@@ -107,6 +149,30 @@ export type ScoreInputsV1 = {
   inspirations: readonly InspirationId[]
   mood: MoodState
   seed: number
+  /**
+   * #161. The user's own tempo, absolute and sticky, or `undefined` for "follow the direction".
+   *
+   * **Absolute rather than an offset from the effective default.** An offset's whole purpose is
+   * to stay valid when the range moves under it, and once out-of-range is legal there is nothing
+   * left for it to keep valid — an absolute is also the number the musician is thinking in.
+   *
+   * `undefined` is a real state and not a missing one: it means the authored default, moved by
+   * inspirations exactly as it is today. That is why absence here is legal where a missing
+   * `seed` is malformed.
+   */
+  bpm?: number | undefined
+  /**
+   * #161. The user's own key, or `undefined` for "let the seed pick from what the direction
+   * offers".
+   *
+   * Any key `parseKey` accepts, including one the direction does not list: `template.keys` is a
+   * curated list rather than a gate (§4), the hooks resolve against any parseable key, and a
+   * direction taken into a mode it does not offer is reported rather than refused (invariant 5).
+   *
+   * A string `parseKey` *cannot* read is carried here too, and only here — the controls refuse
+   * one. See `KEY_MAX_LENGTH` for why a hand-edited link keeps its guide.
+   */
+  key?: string | undefined
 }
 
 /**
@@ -147,9 +213,12 @@ export type Catalogue = {
 
 /**
  * ```
- * format=1&resolver=2&device=polyend-tracker-mini&device=roland-tr-1000&template=industrial-techno
- *   &darkness=50&density=50&grit=50&swing=50&space=50&seed=1
+ * format=2&resolver=5&device=polyend-tracker-mini&device=roland-tr-1000&template=industrial-techno
+ *   &darkness=50&density=50&grit=50&swing=50&space=50&bpm=140&key=A%20minor&seed=1
  * ```
+ *
+ * `bpm` and `key` are written only when the user set them (#161); a link without them is a link
+ * that follows the direction, which is the majority of links and the entirety of v1's.
  *
  * The two leading numbers are `FORMAT_VERSION` and `RESOLVER_VERSION` as they stand today, not
  * constants of the format: the second moves whenever the engine's output can (#100), and a link
@@ -163,6 +232,8 @@ const RESOLVER = 'resolver'
 const DEVICE = 'device'
 const TEMPLATE = 'template'
 const INSPIRATION = 'inspiration'
+const BPM = 'bpm'
+const KEY = 'key'
 const SEED = 'seed'
 
 /**
@@ -177,7 +248,15 @@ const SEED = 'seed'
 const REPEATED: readonly string[] = [DEVICE, INSPIRATION]
 
 /** Scalars. Exactly one of each, always — a second occurrence is malformed, not last-wins. */
-const SCALARS: readonly string[] = [FORMAT, RESOLVER, TEMPLATE, SEED]
+const SCALARS: readonly string[] = [FORMAT, RESOLVER, TEMPLATE, BPM, KEY, SEED]
+
+/**
+ * The scalars a link may simply not have (#161). Every other known scalar is required, because
+ * a guide with no seed is a link we cannot honour rather than one with a sensible default — but
+ * these two have a meaning for absence that is not a default at all: *follow the direction*.
+ * Spelling that with a placeholder would give one state two encodings.
+ */
+const OPTIONAL_SCALARS: readonly string[] = [BPM, KEY]
 
 /**
  * Every key this build understands. Anything else is dropped and reported (`dropped`), which is
@@ -390,6 +469,24 @@ export function checkGuideInputs(
     }
   }
 
+  // #161. Both overrides are optional; `undefined` is the unset state and always legal.
+  if (inputs.bpm !== undefined && !isInt(inputs.bpm, BPM_MIN, BPM_MAX)) {
+    return {
+      reason: 'out-of-range',
+      detail: `bpm must be a whole number ${BPM_MIN}-${BPM_MAX}, got ${String(inputs.bpm)}`,
+    }
+  }
+
+  // Deliberately *not* `parseKey`. A key outside the direction's list and a key the engine
+  // cannot read at all are both carried through to the resolver, which uses the first and
+  // reports both (§5.6). Only the length is a boundary here — see `KEY_MAX_LENGTH`.
+  if (inputs.key !== undefined && inputs.key.length > KEY_MAX_LENGTH) {
+    return {
+      reason: 'out-of-range',
+      detail: `key must be at most ${KEY_MAX_LENGTH} characters, got ${String(inputs.key.length)}`,
+    }
+  }
+
   return undefined
 }
 
@@ -438,6 +535,13 @@ export function encodeGuideInputs(inputs: GuideInputsV1, catalogue: Catalogue): 
     `${TEMPLATE}=${inputs.templateId}`,
     ...inspirations.map((id) => `${INSPIRATION}=${id}`),
     ...MOOD_ORDER_V1.map((axis) => `${axis}=${inputs.mood[axis]}`),
+    // #161. Written only when set: an unset override is *absent*, which is how it reads back.
+    ...(inputs.bpm === undefined ? [] : [`${BPM}=${inputs.bpm}`]),
+    // The one value in the format that needs escaping. A key holds a space and may hold a `#`,
+    // which is a fragment delimiter and would truncate the link at it — `PERMALINK_ID` exists
+    // partly so ids never need this, and a key is not an id. `decodeURIComponent` on the way
+    // back in is already there for both halves of every pair.
+    ...(inputs.key === undefined ? [] : [`${KEY}=${encodeURIComponent(inputs.key)}`]),
     `${SEED}=${inputs.seed}`,
   ]
 
@@ -543,12 +647,21 @@ export function decodeGuideInputs(text: string, catalogue: Catalogue): DecodedGu
   if (formatVersion === undefined) {
     return fail('malformed', `field '${FORMAT}' is not a whole number`)
   }
-  if (formatVersion !== FORMAT_VERSION) {
+  if (!READABLE_FORMATS.has(formatVersion)) {
     return {
       ok: false,
       reason: 'unsupported-version',
       detail: `this link is format v${formatVersion}; this build reads v${FORMAT_VERSION}`,
       format: { encoded: formatVersion, current: FORMAT_VERSION },
+    }
+  }
+
+  // #161. A field the *link's own format* does not have is not a field of that link, however
+  // well this build understands the spelling. Under v1 the two overrides are unknown keys, so
+  // they take the unknown-key path: dropped, and reported as dropped.
+  if (formatVersion < FORMAT_VERSION) {
+    for (const optional of OPTIONAL_SCALARS) {
+      if (scalars.delete(optional)) dropped.add(optional)
     }
   }
 
@@ -576,6 +689,20 @@ export function decodeGuideInputs(text: string, catalogue: Catalogue): DecodedGu
   const seed = parseInt10(seedText)
   if (seed === undefined) return fail('malformed', `field '${SEED}' is not a whole number`)
 
+  // #161. Absent is the unset state, so there is nothing to fail on. Present-but-unreadable is
+  // still malformed: `bpm=fast` is a link that says something this build cannot honour, and
+  // quietly reading it as "follow the direction" would render a tempo its author did not ask
+  // for under a link that names one.
+  const bpmText = scalars.get(BPM)
+  let bpm: number | undefined
+  if (bpmText !== undefined) {
+    bpm = parseInt10(bpmText)
+    if (bpm === undefined) return fail('malformed', `field '${BPM}' is not a whole number`)
+  }
+
+  // Already percent-decoded above, along with every other value.
+  const key = scalars.get(KEY)
+
   const inputs: GuideInputsV1 = {
     version: FORMAT_VERSION,
     devices: lists.get(DEVICE) as string[],
@@ -583,6 +710,8 @@ export function decodeGuideInputs(text: string, catalogue: Catalogue): DecodedGu
     inspirations: lists.get(INSPIRATION) as string[],
     mood: mood as MoodState,
     seed,
+    ...(bpm === undefined ? {} : { bpm }),
+    ...(key === undefined ? {} : { key }),
   }
 
   // Everything above was syntax. This is meaning: ids this build has, numbers in their domain.
