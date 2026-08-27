@@ -3147,10 +3147,28 @@ html {
   color: var(--ink-dim);
 }
 
-/* Indented to clear the cable lane. The run to `out` passes down the left edge, and at the
-   default indent it clipped the first character of two lines. */
-.patch-legend {
+/*
+ * Indented to clear the cable lane — the run to `out` passes down the left edge, and at the
+ * default indent it clipped the first character of two lines.
+ *
+ * The top margin is not decoration: the list above ends at its own scroll boundary, so without
+ * it the sentence sits hard against the last row and reads as part of it. The rows are cards
+ * with their own edges; this is prose about all of them and needs to look like it.
+ */
+/*
+ * Indented to clear the cable lane — the run to `out` passes down the left edge, and at the
+ * default indent it clipped the first character of two lines.
+ *
+ * The top margin is not decoration. The list above ends at its own scroll boundary, so with no
+ * gap the sentence sits hard against the last row and reads as part of that card rather than as
+ * prose about all of them.
+ *
+ * Scoped `.panel` to match `.panel .note { margin: 0 }`, which this element also matches and
+ * which outranks a bare class. Written at (0,2,0) rather than reached for with `!important`.
+ */
+.panel .patch-legend {
   padding-left: 46px;
+  margin-top: 14px;
 }
 
 /*
@@ -3233,6 +3251,6 @@ html {
 }
 
 /* No cables means no lane for the legend to clear. */
-:root[data-jacks='plain'] .patch-legend {
+:root[data-jacks='plain'] .panel .patch-legend {
   padding-left: 0;
 }

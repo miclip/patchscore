@@ -336,8 +336,16 @@ describe('the inspiration panel (§5)', () => {
       ),
     )
     expect(rendered).toContain('Not applied here')
-    expect(rendered).toContain('authors no closed-hat at band 0')
+    // Grouped, not enumerated: the model records one `no-such-target` per band, and four lines
+    // differing by a digit read as a fault in the app rather than a fact about the direction.
+    // "at any band" is also the stronger claim, and the one a reader can act on.
+    expect(rendered).toContain('authors no closed-hat at any band')
+    expect(rendered).not.toContain('at band 0')
     expect(rendered).toContain('already authors its own ghost-perc')
+    // The name is separated from its note by real text, not only by a margin — otherwise the two
+    // run together the moment the page is copied or read aloud, which is how it was reported:
+    // "DancehallThe kick states all four beats".
+    expect(rendered).toContain('Shuffle — The hat lands')
   })
 
   it('states a refusal by name, and shows no notes behind it (§5.3)', () => {

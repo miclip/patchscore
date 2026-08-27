@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { InspirationId } from './ids'
 import { compareCodeUnits } from './resolver'
 import {
+  DENSITY_BANDS,
   PatternSchema,
   RoleRequestSchema,
   TemplateSchema,
@@ -225,11 +226,93 @@ export type InspirationDiagnostic =
       inspirationId: InspirationId
       role: Role
       band: DensityBand
+      /**
+       * Carried so the per-band facts can be read as one without a caller re-deriving the names
+       * or, worse, string-editing the authored sentence below. Both are in scope where this is
+       * built; nothing new is looked up.
+       */
+      templateName: string
+      inspirationName: string
       detail: string
     }
   | { kind: 'role-already-patterned'; inspirationId: InspirationId; role: Role; detail: string }
   | { kind: 'role-already-requested'; inspirationId: InspirationId; role: Role; detail: string }
   | { kind: 'bpm-clamped'; detail: string }
+
+/**
+ * §5.4's diagnostics, collapsed for reading.
+ *
+ * `no-such-target` is recorded per **band**, which is right: each missing slot is a separate fact
+ * and the model should not lose three of them to summarise. But a reader is handed the same
+ * sentence four times with one digit different —
+ *
+ *     'Ambient Dub' authors no texture at band 0, so Echo's replacement for it was not applied
+ *     'Ambient Dub' authors no texture at band 1, so Echo's replacement for it was not applied
+ *     'Ambient Dub' authors no texture at band 2, so Echo's replacement for it was not applied
+ *     'Ambient Dub' authors no texture at band 3, so Echo's replacement for it was not applied
+ *
+ * — which reads as a fault in the app rather than as a fact about the direction, and buries the
+ * findings that are genuinely distinct among near-duplicates.
+ *
+ * Grouped by (inspiration, role), the four become one line that says more: *at no band* is a
+ * stronger claim than *at band 0*, and it is the one a reader can act on. The facts are
+ * unchanged — this is a reading of them, which is why it is derived here beside them rather than
+ * assembled in a component, where a second renderer would have to agree with it by hand.
+ */
+export type GroupedDiagnostic = { key: string; detail: string }
+
+export function groupDiagnostics(
+  diagnostics: readonly InspirationDiagnostic[],
+): GroupedDiagnostic[] {
+  const missing = new Map<
+    string,
+    { role: Role; templateName: string; inspirationName: string; bands: DensityBand[] }
+  >()
+  const out: GroupedDiagnostic[] = []
+
+  for (const d of diagnostics) {
+    if (d.kind !== 'no-such-target') {
+      out.push({ key: `${d.kind}:${out.length.toString()}`, detail: d.detail })
+      continue
+    }
+    const key = `${d.inspirationId}:${d.role}`
+    const found = missing.get(key)
+    if (found === undefined) {
+      missing.set(key, {
+        role: d.role,
+        templateName: d.templateName,
+        inspirationName: d.inspirationName,
+        bands: [d.band],
+      })
+      // A placeholder holds the group's position, so grouping never reorders the list.
+      out.push({ key, detail: '' })
+    } else {
+      found.bands.push(d.band)
+    }
+  }
+
+  return out.map((entry) => {
+    const group = missing.get(entry.key)
+    if (group === undefined) return entry
+    const every = group.bands.length === DENSITY_BANDS.length
+    const where = every
+      ? 'at any band'
+      : `at band${group.bands.length === 1 ? '' : 's'} ${bandList(group.bands)}`
+    return {
+      key: entry.key,
+      detail:
+        `'${group.templateName}' authors no ${group.role} ${where}, so ` +
+        `${group.inspirationName}'s replacement for it was not applied`,
+    }
+  })
+}
+
+/** `0`, `0 and 1`, `0, 1 and 2` — ascending, and by number rather than by any locale rule. */
+function bandList(bands: readonly DensityBand[]): string {
+  const sorted = [...bands].sort((a, b) => a - b).map((b) => String(b))
+  if (sorted.length < 2) return sorted.join('')
+  return `${sorted.slice(0, -1).join(', ')} and ${sorted[sorted.length - 1] as string}`
+}
 
 /** One inspiration's prose, carried through with its name so a reader knows whose claim it is. */
 export type InspirationNote = { inspirationId: InspirationId; name: string; text: string }
@@ -407,6 +490,8 @@ export function applyInspirations(
           inspirationId: inspiration.id,
           role: pattern.forRole,
           band: pattern.band,
+          templateName: template.name,
+          inspirationName: inspiration.name,
           detail:
             `'${template.name}' authors no ${pattern.forRole} at band ${String(pattern.band)}, ` +
             `so ${inspiration.name}'s replacement for it was not applied`,
