@@ -761,7 +761,12 @@ describe('the matching repair changes only the node count (§7.1/#78)', () => {
     // threshold is set well below that, because the figure is allowed to drift and zero is not.
     expect(differed, 'the repair never pruned anything, so this sweep proves nothing').
       toBeGreaterThan(1000)
-  })
+    // Two thousand rigs, each searched twice, is about 38 s of real work — genuinely this test's
+    // own rather than the runner being busy, so it declares its own limit instead of leaning on
+    // `vitest.config.ts`'s 30 s floor. That floor exists to stop a *trivial* test failing when a
+    // parallel worker starves it; a sweep that legitimately takes longer than it has to say so,
+    // the way `search-symmetry.test.ts`'s cap sweep asks for 120 s and says why.
+  }, 180_000)
 })
 
 // ---------------------------------------------------------------------------
