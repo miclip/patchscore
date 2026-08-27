@@ -38,6 +38,11 @@ export function Footer(props: FeedbackContext) {
           <Link href="/directions">Browse directions</Link>
         </li>
         <li>
+          {/* #138. How the app draws itself, kept off the studio where every other control is
+              an input to the guide. */}
+          <Link href="/preferences">Preferences</Link>
+        </li>
+        <li>
           <a href={REPOSITORY_URL}>Source on GitHub</a>
         </li>
         {links.map((link) => (

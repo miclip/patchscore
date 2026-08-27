@@ -85,6 +85,8 @@ export function GenrePicker({ selected, onSelect }: GenrePickerProps) {
                 <input
                   type="radio"
                   name="template"
+                  className="pick-jack"
+                  data-chain={isSelected ? 'direction' : undefined}
                   checked={isSelected}
                   aria-describedby={subId}
                   onChange={() => onSelect(template.id)}

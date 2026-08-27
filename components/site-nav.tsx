@@ -37,6 +37,10 @@ export const NAV_LINKS: readonly { href: string; label: string }[] = [
   { href: '/', label: 'Studio' },
   { href: '/devices', label: 'Devices' },
   { href: '/directions', label: 'Directions' },
+  // #138. Linked here because the footer alone did not reach it: on the studio page the footer
+  // sits below the whole generated guide, some twenty-five screens down, so a preference that
+  // changes how the studio looks was unreachable from the studio.
+  { href: '/preferences', label: 'Preferences' },
 ]
 
 export function SiteNav() {

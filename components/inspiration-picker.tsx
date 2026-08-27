@@ -1,7 +1,7 @@
 'use client'
 
 import { useId } from 'react'
-import { INSPIRATION_CAP } from '@/lib/core'
+import { INSPIRATION_CAP, groupDiagnostics } from '@/lib/core'
 import type { Inspiration, InspirationApplication, InspirationId } from '@/lib/core'
 
 /**
@@ -67,6 +67,13 @@ export function InspirationPicker({
   const atCap = chosen.size >= INSPIRATION_CAP
   const refused = application?.outcome === 'refused' ? application : undefined
   const applied = application?.outcome === 'applied' ? application : undefined
+  /**
+   * §5.4's findings, read rather than enumerated. `no-such-target` is recorded per band — four
+   * near-identical lines for one missing role — which reads as a fault in the app and buries the
+   * findings that are genuinely distinct. Grouped in `lib/core` beside the facts, so a second
+   * renderer cannot disagree about what they add up to.
+   */
+  const grouped = applied === undefined ? [] : groupDiagnostics(applied.diagnostics)
 
   return (
     <section className="panel">
@@ -97,6 +104,9 @@ export function InspirationPicker({
               <label className="pick-choose">
                 <input
                   type="checkbox"
+                  className="pick-jack"
+                  data-chain={on ? 'inspiration' : undefined}
+                  data-chain-key={inspiration.id}
                   checked={on}
                   aria-describedby={subId}
                   // At the cap the unchosen are disabled rather than silently ignored, so the
@@ -129,7 +139,11 @@ export function InspirationPicker({
         <ul className="inspiration-notes">
           {applied.notes.map((note, i) => (
             <li key={`${note.inspirationId}-${String(i)}`}>
+              {/* An explicit separator, not just the span's margin. Without one the two run
+                  together the moment the text leaves the page — copied, read aloud, or pasted
+                  into a bug report, which is how it was noticed: "DancehallThe kick states…". */}
               <span className="who">{note.name}</span>
+              <span className="who-sep"> — </span>
               {note.text}
             </li>
           ))}
@@ -140,12 +154,12 @@ export function InspirationPicker({
         §5.4. What the influence asked for that this direction could not give it. A toggle that
         visibly does nothing is the failure §6.3 warns about; this is where that is prevented.
       */}
-      {applied === undefined || applied.diagnostics.length === 0 ? null : (
+      {applied === undefined || grouped.length === 0 ? null : (
         <>
           <p className="note">Not applied here</p>
           <ul className="inspiration-diagnostics">
-            {applied.diagnostics.map((diagnostic, i) => (
-              <li key={`${diagnostic.kind}-${String(i)}`}>{diagnostic.detail}</li>
+            {grouped.map((diagnostic) => (
+              <li key={diagnostic.key}>{diagnostic.detail}</li>
             ))}
           </ul>
         </>

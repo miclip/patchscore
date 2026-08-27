@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_ORIGIN } from '@/lib/studio/site'
 import type { ReactNode } from 'react'
 import { SiteNav } from '@/components/site-nav'
+import { JACK_STYLE_SCRIPT } from '@/lib/studio/preferences'
 import './globals.css'
 
 /**
@@ -46,6 +47,17 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        {/*
+          #138. Applies the per-browser jack-style preference before first paint, so a reader
+          who chose plain checkboxes never sees a socket flash into one. An inline script is the
+          only way to do that: the server cannot know what this browser stored, so reading it in
+          render would either mismatch hydration or cost a second paint. It is wrapped in
+          try/catch because a throw this early would take the document with it, and it sets the
+          attribute only for a value it recognises.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: JACK_STYLE_SCRIPT }} />
+      </head>
       <body>
         <SiteNav />
         {children}

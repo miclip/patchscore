@@ -1,13 +1,15 @@
 'use client'
 
 import Link from 'next/link'
-import { useId, useMemo, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import type { Device, DeviceId } from '@/lib/core'
 import { expand } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceHref, deviceLabel } from '@/lib/studio/catalogue'
 import { ANY_KIND, deviceView, kindsPresent } from '@/lib/studio/picker'
 import type { DeviceFilter } from '@/lib/studio/picker'
+import { patchbay } from '@/lib/studio/patchbay'
+import { PatchCables } from './patch-cables'
 
 /**
  * "The hardware you own." Multi-select, because a rig is a set — and because the empty set is
@@ -60,6 +62,16 @@ export function DevicePicker({ selected, onToggle }: DevicePickerProps) {
    */
   const chosen = useMemo(() => shown.rows.filter((row) => row.selected), [shown])
   const rest = useMemo(() => shown.rows.filter((row) => !row.selected), [shown])
+
+  /**
+   * #138. Derived from the selected devices in registry order, so the cables follow the list
+   * rather than a second ordering of their own.
+   */
+  const listRef = useRef<HTMLFieldSetElement | null>(null)
+  const bay = useMemo(
+    () => patchbay(chosen.map((row) => row.item)),
+    [chosen],
+  )
 
   return (
     <section className="panel">
@@ -133,9 +145,45 @@ export function DevicePicker({ selected, onToggle }: DevicePickerProps) {
         <p className="note picker-kept">Your rig — {chosen.length} selected. Untick to drop.</p>
       ) : null}
 
-      <fieldset className="picker-list">
-        {[...chosen, ...rest].map((row) => pick(row, onToggle, ids))}
+      <fieldset className="picker-list" ref={listRef}>
+        {[...chosen, ...rest].map((row) => pick(row, onToggle, ids, bay))}
+        <PatchCables bay={bay} listRef={listRef} />
       </fieldset>
+
+      {/*
+        §8's accessible path, and the reason the drawing above may be `aria-hidden`: a sighted
+        reader sees a dashed run into the desk, and this is that same fact in words. The rack
+        does exactly this for its clock and voice cables, describing it as "the accessible path
+        rather than a summary of it".
+      */}
+      {bay.source === undefined ? null : (
+        <p className="note patch-legend">
+          Clock source <strong>{bay.source.deviceName}</strong>
+          {bay.source.basis === 'tie-break' ? ' — nothing claimed it, so this is a tie-break, not advice' : ''}
+          {bay.links.length === 0 ? '.' : '. '}
+          {patchSentence(bay)}
+        </p>
+      )}
+
+      {/*
+        Where the rig leaves for the guide — the reference's single `out`, which is what makes
+        the section read as a patchbay rather than a menu.
+
+        On its own line rather than inline after the sentence, and that is not styling. Inline,
+        the only route to it crossed four lines of the legend, which is the third time cables
+        have wanted to run through text in this component. Given its own row the cable comes
+        down the lane and across open space, and the label reads as silkscreen (§10).
+      */}
+      {/*
+        Where the rig leaves for the guide, and the start of the page's own chain: `out` runs to
+        the Direction, and the Direction on to an Inspiration when one is chosen. Marked for the
+        page-level overlay rather than this one — the device cables belong to the list and scroll
+        with it, and this run crosses panels.
+      */}
+      <p className="patch-out-row">
+        <span className="patch-out" data-chain="out" aria-hidden="true" />
+        <span className="patch-out-label mono">out</span>
+      </p>
 
       {rest.length === 0 && chosen.length > 0 && shown.matched > 0 ? (
         <p className="empty">Everything matching that is already in your rig.</p>
@@ -172,6 +220,7 @@ function pick(
   row: { item: Device; selected: boolean; retained: boolean },
   onToggle: (id: DeviceId, on: boolean) => void,
   idPrefix: string,
+  bay: ReturnType<typeof patchbay>,
 ) {
   const device = row.item
   const assignables = expand(device).length
@@ -180,11 +229,27 @@ function pick(
   // is always a legal id and always unique within the list.
   const subId = `${idPrefix}-${device.id}-sub`
 
+  /**
+   * The socket a cable lands in — **and it is the checkbox**, not an ornament beside one.
+   *
+   * Selecting a device is patching it in, so one control should say that once. The input keeps
+   * its type, its label association, its focus order and its 44px target (#112); only its
+   * painted form changes. `data-patched` distinguishes the clock source from a box a cable
+   * reaches, which `:checked` alone cannot say.
+   */
+  const patched =
+    bay.source?.deviceId === device.id
+      ? 'source'
+      : bay.links.find((l) => l.deviceId === device.id)?.kind
+
   return (
     <div className="pick" key={device.id} data-retained={row.retained ? 'yes' : 'no'}>
       <label className="pick-choose">
         <input
           type="checkbox"
+          className="pick-jack"
+          data-jack={device.id}
+          data-patched={patched ?? 'free'}
           checked={row.selected}
           aria-describedby={subId}
           onChange={(event) => onToggle(device.id, event.target.checked)}
@@ -201,4 +266,40 @@ function pick(
       </span>
     </div>
   )
+}
+
+/**
+ * #138's drawing, said out loud.
+ *
+ * Grouped by kind rather than listed per box, because the claim a reader needs is "what runs
+ * where", and eighteen sentences is not that. A box running free is named — `canReceiveClock:
+ * false` with no audio to take is a real fact about a rig, and #144 and #79 are the record of
+ * how much care it took to word it correctly elsewhere.
+ */
+function patchSentence(bay: ReturnType<typeof patchbay>): string {
+  const of = (kind: string) => bay.links.filter((l) => l.kind === kind).map((l) => l.deviceName)
+  const parts: string[] = []
+  const clock = of('clock')
+  const audio = of('audio')
+  const either = of('either')
+  if (clock.length > 0) parts.push(`${andList(clock)} take${clock.length === 1 ? 's' : ''} clock`)
+  if (audio.length > 0) {
+    parts.push(
+      `${andList(audio)} cannot take clock, so the run to ${audio.length === 1 ? 'it' : 'them'} is audio`,
+    )
+  }
+  if (either.length > 0) {
+    parts.push(`${andList(either)} take${either.length === 1 ? 's' : ''} either — your call which you patch`)
+  }
+  if (bay.free.length > 0) {
+    const names = andList(bay.free.map((f) => f.deviceName))
+    parts.push(`${names} run${bay.free.length === 1 ? 's' : ''} free`)
+  }
+  return parts.length === 0 ? '' : `${parts.join('; ')}.`
+}
+
+/** `a`, `a and b`, `a, b and c`. */
+function andList(items: readonly string[]): string {
+  if (items.length < 2) return items.join('')
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1] as string}`
 }

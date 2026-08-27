@@ -491,11 +491,18 @@ body {
   color: var(--silkscreen);
 }
 
+/*
+ * 18px, up from 15px, and the reason is the socket: a bezel with a visible hole in it needs
+ * more room than a tick to read as one at arm's length. #21's rule is unchanged — the target is
+ * still the label's 44px and still decoupled from this — only the drawn size moved.
+ *
+ * Sized here rather than in `.pick-jack`, because `.pick input` already owned it and two rules
+ * sizing one control is two places to change it. See `.sub`'s indent, which follows this number.
+ */
 .pick input {
   margin: 0;
-  accent-color: var(--accent);
-  width: 15px;
-  height: 15px;
+  width: 18px;
+  height: 18px;
   flex: none;
 }
 
@@ -507,14 +514,14 @@ body {
 
 /*
  * The metadata line spans the whole row and indents to clear the checkbox, so it still reads as
- * belonging to the name above it. 25px is the checkbox (15px) plus `.pick-choose`'s gap (10px);
+ * belonging to the name above it. 28px is the socket (18px) plus `.pick-choose`'s gap (10px);
  * it is a magic number because the alternative is a third grid column that exists only to hold
  * an indent.
  */
 .pick .sub {
   grid-column: 1 / -1;
   grid-row: 2;
-  padding-left: 25px;
+  padding-left: 28px;
   color: var(--ink-dim);
   font-size: 12px;
   min-width: 0;
@@ -2930,4 +2937,320 @@ html {
   @page {
     margin: 14mm;
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * #138 — the picker's patch cables
+ *
+ * A visual layer over the existing rows. `.pick`'s grid was tuned by #112 for two 44px
+ * targets in two columns, so the jack is taken out of flow into the list's left gutter
+ * rather than added as a third column, where it would have re-run that layout.
+ * ------------------------------------------------------------------------ */
+
+.picker-list {
+  position: relative;
+}
+
+/*
+ * The row gains a **cable lane** down its left edge: enough panel for the socket and for a run
+ * to arc in without reaching the text.
+ *
+ * Drawn first with a narrow lane and the cables bowed across the row faces, which is what the
+ * reference does — and looking at it settled that the reference's case is not ours. There the
+ * cables cross module artwork; here they crossed the checkbox and clipped the device names to
+ * "roovebox" and "ecipes". §8 reads this at a rack in poor light, so the text wins and the
+ * cables get their own lane.
+ *
+ * Padding, not a third grid column: the columns are #112's and both 44px targets are untouched.
+ */
+.pick {
+  position: relative;
+  padding-left: 46px;
+}
+
+/*
+ * The checkbox, painted as a socket.
+ *
+ * **It replaces the checkbox visually and *is* the checkbox to the app.** Selecting a device is
+ * patching it in, so one control says that once rather than a tick box with an ornament beside
+ * it. `appearance: none` changes the paint and nothing else: still `input[type=checkbox]`, still
+ * named by its wrapping label, still in the focus order, still inside `.pick-choose`'s 44px
+ * target (#112). #138's constraint was that cables be drawn *around* the real control, never in
+ * place of it — restyling meets it where a div would not.
+ *
+ * **A ring with a centre dot**, which is the reference's form and reads as a socket at this size
+ * where a plain bezel reads as a bullet. The ring is the border, the gap and dot are one radial
+ * gradient. State is a shape *and* colour change, so it does not depend on hue alone
+ * (WCAG 1.4.1).
+ */
+.pick-jack,
+.patch-out {
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 50%;
+  border: 2px solid var(--jack-ring, #4a5158);
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--jack-ring, #4a5158) 0 2.4px,
+    #0b0c0e 2.4px 100%
+  );
+  cursor: pointer;
+}
+
+.pick-jack:checked {
+  --jack-ring: var(--accent);
+  background: radial-gradient(circle at 50% 50%, var(--accent) 0 4px, #0b0c0e 4px 100%);
+}
+
+/* The clock source is the one box nothing runs *to*; a halo says it is the origin without
+   inventing a second shape for it. */
+.pick-jack[data-patched='source'] {
+  box-shadow: 0 0 0 2px var(--accent-dim, rgba(255, 106, 61, 0.3));
+}
+
+/* Focus must stay obvious once the browser's own ring is gone with `appearance`. */
+.pick-jack:focus-visible,
+.patch-out:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/*
+ * The `out` jack: where the rig leaves for the guide.
+ *
+ * The reference has exactly one of these and patches the current selection to it, which is what
+ * makes the page read as a patchbay rather than a menu. It is not a control — nothing toggles —
+ * so it is a `span`, and it is `aria-hidden`: the sentence it sits beside already says what it
+ * draws.
+ */
+.patch-out {
+  display: inline-block;
+  vertical-align: middle;
+  width: 14px;
+  height: 14px;
+  margin-left: 6px;
+  cursor: default;
+}
+
+.patchbay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.patch-cable-casing {
+  fill: none;
+  stroke: #08090a;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.patch-cable-core {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+/* The runs cross the row faces, so they are held back from competing with the names under
+   them. Enough to follow a cable, not enough to fight the text — §8 reads this at a rack. */
+.patch-cable {
+  opacity: 0.75;
+}
+
+/* The stripe sits on the core and is the same width, so it replaces rather than overlays. */
+.patch-cable-stripe {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: butt;
+}
+
+/* Kind lives in the line's continuity, not the hue: the forced-colours block below removes hue
+   entirely, and the channel that survives has to be the one carrying meaning. */
+@media (prefers-reduced-motion: no-preference) {
+  .patch-cable {
+    animation: patch-draw 260ms ease-out both;
+  }
+}
+
+@keyframes patch-draw {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Under forced colours every cable hue collapses, so the dash is all that is left to tell a
+   clock run from an audio one. Casing and core are given system colours and the core keeps its
+   dash — deliberately not `stroke: currentColor` on both, which would erase the jacket. */
+@media (forced-colors: active) {
+  .patch-cable-casing {
+    stroke: Canvas;
+  }
+
+  .patch-cable-core {
+    stroke: CanvasText !important;
+  }
+
+  /* Painted in the background instead of a second tone, the stripe cuts the core into a dash —
+     the same geometry saying the same thing in the one channel this mode leaves. */
+  .patch-cable-stripe {
+    stroke: Canvas !important;
+  }
+
+  /* Filled means patched, a ring means free — and that distinction has to survive here too.
+     Setting only the border left every jack a hollow ring under forced colours, so the one
+     piece of state the socket carries was lost in exactly the mode that needs it most.
+     `CanvasText` fills; `Canvas` leaves the ring open. */
+  /*
+   * `appearance: none` controls are the classic thing that vanishes here, so the socket is
+   * given system colours explicitly and the plug stays an inset ring — a shape, which survives
+   * a two-colour palette where a hue would not.
+   */
+  /*
+   * Gradients are not reliable here, so the dot goes and the two states fall back to an empty
+   * ring against a filled one — still a shape difference, which is what has to survive.
+   */
+  .pick-jack,
+  .patch-out {
+    border-color: CanvasText;
+    background: Canvas;
+  }
+
+  .pick-jack:checked {
+    background: CanvasText;
+  }
+}
+
+/* The overlay's positioning context: the scrolling list plus the sentence that carries `out`. */
+.patch-area {
+  position: relative;
+}
+
+/*
+ * The `out` row. Its own line, because every route to an inline jack crossed the legend text.
+ * Indented to the cable lane so the run arrives horizontally rather than cutting a corner.
+ */
+.patch-out-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  padding-left: 46px;
+}
+
+.patch-out-label {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+/*
+ * Indented to clear the cable lane — the run to `out` passes down the left edge, and at the
+ * default indent it clipped the first character of two lines.
+ *
+ * The top margin is not decoration: the list above ends at its own scroll boundary, so without
+ * it the sentence sits hard against the last row and reads as part of it. The rows are cards
+ * with their own edges; this is prose about all of them and needs to look like it.
+ */
+/*
+ * Indented to clear the cable lane — the run to `out` passes down the left edge, and at the
+ * default indent it clipped the first character of two lines.
+ *
+ * The top margin is not decoration. The list above ends at its own scroll boundary, so with no
+ * gap the sentence sits hard against the last row and reads as part of that card rather than as
+ * prose about all of them.
+ *
+ * Scoped `.panel` to match `.panel .note { margin: 0 }`, which this element also matches and
+ * which outranks a bare class. Written at (0,2,0) rather than reached for with `!important`.
+ */
+.panel .patch-legend {
+  padding-left: 46px;
+  margin-top: 14px;
+}
+
+/*
+ * #138's page chain: `out` -> Direction -> Inspiration.
+ *
+ * Positioned over `.columns` rather than inside a panel, because it crosses three of them and
+ * must not scroll with any one. It runs down the page's left margin, so it is *over* the cards
+ * in paint order and still crosses nothing: behind them, only stubs in the gaps were visible,
+ * which reads as a broken cable rather than a hidden one.
+ */
+.columns {
+  position: relative;
+}
+
+.patch-chain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 2;
+}
+
+.columns > .panel {
+  position: relative;
+  z-index: 1;
+}
+
+/* One colour: this run is not a device cable and should not read as one. */
+.patch-chain-core {
+  stroke: var(--voice-cable, #56c5ef);
+}
+
+/* ---------------------------------------------------------------------------
+ * #138 — plain-checkbox mode
+ *
+ * The preference is a stylesheet switch, not a second component tree: the control underneath is
+ * the same `input[type=checkbox]` either way, which is the whole reason this can be a preference
+ * rather than a fork. `appearance: auto` hands the browser its own control back, so plain mode
+ * gets the platform's checkbox — including whatever the reader's OS does for high contrast —
+ * rather than an imitation of one.
+ *
+ * Set by an inline script before first paint, so nothing flashes.
+ * ------------------------------------------------------------------------ */
+
+:root[data-jacks='plain'] .pick-jack {
+  appearance: auto;
+  -webkit-appearance: auto;
+  width: 15px;
+  height: 15px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  accent-color: var(--accent);
+}
+
+/* The indent follows the control, as it did before the socket grew it to 18px. */
+:root[data-jacks='plain'] .sub {
+  padding-left: 25px;
+}
+
+/* No sockets means nothing for a cable to land in. The sentence stays: it says in words what
+   the cables drew, and it was always the accessible path rather than a caption. */
+:root[data-jacks='plain'] .patchbay,
+:root[data-jacks='plain'] .patch-chain,
+:root[data-jacks='plain'] .patch-out-row {
+  display: none;
+}
+
+:root[data-jacks='plain'] .pick {
+  padding-left: 12px;
+}
+
+/* The preferences page's own row. */
+.pref .sub {
+  display: block;
+  padding-left: 28px;
+  margin: 2px 0 0;
+}
+
+/* No cables means no lane for the legend to clear. */
+:root[data-jacks='plain'] .panel .patch-legend {
+  padding-left: 0;
 }
