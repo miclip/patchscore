@@ -326,20 +326,30 @@ describe('the panel figure', () => {
    * dimension pair immediately beside a real citation to p.30.
    */
   it('states a height only for a panel somebody drew', () => {
+    // Every shipped device is drawn, so the undrawn branch is exercised on a fixture. It is not
+    // dead code: it is what the next device whose manual has no usable figure will render, and
+    // the failure it guards against is silent — a defaulted height reads exactly like a measured
+    // one, standing next to a real citation.
+    const undrawn: Device = {
+      ...(DEVICES.find((d) => d.id === 'moog-minitaur') as Device),
+      panel: undefined,
+    }
+    const bare = renderToStaticMarkup(
+      createElement(PanelFigure, { device: undrawn, idPrefix: 'undrawn' }),
+    )
+    expect(bare).toContain('222.3 mm wide')
+    expect(bare).toContain('drawing convention')
+    // The pair is what reads as a measurement, so the pair is what must not appear.
+    expect(bare).not.toContain('222.3 × ')
+
     for (const device of DEVICES) {
       const markup = renderToStaticMarkup(
         createElement(PanelFigure, { device, idPrefix: device.id }),
       )
       const span = device.physical.panelSpanMm
-      if (device.panel === undefined) {
-        expect(markup, device.id).toContain(`${String(span)} mm wide`)
-        expect(markup, device.id).toContain('drawing convention')
-        // The pair is the thing that reads as a measurement, so the pair is what must not appear.
-        expect(markup, device.id).not.toContain(`${String(span)} × `)
-      } else {
-        expect(markup, device.id).toContain(`${String(span)} × ${String(device.panel.panelRiseMm)} mm`)
-        expect(markup, device.id).not.toContain('drawing convention')
-      }
+      const rise = device.panel?.panelRiseMm
+      expect(markup, device.id).toContain(`${String(span)} × ${String(rise)} mm`)
+      expect(markup, device.id).not.toContain('drawing convention')
     }
   })
 })

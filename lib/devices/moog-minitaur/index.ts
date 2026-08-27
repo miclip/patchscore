@@ -2,6 +2,7 @@ import type { CapabilityEvidence, Device, JackSignalKind, JackSpec, Recipe } fro
 import { jackFact } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, AuthoredParam, Cite } from '../../core/params'
 import type { Role } from '../../core/vocabulary'
+import { MINITAUR_PANEL } from './panel'
 
 /**
  * Moog Minitaur (§2.3) — one monophonic analog voice, two oscillators, a Moog ladder filter,
@@ -80,37 +81,26 @@ import type { Role } from '../../core/vocabulary'
  * `receiveTransport` is omitted, which means all of them. `sendTransport` is moot: §2.3's
  * `sendTransports()` returns nothing for a box that cannot send, whatever the list says.
  *
- * ## No panel, and both figures in this document fail the aspect check
+ * ## The panel, and a measurement that had to be redone
  *
- * §10 wants a drawn panel and printed p.6 has a fully-labelled front-panel figure, so this
- * looked like the DFAM case. It is not. `PanelLayout`'s rule is to **check the aspect before
- * believing either number**, and both figures fail it.
+ * Drawn — see `panel.ts`, which carries the method and the numbers. Two things are worth having
+ * here because they are about the *document* rather than about the drawing:
  *
- *     front panel, p.6    284.26 x 179.49 pt   aspect 1.5837   against 222.3/130.2 = 1.7074
- *     back panel,  p.18   285.29 x  70.28 pt   aspect 4.0595   against 222.3/ 79.4 = 2.7997
+ * **The figure is vector artwork, so the geometry is exact.** `pdftocairo -svg` on PDF page 4
+ * gives 900 paths; the only rasters on the page are two 16 x 15 px glyph icons. There was never
+ * any need to measure a render, and a first pass that did measure one concluded the figure was
+ * stretched and left the panel undrawn. It was not stretched. Every knob is a circle to four
+ * decimal places in the vector data. The render's connected components had merged each knob with
+ * its own pointer and tick marks. `CLAUDE.md` already says a `pdftotext` dump is not evidence a
+ * manual is silent; the same caution applies one tool along, and the artwork was there to read.
  *
- * No pair of the specification's three dimensions (p.30) produces either aspect. The front
- * figure's scale factors also disagree between the axes — 2.2168 against 2.0562, a ratio of real
- * millimetres to drawn ones, which a figure drawn to scale would give as one number. The back
- * figure is stretched by a factor of 1.45.
- *
- * **The two together are the proof, and one alone would not have been.** Both figures are the
- * same column width to within a point, and both are wrong by different factors — which is what
- * artwork scaled to fit a column looks like, and is not what a drawing to scale looks like.
- * These are illustrations in the OVERVIEW and INPUT/OUTPUT chapters rather than the DFAM's 1:1
- * blank patch sheet, and there is no second document in `manuals/` to fall back on the way the
- * Subsequent 37 falls back on its Quickstart poster. The box does ship a printed Getting Started
- * guide (p.4's packing list) which nobody here has obtained; if it carries a to-scale panel this
- * decision is worth revisiting.
- *
- * Backing a rise out of the drawn aspect would give 222.3 / 1.5837 = 140.4 mm. That is not
- * self-evidently absurd — a sloped top face is longer than the footprint it sits on, and 140.4
- * against a 130.2 mm depth implies a rise of about 52 mm on a box 79.4 mm tall, which is a
- * plausible wedge. It is still an inference, and `PanelLayout.verified` is required, so it would
- * have to cite a page that states it. No page does. §10's standard is explicit that a panel with
- * estimated coordinates is worse than no panel at all, because it looks exactly like the ones
- * that were measured. So `panel` is omitted and the rack falls back to the generated panel built
- * from the jacks and voice below.
+ * **The drawn aspect picks a rise that no pair of the stated dimensions gives.** p.30 lists
+ * `222.3mm x 130.2mm x 79.4mm` and the drawing measures 1.5837, which none of 1.7074, 2.7997 or
+ * 1.6398 matches. §2.3's instruction is to read the rise off the drawing, and at the cited
+ * 222.3 mm span that is 140.36 mm — longer than the 130.2 mm footprint because the top of this
+ * box slopes, so the face you play is longer than the edge it stands on. The Mother-32's panel
+ * comment records the mirror image, where the table's axis letters were wrong and the drawing
+ * chose between them.
  *
  * ## The manual contradicts itself about octave naming, on one page
  *
@@ -855,7 +845,7 @@ export const device: Device = {
     panelSpanMm: 222.3,
     verified: cite(30),
   },
-  // No `panel` — see the header. The figure on p.6 is not to scale and nothing else here is.
+  panel: MINITAUR_PANEL,
   jacks: [...JACKS],
   capabilityEvidence: {
     ...JACK_EVIDENCE,

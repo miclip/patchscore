@@ -146,14 +146,7 @@ describe('rack geometry (§10)', () => {
     // documents looks exactly like the bug this line exists to catch. Still an exact count rather
     // than `toBeGreaterThan(1)`: a rise silently dropped to a shared default is the real target.
     //
-    // **Counted over drawn panels only.** A device with no `panel` (see `PANEL_NOT_DRAWN`) has no
-    // measured rise to be distinct from anything — the rack gives it the generated fallback's
-    // default, which for the Minitaur is 170 mm and collides with the Tracker Mini's genuine
-    // 170. Including it would make this assertion fail for the one reason it is not about, and
-    // would then have to be relaxed, which is how the alarm above stops working.
-    const drawn = DEVICES.filter((d) => d.panel !== undefined)
-    const drawnRises = model.panels.filter((p) => drawn.some((d) => d.id === p.deviceId))
-    expect(new Set(drawnRises.map((p) => p.riseMm)).size).toBe(drawn.length - 3)
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 3)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -538,41 +531,11 @@ describe('panel contents', () => {
 // ---------------------------------------------------------------------------
 
 describe('panel layouts', () => {
-  /**
-   * §10. Devices whose manual carries **no figure a panel can be measured from**, and the reason.
-   *
-   * `panel` is optional in the schema and the rack has an honest fallback for a missing one, but
-   * a device that simply forgot to draw one looks identical to a device that could not — so the
-   * ones that could not are named here. Named rather than tolerated: a device that gains a
-   * usable figure fails this test and forces its entry to be deleted, exactly as
-   * `SYMMETRY_INVERSIONS` does in `test/search-symmetry.test.ts`.
-   *
-   * §10's standard is that an estimated panel is worse than no panel, because it looks exactly
-   * like the measured ones. An entry here is that judgement having been made and recorded.
-   */
-  const PANEL_NOT_DRAWN: Record<string, string> = {
-    'moog-minitaur':
-      'both figures in its manual are scaled to fit the column rather than drawn to scale — ' +
-      'the front panel on p.6 measures aspect 1.5837 against the box’s 1.7074, the back panel ' +
-      'on p.18 measures 4.0595 against 2.7997, and no pair of p.30’s three dimensions produces ' +
-      'either. See the manifest header.',
-  }
-
-  it('names every box without a drawing, so a missing panel is a decision', () => {
-    const undrawn = DEVICES.filter((d) => d.panel === undefined).map((d) => d.id).sort()
-    expect(undrawn).toEqual(Object.keys(PANEL_NOT_DRAWN).sort())
-    for (const reason of Object.values(PANEL_NOT_DRAWN)) {
-      expect(reason.length).toBeGreaterThan(40)
-    }
-  })
-
   it('every authored box carries a drawing cited to its manual', () => {
     for (const device of DEVICES) {
       const layout = device.panel
-      if (layout === undefined) {
-        expect(PANEL_NOT_DRAWN[device.id], `${device.id} has no panel layout`).toBeDefined()
-        continue
-      }
+      expect(layout, `${device.id} has no panel layout`).toBeDefined()
+      if (layout === undefined) continue
       // Same rule as a parameter value: a drawing read off a manual says which manual.
       expect(layout.verified).not.toBe(false)
       if (layout.verified !== false) expect(layout.verified.kind).toBe('manual')
@@ -614,8 +577,7 @@ describe('panel layouts', () => {
   it('allows exactly one voice field, and puts the cells inside it', () => {
     const model = rackModel(real)
     for (const device of DEVICES) {
-      if (device.panel === undefined) continue // §10: named in PANEL_NOT_DRAWN above.
-      const fields = device.panel.features.filter((f) => f.kind === 'voices')
+      const fields = device.panel?.features.filter((f) => f.kind === 'voices') ?? []
       // §2.4. A device with no voices contributes no assignables, so it authors no voice field:
       // the region would be filled with nothing on every guide ever rendered, claiming a readout
       // the box cannot produce. The LiveTrak L-8 is the first box in the library like this, and
@@ -736,8 +698,7 @@ describe('panel layouts', () => {
     const model = rackModel(real)
     for (const device of DEVICES) {
       if (device.voices.length === 0) continue // §2.4: no assignables, no region to fill.
-      if (device.panel === undefined) continue // §10: named in PANEL_NOT_DRAWN above.
-      const field = device.panel.features.find((f) => f.kind === 'voices')
+      const field = device.panel?.features.find((f) => f.kind === 'voices')
       if (field?.kind !== 'voices') throw new Error('no voice field')
       const cells = model.panels.find((p) => p.deviceId === device.id)?.banks.flatMap((b) => b.cells) ?? []
       const covered = cells.reduce((sum, c) => sum + c.w * c.h, 0)
@@ -969,9 +930,10 @@ describe('rack view', () => {
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
+    // Fifteen since the Minitaur landed — one field per device that has voices to show.
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(14)
+    expect(fields).toHaveLength(15)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {
@@ -1030,11 +992,7 @@ describe('rack view', () => {
     })
     const html = renderToStaticMarkup(createElement(Rack, { result: rig([undrawn]) }))
     expect(html).toContain('panel not drawn yet')
-    // The real registry says it exactly for the boxes that could not be measured, and for no
-    // others — the count is the assertion, so a device silently losing its panel still fails.
-    const undrawnInReal = DEVICES.filter((d) => d.panel === undefined).length
-    const said = markup(real).split('panel not drawn yet').length - 1
-    expect(said).toBe(undrawnInReal)
+    expect(markup(real)).not.toContain('panel not drawn yet')
   })
 
   it('renders the same bytes twice', () => {
