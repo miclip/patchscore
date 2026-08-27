@@ -306,10 +306,40 @@ describe('the panel figure', () => {
         createElement(PanelFigure, { device, idPrefix: device.id }),
       )
       expect(markup, device.id).toContain('<svg')
-      expect(markup, device.id).toContain('Our own simplified drawing')
+      // "drawing" where somebody drew one, "outline" where the shape came from the sockets.
+      expect(markup, device.id).toContain(
+        device.panel === undefined ? 'Our own simplified outline' : 'Our own simplified drawing',
+      )
       // §10: reference, never asset. Nothing is fetched, so nothing of the maker's is shipped.
       expect(markup, device.id).not.toContain('<image')
       expect(markup, device.id).not.toContain('http')
+    }
+  })
+
+  /**
+   * §10/invariant 5. **An undrawn panel must not print a height as though it were measured.**
+   *
+   * `soloPanel` gives a device with no `panel` the `PANEL_HEIGHT_MM` drawing convention, which
+   * is the constant every undrawn panel shares rather than anything about that box — the rack
+   * model says so itself: "a panel's aspect ratio here is not the device's real aspect ratio."
+   * The caption used to print `222.3 × 170 mm` for the Minitaur, putting an invented number in a
+   * dimension pair immediately beside a real citation to p.30.
+   */
+  it('states a height only for a panel somebody drew', () => {
+    for (const device of DEVICES) {
+      const markup = renderToStaticMarkup(
+        createElement(PanelFigure, { device, idPrefix: device.id }),
+      )
+      const span = device.physical.panelSpanMm
+      if (device.panel === undefined) {
+        expect(markup, device.id).toContain(`${String(span)} mm wide`)
+        expect(markup, device.id).toContain('drawing convention')
+        // The pair is the thing that reads as a measurement, so the pair is what must not appear.
+        expect(markup, device.id).not.toContain(`${String(span)} × `)
+      } else {
+        expect(markup, device.id).toContain(`${String(span)} × ${String(device.panel.panelRiseMm)} mm`)
+        expect(markup, device.id).not.toContain('drawing convention')
+      }
     }
   })
 })

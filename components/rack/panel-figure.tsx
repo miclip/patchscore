@@ -33,6 +33,28 @@ export function PanelFigure({ device, idPrefix }: { device: Device; idPrefix: st
       ? `The ${width} mm panel span is provisional: nobody has checked it against a document.`
       : `The ${width} mm panel span is cited to ${citeText(device.physical.verified)}.`
 
+  /**
+   * §10/invariant 5. **The height is only a dimension when somebody measured it.**
+   *
+   * A drawn panel carries `panelRiseMm` from its own manifest, cited like any other value. A
+   * panel nobody has drawn has no rise at all, and `soloPanel` gives it `PANEL_HEIGHT_MM` — a
+   * *drawing convention*, the constant every panel would share if depth were not modelled, and
+   * the model's own comment says so: "a panel's aspect ratio here is not the device's real
+   * aspect ratio."
+   *
+   * Printing `222.3 × 170 mm` for such a box states a dimension pair the manual does not
+   * contain, one half of it beside a genuine citation, which is the worst place to put an
+   * invented number. So an undrawn panel reports its width and says what the height is.
+   */
+  const size =
+    panel.layout === undefined
+      ? `${width} mm wide. `
+      : `${width} × ${panel.riseMm} mm. `
+  const heightNote =
+    panel.layout === undefined
+      ? ' Its height here is the drawing convention every undrawn panel shares, not the depth of the box.'
+      : ''
+
   return (
     <figure className="rack-figure panel-figure">
       <div className="rack-frame">
@@ -45,7 +67,9 @@ export function PanelFigure({ device, idPrefix }: { device: Device; idPrefix: st
         >
           <title id={titleId}>{`${device.name} front panel`}</title>
           <desc id={descId}>
-            {`Our own simplified drawing of the ${device.name} front panel, ${width} by ${panel.riseMm} mm. ${drawn} ${span}`}
+            {panel.layout === undefined
+              ? `Our own simplified outline of the ${device.name} front panel, ${width} mm wide. ${drawn}${heightNote} ${span}`
+              : `Our own simplified drawing of the ${device.name} front panel, ${width} by ${panel.riseMm} mm. ${drawn} ${span}`}
           </desc>
           <defs>
             <linearGradient id={`${idPrefix}-anodized`} x1="0" y1="0" x2="0" y2="1">
@@ -60,8 +84,9 @@ export function PanelFigure({ device, idPrefix }: { device: Device; idPrefix: st
         </svg>
       </div>
       <figcaption className="panel-caption">
-        {`${width} × ${panel.riseMm} mm. `}
+        {size}
         {span} {drawn}
+        {heightNote}
       </figcaption>
     </figure>
   )
