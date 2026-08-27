@@ -1,4 +1,6 @@
 import {
+  BPM_MAX,
+  BPM_MIN,
   DENSITY_DETENTS,
   FORMAT_VERSION,
   INSPIRATION_CAP,
@@ -11,6 +13,7 @@ import {
   guideInputsFrom,
   hash32,
   loadStudio,
+  parseKey,
   saveStudio,
   studioDoc,
 } from '@/lib/core'
@@ -22,6 +25,7 @@ import type {
   InspirationId,
   GuideInputsV1,
   MoodAxis,
+  SongOverrides,
   StorageSource,
   StoredRigV1,
   TemplateId,
@@ -669,4 +673,56 @@ export function composeTemplate(inputs: GuideInputsV1): InspirationApplication |
 /** Reroll is a change of seed and nothing else (§7.2). */
 export function withSeed(inputs: GuideInputsV1, seed: number): GuideInputsV1 {
   return { ...inputs, seed }
+}
+
+// ---------------------------------------------------------------------------
+// #161. The song the user asked for, on top of the one the direction offers
+// ---------------------------------------------------------------------------
+
+/**
+ * Set the tempo, or hand it back to the direction with `undefined`.
+ *
+ * **Sticky, and every other helper here keeps it** — they spread `inputs`, so changing direction
+ * or adding an influence leaves the number where the user put it rather than moving it under
+ * them. If it now sits outside the effective range, `resolve` says so (`bpm-outside-range`);
+ * that is the whole reason it is allowed to.
+ *
+ * A value outside `BPM_MIN`–`BPM_MAX`, or not a whole number, is a **no-op** rather than a clamp
+ * or a throw, exactly as `withInspiration` no-ops past the cap: a control that cannot express it
+ * is the first guard, and answering an impossible edit with a *different* edit would be the
+ * studio deciding something the user did not. The range is a typo guard, not taste — the
+ * direction's own range is advisory and going outside it is legal here.
+ */
+export function withBpm(inputs: GuideInputsV1, bpm: number | undefined): GuideInputsV1 {
+  if (bpm === undefined) {
+    const { bpm: _dropped, ...rest } = inputs
+    return rest
+  }
+  if (!Number.isInteger(bpm) || bpm < BPM_MIN || bpm > BPM_MAX) return inputs
+  return { ...inputs, bpm }
+}
+
+/**
+ * Set the key, or hand it back to the seed with `undefined`.
+ *
+ * Any key `parseKey` reads is accepted, including one the direction does not offer — that is
+ * reported (`key-not-offered`) and resolved in, per #161. One it cannot read is a no-op, for the
+ * same reason as `withBpm`: there is nothing honest to store.
+ */
+export function withKey(inputs: GuideInputsV1, key: string | undefined): GuideInputsV1 {
+  if (key === undefined) {
+    const { key: _dropped, ...rest } = inputs
+    return rest
+  }
+  if (parseKey(key) === undefined) return inputs
+  return { ...inputs, key }
+}
+
+/**
+ * The two overrides as the resolver takes them. One function so every caller that resolves —
+ * the client, the server entry, anything later — reads the same two fields off the inputs; two
+ * call sites picking them apart by hand is how one of them comes to forget a field.
+ */
+export function songOverrides(inputs: GuideInputsV1): SongOverrides {
+  return { bpm: inputs.bpm, key: inputs.key }
 }

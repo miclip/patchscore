@@ -2,7 +2,7 @@ import type { Catalogue, Device, GuideInputsV1, ResolveResult } from '@/lib/core
 import { decodeGuideInputs, encodeGuideInputs, resolve } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceLabel, plural } from './catalogue'
-import { CATALOGUE, DEFAULT_INPUTS, composeTemplate } from './session'
+import { CATALOGUE, DEFAULT_INPUTS, composeTemplate, songOverrides } from './session'
 import { SITE_DESCRIPTION, SITE_NAME } from './site'
 
 /**
@@ -185,5 +185,13 @@ export function resolveEntry(inputs: GuideInputsV1): ResolveResult | undefined {
   const selected = new Set(inputs.devices)
   // Registry order (§7.2), like everywhere else the rig is turned into devices.
   const devices = DEVICES.filter((d) => selected.has(d.id))
-  return resolve({ devices, template: application.template, mood: inputs.mood, seed: inputs.seed })
+  return resolve({
+    devices,
+    template: application.template,
+    mood: inputs.mood,
+    seed: inputs.seed,
+    // #161's fourth layer. The server resolves the link's own song, or the card describes a
+    // tempo and key the page will not show.
+    overrides: songOverrides(inputs),
+  })
 }

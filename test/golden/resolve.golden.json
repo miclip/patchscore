@@ -64,7 +64,9 @@
   },
   "song": {
     "bpm": 134,
+    "bpmSource": "template",
     "key": "F minor",
+    "keySource": "template",
     "keys": [
       "F minor",
       "A minor"
@@ -96,7 +98,8 @@
           "g-hook-1"
         ]
       }
-    ]
+    ],
+    "diagnostics": []
   },
   "score": [
     0,

@@ -1092,3 +1092,109 @@ describe('#121 the page states the clock topology the Markdown states', () => {
     expect(page).not.toContain('runs free')
   })
 })
+
+// ---------------------------------------------------------------------------
+// #161 The song's provenance and findings, in both guides
+// ---------------------------------------------------------------------------
+
+/**
+ * §5.6 through the sibling rule. Two of phase 1's three facts can now come from the reader, and
+ * both guides have to say the same thing about that in their own ink:
+ *
+ *  - a key the reader chose is **not** something a reroll may change, and the line that used to
+ *    promise otherwise is the one a person would act on — rerolling after a key they already have
+ *  - a finding about the tempo or the key belongs **under the value it qualifies**, in both
+ *
+ * Which finding is about which value is decided once in `lib/core` (`songFindings`); what is
+ * written twice is the wording, which is why each case below asserts both renderers separately
+ * rather than one and a snapshot.
+ */
+describe('the song overrides read the same in both guides (#161)', () => {
+  const set = (overrides: { bpm?: number; key?: string }) =>
+    resolve({
+      devices: DEVICES,
+      template: industrialTechno,
+      mood: NEUTRAL_MOOD,
+      seed: 1,
+      overrides,
+    })
+
+  it('says a reroll may move the key only when the direction picked it', () => {
+    const seeded = set({})
+    expect(seeded.song.keySource).toBe('template')
+    expect(renderGuide(seeded)).toContain('a reroll may pick')
+    expect(text(html(seeded))).toContain('a reroll may pick')
+  })
+
+  it('stops promising a reroll can change a key the reader chose', () => {
+    const chosen = set({ key: 'C minor' })
+    expect(chosen.song.keySource).toBe('user')
+    expect(chosen.song.key).toBe('C minor')
+
+    for (const guide of [renderGuide(chosen), text(html(chosen))]) {
+      // The claim that would send someone rerolling after a key they already have.
+      expect(guide).not.toContain('a reroll may pick')
+      expect(guide).toContain('you set this')
+      // The direction's own keys are still named — they are what the control offers.
+      expect(guide).toContain('F minor')
+    }
+  })
+
+  it("marks a tempo the reader set, and leaves the direction's own unmarked", () => {
+    const theirs = set({ bpm: 140 })
+    expect(theirs.song.bpmSource).toBe('user')
+    for (const guide of [renderGuide(theirs), text(html(theirs))]) {
+      expect(guide).toContain('you set this')
+      expect(guide).toContain('140')
+    }
+
+    const direction = set({})
+    for (const guide of [renderGuide(direction), text(html(direction))]) {
+      expect(guide).not.toContain('you set this')
+      expect(guide).toContain('template range')
+    }
+  })
+
+  it('prints a tempo outside the range in both, with the same sentence', () => {
+    const slow = set({ bpm: 70 })
+    const [finding] = slow.song.diagnostics
+    expect(finding?.kind).toBe('bpm-outside-range')
+    expect(renderGuide(slow)).toContain(finding?.detail)
+    expect(text(html(slow))).toContain(finding?.detail)
+    // The tempo is the guide's, not a suggestion beside a value it did not use.
+    expect(renderGuide(slow)).toContain('**BPM** 70')
+  })
+
+  it('prints an unoffered key in both, and resolves the hooks in it', () => {
+    const unoffered = set({ key: 'C# dorian' })
+    const [finding] = unoffered.song.diagnostics
+    expect(finding?.kind).toBe('key-not-offered')
+    expect(renderGuide(unoffered)).toContain(finding?.detail)
+    expect(text(html(unoffered))).toContain(finding?.detail)
+    // Phase 4 is in the chosen key too, or the finding would be describing a guide nobody saw.
+    for (const choice of unoffered.song.hooks) {
+      if (choice.chosen.outcome === 'resolved') expect(choice.chosen.hook.key).toBe('C# dorian')
+    }
+  })
+
+  it('prints an unreadable key in both, beside the key that was actually used', () => {
+    const unreadable = set({ key: 'H minor' })
+    const [finding] = unreadable.song.diagnostics
+    expect(finding?.kind).toBe('key-unreadable')
+    expect(unreadable.song.keySource).toBe('template')
+    for (const guide of [renderGuide(unreadable), text(html(unreadable))]) {
+      expect(guide).toContain(finding?.detail)
+      // The direction's key stands, so the reroll line is true again and is back.
+      expect(guide).toContain('a reroll may pick')
+    }
+  })
+
+  it('says nothing extra when neither is set, in either guide', () => {
+    const plain = set({})
+    expect(plain.song.diagnostics).toEqual([])
+    for (const guide of [renderGuide(plain), text(html(plain))]) {
+      expect(guide).not.toContain('you set this')
+      expect(guide).not.toContain('do not change with the tempo')
+    }
+  })
+})

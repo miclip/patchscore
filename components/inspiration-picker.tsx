@@ -2,7 +2,12 @@
 
 import { useId } from 'react'
 import { INSPIRATION_CAP, groupDiagnostics } from '@/lib/core'
-import type { Inspiration, InspirationApplication, InspirationId } from '@/lib/core'
+import type {
+  Inspiration,
+  InspirationApplication,
+  InspirationDiagnostic,
+  InspirationId,
+} from '@/lib/core'
 
 /**
  * §5's influences. Multi-select, capped at two, and **never filtered by the chosen direction**.
@@ -24,6 +29,19 @@ export type InspirationPickerProps = {
   onToggle: (id: InspirationId, on: boolean) => void
   /** What composing the current selection said. `undefined` when no direction is chosen. */
   application: InspirationApplication | undefined
+  /**
+   * #161. What the resolver said about the user's own tempo and key (`result.song.diagnostics`).
+   *
+   * **One findings list, not two.** These are the same kind of fact as §5.4's and are addressed
+   * to the same reader — *this input did not do what its face value says* — so they are shown
+   * together rather than in a second list somebody has to notice. They arrive as a prop because
+   * they come off the resolved guide, which this panel has no business resolving.
+   *
+   * They land in this panel because it is where the findings display already is (#158). When
+   * #161's Song panel lands, the natural home for the two of them is beside the controls that
+   * produce them; moving the list then is a move, not a rewrite.
+   */
+  songDiagnostics?: readonly InspirationDiagnostic[]
 }
 
 /**
@@ -56,6 +74,7 @@ export function InspirationPicker({
   selected,
   onToggle,
   application,
+  songDiagnostics = [],
 }: InspirationPickerProps) {
   // Before the early return: a hook may not be called conditionally.
   const ids = useId()
@@ -73,7 +92,7 @@ export function InspirationPicker({
    * findings that are genuinely distinct. Grouped in `lib/core` beside the facts, so a second
    * renderer cannot disagree about what they add up to.
    */
-  const grouped = applied === undefined ? [] : groupDiagnostics(applied.diagnostics)
+  const grouped = groupDiagnostics([...(applied?.diagnostics ?? []), ...songDiagnostics])
 
   return (
     <section className="panel">
@@ -151,12 +170,18 @@ export function InspirationPicker({
       )}
 
       {/*
-        §5.4. What the influence asked for that this direction could not give it. A toggle that
+        §5.4 and §5.6. What the influence asked for that this direction could not give it, and
+        what the user's own tempo and key did that their face value does not say. A toggle that
         visibly does nothing is the failure §6.3 warns about; this is where that is prevented.
+
+        **"Findings", not "Not applied here."** That heading was true of §5.4's diagnostics and
+        is false of §5.6's: a tempo outside the range and a key the direction does not offer are
+        both *applied*, which is the whole point of reporting them rather than blocking them.
+        One label that covers both beats two lists a reader has to find separately.
       */}
-      {applied === undefined || grouped.length === 0 ? null : (
+      {grouped.length === 0 ? null : (
         <>
-          <p className="note">Not applied here</p>
+          <p className="note">Findings</p>
           <ul className="inspiration-diagnostics">
             {grouped.map((diagnostic) => (
               <li key={diagnostic.key}>{diagnostic.detail}</li>
