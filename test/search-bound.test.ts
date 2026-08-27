@@ -30,6 +30,15 @@ import { TEMPLATES } from '../lib/templates/index'
  * now; that number is pinned in `test/search-matching-floor.test.ts` against the deliberately
  * unrepaired floor, so the before and the after are both still measured.
  *
+ * **`ambient-dub` was re-recorded a second time**, at 25,798 → 759, when the repair's buckets
+ * stopped being about `sustain` and became about sections: a bucket is now any set of requests
+ * on one voice whose sections pairwise overlap, so the direction's one transient request in nine
+ * joins the continuous ones instead of standing outside every bucket. Nothing else in the matrix
+ * moved — `industrial-techno`'s two transients occupy disjoint sections and `relay`'s are all it
+ * has, so neither gains a bucket — and the whole matrix's worst case falls 25,798 → 8,309. The
+ * same commit's `test/search-matching-floor.test.ts` diffs whole results against the unrepaired
+ * floor over 18,400 pairs, which is the evidence this re-record needs.
+ *
  * `nodeCap: 20_000_000` is the cap lifted clear of the measurement. Nothing in this matrix caps
  * at `DEFAULT_NODE_CAP` today, so the figures are the same either way, and lifting it says that
  * the numbers are the search's true cost rather than something the cap shaped. A capped run
@@ -46,8 +55,8 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      25716, 25729, 25798, 25729, 25716, 25791, 25739, 25729, 25716, 25729, 25716, 25790, 25753,
-      25729, 25716, 25790, 25729, 25716, 25729, 25716, 25729, 25716, 25730, 25716
+      677, 690, 759, 690, 677, 752, 705, 690, 677, 690, 677, 751, 719, 690, 677, 751, 690, 677,
+      690, 677, 690, 677, 691, 677
     ],
     'drone-study': [
       14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,

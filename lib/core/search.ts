@@ -395,16 +395,23 @@ export type AssignmentResult = {
  *     leaves          7                    unchanged, and it was always seven
  *     wall clock   19.6 ms                 was 384.1 ms, interleaved on one machine
  *
- * The worst case across the whole 168-search sweep went from 165,785 to **25,798**, and it is no
- * longer `industrial-techno` at all — it is `ambient-dub` seed 2, which the repair does nothing
- * for because its contested voices are always free to break. So the cap now clears the measured
- * worst case by **7.8x** rather than 21%.
+ * The worst case across the whole 168-search sweep went from 165,785 to 25,798, and it moved off
+ * `industrial-techno` to `ambient-dub` seed 2 — read at the time as the direction the repair
+ * could do nothing for, its contested voices always being free to break.
+ *
+ * **That reading was wrong, and correcting it took the sweep to 8,309.** The buckets were gated
+ * on `sustain === 'continuous'` rather than on §4.2's actual rule, and one of `ambient-dub`'s
+ * nine requests is transient — so it stood outside every bucket and the repair fired nowhere on
+ * that direction. The gate is now whether the members' sections pairwise overlap, which is what
+ * §4.2 has always said, and `ambient-dub` seed 2 fell 25,798 → 759. `industrial-techno` seed 9 is
+ * the worst case again, at the 8,309 above, so the cap clears the measured worst case by **24x**
+ * rather than 21%.
  *
  * **It is deliberately not lowered.** The argument that a cap is a latency guard has not changed,
  * the headroom costs nothing while nothing reaches it, and moving a constant that is not binding
  * would only have to be moved back. What has changed is which signal to watch: a capped run is
  * now a long way from ordinary, and `test/search-symmetry.test.ts`'s five-percent band around
- * 25,798 fires long before the cap does.
+ * 8,309 fires long before the cap does.
  *
  * Two things above are superseded rather than merely dated, and are marked here rather than
  * deleted. The 86.4%-bounded table is pre-repair — the shape survived, at 88.4%, so "the cost is
@@ -547,18 +554,23 @@ type Ctx = {
   /** Devices a request could legally occupy, ignoring occupancy — for the idle lower bound. */
   suffixReach: Set<DeviceId>[]
   /**
-   * §4.2/§7.1. Per request, `sustain === 'continuous'` — read off the declaration rather than
-   * derived from the section list, because it is the declaration the argument is about. Two
-   * continuous requests occupy the same sections as each other, so §4.2 forbids them one
-   * assignable between them, and that is the whole premise of `liveFloor`'s matching repair.
+   * §4.2/§7.1. **Which pairs of requests could collide.** `overlap[a * n + b]` is 1 when
+   * requests `a` and `b` occupy at least one section in common and 0 when their sections are
+   * disjoint, with `n = requests.length`. Symmetric, and the diagonal is 1 exactly when the
+   * request occupies any section at all.
    *
-   * A transient request listing every section would occupy the same sections too, and could be
-   * bucketed on the same argument. It is not, deliberately: `sections` is a list a template may
-   * shorten, `sustain` is a claim about the part, and a bound whose strength depended on the
-   * first would move when a section was renamed. Narrower than it strictly has to be, and
-   * narrower is the safe direction for a floor.
+   * §4.2 says conflict is same section, same assignable, so two requests may share one voice
+   * precisely where this is 0 — which is the premise `liveFloor`'s matching repair rests on.
+   * Materialised once per `assign` because it is a function of the template alone; asking it at
+   * a node would mean intersecting two section lists per pair per node.
+   *
+   * `sectionsFor` hands a continuous request every section in the structure, so a continuous
+   * request overlaps everything that occupies anything, itself included; a transient one
+   * overlaps only where its list actually meets another's. The degenerate case needs no rule of
+   * its own: a request that occupies nothing intersects nothing, so its whole row is 0 — its
+   * diagonal included — and the pairwise rule already keeps it out of every bucket.
    */
-  continuous: boolean[]
+  overlap: Uint8Array
   /**
    * Per request, the assignable each `ladder` entry occupies, as an index into the rig's
    * assignables. Parallel to `ladder`, so the repair can ask "same voice?" with an integer
@@ -631,8 +643,8 @@ type FloorScratch = {
   /** The cheapest free option, or `null` for a request with none — a forced miss. */
   cost: (Cost | null)[]
   /**
-   * The assignable that option occupies, when the request is one the repair may bucket:
-   * continuous, and filled by a single voice. `-1` for everything else.
+   * The assignable that option occupies when it is a single voice, as an index into the rig.
+   * `-1` for a stack, which takes several, and for a request with no option at all.
    */
   slot: Int32Array
   /** Its position in the ladder, so the alternative can resume from just past it. */
@@ -641,6 +653,13 @@ type FloorScratch = {
   alt: (Cost | null)[]
   /** Where that alternative's miss falls in `Score` order. See `compareGiveUp`. */
   rank: Int32Array
+  /** The bucket being repaired, as request indices in ascending order. See `liveFloor`. */
+  members: Int32Array
+  /**
+   * Which requests a bucket has already claimed in this pass, so no request is charged its
+   * escape twice. Cleared over `from..n` when the repair block runs, and meaningless outside it.
+   */
+  bucketed: Uint8Array
 }
 
 type SuffixFloor = {
@@ -731,19 +750,46 @@ function cheapestCandidate(candidates: readonly Cost[]): Cost | undefined {
  * to break. So the floor is repaired one step, at exactly the collisions §4.2 forbids.
  *
  * **The exclusion, and it is one rule.** §4.2: two requests may share an assignable exactly when
- * their sections are **disjoint**, because conflict is same section, same voice. Two *continuous*
- * requests have the same sections as each other — every one of them — so their overlap is total
- * and they can never share. Therefore, among the continuous requests whose cheapest option is the
- * same single assignable `A`, **at most one occupies `A` in any completion**. That holds for a
- * stack that happens to include `A` too: occupying is occupying.
+ * their sections are **disjoint**, because conflict is same section, same voice. So a bucket is a
+ * set `B` of remaining requests whose cheapest option is the same single assignable `A`, subject
+ * to one condition: every *pair* in `B` occupies some section in common — a clique in
+ * `ctx.overlap`. Then **at most one member of `B` occupies `A` in any completion**, because two
+ * that both did would hold `A` in the section they share, which is the collision §4.2 refuses.
+ * That holds for a stack that happens to include `A` too: occupying is occupying.
+ *
+ * Pairwise overlap is the whole requirement and nothing joint is needed, because the conclusion
+ * is itself pairwise: "no two of them", not "they are together anything".
+ *
+ * Continuous requests are the case that motivated this and they are a clique for free —
+ * `sectionsFor` hands each of them the whole structure, so any two of them overlap totally. **A
+ * transient request joins on exactly the same terms rather than being excluded.** Two transients
+ * in disjoint sections are not a clique and are never bucketed together, which is §4.2 letting
+ * them share one voice quite legally; bucketing them would charge one of them for an eviction
+ * that was never going to happen, and a floor above the optimum prunes the optimum. A transient
+ * and a continuous request *are* a clique, and so are two transients that overlap anywhere. A
+ * request whose sections miss the structure entirely occupies nothing, and it needs no rule of
+ * its own: its whole `overlap` row is 0, so it joins nobody's clique and the one it seeds never
+ * reaches a second member. `parseTemplate` refuses that shape in any case (§4.2), and `assign`
+ * does not parse its input.
+ *
+ * The cliques are grown greedily in request order: the first unbucketed request on a voice seeds
+ * one, and a later one joins if it overlaps everyone already in. That is a maximal clique and
+ * not a maximum one, and the members it leaves out simply keep their unrepaired cheapest — so
+ * the greed moves how *strong* the bound is and never whether it is valid, since every clique
+ * gives the exclusion above. Request order is canonical (§4.4/§7.2), so the cover is
+ * deterministic and so, therefore, is the node count.
+ *
+ * **What it was worth.** The exclusion was `sustain === 'continuous'` before it was §4.2's own
+ * rule, and one direction was paying the whole difference: `ambient-dub` has one transient
+ * request in nine, that one request stood outside every bucket, and the repair therefore fired
+ * nowhere on it. Seed 2 went **25,798 nodes to 759**, and the worst case across all 168 shipped
+ * searches went 25,798 to 8,309 — back onto `industrial-techno`, where it had been. No other
+ * direction moved a node: `industrial-techno`'s two transients occupy disjoint sections and
+ * `relay`'s two are the only requests it has, so neither gains a bucket it did not have.
  *
  * Nothing here is a claim about what `A` is carrying *now*. The exclusion is between the bucket's
  * own members in the finished assignment, and current occupancy has already had its say — a
  * candidate that is not free now is not in the ladder walk that produced these costs at all.
- *
- * A *transient* request is excluded and keeps its unrepaired cheapest, because its sections may
- * be disjoint from another request's and then §4.2 lets the two share one voice quite legally.
- * Bucket it and the floor charges it for an eviction that was never going to happen.
  *
  * **The repair.** For a bucket `B` on `A`, let `c_i` be member `i`'s cheapest option (on `A`)
  * and `alt_i` its cheapest option that does not occupy `A`. Whichever member ends up with `A`,
@@ -751,11 +797,25 @@ function cheapestCandidate(candidates: readonly Cost[]): Cost | undefined {
  *
  *     sum over B of cost(completion) >=lex min over i of ( c_i + sum over m != i of alt_m )
  *
- * and that minimum replaces the `sum of c_i` the unrepaired floor charged. It is never smaller,
- * because `alt_m >=lex c_m` by construction — restricting a minimisation's domain can only raise
- * it — so the repair is `>=lex` the floor it replaces and the bound stays a bound. Summing
- * per-bucket minima is legitimate for the same reason summing per-request minima is: the vectors
- * are non-negative integers, and lexicographic order on those is compatible with addition.
+ * and that minimum replaces the `sum of c_i` the unrepaired floor charged.
+ *
+ * **Why it is still a bound.** Take a completion. At most one member of `B` holds `A` in it —
+ * that is the exclusion, and it is where the clique is spent. Call it `i`, or pick any member
+ * when none does. Member `i` pays at least `c_i`, the minimum over all its options. Every other
+ * member `m` does not hold `A`, so it pays at least the minimum over its options that do not
+ * occupy `A`, which is `alt_m`. Sum, and the completion is `>=lex` that member's term; it is
+ * therefore `>=lex` the minimum over `i` of those terms, which is what the repair charges.
+ *
+ * **Why it is never weaker than what it replaces.** `alt_m >=lex c_m` for every `m`, because
+ * `alt_m` minimises over `c_m`'s options minus the ones that occupy `A` and restricting a
+ * minimisation's domain can only raise it. So `c_i + sum(m != i) alt_m >=lex sum(m) c_m` term by
+ * term, for every `i` and so for the minimising one. The repair can only raise the floor, which
+ * is what makes it prune rather than merely be admissible.
+ *
+ * Both steps sum vectors and compare them lexicographically, and both are entitled to: the
+ * components are non-negative integers, and lexicographic order on those is compatible with
+ * addition — if `a <=lex b` and `c <=lex d` then `a + c <=lex b + d`. That is the same fact
+ * `cheapestCandidate` leans on to sum per-request minima, applied to per-bucket minima instead.
  *
  * Picking the minimising `i` needs no search. The `k` sums differ only by `c_i - alt_i`, so the
  * lexicographic minimum is the member with the lexicographically smallest `c_i - alt_i` — the
@@ -787,8 +847,11 @@ function liveFloor(ctx: Ctx, state: State, from: number): SuffixFloor {
   let roleFitPenalty = 0
   const n = ctx.requests.length
   const scratch = ctx.scratch
-  // Whether any two bucketable requests picked the same voice. Almost every node either has one
-  // collision or none, so this saves the second pass entirely on the nodes that have none.
+  // Whether any two requests that could be bucketed together picked the same voice. Almost every
+  // node either has one collision or none, so this saves the second pass entirely on the nodes
+  // that have none. It applies the same overlap test the clique does, so the two move together:
+  // dropping it from either place alone leaves the other doing the whole job, and the rule
+  // stops being enforced only when both go.
   let collided = false
 
   for (let j = from; j < n; j++) {
@@ -813,15 +876,12 @@ function liveFloor(ctx: Ctx, state: State, from: number): SuffixFloor {
       at = -1
     }
     scratch.at[j] = at
-    const slot =
-      at < 0 || !(ctx.continuous[j] === true)
-        ? -1
-        : ((ctx.ladderSlot[j] as Int32Array)[at] as number)
+    const slot = at < 0 ? -1 : ((ctx.ladderSlot[j] as Int32Array)[at] as number)
     scratch.slot[j] = slot
     scratch.cost[j] = best ?? null
     if (slot >= 0 && !collided) {
       for (let b = from; b < j; b++) {
-        if (scratch.slot[b] === slot) {
+        if (scratch.slot[b] === slot && ctx.overlap[b * n + j] === 1) {
           collided = true
           break
         }
@@ -840,24 +900,40 @@ function liveFloor(ctx: Ctx, state: State, from: number): SuffixFloor {
   }
 
   if (collided && ctx.repair) {
+    const members = scratch.members
+    // A request belongs to one bucket at most, or it would be charged its escape twice. Cleared
+    // here rather than carried, because entries below `from` are stale by construction.
+    scratch.bucketed.fill(0, from, n)
     for (let a = from; a < n; a++) {
       const slot = scratch.slot[a]
-      if (slot === undefined || slot < 0) continue
-      // Each bucket is handled once, at its lowest member. Anything earlier sharing this voice
-      // means this is not that member.
-      let first = true
-      for (let b = from; b < a; b++) {
-        if (scratch.slot[b] === slot) {
-          first = false
-          break
+      if (slot === undefined || slot < 0 || scratch.bucketed[a] === 1) continue
+
+      // Grow the clique: the seed, then every later request on this voice that overlaps
+      // everyone already in. Maximal rather than maximum — see the header on why that is a
+      // choice about strength and not about validity.
+      let size = 0
+      members[size++] = a
+      scratch.bucketed[a] = 1
+      for (let b = a + 1; b < n; b++) {
+        if (scratch.slot[b] !== slot || scratch.bucketed[b] === 1) continue
+        let joins = true
+        for (let m = 0; m < size; m++) {
+          if (ctx.overlap[(members[m] as number) * n + b] === 0) {
+            joins = false
+            break
+          }
         }
+        if (!joins) continue
+        members[size++] = b
+        scratch.bucketed[b] = 1
       }
-      if (!first) continue
+      // One request on a voice is not a contest, and there is nothing to repair.
+      if (size < 2) continue
 
       // Pass one: each member's escape from `A`, and which member keeps it.
       let keeps = -1
-      for (let b = a; b < n; b++) {
-        if (scratch.slot[b] !== slot) continue
+      for (let m = 0; m < size; m++) {
+        const b = members[m] as number
         const alt = alternativeTo(ctx, state, b)
         const request = ctx.requests[b] as RoleRequest
         scratch.alt[b] = alt
@@ -876,8 +952,9 @@ function liveFloor(ctx: Ctx, state: State, from: number): SuffixFloor {
       // Pass two: everyone else pays their escape instead of the voice they cannot have. The
       // floor already charged `c`, so what is added is the difference — which may be negative on
       // an individual key and cannot be on the total, since the total is a sum of real costs.
-      for (let b = a; b < n; b++) {
-        if (scratch.slot[b] !== slot || b === keeps) continue
+      for (let m = 0; m < size; m++) {
+        const b = members[m] as number
+        if (b === keeps) continue
         const cost = scratch.cost[b]
         if (cost === null || cost === undefined) continue
         const alt = scratch.alt[b] ?? null
@@ -1205,9 +1282,24 @@ function buildCtx(input: AssignInput, repair = true): Ctx {
     }
     return slots
   })
-  // Two continuous requests want the same sections as each other, so §4.2 will not let them
-  // share a voice. `liveFloor` says why that is the premise the repair rests on.
-  const continuous = requests.map((request) => request.sustain === 'continuous')
+  // §4.2's pairwise question, answered once: do these two requests occupy any section in
+  // common, and could they therefore never share one voice. `liveFloor` says why the repair
+  // rests on it. Symmetric, and the diagonal answers "does this request occupy anything at all".
+  const overlap = new Uint8Array(requests.length * requests.length)
+  for (let a = 0; a < requests.length; a++) {
+    const mine = new Set(sections[a] ?? [])
+    for (let b = a; b < requests.length; b++) {
+      let shares = false
+      for (const section of sections[b] ?? []) {
+        if (mine.has(section)) {
+          shares = true
+          break
+        }
+      }
+      overlap[a * requests.length + b] = shares ? 1 : 0
+      overlap[b * requests.length + a] = shares ? 1 : 0
+    }
+  }
 
   return {
     template,
@@ -1224,7 +1316,7 @@ function buildCtx(input: AssignInput, repair = true): Ctx {
     stacks,
     suffixReach,
     suffixFloor,
-    continuous,
+    overlap,
     ladderSlot,
     ladder,
     stackFloor: stacks.map((list) => cheapestCandidate(list)),
@@ -1234,6 +1326,8 @@ function buildCtx(input: AssignInput, repair = true): Ctx {
       at: new Int32Array(requests.length).fill(-1),
       alt: new Array<Cost | null>(requests.length).fill(null),
       rank: new Int32Array(requests.length).fill(0),
+      members: new Int32Array(requests.length).fill(-1),
+      bucketed: new Uint8Array(requests.length),
     },
     repair,
     missSlots,

@@ -1,11 +1,17 @@
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { assign, measureAssignWithoutMatchingRepair, compareScore, moodState } from '../lib/core/index'
 import type {
+  AssignInput,
   AssignmentResult,
   Character,
   Device,
   Role,
   RoleRequest,
+  Score,
   Template,
 } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
@@ -100,9 +106,11 @@ describe('the matching repair breaks a contested voice (§7.1/#78)', () => {
   })
 
   it('gives the voice to the request whose alternative is worse', () => {
-    // `recipeDistance` outranks `roleFitPenalty`, so the snare — whose only other route is a
-    // substituted recipe — keeps `v1`, and the kick takes the exact recipe at the worse role
-    // index. This is `compareGiveUp`'s answer, and it is also the true optimum.
+    // The snare keeps `v1` because its escape is a **miss**: `c-snare` authors the part at
+    // `soft`, and a `hard` request cannot substitute that far — `resolveRecipe` returns
+    // `no-recipe`, which is why `ONLY_SHARED` below can reuse the same pair. A miss outranks
+    // every key a landed option charges, so `compareGiveUp` hands the voice to the snare, and
+    // the kick takes its exact recipe at the worse role index. That is also the true optimum.
     const found = best(COLLIDING, bothWantOne)
     expect(placement(found, 'r-snare')).toBe('a-shared/v1')
     expect(placement(found, 'r-kick')).toBe('b-kick/w1')
@@ -139,32 +147,56 @@ describe('the matching repair costs a miss when there is nowhere else to go (§7
 })
 
 // ---------------------------------------------------------------------------
-// §4.2. Transient requests share voices legally, and must not be repaired
+// §4.2. A bucket is a clique in "shares a section", and a transient may be in it
 // ---------------------------------------------------------------------------
 
 /**
- * **The rule the repair rests on, stated as the case that breaks it.**
+ * **The rule the repair rests on, stated as the cases either side of it.**
  *
- * The exclusion is that two *continuous* requests cannot share an assignable — each occupies
- * every section, so neither can take a voice the other has. §4.2 says nothing of the kind about
- * a transient request: two of them in disjoint sections share one voice quite legally, which is
- * the whole reason occupancy is per-section. Bucket them and the floor charges one of them for
- * moving off a voice it was never going to be evicted from, which makes the bound exceed the
- * true optimum — and a bound that exceeds the optimum prunes it.
+ * The exclusion is pairwise and it is about sections, not about `sustain`: two requests may
+ * share one assignable exactly when they occupy no section in common, so a bucket has to be a
+ * set in which *every* pair overlaps. Continuous requests are that for free — `sectionsFor`
+ * hands each of them the whole structure. A transient request is in or out on the same test.
  *
- * Six of the forty-eight authored requests are transient and none of them collide, so the
- * shipped library would not have caught this either.
+ * Both answers matter, and they fail in opposite directions. Bucket a pair §4.2 was going to
+ * let share and the floor charges an eviction that never happens: the bound rises above the
+ * optimum and **prunes it**, which is a missing answer rather than a visibly wrong one. Refuse
+ * to bucket a pair that really does contend and the bound is merely weaker — which is what
+ * `ambient-dub` was paying, 25,798 nodes against 759, for one transient request in nine.
+ *
+ * The three sections are `test/fixtures.ts`'s: Intro, Build, Drop.
  */
-const TRANSIENT_PAIR: RoleRequest[] = [
+const DISJOINT_PAIR: RoleRequest[] = [
   request({ id: 't-kick', role: 'kick', priority: 1, character: 'hard', sustain: 'transient', sections: ['Intro'] }),
   request({ id: 't-snare', role: 'snare', priority: 2, character: 'hard', sustain: 'transient', sections: ['Drop'] }),
 ]
-const sharesLegally = withRoles(TRANSIENT_PAIR)
+const sharesLegally = withRoles(DISJOINT_PAIR)
 
-describe('§4.2 transient requests share a voice and are not repaired (§7.1/#78)', () => {
+/** The same two parts, moved so that both are in Build. Now they contend, and the floor may say so. */
+const OVERLAPPING_PAIR: RoleRequest[] = [
+  request({
+    id: 't-kick', role: 'kick', priority: 1, character: 'hard', sustain: 'transient',
+    sections: ['Intro', 'Build'],
+  }),
+  request({
+    id: 't-snare', role: 'snare', priority: 2, character: 'hard', sustain: 'transient',
+    sections: ['Build', 'Drop'],
+  }),
+]
+const contendInBuild = withRoles(OVERLAPPING_PAIR)
+
+/** One of each. A continuous request occupies every section, so it overlaps any transient that
+ * occupies one — the mixed pair is always a clique, and it is the shape the shipped library
+ * actually has. */
+const mixedPair = withRoles([
+  request({ id: 't-kick', role: 'kick', priority: 1, character: 'hard', sustain: 'transient', sections: ['Intro'] }),
+  request({ id: 'r-snare', role: 'snare', priority: 2, character: 'hard' }),
+])
+
+describe('§4.2 disjoint sections share a voice and are not repaired (§7.1/#78)', () => {
   it('is a real collision: alone, each request takes the same voice', () => {
-    const kickAlone = best(COLLIDING, withRoles([TRANSIENT_PAIR[0] as RoleRequest]))
-    const snareAlone = best(COLLIDING, withRoles([TRANSIENT_PAIR[1] as RoleRequest]))
+    const kickAlone = best(COLLIDING, withRoles([DISJOINT_PAIR[0] as RoleRequest]))
+    const snareAlone = best(COLLIDING, withRoles([DISJOINT_PAIR[1] as RoleRequest]))
     expect(placement(kickAlone, 't-kick')).toBe('a-shared/v1')
     expect(placement(snareAlone, 't-snare')).toBe('a-shared/v1')
   })
@@ -182,17 +214,289 @@ describe('§4.2 transient requests share a voice and are not repaired (§7.1/#78
       expect(keys(found.score).misses).toEqual([0, 0])
     }
   })
+})
 
-  it('is not repaired even when one of the pair is continuous', () => {
-    // A mixed bucket is the subtler version: the continuous one may be bucketed and the
-    // transient one may not, and a repair that bucketed both would evict a request §4.2 was
-    // going to let stay.
-    const mixed = withRoles([
-      request({ id: 't-kick', role: 'kick', priority: 1, character: 'hard', sustain: 'transient', sections: ['Intro'] }),
-      request({ id: 'r-snare', role: 'snare', priority: 2, character: 'hard' }),
-    ])
-    agreesWithOracle(COLLIDING, mixed)
-    agreesWithOracle(ONLY_SHARED, mixed)
+describe('§4.2 transient requests that overlap are bucketed like any other (§7.1/#78)', () => {
+  it('is a real collision: alone, each request takes the same voice', () => {
+    const kickAlone = best(COLLIDING, withRoles([OVERLAPPING_PAIR[0] as RoleRequest]))
+    const snareAlone = best(COLLIDING, withRoles([OVERLAPPING_PAIR[1] as RoleRequest]))
+    expect(placement(kickAlone, 't-kick')).toBe('a-shared/v1')
+    expect(placement(snareAlone, 't-snare')).toBe('a-shared/v1')
+  })
+
+  it('agrees with the oracle, which does not let them share', () => {
+    agreesWithOracle(COLLIDING, contendInBuild)
+    agreesWithOracle(ONLY_SHARED, contendInBuild)
+  })
+
+  it('splits them, exactly as it splits two continuous requests', () => {
+    // Both want Build, so §4.2 gives the voice to one of them — the same answer the continuous
+    // pair gets, and `compareGiveUp` hands it to the same request for the same reason.
+    const found = best(COLLIDING, contendInBuild)
+    expect(placement(found, 't-snare')).toBe('a-shared/v1')
+    expect(placement(found, 't-kick')).toBe('b-kick/w1')
+  })
+
+  it('reports one of them as no-room when the shared voice is the only one', () => {
+    const found = best(ONLY_SHARED, contendInBuild)
+    expect(placement(found, 't-kick')).toBe('a-shared/v1')
+    expect(placement(found, 't-snare')).toBeUndefined()
+    expect(keys(found.score).misses).toEqual([0, 1])
+  })
+})
+
+describe('§4.2 a mixed bucket is a clique, so the transient is in it (§7.1/#78)', () => {
+  it('agrees with the oracle', () => {
+    agreesWithOracle(COLLIDING, mixedPair)
+    agreesWithOracle(ONLY_SHARED, mixedPair)
+  })
+
+  it('splits them: the continuous request occupies Intro too', () => {
+    const found = best(ONLY_SHARED, mixedPair)
+    expect(placement(found, 't-kick')).toBe('a-shared/v1')
+    expect(placement(found, 'r-snare')).toBeUndefined()
+    expect(keys(found.score).misses).toEqual([0, 1])
+  })
+})
+
+/**
+ * The diagonal of `ctx.overlap`, which is the degenerate case the pairwise test also has to
+ * answer: a request that occupies **no** section conflicts with nobody, including a copy of
+ * itself, so it must never be bucketed.
+ *
+ * `parseTemplate` refuses this shape — a transient request must list at least one section and
+ * every name must be in the structure (§4.2) — and `assign` does not parse its input, so the
+ * only way here is a hand-built `Template`, which is exactly what every test in this file uses.
+ * The guard is one array read and it is the same read the pairs make.
+ */
+const offStructure = withRoles([
+  request({ id: 't-kick', role: 'kick', priority: 1, character: 'hard', sustain: 'transient', sections: ['Nowhere'] }),
+  request({ id: 't-snare', role: 'snare', priority: 2, character: 'hard', sustain: 'transient', sections: ['Nowhere'] }),
+])
+
+describe('§4.2 a request occupying no section is not bucketed (§7.1/#78)', () => {
+  it('lets both have the one voice, and charges neither a miss', () => {
+    const found = best(ONLY_SHARED, offStructure)
+    expect(placement(found, 't-kick')).toBe('a-shared/v1')
+    expect(placement(found, 't-snare')).toBe('a-shared/v1')
+    expect(keys(found.score).misses).toEqual([0, 0])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Three on one voice, where the clique is a choice rather than the whole group
+// ---------------------------------------------------------------------------
+
+/**
+ * `v1` is the cheapest voice for all three parts, so the bucket on it has three candidates. The
+ * role order is `snare` first so that the snare's seat here beats its exact-recipe escape
+ * outright rather than tying with it — a tie would be resolved by the seed (§7.2), and a premise
+ * that moves with the seed is not a premise.
+ */
+const shared3 = box('a-shared3', {
+  voices: [{ kind: 'fixed', id: 'v1', label: 'V1', roles: ['snare', 'kick', 'closed-hat'], polyphony: 1 }],
+  comfortableVoices: 1,
+  recipes: [
+    makeRecipe('shared3-kick', 'kick', 'hard', 'v1'),
+    makeRecipe('shared3-snare', 'snare', 'hard', 'v1'),
+    makeRecipe('shared3-hat', 'closed-hat', 'hard', 'v1'),
+  ],
+})
+/**
+ * The two ends of the chain pay `recipeDistance` to leave `v1` and the middle pays only
+ * `roleFitPenalty`, so the optimum is the two disjoint ends sharing the voice — the arrangement
+ * a bucket of all three would charge an eviction for. `dark` rather than `soft` because a `hard`
+ * request cannot substitute a `soft` recipe at all: that pairing is outside the radius
+ * `resolveRecipe` allows and comes back `no-recipe`, which is a miss and not a distance.
+ */
+const kickDistance = box('b-kick3', {
+  voices: [{ kind: 'fixed', id: 'w1', label: 'W1', roles: ['kick'], polyphony: 1 }],
+  comfortableVoices: 1,
+  recipes: [makeRecipe('distance-kick', 'kick', 'dark', 'w1')],
+})
+const hatDistance = box('d-hat3', {
+  voices: [{ kind: 'fixed', id: 'x1', label: 'X1', roles: ['closed-hat'], polyphony: 1 }],
+  comfortableVoices: 1,
+  recipes: [makeRecipe('distance-hat', 'closed-hat', 'dark', 'x1')],
+})
+/** Exact recipe, second in `roles` — the cheap escape, on the key `recipeDistance` outranks. */
+const snareFit = box('c-snare3', {
+  voices: [{ kind: 'fixed', id: 'u1', label: 'U1', roles: ['tom', 'snare'], polyphony: 1 }],
+  comfortableVoices: 1,
+  recipes: [makeRecipe('fit-snare', 'snare', 'hard', 'u1')],
+})
+const TRIO = [shared3, kickDistance, snareFit, hatDistance]
+
+function trio(sections: string[][]): Template {
+  return withRoles([
+    request({ id: 't-kick', role: 'kick', priority: 1, character: 'hard', sustain: 'transient', sections: sections[0] }),
+    request({ id: 't-snare', role: 'snare', priority: 2, character: 'hard', sustain: 'transient', sections: sections[1] }),
+    request({ id: 't-hat', role: 'closed-hat', priority: 3, character: 'hard', sustain: 'transient', sections: sections[2] }),
+  ])
+}
+
+describe('a bucket of three, and a bucket that could only be two (§7.1/#78)', () => {
+  it('is a real collision: alone, each of the three takes the same voice', () => {
+    const all = trio([['Intro'], ['Intro'], ['Intro']])
+    for (const role of all.roles) {
+      const alone = best(TRIO, withRoles([role]))
+      expect(placement(alone, role.id), role.id).toBe('a-shared3/v1')
+    }
+  })
+
+  it('agrees with the oracle when all three pairs overlap', () => {
+    // Intro∩Build, Build∩Drop, Drop∩Intro — a triangle, so the whole group is one clique and
+    // exactly one of the three keeps `v1`.
+    agreesWithOracle(TRIO, trio([['Intro', 'Build'], ['Build', 'Drop'], ['Drop', 'Intro']]))
+  })
+
+  it('agrees with the oracle on a chain, where the clique cannot be all three', () => {
+    // Intro / Intro+Drop / Drop. The first and the last are disjoint and may share `v1`; the
+    // middle one overlaps both. No clique holds all three, and the greedy cover takes the first
+    // two and leaves the third to its unrepaired cheapest.
+    agreesWithOracle(TRIO, trio([['Intro'], ['Intro', 'Drop'], ['Drop']]))
+  })
+
+  it('really does put the two disjoint ends on the one voice', () => {
+    // The observable that a bucket of all three would have destroyed: the kick and the hat
+    // legally share `v1`, and it is the snare in the middle that has to move.
+    const found = best(TRIO, trio([['Intro'], ['Intro', 'Drop'], ['Drop']]))
+    expect(placement(found, 't-kick')).toBe('a-shared3/v1')
+    expect(placement(found, 't-hat')).toBe('a-shared3/v1')
+    expect(placement(found, 't-snare')).toBe('c-snare3/u1')
+    expect(keys(found.score).recipeDistance).toBe(0)
+    expect(keys(found.score).misses).toEqual([0, 0, 0])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Where a wrong bucket actually costs the answer
+// ---------------------------------------------------------------------------
+
+/**
+ * **The fixtures above cannot catch an over-charging bucket, and that is not a slip.**
+ *
+ * An inadmissible floor prunes the optimum, and pruning it only loses it if it had not already
+ * been found — so on any rig whose *first* leaf is optimal, every wrong bucket in the world is
+ * invisible. `orderedCandidates` is greedy and the first leaf of a two-request fixture is
+ * almost always optimal, which is why the mutation battery below reports three of six breakages
+ * as surviving everything else in this file.
+ *
+ * This rig is built the other way round. `v1` plays all four roles and plays them exactly, so
+ * the first leaf gives it to the continuous sub — and the two transients, locked out of every
+ * section by a request that occupies all of them, each pay a substituted recipe. The optimum is
+ * the sub stepping off `v1` and paying one substitution so that the two transients, whose
+ * sections are disjoint, can legally share it. `recipeDistance` outranks `roleFitPenalty`, so
+ * one substitution beats two and the optimum is real; it is also two levels down, which is what
+ * puts it behind the bound.
+ *
+ * Bucket that disjoint pair and the floor charges one of them a substitution it will not pay.
+ * The bound at "the sub stepped off" then ties the first leaf's distance and loses on role fit,
+ * the branch is cut, and the search reports the first leaf. That is the whole failure mode, in
+ * one rig of five boxes.
+ */
+const allFour = box('p-one', {
+  voices: [
+    { kind: 'fixed', id: 'v1', label: 'V1', roles: ['sub', 'kick', 'snare', 'closed-hat'], polyphony: 1 },
+  ],
+  comfortableVoices: 1,
+  recipes: [
+    makeRecipe('one-sub', 'sub', 'hard', 'v1'),
+    makeRecipe('one-kick', 'kick', 'hard', 'v1'),
+    makeRecipe('one-snare', 'snare', 'hard', 'v1'),
+    makeRecipe('one-hat', 'closed-hat', 'hard', 'v1'),
+  ],
+})
+
+/** One role, authored at `dark` — reachable from a `hard` request, and it costs a substitution. */
+function elsewhere(id: string, voiceId: string, role: Role): Device {
+  return box(id, {
+    voices: [{ kind: 'fixed', id: voiceId, label: voiceId.toUpperCase(), roles: [role], polyphony: 1 }],
+    comfortableVoices: 1,
+    recipes: [makeRecipe(`${id}-${role}`, role, 'dark', voiceId)],
+  })
+}
+
+const BLOCKING = [
+  allFour,
+  elsewhere('p-sub', 's1', 'sub'),
+  elsewhere('p-kick', 'k1', 'kick'),
+  elsewhere('p-snare', 'n1', 'snare'),
+  elsewhere('p-hat', 'h1', 'closed-hat'),
+]
+
+/** The continuous sub in front, then one transient per section list given. */
+function blocked(sections: string[][]): Template {
+  const ids = ['t-kick', 't-snare', 't-hat']
+  const roles: Role[] = ['kick', 'snare', 'closed-hat']
+  return withRoles([
+    request({ id: 'r-sub', role: 'sub', priority: 1, character: 'hard' }),
+    ...sections.map((wanted, i) =>
+      request({
+        id: ids[i] as string,
+        role: roles[i] as Role,
+        priority: 2 + i,
+        character: 'hard',
+        sustain: 'transient',
+        sections: wanted,
+      }),
+    ),
+  ])
+}
+
+const blockedDisjoint = blocked([['Intro'], ['Drop']])
+const blockedNowhere = blocked([['Nowhere'], ['Nowhere']])
+const blockedChain = blocked([['Intro'], ['Intro', 'Drop'], ['Drop']])
+/**
+ * A star: the first overlaps both of the others and they do not overlap each other. Joining a
+ * clique against the *seed* rather than against every member already in it buckets all three.
+ */
+const blockedStar = blocked([['Intro', 'Build'], ['Build'], ['Intro']])
+/**
+ * The same three parts ordered so that the middle one is reachable from two seeds — the first
+ * bucket takes it, and a second bucket, seeded by the request the first one could not hold, can
+ * reach it again. It must not be charged its escape twice.
+ */
+const blockedTwice = blocked([['Intro'], ['Drop'], ['Intro', 'Drop']])
+
+describe('the exclusion is load-bearing, on a rig whose first leaf is not the optimum (§7.1/#78)', () => {
+  it('is the shape it says it is: the first leaf gives the shared voice to the sub', () => {
+    // The premise, from the public search: alone, the sub takes `v1` — so the first leaf of the
+    // full search does too, and everything after it is the search climbing back off that.
+    const alone = best(BLOCKING, withRoles([blockedDisjoint.roles[0] as RoleRequest]))
+    expect(placement(alone, 'r-sub')).toBe('p-one/v1')
+  })
+
+  it('steps the sub off the voice so the disjoint pair can share it', () => {
+    const found = best(BLOCKING, blockedDisjoint)
+    expect(placement(found, 'r-sub')).toBe('p-sub/s1')
+    expect(placement(found, 't-kick')).toBe('p-one/v1')
+    expect(placement(found, 't-snare')).toBe('p-one/v1')
+    expect(keys(found.score).misses).toEqual([0, 0, 0])
+  })
+
+  it('agrees with the oracle on every section shape', () => {
+    agreesWithOracle(BLOCKING, blockedDisjoint)
+    agreesWithOracle(BLOCKING, blockedNowhere)
+    agreesWithOracle(BLOCKING, blockedChain)
+    agreesWithOracle(BLOCKING, blockedStar)
+    agreesWithOracle(BLOCKING, blockedTwice)
+  })
+
+  it('leaves every request on the one voice when none of them occupies a section', () => {
+    // Nothing conflicts with nothing, so the sub keeps `v1` and both transients join it there.
+    const found = best(BLOCKING, blockedNowhere)
+    for (const id of ['r-sub', 't-kick', 't-snare']) {
+      expect(placement(found, id), id).toBe('p-one/v1')
+    }
+    expect(keys(found.score).recipeDistance).toBe(0)
+  })
+
+  it('breaks the chain in the middle, where the clique cannot hold all three', () => {
+    const found = best(BLOCKING, blockedChain)
+    expect(placement(found, 't-kick')).toBe('p-one/v1')
+    expect(placement(found, 't-hat')).toBe('p-one/v1')
+    expect(placement(found, 't-snare')).toBe('p-snare/n1')
   })
 })
 
@@ -244,16 +548,27 @@ const SWEEP_CHARS: Character[] = ['hard', 'soft', 'dark', 'bright']
 const SWEEP_SECTIONS = ['Intro', 'Build', 'Drop']
 
 /**
- * `wide` is the one knob, and it exists because the two sweeps can afford different sizes.
- * `bruteForceBest` enumerates every legal assignment, so its sweep has to stay at two to four
- * requests over six roles; the differential sweep runs no oracle and can take four to seven
- * requests over four roles, which is where voices actually get contested. On the narrow setting
- * the repair fires on well under 1% of the pairs — enough to be exercised, not enough to be a
- * test of it.
+ * The mode is the one knob, and it exists because the sweeps can afford different sizes.
+ *
+ *  - `narrow` is what `bruteForceBest` can enumerate: two to four requests over six roles.
+ *  - `wide` runs no oracle and takes four to seven requests over four roles, which is where
+ *    voices actually get contested. On `narrow` the repair fires on well under 1% of the pairs
+ *    — enough to be exercised, not enough to be a test of it.
+ *  - `transient` makes **every** request transient over three roles, so the section clique is
+ *    the thing under test rather than a decoration: some pairs overlap and get bucketed, some
+ *    are disjoint and must not be, and the same corpus is small enough for the oracle.
+ *
+ * Each mode draws from its own `lcg` stream, so adding one leaves the fixtures the others
+ * generate — and the recorded figures below — exactly where they were.
  */
-function generated(fixture: number, wide = false): { devices: Device[]; template: Template } {
-  const r = lcg(wide ? fixture + 5_000_000 : fixture)
-  const roleSource = wide ? SWEEP_ROLES.slice(0, 4) : SWEEP_ROLES
+type SweepMode = 'narrow' | 'wide' | 'transient'
+const STREAM: Record<SweepMode, number> = { narrow: 0, wide: 5_000_000, transient: 9_000_000 }
+
+function generated(fixture: number, mode: SweepMode = 'narrow'): { devices: Device[]; template: Template } {
+  const r = lcg(fixture + STREAM[mode])
+  const wide = mode === 'wide'
+  const roleSource =
+    mode === 'wide' ? SWEEP_ROLES.slice(0, 4) : mode === 'transient' ? SWEEP_ROLES.slice(0, 3) : SWEEP_ROLES
   const devices: Device[] = []
   const deviceCount = 2 + r(wide ? 4 : 3)
   for (let d = 0; d < deviceCount; d++) {
@@ -329,7 +644,9 @@ function generated(fixture: number, wide = false): { devices: Device[]; template
     }
     // §12.4: more notes than one voice of most of these rigs has.
     if (r(5) === 0) extra.polyphony = 2 + r(2)
-    if (r(3) !== 0) {
+    // Short-circuited on purpose: in `transient` mode the draw is never made, so the other two
+    // modes keep the stream they had.
+    if (mode !== 'transient' && r(3) !== 0) {
       roles.push(request({ ...base, ...extra }))
       continue
     }
@@ -417,7 +734,7 @@ describe('the matching repair changes only the node count (§7.1/#78)', () => {
     let checked = 0
     let differed = 0
     for (let fixture = 0; fixture < 2000; fixture++) {
-      const { devices, template } = generated(fixture, true)
+      const { devices, template } = generated(fixture, 'wide')
       for (let seed = 0; seed < 8; seed++) {
         const input = { devices, template, mood: MOOD, seed, nodeCap: 20_000_000 }
         const repaired = assign(input)
@@ -483,6 +800,84 @@ describe('the repaired floor still finds the optimum (§7.1/#78)', () => {
   })
 })
 
+// ---------------------------------------------------------------------------
+// Sweep three: rigs where every request is transient
+// ---------------------------------------------------------------------------
+
+/**
+ * The two sweeps above generate a transient request about one time in three, and a *pair* of
+ * them landing on the same voice is rarer still — which is how the exclusion could be
+ * `sustain === 'continuous'` for as long as it was and cost only `ambient-dub`'s node count.
+ * This corpus is transient throughout and over three roles, so the section clique is the thing
+ * being exercised: overlapping pairs that must be bucketed, disjoint pairs that must not, and
+ * chains where no clique holds the whole group.
+ *
+ * Both detectors run in the same walk, because the corpus is small enough to afford the oracle
+ * and each answers a question the other cannot. `bruteForceBest` says the answer is still the
+ * optimum — an over-charging bucket prunes it. `measureAssignWithoutMatchingRepair` says the
+ * whole result is the one the unrepaired floor reaches — a bound is allowed to move the node
+ * count and nothing else.
+ */
+describe('the section clique holds when every request is transient (§7.1/#78)', () => {
+  const CORPUS = Array.from({ length: 600 }, (_, i) => generated(i, 'transient'))
+
+  it('carries both kinds of pair, so it is a test of the clique and not just of the bucket', () => {
+    let overlapping = 0
+    let disjoint = 0
+    for (const { template } of CORPUS) {
+      const wanted = template.roles.map((role) => new Set(role.sections ?? []))
+      let hasOverlap = false
+      let hasDisjoint = false
+      for (let a = 0; a < wanted.length; a++) {
+        for (let b = a + 1; b < wanted.length; b++) {
+          const shares = [...(wanted[a] as Set<string>)].some((name) =>
+            (wanted[b] as Set<string>).has(name),
+          )
+          if (shares) hasOverlap = true
+          else hasDisjoint = true
+        }
+      }
+      if (hasOverlap) overlapping++
+      if (hasDisjoint) disjoint++
+    }
+    // 564 and 204 of the 600 when this was written. The thresholds sit well below both,
+    // because the figures may drift with the generator and zero of either would mean this
+    // corpus was quietly testing only half of the rule.
+    expect(overlapping, 'no fixture has an overlapping pair to bucket').toBeGreaterThan(300)
+    expect(disjoint, 'no fixture has a disjoint pair to leave alone').toBeGreaterThan(100)
+  })
+
+  it('finds the optimum, and the same whole result, on 600 all-transient rigs', () => {
+    let differed = 0
+    let checked = 0
+    for (const [fixture, { devices, template }] of CORPUS.entries()) {
+      const oracle = bruteForceBest(devices, template)
+      for (let seed = 0; seed < 4; seed++) {
+        const input = { devices, template, mood: MOOD, seed, nodeCap: 20_000_000 }
+        const repaired = assign(input)
+        const plain = measureAssignWithoutMatchingRepair(input)
+        const where = `fixture ${String(fixture)} seed ${String(seed)}`
+        expect(repaired.search.capped, `${where} capped`).toBe(false)
+        expect(plain.search.capped, `${where} capped unrepaired`).toBe(false)
+        expect(shapeOf(repaired), `${where}: the repair moved more than the node count`).toBe(
+          shapeOf(plain),
+        )
+        expect(
+          compareScore(repaired.score, oracle),
+          `${where}: search ${JSON.stringify(repaired.score)} vs oracle ${JSON.stringify(oracle)}`,
+        ).toBe(0)
+        if (repaired.search.nodes !== plain.search.nodes) differed++
+        checked++
+      }
+    }
+    expect(checked).toBe(2_400)
+    // 150 of the 2,400 walked a different number of nodes when this was written. Zero would
+    // mean transient requests were being bucketed nowhere and this sweep compared the same
+    // floor with itself.
+    expect(differed, 'the repair never fired on an all-transient rig').toBeGreaterThan(50)
+  })
+})
+
 describe('the baseline path really is the floor as it stood (§7.1/#78)', () => {
   /**
    * `measureAssignWithoutMatchingRepair` is only worth diffing against if it is the *old* search rather
@@ -524,5 +919,263 @@ describe('the repair prunes, rather than merely being admissible (§7.1/#78)', (
       expect(found.search.capped).toBe(false)
       expect(found.search.nodes, `seed ${String(seed)}, unrepaired walks 157`).toBeLessThan(80)
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The mutation battery: every way of getting the bucket wrong, and who catches it
+// ---------------------------------------------------------------------------
+
+/**
+ * **A test suite is only worth what it rejects, and this one has to be asked.**
+ *
+ * The failure mode of a bound is invisible: an over-charging floor does not produce a wrong
+ * answer, it produces a *missing* one, and only on a rig whose first leaf was not already the
+ * optimum. When this repair was first written, three of four deliberately broken versions
+ * sailed through every hand-built case in this file. That check was done by hand, once, and
+ * then thrown away. This runs it on every commit instead.
+ *
+ * Each mutation is a textual edit to `lib/core/search.ts`, compiled and imported as its own
+ * module — so it is the shipped source that gets broken, not a reimplementation of it that
+ * could drift. The anchor for each edit is asserted to appear exactly once, which means a
+ * refactor that moves the code fails here loudly rather than quietly mutating nothing.
+ *
+ * Every mutation below makes the floor **over-charge**, because that is the direction that
+ * breaks the search. Under-charging is admissible by construction — it is why an
+ * `alternativeTo` that forgot the stack option would pass everything here, as the sweep above
+ * already says. Those are weakenings to be found by the node count, not by correctness.
+ *
+ * The corpus is this file's own fixtures first, then generated rigs, and the test reports which
+ * one did the catching — so "the hand-built cases have teeth" is a claim with an answer rather
+ * than an assumption.
+ */
+type Mutation = {
+  /** Also the mutant module's filename. */
+  name: string
+  /**
+   * The edits, each anchored on a string that must appear in `lib/core/search.ts` exactly once.
+   *
+   * Plural because a rule may be enforced in more than one place, and a mutation that breaks
+   * only one of them is an *equivalent* mutant — it changes the source and cannot change the
+   * answer, so it passes for a reason that has nothing to do with the corpus. The overlap rule
+   * is the case in point: the collision pre-check filters on it as well as the clique, and
+   * removing either alone leaves the other doing the whole job.
+   */
+  edits: { find: string; replace: string }[]
+  /** The rule it breaks, in the header's terms. */
+  breaks: string
+  /**
+   * Whether a fixture *in this file* has to catch it, rather than one of the 300 generated rigs.
+   *
+   * Recorded rather than derived, because it is the thing worth knowing: a hand-built rig can be
+   * read and argued with, a generated one can only be re-run. The three that say `false` are the
+   * three about `compareGiveUp`, and they are caught by generated narrow fixture 56 — a rig
+   * nobody designed, which is the point of having the sweep as well.
+   */
+  handBuilt: boolean
+}
+
+const MUTATIONS: Mutation[] = [
+  {
+    name: 'bucket-ignores-overlap',
+    handBuilt: true,
+    edits: [
+      {
+        find: '          if (ctx.overlap[(members[m] as number) * n + b] === 0) {',
+        replace: '          if (false) {',
+      },
+      {
+        find: '        if (scratch.slot[b] === slot && ctx.overlap[b * n + j] === 1) {',
+        replace: '        if (scratch.slot[b] === slot) {',
+      },
+    ],
+    breaks: 'the clique: any two requests on one voice are bucketed, disjoint sections or not',
+  },
+  {
+    name: 'clique-joins-against-the-seed-only',
+    handBuilt: true,
+    edits: [
+      { find: '        for (let m = 0; m < size; m++) {', replace: '        for (let m = 0; m < 1; m++) {' },
+    ],
+    breaks: 'every pair: a request joins if it overlaps the seed, without meeting the rest',
+  },
+  {
+    name: 'bucket-charges-a-member-twice',
+    handBuilt: true,
+    edits: [
+      {
+        find: '        if (scratch.slot[b] !== slot || scratch.bucketed[b] === 1) continue',
+        replace: '        if (scratch.slot[b] !== slot) continue',
+      },
+    ],
+    breaks: 'one bucket per request: a member of two overlapping cliques pays both escapes',
+  },
+  {
+    name: 'keeper-is-the-first-member',
+    handBuilt: false,
+    edits: [
+      {
+        find: '        if (keeps < 0 || compareGiveUp(scratch, b, keeps) < 0) keeps = b',
+        replace: '        if (keeps < 0) keeps = b',
+      },
+    ],
+    breaks: 'the minimising member: the sum charged is no longer the smallest of the k sums',
+  },
+  {
+    name: 'keeper-is-the-wrong-way-round',
+    handBuilt: false,
+    edits: [
+      {
+        find: '        if (keeps < 0 || compareGiveUp(scratch, b, keeps) < 0) keeps = b',
+        replace: '        if (keeps < 0 || compareGiveUp(scratch, b, keeps) > 0) keeps = b',
+      },
+    ],
+    breaks: 'the same, maximised: the voice goes to whoever loses least by giving it up',
+  },
+  {
+    name: 'the-miss-is-not-ranked-first',
+    handBuilt: false,
+    edits: [
+      {
+        find: `        scratch.rank[b] =
+          alt !== null
+            ? ctx.missSlots + 1
+            : request.optional === true
+              ? ctx.missSlots
+              : request.priority - 1`,
+        replace: '        scratch.rank[b] = 0',
+      },
+    ],
+    breaks: "compareGiveUp's prefix: a member whose only escape is a miss no longer keeps the voice",
+  },
+]
+
+const SEARCH_SOURCE = fileURLToPath(new URL('../lib/core/search.ts', import.meta.url))
+const MUTANT_DIR = mkdtempSync(join(tmpdir(), 'matching-floor-mutants-'))
+afterAll(() => {
+  rmSync(MUTANT_DIR, { recursive: true, force: true })
+})
+
+/**
+ * `lib/core/search.ts` with one edit applied, as a live module.
+ *
+ * Its sibling imports are rewritten to absolute paths so the file can live in a temp directory
+ * and still reach the rest of `lib/core` — which resolves to the very same modules the real
+ * search uses, so nothing here is a second copy of anything but `search.ts` itself.
+ */
+async function mutantAssign(m: Mutation): Promise<(input: AssignInput) => AssignmentResult> {
+  let source = readFileSync(SEARCH_SOURCE, 'utf8')
+  for (const edit of m.edits) {
+    expect(
+      source.split(edit.find).length - 1,
+      `${m.name}: an anchor is no longer in lib/core/search.ts exactly once, so this mutation ` +
+        `is stale and is testing nothing`,
+    ).toBe(1)
+    source = source.replace(edit.find, edit.replace)
+  }
+  const file = join(MUTANT_DIR, `${m.name}.ts`)
+  writeFileSync(file, source.replaceAll("from './", `from '${dirname(SEARCH_SOURCE)}/`))
+  const mod = (await import(/* @vite-ignore */ file)) as {
+    assign: (input: AssignInput) => AssignmentResult
+  }
+  return mod.assign
+}
+
+/** One rig, one direction, and the optimum an independent enumeration says it has. */
+type Case = { name: string; devices: Device[]; template: Template }
+
+const HAND_BUILT: Case[] = [
+  { name: 'two continuous requests on one voice', devices: COLLIDING, template: bothWantOne },
+  { name: 'two continuous requests, no escape but the miss', devices: ONLY_SHARED, template: bothWantOne },
+  { name: 'two transients in disjoint sections', devices: COLLIDING, template: sharesLegally },
+  { name: 'two transients in disjoint sections, one voice', devices: ONLY_SHARED, template: sharesLegally },
+  { name: 'two transients that overlap in Build', devices: COLLIDING, template: contendInBuild },
+  { name: 'a transient and a continuous request', devices: COLLIDING, template: mixedPair },
+  { name: 'a request occupying no section', devices: ONLY_SHARED, template: offStructure },
+  { name: 'three transients, every pair overlapping', devices: TRIO, template: trio([['Intro', 'Build'], ['Build', 'Drop'], ['Drop', 'Intro']]) },
+  { name: 'three transients in a chain', devices: TRIO, template: trio([['Intro'], ['Intro', 'Drop'], ['Drop']]) },
+  // The three whose first leaf is not the optimum. Everything above this line is blind to a
+  // bucket that over-charges without pruning anything.
+  { name: 'a blocked disjoint pair', devices: BLOCKING, template: blockedDisjoint },
+  { name: 'a blocked pair occupying no section', devices: BLOCKING, template: blockedNowhere },
+  { name: 'a blocked chain of three', devices: BLOCKING, template: blockedChain },
+  { name: 'a blocked star of three', devices: BLOCKING, template: blockedStar },
+  { name: 'a blocked three where two buckets reach one request', devices: BLOCKING, template: blockedTwice },
+]
+
+const GENERATED: Case[] = [
+  ...Array.from({ length: 150 }, (_, i) => ({ name: `generated narrow ${String(i)}`, ...generated(i) })),
+  ...Array.from({ length: 150 }, (_, i) => ({
+    name: `generated transient ${String(i)}`,
+    ...generated(i, 'transient'),
+  })),
+]
+
+/**
+ * The first case on which the mutant disagrees with the oracle, or `null` if it survived
+ * everything. Four seeds per case: the seed permutes only exactly-equal scores (§7.2), so a
+ * pruned optimum can hide behind a tie on one of them.
+ */
+function caughtBy(
+  broken: (input: AssignInput) => AssignmentResult,
+  corpus: readonly Case[],
+  oracles: readonly Score[],
+): string | null {
+  for (const [i, entry] of corpus.entries()) {
+    for (let seed = 0; seed < 4; seed++) {
+      const found = broken({
+        devices: entry.devices,
+        template: entry.template,
+        mood: MOOD,
+        seed,
+        nodeCap: 20_000_000,
+      })
+      if (found.search.capped) return `${entry.name} (capped)`
+      if (compareScore(found.score, oracles[i] as Score) !== 0) return entry.name
+    }
+  }
+  return null
+}
+
+describe('the battery: a broken repair is caught, and named (§7.1/#78)', () => {
+  const handOracles = HAND_BUILT.map((c) => bruteForceBest(c.devices, c.template))
+  const generatedOracles = GENERATED.map((c) => bruteForceBest(c.devices, c.template))
+
+  it('the unmutated search passes the whole corpus, so the corpus is not the failure', () => {
+    expect(caughtBy(assign, HAND_BUILT, handOracles)).toBeNull()
+    expect(caughtBy(assign, GENERATED, generatedOracles)).toBeNull()
+  })
+
+  it.each(MUTATIONS)('catches $name, which breaks $breaks', async (mutation: Mutation) => {
+    const broken = await mutantAssign(mutation)
+    const hand = caughtBy(broken, HAND_BUILT, handOracles)
+    const rest = hand === null ? caughtBy(broken, GENERATED, generatedOracles) : null
+    expect(
+      hand ?? rest,
+      `${mutation.name} survived every fixture in this file and 300 generated rigs — ` +
+        `nothing here is testing ${mutation.breaks}`,
+    ).not.toBeNull()
+    if (mutation.handBuilt) {
+      expect(
+        hand,
+        `${mutation.name} is only caught by a generated rig now (${String(rest)}). It used to be ` +
+          `caught by a fixture in this file, and a corpus that loses a hand-built case loses the ` +
+          `part of itself anyone can read.`,
+      ).not.toBeNull()
+    }
+  })
+
+  /**
+   * The one case-specific claim, because it is the whole reason the exclusion is about sections
+   * rather than about `sustain`: bucket two transients whose sections are disjoint and the
+   * hand-built pair says so immediately, without needing a generated rig to find it.
+   */
+  it('is caught on the disjoint pair itself, not somewhere in the sweep', async () => {
+    const broken = await mutantAssign(MUTATIONS[0] as Mutation)
+    const disjoint: Case[] = [
+      { name: 'a blocked disjoint pair', devices: BLOCKING, template: blockedDisjoint },
+    ]
+    const oracles = disjoint.map((c) => bruteForceBest(c.devices, c.template))
+    expect(caughtBy(broken, disjoint, oracles)).toBe('a blocked disjoint pair')
   })
 })

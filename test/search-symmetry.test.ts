@@ -1138,19 +1138,26 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    *  - **Under the floor** — something got cheaper. Good news, and a stale comment: re-measure,
    *    move the band down, and keep the alarm's sensitivity.
    *
-   * **Moved for #78's matching repair**, and this is the "under the floor" case being taken at
-   * its word. `liveFloor` learned that two remaining requests may be costed against one voice
-   * and that §4.2 will not let both have it; `industrial-techno` seed 9 fell from 165,785 nodes
-   * to 8,309, and the worst case in the whole sweep is now `ambient-dub` seed 2 — the one
-   * direction the repair does nothing for, because its contested voices are always free to break.
+   * **Moved twice for #78's matching repair**, and both are the "under the floor" case being
+   * taken at its word.
    *
-   * The peak therefore dropped 6.4x while the direction that produces it changed, which is worth
-   * saying plainly: **this band no longer watches `industrial-techno` at all.** The per-direction
-   * rows in `test/search-bound.test.ts` do, and the 165,785 figure is still pinned there against
-   * the unrepaired floor. Before it: 165,785, and `DEFAULT_NODE_CAP` was raised to 200,000 to
-   * clear it, which the cap's own docstring records as a deliberate exception.
+   * The first move: `liveFloor` learned that two remaining requests may be costed against one
+   * voice and that §4.2 will not let both have it. `industrial-techno` seed 9 fell 165,785 →
+   * 8,309, and the peak moved to `ambient-dub` seed 2 at 25,798 — read at the time as the one
+   * direction the repair could do nothing for.
+   *
+   * The second move says that reading was wrong. The repair was skipping `ambient-dub` because
+   * its buckets were gated on `sustain === 'continuous'`, and one of the direction's nine
+   * requests is transient; the gate is now §4.2's actual rule, that the members' sections
+   * pairwise overlap, and `ambient-dub` seed 2 fell 25,798 → 759. So the peak is back on
+   * `industrial-techno` seed 9 and the whole sweep dropped 3.1x more.
+   *
+   * Before all of it: 165,785, and `DEFAULT_NODE_CAP` was raised to 200,000 to clear it, which
+   * the cap's own docstring records as a deliberate exception. The 165,785 is still pinned in
+   * `test/search-matching-floor.test.ts` against the deliberately unrepaired floor, and the
+   * per-direction rows in `test/search-bound.test.ts` watch every direction this band does not.
    */
-  const WORST_CASE_NODES = 25_798
+  const WORST_CASE_NODES = 8_309
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))
