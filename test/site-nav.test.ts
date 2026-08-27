@@ -73,9 +73,17 @@ describe('#112 the navigation landmark', () => {
     expect(markup).toMatch(/aria-label="[^"]+"/)
   })
 
-  it('names the studio and both catalogue halves, in that order', () => {
+  it('names the studio, both catalogue halves and preferences, in that order', () => {
     const markup = renderToStaticMarkup(createElement(SiteNav))
-    expect(NAV_LINKS.map((l) => l.href)).toEqual(['/', '/devices', '/directions'])
+    // Preferences is last on purpose: it is not a catalogue half, and it is the one entry a
+    // reader goes to rarely. It is *in* the nav at all because the footer could not reach it —
+    // on the studio page the footer sits below the whole generated guide (#138).
+    expect(NAV_LINKS.map((l) => l.href)).toEqual([
+      '/',
+      '/devices',
+      '/directions',
+      '/preferences',
+    ])
     let at = -1
     for (const link of NAV_LINKS) {
       const found = markup.indexOf(`href="${link.href}"`)
