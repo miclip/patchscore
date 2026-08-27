@@ -34,6 +34,9 @@
  *   B  every other shipped direction at its own worst seed over 0..23, cap lifted. The seed is
  *      found by sweeping rather than pinned, so the case list cannot go stale as the library
  *      grows.
+ *   C  the memo actually built, before against after, on those same cases: node counts both
+ *      ways, what the cache held and served, and wall clock. This is the section that answers
+ *      whether item 2 is worth doing, and on the shipped library the answer is no.
  *
  *   npm run bench:search-memo
  */
@@ -41,8 +44,10 @@
 import {
   DEFAULT_NODE_CAP,
   assign,
+  measureMemoSearch,
   measureStateRepeats,
   moodState,
+  type MemoComparison,
   type StateRepeatReport,
   type Template,
 } from '../lib/core/index'
@@ -200,7 +205,7 @@ function worstSeed(template: Template): { seed: number; nodes: number } {
   return out
 }
 
-function sectionB(worstCase: StateRepeatReport): void {
+function sectionB(worstCase: StateRepeatReport): { id: string; seed: number }[] {
   console.log('\nB. EVERY OTHER SHIPPED DIRECTION, at its worst seed over 0..23, cap lifted')
   const others = TEMPLATES.filter((t) => t.id !== industrialTechno.id)
   const rows: { id: string; seed: number; report: StateRepeatReport }[] = []
@@ -240,9 +245,143 @@ function sectionB(worstCase: StateRepeatReport): void {
         `  ${percent(row.report.repeats, row.report.visited).padStart(6)}`,
     )
   }
+
+  // Handed to section C so the memo is measured on exactly the cases just characterised, and
+  // the worst-seed sweep is paid for once.
+  return all.map(({ id, seed }) => ({ id, seed }))
+}
+
+// ---------------------------------------------------------------------------
+// C. The memo, before against after
+// ---------------------------------------------------------------------------
+
+/**
+ * Wall clock for one `assign`, averaged, with a warm run discarded so the first pass through
+ * `buildCtx` and the JIT is not charged to the memo. Heavy cases get fewer repetitions than
+ * light ones for the obvious reason.
+ */
+function millis(template: Template, seed: number, memo: boolean, nodes: number): number {
+  const args = { devices: DEVICES, template, mood: moodState(), seed, nodeCap: LIFTED_CAP, memo }
+  assign(args)
+  const reps = nodes > 50_000 ? 3 : nodes > 2_000 ? 10 : 40
+  const started = process.hrtime.bigint()
+  for (let i = 0; i < reps; i++) assign(args)
+  return Number((process.hrtime.bigint() - started) / 1_000_000n) / reps
+}
+
+function sectionC(cases: { id: string; seed: number }[]): void {
+  console.log('\nC. THE MEMO, BEFORE AGAINST AFTER, cap lifted')
+  console.log(
+    '   two rules: `strict` caches only a subtree with no prune anywhere inside it;' +
+      ' `guarded` also\n   caches one whose best clears every incumbent its prunes were taken' +
+      ' against. See `Outcome`\n   in lib/core/search.ts for why the first is sound and inert' +
+      ' and the second is sound and thin.',
+  )
+
+  const rows: {
+    id: string
+    seed: number
+    comparison: MemoComparison
+    msOff: number
+    msOn: number
+  }[] = []
+  for (const { id, seed } of cases) {
+    const template = TEMPLATES.find((t) => t.id === id) as Template
+    const comparison = measureMemoSearch({
+      devices: DEVICES,
+      template,
+      mood: moodState(),
+      seed,
+      nodeCap: LIFTED_CAP,
+    })
+    // The memo is meant to change the node count and nothing else. If a run ever disagreed with
+    // the traversal it replaced, every number in this section would be a report on a different
+    // search, so this stops rather than printing it.
+    for (const [name, run] of [
+      ['strict', comparison.strict],
+      ['guarded', comparison.guarded],
+    ] as const) {
+      if (!run.sameScore || !run.sameChoices) {
+        throw new Error(
+          `${id} seed ${seed}: the ${name} memo returned a different` +
+            `${run.sameScore ? ' assignment at the same score' : ' score'}`,
+        )
+      }
+    }
+    const nodes = comparison.off.search.nodes
+    rows.push({
+      id,
+      seed,
+      comparison,
+      msOff: millis(template, seed, false, nodes),
+      msOn: millis(template, seed, true, nodes),
+    })
+  }
+
+  console.log('\n   nodes visited')
+  console.log(
+    '     direction            seed        off     strict    guarded    saved' +
+      '     cached    hits',
+  )
+  for (const row of rows) {
+    const { off, strict, guarded, memo } = {
+      off: row.comparison.off.search.nodes,
+      strict: row.comparison.strict.search.nodes,
+      guarded: row.comparison.guarded.search.nodes,
+      memo: row.comparison.guarded.memo,
+    }
+    console.log(
+      `     ${row.id.padEnd(20)} ${String(row.seed).padStart(4)}` +
+        `  ${group(off).padStart(9)}` +
+        `  ${group(strict).padStart(9)}` +
+        `  ${group(guarded).padStart(9)}` +
+        `  ${percent(off - guarded, off).padStart(7)}` +
+        `  ${group(memo.cached).padStart(9)}  ${group(memo.hits).padStart(6)}`,
+    )
+  }
+
+  console.log('\n   what the traversal is actually made of, memo off')
+  console.log('     direction            seed      nodes    bounded   expanded     leaves')
+  for (const row of rows) {
+    const nodes = row.comparison.off.search.nodes
+    const { bounded, leaves } = row.comparison.off.memo
+    console.log(
+      `     ${row.id.padEnd(20)} ${String(row.seed).padStart(4)}` +
+        `  ${group(nodes).padStart(9)}` +
+        `  ${group(bounded).padStart(9)} ${percent(bounded, nodes).padStart(6)}` +
+        `  ${group(nodes - bounded - leaves).padStart(9)}` +
+        `  ${group(leaves).padStart(9)}`,
+    )
+  }
+
+  console.log('\n   wall clock, whole `assign`')
+  console.log('     direction            seed         off          on     change')
+  for (const row of rows) {
+    const change =
+      row.msOff === 0 ? 'n/a' : `${(row.msOn / row.msOff).toFixed(2)}x`
+    console.log(
+      `     ${row.id.padEnd(20)} ${String(row.seed).padStart(4)}` +
+        `  ${row.msOff.toFixed(1).padStart(9)} ms` +
+        `  ${row.msOn.toFixed(1).padStart(9)} ms` +
+        `  ${change.padStart(9)}`,
+    )
+  }
+
+  const totalOff = rows.reduce((n, r) => n + r.comparison.off.search.nodes, 0)
+  const totalOn = rows.reduce((n, r) => n + r.comparison.guarded.search.nodes, 0)
+  const strictCached = rows.reduce((n, r) => n + r.comparison.strict.memo.cached, 0)
+  console.log(
+    `\n   over these ${rows.length} cases: ${group(totalOff)} nodes becomes ${group(totalOn)},` +
+      ` ${percent(totalOff - totalOn, totalOff)} saved.`,
+  )
+  console.log(
+    `   the strict rule cached ${group(strictCached)} states in total, which is why it saves` +
+      ` nothing at all.`,
+  )
 }
 
 // ---------------------------------------------------------------------------
 
-sectionB(sectionA())
+const cases = sectionB(sectionA())
+sectionC(cases)
 console.log()

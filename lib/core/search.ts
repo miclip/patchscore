@@ -1397,59 +1397,347 @@ function orderedCandidates(ctx: Ctx, state: State, index: number): Candidate[] {
 
 type Solution = { score: Score; chosen: (Candidate | null)[] }
 
+/** §7.1's greedy fallback still snapshots a finished state directly; the search does not. */
 function snapshot(ctx: Ctx, state: State): Solution {
   return { score: scoreOf(ctx, state), chosen: [...state.chosen] }
 }
 
+/**
+ * #159 item 2. What the requests from some index onwards did, **held apart from the prefix that
+ * led there**, so that two nodes reaching the same canonical state can share one answer.
+ *
+ * The additive keys are the suffix's own contribution and nothing else. `crowd` and `idle` are
+ * absolute values read off the finished leaf, because neither is additive: `crowdOverflow`
+ * counts occupied assignables against `comfortableVoices` per device and `idleDevices` counts
+ * devices at zero, and both read the *final* occupancy, whose prefix half the canonical state
+ * has already fixed.
+ *
+ * That split is what makes the sharing sound. The full score of a completion under prefix `P`
+ * is `P + delta` on the additive keys and `crowd`/`idle` unchanged, so comparing two completions
+ * under one prefix adds the same integer to the same component of both vectors and cannot
+ * reorder them. A completion that is best under one prefix is best under every prefix reaching
+ * the same canonical state.
+ */
+type Completion = {
+  misses: number[]
+  optionalMisses: number
+  sampledChords: number
+  stackedChords: number
+  recipeDistance: number
+  roleFitPenalty: number
+  crowd: number
+  idle: number
+  /** What requests `index..n-1` took, in order; `null` is the miss branch. */
+  chosen: (Candidate | null)[]
+}
+
+/** The empty completion: nothing left to decide, so only the finished occupancy speaks. */
+function leafCompletion(ctx: Ctx, state: State): Completion {
+  return {
+    misses: new Array<number>(ctx.missSlots).fill(0),
+    optionalMisses: 0,
+    sampledChords: 0,
+    stackedChords: 0,
+    recipeDistance: 0,
+    roleFitPenalty: 0,
+    crowd: crowdOverflow(ctx, state),
+    idle: idleDevices(ctx, state),
+    chosen: [],
+  }
+}
+
+/**
+ * One more decision on the front of a completion. The miss branch is `null`, and charges the
+ * same keys `applyMiss` charges — §4.4's `optional` split included.
+ */
+function extend(
+  ctx: Ctx,
+  index: number,
+  candidate: Candidate | null,
+  child: Completion,
+): Completion {
+  const request = ctx.requests[index] as RoleRequest
+  const misses = [...child.misses]
+  let optionalMisses = child.optionalMisses
+  if (candidate === null) {
+    if (request.optional === true) optionalMisses++
+    else misses[request.priority - 1] = (misses[request.priority - 1] ?? 0) + 1
+  }
+  return {
+    misses,
+    optionalMisses,
+    sampledChords: child.sampledChords + (candidate === null ? 0 : candidate.sampledChord),
+    stackedChords: child.stackedChords + (candidate === null ? 0 : candidate.stacked),
+    recipeDistance: child.recipeDistance + (candidate === null ? 0 : candidate.distance),
+    roleFitPenalty: child.roleFitPenalty + (candidate === null ? 0 : candidate.roleFit),
+    crowd: child.crowd,
+    idle: child.idle,
+    chosen: [candidate, ...child.chosen],
+  }
+}
+
+/**
+ * The full score of `state`'s prefix finished by `completion`. At a leaf, where the completion
+ * is empty, this is `scoreOf(ctx, state)` term for term — which is the check that the split on
+ * `Completion` is a split and not a second scoring function.
+ */
+function recombine(state: State, completion: Completion): Score {
+  return [
+    ...state.misses.map((m, p) => m + (completion.misses[p] ?? 0)),
+    completion.crowd,
+    state.optionalMisses + completion.optionalMisses,
+    state.sampledChords + completion.sampledChords,
+    state.stackedChords + completion.stackedChords,
+    state.recipeDistance + completion.recipeDistance,
+    state.roleFitPenalty + completion.roleFitPenalty,
+    completion.idle,
+  ] as unknown as Score
+}
+
+/**
+ * A subtree's answer, and the whole safety argument for the memo.
+ *
+ * `best` is the best completion over the branches the walk **actually looked at**, which is not
+ * the same as the sub-problem's optimum: §7.1's incumbent bound skips branches, and a branch
+ * skipped is a completion never costed. `exact` is the claim that the two coincide — that `best`
+ * is the optimum, and specifically the *first* one in DFS order, which is what §7.2's
+ * first-winner rule makes the guide show. Only an exact subtree may be cached.
+ *
+ * `guard` is what is known about the parts that were skipped: every prune inside this subtree
+ * was taken against an incumbent, so nothing skipped scores below the incumbent it was measured
+ * against, and `guard` is the lexicographic minimum over those — the weakest of the claims, and
+ * therefore the one that has to be cleared. `undefined` means nothing was skipped at all.
+ *
+ * **Why "nothing was skipped" is the wrong rule on its own.** It is the obvious one, it is what
+ * `'strict'` implements, and on this library it caches *nothing*: `industrial-techno` seed 9
+ * reaches a complete assignment 46 times in 165,785 nodes, so almost every node is arrived at,
+ * bounded and abandoned, and a prune sits under every internal node in the tree. A memo under
+ * that rule is pure overhead. It is kept as a mode because measuring the inert rule is the only
+ * way to show it is inert.
+ *
+ * **The rule that works** compares `best` against `guard`, and has to know DFS order to do it,
+ * because a tie is not a draw. A skipped region holding a completion that *ties* `best` matters
+ * only if it stands earlier in DFS order, since first-winner would then have shown that one
+ * instead. So the guards are kept in two piles:
+ *
+ *  - `guardBefore`, from branches skipped before the branch that produced `best`. Those precede
+ *    `best`'s leaf, so a tie there would displace it: they must be cleared **strictly**.
+ *  - `guardAfter`, from branches skipped after it. Those follow `best`'s leaf and a tie loses to
+ *    it, so `<=` clears them.
+ *
+ * The `after` pile is the one that pays. A node whose own leaf becomes the incumbent prunes
+ * everything it tries afterwards against exactly that incumbent, so its `guard` equals its
+ * `best` on the nose — refused by a strict comparison, cleared correctly by this one.
+ *
+ * The branch that produced `best` is a third case, and it is handled by recursion rather than
+ * by a guard: its skipped parts are interleaved with its own leaves, so `best` is trusted only
+ * when that child came back `exact` itself.
+ *
+ * All of this is prefix-invariant, which is what lets one entry serve a different prefix. The
+ * comparisons are between absolute scores under the prefix in force at the time, and subtracting
+ * a common prefix from two vectors cannot reorder them (see `Completion`).
+ *
+ * `truncated` is the node cap, and no guard rescues it. A capped walk stopped for a reason that
+ * has nothing to do with the objective, so nothing is known about what it did not reach.
+ */
+type Outcome = {
+  best: Completion | undefined
+  exact: boolean
+  guard: Score | undefined
+  truncated: boolean
+}
+
+/** The cap. Unusable, and not rescuable. */
+const TRUNCATED: Outcome = { best: undefined, exact: false, guard: undefined, truncated: true }
+
+/** Lexicographic minimum, treating `undefined` as "no claim made yet". */
+function tighter(a: Score | undefined, b: Score | undefined): Score | undefined {
+  if (a === undefined) return b
+  if (b === undefined) return a
+  return compareScore(a, b) <= 0 ? a : b
+}
+
+/** #159 item 2's counters, for the probe. Zero throughout when the memo is off. */
+export type MemoStats = {
+  /** Canonical states cached, one per subtree proved exact. */
+  cached: number
+  /** Nodes answered from the cache, each one a subtree not walked. */
+  hits: number
+  /** Subtrees that found a completion but could not be proved exact. */
+  refused: number
+  /** Nodes that arrived, failed the bound and were abandoned without expanding. */
+  bounded: number
+  /** Complete assignments reached. */
+  leaves: number
+}
+
+/**
+ * `strict` caches only a subtree that skipped nothing at all. `guarded` also caches one whose
+ * best clears every guard, in the order-sensitive sense `Outcome` sets out. See there for why
+ * the first is inert on this library and the second is sound.
+ */
+type MemoMode = 'off' | 'strict' | 'guarded'
+
+type SearchOptions = {
+  probe?: StateProbe
+  memo?: MemoMode
+}
+
 function search(
   ctx: Ctx,
-  probe?: StateProbe,
-): { best: Solution | undefined; nodes: number; capped: boolean } {
+  options: SearchOptions = {},
+): {
+  best: Solution | undefined
+  nodes: number
+  capped: boolean
+  memo: MemoStats
+} {
   const state = emptyState(ctx)
+  const probe = options.probe
+  const mode: MemoMode = options.memo ?? 'off'
+  // One map per search. Keyed on the canonical state including the request index, so two depths
+  // can never collide, and thrown away with the `Ctx` it belongs to.
+  const memo = mode === 'off' ? undefined : new Map<string, Completion>()
+  const stats: MemoStats = { cached: 0, hits: 0, refused: 0, bounded: 0, leaves: 0 }
   let best: Solution | undefined
   let nodes = 0
   let capped = false
 
-  function dfs(index: number): void {
-    if (capped) return
+  /**
+   * §7.1's incumbent, updated on **strict** improvement only, so the first leaf in DFS order to
+   * reach the optimum wins and a later tie never displaces it.
+   *
+   * Offered from exactly two places, and the pair is what keeps that rule intact under the memo:
+   * every leaf offers itself as it is reached, and a memo hit offers the completion it just
+   * answered with. Walking a subtree leaves the incumbent at the better of what it held and that
+   * subtree's first optimum; answering the same subtree from the cache does the one update that
+   * sequence would have ended on, because each improvement inside it is overwritten by the next.
+   * Internal nodes never offer — their own leaves already did.
+   */
+  function offer(completion: Completion, index: number): void {
+    const score = recombine(state, completion)
+    if (best !== undefined && compareScore(score, best.score) >= 0) return
+    const chosen = [...state.chosen]
+    for (let k = 0; k < completion.chosen.length; k++) {
+      chosen[index + k] = completion.chosen[k] ?? null
+    }
+    best = { score, chosen }
+  }
+
+  function dfs(index: number): Outcome {
+    if (capped) return TRUNCATED
     // Checked before the increment, so `nodes` reports what was actually visited and never
     // overshoots the cap it is being compared against.
     if (nodes >= ctx.nodeCap) {
       capped = true
-      return
+      return TRUNCATED
     }
     nodes++
 
     // #159 item 2's measurement, and the only line the search carries for it. Recorded here
     // rather than before the bound check so `visited` is exactly `SearchReport.nodes`, and
-    // because a memo would be consulted at this same point.
+    // because the memo is consulted at this same point.
     if (probe !== undefined) record(ctx, state, index, probe)
 
-    if (best !== undefined && compareScore(lowerBound(ctx, state, index), best.score) >= 0) return
+    // Before the bound, deliberately. A hit is an exact answer where the bound would only have
+    // said "not better than the incumbent", so consulting the cache first replaces a prune with
+    // something strictly stronger and can never lose a solution.
+    const key = memo === undefined ? '' : canonicalState(ctx, state, index)
+    if (memo !== undefined) {
+      const cached = memo.get(key)
+      if (cached !== undefined) {
+        stats.hits++
+        offer(cached, index)
+        return { best: cached, exact: true, guard: undefined, truncated: false }
+      }
+    }
+
+    if (best !== undefined && compareScore(lowerBound(ctx, state, index), best.score) >= 0) {
+      stats.bounded++
+      // The incumbent this was measured against travels up as the guard: nothing below here was
+      // looked at, and this is the claim under which it was skipped.
+      return { best: undefined, exact: false, guard: best.score, truncated: false }
+    }
 
     if (index === ctx.requests.length) {
-      const score = scoreOf(ctx, state)
-      if (best === undefined || compareScore(score, best.score) < 0) best = snapshot(ctx, state)
-      return
+      stats.leaves++
+      const completion = leafCompletion(ctx, state)
+      offer(completion, index)
+      return { best: completion, exact: true, guard: undefined, truncated: false }
+    }
+
+    let localBest: Completion | undefined
+    let localFull: Score | undefined
+    let bestChildExact = false
+    // Guards from branches skipped before, and after, the branch that produced `localBest`.
+    let guardBefore: Score | undefined
+    let guardAfter: Score | undefined
+    let truncated = false
+
+    const consider = (candidate: Candidate | null, child: Outcome): void => {
+      if (child.truncated) truncated = true
+      if (child.best !== undefined) {
+        const grown = extend(ctx, index, candidate, child.best)
+        const full = recombine(state, grown)
+        // Strictly better only, so among equal completions the first in DFS order is kept —
+        // the same rule `offer` applies to the incumbent, and the reason a cached answer and a
+        // walked one name the same assignment rather than merely the same score.
+        if (localFull === undefined || compareScore(full, localFull) < 0) {
+          // Everything skipped so far now stands *before* the new best.
+          guardBefore = tighter(guardBefore, guardAfter)
+          guardAfter = undefined
+          localBest = grown
+          localFull = full
+          bestChildExact = child.exact
+        }
+      }
+      // An exact child skipped nothing that matters; it discharged its own guard by recursion.
+      if (!child.exact && child.guard !== undefined) {
+        guardAfter = tighter(guardAfter, child.guard)
+      }
     }
 
     for (const candidate of orderedCandidates(ctx, state, index)) {
       apply(ctx, state, index, candidate)
-      dfs(index + 1)
+      const child = dfs(index + 1)
       undo(ctx, state, index, candidate)
-      if (capped) return
+      consider(candidate, child)
+      if (capped) return TRUNCATED
     }
 
     // The miss branch is explored last: filling is usually better, so taking it first would
     // delay a good incumbent and weaken every bound below. It is explored at all because
     // leaving a low-priority part out can genuinely beat crowding a box to fit it.
     applyMiss(ctx, state, index)
-    dfs(index + 1)
+    const missChild = dfs(index + 1)
     undoMiss(ctx, state, index)
+    consider(null, missChild)
+    if (capped) return TRUNCATED
+
+    const skipped = tighter(guardBefore, guardAfter)
+    let exact = false
+    if (localBest !== undefined && localFull !== undefined && bestChildExact && !truncated) {
+      exact =
+        mode === 'strict'
+          ? skipped === undefined
+          : (guardBefore === undefined || compareScore(localFull, guardBefore) < 0) &&
+            (guardAfter === undefined || compareScore(localFull, guardAfter) <= 0)
+    }
+
+    if (memo !== undefined && localBest !== undefined) {
+      if (exact) {
+        memo.set(key, localBest)
+        stats.cached++
+      } else {
+        stats.refused++
+      }
+    }
+
+    return { best: localBest, exact, guard: exact ? undefined : skipped, truncated }
   }
 
   dfs(0)
-  return { best, nodes, capped }
+  return { best, nodes, capped, memo: stats }
 }
 
 /**
@@ -1615,12 +1903,23 @@ export type AssignInput = {
   mood: MoodState
   seed: number
   nodeCap?: number
+  /**
+   * #159 item 2, and it **defaults to off** because the measurement said so.
+   *
+   * The memo is correct — `test/search-memo.test.ts` holds it to byte-identical results against
+   * the traversal it replaces, over convergent prefixes, §12.6's `distinct`, incumbent pruning
+   * and the cap — and on this library it is a 2.2x slowdown for 0.4% fewer nodes. It stays
+   * reachable so that claim is re-measurable rather than remembered, and so a rig shaped
+   * differently from anything shipped can be tested against it. See `measureMemoSearch` and
+   * `scripts/bench-search-memo.ts` for the numbers and `Outcome` for why they come out that way.
+   */
+  memo?: boolean
 }
 
 /** §7 step 6. Search assignments against the lexicographic objective, producing `Occupancy`. */
 export function assign(input: AssignInput): AssignmentResult {
   const ctx = buildCtx(input)
-  const outcome = search(ctx)
+  const outcome = search(ctx, { memo: input.memo === true ? 'guarded' : 'off' })
 
   // §7.1: on the cap, the greedy result stands and the fallback is reported. Reporting it in
   // the result rather than writing to a console keeps the resolver pure and the claim testable.
@@ -1722,40 +2021,63 @@ type StateProbe = {
 }
 
 /**
- * Four separators, none of which can occur in a device id, a voice id, a role or a section
- * name, and one per nesting level rather than one character shared between levels — sections
- * are themselves a joined list, so a single separator would let two different states spell the
- * same key.
+ * **Length-prefixed, not separated.** The obvious encoding picks a character no id could
+ * contain and joins on it, and the premise is false here: `DeviceId`, `RequestId`, `Role` and
+ * `SectionName` are all bare `string` at the type level, a device may be built at runtime by a
+ * caller (`AssignInput` takes objects, never ids — #4), and nothing in the schema forbids
+ * U+0001..U+0004 in a section name. A key that is only unambiguous while the data stays polite
+ * is a wrong answer waiting for an unusual template, and it would fail *silently*: two different
+ * states spelling one key means a memo hit that answers the wrong sub-problem.
+ *
+ * So every piece is written as `<length>:<text>`, which is prefix-free for any text at all, and
+ * the pieces are concatenated with no separator. There is no reserved character.
  */
-const STATE_SECTION_SEP = '\u0001'
-const STATE_FIELD_SEP = '\u0002'
-const STATE_ITEM_SEP = '\u0003'
-const STATE_PART_SEP = '\u0004'
+function piece(text: string): string {
+  return `${text.length}:${text}`
+}
 
 /** Code unit order throughout (invariant 6): no `localeCompare`, on any of these. */
 function canonicalState(ctx: Ctx, state: State, index: number): string {
-  const occupied: string[] = []
-  for (const [key, bySection] of state.occupancy) {
-    if (bySection.size === 0) continue
-    const sections = [...bySection.keys()].sort(compareCodeUnits)
-    occupied.push(`${key}${STATE_FIELD_SEP}${sections.join(STATE_SECTION_SEP)}`)
-  }
-  occupied.sort(compareCodeUnits)
+  // **Every entry, including one whose section map is empty.** A request with `transient`
+  // sustain and no matching section names occupies its voice in no section at all: `apply`
+  // still creates the entry and still counts the assignable in `occupiedByDevice`, so the voice
+  // is spent against `comfortableVoices` and stops its device being idle while `keyIsFree` lets
+  // anything share it. Skipping empty entries here made two genuinely different states spell one
+  // key, and the memo answered the wrong one — found by the fuzz in `test/search-memo.test.ts`,
+  // which is why that test exists rather than a hand-built case.
+  const keys: AssignableKey[] = [...state.occupancy.keys()]
+  keys.sort(compareCodeUnits)
 
-  const distinct = new Set<string>()
+  const parts: string[] = [piece(String(index)), piece(String(keys.length))]
+  for (const key of keys) {
+    const bySection = state.occupancy.get(key) as Map<SectionName, RequestId>
+    // The request ids stored against each section are deliberately not read: `keyIsFree` asks
+    // which sections of an assignable are taken and never by whom, so two states differing only
+    // in which request holds a voice are the same sub-problem.
+    const sections = [...bySection.keys()].sort(compareCodeUnits)
+    parts.push(piece(key), piece(String(sections.length)))
+    for (const section of sections) parts.push(piece(section))
+  }
+
+  // §12.6, as a set of `(role, deviceId)` pairs: `violatesDistinct` asks whether a device is
+  // already taken for this role and never how many times.
+  const distinct: [string, string][] = []
+  const seen = new Set<string>()
   for (let i = 0; i < index; i++) {
     const request = ctx.requests[i] as RoleRequest
     if (request.distinct !== true) continue
     const taken = state.chosen[i]
     if (taken === null || taken === undefined) continue
-    distinct.add(`${request.role}${STATE_FIELD_SEP}${taken.deviceId}`)
+    const pair = piece(request.role) + piece(taken.deviceId)
+    if (seen.has(pair)) continue
+    seen.add(pair)
+    distinct.push([request.role, taken.deviceId])
   }
+  distinct.sort((a, b) => compareCodeUnits(a[0], b[0]) || compareCodeUnits(a[1], b[1]))
+  parts.push(piece(String(distinct.length)))
+  for (const [role, deviceId] of distinct) parts.push(piece(role), piece(deviceId))
 
-  return [
-    String(index),
-    occupied.join(STATE_ITEM_SEP),
-    [...distinct].sort(compareCodeUnits).join(STATE_ITEM_SEP),
-  ].join(STATE_PART_SEP)
+  return parts.join('')
 }
 
 /**
@@ -1765,8 +2087,9 @@ function canonicalState(ctx: Ctx, state: State, index: number): string {
  */
 function derivedOccupiedCounts(state: State): Map<DeviceId, number> {
   const counts = new Map<DeviceId, number>()
-  for (const [key, bySection] of state.occupancy) {
-    if (bySection.size === 0) continue
+  for (const key of state.occupancy.keys()) {
+    // Present, not non-empty: `apply` adds to `occupiedByDevice` for every key it touches, and
+    // a request occupying no section still spends the voice. See `canonicalState`.
     const slash = key.indexOf('/')
     const deviceId = (slash < 0 ? key : key.slice(0, slash)) as DeviceId
     counts.set(deviceId, (counts.get(deviceId) ?? 0) + 1)
@@ -1826,8 +2149,10 @@ export type StateRepeatReport = {
  * measurement is taken on exactly the rig, direction, mood and seed a guide would use — and
  * `nodeCap` is honoured, so a caller measuring a worst case has to lift it deliberately.
  *
- * Not called by `assign`, and nothing in the pipeline reaches it. The search this runs is the
- * shipped one, unmodified apart from the single `if (probe !== undefined)` in `dfs`.
+ * Not called by `assign`, and nothing in the pipeline reaches it. It runs the shipped DFS with
+ * `memo: false`, which is the traversal as it stood before the memo landed — so the repeat
+ * counts this returns stay the ones #159 item 2 was opened against, and do not quietly become
+ * a report on how well the memo already worked.
  */
 export function measureStateRepeats(input: AssignInput): StateRepeatReport {
   const ctx = buildCtx(input)
@@ -1841,7 +2166,10 @@ export function measureStateRepeats(input: AssignInput): StateRepeatReport {
     })),
     checks: 0,
   }
-  const outcome = search(ctx, probe)
+  // Memo off. This helper's numbers are the ones #159 item 2 was opened against, and they
+  // describe the traversal *without* the memo; measuring repeats on the memoised search would
+  // be measuring how well the memo already removed them.
+  const outcome = search(ctx, { probe, memo: 'off' })
 
   let unique = 0
   let repeats = 0
@@ -1863,4 +2191,97 @@ export function measureStateRepeats(input: AssignInput): StateRepeatReport {
       method: outcome.capped ? 'greedy' : 'exhaustive',
     },
   }
+}
+
+// ---------------------------------------------------------------------------
+// #159 item 2. The memo, measured against the traversal it replaced
+// ---------------------------------------------------------------------------
+
+/** One traversal's cost and what its memo did. */
+export type MemoRun = {
+  search: SearchReport
+  memo: MemoStats
+  /**
+   * Whether this run's winner matches the memo-off run's — the score, and separately the
+   * *assignment*. The second is the stronger claim and the one §7.2's first-winner rule is
+   * about: two allocations can tie on `Score`, and which of them the guide shows is decided by
+   * DFS order, so a memo that returned the other one would be wrong while scoring identically.
+   */
+  sameScore: boolean
+  sameChoices: boolean
+}
+
+/**
+ * #159 item 2, measured three ways on one input: the traversal as it was, the strict rule that
+ * caches only prune-free subtrees, and the guarded rule that also caches a subtree whose best
+ * beats every incumbent its prunes were taken against.
+ */
+export type MemoComparison = {
+  off: MemoRun
+  strict: MemoRun
+  guarded: MemoRun
+}
+
+/** `undefined` on either side is a disagreement unless both are. */
+function sameChoiceList(
+  a: (Candidate | null)[] | undefined,
+  b: (Candidate | null)[] | undefined,
+): boolean {
+  if (a === undefined || b === undefined) return a === b
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) {
+    const left = a[i] ?? null
+    const right = b[i] ?? null
+    if (left === null || right === null) {
+      if (left !== right) return false
+      continue
+    }
+    // By content, not identity: a stack candidate is built fresh at every node it is
+    // materialised at (`materialiseStacks`), so a cached one is a different object naming the
+    // same voices.
+    if (left.deviceId !== right.deviceId) return false
+    if (left.recipe.id !== right.recipe.id) return false
+    if (left.keys.length !== right.keys.length) return false
+    for (let k = 0; k < left.keys.length; k++) {
+      if (left.keys[k] !== right.keys[k]) return false
+    }
+  }
+  return true
+}
+
+/**
+ * §7.1's search run once per mode on the same input. Every run is the shipped code path —
+ * `assign` reaches the same `search` with the same options — so this compares two traversals
+ * rather than the search against a re-implementation of it.
+ *
+ * Each run gets its own `Ctx`. `buildCtx` is a pure function of the input, but the search
+ * mutates `State` and materialises stack candidates as it goes, and a fresh context removes the
+ * question of whether an earlier run left anything behind.
+ */
+export function measureMemoSearch(input: AssignInput): MemoComparison {
+  const cap = input.nodeCap ?? DEFAULT_NODE_CAP
+  const run = (mode: 'off' | 'strict' | 'guarded'): {
+    best: Solution | undefined
+    nodes: number
+    capped: boolean
+    memo: MemoStats
+  } => search(buildCtx({ ...input }), { memo: mode })
+
+  const off = run('off')
+  const asRun = (outcome: ReturnType<typeof run>): MemoRun => ({
+    search: {
+      nodes: outcome.nodes,
+      nodeCap: cap,
+      capped: outcome.capped,
+      method: outcome.capped ? 'greedy' : 'exhaustive',
+    },
+    memo: outcome.memo,
+    sameScore:
+      outcome.best?.score === undefined || off.best?.score === undefined
+        ? outcome.best?.score === off.best?.score
+        : compareScore(outcome.best.score, off.best.score) === 0,
+    sameChoices: sameChoiceList(off.best?.chosen, outcome.best?.chosen),
+  })
+
+  return { off: asRun(off), strict: asRun(run('strict')), guarded: asRun(run('guarded')) }
 }
