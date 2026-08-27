@@ -1401,7 +1401,10 @@ function snapshot(ctx: Ctx, state: State): Solution {
   return { score: scoreOf(ctx, state), chosen: [...state.chosen] }
 }
 
-function search(ctx: Ctx): { best: Solution | undefined; nodes: number; capped: boolean } {
+function search(
+  ctx: Ctx,
+  probe?: StateProbe,
+): { best: Solution | undefined; nodes: number; capped: boolean } {
   const state = emptyState(ctx)
   let best: Solution | undefined
   let nodes = 0
@@ -1416,6 +1419,11 @@ function search(ctx: Ctx): { best: Solution | undefined; nodes: number; capped: 
       return
     }
     nodes++
+
+    // #159 item 2's measurement, and the only line the search carries for it. Recorded here
+    // rather than before the bound check so `visited` is exactly `SearchReport.nodes`, and
+    // because a memo would be consulted at this same point.
+    if (probe !== undefined) record(ctx, state, index, probe)
 
     if (best !== undefined && compareScore(lowerBound(ctx, state, index), best.score) >= 0) return
 
@@ -1656,6 +1664,198 @@ export function assign(input: AssignInput): AssignmentResult {
     occupancy: state.occupancy,
     score: scoreOf(ctx, state),
     shortfalls,
+    search: {
+      nodes: outcome.nodes,
+      nodeCap: ctx.nodeCap,
+      capped: outcome.capped,
+      method: outcome.capped ? 'greedy' : 'exhaustive',
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// #159 item 2. Repeated canonical states, measured
+// ---------------------------------------------------------------------------
+
+/**
+ * #159's second item asks whether §7.1's DFS re-solves the same sub-problem, and if so how
+ * often. Memoising is a separate move and is deliberately not made here: this measures, and
+ * nothing else. Item 1 — decomposition — was measured by `scripts/bench-decomposition.ts` and
+ * found not to hold; the two items are independent, and this one is not settled by that.
+ *
+ * **What makes two nodes the same sub-problem.** At a node the search is about to decide
+ * requests `index..n-1`. What the rest of the tree can do, and what it costs, depends on:
+ *
+ *  - `index`, because it names which requests are left;
+ *  - **occupancy, keyed by assignable and section** — every remaining feasibility question
+ *    reads it and nothing else. `keyIsFree` asks which sections of an assignable are taken and
+ *    never by whom, so the request ids stored in `Occupancy` are not part of the identity;
+ *    `isOccupiedAnywhere` (symmetry breaking, stack member choice) reads the same map;
+ *  - **prior same-role `distinct` device choices** (§12.6). `violatesDistinct` scans decided
+ *    requests for one sharing the role and carrying the flag, and compares `deviceId`. That is
+ *    not derivable from occupancy — a device can be busy from a request the rule does not
+ *    touch — so it is carried explicitly, as a *set*, because the rule asks membership and
+ *    never a count.
+ *
+ * `occupiedByDevice` is deliberately **not** in the key: it is a function of the occupancy that
+ * is, since every `AssignableKey` is `${deviceId}/${voiceId}`. `derivedOccupiedCounts` rebuilds
+ * it and `record` checks the rebuild against the live map at every measured node, so that is a
+ * checked claim rather than a comment. `crowdOverflow` and `idleDevices` read only that map, so
+ * they are determined by the key too.
+ *
+ * The accumulated cost so far — `misses`, `recipeDistance`, `roleFitPenalty` and the rest — is
+ * **not** in the key, and that is the point rather than an omission. Those keys are additive and
+ * identical for every completion of a given prefix, and `crowdOverflow`/`idleDevices` are
+ * functions of the final occupancy, whose prefix half the key already fixes. So the best
+ * completion from a node depends on the key alone, which is what would make a memo sound.
+ *
+ * **What the numbers below do and do not say.** They describe the traversal as it runs today,
+ * incumbent pruning included. A memo would change which nodes get visited at all, so the hit
+ * rate here is not a predicted speed-up — it is the answer to "is there anything to memoise",
+ * measured on the search we have.
+ */
+type StateProbe = {
+  /** Canonical key -> times visited. The key carries `index`, so depths cannot collide. */
+  seen: Map<string, number>
+  byDepth: { depth: number; visited: number; unique: number; repeats: number }[]
+  checks: number
+}
+
+/**
+ * Four separators, none of which can occur in a device id, a voice id, a role or a section
+ * name, and one per nesting level rather than one character shared between levels — sections
+ * are themselves a joined list, so a single separator would let two different states spell the
+ * same key.
+ */
+const STATE_SECTION_SEP = '\u0001'
+const STATE_FIELD_SEP = '\u0002'
+const STATE_ITEM_SEP = '\u0003'
+const STATE_PART_SEP = '\u0004'
+
+/** Code unit order throughout (invariant 6): no `localeCompare`, on any of these. */
+function canonicalState(ctx: Ctx, state: State, index: number): string {
+  const occupied: string[] = []
+  for (const [key, bySection] of state.occupancy) {
+    if (bySection.size === 0) continue
+    const sections = [...bySection.keys()].sort(compareCodeUnits)
+    occupied.push(`${key}${STATE_FIELD_SEP}${sections.join(STATE_SECTION_SEP)}`)
+  }
+  occupied.sort(compareCodeUnits)
+
+  const distinct = new Set<string>()
+  for (let i = 0; i < index; i++) {
+    const request = ctx.requests[i] as RoleRequest
+    if (request.distinct !== true) continue
+    const taken = state.chosen[i]
+    if (taken === null || taken === undefined) continue
+    distinct.add(`${request.role}${STATE_FIELD_SEP}${taken.deviceId}`)
+  }
+
+  return [
+    String(index),
+    occupied.join(STATE_ITEM_SEP),
+    [...distinct].sort(compareCodeUnits).join(STATE_ITEM_SEP),
+  ].join(STATE_PART_SEP)
+}
+
+/**
+ * Per-device occupied counts, rebuilt from occupancy alone — the claim the key rests on. A
+ * device absent here has none occupied, which is exactly how `idleDevices` reads a missing
+ * entry.
+ */
+function derivedOccupiedCounts(state: State): Map<DeviceId, number> {
+  const counts = new Map<DeviceId, number>()
+  for (const [key, bySection] of state.occupancy) {
+    if (bySection.size === 0) continue
+    const slash = key.indexOf('/')
+    const deviceId = (slash < 0 ? key : key.slice(0, slash)) as DeviceId
+    counts.set(deviceId, (counts.get(deviceId) ?? 0) + 1)
+  }
+  return counts
+}
+
+function record(ctx: Ctx, state: State, index: number, probe: StateProbe): void {
+  const derived = derivedOccupiedCounts(state)
+  for (const id of ctx.deviceIds) {
+    const live = state.occupiedByDevice.get(id)?.size ?? 0
+    if ((derived.get(id) ?? 0) !== live) {
+      throw new Error(
+        `occupiedByDevice is not derivable from occupancy: ${id} is ${live} live and` +
+          ` ${derived.get(id) ?? 0} derived at depth ${index}. The canonical key would be` +
+          ` measuring something narrower than the state the search actually reads.`,
+      )
+    }
+  }
+  probe.checks++
+
+  const key = canonicalState(ctx, state, index)
+  const before = probe.seen.get(key)
+  probe.seen.set(key, (before ?? 0) + 1)
+  const row = probe.byDepth[index]
+  if (row === undefined) return
+  row.visited++
+  if (before === undefined) row.unique++
+  else row.repeats++
+}
+
+/** One depth's tally. `visited === unique + repeats`, always. */
+export type StateRepeatDepth = {
+  /** The request index the node was about to decide; `requests.length` is a leaf. */
+  depth: number
+  visited: number
+  unique: number
+  repeats: number
+}
+
+export type StateRepeatReport = {
+  /** Nodes the DFS visited, equal to `search.nodes` by construction. */
+  visited: number
+  /** Distinct canonical states among them. */
+  unique: number
+  /** Visits to a state already seen at that depth — what a memo would have answered. */
+  repeats: number
+  /** Nodes at which `occupiedByDevice` was confirmed derivable from occupancy. */
+  checks: number
+  byDepth: StateRepeatDepth[]
+  /** The ordinary report for the same run, so a probe run is comparable to a shipped one. */
+  search: SearchReport
+}
+
+/**
+ * §7.1's search, run once with the state probe attached. Same `AssignInput` as `assign`, so a
+ * measurement is taken on exactly the rig, direction, mood and seed a guide would use — and
+ * `nodeCap` is honoured, so a caller measuring a worst case has to lift it deliberately.
+ *
+ * Not called by `assign`, and nothing in the pipeline reaches it. The search this runs is the
+ * shipped one, unmodified apart from the single `if (probe !== undefined)` in `dfs`.
+ */
+export function measureStateRepeats(input: AssignInput): StateRepeatReport {
+  const ctx = buildCtx(input)
+  const probe: StateProbe = {
+    seen: new Map(),
+    byDepth: Array.from({ length: ctx.requests.length + 1 }, (_, depth) => ({
+      depth,
+      visited: 0,
+      unique: 0,
+      repeats: 0,
+    })),
+    checks: 0,
+  }
+  const outcome = search(ctx, probe)
+
+  let unique = 0
+  let repeats = 0
+  for (const row of probe.byDepth) {
+    unique += row.unique
+    repeats += row.repeats
+  }
+
+  return {
+    visited: outcome.nodes,
+    unique,
+    repeats,
+    checks: probe.checks,
+    byDepth: probe.byDepth,
     search: {
       nodes: outcome.nodes,
       nodeCap: ctx.nodeCap,

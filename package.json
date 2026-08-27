@@ -20,6 +20,7 @@
     "audit": "tsx scripts/audit-verified.ts",
     "bench:search": "tsx scripts/bench-search.ts",
     "bench:decomposition": "tsx scripts/bench-decomposition.ts",
+    "bench:search-memo": "tsx scripts/bench-search-memo.ts",
     "verify": "npm run typecheck && npm run test",
     "gen:golden": "tsx test/golden/generate.ts --write",
     "gen:guides": "tsx test/golden/guides.ts --write"
