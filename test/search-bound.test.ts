@@ -4,16 +4,31 @@ import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 
 /**
- * §7.1/#159. The exact traversal every shipped direction walks, seed by seed, recorded on the
- * unchanged search as the baseline for work on `lowerBound`.
+ * §7.1/#159/#78. The exact traversal every shipped direction walks, seed by seed.
  *
  * #159's closing measurement put the search at bounded-on-arrival for 86.4% of its nodes on
- * `industrial-techno` and 86.7% on `weave`, so the bound is where the cost lives. The work this
- * guards is meant to make evaluating the bound cheaper **at identical bound values**: the same
- * `Score` at the same node, reached by less work. A bound that returns a different value is a
- * different bound, whether it prunes more or less, so **any one-node change here is a failure**
- * and not a number to re-record. Re-record only when the library itself changes — a device, a
- * direction, a recipe — because those move the problem rather than the algorithm.
+ * `industrial-techno` and 86.7% on `weave`, so the bound is where the cost lives — and #78 said
+ * the answer was a sharper bound rather than a bigger cap. **Both have now happened, and the
+ * rule for this table changed with them.**
+ *
+ * The original rule was that any one-node change here is a failure, because the work being
+ * guarded was meant to make the *same* bound cheaper to evaluate. That still holds for that kind
+ * of work. But a change that makes the bound *tighter* is a different thing: it returns a larger
+ * admissible value, prunes strictly more, and reaches an identical answer from fewer nodes. That
+ * is not a regression to explain, it is the point. So there are now three reasons a row moves,
+ * and they want different responses:
+ *
+ *  - **The library moved** — a device, a direction, a recipe. Re-record; the problem changed.
+ *  - **The bound got tighter.** Re-record, but only alongside evidence that the *answer* did not
+ *    move: `test/search-matching-floor.test.ts` diffs whole results against the previous floor
+ *    and is the thing that makes a re-record here safe rather than convenient.
+ *  - **Anything else.** A failure. A bound that returns a different value at the same node
+ *    without being provably tighter is a different bound, whether it prunes more or less.
+ *
+ * The figures below were re-recorded when `liveFloor` gained the one-step matching repair (#78).
+ * The pre-repair row for `industrial-techno` peaked at 165,785 nodes on seed 9 against 8,309
+ * now; that number is pinned in `test/search-matching-floor.test.ts` against the deliberately
+ * unrepaired floor, so the before and the after are both still measured.
  *
  * `nodeCap: 20_000_000` is the cap lifted clear of the measurement. Nothing in this matrix caps
  * at `DEFAULT_NODE_CAP` today, so the figures are the same either way, and lifting it says that
@@ -21,9 +36,8 @@ import { TEMPLATES } from '../lib/templates/index'
  * reports the cap and not what the walk would have been, which is the one number a degraded
  * search cannot give you.
  *
- * The whole sweep is 168 exhaustive searches, about fifteen seconds, most of it in
- * `industrial-techno`. That is the price of catching a bound change on the direction it matters
- * on rather than only on a cheap one.
+ * The whole sweep is 168 exhaustive searches. It used to take about fifteen seconds, nearly all
+ * of it in `industrial-techno`; the repair took it under two.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -32,33 +46,32 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      25716, 25729, 25798, 25729, 25716, 25791, 25739, 25729, 25716, 25729, 25716, 25790,
-      25753, 25729, 25716, 25790, 25729, 25716, 25729, 25716, 25729, 25716, 25730, 25716,
+      25716, 25729, 25798, 25729, 25716, 25791, 25739, 25729, 25716, 25729, 25716, 25790, 25753,
+      25729, 25716, 25790, 25729, 25716, 25729, 25716, 25729, 25716, 25730, 25716
     ],
     'drone-study': [
-      14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-      14, 14,
+      14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+      14
     ],
     'industrial-techno': [
-      148793, 149068, 148788, 149090, 148788, 155174, 148788, 149053, 150043, 165785, 148793,
-      149090, 150641, 149084, 150642, 150626, 149053, 148788, 149068, 150042, 164166, 148789,
-      150629, 148789,
+      6265, 6524, 6260, 6546, 6260, 7483, 6260, 6511, 6646, 8309, 6265, 6546, 7001, 6540, 7002,
+      7205, 6511, 6260, 6524, 6645, 7569, 6261, 7208, 6261
     ],
     'lydian-house': [
-      324, 324, 324, 324, 324, 324, 324, 324, 324, 324, 324, 324, 324, 324, 324, 324, 324, 324,
-      324, 324, 324, 324, 324, 324,
+      279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279,
+      279, 279, 279, 279, 279, 279
     ],
     'major-key-electro': [
-      1928, 1897, 1921, 1899, 1901, 1897, 1901, 1901, 2139, 1896, 1928, 1899, 2278, 2613, 2091,
-      2272, 1878, 1921, 1878, 2137, 1896, 1901, 2106, 1878,
+      1753, 1722, 1746, 1724, 1726, 1722, 1726, 1726, 1979, 1721, 1753, 1724, 2103, 2409, 1901,
+      2127, 1703, 1746, 1703, 1977, 1721, 1726, 1946, 1703
     ],
     relay: [
-      29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-      29, 29,
+      29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+      29
     ],
     weave: [
-      6744, 6770, 6744, 6771, 6744, 6788, 6744, 6770, 6983, 6770, 6744, 6771, 6983, 6769, 6744,
-      6925, 6770, 6744, 6770, 6981, 6770, 6744, 6923, 6744,
+      4535, 4589, 4535, 4591, 4535, 4625, 4535, 4589, 4803, 4589, 4535, 4591, 4803, 4587, 4535,
+      4716, 4589, 4535, 4589, 4791, 4589, 4535, 4704, 4535
     ],
   }
 

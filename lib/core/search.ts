@@ -239,11 +239,14 @@ export type AssignmentResult = {
  * degrading", for a search that runs once when somebody presses generate.
  *
  * **50,000 was chosen when the library had three devices, and it stopped being generous.** Raised
- * to 150,000 on the measurement below, which is a **stopgap and is filed as one — see #78**, the
+ * to 150,000 on the measurement below, which is a **stopgap and was filed as one — see #78**, the
  * issue arguing that raising the cap treats the symptom and buys time until the next device. It
- * has been right twice now. What would actually fix this is a tighter *bound* — the suffix floor
- * admits branches a sharper admissible estimate would prune — and that is bound work, not a
- * constant.
+ * was right three times. What it said would actually fix this is a tighter *bound* — the suffix
+ * floor admits branches a sharper admissible estimate would prune — and that is bound work, not
+ * a constant. **That is what finally happened; the last section below is the measurement.** The
+ * history between here and there is left standing rather than tidied away, because every raise
+ * in it was made against the same argument and the record of being wrong three times is the
+ * useful part.
  *
  * The measurement, on the tree that raised it:
  *
@@ -322,7 +325,7 @@ export type AssignmentResult = {
  * reading carefully, because the promising number was misleading.
  *
  * `npm run bench:search-shape` divides the nodes. On `industrial-techno` seed 9, the worst case
- * above:
+ * as it stood *before* the matching repair below:
  *
  *     visited   165,785
  *     bounded   143,270   86.4%   abandoned by `lowerBound` on arrival, never expanded
@@ -378,6 +381,39 @@ export type AssignmentResult = {
  * count is non-monotonic, and forcing `industrial-techno`'s two polyphonic requests to one note
  * each *raises* the eighteen-device worst case to 147,280 — and #160 asks whether the search
  * should be a solver rather than a hand-rolled bound. Neither is closed by this constant moving.
+ *
+ * ## The tighter bound arrived, and every figure above it is now historical
+ *
+ * `liveFloor` gained the one-step matching repair described in its own docstring: two remaining
+ * requests are routinely costed against the same voice, and §4.2 will not let both have it, so
+ * the floor charges the cheaper escape for all but one of them. On `industrial-techno` seed 9,
+ * the case that forced the third raise:
+ *
+ *     visited     8,309   was 165,785      20.0x fewer
+ *     bounded     7,348   88.4%            was 143,270 at 86.4%
+ *     expanded      961                    was 22,515
+ *     leaves          7                    unchanged, and it was always seven
+ *     wall clock   19.6 ms                 was 384.1 ms, interleaved on one machine
+ *
+ * The worst case across the whole 168-search sweep went from 165,785 to **25,798**, and it is no
+ * longer `industrial-techno` at all — it is `ambient-dub` seed 2, which the repair does nothing
+ * for because its contested voices are always free to break. So the cap now clears the measured
+ * worst case by **7.8x** rather than 21%.
+ *
+ * **It is deliberately not lowered.** The argument that a cap is a latency guard has not changed,
+ * the headroom costs nothing while nothing reaches it, and moving a constant that is not binding
+ * would only have to be moved back. What has changed is which signal to watch: a capped run is
+ * now a long way from ordinary, and `test/search-symmetry.test.ts`'s five-percent band around
+ * 25,798 fires long before the cap does.
+ *
+ * Two things above are superseded rather than merely dated, and are marked here rather than
+ * deleted. The 86.4%-bounded table is pre-repair — the shape survived, at 88.4%, so "the cost is
+ * `lowerBound` at nodes that never expand" still holds and is still where work should aim. And
+ * the polyphony probe's 132,615 baseline belongs to the floor before both #78's live version and
+ * this repair; the hypothesis it raised is untouched by any of this and is still unconfirmed.
+ *
+ * Neither #159's non-monotonicity nor #160's solver question is closed by this either. What is
+ * closed is #78's own claim, which was that the bound rather than the constant was the problem.
  */
 export const DEFAULT_NODE_CAP = 200_000
 
@@ -511,6 +547,26 @@ type Ctx = {
   /** Devices a request could legally occupy, ignoring occupancy — for the idle lower bound. */
   suffixReach: Set<DeviceId>[]
   /**
+   * §4.2/§7.1. Per request, `sustain === 'continuous'` — read off the declaration rather than
+   * derived from the section list, because it is the declaration the argument is about. Two
+   * continuous requests occupy the same sections as each other, so §4.2 forbids them one
+   * assignable between them, and that is the whole premise of `liveFloor`'s matching repair.
+   *
+   * A transient request listing every section would occupy the same sections too, and could be
+   * bucketed on the same argument. It is not, deliberately: `sections` is a list a template may
+   * shorten, `sustain` is a claim about the part, and a bound whose strength depended on the
+   * first would move when a section was renamed. Narrower than it strictly has to be, and
+   * narrower is the safe direction for a floor.
+   */
+  continuous: boolean[]
+  /**
+   * Per request, the assignable each `ladder` entry occupies, as an index into the rig's
+   * assignables. Parallel to `ladder`, so the repair can ask "same voice?" with an integer
+   * compare rather than by re-deriving an `AssignableKey` at every node. `-1` for a stack, which
+   * takes several and is never bucketed.
+   */
+  ladderSlot: Int32Array[]
+  /**
    * The cheapest the *remaining* requests can possibly be on the additive keys. `suffixFloor[i]`
    * covers requests i..n-1, and `suffixFloor[n]` is all zeroes so the leaf bound stays exact.
    *
@@ -534,6 +590,27 @@ type Ctx = {
    * which is the safe one for a lower bound.
    */
   stackFloor: readonly (Cost | undefined)[]
+  /**
+   * `liveFloor`'s working arrays, allocated once per `assign` rather than once per node.
+   *
+   * The one mutable thing on `Ctx`, and it is spelled as scratch rather than hidden among the
+   * precomputed tables so nobody reads a value out of it expecting it to mean something. It is
+   * written and read within a single `liveFloor` call and carries nothing between them; the
+   * search is one recursion on one thread and `liveFloor` does not call itself, so there is no
+   * second writer. Entries below `from` are stale by construction and never read.
+   */
+  scratch: FloorScratch
+  /**
+   * §7.1/#78. Whether `liveFloor` applies the matching repair. **Always true in `assign`**, and
+   * false only through `measureAssignWithoutMatchingRepair`, which exists so a test can run the
+   * pre-repair floor and diff the two whole results.
+   *
+   * Not an option on `AssignInput`: a caller has no business choosing a weaker bound, and the
+   * two paths must not be able to disagree about which one shipped. It gates the repair block
+   * wholesale rather than threading a condition through the arithmetic, so the `false` path is
+   * the floor as it stood before the repair existed and not a second implementation of it.
+   */
+  repair: boolean
   missSlots: number
   seed: number
   nodeCap: number
@@ -549,6 +626,23 @@ type Ctx = {
  * only *widen* each request's option set, so the per-request minimum can only fall, and a floor
  * built from it stays below anything the search can actually reach.
  */
+/** See `Ctx.scratch`. Indexed by absolute request index throughout. */
+type FloorScratch = {
+  /** The cheapest free option, or `null` for a request with none — a forced miss. */
+  cost: (Cost | null)[]
+  /**
+   * The assignable that option occupies, when the request is one the repair may bucket:
+   * continuous, and filled by a single voice. `-1` for everything else.
+   */
+  slot: Int32Array
+  /** Its position in the ladder, so the alternative can resume from just past it. */
+  at: Int32Array
+  /** The cheapest option that does *not* occupy `slot`, or `null` for a miss. */
+  alt: (Cost | null)[]
+  /** Where that alternative's miss falls in `Score` order. See `compareGiveUp`. */
+  rank: Int32Array
+}
+
 type SuffixFloor = {
   misses: readonly number[]
   optionalMisses: number
@@ -627,6 +721,62 @@ function cheapestCandidate(candidates: readonly Cost[]): Cost | undefined {
  * Two deliberate optimisms, both the safe direction for a lower bound: `distinct` (§12.6) is not
  * consulted, and stack plans are costed as though their members were free. Ignoring a constraint
  * can only widen a request's options and lower its minimum.
+ *
+ * ## The one-step matching repair
+ *
+ * Taking each request's cheapest option independently is a relaxation, and the thing it relaxes
+ * is that the remaining requests are competing for the *same voices*. Two of them can both be
+ * costed against the Deluge's first synth track, and on `industrial-techno` two of them usually
+ * are: 58.5% of the calls on that direction have at least one such collision that is not free
+ * to break. So the floor is repaired one step, at exactly the collisions §4.2 forbids.
+ *
+ * **The exclusion, and it is one rule.** §4.2: two requests may share an assignable exactly when
+ * their sections are **disjoint**, because conflict is same section, same voice. Two *continuous*
+ * requests have the same sections as each other — every one of them — so their overlap is total
+ * and they can never share. Therefore, among the continuous requests whose cheapest option is the
+ * same single assignable `A`, **at most one occupies `A` in any completion**. That holds for a
+ * stack that happens to include `A` too: occupying is occupying.
+ *
+ * Nothing here is a claim about what `A` is carrying *now*. The exclusion is between the bucket's
+ * own members in the finished assignment, and current occupancy has already had its say — a
+ * candidate that is not free now is not in the ladder walk that produced these costs at all.
+ *
+ * A *transient* request is excluded and keeps its unrepaired cheapest, because its sections may
+ * be disjoint from another request's and then §4.2 lets the two share one voice quite legally.
+ * Bucket it and the floor charges it for an eviction that was never going to happen.
+ *
+ * **The repair.** For a bucket `B` on `A`, let `c_i` be member `i`'s cheapest option (on `A`)
+ * and `alt_i` its cheapest option that does not occupy `A`. Whichever member ends up with `A`,
+ * every other member pays at least its own `alt`, so
+ *
+ *     sum over B of cost(completion) >=lex min over i of ( c_i + sum over m != i of alt_m )
+ *
+ * and that minimum replaces the `sum of c_i` the unrepaired floor charged. It is never smaller,
+ * because `alt_m >=lex c_m` by construction — restricting a minimisation's domain can only raise
+ * it — so the repair is `>=lex` the floor it replaces and the bound stays a bound. Summing
+ * per-bucket minima is legitimate for the same reason summing per-request minima is: the vectors
+ * are non-negative integers, and lexicographic order on those is compatible with addition.
+ *
+ * Picking the minimising `i` needs no search. The `k` sums differ only by `c_i - alt_i`, so the
+ * lexicographic minimum is the member with the lexicographically smallest `c_i - alt_i` — the
+ * one that loses most by giving `A` up. `compareGiveUp` is that comparison.
+ *
+ * **Where `alt` is deliberately understated.** It is the cheapest of: the next free ladder entry
+ * (the ladder is cost-sorted and `A` appears in it exactly once, so the next *free* entry after
+ * `A` is the cheapest free entry that is not `A`), the request's stack plan, and the miss. The
+ * stack is thrown in without asking whether its pool contains `A`. That can only make `alt`
+ * cheaper than the true cheapest-avoiding-`A`, which lowers the repair — the safe direction, and
+ * it keeps the stack the same conflict-free abstraction it already is everywhere else here.
+ *
+ * **The miss is a real option and is costed as one**, on `misses[priority]` or on
+ * `optionalMisses`. Both outrank everything a landed option can charge, so a member whose only
+ * escape from `A` is a miss is exactly the member `compareGiveUp` hands `A` to.
+ *
+ * **One step, not a matching.** Nothing here iterates: the repaired costs are not re-bucketed,
+ * and a bucket is broken against the *original* cheapest rather than against what its neighbours
+ * were just moved onto. A full assignment relaxation would be a stronger bound and a solver
+ * (#159 says as much); this is the first step of one, taken because it is O(remaining) per node
+ * and the search is bound-dominated.
  */
 function liveFloor(ctx: Ctx, state: State, from: number): SuffixFloor {
   const misses = new Array<number>(ctx.missSlots).fill(0)
@@ -635,20 +785,48 @@ function liveFloor(ctx: Ctx, state: State, from: number): SuffixFloor {
   let stackedChords = 0
   let recipeDistance = 0
   let roleFitPenalty = 0
+  const n = ctx.requests.length
+  const scratch = ctx.scratch
+  // Whether any two bucketable requests picked the same voice. Almost every node either has one
+  // collision or none, so this saves the second pass entirely on the nodes that have none.
+  let collided = false
 
-  for (let j = from; j < ctx.requests.length; j++) {
+  for (let j = from; j < n; j++) {
     const request = ctx.requests[j] as RoleRequest
     // The ladder is in `cheapestCandidate` order, so the first free entry *is* the cheapest free
     // one. Usually that is the first entry and the walk stops immediately.
+    const ladder = ctx.ladder[j] ?? []
     let best: Cost | undefined
-    for (const candidate of ctx.ladder[j] ?? []) {
+    let at = -1
+    for (let i = 0; i < ladder.length; i++) {
+      const candidate = ladder[i] as Candidate
       if (isFree(ctx, state, j, candidate)) {
         best = candidate
+        at = i
         break
       }
     }
     const stack = ctx.stackFloor[j]
-    if (stack !== undefined && (best === undefined || compareCost(stack, best) < 0)) best = stack
+    if (stack !== undefined && (best === undefined || compareCost(stack, best) < 0)) {
+      best = stack
+      // A stack is the conflict-free option: it is not bucketed, so it claims no voice here.
+      at = -1
+    }
+    scratch.at[j] = at
+    const slot =
+      at < 0 || !(ctx.continuous[j] === true)
+        ? -1
+        : ((ctx.ladderSlot[j] as Int32Array)[at] as number)
+    scratch.slot[j] = slot
+    scratch.cost[j] = best ?? null
+    if (slot >= 0 && !collided) {
+      for (let b = from; b < j; b++) {
+        if (scratch.slot[b] === slot) {
+          collided = true
+          break
+        }
+      }
+    }
 
     if (best === undefined) {
       if (request.optional === true) optionalMisses += 1
@@ -661,7 +839,127 @@ function liveFloor(ctx: Ctx, state: State, from: number): SuffixFloor {
     roleFitPenalty += best.roleFit
   }
 
+  if (collided && ctx.repair) {
+    for (let a = from; a < n; a++) {
+      const slot = scratch.slot[a]
+      if (slot === undefined || slot < 0) continue
+      // Each bucket is handled once, at its lowest member. Anything earlier sharing this voice
+      // means this is not that member.
+      let first = true
+      for (let b = from; b < a; b++) {
+        if (scratch.slot[b] === slot) {
+          first = false
+          break
+        }
+      }
+      if (!first) continue
+
+      // Pass one: each member's escape from `A`, and which member keeps it.
+      let keeps = -1
+      for (let b = a; b < n; b++) {
+        if (scratch.slot[b] !== slot) continue
+        const alt = alternativeTo(ctx, state, b)
+        const request = ctx.requests[b] as RoleRequest
+        scratch.alt[b] = alt
+        // Ranked in `Score` order: a required miss at priority p sits at p, an optional miss
+        // below every required one, and a landed alternative below both — it charges no miss.
+        scratch.rank[b] =
+          alt !== null
+            ? ctx.missSlots + 1
+            : request.optional === true
+              ? ctx.missSlots
+              : request.priority - 1
+        if (keeps < 0 || compareGiveUp(scratch, b, keeps) < 0) keeps = b
+      }
+      if (keeps < 0) continue
+
+      // Pass two: everyone else pays their escape instead of the voice they cannot have. The
+      // floor already charged `c`, so what is added is the difference — which may be negative on
+      // an individual key and cannot be on the total, since the total is a sum of real costs.
+      for (let b = a; b < n; b++) {
+        if (scratch.slot[b] !== slot || b === keeps) continue
+        const cost = scratch.cost[b]
+        if (cost === null || cost === undefined) continue
+        const alt = scratch.alt[b] ?? null
+        if (alt === null) {
+          const request = ctx.requests[b] as RoleRequest
+          if (request.optional === true) optionalMisses += 1
+          else misses[request.priority - 1] = (misses[request.priority - 1] ?? 0) + 1
+        } else {
+          sampledChords += alt.sampledChord
+          stackedChords += alt.stacked
+          recipeDistance += alt.distance
+          roleFitPenalty += alt.roleFit
+        }
+        sampledChords -= cost.sampledChord
+        stackedChords -= cost.stacked
+        recipeDistance -= cost.distance
+        roleFitPenalty -= cost.roleFit
+      }
+    }
+  }
+
   return { misses, optionalMisses, sampledChords, stackedChords, recipeDistance, roleFitPenalty }
+}
+
+/**
+ * Request `j`'s cheapest option that does not occupy the voice its cheapest option took.
+ *
+ * The ladder is cost-sorted and holds each assignable exactly once, and `scratch.at[j]` is the
+ * *first* free entry — so every entry before it is occupied and cannot be an option, the entry
+ * at it is the voice being given up, and the first free entry after it is the cheapest remaining
+ * one. No re-minimisation and no second sort.
+ *
+ * `null` means the request has no escape but the miss, which `liveFloor` costs as one.
+ */
+function alternativeTo(ctx: Ctx, state: State, j: number): Cost | null {
+  const ladder = ctx.ladder[j] ?? []
+  let alt: Cost | undefined
+  for (let i = (ctx.scratch.at[j] as number) + 1; i < ladder.length; i++) {
+    const candidate = ladder[i] as Candidate
+    if (isFree(ctx, state, j, candidate)) {
+      alt = candidate
+      break
+    }
+  }
+  const stack = ctx.stackFloor[j]
+  if (stack !== undefined && (alt === undefined || compareCost(stack, alt) < 0)) alt = stack
+  return alt ?? null
+}
+
+/**
+ * `c_a - alt_a` against `c_b - alt_b`, lexicographically in `Score` key order — which member of
+ * a bucket loses most by giving the shared voice up, and therefore keeps it.
+ *
+ * The differences are compared rather than the sums they belong to because the sums differ only
+ * by this term: `c_i + sum(m != i) alt_m` is `sum(m) alt_m + (c_i - alt_i)`, and the first half
+ * is common to every member. Components may be negative here, which is why this is its own
+ * comparison and not `compareCost`.
+ *
+ * The miss keys come first, and at most one of them is non-zero for any one member — a miss
+ * charges one point in one slot — so `rank` stands in for that whole prefix: the member whose
+ * escape charges a miss *earlier* in the vector has the lexicographically smaller difference.
+ */
+function compareGiveUp(scratch: FloorScratch, a: number, b: number): number {
+  const rankA = scratch.rank[a] as number
+  const rankB = scratch.rank[b] as number
+  if (rankA !== rankB) return rankA - rankB
+  const costA = scratch.cost[a] as Cost
+  const costB = scratch.cost[b] as Cost
+  const altA = scratch.alt[a] ?? null
+  const altB = scratch.alt[b] ?? null
+  const sampled = costA.sampledChord - (altA?.sampledChord ?? 0)
+  const sampledOther = costB.sampledChord - (altB?.sampledChord ?? 0)
+  if (sampled !== sampledOther) return sampled - sampledOther
+  const stacked = costA.stacked - (altA?.stacked ?? 0)
+  const stackedOther = costB.stacked - (altB?.stacked ?? 0)
+  if (stacked !== stackedOther) return stacked - stackedOther
+  const distance = costA.distance - (altA?.distance ?? 0)
+  const distanceOther = costB.distance - (altB?.distance ?? 0)
+  if (distance !== distanceOther) return distance - distanceOther
+  const fit = costA.roleFit - (altA?.roleFit ?? 0)
+  const fitOther = costB.roleFit - (altB?.roleFit ?? 0)
+  return fit - fitOther
 }
 
 /**
@@ -729,7 +1027,7 @@ function buildSuffixFloor(
   return floors
 }
 
-function buildCtx(input: AssignInput): Ctx {
+function buildCtx(input: AssignInput, repair = true): Ctx {
   const { template, devices, mood, seed } = input
 
   const deviceById = new Map<DeviceId, Device>()
@@ -880,6 +1178,37 @@ function buildCtx(input: AssignInput): Ctx {
 
   const suffixFloor = buildSuffixFloor(requests, voiceable, stacks, missSlots)
 
+  // #78. The ladder is sorted once here, not per node: the candidate lists are static, so the
+  // order they are searched in is too. `deviceId` then `voiceId` after the four cost keys makes
+  // it total, so the bound cannot depend on the order `voiceable` happened to be built in.
+  const ladder: readonly Candidate[][] = voiceable.map((list) =>
+    [...list].sort(
+      (a, b) =>
+        compareCost(a, b) ||
+        compareCodeUnits(a.deviceId, b.deviceId) ||
+        compareCodeUnits(
+          (a.assignables[0] as Assignable).voiceId,
+          (b.assignables[0] as Assignable).voiceId,
+        ),
+    ),
+  )
+
+  // §7.1's matching repair. The voice each ladder entry occupies, as an integer, so a node can
+  // ask "same voice?" without touching a string. `assignables` is the rig in canonical order
+  // (§7.2), so the number a voice gets is a function of the rig alone.
+  const slotOf = new Map<AssignableKey, number>()
+  assignables.forEach((a, i) => slotOf.set(assignableKey(a), i))
+  const ladderSlot = ladder.map((list) => {
+    const slots = new Int32Array(list.length)
+    for (let i = 0; i < list.length; i++) {
+      slots[i] = slotOf.get((list[i] as Candidate).keys[0] as AssignableKey) ?? -1
+    }
+    return slots
+  })
+  // Two continuous requests want the same sections as each other, so §4.2 will not let them
+  // share a voice. `liveFloor` says why that is the premise the repair rests on.
+  const continuous = requests.map((request) => request.sustain === 'continuous')
+
   return {
     template,
     devices,
@@ -895,21 +1224,18 @@ function buildCtx(input: AssignInput): Ctx {
     stacks,
     suffixReach,
     suffixFloor,
-    // #78. The ladder is sorted once here, not per node: the candidate lists are static, so the
-    // order they are searched in is too. `deviceId` then `voiceId` after the four cost keys makes
-    // it total, so the bound cannot depend on the order `voiceable` happened to be built in.
-    ladder: voiceable.map((list) =>
-      [...list].sort(
-        (a, b) =>
-          compareCost(a, b) ||
-          compareCodeUnits(a.deviceId, b.deviceId) ||
-          compareCodeUnits(
-            (a.assignables[0] as Assignable).voiceId,
-            (b.assignables[0] as Assignable).voiceId,
-          ),
-      ),
-    ),
+    continuous,
+    ladderSlot,
+    ladder,
     stackFloor: stacks.map((list) => cheapestCandidate(list)),
+    scratch: {
+      cost: new Array<Cost | null>(requests.length).fill(null),
+      slot: new Int32Array(requests.length).fill(-1),
+      at: new Int32Array(requests.length).fill(-1),
+      alt: new Array<Cost | null>(requests.length).fill(null),
+      rank: new Int32Array(requests.length).fill(0),
+    },
+    repair,
     missSlots,
     seed,
     nodeCap: input.nodeCap ?? DEFAULT_NODE_CAP,
@@ -1895,7 +2221,25 @@ export type AssignInput = {
 
 /** §7 step 6. Search assignments against the lexicographic objective, producing `Occupancy`. */
 export function assign(input: AssignInput): AssignmentResult {
-  const ctx = buildCtx(input)
+  return assignFrom(buildCtx(input))
+}
+
+/**
+ * §7.1/#78. `assign` with `liveFloor`'s matching repair switched off — **the floor exactly as it
+ * stood before the repair, and a test-only door**, named like `measureSearchShape` so nobody
+ * arrives at it by accident and reachable from `assign` never.
+ *
+ * A tighter admissible bound must not change the answer, only how fast it is reached. That is a
+ * claim about two whole `AssignmentResult`s and not about `Score` — a bound that quietly moved
+ * which voice carried a part, or which section it occupied, or how a shortfall was classified,
+ * would tie on score and still have changed every guide the resolver prints. `search.nodes` is
+ * the one field the two are *meant* to differ on. See `test/search-matching-floor.test.ts`.
+ */
+export function measureAssignWithoutMatchingRepair(input: AssignInput): AssignmentResult {
+  return assignFrom(buildCtx(input, false))
+}
+
+function assignFrom(ctx: Ctx): AssignmentResult {
   const outcome = search(ctx)
 
   // §7.1: on the cap, the greedy result stands and the fallback is reported. Reporting it in
