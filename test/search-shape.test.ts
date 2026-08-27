@@ -8,9 +8,17 @@ import { TEMPLATES, industrialTechno } from '../lib/templates/index'
  * traversal without changing it, and that the claim its state key rests on is true.
  *
  * The numbers themselves live in `npm run bench:search-shape` and in `DEFAULT_NODE_CAP`'s
- * docstring. They are not asserted here — a node count is pinned once, in
- * `test/search-symmetry.test.ts`'s band, and pinning it twice would mean two places to update
- * for one measurement and a second chance to disagree.
+ * docstring. They are not asserted here, because two other files assert them already and ask
+ * different questions of the same measurement. `test/search-symmetry.test.ts` holds the peak in
+ * a five percent band, which is the alarm on the cap. `test/search-bound.test.ts` pins every
+ * direction at every seed exactly, which is the guard on `lowerBound` still returning the value
+ * it used to return, where one node of drift is the whole finding.
+ *
+ * So the peak is now asserted in two places, loosely and exactly, and a device or a direction
+ * re-records both. That is the cost of the exact table and it was taken deliberately: a band
+ * wide enough to survive an honest re-measurement is far too wide to see a bound change.
+ * This probe's own `visited` is asserted against the traversal it shadows, not against any
+ * recorded figure.
  */
 
 const LIFTED = 20_000_000

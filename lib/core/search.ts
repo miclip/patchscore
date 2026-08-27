@@ -931,10 +931,22 @@ type State = {
   occupiedByDevice: Map<DeviceId, Set<AssignableKey>>
   occupancy: Occupancy
   chosen: (Candidate | null)[]
+  /**
+   * `crowdOverflowFrom(ctx, state)` and `idleDevicesFrom(ctx, state)`, carried rather than
+   * recomputed. Both were whole-rig scans run at every node by `scoreOf` and `lowerBound`, and
+   * the search is bound-dominated (#159: 86.4% of nodes bounded on arrival), so the scan ran
+   * mostly to prove a node was not worth expanding.
+   *
+   * They are a cache and not a second source of truth. `occupiedByDevice` still decides, these
+   * follow it in `apply`/`undo`, and `measureSearchShape` recomputes both at every node of a
+   * real search and throws if they have drifted. Nothing else may write them.
+   */
+  crowd: number
+  idle: number
 }
 
 function emptyState(ctx: Ctx): State {
-  return {
+  const state: State = {
     misses: new Array(ctx.missSlots).fill(0),
     optionalMisses: 0,
     recipeDistance: 0,
@@ -944,10 +956,18 @@ function emptyState(ctx: Ctx): State {
     occupiedByDevice: new Map(ctx.devices.map((d) => [d.id, new Set<AssignableKey>()])),
     occupancy: new Map(),
     chosen: new Array(ctx.requests.length).fill(null),
+    crowd: 0,
+    idle: 0,
   }
+  // Seeded from the scans rather than from what an empty rig obviously scores, so the cache and
+  // its definition cannot disagree at the root even if either definition changes.
+  state.crowd = crowdOverflowFrom(ctx, state)
+  state.idle = idleDevicesFrom(ctx, state)
+  return state
 }
 
-function crowdOverflow(ctx: Ctx, state: State): number {
+/** The definition of `state.crowd`. Called to seed it and to check it, never inside the walk. */
+function crowdOverflowFrom(ctx: Ctx, state: State): number {
   let total = 0
   for (const id of ctx.deviceIds) {
     const occupied = state.occupiedByDevice.get(id)?.size ?? 0
@@ -965,7 +985,7 @@ function crowdOverflow(ctx: Ctx, state: State): number {
  * §12.4: an assignable occupied in *any* section counts once — the physical voice is committed
  * for the whole build even if its part only plays in Build.
  */
-function idleDevices(ctx: Ctx, state: State): number {
+function idleDevicesFrom(ctx: Ctx, state: State): number {
   let idle = 0
   for (const id of ctx.deviceIds) {
     if ((state.occupiedByDevice.get(id)?.size ?? 0) === 0) idle++
@@ -973,16 +993,33 @@ function idleDevices(ctx: Ctx, state: State): number {
   return idle
 }
 
+/**
+ * One device's occupied count moved from `before` to `after`, so move the two scalars with it.
+ *
+ * Only a transition between globally unoccupied and occupied can change `idle`, and only the
+ * part of the count above `comfortableVoices` can change `crowd` — both are read off the two
+ * sizes rather than rediscovered, which is what makes this O(1) instead of a rig scan. A
+ * candidate's keys all sit on one device (`candidate.deviceId`), so one call covers a whole
+ * `apply` or `undo`.
+ */
+function recount(ctx: Ctx, state: State, deviceId: DeviceId, before: number, after: number): void {
+  if (after === before) return
+  const comfortable = ctx.comfortable.get(deviceId) ?? 0
+  state.crowd += Math.max(0, after - comfortable) - Math.max(0, before - comfortable)
+  if (before === 0) state.idle--
+  else if (after === 0) state.idle++
+}
+
 function scoreOf(ctx: Ctx, state: State): Score {
   return [
     ...state.misses,
-    crowdOverflow(ctx, state),
+    state.crowd,
     state.optionalMisses,
     state.sampledChords,
     state.stackedChords,
     state.recipeDistance,
     state.roleFitPenalty,
-    idleDevices(ctx, state),
+    state.idle,
   ] as unknown as Score
 }
 
@@ -1030,20 +1067,25 @@ function lowerBound(ctx: Ctx, state: State, next: number): Score {
   // to survive no longer does.
   const floor = liveFloor(ctx, state, next)
   const reachable = ctx.suffixReach[next] ?? new Set<DeviceId>()
-  let unreachableIdle = 0
-  let reachableIdle = 0
+  // The same two counts as before, off a smaller loop. The idle devices partition into reachable
+  // and unreachable, `state.idle` is the total, so only one class has to be counted — and it is
+  // the one that can be walked directly, since `reachable` is a subset of the rig. Membership is
+  // tested through `occupiedByDevice` rather than assumed, so a device id that is somehow not in
+  // the rig contributes to neither class, exactly as the whole-rig loop it replaces.
+  //
   // A voiceless device is in no request's reachable set, so it lands in `unreachableIdle` and is
-  // counted here exactly as `idleDevices` counts it — the bound stays exact at the leaf.
-  for (const id of ctx.deviceIds) {
-    if ((state.occupiedByDevice.get(id)?.size ?? 0) !== 0) continue
-    if (reachable.has(id)) reachableIdle++
-    else unreachableIdle++
+  // counted here exactly as `idleDevicesFrom` counts it — the bound stays exact at the leaf.
+  let reachableIdle = 0
+  for (const id of reachable) {
+    const occupied = state.occupiedByDevice.get(id)
+    if (occupied !== undefined && occupied.size === 0) reachableIdle++
   }
+  const unreachableIdle = state.idle - reachableIdle
   const remaining = ctx.requests.length - next
   const floorIdle = unreachableIdle + Math.max(0, reachableIdle - remaining)
   return [
     ...state.misses.map((m, p) => m + (floor.misses[p] ?? 0)),
-    crowdOverflow(ctx, state),
+    state.crowd,
     state.optionalMisses + floor.optionalMisses,
     state.sampledChords + floor.sampledChords,
     state.stackedChords + floor.stackedChords,
@@ -1066,6 +1108,8 @@ function lowerBound(ctx: Ctx, state: State, next: number): Score {
 function apply(ctx: Ctx, state: State, index: number, candidate: Candidate): void {
   const request = ctx.requests[index] as RoleRequest
   const sections = ctx.sections[index] ?? []
+  const occupied = state.occupiedByDevice.get(candidate.deviceId)
+  const before = occupied?.size ?? 0
   for (const key of candidate.keys) {
     let bySection = state.occupancy.get(key)
     if (bySection === undefined) {
@@ -1073,8 +1117,9 @@ function apply(ctx: Ctx, state: State, index: number, candidate: Candidate): voi
       state.occupancy.set(key, bySection)
     }
     for (const section of sections) bySection.set(section, request.id)
-    state.occupiedByDevice.get(candidate.deviceId)?.add(key)
+    occupied?.add(key)
   }
+  recount(ctx, state, candidate.deviceId, before, occupied?.size ?? 0)
   state.recipeDistance += candidate.distance
   state.sampledChords += candidate.sampledChord
   state.stackedChords += candidate.stacked
@@ -1084,6 +1129,8 @@ function apply(ctx: Ctx, state: State, index: number, candidate: Candidate): voi
 
 function undo(ctx: Ctx, state: State, index: number, candidate: Candidate): void {
   const sections = ctx.sections[index] ?? []
+  const occupied = state.occupiedByDevice.get(candidate.deviceId)
+  const before = occupied?.size ?? 0
   for (const key of candidate.keys) {
     const bySection = state.occupancy.get(key)
     if (bySection === undefined) continue
@@ -1092,9 +1139,10 @@ function undo(ctx: Ctx, state: State, index: number, candidate: Candidate): void
       state.occupancy.delete(key)
       // Only now does the assignable stop being occupied, and only then can the device's
       // occupied count fall. §12.4 counts assignables, not sections.
-      state.occupiedByDevice.get(candidate.deviceId)?.delete(key)
+      occupied?.delete(key)
     }
   }
+  recount(ctx, state, candidate.deviceId, before, occupied?.size ?? 0)
   state.recipeDistance -= candidate.distance
   state.sampledChords -= candidate.sampledChord
   state.stackedChords -= candidate.stacked
@@ -1642,6 +1690,16 @@ export function measureSearchShape(input: AssignInput): SearchShape {
         if ((derived.get(id) ?? 0) !== (state.occupiedByDevice.get(id)?.size ?? 0)) {
           throw new Error(`occupiedByDevice is not derivable from occupancy at ${id}`)
         }
+      }
+      // And the same claim for the two scalars `apply`/`undo` carry: they are a cache of these
+      // scans, so the scans decide whether the cache is still telling the truth. Checked here
+      // and not in a fixture because the failure to catch is an incremental update that is right
+      // everywhere a hand-written rig goes and wrong at one node of a real search.
+      if (state.crowd !== crowdOverflowFrom(ctx, state)) {
+        throw new Error(`state.crowd drifted from the occupancy at index ${String(index)}`)
+      }
+      if (state.idle !== idleDevicesFrom(ctx, state)) {
+        throw new Error(`state.idle drifted from the occupancy at index ${String(index)}`)
       }
       checks++
     },

@@ -21,6 +21,7 @@
     "bench:search": "tsx scripts/bench-search.ts",
     "bench:decomposition": "tsx scripts/bench-decomposition.ts",
     "bench:search-shape": "tsx scripts/bench-search-shape.ts",
+    "bench:bound": "tsx scripts/bench-bound.ts",
     "verify": "npm run typecheck && npm run test",
     "gen:golden": "tsx test/golden/generate.ts --write",
     "gen:guides": "tsx test/golden/guides.ts --write"
