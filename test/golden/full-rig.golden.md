@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → Deluge · Track 1 — *Kit-row kick, bass lifted, edge from decimation*
+- **`kick`** → Deluge · Track 1 — *Synth kick on a kit row — sine, fast pitch drop, decimated*
   - p1 · exact `hard` · every section
 - **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
@@ -237,7 +237,7 @@ Note length is set per note here — `LEN`. · manual
 
 ### `kick` — Deluge · Track 1
 
-**Kit-row kick, bass lifted, edge from decimation** — settings in Sound design
+**Synth kick on a kit row — sine, fast pitch drop, decimated** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -1011,12 +1011,7 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
 
 ### Deluge
 
-*Values below cite Deluge Official Guidebook OS 4.1 (OLED) and Deluge community firmware release_1_2_1, community_features.md.*
-
-**Content**
-
-- Ships a factory library on the supplied SD card — look in SAMPLES/ARTISTS and SAMPLES/DRUMS. p.12 marks both folders as supplied samples and never names one of them, so the Source line below says what the part needs rather than naming a file. · manual
-  - ↳ cite: claim manual — Deluge Official Guidebook OS 4.1 (OLED), p.12
+*Values below cite Deluge Official Guidebook OS 4.1 (OLED) and Deluge community firmware release_1_2_1.*
 
 **Song-wide**
 
@@ -1027,19 +1022,43 @@ One setting for the whole song — set it once, not once per part below.
   - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
   - ↳ hint: Hold [SHIFT], turn (TEMPO)
 
-#### Track 1 — `kick`: Kit-row kick, bass lifted, edge from decimation
+#### Track 1 — `kick`: Synth kick on a kit row — sine, fast pitch drop, decimated
 
-Source — A dry kick one-shot with a defined attack, no room on it
-
-*Ranges cite manual — Deluge Official Guidebook OS 4.1 (OLED), p.219.*
-
-- **OSC TYPE** `Sample`
-- **REPEAT MODE** `ONCE`
-- **EQ BASS AMOUNT** `33` (0…50)
-  - ↳ note: 25 is neutral; above boosts
-- **EQ BASS FREQUENCY** `14` (0…50)
-- **DECIMATION** `6` (0…50)
+- **CLIP TYPE** `Kit`
+  - ↳ hint: From clip view: [SHIFT] + [KIT] or [SYNTH]
+- **OSC 1 TYPE** `Sine`
+  - ↳ hint: [AUDITION] + [SYNTH] makes a synth row
+- **ENV 1 ATTACK** `1` (0…50)
+  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/attack.md
+  - ↳ note: the menus recommend at least 1; 0 is likely to click
+  - ↳ hint: Press (SELECT), ENV 1, then ATTACK / DECAY
+- **ENV 1 DECAY** `17` (0…50)
+  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/decay.md
+  - ↳ note: 0 is the shortest decay, 50 the longest
+- **ENV 1 SUSTAIN** `0` (0…50)
+  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/sustain.md
+  - ↳ note: 0 decays away to nothing, which is what a drum does
+- **ENV 1 RELEASE** `5` (0…50)
+  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/release.md
+- **ENV 2 ATTACK** `1` (0…50)
+  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/attack.md
+- **ENV 2 DECAY** `6` (0…50)
+  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/decay.md
+  - ↳ note: this is how fast the pitch falls
+- **ENV 2 SUSTAIN** `25` (0…50)
+  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/sustain.md
+  - ↳ note: p.125: on a pitch destination 25 is the note itself, and below 25 goes flat
+- **ENV 2 → PITCH DEPTH** `22` (-50…50)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.120 and p.122 + community firmware release_1_2_1, automation_view.md
+  - ↳ note: destination is Pitch / Transpose: Overall; positive lifts the attack above the note
+  - ↳ hint: In PITCH, press (SELECT) again, pick ENV 2
+- **DECIMATION** `12` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
+- **BITCRUSH** `6` (0…50)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
+- **EQ BASS AMOUNT** `33` (0…50)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
+  - ↳ note: 25 is neutral; above boosts
 
 ## 7. Finishing
 
@@ -1059,7 +1078,7 @@ What processes audio in this rig:
 - MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and DELAY SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 - TR-8S — carries REVERB, DELAY and MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
-- Deluge — carries DECIMATION in its recipes
+- Deluge — carries BITCRUSH and DECIMATION in its recipes
 - Model 2400 — is a mixer and recorder (stereo main out · 8 individual outs · USB audio · audio in)
 - Zoom LiveTrak L-8 — is a mixer and recorder (stereo main out · USB audio · audio in)
 

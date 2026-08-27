@@ -32,6 +32,25 @@ import { TEMPLATES } from '../lib/templates/index'
  * a twentieth device serving fourteen roles with nineteen recipes, which is the growth curve
  * `DEFAULT_NODE_CAP` describes rather than a bound that changed.
  *
+ * **#173 re-recorded two rows, in two passes, and each time only the rows the change could
+ * reach.** The Deluge's kick went from one recipe to three: a synthesised `hard`, a synthesised
+ * `dark`, and the sampled one moved to `dirty`.
+ *
+ *   - `ambient-dub` 806 → 913 at its peak, when `(kick, dirty)` appeared and `(kick, hard)` became
+ *     a different recipe. It requests `kick`/`soft`, so every candidate it sees is a §3.5
+ *     approximation and its costs moved.
+ *   - `lydian-house` 295 → 361, flat across all 24 seeds, when `(kick, dark)` was added. It is the
+ *     one direction that requests `kick`/`dark`, and it went from approximating to matching
+ *     exactly — a different cost, and therefore a different walk.
+ *
+ * That each pass moved exactly the directions whose kick request it touched is the shape of §7.1
+ * rather than luck: `resolveRecipe` returns one resolution per `(assignable, role, character)`, so
+ * a recipe on a new key does not widen the branching factor at all. It changes what a request
+ * costs, and a row moves only where the new cost prunes differently. `industrial-techno` is
+ * node-for-node identical through both passes — it asks for `kick`/`hard`, which stayed one recipe
+ * throughout, however much that recipe's contents changed — so the whole matrix's worst case is
+ * unchanged at 9,507.
+ *
  * The pre-repair row for `industrial-techno` peaked at 165,785 nodes on seed 9 against 8,309
  * after the repair; that number is pinned in `test/search-matching-floor.test.ts` against the
  * deliberately unrepaired floor, so the before and the after are both still measured. It moved
@@ -63,8 +82,8 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      718, 732, 806, 732, 718, 798, 748, 732, 718, 732, 718, 797, 763, 732, 718, 797, 732, 718, 732,
-      718, 732, 718, 733, 718
+      824, 838, 854, 838, 824, 838, 824, 838, 824, 839, 824, 884, 824, 903, 824, 913, 868, 824, 839,
+      824, 883, 824, 838, 824
     ],
     'drone-study': [
       15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15
@@ -74,8 +93,8 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
       7801, 7505, 8217, 8391, 8200, 9507, 8217, 7507
     ],
     'lydian-house': [
-      295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295, 295,
-      295, 295, 295, 295, 295
+      361, 361, 361, 361, 361, 361, 361, 361, 361, 361, 361, 361, 361, 361, 361, 361, 361, 361, 361,
+      361, 361, 361, 361, 361
     ],
     'major-key-electro': [
       2032, 2005, 2277, 2003, 2027, 2002, 2032, 2277, 2195, 2002, 2610, 1983, 2029, 2003, 2278, 2002,

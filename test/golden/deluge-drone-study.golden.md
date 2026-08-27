@@ -145,7 +145,7 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 
 ### Deluge
 
-*Values below cite Deluge Official Guidebook OS 4.1 (OLED) and Deluge community firmware release_1_2_1, community_features.md.*
+*Values below cite Deluge Official Guidebook OS 4.1 (OLED) and Deluge community firmware release_1_2_1.*
 
 **Song-wide**
 
@@ -160,6 +160,8 @@ One setting for the whole song — set it once, not once per part below.
 
 Routing — Needs the DX7 ENGINE community setting on; create with CUSTOM 1 + SYNTH. Documented as experimental.
 
+- **CLIP TYPE** `Synth`
+  - ↳ hint: From clip view: [SHIFT] + [KIT] or [SYNTH]
 - **OSC 1 TYPE** `DX7`
 - **REVERB AMOUNT** `30` (0…50)
   - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.225

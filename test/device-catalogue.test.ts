@@ -233,6 +233,47 @@ describe('what the page says about a device', () => {
     expect(rangeDocuments(ZOIA)).toEqual([])
   })
 
+  /**
+   * #173. A page number is not the only way to point inside a document, and the second way was
+   * missed for as long as nothing used it.
+   *
+   * A tagged documentation corpus is located by repository path rather than by page, and the tag
+   * that makes such a citation checkable — `release_1_2_1` — belongs to the *corpus*. Treating the
+   * path as part of the document name made five files under one corpus read as five documents, and
+   * the Deluge's summary sentence repeated the corpus name five times in a comma-separated list
+   * whose items contained commas.
+   */
+  it('groups a tagged corpus by its tag, not by the file inside it', () => {
+    const corpus = 'Deluge community firmware release_1_2_1'
+    expect(citedDocument(`${corpus}, menus/envelope/attack.md`)).toBe(corpus)
+    expect(citedDocument(`${corpus}, community_features.md`)).toBe(corpus)
+
+    // A citation that spans both kinds of source still groups under the paginated document it
+    // names first — the page rule runs after the path rule, so stripping the path exposes it.
+    expect(
+      citedDocument(
+        'Deluge Official Guidebook OS 4.1 (OLED), p.120 and p.122 + community firmware release_1_2_1, automation_view.md',
+      ),
+    ).toBe('Deluge Official Guidebook OS 4.1 (OLED)')
+
+    // Narrow on purpose. A document *title* that ends in ".md" contains spaces and is not a path,
+    // so it is left whole; and a path that is not at the end is not a locator for this citation.
+    expect(citedDocument('A Manual About Writing .md')).toBe('A Manual About Writing .md')
+    expect(citedDocument('notes/a.md and something else')).toBe('notes/a.md and something else')
+
+    // The Deluge is the only device in the library that cites a corpus this way, and it now names
+    // two documents rather than six.
+    const deluge = DEVICES.find((d) => d.id === 'synthstrom-deluge') as Device
+    expect(rangeDocuments(deluge)).toEqual(['Deluge Official Guidebook OS 4.1 (OLED)', corpus])
+
+    // Every other device is untouched by the path rule — none of them cites a file at all.
+    for (const device of DEVICES) {
+      for (const document of rangeDocuments(device)) {
+        expect(document.endsWith('.md'), `${device.id}: ${document}`).toBe(false)
+      }
+    }
+  })
+
   it('describes itself in one sentence a search result can hold', () => {
     for (const device of DEVICES) {
       const page = devicePage(device)
