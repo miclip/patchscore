@@ -447,6 +447,14 @@ type Ctx = {
   deviceById: Map<DeviceId, Device>
   /** Every selected device, in the order the caller passed them. */
   deviceIds: DeviceId[]
+  /**
+   * Which device owns each assignable. `AssignableKey` happens to be spelled
+   * `${deviceId}/${voiceId}` today (`assignableKey`), and reading the device back out of it by
+   * splitting on the separator would make that spelling load-bearing in a second place: a voice
+   * id containing a slash, or a change to the key format, would silently mis-attribute an
+   * occupied voice rather than fail. `buildCtx` already knows the owner, so it says so.
+   */
+  ownerOf: Map<AssignableKey, DeviceId>
   comfortable: Map<DeviceId, number>
   requests: RoleRequest[]
   wanted: Character[]
@@ -852,6 +860,7 @@ function buildCtx(input: AssignInput): Ctx {
     deviceById,
     deviceIds,
     comfortable,
+    ownerOf: new Map([...assignableOwner].map(([key, device]) => [key, device.id])),
     requests,
     wanted,
     sections,
@@ -1572,11 +1581,19 @@ export type MemoStats = {
 }
 
 /**
- * `strict` caches only a subtree that skipped nothing at all. `guarded` also caches one whose
- * best clears every guard, in the order-sensitive sense `Outcome` sets out. See there for why
- * the first is inert on this library and the second is sound.
+ * `off` is the shipped traversal. `strict` caches only a subtree that skipped nothing at all;
+ * `guarded` also caches one whose best clears every guard, in the order-sensitive sense
+ * `Outcome` sets out. See there for why the first is inert on this library and the second is
+ * sound.
+ *
+ * **Neither prototype mode agrees with `off` in every case, and that is what keeps them out of
+ * `assign`.** A memo makes the walk cheaper, so an input that blows `nodeCap` unmemoised can
+ * finish inside it memoised, and a capped run falls back to greedy where an uncapped one does
+ * not. The two then produce different guides. Since the mode is not part of `AssignInput`, that
+ * is one set of inputs standing behind two guides, which invariant 6 forbids — not two
+ * configurations legitimately differing. `test/search-memo.test.ts` pins it.
  */
-type MemoMode = 'off' | 'strict' | 'guarded'
+export type MemoMode = 'off' | 'strict' | 'guarded'
 
 type SearchOptions = {
   probe?: StateProbe
@@ -1903,23 +1920,21 @@ export type AssignInput = {
   mood: MoodState
   seed: number
   nodeCap?: number
-  /**
-   * #159 item 2, and it **defaults to off** because the measurement said so.
-   *
-   * The memo is correct — `test/search-memo.test.ts` holds it to byte-identical results against
-   * the traversal it replaces, over convergent prefixes, §12.6's `distinct`, incumbent pruning
-   * and the cap — and on this library it is a 2.2x slowdown for 0.4% fewer nodes. It stays
-   * reachable so that claim is re-measurable rather than remembered, and so a rig shaped
-   * differently from anything shipped can be tested against it. See `measureMemoSearch` and
-   * `scripts/bench-search-memo.ts` for the numbers and `Outcome` for why they come out that way.
-   */
-  memo?: boolean
 }
 
 /** §7 step 6. Search assignments against the lexicographic objective, producing `Occupancy`. */
 export function assign(input: AssignInput): AssignmentResult {
-  const ctx = buildCtx(input)
-  const outcome = search(ctx, { memo: input.memo === true ? 'guarded' : 'off' })
+  // #159 item 2's memo is deliberately unreachable from here, and there is no input that turns
+  // it on. It changes the guide wherever the cap fires on one side and not the other, which
+  // would put two byte-different guides behind one set of inputs and break invariant 6. The
+  // prototype is reachable only from `measureAssign` and `measureMemoSearch`, which exist to
+  // measure it and are named so that no caller reaches one by accident.
+  return resolveAssignment(buildCtx(input), 'off')
+}
+
+/** `assign`'s body, over a `Ctx` and a memo mode. See `assign` for why the mode is not an input. */
+function resolveAssignment(ctx: Ctx, mode: MemoMode): AssignmentResult {
+  const outcome = search(ctx, { memo: mode })
 
   // §7.1: on the cap, the greedy result stands and the fallback is reported. Reporting it in
   // the result rather than writing to a console keeps the resolver pure and the claim testable.
@@ -1997,9 +2012,10 @@ export function assign(input: AssignInput): AssignmentResult {
  *    never a count.
  *
  * `occupiedByDevice` is deliberately **not** in the key: it is a function of the occupancy that
- * is, since every `AssignableKey` is `${deviceId}/${voiceId}`. `derivedOccupiedCounts` rebuilds
- * it and `record` checks the rebuild against the live map at every measured node, so that is a
- * checked claim rather than a comment. `crowdOverflow` and `idleDevices` read only that map, so
+ * is, because each occupied assignable belongs to exactly one device and `ctx.ownerOf` says
+ * which. `derivedOccupiedCounts` rebuilds it from that lookup and `record` checks the rebuild
+ * against the live map at every measured node, so that is a checked claim rather than a
+ * comment. `crowdOverflow` and `idleDevices` read only that map, so
  * they are determined by the key too.
  *
  * The accumulated cost so far — `misses`, `recipeDistance`, `roleFitPenalty` and the rest — is
@@ -2081,24 +2097,26 @@ function canonicalState(ctx: Ctx, state: State, index: number): string {
 }
 
 /**
- * Per-device occupied counts, rebuilt from occupancy alone — the claim the key rests on. A
- * device absent here has none occupied, which is exactly how `idleDevices` reads a missing
+ * Per-device occupied counts, rebuilt from occupancy and `ctx.ownerOf` — the claim the key rests
+ * on. A device absent here has none occupied, which is exactly how `idleDevices` reads a missing
  * entry.
  */
-function derivedOccupiedCounts(state: State): Map<DeviceId, number> {
+function derivedOccupiedCounts(ctx: Ctx, state: State): Map<DeviceId, number> {
   const counts = new Map<DeviceId, number>()
   for (const key of state.occupancy.keys()) {
     // Present, not non-empty: `apply` adds to `occupiedByDevice` for every key it touches, and
     // a request occupying no section still spends the voice. See `canonicalState`.
-    const slash = key.indexOf('/')
-    const deviceId = (slash < 0 ? key : key.slice(0, slash)) as DeviceId
+    const deviceId = ctx.ownerOf.get(key)
+    if (deviceId === undefined) {
+      throw new Error(`occupancy holds ${key}, which no device in this rig owns`)
+    }
     counts.set(deviceId, (counts.get(deviceId) ?? 0) + 1)
   }
   return counts
 }
 
 function record(ctx: Ctx, state: State, index: number, probe: StateProbe): void {
-  const derived = derivedOccupiedCounts(state)
+  const derived = derivedOccupiedCounts(ctx, state)
   for (const id of ctx.deviceIds) {
     const live = state.occupiedByDevice.get(id)?.size ?? 0
     if ((derived.get(id) ?? 0) !== live) {
@@ -2247,6 +2265,22 @@ function sameChoiceList(
     }
   }
   return true
+}
+
+/**
+ * #159 item 2's prototype, as a whole `AssignmentResult` rather than a raw search outcome, so a
+ * measurement can compare the guide a memoised run would produce against the one that ships.
+ *
+ * **Not a variant of `assign`, and deliberately not spelled like one.** `AssignInput` carries no
+ * memo field, so this is the only way to reach the prototype and a caller has to name a mode to
+ * get here. That is invariant 6's requirement rather than tidiness: the memo does not always
+ * agree with the traversal it replaces, so if it were reachable from an input then one set of
+ * inputs would stand behind two different guides.
+ *
+ * @param mode `'off'` reproduces `assign` exactly; the other two are the prototype.
+ */
+export function measureAssign(input: AssignInput, mode: MemoMode): AssignmentResult {
+  return resolveAssignment(buildCtx(input), mode)
 }
 
 /**

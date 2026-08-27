@@ -3,6 +3,7 @@ import {
   DEFAULT_NODE_CAP,
   assign,
   compareScore,
+  measureAssign,
   measureMemoSearch,
   moodState,
   type AssignInput,
@@ -27,8 +28,14 @@ import { box, bruteForceBest, makeRecipe, request, withRoles } from './rigs'
  * guide shows, so a memo returning the other member of a tie would be wrong while scoring the
  * same, and a test comparing only `Score` would pass.
  *
- * `memo` on `AssignInput` defaults to off — see its docstring for the measurement that decided
- * that — so every case here asks for it explicitly and runs both ways round.
+ * The memo is **not reachable from `AssignInput`**. `measureAssign(input, mode)` is the only
+ * route to it and exists for these measurements, so every case here names a mode.
+ *
+ * Two results in this file are blockers rather than characterisations, and both are asserted so
+ * they cannot rot into silence: the memo disagrees with the traversal it replaces wherever the
+ * node cap fires on one side and not the other, which is an **invariant 6 violation** (same
+ * inputs, same seed, same resolver version, two different guides), and it is slower. Either one
+ * on its own is enough to keep it out of `assign`.
  */
 
 // ---------------------------------------------------------------------------
@@ -73,19 +80,21 @@ function shapeOf(result: AssignmentResult): string {
 /**
  * The two runs, and whether the cap fired differently between them.
  *
- * **A cap that fires on one side and not the other is a legitimate difference, not a defect.**
- * §7.1's cap is a latency guard: hitting it swaps the exhaustive answer for the greedy one. The
- * memo makes the walk cheaper, so an input that blew the cap unmemoised can finish inside it
- * memoised, and then the two sides are answering different questions — one exhaustively, one
- * greedily. Every case that pins a cap low enough to matter has to say which it expects.
+ * **A cap firing on one side and not the other is a defect in the memo, not a footnote.** §7.1's
+ * cap is a latency guard: hitting it swaps the exhaustive answer for the greedy one. The memo
+ * makes the walk cheaper, so an input that blew the cap unmemoised can finish inside it
+ * memoised, and the two then produce different guides from identical inputs. `memo` is not part
+ * of the input and must not become part of it, so that is invariant 6 broken rather than two
+ * configurations legitimately differing. It is why the prototype cannot ship even at a speed-up,
+ * and the fuzz below pins it rather than tolerating it.
  */
 function bothWays(input: AssignInput): {
   off: AssignmentResult
   on: AssignmentResult
   sameCapping: boolean
 } {
-  const off = assign({ ...input, memo: false })
-  const on = assign({ ...input, memo: true })
+  const off = measureAssign(input, 'off')
+  const on = measureAssign(input, 'guarded')
   return { off, on, sameCapping: off.search.capped === on.search.capped }
 }
 
@@ -250,8 +259,9 @@ describe('the memo answers what the walk would have answered (#159)', () => {
 
   it('agrees when the cap fires on both sides', () => {
     // A capped walk stops for a reason with nothing to do with the objective, so nothing is
-    // known about what it did not reach and no subtree containing the cap is ever cached. Both
-    // sides fall back to greedy and must produce the same guide.
+    // known about what it did not reach and no subtree containing the cap is ever cached. Where
+    // both sides cap, both fall back to greedy and must produce the same guide. Where only one
+    // caps they do not, which is the blocker pinned further down.
     for (const cap of [1, 7, 64, 500, 5_000]) {
       const args = { devices: DEVICES, template: industrialTechno, mood: NEUTRAL, seed: 9, nodeCap: cap }
       const { off, on, sameCapping } = bothWays(args)
@@ -285,7 +295,7 @@ describe('the memo answers what the walk would have answered (#159)', () => {
     // a mistake shared by both traversals cannot hide.
     const devices = [one, two, three]
     const template = convergent()
-    const memoised = assign({ devices, template, mood: NEUTRAL, seed: 3, memo: true })
+    const memoised = measureAssign({ devices, template, mood: NEUTRAL, seed: 3 }, 'guarded')
     expect(compareScore(memoised.score, bruteForceBest([...devices], template))).toBe(0)
   })
 })
@@ -375,10 +385,22 @@ function fuzzTemplate(r: () => number): Template {
 }
 
 describe('the memo survives random rigs (#159)', () => {
-  it('matches the unmemoised walk on every uncapped case', () => {
+  /**
+   * One sweep, two results, reported separately because they mean different things.
+   *
+   *  - Where both runs cap the same way, the memo must be byte-identical to the traversal it
+   *    replaces. It is, over more than ten thousand runs, and this is the correctness claim.
+   *  - Where the cap fires on one side and not the other, it is not, and that is a **defect that
+   *    prevents shipping**. `memo` is not part of `AssignInput` and must not become part of it,
+   *    so those runs are one set of inputs standing behind two different guides — invariant 6,
+   *    broken. The count is asserted to be non-zero so the failure stays visible rather than
+   *    becoming a branch nobody reads.
+   */
+  it('matches the unmemoised walk wherever the cap fires the same way', () => {
     let ran = 0
-    let cappingDiverged = 0
+    let breaksInvariantSix = 0
     const failures: string[] = []
+    const divergent: string[] = []
     for (let trial = 1; trial <= 1_500; trial++) {
       const r = xorshift(trial)
       const devices = fuzzRig(r)
@@ -389,24 +411,54 @@ describe('the memo survives random rigs (#159)', () => {
           ran++
           const { off, on, sameCapping } = bothWays(args)
           if (!sameCapping) {
-            // The memo finished inside a cap the plain walk blew. Expected, and the memo's
-            // answer is the exhaustive one, so it is the better of the two.
-            cappingDiverged++
-            expect(on.search.capped, `trial ${trial} seed ${seed} cap ${nodeCap}`).toBe(false)
+            breaksInvariantSix++
+            if (divergent.length < 3) {
+              divergent.push(`trial ${trial} seed ${seed} cap ${nodeCap}`)
+            }
             continue
           }
           if (shapeOf(on) !== shapeOf(off) && failures.length < 3) {
-            failures.push(`trial ${trial} seed ${seed} cap ${nodeCap}\n  off ${shapeOf(off)}\n   on ${shapeOf(on)}`)
+            failures.push(
+              `trial ${trial} seed ${seed} cap ${nodeCap}\n  off ${shapeOf(off)}\n   on ${shapeOf(on)}`,
+            )
           }
         }
       }
     }
     expect(failures.join('\n')).toBe('')
     expect(ran).toBeGreaterThan(10_000)
-    // The fuzz has to reach the cap divergence, or the branch above is dead and the caps in the
-    // matrix are decoration.
-    expect(cappingDiverged, 'no case ever capped one way and not the other').toBeGreaterThan(0)
+    // Non-zero, and that is the bad news rather than a coverage check. If this ever reaches zero
+    // the memo has stopped moving the cap and the blocker recorded on `assign` can be re-taken.
+    expect(
+      breaksInvariantSix,
+      `the memo produces a different guide from identical inputs on ${breaksInvariantSix} of` +
+        ` ${ran} runs, because the cap fires on one side only: ${divergent.join(', ')}`,
+    ).toBeGreaterThan(0)
   }, 120_000)
+
+  it('cannot ship while the cap divergence stands, whatever it costs', () => {
+    // The narrowest statement of the blocker, on a fixed case rather than over the fuzz, so the
+    // failure mode is readable without running fifteen thousand searches.
+    //
+    // At this cap the unmemoised walk degrades to greedy and the memoised one finishes. Both are
+    // defensible answers to the question asked; what is not defensible is `assign` returning
+    // either of them for the same input depending on a flag, which is why there is no flag.
+    const args: AssignInput = {
+      devices: DEVICES,
+      template: ambientDub,
+      mood: NEUTRAL,
+      seed: 2,
+      nodeCap: 25_500,
+    }
+    const off = measureAssign(args, 'off')
+    const on = measureAssign(args, 'guarded')
+    expect(off.search.capped, 'the unmemoised walk no longer caps here').toBe(true)
+    expect(on.search.capped, 'the memoised walk no longer finishes here').toBe(false)
+    expect(off.search.method).toBe('greedy')
+    expect(on.search.method).toBe('exhaustive')
+    // Same inputs, same seed, same resolver version, two different guides.
+    expect(shapeOf(on)).not.toBe(shapeOf(off))
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -457,11 +509,12 @@ describe('what the memo costs and what it buys (#159)', () => {
   }, 60_000)
 
   it('leaves the shipped path on the unmemoised traversal', () => {
-    // The default is off. If that flips, `DEFAULT_NODE_CAP`'s docstring and §7.1's recorded
-    // worst case are both talking about a different search and have to be re-measured.
+    // `assign` reaches the memo through no input at all, so this pins that `assign` and
+    // `measureAssign(_, 'off')` are the same walk. If they ever part, `DEFAULT_NODE_CAP`'s
+    // docstring and §7.1's recorded worst case are describing a different search.
     const template = TEMPLATES.find((t) => t.id === 'weave') as Template
     const shipped = assign({ devices: DEVICES, template, mood: NEUTRAL, seed: 8 })
-    const explicit = assign({ devices: DEVICES, template, mood: NEUTRAL, seed: 8, memo: false })
+    const explicit = measureAssign({ devices: DEVICES, template, mood: NEUTRAL, seed: 8 }, 'off')
     expect(shipped.search.nodes).toBe(explicit.search.nodes)
     expect(shipped.search.nodeCap).toBe(DEFAULT_NODE_CAP)
   })

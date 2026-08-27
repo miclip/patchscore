@@ -24,7 +24,9 @@
  * visited and stop being counted — and it interacts with incumbent pruning, since a subtree
  * skipped by a memo never improves the incumbent that would have pruned its neighbours. What is
  * measured here is the narrower and prior question: **on the traversal we run today, how much of
- * it is a state already solved.** If that were near zero there would be nothing to implement.
+ * it arrives at a canonical state already seen.** If that were near zero there would be nothing
+ * to implement. It is not near zero, and section C is where that turns out not to be the same
+ * thing as a sub-problem already solved.
  *
  * Sections:
  *
@@ -37,6 +39,10 @@
  *   C  the memo actually built, before against after, on those same cases: node counts both
  *      ways, what the cache held and served, and wall clock. This is the section that answers
  *      whether item 2 is worth doing, and on the shipped library the answer is no.
+ *   D  the same comparison over the whole matrix, every direction at every seed 0..23, so the
+ *      aggregate saving is measured here rather than quoted from somewhere else. It also counts
+ *      the runs where the memo and the shipped traversal produce **different guides**, which
+ *      they do wherever the memo finishes inside a `nodeCap` the unmemoised walk blows.
  *
  *   npm run bench:search-memo
  */
@@ -44,10 +50,12 @@
 import {
   DEFAULT_NODE_CAP,
   assign,
+  measureAssign,
   measureMemoSearch,
   measureStateRepeats,
   moodState,
   type MemoComparison,
+  type MemoMode,
   type StateRepeatReport,
   type Template,
 } from '../lib/core/index'
@@ -70,6 +78,15 @@ function group(n: number): string {
 function percent(part: number, whole: number): string {
   if (whole === 0) return '0.0%'
   return `${((part / whole) * 100).toFixed(1)}%`
+}
+
+/**
+ * Two places, for section D's aggregate only. One decimal rounds the headline saving to `0.4%`,
+ * which reads like a number somebody chose rather than one that was measured.
+ */
+function percentFine(part: number, whole: number): string {
+  if (whole === 0) return '0.00%'
+  return `${((part / whole) * 100).toFixed(2)}%`
 }
 
 /** Seeds 0..23, as `bench-search.ts` and `bench-decomposition.ts` both sweep. */
@@ -260,12 +277,12 @@ function sectionB(worstCase: StateRepeatReport): { id: string; seed: number }[] 
  * `buildCtx` and the JIT is not charged to the memo. Heavy cases get fewer repetitions than
  * light ones for the obvious reason.
  */
-function millis(template: Template, seed: number, memo: boolean, nodes: number): number {
-  const args = { devices: DEVICES, template, mood: moodState(), seed, nodeCap: LIFTED_CAP, memo }
-  assign(args)
+function millis(template: Template, seed: number, mode: MemoMode, nodes: number): number {
+  const args = { devices: DEVICES, template, mood: moodState(), seed, nodeCap: LIFTED_CAP }
+  measureAssign(args, mode)
   const reps = nodes > 50_000 ? 3 : nodes > 2_000 ? 10 : 40
   const started = process.hrtime.bigint()
-  for (let i = 0; i < reps; i++) assign(args)
+  for (let i = 0; i < reps; i++) measureAssign(args, mode)
   return Number((process.hrtime.bigint() - started) / 1_000_000n) / reps
 }
 
@@ -313,8 +330,8 @@ function sectionC(cases: { id: string; seed: number }[]): void {
       id,
       seed,
       comparison,
-      msOff: millis(template, seed, false, nodes),
-      msOn: millis(template, seed, true, nodes),
+      msOff: millis(template, seed, 'off', nodes),
+      msOn: millis(template, seed, 'guarded', nodes),
     })
   }
 
@@ -380,8 +397,113 @@ function sectionC(cases: { id: string; seed: number }[]): void {
   )
 }
 
+
+// ---------------------------------------------------------------------------
+// D. The whole matrix
+// ---------------------------------------------------------------------------
+
+/**
+ * Every direction at every seed 0..23, cap lifted, memo off against memo guarded.
+ *
+ * Section C characterises seven worst cases; this is the aggregate over all 168, so the headline
+ * percentage is a measurement taken here rather than a number carried in from a note. The best
+ * single case is reported beside it, because an average over cases that mostly save nothing
+ * would otherwise hide a case that saves a lot, and there is no such case.
+ *
+ * The shipped cap is swept separately and deliberately. With `nodeCap` at its default the memo
+ * and the shipped traversal do not always produce the same guide: the memo finishes inside a cap
+ * the unmemoised walk blows, so one run is exhaustive and the other degrades to greedy. Since
+ * the memo is not part of `AssignInput`, that is one set of inputs behind two guides, which
+ * invariant 6 forbids. Counting it here rather than in a footnote, because it blocks the
+ * prototype from shipping on its own, before any argument about speed.
+ */
+function sectionD(): void {
+  console.log('\nD. THE WHOLE MATRIX, every direction x seeds 0..23')
+
+  let totalOff = 0
+  let totalOn = 0
+  let cached = 0
+  let hits = 0
+  let disagreed = 0
+  let best: { where: string; off: number; on: number } | null = null
+  for (const template of TEMPLATES) {
+    for (const seed of SWEEP_SEEDS) {
+      const comparison = measureMemoSearch({
+        devices: DEVICES,
+        template,
+        mood: moodState(),
+        seed,
+        nodeCap: LIFTED_CAP,
+      })
+      const off = comparison.off.search.nodes
+      const on = comparison.guarded.search.nodes
+      totalOff += off
+      totalOn += on
+      cached += comparison.guarded.memo.cached
+      hits += comparison.guarded.memo.hits
+      if (!comparison.guarded.sameScore || !comparison.guarded.sameChoices) {
+        throw new Error(`${template.id} seed ${seed}: the memo disagreed with the cap lifted`)
+      }
+      // Bigger cases first on ties, so the headline names a case where the saving would matter.
+      if (best === null || off - on > best.off - best.on) {
+        best = { where: `${template.id} seed ${seed}`, off, on }
+      }
+    }
+  }
+  console.log(
+    `   cap ${group(LIFTED_CAP)}: ${group(totalOff)} nodes becomes ${group(totalOn)},` +
+      ` ${percentFine(totalOff - totalOn, totalOff)} saved` +
+      `   over ${TEMPLATES.length * SWEEP_SEEDS.length} cases`,
+  )
+  console.log(`   ${group(cached)} states cached in total, ${group(hits)} served`)
+  if (best !== null) {
+    console.log(
+      `   best single case: ${best.where}, ${group(best.off)} -> ${group(best.on)},` +
+        ` ${percentFine(best.off - best.on, best.off)}`,
+    )
+  }
+
+  // The same matrix at the shipped cap, where the divergence lives.
+  let sameCapping = 0
+  let diverged = 0
+  const examples: string[] = []
+  for (const template of TEMPLATES) {
+    for (const seed of SWEEP_SEEDS) {
+      for (const nodeCap of [DEFAULT_NODE_CAP, 25_500, 6_500, 300]) {
+        const args = { devices: DEVICES, template, mood: moodState(), seed, nodeCap }
+        const off = measureAssign(args, 'off')
+        const on = measureAssign(args, 'guarded')
+        if (off.search.capped !== on.search.capped) {
+          diverged++
+          if (examples.length < 4) {
+            examples.push(`${template.id} seed ${seed} cap ${group(nodeCap)}`)
+          }
+          continue
+        }
+        sameCapping++
+        if (JSON.stringify(off.score) !== JSON.stringify(on.score)) {
+          disagreed++
+        }
+      }
+    }
+  }
+  console.log(
+    `\n   at real caps: ${group(sameCapping)} runs cap the same way and agree on` +
+      ` ${group(sameCapping - disagreed)} of them`,
+  )
+  console.log(
+    `   ${group(diverged)} runs produce a DIFFERENT GUIDE from identical inputs, because the` +
+      ` memo finishes\n   inside a cap the shipped walk blows. That is invariant 6 broken, and it` +
+      ` is why the prototype\n   stays out of \`assign\` regardless of what it costs.`,
+  )
+  if (examples.length > 0) {
+    console.log(`     for example: ${examples.join(', ')}`)
+  }
+}
+
 // ---------------------------------------------------------------------------
 
 const cases = sectionB(sectionA())
 sectionC(cases)
+sectionD()
 console.log()
