@@ -522,8 +522,37 @@ export function effectiveVerified(
   return own ?? inherited
 }
 
-/** The document a citation names, without the page: `"X Manual, p.30"` -> `"X Manual"`. */
+/**
+ * The document a citation names, without the locator that points inside it:
+ * `"X Manual, p.30"` -> `"X Manual"`, `"X firmware release_1_2_1, menus/envelope/attack.md"` ->
+ * `"X firmware release_1_2_1"`.
+ *
+ * **Two locator shapes, because the library cites two kinds of source.** A paginated manual is
+ * located by page, `", p.30"`. A tagged documentation corpus is located by repository path,
+ * `", menus/envelope/attack.md"` — and the tag that makes such a citation checkable is part of the
+ * *corpus* name, not of the path. Both answer "where inside the document", and neither is a
+ * different document, so both are stripped.
+ *
+ * **The path shape was missed and it showed (#173).** Only this function groups; the guide's
+ * summary sentence and the catalogue's are built from what it returns. So five files under one
+ * tagged corpus read as five documents, and the Deluge's summary became "Values below cite
+ * <guidebook>, <corpus>, menus/envelope/attack.md, <corpus>, menus/envelope/decay.md, …" — a
+ * comma-separated list whose items contain commas, repeating the corpus name five times, and
+ * reordering itself whenever a citation count shifted. §8 is a page read at the machine; that is
+ * not a page anyone can skim.
+ *
+ * **Grouping here costs no provenance.** A parameter's own `↳ cite:` line renders `Cite.source`
+ * whole and is untouched, so the exact file is still printed beside the value that rests on it.
+ * This function answers a strictly coarser question — which documents am I going to need open —
+ * and that question has one right answer per corpus.
+ *
+ * The path pattern is deliberately narrow: a trailing `", "` then one comma-free, space-free path
+ * ending in `.md`. A document *title* ending in ".md" would contain spaces and is left alone, and
+ * the page rule runs afterwards so a citation spanning both kinds of source still groups under the
+ * paginated one it names first.
+ */
 export function citedDocument(source: string): string {
-  const at = source.lastIndexOf(', p.')
-  return at === -1 ? source : source.slice(0, at)
+  const withoutPath = source.replace(/, [^\s,]+\.md$/, '')
+  const at = withoutPath.lastIndexOf(', p.')
+  return at === -1 ? withoutPath : withoutPath.slice(0, at)
 }

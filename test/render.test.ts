@@ -1575,6 +1575,50 @@ describe('the guide cites the document the values came from (#89)', () => {
     expect(rangeDocuments(mc101).length).toBeGreaterThan(1)
   })
 
+  /**
+   * #173. The summary sentence and the per-parameter citation answer different questions, and
+   * grouping the first must not coarsen the second.
+   *
+   * "Which documents will I need open" has one right answer per corpus. "Where does *this* value
+   * come from" has one right answer per file. The Deluge is the device that has both, so it is
+   * the one that proves they stayed separate.
+   */
+  it('groups a tagged corpus in the summary while each value keeps its own file', () => {
+    const deluge = DEVICES.find((d) => d.id === 'synthstrom-deluge') as Device
+    const corpus = 'Deluge community firmware release_1_2_1'
+    const sentence = citationSentence(deluge) ?? ''
+
+    expect(sentence).toContain('Deluge Official Guidebook OS 4.1 (OLED)')
+    expect(sentence).toContain(corpus)
+    // Named once, not once per file. This is the whole defect: the sentence used to repeat the
+    // corpus five times and reorder itself whenever a citation count shifted.
+    expect(sentence.split(corpus).length - 1).toBe(1)
+    expect(sentence).not.toContain('.md')
+
+    // And the file is still on the value. Four envelope stages, four different files, each cited
+    // to the one that prints its range.
+    const sources = deluge.recipes.flatMap((recipe) =>
+      (recipe.params as { name: string; kind: string; range?: { verified?: unknown } }[])
+        // The four stages. `ENV 2 → PITCH DEPTH` is a patch cable and cites two sources.
+        .filter(
+          (param) =>
+            /^ENV [12] (ATTACK|DECAY|SUSTAIN|RELEASE)$/.test(param.name) &&
+            param.kind === 'numeric',
+        )
+        .map((param) => (param.range?.verified as { source: string } | undefined)?.source ?? ''),
+    )
+    expect(sources.length).toBeGreaterThan(0)
+    for (const source of sources) expect(source.startsWith(`${corpus}, menus/envelope/`)).toBe(true)
+    expect(new Set(sources).size).toBe(4)
+  })
+
+  /** No device's summary may point at a file: that is the per-value line's job, not this one's. */
+  it('never puts a repository path in a citation summary', () => {
+    for (const device of DEVICES) {
+      expect(citationSentence(device) ?? '', device.id).not.toContain('.md')
+    }
+  })
+
   it('says nothing for a device whose ranges cite nothing', () => {
     for (const device of DEVICES) {
       if (rangeDocuments(device).length > 0) continue

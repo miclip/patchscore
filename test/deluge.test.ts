@@ -6,6 +6,7 @@ import {
   expand,
   resolveRecipe,
   type AuthoredParam,
+  type Role,
 } from '../lib/core/index'
 import { device } from '../lib/devices/synthstrom-deluge/index'
 import { auditDevice } from '../scripts/audit-verified'
@@ -17,6 +18,26 @@ function pool() {
   const voice = device.voices[0]
   if (voice === undefined || voice.kind !== 'pool') throw new Error('the Deluge should be one pool')
   return voice
+}
+
+/**
+ * The roles that belong in a drum kit. Used twice: a kit row that loads nothing has to be one of
+ * these (#172), and a sampled one of these has to name the lineage it is reaching for (#173).
+ */
+const PERCUSSIVE: Role[] = [
+  'kick', 'snare', 'clap', 'rim', 'ghost-perc',
+  'closed-hat', 'open-hat', 'ride', 'metallic', 'tom',
+]
+
+/** The two recipes #173 added or converted. Both are synth rows inside a kit. */
+const SYNTH_KICKS = ['deluge-kick-hard', 'deluge-kick-dark']
+
+function paramNamed(recipeId: string, name: string): AuthoredParam {
+  const recipe = device.recipes.find((r) => r.id === recipeId)
+  if (recipe === undefined) throw new Error(`no recipe ${recipeId}`)
+  const param = (recipe.params as AuthoredParam[]).find((p) => p.name === name)
+  if (param === undefined) throw new Error(`${recipeId} has no ${name}`)
+  return param
 }
 
 function params(): { recipe: string; param: AuthoredParam }[] {
@@ -167,12 +188,264 @@ describe('Deluge manifest', () => {
   })
 
   // -------------------------------------------------------------------------
+  // #173 — a drum this box can be told how to make, rather than one to go and find
+  // -------------------------------------------------------------------------
+
+  it('offers a percussive part that needs no sample at all (#173)', () => {
+    // The defect this closes was structural. With no envelope modelled, a recipe could not
+    // describe a sound whose shape over time is the point — which is every drum — so every
+    // percussive role here asked the reader to go and find a recording and every tonal role was
+    // synthesised. That split was a fact about the manifest, not about the Deluge.
+    const synthesisedDrums = device.recipes.filter(
+      (r) => PERCUSSIVE.includes(r.role) && r.sourceAudio === undefined,
+    )
+    for (const id of SYNTH_KICKS) expect(synthesisedDrums.map((r) => r.id)).toContain(id)
+
+    // And one of them is the *most requested* character rather than only a spare one. Three of
+    // the five kick requests in the direction library ask for `hard`, industrial-techno among
+    // them, which is where "go and find a sample" costs a reader the most.
+    const kick = device.recipes.find((r) => r.id === 'deluge-kick-hard')
+    expect(kick?.character).toBe('hard')
+    expect(kick?.sourceAudio).toBeUndefined()
+  })
+
+  it('makes the synthesised kick a synth row inside a kit, and says how (#173)', () => {
+    // p.87 documents the combination outright: "CREATING A NEW SYNTHESIZER ROW IN A KIT CLIP...
+    // Press [AUDITION] + [SYNTH] to create a synth clip on the row selected". The drums belong in
+    // one kit, so the kick does not become a separate synth clip just because it is synthesised.
+    for (const id of SYNTH_KICKS) {
+      const clip = paramNamed(id, 'CLIP TYPE')
+      if (clip.kind !== 'enum') throw new Error(`${id}: CLIP TYPE is not an enum`)
+      expect(clip.value, id).toBe('Kit')
+
+      const osc = paramNamed(id, 'OSC 1 TYPE')
+      if (osc.kind !== 'enum') throw new Error(`${id}: OSC 1 TYPE is not an enum`)
+      expect(osc.value, id).toBe('Sine')
+      // Without the jog, a reader who has made a kit has no way to know a row can be a synth.
+      expect(osc.hint, id).toBe('kit-synth-row')
+    }
+    expect(device.hints?.['kit-synth-row']).toContain('[AUDITION]')
+  })
+
+  it('dials the whole kick rather than gesturing at it (#173)', () => {
+    // The argument for a synthesised recipe is that it is *finishable*: real numbers on real
+    // controls, and the reader is done when they have dialled them. A half-authored envelope
+    // would leave the remaining stages at whatever the preset held, which is the same "go and
+    // find it" the sample route was criticised for.
+    for (const id of SYNTH_KICKS) checkComplete(id)
+  })
+
+  function checkComplete(id: string): void {
+    const names = (device.recipes.find((r) => r.id === id)?.params ?? []).map(
+      (p) => (p as AuthoredParam).name,
+    )
+    for (const stage of ['ATTACK', 'DECAY', 'SUSTAIN', 'RELEASE']) {
+      expect(names, `${id} ENV 1 ${stage}`).toContain(`ENV 1 ${stage}`)
+    }
+    // ENV 2 carries no RELEASE, and that is deliberate rather than missed: ENV 1's amplitude is
+    // already at silence, so a pitch still moving after note-off is inaudible. Authoring it would
+    // be the decoration this manifest refuses for a lone LFO shape.
+    for (const stage of ['ATTACK', 'DECAY', 'SUSTAIN']) {
+      expect(names, `${id} ENV 2 ${stage}`).toContain(`ENV 2 ${stage}`)
+    }
+    expect(names, id).not.toContain('ENV 2 RELEASE')
+
+    // The two sustains are not the same claim and must not carry the same value — see the test
+    // below, which is where that got corrected.
+    for (const name of ['ENV 1 SUSTAIN', 'ENV 2 SUSTAIN']) {
+      const param = paramNamed(id, name)
+      if (param.kind !== 'numeric') throw new Error(`${id} / ${name} is not numeric`)
+      expect(param.note, `${id} / ${name}`).toBeDefined()
+    }
+  }
+
+  it('reads each sustain on the scale that is actually in force for its destination (p.125)', () => {
+    // **This is CLAUDE.md's cited-wrong-range failure, caught after it shipped into this file.**
+    // `menus/envelope/sustain.md` says "0 causes the envelope to decay to 0", and both synthesised
+    // kicks were authored at `ENV 2 SUSTAIN 0` with a note claiming that returned the pitch to the
+    // note. The bound was right and the scale was wrong. §6.3 on p.125: "When either of the 2
+    // envelopes modulate a parameter other than volume level, it does so with a 'bipolar'
+    // behaviour... when the sustain is set to 25 (default for ENV2), that stage of the envelope
+    // will match the current setting of the target parameter without modulation. Sustain settings
+    // below 25 will then modulate the parameter lower than its current setting". So 0 on a pitch
+    // destination is a kick that ends flat and stays there.
+    //
+    // The asymmetry below is the same sentence read twice: the bipolar rule is for "a parameter
+    // other than volume level", and ENV 1's destination *is* volume level (p.122 has it as Hard
+    // Connect to Overall Volume; p.125 opens "ENV1 controls volume amplitude by default").
+    for (const id of SYNTH_KICKS) {
+      const amp = paramNamed(id, 'ENV 1 SUSTAIN')
+      const pitch = paramNamed(id, 'ENV 2 SUSTAIN')
+      if (amp.kind !== 'numeric' || pitch.kind !== 'numeric') {
+        throw new Error(`${id}: a sustain is not numeric`)
+      }
+      // Unipolar: the amplitude has to decay away, because that is what a drum does.
+      expect(amp.value, `${id} ENV 1 SUSTAIN`).toBe(0)
+      // Bipolar: 25 is the neutral, so the sustain stage sits at the note and the drop is what
+      // the attack and decay do above it.
+      expect(pitch.value, `${id} ENV 2 SUSTAIN`).toBe(25)
+      expect(pitch.note, `${id} ENV 2 SUSTAIN`).toContain('p.125')
+      // The range is unchanged and still the community file's. Only the reading of it moved.
+      expect(pitch.range.verified, `${id} ENV 2 SUSTAIN`).toEqual({
+        kind: 'manual',
+        source: `${COMMUNITY}menus/envelope/sustain.md`,
+      })
+    }
+  })
+
+  it('serves the three-character kick set the directions actually ask for (#173)', () => {
+    // The requests are `soft`, `hard`, `dark`, `hard`, `hard`. `hard` is three of the five and
+    // industrial-techno is one of them, so `hard` is where a synthesised recipe has to land — a
+    // synthesised kick parked on `dark` alone would leave techno hunting for a file, which was
+    // the original complaint. `dark` is worth having on its own terms and is kept; `dirty` keeps
+    // the sampled route, because removing it was never the point.
+    const kicks = device.recipes.filter((r) => r.role === 'kick')
+    expect(kicks.map((r) => r.character).sort()).toEqual(['dark', 'dirty', 'hard'])
+    for (const id of SYNTH_KICKS) {
+      expect(device.recipes.find((r) => r.id === id)?.sourceAudio, id).toBeUndefined()
+    }
+    expect(device.recipes.find((r) => r.id === 'deluge-kick-dirty')?.sourceAudio).toBeDefined()
+  })
+
+  it('keeps the two synthesised kicks apart on every axis that names them (#173)', () => {
+    // Two recipes on one role that differ only in their id are two labels for one sound, which is
+    // the mislabelling this set was arranged to avoid. `hard` is the industrial one: the operator's
+    // point is that sine plus a fast drop plus saturation is not an approximation of a hard techno
+    // kick but how one is made. `dark` is the clean one, and is clean by the absence of exactly
+    // those two controls rather than by a smaller amount of them.
+    const value = (id: string, name: string): number => {
+      const param = paramNamed(id, name)
+      if (param.kind !== 'numeric') throw new Error(`${id} / ${name} is not numeric`)
+      return param.value
+    }
+    // The drop is smaller and slower on `dark`; the body is longer.
+    expect(value('deluge-kick-dark', 'ENV 2 → PITCH DEPTH')).toBeLessThan(
+      value('deluge-kick-hard', 'ENV 2 → PITCH DEPTH'),
+    )
+    expect(value('deluge-kick-dark', 'ENV 2 DECAY')).toBeGreaterThan(
+      value('deluge-kick-hard', 'ENV 2 DECAY'),
+    )
+    expect(value('deluge-kick-dark', 'ENV 1 DECAY')).toBeGreaterThan(
+      value('deluge-kick-hard', 'ENV 1 DECAY'),
+    )
+
+    // No saturation at all on `dark` — absent, not merely lower.
+    const darkNames = (device.recipes.find((r) => r.id === 'deluge-kick-dark')?.params ?? []).map(
+      (p) => (p as AuthoredParam).name,
+    )
+    expect(darkNames).not.toContain('DECIMATION')
+    expect(darkNames).not.toContain('BITCRUSH')
+    // And it carries the darkness axis, the way this box's other `dark` recipes do.
+    const treble = paramNamed('deluge-kick-dark', 'EQ TREBLE AMOUNT')
+    if (treble.kind !== 'numeric') throw new Error('EQ TREBLE AMOUNT is not numeric')
+    expect(treble.mood?.map((m) => m.axis)).toEqual(['darkness'])
+
+    // `hard` has the edge, and stays clear of `dirty` on both controls or the two characters are
+    // one sound at two labels.
+    for (const name of ['DECIMATION', 'BITCRUSH']) {
+      expect(value('deluge-kick-hard', name), name).toBeGreaterThan(0)
+      expect(value('deluge-kick-hard', name), name).toBeLessThan(value('deluge-kick-dirty', name))
+    }
+  })
+
+  it('cites the pitch patch cable to the source that carries each half of it (#173)', () => {
+    // Three claims, two sources. p.122's matrix ticks ENV 2 against `Pitch / Transpose: Overall`,
+    // so the route exists; p.120 ends "Depth can be positive and negative values", so it is
+    // signed; and only `automation_view.md` @ release_1_2_1 prints the bound — "the bottom pad in
+    // the grid will set the value to -50 and the top pad in the grid will set the value to +50".
+    // Citing either source alone would leave one of the three unsubstantiated.
+    for (const id of SYNTH_KICKS) {
+      const depth = paramNamed(id, 'ENV 2 → PITCH DEPTH')
+      if (depth.kind !== 'numeric') throw new Error(`${id}: pitch depth is not numeric`)
+
+      const source = (depth.range.verified as { source: string }).source
+      expect(source, id).toContain('p.120')
+      expect(source, id).toContain('p.122')
+      expect(source, id).toContain('release_1_2_1')
+      expect(source, id).toContain('automation_view.md')
+
+      // Signed, and positive — ENV 2 lifts the attack above the note and its decay falls back to
+      // the sustain, which p.125 puts at the note itself.
+      expect({ min: depth.range.min, max: depth.range.max }, id).toEqual({ min: -50, max: 50 })
+      expect(depth.value, id).toBeGreaterThan(0)
+      expect(depth.hint, id).toBe('env2-pitch')
+      // The destination is one row of a matrix with two pitch rows; the note has to say which.
+      expect(depth.note, id).toContain('Pitch / Transpose: Overall')
+    }
+  })
+
+  it('moves the sampled kick to a character its parameters earn (#173)', () => {
+    // Two kicks cannot share `(kick, hard, track)` — §3's uniqueness key admits a second recipe
+    // only on a different key, and the Tracker Mini pad pair is not a precedent, because that
+    // pair splits on `Realisation`, which is a claim about note count. Two kicks are both one
+    // note. `hard` and `dirty` are orthogonal in CHAR, so the move is real.
+    //
+    // **But the slot does not confer the character.** As authored the recipe was an EQ bass lift
+    // and `DECIMATION 6` of 50 — the "edge" its old title claimed, and not a dirty kick. A wrong
+    // character is worse than a missing one: it silently wins a search it should not, where §3.5
+    // costs an absent character nothing worse than an approximation.
+    const decimation = paramNamed('deluge-kick-dirty', 'DECIMATION')
+    const bitcrush = paramNamed('deluge-kick-dirty', 'BITCRUSH')
+    if (decimation.kind !== 'numeric' || bitcrush.kind !== 'numeric') {
+      throw new Error('the dirty kick should carry two numerics')
+    }
+    // Measured against the company it now keeps rather than against a number pulled from the air:
+    // the three other `dirty` recipes here sit at decimation 13-17 and bitcrush 7-21.
+    const others = device.recipes.filter((r) => r.character === 'dirty' && r.role !== 'kick')
+    expect(others.map((r) => r.id).sort()).toEqual([
+      'deluge-acid-dirty', 'deluge-bass-mid-dirty', 'deluge-noise-dirty',
+    ])
+    expect(others.length).toBeGreaterThanOrEqual(3)
+    const floor = Math.min(
+      ...others.map((r) => {
+        const d = (r.params as AuthoredParam[]).find((p) => p.name === 'DECIMATION')
+        return d?.kind === 'numeric' ? d.value : Number.POSITIVE_INFINITY
+      }),
+    )
+    expect(decimation.value).toBeGreaterThanOrEqual(floor)
+    expect(bitcrush.value).toBeGreaterThan(0)
+    // The title has to say what it now is, or the mislabelling has just moved into prose.
+    const dirty = device.recipes.find((r) => r.id === 'deluge-kick-dirty')
+    expect(dirty?.title.toLowerCase()).not.toContain('edge')
+  })
+
+  it('names the lineage a sampled drum is reaching for, and only where there is one (#173)', () => {
+    // "Load `TR-808 Kick 01.wav`" claims something about a card nobody has seen — `content` is
+    // `shipped-library` precisely because p.12 marks the factory folders as supplied and never
+    // names a file. "An 808-style kick" claims something about the *sound*, is true whatever
+    // library the reader has, and is the shorthand every producer already thinks in. The library
+    // already speaks this vocabulary where content is enumerable (the TR-1000 and TR-8S name 808
+    // and 909 outright); this is the same opinion, held where it cannot be a filename.
+    const LINEAGE = /\b(808|909|707)-style\b/
+    for (const recipe of device.recipes) {
+      if (recipe.sourceAudio === undefined) continue
+      if (!PERCUSSIVE.includes(recipe.role)) continue
+      expect(recipe.sourceAudio.need, recipe.id).toMatch(LINEAGE)
+      // Additive, not a replacement. The physical description is what makes it checkable against
+      // a file the reader actually has.
+      expect(recipe.sourceAudio.need.length, recipe.id).toBeGreaterThan(40)
+    }
+
+    // And it stops where the opinion stops. There is no drum-machine lineage for room tone or for
+    // "something big", and naming one to match the others would be the invention the whole
+    // reframe exists to avoid.
+    for (const id of ['deluge-noise-dirty', 'deluge-impact-hard']) {
+      const recipe = device.recipes.find((r) => r.id === id)
+      expect(recipe?.sourceAudio?.need, id).not.toMatch(LINEAGE)
+    }
+  })
+
+  // -------------------------------------------------------------------------
   // Content and citation discipline (§3.2)
   // -------------------------------------------------------------------------
 
-  it('carries 15-20 recipes on distinct (role, character, voice) triples (§3)', () => {
+  it('carries 15-21 recipes on distinct (role, character, voice) triples (§3)', () => {
+    // The ceiling moved by one at #173, when the kick became three recipes rather than one. That
+    // is the guideline stretching rather than breaking: CLAUDE.md's "roughly 15-20 recipes covers
+    // a device well" is about coverage, and three devices in the library already sit above it —
+    // the TR-8S at 22, the DFAM and the Tracker Mini at 21.
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(20)
+    expect(device.recipes.length).toBeLessThanOrEqual(21)
 
     const triples = device.recipes.map((r) => `${r.role}\u0000${r.character}\u0000${r.voice}`)
     expect(new Set(triples).size).toBe(triples.length)
@@ -181,6 +454,107 @@ describe('Deluge manifest', () => {
       expect(ROLES).toContain(recipe.role)
       expect(CHARACTERS).toContain(recipe.character)
     }
+  })
+
+  // -------------------------------------------------------------------------
+  // #172 — which clip to make, as a parameter rather than as a title
+  // -------------------------------------------------------------------------
+
+  it('tells the reader which kind of clip to create, in a cited parameter (#172)', () => {
+    // `deluge-kick-hard` was titled "Kit-row kick" and printed nothing a reader could act on to
+    // get to a kit. A title is prose: it is not what the renderer surfaces as an instruction, it
+    // is not what `verified` attaches to, and it is not what the audit counts — so the claim has
+    // to be a parameter or it is invisible to all three.
+    for (const recipe of device.recipes) {
+      const clip = (recipe.params as AuthoredParam[]).find((p) => p.name === 'CLIP TYPE')
+      expect(clip, recipe.id).toBeDefined()
+      if (clip?.kind !== 'enum') throw new Error(`${recipe.id}: CLIP TYPE is not an enum`)
+
+      // The first thing the reader does at the box is the first thing the guide prints.
+      expect((recipe.params as AuthoredParam[])[0]?.name, recipe.id).toBe('CLIP TYPE')
+
+      // §2.4 Views (p.18) enumerates the whole set: "Single synth, kit, audio, MIDI or CV clips",
+      // with a panel callout naming each view. All five are options; the legality claim is the
+      // page's, the selection is ours.
+      expect(clip.options.values, recipe.id).toEqual(['Synth', 'Kit', 'Audio', 'MIDI', 'CV'])
+      expect(clip.options.verified, recipe.id).toEqual({
+        kind: 'manual',
+        source: `${GUIDEBOOK}18`,
+      })
+      expect(clip.verified, recipe.id).toBe(false)
+      expect(clip.hint, recipe.id).toBe('clip-type')
+    }
+
+    // The gesture is reachable, not buried in a comment: [SHIFT] + [SYNTH] (p.87) and
+    // [SHIFT] + [KIT] (p.112), both from clip view.
+    expect(Object.keys(device.hints ?? {})).toContain('clip-type')
+  })
+
+  it('follows the sound source when it picks a clip type, and admits a synth row in a kit (#172, #173)', () => {
+    // §5.2 (p.108) draws the line this started from: "If synth clips mainly support melodic
+    // elements with the ability for sample use, kits would more often be used with samples as the
+    // primary elements". That is still the rule for anything that loads audio.
+    //
+    // **It was too tight in one direction, and #173 is what found the edge.** The original form
+    // asserted `Kit` if and only if the recipe loads a sample, which forbids the one combination
+    // p.87 documents outright — "CREATING A NEW SYNTHESIZER ROW IN A KIT CLIP", a row of a kit
+    // that is synthesised rather than sampled. That is exactly what a synthesised kick is, and it
+    // has to sit in the kit with the rest of the drums. So the biconditional is now two claims:
+    // sampling still implies a kit row, and a synth *clip* still implies nothing was loaded, but a
+    // kit row is free to sound the internal engine.
+    for (const recipe of device.recipes) {
+      const params = recipe.params as AuthoredParam[]
+      const clip = params.find((p) => p.name === 'CLIP TYPE')
+      const osc = params.find((p) => p.name === 'OSC 1 TYPE')
+      if (clip?.kind !== 'enum') throw new Error(`${recipe.id}: CLIP TYPE is not an enum`)
+
+      // The two ways of saying "this recipe loads audio" must not come apart, whichever clip type
+      // it lands on. This is the claim that stops a `sourceAudio` recipe quietly losing its
+      // Sample oscillator, or vice versa.
+      const loadsAudio = recipe.sourceAudio !== undefined
+      const sampled = osc?.kind === 'enum' && osc.value === 'Sample'
+      expect(sampled, recipe.id).toBe(loadsAudio)
+
+      if (loadsAudio) expect(clip.value, `${recipe.id} loads audio`).toBe('Kit')
+      if (clip.value === 'Synth') expect(loadsAudio, `${recipe.id} is a synth clip`).toBe(false)
+      // A kit row that loads nothing is a synth row inside a kit. It is only worth the extra
+      // explaining for a part that belongs in the drum kit, so it is confined to those roles.
+      if (clip.value === 'Kit' && !loadsAudio) {
+        expect(PERCUSSIVE, `${recipe.id} is a synth row in a kit`).toContain(recipe.role)
+      }
+    }
+
+    // Both sides of the widening are actually exercised, or the rule above is untested prose.
+    const kitRows = device.recipes.filter((r) => {
+      const clip = (r.params as AuthoredParam[]).find((p) => p.name === 'CLIP TYPE')
+      return clip?.kind === 'enum' && clip.value === 'Kit'
+    })
+    expect(kitRows.some((r) => r.sourceAudio !== undefined)).toBe(true)
+    expect(kitRows.some((r) => r.sourceAudio === undefined)).toBe(true)
+
+    // Both halves are actually populated, or the rule above is vacuous.
+    const values = device.recipes.map((r) => {
+      const clip = (r.params as AuthoredParam[]).find((p) => p.name === 'CLIP TYPE')
+      return clip?.kind === 'enum' ? clip.value : undefined
+    })
+    expect(values.filter((v) => v === 'Kit').length).toBeGreaterThan(0)
+    expect(values.filter((v) => v === 'Synth').length).toBeGreaterThan(0)
+    // Audio, MIDI and CV are offered and never selected: an audio clip has no oscillator, so
+    // `OSC 1 TYPE` and `REPEAT MODE` do not exist on one, and MIDI and CV clips drive some other
+    // box entirely.
+    expect(values.filter((v) => v !== 'Kit' && v !== 'Synth')).toEqual([])
+  })
+
+  it('spells the oscillator-1 control one way (#172)', () => {
+    // The guidebook gives this as the `TYPE` parameter of the `OSCILLATOR 1 / CARRIER 1 (FM)`
+    // function (p.81) and gives oscillator 2 a `TYPE` of its own, so the printed name alone does
+    // not say which oscillator. The manifest used to carry both `OSC TYPE` and `OSC 1 TYPE` for
+    // the same control; the name that carries the ordinal is the one that survives.
+    for (const { recipe, param } of params()) {
+      expect(param.name, recipe).not.toBe('OSC TYPE')
+    }
+    const oscs = params().filter(({ param }) => param.name === 'OSC 1 TYPE')
+    expect(oscs.length).toBe(device.recipes.length)
   })
 
   it('cites every range and option set, and no point (§3.2)', () => {
@@ -221,6 +595,11 @@ describe('Deluge manifest', () => {
       { min: 0, max: 50 },
       { min: 1, max: 8 },
       { min: 1, max: 99 },
+      // #173. A patch cable's depth, and the only signed range on this box. Unlike PAN, the source
+      // prints the signed numbers themselves: automation_view.md @ release_1_2_1 says the bottom
+      // pad sets -50 and the top pad sets +50, so this is the range as printed rather than a
+      // transcription of a left/right label scale.
+      { min: -50, max: 50 },
     ]
     for (const { recipe, param } of params()) {
       if (param.kind !== 'numeric') continue
@@ -236,7 +615,26 @@ describe('Deluge manifest', () => {
     // **The source split, enforced.** A community menu doc describing a stock parameter is prose
     // about a moving target; the guidebook is the box's own documentation. So a community
     // citation may only appear on a parameter community firmware actually added.
-    const COMMUNITY_ADDED = ['ARP PRESET', 'ARP RHYTHM', 'ARP RATCHET PROBABILITY', 'FILTER ROUTE', 'OSC 1 TYPE']
+    // `OSC 1 TYPE` is *not* on this list, and used to be. It is a stock control — the guidebook's
+    // own `OSCILLATOR 1` TYPE (p.81) — and its one community-touched use, the DX7 recipe, carries
+    // a citation naming the guidebook page *and* the tagged doc, so it never reached this check in
+    // the first place. Listing it asserted something false and tested nothing.
+    const COMMUNITY_ADDED = ['ARP PRESET', 'ARP RHYTHM', 'ARP RATCHET PROBABILITY', 'FILTER ROUTE']
+
+    // **A second list, and it means something different (#173).** These are *stock* controls whose
+    // range only the community menu files print — the guidebook documents the envelope (§4.5's
+    // "ENV 1 to shape amplitude", p.122's matrix) and never bounds it. Under the old rule they
+    // were simply not authored, and the cost was that no recipe on this box could describe a drum.
+    // The operator has ruled that `menus/envelope/*.md` establishes each 0-50 range.
+    //
+    // It is a closed list on purpose. The ruling is about four files, not a general licence to
+    // reach for community prose whenever the guidebook is silent, and the way to keep it that way
+    // is for a fifth name to have to be added here deliberately.
+    const COMMUNITY_RANGED = ['ATTACK', 'DECAY', 'SUSTAIN', 'RELEASE'].flatMap((stage) => [
+      `ENV 1 ${stage}`,
+      `ENV 2 ${stage}`,
+    ])
+    const MAY_CITE_COMMUNITY = [...COMMUNITY_ADDED, ...COMMUNITY_RANGED]
     for (const { recipe, param } of params()) {
       const legality =
         param.kind === 'numeric'
@@ -246,15 +644,30 @@ describe('Deluge manifest', () => {
             : undefined
       if (legality === undefined || legality === false) continue
       if (!legality.source.startsWith(COMMUNITY)) continue
-      expect(COMMUNITY_ADDED, `${recipe} / ${param.name} cites community docs`).toContain(param.name)
+      expect(MAY_CITE_COMMUNITY, `${recipe} / ${param.name} cites community docs`).toContain(
+        param.name,
+      )
     }
 
-    // And the envelope and wavetable position are absent entirely: the guidebook prints no range
-    // for either, and the community menus that do are not a source for a stock parameter.
+    // The wavetable position is still absent: no source prints a range for it, and the envelope
+    // ruling does not reach it. This list used to carry the four envelope stages alongside it and
+    // that is the ban #173 lifted.
     for (const { recipe, param } of params()) {
-      for (const banned of ['ENV ', 'ATTACK', 'DECAY', 'SUSTAIN', 'RELEASE', 'WAVE INDEX']) {
-        expect(param.name.includes(banned), `${recipe} sets ${param.name}`).toBe(false)
-      }
+      expect(param.name.includes('WAVE INDEX'), `${recipe} sets ${param.name}`).toBe(false)
+    }
+
+    // Each stage cites its own file, not one blanket envelope citation — the same discipline every
+    // other range here follows, and the thing that makes the citation checkable.
+    for (const { recipe, param } of params()) {
+      // The four stages only. `ENV 2 → PITCH DEPTH` is a patch cable, not a stage, and it cites
+      // the two sources that between them establish the route, its sign and its bound.
+      if (!/^ENV [12] (ATTACK|DECAY|SUSTAIN|RELEASE)$/.test(param.name)) continue
+      if (param.kind !== 'numeric') throw new Error(`${recipe}: ${param.name} is not numeric`)
+      const stage = param.name.split(' ')[2]?.toLowerCase()
+      expect(param.range.verified, `${recipe} / ${param.name}`).toEqual({
+        kind: 'manual',
+        source: `${COMMUNITY}menus/envelope/${stage}.md`,
+      })
     }
   })
 

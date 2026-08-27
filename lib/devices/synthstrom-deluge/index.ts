@@ -26,20 +26,36 @@ import { DELUGE_PANEL } from './panel'
  *   - `Deluge-Guidebook-4p1-OLED.pdf` (OS 4.1) — **every stock parameter range and option set**,
  *     cited as `manual` with a page. This is the only source for anything the stock box has.
  *   - `manuals/deluge-community/` @ `release_1_2_1` — which features exist and how they are
- *     reached, and ranges for **community-added parameters only**: the advanced arpeggiator's
- *     `RHYTHM` and `RATCHET PROBABILITY`, and the `FILTER ROUTE` option set. Cited as `manual`
- *     with the tag in the source string, because a citation to a moving target that does not name
- *     the tag means nothing.
+ *     reached, ranges for **community-added parameters**: the advanced arpeggiator's `RHYTHM` and
+ *     `RATCHET PROBABILITY`, and the `FILTER ROUTE` option set — and, by the operator decision
+ *     recorded below, the **envelope stage ranges** for a stock control the guidebook never ranges.
+ *     Cited as `manual` with the tag in the source string, because a citation to a moving target
+ *     that does not name the tag means nothing.
  *   - the unit — nothing here, deliberately. See below.
  *
- * **The split is strict, and it costs something.** A community menu doc stating a bound for a
- * *stock* parameter is not a substitute for the guidebook: it is prose about a moving target,
- * describing one firmware's behaviour, where the guidebook prints the box's own documented value.
- * So the envelope stages and the wavetable position are not authored here at all — the community
- * envelope menus do say "0 represents the minimum attack time, 50 represents the maximum", and
- * the guidebook prints no range for ADSR anywhere. Recipes are built from parameters the
- * guidebook does range: EQ, decimation and bitcrush, delay, reverb send, mod FX, arp gate and
- * octaves, pan.
+ * **The split used to be strict, and the strictness had a cost this manifest was paying (#173).**
+ * The rule was that a community menu doc stating a bound for a *stock* parameter is prose about a
+ * moving target where the guidebook prints the box's own documented value, so the envelope stages
+ * were not authored at all. The consequence was structural rather than cosmetic: with no attack,
+ * no decay, no sustain, no release and nothing routing an envelope to pitch, **no recipe here
+ * could describe a sound whose shape over time is the point** — which is every drum — and the only
+ * way left to get one was to ask the reader to go and find a recording of it. Every percussive
+ * role on this box needed a sample and every tonal role was synthesised, and that split was a fact
+ * about the manifest, not about the Deluge.
+ *
+ * **The operator has ruled that `menus/envelope/*.md` establishes each 0-50 range**, and the four
+ * files are unambiguous about it — *"0 represents the minimum attack time, 50 represents the
+ * maximum"*, *"0 represents the shortest possible decay, 50 represents the longest"*, *"0 causes
+ * the envelope to decay to 0, 50 means the envelope does not decay"*, *"0 represents a minimum
+ * release time... 50 represents the maximum release time"*. The guidebook prints the *control*
+ * (§4.5's workflow step 6, "ENV 1 to shape amplitude"; p.122's matrix, where ENV 1 is Hard Connect
+ * to Overall Volume and ENV 2 is free) and never prints its bounds; the tagged community menus
+ * print the bounds. Both halves are cited, each to the source that actually carries it.
+ *
+ * The rest of the split is unchanged, and so is the reason for it. This is a ruling about four
+ * files, not a licence to reach for the community docs whenever the guidebook is silent — the
+ * wavetable position still has no authored range, and `test/deluge.test.ts` pins the small list of
+ * names a community citation may appear on.
  *
  * **No `observed` citation appears in this file.** `observed` means somebody took the reading off
  * the instrument (§3.1: "An observation is a real citation, not a hedge"). Nobody has. Where a
@@ -57,8 +73,8 @@ import { DELUGE_PANEL } from './panel'
  *   - **`LFO RATE`, and LFO shape on its own.** Shapes and sync divisions are enumerated (p.84)
  *     and the rate is not — and a shape with no rate, no sync interval and no patched destination
  *     is not an instruction, it is a decoration. Nothing here sets an LFO.
- *   - **Envelope `ATTACK`/`DECAY`/`SUSTAIN`/`RELEASE` and wavetable `POSITION`.** See the source
- *     split above: the guidebook prints no range for either.
+ *   - **Wavetable `POSITION`.** No source prints a range for it. The envelope stages used to sit
+ *     on this line beside it and no longer do — see the source split above.
  *   - **`PAN`.** p.86 prints "32L - 0 - 32R", which is a left/right *label* scale, not a signed
  *     number line. Encoding left as negative would be an inference about how the box represents
  *     the value, and `NumericRange` would then carry a bound nobody printed. A cited range has to
@@ -102,6 +118,36 @@ function community(file: string): Cite {
 const Z50 = { min: 0, max: 50 }
 /** p.84: "Number of octave range of arpeggiator.1-8". */
 const OCTAVES = { min: 1, max: 8 }
+
+/**
+ * §3.2/#173. **A patch cable's depth is signed, and both halves of that are cited.**
+ *
+ * The guidebook establishes the connection and its sign and stops there: p.122's matrix ticks
+ * ENV 2 against `Pitch / Transpose: Overall`, so the route exists; p.120 walks the reader through
+ * making it and ends *"Depth can be positive and negative values"*. Neither page prints a bound.
+ * `automation_view.md` @ `release_1_2_1` does, for exactly this class of parameter: *"For patch
+ * cables / modulation depth, the grid value ranges for each pad have been adapted to accomodate
+ * the full -50 to +50 range... The bottom pad in the grid will set the value to -50 and the top
+ * pad in the grid will set the value to +50."*
+ *
+ * **This is not the `PAN` case, and the difference is the whole test.** `PAN` is excluded below
+ * because p.86 prints "32L - 0 - 32R", a left/right *label* scale, and turning that into a signed
+ * number line would be a transcription rather than a reading. Here the source prints the signed
+ * numbers themselves — `-50` and `+50`, as numbers, against the two ends of the control — so the
+ * range is the range as printed.
+ */
+const PITCH_DEPTH = { min: -50, max: 50 }
+
+/**
+ * Both halves in one citation, the same way `DX7_OPTIONS_CITE` spans two sources: naming only the
+ * community doc would leave the connection and its sign unsubstantiated, and naming only the
+ * guidebook would leave the bound invented.
+ */
+const PITCH_DEPTH_CITE: Cite = {
+  kind: 'manual',
+  source:
+    'Deluge Official Guidebook OS 4.1 (OLED), p.120 and p.122 + community firmware release_1_2_1, automation_view.md',
+}
 
 function num(
   name: string,
@@ -161,14 +207,41 @@ function swing(): AuthoredNumericParam {
   })
 }
 
+/**
+ * §3.2/#173. **One ADSR stage, cited to the menu file that prints its range.**
+ *
+ * Each of the four files carries its own sentence, so each stage cites its own file rather than
+ * one blanket "the envelope menus say 0-50" — the same discipline every other range here follows.
+ * `which` is 1 or 2 because the box has two per voice and the printed name (`ATTACK`) does not say
+ * which one; p.122's matrix lists them as separate modulation sources, and ENV 1 is Hard Connect
+ * to Overall Volume while ENV 2 is free, so they are not interchangeable and the name carries the
+ * ordinal for the same reason `OSC 1 TYPE` does.
+ */
+function env(
+  which: 1 | 2,
+  stage: 'ATTACK' | 'DECAY' | 'SUSTAIN' | 'RELEASE',
+  value: number,
+  extra: Partial<AuthoredNumericParam> = {},
+): AuthoredNumericParam {
+  const file = `menus/envelope/${stage.toLowerCase()}.md`
+  return num(`ENV ${which} ${stage}`, value, Z50, community(file), extra)
+}
+
 /** §3.2: the option set is legality and is cited; the selection is authority and is taste. */
-function pick(name: string, value: string, options: string[], where: Cite): AuthoredEnumParam {
+function pick(
+  name: string,
+  value: string,
+  options: string[],
+  where: Cite,
+  extra: Partial<AuthoredEnumParam> = {},
+): AuthoredEnumParam {
   return {
     kind: 'enum',
     name,
     value,
     options: { values: options, verified: where },
     verified: false,
+    ...extra,
   }
 }
 
@@ -177,11 +250,41 @@ function pick(name: string, value: string, options: string[], where: Cite): Auth
 // ---------------------------------------------------------------------------
 
 /**
+ * §2.4 Views, p.18 — **which kind of clip to make, as a parameter rather than as prose (#172).**
+ *
+ * The page enumerates the whole set twice: the CLIP VIEW caption reads *"Single synth, kit, audio,
+ * MIDI or CV clips configured as individual sequences"*, and the panel callout beside it names
+ * each view and how the box shows it — SYNTH CLIP VIEW "Synth button lit red", KIT CLIP VIEW "Kit
+ * button lit red", AUDIO CLIP VIEW "All buttons off / unlit", MIDI CLIP VIEW, CV CLIP VIEW. All
+ * five are listed for the same reason the `IN*` oscillator types are: the option set is what the
+ * box offers, and no recipe here selects Audio, MIDI or CV.
+ *
+ * **Why this is a parameter at all.** `deluge-kick-hard` was titled "Kit-row kick" and printed
+ * nothing a reader could act on to get to a kit — and its one machine-readable identifier,
+ * `OSC 1 TYPE`, is a *synth-page* label, so the guide pointed away from the page the values belong
+ * on. A title is prose: §3's params are what the renderer surfaces, what `verified` attaches to
+ * and what the audit counts, so a claim that lives only in a title is invisible to all three. This
+ * is the same move the TR-8S makes with its loaded tone and the minilogue xd with its scale
+ * switch — the thing that decides *which control* a value belongs to travels with the value.
+ *
+ * The selection stays taste (`verified: false`) like every other `pick` here: p.18 prints the set,
+ * not the claim that a hard kick wants a kit row.
+ */
+const CLIP_TYPES = ['Synth', 'Kit', 'Audio', 'MIDI', 'CV']
+
+/**
  * p.81, verbatim: "Waveform Options. Digital: Sine, Saw, Square, Triangle. Analog Modelled:
  * Analog Saw, Analog Square. Audio: Wavetable, Sample, IN (Expandable to INL, INR, INLR)". The
  * `IN*` types monitor the physical inputs under stated conditions, so no recipe selects one —
  * they are listed because the option set is what the box offers, and trimming it to what happens
  * to be authored hides the box.
+ *
+ * **The parameter is `OSC 1 TYPE` everywhere, and that spelling is deliberate (#172).** The
+ * guidebook's table gives this control as the `TYPE` parameter of the `OSCILLATOR 1 / CARRIER 1
+ * (FM)` function, and gives oscillator 2 a `TYPE` of its own on p.82 — the printed name alone does
+ * not say which oscillator, and the row it sits in is what disambiguates it. The manifest used to
+ * spell the same control two ways, `OSC TYPE` on eighteen recipes and `OSC 1 TYPE` on the DX7 one;
+ * they are one control, and the name that carries the ordinal is the one that survives.
  */
 const OSC_TYPES = [
   'Sine',
@@ -229,6 +332,27 @@ const DX7_OPTIONS_CITE: Cite = {
 /** `community_features.md`, `FILTER ROUTE`, SOUND menu only — community-added. */
 const FILTER_ROUTES = ['HPF TO LPF', 'LPF TO HPF', 'PARALLEL']
 
+/**
+ * **The first thing the reader does at the box, so it is the first parameter printed (#172).**
+ *
+ * Every recipe carries one. The split is not a taste call recipe by recipe — it follows the sound
+ * source, which is the line the guidebook itself draws: §5.2 (p.108) says *"If synth clips mainly
+ * support melodic elements with the ability for sample use, kits would more often be used with
+ * samples as the primary elements"*. So a recipe that loads a one-shot is a **kit row** and a
+ * recipe that sounds the internal engine is a **synth clip**, which lands exactly on this
+ * manifest's `sourceAudio` recipes — all nine of them, and only them, set `OSC 1 TYPE` to Sample.
+ *
+ * Neither Audio, MIDI nor CV is selected anywhere, and that is the same fact twice: an audio clip
+ * has no oscillator at all, so `OSC 1 TYPE`, `REPEAT MODE` and the rest of what these recipes set
+ * do not exist on one; MIDI and CV clips drive something that is not this box.
+ *
+ * The `clip-type` hint carries the gesture — [SHIFT] + [SYNTH] creates a synth clip (p.87),
+ * [SHIFT] + [KIT] creates a kit clip (p.112), both from clip view.
+ */
+function clipType(value: 'Synth' | 'Kit'): AuthoredEnumParam {
+  return pick('CLIP TYPE', value, CLIP_TYPES, cite(18), { hint: 'clip-type' })
+}
+
 // ---------------------------------------------------------------------------
 // Voices
 // ---------------------------------------------------------------------------
@@ -255,21 +379,175 @@ const TRACK_ROLES: Role[] = [
 
 const RECIPES: Recipe[] = [
   // ---- low ------------------------------------------------------------------------
+  /**
+   * #173. **The kick set, and why it is three recipes rather than one.**
+   *
+   * The directions ask for `soft`, `hard`, `dark`, `hard`, `hard`. `hard` is three of the five and
+   * industrial-techno is one of them, which is the case the operator raised: *"for the deluge and
+   * a techno direction, why not use the Kit source and a TR-808 or something vs a Sample?"*. So
+   * `hard` is where a synthesised recipe has to land. Putting it on `dark` instead would have left
+   * the complaint alive on the direction that prompted it.
+   *
+   * **A sine with a pitch drop is not only a clean kick.** That reading is true of a *bare* sine,
+   * and it is why `dark` below is worth having. It is not true of what this box does with one:
+   * this manifest already carries `DECIMATION` and `BITCRUSH` (p.217), and sine plus a fast pitch
+   * drop plus saturation is not an approximation of a hard techno kick, it is how one is made. The
+   * `hard` recipe reaches for edge the way the old sampled recipe did, on the same two controls,
+   * with the shape underneath it now specified rather than sourced.
+   *
+   *   - `hard`  — synthesised, fast drop, decimated and crushed. Three directions.
+   *   - `dark`  — synthesised, gentler drop, longer body, no saturation at all. One direction.
+   *   - `dirty` — the sampled recipe, which keeps its place because a loaded one-shot is how
+   *               plenty of people do it and the point was never to remove that route.
+   *
+   * **Kit, not Synth, on both synthesised recipes, and that is the point of the row hint.** The
+   * drums belong in one kit clip, and p.87 documents making a row of it synthesised rather than
+   * sampled — "CREATING A NEW SYNTHESIZER ROW IN A KIT CLIP... Press [AUDITION] + [SYNTH] to
+   * create a synth clip on the row selected". A `Kit` clip type with no `sourceAudio` is a
+   * combination the manifest could not express before #172 modelled the clip type at all.
+   *
+   * **How the two envelopes divide the work** (p.122's matrix, and §6.3 on p.125): ENV 1 is *Hard
+   * Connect* to Overall Volume — "ENV1 controls volume amplitude by default" — so its four stages
+   * shape the amplitude with no patching. ENV 2 "has freely assignable destinations", and the
+   * matrix ticks it against `Pitch / Transpose: Overall`, which is the pitch drop.
+   *
+   * **`ENV 2 SUSTAIN` is 25, not 0, and the difference is the whole of p.125.** The community menu
+   * file says "0 causes the envelope to decay to 0", and that is the *volume* reading — §6.3 is
+   * explicit that a second scale is in force here: *"When either of the 2 envelopes modulate a
+   * parameter other than volume level, it does so with a 'bipolar' behaviour... when the sustain
+   * is set to 25 (default for ENV2), that stage of the envelope will match the current setting of
+   * the target parameter without modulation. Sustain settings below 25 will then modulate the
+   * parameter lower than its current setting"*. So on a pitch destination 25 is the note and 0 is
+   * *below* the note — an envelope that ends flat and stays there. This manifest had 0, with a
+   * note claiming it returned the pitch to the note, which was the CLAUDE.md failure exactly: a
+   * cited range with the point read off the wrong one of two printed scales. The bound is still
+   * `sustain.md`'s 0-50; what changed is which scale that bound is being read on.
+   *
+   * `ENV 1 SUSTAIN` stays 0, and the asymmetry is the same sentence: p.125's bipolar rule is for
+   * "a parameter other than volume level", and ENV 1's destination *is* volume level.
+   *
+   * **No `ENV 2 RELEASE`.** With ENV 1's amplitude already at silence, a pitch still moving after
+   * note-off is inaudible, and authoring a value nobody can hear is the decoration this manifest
+   * refuses elsewhere. `ENV 1 RELEASE` *is* authored, because a grid note can end before the decay
+   * has finished and then the release is what the reader hears.
+   */
   {
     id: 'deluge-kick-hard',
     role: 'kick',
     character: 'hard',
     voice: 'track',
-    title: 'Kit-row kick, bass lifted, edge from decimation',
+    title: 'Synth kick on a kit row — sine, fast pitch drop, decimated',
+    params: [
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Sine', OSC_TYPES, cite(81), { hint: 'kit-synth-row' }),
+      env(1, 'ATTACK', 1, {
+        hint: 'env-menu',
+        note: 'the menus recommend at least 1; 0 is likely to click',
+      }),
+      env(1, 'DECAY', 17, { note: '0 is the shortest decay, 50 the longest' }),
+      env(1, 'SUSTAIN', 0, { note: '0 decays away to nothing, which is what a drum does' }),
+      env(1, 'RELEASE', 5),
+      env(2, 'ATTACK', 1),
+      env(2, 'DECAY', 6, { note: 'this is how fast the pitch falls' }),
+      env(2, 'SUSTAIN', 25, {
+        note: 'p.125: on a pitch destination 25 is the note itself, and below 25 goes flat',
+      }),
+      num('ENV 2 → PITCH DEPTH', 22, PITCH_DEPTH, PITCH_DEPTH_CITE, {
+        hint: 'env2-pitch',
+        note: 'destination is Pitch / Transpose: Overall; positive lifts the attack above the note',
+      }),
+      // The edge, on the two controls the old sampled recipe already used. Below every `dirty`
+      // recipe on this box, which is what keeps `hard` and `dirty` apart as characters rather
+      // than as labels.
+      num('DECIMATION', 12, Z50, cite(217), { mood: [{ axis: 'grit', amount: 12 }] }),
+      num('BITCRUSH', 6, Z50, cite(217), { mood: [{ axis: 'grit', amount: 6 }] }),
+      num('EQ BASS AMOUNT', 33, Z50, cite(219), { note: '25 is neutral; above boosts' }),
+      swing(),
+    ],
+    articulation: [{ slot: 'accent', set: { velocity: 127 }, hint: 'note-velocity' }],
+    verified: false,
+  },
+  /**
+   * #173. **The clean one. Same construction, every value pulled the other way.**
+   *
+   * `dark` is lydian-house's request, and a bare sine with a gentle drop is exactly right for it —
+   * which is the reading that made `dark` look like the whole answer, and is why it survives as
+   * one of three rather than as the only one. Against `hard`: the pitch drop is smaller (13 against
+   * 22) and slower (`ENV 2 DECAY` 11 against 6), the body is longer (`ENV 1 DECAY` 26 against 17),
+   * and there is no `DECIMATION` and no `BITCRUSH` at all. The treble is cut and carries the
+   * darkness axis, the way `sub`/`dark` and `open-hat`/`dark` already do on this box.
+   */
+  {
+    id: 'deluge-kick-dark',
+    role: 'kick',
+    character: 'dark',
+    voice: 'track',
+    title: 'Clean sine kick, long body, gentle pitch drop',
+    params: [
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Sine', OSC_TYPES, cite(81), { hint: 'kit-synth-row' }),
+      env(1, 'ATTACK', 1, {
+        hint: 'env-menu',
+        note: 'the menus recommend at least 1; 0 is likely to click',
+      }),
+      env(1, 'DECAY', 26, { note: 'longer than the hard kick — this is the body' }),
+      env(1, 'SUSTAIN', 0, { note: '0 decays away to nothing, which is what a drum does' }),
+      env(1, 'RELEASE', 8),
+      env(2, 'ATTACK', 1),
+      env(2, 'DECAY', 11, { note: 'slower than the hard kick — the drop is a fall, not a click' }),
+      env(2, 'SUSTAIN', 25, {
+        note: 'p.125: on a pitch destination 25 is the note itself, and below 25 goes flat',
+      }),
+      num('ENV 2 → PITCH DEPTH', 13, PITCH_DEPTH, PITCH_DEPTH_CITE, {
+        hint: 'env2-pitch',
+        note: 'destination is Pitch / Transpose: Overall; positive lifts the attack above the note',
+      }),
+      num('EQ TREBLE AMOUNT', 18, Z50, cite(219), {
+        mood: [{ axis: 'darkness', amount: -6 }],
+        note: '25 is neutral; below cuts',
+      }),
+      num('EQ BASS AMOUNT', 34, Z50, cite(219), { note: '25 is neutral; above boosts' }),
+      swing(),
+    ],
+    articulation: [{ slot: 'downbeat', set: { velocity: 108 } }],
+    verified: false,
+  },
+  /**
+   * #173. **The sampled kick, moved to `dirty` and made to earn it.**
+   *
+   * It kept its slot for as long as it was the only kick here. It is not any more, and two kicks
+   * cannot share `(kick, hard, track)` — §3's uniqueness key admits a second recipe only on a
+   * different key, and the Tracker Mini pad pair is not a precedent for this because that pair
+   * splits on `Realisation`, which is a claim about *note count*. Two kicks are both one note.
+   *
+   * `hard` and `dirty` are orthogonal in `CHAR` rather than near-synonyms, so this is a real move
+   * — but it had to be earned by the parameters and not by the slot. As authored it was an EQ bass
+   * lift and `DECIMATION 6` of 50, which is the "edge" its old title claimed and is not a dirty
+   * kick. The decimation is up to 21 and `BITCRUSH` is authored beside it, which puts this recipe
+   * in the same band as the three other `dirty` recipes on this box (`bass-mid` at 14/9, `acid` at
+   * 17/7, `noise` at 13/21), and the title says what it now is. Both ranges are p.217's, unchanged.
+   *
+   * It also has to stay clear of `hard`, which now carries the same two controls at 12/6. It does,
+   * on both, and by a margin larger than the gap between any two `dirty` recipes here — otherwise
+   * the two characters would be one sound at two labels, which is the failure the move was for.
+   */
+  {
+    id: 'deluge-kick-dirty',
+    role: 'kick',
+    character: 'dirty',
+    voice: 'track',
+    title: 'Sampled kick, decimated and crushed',
     sourceAudio: {
-      need: 'A dry kick one-shot with a defined attack, no room on it',
+      need: 'A 909-style kick — click on the front, short body, no room on it',
     },
     params: [
-      pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Sample', OSC_TYPES, cite(81)),
       pick('REPEAT MODE', 'ONCE', REPEAT_MODES, cite(81)),
+      num('DECIMATION', 21, Z50, cite(217), { mood: [{ axis: 'grit', amount: 16 }] }),
+      num('BITCRUSH', 13, Z50, cite(217), { mood: [{ axis: 'grit', amount: 12 }] }),
       num('EQ BASS AMOUNT', 33, Z50, cite(219), { note: '25 is neutral; above boosts' }),
       num('EQ BASS FREQUENCY', 14, Z50, cite(219)),
-      num('DECIMATION', 6, Z50, cite(217), { mood: [{ axis: 'grit', amount: 10 }] }),
       swing(),
     ],
     articulation: [{ slot: 'accent', set: { velocity: 127 }, hint: 'note-velocity' }],
@@ -282,7 +560,8 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Sine sub with the top end cut away',
     params: [
-      pick('OSC TYPE', 'Sine', OSC_TYPES, cite(81)),
+      clipType('Synth'),
+      pick('OSC 1 TYPE', 'Sine', OSC_TYPES, cite(81)),
       num('EQ TREBLE AMOUNT', 17, Z50, cite(219), {
         mood: [{ axis: 'darkness', amount: -6 }],
         note: '25 is neutral; below cuts',
@@ -300,7 +579,8 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Analog saw bass through the drive filter, crushed',
     params: [
-      pick('OSC TYPE', 'Analog Saw', OSC_TYPES, cite(81)),
+      clipType('Synth'),
+      pick('OSC 1 TYPE', 'Analog Saw', OSC_TYPES, cite(81)),
       pick('LPF MODE', 'DRIVE', LPF_MODES, cite(83)),
       num('DECIMATION', 14, Z50, cite(217), { mood: [{ axis: 'grit', amount: 14 }] }),
       num('BITCRUSH', 9, Z50, cite(217), { mood: [{ axis: 'grit', amount: 12 }] }),
@@ -319,10 +599,11 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Snare with the treble lifted, rolling on the fill',
     sourceAudio: {
-      need: 'A snare one-shot with the crack still on it, dry',
+      need: 'A 909-style snare — noise and crack over a short body, dry',
     },
     params: [
-      pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Sample', OSC_TYPES, cite(81)),
       num('EQ TREBLE AMOUNT', 34, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -7 }] }),
       num('EQ TREBLE FREQUENCY', 30, Z50, cite(219)),
       num('REVERB AMOUNT', 8, Z50, cite(225), { mood: [{ axis: 'space', amount: 12 }] }),
@@ -341,10 +622,11 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Clap sitting back in the reverb',
     sourceAudio: {
-      need: 'A stereo hand-clap one-shot, several hands rather than one',
+      need: 'A 909-style clap — several hands and a short room tail, in stereo',
     },
     params: [
-      pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Sample', OSC_TYPES, cite(81)),
       num('REVERB AMOUNT', 19, Z50, cite(225), { mood: [{ axis: 'space', amount: 16 }] }),
       num('EQ TREBLE AMOUNT', 31, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -5 }] }),
       swing(),
@@ -359,10 +641,11 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Dry rim, thinned out, dropped in and out',
     sourceAudio: {
-      need: 'A rim or stick one-shot, dry and close to transient-only',
+      need: 'An 808-style rim — a dry woodblock tick, close to transient-only',
     },
     params: [
-      pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Sample', OSC_TYPES, cite(81)),
       num('EQ BASS AMOUNT', 19, Z50, cite(219), { note: '25 is neutral; below cuts' }),
       num('EQ TREBLE AMOUNT', 28, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -4 }] }),
       swing(),
@@ -377,10 +660,11 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Closed hat with the bass rolled off',
     sourceAudio: {
-      need: 'A closed hat one-shot under 150 ms, dry',
+      need: 'An 808-style closed hat — a short metallic tick under 150 ms, dry',
     },
     params: [
-      pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Sample', OSC_TYPES, cite(81)),
       pick('REPEAT MODE', 'CUT', REPEAT_MODES, cite(81)),
       num('EQ TREBLE AMOUNT', 32, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -6 }] }),
       num('EQ BASS AMOUNT', 18, Z50, cite(219)),
@@ -396,10 +680,11 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Open hat filtered down, decaying into the bar',
     sourceAudio: {
-      need: 'An open hat one-shot with a real tail to gate',
+      need: 'A 909-style open hat — a real sampled tail to gate',
     },
     params: [
-      pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Sample', OSC_TYPES, cite(81)),
       pick('LPF MODE', '24dB/Octave', LPF_MODES, cite(83)),
       num('EQ TREBLE AMOUNT', 20, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -8 }] }),
       num('REVERB AMOUNT', 10, Z50, cite(225), { mood: [{ axis: 'space', amount: 12 }] }),
@@ -415,10 +700,11 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Quiet percussion filling the gaps',
     sourceAudio: {
-      need: 'A shaker, tick or brushed one-shot under 100 ms',
+      need: 'A 707-style shaker or tambourine — a soft tick under 100 ms',
     },
     params: [
-      pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Sample', OSC_TYPES, cite(81)),
       num('REVERB AMOUNT', 12, Z50, cite(225), { mood: [{ axis: 'space', amount: 14 }] }),
       num('EQ BASS AMOUNT', 20, Z50, cite(219)),
       swing(),
@@ -435,7 +721,8 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Wavetable pad, slow chorus, wide reverb send',
     params: [
-      pick('OSC TYPE', 'Wavetable', OSC_TYPES, cite(81)),
+      clipType('Synth'),
+      pick('OSC 1 TYPE', 'Wavetable', OSC_TYPES, cite(81)),
       pick('MOD FX TYPE', 'CHORUS', MOD_FX_TYPES, cite(216)),
       num('MOD FX RATE', 9, Z50, cite(229)),
       num('REVERB AMOUNT', 27, Z50, cite(225), { mood: [{ axis: 'space', amount: 18 }] }),
@@ -452,7 +739,8 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Analog saw lead, treble up, delay trailing behind',
     params: [
-      pick('OSC TYPE', 'Analog Saw', OSC_TYPES, cite(81)),
+      clipType('Synth'),
+      pick('OSC 1 TYPE', 'Analog Saw', OSC_TYPES, cite(81)),
       pick('LPF MODE', '12dB/Octave', LPF_MODES, cite(83)),
       num('EQ TREBLE AMOUNT', 33, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -9 }] }),
       // Rate without amount is a delay nobody can hear; both are authored or neither is.
@@ -470,7 +758,8 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Square stab through a fast phaser',
     params: [
-      pick('OSC TYPE', 'Analog Square', OSC_TYPES, cite(81)),
+      clipType('Synth'),
+      pick('OSC 1 TYPE', 'Analog Square', OSC_TYPES, cite(81)),
       pick('MOD FX TYPE', 'PHASER', MOD_FX_TYPES, cite(216)),
       num('MOD FX RATE', 16, Z50, cite(229)),
       num('MOD FX FEEDBACK', 18, Z50, cite(229), { note: 'Flanger and phaser types only' }),
@@ -487,7 +776,8 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Two-octave arp on a rhythm preset, with ratchets',
     params: [
-      pick('OSC TYPE', 'Square', OSC_TYPES, cite(81)),
+      clipType('Synth'),
+      pick('OSC 1 TYPE', 'Square', OSC_TYPES, cite(81)),
       pick('ARP PRESET', 'Up', ARP_PRESETS, community('community_features.md')),
       num('ARP GATE', 22, Z50, cite(102), {
         hint: 'arp-menu',
@@ -513,7 +803,8 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Saw through the drive ladder, filters in series',
     params: [
-      pick('OSC TYPE', 'Analog Saw', OSC_TYPES, cite(81)),
+      clipType('Synth'),
+      pick('OSC 1 TYPE', 'Analog Saw', OSC_TYPES, cite(81)),
       pick('LPF MODE', 'DRIVE', LPF_MODES, cite(83)),
       pick('FILTER ROUTE', 'HPF TO LPF', FILTER_ROUTES, community('community_features.md')),
       num('DECIMATION', 17, Z50, cite(217), { mood: [{ axis: 'grit', amount: 16 }] }),
@@ -530,6 +821,7 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'DX7 bed sent to the reverb and the delay',
     params: [
+      clipType('Synth'),
       // The DX7 engine is an OSC1 type on the subtractive engine (`dx_synth.md`). Its own
       // parameters — operator levels, coarse tuning, algorithm, feedback — carry no documented
       // range in any source, so none of them is authored here.
@@ -549,13 +841,17 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'track',
     title: 'Crushed noise wash under the drums',
+    // #173's lineage reframe stops here, and that is the reframe working rather than an omission.
+    // "An 808-style kick" is a recommendation about a sound; there is no drum-machine lineage for
+    // room tone, and naming one to match the others would be the invention the reframe replaced.
     sourceAudio: {
       need:
         'A noise or air bed that loops without a seam — rain, tape hiss, room tone. It plays ' +
         'under everything on LOOP, so a click at the loop point is audible every pass',
     },
     params: [
-      pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Sample', OSC_TYPES, cite(81)),
       pick('REPEAT MODE', 'LOOP', REPEAT_MODES, cite(81)),
       num('BITCRUSH', 21, Z50, cite(217), { mood: [{ axis: 'grit', amount: 18 }] }),
       num('DECIMATION', 13, Z50, cite(217), { mood: [{ axis: 'grit', amount: 12 }] }),
@@ -573,7 +869,8 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Saw riser, top end open, thrown into the reverb',
     params: [
-      pick('OSC TYPE', 'Saw', OSC_TYPES, cite(81)),
+      clipType('Synth'),
+      pick('OSC 1 TYPE', 'Saw', OSC_TYPES, cite(81)),
       num('EQ TREBLE AMOUNT', 35, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -8 }] }),
       num('REVERB AMOUNT', 23, Z50, cite(225), { mood: [{ axis: 'space', amount: 16 }] }),
       num('DELAY AMOUNT', 16, Z50, cite(222), { mood: [{ axis: 'space', amount: 10 }] }),
@@ -588,11 +885,14 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'track',
     title: 'Downbeat impact, decimated, long reverb send',
+    // Left generic for the same reason as the noise bed above: an impact is whatever is big
+    // enough, and no drum machine owns that sound.
     sourceAudio: {
       need: 'A one-shot with a big front — a crash, a gated slam',
     },
     params: [
-      pick('OSC TYPE', 'Sample', OSC_TYPES, cite(81)),
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Sample', OSC_TYPES, cite(81)),
       num('DECIMATION', 20, Z50, cite(217), { mood: [{ axis: 'grit', amount: 14 }] }),
       num('REVERB AMOUNT', 34, Z50, cite(225), { mood: [{ axis: 'space', amount: 14 }] }),
       num('EQ BASS AMOUNT', 32, Z50, cite(219)),
@@ -608,7 +908,8 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Slow phaser sweep across the transition',
     params: [
-      pick('OSC TYPE', 'Triangle', OSC_TYPES, cite(81)),
+      clipType('Synth'),
+      pick('OSC 1 TYPE', 'Triangle', OSC_TYPES, cite(81)),
       pick('MOD FX TYPE', 'PHASER', MOD_FX_TYPES, cite(216)),
       num('MOD FX RATE', 7, Z50, cite(229)),
       num('MOD FX FEEDBACK', 22, Z50, cite(229), { note: 'Flanger and phaser types only' }),
@@ -834,8 +1135,18 @@ export const device: Device = {
 
   /** Gestures off the panel. Jogs, not documentation (invariant 7). */
   hints: {
+    // The clip type is the first thing a recipe asks for, so the gesture that makes one is a jog.
+    // p.87: "Press [SHIFT] + [SYNTH] to create a synth clip"; p.112: "Press [SHIFT] + [KIT] to
+    // create a kit clip". Both from clip view, which is where a reader already is.
+    'clip-type': 'From clip view: [SHIFT] + [KIT] or [SYNTH]',
     'osc-type': 'Hold [SHIFT], press the OSC type pad',
-    'env-menu': 'Press (SELECT), turn to ENV 1',
+    // #173. Two envelope jogs, written for a reader who has not opened this menu before: one to
+    // find the stages at all, one for the patch that is not on any pad — p.120's procedure is
+    // drill into the destination, press (SELECT) again, and the modulation sources appear.
+    'env-menu': 'Press (SELECT), ENV 1, then ATTACK / DECAY',
+    'env2-pitch': 'In PITCH, press (SELECT) again, pick ENV 2',
+    // p.87: "Press [AUDITION] + [SYNTH] to create a synth clip on the row selected".
+    'kit-synth-row': '[AUDITION] + [SYNTH] makes a synth row',
     'arp-menu': 'Hold [SHIFT], press [ARP]',
     'note-velocity': 'Hold the note pad, turn (SELECT)',
     'note-probability': 'Hold pad, turn (SELECT) anticlockwise',
