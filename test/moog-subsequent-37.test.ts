@@ -125,15 +125,20 @@ describe('Subsequent 37 manifest', () => {
     expect(device.clock.preferredSource).toBeUndefined()
   })
 
-  it('is the library first mono-output synth, and takes audio in', () => {
+  it('is a mono-output synth that takes audio in, which most of the library is not', () => {
     // p.61: `AUDIO OUTPUT: 1xTS, 1xTRS Headphone`, and p.34 says the headphone jack is the same
-    // monaural signal on both sides. Every other synth in the registry is stereo.
+    // monaural signal on both sides.
     expect(device.io).toEqual({ main: 'mono', individualOuts: 0, audioIn: true, usbAudio: false })
     const synths = DEVICES.filter((d) => d.kind === 'synth')
     expect(synths.map((d) => d.id)).toContain('moog-subsequent-37')
-    expect(synths.filter((d) => d.io.main === 'mono').map((d) => d.id)).toEqual([
-      'moog-subsequent-37',
-    ])
+    // **It was "the library's first", and a second one landed.** The Minitaur is mono out and
+    // takes audio in for the same reason — a small analog Moog with one voice. The claim worth
+    // keeping is that mono is the exception among synths, not that this box is alone in it, so
+    // the assertion is the membership and the minority rather than a list of one.
+    const mono = synths.filter((d) => d.io.main === 'mono').map((d) => d.id)
+    expect(mono).toContain('moog-subsequent-37')
+    expect(mono).toContain('moog-minitaur')
+    expect(mono.length).toBeLessThan(synths.length)
   })
 
   it('declares no patch points, because every socket is a rig connection', () => {

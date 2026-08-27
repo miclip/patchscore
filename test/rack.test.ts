@@ -145,6 +145,7 @@ describe('rack geometry (§10)', () => {
     // That second pair is worth the sentence, because a shared rise arrived at twice from two
     // documents looks exactly like the bug this line exists to catch. Still an exact count rather
     // than `toBeGreaterThan(1)`: a rise silently dropped to a shared default is the real target.
+    //
     expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 3)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
@@ -929,9 +930,10 @@ describe('rack view', () => {
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
+    // Fifteen since the Minitaur landed — one field per device that has voices to show.
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(14)
+    expect(fields).toHaveLength(15)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

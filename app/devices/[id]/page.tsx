@@ -92,7 +92,16 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       <section className="panel span-2">
         <header>
           <h2>Panel</h2>
-          <p className="note">Our drawing, from cited dimensions.</p>
+          {/*
+            §10. Two different claims, and the page must not make the first one for a box whose
+            panel nobody has drawn: the outline there comes from the sockets the manifest
+            declares, not from a figure anybody measured.
+          */}
+          <p className="note">
+            {device.panel === undefined
+              ? 'Our outline, from the sockets this box declares.'
+              : 'Our drawing, from cited dimensions.'}
+          </p>
         </header>
         <PanelFigure device={device} idPrefix={device.id} />
       </section>

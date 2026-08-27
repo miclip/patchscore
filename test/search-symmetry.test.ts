@@ -1132,11 +1132,18 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * still somewhere to go.
    *
    *  - **Over the ceiling** — something got more expensive. Re-measure, read the mono-voice
-   *    paragraph above, and do not reach for `DEFAULT_NODE_CAP`; that is closed (#78).
+   *    paragraph above, and do not reach for `DEFAULT_NODE_CAP`; #78 is closed and #159 and #160
+   *    are where the cost problem lives now.
    *  - **Under the floor** — something got cheaper. Good news, and a stale comment: re-measure,
    *    move the band down, and keep the alarm's sensitivity.
+   *
+   * **Moved for the Minitaur**, from 132,615 at eighteen devices to the figure below at
+   * nineteen. `DEFAULT_NODE_CAP` was raised with it, 150,000 to 200,000, which the cap's own
+   * docstring argues against and records as a deliberate exception — the deciding measurement
+   * was that the true uncapped worst case is 165,785, a 10% overshoot rather than a blow-up.
+   * That is the one number a capped run cannot give you, since it reports the cap.
    */
-  const WORST_CASE_NODES = 132_615
+  const WORST_CASE_NODES = 165_785
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))
