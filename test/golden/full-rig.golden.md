@@ -63,7 +63,7 @@ None.
 
 **Clock source** — Hapax over `midi-din`, carrying 0 parts. Sync everything else to it, except Zoom LiveTrak L-8, which cannot receive clock and runs free, and Model 2400, which cannot receive clock — a DAW drives its transport over HUI/MCU, and without one it runs free, and Metropolix and DFAM, which have no `midi-din` input and run free.
 
-- Why this box — 3 boxes here claim that job, so transport, then name, settled it · manual
+- Why this box — 4 boxes here claim that job, so transport, then name, settled it · manual
   - ↳ cite: claim manual — Hapax Manual (22 June 2026), p.130
 
 - On the Hapax, set `settings > sync output > MIDI A` to `CLOCK+TRANSPORT` · manual
@@ -201,6 +201,14 @@ None.
     - ↳ cite: value manual — OP-XY full guide v1.1.15, p.3
   - audio: stereo main out · USB audio · audio in
   - mixer: 1 part, no individual outs: one stereo channel for all
+- **T-1** — sequencer · 0 parts
+  - clock: sends clock · midi-din/usb/analog-clock/ableton-link
+  - midi · in: 3.5 mm TRS Type A — Type B adapters are incompatible. Enable Clock under T1 Config > MIDI I/O > TRS > In to follow it. · manual
+    - ↳ cite: value manual — Torso T-1 docs, /t1/midi-and-analog-sync/midi-connectivity/, fetched 2026-08-28
+  - midi · out: 3.5 mm TRS Type A. Clock and Start / Stop are enabled per message type under T1 Config > MIDI I/O > TRS > Out. · manual
+    - ↳ cite: value manual — Torso T-1 docs, /t1/midi-and-analog-sync/midi-connectivity/, fetched 2026-08-28
+  - audio: no audio I/O
+  - mixer: no parts assigned; nothing to patch
 - **Zoom LiveTrak L-8** — mixer-recorder · 0 parts
   - clock: no clock in or out
   - audio: stereo main out · USB audio · audio in

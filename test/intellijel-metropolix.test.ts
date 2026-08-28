@@ -47,12 +47,15 @@ describe('Metropolix manifest', () => {
     // **The Hapax is the second, and it arrived at the kind by the same reading**: everything it
     // emits is control data, its connectivity pages enumerate the back panel and name no audio
     // socket, and its sixteen tracks per project are the same temptation this file exists to
-    // resist, wearing a bigger number. Asserted as a list rather than a count so a third has to
-    // be looked at rather than absorbed.
+    // resist, wearing a bigger number. The T-1 is the third, on documentation that says it in a
+    // sentence — "The T1 does not generate audio; it controls external instruments" — and its
+    // sixteen tracks per pattern are the temptation a third time. Asserted as a list rather than
+    // a count so a fourth has to be looked at rather than absorbed.
     expect(device.kind).toBe('sequencer')
     expect(DEVICES.filter((d) => d.kind === 'sequencer').map((d) => d.id)).toEqual([
       'intellijel-metropolix',
       'squarp-hapax',
+      'torso-t1',
     ])
     // And the other Intellijel box in the library is the counter-example the kind exists against.
     expect(cascadia.kind).toBe('semi-modular')
@@ -187,17 +190,19 @@ describe('Metropolix manifest', () => {
   // -------------------------------------------------------------------------
 
   describe('clock (§7.4)', () => {
-    it('claims the preference, and is one of the three boxes that do', () => {
+    it('claims the preference, and is one of the four boxes that do', () => {
       expect(device.clock.preferredSource).toBe(true)
       // This was the only claim in the library until #80 went through the nine boxes with no
       // decision recorded either way. Exactly one of them cleared §7.4's bar: the Tracker Mini,
       // whose manual calls it "a perfect fit for the centre piece of a setup" (p.283). The other
       // eight carry a reasoned non-claim in `capabilityEvidence`, which is why the list is short
-      // rather than because nobody looked.
+      // rather than because nobody looked. The T-1 is the fourth, on a documentation page that
+      // prints the job in a field labelled Role: "Sequencer and clock hub for hybrid rigs".
       expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
         'intellijel-metropolix',
         'polyend-tracker-mini',
         'squarp-hapax',
+        'torso-t1',
       ])
       // The Model 2400 claimed it for two commits on the strength of a manual proving only that
       // a desk *can* generate clock. Capability is not preference; this claim is about what the
@@ -245,11 +250,14 @@ describe('Metropolix manifest', () => {
       const result = resolve({ devices: DEVICES, template, mood: NEUTRAL_MOOD, seed: 18 })
       expect(result.clockSource?.deviceId).toBe('squarp-hapax')
       expect(result.clockSource?.transport).toBe('midi-din')
-      // Not because this box was demoted: strip every other claim and it leads again. Two have
-      // to come off — the Hapax outranks it on transport, and the Tracker Mini would win the
-      // fall-through if the Hapax were absent and this box's `usb` were the only alternative.
+      // Not because this box was demoted: strip every other claim and it leads again. Three have
+      // to come off now — the Hapax and the T-1 both outrank it on transport, and the Tracker Mini
+      // would win the fall-through if both were absent and this box's `usb` were the only
+      // alternative. The Hapax still wins over the T-1 among the voiceless claimants, on the
+      // bottom key: `squarp-` sorts before `torso-`.
+      const OTHER_CLAIMS = ['polyend-tracker-mini', 'squarp-hapax', 'torso-t1']
       const soleClaim = DEVICES.map((d) =>
-        d.id === 'polyend-tracker-mini' || d.id === 'squarp-hapax'
+        OTHER_CLAIMS.includes(d.id)
           ? { ...d, clock: { ...d.clock, preferredSource: undefined } }
           : d,
       )
