@@ -33,6 +33,9 @@ opened.
 | `LABYRINTH-MANUAL_1.pdf` | **Moog Labyrinth**, 62pp / 68k chars / 1 range. Enum-dominated, as #184 predicts for this family. Note the space in the CDN filename — `LABYRINTH-MANUAL%201.pdf`, which is why guessing the path failed for a year. | [direct](https://cdn.inmusicbrands.com/Moog/Labyrinth/LABYRINTH-MANUAL%201.pdf), confirmed 2026-08-28 |
 | `Messenger_Manual.pdf` | **Moog Messenger**, 38pp / 66k chars / 4 ranges. Fetched alongside the other two; not in any backlog yet. | [direct](https://cdn.inmusicbrands.com/Moog/Messenger/Messenger_Manual.pdf), confirmed 2026-08-28 |
 | `Spectravox_Quickstart_Guide_v1.0.pdf` | **Do not author from this.** 2pp and **2 characters of extractable text** — an image-only PDF. Kept so nobody re-downloads it expecting a manual. See the note below. | [direct](https://cdn.inmusicbrands.com/Moog/Spectravox/Spectravox%20-%20Quickstart%20Guide%20-%20v1.0.pdf) |
+| `SP-404MK2_v4_reference_eng02_W.pdf` | **Roland SP-404MKII Reference Manual, v4.00.** 274pp / 279k chars / **275 ranges** — Roland prints them bare (`0–127`, `40.0–200.0`, `1/4–7/4`) with an en dash and no unit, so a unit-bearing grep reports zero. | [direct](https://static.roland.com/assets/media/pdf/SP-404MK2_v4_reference_eng02_W.pdf), confirmed 2026-08-28 |
+| `te-ep-133/` | **teenage engineering EP–133 K.O. II guide mirror**, 19 pages / 105k chars / 36 ranges. No PDF exists — see the TE note below. | [guide](https://teenage.engineering/guides/ep-133), mirrored 2026-08-28 |
+| `te-ep-40/` | **teenage engineering EP–40 riddim guide mirror**, 19 pages / 107k chars / 39 ranges. No PDF exists. | [guide](https://teenage.engineering/guides/ep-40), mirrored 2026-08-28 |
 | `torso-t1/` | **Torso T-1 documentation mirror**, 77 pages / 273k chars / 67 printed ranges. No PDF exists; see the note below and `torso-t1/VERSION`. | [docs](https://docs.torsoelectronics.com/t1/), mirrored 2026-08-28 |
 
 ## The Deluge runs community firmware
@@ -243,6 +246,21 @@ return the same answer.
   page exposes no direct links. Not workable until a real manual is in hand.
 - ~~**Deluge guidebook**~~ — resolved. It was an excerpt; the full 284pp guidebook and the
   community firmware docs are both here now.
+
+### teenage engineering publishes guides, not manuals
+
+The OP-XY was the exception here, not the rule: it has a PDF, and an OCR'd one at that. **EP–133
+K.O. II and EP–40 riddim have no PDF at all** — the downloads page offers a browser update utility
+and links to web guides, and nothing else. Same answer as the T-1, and the same shape
+`deluge-community/` set: mirror the pages, pin the date, cite the date.
+
+Their guides are **server-rendered**, so `curl` gets the real text and no model sits between the
+page and the file. 19 pages each, `<main>` extracted verbatim, first line of every file carrying
+its source URL.
+
+Both are worth noting as *sampler* shapes rather than synths, and the EP–40's library is genre-bound
+(reggae, dub, dancehall) in a way nothing else here is — which is a content question before it is a
+modelling one.
 
 ## Notes for whoever refreshes these
 
