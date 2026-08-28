@@ -151,7 +151,18 @@ export function PhaseFinishing({ result }: { result: ResolveResult }) {
         <p className="quiet">
           <RoleList roles={trajectory.unpatterned} />{' '}
           {trajectory.unpatterned.length === 1 ? 'has' : 'have'} no pattern authored at any band,
-          so nothing here varies for them.
+          so nothing here varies for {trajectory.unpatterned.length === 1 ? 'it' : 'them'}.
+        </p>
+      )}
+
+      {/* §4.2. A separate sentence, after that one, because it is a different claim: that one
+          reports a hole in the direction, this one reports what the part is. Run together they
+          read as one list of things that went wrong. */}
+      {trajectory.sustained.length === 0 ? null : (
+        <p className="quiet">
+          <RoleList roles={trajectory.sustained} />{' '}
+          {trajectory.sustained.length === 1 ? 'is' : 'are'} held rather than struck, so there is
+          no grid here to vary.
         </p>
       )}
 

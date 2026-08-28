@@ -9,9 +9,22 @@ import type {
   SectionChain,
   SectionName,
 } from '@/lib/core'
-import { STEPS_PER_BAR, chainPlan, reStrikesHeldNote, tightestReStrike } from '@/lib/core'
+import {
+  STEPS_PER_BAR,
+  chainPlan,
+  isSustainedPart,
+  reStrikesHeldNote,
+  tightestReStrike,
+} from '@/lib/core'
 import { citeLines, count, hintText, num, voicesLabel } from './format'
-import { HookRef, Instruction, ProvenanceMark, ReArticulationRef, SoundRef } from './instruction'
+import {
+  HookRef,
+  Instruction,
+  ProvenanceMark,
+  ReArticulationRef,
+  SoundRef,
+  SustainedRef,
+} from './instruction'
 
 const ROW = 16
 
@@ -154,6 +167,11 @@ export function mergeBlocks(a: ResolvedAssignment): Block[] {
   // played — it is where the held note is struck again — and suppressing it is what left the
   // density knob changing nothing a listener could hear on those parts.
   if (a.hookAuthority !== undefined && !a.reArticulatesHook) return []
+  // §4.2. And a part whose role is held rather than struck has none either: an empty grid is not
+  // a hole in the direction, so the block that would have said "no pattern authored" is dropped
+  // and `SustainedRef` says what the part is instead. Kept in step with the Markdown sibling's
+  // `phaseSteps`, which suppresses on the same condition.
+  if (isSustainedPart(a)) return []
   const merged = new Map<string, Block>()
   for (const entry of a.patterns) {
     const s = entry.selection
@@ -375,7 +393,11 @@ export function PhaseSteps({
           {/* Same reason as the hook phase: this one says what to play, not what it sounds
               like, so a reader stopping here would think the sound was missing. */}
           <SoundRef title={a.recipe.title} />
-          {a.hookAuthority === undefined ? null : <HookPointer a={a} />}
+          {a.hookAuthority !== undefined ? (
+            <HookPointer a={a} />
+          ) : isSustainedPart(a) ? (
+            <SustainedRef />
+          ) : null}
           {mergeBlocks(a).map((block) => (
             <div className="block" key={block.sections.join(',')}>
               <h5>{block.sections.join(', ')}</h5>

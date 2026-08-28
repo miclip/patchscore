@@ -13,7 +13,7 @@ import {
 } from '../lib/core/index'
 import type { ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { TEMPLATES, droneStudy, industrialTechno, relay } from '../lib/templates/index'
+import { TEMPLATES, ambientDub, droneStudy, industrialTechno, relay } from '../lib/templates/index'
 import { DEFAULT_INPUTS } from '../lib/studio/session'
 import { readFileSync } from 'node:fs'
 import { applyInspirations } from '../lib/core/index'
@@ -72,6 +72,22 @@ const bothScopes = resolve({
   template: industrialTechno,
   mood: NEUTRAL_MOOD,
   seed: 1,
+})
+
+/**
+ * #46. The full library against Ambient Dub, which is the rig that still reports **two**
+ * unpatterned roles once `pad` stops being one.
+ *
+ * `industrial-techno` used to serve the joining assertion below and can no longer: its only
+ * remaining hole is `riser`, and a one-item list joins nothing. Ambient Dub authors no variant
+ * for `texture` or `sweep` and hooks neither, so both are real holes and the note about them is
+ * a genuine two-item list rather than a fixture built to produce one.
+ */
+const twoHoles = resolve({
+  devices: DEVICES,
+  template: ambientDub,
+  mood: NEUTRAL_MOOD,
+  seed: 3,
 })
 
 /**
@@ -295,10 +311,14 @@ describe('inline token lists keep their separators', () => {
     expect(grouped.length).toBeGreaterThan(0)
     for (const group of grouped) expect(out).toContain(group.sections.join(', '))
 
-    // Roles in a note are joined the same way the Markdown sibling joins them.
-    expect(trajectory.unpatterned.length).toBeGreaterThan(1)
-    const last = trajectory.unpatterned[trajectory.unpatterned.length - 1] as string
-    expect(out).toContain(`${trajectory.unpatterned.slice(0, -1).join(', ')} and ${last}`)
+    // Roles in a note are joined the same way the Markdown sibling joins them. Asked of a rig
+    // that genuinely has two of them (#46) — `industrial-techno` is down to one hole now that a
+    // held `pad` is no longer reported as a missing pattern, and one role joins nothing.
+    const holes = bandTrajectory(twoHoles)
+    const outTwo = text(html(twoHoles))
+    expect(holes.unpatterned.length).toBeGreaterThan(1)
+    const last = holes.unpatterned[holes.unpatterned.length - 1] as string
+    expect(outTwo).toContain(`${holes.unpatterned.slice(0, -1).join(', ')} and ${last}`)
   })
 
   it('separates the sections a part occupies, and the axes a mood move names', () => {

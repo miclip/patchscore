@@ -304,6 +304,23 @@ export function HookRef() {
 }
 
 /**
+ * §4.2/invariant 5. The sibling of `HookRef` for a part whose *role* does not bear a pattern
+ * (`NON_PATTERN_BEARING_ROLES`) and whose hook did not resolve, so there is nothing to point at.
+ *
+ * Worded as `SUSTAINED_NOT_STRUCK` in `lib/core/render.ts` words it, and carrying no link for the
+ * same reason it carries no hook id: a pointer to a Hook section that has nothing for this part
+ * is the false trail this replaced, not an improvement on it.
+ */
+export function SustainedRef() {
+  return (
+    <p className="sound-ref hook-ref">
+      <strong>Held, not struck</strong> — this part sustains rather than repeating a figure, so the
+      direction authors no grid for it. Nothing to program here.
+    </p>
+  )
+}
+
+/**
  * §4.3/§8. The sibling of `HookRef` for a part whose direction says its variants re-articulate the
  * hook (`RoleRequest.reArticulatesHook`): the hook owns which note and how long, the grid below
  * owns where it is lifted and struck again. Two authorities, one sentence, nothing restated — so

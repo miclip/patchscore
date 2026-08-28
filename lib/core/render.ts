@@ -38,7 +38,13 @@ import {
   type VoiceControlSource,
 } from './pipeline'
 import { GUIDE_PHASES } from './guide'
-import { bandTrajectory, chainPlan, type BandGroup, type SectionChain } from './arrangement'
+import {
+  bandTrajectory,
+  chainPlan,
+  isSustainedPart,
+  type BandGroup,
+  type SectionChain,
+} from './arrangement'
 import { fxSources, type FxSource } from './fx'
 import {
   noDuckers,
@@ -1718,6 +1724,25 @@ const HOOK_IS_THE_PATTERN =
   'Nothing separate to program here.'
 
 /**
+ * §4.2/invariant 5. What phase 5 says for a part whose *role* does not bear a pattern
+ * (`NON_PATTERN_BEARING_ROLES`) and whose direction authored none.
+ *
+ * The line it replaces was "no pattern authored for `pad` at any band", which reports a hole. On
+ * a pad there is no hole: the part is a note held across the section, and a grid is not the thing
+ * it is missing. Invariant 5 is about never hiding a gap, and this is its other half — a gap
+ * invented is as untrue as a gap concealed, and it sends someone hunting through the direction
+ * for a variant nobody ever meant to write.
+ *
+ * **It claims no hook, deliberately.** Where one resolved, `HOOK_IS_THE_PATTERN` above prints
+ * instead and points at the heading. This is the fallback for the case where none did, and a
+ * pointer to a Hook section that says "this template has no hooks" is the exact false trail this
+ * whole change is removing.
+ */
+const SUSTAINED_NOT_STRUCK =
+  '**Held, not struck** — this part sustains rather than repeating a figure, so the direction ' +
+  'authors no grid for it. Nothing to program here.'
+
+/**
  * §4.3/§8. What phase 5 says for a part whose hook is held and whose variants say where it is
  * struck again (`RoleRequest.reArticulatesHook`).
  *
@@ -1809,7 +1834,14 @@ function phaseSteps(
     // whose direction says the variants re-articulate the hook prints both, because there the
     // grid is not a competing rhythm but the map of where the held note is struck again (§4.3).
     const deferred = a.hookAuthority !== undefined
-    const blocks = deferred && !a.reArticulatesHook ? [] : mergeBlocks(a, deviceById, options, result.song.bpm)
+    // §4.2. The same suppression as a deferred part and for a neighbouring reason: there is no
+    // grid, so there is nothing to draw. A pad reaches this branch only when its hook did not
+    // resolve — where one did, `deferred` is already true and says where to look instead.
+    const sustained = isSustainedPart(a)
+    const blocks =
+      (deferred && !a.reArticulatesHook) || sustained
+        ? []
+        : mergeBlocks(a, deviceById, options, result.song.bpm)
     if (deferred) {
       out.push('')
       // The sentence needs a length, so it needs a pattern; a re-articulating part whose every
@@ -1821,6 +1853,9 @@ function phaseSteps(
           ? reArticulationHeadline(first.pattern)
           : HOOK_IS_THE_PATTERN,
       )
+    } else if (sustained) {
+      out.push('')
+      out.push(SUSTAINED_NOT_STRUCK)
     }
     for (const { sections, block } of blocks) {
       out.push('')
@@ -2207,7 +2242,22 @@ function phaseFinishing(result: ResolveResult): Line[] {
     out.push('')
     out.push(
       `${roleList(trajectory.unpatterned)} ${trajectory.unpatterned.length === 1 ? 'has' : 'have'}` +
-        ' no pattern authored at any band, so nothing here varies for them.',
+        ' no pattern authored at any band, so nothing here varies for ' +
+        // #46 left this list singular for the first time: `industrial-techno` reports `riser`
+        // alone once a held `pad` is no longer named beside it, and "varies for them" about one
+        // role reads as though a name had dropped out of the sentence.
+        `${trajectory.unpatterned.length === 1 ? 'it' : 'them'}.`,
+    )
+  }
+  // §4.2. Said separately from the sentence above, and after it, because it is a different
+  // claim: that one reports a hole in the direction, this one reports what the part *is*. Run
+  // together they read as one list of things that went wrong, which is how `pad` came to be
+  // named beside `riser` as though a variant for it had been forgotten.
+  if (trajectory.sustained.length > 0) {
+    out.push('')
+    out.push(
+      `${roleList(trajectory.sustained)} ${trajectory.sustained.length === 1 ? 'is' : 'are'}` +
+        ' held rather than struck, so there is no grid here to vary.',
     )
   }
   return out

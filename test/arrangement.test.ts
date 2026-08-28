@@ -251,7 +251,15 @@ describe('bandTrajectory carries no per-part fact the band does not make true', 
         },
       ],
     })
-    expect(Object.keys(bandTrajectory(run(t))).sort()).toEqual(['groups', 'unpatterned'])
+    // `sustained` (#46) is allowed here for the same reason `unpatterned` is: it is decided by
+    // looking at every section a part occupies, so it is a fact the band trajectory makes true
+    // rather than one copied off an assignment. A key that could be read off a single part
+    // still does not belong.
+    expect(Object.keys(bandTrajectory(run(t))).sort()).toEqual([
+      'groups',
+      'sustained',
+      'unpatterned',
+    ])
   })
 
   it('is a pure function of the result — the same facts on every call', () => {

@@ -31,6 +31,41 @@ export const RoleSchema = z.enum(ROLES)
 /** §4.2. The three roles that exist for a few bars rather than owning a voice for a track. */
 export const TRANSITIONAL_ROLES: readonly Role[] = ['riser', 'impact', 'sweep']
 
+/**
+ * §4.2/invariant 5. Roles that are a note **held** rather than a rhythm **struck**, so an empty
+ * step grid is not something a direction has failed to author for them.
+ *
+ * **This is a property of `Role`, and it belongs here for that reason.** It is not a fifth shared
+ * vocabulary — nothing new crosses the template/device boundary, and invariant 3 is untouched:
+ * this adds no name a template or a device may utter that it could not utter already. It is a
+ * closed claim about the existing `ROLES` list, exactly as `TRANSITIONAL_ROLES` is, sitting
+ * beside it because it is the same kind of claim about the same list.
+ *
+ * It is deliberately **not** per-template metadata. A pad sustains on any box and in any genre;
+ * that is what makes it a pad. Authored per direction it would be a flag seven templates could
+ * disagree about, and the first one that forgot it would print `pad` under a heading saying its
+ * pattern is missing. Authored per device it would be a box naming what a genre wants, which is
+ * the thing invariant 3 exists to forbid.
+ *
+ * **Only `pad`, and the shortness of the list is the point.** `texture` is the case that proves
+ * it: Ambient Dub holds one and authors no variant, Drone Study patterns one, and the same role
+ * is therefore struck in a direction that wants it struck. Silence on `texture`, `sweep` and
+ * `riser` can be a real hole and stays reported. A role earns a place here only when *no*
+ * direction could reasonably pattern it; anything looser turns invariant 5's honesty into a way
+ * of hiding gaps.
+ */
+export const NON_PATTERN_BEARING_ROLES: readonly Role[] = ['pad']
+
+/**
+ * Whether a step grid is a thing this role can be *missing*. See `NON_PATTERN_BEARING_ROLES`.
+ *
+ * A predicate rather than a bare list at every call site: the callers ask a question about one
+ * role, and `!LIST.includes(role)` written out four times is four chances to drop the `!`.
+ */
+export function bearsPattern(role: Role): boolean {
+  return !NON_PATTERN_BEARING_ROLES.includes(role)
+}
+
 /** §3.4. Six characters, three opposed pairs. */
 export const CHARACTERS = ['hard', 'soft', 'bright', 'dark', 'clean', 'dirty'] as const
 
