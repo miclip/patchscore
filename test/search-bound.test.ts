@@ -76,6 +76,24 @@ import { TEMPLATES } from '../lib/templates/index'
  * got cheaper because nothing this box offers is the *only* good answer to a request; contrast
  * the TR-6S, which made five directions cheaper by being the obvious home for a kick.
  *
+ * **The MPC XL re-recorded all seven rows again**, and it is the cleanest test of what this
+ * matrix measures that the library has had. The XL derives its recipes from the Live III by
+ * reference: same three pools, same nineteen recipes, same values. The two boxes are the same
+ * search problem twice over, and six of the seven rows rose:
+ *
+ *     drone-study         17 ->    18      one more device at the root
+ *     relay               34 ->    36      two more, the same way the Live III added two
+ *     ambient-dub        258 ->   279      seed 20, its worst
+ *     lydian-house       187 ->   203      seed 23
+ *     industrial-techno 19080 -> 20779     worst seed moves 11 -> 16
+ *     weave            21368 -> 26688      worst seed moves 10 -> 16
+ *
+ * `major-key-electro` is the seventh and it went the other way, 1,097 -> 975 at its peak, with
+ * its old worst seed collapsing 1,097 -> 233. A duplicate device is not only more branching: it
+ * is also a second cheap answer available earlier, which is the TR-6S's effect arriving on one
+ * direction rather than five. The matrix's worst case stays on `weave` and moves to **26,688**,
+ * which is 13.3% of `DEFAULT_NODE_CAP`.
+ *
  * The pre-repair row for `industrial-techno` peaked at 165,785 nodes on seed 9 against 8,309
  * after the repair; that number is pinned in `test/search-matching-floor.test.ts` against the
  * deliberately unrepaired floor, so the before and the after are both still measured. It moved
@@ -107,30 +125,30 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      144, 105, 102, 105, 102, 149, 100, 194, 102, 105, 102, 194, 102, 103, 191, 186, 147, 102, 103,
-      100, 258, 164, 149, 164
+      155, 112, 109, 112, 109, 160, 107, 209, 109, 112, 109, 209, 109, 110, 206, 200, 158, 109, 110,
+      107, 279, 177, 160, 177
     ],
     'drone-study': [
-      17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17
+      18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18
     ],
     'industrial-techno': [
-      14861, 16138, 16391, 16821, 18414, 15385, 14864, 15337, 15625, 15335, 15757, 19080, 14949, 15385,
-      14857, 15353, 15335, 14951, 15385, 14861, 15335, 14864, 15385, 14965
+      19628, 18026, 18525, 18813, 17462, 17978, 17462, 18026, 17462, 18026, 17459, 18026, 20425,
+      19969, 17462, 17994, 20779, 17572, 17994, 19720, 17994, 17462, 18026, 17572
     ],
     'lydian-house': [
-      145, 145, 146, 145, 145, 145, 146, 145, 165, 166, 146, 144, 146, 166, 146, 166, 165, 166, 145,
-      166, 145, 166, 145, 187
+      157, 157, 158, 157, 157, 157, 158, 157, 179, 180, 158, 156, 158, 180, 158, 180, 179, 180, 157,
+      180, 157, 180, 157, 203
     ],
     'major-key-electro': [
-      887, 385, 212, 346, 209, 143, 217, 184, 484, 135, 462, 140, 204, 143, 204, 135, 135, 184, 143,
-      1097, 135, 191, 143, 143
+      728, 156, 507, 415, 238, 151, 238, 209, 238, 156, 975, 156, 230, 153, 238, 152, 617, 209, 152,
+      233, 148, 209, 156, 156
     ],
     relay: [
-      34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34
+      36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36
     ],
     weave: [
-      20340, 20340, 20340, 21300, 20340, 20340, 20340, 20340, 20340, 20340, 21368, 20340, 20340, 20340,
-      20340, 20340, 20340, 20340, 20340, 20340, 20340, 20340, 20340, 20340
+      26614, 24090, 25216, 24090, 24090, 24090, 24090, 24090, 24090, 24090, 24090, 24090, 24090,
+      24090, 24090, 24090, 26688, 24090, 24090, 24090, 24090, 24090, 24090, 24090
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".

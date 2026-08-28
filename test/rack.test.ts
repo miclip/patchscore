@@ -896,7 +896,11 @@ describe('rack view', () => {
     // panels with none are the Cascadia and the CRAVE, which genuinely have no display.
     // 16: plus the MPC Live III's, whose 150 x 93 mm active area is the largest in the library
     // and carries that panel's voice field on top of it.
-    expect(count('rack-screen')).toBe(16)
+    // 34: plus the MPC XL's eighteen. Its main display takes the largest-active-area title at
+    // 217.4 x 135.8 mm and carries that panel's voice field; the other seventeen are the OLED
+    // strips p.532 counts, sixteen across the Q-Link row and one under the Channel Control.
+    // They are screens rather than a grid because a display is not a control.
+    expect(count('rack-screen')).toBe(34)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -918,7 +922,8 @@ describe('rack view', () => {
     // pitch as its six instrument select buttons below them.
     // 133: plus the MPC Live III's touch strip, a single continuous linear control down the left
     // edge — a fader of one, the way the Grandmother's three single sliders are.
-    expect(count('rack-fader')).toBe(133)
+    // 134: plus the MPC XL's, which is the same control on the same edge of a wider box.
+    expect(count('rack-fader')).toBe(134)
     // 103: the TR-1000's sixteen step keys, the CRAVE's thirteen-note keyboard, and thirty-seven
     // each from the minilogue xd and the Subsequent 37 — twenty-two white in one grid and
     // fifteen black in six clusters, because a keyboard drawn as an even row of rectangles stops
@@ -941,9 +946,10 @@ describe('rack view', () => {
     expect(count('rack-pad')).toBeGreaterThan(50)
 
     // Sixteen since the Subharmonicon landed — one field per device that has voices to show.
+    // Nineteen since the MPC XL, whose field sits on its display for the sibling's reason.
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(18)
+    expect(fields).toHaveLength(19)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

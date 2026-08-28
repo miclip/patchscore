@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → MPC Live III · Mono Track 1 — *DrumSynth Kick, transient forward and the low band lifted*
+- **`kick`** → Mother-32 · Voice — *Kick from the normalled envelope: no cables, the pitch drop is two switches*
   - p1 · exact `hard` · every section
 - **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
@@ -79,14 +79,19 @@ None.
 
 - Why this box sends them — its manual says leading a rig is its job
 
-**Not driven** — Metropolix offers 2 pitch-and-gate pairs and this rig needs more. Minitaur is left unpatched:
+**Not driven** — Metropolix offers 2 pitch-and-gate pairs and this rig needs more. Minitaur and Mother-32 are left unpatched:
 
 - Minitaur `CONTROLLER INPUTS · PITCH CV` and `CONTROLLER INPUTS · GATE` — nothing to plug in. Play it from its own keyboard or sequencer.
+- Mother-32 `IN · VCO 1V/OCT` and `IN · GATE` — nothing to plug in. Play it from its own keyboard or sequencer.
 
-- **MPC Live III** — groovebox · 1 part
+- **MPC Live III** — groovebox · 0 parts
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · 4 individual outs · USB audio · audio in
-  - mixer: 1 part, 4 individual outs: one channel each
+  - mixer: no parts assigned; nothing to patch
+- **MPC XL** — groovebox · 0 parts
+  - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
+  - audio: stereo main out · 6 individual outs · USB audio · audio in
+  - mixer: no parts assigned; nothing to patch
 - **CRAVE** — semi-modular · 1 part
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
@@ -135,12 +140,12 @@ None.
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
   - mixer: 1 part, no individual outs: one mono channel for all
-- **Mother-32** — semi-modular · 0 parts
+- **Mother-32** — semi-modular · 1 part
   - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
   - MIDI IN: The only MIDI connector on the box: input only, 5-pin DIN, on the front panel · manual
     - ↳ cite: value manual — Moog Mother-32 User Manual (Version 2), p.54
   - audio: mono main out · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **Subharmonicon** — semi-modular · 0 parts
   - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
   - IN · MIDI IN: A 3.5 mm socket fed by the supplied five-pin DIN adapter (MIDI Type A). Takes clock, note data and CCs. MIDI clock overrides the internal clock *and* anything at IN · CLOCK · manual
@@ -243,9 +248,9 @@ Note length is set per note here — `LEN`. · manual
 
 ## 5. Step programming
 
-### `kick` — MPC Live III · Mono Track 1
+### `kick` — Mother-32 · Voice
 
-**DrumSynth Kick, transient forward and the low band lifted** — settings in Sound design
+**Kick from the normalled envelope: no cables, the pitch drop is two switches** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -254,22 +259,12 @@ Note length is set per note here — `LEN`. · manual
 ```
 - `downbeat` — 1, 9
 
-**On this box** — MPC Live III
-
-- `downbeat` → `velocity` 120 on steps 1, 9
-  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
-
 **Build, Breakdown** — 16 steps, band 1
 
 ```
  1 x··· x··· x··· x···
 ```
 - `downbeat` — 1, 5, 9, 13
-
-**On this box** — MPC Live III
-
-- `downbeat` → `velocity` 120 on steps 1, 5, 9, 13
-  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -280,10 +275,10 @@ Note length is set per note here — `LEN`. · manual
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — MPC Live III
+**On this box** — Mother-32
 
-- `downbeat` → `velocity` 120 on steps 1, 5, 13
-  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
+- `accent` → `accent` true on step 9
+  - ↳ hint: RESET / ACCENT accents the step being edited
 
 ### `sub` — Minitaur · Voice
 
@@ -552,36 +547,6 @@ Note length is set per note here — `LEN`. · manual
 
 ## 6. Sound design
 
-### MPC Live III
-
-*Values below cite MPC Live III / MPC XL User Guide v3.7.*
-
-#### Mono Track 1 — `kick`: DrumSynth Kick, transient forward and the low band lifted
-
-*Ranges cite manual — MPC Live III / MPC XL User Guide v3.7, p.432.*
-
-- **Track Type** `Plugin`
-- **Plugin** `DrumSynth`
-- **Drum Type** `Kick`
-  - ↳ note: One DrumSynth instrument per plugin track
-- **Velocity** `30` % (0…100 %)
-  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
-- **Gain** `-2` dB (-68…12 dB)
-  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
-  - ↳ note: p.431 prints "-Inf, -68.0 – 0 – +12.0 dB"; -Inf is a setting below the range, not part of it
-- **Transient Attack** `45` % (-100…100 %)
-- **Distortion Drive** `6` dB (0…60 dB)
-- **Distortion Mix** `25` % (0…100 %)
-- **EQ Low Freq** `58` Hz (20…1000 Hz)
-- **EQ Low Gain** `3.5` dB (-12…12 dB)
-  - ↳ note: A `Cut` setting sits below the numeric range on the same page
-- **EQ High Gain** `-1.5` dB (-12…12 dB)
-- **Comp Ratio** `4` (1…100)
-  - ↳ note: p.432 prints the range as 1.0:1 - 100.0:1; this is the left-hand number
-- **Comp Attack** `8` ms (0.1…300 ms)
-  - ↳ note: p.432 prints the low end as 100 us
-- **Comp Threshold** `-14` dB (-60…0 dB)
-
 ### CRAVE
 
 *Values below cite CRAVE Quick Start Guide BE_0718-AAJ_WW.*
@@ -795,6 +760,48 @@ Routing — One VCO only — VCO 2 is down, so there is nothing to beat against 
 - **VOLUME** `70` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: Panelled `VOLUME` beside a headphone pictogram — one knob sets the output and the headphones together (p.17)
+
+### Mother-32
+
+*Values below cite Moog Mother-32 User Manual (Version 2).*
+
+#### Voice — `kick`: Kick from the normalled envelope: no cables, the pitch drop is two switches
+
+Routing — Played from its own 32-step sequencer, from MIDI IN, or from pitch and gate at VCO 1V/OCT and GATE. No patch cable: the EG is already normalled to the up position of VCO MOD SOURCE (p.49), so VCO MOD DEST at FREQUENCY is the whole pitch drop
+
+- **FREQUENCY** `0` st (-12…12 st)
+  - ↳ cite: range manual — Moog Mother-32 User Manual (Version 2), p.11
+- **VCO WAVE** `SAW`
+- **MIX** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: Counterclockwise is the VCO, clockwise is white noise or whatever is in EXT. AUDIO
+- **CUTOFF** `110` Hz (20…20000 Hz)
+  - ↳ cite: range manual — Moog Mother-32 User Manual (Version 2), p.14
+- **RESONANCE** `28` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Past 3 o’clock the filter self-oscillates
+- **VCF MODE** `LOW PASS`
+- **VOLUME** `78` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCO MOD SOURCE** `EG / VCO MOD`
+  - ↳ note: The EG is normalled here — a cable in VCO MOD replaces it
+- **VCO MOD DEST** `FREQUENCY`
+- **VCO MOD AMOUNT** `34` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCF MOD SOURCE** `EG`
+- **VCF MOD POLARITY** `+`
+- **VCF MOD AMOUNT** `40` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **ATTACK** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **SUSTAIN** `OFF`
+  - ↳ hint: SUSTAIN ON plays legato, OFF retriggers
+- **DECAY** `16` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCA MODE** `EG`
+- **GLIDE** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Turn GLIDE clockwise to glide a step
 
 ### Subsequent 37
 
@@ -1073,9 +1080,9 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
 
 **Sidechain**
 
-The MPC Live III and Cascadia can duck to another box: patch the box you want each to follow into its audio in.
+The MPC Live III, MPC XL and Cascadia can duck to another box: patch the box you want each to follow into its audio in.
 
-The MPC Live III can also duck from its own parts.
+The MPC Live III and MPC XL can also duck from their own parts.
 
 The TR-1000, TR-6S, TR-8S and Deluge duck from their own parts only.
 
@@ -1084,6 +1091,7 @@ The TR-1000, TR-6S, TR-8S and Deluge duck from their own parts only.
 What processes audio in this rig:
 
 - MPC Live III — carries effects, though no part in this guide reaches them
+- MPC XL — carries effects, though no part in this guide reaches them
 - ZOIA Euroburo — is an effects unit (stereo main out · audio in)
 - Matriarch — carries effects, though no part in this guide reaches them
 - Tracker Mini — carries effects, though no part in this guide reaches them
