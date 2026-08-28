@@ -1233,7 +1233,25 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * that shares an engine is not a device the search gets for free**, and that is now measured
    * twice rather than argued once.
    */
-  const WORST_CASE_NODES = 35_678
+  /**
+   * The Muse, and the first time in a while that this number moved by more than a rounding.
+   * 35,678 on `weave` seed 9 -> **55,825 on `industrial-techno` seed 5**, a 56% rise, and the
+   * worst case changes direction as well as value.
+   *
+   * The cost is concentrated rather than spread, which is the useful part: `search-bound.test.ts`
+   * records `weave` moving eighteen nodes across the same change, and `major-key-electro` getting
+   * *cheaper*. What this box charges for is serving seven tonal roles from a pool of two timbres,
+   * and `industrial-techno` is the direction that asks for the most of them at once — so the bill
+   * arrives there and almost nowhere else. That is the growth curve §7.1 and the `DEFAULT_NODE_CAP`
+   * docstring both describe: recipes multiplied by the roles a *direction* requests, not folder
+   * count and not panel size.
+   *
+   * `DEFAULT_NODE_CAP` is **200,000**, so 55,825 is **27.9% of it and 72.1% headroom stands**.
+   * (`.claude/skills/device-authoring/SKILL.md` still quotes the cap as 150,000 and a
+   * ~12% headroom at eighteen devices; both figures pre-date #78's repair and the cap being
+   * raised, and the constant in `lib/core/search.ts` is the one to read.)
+   */
+  const WORST_CASE_NODES = 55_825
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))

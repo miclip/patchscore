@@ -57,9 +57,19 @@ describe('a patch cannot be handed more notes than it sounds (#85)', () => {
 describe('the cap changes nothing for a box that declares none', () => {
   it('leaves every other device untouched', () => {
     // #85 is a new optional field, so absence has to be the pre-#85 behaviour exactly. Asserted
-    // over the library rather than argued: only the minilogue declares it.
+    // over the library rather than argued, and pinned so that a third device declaring it is a
+    // decision somebody made rather than a diff nobody read.
+    //
+    // The Muse is the second, and it declares the field for a narrower reason than the minilogue
+    // does. That box has three rungs — POLY, DUO and UNISON — and two of them spend voices. This
+    // one has a single cited rung: `MONO`, which p.105 says *"will restrict the timbre to
+    // operating in a monophonic mode. Only one voice will be used at a time and polyphonic
+    // playing will be disabled."* Its `UNISON` deliberately does **not** cap anything — it
+    // *"will stack any currently unused voices on top of the active ones"*, which is dynamic
+    // thickness rather than a mono mode, and modelling it as `patchPolyphony: 1` would be the
+    // manifest inventing a limit the manual does not state.
     const declaring = DEVICES.filter((d) => d.recipes.some((r) => r.patchPolyphony !== undefined))
-    expect(declaring.map((d) => d.id)).toEqual(['korg-minilogue-xd'])
+    expect(declaring.map((d) => d.id)).toEqual(['korg-minilogue-xd', 'moog-muse'])
   })
 
   it('is the box own polyphony where no recipe caps', () => {

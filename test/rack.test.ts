@@ -934,7 +934,11 @@ describe('rack view', () => {
     // 38: plus the Hapax's two, which are the same 67.3 x 33.9 mm part twice — the left screen
     // showing step and track parameters under its eight encoders, the right one the mode's main
     // display under the menu encoder.
-    expect(count('rack-screen')).toBe(38)
+    // 39: plus the Muse's, the OLED p.116 lists at the end of its panel-control count ("44 knobs,
+    // 16 sliders, 129 buttons – OLED screen"). It is the only figure on that panel the manual
+    // gives no dimension for, so the 80.9 x 23.2 mm here is measured off the p.13 plan view like
+    // every other coordinate in that layout rather than read off a specification line.
+    expect(count('rack-screen')).toBe(39)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -957,7 +961,13 @@ describe('rack view', () => {
     // 133: plus the MPC Live III's touch strip, a single continuous linear control down the left
     // edge — a fader of one, the way the Grandmother's three single sliders are.
     // 134: plus the MPC XL's, which is the same control on the same edge of a wider box.
-    expect(count('rack-fader')).toBe(134)
+    // 150: plus the Muse's sixteen, which is the exact count p.116 gives for that panel ("44 knobs,
+    // 16 sliders, 129 buttons") and lands as four banks rather than one: six MIXER channels, four
+    // FILTER ENVELOPE stages, four VCA ENVELOPE stages, and the PITCH and MOD pair on the
+    // Left-Hand Controller. The last two are the Grandmother's and Matriarch's case a third time
+    // — a maker drawing its left-hand wheels as vertical faders — and the manifest models the
+    // drawing.
+    expect(count('rack-fader')).toBe(150)
     // 103: the TR-1000's sixteen step keys, the CRAVE's thirteen-note keyboard, and thirty-seven
     // each from the minilogue xd and the Subsequent 37 — twenty-two white in one grid and
     // fifteen black in six clusters, because a keyboard drawn as an even row of rectangles stops
@@ -980,7 +990,13 @@ describe('rack view', () => {
     // decodes to. The accidentals sit on the *column boundaries* of the naturals rather than on
     // the key grid's own centres, so one fourteen-wide grid would have invented the two missing
     // sharps; four clusters is the same answer the two Moog keybeds reached.
-    expect(count('rack-key')).toBe(208)
+    // 269: plus the Muse's sixty-one, which is the keybed p.116 specifies — "61 full-size
+    // semi-weighted Fatar keybed" — and the largest keyboard in the library. Thirty-six naturals
+    // in one grid and twenty-five accidentals in five 2-then-3 clusters, five octaves starting on
+    // C, the same answer the Grandmother, the Matriarch and the OP-XY reached. The natural pitch
+    // decodes to 23.07 mm, which is a full-size key and is the independent check on that panel's
+    // 990 mm span: no other reading of p.118's `99 x 42 x 11 (cm)` puts a full-size key here.
+    expect(count('rack-key')).toBe(269)
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
@@ -989,9 +1005,13 @@ describe('rack view', () => {
     // Twenty since the OP-XY, whose field sits on its eight track buttons.
     // Twenty-one since the MPC One G2 — the third MPC, and the third to put its field on the
     // display rather than the pads, because the pad grid addresses one of its three pools.
+    // Twenty-two since the Muse, whose field sits on the TIMBRE A / B buttons in VOICE CONTROL —
+    // §10's "the place the box's own voice allocation is chosen and shown", read literally: those
+    // two buttons are the pool of two this device declares, and pressing one is how a reader
+    // addresses the timbre a part landed on.
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(21)
+    expect(fields).toHaveLength(22)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

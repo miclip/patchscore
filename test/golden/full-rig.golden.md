@@ -32,7 +32,7 @@ glance whether the screen in front of you is the one the line is about.
 
 - **`kick`** → OP-XY · Track 1 — *Drum sampler kick, tight and forward*
   - p1 · exact `hard` · every section
-- **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
+- **`sub`** → MC-101 · TONE Track 1 — *Sine sub, one note at a time, nothing above the fundamental*
   - p1 · exact `dark` · every section
 - **`bass-mid`** → Subsequent 37 · Voice — *Mixer pushed past unity with feedback under it and MultiDrive on top*
   - p2 · exact `dirty` · every section
@@ -44,11 +44,11 @@ glance whether the screen in front of you is the one the line is about.
   - p3 · exact `dark` · every section
 - **`open-hat`** → TR-1000 · OH — *Dull open hat, more air than sizzle*
   - p3 · exact `dark` · every section
-- **`stab`** → MC-101 · TONE Track 1 — *Short chord stab, played on the track*
+- **`stab`** → minilogue xd · Voice — *Four-voice stab with the filter snapping shut behind the chord*
   - p3 · exact `hard` · 3 notes at once on one polyphonic voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
-- **`pad`** → minilogue xd · Voice — *Low pad with the filter shut down over the top of it*
+- **`pad`** → Muse · Timbre 1 — *Both filters low and serial, sixteen-foot underneath, no top at all*
   - p4 · exact `dark` · 3 notes at once on one polyphonic voice · every section
 - **`riser`** → TR-8S · CC — *A sample played backwards into the change*
   - p4 · exact `bright` · Build, Breakdown
@@ -70,14 +70,12 @@ None.
   - ↳ note: MIDI B, C and D have the same row and the same four options; set the one the cable is in.
   - ↳ cite: value manual — Hapax Manual (22 June 2026), p.132
 
-**Voice control** — Hapax sends the notes, 6 cables in all. Patch each pair before you play anything:
+**Voice control** — Hapax sends the notes, 4 cables in all. Patch each pair before you play anything:
 
 - pitch: Hapax `Cv out 2` → CRAVE `IN · OSC CV`
 - gate: Hapax `gate out 2` → CRAVE `IN · ENV GATE`
 - pitch: Hapax `Cv out 3` → Cascadia `EXT IN · PITCH`
 - gate: Hapax `gate out 3` → Cascadia `EXT IN · GATE`
-- pitch: Hapax `Cv out 4` → Minitaur `CONTROLLER INPUTS · PITCH CV`
-- gate: Hapax `gate out 4` → Minitaur `CONTROLLER INPUTS · GATE`
 
 - Why this box sends them — it is already the clock source, so the cables run from where the tempo does
 
@@ -137,16 +135,20 @@ None.
     - ↳ cite: value manual — Moog Matriarch Manual (012023), p.59
   - audio: stereo main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **Minitaur** — synth · 1 part
+- **Minitaur** — synth · 0 parts
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
-  - mixer: 1 part, no individual outs: one mono channel for all
+  - mixer: no parts assigned; nothing to patch
 - **Mother-32** — semi-modular · 0 parts
   - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
   - MIDI IN: The only MIDI connector on the box: input only, 5-pin DIN, on the front panel · manual
     - ↳ cite: value manual — Moog Mother-32 User Manual (Version 2), p.54
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
+- **Muse** — synth · 1 part
+  - clock: sends clock · out: midi-din/analog-clock · in: midi-din/usb/analog-clock
+  - audio: stereo main out
+  - mixer: 1 part, no individual outs: one stereo channel for all
 - **Subharmonicon** — semi-modular · 0 parts
   - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
   - IN · MIDI IN: A 3.5 mm socket fed by the supplied five-pin DIN adapter (MIDI Type A). Takes clock, note data and CCs. MIDI clock overrides the internal clock *and* anything at IN · CLOCK · manual
@@ -242,27 +244,27 @@ A step is one note long and nothing here sets a length: `TIE` joins a note to th
 - bar 2 · step 23 · sounds for 2 steps · `Db2` (`C#2`) · 6th · MIDI 37
 - bar 2 · step 27 · sounds for 4 steps · `C2` · 5th · MIDI 36
 
-### `pad` — minilogue xd · Voice
+### `pad` — Muse · Timbre 1
 
-**Low pad with the filter shut down over the top of it** — settings in Sound design
+**Both filters low and serial, sixteen-foot underneath, no top at all** — settings in Sound design
 
 8 bars in F minor.
 
-How this box sets a note’s length is not established here, so the durations below are the part rather than a field to fill in. · unread
-- ↳ cite: unread — the minilogue xd manual is not in `manuals/`; no document here was opened for it
+Note length is set per note here — `GATE`. · manual
+- ↳ cite: claim manual — Muse User's Manual v1.4.0, p.84
 
 - bar 1 · step 1 · sounds for 64 steps (4 bars) · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
 - bar 5 · step 65 · sounds for 32 steps (2 bars) · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
 - bar 7 · step 97 · sounds for 32 steps (2 bars) · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`) · 7th 2nd 4th · MIDI 63 67 70
 
-### `stab` — MC-101 · TONE Track 1
+### `stab` — minilogue xd · Voice
 
-**Short chord stab, played on the track** — settings in Sound design
+**Four-voice stab with the filter snapping shut behind the chord** — settings in Sound design
 
 4 bars in F minor.
 
-Note length is set per note here — `LEN`. · manual
-- ↳ cite: claim manual — MC-101 Reference Manual eng01, p.22
+How this box sets a note’s length is not established here, so the durations below are the part rather than a field to fill in. · unread
+- ↳ cite: unread — the minilogue xd manual is not in `manuals/`; no document here was opened for it
 
 - bar 1 · step 1 · sounds for 2 steps · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
 - bar 1 · step 11 · sounds for 1 step · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
@@ -307,11 +309,9 @@ Note length is set per note here — `LEN`. · manual
   - ↳ cite: value manual — OP-XY full guide v1.1.15, p.31
   - ↳ hint: Hold [shift], velocity key, then a sharp
 
-### `sub` — Minitaur · Voice
+### `sub` — MC-101 · TONE Track 1
 
-**One oscillator under the filter, nothing above it** — settings in Sound design
-
-**Not programmed here** — it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage. Enter this figure on the Hapax, which drives it through `Cv out 4` and `gate out 4`.
+**Sine sub, one note at a time, nothing above the fundamental** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -319,6 +319,11 @@ Note length is set per note here — `LEN`. · manual
  1 x··· ···· ···· ····
 ```
 - `downbeat` — 1
+
+**On this box** — MC-101
+
+- `downbeat` → `note-length` 12 on step 1
+  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
 
 **Build, Breakdown** — 16 steps, band 1
 
@@ -328,6 +333,11 @@ Note length is set per note here — `LEN`. · manual
 - `downbeat` — 1, 9
 - `offbeat` — 15
 
+**On this box** — MC-101
+
+- `downbeat` → `note-length` 12 on steps 1, 9
+  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
+
 **Drop, Peak** — 16 steps, band 3
 
 ```
@@ -335,6 +345,11 @@ Note length is set per note here — `LEN`. · manual
 ```
 - `downbeat` — 1
 - `offbeat` — 3, 7, 11, 15
+
+**On this box** — MC-101
+
+- `downbeat` → `note-length` 12 on step 1
+  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
 
 ### `bass-mid` — Subsequent 37 · Voice
 
@@ -503,9 +518,9 @@ Note length is set per note here — `LEN`. · manual
 - `offbeat` → `weak` true on steps 3, 7, 11
   - ↳ hint: Hold [SHIFT], press step keys
 
-### `stab` — MC-101 · TONE Track 1
+### `stab` — minilogue xd · Voice
 
-**Short chord stab, played on the track** — settings in Sound design
+**Four-voice stab with the filter snapping shut behind the chord** — settings in Sound design
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
@@ -530,9 +545,9 @@ Note length is set per note here — `LEN`. · manual
 - `first-hit` → `accent` true on step 1
   - ↳ hint: ACCENT [STEP], then step keys
 
-### `pad` — minilogue xd · Voice
+### `pad` — Muse · Timbre 1
 
-**Low pad with the filter shut down over the top of it** — settings in Sound design
+**Both filters low and serial, sixteen-foot underneath, no top at all** — settings in Sound design
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
@@ -654,13 +669,13 @@ Routing — played from MIDI IN or EXT IN PITCH/GATE — Cascadia has no sequenc
 
 *Values below cite minilogue xd Owner's Manual E 9.*
 
-#### Voice — `pad`: Low pad with the filter shut down over the top of it
+#### Voice — `stab`: Four-voice stab with the filter snapping shut behind the chord
 
 Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 
 *Ranges cite manual — minilogue xd Owner's Manual E 9, p.24.*
 
-- **PORTAMENTO** `20` (0…127)
+- **PORTAMENTO** `0` (0…127)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.17
 - **SWING** `0` % (-75…75 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.41
@@ -671,17 +686,17 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.17
   - ↳ note: Left at 0 — turning right crosses into DUO, which spends two voices on every key
 - **VCO 1 · WAVE** `SAW`
-- **VCO 1 · OCTAVE** `16'`
+- **VCO 1 · OCTAVE** `8'`
 - **VCO 1 · PITCH** `0` c (-1200…1200 c)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
-- **VCO 1 · SHAPE** `380` (0…1023)
+- **VCO 1 · SHAPE** `480` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
   - ↳ note: Shape, complexity, or duty cycle of the selected wave
-- **VCO 2 · WAVE** `TRI`
+- **VCO 2 · WAVE** `SAW`
 - **VCO 2 · OCTAVE** `8'`
-- **VCO 2 · PITCH** `-9` c (-1200…1200 c)
+- **VCO 2 · PITCH** `9` c (-1200…1200 c)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
-- **VCO 2 · SHAPE** `200` (0…1023)
+- **VCO 2 · SHAPE** `460` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
 - **VCO 2 · SYNC** `OFF`
   - ↳ note: Locks oscillator 2 to the phase of oscillator 1
@@ -691,102 +706,237 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.19
   - ↳ note: Oscillator 1 modulating the pitch of oscillator 2
 - **MULTI ENGINE · NOISE/VPM/USR** `NOISE`
-- **MULTI ENGINE · TYPE** `Low`
-- **MULTI ENGINE · SHAPE** `400` Hz (10…21000 Hz)
+- **MULTI ENGINE · TYPE** `Peak`
+- **MULTI ENGINE · SHAPE** `500` Hz (110…880 Hz)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.20
-  - ↳ note: CUTOFF — the low-pass filter on the noise
-- **MIXER · VCO 1** `700` (0…1023)
+  - ↳ note: BANDWIDTH — the peak filter width
+- **MIXER · VCO 1** `780` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
-- **MIXER · VCO 2** `540` (0…1023)
+- **MIXER · VCO 2** `620` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
-- **MIXER · MULTI** `120` (0…1023)
+- **MIXER · MULTI** `180` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
-- **CUTOFF** `300` (0…1023)
+- **CUTOFF** `560` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.23
   - ↳ note: Set too low and the patch may be barely audible
-- **RESONANCE** `180` (0…1023)
+- **RESONANCE** `520` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.23
 - **DRIVE** `50%`
   - ↳ note: The filter drive circuit, in three stages
 - **KEYTRACK** `50%`
   - ↳ note: 100% moves the cutoff with the key, centred on C4
-- **AMP EG · ATTACK** `620` (0…1023)
-- **AMP EG · DECAY** `760` (0…1023)
-- **AMP EG · SUSTAIN** `800` (0…1023)
-- **AMP EG · RELEASE** `780` (0…1023)
-- **EG · ATTACK** `500` (0…1023)
-- **EG · DECAY** `700` (0…1023)
-- **EG · INT** `-18` % (-100…100 %)
+- **AMP EG · ATTACK** `0` (0…1023)
+- **AMP EG · DECAY** `300` (0…1023)
+- **AMP EG · SUSTAIN** `0` (0…1023)
+- **AMP EG · RELEASE** `240` (0…1023)
+- **EG · ATTACK** `0` (0…1023)
+- **EG · DECAY** `260` (0…1023)
+- **EG · INT** `62` % (-100…100 %)
   - ↳ note: Negative applies the envelope downwards
 - **EG · TARGET** `CUTOFF`
 - **LFO · WAVE** `TRI`
 - **LFO · MODE** `NORMAL`
-- **LFO · RATE** `110` (0…1023)
+- **LFO · RATE** `200` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.25
-- **LFO · INT** `70` (0…511)
+- **LFO · INT** `0` (0…511)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.25
   - ↳ hint: Hold SHIFT, turn INT to invert
 - **LFO · TARGET** `CUTOFF`
-- **EFFECTS · DEL/REV/MOD** `REV`
+- **EFFECTS · DEL/REV/MOD** `DEL`
   - ↳ note: Selects which effect the two knobs below are setting; the other two keep their stored values
 - **EFFECTS · OFF/ON/SELECT** `ON`
   - ↳ hint: Hold SHIFT, flip to SELECT
-- **EFFECTS · DEPTH** `62` % (0…100 %)
+- **EFFECTS · DEPTH** `28` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
 
-### Minitaur
+### Muse
 
-*Values below cite Moog Minitaur Manual.*
+*Values below cite Muse User's Manual v1.4.0 Appendix A (MIDI CC) and Muse User's Manual v1.4.0.*
 
-#### Voice — `sub`: One oscillator under the filter, nothing above it
+**Song-wide**
 
-Routing — One VCO only — VCO 2 is down, so there is nothing to beat against and the pitch is dead still.
+One setting for the whole song — set it once, not once per part below.
 
-*Ranges cite manual — Moog Minitaur Manual, p.29.*
-
-- **FINE TUNE** `0` st (-1…1 st)
-  - ↳ note: Centred is in tune. Adjusts both oscillators together, and neither sends nor receives MIDI (p.10)
-- **OSCILLATOR 1** `Square`
-  - ↳ note: The switch LED is off for Sawtooth and on for Square
-- **OSCILLATOR 2** `Square`
-- **VCO 2 FREQ** `0` st (-12…12 st)
-  - ↳ note: Centre is unison with VCO 1; the panel marks only − and +
-- **VCO 1 LVL** `100` % (0…100 %)
-  - ↳ hint: Past 2 o’clock it clips the filter
-- **VCO 2 LVL** `0` % (0…100 %)
-  - ↳ note: The VCOs begin to clip the filter at about 2 o’clock, which is where grit pushes them
-- **CUTOFF** `80` Hz (20…20000 Hz)
-  - ↳ note: The one knob on this panel with a printed scale: 20Hz, 80Hz, 320Hz, 1.2KHz, 5KHz, 20KHz
-- **RES** `5` % travel (0…100 % travel)
+- **DELAY · CHARACTER** `64` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
+  - ↳ note: Noon, where the default DJ-style filter on the repeats is doing nothing · Send MIDI CC 104 = 64. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **DELAY · CLOCK SYNC** `ON`
+  - ↳ note: Both TIME knobs jump between divisions of the global TEMPO
+- **DELAY · FEEDBACK** `54` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
+  - ↳ note: Single repeat through to infinite · Send MIDI CC 103 = 54. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **DELAY · LINK DELAYS** `OFF`
+  - ↳ note: Off, so TIME-L is the left delay time rather than an offset against the right
+- **DELAY · MIX** `38` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
+  - ↳ note: Send MIDI CC 105 = 38. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **DELAY · SYNC TYPE** `COMBO`
+  - ↳ note: Its printed default — every division rather than only straight, triplet or dotted ones
+  - ↳ hint: Press MORE in that section
+- **DELAY · TIME - L** `48` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
+  - ↳ note: Send MIDI CC 93 = 48. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **DELAY · TIME - R** `72` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
+  - ↳ note: Send MIDI CC 94 = 72. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **DYNAMIC VOICE ALLOCATION** `OFF`
+  - ↳ note: Its printed default. On, a busy timbre steals from the other and the four-each split stops holding
+  - ↳ hint: PROGRAMMER, VOICE CONTROL, MORE
+- **MIDI IN CHANNEL** `1`
+  - ↳ note: TIMBRE A listens here
+  - ↳ hint: PROGRAMMER, MENU, MIDI
+- **MULTI IN B CHANNEL** `2`
+  - ↳ note: TIMBRE B listens here. Both default to 1, so this must be changed or the two timbres double on one channel
+  - ↳ hint: PROGRAMMER, MENU, MIDI
+- **MULTI MODE** `ON`
+  - ↳ note: Its printed default, and what makes the two timbres separately playable
+  - ↳ hint: PROGRAMMER, MENU, MIDI
+- **RECIEVE CC** `ON`
+  - ↳ note: Defaults to OFF, so the box ignores CC until this is set. The manual's spelling
+  - ↳ hint: PROGRAMMER, MENU, MIDI
+- **TIMBRE A VOICE COUNT** `4` (0…8)
   - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ note: p.29 gives this range as "0 to Self-Oscillation" — a named endpoint, not a number, so this is percent of travel
-- **EG AMOUNT** `0` % (-100…100 %)
-  - ↳ note: How much the filter envelope adds to or subtracts from CUTOFF; centre is none
-- **FILTER ATTACK** `1` ms (1…30000 ms)
-  - ↳ note: 1 ms fully anticlockwise to 30 s fully clockwise; set it by ear
-- **FILTER DECAY/RELEASE** `400` ms (1…30000 ms)
-  - ↳ note: One knob for both segments. In Mode 1 the RELEASE switch decides whether you hear the release at all; in Mode 2 it decides which of the two the knob is editing — see `DECAY/RELEASE MODE`
-- **FILTER SUSTAIN** `100` % (0…100 %)
-- **AMPLIFIER ATTACK** `5` ms (1…30000 ms)
-  - ↳ note: 1 ms fully anticlockwise to 30 s fully clockwise; set it by ear
-- **AMPLIFIER DECAY/RELEASE** `600` ms (1…30000 ms)
-  - ↳ note: One knob for both segments. In Mode 1 the RELEASE switch decides whether you hear the release at all; in Mode 2 it decides which of the two the knob is editing — see `DECAY/RELEASE MODE`
-- **AMPLIFIER SUSTAIN** `100` % (0…100 %)
-- **RELEASE** `Off`
-  - ↳ note: In Mode 1: on, the release time equals the decay time; off, the envelope stops dead at note-off
-- **DECAY/RELEASE MODE** `MODE 1`
-  - ↳ note: Hold RELEASE ON/OFF for one second to toggle; remembered on power-down. Mode 1 links decay and release, which is what the times above assume
-- **LFO RATE** `0.5` Hz (0.01…100 Hz)
-- **VCO LFO AMT** `0` % (0…100 %)
-  - ↳ note: Up to ±1 octave of pitch at full travel (p.16)
-- **VCF LFO AMT** `0` % (0…100 %)
-  - ↳ note: Up to ±5 octaves of cutoff at full travel (p.16)
-- **GLIDE** `Off`
-- **GLIDE RATE** `0` % (0…100 %)
-  - ↳ note: Instantaneous fully anticlockwise to extremely long fully clockwise (p.11)
-- **VOLUME** `70` % travel (0…100 % travel)
+  - ↳ note: Four each. The counts always sum to eight, so setting this sets the other
+  - ↳ hint: PROGRAMMER, VOICE CONTROL, MORE
+
+#### Timbre 1 — `pad`: Both filters low and serial, sixteen-foot underneath, no top at all
+
+Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
+
+*Ranges cite manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.121.*
+
+- **VOICE CONTROL · UNISON** `OFF`
+  - ↳ note: Stacks any currently unused voices onto the active ones — thickness varies with how many notes are held
+- **VOICE CONTROL · MONO** `OFF`
+- **VOICE CONTROL · DETUNE** `22` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
+  - ↳ note: Between voices when poly, between stacked voices under UNISON, between the two oscillators under MONO · Send MIDI CC 92 = 22. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **OSC 1 · OCTAVE** `16'`
+- **OSC 1 · FREQUENCY** `0` st (-7…7 st)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0, p.27
+  - ↳ note: Bipolar, in tune at noon; a perfect fifth either way
+- **OSC 1 · TRI/SAW** `30` (0…127)
+  - ↳ note: Triangle fully counter-clockwise, sawtooth fully clockwise · Send MIDI CC 46 = 30. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **OSC 1 · PULSE WIDTH** `58` (0…127)
+  - ↳ note: A square wave sits at noon · Send MIDI CC 47 = 58. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **OSC 1 · WAVE MIX** `42` (0…127)
+  - ↳ note: The slider: triangle/sawtooth on the left against the pulse wave on the right · Send MIDI CC 48 = 42. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **OSC 2 · OCTAVE** `8'`
+- **OSC 2 · FREQUENCY** `-2` st (-7…7 st)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0, p.27
+- **OSC 2 · TRI/SAW** `26` (0…127)
+  - ↳ note: Send MIDI CC 51 = 26. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **OSC 2 · PULSE WIDTH** `62` (0…127)
+  - ↳ note: Send MIDI CC 52 = 62. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **OSC 2 · WAVE MIX** `38` (0…127)
+  - ↳ note: Send MIDI CC 53 = 38. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **SYNC 2▸1** `OFF`
+  - ↳ note: Locks oscillator 2 to the phase of oscillator 1
+- **MOD OSC · AUDIO** `OFF`
+  - ↳ note: Sub-audio: eight per-voice LFOs, one for each voice
+- **MOD OSC · WAVEFORM** `SINE`
+- **MOD OSC · FREQUENCY** `16` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.120
+  - ↳ note: The range of this knob differs with the AUDIO button above · Send MIDI CC 25 = 16. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **MOD OSC · PITCH AMOUNT** `10` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.120
+  - ↳ note: Send MIDI CC 31 = 10. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **MOD OSC · PITCH ▸ OSC 1** `ON`
+- **MOD OSC · PITCH ▸ OSC 2** `OFF`
+- **MOD OSC · FILTER AMOUNT** `12` (0…127)
+  - ↳ note: Send MIDI CC 39 = 12. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **MOD OSC · FILTER ▸ 1** `ON`
+- **MOD OSC · FILTER ▸ 2** `OFF`
+- **MIXER · OSC 1** `104` (0…127)
+  - ↳ note: Send MIDI CC 58 = 104. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **MIXER · RING MOD** `0` (0…127)
+  - ↳ note: Sum and difference tones of the two oscillators — inharmonic as they detune · Send MIDI CC 60 = 0. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **MIXER · OSC 2** `88` (0…127)
+  - ↳ note: Send MIDI CC 59 = 88. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **MIXER · MOD OSC** `0` (0…127)
+  - ↳ note: Send MIDI CC 61 = 0. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **MIXER · NOISE** `6` (0…127)
+  - ↳ note: White noise · Send MIDI CC 62 = 6. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **MIXER · OVERLOAD** `0` (0…127)
   - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ note: Panelled `VOLUME` beside a headphone pictogram — one knob sets the output and the headphones together (p.17)
+  - ↳ note: No page prints a scale for this fader and no CC row names it, so this number is relative within this guide rather than a position on the panel
+- **OVERLOAD RANGE** `LOW`
+  - ↳ note: LOW narrows the drive range for finer control
+  - ↳ hint: Press MORE in that section
+- **FILTER · ORDER** `SER`
+  - ↳ note: SERIAL, STEREO or PARALLEL — with HIGH PASS this decides bandpass, stereo lowpass or notch
+- **LINK FILTERS** `OFF`
+  - ↳ note: Off, so FILTER 1 CUTOFF is an absolute cutoff rather than the spacing between the two
+- **FILTER 1 · HIGH PASS** `OFF`
+  - ↳ note: Lowpass
+- **FILTER 1 · CUTOFF** `34` (0…127)
+  - ↳ note: Send MIDI CC 67 = 34. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **FILTER 1 · RESONANCE** `26` (0…127)
+  - ↳ note: Self-oscillates into a sine fully clockwise · Send MIDI CC 68 = 26. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **FILTER 1 · ENVELOPE AMOUNT** `30` (0…127)
+  - ↳ note: Bipolar, no modulation at noon · Send MIDI CC 69 = 30. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **FILTER 1 · KB TRACKING** `1:2`
+- **FILTER 2 · CUTOFF** `30` (0…127)
+  - ↳ note: Send MIDI CC 72 = 30. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **FILTER 2 · RESONANCE** `20` (0…127)
+  - ↳ note: Send MIDI CC 73 = 20. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **FILTER 2 · ENVELOPE AMOUNT** `24` (0…127)
+  - ↳ note: Bipolar, no modulation at noon · Send MIDI CC 75 = 24. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **FILTER 2 · KB TRACKING** `1:2`
+- **FILTER ENV · ATTACK** `90` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
+  - ↳ note: Send MIDI CC 79 = 90. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **FILTER ENV · DECAY** `96` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
+  - ↳ note: Send MIDI CC 80 = 96. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **FILTER ENV · SUSTAIN** `40` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
+  - ↳ note: Send MIDI CC 81 = 40. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **FILTER ENV · RELEASE** `100` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
+  - ↳ note: Send MIDI CC 82 = 100. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **FILTER ENV · LOOP** `OFF`
+  - ↳ note: Looping, the envelope runs like an LFO
+- **VCA ENV · ATTACK** `88` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
+  - ↳ note: Send MIDI CC 86 = 88. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **VCA ENV · DECAY** `84` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
+  - ↳ note: Send MIDI CC 87 = 84. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **VCA ENV · SUSTAIN** `104` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
+  - ↳ note: Send MIDI CC 88 = 104. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **VCA ENV · RELEASE** `104` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
+  - ↳ note: Send MIDI CC 89 = 104. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **VCA ENV · VELOCITY** `ON`
+- **VCA · LEVEL** `92` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.120
+  - ↳ note: Send MIDI CC 7 = 92. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+  - ↳ hint: Light TIMBRE A or B first
+- **VCA · PAN** `60` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.120
+  - ↳ note: Bipolar, centred at noon · Send MIDI CC 10 = 60. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **VCA · PAN SPREAD** `46` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.120
+  - ↳ note: All voices sit at the PAN position fully counter-clockwise · Send MIDI CC 9 = 46. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **VCA · PAN SPRD MODE** `L/R`
+  - ↳ hint: Press MORE in that section
+- **DELAY · TIMBRE A / TIMBRE B** `ON`
+  - ↳ note: Two separate buttons, one per timbre — engage the one for the timbre this part is on. Disengaged, this part bypasses the delay on a fully analog path
+- **LFO 1 · WAVEFORM** `TRIANGLE`
+- **LFO 1 · RATE** `0.14` Hz (0.01…40 Hz)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0, p.52
+  - ↳ note: The default range; RATE MIN and RATE MAX in the MORE menu can widen it to 1 kHz
+- **LFO 1 · AMPLITUDE** `22` (0…127)
+  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.120
+  - ↳ note: An attenuator ahead of every destination · Send MIDI CC 13 = 22. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
+- **LFO 1 · SYNC** `OFF`
+  - ↳ note: Off, so RATE is the free-running Hz scale rather than tempo divisions
+  - ↳ hint: Press MORE in that section
+- **LFO 1 · LFO TYPE** `PER-VOICE`
+  - ↳ note: PER-VOICE gives eight separate LFOs, one per voice
+  - ↳ hint: Press MORE in that section
 
 ### Subsequent 37
 
@@ -906,19 +1056,25 @@ Routing — One VCO only — VCO 2 is down, so there is nothing to beat against 
 
 *Values below cite MC-101 Reference Manual eng01 and MC-101 Update eng08.*
 
-#### TONE Track 1 — `stab`: Short chord stab, played on the track
+#### TONE Track 1 — `sub`: Sine sub, one note at a time, nothing above the fundamental
 
-Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
+Routing — Keep the sub mono and dry — the reverb and delay sends stay at 0
 
 *Ranges cite manual — MC-101 Reference Manual eng01, p.45.*
 
-- **MONO/POLY** `POLY`
-- **ATTACK** `-40` (-64…63)
-- **DECAY** `-26` (-64…63)
-- **RELEASE** `-34` (-64…63)
-- **CUTOFF** `20` (-64…63)
-- **RESONANCE** `10` (-64…63)
-- **DELAY SEND** `18` (0…127)
+- **MONO/POLY** `MONO`
+- **OCT SHIFT** `-1` (-3…3)
+- **CUTOFF** `-34` (-64…63)
+- **RESONANCE** `-18` (-64…63)
+- **ATTACK** `-20` (-64…63)
+- **RELEASE** `-24` (-64…63)
+- **MFX TYPE** `04 Low Boost`
+- **BOOST FREQUENCY** `63`
+- **BOOST GAIN** `5` dB (0…12 dB)
+  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.54
+  - ↳ hint: Hold [SHIFT], press [SOUND]
+- **BOOST WIDTH** `NARROW`
+- **REVERB SEND** `0` (0…127)
 - **SHUFFLE** `0` (-50…50)
   - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
   - ↳ note: One setting for the whole clip, not per step
@@ -1104,8 +1260,9 @@ What processes audio in this rig:
 - MPC XL — carries effects, though no part in this guide reaches them
 - ZOIA Euroburo — is an effects unit (stereo main out · audio in)
 - Matriarch — carries effects, though no part in this guide reaches them
+- Muse — carries DELAY · CHARACTER, DELAY · CLOCK SYNC, DELAY · FEEDBACK, DELAY · LINK DELAYS, DELAY · MIX, DELAY · SYNC TYPE, DELAY · TIMBRE A / TIMBRE B, DELAY · TIME - L and DELAY · TIME - R in its recipes
 - Tracker Mini — carries effects, though no part in this guide reaches them
-- MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and DELAY SEND in its recipes
+- MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and REVERB SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 - TR-6S — carries MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
 - TR-8S — carries REVERB, DELAY and MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes

@@ -79,8 +79,30 @@ describe('the notice answers only for a box that declares it', () => {
 })
 
 describe('phase 5 stops telling a sequencer-less box to step-program (§8/#65)', () => {
-  const withMinitaur = TEMPLATES.map((template) =>
-    resolve({ devices: [...DEVICES], template, mood: moodState({}), seed: 3 }),
+  /**
+   * The fixture searches **seeds as well as directions**, and that breadth is the point rather
+   * than thoroughness for its own sake.
+   *
+   * It was pinned to seed 3, and the day the Muse landed there was no direction at that seed that
+   * put a part on the Minitaur — so the guard below fired and the two real assertions went with
+   * it. Nothing about #65 had changed: the Minitaur still takes twelve parts across the templates
+   * at other seeds, and its `patternEntry` notice still renders exactly as before. What moved was
+   * which box won a mono bass request on one seed, which is the resolver's business and not this
+   * file's.
+   *
+   * `device-content.test.ts` reached the same conclusion for the same reason and is worth reading
+   * beside this: *"Searched across the real templates rather than pinned to one, because which
+   * recipe a template assigns is the resolver's business and pinning it would make this test fail
+   * on an unrelated objective change instead of on the thing it is about."* A fixture that has to
+   * be re-pinned every time a device lands is not guarding the claim, it is recording a seed.
+   *
+   * The guard on the subject stays, and stays load-bearing: if the Minitaur ever stops being
+   * assigned *anywhere*, this still fails rather than passing vacuously.
+   */
+  const withMinitaur = TEMPLATES.flatMap((template) =>
+    // Both parities, deliberately: this box is assigned on even seeds and not odd ones today,
+    // and a sweep that happened to pick 1/3/5/7 would have looked exactly like "never assigned".
+    [0, 1, 2, 3].map((seed) => resolve({ devices: [...DEVICES], template, mood: moodState({}), seed })),
   ).find((r) => r.assignments.some((a) => a.deviceId === 'moog-minitaur'))
 
   it('has a direction that puts a part on the Minitaur at all', () => {

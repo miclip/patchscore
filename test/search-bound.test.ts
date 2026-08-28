@@ -132,6 +132,35 @@ import { TEMPLATES } from '../lib/templates/index'
  *
  * The whole sweep is 168 exhaustive searches. It used to take about fifteen seconds, nearly all
  * of it in `industrial-techno`; the repair took it under two.
+ *
+ * ## The Muse, and a cost that lands on one direction rather than across the board
+ *
+ * The twenty-eighth box serves seven tonal roles from a pool of two timbres. **Six of the seven
+ * directions get dearer and one gets cheaper**, but the six are not comparable to each other —
+ * five of them move by a node or two and the sixth doubles:
+ *
+ *   - **`industrial-techno` 22,926-28,046 -> 48,301-55,825**, roughly double, and it takes the
+ *     worst case off `weave` for the first time. This is the direction that asks for the most
+ *     tonal roles at once, so a device answering seven of them adds candidates at every one of
+ *     those requests. It is the entire cost of this device, and the other six rows are what make
+ *     that visible.
+ *   - **`weave` 32,652-35,678 -> 32,670-35,696**, eighteen nodes at every seed, on the direction
+ *     that was the worst case until now. Same registry, same device: what a box costs is the roles
+ *     a *direction* asks for, not the size of the box, which is the claim §7.1 makes and this pair
+ *     of rows measures.
+ *   - `ambient-dub` 123/126 -> 130 flat, `drone-study` 20 -> 21, `relay` 40 -> 42. One or two
+ *     nodes: a candidate considered and rejected at the same place.
+ *   - **`lydian-house` 180-235 -> 112-241** is the one row that moves both ways, and it is worth
+ *     not flattening into either verdict. Its peak rises by six nodes and its floor falls by
+ *     sixty-eight, so most seeds get cheaper while the worst gets marginally dearer.
+ *   - **`major-key-electro` 170-704 -> 116-446** is the only row cheaper at the peak, and by a
+ *     third. The `ambient-dub`/OP-XY note above explains the mechanism and it applies again: a
+ *     request that was being approximated off distant candidates now has one that matches, so
+ *     `liveFloor` tightens on the first branch and prunes the subtree behind the approximations.
+ *
+ * A device that pays for itself on the one direction that asks for what it offers, and costs one
+ * or two nodes everywhere else, is the bound behaving as designed. The number to watch is
+ * `industrial-techno`, and `search-symmetry.test.ts` is where it is watched.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -140,32 +169,32 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      123, 126, 123, 126, 123, 126, 123, 126, 123, 126, 123, 126, 123, 126, 123, 126, 126, 123,
-      126, 123, 126, 123, 126, 123
+      130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130,
+      130, 130, 130, 130, 130, 130
     ],
     'drone-study': [
-      20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
-      20
+      21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
+      21
     ],
     'industrial-techno': [
-      24277, 25285, 23054, 23554, 22931, 28046, 22926, 23522, 22926, 26841, 24011, 23554, 23050,
-      23522, 22931, 23554, 23506, 23054, 23554, 22931, 23522, 24011, 23538, 25460
+      52296, 51233, 48541, 48302, 48302, 55825, 48301, 48301, 48301, 55217, 51232, 48302, 48539,
+      48301, 48302, 48302, 48302, 48541, 48302, 48302, 48301, 51232, 48301, 55445
     ],
     'lydian-house': [
-      181, 181, 182, 181, 181, 181, 182, 181, 207, 208, 182, 180, 182, 208, 182, 208, 207, 208,
-      181, 208, 181, 208, 181, 235
+      113, 184, 113, 184, 113, 184, 113, 184, 140, 184, 113, 184, 113, 184, 113, 184, 241, 141,
+      186, 112, 186, 141, 186, 141
     ],
     'major-key-electro': [
-      613, 430, 273, 178, 273, 173, 260, 234, 260, 701, 542, 178, 461, 170, 273, 178, 173, 239,
-      178, 273, 174, 505, 272, 704
+      300, 305, 121, 121, 121, 118, 116, 118, 116, 443, 259, 121, 218, 116, 121, 121, 118, 121,
+      121, 121, 118, 257, 218, 446
     ],
     relay: [
-      40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
-      40
+      42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
+      42
     ],
     weave: [
-      34356, 33888, 32652, 32652, 32652, 32652, 32652, 32652, 32652, 35678, 33888, 32652, 32652,
-      32652, 32652, 32652, 32652, 32652, 32652, 32652, 32652, 33888, 32652, 35678
+      34374, 33906, 32670, 32670, 32670, 32670, 32670, 32670, 32670, 35696, 33906, 32670, 32670,
+      32670, 32670, 32670, 32670, 32670, 32670, 32670, 32670, 33906, 32670, 35696
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".
