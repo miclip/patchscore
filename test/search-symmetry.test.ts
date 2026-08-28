@@ -1251,7 +1251,21 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * ~12% headroom at eighteen devices; both figures pre-date #78's repair and the cap being
    * raised, and the constant in `lib/core/search.ts` is the one to read.)
    */
-  const WORST_CASE_NODES = 55_825
+  /**
+   * **The SP-404MK2 takes it to 67,088, on `industrial-techno` seed 10.** Up a fifth, and by a
+   * different mechanism from the Muse's doubling above: this box declares one pool of sixteen
+   * pads over the whole 23-role vocabulary and authors nineteen recipes across seventeen of them,
+   * so the direction that asks for the most tonal roles at once gains sixteen ordinal-identical
+   * candidates at every one of them. The cost lands where the paragraph above predicts it will,
+   * and `search-bound.test.ts` records what the other six directions paid — between one node and
+   * a seventh.
+   *
+   * The worst seed moves 5 -> 10 as well, which is the tie-break permuting among equal costs
+   * (§7.2) rather than anything to read into.
+   *
+   * `DEFAULT_NODE_CAP` is 200,000, so 67,088 is **33.5% of it and 66.5% headroom stands**.
+   */
+  const WORST_CASE_NODES = 67_088
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))

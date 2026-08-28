@@ -161,6 +161,29 @@ import { TEMPLATES } from '../lib/templates/index'
  * A device that pays for itself on the one direction that asks for what it offers, and costs one
  * or two nodes everywhere else, is the bound behaving as designed. The number to watch is
  * `industrial-techno`, and `search-symmetry.test.ts` is where it is watched.
+ *
+ * ## The SP-404MK2, and what a pool that carries every role costs
+ *
+ * The twenty-ninth box declares one pool of sixteen pads over the whole 23-role vocabulary and
+ * authors nineteen recipes across seventeen of them. **Every row moves up, and the two expensive
+ * directions take almost all of it:**
+ *
+ *   - **`industrial-techno` 48,301-55,825 -> 55,355-67,088**, about a fifth dearer, and the worst
+ *     seed moves from 5 to 10. Same reason as the Muse's row above and a different mechanism: not
+ *     a device answering seven tonal roles from two timbres, but one answering seventeen roles
+ *     from sixteen interchangeable slots, so every request in the direction gains sixteen
+ *     candidates that differ only by ordinal.
+ *   - **`weave` 32,670-35,696 -> 37,499-39,319**, about a seventh. The second-most tonal
+ *     direction, paying a smaller share of the same bill.
+ *   - `ambient-dub` 130 -> 137, `drone-study` 21 -> 22, `relay` 42 -> 43, `lydian-house`
+ *     112-241 -> 119-257: a handful of nodes, flat across every seed, which is one more candidate
+ *     considered and rejected at the same place.
+ *   - **`major-key-electro` 116-446 -> 122-614** is the one row whose *shape* changes rather than
+ *     its level: its peak moves off seed 23 onto seed 2 and rises by a third while its floor
+ *     barely moves. A pool that answers every role reorders which seed is unlucky, which is what
+ *     a tie-break permuting among equal costs (§7.2) is expected to do.
+ *
+ * Nothing caps, and `industrial-techno` at 67,088 is 33.5% of `DEFAULT_NODE_CAP`.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -169,32 +192,32 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130, 130,
-      130, 130, 130, 130, 130, 130
+      137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137,
+      137, 137, 137, 137, 137, 137
     ],
     'drone-study': [
-      21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
-      21
+      22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+      22
     ],
     'industrial-techno': [
-      52296, 51233, 48541, 48302, 48302, 55825, 48301, 48301, 48301, 55217, 51232, 48302, 48539,
-      48301, 48302, 48302, 48302, 48541, 48302, 48302, 48301, 51232, 48301, 55445
+      55355, 55356, 55611, 55356, 55355, 55356, 55356, 55356, 63378, 58485, 67088, 55355, 55611,
+      58484, 55356, 55356, 55356, 55595, 55356, 55356, 55356, 55356, 65860, 55593
     ],
     'lydian-house': [
-      113, 184, 113, 184, 113, 184, 113, 184, 140, 184, 113, 184, 113, 184, 113, 184, 241, 141,
-      186, 112, 186, 141, 186, 141
+      120, 196, 120, 196, 120, 196, 120, 196, 149, 196, 120, 196, 120, 196, 120, 196, 257, 150,
+      198, 119, 198, 150, 198, 150
     ],
     'major-key-electro': [
-      300, 305, 121, 121, 121, 118, 116, 118, 116, 443, 259, 121, 218, 116, 121, 121, 118, 121,
-      121, 121, 118, 257, 218, 446
+      122, 124, 614, 127, 122, 127, 127, 127, 124, 320, 124, 122, 127, 272, 127, 124, 424, 124,
+      124, 124, 127, 127, 318, 122
     ],
     relay: [
-      42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
-      42
+      43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43,
+      43
     ],
     weave: [
-      34374, 33906, 32670, 32670, 32670, 32670, 32670, 32670, 32670, 35696, 33906, 32670, 32670,
-      32670, 32670, 32670, 32670, 32670, 32670, 32670, 32670, 33906, 32670, 35696
+      37499, 37499, 37499, 37499, 37499, 37499, 37499, 37499, 37499, 38827, 37499, 37499, 37499,
+      38919, 37499, 37499, 37499, 37499, 37499, 37499, 37499, 37499, 39319, 37499
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".

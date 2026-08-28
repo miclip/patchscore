@@ -307,6 +307,10 @@ describe('the committed registry', () => {
       'empress-zoia-euroburo',
       'intellijel-metropolix',
       'roland-mc-101',
+      // 178 mm, and portrait like the Tracker Mini above it: the SP-404MK2's specification line
+      // reads `178 (W) x 276 (D) x 71 (H)` (p.266), so the span is the smaller of the first two
+      // and the 276 is what its `panelRiseMm` carries.
+      'roland-sp-404mk2',
       'elektron-digitakt-ii',
       // 222.3 mm — p.30's `8.75"`, the smallest of the Moogs by some way.
       'moog-minitaur',

@@ -91,9 +91,10 @@ describe('device search matches name, maker and kind', () => {
     // Name.
     expect(ids(devices({ query: 'tr-1000' }).rows)).toEqual(['roland-tr-1000'])
     expect(ids(devices({ query: 'TR-1000' }).rows)).toEqual(['roland-tr-1000'])
-    // Maker — four Rolands in the registry since the TR-6S landed, in registry order.
+    // Maker — five Rolands in the registry since the SP-404MK2 landed, in registry order.
     expect(ids(devices({ query: 'roLAnd' }).rows)).toEqual([
       'roland-mc-101',
+      'roland-sp-404mk2',
       'roland-tr-1000',
       'roland-tr-6s',
       'roland-tr-8s',
