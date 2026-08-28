@@ -234,18 +234,20 @@ describe('Metropolix manifest', () => {
     })
 
     it('loses the full rig to the other authored claim, on transport rather than on rank', () => {
-      // **#80's outcome, and it is the correct one rather than a regression.** The Tracker Mini
-      // claims the field too, and §7.4 has no basis to rank two authored preferences against each
-      // other — so the keys below the claim decide, and this box has only `usb` where the Tracker
-      // Mini has `midi-din`. That is a *justified* tie-break between two boxes each authored as a
-      // rig leader, which is exactly the thing #80 replaced: the same arithmetic among everything
-      // that merely can send clock was an alphabetical accident.
+      // **This box still loses on transport, and that has not changed** — it has only `usb`
+      // where the other claimants have `midi-din`. What changed is who wins.
+      //
+      // #198 gave §7.4 the basis it did not have for ranking two authored claims: between two
+      // boxes that both claim the field, the one with no voices is the likelier brain. That
+      // promotes the Hapax over the Tracker Mini, and this box over the Tracker Mini too — but
+      // the Hapax and this box are both voiceless, so between *them* the keys below decide, and
+      // `midi-din` beats `usb`. The lesson is unchanged and the winner is not.
       const result = resolve({ devices: DEVICES, template, mood: NEUTRAL_MOOD, seed: 18 })
-      expect(result.clockSource?.deviceId).toBe('polyend-tracker-mini')
+      expect(result.clockSource?.deviceId).toBe('squarp-hapax')
       expect(result.clockSource?.transport).toBe('midi-din')
       // Not because this box was demoted: strip every other claim and it leads again. Two have
-      // to come off now rather than one — the Hapax joined with `midi-din` and no parts at all,
-      // so it wins the same fall-through the Tracker Mini does, and for the same reason.
+      // to come off — the Hapax outranks it on transport, and the Tracker Mini would win the
+      // fall-through if the Hapax were absent and this box's `usb` were the only alternative.
       const soleClaim = DEVICES.map((d) =>
         d.id === 'polyend-tracker-mini' || d.id === 'squarp-hapax'
           ? { ...d, clock: { ...d.clock, preferredSource: undefined } }
@@ -256,7 +258,7 @@ describe('Metropolix manifest', () => {
 
     it('says so in the guide, and still exempts the boxes that cannot follow', () => {
       const doc = renderGuide(resolve({ devices: DEVICES, template, mood: NEUTRAL_MOOD, seed: 18 }))
-      expect(doc).toContain('**Clock source** — Tracker Mini over `midi-din`')
+      expect(doc).toContain('**Clock source** — Hapax over `midi-din`')
       // §7.4's exemption clause, which must survive the source moving. Asserted against the boxes
       // that are actually deaf rather than against a remembered list.
       for (const deaf of DEVICES.filter((d) => !d.clock.canReceiveClock)) {

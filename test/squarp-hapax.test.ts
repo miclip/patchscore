@@ -11,6 +11,7 @@ import {
 } from '../lib/core/index'
 import { device } from '../lib/devices/squarp-hapax/index'
 import { device as metropolix } from '../lib/devices/intellijel-metropolix/index'
+import { device as trackerMini } from '../lib/devices/polyend-tracker-mini/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 import { rackModel } from '../components/rack/model'
@@ -179,19 +180,25 @@ describe('Hapax manifest', () => {
       })
     })
 
-    it('leads a rig once the two older claims are out of the way, on transport and id', () => {
-      // Three boxes claim the field and §7.4 has no basis to rank authored claims against each
-      // other, so the keys below decide. This box has `midi-din` and no parts, which beats the
-      // Metropolix's `usb` outright; against the Tracker Mini it ties down to the id, and
-      // `polyend-tracker-mini` sorts before `squarp-hapax` by code unit.
-      expect(selectClockSource(DEVICES, new Map())?.deviceId).toBe('polyend-tracker-mini')
-      const withoutTracker = DEVICES.filter((d) => d.id !== 'polyend-tracker-mini')
-      const source = selectClockSource(withoutTracker, new Map())
+    it('leads the whole library, over two other boxes that claim the same field', () => {
+      // Three boxes claim it. #198 gave §7.4 a basis for ranking them: between two claimants,
+      // the one with no voices is the likelier brain, because clock and sequencing are the only
+      // thing it can contribute. That puts this box and the Metropolix above the Tracker Mini,
+      // and between the two voiceless ones `midi-din` beats the Metropolix's `usb`.
+      //
+      // Before #198 this fell through to `compareCodeUnits` and the Tracker Mini won on
+      // `polyend-` sorting before `squarp-`, which is a rig's clock chosen alphabetically.
+      const source = selectClockSource(DEVICES, new Map())
       expect(source?.deviceId).toBe(device.id)
       expect(source?.transport).toBe('midi-din')
       expect(source?.occupiedAssignables).toBe(0)
-      // Not merely because the Metropolix is weak: it holds the same authored claim and loses on
-      // transport, which is the tie-break §7.4 intends between two boxes authored as leaders.
+      // The Tracker Mini loses on the voiceless key rather than on transport — it has `midi-din`
+      // too, so nothing below the claim would have separated them.
+      expect(trackerMini.clock.transport).toContain('midi-din')
+      expect(trackerMini.voices.length).toBeGreaterThan(0)
+      // The Metropolix loses on transport, the tie-break §7.4 intends between two boxes that are
+      // both authored as leaders and both carry no parts.
+      expect(metropolix.voices).toEqual([])
       expect(metropolix.clock.transport).not.toContain('midi-din')
     })
 

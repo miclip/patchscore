@@ -1079,7 +1079,12 @@ describe('#121 the page states the clock topology the Markdown states', () => {
    * and a reader who believes it goes looking for a fault in the wrong place.
    */
   it('names a box that receives clock but not over this rig\'s transport, in its own words', () => {
-    const page = text(html(rigOf('polyend-tracker-mini', 'intellijel-metropolix')))
+    // #198: the source has to be a box that outranks the Metropolix, or the Metropolix *is* the
+    // source and there is no follower left to exercise the clause. The Hapax does it on
+    // transport — both claim `preferredSource` and both carry no voices, so `midi-din` beats
+    // `usb`. The Tracker Mini used to serve here and no longer can: it loses to any voiceless
+    // claimant now.
+    const page = text(html(rigOf('squarp-hapax', 'intellijel-metropolix')))
     // #144: the Metropolix is the whole of "everything else" here, so the lead-in changes and the
     // clause — the thing this test exists for — does not.
     expect(page).toContain('Nothing else here can follow it: Metropolix')
@@ -1088,13 +1093,13 @@ describe('#121 the page states the clock topology the Markdown states', () => {
     expect(page).not.toContain('cannot receive clock')
 
     // The same clause under the `except` lead-in, in a rig that has a follower to sync.
-    const following = text(html(rigOf('polyend-tracker-mini', 'intellijel-metropolix', 'roland-tr-1000')))
+    const following = text(html(rigOf('squarp-hapax', 'intellijel-metropolix', 'roland-tr-1000')))
     expect(following).toContain('Sync everything else to it, except Metropolix')
     expect(following).toContain('has no `midi-din` input and runs free')
   })
 
   it('says the two reasons separately when a rig has both', () => {
-    const page = text(html(rigOf('polyend-tracker-mini', 'intellijel-metropolix', 'zoom-livetrak-l-8')))
+    const page = text(html(rigOf('squarp-hapax', 'intellijel-metropolix', 'zoom-livetrak-l-8')))
     expect(page).toContain('Zoom LiveTrak L-8, which cannot receive clock and runs free')
     expect(page).toContain('Metropolix, which has no `midi-din` input and runs free')
   })

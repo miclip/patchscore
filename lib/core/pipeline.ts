@@ -197,6 +197,28 @@ export function selectClockSource(
   const ranked = [...capable].sort((a, b) => {
     const byPreferred = Number(b.clock.preferredSource === true) - Number(a.clock.preferredSource === true)
     if (byPreferred !== 0) return byPreferred
+    // §7.4/#198. **Between two boxes that both claim the field, one with no voices is the
+    // likelier brain.** Clock and sequencing are its only possible contribution, where a box
+    // carrying parts is offering clock alongside another job. Three devices claim
+    // `preferredSource` now — Metropolix, Tracker Mini, Hapax — and without this the winner
+    // between a Hapax and a Tracker Mini fell to `compareCodeUnits` at the bottom, on `polyend-`
+    // sorting before `squarp-`. A rig's clock was being chosen alphabetically.
+    //
+    // **Only among claimants**, and that restriction is the whole correctness of it. `voices: []`
+    // does not mean "sequencer" — it means "contributes no parts", which is equally true of the
+    // Model 2400 and the L-8. Applied to every eligible box this rule would put a mixing desk in
+    // charge of an MPC, which is what `test/pipeline.test.ts`'s unpreferred-rig case catches. A
+    // box that has not claimed the job does not get promoted into it for having no voices.
+    //
+    // **This is not the parts-count rule #50 removed.** That ranked by *how many* parts a device
+    // carried, which is why it picked wrongly for a sequencer carrying none. This asks only
+    // whether a device can carry *any* — a fact about the instrument, not about this rig — and it
+    // reads `voices`, the declaration, never `occupied`, which is the outcome and has no part in
+    // choosing a source (see the note above).
+    if (a.clock.preferredSource === true && b.clock.preferredSource === true) {
+      const byVoiceless = Number(b.voices.length === 0) - Number(a.voices.length === 0)
+      if (byVoiceless !== 0) return byVoiceless
+    }
     const byTransport = transportRank(a) - transportRank(b)
     if (byTransport !== 0) return byTransport
     return compareCodeUnits(a.id, b.id)
