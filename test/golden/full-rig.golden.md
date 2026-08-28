@@ -70,18 +70,16 @@ None.
   - ↳ note: MIDI B, C and D have the same row and the same four options; set the one the cable is in.
   - ↳ cite: value manual — Hapax Manual (22 June 2026), p.132
 
-**Voice control** — Metropolix sends the notes, 4 cables in all. Patch each pair before you play anything:
+**Voice control** — Hapax sends the notes, 6 cables in all. Patch each pair before you play anything:
 
-- pitch: Metropolix `TRK 1 · PITCH` → CRAVE `IN · OSC CV`
-- gate: Metropolix `TRK 1 · GATE` → CRAVE `IN · ENV GATE`
-- pitch: Metropolix `TRK 2 · PITCH` → Cascadia `EXT IN · PITCH`
-- gate: Metropolix `TRK 2 · GATE` → Cascadia `EXT IN · GATE`
+- pitch: Hapax `Cv out 2` → CRAVE `IN · OSC CV`
+- gate: Hapax `gate out 2` → CRAVE `IN · ENV GATE`
+- pitch: Hapax `Cv out 3` → Cascadia `EXT IN · PITCH`
+- gate: Hapax `gate out 3` → Cascadia `EXT IN · GATE`
+- pitch: Hapax `Cv out 4` → Minitaur `CONTROLLER INPUTS · PITCH CV`
+- gate: Hapax `gate out 4` → Minitaur `CONTROLLER INPUTS · GATE`
 
-- Why this box sends them — its manual says leading a rig is its job
-
-**Not driven** — Metropolix offers 2 pitch-and-gate pairs and this rig needs more. Minitaur is left unpatched:
-
-- Minitaur `CONTROLLER INPUTS · PITCH CV` and `CONTROLLER INPUTS · GATE` — nothing to plug in. Play it from its own keyboard or sequencer.
+- Why this box sends them — it is already the clock source, so the cables run from where the tempo does
 
 - **MPC Live III** — groovebox · 0 parts
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
