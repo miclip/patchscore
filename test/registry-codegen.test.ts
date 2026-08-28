@@ -341,6 +341,10 @@ describe('the committed registry', () => {
       // tie: 680 against 680.5, so the order is decided by the numbers rather than by folder
       // order, and a re-measurement of either could legitimately swap them.
       'korg-minilogue-xd',
+      // 543 mm — p.533's `543 x 488 x 94 mm`, 107 mm wider than the Live III on the row above.
+      // The two MPCs are the library's clearest illustration of what this ordering is for: one
+      // operating system in two chassis, and the rack shows the difference as width.
+      'akai-mpc-xl',
       // 584.2 mm, and the only span in this list taken from a manufacturer's *imperial* figure
       // over the metric one printed beside it: p.54's DIMS line reads `23" (54.82cm)`, and 23"
       // is 58.42 cm. See `moog-grandmother/panel.ts` for the drawing that settles it. The

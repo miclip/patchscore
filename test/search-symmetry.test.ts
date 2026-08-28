@@ -1196,8 +1196,21 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * device was being authored, a pool of 128 and a pool of 16 produce **identical** node counts.
    * So `count` is nearly free and it is the *roles per voice* that is not — which is why the two
    * pools here are split by what a fixed-note pad can actually carry rather than by convenience.
+   *
+   * **Moved a sixth time for the MPC XL**: 21,368 -> 26,688, a rise of 24.9%, with the peak
+   * staying on `weave` and crossing from seed 10 to seed 16. Nothing capped, and 26,688 is 13.3%
+   * of `DEFAULT_NODE_CAP`.
+   *
+   * This one measures the rule above rather than illustrating it, because the XL is the Live III
+   * again: it takes that manifest's three pools and all nineteen of its recipes by reference, so
+   * the two boxes present the same roles-per-voice to the search and differ only in identity and
+   * hardware. A quarter more nodes for an exact duplicate is what symmetry breaking cannot reach,
+   * since §7.1 collapses interchangeable members *within* a pool and two devices are never
+   * interchangeable — they have different jacks, different individual-out counts and different
+   * spans, all of which the objective can tell apart. The per-direction rows in
+   * `test/search-bound.test.ts` show the same event with one direction going the other way.
    */
-  const WORST_CASE_NODES = 21_368
+  const WORST_CASE_NODES = 26_688
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))

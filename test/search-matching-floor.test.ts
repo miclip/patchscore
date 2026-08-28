@@ -921,8 +921,17 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * position the repair is for: two requests §4.2 will not let share a voice, on a device with
    * plenty of voices to separate them onto. The unrepaired floor pays for all of it and the
    * repaired search collapses most of it.
+   *
+   * **The MPC XL moves it again, 664,888 → 900,769, a rise of 35.5%**, and the paragraph above
+   * is why the two halves of that sentence are nearly the same number twice: the XL takes the
+   * Live III's three pools and all nineteen of its recipes by reference, so it presents the
+   * search with the identical shape a second time, and the floor grows by almost exactly what
+   * the first copy cost it. The repaired sweep rose 24.9% over the same device
+   * (`test/search-symmetry.test.ts` records 21,368 → 26,688), so the gap between the two rates
+   * narrowed from three times to one and a half. A duplicate is the one kind of new device whose
+   * request pairs the repair has already seen the shape of.
    */
-  it('walks the recorded 664,888 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 900,769 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -930,7 +939,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(664_888)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(900_769)
     // And the repaired floor is emphatically not walking it.
     expect(assign(input).search.nodes).toBeLessThan(20_000)
   })
