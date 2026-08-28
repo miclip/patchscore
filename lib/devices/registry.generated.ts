@@ -19,6 +19,7 @@ import { device as device_moog_grandmother } from './moog-grandmother/index'
 import { device as device_moog_matriarch } from './moog-matriarch/index'
 import { device as device_moog_minitaur } from './moog-minitaur/index'
 import { device as device_moog_mother_32 } from './moog-mother-32/index'
+import { device as device_moog_muse } from './moog-muse/index'
 import { device as device_moog_subharmonicon } from './moog-subharmonicon/index'
 import { device as device_moog_subsequent_37 } from './moog-subsequent-37/index'
 import { device as device_polyend_tracker_mini } from './polyend-tracker-mini/index'
@@ -49,6 +50,7 @@ export const DEVICES: readonly Device[] = [
   device_moog_matriarch,
   device_moog_minitaur,
   device_moog_mother_32,
+  device_moog_muse,
   device_moog_subharmonicon,
   device_moog_subsequent_37,
   device_polyend_tracker_mini,
@@ -80,6 +82,7 @@ export const DEVICE_FOLDERS: readonly string[] = [
   'moog-matriarch',
   'moog-minitaur',
   'moog-mother-32',
+  'moog-muse',
   'moog-subharmonicon',
   'moog-subsequent-37',
   'polyend-tracker-mini',

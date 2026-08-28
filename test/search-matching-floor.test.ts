@@ -950,7 +950,39 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * amount — 35.5% and 34.6% — while moving the repaired search by 24.9% and 19.4%. Sharing an
    * engine buys the reader a consistent guide and buys the search nothing.
    */
-  it('walks the recorded 1,615,995 nodes on industrial-techno seed 9', () => {
+  /**
+   * **The Muse breaks the run, and it breaks it downwards: 1,615,995 -> 55,575, a fall of 96.6%.**
+   *
+   * Every entry above this one records the unrepaired floor *rising* as a device landed, and each
+   * came with a rate to compare against the repaired sweep. This one has no such pair, because
+   * the two numbers converged: on `industrial-techno` seed 9 the search now walks 55,575
+   * unrepaired against 55,217 repaired. **The repair prunes 0.6% here, where it pruned 98.3%.**
+   *
+   * It is not the repair that broke, and the direction of the change is how that is known. The
+   * repair can only ever remove nodes, so a *floor* falling 29-fold is the underlying problem
+   * getting easier rather than the bound getting weaker. The Muse answers seven of the tonal
+   * requests `industrial-techno` makes, so a strong incumbent is reached far earlier in the walk
+   * and ordinary cost pruning removes what the matching repair used to have to prove unreachable.
+   * There is nothing left for it to collapse.
+   *
+   * Measured across the seeds rather than inferred from one: 1,590,389/1,561,663/1,717,339 before
+   * against 51,591/48,660/56,183 after on seeds 1, 3 and 5, with the repaired walk roughly
+   * doubling (25,285 -> 51,233, 23,554 -> 48,302, 28,046 -> 55,825). The effect is the whole
+   * direction, not one seed.
+   *
+   * **So this fixture has stopped being a demonstration of the repair, and the assertion below no
+   * longer claims to be one.** The claim itself is intact and is held next door: `the repair
+   * prunes, rather than merely being admissible` runs a three-device rig where the incumbent is
+   * poor, the repair still has pairs to collapse, and the gap is still enormous. That block is
+   * now the only place the pruning ratio is asserted, which is worth knowing before anyone
+   * deletes it as redundant.
+   *
+   * What survives here is narrower and still worth pinning: the two walks are reproducible to the
+   * node (invariant 6), and the repaired walk stays inside a bound that is nowhere near the cap.
+   * If a later device sends the floor back up without the repaired figure following it, the run
+   * of paragraphs above resumes and this note is the gap in it.
+   */
+  it('walks the recorded 55,575 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -958,15 +990,12 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(1_615_995)
-    // And the repaired floor is emphatically not walking it. The headroom is what carries the
-    // claim, not the round number: this seed walks 26,841 repaired against 1,615,995 unrepaired,
-    // so the ceiling is a sixtieth of the floor. It was 20,000, then 25,000, and each time a
-    // device pushed the repaired walk past it. Loosen it when it binds rather than re-tightening
-    // it onto each new figure: a ceiling that sits one node above the last measurement stops
-    // guarding the claim it is here to make and starts re-recording the measurement a second
-    // time.
-    expect(assign(input).search.nodes).toBeLessThan(35_000)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(55_575)
+    // The ceiling is loosened rather than re-tightened onto 55,217, per the standing note: it was
+    // 20,000, then 25,000, then 35,000, and each time a device pushed the repaired walk past it.
+    // A ceiling sitting one node above the last measurement stops guarding anything and starts
+    // re-recording the measurement a second time.
+    expect(assign(input).search.nodes).toBeLessThan(70_000)
   })
 })
 

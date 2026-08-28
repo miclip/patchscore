@@ -378,10 +378,18 @@ describe('the committed registry', () => {
       'moog-grandmother',
       'moog-subsequent-37',
       'tascam-model-2400',
-      // 812.8 mm, and the widest thing in the library — a 49-key synthesiser is wider than a
-      // 24-channel mixer desk. The only Moog dimension line here whose imperial and metric
-      // figures both convert cleanly, which is why it needed no tie-break at all.
+      // 812.8 mm — a 49-key synthesiser is wider than a 24-channel mixer desk. The only Moog
+      // dimension line here whose imperial and metric figures both convert cleanly, which is why
+      // it needed no tie-break at all.
       'moog-matriarch',
+      // 990 mm, and the widest thing in the library by 177 mm: 61 full-size keys against the
+      // Matriarch's 49. From p.118's `(W x D x H): 99 x 42 x 11 (cm)`, the metric column — the
+      // imperial one beside it rounds 42 cm to 17 inches, which is 43.2, so it is a conversion
+      // rather than a second measurement and cannot corroborate anything. This is also the one
+      // span in the list a drawing checks independently: `moog-muse/panel.ts` measures the
+      // keyboard at 23.07 mm per white key across 36 of them, which is a full-size key and could
+      // only come out right if 99 cm is the width.
+      'moog-muse',
     ])
   })
 })
