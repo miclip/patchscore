@@ -9,7 +9,21 @@
  * search, then best-of-seven, because the quantity wanted is how fast this machine *can* run it
  * and a slower sample is only ever something else on the box.
  *
- * Node count is not a measurement here — it is a precondition. Anything that changes it has
+ * **This script used to assert its own node count and it was removed, deliberately.** The
+ * constant said 9,006 while the real figure had reached 18,026, so `npm run bench:bound` threw
+ * for anybody who ran it — through the TR-6S, #183's widening of the TR-8S's RC slot, and both
+ * MPCs. Re-recording it was tried first and lasted under an hour: the OP-XY and the MPC One G2
+ * landed and it was 26,841.
+ *
+ * That is the argument against having it here at all. The assertion could not tell the two cases
+ * apart — **the library grew**, which is constant and fine, from **the traversal changed**, which
+ * is the thing worth stopping for. It threw on the first and would have caught the second only by
+ * accident. `test/search-bound.test.ts` pins the count per direction and per seed, it distinguishes
+ * exactly that, and it runs in `npm run verify`; this was the same fact kept a second time in a
+ * file nothing gates, which is why this copy was always the one that rotted.
+ *
+ * So the count is now **reported rather than asserted**. It prints beside the timing, which is what
+ * a reader needs to know what was walked, and the gate keeps its own record honest. Anything that changes it has
  * changed the traversal and is a different search, which `test/search-bound.test.ts` is what
  * actually catches; this script asserts it so a timing can never be reported for a walk that
  * silently stopped being the same one.
@@ -72,7 +86,6 @@ import { industrialTechno } from '../lib/templates/index'
 const WARMUPS = 3
 const RUNS = 7
 const LIFTED = 20_000_000
-const EXPECTED_NODES = 9_006
 
 function once(): { ms: number; nodes: number } {
   const started = performance.now()
@@ -98,9 +111,7 @@ for (let i = 0; i < RUNS; i++) {
   nodes = run.nodes
 }
 
-if (nodes !== EXPECTED_NODES) {
-  throw new Error(`the walk moved: ${String(nodes)} nodes, expected ${String(EXPECTED_NODES)}`)
-}
+
 
 const sorted = [...times].sort((a, b) => a - b)
 const best = sorted[0] as number
