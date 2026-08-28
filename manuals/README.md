@@ -160,6 +160,47 @@ Filename casing is inconsistent between products: `TR-1000_reference_...` is low
   share. Twelve guesses at these patterns produced one file; a web search produced the rest at
   once. Guessing is the slow way.
 
+### Moog panel manuals print almost no ranges, and that is the answer to #184
+
+Six devices carry 1,349 of the library's unverified ranges and eleven carry none. The question
+#184 asked was whether the pages exist and were missed. **They do not exist.** Counted across the
+whole of each PDF, printed numeric ranges for controls:
+
+| manual | pages | printed ranges | per page |
+|---|---|---|---|
+| `Minitaur_Manual.pdf` | 19 | 10 | 0.53 |
+| `cascadia_manual_v1.1_2023.04.18.pdf` | 110 | 12 | 0.11 |
+| `Matriarch_Manual_012023.pdf` | 92 | 10 | 0.11 |
+| `Mother_32_Users_Manual.pdf` | 73 | 6 | 0.08 |
+| `DFAM_Manual.pdf` | 44 | 4 | 0.09 |
+| `Grandmother_Manual_Version_2.pdf` | 56 | 3 | 0.05 |
+| `Subharmonicon_Manual.pdf` | 58 | 3 | 0.05 |
+
+The Minitaur is ten times the Grandmother's density, which is the whole explanation for its 11%
+against their 85-88%.
+
+**The few that are printed are already cited.** `CUTOFF` carries a citation on all five Moogs, as
+do `LFO RATE`, `MODULATION RATE` and the oscillator `FREQUENCY` knobs where a range is given. The
+authors found what there was to find.
+
+What is left uncited is what the manuals describe in prose and never scale. Two checked by
+rendering the page rather than grepping it:
+
+- **Matriarch p.37** draws `CUTOFF AMT` as line art with tick marks and no numerals, and says only
+  *"determines the maximum amount of modulation that will be applied to the Cutoff frequency of
+  the Filter when the MOD wheel is at its maximum position"*.
+- **DFAM `VCO 1/2 FREQUENCY`** appears twenty-one times in recipes and the manual's every mention
+  is an instruction: *"Turn the VCO 1 FREQUENCY knob slowly to the left until you hear a nice,
+  deep..."*.
+
+The `SPECIFICATIONS` page of the Matriarch (p.90) is architectural — polyphony, patch-point
+counts, dimensions, weight — and carries no control scales at all. It is not the parameter
+appendix its name suggests, and neither are the others.
+
+So a high unverified rate on these devices is the honest reading of a manual that documents by
+description. It is invariant 5 working, not authoring left half-done, and re-auditing it will
+return the same answer.
+
 ## Known gaps
 
 - ~~**MC-101 Reference Manual**~~ — resolved 2026-08-24. It is here, and the direct URL above is
