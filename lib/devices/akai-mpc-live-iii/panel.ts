@@ -46,8 +46,8 @@ import type { PanelFeature, PanelLayout } from '@/lib/core'
  * on top of one to show a box whose screen lists its tracks."* Everything in this manifest is
  * selected there — p.45 changes a track's type from the Track Section, p.47 assigns samples to
  * pads through **Sample Assign** on the same display — whereas the pad grid shows a bank of
- * sixteen and says nothing about the other pool. Putting the field on the pads would draw
- * thirty-two cells over a control that addresses sixteen.
+ * sixteen and says nothing about the other two pools. Putting the field on the pads would draw
+ * forty-eight cells over a control that addresses sixteen.
  *
  * That leaves the 4 x 4 pad grid free to be drawn as what it is, which matters: it is the single
  * most recognisable thing on the machine, and a reader finding their place on this panel finds it

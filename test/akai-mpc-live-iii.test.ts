@@ -4,7 +4,7 @@ import { ARTICULABLE_PER_STEP, device } from '../lib/devices/akai-mpc-live-iii/i
 import { TEMPLATES } from '../lib/templates/index'
 
 /**
- * The MPC Live III is the largest box in the library and the first with **two pools**, and both
+ * The MPC Live III is the largest box in the library and the first with **three pools**, and both
  * facts come from the same place: this manual prints its parameter ranges for the plugins and
  * effects (pp.392-521) and prints none at all for the sampler voice a drum pad actually is
  * (pp.209-274). So the manifest has two parameter regimes side by side, and the failures worth
