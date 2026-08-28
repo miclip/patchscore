@@ -19,10 +19,10 @@ import { MPC_LIVE_III_PANEL } from './panel'
  * pp.388-391). The screenshot on p.222 shows `CUTOFF 127` and `SUSTAIN 127`, which is a picture
  * of one machine's state and not a printed scale, so nothing here reads a range off it.
  *
- * That single fact shapes the whole manifest, and it is why this box gets **two pools rather than
- * one**.
+ * That single fact shapes the whole manifest, and it is why this box gets **three pools rather
+ * than one**.
  *
- * ## Two pools, because the box has two parameter regimes
+ * ## Three pools, because the box has three parameter regimes
  *
  * p.44: *"Each sequence you create within a project is made up of tracks. There are six main
  * types of tracks... A single project can hold up to 128 tracks."* Two of those six make sound
@@ -1280,7 +1280,7 @@ export const device: Device = {
   ],
 
   /**
-   * Twelve of thirty-two, and openly a judgement — there is no number to cite, because the
+   * Twelve of forty-eight, and openly a judgement — there is no number to cite, because the
    * quantity that would bound it is the one this manual never prints (see the head note).
    *
    * What the document does say is that the ceiling is CPU rather than architecture, and it says it
@@ -1288,7 +1288,7 @@ export const device: Device = {
    * CPU-intensive a pad or track is"* (p.211), the warp algorithms carry their own warning that
    * they *"can be very CPU-intensive, and can result in audio drop-outs"* (p.62), and there is a
    * System Resources screen (p.58) because you are expected to watch it. Plugin tracks are the
-   * expensive ones and this manifest puts sixteen of them in reach, so twelve is deliberately
+   * expensive ones and this manifest puts thirty-two of them in reach, so twelve is deliberately
    * conservative. Crowding is a cost in the objective and never a feasibility limit (§12.4): if
    * this number is wrong nothing breaks, some guides are ranked differently.
    */
