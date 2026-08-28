@@ -8,6 +8,14 @@ import { MPC_LIVE_III_PANEL } from './panel'
  * this library by a wide margin — 128 tracks of six types, 128 pads across eight banks, a
  * sampler, a mixer with submixes and returns, and eighteen bundled instrument plugins.
  *
+ * **This folder is load-bearing for two other devices** (invariant 2/#196). `akai-mpc-xl` takes
+ * its recipes, pools and `features` by reference, and `akai-mpc-one-g2` takes the recipes and
+ * rewrites every citation onto the v3.9 manual that documents *that* box. Restructuring anything
+ * they read breaks them, and the guard is that both fail the build rather than drift: the XL's
+ * `shared()` throws when a fact it expects stops being carried, the One G2's `pageInV39` throws
+ * on a citation it has not mapped. `test/registry-codegen.test.ts` pins the two imports, so a
+ * third is a decision rather than something a session adds under time pressure.
+ *
  * **The interesting thing about this manual is where its numbers are.** It prints roughly 1,791
  * ranges and almost every one of them is in one chapter: `Appendix > Effects & Parameters`,
  * pp.392-521, laid out as `Parameter | Value Range | Default Value` tables for the built-in

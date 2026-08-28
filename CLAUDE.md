@@ -37,6 +37,12 @@ update `DESIGN.md` in the same commit.
 1. No LLM calls. Deterministic by design.
 2. Adding a device = adding one folder under `lib/devices/`. No *hand-edited* file outside it;
    `lib/devices/registry.generated.ts` is machine-written by `prebuild` and never hand-edited.
+   **A folder may import a sibling** (#196) — three MPCs share one manual, and copying twenty
+   recipes to avoid the import would be three copies drifting apart with one of them corrected.
+   The importer owns the risk and must make a break loud: `akai-mpc-xl` routes shared facts
+   through a `shared()` helper that throws when the sibling stops carrying one, and
+   `akai-mpc-one-g2` through `pageInV39`, which throws on a citation it has not mapped to its own
+   manual. An import without such a guard is the thing this forbids, not the import.
 3. **`Role`, `Character`, `MoodAxis` and `PatternSlot` are the entire shared vocabulary.**
    Templates never name a device; devices never name a genre. Adding a fifth shared vocabulary is
    an architecture change, not a convenience.

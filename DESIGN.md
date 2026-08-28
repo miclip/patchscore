@@ -42,6 +42,12 @@ These are load-bearing. If one stops being true, stop and fix the architecture.
 2. Adding a device = adding one folder under `lib/devices/`, plus **regenerating** the registry.
    No *authored* edit outside that folder: no engine, UI, or switch-statement edits, and
    `registry.generated.ts` (§9) is machine-written and never hand-edited.
+   A folder **may import a sibling** where two boxes genuinely share a document (#196), and the
+   importer must fail the build rather than drift when the sibling moves. A shared
+   module under `lib/devices/` is *not* the alternative: the loader treats every directory there
+   as a device, so a `_shared/` folder would be loaded as one and fail validation. Making that
+   work would mean editing the engine to accommodate how devices are organised, which is the
+   change this invariant exists to prevent.
 3. Templates never reference device IDs. Devices never reference genres. The shared vocabulary is
    a closed set of controlled unions — `Role`, `Character`, `MoodAxis`, `PatternSlot` — and
    nothing else. Neither side ever names the other.
