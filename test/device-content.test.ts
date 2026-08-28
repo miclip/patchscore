@@ -665,7 +665,7 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
     .map((d) => d.id)
     .sort(byCodeUnit)
 
-  it('is the eleven boxes established to ship one, and a twelfth has to be added deliberately', () => {
+  it('is the twelve boxes established to ship one, and a thirteenth has to be added deliberately', () => {
     // The derivation covers whatever is declared; this says which declarations were expected, so
     // a new one is loud in review rather than silently absorbed.
     expect(SHIPPED).toEqual([
@@ -687,6 +687,12 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
       'roland-tr-6s',
       'roland-tr-8s',
       'synthstrom-deluge',
+      // The EP-133 gets closest of the twelve to an inventory and still stops short: guide 8.1
+      // says "over 300 samples" out of the box and prints a banding by sound number — kicks
+      // 1-99, snares 100-199, and so on — which tells a reader which hundred to scroll into and
+      // names nothing inside it. Navigation is not an inventory, so a recipe cannot reference an
+      // entry and the band goes in `sourceAudio.prep` instead.
+      'te-ep-133',
       // The OP-XY ships factory presets for every engine and category (p.52) and a factory
       // projects folder (p.37), and no page enumerates either. Its three browser screenshots
       // reuse one set of seven names across projects, presets and samples, which is what

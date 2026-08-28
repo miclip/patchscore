@@ -1263,9 +1263,26 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * The worst seed moves 5 -> 10 as well, which is the tie-break permuting among equal costs
    * (§7.2) rather than anything to read into.
    *
-   * `DEFAULT_NODE_CAP` is 200,000, so 67,088 is **33.5% of it and 66.5% headroom stands**.
+   * `DEFAULT_NODE_CAP` is 200,000, so 67,088 is 33.5% of it and 66.5% headroom stands.
    */
-  const WORST_CASE_NODES = 67_088
+  /**
+   * **The EP-133 takes it to 71,675, on `industrial-techno` seed 17.** Up 6.8%, and the
+   * interesting part is how little it is: this box declares **forty-eight** pads over the whole
+   * 23-role vocabulary — three times the SP-404MK2's pool above — and authors twenty-one recipes
+   * across nineteen roles, and it costs a third of what the SP-404MK2's sixteen did.
+   *
+   * That is symmetry breaking doing exactly its job, and it was measured rather than assumed: the
+   * same sweep run with this device's pool set to 12, 48 and 48-with-`comfortableVoices`-48 gives
+   * **the identical node count in all three**. Pool *size* is free; what costs is the number of
+   * distinct (role, character) recipes a direction can reach, which is the growth curve the two
+   * paragraphs above describe. A future device should be sized against its recipe sheet, not
+   * against how many slots it has.
+   *
+   * The worst seed moves 10 -> 17, which is the tie-break permuting among equal costs (§7.2).
+   *
+   * `DEFAULT_NODE_CAP` is 200,000, so 71,675 is **35.8% of it and 64.2% headroom stands**.
+   */
+  const WORST_CASE_NODES = 71_675
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))

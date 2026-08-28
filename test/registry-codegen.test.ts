@@ -307,6 +307,14 @@ describe('the committed registry', () => {
       'empress-zoia-euroburo',
       'intellijel-metropolix',
       'roland-mc-101',
+      // **176 mm, and portrait — and the entry that shows why this list asserts an ordering.**
+      // teenage engineering publish `240 mm x 176 mm x 16 mm` and nothing in that line says which
+      // figure is the width. Taking the first put this box at 240 mm, four places further down
+      // between the LiveTrak and the MPC One G2, and it read as perfectly plausible there. The
+      // published front view settles it: the outline's drawn aspect is 0.73324 against 176/240's
+      // 0.73333, so 176 is across. A device authored in the wrong orientation sorts wrong, which
+      // is the failure this ordering exists to catch, and it caught this one.
+      'te-ep-133',
       // 178 mm, and portrait like the Tracker Mini above it: the SP-404MK2's specification line
       // reads `178 (W) x 276 (D) x 71 (H)` (p.266), so the span is the smaller of the first two
       // and the 276 is what its `panelRiseMm` carries.
