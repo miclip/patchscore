@@ -13,7 +13,7 @@
 import { relative } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { AuditCounts, AuditFinding, DeviceAudit } from '../lib/studio/provenance'
-import { auditDevice, totalCounts } from '../lib/studio/provenance'
+import { auditDevice, libraryCounts, totalCounts } from '../lib/studio/provenance'
 import {
   DEFAULT_DEVICES_ROOT,
   RegistryError,
@@ -89,7 +89,16 @@ export function findingLine(f: AuditFinding): string {
   return 'fact' in f ? `${f.kind}: ${f.fact}` : `${f.kind}: ${f.recipeId} / ${f.paramName}`
 }
 
-export function formatAudit(audits: DeviceAudit[], verbose: boolean): string {
+export function formatAudit(
+  audits: DeviceAudit[],
+  verbose: boolean,
+  /**
+   * §9/#193. The library totals, de-duplicated by recipe identity. Passed in rather than derived
+   * from `audits`, because a summed audit cannot tell a shared object from a copied one — that is
+   * exactly the fact it has already lost.
+   */
+  total?: AuditCounts,
+): string {
   const ordered = [...audits].sort((a, b) => compareCodeUnits(a.deviceId, b.deviceId))
   const lines: string[] = ['verified audit (DESIGN.md §3.2, §9)', '']
 
@@ -101,7 +110,7 @@ export function formatAudit(audits: DeviceAudit[], verbose: boolean): string {
     lines.push('')
   }
 
-  lines.push(...countsBlock('TOTAL', totalCounts(ordered)), '')
+  lines.push(...countsBlock('TOTAL', total ?? totalCounts(ordered)), '')
   return lines.join('\n')
 }
 
@@ -111,8 +120,13 @@ async function main(argv: string[]): Promise<number> {
   const devicesRoot = rootFlag === -1 ? DEFAULT_DEVICES_ROOT : (argv[rootFlag + 1] ?? '')
 
   let audits: DeviceAudit[]
+  let total: AuditCounts | undefined
   try {
-    audits = (await loadDevices(devicesRoot)).map((l) => auditDevice(l.device))
+    const loaded = await loadDevices(devicesRoot)
+    audits = loaded.map((l) => auditDevice(l.device))
+    // #193. The TOTAL is a second pass, sharing one `Set` so a recipe held by two manifests is
+    // counted once. The per-device blocks above stay whole.
+    total = libraryCounts(loaded.map((l) => l.device))
   } catch (err) {
     if (err instanceof RegistryError) {
       process.stderr.write(`audit: ${relative(process.cwd(), devicesRoot)} does not validate\n`)
@@ -123,7 +137,7 @@ async function main(argv: string[]): Promise<number> {
     return 1
   }
 
-  process.stdout.write(`${formatAudit(audits, verbose)}\n`)
+  process.stdout.write(`${formatAudit(audits, verbose, total)}\n`)
   // A report, not a gate: provisional values are legal and shown honestly (invariant 5).
   return 0
 }

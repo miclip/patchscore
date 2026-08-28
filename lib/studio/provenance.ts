@@ -6,7 +6,7 @@ import type {
   Recipe,
   Verified,
 } from '../core/index'
-import { citedDocument, effectiveVerified, rangeDocuments } from '../core/index'
+import { citedDocument, compareCodeUnits, effectiveVerified, rangeDocuments } from '../core/index'
 
 /**
  * Re-exported, not redefined. These moved into `core` when the guide needed them: `lib/core`
@@ -278,11 +278,51 @@ function auditCapabilities(device: Device, into: DeviceAudit): void {
   }
 }
 
-export function auditDevice(device: Device): DeviceAudit {
+export function auditDevice(device: Device, countedRecipes?: Set<string>): DeviceAudit {
   const audit: DeviceAudit = { deviceId: device.id, counts: { ...ZERO_COUNTS }, findings: [] }
-  for (const recipe of device.recipes) auditRecipe(device.id, recipe, audit)
+  for (const recipe of device.recipes) {
+    // §9/#193. **A recipe shared by reference is one recipe, and the library total says so.**
+    //
+    // `akai-mpc-xl` takes the Live III's recipes as the *same objects*, so summing the per-device
+    // audits counted 283 points and 169 ranges that nobody authored — one manifest referencing
+    // another's. Those totals are quoted in every device commit as evidence provenance did not
+    // regress, so an inflating measure undermines the check it exists for.
+    //
+    // Identity, not recipe id, and that distinction is the whole rule. `akai-mpc-one-g2` shares
+    // every id with the Live III and is a *different object*: it rewrites each citation onto the
+    // v3.9 page somebody opened and compared, so `mpc-kick-hard` cites p.441 there against p.431
+    // here. That is real provenance work and it is counted. De-duplicating by id would have
+    // erased it, which is why the obvious fix was the wrong one.
+    //
+    // Per-device blocks pass no set and count everything: a reader of the MPC XL's row wants what
+    // the XL offers, however it came to offer it.
+    if (countedRecipes !== undefined) {
+      // Keyed on content, not on object identity. Identity looks right and is load-path
+      // dependent: the generated registry has `akai-mpc-xl` importing the Live III's module, so
+      // the recipes are literally the same objects, while `loadDevices` parses each folder from
+      // disk and produces separate ones. The audit runs on the second path, so an identity check
+      // silently counted nothing and the totals did not move.
+      const key = JSON.stringify(recipe)
+      if (countedRecipes.has(key)) continue
+      countedRecipes.add(key)
+    }
+    auditRecipe(device.id, recipe, audit)
+  }
   auditCapabilities(device, audit)
   return audit
+}
+
+/**
+ * §9/#193. The library's totals, with a recipe shared by reference counted once.
+ *
+ * Capability facts are summed rather than de-duplicated, and that is not an oversight: every
+ * device declares its own, and two boxes citing the same page have each made the claim about
+ * themselves.
+ */
+export function libraryCounts(devices: readonly Device[]): AuditCounts {
+  const counted = new Set<string>()
+  const ordered = [...devices].sort((a, b) => compareCodeUnits(a.id, b.id))
+  return totalCounts(ordered.map((device) => auditDevice(device, counted)))
 }
 
 export function totalCounts(audits: DeviceAudit[]): AuditCounts {
