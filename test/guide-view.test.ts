@@ -1038,12 +1038,19 @@ describe('#121 the page states the clock topology the Markdown states', () => {
     expect(fullPage).not.toContain(`receives clock only · ${l8?.clock.transport.join('/')}`)
   })
 
-  it('names the boxes that cannot be synced, as the Markdown does', () => {
-    expect(fullMd).toContain('except Model 2400 and Zoom LiveTrak L-8')
-    // The page's own punctuation — `andList` has no Oxford comma and `list` does — and the same
-    // two boxes, which is the fact the two renderers have to agree on.
-    expect(fullPage).toContain('Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8')
-    expect(fullPage).toContain('which cannot receive clock and run free')
+  it('names the boxes that cannot be synced, and separates the one a DAW drives', () => {
+    // #79 split these two. Both are deaf and neither is ever a follower, but a Model 2400 in DAW
+    // control mode is not running free — the DAW owns the timeline — and the guide used to say it
+    // was, in the one workflow the desk exists for. The L-8 has no such mode and keeps the plain
+    // clause. That the two are no longer one phrase is the fix, not a regression.
+    for (const doc of [fullMd, fullPage]) {
+      expect(doc).toContain('Zoom LiveTrak L-8, which cannot receive clock and runs free')
+      expect(doc).toContain('Model 2400, which cannot receive clock — a DAW drives its transport over HUI/MCU')
+      expect(doc).toContain('and without one it runs free')
+    }
+    // The claim is conditional on a workflow the guide cannot see, so it must not assert that a
+    // DAW *is* driving it.
+    expect(fullPage).not.toContain('Model 2400, which cannot receive clock and runs free')
   })
 
   it('says one box runs free rather than run free', () => {

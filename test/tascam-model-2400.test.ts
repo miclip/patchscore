@@ -171,8 +171,10 @@ describe('the first box that sends clock and cannot receive it', () => {
       mood: NEUTRAL_MOOD,
       seed: 1,
     })
+    // #79 changed the tail, not the form: the box is still named and still exempted, and a
+    // computer driving its transport is stated as the condition it is rather than asserted.
     expect(renderGuide(following)).toContain(
-      'Sync everything else to it, except Model 2400, which cannot receive clock and runs free',
+      'Sync everything else to it, except Model 2400, which cannot receive clock — a DAW drives its transport over HUI/MCU',
     )
 
     // And the clause is absent when nothing in the rig is deaf, or the assertion above would
@@ -276,5 +278,43 @@ describe('the panel (§10)', () => {
     const lanes = faders.reduce((sum, f) => sum + (f.kind === 'grid' ? f.cols * f.rows : 0), 0)
     // Seventeen input channels, four SUB pairs and MAIN.
     expect(lanes).toBe(22)
+  })
+})
+
+/**
+ * §7.4/#79. **A desk in DAW control mode is not running free.**
+ *
+ * `canReceiveClock: false` is right and unchanged — p.65's MIDI Implementation Chart recognises
+ * no clock, no song position and no quarter frame. But this box emulates HUI and Mackie Control
+ * over USB, so a DAW owns its transport, and the guide told a reader it "runs free" in the one
+ * workflow the desk exists for.
+ */
+describe('a DAW drives its transport, and the guide says so (#79)', () => {
+  it('declares the fact with the page that says what the protocol carries', () => {
+    expect(device.dawTransport).toEqual({ protocol: 'HUI/MCU' })
+    // p.48, not p.5: the feature list names the feature, that page says what travels over it —
+    // "REC READY operations, playing, stopping and other transport functions, and using markers".
+    expect(device.capabilityEvidence?.['dawTransport']).toMatchObject({ kind: 'manual' })
+  })
+
+  it('changes no flag and adds no cable', () => {
+    // The whole point of keeping this separate from `canReceiveClock`. It is still deaf, still
+    // never a follower, and nothing is drawn between it and the clock source.
+    expect(device.clock.canReceiveClock).toBe(false)
+    const result = resolve({ devices: [tr1000, device], template, mood: NEUTRAL_MOOD, seed: 1 })
+    expect(result.clockSource?.deviceId).toBe('roland-tr-1000')
+    const doc = renderGuide(result)
+    expect(doc).toContain('Model 2400')
+    expect(doc).not.toContain('Model 2400, which cannot receive clock and runs free')
+  })
+
+  it('states the condition rather than asserting a workflow it cannot see', () => {
+    // The guide does not know whether a computer is attached. "A DAW drives it" alone would be a
+    // claim about the reader's studio; "and without one it runs free" is the honest form.
+    const doc = renderGuide(
+      resolve({ devices: [tr1000, device, tr8s], template, mood: NEUTRAL_MOOD, seed: 1 }),
+    )
+    expect(doc).toContain('a DAW drives its transport over HUI/MCU')
+    expect(doc).toContain('without one it runs free')
   })
 })

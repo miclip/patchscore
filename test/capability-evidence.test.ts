@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CAPABILITY_FACTS,
   CONTENT_FACT,
+  DAW_TRANSPORT_FACT,
   PATTERN_ENTRY_FACT,
   CapabilityEvidenceSchema,
   DeviceSchema,
@@ -142,7 +143,14 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
           ? { content: { kind: 'user-supplied' } as const }
           : fact === PATTERN_ENTRY_FACT
             ? { patternEntry: { kind: 'external', reason: 'played from elsewhere' } as const }
-            : {}
+            : fact === DAW_TRANSPORT_FACT
+              ? // §7.4/#79 also refuses the pairing on a box that *can* take a clock, so the
+                // fixture has to say it cannot — the declaration and the flag are one claim.
+                {
+                  dawTransport: { protocol: 'HUI over USB' } as const,
+                  clock: { canSendClock: true, canReceiveClock: false, transport: ['usb'] } as const,
+                }
+              : {}
       const parsed = DeviceSchema.safeParse(
         patchable({
           ...declaring,

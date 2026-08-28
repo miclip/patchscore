@@ -25,11 +25,22 @@ import { MODEL_2400_PANEL } from './panel'
  *    and simultaneously sent to a computer connected by USB"* (p.45). `MIDI CLOCK/SPP` is an
  *    on/off setting, off by default, and the feature list on p.5 names the purpose outright:
  *    *"output to drum machines and sequencers with MTC/MIDI CLOCK output"*.
- *  - **Does not receive.** The MIDI IN connector exists, and the block diagram on p.74 labels
+ *  - **Does not receive**, and the MIDI Implementation Chart on p.65 settles it in one place:
+ *    every cell in its Recognized column is `NO`, for Clock, Song Position and Quarter frame
+ *    alike. The block diagram on p.74 labels
  *    exactly what it does: `MIDI IN (USB conversion)`, against `MIDI OUT (MTC, MIDI CLOCK, MIDI
  *    message out)`. p.5 agrees — MIDI IN is there so a keyboard reaches a DAW. Nothing routes it
  *    to this unit's own transport, and the word "synchronize" occurs once in the whole manual,
  *    describing a DAW following *this* box.
+ *
+ * **A computer still drives its transport, which is why `dawTransport` is declared** (§7.4/#79).
+ * p.5's feature list names *"DAW transport control and track recording control functions with
+ * HUI/MCU emulation supported by major DAWs"*, and p.48 spells out what that carries: *"REC READY
+ * operations, playing, stopping and other transport functions, and using markers"*, under Mackie
+ * Control and HUI emulation. So a clock cable cannot reach this desk and a DAW can, and the guide
+ * used to tell a reader it "runs free" in exactly the workflow the box is built for. The flag is
+ * unchanged — `canReceiveClock` stays false, this box never becomes a follower and no cable is
+ * drawn — and only the sentence moves.
  *
  * **That combination is not a reason to claim `clock.preferredSource`, and this manifest briefly
  * did.** The manual proves two things: the box generates MTC and MIDI clock at MIDI OUT and over
@@ -105,6 +116,15 @@ export const device: Device = {
   clock: { canSendClock: true, canReceiveClock: false, transport: ['midi-din', 'usb'] },
 
   /**
+   * §7.4/#79. A clock cable cannot reach this desk; a DAW can. p.5 lists *"DAW transport control
+   * ... with HUI/MCU emulation"* and p.48 says what travels: *"REC READY operations, playing,
+   * stopping and other transport functions, and using markers"*.
+   */
+  // The protocol only. The wire is USB and is already in `jacks` and the rig diagram; the
+  // guide's sentence reads "over HUI/MCU", and "over HUI/MCU over USB" doubles the preposition.
+  dawTransport: { protocol: 'HUI/MCU' },
+
+  /**
    * §2.6/#22, §7.4/#80. **One entry, recording the non-claim the module JSDoc argues for.**
    *
    * The pages were in that comment and are now here, which is what #22 exists for and what #120
@@ -113,6 +133,8 @@ export const device: Device = {
    * is for, which is a different finding from the Cascadia’s manual arguing the other way.
    */
   capabilityEvidence: {
+    // §7.4/#79. p.48 is the page that says what the protocol carries; p.5 only lists the feature.
+    dawTransport: { kind: 'manual', source: 'TASCAM Model 2400 Owner’s Manual, p.48' },
     'clock.preferredSource': {
       kind: 'unknown',
       reason:

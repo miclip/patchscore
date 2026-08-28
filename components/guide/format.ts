@@ -281,10 +281,23 @@ export function syncText(
   if (following.alone) return 'Nothing else is here to sync to it.'
   const { deaf, unwired } = following
   const clauses: string[] = []
-  if (deaf.length > 0) {
+  // §7.4/#79, in this renderer's own words; `lib/core/render.ts` states the reasoning. A box a
+  // computer drives is still deaf — no clock reaches it — but "runs free" is false in the one
+  // workflow it exists for, so the sentence states the condition instead of choosing for a reader.
+  const driven = deaf.filter((d) => d.dawTransport !== undefined)
+  const free = deaf.filter((d) => d.dawTransport === undefined)
+  if (free.length > 0) {
     clauses.push(
-      `${andList(deaf.map((d) => d.name))}, which cannot receive clock and ` +
-        `${deaf.length === 1 ? 'runs' : 'run'} free`,
+      `${andList(free.map((d) => d.name))}, which cannot receive clock and ` +
+        `${free.length === 1 ? 'runs' : 'run'} free`,
+    )
+  }
+  if (driven.length > 0) {
+    clauses.push(
+      `${andList(driven.map((d) => d.name))}, which cannot receive clock — a DAW drives ` +
+        `${driven.length === 1 ? 'its' : 'their'} transport over ` +
+        `${andList([...new Set(driven.map((d) => d.dawTransport?.protocol ?? ''))])}, and ` +
+        `without one ${driven.length === 1 ? 'it runs' : 'they run'} free`,
     )
   }
   if (unwired.length > 0) {

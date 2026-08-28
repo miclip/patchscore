@@ -692,10 +692,24 @@ function mixerText(device: Device, parts: number): string {
 function syncText(following: ClockFollowing, transport: string): string {
   if (following.alone) return 'Nothing else is here to sync to it.'
   const clauses: string[] = []
-  if (following.deaf.length > 0) {
+  // §7.4/#79. A box a computer drives is split out of `deaf` before the clause is built. It is
+  // still deaf — no clock reaches it and no cable is drawn — but "runs free" is false in the one
+  // workflow it is built for, and the guide cannot see whether a reader is in that workflow. So
+  // the sentence states the condition rather than picking a side.
+  const driven = following.deaf.filter((d) => d.dawTransport !== undefined)
+  const free = following.deaf.filter((d) => d.dawTransport === undefined)
+  if (free.length > 0) {
     clauses.push(
-      `${list(following.deaf.map((d) => d.name))}, which cannot receive clock and ` +
-        `${following.deaf.length === 1 ? 'runs' : 'run'} free`,
+      `${list(free.map((d) => d.name))}, which cannot receive clock and ` +
+        `${free.length === 1 ? 'runs' : 'run'} free`,
+    )
+  }
+  if (driven.length > 0) {
+    clauses.push(
+      `${list(driven.map((d) => d.name))}, which cannot receive clock — a DAW drives ` +
+        `${driven.length === 1 ? 'its' : 'their'} transport over ` +
+        `${list([...new Set(driven.map((d) => d.dawTransport?.protocol ?? ''))])}, and without one ` +
+        `${driven.length === 1 ? 'it runs' : 'they run'} free`,
     )
   }
   if (following.unwired.length > 0) {
