@@ -315,6 +315,14 @@ describe('the committed registry', () => {
       // so the order is decided by the numbers.
       'roland-tr-6s',
       'zoom-livetrak-l-8',
+      // **288 mm, and the only span in this list not cited to a page.** The OP-XY's guide
+      // publishes no dimension anywhere in 135 pages, so this is teenage engineering's own
+      // published figure from their product page rather than from the manual — and `Cite` has no
+      // kind for a product page, only `manual` and `observed`, so `physical.verified` is `false`
+      // and the rack draws it provisional. `test/rack.test.ts` names it as the one such box.
+      // It is not a guess: `panel.ts` measures the p.5 drawing at 3049 x 1091 px, an aspect of
+      // 2.7947 against the published 288/102's 2.8235, so the two sources agree to 1.02%.
+      'teenage-engineering-op-xy',
       'synthstrom-deluge',
       // **A real tie, and the first one in this list that is not a coincidence.** The DFAM, the
       // Mother-32 and the Subharmonicon are the same 60 HP Moog enclosure — p.7 of the DFAM

@@ -115,6 +115,21 @@ import { TEMPLATES } from '../lib/templates/index'
  * reports the cap and not what the walk would have been, which is the one number a degraded
  * search cannot give you.
  *
+ * **The OP-XY re-recorded all seven rows** — the first of the three reasons above, the library
+ * moving — and one of them went *down*, which is worth the sentence.
+ *
+ *   - `weave` 26,688 -> 29,870 at its peak and `industrial-techno` 20,779 -> 24,923, the two
+ *     expensive directions paying for a twenty-fourth box that serves every tonal role.
+ *   - `drone-study` 18 -> 19 and `relay` 36 -> 38, one and two nodes: both are flat across all
+ *     24 seeds, so this is one more candidate considered and rejected at the same place.
+ *   - **`ambient-dub` 279 -> 119 at its peak, and flat-ish where it used to spike.** A new device
+ *     making a direction *cheaper* is the bound working as designed rather than an anomaly: this
+ *     is the one direction that asks for `pad`/`soft`, and it had been approximating that request
+ *     off every candidate in the library (§3.5). The OP-XY authors it exactly — axis, p.93 — so
+ *     the request now has a matching resolution, `liveFloor` returns a tighter admissible value
+ *     on the first branch, and the whole subtree behind the old approximations is pruned. The
+ *     seed-to-seed variance collapses with it, from 107-279 to 116/119.
+ *
  * The whole sweep is 168 exhaustive searches. It used to take about fifteen seconds, nearly all
  * of it in `industrial-techno`; the repair took it under two.
  */
@@ -125,30 +140,30 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      155, 112, 109, 112, 109, 160, 107, 209, 109, 112, 109, 209, 109, 110, 206, 200, 158, 109, 110,
-      107, 279, 177, 160, 177
+      116, 119, 116, 119, 116, 119, 116, 119, 116, 119, 116, 119, 116, 119, 116, 119, 119, 116, 119,
+      116, 119, 116, 119, 116
     ],
     'drone-study': [
-      18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18
+      19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19
     ],
     'industrial-techno': [
-      19628, 18026, 18525, 18813, 17462, 17978, 17462, 18026, 17462, 18026, 17459, 18026, 20425,
-      19969, 17462, 17994, 20779, 17572, 17994, 19720, 17994, 17462, 18026, 17572
+      19943, 20529, 20063, 23449, 19949, 20529, 21203, 22141, 19949, 20497, 19949, 20513, 20063,
+      24203, 22945, 22114, 22631, 20053, 20497, 19949, 24677, 19949, 20529, 20049
     ],
     'lydian-house': [
-      157, 157, 158, 157, 157, 157, 158, 157, 179, 180, 158, 156, 158, 180, 158, 180, 179, 180, 157,
-      180, 157, 180, 157, 203
+      169, 169, 170, 169, 169, 169, 170, 169, 193, 194, 170, 168, 170, 194, 170, 194, 193, 194, 169,
+      194, 169, 194, 169, 219
     ],
     'major-key-electro': [
-      728, 156, 507, 415, 238, 151, 238, 209, 238, 156, 975, 156, 230, 153, 238, 152, 617, 209, 152,
-      233, 148, 209, 156, 156
+      243, 165, 252, 705, 252, 165, 568, 517, 252, 157, 252, 252, 252, 162, 244, 396, 457, 210, 157,
+      252, 160, 221, 165, 160
     ],
     relay: [
-      36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38
     ],
     weave: [
-      26614, 24090, 25216, 24090, 24090, 24090, 24090, 24090, 24090, 24090, 24090, 24090, 24090,
-      24090, 24090, 24090, 26688, 24090, 24090, 24090, 24090, 24090, 24090, 24090
+      28282, 28282, 28282, 29870, 28282, 28282, 29870, 29426, 28282, 28282, 28282, 28282, 28282,
+      28282, 28282, 29426, 29870, 28282, 28282, 28282, 28282, 28282, 28282, 28282
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".

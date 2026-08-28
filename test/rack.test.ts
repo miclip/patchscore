@@ -522,10 +522,30 @@ describe('panel contents', () => {
     expect(shown + (panel?.hiddenCells ?? 0)).toBe(200)
   })
 
+  /**
+   * The second assertion is a **census**, like the shape counts further down: it records which
+   * shipped boxes draw on a span nobody can cite, so a new one is loud in review rather than
+   * silently absorbed. It said "none" for the first twenty-three devices.
+   *
+   * The OP-XY is the first, and it is a property of its documentation rather than of its
+   * authoring. teenage engineering publishes one usable guide and it prints no dimension
+   * anywhere in 135 pages — §1.4 *technical specifications* (p.3) gives jacks, battery, display
+   * and storage, §1.5 gives levels and impedance, and all 135 pages were rendered and read to
+   * confirm no dimension callout hides inside a drawing. Its 288 mm is teenage engineering's own
+   * published figure, from the product page rather than the manual, and `Cite` has no kind for
+   * that — only `manual` and `observed` — so `verified: false` is what the type has to say about
+   * it, which is exactly the state invariant 5 wants shown rather than hidden.
+   *
+   * So this asserts the list, not its emptiness. A device added tomorrow with an uncited span
+   * still fails here and still has to argue its case in review.
+   */
   it('carries a provisional span through rather than presenting it as cited', () => {
     const guessed = box('guessed', { physical: { panelSpanMm: 200, verified: false } })
     expect(rackModel(rig([guessed])).panels[0]?.spanVerified).toBe(false)
-    for (const panel of rackModel(real).panels) expect(panel.spanVerified).not.toBe(false)
+    const provisional = rackModel(real)
+      .panels.filter((p) => p.spanVerified === false)
+      .map((p) => p.deviceId)
+    expect(provisional).toEqual(['teenage-engineering-op-xy'])
   })
 })
 
@@ -900,7 +920,10 @@ describe('rack view', () => {
     // 217.4 x 135.8 mm and carries that panel's voice field; the other seventeen are the OLED
     // strips p.532 counts, sixteen across the Q-Link row and one under the Channel Control.
     // They are screens rather than a grid because a display is not a control.
-    expect(count('rack-screen')).toBe(34)
+    // 35: plus the OP-XY's, the 480 x 220 display p.3 specifies, drawn in the four-column gap
+    // between the volume cluster and the encoders because that is where p.4 puts the four module
+    // buttons that switch it — "the four buttons underneath the screen".
+    expect(count('rack-screen')).toBe(35)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -941,15 +964,21 @@ describe('rack view', () => {
     // fixes its range at C to G. p.54 says `32 Full-Size Keys` and the drawn keyboard decodes to
     // exactly that, which is the check that its 584.2 mm span is the right one of the two figures
     // printed on that line.
-    expect(count('rack-key')).toBe(184)
+    // 208: plus the OP-XY's twenty-four — fourteen naturals in one grid and ten accidentals in
+    // four clusters, two octaves starting on F, which is what the 3-2-3-2 gap pattern on p.6
+    // decodes to. The accidentals sit on the *column boundaries* of the naturals rather than on
+    // the key grid's own centres, so one fourteen-wide grid would have invented the two missing
+    // sharps; four clusters is the same answer the two Moog keybeds reached.
+    expect(count('rack-key')).toBe(208)
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
     // Sixteen since the Subharmonicon landed — one field per device that has voices to show.
     // Nineteen since the MPC XL, whose field sits on its display for the sibling's reason.
+    // Twenty since the OP-XY, whose field sits on its eight track buttons.
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(19)
+    expect(fields).toHaveLength(20)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

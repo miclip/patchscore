@@ -106,6 +106,7 @@ describe('device search matches name, maker and kind', () => {
       'polyend-tracker-mini',
       'roland-mc-101',
       'synthstrom-deluge',
+      'teenage-engineering-op-xy',
     ])
   })
 
@@ -197,9 +198,10 @@ describe('the kind filter', () => {
       'polyend-tracker-mini',
       'roland-mc-101',
       'synthstrom-deluge',
+      'teenage-engineering-op-xy',
     ])
 
-    // Both conditions, not either: the kind alone returns five grooveboxes and the query alone
+    // Both conditions, not either: the kind alone returns six grooveboxes and the query alone
     // returns one device, and together they return the one that satisfies both.
     expect(ids(devices({ kind: 'groovebox', query: 'polyend' }).rows)).toEqual([
       'polyend-tracker-mini',
@@ -335,7 +337,7 @@ describe('selected entries survive any filter', () => {
     const shown = devices({ kind: 'groovebox' }, ['roland-tr-1000'])
     expect(ids(shown.rows)).toContain('roland-tr-1000')
     expect(shown.rows.find((r) => r.item.id === 'roland-tr-1000')?.retained).toBe(true)
-    expect(shown.matched).toBe(5)
+    expect(shown.matched).toBe(6)
   })
 
   it('keeps them in registry order rather than appending them at the end', () => {

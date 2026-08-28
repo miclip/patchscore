@@ -665,7 +665,7 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
     .map((d) => d.id)
     .sort(byCodeUnit)
 
-  it('is the eight boxes established to ship one, and a ninth has to be added deliberately', () => {
+  it('is the nine boxes established to ship one, and a tenth has to be added deliberately', () => {
     // The derivation covers whatever is declared; this says which declarations were expected, so
     // a new one is loud in review rather than silently absorbed.
     expect(SHIPPED).toEqual([
@@ -677,6 +677,11 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
       'roland-tr-6s',
       'roland-tr-8s',
       'synthstrom-deluge',
+      // The OP-XY ships factory presets for every engine and category (p.52) and a factory
+      // projects folder (p.37), and no page enumerates either. Its three browser screenshots
+      // reuse one set of seven names across projects, presets and samples, which is what
+      // disqualifies them as an inventory and this device as `enumerable`.
+      'teenage-engineering-op-xy',
     ])
     expect(SHIPPED_LOADERS).toEqual(SHIPPED)
   })
