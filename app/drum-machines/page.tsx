@@ -71,7 +71,7 @@ const MACHINES: Machine[] = [
     sub: 'The one that punches',
     sounds:
       'The kick has a click at the front and drops in pitch fast, so you hear the hit before you hear the tone. Shorter and harder than an 808. The snare is mostly noise, and the hats and cymbals are bright and splashy.',
-    suits: 'House, techno and trance. It holds up loud, and it holds up on a big system.',
+    suits: 'House, techno and trance. It holds up loud and on a big system.',
     unsure:
       'If your kick keeps disappearing under everything else, swap it for this one and it will come back.',
   },
@@ -80,7 +80,7 @@ const MACHINES: Machine[] = [
     name: 'TR-707',
     sub: 'The flat one',
     sounds:
-      'Short, dry and even. Recorded drums played back briefly, with no ring and no tail. Nothing sticks out and nothing hangs around.',
+      'Short, dry and even. Recorded drums played back briefly, with no ring on them. Nothing sticks out and nothing hangs around.',
     suits:
       'Parts that should stay out of the way. Electro, synth-pop, freestyle, and anything where a big kick would crowd the bass.',
     unsure:
@@ -144,18 +144,17 @@ export default function Page() {
         </header>
         <p>
           A guide will sometimes ask you for a dry kick with a defined attack, or a struck metal
-          one-shot. That is accurate and it assumes you already know what those words do. This page
-          says the same things in plainer language, one machine at a time.
+          one-shot. Those words assume you already know what they do. This page says the same
+          things in plainer language, one machine at a time.
         </p>
         <p>
           These are families of sound, and the names outlived the boxes. Producers have said
           &ldquo;an 808 kick&rdquo; for forty years about sounds that never came near a real 808.
-          You do not need the hardware to use any of this. You need to know what you are listening
-          for.
+          You do not need the hardware to use any of this, only an idea of what you are
+          listening for.
         </p>
         <p className="reference-note">
-          Every description here is ours. We wrote it from listening, and you should treat it as
-          taste rather than specification.
+          Every description here is ours, written from listening. Treat it as taste.
         </p>
       </section>
 
@@ -187,14 +186,14 @@ export default function Page() {
         </header>
         <p>
           If your sampler came with a sample library, some of it may already answer to these
-          names. We cannot tell you that it does. Patchscore has not established what is in your
-          library, so it never tells you which sounds you own. What it can tell you is what to
-          listen for once you open the folder. An 808-style kick is the low one that rings
-          on with no click at the front. A 909-style kick is the short one that clicks and drops.
+          names. We cannot tell you whether it does, because Patchscore is never told what is in
+          your library. Once you open the folder, listen for this: an 808-style kick is the low one
+          that rings on with no click at the front, and a 909-style kick is the short one that
+          clicks and drops.
         </p>
         <p>
-          If your rig can synthesise a drum sound, that route is often the easier one, and for a
-          beginner it usually is. Searching a card for &ldquo;a dry kick with a defined
+          If your rig can synthesise a drum sound, that is usually the easier route for a
+          beginner. Searching a card for &ldquo;a dry kick with a defined
           attack&rdquo; has no finish line. You audition, you reject, you audition again, and
           nothing tells you when to stop. Dialling a kick is finished when the numbers are dialled.
           The guide gives you the values and this page tells you what they are aiming at.
@@ -215,11 +214,10 @@ export default function Page() {
           manual — TR-1000 Preset GEN/INST List (eng02) v1.20, GEN list p.1
         </p>
         <p>
-          That page prints a name, a category and a folder for each generator. It is our source for
-          the fact that Roland uses these names for these sounds, and for nothing else on this
-          page. It describes no sound, so the character of each family above rests on our ears.
-          The LinnDrum and the DX7 do not appear on it at all, and nothing said about them here is
-          cited to anything.
+          That page prints a name, a category and a folder for each generator. It is our source
+          for the fact that Roland uses these names, and for nothing else here. It describes no
+          sound, so the character of each family above comes from our own listening. The LinnDrum
+          and the DX7 do not appear on it, and nothing said about them here is cited to anything.
         </p>
       </section>
 

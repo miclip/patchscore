@@ -155,10 +155,16 @@ describe('#174 what the page says about each family', () => {
 
 describe('#174 the claims the page must not make', () => {
   it('says what is in nobody’s library', () => {
-    // The sentence that has to be there, in whatever words: the condition, and the admission.
-    expect(TEXT).toMatch(/If your sampler came with a sample library/)
-    expect(TEXT).toContain('Patchscore has not established what is in your library')
-    expect(TEXT).toMatch(/We cannot tell you/)
+    // The claim that has to be there, in whatever words: the offer is conditional, and the page
+    // says outright that it does not know. Pinning either sentence whole would fail an author who
+    // rephrased it and pass one who quietly dropped the condition.
+    expect(TEXT, 'the library offer must be conditional').toMatch(/\bIf your sampler\b/)
+    expect(TEXT, 'the page must admit it cannot know what you have').toMatch(
+      /\b(cannot|can[’']t|never) (tell|know)\b/,
+    )
+    expect(TEXT, 'and must say whose library it is talking about').toMatch(
+      /\bwhat is in your library\b/,
+    )
   })
 
   it('never asserts the reader owns a sound, a file or a folder', () => {
@@ -190,7 +196,9 @@ describe('#174 the claims the page must not make', () => {
 
   it('says the characters are ours, in our voice, before a reader believes otherwise', () => {
     expect(TEXT).toMatch(/Every description here is ours/)
-    expect(TEXT).toMatch(/taste rather than specification/)
+    expect(TEXT, 'the descriptions must be marked as taste, however it is worded').toMatch(
+      /\btaste\b/,
+    )
     // Above the fold in reading order: the disclaimer sits in the opening panel, not in a note
     // under the citation at the bottom which a reader reaches after believing the page.
     expect(TEXT.indexOf('Every description here is ours')).toBeLessThan(TEXT.indexOf('TR-808'))
