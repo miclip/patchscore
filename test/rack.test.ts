@@ -560,14 +560,23 @@ describe('panel contents', () => {
 // ---------------------------------------------------------------------------
 
 describe('panel layouts', () => {
-  it('every authored box carries a drawing cited to its manual', () => {
+  it('every authored box carries a drawing, cited to the figure it was measured from', () => {
     for (const device of DEVICES) {
       const layout = device.panel
       expect(layout, `${device.id} has no panel layout`).toBeDefined()
       if (layout === undefined) continue
-      // Same rule as a parameter value: a drawing read off a manual says which manual.
+      // Same rule as a parameter value: a drawing read off a figure says which figure.
       expect(layout.verified).not.toBe(false)
-      if (layout.verified !== false) expect(layout.verified.kind).toBe('manual')
+      // **`maker` as well as `manual`, since the EP-133** (#191). A drawing has to come from a
+      // document somebody can go and look at, and for twenty-nine of the thirty that document is
+      // the manual. The thirtieth has no manual at all — teenage engineering publish no PDF for
+      // it — and publishes a complete vector front view on its own product pages instead. That is
+      // exactly the kind #191 added for a maker figure outside a manual, and it is already what
+      // that box's `physical.verified` carries. What stays refused is `observed` and `false`:
+      // a panel nobody can re-measure is the thing this guards.
+      if (layout.verified !== false) {
+        expect(['manual', 'maker'], device.id).toContain(layout.verified.kind)
+      }
       expect(layout.features.length).toBeGreaterThan(4)
     }
   })
@@ -945,7 +954,13 @@ describe('rack view', () => {
     // edge: p.6 draws its own orange section rectangle across the bottom of the display well, so
     // the screen is measured down to where the annotation starts and the real lower edge is a
     // millimetre or two further. `panel.ts` records which coordinates that affects and why.
-    expect(count('rack-screen')).toBe(40)
+    // 41: plus the EP-133's, the full-width dark band across the middle of its front view. It is
+    // the one screen in the library read off a figure rather than a specification: teenage
+    // engineering print no display dimension anywhere, and the drawing gives an unlit window with
+    // a specular reflection across it and no bezel. So the 176 x 47.9 mm here is the *glass* and
+    // not the active area — the guide's "custom display that features 66 unique icons" is inside
+    // it somewhere the figure does not delimit, and that panel file says so rather than guessing.
+    expect(count('rack-screen')).toBe(41)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -974,7 +989,11 @@ describe('rack view', () => {
     // Left-Hand Controller. The last two are the Grandmother's and Matriarch's case a third time
     // — a maker drawing its left-hand wheels as vertical faders — and the manifest models the
     // drawing.
-    expect(count('rack-fader')).toBe(150)
+    // 151: plus the EP-133's one, the vertical slider between its FADER and SHIFT buttons. A
+    // fader of one, like the Grandmother's three and the MPC touch strips — and the only control
+    // in this list whose *function* is a roster rather than a fixed job: holding [FADER] and a
+    // pad reassigns it to one of the twelve parameters silkscreened above the pads.
+    expect(count('rack-fader')).toBe(151)
     // 103: the TR-1000's sixteen step keys, the CRAVE's thirteen-note keyboard, and thirty-seven
     // each from the minilogue xd and the Subsequent 37 — twenty-two white in one grid and
     // fifteen black in six clusters, because a keyboard drawn as an even row of rectangles stops
@@ -1019,9 +1038,16 @@ describe('rack view', () => {
     // Twenty-three since the SP-404MK2, whose field is pads [1]-[16] — the 4 x 4 block only. The
     // fifth column beside it (BUS FX, HOLD, EXT SOURCE, SUB PAD) is buttons rather than sample
     // slots, so it is drawn as an ordinary grid and stays out of the field.
+    // Twenty-four since the EP-133, whose field is the group column *and* the twelve pads. It is
+    // the first field to take in a bank *selector* as well as the slots, and it is the same
+    // reading as the Muse's two TIMBRE buttons rather than an exception to it: A-D choose which
+    // twelve of the forty-eight assignables the pads are addressing, so the selection is the pair
+    // of columns. The pad block alone packs 48 cells at 54% and fails the coverage floor above,
+    // which is that floor doing its job — a field that cannot hold its own assignables is drawn
+    // in the wrong place.
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(23)
+    expect(fields).toHaveLength(24)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

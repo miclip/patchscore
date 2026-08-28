@@ -184,6 +184,34 @@ import { TEMPLATES } from '../lib/templates/index'
  *     a tie-break permuting among equal costs (§7.2) is expected to do.
  *
  * Nothing caps, and `industrial-techno` at 67,088 is 33.5% of `DEFAULT_NODE_CAP`.
+ *
+ * ## The EP-133, and the measurement that says pool size is free
+ *
+ * The thirtieth box declares **forty-eight** pads over the whole 23-role vocabulary — three times
+ * the SP-404MK2's pool — and authors twenty-one recipes across nineteen roles. On the paragraph
+ * above's reasoning that should be the expensive one, and it is not:
+ *
+ *   - **`industrial-techno` 55,355-67,088 -> 62,885-71,675**, 6.8% at the peak against the
+ *     SP-404MK2's fifth, from a pool three times the size. The floor rises more than the peak
+ *     does, which is the row flattening rather than spiking.
+ *   - **`weave` 37,499-39,319 -> 42,650-44,586**, about a seventh, and flat across twenty of the
+ *     twenty-four seeds.
+ *   - `ambient-dub` 137 -> 144, `drone-study` 22 -> 23, `relay` 43 -> 45, `lydian-house`
+ *     119-257 -> 126-273: a handful of nodes, flat across every seed.
+ *   - **`major-key-electro` 122-614 -> 128-447** is the one row cheaper at the peak, by a
+ *     quarter, and its shape moves again — the expensive seeds are now 6 and 1 rather than 2.
+ *     Same mechanism as the OP-XY's note far above: a request that was being approximated now has
+ *     a match, so `liveFloor` tightens early and prunes the subtree behind the approximations.
+ *
+ * **The useful finding is the one that was measured rather than inferred.** The same sweep run
+ * with this device's pool at 12, at 48, and at 48 with `comfortableVoices` lifted to 48 gives the
+ * *identical* worst case in all three. Ordinal-identical pool members are collapsed before they
+ * ever branch, so a pool costs what its **recipe sheet** costs and not what its slot count does.
+ * The SP-404MK2 paragraph above reads its own fifth as sixteen ordinal-identical candidates per
+ * request; on this evidence that reading is wrong, and what it was actually paying for was
+ * nineteen recipes reaching seventeen roles. Size the next device against its recipes.
+ *
+ * Nothing caps, and `industrial-techno` at 71,675 is 35.8% of `DEFAULT_NODE_CAP`.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -192,32 +220,32 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137, 137,
-      137, 137, 137, 137, 137, 137
+      144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144,
+      144, 144, 144, 144, 144, 144
     ],
     'drone-study': [
-      22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-      22
+      23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+      23
     ],
     'industrial-techno': [
-      55355, 55356, 55611, 55356, 55355, 55356, 55356, 55356, 63378, 58485, 67088, 55355, 55611,
-      58484, 55356, 55356, 55356, 55595, 55356, 55356, 55356, 55356, 65860, 55593
+      62885, 62885, 63147, 62885, 67428, 62885, 62885, 62885, 66212, 62885, 66212, 62885, 63157,
+      62885, 71419, 71419, 62885, 71675, 67429, 66834, 62885, 71378, 62885, 63157
     ],
     'lydian-house': [
-      120, 196, 120, 196, 120, 196, 120, 196, 149, 196, 120, 196, 120, 196, 120, 196, 257, 150,
-      198, 119, 198, 150, 198, 150
+      127, 208, 127, 208, 127, 208, 127, 208, 158, 208, 127, 208, 127, 208, 127, 208, 273, 159,
+      210, 126, 210, 159, 210, 159
     ],
     'major-key-electro': [
-      122, 124, 614, 127, 122, 127, 127, 127, 124, 320, 124, 122, 127, 272, 127, 124, 424, 124,
-      124, 124, 127, 127, 318, 122
+      133, 444, 128, 130, 330, 133, 447, 133, 330, 133, 332, 133, 133, 133, 130, 130, 133, 130,
+      335, 131, 133, 131, 133, 133
     ],
     relay: [
-      43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43,
-      43
+      45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45,
+      45
     ],
     weave: [
-      37499, 37499, 37499, 37499, 37499, 37499, 37499, 37499, 37499, 38827, 37499, 37499, 37499,
-      38919, 37499, 37499, 37499, 37499, 37499, 37499, 37499, 37499, 39319, 37499
+      42650, 42650, 42650, 42650, 44586, 42650, 42650, 42650, 44168, 42650, 44168, 42650, 42650,
+      42650, 42650, 42650, 42650, 42650, 44586, 42650, 42650, 42650, 42650, 42650
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".

@@ -988,8 +988,13 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * them stays where the Muse left it, so the repair is neither doing more work nor less — the
    * problem simply got a little bigger, which is what a nineteen-recipe pool over seventeen roles
    * does to the direction that asks for the most of them.
+   *
+   * **The EP-133 does it again and keeps the gap**: the floor goes 58,872 -> 63,283 and the
+   * repaired walk 58,485 -> 62,885, 7.5% on each. Two devices in a row moving both figures by the
+   * same fraction is the note above's reassuring case a second time — the repair is doing neither
+   * more work nor less, and the problem is simply a little bigger.
    */
-  it('walks the recorded 58,872 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 63,283 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -997,7 +1002,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(58_872)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(63_283)
     // The ceiling is loosened rather than re-tightened onto 55,217, per the standing note: it was
     // 20,000, then 25,000, then 35,000, and each time a device pushed the repaired walk past it.
     // A ceiling sitting one node above the last measurement stops guarding anything and starts
