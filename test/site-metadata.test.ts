@@ -19,23 +19,26 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
     expect(new URL(String(metadata.metadataBase)).origin).toBe(SITE_ORIGIN)
   })
 
-  it('lists the root, both catalogues and every page in them, and no generated view', () => {
+  it('lists the root, both catalogues, every page in them, the reference, and no generated view', () => {
     // #44: a permalinked guide is canonical to '/', so enumerating variants here would contradict
     // it. A catalogue page (#84) is the other thing — authored content whose canonical is itself —
-    // so it belongs. The rule for a new entry is "is there a page at it whose canonical is itself".
+    // so it belongs. The rule for a new entry is "is there a page at it whose canonical is itself",
+    // which is why #174's reference page qualifies on the same terms despite deriving from nothing.
     const entries = sitemap()
     const urls = entries.map((e) => e.url)
     expect(urls[0]).toBe(SITE_ORIGIN)
-    expect(entries).toHaveLength(3 + DEVICES.length + TEMPLATES.length)
+    expect(entries).toHaveLength(4 + DEVICES.length + TEMPLATES.length)
 
     // Derived rather than listed, and in source order: authoring a manifest or a template adds its
-    // page here without an edit (invariant 2).
+    // page here without an edit (invariant 2). The last entry is the exception and is meant to be:
+    // one authored page, with no list in the repo to loop over.
     expect(urls).toEqual([
       SITE_ORIGIN,
       `${SITE_ORIGIN}/devices`,
       ...DEVICES.map((d) => `${SITE_ORIGIN}/devices/${d.id}`),
       `${SITE_ORIGIN}/directions`,
       ...TEMPLATES.map((t) => `${SITE_ORIGIN}/directions/${t.id}`),
+      `${SITE_ORIGIN}/drum-machines`,
     ])
 
     for (const entry of entries) {

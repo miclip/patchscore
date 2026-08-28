@@ -6,7 +6,8 @@ import { TEMPLATES } from '@/lib/templates'
 import { deviceHref, templateHref } from '@/lib/studio/catalogue'
 
 /**
- * The root, both catalogue indexes, one entry per device and one per direction (#84). All of them
+ * The root, both catalogue indexes, one entry per device, one per direction (#84), and #174's
+ * drum-machine reference. All of them
  * are derived, from the registry and from `lib/templates`, so authoring a manifest or a template
  * adds its page here without an edit (invariant 2).
  *
@@ -47,5 +48,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
+    /*
+     * #174. Listed for the reason stated above: there is a page at it whose canonical is itself.
+     * Hand-written rather than derived, because it is one authored page about sounds and there is
+     * no list in the repo to loop over — nothing about it turns on the registry.
+     */
+    {
+      url: `${SITE_ORIGIN}/drum-machines`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    },
   ]
 }

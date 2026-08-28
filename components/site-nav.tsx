@@ -37,6 +37,10 @@ export const NAV_LINKS: readonly { href: string; label: string }[] = [
   { href: '/', label: 'Studio' },
   { href: '/devices', label: 'Devices' },
   { href: '/directions', label: 'Directions' },
+  // #174. Beside the two catalogue halves because it is the third thing to read rather than a
+  // setting: it explains the sounds a guide asks for by name, and a reader who needs it needs it
+  // before they start, not while they are standing at the machine (§8).
+  { href: '/drum-machines', label: 'Drum machines' },
   // #138. Linked here because the footer alone did not reach it: on the studio page the footer
   // sits below the whole generated guide, some twenty-five screens down, so a preference that
   // changes how the studio looks was unreachable from the studio.
@@ -47,7 +51,7 @@ export function SiteNav() {
   return (
     <nav className="site-nav" aria-label="Site">
       {/*
-        The mark, and deliberately **not a fourth link**. `NAV_LINKS` above is what the tests
+        The mark, and deliberately **not another link**. `NAV_LINKS` above is what the tests
         assert against, so a hand-written anchor beside it is the drift this component exists to
         prevent — and the list already carries Studio → `/`, so a linked logo would be a second
         route to the same page for a reader tabbing through.
@@ -63,8 +67,8 @@ export function SiteNav() {
       <img className="site-nav-mark" src="/icon.png" width={28} height={28} alt="" />
       {/*
         A list, so a screen reader is told how many ways out there are before reading the first
-        one. Three items is small enough that this reads as pedantry and large enough that the
-        count is worth having; the alternative — bare links in a div — is what `masthead-actions`
+        one. The count is small enough that this reads as pedantry and large enough that having
+        it is worth something; the alternative — bare links in a div — is what `masthead-actions`
         was, and it announced as prose.
       */}
       <ul>
