@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import type { PatternDriver } from '@/lib/core'
 import type { ReactNode } from 'react'
 import type { CapabilityEvidence, Cite, Provenance, ResolvedParam } from '@/lib/core'
 import { GUIDE_PHASES } from '@/lib/core'
@@ -328,13 +329,47 @@ export function SustainedRef() {
  * still has to program it. What was wrong was never the grid, only the unstated assumption about
  * which box it goes on.
  */
-export function EnteredElsewhereRef({ reason }: { reason: string }) {
+export function EnteredElsewhereRef({
+  reason,
+  driver,
+}: {
+  reason: string
+  /** §8/#65. The one verdict, decided in `patternDriver` so both renderers agree (#33). */
+  driver: PatternDriver
+}) {
   return (
     <p className="sound-ref hook-ref">
-      <strong>Not programmed here</strong> — {reason}. Enter this figure on whatever is driving it;
-      the rig diagram shows what that is.
+      <strong>Not programmed here</strong> — {reason}. {driverText(driver)}
     </p>
   )
+}
+
+/** This renderer's own words for `patternDriver`'s four states; see `lib/core/render.ts`. */
+function driverText(driver: PatternDriver) {
+  switch (driver.state) {
+    case 'driven':
+      return (
+        <>
+          Enter this figure on the {driver.deviceName}, which drives it through{' '}
+          <code>{driver.pitchJack}</code> and <code>{driver.gateJack}</code>.
+        </>
+      )
+    case 'nothing-drives':
+      return (
+        <>
+          <strong>Nothing in this rig can drive it</strong> — no box here sends a note and a gate.
+        </>
+      )
+    case 'source-exhausted':
+      return (
+        <>
+          The {driver.deviceName} drives this rig and has no pitch-and-gate pair left for this box,
+          so it stays unpatched.
+        </>
+      )
+    default:
+      return <>Enter this figure on whatever is driving it; the rig diagram shows what that is.</>
+  }
 }
 
 /**

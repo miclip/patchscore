@@ -13,6 +13,7 @@ import {
   STEPS_PER_BAR,
   chainPlan,
   isSustainedPart,
+  patternDriver,
   patternEntryNotice,
   reStrikesHeldNote,
   tightestReStrike,
@@ -403,7 +404,12 @@ export function PhaseSteps({
             // §8/#65. Qualifies the grid below rather than replacing it.
             (() => {
               const entry = patternEntryNotice(deviceById.get(a.deviceId))
-              return entry === undefined ? null : <EnteredElsewhereRef reason={entry.reason} />
+              return entry === undefined ? null : (
+                <EnteredElsewhereRef
+                  reason={entry.reason}
+                  driver={patternDriver(result.interDevicePatch, a.deviceId)}
+                />
+              )
             })()
           )}
           {mergeBlocks(a).map((block) => (

@@ -492,6 +492,66 @@ function trailingOrdinal(id: string): number | undefined {
  *    and telling somebody "nothing here can drive this" instead would send them shopping for the
  *    thing they already own.
  */
+/**
+ * §8/#65. **What phase 5 should say about where a pattern is entered, for a box that cannot hold
+ * one.**
+ *
+ * `patternEntry` shipped the first half: a box with no sequencer says so instead of being handed
+ * a grid. This is the half that was left — naming *which* box drives it, and saying plainly when
+ * nothing in the rig can.
+ *
+ * One decision in one place, the arrangement `contentNotice`, `noteDurationNotice` and
+ * `patternEntryNotice` already sit in (#33). Two hand-written vocabularies around one verdict is
+ * how the Markdown guide and the page come to disagree about the rig a reader is standing in.
+ *
+ * The four states are four different things to a reader, and collapsing any two would be advice
+ * rather than fact:
+ *
+ *  - `driven` — a box is driving it, and here are the two sockets. The best case, and the one the
+ *    old wording could not express.
+ *  - `nothing-drives` — the rig has no box that can send a note and a gate. That is a purchase,
+ *    not a patching mistake, and the guide should not imply otherwise.
+ *  - `source-exhausted` — something can, and it ran out of pairs. A cable count, not a capability.
+ *  - `unrouted` — this pass reached no verdict for the box. The pre-#65 wording stands: point at
+ *    the rig diagram rather than invent a driver.
+ */
+export type PatternDriver =
+  | { state: 'driven'; deviceName: string; pitchJack: string; gateJack: string }
+  | { state: 'nothing-drives' }
+  | { state: 'source-exhausted'; deviceName: string }
+  | { state: 'unrouted' }
+
+export function patternDriver(
+  patch: InterDevicePatch | undefined,
+  deviceId: DeviceId,
+): PatternDriver {
+  const target = patch?.targets.find((t) => t.deviceId === deviceId)
+  if (target === undefined) return { state: 'unrouted' }
+  switch (target.outcome) {
+    case 'routed': {
+      // **The source's sockets, not the target's.** `target.pitchJack` and `target.gateJack` are
+      // the inputs on the box being played; a reader told to "enter this on the Hapax through
+      // CONTROLLER INPUTS · PITCH CV" is being handed the Minitaur's own socket names and sent to
+      // the wrong panel. What phase 5 needs is which output of the driving box carries this part,
+      // which is the cable's `fromJack`. Matched on `toJack` rather than taken by index, so the
+      // pair cannot come apart if the cable order ever changes.
+      const pitch = target.cables.find((c) => c.toJack === target.pitchJack)
+      const gate = target.cables.find((c) => c.toJack === target.gateJack)
+      if (pitch === undefined || gate === undefined) return { state: 'unrouted' }
+      return {
+        state: 'driven',
+        deviceName: pitch.fromDeviceName,
+        pitchJack: pitch.fromJack,
+        gateJack: gate.fromJack,
+      }
+    }
+    case 'no-compatible-source':
+      return { state: 'nothing-drives' }
+    case 'source-exhausted':
+      return { state: 'source-exhausted', deviceName: patch?.source?.deviceName ?? '' }
+  }
+}
+
 export type VoiceControlTarget = {
   deviceId: DeviceId
   deviceName: string
