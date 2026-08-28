@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { DeviceSchema, PATTERN_ENTRY_FACT, patternEntryNotice, renderGuide } from '../lib/core/index'
+import {
+  DeviceSchema,
+  PATTERN_ENTRY_FACT,
+  patternDriver,
+  patternEntryNotice,
+  renderGuide,
+} from '../lib/core/index'
 import { moodState, resolve } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
@@ -97,5 +103,48 @@ describe('phase 5 stops telling a sequencer-less box to step-program (§8/#65)',
     const notice = patternEntryNotice(DEVICES.find((d) => d.id === 'moog-minitaur'))
     expect(notice).toBeDefined()
     expect(md).toContain(notice!.reason)
+  })
+})
+
+/**
+ * §8/#65, the half that was left. `patternEntry` shipped the claim that a box cannot hold a
+ * pattern; this names *which* box drives it, and says plainly when nothing can.
+ *
+ * The four states are asserted as claims rather than sentences, per #46: a fixture pinned to
+ * wording fails an author who rephrases and passes one who drops the meaning.
+ */
+describe('phase 5 names the box that drives a sequencer-less part (#65)', () => {
+  const rig = (...ids: string[]) => DEVICES.filter((d) => ids.includes(d.id))
+  const run = (devices: readonly (typeof DEVICES)[number][]) =>
+    resolve({ devices, template: TEMPLATES.find((t) => t.id === 'industrial-techno')!, mood: moodState({}), seed: 3 })
+
+  it('names the driving box and its own sockets, not the target’s', () => {
+    // The trap this had first: `target.pitchJack` is the socket on the box being *played*, so a
+    // reader was told to enter the figure on the Hapax through the Minitaur's own input names.
+    const result = run(rig('moog-minitaur', 'squarp-hapax', 'roland-tr-8s'))
+    const driver = patternDriver(result.interDevicePatch, 'moog-minitaur')
+    expect(driver.state).toBe('driven')
+    if (driver.state !== 'driven') throw new Error('expected driven')
+    expect(driver.deviceName).toBe('Hapax')
+    // A Hapax output, not a Minitaur input.
+    expect(driver.pitchJack).toMatch(/^Cv out \d$/)
+    expect(driver.gateJack).toMatch(/^gate out \d$/)
+
+    const doc = renderGuide(result)
+    expect(doc).toContain(driver.pitchJack)
+    expect(doc).not.toContain('whatever is driving it')
+  })
+
+  it('says nothing can drive it, rather than pointing at a diagram that shows nothing', () => {
+    // A purchase, not a patching mistake, and the guide must not read like one.
+    const result = run(rig('moog-minitaur', 'roland-tr-8s'))
+    expect(patternDriver(result.interDevicePatch, 'moog-minitaur').state).toBe('nothing-drives')
+    expect(renderGuide(result)).toContain('Nothing in this rig can drive it')
+  })
+
+  it('falls back to the pointer when the pass reached no verdict', () => {
+    // Invariant 5: no target, no claim. A box the pass never considered gets the pre-#65 wording
+    // rather than an invented driver.
+    expect(patternDriver(undefined, 'moog-minitaur').state).toBe('unrouted')
   })
 })

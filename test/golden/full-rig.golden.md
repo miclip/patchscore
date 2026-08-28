@@ -303,7 +303,7 @@ Note length is set per note here — `LEN`. · manual
 
 **One oscillator under the filter, nothing above it** — settings in Sound design
 
-**Not programmed here** — it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage. Enter this figure on whatever is driving it; the rig diagram shows what that is.
+**Not programmed here** — it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage. Enter this figure on the Hapax, which drives it through `Cv out 4` and `gate out 4`.
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -424,7 +424,7 @@ Note length is set per note here — `LEN`. · manual
 
 **Ring modulator fed a square, notched rather than filtered** — settings in Sound design
 
-**Not programmed here** — it has no sequencer, so it is played from whichever controller or sequencer is driving the rig. Enter this figure on whatever is driving it; the rig diagram shows what that is.
+**Not programmed here** — it has no sequencer, so it is played from whichever controller or sequencer is driving the rig. Enter this figure on the Hapax, which drives it through `Cv out 3` and `gate out 3`.
 
 **Intro, Outro** — 32 steps, band 0
 

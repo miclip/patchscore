@@ -1,3 +1,4 @@
+import type { PatternDriver } from './pipeline'
 import type { CapabilityEvidence, ContentNotice, Device, NoteDurationNotice } from './device'
 import {
   clockJackNotes,
@@ -36,8 +37,7 @@ import {
   type InterDevicePatch,
   type ResolveResult,
   type ResolvedAssignment,
-  type VoiceControlSource,
-} from './pipeline'
+  type VoiceControlSource, patternDriver,} from './pipeline'
 import { GUIDE_PHASES } from './guide'
 import {
   bandTrajectory,
@@ -1759,11 +1759,30 @@ const HOOK_IS_THE_PATTERN =
  * generic one. Where the pattern goes instead depends on the rig, and phase 3 is where a reader
  * finds what is driving what, so this points rather than guesses.
  */
-function patternEnteredElsewhere(reason: string): string {
-  return (
-    `**Not programmed here** — ${reason}. Enter this figure on whatever is driving it; ` +
-    'the rig diagram shows what that is.'
-  )
+function patternEnteredElsewhere(reason: string, driver: PatternDriver): string {
+  const head = `**Not programmed here** — ${reason}.`
+  switch (driver.state) {
+    // #65's second half. The sockets are named because a reader standing at a rack with four CV
+    // outputs needs to know *which*, and the pass already decided it — repeating the decision in
+    // prose is what the renderer must never do, so it prints what §3.3 chose.
+    case 'driven':
+      return (
+        `${head} Enter this figure on the ${driver.deviceName}, which drives it through ` +
+        `\`${driver.pitchJack}\` and \`${driver.gateJack}\`.`
+      )
+    // Not a patching mistake and the guide must not read like one. Nothing here can send a note
+    // and a gate, so this part cannot be played at all until something can.
+    case 'nothing-drives':
+      return `${head} **Nothing in this rig can drive it** — no box here sends a note and a gate.`
+    case 'source-exhausted':
+      return (
+        `${head} The ${driver.deviceName} drives this rig and has no pitch-and-gate pair left ` +
+        'for this box, so it stays unpatched.'
+      )
+    // The pass reached no verdict, so point rather than guess (invariant 5).
+    default:
+      return `${head} Enter this figure on whatever is driving it; the rig diagram shows what that is.`
+  }
 }
 
 const SUSTAINED_NOT_STRUCK =
@@ -1890,7 +1909,7 @@ function phaseSteps(
       const entry = patternEntryNotice(deviceById.get(a.deviceId))
       if (entry !== undefined) {
         out.push('')
-        out.push(patternEnteredElsewhere(entry.reason))
+        out.push(patternEnteredElsewhere(entry.reason, patternDriver(result.interDevicePatch, a.deviceId)))
       }
     }
     for (const { sections, block } of blocks) {
