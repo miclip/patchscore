@@ -572,7 +572,7 @@ describe('the Tracker Mini chord recipes (§12.4, production)', () => {
  * These are the declines, asserted where someone will look when they wonder why their drum
  * machine has no pad. The evidence for each is in the manifest that declines it.
  */
-describe('the boxes that can hold a chord and cannot move it (§12.4)', () => {
+describe('which boxes can hold a chord and move it, and which only hold it (§12.4)', () => {
   const only = (id: string) =>
     resolve({
       devices: DEVICES.filter((d) => d.id === id),
@@ -581,27 +581,43 @@ describe('the boxes that can hold a chord and cannot move it (§12.4)', () => {
       seed: 18,
     })
 
-  it('authors no sampled chord for either Roland drum machine', () => {
-    // Both pass the sustain half outright — the TR-8S has `Hold Mode: Whole`, "the sound is
-    // heard to the end without decaying" (Reference p.31), and the TR-1000 the same control as
-    // `HLD MODE WHOLE`, "the entire sample is played" (Reference p.64). Both fail the second
-    // half: the only per-step-recordable pitch control on either is a [TUNE] knob the manual
-    // describes as "Adjusts the tuning (pitch)" with no semitone scale, and the semitone control
-    // each of them does print — `Coarse Tune -24–0–+24` / `COARSE -12St–12St` — is not reachable
-    // from a knob whose motion the sequencer records per step.
-    for (const id of ['roland-tr-8s', 'roland-tr-1000']) {
-      const device = DEVICES.find((d) => d.id === id) as Device
-      expect(device.recipes.filter((r) => realisationOf(r) === 'sampled-chord'), id).toEqual([])
-    }
+  it('authors a sampled chord for the TR-8S and not the TR-1000 (#183)', () => {
+    // These two look like the same box and are not, and the difference is one printed page.
+    //
+    // **TR-8S: the route is open.** `Coarse Tune` is `-24–0–+24` semitones (Reference p.31), and
+    // `KIT: CTRL` on p.28 is a two-row table whose second row — shown only under `CTRL Sel =
+    // User` — puts `(SAMPLE) Coarse` on a `[CTRL]` knob. p.16 records `[CTRL]` knob movements
+    // into steps. So the chord retunes per step and follows the progression.
+    //
+    // **TR-1000: still declined, and for a reason the manual does not answer rather than one it
+    // denies.** `COARSE` is on the sample edit screen (p.64), reached from the `[C4]` knob of an
+    // editor rather than a performance knob p.30 records; KNOB ASSIGN (p.36) would bridge it and
+    // prints no target list at all. Assuming it is assignable would invent a capability.
+    const tr8s = DEVICES.find((d) => d.id === 'roland-tr-8s') as Device
+    expect(tr8s.recipes.filter((r) => realisationOf(r) === 'sampled-chord').length).toBeGreaterThan(0)
+
+    const tr1000 = DEVICES.find((d) => d.id === 'roland-tr-1000') as Device
+    expect(tr1000.recipes.filter((r) => realisationOf(r) === 'sampled-chord')).toEqual([])
   })
 
-  it('leaves pad and stab as gaps on a drum-machine-only rig, rather than a drone', () => {
-    for (const id of ['roland-tr-8s', 'roland-tr-1000']) {
-      const result = only(id)
-      for (const role of ['pad', 'stab']) {
-        expect(result.assignments.find((a) => a.role === role), `${id} ${role}`).toBeUndefined()
-        expect(result.shortfalls.find((g) => g.role === role), `${id} ${role}`).toBeDefined()
-      }
+  it('carries a chord part on a TR-8S-only rig, and gaps both on a TR-1000-only one', () => {
+    // The gap this used to assert for the TR-8S was one we invented — invariant 5 pointing the
+    // wrong way, reporting a hole the box does not have. RC is one monophonic slot, so it holds
+    // one chord part and not both; that remaining shortfall is a real constraint.
+    const tr8s = only('roland-tr-8s')
+    const chordParts = tr8s.assignments.filter((a) => a.role === 'pad' || a.role === 'stab')
+    expect(chordParts.length).toBeGreaterThan(0)
+    // Back to the authored recipe: an assignment carries a reference, not the recipe itself.
+    const authored = DEVICES.find((d) => d.id === 'roland-tr-8s') as Device
+    for (const part of chordParts) {
+      const recipe = authored.recipes.find((r) => r.id === part.recipe.id)
+      expect(recipe && realisationOf(recipe), part.recipe.id).toBe('sampled-chord')
+    }
+
+    const tr1000 = only('roland-tr-1000')
+    for (const role of ['pad', 'stab']) {
+      expect(tr1000.assignments.find((a) => a.role === role), role).toBeUndefined()
+      expect(tr1000.shortfalls.find((g) => g.role === role), role).toBeDefined()
     }
   })
 

@@ -551,8 +551,12 @@ export const device: Device = {
   /**
    * ## Why there is no `sampled-chord` pad or stab here (§12.4)
    *
-   * The same answer as the TR-8S, reached down a different corridor, and the two together are
-   * what make it a fact about this class of box rather than about one manual's omissions.
+   * **Not the same answer as the TR-8S** — that box's route turned out to be open (#183), and the
+   * difference is instructive rather than embarrassing. There, `Coarse` is assignable to a
+   * performance `[CTRL]` knob and p.28 prints the list saying so. Here the semitone control sits
+   * on the sample edit screen and the one page that would bridge it, KNOB ASSIGN (p.36), prints
+   * no target list at all. So this is a gap because the manual does not answer, not because the
+   * class of box cannot do it.
    *
    * **Sustain passes.** p.64's sample block gives `HLD MODE  WHOLE, TIME, STEP` with *"WHOLE:
    * The entire sample is played without any decrease in volume"*, and the box loads user samples.
