@@ -32,7 +32,12 @@ describe('a chosen clock source outranks §7.4 (#200)', () => {
     // in the same sentence, because the fallback then reads as advice.
     const doc = renderGuide(resolve({ ...base, overrides: { clockSourceId: 'roland-tr-8s' } }))
     expect(doc).toContain('Why this box — you chose it')
-    expect(doc).not.toContain('settled it')
+    // Scoped to the clock line rather than the whole guide. `settled it` is also the honest
+    // wording of §3.3's voice-control basis, which is a different sentence about a different
+    // decision — asserting over the document made this test fail the moment #201 gave the Hapax
+    // a pitch-and-gate bundle, for a reason that had nothing to do with the clock.
+    const clockLine = doc.split('\n').find((l) => l.includes('**Clock source**')) ?? ''
+    expect(clockLine).not.toContain('settled it')
   })
 
   it('refuses a box that cannot send clock, rather than obeying it', () => {
@@ -96,5 +101,52 @@ describe('withClockSource', () => {
     const result = resolve({ ...base, devices: withoutIt, overrides: songOverrides(set) })
     expect(result.clockSource?.chosen).toBe(false)
     expect(result.clockSource).toBeDefined()
+  })
+})
+
+/**
+ * §3.3/#201. **Two numbered groups pair by ordinal, where one legend pairs by section.**
+ *
+ * The section rule was written against boxes that put pitch and gate under one panel legend. A
+ * multitrack CV sequencer does not lay out that way, and until this the engine reported that a
+ * Hapax could not play a Minitaur — the exact pair of boxes both products exist for.
+ */
+describe('pitch and gate pair by ordinal when no panel section pairs them (#201)', () => {
+  const rig = DEVICES.filter((d) => ['moog-minitaur', 'squarp-hapax'].includes(d.id))
+
+  it('routes a Hapax into a Minitaur', () => {
+    const result = resolve({ devices: rig, template, mood: moodState(), seed: 3 })
+    const patch = result.interDevicePatch
+    expect(patch?.outcome).toBe('routed')
+    expect(patch?.source?.deviceId).toBe('squarp-hapax')
+    const target = patch?.targets.find((t) => t.deviceId === 'moog-minitaur')
+    expect(target?.outcome).toBe('routed')
+    // A pitch cable and a gate cable, which is what a voice needs to be played at all.
+    expect(target?.cables).toHaveLength(2)
+  })
+
+  it('pairs the numbers rather than merely finding two sockets', () => {
+    // The claim is `Cv out N` with `gate out N`, not "any CV with any gate". A pass that returned
+    // a pair without matching the ordinals would satisfy the test above and still tell a reader
+    // to patch CV 1 into gate 3.
+    const result = resolve({ devices: rig, template, mood: moodState(), seed: 3 })
+    const cables = result.interDevicePatch?.targets.find((t) => t.deviceId === 'moog-minitaur')?.cables ?? []
+    const ordinal = (s: string) => /\s(\d+)$/.exec(s)?.[1]
+    const used = cables.map((c) => ordinal(c.fromJack)).filter((n) => n !== undefined)
+    expect(used.length).toBe(2)
+    expect(new Set(used).size).toBe(1)
+  })
+
+  it('leaves a box that groups them by section alone', () => {
+    // The ordinal rule is a fallback and must never override a panel that has answered the
+    // question. The Minitaur groups PITCH CV and GATE under one CONTROLLER INPUTS legend, and its
+    // manifest records that bundling as load-bearing.
+    const minitaur = DEVICES.find((d) => d.id === 'moog-minitaur')!
+    const controller = (minitaur.jacks ?? []).filter((j) => j.id.startsWith('CONTROLLER INPUTS · '))
+    expect(controller.length).toBeGreaterThan(2)
+    const result = resolve({ devices: rig, template, mood: moodState(), seed: 3 })
+    const target = result.interDevicePatch?.targets.find((t) => t.deviceId === 'moog-minitaur')
+    expect(target?.pitchJack).toBe('CONTROLLER INPUTS · PITCH CV')
+    expect(target?.gateJack).toBe('CONTROLLER INPUTS · GATE')
   })
 })

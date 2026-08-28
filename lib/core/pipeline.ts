@@ -429,11 +429,53 @@ function bundles(device: Device, direction: 'in' | 'out'): Bundle[] {
   const gates = soleKind(jacks, direction, 'gate')
   const sections = [...new Set(pitches.map((p) => jackSection(p.id)))].sort(compareCodeUnits)
 
-  return sections.flatMap((section) => {
+  const bySection = sections.flatMap((section) => {
     const pitch = pitches.find((p) => jackSection(p.id) === section)
     const gate = gates.find((g) => jackSection(g.id) === section)
     return pitch === undefined || gate === undefined ? [] : [{ section, pitch, gate }]
   })
+  if (bySection.length > 0) return bySection
+
+  // §3.3/#201. **The second shape: two numbered groups, paired by ordinal.**
+  //
+  // The section rule above is right for a box that puts its pitch and gate sockets under one
+  // legend — the Minitaur's `CONTROLLER INPUTS · PITCH CV` and `· GATE`, where the panel itself
+  // says they belong together. A multitrack CV sequencer does not lay out that way: the Hapax
+  // labels `Cv out 1`-`Cv out 4` and `gate out 1`-`gate out 4` as two groups addressed by number,
+  // and CV out 1 goes with gate out 1. Under the section rule alone each of its sockets is its own
+  // section, no pair is ever found, and the engine reported that a Hapax cannot play a Minitaur.
+  //
+  // **A fallback, never an override.** A box whose panel groups them has answered the question,
+  // and this must not second-guess it — so this runs only where the section rule found nothing,
+  // which makes the change a pure addition for every device authored before it.
+  //
+  // The ordinal is read from the id rather than declared because it is already authored intent:
+  // the Hapax manifest records that its jack ids carry "the figures' words plus the routing menu's
+  // ordinal", precisely because p.90 addresses `CV 1` to `CV 4` one at a time where the drawing
+  // labels only the group. A jack with no trailing number takes no part.
+  const byOrdinal: Bundle[] = []
+  for (const pitch of pitches) {
+    const n = trailingOrdinal(pitch.id)
+    if (n === undefined) continue
+    const gate = gates.find((g) => trailingOrdinal(g.id) === n)
+    if (gate === undefined) continue
+    byOrdinal.push({ section: String(n), pitch, gate })
+  }
+  return byOrdinal.sort((a, b) => compareCodeUnits(a.pitch.id, b.pitch.id))
+}
+
+/**
+ * §3.3/#201. The number a socket's id ends with, or `undefined` when it ends with anything else.
+ *
+ * Deliberately anchored to the end. A jack called `Cv out 1` pairs on `1`; one called
+ * `1 · SOMETHING` does not pair on `1`, because a leading number is part of a name rather than an
+ * ordinal, and pairing on it would invent a correspondence the panel does not make.
+ */
+function trailingOrdinal(id: string): number | undefined {
+  const match = /\s(\d+)$/.exec(id)
+  if (match?.[1] === undefined) return undefined
+  const n = parseInt(match[1], 10)
+  return Number.isSafeInteger(n) ? n : undefined
 }
 
 /**
