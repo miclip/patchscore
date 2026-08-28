@@ -29,6 +29,10 @@ opened.
 | `cascadia_manual_v1.1_2023.04.18.pdf` | Manual v1.1, 2023-04-18. | [direct](https://intellijel.com/downloads/manuals/cascadia_manual_v1.1_2023.04.18.pdf), confirmed 2026-08-25 |
 | `model-2400_om_e_vc.pdf` | Owner's Manual. | [docs](https://tascam.com/us/product/model_2400/docs) |
 | `ZEBU_Manual_Rrev2_Web_ENG.pdf` | ZOIA Euroburo manual, rev2. | empresseffects.com |
+| `Muse_Manual-1.4.0.pdf` | **Moog Muse**, 124pp / 196k chars / 18 ranges. Denser than the TR-1000 Reference, and the library's first 8-voice polysynth. | [direct](https://cdn.inmusicbrands.com/Moog/Muse/Muse_Manual-1.4.0.pdf), confirmed 2026-08-28 |
+| `LABYRINTH-MANUAL_1.pdf` | **Moog Labyrinth**, 62pp / 68k chars / 1 range. Enum-dominated, as #184 predicts for this family. Note the space in the CDN filename — `LABYRINTH-MANUAL%201.pdf`, which is why guessing the path failed for a year. | [direct](https://cdn.inmusicbrands.com/Moog/Labyrinth/LABYRINTH-MANUAL%201.pdf), confirmed 2026-08-28 |
+| `Messenger_Manual.pdf` | **Moog Messenger**, 38pp / 66k chars / 4 ranges. Fetched alongside the other two; not in any backlog yet. | [direct](https://cdn.inmusicbrands.com/Moog/Messenger/Messenger_Manual.pdf), confirmed 2026-08-28 |
+| `Spectravox_Quickstart_Guide_v1.0.pdf` | **Do not author from this.** 2pp and **2 characters of extractable text** — an image-only PDF. Kept so nobody re-downloads it expecting a manual. See the note below. | [direct](https://cdn.inmusicbrands.com/Moog/Spectravox/Spectravox%20-%20Quickstart%20Guide%20-%20v1.0.pdf) |
 | `torso-t1/` | **Torso T-1 documentation mirror**, 77 pages / 273k chars / 67 printed ranges. No PDF exists; see the note below and `torso-t1/VERSION`. | [docs](https://docs.torsoelectronics.com/t1/), mirrored 2026-08-28 |
 
 ## The Deluge runs community firmware
@@ -227,8 +231,16 @@ return the same answer.
   **Images are dropped**, so a value that exists only in a diagram is not in the mirror — check
   the live page before concluding the docs are silent, the same rule that applies to a dimension
   callout inside a PDF drawing.
-- **Moog Labyrinth and Spectravox** — no CDN path found. Present on manual-scraper sites only,
-  which are not a citable source. Everything else in that family is here.
+- ~~**Moog Labyrinth**~~ — **resolved 2026-08-28.** It was on the usual CDN all along; the path has a
+  **space in the filename**, `LABYRINTH-MANUAL%201.pdf`, which no amount of guessing the
+  `<Product>_Manual.pdf` pattern was going to find. Searching the manufacturer's own domain found
+  it in one call. Worth remembering before recording the next device as blocked: "no CDN path
+  found" may mean the path is not guessable rather than not there.
+- **Moog Spectravox** — still blocked, and for a sharper reason than before. The CDN has exactly
+  one Spectravox document, `Spectravox - Quickstart Guide - v1.0.pdf`, and it is **2 pages with 2
+  characters of extractable text** — an image with no text layer, useless as a source and only a
+  quickstart in any case. Six candidate paths for a full user guide all 404, and the downloads
+  page exposes no direct links. Not workable until a real manual is in hand.
 - ~~**Deluge guidebook**~~ — resolved. It was an excerpt; the full 284pp guidebook and the
   community firmware docs are both here now.
 
