@@ -61,8 +61,8 @@ The community docs are a **moving target**, unlike a PDF — `manuals/deluge-com
 | `minilogue_xd_OM_E9.pdf` | Korg minilogue xd | 68pp, and it covers **both** the keyboard and the `xd module` — one document, two devices, so every dimension line names which. Korg publishes **no separate Parameter Guide**, which is the TR-1000 trap and is *not* one here: the Owner's Manual carries 109 bracketed ranges and every front-panel sound knob has one, `[0...1023]` for the continuous controls. Specifications is p.66, not p.65: 4-voice, 500 x 300 x 85 mm for the keyboard and 500 x 179 x 85 mm for the module. The front-panel parameters run pp.17-26, with VOICE MODE on pp.17-18. |
 | `Subsequent_37_Manual.pdf` | Moog Subsequent 37 | **The parameter source.** 63pp, 168k chars, from [Moog's CDN](https://cdn.inmusicbrands.com/Moog/Subsequent37/Subsequent_37_Manual_0.pdf). Printed folio equals PDF page index throughout, so a citation needs no offset. Two-note paraphonic, so it fails a triad — see #20. |
 | `Minitaur_Manual.pdf` | Moog Minitaur | 19pp, from the same [Moog CDN path](https://cdn.inmusicbrands.com/Moog/Minitaur/Minitaur_Manual.pdf) as the Subsequent 37. **Specified in physical units rather than encoder counts** — cutoff `20Hz to 20KHz`, envelope stages `1 msec to 30 sec`, OSC 2 `± 12 Semitones` — which is more useful than a 0-1023 scale and rarer. Dimensions given in mm directly: 222.3 x 130.2 x 79.4. One trap: `RESONANCE: 0 to Self-Oscillation` is a named endpoint and not a number, the same shape as the CRAVE's `lo/mix 1 to hi/mix 2`. |
-| `TR-6S_Manual_eng01_W.pdf` | Roland TR-6S | Owner's Manual, 41pp / 96k chars. [direct](https://static.roland.com/assets/media/pdf/TR-6S_Manual_eng01_W.pdf). **Note the `_Manual_` in the filename** — the TR-1000 and TR-8S owner's manuals are `TR-1000_eng02_W.pdf`, with no such segment, and guessing that shape here returns 403. **Documents no parameter ranges** — the Parameter Guide below is the value source, per Roland's split-manual pattern (#18). |
-| `TR-6S_Manual_eng02_W.pdf` | Roland TR-6S | Edition 02 of the same, adding the system-update section. |
+| `TR-6S_Manual_eng01_W.pdf` | Roland TR-6S | Owner's Manual, 39pp / 90k chars. [direct](https://static.roland.com/assets/media/pdf/TR-6S_Manual_eng01_W.pdf). **Note the `_Manual_` in the filename** — the TR-1000 and TR-8S owner's manuals are `TR-1000_eng02_W.pdf`, with no such segment, and guessing that shape here returns 403. **Documents no parameter ranges** — the Parameter Guide below is the value source, per Roland's split-manual pattern (#18). |
+| `TR-6S_Manual_eng02_W.pdf` | Roland TR-6S | Edition 02 of the same, adding the system-update section. 41pp / 96k chars — the figures this table gave for `eng01` until they were re-measured. |
 | `TR-6S_Parameter_eng02_W.pdf` | Roland TR-6S | **The Parameter Guide, and the value source.** 13pp / 48k chars of `Parameter` / `Value` / `Explanation` tables — the ranges the Owner's Manual does not carry. Roland titles it *Parameter Guide* and the filename says `_Parameter_`, not `_Reference_` as the TR-8S and MC-101 do nor lowercase `_reference_` as the TR-1000 does; the word is per-product. [direct](https://static.roland.com/assets/media/pdf/TR-6S_Parameter_eng02_W.pdf), confirmed 2026-08-26 — `eng01` returns 403 at the same path, so the edition is load-bearing. |
 | `Mother_32_Users_Manual.pdf` | Moog Mother-32 | 73pp / 108k chars. [direct](https://cdn.inmusicbrands.com/Moog/Mother32/Mother_32_Users_Manual.pdf) |
 | `DFAM_Manual.pdf` | Moog DFAM | 44pp / 58k chars. [direct](https://cdn.inmusicbrands.com/Moog/DFAM/DFAM_Manual.pdf) |
@@ -70,6 +70,49 @@ The community docs are a **moving target**, unlike a PDF — `manuals/deluge-com
 | `Grandmother_Manual_Version_2.pdf` | Moog Grandmother | 56pp / 77k chars. [direct](https://cdn.inmusicbrands.com/Moog/Grandmother/Grandmother_Manual_Version_2.pdf) |
 | `Subharmonicon_Manual.pdf` | Moog Subharmonicon | 58pp / 81k chars. [direct](https://cdn.inmusicbrands.com/Moog/Subharmonicon/Subharmonicon_Manual%20AMZ.pdf) — the source filename contains a URL-encoded space and a retailer suffix; saved here without either. |
 | `Sub_37_Quickstart_Print.pdf` | Moog Subsequent 37 | **The panel drawing the manual does not have**, and the source of `panel.ts`'s geometry. A two-page poster from [Moog's CDN](https://cdn.inmusicbrands.com/Moog/Subsequent37/Sub_37_Quickstart_Print.pdf); its lower half is a flat, to-scale legend of the whole control surface. Also carries Moog's own acid recipe: *"Turn on Legato Glide, set Glide Type to EXP, and set the GLIDE TIME knob to 2."* The filename says `Sub_37` and the document says Subsequent 37 in its body, its panel artwork and its "Download the full Subsequent 37 Manual" footer — Moog reused the earlier filename. Cite it as **Subsequent 37 Quickstart Guide**. |
+
+| `MPC_Live_III_MPC_XL_User_Guide_v3.7.pdf` | Akai MPC Live III, MPC XL | **One guide covers both boxes** — 535pp / 909k chars / 1,791 ranges, manual version v3.7, MPC 3 OS. Mirrored from [Kraft Music](https://files.kraftmusic.com/media/ownersmanual/Akai_Professional_MPC_XL_User_Guide.pdf), a retailer, because Akai's own downloads page is JS-rendered and its CDN returns 403 for every guessed path to this document. See the draft warning below before reaching for the Akai CDN copy. |
+| `MPC_Standalone_OS_User_Guide_v3.9.pdf` | Akai MPC One G2 (and Key 37 G2, Live II, X) | 530pp / 933k chars. **The One G2 has no guide of its own** — it is documented here, 46 mentions against 1 for the XL, so this is the file for that box and the one above is not. [direct](https://cdn.inmusicbrands.com/Software/15JM26PSBC/MPC%20Standalone%20OS%20-%20User%20Guide%20-%20v3.9.pdf), confirmed 2026-08-27 |
+| `OP-XY_full_guide_v1.1.15.pdf` | Teenage Engineering OP-XY | 135pp / 263k chars / 80 ranges, **full guide v1.1.15**. Searchable, and the right file — see the two-PDF trap below. [direct](https://assets.teenage.engineering/_img/6a452a3b31b95d1c6dbb44bb_original.pdf) via [guides](https://teenage.engineering/guides/op-xy), confirmed 2026-08-27 |
+| `HAPAX_manual.pdf` | Squarp Hapax | Complete manual, 159pp / 171k chars / 18 ranges. The low range count is the shape of the device rather than a partial document — it is a sequencer, and the Metropolix reads the same way. [direct](https://squarp.net/static/HAPAX_manual-955ab84ef06fd2782cc0ee083550f72c.pdf), confirmed 2026-08-27. The filename carries a content hash that will change when Squarp revises it; the [manual page](https://squarp.net/hapax/manual/) is the stable link. |
+| `HAPAX_QUICKSTART_EN.pdf` | Squarp Hapax | 16pp quickstart. Panel-shaped, so likely the source for a `panel.ts` the way the Subsequent 37's poster was. |
+
+### Teenage engineering publishes two OP-XY PDFs, and a search finds the wrong one
+
+The one to use is the **full guide**, v1.1.15, linked from
+[teenage.engineering/guides/op-xy](https://teenage.engineering/guides/op-xy): 135pp, 599 embedded
+fonts, 263k extractable characters, 80 ranges. It is searchable and entirely workable.
+
+The other is the **printed guide**, `OP-XY_printed guide_v1.0.9-2` by its own title, an Adobe
+Illustrator layout at `teenage.engineering/_img/673624c81db2feb0839f6e76_original.pdf`. It is what
+a web search surfaces first. Two things are wrong with it: every glyph is converted to outlines,
+so `pdffonts` reports **zero embedded fonts** and `pdftotext` extracts 114 characters from 114
+pages — 114 form feeds and nothing else — and it is an **older version**, 1.0.9 against 1.1.15.
+
+It was downloaded here first and written up as "the OP-XY manual has no text in it", which was
+wrong about the device and right only about a print artifact nobody should author from. The check
+that catches it costs nothing: `pdfinfo` prints the title, and this one says *printed guide* and
+its version in plain words.
+
+**One caveat on the good file.** Its Producer is `Adobe Acrobat 26 Paper Capture Plug-in`, which
+is OCR — teenage engineering appears to have run recognition over the same outlined artwork to
+give it a text layer. It reads cleanly in spot checks (`0-127`, `51-100`, control names at
+plausible counts) and is fine for finding a page. For a *value*, prefer confirming the digits
+against a rendered page, because a misread digit is exactly the failure that produces a wrong
+number wearing a correct citation.
+
+### Akai publishes a draft of the Live III guide on its own CDN
+
+`https://cdn.inmusicbrands.com/akai/MPC%20Live%20III%20-%20User%20Guide%20-%203.6.pdf` resolves,
+looks official, and its title page reads **"DRAFT DOCUMENT NOT FOR PUBLIC DISTRIBUTION"**. It is
+manual version v3.6 and it covers the Live III alone. Do not cite it. The released v3.7 above
+supersedes it, covers the XL as well, and carries no such marker. The draft is deliberately not
+kept here — unlike the Deluge excerpt, it is trivially re-findable, so this note is the guard
+instead of a 34 MB file.
+
+**A grep trap in the same family:** `MPC Live II` is a substring of `MPC Live III`, so counting
+mentions of the older box inside a Live III document returns the newer box's count and looks like
+evidence of joint coverage. Match `MPC Live II([^I]|$)` or the answer is wrong.
 
 ### The Subsequent 37's "Patch Guide" is not a document
 
@@ -133,6 +176,12 @@ Filename casing is inconsistent between products: `TR-1000_reference_...` is low
   fetched by hand from a browser. This is not a nicety: #80 had to leave the Cascadia's
   `clock.preferredSource` undecided until its manual was supplied by hand, because a decision with
   no page behind it is exactly what that field exists to prevent.
+- **Torso T-1 publishes no PDF at all.** The official documentation is a website,
+  [docs.torsoelectronics.com](https://docs.torsoelectronics.com/t1/introduction/), and the only
+  PDFs are on scraper sites, which are not a citable source. If that device is ever authored, the
+  answer is the shape `deluge-community/` already uses here: mirror the docs, pin them by date,
+  and put the date in every citation. A live URL cited without one means nothing, because the page
+  can change under the citation.
 - **Moog Labyrinth and Spectravox** — no CDN path found. Present on manual-scraper sites only,
   which are not a citable source. Everything else in that family is here.
 - ~~**Deluge guidebook**~~ — resolved. It was an excerpt; the full 284pp guidebook and the
