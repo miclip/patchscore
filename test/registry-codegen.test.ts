@@ -379,3 +379,40 @@ describe('the committed registry', () => {
     ])
   })
 })
+
+/**
+ * Invariant 2/#196. **Which device folders import a sibling, pinned.**
+ *
+ * Sibling imports are allowed — three MPCs share one manual, and three copies of twenty recipes
+ * would drift with one of them corrected. What is not allowed is one appearing without anybody
+ * deciding. Two sessions under time pressure each added one, and until this nothing recorded that
+ * `akai-mpc-live-iii` had become load-bearing for two other devices: restructuring it breaks them,
+ * and the only warning was a build error after the fact.
+ *
+ * The list is the record. Adding an import fails here, and whoever updates it states in the commit
+ * why the sibling is the right source and what makes the break loud — `shared()` on the XL,
+ * `pageInV39` on the One G2, both of which throw rather than silently drift.
+ */
+describe('cross-device imports are declared (invariant 2/#196)', () => {
+  it('names every folder that imports another, and what it imports', async () => {
+    const { readFileSync, readdirSync } = await import('node:fs')
+    const root = 'lib/devices'
+    const found: string[] = []
+    for (const entry of readdirSync(root, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      let text: string
+      try {
+        text = readFileSync(`${root}/${entry.name}/index.ts`, 'utf8')
+      } catch {
+        continue
+      }
+      for (const m of text.matchAll(/from '\.\.\/([a-z0-9-]+)\/index'/g)) {
+        found.push(`${entry.name} -> ${m[1] ?? ''}`)
+      }
+    }
+    expect(found.sort()).toEqual([
+      'akai-mpc-one-g2 -> akai-mpc-live-iii',
+      'akai-mpc-xl -> akai-mpc-live-iii',
+    ])
+  })
+})
