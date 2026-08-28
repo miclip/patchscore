@@ -6,6 +6,7 @@ import {
   contentNotice,
   evidenceFor,
   noteDurationNotice,
+  patternEntryNotice,
   noteOffSteps,
   printsNoteDuration,
   rangeDocuments,
@@ -1738,6 +1739,26 @@ const HOOK_IS_THE_PATTERN =
  * pointer to a Hook section that says "this template has no hooks" is the exact false trail this
  * whole change is removing.
  */
+/**
+ * §8/#65. What phase 5 says for a part on a box that cannot hold a pattern.
+ *
+ * **The grid still prints, and that is the point.** The rhythm is real and the reader needs it;
+ * what was wrong was the silent assumption about *where they enter it*. Suppressing the grid here
+ * would answer a wrong instruction by removing information, which is the opposite of what §4.2's
+ * held-pad case does and the opposite of what this reader needs — they still have to program the
+ * figure, just not on this box.
+ *
+ * The device's own words for why, so the sentence carries the manual's reason rather than a
+ * generic one. Where the pattern goes instead depends on the rig, and phase 3 is where a reader
+ * finds what is driving what, so this points rather than guesses.
+ */
+function patternEnteredElsewhere(reason: string): string {
+  return (
+    `**Not programmed here** — ${reason}. Enter this figure on whatever is driving it; ` +
+    'the rig diagram shows what that is.'
+  )
+}
+
 const SUSTAINED_NOT_STRUCK =
   '**Held, not struck** — this part sustains rather than repeating a figure, so the direction ' +
   'authors no grid for it. Nothing to program here.'
@@ -1856,6 +1877,14 @@ function phaseSteps(
     } else if (sustained) {
       out.push('')
       out.push(SUSTAINED_NOT_STRUCK)
+    } else {
+      // §8/#65. After the recipe pointer and before the blocks, in the same place the two
+      // sentences above sit: it qualifies the grid that follows rather than replacing it.
+      const entry = patternEntryNotice(deviceById.get(a.deviceId))
+      if (entry !== undefined) {
+        out.push('')
+        out.push(patternEnteredElsewhere(entry.reason))
+      }
     }
     for (const { sections, block } of blocks) {
       out.push('')

@@ -871,6 +871,11 @@ export const device: Device = {
         'a box that cannot transmit clock cannot be a rig’s clock source, and p.25 says it cannot. This is not the usual "no page states what this box is for in a rig" — the question is settled one level down, by the capability rather than by the intent',
     },
     'features.lfo': cite(16),
+    // §8/#65. The same page as `features.perStep` below and the same reading of it, because it
+    // is the same negative: Appendix E's synth-engine list is exhaustive and no sequencer is on
+    // it. The two facts are not the same claim — one is about per-step lanes, one about whether
+    // a pattern can be entered here at all — but p.29 is what establishes both.
+    patternEntry: cite(29),
     'features.perStep': {
       kind: 'cited-against',
       // p.29, not p.9. p.9 says the box responds to MIDI, which is a positive statement about
@@ -905,6 +910,18 @@ export const device: Device = {
    * One monophonic analog voice (p.29: "TYPE: Programmable Monophonic Analog Bass Synthesizer").
    * Two oscillators, but they are one voice — both follow the same note.
    */
+  /**
+   * §8/#65. Every note this box plays arrives from somewhere else — p.9's first sentence is that
+   * it *"responds to MIDI messages on both DIN and USB MIDI Inputs"*, and Appendix E's engine
+   * list on p.29 is exhaustive with no sequencer on it. Phase 5 used to draw this box a step
+   * grid, which is an instruction it cannot carry out.
+   */
+  patternEntry: {
+    kind: 'external',
+    reason:
+      'it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage',
+  },
+
   voices: [{ kind: 'fixed', id: 'voice', label: 'Voice', roles: [...VOICE_ROLES], polyphony: 1 }],
   /**
    * One assignable exists, so one is the most that can ever be occupied (§12.4). Written out

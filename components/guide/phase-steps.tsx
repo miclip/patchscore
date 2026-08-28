@@ -13,6 +13,7 @@ import {
   STEPS_PER_BAR,
   chainPlan,
   isSustainedPart,
+  patternEntryNotice,
   reStrikesHeldNote,
   tightestReStrike,
 } from '@/lib/core'
@@ -23,6 +24,7 @@ import {
   ProvenanceMark,
   ReArticulationRef,
   SoundRef,
+  EnteredElsewhereRef,
   SustainedRef,
 } from './instruction'
 
@@ -397,7 +399,13 @@ export function PhaseSteps({
             <HookPointer a={a} />
           ) : isSustainedPart(a) ? (
             <SustainedRef />
-          ) : null}
+          ) : (
+            // §8/#65. Qualifies the grid below rather than replacing it.
+            (() => {
+              const entry = patternEntryNotice(deviceById.get(a.deviceId))
+              return entry === undefined ? null : <EnteredElsewhereRef reason={entry.reason} />
+            })()
+          )}
           {mergeBlocks(a).map((block) => (
             <div className="block" key={block.sections.join(',')}>
               <h5>{block.sections.join(', ')}</h5>

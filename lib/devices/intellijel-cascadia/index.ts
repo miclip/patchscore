@@ -1503,6 +1503,11 @@ export const device: Device = {
 
   capabilityEvidence: {
     noteDuration: cite(83),
+    // §8/#65. p.78 describes MIDI IN as being for "whichever controller, sequencer or MIDI
+    // interface you'll use to play Cascadia" — the manual saying in its own words that the
+    // notes come from elsewhere. The same page already carries the `clock.preferredSource`
+    // reading below, and this is the other half of what it establishes.
+    patternEntry: cite(78),
     ...JACK_EVIDENCE,
     'clock.preferredSource': {
       kind: 'cited-against',
@@ -1517,6 +1522,18 @@ export const device: Device = {
    * semi-modular mono synth" (p.7) — and deliberately not an inference from the parts on the
    * panel, which include a second VCA and a second filter. See `VOICE_ROLES` above.
    */
+  /**
+   * §8/#65. No sequencer, which the provenance notes above already record as the reason
+   * `features.perStep` is absent and no recipe articulates. p.78's MIDI IN is for *"whichever
+   * controller, sequencer or MIDI interface you'll use to play Cascadia"*. The recipes' own
+   * `routing` prose says the same thing to a human; this says it where the renderer can read it.
+   */
+  patternEntry: {
+    kind: 'external',
+    reason:
+      'it has no sequencer, so it is played from whichever controller or sequencer is driving the rig',
+  },
+
   voices: [{ kind: 'fixed', id: 'voice', label: 'Voice', roles: VOICE_ROLES, polyphony: 1 }],
 
   /**
