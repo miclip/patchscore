@@ -665,10 +665,11 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
     .map((d) => d.id)
     .sort(byCodeUnit)
 
-  it('is the six boxes established to ship one, and a seventh has to be added deliberately', () => {
+  it('is the seven boxes established to ship one, and an eighth has to be added deliberately', () => {
     // The derivation covers whatever is declared; this says which declarations were expected, so
     // a new one is loud in review rather than silently absorbed.
     expect(SHIPPED).toEqual([
+      'akai-mpc-live-iii',
       'elektron-digitakt-ii',
       'polyend-tracker-mini',
       'roland-mc-101',

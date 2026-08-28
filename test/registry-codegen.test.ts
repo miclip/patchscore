@@ -333,6 +333,8 @@ describe('the committed registry', () => {
       'behringer-crave',
       'intellijel-cascadia',
       'roland-tr-8s',
+      // 436 mm — p.530's `436 x 256 x 67 mm`, with the axis order printed in the row header.
+      'akai-mpc-live-iii',
       'roland-tr-1000',
       // The three keyboards, and the widest things in the library that are not mixers. The
       // Subsequent 37 and the Model 2400 are within a millimetre of each other and are not a

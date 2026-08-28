@@ -907,14 +907,17 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * box with more voices does, so on this device the floor and the repaired search grow at
    * nearly the same rate. That is the repair being less effective here, not absent.
    *
-   * **#183 moved it again without adding a device: 471,392 → 493,870, a rise of 4.8%.** The TR-8S
-   * gained `pad` and `stab` on its RC slot when the `sampled-chord` route turned out to be open,
-   * so one existing voice became a candidate for two more requests. The repaired sweep barely
-   * noticed — `industrial-techno` went 14,878 → 15,441 and the matrix's worst case is unchanged
-   * at 19,066 — which is the gap between the two rates saying the thing it usually says: the
-   * repair absorbs a widened voice better than it absorbs a new one.
+   * The MPC Live III moves it again — **471,392 → 637,578**, a rise of 35.3% — and the two growth
+   * rates come apart again, which is the more usual shape: the repaired sweep rose 12.1% over the
+   * same device (`test/search-symmetry.test.ts` records 19,066 → 21,368). Close to three times the
+   * gap, and it is what the TR-6S note predicts from the other end. This box declares *two* pools
+   * whose role sets barely overlap — sixteen fixed-note pads carrying seventeen roles, sixteen
+   * chromatic tracks carrying all twenty-three — so most request pairs land in exactly the
+   * position the repair is for: two requests §4.2 will not let share a voice, on a device with
+   * plenty of voices to separate them onto. The unrepaired floor pays for all of it and the
+   * repaired search collapses most of it.
    */
-  it('walks the recorded 493,870 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 637,578 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -922,7 +925,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(493_870)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(637_578)
     // And the repaired floor is emphatically not walking it.
     expect(assign(input).search.nodes).toBeLessThan(20_000)
   })

@@ -887,14 +887,16 @@ describe('rack view', () => {
 
     // Every kind in the vocabulary is exercised by the authored boxes, so a renderer arm
     // that stopped working would show up here rather than only in Chrome.
-    // Fifteen, from two boxes that author *two* screens each and the rest one apiece. The TR-8S
+    // Sixteen, from two boxes that author *two* screens each and the rest one apiece. The TR-8S
     // draws its main display and the separate value readout beside it; the minilogue xd draws
     // its main organic-EL display and the MULTI ENGINE's own 7-segment readout, which p.66 lists
     // as two separate things in two separate sections. Metropolix, the Digitakt II, the
     // Subsequent 37 and the TR-6S bring one each — the Moog's is the LCD in its PROGRAMMING
     // column, and the TR-6S has a single display where its larger sibling has two. The two
     // panels with none are the Cascadia and the CRAVE, which genuinely have no display.
-    expect(count('rack-screen')).toBe(15)
+    // 16: plus the MPC Live III's, whose 150 x 93 mm active area is the largest in the library
+    // and carries that panel's voice field on top of it.
+    expect(count('rack-screen')).toBe(16)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -914,7 +916,9 @@ describe('rack view', () => {
     // one assembly; the second SUSTAIN is the only new shape.
     // 132: plus the TR-6S's six instrument level faders, one per instrument, on the same even
     // pitch as its six instrument select buttons below them.
-    expect(count('rack-fader')).toBe(132)
+    // 133: plus the MPC Live III's touch strip, a single continuous linear control down the left
+    // edge — a fader of one, the way the Grandmother's three single sliders are.
+    expect(count('rack-fader')).toBe(133)
     // 103: the TR-1000's sixteen step keys, the CRAVE's thirteen-note keyboard, and thirty-seven
     // each from the minilogue xd and the Subsequent 37 — twenty-two white in one grid and
     // fifteen black in six clusters, because a keyboard drawn as an even row of rectangles stops
@@ -939,7 +943,7 @@ describe('rack view', () => {
     // Sixteen since the Subharmonicon landed — one field per device that has voices to show.
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(17)
+    expect(fields).toHaveLength(18)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

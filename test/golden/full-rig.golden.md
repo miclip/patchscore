@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → Grandmother · Voice — *Kick with the envelope cabled to Oscillator 1’s pitch*
+- **`kick`** → MPC Live III · Mono Track 1 — *DrumSynth Kick, transient forward and the low band lifted*
   - p1 · exact `hard` · every section
 - **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
@@ -83,6 +83,10 @@ None.
 
 - Minitaur `CONTROLLER INPUTS · PITCH CV` and `CONTROLLER INPUTS · GATE` — nothing to plug in. Play it from its own keyboard or sequencer.
 
+- **MPC Live III** — groovebox · 1 part
+  - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
+  - audio: stereo main out · 4 individual outs · USB audio · audio in
+  - mixer: 1 part, 4 individual outs: one channel each
 - **CRAVE** — semi-modular · 1 part
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
@@ -111,14 +115,14 @@ None.
   - clock: sends clock · analog-clock
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **Grandmother** — semi-modular · 1 part
+- **Grandmother** — semi-modular · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per the Global Settings (p.37) · manual
     - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
   - MIDI OUT: Everything originating on this box, MIDI Clock included when the Global Setting sends it (p.37) · manual
     - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
   - audio: mono main out · audio in
-  - mixer: 1 part, no individual outs: one mono channel for all
+  - mixer: no parts assigned; nothing to patch
 - **Matriarch** — semi-modular · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per Global Setting 1.5 (p.64) · manual
@@ -239,9 +243,9 @@ Note length is set per note here — `LEN`. · manual
 
 ## 5. Step programming
 
-### `kick` — Grandmother · Voice
+### `kick` — MPC Live III · Mono Track 1
 
-**Kick with the envelope cabled to Oscillator 1’s pitch** — settings in Sound design
+**DrumSynth Kick, transient forward and the low band lifted** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -250,12 +254,22 @@ Note length is set per note here — `LEN`. · manual
 ```
 - `downbeat` — 1, 9
 
+**On this box** — MPC Live III
+
+- `downbeat` → `velocity` 120 on steps 1, 9
+  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
+
 **Build, Breakdown** — 16 steps, band 1
 
 ```
  1 x··· x··· x··· x···
 ```
 - `downbeat` — 1, 5, 9, 13
+
+**On this box** — MPC Live III
+
+- `downbeat` → `velocity` 120 on steps 1, 5, 9, 13
+  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -266,10 +280,10 @@ Note length is set per note here — `LEN`. · manual
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — Grandmother
+**On this box** — MPC Live III
 
-- `accent` → `accent` true on step 9
-  - ↳ hint: REC mode, then TAP adds an accent
+- `downbeat` → `velocity` 120 on steps 1, 5, 13
+  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
 
 ### `sub` — Minitaur · Voice
 
@@ -538,6 +552,36 @@ Note length is set per note here — `LEN`. · manual
 
 ## 6. Sound design
 
+### MPC Live III
+
+*Values below cite MPC Live III / MPC XL User Guide v3.7.*
+
+#### Mono Track 1 — `kick`: DrumSynth Kick, transient forward and the low band lifted
+
+*Ranges cite manual — MPC Live III / MPC XL User Guide v3.7, p.432.*
+
+- **Track Type** `Plugin`
+- **Plugin** `DrumSynth`
+- **Drum Type** `Kick`
+  - ↳ note: One DrumSynth instrument per plugin track
+- **Velocity** `30` % (0…100 %)
+  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
+- **Gain** `-2` dB (-68…12 dB)
+  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
+  - ↳ note: p.431 prints "-Inf, -68.0 – 0 – +12.0 dB"; -Inf is a setting below the range, not part of it
+- **Transient Attack** `45` % (-100…100 %)
+- **Distortion Drive** `6` dB (0…60 dB)
+- **Distortion Mix** `25` % (0…100 %)
+- **EQ Low Freq** `58` Hz (20…1000 Hz)
+- **EQ Low Gain** `3.5` dB (-12…12 dB)
+  - ↳ note: A `Cut` setting sits below the numeric range on the same page
+- **EQ High Gain** `-1.5` dB (-12…12 dB)
+- **Comp Ratio** `4` (1…100)
+  - ↳ note: p.432 prints the range as 1.0:1 - 100.0:1; this is the left-hand number
+- **Comp Attack** `8` ms (0.1…300 ms)
+  - ↳ note: p.432 prints the low end as 100 us
+- **Comp Threshold** `-14` dB (-60…0 dB)
+
 ### CRAVE
 
 *Values below cite CRAVE Quick Start Guide BE_0718-AAJ_WW.*
@@ -697,63 +741,6 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ hint: Hold SHIFT, flip to SELECT
 - **EFFECTS · DEPTH** `62` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
-
-### Grandmother
-
-*Values below cite Moog Grandmother User’s Manual (Version 2).*
-
-#### Voice — `kick`: Kick with the envelope cabled to Oscillator 1’s pitch
-
-Routing — Played from its own 32-note keyboard, from the arpeggiator or the 256-step sequencer, or over MIDI IN. Two cables: + ENV OUT to OSCILLATORS 1 PITCH IN for the drop — there is no normalled envelope-to-pitch route on this box — and KB VEL OUT to CUTOFF IN, without which p.30 says the accent is inaudible
-
-- **OSCILLATOR 1 OCTAVE** `32'`
-- **OSCILLATOR 1 WAVEFORM** `TRIANGLE`
-- **OSCILLATOR 2 OCTAVE** `16'`
-- **OSCILLATOR 2 WAVEFORM** `TRIANGLE`
-- **SYNC** `OFF`
-- **OSCILLATOR 2 FREQUENCY** `0` st (-7…7 st)
-  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.12
-  - ↳ hint: 12 o’clock is unison with Oscillator 1
-- **OSCILLATOR 1** `82` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: Past 1 o’clock the mixer starts to overdrive
-- **OSCILLATOR 2** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **NOISE** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **CUTOFF** `120` Hz (10…20000 Hz)
-  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.16
-- **RESONANCE** `30` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: Past 3 o’clock the ladder self-oscillates
-- **ENVELOPE AMT** `66` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: 12 o’clock is off; either way from there
-- **KBD TRACK** `OFF`
-- **ATTACK** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **DECAY** `14` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **SUSTAIN** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **RELEASE** `12` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **VCA MODE** `ENV`
-- **VOLUME** `78` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **MIX** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: Fully clockwise is reverb only, no dry
-- **GLIDE** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-
-**Patch**
-
-- `ENVELOPE · + ENV OUT` → `OSCILLATORS · 1 PITCH IN`
-  - ↳ note: The pitch drop — a short DECAY makes it a click, a longer one a boom
-- `ARP/SEQ · KB VEL OUT` → `FILTER · CUTOFF IN` · manual
-  - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.30
-  - ↳ note: Makes a sequencer accent audible — the accent envelope only exists at this jack
 
 ### Minitaur
 
@@ -1086,7 +1073,9 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
 
 **Sidechain**
 
-The Cascadia can duck to another box: patch the box you want it to follow into its audio in.
+The MPC Live III and Cascadia can duck to another box: patch the box you want each to follow into its audio in.
+
+The MPC Live III can also duck from its own parts.
 
 The TR-1000, TR-6S, TR-8S and Deluge duck from their own parts only.
 
@@ -1094,6 +1083,7 @@ The TR-1000, TR-6S, TR-8S and Deluge duck from their own parts only.
 
 What processes audio in this rig:
 
+- MPC Live III — carries effects, though no part in this guide reaches them
 - ZOIA Euroburo — is an effects unit (stereo main out · audio in)
 - Matriarch — carries effects, though no part in this guide reaches them
 - Tracker Mini — carries effects, though no part in this guide reaches them
