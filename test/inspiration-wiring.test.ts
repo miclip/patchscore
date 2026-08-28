@@ -380,7 +380,9 @@ describe('what a refusal does to the page (§5.3)', () => {
   }
 
   function area(application: InspirationApplication | undefined, result: ReturnType<typeof resolve> | undefined) {
-    return renderToStaticMarkup(createElement(GuideArea, { application, result, seed: 1 }))
+    return renderToStaticMarkup(
+      createElement(GuideArea, { application, result, seed: 1, onClockSource: () => {} }),
+    )
   }
 
   it('renders the rack and the guide when the selection composes', () => {

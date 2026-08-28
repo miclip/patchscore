@@ -86,6 +86,14 @@ export type ClockSource = {
    */
   claims: number
   /**
+   * §7.4/#200. **True when the reader picked this box rather than the ranking.**
+   *
+   * Rendered, never ranked, like the two fields above: by the time this is set the choice has
+   * already been made, and it is carried so the guide can say *why* this box is in charge
+   * without a renderer re-deriving §7.4's keys.
+   */
+  chosen: boolean
+  /**
    * §7.4/#144. **How many boxes were eligible at all** — how many declare `canSendClock`.
    *
    * `claims` says what the ranking's one semantic key found; this says whether there was
@@ -115,9 +123,12 @@ export type ClockSource = {
  * Derived here rather than stored as a fourth field, so there is exactly one place the three
  * words are decided and no way for `claims` and a `basis` string to disagree.
  */
-export type ClockSourceBasis = 'claimed' | 'contested' | 'tie-break'
+export type ClockSourceBasis = 'chosen' | 'claimed' | 'contested' | 'tie-break'
 
 export function clockSourceBasis(source: ClockSource): ClockSourceBasis {
+  // #200 first: a reader who picked a box does not need to be told how the ranking would have
+  // gone. The other three answer "why this one" only when nobody answered it for us.
+  if (source.chosen) return 'chosen'
   if (source.claims === 0) return 'tie-break'
   return source.claims === 1 ? 'claimed' : 'contested'
 }
@@ -186,9 +197,16 @@ function transportRank(device: Device): number {
 export function selectClockSource(
   devices: readonly Device[],
   occupied: Map<DeviceId, number>,
+  chosenId?: DeviceId | undefined,
 ): ClockSource | undefined {
   const capable = devices.filter((d) => d.clock.canSendClock)
   if (capable.length === 0) return undefined
+  // §7.4/#200. The reader's choice outranks every key below, and is honoured only for a box that
+  // can actually send clock — a device with no clock output cannot be made one by picking it, and
+  // obeying a stale link here would print a setup for a socket that does not exist. When the id
+  // names nothing eligible the ranking simply proceeds, which is the same shape as #161's
+  // unreadable key: the override is dropped and the derived answer stands.
+  const chosen = chosenId === undefined ? undefined : capable.find((d) => d.id === chosenId)
   // #121. Counted over the *eligible* boxes, not over the rig: a manifest cannot claim the field
   // without `canSendClock` (the schema refuses it), so the two lists agree today — and counting
   // the eligible ones is what the sort below actually ranked, which is what the guide reports.
@@ -224,7 +242,7 @@ export function selectClockSource(
     return compareCodeUnits(a.id, b.id)
   })
 
-  const winner = ranked[0] as Device
+  const winner = chosen ?? (ranked[0] as Device)
   const rank = transportRank(winner)
   // The fallback is the winner's own first *send* transport, for a box whose only output is a
   // transport `TRANSPORT_PREFERENCE` does not rank — `analog-clock` on the Mother-32 today. The
@@ -235,6 +253,7 @@ export function selectClockSource(
     deviceId: winner.id,
     deviceName: winner.name,
     transport: (TRANSPORT_PREFERENCE[rank] ?? sends[0] ?? '') as string,
+    chosen: chosen !== undefined,
     occupiedAssignables: occupied.get(winner.id) ?? 0,
     claims,
     eligible: capable.length,
@@ -861,6 +880,20 @@ export type SongOverrides = {
    * against it like any other key; an unreadable one is reported and the seed's pick stands.
    */
   key?: string | undefined
+  /**
+   * §7.4/#200. **The box the reader put in charge**, overriding §7.4's ranking.
+   *
+   * Here rather than in a UI state hook because it changes the guide: which box is named, which
+   * setup is printed, and which boxes are told to run free. Invariant 6 says the same inputs
+   * reproduce the same bytes, so a chosen clock source is an *input* — a shared link carries it
+   * and reproduces the guide the sender saw.
+   *
+   * A device that cannot send clock is refused rather than obeyed: the ranking stands and
+   * `ClockSource.chosen` stays false, so the guide never claims a box is the source when it has
+   * no socket to be one. That case reaches here only from a stale link, since the rack offers
+   * the choice on eligible panels alone.
+   */
+  clockSourceId?: DeviceId | undefined
 }
 
 export type ResolveInput = {
@@ -1150,7 +1183,7 @@ export function resolve(input: ResolveInput): ResolveResult {
     }
   })
 
-  const clockSource = selectClockSource(devices, occupiedCounts(assignments))
+  const clockSource = selectClockSource(devices, occupiedCounts(assignments), input.overrides?.clockSourceId)
 
   return {
     template,

@@ -729,6 +729,13 @@ function syncText(following: ClockFollowing, transport: string): string {
  */
 function clockBasisText(source: ClockSource): string {
   switch (clockSourceBasis(source)) {
+    // #200. The reader put this box in charge, so there is nothing to justify — every other
+    // branch here exists to answer "why this one" for somebody who did not decide it. Saying
+    // "you chose it" also keeps the promise the others make: a derived answer and a person's
+    // judgement never reach a reader in the same words, which is the rule stated below for
+    // `interDeviceBasisText` and the reason `claimed` is worded as a fact about the box.
+    case 'chosen':
+      return 'Why this box — you chose it'
     // #144 leaves this one alone, and the reason is the whole rule: it asserts no comparison.
     // "Its manual says leading a rig is its job" is a fact about this box, true whether it was
     // ranked against ten others or against none. Only a sentence claiming that something was

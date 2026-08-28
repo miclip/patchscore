@@ -124,6 +124,7 @@
     "deviceId": "B-tracker",
     "deviceName": "Golden Tracker",
     "transport": "midi-din",
+    "chosen": false,
     "occupiedAssignables": 3,
     "claims": 0,
     "eligible": 2

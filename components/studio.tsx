@@ -19,6 +19,7 @@ import {
   composeTemplate,
   songOverrides,
   withBpm,
+  withClockSource,
   withKey,
   copyStudioLink,
   createStudioSync,
@@ -218,11 +219,17 @@ export function Studio({ initialInputs }: StudioProps) {
             template,
             mood: inputs.mood,
             seed: inputs.seed,
-            // #161. No control writes these yet; a permalink or a stored studio can carry them,
-            // and the guide has to render what the inputs say whatever put them there.
+            // #161/#200. A permalink, a stored studio or a control can put these here, and the
+            // guide renders what the inputs say whatever wrote them.
             overrides: songOverrides(inputs),
           }),
-    [devices, template, inputs.mood, inputs.seed, inputs.bpm, inputs.key],
+    // **`inputs` whole, not its fields one by one.** This list used to enumerate them, and #200
+    // added `clockSourceId` without adding it here: the click wrote the input and the permalink,
+    // the memo did not recompute, and the guide went on naming the box the ranking had picked.
+    // Every field of `inputs` is an input to `resolve` by construction — `devices` and `template`
+    // are themselves derived from it — so depending on the object cannot go stale, where a list
+    // of fields silently does the moment somebody adds a fifth.
+    [devices, template, inputs],
   )
 
   const onCopy = useCallback(() => {
@@ -286,6 +293,15 @@ export function Studio({ initialInputs }: StudioProps) {
     setInputs((current) => withKey(current, key))
   }
 
+  /**
+   * §7.4/#200. Putting a box in charge of the clock, or handing the job back to §7.4's ranking.
+   * An input like the tempo rather than a view setting, so it travels in the permalink and a
+   * shared guide reproduces the one its sender saw.
+   */
+  function setClockSource(deviceId: DeviceId | undefined) {
+    setInputs((current) => withClockSource(current, deviceId))
+  }
+
   return (
     <main className="shell">
       <header className="masthead">
@@ -335,7 +351,11 @@ export function Studio({ initialInputs }: StudioProps) {
           overlay sits here rather than in any one of them. */}
       <div className="columns" ref={columnsRef}>
         <PatchChain areaRef={columnsRef} />
-        <DevicePicker selected={inputs.devices} onToggle={toggleDevice} />
+        <DevicePicker
+          selected={inputs.devices}
+          onToggle={toggleDevice}
+          clockSourceId={inputs.clockSourceId}
+        />
         <GenrePicker selected={inputs.templateId} onSelect={selectTemplate} />
         {/*
           #161. The panel beside INSPIRATIONS, holding the three facts §8's phase 1 opens with.
@@ -366,7 +386,12 @@ export function Studio({ initialInputs }: StudioProps) {
 
         <MoodPanel mood={inputs.mood} onChange={setAxis} />
 
-        <GuideArea application={application} result={result} seed={inputs.seed} />
+        <GuideArea
+          application={application}
+          result={result}
+          seed={inputs.seed}
+          onClockSource={setClockSource}
+        />
       </div>
 
       <Footer permalink={permalink} devices={devices.map((d) => `${d.maker} ${d.name}`)} />

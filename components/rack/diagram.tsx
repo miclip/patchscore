@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import type { PanelFeature } from '@/lib/core'
 import { list } from '../guide/format'
 import type { ClockCable, PanelJack, RackModel, RackPanel, VoiceCable } from './model'
@@ -227,7 +228,20 @@ function Feature({ f }: { f: PanelFeature }) {
 
 const GRID_GAP = 1.2
 
-export function Panel({ panel }: { panel: RackPanel }) {
+export function Panel({
+  panel,
+  onChoose,
+}: {
+  panel: RackPanel
+  /**
+   * §7.4/#200. Put this box in charge of the clock. A pointer convenience only: this `<g>` sits
+   * inside a `role="img"` SVG, so it is invisible to assistive tech by design and the buttons
+   * above the rack are the announced path. Absent for a box that cannot send clock, which is why
+   * the class below is applied from the same condition — an affordance and its action arrive
+   * together or not at all.
+   */
+  onChoose?: (() => void) | undefined
+}) {
   const { spanMm, riseMm } = panel
   // Scaled to the panel, not a fixed size: 9 mm of silkscreen on a 130 mm panel is a banner, and
   // 4.5 mm on a 486 mm one is unreadable. The clamp keeps a narrow panel's name legible without
@@ -235,8 +249,9 @@ export function Panel({ panel }: { panel: RackPanel }) {
   const nameMm = Math.min(Math.max(spanMm * 0.03, 4.5), 9)
   return (
     <g
-      className="rack-panel"
+      className={onChoose === undefined ? 'rack-panel' : 'rack-panel rack-panel-choosable'}
       data-device={panel.deviceId}
+      onClick={onChoose}
       data-clock={panel.clockRole}
       data-generated={panel.generated ? 'yes' : 'no'}
       transform={`translate(${panel.xMm} ${panel.topMm})`}
@@ -455,9 +470,28 @@ function summary(model: RackModel): string {
   return `A rack of ${names}, drawn to relative width.${rows} ${clock}${isolated}${voice}`
 }
 
-export function RackDiagram({ model, idPrefix }: { model: RackModel; idPrefix: string }) {
+export function RackDiagram({
+  model,
+  idPrefix,
+  bpm,
+  onChoosePanel,
+}: {
+  model: RackModel
+  idPrefix: string
+  /**
+   * §7.4/#200. The song's tempo, so the clock source's glow beats at it. Optional: a diagram
+   * rendered without one keeps the static ring and no pulse, which is also what a reader under
+   * `prefers-reduced-motion` sees.
+   */
+  bpm?: number | undefined
+  /** §7.4/#200. Pointer path for putting a box in charge; see `Panel`. */
+  onChoosePanel?: ((deviceId: string) => void) | undefined
+}) {
   const titleId = `${idPrefix}-rack-title`
   const descId = `${idPrefix}-rack-desc`
+  // One beat in milliseconds. Guarded rather than trusted: a zero or negative BPM would make an
+  // infinite animation with a zero-length period, which browsers handle by never painting a frame.
+  const beatMs = bpm !== undefined && bpm > 0 ? Math.round(60_000 / bpm) : undefined
 
   return (
     <svg
@@ -466,6 +500,7 @@ export function RackDiagram({ model, idPrefix }: { model: RackModel; idPrefix: s
       preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-labelledby={`${titleId} ${descId}`}
+      style={beatMs === undefined ? undefined : ({ '--rack-beat': `${beatMs}ms` } as CSSProperties)}
     >
       <title id={titleId}>Rack diagram</title>
       <desc id={descId}>{summary(model)}</desc>
@@ -499,7 +534,17 @@ export function RackDiagram({ model, idPrefix }: { model: RackModel; idPrefix: s
         : null}
 
       {model.panels.map((panel) => (
-        <Panel key={panel.deviceId} panel={panel} />
+        <Panel
+          key={panel.deviceId}
+          panel={panel}
+          onChoose={
+            onChoosePanel === undefined || !panel.canSendClock
+              ? undefined
+              : () => {
+                  onChoosePanel(panel.deviceId)
+                }
+          }
+        />
       ))}
       {model.cables.map((cable) => (
         <Cable key={`${cable.fromDeviceId}->${cable.toDeviceId}`} cable={cable} />

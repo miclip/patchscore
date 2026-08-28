@@ -33,9 +33,12 @@ import { RackDiagram } from './diagram'
 export function RackFullscreen({
   model,
   onClose,
+  bpm,
 }: {
   model: RackModel
   onClose: () => void
+  /** §7.4/#200. Passed through so the clock source beats at tempo here too, not only inline. */
+  bpm?: number | undefined
 }) {
   const closeRef = useRef<HTMLButtonElement>(null)
   const regionRef = useRef<HTMLDivElement>(null)
@@ -123,7 +126,7 @@ export function RackFullscreen({
         onPointerCancel={endDrag}
         style={{ ['--rack-mm' as string]: model.totalMm }}
       >
-        <RackDiagram model={model} idPrefix="rack-full" />
+        <RackDiagram model={model} idPrefix="rack-full" bpm={bpm} />
       </div>
       <p className="rack-modal-foot">Drag to pan, or use the arrow keys. Escape closes.</p>
     </div>
