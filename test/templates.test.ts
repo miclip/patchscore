@@ -186,6 +186,30 @@ describe('invariant 3 — a template never names a device', () => {
     expect(breaches).toEqual([])
   })
 
+  /**
+   * §invariant 3/#189. **The exemption list is pinned, so it can only grow deliberately.**
+   *
+   * #189 worried that this set widens with every device until the check passes anything. The
+   * history says otherwise — three words across twenty-six devices, one per genuine collision:
+   * `key` with the MC-101, `transient` with the TR-8S, `one` with the MPC One G2 — and each
+   * carries its reasoning above. It is not drifting.
+   *
+   * What was missing is any reason it *could not*. A device session under time pressure meets a
+   * collision, adds a word, and the suite stays green: nothing asks whether the word identifies a
+   * box. Pinning the membership makes adding one a deliberate act — the test fails, and whoever
+   * updates it reads the standard three paragraphs up before they do.
+   *
+   * Asserted as a set rather than a size, so swapping a word for another is caught too.
+   *
+   * **This is a second net, not the first one.** The assertion below is the real guard: a
+   * template that names a device has to write an id or a folder name, and that is tested on
+   * substrings which no token exemption can reach. Every word here is one that identifies nothing
+   * on its own, which is why exempting it opens no hole.
+   */
+  it('exempts exactly three English words, and adding a fourth is a decision', () => {
+    expect([...NON_IDENTIFYING_ENGLISH].sort()).toEqual(['key', 'one', 'transient'])
+  })
+
   it('contains no device id or folder name as a substring', () => {
     // Distinctive multi-part strings, so a plain substring test is safe here and catches an id
     // smuggled inside a longer word that the token test would split apart.
