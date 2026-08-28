@@ -665,11 +665,16 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
     .map((d) => d.id)
     .sort(byCodeUnit)
 
-  it('is the nine boxes established to ship one, and a tenth has to be added deliberately', () => {
+  it('is the ten boxes established to ship one, and an eleventh has to be added deliberately', () => {
     // The derivation covers whatever is declared; this says which declarations were expected, so
     // a new one is loud in review rather than silently absorbed.
     expect(SHIPPED).toEqual([
       'akai-mpc-live-iii',
+      // The One G2 reads the same folder off a different document, and names it: v3.9 p.138 has
+      // the Content buttons enter `Expansions/The Vault 2` and `Expansions/Instruments` on the
+      // internal drive. A named expansion is more than v3.7 gave, and still not an inventory of
+      // what is in it, which is the line between `shipped-library` and `enumerable`.
+      'akai-mpc-one-g2',
       'akai-mpc-xl',
       'elektron-digitakt-ii',
       'polyend-tracker-mini',

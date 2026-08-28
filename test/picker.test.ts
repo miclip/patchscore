@@ -102,6 +102,7 @@ describe('device search matches name, maker and kind', () => {
     // Kind — the field #53 asked for by name, and the one that groups rather than identifies.
     expect(ids(devices({ query: 'groovebox' }).rows)).toEqual([
       'akai-mpc-live-iii',
+      'akai-mpc-one-g2',
       'akai-mpc-xl',
       'polyend-tracker-mini',
       'roland-mc-101',
@@ -194,6 +195,7 @@ describe('the kind filter', () => {
   it('narrows to one kind, and combines with the search as AND', () => {
     expect(ids(devices({ kind: 'groovebox' }).rows)).toEqual([
       'akai-mpc-live-iii',
+      'akai-mpc-one-g2',
       'akai-mpc-xl',
       'polyend-tracker-mini',
       'roland-mc-101',
@@ -337,7 +339,7 @@ describe('selected entries survive any filter', () => {
     const shown = devices({ kind: 'groovebox' }, ['roland-tr-1000'])
     expect(ids(shown.rows)).toContain('roland-tr-1000')
     expect(shown.rows.find((r) => r.item.id === 'roland-tr-1000')?.retained).toBe(true)
-    expect(shown.matched).toBe(6)
+    expect(shown.matched).toBe(7)
   })
 
   it('keeps them in registry order rather than appending them at the end', () => {

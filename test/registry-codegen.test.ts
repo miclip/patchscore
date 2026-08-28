@@ -315,6 +315,11 @@ describe('the committed registry', () => {
       // so the order is decided by the numbers.
       'roland-tr-6s',
       'zoom-livetrak-l-8',
+      // 272 mm, and the only square panel in the library — p.478's `272 x 272 x 53 mm`. That is
+      // why its span says less about it than most: the ordering here is by width, and this box
+      // is as deep as it is wide, so it draws far taller in the rack than the four narrower
+      // panels above it.
+      'akai-mpc-one-g2',
       // **288 mm, and the only span in this list not cited to a page.** The OP-XY's guide
       // publishes no dimension anywhere in 135 pages, so this is teenage engineering's own
       // published figure from their product page rather than from the manual — and `Cite` has no
