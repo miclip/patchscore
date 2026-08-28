@@ -659,6 +659,30 @@ export const PatternEntrySchema = z.strictObject({
   reason: z.string().min(1, 'say what the manual established about how the box is played'),
 })
 
+/**
+ * §7.4/#79. **A box that takes transport from a computer rather than from a clock wire.**
+ *
+ * The Model 2400 declares `canReceiveClock: false`, and that is right: its MIDI Implementation
+ * Chart recognises no clock, no song position and no quarter frame. But it emulates HUI and
+ * Mackie Control over USB, so a DAW drives its transport — play, stop, locate — and telling a
+ * reader it "runs free" is wrong in the one workflow the box is built for.
+ *
+ * **This does not make it a clock follower and must not be read as one.** `canReceiveClock` stays
+ * false, it never becomes a `follower`, and no cable is drawn. What it changes is a sentence: the
+ * guide says the box runs free *unless a computer is driving it*, which is the honest form of a
+ * claim that depends on a workflow the guide cannot see.
+ *
+ * The DAW itself stays unexpressed — a participant with no panel, no assignables and no span is
+ * the feature #79 defers, and this is deliberately not it.
+ */
+export const DAW_TRANSPORT_FACT = 'dawTransport'
+
+export type DawTransport = { protocol: string }
+
+export const DawTransportSchema = z.strictObject({
+  protocol: z.string().min(1, 'name the protocol the manual names'),
+})
+
 export const CAPABILITY_FACTS = [
   'clock.canSendClock',
   'clock.canReceiveClock',
@@ -676,6 +700,7 @@ export const CAPABILITY_FACTS = [
   CONTENT_FACT,
   NOTE_DURATION_FACT,
   PATTERN_ENTRY_FACT,
+  DAW_TRANSPORT_FACT,
 ] as const
 
 export type CapabilityFact = (typeof CAPABILITY_FACTS)[number]
@@ -1983,6 +2008,11 @@ export type Device = {
    */
   patternEntry?: PatternEntry
   /**
+   * §7.4/#79. Declared by a box whose transport a computer drives over a control-surface
+   * protocol, where a clock wire cannot reach it. See `DawTransport`.
+   */
+  dawTransport?: DawTransport
+  /**
    * §2.6/#22. **Who checked the capability facts above, keyed by field path.**
    *
    * Optional, and silence is the honest default — an author cites what they checked. Required in
@@ -2013,6 +2043,7 @@ export const DeviceSchema = z
     content: DeviceContentSchema.optional(),
     noteDuration: NoteDurationSchema.optional(),
     patternEntry: PatternEntrySchema.optional(),
+    dawTransport: DawTransportSchema.optional(),
     capabilityEvidence: z
       .record(z.string().min(1), CapabilityEvidenceSchema)
       .refine((m) => Object.keys(m).length > 0, {
@@ -2352,6 +2383,37 @@ export const DeviceSchema = z
      * a citation with no declaration behind it is a reading that supports no claim, which is
      * what `cited-against` is for.
      */
+    /**
+     * §7.4/#79. The same two directions as `patternEntry` and `content`. "A computer drives this
+     * box's transport" is a positive claim about an instrument and carries the page that says so;
+     * a citation with no declaration is a reading supporting no claim.
+     */
+    const dawEvidence = evidence[DAW_TRANSPORT_FACT]
+    if (device.dawTransport !== undefined) {
+      if (dawEvidence === undefined || !isCite(dawEvidence)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `dawTransport is declared with no citation at '${DAW_TRANSPORT_FACT}'; that a computer drives this box is read off its manual (§7.4/#79)`,
+          path: ['capabilityEvidence', DAW_TRANSPORT_FACT],
+        })
+      }
+      // A box that takes clock on a wire does not need this, and declaring both invites a reader
+      // to wonder which one the guide means. #79 is about the box a clock cable cannot reach.
+      if (device.clock.canReceiveClock) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `dawTransport is for a box that cannot receive clock; this one declares canReceiveClock (§7.4/#79)`,
+          path: ['dawTransport'],
+        })
+      }
+    } else if (dawEvidence !== undefined && isCite(dawEvidence)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `'${DAW_TRANSPORT_FACT}' carries a citation but no dawTransport is declared; a reading that supports no claim is 'cited-against' (§7.4/#79)`,
+        path: ['capabilityEvidence', DAW_TRANSPORT_FACT],
+      })
+    }
+
     const entryEvidence = evidence[PATTERN_ENTRY_FACT]
     if (device.patternEntry !== undefined) {
       if (entryEvidence === undefined || !isCite(entryEvidence)) {

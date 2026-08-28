@@ -61,7 +61,7 @@ None.
 
 ## 3. Rig integration
 
-**Clock source** — Hapax over `midi-din`, carrying 0 parts. Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8, which cannot receive clock and run free, and Metropolix and DFAM, which have no `midi-din` input and run free.
+**Clock source** — Hapax over `midi-din`, carrying 0 parts. Sync everything else to it, except Zoom LiveTrak L-8, which cannot receive clock and runs free, and Model 2400, which cannot receive clock — a DAW drives its transport over HUI/MCU, and without one it runs free, and Metropolix and DFAM, which have no `midi-din` input and run free.
 
 - Why this box — 3 boxes here claim that job, so transport, then name, settled it · manual
   - ↳ cite: claim manual — Hapax Manual (22 June 2026), p.130
