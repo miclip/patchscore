@@ -691,9 +691,13 @@ describe('clock source ranks on semantics, not on load (§7.4)', () => {
     // and that fall-through between two authored leaders is a justified tie, where the same
     // arithmetic between everything that merely *can* send clock is an alphabetical accident. The
     // test below is the one that pins the difference.
+    // Three since the Hapax, whose claim is the least argued of them: p.130 glosses its own
+    // internal clock as being "the synchronisation leader", so the page says what the box is for
+    // rather than an author reading it off a title.
     expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
       'intellijel-metropolix',
       'polyend-tracker-mini',
+      'squarp-hapax',
     ])
     for (const device of DEVICES) {
       if (device.clock.preferredSource === true) continue

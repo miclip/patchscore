@@ -345,6 +345,12 @@ describe('the committed registry', () => {
       // any citation becoming wrong.
       'behringer-crave',
       'intellijel-cascadia',
+      // **358 mm, and the second span in this list with no page behind it.** Neither the Hapax
+      // manual nor its Quickstart prints a dimension anywhere, so this is Squarp's own published
+      // figure by way of a retailer, and `physical.verified` is `false` like the OP-XY's. Two
+      // retailers disagree — 385 against 358 — and the inch conversion printed beside the second
+      // settles it: 358 mm is 14.09", where 385 mm would be 15.16".
+      'squarp-hapax',
       'roland-tr-8s',
       // 436 mm — p.530's `436 x 256 x 67 mm`, with the axis order printed in the row header.
       'akai-mpc-live-iii',

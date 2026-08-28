@@ -39,13 +39,20 @@ describe('Metropolix manifest', () => {
     expect(device.maker).toBe('Intellijel')
   })
 
-  it('is the library\'s first sequencer, and nothing else claims that kind', () => {
+  it('is the library\'s first sequencer, and the kind has since been read the same way twice', () => {
     // §2.3 gained the kind for exactly this shape: `semi-modular` would imply a normalised audio
     // instrument with voices and recipes, `groovebox` self-contained sound generation. Both would
     // make this manifest state something false.
+    //
+    // **The Hapax is the second, and it arrived at the kind by the same reading**: everything it
+    // emits is control data, its connectivity pages enumerate the back panel and name no audio
+    // socket, and its sixteen tracks per project are the same temptation this file exists to
+    // resist, wearing a bigger number. Asserted as a list rather than a count so a third has to
+    // be looked at rather than absorbed.
     expect(device.kind).toBe('sequencer')
     expect(DEVICES.filter((d) => d.kind === 'sequencer').map((d) => d.id)).toEqual([
       'intellijel-metropolix',
+      'squarp-hapax',
     ])
     // And the other Intellijel box in the library is the counter-example the kind exists against.
     expect(cascadia.kind).toBe('semi-modular')
@@ -123,9 +130,9 @@ describe('Metropolix manifest', () => {
     expect(panel?.hiddenCells).toBe(0)
   })
 
-  it('draws no voice field, alone in the library', () => {
-    // Every other drawn panel has one. This is the first that must not: a lit rectangle that can
-    // never light would be a claim the resolver can never satisfy.
+  it('draws no voice field, which only a box with no voices may do', () => {
+    // Every drawn panel has one except the two sequencers. This was the first that must not: a
+    // lit rectangle that can never light would be a claim the resolver can never satisfy.
     expect(device.panel?.features.filter((f) => f.kind === 'voices')).toEqual([])
     const drawnWithVoices = DEVICES.filter(
       (d) => d.panel !== undefined && d.panel.features.some((f) => f.kind === 'voices'),
@@ -180,7 +187,7 @@ describe('Metropolix manifest', () => {
   // -------------------------------------------------------------------------
 
   describe('clock (§7.4)', () => {
-    it('claims the preference, and is one of the two boxes that do', () => {
+    it('claims the preference, and is one of the three boxes that do', () => {
       expect(device.clock.preferredSource).toBe(true)
       // This was the only claim in the library until #80 went through the nine boxes with no
       // decision recorded either way. Exactly one of them cleared §7.4's bar: the Tracker Mini,
@@ -190,6 +197,7 @@ describe('Metropolix manifest', () => {
       expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
         'intellijel-metropolix',
         'polyend-tracker-mini',
+        'squarp-hapax',
       ])
       // The Model 2400 claimed it for two commits on the strength of a manual proving only that
       // a desk *can* generate clock. Capability is not preference; this claim is about what the
@@ -235,9 +243,11 @@ describe('Metropolix manifest', () => {
       const result = resolve({ devices: DEVICES, template, mood: NEUTRAL_MOOD, seed: 18 })
       expect(result.clockSource?.deviceId).toBe('polyend-tracker-mini')
       expect(result.clockSource?.transport).toBe('midi-din')
-      // Not because this box was demoted: strip the other claim and it leads again.
+      // Not because this box was demoted: strip every other claim and it leads again. Two have
+      // to come off now rather than one — the Hapax joined with `midi-din` and no parts at all,
+      // so it wins the same fall-through the Tracker Mini does, and for the same reason.
       const soleClaim = DEVICES.map((d) =>
-        d.id === 'polyend-tracker-mini'
+        d.id === 'polyend-tracker-mini' || d.id === 'squarp-hapax'
           ? { ...d, clock: { ...d.clock, preferredSource: undefined } }
           : d,
       )
@@ -334,8 +344,14 @@ describe('Metropolix manifest', () => {
     const used = device.recipes.flatMap((r) => (r.articulation ?? []).flatMap((a) => Object.keys(a.set)))
     expect(used).toEqual([])
     expect(device.features?.perStep?.length).toBe(8)
-    // Every other device that declares lanes reaches at least one of them.
-    for (const other of DEVICES.filter((d) => (d.features?.perStep ?? []).length > 0 && d.id !== device.id)) {
+    // **Every device that declares lanes *and has recipes* reaches at least one of them**, which
+    // is the rule this ever stated. It used to be written as "every device except this one",
+    // and the Hapax made the exception list the wrong shape: it is the second voiceless
+    // sequencer, it declares the eight per-note parameters p.47 names, and it can no more reach
+    // them than this box can. The condition below says why rather than naming ids.
+    for (const other of DEVICES.filter(
+      (d) => (d.features?.perStep ?? []).length > 0 && d.recipes.length > 0,
+    )) {
       const reached = other.recipes.flatMap((r) => (r.articulation ?? []).flatMap((a) => Object.keys(a.set)))
       expect(reached.length, other.id).toBeGreaterThan(0)
     }

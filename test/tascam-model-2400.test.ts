@@ -131,6 +131,7 @@ describe('the first box that sends clock and cannot receive it', () => {
     expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
       'intellijel-metropolix',
       'polyend-tracker-mini',
+      'squarp-hapax',
     ])
   })
 
