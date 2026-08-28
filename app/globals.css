@@ -1614,6 +1614,39 @@ button:active {
   }
 }
 
+/*
+ * §7.4/#200. **The clock source pulses at the song's tempo.** `--rack-beat` is set on the diagram
+ * from the resolved BPM, so the glow is the tempo rather than a decorative blink — a reader
+ * glancing at the rack sees which box is counting and how fast.
+ *
+ * Inside `prefers-reduced-motion: no-preference` and nowhere else, the rule §21 already applies to
+ * the cable draw. Under reduced motion the source is still marked, by the static ring below, and
+ * nothing about the diagram becomes unreadable for the absence of the pulse.
+ */
+.rack-panel[data-clock='source'] .rack-face {
+  /* Always on, motion or not: this is the "which box" answer and it must not depend on animation. */
+  stroke: var(--accent);
+  stroke-width: 0.8;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rack-panel[data-clock='source'] .rack-face {
+    animation: rack-clock-pulse var(--rack-beat, 500ms) ease-in-out infinite;
+  }
+}
+
+@keyframes rack-clock-pulse {
+  0% {
+    filter: drop-shadow(0 0 0.4mm color-mix(in srgb, var(--accent) 70%, transparent));
+  }
+  12% {
+    filter: drop-shadow(0 0 1.8mm var(--accent));
+  }
+  100% {
+    filter: drop-shadow(0 0 0.4mm color-mix(in srgb, var(--accent) 70%, transparent));
+  }
+}
+
 @keyframes rack-draw {
   to {
     stroke-dashoffset: 0;

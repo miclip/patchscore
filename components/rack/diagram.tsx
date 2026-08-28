@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import type { PanelFeature } from '@/lib/core'
 import { list } from '../guide/format'
 import type { ClockCable, PanelJack, RackModel, RackPanel, VoiceCable } from './model'
@@ -455,9 +456,25 @@ function summary(model: RackModel): string {
   return `A rack of ${names}, drawn to relative width.${rows} ${clock}${isolated}${voice}`
 }
 
-export function RackDiagram({ model, idPrefix }: { model: RackModel; idPrefix: string }) {
+export function RackDiagram({
+  model,
+  idPrefix,
+  bpm,
+}: {
+  model: RackModel
+  idPrefix: string
+  /**
+   * §7.4/#200. The song's tempo, so the clock source's glow beats at it. Optional: a diagram
+   * rendered without one keeps the static ring and no pulse, which is also what a reader under
+   * `prefers-reduced-motion` sees.
+   */
+  bpm?: number | undefined
+}) {
   const titleId = `${idPrefix}-rack-title`
   const descId = `${idPrefix}-rack-desc`
+  // One beat in milliseconds. Guarded rather than trusted: a zero or negative BPM would make an
+  // infinite animation with a zero-length period, which browsers handle by never painting a frame.
+  const beatMs = bpm !== undefined && bpm > 0 ? Math.round(60_000 / bpm) : undefined
 
   return (
     <svg
@@ -466,6 +483,7 @@ export function RackDiagram({ model, idPrefix }: { model: RackModel; idPrefix: s
       preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-labelledby={`${titleId} ${descId}`}
+      style={beatMs === undefined ? undefined : ({ '--rack-beat': `${beatMs}ms` } as CSSProperties)}
     >
       <title id={titleId}>Rack diagram</title>
       <desc id={descId}>{summary(model)}</desc>

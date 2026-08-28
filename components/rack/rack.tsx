@@ -128,7 +128,7 @@ export function Rack({ result }: { result: ResolveResult | undefined }) {
           className="rack-frame rack-overview"
           style={{ ['--rack-mm' as string]: model.totalMm }}
         >
-          <RackDiagram model={model} idPrefix="rack-inline" />
+          <RackDiagram model={model} idPrefix="rack-inline" bpm={result?.song.bpm} />
         </div>
         <figcaption className="rack-caption">
           {/*
@@ -269,7 +269,7 @@ export function Rack({ result }: { result: ResolveResult | undefined }) {
         </p>
       ) : null}
 
-      {full ? <RackFullscreen model={model} onClose={close} /> : null}
+      {full ? <RackFullscreen model={model} onClose={close} bpm={result?.song.bpm} /> : null}
     </section>
   )
 }
