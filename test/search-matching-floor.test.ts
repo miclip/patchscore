@@ -930,8 +930,18 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * (`test/search-symmetry.test.ts` records 21,368 → 26,688), so the gap between the two rates
    * narrowed from three times to one and a half. A duplicate is the one kind of new device whose
    * request pairs the repair has already seen the shape of.
+   *
+   * **The OP-XY takes it 900,769 → 1,200,333, a rise of 33.3%**, and the two rates come apart
+   * again — the repaired sweep rose 11.9% over the same device (`test/search-symmetry.test.ts`
+   * records 26,688 → 29,870), so the gap is back to about two and four fifths. That is the MPC
+   * XL paragraph read in reverse: the XL was a duplicate and its request pairs were a shape the
+   * repair had already collapsed, where this box is a single pool of eight carrying all
+   * twenty-three roles. Eight voices and twenty-three roles is the TR-6S's ratio turned the
+   * other way up — plenty of roles the repair can prove will not share a voice, and enough
+   * voices to separate them onto — which is precisely the position the repair is for. The
+   * unrepaired floor pays for every one of those pairs and the repaired search collapses them.
    */
-  it('walks the recorded 900,769 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 1,200,163 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -939,9 +949,14 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(900_769)
-    // And the repaired floor is emphatically not walking it.
-    expect(assign(input).search.nodes).toBeLessThan(20_000)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(1_200_163)
+    // And the repaired floor is emphatically not walking it. The headroom is what carries the
+    // claim, not the round number: this seed walks 20,497 repaired against 1,200,163 unrepaired,
+    // so the ceiling is a fifty-eighth of the floor. It was 20,000 until this device pushed the
+    // repaired walk past it. Loosen it when it binds rather than re-tightening it onto each new
+    // figure: a ceiling that sits one node above the last measurement stops guarding the claim
+    // it is here to make and starts re-recording the measurement a second time.
+    expect(assign(input).search.nodes).toBeLessThan(25_000)
   })
 })
 

@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → Mother-32 · Voice — *Kick from the normalled envelope: no cables, the pitch drop is two switches*
+- **`kick`** → Grandmother · Voice — *Kick with the envelope cabled to Oscillator 1’s pitch*
   - p1 · exact `hard` · every section
 - **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
@@ -79,10 +79,9 @@ None.
 
 - Why this box sends them — its manual says leading a rig is its job
 
-**Not driven** — Metropolix offers 2 pitch-and-gate pairs and this rig needs more. Minitaur and Mother-32 are left unpatched:
+**Not driven** — Metropolix offers 2 pitch-and-gate pairs and this rig needs more. Minitaur is left unpatched:
 
 - Minitaur `CONTROLLER INPUTS · PITCH CV` and `CONTROLLER INPUTS · GATE` — nothing to plug in. Play it from its own keyboard or sequencer.
-- Mother-32 `IN · VCO 1V/OCT` and `IN · GATE` — nothing to plug in. Play it from its own keyboard or sequencer.
 
 - **MPC Live III** — groovebox · 0 parts
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
@@ -120,14 +119,14 @@ None.
   - clock: sends clock · analog-clock
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **Grandmother** — semi-modular · 0 parts
+- **Grandmother** — semi-modular · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per the Global Settings (p.37) · manual
     - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
   - MIDI OUT: Everything originating on this box, MIDI Clock included when the Global Setting sends it (p.37) · manual
     - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
   - audio: mono main out · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **Matriarch** — semi-modular · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per Global Setting 1.5 (p.64) · manual
@@ -140,12 +139,12 @@ None.
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
   - mixer: 1 part, no individual outs: one mono channel for all
-- **Mother-32** — semi-modular · 1 part
+- **Mother-32** — semi-modular · 0 parts
   - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
   - MIDI IN: The only MIDI connector on the box: input only, 5-pin DIN, on the front panel · manual
     - ↳ cite: value manual — Moog Mother-32 User Manual (Version 2), p.54
   - audio: mono main out · audio in
-  - mixer: 1 part, no individual outs: one mono channel for all
+  - mixer: no parts assigned; nothing to patch
 - **Subharmonicon** — semi-modular · 0 parts
   - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
   - IN · MIDI IN: A 3.5 mm socket fed by the supplied five-pin DIN adapter (MIDI Type A). Takes clock, note data and CCs. MIDI clock overrides the internal clock *and* anything at IN · CLOCK · manual
@@ -185,6 +184,12 @@ None.
 - **Model 2400** — mixer-recorder · 0 parts
   - clock: sends clock, cannot receive · midi-din/usb
   - audio: stereo main out · 8 individual outs · USB audio · audio in
+  - mixer: no parts assigned; nothing to patch
+- **OP-XY** — groovebox · 0 parts
+  - clock: sends clock · out: midi-din/usb/sync · in: midi-din/usb
+  - midi in: 3.5 mm TRS. The manual does not state which TRS type this input is — it names type A only for the multi-out (p.111). Clock arrives here per p.88, which says midi clock is sent and received without saying the transport follows it. · manual
+    - ↳ cite: value manual — OP-XY full guide v1.1.15, p.3
+  - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
 - **Zoom LiveTrak L-8** — mixer-recorder · 0 parts
   - clock: no clock in or out
@@ -248,9 +253,9 @@ Note length is set per note here — `LEN`. · manual
 
 ## 5. Step programming
 
-### `kick` — Mother-32 · Voice
+### `kick` — Grandmother · Voice
 
-**Kick from the normalled envelope: no cables, the pitch drop is two switches** — settings in Sound design
+**Kick with the envelope cabled to Oscillator 1’s pitch** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -275,10 +280,10 @@ Note length is set per note here — `LEN`. · manual
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — Mother-32
+**On this box** — Grandmother
 
 - `accent` → `accent` true on step 9
-  - ↳ hint: RESET / ACCENT accents the step being edited
+  - ↳ hint: REC mode, then TAP adds an accent
 
 ### `sub` — Minitaur · Voice
 
@@ -707,6 +712,63 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **EFFECTS · DEPTH** `62` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
 
+### Grandmother
+
+*Values below cite Moog Grandmother User’s Manual (Version 2).*
+
+#### Voice — `kick`: Kick with the envelope cabled to Oscillator 1’s pitch
+
+Routing — Played from its own 32-note keyboard, from the arpeggiator or the 256-step sequencer, or over MIDI IN. Two cables: + ENV OUT to OSCILLATORS 1 PITCH IN for the drop — there is no normalled envelope-to-pitch route on this box — and KB VEL OUT to CUTOFF IN, without which p.30 says the accent is inaudible
+
+- **OSCILLATOR 1 OCTAVE** `32'`
+- **OSCILLATOR 1 WAVEFORM** `TRIANGLE`
+- **OSCILLATOR 2 OCTAVE** `16'`
+- **OSCILLATOR 2 WAVEFORM** `TRIANGLE`
+- **SYNC** `OFF`
+- **OSCILLATOR 2 FREQUENCY** `0` st (-7…7 st)
+  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.12
+  - ↳ hint: 12 o’clock is unison with Oscillator 1
+- **OSCILLATOR 1** `82` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Past 1 o’clock the mixer starts to overdrive
+- **OSCILLATOR 2** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **NOISE** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **CUTOFF** `120` Hz (10…20000 Hz)
+  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.16
+- **RESONANCE** `30` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Past 3 o’clock the ladder self-oscillates
+- **ENVELOPE AMT** `66` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: 12 o’clock is off; either way from there
+- **KBD TRACK** `OFF`
+- **ATTACK** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **DECAY** `14` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **SUSTAIN** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **RELEASE** `12` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCA MODE** `ENV`
+- **VOLUME** `78` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **MIX** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Fully clockwise is reverb only, no dry
+- **GLIDE** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+
+**Patch**
+
+- `ENVELOPE · + ENV OUT` → `OSCILLATORS · 1 PITCH IN`
+  - ↳ note: The pitch drop — a short DECAY makes it a click, a longer one a boom
+- `ARP/SEQ · KB VEL OUT` → `FILTER · CUTOFF IN` · manual
+  - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.30
+  - ↳ note: Makes a sequencer accent audible — the accent envelope only exists at this jack
+
 ### Minitaur
 
 *Values below cite Moog Minitaur Manual.*
@@ -760,48 +822,6 @@ Routing — One VCO only — VCO 2 is down, so there is nothing to beat against 
 - **VOLUME** `70` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: Panelled `VOLUME` beside a headphone pictogram — one knob sets the output and the headphones together (p.17)
-
-### Mother-32
-
-*Values below cite Moog Mother-32 User Manual (Version 2).*
-
-#### Voice — `kick`: Kick from the normalled envelope: no cables, the pitch drop is two switches
-
-Routing — Played from its own 32-step sequencer, from MIDI IN, or from pitch and gate at VCO 1V/OCT and GATE. No patch cable: the EG is already normalled to the up position of VCO MOD SOURCE (p.49), so VCO MOD DEST at FREQUENCY is the whole pitch drop
-
-- **FREQUENCY** `0` st (-12…12 st)
-  - ↳ cite: range manual — Moog Mother-32 User Manual (Version 2), p.11
-- **VCO WAVE** `SAW`
-- **MIX** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ note: Counterclockwise is the VCO, clockwise is white noise or whatever is in EXT. AUDIO
-- **CUTOFF** `110` Hz (20…20000 Hz)
-  - ↳ cite: range manual — Moog Mother-32 User Manual (Version 2), p.14
-- **RESONANCE** `28` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: Past 3 o’clock the filter self-oscillates
-- **VCF MODE** `LOW PASS`
-- **VOLUME** `78` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **VCO MOD SOURCE** `EG / VCO MOD`
-  - ↳ note: The EG is normalled here — a cable in VCO MOD replaces it
-- **VCO MOD DEST** `FREQUENCY`
-- **VCO MOD AMOUNT** `34` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **VCF MOD SOURCE** `EG`
-- **VCF MOD POLARITY** `+`
-- **VCF MOD AMOUNT** `40` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **ATTACK** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **SUSTAIN** `OFF`
-  - ↳ hint: SUSTAIN ON plays legato, OFF retriggers
-- **DECAY** `16` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **VCA MODE** `EG`
-- **GLIDE** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: Turn GLIDE clockwise to glide a step
 
 ### Subsequent 37
 
@@ -1084,7 +1104,7 @@ The MPC Live III, MPC XL and Cascadia can duck to another box: patch the box you
 
 The MPC Live III and MPC XL can also duck from their own parts.
 
-The TR-1000, TR-6S, TR-8S and Deluge duck from their own parts only.
+The TR-1000, TR-6S, TR-8S, Deluge and OP-XY duck from their own parts only.
 
 **Master FX**
 
@@ -1101,6 +1121,7 @@ What processes audio in this rig:
 - TR-8S — carries REVERB, DELAY and MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
 - Deluge — carries effects, though no part in this guide reaches them
 - Model 2400 — is a mixer and recorder (stereo main out · 8 individual outs · USB audio · audio in)
+- OP-XY — carries effects, though no part in this guide reaches them
 - Zoom LiveTrak L-8 — is a mixer and recorder (stereo main out · USB audio · audio in)
 
 **Arrangement variations**

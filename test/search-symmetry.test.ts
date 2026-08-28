@@ -1209,8 +1209,18 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * interchangeable — they have different jacks, different individual-out counts and different
    * spans, all of which the objective can tell apart. The per-direction rows in
    * `test/search-bound.test.ts` show the same event with one direction going the other way.
+   *
+   * **Moved a seventh time for the OP-XY**: 26,688 -> 29,870, a rise of 11.9%, the peak staying
+   * on `weave` and crossing from seed 16 to seed 3. Nothing capped, and 29,870 is 19.9% of
+   * `DEFAULT_NODE_CAP`.
+   *
+   * A single pool of eight carrying all 23 roles and 18 recipes costs less than half what the
+   * MPC XL's duplicate-of-a-duplicate did, which is the rule above holding a third time: what is
+   * expensive is a *second box* the objective can tell apart, not a wide pool inside one. The
+   * roles-per-voice here is the highest in the library — every track takes every engine, so
+   * there is nothing to split the pool along — and it still lands under the Live III's arrival.
    */
-  const WORST_CASE_NODES = 26_688
+  const WORST_CASE_NODES = 29_870
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))
