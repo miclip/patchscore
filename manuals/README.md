@@ -29,6 +29,7 @@ opened.
 | `cascadia_manual_v1.1_2023.04.18.pdf` | Manual v1.1, 2023-04-18. | [direct](https://intellijel.com/downloads/manuals/cascadia_manual_v1.1_2023.04.18.pdf), confirmed 2026-08-25 |
 | `model-2400_om_e_vc.pdf` | Owner's Manual. | [docs](https://tascam.com/us/product/model_2400/docs) |
 | `ZEBU_Manual_Rrev2_Web_ENG.pdf` | ZOIA Euroburo manual, rev2. | empresseffects.com |
+| `torso-t1/` | **Torso T-1 documentation mirror**, 77 pages / 273k chars / 67 printed ranges. No PDF exists; see the note below and `torso-t1/VERSION`. | [docs](https://docs.torsoelectronics.com/t1/), mirrored 2026-08-28 |
 
 ## The Deluge runs community firmware
 
@@ -217,12 +218,15 @@ return the same answer.
   fetched by hand from a browser. This is not a nicety: #80 had to leave the Cascadia's
   `clock.preferredSource` undecided until its manual was supplied by hand, because a decision with
   no page behind it is exactly what that field exists to prevent.
-- **Torso T-1 publishes no PDF at all.** The official documentation is a website,
-  [docs.torsoelectronics.com](https://docs.torsoelectronics.com/t1/introduction/), and the only
-  PDFs are on scraper sites, which are not a citable source. If that device is ever authored, the
-  answer is the shape `deluge-community/` already uses here: mirror the docs, pin them by date,
-  and put the date in every citation. A live URL cited without one means nothing, because the page
-  can change under the citation.
+- ~~**Torso T-1 publishes no PDF at all.**~~ **Resolved — mirrored to `torso-t1/`.** Still no PDF;
+  the only ones are on scraper sites, which are not a citable source. So the docs are mirrored the
+  way this note prescribed and `deluge-community/` already does: 77 English pages from the
+  sitemap, `<article>` extracted verbatim by `curl`, pinned in `torso-t1/VERSION` and dated
+  2026-08-28. Every file's first line carries the URL it came from, and a citation must name the
+  fetch date or it means nothing, because the page can change under it.
+  **Images are dropped**, so a value that exists only in a diagram is not in the mirror — check
+  the live page before concluding the docs are silent, the same rule that applies to a dimension
+  callout inside a PDF drawing.
 - **Moog Labyrinth and Spectravox** — no CDN path found. Present on manual-scraper sites only,
   which are not a citable source. Everything else in that family is here.
 - ~~**Deluge guidebook**~~ — resolved. It was an excerpt; the full 284pp guidebook and the
