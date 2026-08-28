@@ -30,19 +30,19 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → Deluge · Track 1 — *Synth kick on a kit row — sine, fast pitch drop, decimated*
+- **`kick`** → Grandmother · Voice — *Kick with the envelope cabled to Oscillator 1’s pitch*
   - p1 · exact `hard` · every section
 - **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
 - **`bass-mid`** → Subsequent 37 · Voice — *Mixer pushed past unity with feedback under it and MultiDrive on top*
   - p2 · exact `dirty` · every section
-- **`clap`** → TR-1000 · HC — *Wide clap sitting on top of the snare*
+- **`clap`** → TR-8S · HC — *Hand clap with a short room*
   - p2 · exact `bright` · every section
-- **`closed-hat`** → TR-8S · CH — *Hat pushed into the compressor*
+- **`closed-hat`** → TR-6S · CH — *Closed hat bit-crushed into a tick*
   - p2 · exact `dirty` · every section
 - **`metallic`** → Cascadia · Voice — *Ring modulator fed a square, notched rather than filtered*
   - p3 · exact `dark` · every section
-- **`open-hat`** → TR-8S · OH — *Open hat with the top rolled off*
+- **`open-hat`** → TR-1000 · OH — *Dull open hat, more air than sizzle*
   - p3 · exact `dark` · every section
 - **`stab`** → MC-101 · TONE Track 1 — *Short chord stab, played on the track*
   - p3 · exact `hard` · 3 notes at once on one polyphonic voice · every section
@@ -111,14 +111,14 @@ None.
   - clock: sends clock · analog-clock
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **Grandmother** — semi-modular · 0 parts
+- **Grandmother** — semi-modular · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per the Global Settings (p.37) · manual
     - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
   - MIDI OUT: Everything originating on this box, MIDI Clock included when the Global Setting sends it (p.37) · manual
     - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
   - audio: mono main out · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **Matriarch** — semi-modular · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per Global Setting 1.5 (p.64) · manual
@@ -161,14 +161,18 @@ None.
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
   - mixer: 2 parts, 10 individual outs: one channel each
-- **TR-8S** — drum-machine · 3 parts
+- **TR-6S** — drum-machine · 1 part
+  - clock: sends clock · midi-din/usb
+  - audio: stereo main out · USB audio
+  - mixer: 1 part, no individual outs: one stereo channel for all
+- **TR-8S** — drum-machine · 2 parts
   - clock: sends clock · midi-din/usb/trigger
   - audio: stereo main out · 6 individual outs · USB audio · audio in
-  - mixer: 3 parts, 6 individual outs: one channel each
-- **Deluge** — groovebox · 1 part
+  - mixer: 2 parts, 6 individual outs: one channel each
+- **Deluge** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: stereo main out · audio in
-  - mixer: 1 part, no individual outs: one stereo channel for all
+  - mixer: no parts assigned; nothing to patch
 - **Model 2400** — mixer-recorder · 0 parts
   - clock: sends clock, cannot receive · midi-din/usb
   - audio: stereo main out · 8 individual outs · USB audio · audio in
@@ -235,9 +239,9 @@ Note length is set per note here — `LEN`. · manual
 
 ## 5. Step programming
 
-### `kick` — Deluge · Track 1
+### `kick` — Grandmother · Voice
 
-**Synth kick on a kit row — sine, fast pitch drop, decimated** — settings in Sound design
+**Kick with the envelope cabled to Oscillator 1’s pitch** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -262,10 +266,10 @@ Note length is set per note here — `LEN`. · manual
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — Deluge
+**On this box** — Grandmother
 
-- `accent` → `velocity` 127 on step 9
-  - ↳ hint: Hold the note pad, turn (SELECT)
+- `accent` → `accent` true on step 9
+  - ↳ hint: REC mode, then TAP adds an accent
 
 ### `sub` — Minitaur · Voice
 
@@ -302,9 +306,9 @@ Note length is set per note here — `LEN`. · manual
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
-### `clap` — TR-1000 · HC
+### `clap` — TR-8S · HC
 
-**Wide clap sitting on top of the snare** — settings in Sound design
+**Hand clap with a short room** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -313,10 +317,10 @@ Note length is set per note here — `LEN`. · manual
 ```
 - `backbeat` — 13
 
-**On this box** — TR-1000
+**On this box** — TR-8S
 
 - `backbeat` → `accent` true on step 13
-  - ↳ hint: ACCENT [STEP], then step keys
+  - ↳ hint: ACCENT [STEP], then pads
 
 **Build, Breakdown** — 16 steps, band 1
 
@@ -325,10 +329,10 @@ Note length is set per note here — `LEN`. · manual
 ```
 - `backbeat` — 5, 13
 
-**On this box** — TR-1000
+**On this box** — TR-8S
 
 - `backbeat` → `accent` true on steps 5, 13
-  - ↳ hint: ACCENT [STEP], then step keys
+  - ↳ hint: ACCENT [STEP], then pads
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -339,14 +343,14 @@ Note length is set per note here — `LEN`. · manual
 - `accent` — 13 (vel 112)
 - `fill` — 14, 15, 16
 
-**On this box** — TR-1000
+**On this box** — TR-8S
 
 - `backbeat` → `accent` true on step 5
-  - ↳ hint: ACCENT [STEP], then step keys
+  - ↳ hint: ACCENT [STEP], then pads
 
-### `closed-hat` — TR-8S · CH
+### `closed-hat` — TR-6S · CH
 
-**Hat pushed into the compressor** — settings in Sound design
+**Closed hat bit-crushed into a tick** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -355,10 +359,10 @@ Note length is set per note here — `LEN`. · manual
 ```
 - `offbeat` — 3, 7, 11, 15
 
-**On this box** — TR-8S
+**On this box** — TR-6S
 
-- `offbeat` → `alt-inst` true on steps 3, 7, 11, 15
-  - ↳ hint: Hold [BD]-[RC], press a pad
+- `offbeat` → `substep` 1/4 on steps 3, 7, 11, 15
+  - ↳ hint: Press [SUB], then a pad
 
 **Build, Breakdown** — 16 steps, band 1
 
@@ -368,12 +372,10 @@ Note length is set per note here — `LEN`. · manual
 - `ghost` — 2, 10 (all vel 45)
 - `offbeat` — 3, 7, 11, 15
 
-**On this box** — TR-8S
+**On this box** — TR-6S
 
-- `offbeat` → `alt-inst` true on steps 3, 7, 11, 15
-  - ↳ hint: Hold [BD]-[RC], press a pad
-- `ghost` → `weak` true on steps 2, 10
-  - ↳ hint: Hold [SHIFT], press a pad
+- `offbeat` → `substep` 1/4 on steps 3, 7, 11, 15
+  - ↳ hint: Press [SUB], then a pad
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -385,12 +387,10 @@ Note length is set per note here — `LEN`. · manual
 - `offbeat` — 3, 7, 11
 - `accent` — 15 (vel 108)
 
-**On this box** — TR-8S
+**On this box** — TR-6S
 
-- `offbeat` → `alt-inst` true on steps 3, 7, 11
-  - ↳ hint: Hold [BD]-[RC], press a pad
-- `ghost` → `weak` true on steps 2, 4, 6, 8, 10, 12, 14, 16
-  - ↳ hint: Hold [SHIFT], press a pad
+- `offbeat` → `substep` 1/4 on steps 3, 7, 11
+  - ↳ hint: Press [SUB], then a pad
 
 ### `metallic` — Cascadia · Voice
 
@@ -425,9 +425,9 @@ Note length is set per note here — `LEN`. · manual
 - `downbeat` — 17
 - `last-hit` — 32
 
-### `open-hat` — TR-8S · OH
+### `open-hat` — TR-1000 · OH
 
-**Open hat with the top rolled off** — settings in Sound design
+**Dull open hat, more air than sizzle** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -436,12 +436,22 @@ Note length is set per note here — `LEN`. · manual
 ```
 - `offbeat` — 7
 
+**On this box** — TR-1000
+
+- `offbeat` → `weak` true on step 7
+  - ↳ hint: Hold [SHIFT], press step keys
+
 **Build, Breakdown** — 16 steps, band 1
 
 ```
  1 ··x· ···· ··x· ····
 ```
 - `offbeat` — 3, 11
+
+**On this box** — TR-1000
+
+- `offbeat` → `weak` true on steps 3, 11
+  - ↳ hint: Hold [SHIFT], press step keys
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -451,6 +461,11 @@ Note length is set per note here — `LEN`. · manual
 - `offbeat` — 3, 7, 11
 - `downbeat` — 13
 - `accent` — 15 (vel 106)
+
+**On this box** — TR-1000
+
+- `offbeat` → `weak` true on steps 3, 7, 11
+  - ↳ hint: Hold [SHIFT], press step keys
 
 ### `stab` — MC-101 · TONE Track 1
 
@@ -683,6 +698,63 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **EFFECTS · DEPTH** `62` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
 
+### Grandmother
+
+*Values below cite Moog Grandmother User’s Manual (Version 2).*
+
+#### Voice — `kick`: Kick with the envelope cabled to Oscillator 1’s pitch
+
+Routing — Played from its own 32-note keyboard, from the arpeggiator or the 256-step sequencer, or over MIDI IN. Two cables: + ENV OUT to OSCILLATORS 1 PITCH IN for the drop — there is no normalled envelope-to-pitch route on this box — and KB VEL OUT to CUTOFF IN, without which p.30 says the accent is inaudible
+
+- **OSCILLATOR 1 OCTAVE** `32'`
+- **OSCILLATOR 1 WAVEFORM** `TRIANGLE`
+- **OSCILLATOR 2 OCTAVE** `16'`
+- **OSCILLATOR 2 WAVEFORM** `TRIANGLE`
+- **SYNC** `OFF`
+- **OSCILLATOR 2 FREQUENCY** `0` st (-7…7 st)
+  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.12
+  - ↳ hint: 12 o’clock is unison with Oscillator 1
+- **OSCILLATOR 1** `82` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Past 1 o’clock the mixer starts to overdrive
+- **OSCILLATOR 2** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **NOISE** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **CUTOFF** `120` Hz (10…20000 Hz)
+  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.16
+- **RESONANCE** `30` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Past 3 o’clock the ladder self-oscillates
+- **ENVELOPE AMT** `66` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: 12 o’clock is off; either way from there
+- **KBD TRACK** `OFF`
+- **ATTACK** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **DECAY** `14` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **SUSTAIN** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **RELEASE** `12` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCA MODE** `ENV`
+- **VOLUME** `78` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **MIX** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Fully clockwise is reverb only, no dry
+- **GLIDE** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+
+**Patch**
+
+- `ENVELOPE · + ENV OUT` → `OSCILLATORS · 1 PITCH IN`
+  - ↳ note: The pitch drop — a short DECAY makes it a click, a longer one a boom
+- `ARP/SEQ · KB VEL OUT` → `FILTER · CUTOFF IN` · manual
+  - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.30
+  - ↳ note: Makes a sequencer accent audible — the accent envelope only exists at this jack
+
 ### Minitaur
 
 *Values below cite Moog Minitaur Manual.*
@@ -886,33 +958,20 @@ One setting for the whole pattern — set it once, not once per part below.
   - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
   - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
-#### HC — `clap`: Wide clap sitting on top of the snare
+#### OH — `open-hat`: Dull open hat, more air than sizzle
 
 *Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
 
-- **GEN** `9X Hand Clap`
+- **GEN** `606 Open HiHat`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
-- **FILTER** `35` % (-100…100 %)
-  - ↳ hint: Clap brightness
-- **CLAPS** `70` % (0…100 %)
-- **SPEED** `55` % (0…100 %)
-- **MIX** `20` % (-100…100 %)
-  - ↳ hint: Clap against tail, not layers
-- **TAIL DCY** `62` % (0…100 %)
-- **MOD WAVE** `TRI`
-  - ↳ hint: Hold [SHIFT], press [FILTER]
-- **MOD NOTE** `1/1`
-  - ↳ note: Tempo-synced rate; if the screen offers a SYNC selector, point it at NOTE
-- **MOD DEST** `1` (1…3)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
-  - ↳ note: Which of the three assignment slots this uses
-- **MOD TARGET** `FILTER`
-- **MOD AMOUNT** `22` % (-100…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
-- **RVB SEND** `30` % (0…100 %)
+- **TUNE** `-18` % (-100…100 %)
+- **DECAY** `64` % (0…100 %)
+- **TONE** `-35` % (-100…100 %)
+  - ↳ hint: Brightness of the cymbal
+- **RVB SEND** `14` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
-- **DLY SEND** `14` % (0…100 %)
+- **DLY SEND** `12` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
@@ -930,6 +989,37 @@ One setting for the whole pattern — set it once, not once per part below.
 - **DLY SEND** `18` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
+
+### TR-6S
+
+*Values below cite TR-6S Parameter Guide eng02 and TR-6S Owner's Manual eng02.*
+
+**Pattern-wide**
+
+One setting for the whole pattern — set it once, not once per part below.
+
+- **SHUFFLE** `0` (-128…127)
+  - ↳ cite: range manual — TR-6S Owner's Manual eng02, p.17
+  - ↳ note: Pattern-wide: one setting for the whole pattern, not per instrument
+  - ↳ hint: Hold [SHIFT], press [PTN SELECT]
+
+#### CH — `closed-hat`: Closed hat bit-crushed into a tick
+
+*Ranges cite manual — TR-6S Parameter Guide eng02, p.7.*
+
+- **TONE** `CH/OH category`
+- **TUNE** `44` (-128…127)
+- **DECAY** `36` (0…255)
+- **INST FX TYPE** `CRUSHER`
+  - ↳ hint: Hold [SHIFT], press [INST]
+- **CRUSHER BALANCE** `220` (1…255)
+  - ↳ cite: range manual — TR-6S Parameter Guide eng02, p.10
+- **SAMPLERATE** `128` (0…255)
+  - ↳ cite: range manual — TR-6S Parameter Guide eng02, p.10
+- **REVERB SEND** `12` (0…255)
+  - ↳ hint: INST Edit > ReverbSend
+- **DELAY SEND** `40` (0…255)
+  - ↳ hint: INST Edit > DelaySend
 
 ### TR-8S
 
@@ -949,42 +1039,21 @@ One setting for the whole pattern — set it once, not once per part below.
   - ↳ note: Pattern-wide: one setting for the whole pattern, not per instrument
   - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
-#### CH — `closed-hat`: Hat pushed into the compressor
+#### HC — `clap`: Hand clap with a short room
 
 *Ranges cite manual — TR-8S Reference Manual eng01, p.30.*
 
-- **TONE** `CH category`
-- **TUNE** `40` (-128…127)
-- **DECAY** `44` (0…255)
-- **INST FX TYPE** `COMP+DRV`
+- **TONE** `HC category`
+- **TUNE** `24` (-128…127)
   - ↳ hint: Hold [SHIFT], press [INST]
-- **COMP+DRV BALANCE** `200` (1…255)
+- **DECAY** `112` (0…255)
+- **INST FX TYPE** `H BOOST`
+  - ↳ hint: Hold [SHIFT], press [INST]
+- **H BOOST** `96` (0…255)
   - ↳ cite: range manual — TR-8S Reference Manual eng01, p.32
-- **CMP BALANCE** `220` (1…255)
-  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.32
-- **DRV BALANCE** `130` (1…255)
-  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.32
-- **REVERB SEND** `20` (0…255)
+- **REVERB SEND** `88` (0…255)
   - ↳ hint: INST Edit > ReverbSend
 - **DELAY SEND** `24` (0…255)
-  - ↳ hint: INST Edit > DelaySend
-
-#### OH — `open-hat`: Open hat with the top rolled off
-
-Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
-
-*Ranges cite manual — TR-8S Reference Manual eng01, p.30.*
-
-- **TONE** `OH category`
-- **TUNE** `-24` (-128…127)
-- **DECAY** `176` (0…255)
-- **INST FX TYPE** `LPF`
-  - ↳ hint: Hold [SHIFT], press [INST]
-- **LPF CUTOFF** `132` (0…255)
-  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.31
-- **REVERB SEND** `56` (0…255)
-  - ↳ hint: INST Edit > ReverbSend
-- **DELAY SEND** `48` (0…255)
   - ↳ hint: INST Edit > DelaySend
 
 #### CC — `riser`: A sample played backwards into the change
@@ -1013,64 +1082,13 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
   - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
   - ↳ hint: INST Edit > DelaySend
 
-### Deluge
-
-*Values below cite Deluge Official Guidebook OS 4.1 (OLED) and Deluge community firmware release_1_2_1.*
-
-**Song-wide**
-
-One setting for the whole song — set it once, not once per part below.
-
-- **SWING** `50` % (1…99 %)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
-  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
-  - ↳ hint: Hold [SHIFT], turn (TEMPO)
-
-#### Track 1 — `kick`: Synth kick on a kit row — sine, fast pitch drop, decimated
-
-- **CLIP TYPE** `Kit`
-  - ↳ hint: From clip view: [SHIFT] + [KIT] or [SYNTH]
-- **OSC 1 TYPE** `Sine`
-  - ↳ hint: [AUDITION] + [SYNTH] makes a synth row
-- **ENV 1 ATTACK** `1` (0…50)
-  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/attack.md
-  - ↳ note: the menus recommend at least 1; 0 is likely to click
-  - ↳ hint: Press (SELECT), ENV 1, then ATTACK / DECAY
-- **ENV 1 DECAY** `17` (0…50)
-  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/decay.md
-  - ↳ note: 0 is the shortest decay, 50 the longest
-- **ENV 1 SUSTAIN** `0` (0…50)
-  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/sustain.md
-  - ↳ note: 0 decays away to nothing, which is what a drum does
-- **ENV 1 RELEASE** `5` (0…50)
-  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/release.md
-- **ENV 2 ATTACK** `1` (0…50)
-  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/attack.md
-- **ENV 2 DECAY** `6` (0…50)
-  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/decay.md
-  - ↳ note: this is how fast the pitch falls
-- **ENV 2 SUSTAIN** `25` (0…50)
-  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/sustain.md
-  - ↳ note: p.125: on a pitch destination 25 is the note itself, and below 25 goes flat
-- **ENV 2 → PITCH DEPTH** `22` (-50…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.120 and p.122 + community firmware release_1_2_1, automation_view.md
-  - ↳ note: destination is Pitch / Transpose: Overall; positive lifts the attack above the note
-  - ↳ hint: In PITCH, press (SELECT) again, pick ENV 2
-- **DECIMATION** `12` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
-- **BITCRUSH** `6` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
-- **EQ BASS AMOUNT** `33` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
-  - ↳ note: 25 is neutral; above boosts
-
 ## 7. Finishing
 
 **Sidechain**
 
 The Cascadia can duck to another box: patch the box you want it to follow into its audio in.
 
-The TR-1000, TR-8S and Deluge duck from their own parts only.
+The TR-1000, TR-6S, TR-8S and Deluge duck from their own parts only.
 
 **Master FX**
 
@@ -1081,8 +1099,9 @@ What processes audio in this rig:
 - Tracker Mini — carries effects, though no part in this guide reaches them
 - MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and DELAY SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
+- TR-6S — carries MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
 - TR-8S — carries REVERB, DELAY and MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
-- Deluge — carries BITCRUSH and DECIMATION in its recipes
+- Deluge — carries effects, though no part in this guide reaches them
 - Model 2400 — is a mixer and recorder (stereo main out · 8 individual outs · USB audio · audio in)
 - Zoom LiveTrak L-8 — is a mixer and recorder (stereo main out · USB audio · audio in)
 

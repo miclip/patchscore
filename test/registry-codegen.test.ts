@@ -310,6 +310,10 @@ describe('the committed registry', () => {
       'elektron-digitakt-ii',
       // 222.3 mm — p.30's `8.75"`, the smallest of the Moogs by some way.
       'moog-minitaur',
+      // 224 mm, and the closest pair in the list that is not a tie: one and seven tenths of a
+      // millimetre above the Minitaur. Both are cited to their makers' own specification tables,
+      // so the order is decided by the numbers.
+      'roland-tr-6s',
       'zoom-livetrak-l-8',
       'synthstrom-deluge',
       // **A real tie, and the first one in this list that is not a coincidence.** The DFAM, the
