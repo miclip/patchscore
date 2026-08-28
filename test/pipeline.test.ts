@@ -677,7 +677,7 @@ describe('clock source ranks on semantics, not on load (§7.4)', () => {
     ).toBe('z-sequencer-kind')
   })
 
-  it('is claimed by two devices, and omitted rather than falsified elsewhere', () => {
+  it('is claimed by four devices, and omitted rather than falsified elsewhere', () => {
     // Metropolix, whose entire output is timing and control for other boxes, and the Tracker
     // Mini, whose manual calls it "a perfect fit for the centre piece of a setup" (p.283) and
     // draws it leading as the first of its typical configurations (p.287). Both claims are about
@@ -693,11 +693,14 @@ describe('clock source ranks on semantics, not on load (§7.4)', () => {
     // test below is the one that pins the difference.
     // Three since the Hapax, whose claim is the least argued of them: p.130 glosses its own
     // internal clock as being "the synchronisation leader", so the page says what the box is for
-    // rather than an author reading it off a title.
+    // rather than an author reading it off a title. Four since the T-1, whose documentation puts
+    // it in a field of its own — `Role: Sequencer and clock hub for hybrid rigs` — beside Power
+    // and Connections, which is a role sentence rather than a capability page.
     expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
       'intellijel-metropolix',
       'polyend-tracker-mini',
       'squarp-hapax',
+      'torso-t1',
     ])
     for (const device of DEVICES) {
       if (device.clock.preferredSource === true) continue
