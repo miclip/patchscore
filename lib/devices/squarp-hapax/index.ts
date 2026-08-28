@@ -205,7 +205,17 @@ export const device: Device = {
    * the ratio of its drawn edges is not the ratio of the real ones. Nothing available corroborates
    * 358 x 206 beyond the inch conversion printed beside it.
    */
-  physical: { panelSpanMm: 358, verified: false },
+  physical: {
+    panelSpanMm: 358,
+    // #191. Squarp publishes it and the note above resolves which of their two figures is right,
+    // by the inch conversion printed beside one of them. That is a reading somebody did, not an
+    // absence — `false` said nobody had looked. The source names the disagreement so the next
+    // reader meets it rather than rediscovering it.
+    verified: {
+      kind: 'maker',
+      source: 'Squarp Hapax product page, 358 x 206 x 58 mm (the 385 figure elsewhere transposes two digits)',
+    },
+  },
 
   /** §10. A simplified original drawing of the control surface — see `panel.ts` for the method. */
   panel: HAPAX_PANEL,

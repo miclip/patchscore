@@ -29,13 +29,21 @@ describe('Verified (§3.1)', () => {
 })
 
 describe('Cite kind (§3.1)', () => {
-  it('carries how the value was checked, and admits exactly two kinds', () => {
+  it('carries how the value was checked, and admits exactly three kinds', () => {
     expect(CiteSchema.safeParse({ kind: 'manual', source: 'p.42' }).success).toBe(true)
     expect(CiteSchema.safeParse({ kind: 'observed', source: 'unit, firmware 1.11' }).success).toBe(
       true,
     )
+    // #191. A figure the manufacturer publishes outside the manual — a product page or a spec
+    // sheet. Checkable by anyone with the link, which is the distinction the kinds encode; it is
+    // not a licence to cite a forum or a retailer.
+    expect(
+      CiteSchema.safeParse({ kind: 'maker', source: 'teenage.engineering/products/op-xy' }).success,
+    ).toBe(true)
     expect(CiteSchema.safeParse({ kind: 'ear', source: 'sounds right' }).success).toBe(false)
-    expect(CITE_KINDS).toEqual(['manual', 'observed'])
+    // Pinned, so a fourth kind is a decision rather than a drift — the same guard #189 put on
+    // invariant 3's exemptions.
+    expect(CITE_KINDS).toEqual(['manual', 'observed', 'maker'])
   })
 
   it('will not take a source without saying how it was checked', () => {

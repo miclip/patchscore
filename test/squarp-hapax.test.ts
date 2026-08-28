@@ -309,13 +309,21 @@ describe('Hapax manifest', () => {
   // -------------------------------------------------------------------------
 
   describe('panel (§10)', () => {
-    it('carries a provisional span, because no page in either document prints one', () => {
+    it('cites its span to the maker, because no page in either document prints one', () => {
       // The OP-XY's case in a sharper form: there a store figure was corroborated by a measured
       // plan-view aspect to 1%, and here no drawing can corroborate anything, because a parallel
       // projection foreshortens the two axes by different amounts. So the number stands on the
-      // inch conversion printed beside it, and `verified` says nobody checked a page.
+      // inch conversion printed beside it.
+      //
+      // #191: that is a reading somebody did, not an absence. `false` claimed nobody had checked,
+      // where the truth is that what they checked was not a manual. `maker` says which.
       expect(device.physical.panelSpanMm).toBe(358)
-      expect(device.physical.verified).toBe(false)
+      expect(device.physical.verified).toMatchObject({ kind: 'maker' })
+      // The source names the disagreement rather than hiding it, so the next reader meets the
+      // 385 figure with the reason it was rejected already attached.
+      const verified = device.physical.verified
+      if (verified === false) throw new Error('expected a citation')
+      expect(verified.source).toContain('385')
     })
 
     it('cites the Quickstart rather than the manual, which has no panel figure', () => {
