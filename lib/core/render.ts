@@ -38,7 +38,7 @@ import {
   type ResolveResult,
   type ResolvedAssignment,
   type VoiceControlSource, patternDriver,} from './pipeline'
-import { GUIDE_PHASES } from './guide'
+import { GUIDE_PHASES, count, ioText, mixerText, num} from './guide'
 import {
   bandTrajectory,
   chainPlan,
@@ -116,18 +116,7 @@ export type RenderOptions = {
 // Values, provenance and citations
 // ---------------------------------------------------------------------------
 
-/**
- * `String`, never `toLocaleString` (§7.2). Spelled out as a named function so that a later edit
- * reaching for thousands separators has to come through here and read this comment.
- */
-function num(value: number): string {
-  return String(value)
-}
 
-/** '1 part', '3 parts'. English only, and hard-coded: this file is not internationalised. */
-function count(n: number, singular: string): string {
-  return `${num(n)} ${singular}${n === 1 ? '' : 's'}`
-}
 
 /** Names in prose: "the L-8", "the L-8 and the 2400", "a, b, and c". */
 function list(items: string[]): string {
@@ -615,54 +604,7 @@ function shortfallLine(shortfall: Shortfall, sentence: string): string {
 // Phase 3 — Rig integration
 // ---------------------------------------------------------------------------
 
-function ioText(device: Device): string {
-  const parts: string[] = []
-  // §2.3: `main: 'none'` is a box with no audio bus at all. It may still have the other three,
-  // so this is a missing entry in the list rather than a special case around it.
-  if (device.io.main !== 'none') parts.push(`${device.io.main} main out`)
-  if (device.io.individualOuts > 0) parts.push(count(device.io.individualOuts, 'individual out'))
-  if (device.io.usbAudio) parts.push('USB audio')
-  if (device.io.audioIn) parts.push('audio in')
-  // Empty only when `main` is `none` and nothing else is declared either, because every other
-  // value of `main` pushes. So this sentence means what it says rather than approximating it.
-  if (parts.length === 0) return 'no audio I/O'
-  return parts.join(' · ')
-}
 
-/**
- * The channel plan for one box, derived from the two declared numbers and nothing else. No
- * channel strip is invented for a device that cannot separate its parts.
- */
-function mixerText(device: Device, parts: number): string {
-  if (parts === 0) return 'no parts assigned; nothing to patch'
-  const separable = Math.min(parts, device.io.individualOuts)
-  const outs = count(device.io.individualOuts, 'individual out')
-  if (separable === parts) return `${count(parts, 'part')}, ${outs}: one channel each`
-
-  // Past here some part has to go somewhere other than its own jack, and both remaining
-  // sentences name the main bus. A box with `main: 'none'` has no bus to name, so it is handled
-  // before `main` is read rather than after — and `main` is then bound to a local the compiler
-  // has narrowed, so a future value of the union cannot reach a template string by accident.
-  //
-  // This is not reachable by any device in the library today: a box with no audio path also has
-  // no assignables, so `parts === 0` returns above. It is written for the first box that has
-  // both, because "unreachable via an early return in a different function" is not a guarantee.
-  if (device.io.main === 'none') {
-    if (separable === 0) return `${count(parts, 'part')}, no audio output: nothing to patch`
-    return (
-      `${count(parts, 'part')}, ${outs}: ${num(separable)} on their own channels, ` +
-      `the rest have no output`
-    )
-  }
-  const main: 'mono' | 'stereo' = device.io.main
-  if (separable === 0) {
-    return `${count(parts, 'part')}, no individual outs: one ${main} channel for all`
-  }
-  return (
-    `${count(parts, 'part')}, ${outs}: ${num(separable)} on their own channels, ` +
-    `the rest summed to the ${main} out`
-  )
-}
 
 /**
  * §7.4/#121/#144. **"Sync everything else to it"**, and the two rigs where that is not a sentence.

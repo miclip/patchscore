@@ -940,11 +940,16 @@ describe('rig integration (§7.4)', () => {
       )
     })
 
-    it('agrees with the other renderer, byte for byte', () => {
-      // `ioText` and `mixerText` exist twice — once in `lib/core/render.ts` for the Markdown
-      // guide and once in `components/guide/format.ts` for the view. Two implementations of one
-      // contract, which is a finding in its own right; until they are one, this pins that they
-      // agree on the value that is new.
+    it('renders the shared sentence rather than rebuilding one', () => {
+      // **They are one function now** (#82). This used to pin that two byte-identical copies
+      // agreed, which was the right guard while the duplication existed and the wrong fix for it:
+      // it held the symptom still while every change had to be made twice. `ioText` and
+      // `mixerText` live in `lib/core/guide.ts` and both renderers import them.
+      //
+      // What is left to check is narrower and still worth checking: that this renderer's rig
+      // block reaches the guide through those functions rather than assembling the same words
+      // again. It is imported here from `components/guide/format.ts`, which re-exports them, so
+      // the assertion also covers that path staying wired to the same definition.
       for (const io of [
         { main: 'none' as const, individualOuts: 0, audioIn: false, usbAudio: false },
         { main: 'none' as const, individualOuts: 2, audioIn: true, usbAudio: false },
