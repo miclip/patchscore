@@ -16,8 +16,7 @@ import {
   type Cite,
   type Verified,
   citedDocument,
-  effectiveVerified,
-} from './params'
+  effectiveVerified, CITE_KINDS} from './params'
 
 /**
  * §2. One self-contained module per device. Devices know their own capabilities and their own
@@ -742,10 +741,14 @@ export function requiredEvidence(device: Device, path: string): CapabilityEviden
 /**
  * Is this piece of evidence a citation *for* the fact, as opposed to one of the four ways of
  * having no claim? `false` is "authored, nothing checked against"; `unknown`, `unread` and
- * `cited-against` all support an *absence* (§2.6/#120). Only `manual` and `observed` say yes.
+ * `cited-against` all support an *absence* (§2.6/#120). The `CITE_KINDS` say yes.
+ *
+ * Written against `CITE_KINDS` rather than naming the kinds, so #191's `maker` — and any kind
+ * after it — is a citation here without a second edit. Listing them by hand is how a new kind
+ * silently stops counting as evidence while every type still checks.
  */
 export function isCite(evidence: CapabilityEvidence): evidence is Cite {
-  return evidence !== false && (evidence.kind === 'manual' || evidence.kind === 'observed')
+  return evidence !== false && (CITE_KINDS as readonly string[]).includes(evidence.kind)
 }
 
 /**

@@ -606,7 +606,15 @@ export const device: Device = {
    * that measured aspect instead would have been circular, and would have produced an invented
    * value with a citation-shaped comment beside it.
    */
-  physical: { panelSpanMm: 288, verified: false },
+  physical: {
+    panelSpanMm: 288,
+    // #191. Not `false`: teenage engineering publishes this and somebody checked it, which is
+    // what `provisional` denied. The guide prints no dimension anywhere — §1.4 technical
+    // specifications lists jacks, battery, display and storage — so the manual cannot carry it
+    // and `maker` is the honest kind. The note above records the 1.02% agreement with the p.5
+    // drawing, which is corroboration rather than the source.
+    verified: { kind: 'maker', source: 'teenage engineering OP-XY product page, 288 x 102 mm' },
+  },
 
   panel: OP_XY_PANEL,
 

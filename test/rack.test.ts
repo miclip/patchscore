@@ -545,11 +545,13 @@ describe('panel contents', () => {
     const provisional = rackModel(real)
       .panels.filter((p) => p.spanVerified === false)
       .map((p) => p.deviceId)
-    // Two now, and the second for a sharper version of the same reason: neither of the Hapax's
-    // two documents prints a dimension anywhere, so its 358 mm span is a published figure with
-    // no page behind it either. `index.ts` records which retailer figure it is and the inch
-    // conversion that picks it out of two that disagree.
-    expect(provisional).toEqual(['squarp-hapax', 'teenage-engineering-op-xy'])
+    // **None in the shipped library, since #191.** The two that used to be here — the Hapax and
+    // the OP-XY — were never "nobody checked": both makers publish a figure, and this comment
+    // previously said so while the field said otherwise ("a published figure with no page behind
+    // it"). They now carry `kind: 'maker'`, and the legend no longer tells a reader there is no
+    // published figure when there is one. The fixture above still exercises a genuinely
+    // unchecked span.
+    expect(provisional).toEqual([])
   })
 })
 

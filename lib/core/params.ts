@@ -10,12 +10,23 @@ import { MoodAxisSchema, type MoodAxis } from './vocabulary'
  */
 
 /**
- * §3.1. How a value was checked. Neither kind is second-class, and `observed` is not a softer
+ * §3.1. How a value was checked. No kind is second-class, and `observed` is not a softer
  * `provisional`: `provisional` means nobody checked, `observed` means somebody did, on hardware.
- * They are kept apart because they are checkable by different people — a manual page can be
+ * They are kept apart because they are **checkable by different people** — a manual page can be
  * re-read by anyone holding the document, a unit reading can only be re-taken on that unit.
+ *
+ * `maker` is the third, added by #191: a figure the manufacturer publishes **outside the manual**
+ * — a product page, a spec sheet, a store listing. It is checkable by anyone with the link, and
+ * it is not a manual page, which is the whole distinction. Two devices needed it and neither was
+ * the case #191 was filed about: the OP-XY's guide prints no dimension anywhere, so its span is
+ * teenage engineering's own published `288 x 102`; the Hapax's two Squarp pages disagree, and the
+ * inch conversion printed beside one of them settles it. Both are published figures, and calling
+ * them `provisional` said nobody had checked when somebody had.
+ *
+ * It is deliberately **not** a licence to cite a forum post or a retailer. The source is the
+ * manufacturer's own publication, and the string says which page, so a reader can go and look.
  */
-export const CITE_KINDS = ['manual', 'observed'] as const
+export const CITE_KINDS = ['manual', 'observed', 'maker'] as const
 
 export type CiteKind = (typeof CITE_KINDS)[number]
 
@@ -29,6 +40,8 @@ export type Cite =
   | { kind: 'manual'; source: string }
   /** 'TR-1000 unit, firmware 1.11' */
   | { kind: 'observed'; source: string }
+  /** 'teenage engineering OP-XY product page, teenage.engineering/products/op-xy' */
+  | { kind: 'maker'; source: string }
 
 /** `false` = authored, nothing checked against. */
 export type Verified = Cite | false
@@ -40,6 +53,10 @@ export const CiteSchema = z.discriminatedUnion('kind', [
   }),
   z.strictObject({
     kind: z.literal('observed'),
+    source: z.string().min(1, 'a citation needs a source'),
+  }),
+  z.strictObject({
+    kind: z.literal('maker'),
     source: z.string().min(1, 'a citation needs a source'),
   }),
 ])
