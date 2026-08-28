@@ -144,8 +144,8 @@ export default function Page() {
         </header>
         <p>
           A guide will sometimes ask you for a dry kick with a defined attack, or a struck metal
-          one-shot. Those words assume you already know what they do. This page says the same
-          things in plainer language, one machine at a time.
+          one-shot. In case you need more help, this page explains those sounds one machine at a
+          time.
         </p>
         <p>
           These are families of sound, and the names outlived the boxes. Producers have said
@@ -154,7 +154,7 @@ export default function Page() {
           listening for.
         </p>
         <p className="reference-note">
-          Every description here is ours, written from listening. Treat it as taste.
+          Every description here is ours. We wrote it from listening, so it is opinion.
         </p>
       </section>
 

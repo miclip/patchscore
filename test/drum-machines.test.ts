@@ -196,8 +196,8 @@ describe('#174 the claims the page must not make', () => {
 
   it('says the characters are ours, in our voice, before a reader believes otherwise', () => {
     expect(TEXT).toMatch(/Every description here is ours/)
-    expect(TEXT, 'the descriptions must be marked as taste, however it is worded').toMatch(
-      /\btaste\b/,
+    expect(TEXT, 'the descriptions must be marked as opinion, however it is worded').toMatch(
+      /\b(taste|opinion)\b/,
     )
     // Above the fold in reading order: the disclaimer sits in the opening panel, not in a note
     // under the citation at the bottom which a reader reaches after believing the page.
