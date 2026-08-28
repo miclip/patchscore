@@ -64,6 +64,18 @@ import { TEMPLATES } from '../lib/templates/index'
  * voices carrying fifteen roles is branching that no bound removes. `drone-study` and `relay` at
  * 15 → 16 and 31 → 32 are the floor: one more device to consider at the root and nothing else.
  *
+ * **The MPC Live III re-recorded all seven rows too**, and this time every one of them moved *up*:
+ * `ambient-dub` 132 -> 143 at its worst seed, `lydian-house` 148 -> 182, `major-key-electro`
+ * 648 -> 1,097, `industrial-techno` 14,878 -> 18,446, `weave` 19,066 -> 21,368, and the two
+ * floors 16 -> 17 and 32 -> 34. The matrix's worst case stays on `weave` and moves to **21,368**.
+ *
+ * All up, and by very different amounts, is the signature of a device with a broad answer to
+ * everything: the two floors rise by one and by two — one more device at the root, and this is
+ * the first manifest to declare *two* pools, so `relay` sees two more root candidates rather than
+ * one — while the directions with real tonal demands pay for genuinely new options. Nothing here
+ * got cheaper because nothing this box offers is the *only* good answer to a request; contrast
+ * the TR-6S, which made five directions cheaper by being the obvious home for a kick.
+ *
  * The pre-repair row for `industrial-techno` peaked at 165,785 nodes on seed 9 against 8,309
  * after the repair; that number is pinned in `test/search-matching-floor.test.ts` against the
  * deliberately unrepaired floor, so the before and the after are both still measured. It moved
@@ -95,30 +107,30 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      133, 98, 95, 98, 95, 169, 93, 179, 95, 98, 95, 179, 95, 96, 176, 172, 167, 95, 96, 93, 237, 151,
-      169, 151
+      144, 105, 102, 105, 102, 149, 100, 194, 102, 105, 102, 194, 102, 103, 191, 186, 147, 102, 103,
+      100, 258, 164, 149, 164
     ],
     'drone-study': [
-      16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16
+      17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17
     ],
     'industrial-techno': [
-      12472, 12900, 14390, 12902, 12466, 12918, 13292, 12902, 13697, 14916, 14305, 12950, 12554, 12918,
-      14186, 12918, 14637, 12550, 14599, 12472, 15441, 13697, 12950, 12564
+      14861, 16138, 16391, 16821, 18414, 15385, 14864, 15337, 15625, 15335, 15757, 19080, 14949, 15385,
+      14857, 15353, 15335, 14951, 15385, 14861, 15335, 14864, 15385, 14965
     ],
     'lydian-house': [
-      133, 133, 134, 133, 133, 133, 134, 133, 151, 152, 134, 132, 134, 152, 134, 152, 151, 152, 133,
-      152, 133, 152, 133, 171
+      145, 145, 146, 145, 145, 145, 146, 145, 165, 166, 146, 144, 146, 166, 146, 166, 165, 166, 145,
+      166, 145, 166, 145, 187
     ],
     'major-key-electro': [
-      196, 122, 604, 125, 187, 122, 389, 166, 191, 502, 594, 130, 183, 122, 648, 126, 355, 166, 127,
-      196, 555, 169, 130, 130
+      887, 385, 212, 346, 209, 143, 217, 184, 484, 135, 462, 140, 204, 143, 204, 135, 135, 184, 143,
+      1097, 135, 191, 143, 143
     ],
     relay: [
-      32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32
+      34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34
     ],
     weave: [
-      16896, 16896, 19066, 16896, 16896, 16896, 17764, 16896, 16896, 17826, 19004, 16896, 16896, 16896,
-      16896, 16896, 18136, 16896, 16896, 16896, 16896, 16896, 16896, 16896
+      20340, 20340, 20340, 21300, 20340, 20340, 20340, 20340, 20340, 20340, 21368, 20340, 20340, 20340,
+      20340, 20340, 20340, 20340, 20340, 20340, 20340, 20340, 20340, 20340
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".

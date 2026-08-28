@@ -1182,15 +1182,29 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * the branching the search pays for. A box with more voices and the same roles spread thinly
    * across them is cheaper than a box with fewer voices each claiming several — so it is
    * `recipes x supported roles per voice` that this band tracks, and folder count says nothing.
+   *
+   * **Moved a fifth time for the MPC Live III**: 19,066 -> 21,368, a rise of 12.1%, with the peak
+   * staying on `weave` and crossing from seed 2 to seed 10. Nothing capped, and 21,368 is 14% of
+   * `DEFAULT_NODE_CAP`.
+   *
+   * A twelve-percent move from the largest box in the library is worth a sentence for the same
+   * reason the TR-6S's doubling was, in the opposite direction. This device brings 20 recipes and
+   * two pools of sixteen — more assignables than any other manifest — and costs an eighth of what
+   * a six-voice drum machine did. Both facts are the same rule read twice: what the search pays
+   * for is *ambiguity per request*, and a pool whose members are interchangeable is collapsed by
+   * §7.1's symmetry breaking before the branching ever happens. Measured directly while this
+   * device was being authored, a pool of 128 and a pool of 16 produce **identical** node counts.
+   * So `count` is nearly free and it is the *roles per voice* that is not — which is why the two
+   * pools here are split by what a fixed-note pad can actually carry rather than by convenience.
    */
-  const WORST_CASE_NODES = 19_066
+  const WORST_CASE_NODES = 21_368
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))
 
   /**
    * The timeout is not a workaround. This runs `TEMPLATES.length * CAP_SWEEP_SEEDS.length`
-   * exhaustive searches over the whole registry — 168 of them today at twenty-one devices and
+   * exhaustive searches over the whole registry — 168 of them today at twenty-two devices and
    * seven directions. It first went red on `LANG=C.UTF-8` at the default 5s, which reads like a
    * locale failure and is not one, and while #78's repair has bought a great deal of headroom
    * back the timeout stays: a CI runner sharing a core is what it was raised for, not the
