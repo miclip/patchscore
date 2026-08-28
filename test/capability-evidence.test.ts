@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CAPABILITY_FACTS,
   CONTENT_FACT,
+  PATTERN_ENTRY_FACT,
   CapabilityEvidenceSchema,
   DeviceSchema,
   clockJackNotes,
@@ -130,12 +131,18 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
 
   it('accepts every scalar fact in the closed list', () => {
     for (const fact of CAPABILITY_FACTS) {
-      // §2.6/#111. `content` is the one path whose citation needs a declaration beside it: the
-      // field is a positive claim about what the box ships, so a page with nothing behind it is
-      // refused there (`test/device-content.test.ts`). Every other path accepts a citation on
-      // its own, declared or not — `features.*` and `clock.preferredSource` deliberately so.
+      // §2.6/#111, §8/#65. Two paths need a declaration beside the citation, because both are
+      // positive claims about the box rather than readings of a control: what it ships, and
+      // whether it can hold a pattern at all. A page with nothing behind it is refused for both
+      // (`test/device-content.test.ts`, `test/pattern-entry.test.ts`). `noteDuration` is the
+      // third of that kind and the shared fixture already declares it. Every other path accepts
+      // a citation on its own — `features.*` and `clock.preferredSource` deliberately so.
       const declaring =
-        fact === CONTENT_FACT ? { content: { kind: 'user-supplied' } as const } : {}
+        fact === CONTENT_FACT
+          ? { content: { kind: 'user-supplied' } as const }
+          : fact === PATTERN_ENTRY_FACT
+            ? { patternEntry: { kind: 'external', reason: 'played from elsewhere' } as const }
+            : {}
       const parsed = DeviceSchema.safeParse(
         patchable({
           ...declaring,

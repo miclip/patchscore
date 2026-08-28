@@ -633,6 +633,33 @@ export const NoteDurationSchema = z.discriminatedUnion('kind', [
   }),
 ])
 
+/**
+ * §8/#65. **Whether the pattern phase 5 prints can be entered on this box at all.**
+ *
+ * Phase 5 is called *Step programming* and draws a grid for every part. That is right for a
+ * TR-1000 and a Deluge and wrong for a box with no sequencer, where the notes arrive from
+ * somewhere else entirely — the reader is handed a grid with nowhere to put it.
+ *
+ * **Only the negative case is declarable, and that is deliberate.** A box that sequences itself
+ * needs no field; the grid is already the right instruction. This says the opposite, and it is a
+ * positive claim about the instrument, so it carries a citation like every other capability fact.
+ *
+ * **`features.perStep` is a different claim and must not be read as this one.** Its absence means
+ * no per-step lanes, which a box with a sequencer can also be true of. Reading one as the other
+ * is the failure `CLAUDE.md` records for the TR-8S's INST table and the minilogue xd's SHAPE
+ * knob, wearing a third field's name.
+ *
+ * `reason` is what the manual established, in the author's words, and the renderers print it.
+ */
+export const PATTERN_ENTRY_FACT = 'patternEntry'
+
+export type PatternEntry = { kind: 'external'; reason: string }
+
+export const PatternEntrySchema = z.strictObject({
+  kind: z.literal('external'),
+  reason: z.string().min(1, 'say what the manual established about how the box is played'),
+})
+
 export const CAPABILITY_FACTS = [
   'clock.canSendClock',
   'clock.canReceiveClock',
@@ -649,6 +676,7 @@ export const CAPABILITY_FACTS = [
   'features.lfo',
   CONTENT_FACT,
   NOTE_DURATION_FACT,
+  PATTERN_ENTRY_FACT,
 ] as const
 
 export type CapabilityFact = (typeof CAPABILITY_FACTS)[number]
@@ -800,6 +828,26 @@ export function contentNotice(
     }
   }
   return { state: 'unknown', evidence }
+}
+
+/**
+ * §8/#65. **Whether phase 5's grid is an instruction this box can carry out.**
+ *
+ * One decision in one place, the arrangement `contentNotice` and `noteDurationNotice` already
+ * sit in (#33): two hand-written vocabularies around one verdict is how the Markdown guide and
+ * the page come to disagree about the box a reader is holding.
+ *
+ * Returns `undefined` for the ordinary case, like `contentNotice` and unlike
+ * `noteDurationNotice`. A box that sequences itself has no question here — the grid is already
+ * the right instruction, and a sentence saying so on every part of every guide would be noise.
+ */
+export type PatternEntryNotice = { state: 'external'; reason: string; evidence: Cite }
+
+export function patternEntryNotice(device: Device | undefined): PatternEntryNotice | undefined {
+  if (device?.patternEntry === undefined) return undefined
+  const evidence = evidenceFor(device, PATTERN_ENTRY_FACT)
+  if (evidence === undefined || !isCite(evidence)) return undefined
+  return { state: 'external', reason: device.patternEntry.reason, evidence }
 }
 
 /**
@@ -1926,6 +1974,12 @@ export type Device = {
    */
   noteDuration?: NoteDuration
   /**
+   * §8/#65. Declared only by a box that cannot hold a pattern itself — see `PatternEntry`.
+   * Absence is not ignorance here but the ordinary case: nearly every box sequences itself, and
+   * the grid phase 5 draws is the right instruction for it.
+   */
+  patternEntry?: PatternEntry
+  /**
    * §2.6/#22. **Who checked the capability facts above, keyed by field path.**
    *
    * Optional, and silence is the honest default — an author cites what they checked. Required in
@@ -1955,6 +2009,7 @@ export const DeviceSchema = z
     features: DeviceFeaturesSchema.optional(),
     content: DeviceContentSchema.optional(),
     noteDuration: NoteDurationSchema.optional(),
+    patternEntry: PatternEntrySchema.optional(),
     capabilityEvidence: z
       .record(z.string().min(1), CapabilityEvidenceSchema)
       .refine((m) => Object.keys(m).length > 0, {
@@ -2285,6 +2340,29 @@ export const DeviceSchema = z
         code: 'custom',
         message: `'${NOTE_DURATION_FACT}' carries a citation but no noteDuration is declared; a reading that supports no claim is 'cited-against' (§2.6/#142)`,
         path: ['capabilityEvidence', NOTE_DURATION_FACT],
+      })
+    }
+
+    /**
+     * §8/#65. Same two directions again, and for the same reason. "This box cannot hold a
+     * pattern" is a positive claim about an instrument and needs the page that establishes it;
+     * a citation with no declaration behind it is a reading that supports no claim, which is
+     * what `cited-against` is for.
+     */
+    const entryEvidence = evidence[PATTERN_ENTRY_FACT]
+    if (device.patternEntry !== undefined) {
+      if (entryEvidence === undefined || !isCite(entryEvidence)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `patternEntry is declared '${device.patternEntry.kind}' with no citation at '${PATTERN_ENTRY_FACT}'; that a box cannot sequence itself is read off its manual (§8/#65)`,
+          path: ['capabilityEvidence', PATTERN_ENTRY_FACT],
+        })
+      }
+    } else if (entryEvidence !== undefined && isCite(entryEvidence)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `'${PATTERN_ENTRY_FACT}' carries a citation but no patternEntry is declared; a reading that supports no claim is 'cited-against' (§8/#65)`,
+        path: ['capabilityEvidence', PATTERN_ENTRY_FACT],
       })
     }
 

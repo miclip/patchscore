@@ -321,6 +321,23 @@ export function SustainedRef() {
 }
 
 /**
+ * §8/#65. The sibling of `SustainedRef` for a part on a box that cannot hold a pattern, worded as
+ * `patternEnteredElsewhere` in `lib/core/render.ts` words it.
+ *
+ * Unlike `SustainedRef` the grid still follows this, because the figure is real and the reader
+ * still has to program it. What was wrong was never the grid, only the unstated assumption about
+ * which box it goes on.
+ */
+export function EnteredElsewhereRef({ reason }: { reason: string }) {
+  return (
+    <p className="sound-ref hook-ref">
+      <strong>Not programmed here</strong> — {reason}. Enter this figure on whatever is driving it;
+      the rig diagram shows what that is.
+    </p>
+  )
+}
+
+/**
  * §4.3/§8. The sibling of `HookRef` for a part whose direction says its variants re-articulate the
  * hook (`RoleRequest.reArticulatesHook`): the hook owns which note and how long, the grid below
  * owns where it is lifted and struck again. Two authorities, one sentence, nothing restated — so
