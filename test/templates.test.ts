@@ -79,7 +79,12 @@ const SHARED_VOCABULARY = new Set(
 )
 
 /**
- * Ordinary musical English that a device manual happens to print on a control.
+ * Ordinary English that a device folder happens to print — on a control, or on the box itself.
+ *
+ * The set was `MUSICAL_ENGLISH` while both its members were words a *manual* prints beside a
+ * knob. `one` is neither musical nor a parameter: it is a word in a product's name. The bar the
+ * set enforces did not change and the name now says what it actually is — a word that identifies
+ * no device however a template uses it.
  *
  * `key` is the MC-101's own name for a drum pad's tuning — `Key Offset`, Reference Manual p.47 —
  * and it is also what every musician calls the tonality a template is written in, which is what
@@ -94,12 +99,25 @@ const SHARED_VOCABULARY = new Set(
  * rewrite §4.4's vocabulary to dodge a check, and renaming the parameter would put a word on the
  * screen that the box does not print.
  *
+ * `one` is the collision arriving from a third direction: not a parameter name but a **product
+ * name**, `Akai MPC One G2`. `deviceVocabulary` tokenises `device.name`, so the day that box
+ * landed the word `one` became a device word and `weave`'s *"this is one more thing up there"*
+ * became a breach — a template counting its own parts, naming nothing. No side may move here
+ * either: the box is called what Akai calls it, and a direction may not be forbidden the
+ * commonest number word in English.
+ *
+ * **Exempting `one` does not open a hole, and the test below is why.** A template that really
+ * did name this box would have to write `akai-mpc-one-g2`, and *"contains no device id or folder
+ * name as a substring"* asserts against exactly that, on ids and folder names rather than
+ * tokens. The other two tokens of the name, `mpc` and `g2`, stay forbidden here. What is exempt
+ * is the bare English word, which on its own identifies nothing.
+ *
  * This is the same false positive the single-letter rule below already records for `A minor`,
  * and it is repaired the same way: by naming the word, once, with the reason. Keep this set
- * tiny. A word earns a place here only when a device manual's own vocabulary collides with
- * ordinary musical English, never to let a template through that really is naming a box.
+ * tiny. A word earns a place here only when a device folder's own vocabulary collides with
+ * ordinary English, never to let a template through that really is naming a box.
  */
-const MUSICAL_ENGLISH = new Set(['key', 'transient'])
+const NON_IDENTIFYING_ENGLISH = new Set(['key', 'one', 'transient'])
 
 function tokens(text: string): string[] {
   return text
@@ -136,7 +154,7 @@ function deviceVocabulary(devices: readonly Device[]): Set<string> {
       // 'a' as a device word forbids a template from naming the key of A minor, which is what
       // it did the day this device landed.
       if (token.length === 1) continue
-      if (MUSICAL_ENGLISH.has(token)) continue
+      if (NON_IDENTIFYING_ENGLISH.has(token)) continue
       if (!SHARED_VOCABULARY.has(token)) out.add(token)
     }
   }

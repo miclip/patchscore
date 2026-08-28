@@ -923,7 +923,9 @@ describe('rack view', () => {
     // 35: plus the OP-XY's, the 480 x 220 display p.3 specifies, drawn in the four-column gap
     // between the volume cluster and the encoders because that is where p.4 puts the four module
     // buttons that switch it — "the four buttons underneath the screen".
-    expect(count('rack-screen')).toBe(35)
+    // 36: plus the MPC One G2's, the 151 x 94 mm active area p.477 specifies, carrying that
+    // panel's voice field the way both its siblings do.
+    expect(count('rack-screen')).toBe(36)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -976,9 +978,11 @@ describe('rack view', () => {
     // Sixteen since the Subharmonicon landed — one field per device that has voices to show.
     // Nineteen since the MPC XL, whose field sits on its display for the sibling's reason.
     // Twenty since the OP-XY, whose field sits on its eight track buttons.
+    // Twenty-one since the MPC One G2 — the third MPC, and the third to put its field on the
+    // display rather than the pads, because the pad grid addresses one of its three pools.
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(20)
+    expect(fields).toHaveLength(21)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

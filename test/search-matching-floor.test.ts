@@ -931,7 +931,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * narrowed from three times to one and a half. A duplicate is the one kind of new device whose
    * request pairs the repair has already seen the shape of.
    *
-   * **The OP-XY takes it 900,769 → 1,200,333, a rise of 33.3%**, and the two rates come apart
+   * **The OP-XY takes it 900,769 → 1,200,163, a rise of 33.3%**, and the two rates come apart
    * again — the repaired sweep rose 11.9% over the same device (`test/search-symmetry.test.ts`
    * records 26,688 → 29,870), so the gap is back to about two and four fifths. That is the MPC
    * XL paragraph read in reverse: the XL was a duplicate and its request pairs were a shape the
@@ -940,8 +940,17 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * other way up — plenty of roles the repair can prove will not share a voice, and enough
    * voices to separate them onto — which is precisely the position the repair is for. The
    * unrepaired floor pays for every one of those pairs and the repaired search collapses them.
+   *
+   * **The MPC One G2 takes it 1,200,163 → 1,615,995, a rise of 34.6%**, against 19.4% on the
+   * repaired sweep over the same device (`test/search-symmetry.test.ts` records 29,870 → 35,678)
+   * — the gap back to about one and four fifths, which is the MPC XL's shape again rather than
+   * the OP-XY's. That is what it should be: this box is the third copy of the Live III's three
+   * pools and twenty recipes, so its request pairs are the shape the repair has already
+   * collapsed twice. Two duplicates of one engine have now moved this floor by almost the same
+   * amount — 35.5% and 34.6% — while moving the repaired search by 24.9% and 19.4%. Sharing an
+   * engine buys the reader a consistent guide and buys the search nothing.
    */
-  it('walks the recorded 1,200,163 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 1,615,995 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -949,14 +958,15 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(1_200_163)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(1_615_995)
     // And the repaired floor is emphatically not walking it. The headroom is what carries the
-    // claim, not the round number: this seed walks 20,497 repaired against 1,200,163 unrepaired,
-    // so the ceiling is a fifty-eighth of the floor. It was 20,000 until this device pushed the
-    // repaired walk past it. Loosen it when it binds rather than re-tightening it onto each new
-    // figure: a ceiling that sits one node above the last measurement stops guarding the claim
-    // it is here to make and starts re-recording the measurement a second time.
-    expect(assign(input).search.nodes).toBeLessThan(25_000)
+    // claim, not the round number: this seed walks 26,841 repaired against 1,615,995 unrepaired,
+    // so the ceiling is a sixtieth of the floor. It was 20,000, then 25,000, and each time a
+    // device pushed the repaired walk past it. Loosen it when it binds rather than re-tightening
+    // it onto each new figure: a ceiling that sits one node above the last measurement stops
+    // guarding the claim it is here to make and starts re-recording the measurement a second
+    // time.
+    expect(assign(input).search.nodes).toBeLessThan(35_000)
   })
 })
 

@@ -6,6 +6,7 @@
 
 import type { Device } from '../core/device'
 import { device as device_akai_mpc_live_iii } from './akai-mpc-live-iii/index'
+import { device as device_akai_mpc_one_g2 } from './akai-mpc-one-g2/index'
 import { device as device_akai_mpc_xl } from './akai-mpc-xl/index'
 import { device as device_behringer_crave } from './behringer-crave/index'
 import { device as device_elektron_digitakt_ii } from './elektron-digitakt-ii/index'
@@ -33,6 +34,7 @@ import { device as device_zoom_livetrak_l_8 } from './zoom-livetrak-l-8/index'
 /** Every device manifest, ordered by folder name (UTF-16 code unit). */
 export const DEVICES: readonly Device[] = [
   device_akai_mpc_live_iii,
+  device_akai_mpc_one_g2,
   device_akai_mpc_xl,
   device_behringer_crave,
   device_elektron_digitakt_ii,
@@ -61,6 +63,7 @@ export const DEVICES: readonly Device[] = [
 /** Folder names, in the same order. Useful for error messages that name a source. */
 export const DEVICE_FOLDERS: readonly string[] = [
   'akai-mpc-live-iii',
+  'akai-mpc-one-g2',
   'akai-mpc-xl',
   'behringer-crave',
   'elektron-digitakt-ii',

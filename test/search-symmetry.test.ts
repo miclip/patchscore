@@ -1211,7 +1211,7 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * `test/search-bound.test.ts` show the same event with one direction going the other way.
    *
    * **Moved a seventh time for the OP-XY**: 26,688 -> 29,870, a rise of 11.9%, the peak staying
-   * on `weave` and crossing from seed 16 to seed 3. Nothing capped, and 29,870 is 19.9% of
+   * on `weave` and crossing from seed 16 to seed 3. Nothing capped, and 29,870 is 14.9% of
    * `DEFAULT_NODE_CAP`.
    *
    * A single pool of eight carrying all 23 roles and 18 recipes costs less than half what the
@@ -1219,8 +1219,21 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * expensive is a *second box* the objective can tell apart, not a wide pool inside one. The
    * roles-per-voice here is the highest in the library — every track takes every engine, so
    * there is nothing to split the pool along — and it still lands under the Live III's arrival.
+   *
+   * **Moved an eighth time for the MPC One G2**: 29,870 -> 35,678, a rise of 19.4%, the peak
+   * staying on `weave` and crossing from seed 3 to seed 9. Nothing capped, and 35,678 is 17.8%
+   * of `DEFAULT_NODE_CAP`.
+   *
+   * The third MPC, and it costs almost as much as the second did (24.9%) for the same reason and
+   * with the same lesson: it takes the Live III's three pools and all twenty of its recipes by
+   * reference, retargeting only their citations, so it presents the search exactly the roles-per-
+   * voice the other two do. The objective can still tell the three apart — this one has eleven
+   * jacks where the Live III has nineteen, no individual outs where that box has four, and a 272
+   * mm span against 436 — so symmetry breaking has nothing to collapse between them. **A device
+   * that shares an engine is not a device the search gets for free**, and that is now measured
+   * twice rather than argued once.
    */
-  const WORST_CASE_NODES = 29_870
+  const WORST_CASE_NODES = 35_678
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))
