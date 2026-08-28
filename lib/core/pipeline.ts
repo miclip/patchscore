@@ -471,11 +471,24 @@ function bundles(device: Device, direction: 'in' | 'out'): Bundle[] {
  * `1 · SOMETHING` does not pair on `1`, because a leading number is part of a name rather than an
  * ordinal, and pairing on it would invent a correspondence the panel does not make.
  */
-function trailingOrdinal(id: string): number | undefined {
-  const match = /\s(\d+)$/.exec(id)
-  if (match?.[1] === undefined) return undefined
-  const n = parseInt(match[1], 10)
-  return Number.isSafeInteger(n) ? n : undefined
+function trailingOrdinal(id: string): string | undefined {
+  // A number, or a **single** letter. The Hapax labels its sockets `Cv out 1`; the Torso T-1
+  // labels its `cv · a` and `gate · a`, and #201 shipped reading digits only, so that box paired
+  // nothing and the engine reported it could drive no synth — a sequencer whose entire purpose is
+  // driving synths.
+  //
+  // **One letter, never a word.** `ENVELOPE A · EOA` ends in a letter too, and `EOA` is a name
+  // rather than an ordinal; pairing on it is how a reader gets told to play a synth from an
+  // end-of-attack pulse, which is the failure `soleKind` was written to prevent. Anchored to the
+  // end for the same reason #201 was: a leading token is part of a name.
+  //
+  // Returned as a string so `1` and `a` compare by one rule. Lower-cased because a panel may
+  // print `CV A` and `Gate a`, and a pairing that depends on the case of a silkscreen is not a
+  // pairing.
+  const match = /(?:\s|·)\s*([0-9]+|[A-Za-z])$/.exec(id)
+  const token = match?.[1]
+  if (token === undefined) return undefined
+  return token.toLowerCase()
 }
 
 /**

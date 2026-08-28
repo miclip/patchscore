@@ -150,3 +150,59 @@ describe('pitch and gate pair by ordinal when no panel section pairs them (#201)
     expect(target?.gateJack).toBe('CONTROLLER INPUTS · GATE')
   })
 })
+
+/**
+ * §3.3/#213. **The ordinal rule reads a letter as well as a digit.**
+ *
+ * #201 taught `bundles()` to pair a pitch jack with a gate jack by ordinal, because a multitrack
+ * CV sequencer labels two numbered groups the section rule cannot join. I wrote the matcher as
+ * `\s(\d+)$`, which was the Hapax's `Cv out 1` and nothing else. The Torso T-1 labels its sockets
+ * `cv · a` and `gate · a`, so it paired nothing.
+ *
+ * These are fixtures rather than the T-1 itself, and deliberately: that box declares
+ * `['pitch-cv','cv','gate']` on each CV output because a per-socket Function setting chooses, so
+ * `soleKind` excludes it and it still drives nothing. That is #213's second gap, which is a design
+ * question rather than a matcher bug and is not fixed here.
+ */
+describe('pitch and gate pair on a lettered ordinal too (#213)', () => {
+  const out = (id: string, signal: string[]) => ({ id, direction: 'out' as const, signal })
+  const hapax = DEVICES.find((d) => d.id === 'squarp-hapax')!
+  const box = (jacks: ReturnType<typeof out>[]) =>
+    ({ ...hapax, id: 'fixture', jacks }) as unknown as (typeof DEVICES)[number]
+
+  it('pairs cv · a with gate · a', () => {
+    const rig = [
+      box([out('cv · a', ['pitch-cv']), out('gate · a', ['gate'])]),
+      DEVICES.find((d) => d.id === 'moog-minitaur')!,
+    ]
+    const result = resolve({ devices: rig, template, mood: moodState(), seed: 3 })
+    const target = result.interDevicePatch?.targets.find((t) => t.deviceId === 'moog-minitaur')
+    expect(target?.outcome).toBe('routed')
+    expect(target?.cables.map((c) => c.fromJack).sort()).toEqual(['cv · a', 'gate · a'])
+  })
+
+  it('does not pair across different letters', () => {
+    // The claim is `a` with `a`, not "any cv with any gate". A pass that ignored the ordinal would
+    // route this and tell a reader to patch CV A into gate B.
+    const rig = [
+      box([out('cv · a', ['pitch-cv']), out('gate · b', ['gate'])]),
+      DEVICES.find((d) => d.id === 'moog-minitaur')!,
+    ]
+    const result = resolve({ devices: rig, template, mood: moodState(), seed: 3 })
+    const target = result.interDevicePatch?.targets.find((t) => t.deviceId === 'moog-minitaur')
+    expect(target?.outcome).not.toBe('routed')
+  })
+
+  it('refuses a trailing word, which is a name rather than an ordinal', () => {
+    // The Cascadia's `ENVELOPE A · EOA` ends in a letter. Pairing on it is how a reader gets told
+    // to play a synth from an end-of-attack pulse — the failure `soleKind` exists to prevent.
+    const rig = [
+      box([out('pitch · eoa', ['pitch-cv']), out('gate · eoa', ['gate'])]),
+      DEVICES.find((d) => d.id === 'moog-minitaur')!,
+    ]
+    const result = resolve({ devices: rig, template, mood: moodState(), seed: 3 })
+    expect(
+      result.interDevicePatch?.targets.find((t) => t.deviceId === 'moog-minitaur')?.outcome,
+    ).not.toBe('routed')
+  })
+})
