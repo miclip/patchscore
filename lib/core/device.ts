@@ -1028,6 +1028,48 @@ export function noteOffSteps(notes: readonly { step: number; len: number }[], st
  * a position yet and this is deliberately not the change that adds one — but the list is the
  * foundation that change would extend, rather than something it would have to invent first.
  */
+/**
+ * §3.3/#213. **What to set so this socket carries a given kind.**
+ *
+ * A socket declaring several kinds means one of two opposite things, and the model had one word
+ * for both:
+ *
+ *  - **Ambiguous.** The Cascadia's `ENVELOPE A · EOA` is `['gate','trigger']` because its page
+ *    says the socket is a trigger by default and a gate only if a global setting changes. The
+ *    manual hedges; nothing tells a reader how to make it the thing they want. Ranked on
+ *    membership alone, this once told somebody to play a synth from an end-of-attack pulse, which
+ *    is why `soleKind` refuses a multi-kind socket in the first place.
+ *  - **Configurable.** The Torso T-1's `cv · a` is `['pitch-cv','cv','gate']` because a per-socket
+ *    Function setting *chooses* one, and the manual says which to pick. The socket becomes a pitch
+ *    output because the reader makes it one.
+ *
+ * A `setup` is the difference, and it is evidence rather than a flag: a manifest can only write
+ * one if the manual prints the path and the option. Ambiguity has no instruction to cite;
+ * configurability does. So `soleKind` honours a socket that declares how it is set, and goes on
+ * refusing one that merely lists what it might be.
+ *
+ * Deliberately the same shape as `ClockSourceSetup`, which #104 added for a port that ships
+ * silent: same problem — a socket that does not yet do the job and a menu step that makes it —
+ * so it should not be a second vocabulary.
+ */
+export type JackSetup = {
+  /** The kind this setting makes the socket carry. Must be one of the jack's declared `signal`s. */
+  signal: JackSignalKind
+  /** The menu path, as the box prints it: 'T1 Config > CV/Gate > Function'. */
+  path: string
+  /** The option to select there, in the menu's own words: 'Pitch'. */
+  value: string
+  /** Anything a reader would otherwise discover at the machine — a scaling that must match, say. */
+  note?: string
+}
+
+export const JackSetupSchema = z.strictObject({
+  signal: JackSignalKindSchema,
+  path: z.string().min(1),
+  value: z.string().min(1),
+  note: z.string().min(1).optional(),
+})
+
 export type JackSpec = {
   /** Section-qualified, as the panel prints it: 'VCO A · FM 1'. */
   id: string
@@ -1088,6 +1130,12 @@ export type JackSpec = {
   clock?: ClockTransport[]
   /** Anything a name alone would mislead a reader about. */
   note?: string
+  /**
+   * §3.3/#213. How this socket is set to carry a kind it can be configured for — see `JackSetup`.
+   * Only meaningful on a socket declaring more than one `signal`; a single-kind socket is already
+   * the thing, and the schema refuses a `setup` there.
+   */
+  setup?: JackSetup[]
 }
 
 /**
@@ -1103,9 +1151,33 @@ export const JackSpecSchema = z
     direction: z.enum(['in', 'out']),
     signal: z.array(JackSignalKindSchema).min(1),
     clock: z.array(ClockTransportSchema).min(1).optional(),
+    setup: z.array(JackSetupSchema).min(1).optional(),
     note: z.string().min(1).optional(),
   })
   .superRefine((jack, ctx) => {
+    /**
+     * §3.3/#213. **A setup names a kind the socket actually declares**, and a single-kind socket
+     * has nothing to set. Both refusals keep `setup` meaning one thing: the way a *configurable*
+     * socket is made into one of the things it can be. A setup pointing at a kind the jack does
+     * not carry is a manifest disagreeing with itself, and one on a socket that is already the
+     * kind is a menu step a reader does not need to take.
+     */
+    for (const [i, step] of (jack.setup ?? []).entries()) {
+      if (!jack.signal.includes(step.signal)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `setup names '${step.signal}', which this jack does not declare in 'signal' (§3.3/#213)`,
+          path: ['setup', i, 'signal'],
+        })
+      }
+    }
+    if (jack.setup !== undefined && jack.signal.length === 1) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `a single-kind socket is already what it carries; 'setup' is for choosing between declared kinds (§3.3/#213)`,
+        path: ['setup'],
+      })
+    }
     /**
      * §3.3. **A repeated kind is an authoring slip, not emphasis.** The list is plural for a
      * socket that carries two *different* things; `['cv', 'cv']` says nothing the singleton did
