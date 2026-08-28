@@ -460,8 +460,9 @@ const recipes: Recipe[] = [
      * concerned, which is exactly what `sampled-chord` says.
      *
      * **The two things that make the substitution legitimate are both on the page**, and they
-     * are worth naming here because two other boxes in this library pass the first and fail the
-     * second (see the TR-8S and TR-1000 manifests):
+     * are worth naming here because the TR-1000 passes the first and fails the second (see its
+     * manifest; the TR-8S was thought to fail it too until #183 found the page that says
+     * otherwise):
      *
      *  1. *It sustains.* The Oneshot machine *"plays the sample linearly (forward, reversed, or
      *     looped)"* (p.93); `FORWARD LOOP` holds a chord under a whole bar, and the pad below

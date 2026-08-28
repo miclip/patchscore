@@ -906,8 +906,15 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * voices and fifteen roles gives it fewer such pairs to collapse per unit of branching than a
    * box with more voices does, so on this device the floor and the repaired search grow at
    * nearly the same rate. That is the repair being less effective here, not absent.
+   *
+   * **#183 moved it again without adding a device: 471,392 → 493,870, a rise of 4.8%.** The TR-8S
+   * gained `pad` and `stab` on its RC slot when the `sampled-chord` route turned out to be open,
+   * so one existing voice became a candidate for two more requests. The repaired sweep barely
+   * noticed — `industrial-techno` went 14,878 → 15,441 and the matrix's worst case is unchanged
+   * at 19,066 — which is the gap between the two rates saying the thing it usually says: the
+   * repair absorbs a widened voice better than it absorbs a new one.
    */
-  it('walks the recorded 471,392 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 493,870 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -915,7 +922,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(471_392)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(493_870)
     // And the repaired floor is emphatically not walking it.
     expect(assign(input).search.nodes).toBeLessThan(20_000)
   })

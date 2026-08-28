@@ -198,6 +198,39 @@ function instFx(value: (typeof INST_FX_TYPES)[number]): AuthoredParam {
   }
 }
 
+/**
+ * #183. **The `[CTRL]` knob assignment, carried as two params so the pairing cannot come apart.**
+ *
+ * `Coarse` is only on a `[CTRL]` knob when `KIT: CTRL Sel = User`, and p.28's second row exists
+ * only under that setting. Authoring the destination without the switch would be a value read off
+ * a scale that is not in force — `CLAUDE.md`'s rule, which is what got this box wrong in the first
+ * place (see the §12.4 note on the device). So a recipe that transposes states both.
+ */
+function ctrlCoarse(): AuthoredParam[] {
+  return [
+    {
+      kind: 'enum',
+      name: 'KIT: CTRL Sel',
+      value: 'User',
+      options: {
+        values: ['OFF', 'Pan', 'ReverbSend', 'DelaySend', 'LFO Depth', 'InstFX', 'User'],
+        verified: cite(28),
+      },
+      verified: false,
+      hint: 'ctrl-select',
+      note: "Row two of p.28's KIT: CTRL table is shown only under User",
+    },
+    {
+      kind: 'text',
+      name: 'KIT: CTRL (per instrument)',
+      value: '(SAMPLE) Coarse',
+      verified: false,
+      hint: 'kit-edit',
+      note: 'Puts semitone tuning on the [CTRL] knob, where p.16 motion-records it per step',
+    },
+  ]
+}
+
 // ---------------------------------------------------------------------------
 // Recipes (§3)
 // ---------------------------------------------------------------------------
@@ -679,6 +712,99 @@ const recipes: Recipe[] = [
     routing: 'KIT Edit > MUTE, RC = CH — a sustaining sample can be choked like OpenHH (p.27)',
     verified: false,
   },
+  {
+    id: 'tr8s-pad-soft',
+    role: 'pad',
+    character: 'soft',
+    voice: 'rc',
+    title: 'Rendered chord sample held under the bar, retuned per step',
+    verified: false,
+    realisation: 'sampled-chord',
+    /**
+     * §12.4/#183. One instrument is monophonic, so a three-note pad is not reachable by patching
+     * — the way out is a sample that already contains the chord, which is one note as far as the
+     * slot is concerned.
+     *
+     * Both halves are on the page and the device note above gives the chain: `Hold Mode Whole`
+     * sustains it (p.31), and `(SAMPLE) Coarse` on a `[CTRL]` knob moves it in semitones at
+     * individual steps (pp.28, 16, 31). Transposition keeps the recorded voicing and nothing
+     * else, so a changed shape is a second sample (§4.1) — the Hook phase lists which sample the
+     * part needs and the offset to put on each step.
+     *
+     * `RC` because it is the slot least likely to be carrying a drum duty in a rig that also
+     * wants a pad, which is a musical call rather than a constraint.
+     */
+    sourceAudio: {
+      need:
+        'A chord sample per shape the hook plays, loaded as a User tone; see Hook for which and ' +
+        'for the semitone offset on each step',
+    },
+    params: [
+      tone('Sample', 'A User tone — p.30 lists User as "Tones that use imported samples"'),
+      ...ctrlCoarse(),
+      num('COARSE TUNE', 0, COARSE, 31, {
+        unit: 'St',
+        note: 'The step value; the hook prints the offset per step',
+      }),
+      {
+        kind: 'enum',
+        name: 'HOLD MODE',
+        value: 'Whole',
+        options: { values: ['Whole', 'Time', 'Step'], verified: cite(31) },
+        verified: false,
+        hint: 'inst-edit',
+        note: 'Whole: "the sound is heard to the end without decaying"',
+      },
+      num('TUNE', 0, BIPOLAR, 30, { mood: [{ axis: 'darkness', amount: -30 }], hint: 'inst-edit' }),
+      instFx('THRU'),
+      ...sends(150, 70, 140),
+      shuffle(),
+    ],
+  },
+  {
+    id: 'tr8s-stab-hard',
+    role: 'stab',
+    character: 'hard',
+    voice: 'rc',
+    title: 'Short chord sample struck on the step, retuned to the degree',
+    verified: false,
+    realisation: 'sampled-chord',
+    /**
+     * The pad's chain with the sustain half turned off: `Hold Mode Step` ends the sound with the
+     * step rather than holding it (p.31), which is what makes a stab a stab. The transposition
+     * half is unchanged and is what the role needs — a stab that cannot follow the degree is a
+     * drone with gaps in it.
+     */
+    sourceAudio: {
+      need:
+        'A short chord sample per shape, loaded as a User tone; see Hook for the semitone offset ' +
+        'on each step',
+    },
+    params: [
+      tone('Sample', 'A User tone — p.30 lists User as "Tones that use imported samples"'),
+      ...ctrlCoarse(),
+      num('COARSE TUNE', 0, COARSE, 31, {
+        unit: 'St',
+        note: 'The step value; the hook prints the offset per step',
+      }),
+      {
+        kind: 'enum',
+        name: 'HOLD MODE',
+        value: 'Step',
+        options: { values: ['Whole', 'Time', 'Step'], verified: cite(31) },
+        verified: false,
+        hint: 'inst-edit',
+        note: 'Step ends the sound with the step, which is what separates a stab from the pad',
+      },
+      num('DECAY', 90, UNIT, 30, { mood: [{ axis: 'density', amount: -60 }] }),
+      instFx('THRU'),
+      ...sends(70, 90, 90),
+      shuffle(),
+    ],
+    // `accent`, not `first-hit`: a stab's reachable slots are the ones the directions emit for it
+    // (downbeat, offbeat, accent), and `first-hit` is a drum-part slot. #108's test catches this.
+    articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
+  },
 ]
 
 // ---------------------------------------------------------------------------
@@ -818,49 +944,54 @@ export const device: Device = {
   panel: TR_8S_PANEL,
 
   /**
-   * ## Why there is no `sampled-chord` pad or stab here (§12.4)
+   * ## §12.4's `sampled-chord` is open on this box, and the reading that said otherwise (#183)
    *
-   * This box loads user samples and can hold a chord in one, so the obvious move is the Tracker
-   * Mini's: give RC a rendered chord and let one monophonic voice carry a three-note pad. It
-   * does not work, and the half that fails is worth stating because the half that passes is so
-   * convincing.
+   * This manifest used to carry a long argument that a chord sample could be *held* here but not
+   * *moved*, and therefore that a rig of nothing but this box gaps `pad` and `stab`. The sustain
+   * half was right. The transposition half was wrong, and the error is worth keeping because it
+   * is the exact failure `CLAUDE.md` warns about, one step out from where it usually appears.
    *
-   * **Sustain passes, outright.** p.30's INST screen legend lists `User: Tones that use imported
-   * samples` and `Loop: Tones that play repeatedly`, and p.31's *Sample tone only* block gives
+   * **Sustain passes.** p.30's INST screen legend lists `User: Tones that use imported samples`
+   * and `Loop: Tones that play repeatedly`, and p.31's *Sample tone only* block gives
    * `Hold Mode  Whole, Time, Step` with `Whole: The sound is heard to the end without decaying`.
-   * A chord loaded here will sustain under a bar.
    *
-   * **Per-step transposition fails, and that is the half that decides it.** A chord sample
-   * standing in for a pad has to *follow the progression* — our templates give a pad a harmonic
-   * cycle, and a chord pinned to one pitch plays the same chord under every degree, which is a
-   * drone that disagrees with the harmony rather than a pad. So the box has to be able to retune
-   * the slot at individual steps, and this one cannot:
+   * **Transposition passes too, and here is the chain.** All three links are printed:
    *
-   *  - p.16 says exactly which controls motion records into steps — *"movements of the instrument
-   *    [TUNE] knobs, [DECAY] knobs, and [CTRL] knobs"* — and gives the per-step form: *"Operate a
-   *    knob while holding down a pad [1]–[16]."* So the question is only what those three knobs
-   *    can carry.
-   *  - `Tune` (p.30, the [TUNE] knob) is `-128–0–+127`, described in full as *"Adjusts the tuning
-   *    (pitch)"*. **No semitone scale is printed for it anywhere.** Transposing a chord by a minor
-   *    third needs a number in semitones, and turning -128–+127 into one would be inventing the
-   *    mapping (invariant 5).
-   *  - `Coarse Tune` (p.31) *is* in semitones — `-24–0–+24`, *"Specifies the pitch in semitone
-   *    steps"* — and is **not reachable from a [CTRL] knob**. The parameters that are carry an
-   *    `INST [CTRL]` marker and a footnote; `Color`, `Pan`, `ReverbSend`, `DelaySend`, `LFO
-   *    Depth` and the filter `Cutoff`s all have one, and `Coarse Tune` has none. KIT: CTRL `Sel`
-   *    (p.28) offers `OFF, Pan, ReverbSend, DelaySend, LFO Depth, InstFX, User`, and pitch is in
-   *    none of them.
+   *  1. `Coarse Tune` is *"the pitch in semitone steps"*, `-24-0-+24` (p.31). A semitone number,
+   *     which is what moving a chord by a minor third needs.
+   *  2. It is assignable to a `[CTRL]` knob. **`KIT: CTRL` on p.28 is a two-row table.** Row one
+   *     is `Sel`, whose values are `OFF, Pan, ReverbSend, DelaySend, LFO Depth, InstFX, User`.
+   *     Row two is per instrument, `BD`-`RC`, shown *"only if you've set CTRL Sel = User"*, and
+   *     its list contains `(SAMPLE) Coarse`.
+   *  3. `[CTRL]` knobs motion-record per step. p.16: *"movements of the instrument [TUNE] knobs,
+   *     [DECAY] knobs, and [CTRL] knobs are recorded in the steps"*, with the per-step form
+   *     *"Operate a knob while holding down a pad [1]-[16]."*
    *
-   * The near miss, recorded so the next person does not have to find it twice: p.30's LFO
-   * destination list *does* include `(SAMPLE) Coarse`, and `LFO Depth` *is* on a [CTRL] knob. So
-   * one can motion-record LFO Depth per step with the LFO pointed at Coarse. That is a pitch
-   * sweep of an unstated span, not a stable semitone transposition, and no page maps LFO Depth
-   * onto semitones — so it cannot produce "play this chord two semitones up" and is not a route.
+   * So the slot retunes in semitones at individual steps, the chord follows the progression, and
+   * `sampled-chord` is satisfied. The two recipes below are what that buys.
    *
-   * The honest consequence: a rig of nothing but this box gaps `pad` and `stab`, and the guide
-   * says so. §12.4's `sampled-chord` requires a voice that can move the chord, and this one can
-   * hold it and not move it.
+   * **The mistake, recorded so it is not made again.** The old reading quoted row one of p.28
+   * correctly and concluded *"pitch is in none of them"*. But `User` is not a destination — it is
+   * the switch that reveals row two. The seven-item list is exhaustive of *modes*, not of
+   * destinations, and the value was read off the wrong row of a two-row table. `CLAUDE.md` states
+   * this for a cited *range* on the TR-8S's own INST table and the minilogue xd's SHAPE; it is
+   * the same failure over a cited *table*, and `pdftotext` flattens these two rows into
+   * fragments, which is how the second one went missing. Render the page.
+   *
+   * The consequence was not a wrong value but an invented **gap**: the guide told a reader this
+   * box could not carry a pad when it can. Invariant 5 exists to stop us filling holes we cannot
+   * support, and this is the same rule pointing the other way — a hole we reported and did not
+   * have.
+   *
+   * The near miss the old note recorded is still true and still not the route: p.30's LFO
+   * destination list includes `(SAMPLE) Coarse`, so LFO Depth on a `[CTRL]` knob sweeps pitch by
+   * an unstated span. That is not a stable semitone transposition. It was never needed.
+   *
+   * `Tune` (p.30, the `[TUNE]` knob) remains unusable for this and for the reason first given:
+   * `-128-0-+127` with no semitone scale printed anywhere, so turning it into an interval would
+   * be inventing the mapping.
    */
+
   /**
    * The eleven instruments, in panel order (p.4). Every one is monophonic — one trigger, one
    * sound — so `polyphony` is 1 throughout; §2.2's meaning of the field is *notes within one
@@ -882,7 +1013,18 @@ export const device: Device = {
     { kind: 'fixed', id: 'ch', label: 'CH', roles: ['closed-hat', 'ghost-perc'], polyphony: 1 },
     { kind: 'fixed', id: 'oh', label: 'OH', roles: ['open-hat', 'noise'], polyphony: 1 },
     { kind: 'fixed', id: 'cc', label: 'CC', roles: ['impact', 'metallic', 'noise', 'riser'], polyphony: 1 },
-    { kind: 'fixed', id: 'rc', label: 'RC', roles: ['ride', 'metallic', 'closed-hat', 'texture'], polyphony: 1 },
+    // #183. `pad` and `stab` are here because §12.4's `sampled-chord` route is open on this box —
+    // a chord sample sustains under Hold Mode Whole and retunes per step through (SAMPLE) Coarse
+    // on a [CTRL] knob. The device note above gives the chain and the reading that missed it.
+    // RC carries them because it is the slot least likely to be holding a drum duty in a rig that
+    // also wants a pad.
+    {
+      kind: 'fixed',
+      id: 'rc',
+      label: 'RC',
+      roles: ['ride', 'metallic', 'closed-hat', 'texture', 'pad', 'stab'],
+      polyphony: 1,
+    },
   ],
 
   features: {
