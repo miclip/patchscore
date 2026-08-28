@@ -340,6 +340,8 @@ describe('one voice-control source per rig (§3.3)', () => {
       transport: 'midi-din',
       occupiedAssignables: 0,
       claims: 0,
+      // #200. Derived, not chosen — this fixture is about the ranking's answer.
+      chosen: false,
       // #144. Two boxes here can send clock; this pass reads neither field, and a fixture that
       // said `1` would be describing a different rig from the one it built.
       eligible: 2,

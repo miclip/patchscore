@@ -22,6 +22,11 @@ import { EvidenceMark, evidenceLines } from './instruction'
  */
 function basisText(source: ClockSource): string {
   switch (clockSourceBasis(source)) {
+    // #200. Nothing to justify — the reader decided it. The other three exist to answer "why
+    // this one" for somebody who did not, and a derived answer must never wear the same words
+    // as a person's judgement.
+    case 'chosen':
+      return 'you chose it'
     // #144 leaves this one alone: it asserts no comparison. "Its manual says leading a rig is its
     // job" is a fact about this box, true whether it was ranked against ten others or none.
     case 'claimed':
