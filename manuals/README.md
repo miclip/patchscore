@@ -247,6 +247,29 @@ return the same answer.
 - ~~**Deluge guidebook**~~ — resolved. It was an excerpt; the full 284pp guidebook and the
   community firmware docs are both here now.
 
+### A text mirror is not evidence a document is silent
+
+`CLAUDE.md` says `pdftotext` is not evidence a manual says nothing, because it extracts nothing
+from a callout inside a drawing. **The same rule applies to the mirrors here, and harder.** They
+carry the text of a page and none of its images, so anything a maker documents in a figure — a
+panel layout, a control roster, a labelled diagram — is simply absent, with no gap where it was.
+
+This has already cost something. An earlier draft of `te-ep-133` shipped **no panel at all** and
+recorded two control rosters as unrecoverable, reasoning that a mirror with no images meant no
+figure existed. teenage engineering publish a complete, unobstructed, fully-labelled vector front
+view, linked from the very page the mirror was taken from:
+
+    assets.teenage.engineering/_img/69787b2c965bf01b27d19664_opt.svg
+
+440 x 511, 68 paths, no raster and no perspective — a better source than most PDFs here, and the
+mirror gave no sign of it. Recovering it produced the panel, the twelve fader assignments guide
+9.4 calls "printed above the pads" without ever listing them, and an orientation fix: the
+published `240 mm x 176 mm x 16 mm` says nothing about which figure is the span, and the drawing's
+own aspect settles it to 0.013%.
+
+**So before recording anything as absent from a mirrored guide:** open the live page, and look for
+linked image assets. A vector asset is worth more than the text was.
+
 ### teenage engineering publishes guides, not manuals
 
 The OP-XY was the exception here, not the rule: it has a PDF, and an OCR'd one at that. **EP–133
