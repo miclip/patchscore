@@ -938,7 +938,14 @@ describe('rack view', () => {
     // 16 sliders, 129 buttons – OLED screen"). It is the only figure on that panel the manual
     // gives no dimension for, so the 80.9 x 23.2 mm here is measured off the p.13 plan view like
     // every other coordinate in that layout rather than read off a specification line.
-    expect(count('rack-screen')).toBe(39)
+    // 40: plus the SP-404MK2's, the OLED inside the round display well on its top panel. Roland
+    // gives it no dimension either — p.266's specification line says only "Graphic OLED display"
+    // — so the 58.1 x 40.1 mm here is measured off the p.6 plan view like every other coordinate
+    // in that layout. The rise is the one figure in that layout that is a *bound* rather than an
+    // edge: p.6 draws its own orange section rectangle across the bottom of the display well, so
+    // the screen is measured down to where the annotation starts and the real lower edge is a
+    // millimetre or two further. `panel.ts` records which coordinates that affects and why.
+    expect(count('rack-screen')).toBe(40)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -1009,9 +1016,12 @@ describe('rack view', () => {
     // §10's "the place the box's own voice allocation is chosen and shown", read literally: those
     // two buttons are the pool of two this device declares, and pressing one is how a reader
     // addresses the timbre a part landed on.
+    // Twenty-three since the SP-404MK2, whose field is pads [1]-[16] — the 4 x 4 block only. The
+    // fifth column beside it (BUS FX, HOLD, EXT SOURCE, SUB PAD) is buttons rather than sample
+    // slots, so it is drawn as an ordinary grid and stays out of the field.
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(22)
+    expect(fields).toHaveLength(23)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

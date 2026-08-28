@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → OP-XY · Track 1 — *Drum sampler kick, tight and forward*
+- **`kick`** → Subharmonicon · Voice — *The ladder filter self-oscillating, opened by a sequencer clock*
   - p1 · exact `hard` · every section
 - **`sub`** → MC-101 · TONE Track 1 — *Sine sub, one note at a time, nothing above the fundamental*
   - p1 · exact `dark` · every section
@@ -70,12 +70,14 @@ None.
   - ↳ note: MIDI B, C and D have the same row and the same four options; set the one the cable is in.
   - ↳ cite: value manual — Hapax Manual (22 June 2026), p.132
 
-**Voice control** — Hapax sends the notes, 4 cables in all. Patch each pair before you play anything:
+**Voice control** — Hapax sends the notes, 6 cables in all. Patch each pair before you play anything:
 
 - pitch: Hapax `Cv out 2` → CRAVE `IN · OSC CV`
 - gate: Hapax `gate out 2` → CRAVE `IN · ENV GATE`
 - pitch: Hapax `Cv out 3` → Cascadia `EXT IN · PITCH`
 - gate: Hapax `gate out 3` → Cascadia `EXT IN · GATE`
+- pitch: Hapax `Cv out 4` → Subharmonicon `IN · VCO 1`
+- gate: Hapax `gate out 4` → Subharmonicon `IN · PLAY`
 
 - Why this box sends them — it is already the clock source, so the cables run from where the tempo does
 
@@ -149,12 +151,12 @@ None.
   - clock: sends clock · out: midi-din/analog-clock · in: midi-din/usb/analog-clock
   - audio: stereo main out
   - mixer: 1 part, no individual outs: one stereo channel for all
-- **Subharmonicon** — semi-modular · 0 parts
+- **Subharmonicon** — semi-modular · 1 part
   - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
   - IN · MIDI IN: A 3.5 mm socket fed by the supplied five-pin DIN adapter (MIDI Type A). Takes clock, note data and CCs. MIDI clock overrides the internal clock *and* anything at IN · CLOCK · manual
     - ↳ cite: value manual — Moog Subharmonicon Manual, p.37
   - audio: mono main out
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **Subsequent 37** — synth · 1 part
   - clock: sends clock · midi-din/usb
   - audio: mono main out · audio in
@@ -169,6 +171,12 @@ None.
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio
   - mixer: 1 part, no individual outs: one stereo channel for all
+- **SP-404MK2** — sampler · 0 parts
+  - clock: sends clock · out: midi-din · in: midi-din/usb
+  - MIDI OUT, MIDI IN: 3.5mm stereo-mini, not 5-pin — Roland’s TRS/MIDI cable is the BMIDI-5-35 (p.14) · manual
+    - ↳ cite: value manual — SP-404MK2 Reference Manual v4.00, p.14
+  - audio: stereo main out · USB audio · audio in
+  - mixer: no parts assigned; nothing to patch
 - **TR-1000** — drum-machine · 2 parts
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
@@ -197,12 +205,12 @@ None.
   - clock: sends clock, cannot receive · midi-din/usb
   - audio: stereo main out · 8 individual outs · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
-- **OP-XY** — groovebox · 1 part
+- **OP-XY** — groovebox · 0 parts
   - clock: sends clock · out: midi-din/usb/sync · in: midi-din/usb
   - midi in: 3.5 mm TRS. The manual does not state which TRS type this input is — it names type A only for the multi-out (p.111). Clock arrives here per p.88, which says midi clock is sent and received without saying the transport follows it. · manual
     - ↳ cite: value manual — OP-XY full guide v1.1.15, p.3
   - audio: stereo main out · USB audio · audio in
-  - mixer: 1 part, no individual outs: one stereo channel for all
+  - mixer: no parts assigned; nothing to patch
 - **T-1** — sequencer · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock/ableton-link
   - midi · in: 3.5 mm TRS Type A — Type B adapters are incompatible. Enable Clock under T1 Config > MIDI I/O > TRS > In to follow it. · manual
@@ -273,9 +281,9 @@ How this box sets a note’s length is not established here, so the durations be
 
 ## 5. Step programming
 
-### `kick` — OP-XY · Track 1
+### `kick` — Subharmonicon · Voice
 
-**Drum sampler kick, tight and forward** — settings in Sound design
+**The ladder filter self-oscillating, opened by a sequencer clock** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -299,15 +307,6 @@ How this box sets a note’s length is not established here, so the durations be
 - `downbeat` — 1, 5, 13
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
-
-**On this box** — OP-XY
-
-- `accent` → `velocity` 127 on step 9 · manual
-  - ↳ cite: value manual — OP-XY full guide v1.1.15, p.31
-  - ↳ hint: Hold [shift], velocity key, then a sharp
-- `ghost` → `velocity` 32 on steps 8, 16 · manual
-  - ↳ cite: value manual — OP-XY full guide v1.1.15, p.31
-  - ↳ hint: Hold [shift], velocity key, then a sharp
 
 ### `sub` — MC-101 · TONE Track 1
 
@@ -938,6 +937,113 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ note: PER-VOICE gives eight separate LFOs, one per voice
   - ↳ hint: Press MORE in that section
 
+### Subharmonicon
+
+*Values below cite Moog Subharmonicon Manual.*
+
+#### Voice — `kick`: The ladder filter self-oscillating, opened by a sequencer clock
+
+Routing — Clock it at IN · CLOCK, or over MIDI at IN · MIDI IN, which overrides both the internal clock and the analog one. Its own grid is four steps advanced by the RHYTHM dividers, so the pattern above is what to aim them at rather than something the box can play literally. This is the BATERIA patch sheet (p.47) read off its own drawing: every mixer level is fully down, RESONANCE is fully up, and what you hear is the filter's own oscillation gated by a clock. The sheet's NOTES are the tuning instruction — "Kick drum tuning is controlled via filter CUTOFF. Adjust VCF DECAY and EG AMT knobs for different kick drum flavors"
+
+*Ranges cite manual — Moog Subharmonicon Manual, p.30.*
+
+- **VCO 1 FREQ** `262` Hz (262…4186 Hz)
+  - ↳ cite: range manual — Moog Subharmonicon Manual, p.18
+  - ↳ hint: Tune to the key; QUANTIZE snaps it
+- **VCO 1 WAVE** `UP`
+  - ↳ hint: Square up, saw down, PWM centre
+- **SUB 1 FREQ (VCO 1)** `1` (1…16)
+  - ↳ cite: range manual — Moog Subharmonicon Manual, p.18
+  - ↳ hint: Divides the VCO pitch by this integer
+- **SUB 2 FREQ (VCO 1)** `1` (1…16)
+  - ↳ cite: range manual — Moog Subharmonicon Manual, p.19
+  - ↳ hint: Divides the VCO pitch by this integer
+- **VCO 2 FREQ** `262` Hz (262…4186 Hz)
+  - ↳ cite: range manual — Moog Subharmonicon Manual, p.19
+  - ↳ hint: Tune to the key; QUANTIZE snaps it
+- **VCO 2 WAVE** `UP`
+  - ↳ hint: Square up, saw down, PWM centre
+- **SUB 1 FREQ (VCO 2)** `1` (1…16)
+  - ↳ cite: range manual — Moog Subharmonicon Manual, p.20
+  - ↳ hint: Divides the VCO pitch by this integer
+- **SUB 2 FREQ (VCO 2)** `1` (1…16)
+  - ↳ cite: range manual — Moog Subharmonicon Manual, p.20
+  - ↳ hint: Divides the VCO pitch by this integer
+- **VCO 1 LEVEL** `0` % travel (0…100 % travel) · manual
+  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
+  - ↳ cite: range unverified — mood leaves this value alone
+- **SUB 1 LEVEL (VCO 1)** `0` % travel (0…100 % travel) · manual
+  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
+  - ↳ cite: range unverified — mood leaves this value alone
+- **SUB 2 LEVEL (VCO 1)** `0` % travel (0…100 % travel) · manual
+  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCO 2 LEVEL** `0` % travel (0…100 % travel) · manual
+  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
+  - ↳ cite: range unverified — mood leaves this value alone
+- **SUB 1 LEVEL (VCO 2)** `0` % travel (0…100 % travel) · manual
+  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
+  - ↳ cite: range unverified — mood leaves this value alone
+- **SUB 2 LEVEL (VCO 2)** `0` % travel (0…100 % travel) · manual
+  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
+  - ↳ cite: range unverified — mood leaves this value alone
+- **CUTOFF** `62` Hz (20…20000 Hz)
+  - ↳ cite: range manual — Moog Subharmonicon Manual, p.23
+- **RESONANCE** `100` % travel (0…100 % travel) · manual
+  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Full RESONANCE and the ladder sings
+- **VCF ATTACK** `1` ms (1…10000 ms)
+  - ↳ cite: range manual — Moog Subharmonicon Manual, p.24
+- **VCF DECAY** `95` ms (5…10000 ms)
+  - ↳ cite: range manual — Moog Subharmonicon Manual, p.24
+- **VCF EG AMT** `60` % travel from centre (-100…100 % travel from centre)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCA ATTACK** `1` ms (1…10000 ms)
+  - ↳ cite: range manual — Moog Subharmonicon Manual, p.24
+- **VCA DECAY** `130` ms (5…10000 ms)
+  - ↳ cite: range manual — Moog Subharmonicon Manual, p.25
+  - ↳ hint: Nothing else sets how long it rings
+- **VOLUME** `100` % travel (0…100 % travel) · manual
+  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
+  - ↳ cite: range unverified — mood leaves this value alone
+- **QUANTIZE** `12-ET`
+- **SEQ OCT** `±1`
+- **SEQ 1 ASSIGN · OSC 1** `UNLIT`
+- **SEQ 1 ASSIGN · SUB 1** `UNLIT`
+- **SEQ 1 ASSIGN · SUB 2** `UNLIT`
+- **SEQ 2 ASSIGN · OSC 2** `UNLIT`
+- **SEQ 2 ASSIGN · SUB 1** `UNLIT`
+- **SEQ 2 ASSIGN · SUB 2** `UNLIT`
+- **RHYTHM 1** `8` (1…16)
+  - ↳ hint: Divides the tempo; 1 is the tempo
+- **RHYTHM 1 · SEQ 1** `LIT`
+- **RHYTHM 1 · SEQ 2** `UNLIT`
+- **RHYTHM 2** `4` (1…16)
+- **RHYTHM 2 · SEQ 1** `UNLIT`
+- **RHYTHM 2 · SEQ 2** `LIT`
+- **RHYTHM 3** `1` (1…16)
+- **RHYTHM 3 · SEQ 1** `UNLIT`
+- **RHYTHM 3 · SEQ 2** `UNLIT`
+- **RHYTHM 4** `16` (1…16)
+- **RHYTHM 4 · SEQ 1** `LIT`
+- **RHYTHM 4 · SEQ 2** `UNLIT`
+
+**Patch**
+
+- `OUT · SEQ 2 CLK` → `IN · VCA` · manual
+  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
+  - ↳ note: Sequencer 2’s own polyrhythm opens the amplifier — this is what makes the drum, since no oscillator reaches the mixer
+- `OUT · SEQ 1 CLK` → `IN · CUTOFF` · manual
+  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
+  - ↳ note: Sequencer 1’s clock kicks the filter, so the drum is pitched by a pulse rather than by a note
+- `OUT · SEQ 1` → `IN · RHYTHM 1` · manual
+  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
+  - ↳ note: The sequencer sets its own divider, so the pattern walks its rate instead of repeating
+- `OUT · SEQ 2` → `IN · RHYTHM 2` · manual
+  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
+  - ↳ note: The same feedback on the second generator, which is what keeps the two sides from locking
+
 ### Subsequent 37
 
 *Values below cite Subsequent 37 User's Manual.*
@@ -1216,30 +1322,6 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
 - **DELAY SEND** `90` (0…255)
   - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
   - ↳ hint: INST Edit > DelaySend
-
-### OP-XY
-
-*Values below cite OP-XY full guide v1.1.15.*
-
-**Content**
-
-- Ships factory presets for every engine and category, and a factory projects folder — look in shift + a track button for presets, shift + projects for the folder. pp.52 and 37 say both exist, and the only screens that look like inventories reuse one set of seven names across all three browsers, so the Source line below says what the part needs rather than naming a file. · manual
-  - ↳ cite: claim manual — OP-XY full guide v1.1.15, p.52
-
-#### Track 1 — `kick`: Drum sampler kick, tight and forward
-
-Source — A short, dry kick one-shot with its weight low and no audible tail
-
-- Press [sample] from any screen; the white knob sets the record threshold and recording starts when the input crosses it (p.79). Maximum 20 seconds. · manual
-  - ↳ cite: value manual — OP-XY full guide v1.1.15, p.75
-  - ↳ hint: Press [sample], hold [M1] to record
-
-Routing — Percussion group — p.73: any percussive engine routes there automatically
-
-- **ENGINE** `drum sampler`
-  - ↳ hint: Hold [shift], press [M1]
-- **SAMPLE SOURCE** `audio input`
-  - ↳ hint: Press [sample], hold [M1] to record
 
 ## 7. Finishing
 

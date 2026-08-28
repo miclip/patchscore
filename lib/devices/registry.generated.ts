@@ -24,6 +24,7 @@ import { device as device_moog_subharmonicon } from './moog-subharmonicon/index'
 import { device as device_moog_subsequent_37 } from './moog-subsequent-37/index'
 import { device as device_polyend_tracker_mini } from './polyend-tracker-mini/index'
 import { device as device_roland_mc_101 } from './roland-mc-101/index'
+import { device as device_roland_sp_404mk2 } from './roland-sp-404mk2/index'
 import { device as device_roland_tr_1000 } from './roland-tr-1000/index'
 import { device as device_roland_tr_6s } from './roland-tr-6s/index'
 import { device as device_roland_tr_8s } from './roland-tr-8s/index'
@@ -55,6 +56,7 @@ export const DEVICES: readonly Device[] = [
   device_moog_subsequent_37,
   device_polyend_tracker_mini,
   device_roland_mc_101,
+  device_roland_sp_404mk2,
   device_roland_tr_1000,
   device_roland_tr_6s,
   device_roland_tr_8s,
@@ -87,6 +89,7 @@ export const DEVICE_FOLDERS: readonly string[] = [
   'moog-subsequent-37',
   'polyend-tracker-mini',
   'roland-mc-101',
+  'roland-sp-404mk2',
   'roland-tr-1000',
   'roland-tr-6s',
   'roland-tr-8s',

@@ -981,8 +981,15 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * node (invariant 6), and the repaired walk stays inside a bound that is nowhere near the cap.
    * If a later device sends the floor back up without the repaired figure following it, the run
    * of paragraphs above resumes and this note is the gap in it.
+   *
+   * **The SP-404MK2 re-records both figures and moves them together**, which is the case the
+   * paragraph above says to watch for and the reassuring version of it: the floor goes
+   * 55,575 -> 58,872 and the repaired walk 55,217 -> 58,485, a 5.9% rise on each. The gap between
+   * them stays where the Muse left it, so the repair is neither doing more work nor less — the
+   * problem simply got a little bigger, which is what a nineteen-recipe pool over seventeen roles
+   * does to the direction that asks for the most of them.
    */
-  it('walks the recorded 55,575 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 58,872 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -990,7 +997,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(55_575)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(58_872)
     // The ceiling is loosened rather than re-tightened onto 55,217, per the standing note: it was
     // 20,000, then 25,000, then 35,000, and each time a device pushed the repaired walk past it.
     // A ceiling sitting one node above the last measurement stops guarding anything and starts

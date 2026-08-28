@@ -665,7 +665,7 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
     .map((d) => d.id)
     .sort(byCodeUnit)
 
-  it('is the ten boxes established to ship one, and an eleventh has to be added deliberately', () => {
+  it('is the eleven boxes established to ship one, and a twelfth has to be added deliberately', () => {
     // The derivation covers whatever is declared; this says which declarations were expected, so
     // a new one is loud in review rather than silently absorbed.
     expect(SHIPPED).toEqual([
@@ -679,6 +679,11 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
       'elektron-digitakt-ii',
       'polyend-tracker-mini',
       'roland-mc-101',
+      // The SP-404MK2 opens its SAMPLE MODE chapter with "There are many preset samples
+      // available on this unit by factory default" (p.26), and p.266's storage line footnotes
+      // "Include preload data". No page counts them or names one, which is the line between
+      // `shipped-library` and `enumerable` again.
+      'roland-sp-404mk2',
       'roland-tr-6s',
       'roland-tr-8s',
       'synthstrom-deluge',

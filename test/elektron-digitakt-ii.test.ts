@@ -47,8 +47,12 @@ describe('Digitakt II manifest', () => {
     // appear; `sampler` is the one that discriminates, because unlike the two Rolands there is no
     // fixed instrument set — sixteen fungible tracks, each holding whatever is loaded.
     expect(device.kind).toBe('sampler')
+    // First, and no longer alone: the SP-404MK2 is the second, and it is the same argument on a
+    // pad grid rather than a track list — sixteen slots, each holding whatever is loaded. Listed
+    // in registry order, which is folder order.
     expect(DEVICES.filter((d) => d.kind === 'sampler').map((d) => d.id)).toEqual([
       'elektron-digitakt-ii',
+      'roland-sp-404mk2',
     ])
   })
 
