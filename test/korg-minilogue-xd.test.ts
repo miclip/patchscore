@@ -58,9 +58,15 @@ function every(): AuthoredParam[] {
 /**
  * How many notes a recipe leaves itself, read off the voice mode it selects (p.17).
  *
- * This is the number the engine cannot see. `Assignable.polyphony` is 4 and stays 4, because
- * that is a fact about the box; what a recipe does with the four is a fact about the recipe, and
- * `Recipe` has nowhere to put it. So the tests derive it here and hold the manifest to it.
+ * This used to be the number the engine could not see, and #85 gave it somewhere to live:
+ * `Recipe.patchPolyphony`. `Assignable.polyphony` is 4 and stays 4, because that is a fact about
+ * the box; what a recipe does with the four is a fact about the recipe, and the resolver now
+ * takes the lower of the two.
+ *
+ * This helper stays, and its job has changed. It derives the number from the *parameters* — the
+ * mode and the depth a reader actually sets — so the test below can check that the declared
+ * `patchPolyphony` agrees with what the patch says it does. Two ways of knowing, one of which is
+ * the manual's.
  */
 function notesAvailable(recipe: Recipe): number {
   const mode = paramNamed(recipe, 'VOICE MODE TYPE')
@@ -326,13 +332,22 @@ describe('VOICE MODE is a cited recipe parameter, never a voice count (pp.17-18)
     // rather than a sequenced part. Both exist and are cited above; neither is chosen.
   })
 
-  it('confines UNISON to the two roles that are one note in practice, and says so', () => {
+  it('declares patchPolyphony matching what its own parameters say (#85)', () => {
+    // The confinement this used to assert — UNISON only on `sub` and `bass-mid` — has gone, and
+    // that is the point of #85. It was a constraint living in one device's tests protecting an
+    // invariant the engine could not see; the resolver enforces it now, so a UNISON recipe may be
+    // authored for any role and simply never wins a part needing two notes.
+    //
+    // What is checked instead is that the declaration agrees with the patch. `notesAvailable`
+    // reads the mode and depth a reader sets; `patchPolyphony` is what the resolver reads. If
+    // those two ever disagree the manifest is lying to the engine about its own knobs.
     for (const recipe of device.recipes) {
       const mode = paramNamed(recipe, 'VOICE MODE TYPE')
-      if (mode?.kind !== 'enum' || mode.value !== 'UNISON') continue
-      expect(['sub', 'bass-mid'], recipe.id).toContain(recipe.role)
-      // Nothing in `Recipe` can cap the notes a recipe accepts, so the limit is stated at the
-      // machine rather than hidden: UNISON stacks all four voices onto one note (p.17).
+      if (mode?.kind !== 'enum') continue
+      const available = notesAvailable(recipe)
+      expect(recipe.patchPolyphony ?? 4, recipe.id).toBe(available)
+      if (mode.value !== 'UNISON') continue
+      // The note stays: a person at the machine still wants to know why the patch is mono.
       expect(mode.note, recipe.id).toContain('single note at a time')
       const depth = paramNamed(recipe, 'VOICE MODE DEPTH')
       if (depth?.kind !== 'numeric') throw new Error(`${recipe.id}: no UNISON depth`)

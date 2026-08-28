@@ -47,24 +47,18 @@ import { MINILOGUE_XD_PANEL } from './panel'
  *  - **UNISON** stacks all four into one, *"as a mono synth"* (p.17). One note. Used on `sub`
  *    and `bass-mid` alone.
  *
- * The last two are the one place this model is looser than the hardware, and it is worth being
- * exact about where the looseness lives. `Assignable.polyphony` is a fact about the box and is
- * right at 4. What is missing is a way for a *recipe* to say "and this patch spends them" —
- * `Recipe` has `realisation`, which can only ever lower a request's demand (§12.4), and nothing
- * that lowers a voice's supply. So a DUO recipe handed a triad, or a UNISON one handed a dyad,
- * would render a patch that cannot play the part.
+ * The last two used to be the one place this model was looser than the hardware, and #85 closed
+ * it. `Assignable.polyphony` is a fact about the box and is still 4; `Recipe.patchPolyphony` is
+ * the supply-side counterpart to `realisation` — where `sampled-chord` lowers a request's demand,
+ * this lowers what a patch can sound. `scoreRecipes` takes the lower of the two, so a UNISON
+ * recipe is simply never chosen for a part needing more than one note, and a DUO one never for
+ * more than two.
  *
- * Rather than paper over it, both are **confined to roles that are one or two notes in practice
- * and both say so in a note the reader sees at the machine**; `test/korg-minilogue-xd.test.ts`
- * holds the confinement from the manifest side. The honest fix, if a template ever asks for a
- * three-note `lead`, is a supply-side counterpart to `realisation` on `Recipe` — an engine
- * change, made deliberately, and not a value quietly edited here.
- *  - **CHORD** and **ARP/LATCH** are used by no recipe, deliberately. CHORD makes one key sound a
- *    whole chord, so a guide that prints a triad to play would have the box sound three chords —
- *    and it fits neither `Realisation`: `polyphonic-voice` overstates what the reader plays and
- *    `sampled-chord` renders as *"load a chord sample"*, which is not something this instrument
- *    has any way to do. ARP is a performance mode over notes the template already sequences.
- *    Both are in the `VOICE MODE TYPE` option list, cited, because they exist; neither is chosen.
+ * The recipes below declare it: 1 on the UNISON `sub` and `bass-mid` patches, 2 on the three DUO
+ * `lead` patches. Their notes to the reader stay, because a person at the machine still wants to
+ * know why the patch is mono; what has gone is the *confinement*, which was a constraint living
+ * in one device's tests protecting an invariant the engine could not see. The engine sees it now,
+ * and the next box with a unison mode does not get to rediscover this.
  *
  * ## What is left out, and why
  *
@@ -673,6 +667,9 @@ const recipes: Recipe[] = [
   // ---- lead ---------------------------------------------------------------
   {
     id: 'mxd-lead-bright',
+    // §12.4/#85. A non-zero VOICE MODE DEPTH under POLY is DUO — two voices stacked per key
+    // (p.17) — so four voices sound two notes.
+    patchPolyphony: 2,
     role: 'lead',
     character: 'bright',
     voice: 'voice',
@@ -694,6 +691,9 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mxd-lead-dark',
+    // §12.4/#85. A non-zero VOICE MODE DEPTH under POLY is DUO — two voices stacked per key
+    // (p.17) — so four voices sound two notes.
+    patchPolyphony: 2,
     role: 'lead',
     character: 'dark',
     voice: 'voice',
@@ -715,6 +715,9 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mxd-lead-dirty',
+    // §12.4/#85. A non-zero VOICE MODE DEPTH under POLY is DUO — two voices stacked per key
+    // (p.17) — so four voices sound two notes.
+    patchPolyphony: 2,
     role: 'lead',
     character: 'dirty',
     voice: 'voice',
@@ -738,6 +741,9 @@ const recipes: Recipe[] = [
   // ---- low end: the two roles UNISON is confined to -----------------------
   {
     id: 'mxd-bass-mid-dark',
+    // §12.4/#85. UNISON stacks all four voices onto one note, *"as a mono synth"* (p.17), so
+    // this patch sounds one however many the box has.
+    patchPolyphony: 1,
     role: 'bass-mid',
     character: 'dark',
     voice: 'voice',
@@ -759,6 +765,9 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mxd-bass-mid-dirty',
+    // §12.4/#85. UNISON stacks all four voices onto one note, *"as a mono synth"* (p.17), so
+    // this patch sounds one however many the box has.
+    patchPolyphony: 1,
     role: 'bass-mid',
     character: 'dirty',
     voice: 'voice',
@@ -780,6 +789,9 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mxd-sub-dark',
+    // §12.4/#85. UNISON stacks all four voices onto one note, *"as a mono synth"* (p.17), so
+    // this patch sounds one however many the box has.
+    patchPolyphony: 1,
     role: 'sub',
     character: 'dark',
     voice: 'voice',
@@ -801,6 +813,9 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mxd-sub-clean',
+    // §12.4/#85. UNISON stacks all four voices onto one note, *"as a mono synth"* (p.17), so
+    // this patch sounds one however many the box has.
+    patchPolyphony: 1,
     role: 'sub',
     character: 'clean',
     voice: 'voice',
