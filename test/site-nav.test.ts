@@ -10,6 +10,7 @@ import DeviceIndexPage from '../app/devices/page'
 import DirectionIndexPage from '../app/directions/page'
 import DevicePageRoute from '../app/devices/[id]/page'
 import DirectionPageRoute from '../app/directions/[id]/page'
+import DrumMachinesPage from '../app/drum-machines/page'
 import Page from '../app/page'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
@@ -50,6 +51,10 @@ async function routes(): Promise<{ name: string; markup: string }[]> {
     { name: '/', markup: await shell(await Page({ searchParams: Promise.resolve({}) })) },
     { name: '/devices', markup: await shell(createElement(DeviceIndexPage)) },
     { name: '/directions', markup: await shell(createElement(DirectionIndexPage)) },
+    // #174. In the route set rather than beside it: every claim below — one nav, the same links,
+    // no hand-written link set — is about *every* page, and a page kept out of this list is a
+    // page none of them cover.
+    { name: '/drum-machines', markup: await shell(createElement(DrumMachinesPage)) },
     {
       name: `/devices/${device.id}`,
       markup: await shell(await DevicePageRoute({ params: Promise.resolve({ id: device.id }) })),
@@ -73,15 +78,17 @@ describe('#112 the navigation landmark', () => {
     expect(markup).toMatch(/aria-label="[^"]+"/)
   })
 
-  it('names the studio, both catalogue halves and preferences, in that order', () => {
+  it('names the studio, both catalogue halves, the reference and preferences, in that order', () => {
     const markup = renderToStaticMarkup(createElement(SiteNav))
     // Preferences is last on purpose: it is not a catalogue half, and it is the one entry a
     // reader goes to rarely. It is *in* the nav at all because the footer could not reach it —
-    // on the studio page the footer sits below the whole generated guide (#138).
+    // on the studio page the footer sits below the whole generated guide (#138). The reference
+    // (#174) sits above it and below the catalogue, which is where it is read from.
     expect(NAV_LINKS.map((l) => l.href)).toEqual([
       '/',
       '/devices',
       '/directions',
+      '/drum-machines',
       '/preferences',
     ])
     let at = -1
@@ -146,8 +153,11 @@ describe('#112 the navigation landmark', () => {
 
 describe('#112 the nav at 390px', () => {
   it('wraps rather than taking the body sideways', () => {
-    // #21: three links fit on one line today. The rule is `wrap`, not a width nobody re-checks —
-    // a fourth link or a reader at 200% text size must cost a row, never a horizontal scroll.
+    // #21: measured in a browser at 390px, the row wraps to two lines now that #174 added a
+    // fifth and longest label, and the nav comes out 88px tall with the document and the body
+    // both at exactly 390px. That is the rule working rather than failing. It was always `wrap`
+    // and not a width nobody re-checks — another link, a longer label, or a reader at 200% text
+    // size costs a row, never a sideways page.
     expect(rule('.site-nav ul')).toContain('flex-wrap: wrap')
     expect(rule('.site-nav ul')).toContain('min-width: 0')
     expect(rule('.site-nav')).not.toContain('overflow-x')
