@@ -898,8 +898,16 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * no matching repair to protect it, against 14.4% on the repaired one over the same rig. Both
    * numbers grew for the same reason and the gap between the two growth rates is the repair
    * doing its job on a larger library.
+   *
+   * The TR-6S is the next device to move it: **221,573 → 471,392**, a rise of 112.7%. This is
+   * the one place the two growth rates come out close — the repaired sweep doubled too
+   * (`test/search-symmetry.test.ts` records 9,507 → 19,066) — and the reason is in that file's
+   * note. The repair collapses requests that §4.2 will not let share a voice; a box with six
+   * voices and fifteen roles gives it fewer such pairs to collapse per unit of branching than a
+   * box with more voices does, so on this device the floor and the repaired search grow at
+   * nearly the same rate. That is the repair being less effective here, not absent.
    */
-  it('walks the recorded 221,573 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 471,392 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -907,7 +915,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(221_573)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(471_392)
     // And the repaired floor is emphatically not walking it.
     expect(assign(input).search.nodes).toBeLessThan(20_000)
   })

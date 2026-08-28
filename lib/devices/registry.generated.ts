@@ -21,6 +21,7 @@ import { device as device_moog_subsequent_37 } from './moog-subsequent-37/index'
 import { device as device_polyend_tracker_mini } from './polyend-tracker-mini/index'
 import { device as device_roland_mc_101 } from './roland-mc-101/index'
 import { device as device_roland_tr_1000 } from './roland-tr-1000/index'
+import { device as device_roland_tr_6s } from './roland-tr-6s/index'
 import { device as device_roland_tr_8s } from './roland-tr-8s/index'
 import { device as device_synthstrom_deluge } from './synthstrom-deluge/index'
 import { device as device_tascam_model_2400 } from './tascam-model-2400/index'
@@ -44,6 +45,7 @@ export const DEVICES: readonly Device[] = [
   device_polyend_tracker_mini,
   device_roland_mc_101,
   device_roland_tr_1000,
+  device_roland_tr_6s,
   device_roland_tr_8s,
   device_synthstrom_deluge,
   device_tascam_model_2400,
@@ -68,6 +70,7 @@ export const DEVICE_FOLDERS: readonly string[] = [
   'polyend-tracker-mini',
   'roland-mc-101',
   'roland-tr-1000',
+  'roland-tr-6s',
   'roland-tr-8s',
   'synthstrom-deluge',
   'tascam-model-2400',

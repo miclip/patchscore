@@ -1169,15 +1169,28 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * the cap's own docstring records as a deliberate exception. The 165,785 is still pinned in
    * `test/search-matching-floor.test.ts` against the deliberately unrepaired floor, and the
    * per-direction rows in `test/search-bound.test.ts` watch every direction this band does not.
+   *
+   * **Moved a fourth time for the TR-6S**, the largest single-device move the band has taken:
+   * 9,507 -> 19,066, a doubling, with the peak crossing from `industrial-techno` seed 21 to
+   * `weave` seed 2. Nothing capped, and 19,066 is 13% of `DEFAULT_NODE_CAP`.
+   *
+   * The paragraph above predicts the shape of this and the size of it is worth a sentence
+   * anyway, because the arithmetic is counter-intuitive: the TR-6S is the *smallest* drum
+   * machine in the library, six voices against the TR-8S's eleven, and it costs more than the
+   * Subharmonicon did. Six voices carrying fifteen roles between them means every voice is a
+   * candidate for two to four requests and no request has an obvious home, which is precisely
+   * the branching the search pays for. A box with more voices and the same roles spread thinly
+   * across them is cheaper than a box with fewer voices each claiming several — so it is
+   * `recipes x supported roles per voice` that this band tracks, and folder count says nothing.
    */
-  const WORST_CASE_NODES = 9_507
+  const WORST_CASE_NODES = 19_066
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))
 
   /**
    * The timeout is not a workaround. This runs `TEMPLATES.length * CAP_SWEEP_SEEDS.length`
-   * exhaustive searches over the whole registry — 168 of them today at twenty devices and
+   * exhaustive searches over the whole registry — 168 of them today at twenty-one devices and
    * seven directions. It first went red on `LANG=C.UTF-8` at the default 5s, which reads like a
    * locale failure and is not one, and while #78's repair has bought a great deal of headroom
    * back the timeout stays: a CI runner sharing a core is what it was raised for, not the
