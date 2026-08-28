@@ -2,6 +2,7 @@
 
 import type { InspirationApplication, ResolveResult } from '@/lib/core'
 import { Guide } from './guide/guide'
+import type { DeviceId } from '@/lib/core'
 import { Rack } from './rack/rack'
 
 /**
@@ -28,9 +29,11 @@ export type GuideAreaProps = {
   application: InspirationApplication | undefined
   result: ResolveResult | undefined
   seed: number
+  /** §7.4/#200. Passed to the rack, which is where a box is put in charge of the clock. */
+  onClockSource: (deviceId: DeviceId | undefined) => void
 }
 
-export function GuideArea({ application, result, seed }: GuideAreaProps) {
+export function GuideArea({ application, result, seed, onClockSource }: GuideAreaProps) {
   if (application?.outcome === 'refused') {
     return (
       <section className="panel span-2">
@@ -50,7 +53,7 @@ export function GuideArea({ application, result, seed }: GuideAreaProps) {
         §10's signature element sits above the guide, not under it: the guide is seven phases
         long, and a rack drawing below all of that is a rack drawing nobody scrolls to.
       */}
-      <Rack result={result} />
+      <Rack result={result} onClockSource={onClockSource} />
 
       {result === undefined ? (
         <section className="panel span-2">

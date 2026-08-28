@@ -1615,6 +1615,57 @@ button:active {
 }
 
 /*
+ * §7.4/#200. The clock-source control. Buttons rather than clicks on the drawing, because the
+ * rack SVG is `role="img"` and everything inside it is one picture to a screen reader; the panel
+ * click is a pointer convenience layered on these, never a replacement for them.
+ */
+.rack-clock-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.rack-clock-choice-label {
+  color: var(--silkscreen);
+  font-size: 0.8125rem;
+}
+
+.rack-clock-choice-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.rack-clock-option {
+  /* §21: 44px targets, because this is read at the machine with hands busy. */
+  min-height: 44px;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.rack-clock-option[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.rack-clock-clear {
+  border-style: dashed;
+}
+
+/* The pointer affordance, and only where there is something to click. */
+.rack-panel-choosable {
+  cursor: pointer;
+}
+
+/*
  * §7.4/#200. **The clock source pulses at the song's tempo.** `--rack-beat` is set on the diagram
  * from the resolved BPM, so the glow is the tempo rather than a decorative blink — a reader
  * glancing at the rack sees which box is counting and how fast.

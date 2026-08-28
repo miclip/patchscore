@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import type { ResolveResult } from '@/lib/core'
+import type { DeviceId, ResolveResult } from '@/lib/core'
 import { citeText, count, list } from '../guide/format'
 import { RackDiagram } from './diagram'
 import { RackFullscreen } from './fullscreen'
@@ -75,7 +75,84 @@ function serverPerRow(): number {
  * artwork here and there must not be: invariant 2 puts UI edits on the list of things adding a
  * device may not require.
  */
-export function Rack({ result }: { result: ResolveResult | undefined }) {
+/**
+ * §7.4/#200. **Choosing which box runs the clock, as buttons rather than as clicks on a drawing.**
+ *
+ * The rack SVG is `role="img"` with a `<desc>` summary: everything inside it is one picture to a
+ * screen reader, by design. Panel clicks are therefore a pointer convenience and cannot be the
+ * only way to set this, or the feature is mouse-only. These buttons are the announced, keyboard
+ * path, and the panels defer to them — the same arrangement `CLAUDE.md` states for knobs, where
+ * "typed input is the accessible path and the precise one" and must never be a hidden fallback
+ * behind a gesture.
+ *
+ * Only boxes that can send clock appear. `selectClockSource` refuses an ineligible id anyway, but
+ * offering one and then ignoring it is a control that lies about what it does.
+ */
+function ClockChoice({
+  result,
+  onClockSource,
+}: {
+  result: ResolveResult
+  onClockSource: (deviceId: DeviceId | undefined) => void
+}) {
+  const eligible = result.devices.filter((d) => d.clock.canSendClock)
+  // Nothing to choose between: one candidate is not a choice, and none is the honest "no box here
+  // can send clock" the guide already states in words.
+  if (eligible.length < 2) return null
+  const current = result.clockSource?.deviceId
+  const chosen = result.clockSource?.chosen === true
+
+  return (
+    <div className="rack-clock-choice">
+      <span className="rack-clock-choice-label" id="rack-clock-choice-label">
+        Clock source
+      </span>
+      <div className="rack-clock-choice-options" role="group" aria-labelledby="rack-clock-choice-label">
+        {eligible.map((device) => (
+          <button
+            key={device.id}
+            type="button"
+            className="rack-clock-option"
+            aria-pressed={device.id === current}
+            onClick={() => {
+              onClockSource(device.id)
+            }}
+          >
+            {device.name}
+          </button>
+        ))}
+        {/*
+          Only once a choice has been made. "Let the rig decide" beside an already-derived answer
+          is a button that does nothing, and §7.4's ranking is what a reader gets by default.
+        */}
+        {chosen ? (
+          <button
+            type="button"
+            className="rack-clock-option rack-clock-clear"
+            onClick={() => {
+              onClockSource(undefined)
+            }}
+          >
+            Let the rig decide
+          </button>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+export function Rack({
+  result,
+  onClockSource,
+}: {
+  result: ResolveResult | undefined
+  /**
+   * §7.4/#200. Put a box in charge of the clock, or `undefined` to hand the job back to §7.4.
+   * Optional so the device pages, which render a rack without a session behind it, need not
+   * supply one — and where it is absent nothing is offered rather than offered and inert.
+   */
+  onClockSource?: ((deviceId: DeviceId | undefined) => void) | undefined
+}) {
   const [full, setFull] = useState(false)
   const openRef = useRef<HTMLButtonElement>(null)
   const perRow = useSyncExternalStore(subscribe, perRowNow, serverPerRow)
@@ -128,8 +205,16 @@ export function Rack({ result }: { result: ResolveResult | undefined }) {
           className="rack-frame rack-overview"
           style={{ ['--rack-mm' as string]: model.totalMm }}
         >
-          <RackDiagram model={model} idPrefix="rack-inline" bpm={result?.song.bpm} />
+          <RackDiagram
+            model={model}
+            idPrefix="rack-inline"
+            bpm={result?.song.bpm}
+            onChoosePanel={onClockSource}
+          />
         </div>
+        {onClockSource === undefined || result === undefined ? null : (
+          <ClockChoice result={result} onClockSource={onClockSource} />
+        )}
         <figcaption className="rack-caption">
           {/*
             The number quoted is `frontPanelMm` — the sum of the cited spans — rather than the

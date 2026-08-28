@@ -19,6 +19,7 @@ import {
   composeTemplate,
   songOverrides,
   withBpm,
+  withClockSource,
   withKey,
   copyStudioLink,
   createStudioSync,
@@ -286,6 +287,15 @@ export function Studio({ initialInputs }: StudioProps) {
     setInputs((current) => withKey(current, key))
   }
 
+  /**
+   * §7.4/#200. Putting a box in charge of the clock, or handing the job back to §7.4's ranking.
+   * An input like the tempo rather than a view setting, so it travels in the permalink and a
+   * shared guide reproduces the one its sender saw.
+   */
+  function setClockSource(deviceId: DeviceId | undefined) {
+    setInputs((current) => withClockSource(current, deviceId))
+  }
+
   return (
     <main className="shell">
       <header className="masthead">
@@ -366,7 +376,12 @@ export function Studio({ initialInputs }: StudioProps) {
 
         <MoodPanel mood={inputs.mood} onChange={setAxis} />
 
-        <GuideArea application={application} result={result} seed={inputs.seed} />
+        <GuideArea
+          application={application}
+          result={result}
+          seed={inputs.seed}
+          onClockSource={setClockSource}
+        />
       </div>
 
       <Footer permalink={permalink} devices={devices.map((d) => `${d.maker} ${d.name}`)} />

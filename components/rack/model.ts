@@ -339,6 +339,13 @@ export type RackPanel = {
   /** Provenance of `spanMm`, carried through so a provisional panel can be marked as one. */
   spanVerified: Verified
   clockRole: ClockRole
+  /**
+   * §7.4/#200. Whether this box could be put in charge of the clock at all — `canSendClock`, not
+   * whether it currently is. `clockRole` answers a different question: it says what this box is
+   * doing in *this* rig, where a receiver may still be a perfectly good source if the reader
+   * says so.
+   */
+  canSendClock: boolean
   /** Set only for `isolated`, and phrased for a reader. */
   isolatedReason?: string
   /** §12.4 assignables occupied in at least one section. */
@@ -956,6 +963,7 @@ export function soloPanel(device: Device): RackPanel {
     generated: layout === undefined,
     spanVerified: device.physical.verified,
     clockRole: 'isolated',
+    canSendClock: device.clock.canSendClock,
     parts: 0,
     jacks,
     banks,
@@ -1266,6 +1274,7 @@ export function rackModel(result: ResolveResult, options: RackLayoutOptions = {}
       generated: layout === undefined,
       spanVerified: device.physical.verified,
       clockRole: clock.role,
+      canSendClock: device.clock.canSendClock,
       parts: parts.get(device.id) ?? 0,
       jacks,
       banks,

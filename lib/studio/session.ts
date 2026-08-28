@@ -724,5 +724,25 @@ export function withKey(inputs: GuideInputsV1, key: string | undefined): GuideIn
  * call sites picking them apart by hand is how one of them comes to forget a field.
  */
 export function songOverrides(inputs: GuideInputsV1): SongOverrides {
-  return { bpm: inputs.bpm, key: inputs.key }
+  return { bpm: inputs.bpm, key: inputs.key, clockSourceId: inputs.clockSourceId }
+}
+
+/**
+ * §7.4/#200. Put a box in charge of the clock, or hand the job back to §7.4's ranking with
+ * `undefined`.
+ *
+ * Unvalidated on purpose, unlike `withBpm`. A device that cannot send clock is refused by
+ * `selectClockSource` rather than here, so a rig edit that removes the chosen box leaves an id
+ * pointing at nothing and the guide quietly reverts to the ranked answer — which is the right
+ * behaviour and needs no cleanup pass over the inputs.
+ */
+export function withClockSource(
+  inputs: GuideInputsV1,
+  clockSourceId: DeviceId | undefined,
+): GuideInputsV1 {
+  if (clockSourceId === undefined) {
+    const { clockSourceId: _dropped, ...rest } = inputs
+    return rest
+  }
+  return { ...inputs, clockSourceId }
 }

@@ -173,6 +173,17 @@ export type ScoreInputsV1 = {
    * one. See `KEY_MAX_LENGTH` for why a hand-edited link keeps its guide.
    */
   key?: string | undefined
+  /**
+   * §7.4/#200. The box the reader put in charge of the clock, or `undefined` for "let §7.4 rank
+   * one". Carried here because it changes the guide, so invariant 6 makes it an input rather
+   * than a view setting: a shared link reproduces the guide its sender saw.
+   *
+   * A device id is checked against the catalogue like the rig's own ids — an unknown one is
+   * corruption, not something to migrate around. Eligibility is *not* checked here: whether the
+   * box can send clock is a fact about a build's manifests rather than about the link, and
+   * `selectClockSource` already refuses an ineligible id by falling back to the ranking.
+   */
+  clockSourceId?: DeviceId | undefined
 }
 
 /**
@@ -235,6 +246,7 @@ const INSPIRATION = 'inspiration'
 const BPM = 'bpm'
 const KEY = 'key'
 const SEED = 'seed'
+const CLOCK = 'clock'
 
 /**
  * Repeated once per element, so a list needs no separator character and no escaping — and the
@@ -248,7 +260,7 @@ const SEED = 'seed'
 const REPEATED: readonly string[] = [DEVICE, INSPIRATION]
 
 /** Scalars. Exactly one of each, always — a second occurrence is malformed, not last-wins. */
-const SCALARS: readonly string[] = [FORMAT, RESOLVER, TEMPLATE, BPM, KEY, SEED]
+const SCALARS: readonly string[] = [FORMAT, RESOLVER, TEMPLATE, BPM, KEY, SEED, CLOCK]
 
 /**
  * The scalars a link may simply not have (#161). Every other known scalar is required, because
@@ -256,7 +268,7 @@ const SCALARS: readonly string[] = [FORMAT, RESOLVER, TEMPLATE, BPM, KEY, SEED]
  * these two have a meaning for absence that is not a default at all: *follow the direction*.
  * Spelling that with a placeholder would give one state two encodings.
  */
-const OPTIONAL_SCALARS: readonly string[] = [BPM, KEY]
+const OPTIONAL_SCALARS: readonly string[] = [BPM, KEY, CLOCK]
 
 /**
  * Every key this build understands. Anything else is dropped and reported (`dropped`), which is
@@ -537,6 +549,7 @@ export function encodeGuideInputs(inputs: GuideInputsV1, catalogue: Catalogue): 
     ...MOOD_ORDER_V1.map((axis) => `${axis}=${inputs.mood[axis]}`),
     // #161. Written only when set: an unset override is *absent*, which is how it reads back.
     ...(inputs.bpm === undefined ? [] : [`${BPM}=${inputs.bpm}`]),
+    ...(inputs.clockSourceId === undefined ? [] : [`${CLOCK}=${inputs.clockSourceId}`]),
     // The one value in the format that needs escaping. A key holds a space and may hold a `#`,
     // which is a fragment delimiter and would truncate the link at it — `PERMALINK_ID` exists
     // partly so ids never need this, and a key is not an id. `decodeURIComponent` on the way
@@ -703,6 +716,15 @@ export function decodeGuideInputs(text: string, catalogue: Catalogue): DecodedGu
   // Already percent-decoded above, along with every other value.
   const key = scalars.get(KEY)
 
+  // #200. Checked against the catalogue exactly as the rig's ids are: an id this build does not
+  // ship is corruption rather than something to migrate around. Whether the box can *send* clock
+  // is deliberately not checked — that is a fact about manifests, and `selectClockSource` answers
+  // it by falling back to the ranking rather than by rejecting the link.
+  const clockSourceId = scalars.get(CLOCK)
+  if (clockSourceId !== undefined && !catalogue.devices.includes(clockSourceId)) {
+    return fail('malformed', `field '${CLOCK}' names a device this build does not ship`)
+  }
+
   const inputs: GuideInputsV1 = {
     version: FORMAT_VERSION,
     devices: lists.get(DEVICE) as string[],
@@ -712,6 +734,7 @@ export function decodeGuideInputs(text: string, catalogue: Catalogue): DecodedGu
     seed,
     ...(bpm === undefined ? {} : { bpm }),
     ...(key === undefined ? {} : { key }),
+    ...(clockSourceId === undefined ? {} : { clockSourceId }),
   }
 
   // Everything above was syntax. This is meaning: ids this build has, numbers in their domain.
