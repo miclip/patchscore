@@ -328,6 +328,12 @@ describe('the committed registry', () => {
       // It is not a guess: `panel.ts` measures the p.5 drawing at 3049 x 1091 px, an aspect of
       // 2.7947 against the published 288/102's 2.8235, so the two sources agree to 1.02%.
       'teenage-engineering-op-xy',
+      // 304 mm, and the closest pair in the whole list: one millimetre under the Deluge.
+      // Both are cited — the T-1's to the specifications page of its documentation mirror,
+      // the Deluge's to its guidebook — so the order is decided by the numbers, and the
+      // T-1's is the one figure here corroborated by a drawing measured off the same page's
+      // panel figure: 2.6661 against 304/114's 2.6667.
+      'torso-t1',
       'synthstrom-deluge',
       // **A real tie, and the first one in this list that is not a coincidence.** The DFAM, the
       // Mother-32 and the Subharmonicon are the same 60 HP Moog enclosure — p.7 of the DFAM
