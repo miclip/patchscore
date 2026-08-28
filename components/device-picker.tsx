@@ -33,9 +33,14 @@ import { PatchCables } from './patch-cables'
 export type DevicePickerProps = {
   selected: readonly DeviceId[]
   onToggle: (id: DeviceId, on: boolean) => void
+  /**
+   * §7.4/#200. The box the reader put in charge, so this pane's clock line agrees with the
+   * guide's. Optional: absent means "nobody chose", which is also what it meant before #200.
+   */
+  clockSourceId?: DeviceId | undefined
 }
 
-export function DevicePicker({ selected, onToggle }: DevicePickerProps) {
+export function DevicePicker({ selected, onToggle, clockSourceId }: DevicePickerProps) {
   const [filter, setFilter] = useState<DeviceFilter>({ query: '', kind: ANY_KIND })
   const ids = useId()
   const searchId = `${ids}-search`
@@ -69,8 +74,13 @@ export function DevicePicker({ selected, onToggle }: DevicePickerProps) {
    */
   const listRef = useRef<HTMLFieldSetElement | null>(null)
   const bay = useMemo(
-    () => patchbay(chosen.map((row) => row.item)),
-    [chosen],
+    () => patchbay(
+      chosen.map((row) => row.item),
+      clockSourceId,
+    ),
+    // #200: the choice belongs here too, or this pane keeps the ranked answer after the reader
+    // has picked another box — the same stale-dependency shape the studio's resolve memo had.
+    [chosen, clockSourceId],
   )
 
   return (

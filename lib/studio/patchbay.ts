@@ -126,8 +126,15 @@ function hueOf(id: DeviceId): number {
  * decides the drawing, and nothing here re-sorts it (#53's rule for the list applies to the
  * cables over it).
  */
-export function patchbay(devices: readonly Device[]): Patchbay {
-  const source = selectClockSource(devices, new Map())
+export function patchbay(
+  devices: readonly Device[],
+  chosenClockSourceId?: DeviceId | undefined,
+): Patchbay {
+  // §7.4/#200. The reader's choice, or §7.4's ranking where they have not made one. Threaded
+  // through rather than recomputed: this pass and the guide both answer "which box runs the
+  // clock", and a picker that kept saying the ranked answer while the guide named the chosen one
+  // is two sources of truth disagreeing in the same window.
+  const source = selectClockSource(devices, new Map(), chosenClockSourceId)
   const links: PatchLink[] = []
   const free: { deviceId: DeviceId; deviceName: string }[] = []
 

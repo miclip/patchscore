@@ -219,11 +219,17 @@ export function Studio({ initialInputs }: StudioProps) {
             template,
             mood: inputs.mood,
             seed: inputs.seed,
-            // #161. No control writes these yet; a permalink or a stored studio can carry them,
-            // and the guide has to render what the inputs say whatever put them there.
+            // #161/#200. A permalink, a stored studio or a control can put these here, and the
+            // guide renders what the inputs say whatever wrote them.
             overrides: songOverrides(inputs),
           }),
-    [devices, template, inputs.mood, inputs.seed, inputs.bpm, inputs.key],
+    // **`inputs` whole, not its fields one by one.** This list used to enumerate them, and #200
+    // added `clockSourceId` without adding it here: the click wrote the input and the permalink,
+    // the memo did not recompute, and the guide went on naming the box the ranking had picked.
+    // Every field of `inputs` is an input to `resolve` by construction — `devices` and `template`
+    // are themselves derived from it — so depending on the object cannot go stale, where a list
+    // of fields silently does the moment somebody adds a fifth.
+    [devices, template, inputs],
   )
 
   const onCopy = useCallback(() => {
@@ -345,7 +351,11 @@ export function Studio({ initialInputs }: StudioProps) {
           overlay sits here rather than in any one of them. */}
       <div className="columns" ref={columnsRef}>
         <PatchChain areaRef={columnsRef} />
-        <DevicePicker selected={inputs.devices} onToggle={toggleDevice} />
+        <DevicePicker
+          selected={inputs.devices}
+          onToggle={toggleDevice}
+          clockSourceId={inputs.clockSourceId}
+        />
         <GenrePicker selected={inputs.templateId} onSelect={selectTemplate} />
         {/*
           #161. The panel beside INSPIRATIONS, holding the three facts §8's phase 1 opens with.
