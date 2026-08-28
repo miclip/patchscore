@@ -907,17 +907,22 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * box with more voices does, so on this device the floor and the repaired search grow at
    * nearly the same rate. That is the repair being less effective here, not absent.
    *
-   * The MPC Live III moves it again — **471,392 → 637,578**, a rise of 35.3% — and the two growth
-   * rates come apart again, which is the more usual shape: the repaired sweep rose 12.1% over the
-   * same device (`test/search-symmetry.test.ts` records 19,066 → 21,368). Close to three times the
-   * gap, and it is what the TR-6S note predicts from the other end. This box declares *two* pools
+   * **Two changes moved it after the TR-6S, and the figure below carries both.** #183 came first
+   * and was small: the TR-8S's RC slot gained `pad` and `stab` when §12.4's `sampled-chord` route
+   * turned out to be open there, taking the floor 471,392 → 493,870 and leaving the repaired
+   * sweep's worst case untouched at 19,066.
+   *
+   * The MPC Live III is the larger half — **493,870 → 664,888**, a rise of 34.6% — and the two
+   * growth rates come apart again, which is the more usual shape: the repaired sweep rose 12.1%
+   * over the same device (`test/search-symmetry.test.ts` records 19,066 → 21,368). Close to three
+   * times the gap, and it is what the TR-6S note predicts from the other end. This box declares *two* pools
    * whose role sets barely overlap — sixteen fixed-note pads carrying seventeen roles, sixteen
    * chromatic tracks carrying all twenty-three — so most request pairs land in exactly the
    * position the repair is for: two requests §4.2 will not let share a voice, on a device with
    * plenty of voices to separate them onto. The unrepaired floor pays for all of it and the
    * repaired search collapses most of it.
    */
-  it('walks the recorded 637,578 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 664,888 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -925,7 +930,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(637_578)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(664_888)
     // And the repaired floor is emphatically not walking it.
     expect(assign(input).search.nodes).toBeLessThan(20_000)
   })
