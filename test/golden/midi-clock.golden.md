@@ -667,4 +667,4 @@ Sections that program identically, part for part — build one and copy it:
 - **band 1** — Build, Breakdown · 7 parts, 23 strikes
 - **band 3** — Drop, Peak · 8 parts, 60 strikes
 
-`pad` has no pattern authored at any band, so nothing here varies for them.
+`pad` is held rather than struck, so there is no grid here to vary.

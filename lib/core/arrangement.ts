@@ -2,7 +2,7 @@ import type { SectionName } from './ids'
 import type { ResolveResult, ResolvedAssignment } from './pipeline'
 import type { DensityBand } from './template'
 import { STEPS_PER_BAR } from './template'
-import type { Role } from './vocabulary'
+import { bearsPattern, type Role } from './vocabulary'
 
 /**
  * §6.3's band trajectory: the arrangement of a resolved guide, derived once.
@@ -87,8 +87,41 @@ export type BandTrajectory = {
    * subject and was briefly repeated here as "parts that come and go" — an exact duplicate,
    * and duplicating a fact is how the section grew into a second copy of the guide the first
    * time. Nothing lands here unless the band trajectory is what makes it true.
+   *
+   * **Pattern-bearing roles only.** A role that does not bear a pattern at all is silent here
+   * because it sustains, not because a variant is missing, and reporting it as "no pattern
+   * authored" told a reader a hole existed where none did. Those go to `sustained` instead.
    */
   unpatterned: Role[]
+  /**
+   * Parts silent everywhere because their role is held rather than struck
+   * (`NON_PATTERN_BEARING_ROLES`).
+   *
+   * Split from `unpatterned` rather than dropped, because both renderers still owe the reader
+   * a word about the part: it is in the rig, it plays through the arrangement, and a section
+   * that simply stopped mentioning it would read as though it had been forgotten. What changes
+   * is the claim — *nothing to vary* rather than *nothing authored*.
+   */
+  sustained: Role[]
+}
+
+/**
+ * §4.2. A part that sustains, with no variant anywhere that would contradict it.
+ *
+ * Both halves are load-bearing, and the second is the honest one: the role says a grid is not
+ * expected, the emptiness says none was authored anyway. A direction that *does* pattern a `pad`
+ * has said something, and printing it beats a sentence claiming pads are never programmed —
+ * invariant 5 cuts both ways, and inventing an absence is as bad as inventing a value.
+ *
+ * Exported because phase 5 asks the same question per part that `bandTrajectory` asks per role,
+ * and two spellings of one musical claim are one drift away from disagreeing on the page.
+ */
+export function isSustainedPart(a: ResolvedAssignment): boolean {
+  return (
+    !bearsPattern(a.role) &&
+    a.patterns.length > 0 &&
+    a.patterns.every((p) => p.selection.outcome === 'none')
+  )
 }
 
 /** First occurrence wins. A template may request one role twice; `pad and pad` is noise. */
@@ -121,14 +154,20 @@ export function bandTrajectory(result: ResolveResult): BandTrajectory {
 
   // A part is only outside the shape if it is silent in *every* section it occupies. One
   // silent section is a fact about that group; silence everywhere is a fact about the part.
-  const unpatterned = unique(
+  const alwaysSilentRoles = unique(
     result.assignments
       .filter(
         (a) => a.patterns.length > 0 && a.patterns.every((p) => p.selection.outcome === 'none'),
       )
       .map((a) => a.role),
   )
-  const alwaysSilent = new Set(unpatterned)
+  // Hoisted out of the per-section groups either way — the grouping question is "does this part
+  // program differently here", and the answer for both is no. Only the sentence differs, so the
+  // split happens after `alwaysSilent`, not before it: a role that stopped being reported as a
+  // hole must not start being reported as a per-group silence instead.
+  const alwaysSilent = new Set(alwaysSilentRoles)
+  const unpatterned = alwaysSilentRoles.filter(bearsPattern)
+  const sustained = alwaysSilentRoles.filter((role) => !bearsPattern(role))
 
   const groups: BandGroup[] = []
   const sigs: Map<string, string>[] = []
@@ -199,7 +238,7 @@ export function bandTrajectory(result: ResolveResult): BandTrajectory {
     })
   }
 
-  return { groups, unpatterned }
+  return { groups, unpatterned, sustained }
 }
 
 // ---------------------------------------------------------------------------

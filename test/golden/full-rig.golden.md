@@ -1090,4 +1090,6 @@ Sections that program identically, part for part — build one and copy it:
 - **band 1** — Build, Breakdown · 9 parts, 27 strikes
 - **band 3** — Drop, Peak · 10 parts, 73 strikes
 
-`pad` and `riser` have no pattern authored at any band, so nothing here varies for them.
+`riser` has no pattern authored at any band, so nothing here varies for it.
+
+`pad` is held rather than struck, so there is no grid here to vary.
