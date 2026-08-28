@@ -418,8 +418,27 @@ function jackSection(id: string): string {
  */
 function soleKind(jacks: readonly JackSpec[], direction: 'in' | 'out', kind: JackSignalKind) {
   return jacks
-    .filter((j) => j.direction === direction && j.signal.length === 1 && j.signal[0] === kind)
+    .filter((j) => j.direction === direction && carriesOnly(j, kind))
     .sort((a, b) => compareCodeUnits(a.id, b.id))
+}
+
+/**
+ * §3.3/#213. Whether this socket's job is `kind` — either because it declares nothing else, or
+ * because the manual says how to set it to that and the manifest cites the setting.
+ *
+ * **The second clause is not a relaxation of the first.** A multi-kind socket still fails unless
+ * it carries a `setup`, and a `setup` can only be authored from a printed menu path and option
+ * (`JackSetup`). So the Cascadia's `ENVELOPE A · EOA` — `['gate','trigger']`, a trigger by default
+ * and a gate only if a global setting changes — still fails, because its manual hedges and there
+ * is no instruction to cite. The Torso T-1's `cv · a` passes, because a per-socket Function
+ * setting chooses and the page says to pick Pitch.
+ *
+ * That is the whole distinction: **a socket that can be set to a kind is not one that is
+ * ambiguous about it**, and the evidence for which is whether an instruction exists.
+ */
+function carriesOnly(jack: JackSpec, kind: JackSignalKind): boolean {
+  if (jack.signal.length === 1) return jack.signal[0] === kind
+  return (jack.setup ?? []).some((step) => step.signal === kind)
 }
 
 /** Every section on this box that declares both a note socket and a gate socket, section-ordered. */

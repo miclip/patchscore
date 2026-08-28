@@ -340,11 +340,71 @@ export const device: Device = {
       id: 'cv · a',
       direction: 'out',
       signal: ['pitch-cv', 'cv', 'gate'],
+      // §3.3/#213. The socket is configurable rather than ambiguous, and this is the evidence:
+      // T1 Config's CV/Gate menu has an Output Function setting with Pitch, Velocity and Gate,
+      // and the page says which to pick. `soleKind` honours a cited setting and goes on refusing
+      // a socket whose manual merely hedges — the Cascadia's end-of-stage output stays refused.
+      setup: [
+        {
+          signal: 'pitch-cv' as const,
+          path: 'T1 Config > CV/Gate > Output Function',
+          value: 'Pitch',
+          note: 'Then match Scaling to the destination — V/Oct, 1.2V/Oct or Hz/V.',
+        },
+      ],
       note: 'Function decides which: Pitch, Velocity or Gate. Set it to Pitch for an oscillator, then match Scaling to the destination — V/Oct, 1.2V/Oct or Hz/V. Pair it with gate · a, which is the routing T1 Config’s 2-voices preset uses.',
     },
-    { id: 'cv · b', direction: 'out', signal: ['pitch-cv', 'cv', 'gate'] },
-    { id: 'cv · c', direction: 'out', signal: ['pitch-cv', 'cv', 'gate'] },
-    { id: 'cv · d', direction: 'out', signal: ['pitch-cv', 'cv', 'gate'] },
+    {
+      id: 'cv · b',
+      direction: 'out',
+      signal: ['pitch-cv', 'cv', 'gate'],
+      // §3.3/#213. The socket is configurable rather than ambiguous, and this is the evidence:
+      // T1 Config's CV/Gate menu has an Output Function setting with Pitch, Velocity and Gate,
+      // and the page says which to pick. `soleKind` honours a cited setting and goes on refusing
+      // a socket whose manual merely hedges — the Cascadia's end-of-stage output stays refused.
+      setup: [
+        {
+          signal: 'pitch-cv' as const,
+          path: 'T1 Config > CV/Gate > Output Function',
+          value: 'Pitch',
+          note: 'Then match Scaling to the destination — V/Oct, 1.2V/Oct or Hz/V.',
+        },
+      ],
+    },
+    {
+      id: 'cv · c',
+      direction: 'out',
+      signal: ['pitch-cv', 'cv', 'gate'],
+      // §3.3/#213. The socket is configurable rather than ambiguous, and this is the evidence:
+      // T1 Config's CV/Gate menu has an Output Function setting with Pitch, Velocity and Gate,
+      // and the page says which to pick. `soleKind` honours a cited setting and goes on refusing
+      // a socket whose manual merely hedges — the Cascadia's end-of-stage output stays refused.
+      setup: [
+        {
+          signal: 'pitch-cv' as const,
+          path: 'T1 Config > CV/Gate > Output Function',
+          value: 'Pitch',
+          note: 'Then match Scaling to the destination — V/Oct, 1.2V/Oct or Hz/V.',
+        },
+      ],
+    },
+    {
+      id: 'cv · d',
+      direction: 'out',
+      signal: ['pitch-cv', 'cv', 'gate'],
+      // §3.3/#213. The socket is configurable rather than ambiguous, and this is the evidence:
+      // T1 Config's CV/Gate menu has an Output Function setting with Pitch, Velocity and Gate,
+      // and the page says which to pick. `soleKind` honours a cited setting and goes on refusing
+      // a socket whose manual merely hedges — the Cascadia's end-of-stage output stays refused.
+      setup: [
+        {
+          signal: 'pitch-cv' as const,
+          path: 'T1 Config > CV/Gate > Output Function',
+          value: 'Pitch',
+          note: 'Then match Scaling to the destination — V/Oct, 1.2V/Oct or Hz/V.',
+        },
+      ],
+    },
   ],
 
   /**

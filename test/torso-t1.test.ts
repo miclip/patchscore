@@ -335,12 +335,18 @@ describe('T-1 manifest', () => {
   // -------------------------------------------------------------------------
 
   describe('voice control (§3.3)', () => {
-    it('offers no pitch-and-gate bundle, because Function decides what a CV out carries', () => {
+    it('drives, because it cites the setting that makes a CV out a pitch out (#213)', () => {
       // T1 Config gives CV A-D a Function of Pitch, Velocity or Gate and no page states a
-      // default, so `signal` is all three. §3.3's sole-kind rule then excludes them, which is the
-      // conservative answer and the right one: the Cascadia's end-of-attack outputs are the case
-      // that rule exists for, and a guide that tells a reader to patch pitch out of a socket
-      // currently set to Velocity is wrong in the same way.
+      // default, so `signal` stays all three — that is a true fact about the socket and does not
+      // change. What changed is #213: the jack now also carries the `setup` that makes it a pitch
+      // output, `T1 Config > CV/Gate > Output Function` set to `Pitch`, and `soleKind` honours a
+      // socket whose manual says how to set it.
+      //
+      // The Cascadia's end-of-attack outputs — the case that rule exists for — stay refused, and
+      // that is the point rather than a side effect: its manual *hedges* about what the socket is,
+      // so there is no instruction to cite, where this one *instructs*. A guide telling a reader
+      // to patch pitch from a socket set to Velocity is still wrong; this one tells them to set it
+      // to Pitch first.
       for (const id of ['cv · a', 'cv · b', 'cv · c', 'cv · d']) {
         expect(device.jacks?.find((j) => j.id === id)?.signal, id).toEqual([
           'pitch-cv',
@@ -349,18 +355,27 @@ describe('T-1 manifest', () => {
         ])
       }
       // The gate outputs are single-kind — the Function setting is offered on the CV outputs
-      // only — so it is the pitch half that is missing, not both.
+      // only — so the gate half never needed a setting, and the pitch half now has one.
       expect(
         (device.jacks ?? []).filter((j) => j.signal.length === 1 && j.signal[0] === 'gate').map((j) => j.id),
       ).toEqual(['gate · a', 'gate · b'])
+      for (const id of ['cv · a', 'cv · b', 'cv · c', 'cv · d']) {
+        const jack = device.jacks?.find((j) => j.id === id)
+        expect(jack?.setup?.[0], id).toMatchObject({ signal: 'pitch-cv', value: 'Pitch' })
+      }
 
       const result = resolve({
         devices: [device, minitaur],
-        template: TEMPLATES.find((t) => t.id === 'drone-study') ?? template,
+        template: TEMPLATES.find((t) => t.id === 'industrial-techno') ?? template,
         mood: NEUTRAL_MOOD,
-        seed: 1,
+        seed: 3,
       })
-      expect(result.interDevicePatch?.source).toBeUndefined()
+      expect(result.interDevicePatch?.source?.deviceId).toBe(device.id)
+      const target = result.interDevicePatch?.targets.find((t) => t.deviceId === 'moog-minitaur')
+      expect(target?.outcome).toBe('routed')
+      // Its own letters, paired by #214's matcher: `cv · a` with `gate · a`, which is the routing
+      // T1 Config's 2-voices preset uses and what the manifest note said all along.
+      expect(target?.cables.map((c) => c.fromJack).sort()).toEqual(['cv · a', 'gate · a'])
     })
 
     it('pairs its lettered sockets once they are single-kind, since #214 (#213)', () => {
@@ -397,13 +412,16 @@ describe('T-1 manifest', () => {
 
       // And the real manifest still does not, because the Function reading stands — the second
       // gap in #213, which is a design question rather than a matcher bug.
+      // The shipped manifest drives too now, since #213 gave it somewhere to cite the Function
+      // setting. Both halves of that issue are closed and this box is no longer the evidence for
+      // either — kept because it is still the case that found them.
       const asShipped = resolve({
         devices: [device, minitaur],
-        template: droneStudy,
+        template: TEMPLATES.find((t) => t.id === 'industrial-techno') ?? template,
         mood: NEUTRAL_MOOD,
-        seed: 1,
+        seed: 3,
       })
-      expect(asShipped.interDevicePatch?.source).toBeUndefined()
+      expect(asShipped.interDevicePatch?.source?.deviceId).toBe(device.id)
 
       const RENAMED: Record<string, string> = {
         'cv · a': 'cv 1',

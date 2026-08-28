@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { clockSourceBasis, decodeGuideInputs, encodeGuideInputs, moodState, resolve, renderGuide } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
+import { JackSpecSchema } from '../lib/core/device'
 import { CATALOGUE, DEFAULT_INPUTS, songOverrides, withClockSource } from '../lib/studio/session'
 
 /**
@@ -204,5 +205,59 @@ describe('pitch and gate pair on a lettered ordinal too (#213)', () => {
     expect(
       result.interDevicePatch?.targets.find((t) => t.deviceId === 'moog-minitaur')?.outcome,
     ).not.toBe('routed')
+  })
+})
+
+/**
+ * §3.3/#213. **A socket you can set to a kind is not one the manual is vague about.**
+ *
+ * `soleKind` refused every multi-kind socket, and that rule earns its keep: the Cascadia declares
+ * end-of-stage outputs as `['gate','trigger']` because its page says they are triggers by default
+ * and gates only if a global setting changes, and ranking on membership once told a reader to play
+ * a synth from an end-of-attack pulse.
+ *
+ * The T-1's CV outputs wear the same shape and make the opposite claim — a per-socket Function
+ * setting *chooses*, and the manual says which to pick. `JackSetup` is the difference, and it is
+ * evidence rather than a flag: it can only be authored from a printed path and option.
+ */
+describe('a cited setting makes a configurable socket usable (#213)', () => {
+  it('lets the T-1 drive, through the sockets its own note named', () => {
+    const rig = DEVICES.filter((d) => ['torso-t1', 'moog-minitaur'].includes(d.id))
+    const result = resolve({ devices: rig, template, mood: moodState(), seed: 3 })
+    expect(result.interDevicePatch?.source?.deviceId).toBe('torso-t1')
+    const target = result.interDevicePatch?.targets.find((t) => t.deviceId === 'moog-minitaur')
+    expect(target?.cables.map((c) => c.fromJack).sort()).toEqual(['cv · a', 'gate · a'])
+  })
+
+  it('still refuses a socket whose manual only hedges', () => {
+    // The Cascadia's eight multi-kind outputs carry no `setup`, because there is no instruction to
+    // cite — so nothing about them changed, which is the whole point of keeping the rule.
+    const cascadia = DEVICES.find((d) => d.id === 'intellijel-cascadia')!
+    const multi = (cascadia.jacks ?? []).filter((j) => j.direction === 'out' && j.signal.length > 1)
+    expect(multi.length).toBeGreaterThan(4)
+    for (const jack of multi) expect(jack.setup, jack.id).toBeUndefined()
+  })
+
+  it('refuses a setup that names a kind the socket does not carry', () => {
+    // A manifest disagreeing with itself. Caught at the schema rather than at the pass, so it
+    // cannot ship.
+    const jack = {
+      id: 'x · a',
+      direction: 'out' as const,
+      signal: ['cv' as const, 'gate' as const],
+      setup: [{ signal: 'pitch-cv' as const, path: 'Menu > Thing', value: 'Pitch' }],
+    }
+    expect(JackSpecSchema.safeParse(jack).success).toBe(false)
+  })
+
+  it('refuses a setup on a socket that is already the one kind', () => {
+    // A menu step a reader does not need to take.
+    const jack = {
+      id: 'x · b',
+      direction: 'out' as const,
+      signal: ['gate' as const],
+      setup: [{ signal: 'gate' as const, path: 'Menu > Thing', value: 'Gate' }],
+    }
+    expect(JackSpecSchema.safeParse(jack).success).toBe(false)
   })
 })
