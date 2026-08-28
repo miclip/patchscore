@@ -545,7 +545,11 @@ describe('panel contents', () => {
     const provisional = rackModel(real)
       .panels.filter((p) => p.spanVerified === false)
       .map((p) => p.deviceId)
-    expect(provisional).toEqual(['teenage-engineering-op-xy'])
+    // Two now, and the second for a sharper version of the same reason: neither of the Hapax's
+    // two documents prints a dimension anywhere, so its 358 mm span is a published figure with
+    // no page behind it either. `index.ts` records which retailer figure it is and the inch
+    // conversion that picks it out of two that disagree.
+    expect(provisional).toEqual(['squarp-hapax', 'teenage-engineering-op-xy'])
   })
 })
 
@@ -925,7 +929,10 @@ describe('rack view', () => {
     // buttons that switch it — "the four buttons underneath the screen".
     // 36: plus the MPC One G2's, the 151 x 94 mm active area p.477 specifies, carrying that
     // panel's voice field the way both its siblings do.
-    expect(count('rack-screen')).toBe(36)
+    // 38: plus the Hapax's two, which are the same 67.3 x 33.9 mm part twice — the left screen
+    // showing step and track parameters under its eight encoders, the right one the mode's main
+    // display under the menu encoder.
+    expect(count('rack-screen')).toBe(38)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one

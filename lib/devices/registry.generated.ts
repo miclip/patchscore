@@ -26,6 +26,7 @@ import { device as device_roland_mc_101 } from './roland-mc-101/index'
 import { device as device_roland_tr_1000 } from './roland-tr-1000/index'
 import { device as device_roland_tr_6s } from './roland-tr-6s/index'
 import { device as device_roland_tr_8s } from './roland-tr-8s/index'
+import { device as device_squarp_hapax } from './squarp-hapax/index'
 import { device as device_synthstrom_deluge } from './synthstrom-deluge/index'
 import { device as device_tascam_model_2400 } from './tascam-model-2400/index'
 import { device as device_teenage_engineering_op_xy } from './teenage-engineering-op-xy/index'
@@ -54,6 +55,7 @@ export const DEVICES: readonly Device[] = [
   device_roland_tr_1000,
   device_roland_tr_6s,
   device_roland_tr_8s,
+  device_squarp_hapax,
   device_synthstrom_deluge,
   device_tascam_model_2400,
   device_teenage_engineering_op_xy,
@@ -83,6 +85,7 @@ export const DEVICE_FOLDERS: readonly string[] = [
   'roland-tr-1000',
   'roland-tr-6s',
   'roland-tr-8s',
+  'squarp-hapax',
   'synthstrom-deluge',
   'tascam-model-2400',
   'teenage-engineering-op-xy',

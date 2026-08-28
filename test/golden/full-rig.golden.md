@@ -63,7 +63,7 @@ None.
 
 **Clock source** — Tracker Mini over `midi-din`, carrying 0 parts. Sync everything else to it, except Model 2400 and Zoom LiveTrak L-8, which cannot receive clock and run free, and Metropolix and DFAM, which have no `midi-din` input and run free.
 
-- Why this box — 2 boxes here claim that job, so transport, then name, settled it · manual
+- Why this box — 3 boxes here claim that job, so transport, then name, settled it · manual
   - ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.283
 
 - On the Tracker Mini, set `Config > MIDI > Clock Out` to `MIDI Out jack` · manual
@@ -181,6 +181,14 @@ None.
   - clock: sends clock · midi-din/usb/trigger
   - audio: stereo main out · 6 individual outs · USB audio · audio in
   - mixer: 2 parts, 6 individual outs: one channel each
+- **Hapax** — sequencer · 0 parts
+  - clock: sends clock · midi-din/usb/analog-clock
+  - midi in A: CLOCK SOURCE = MIDI IN A makes this the sync input; MIDI IN B is the other choice (p.130). · manual
+    - ↳ cite: value manual — Hapax Manual (22 June 2026), p.27
+  - midi out A: Sync output must be set to CLOCK+TRANSPORT for the port the cable is in; B, C and D send the same clock (p.132). · manual
+    - ↳ cite: value manual — Hapax Manual (22 June 2026), p.28
+  - audio: no audio I/O
+  - mixer: no parts assigned; nothing to patch
 - **Deluge** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: stereo main out · audio in
