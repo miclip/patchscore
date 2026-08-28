@@ -363,17 +363,22 @@ describe('T-1 manifest', () => {
       expect(result.interDevicePatch?.source).toBeUndefined()
     })
 
-    it('would still find no bundle if the CV outputs were single-kind, and that is an engine finding', () => {
+    it('pairs its lettered sockets once they are single-kind, since #214 (#213)', () => {
       // #201 pairs a multitrack CV sequencer's pitch and gate sockets by *trailing ordinal* — the
       // Hapax's `Cv out 1` with `gate out 1`. This box numbers nothing: the silkscreen reads
       // `cv a`-`cv d` and `gate a`-`gate b`, and T1 Config pairs `CV A` with `Gate A` in as many
       // words. So the shape #201 solved is here with letters where it had digits.
       //
-      // This test is the evidence for that claim rather than an assertion that it should stay
-      // true: give the sockets a single kind and the pairing still fails; renumber them as well
-      // and it succeeds. Nothing here is worked around in the manifest — the recorded finding is
-      // the deliverable (skill §6, #57), and it changes nothing today because the Function
-      // reading above already settles the same question.
+      // **This was written before #214 and its first half has since been fixed**, which is what
+      // the test said it wanted: it called itself "evidence for that claim rather than an
+      // assertion that it should stay true". #214 taught the matcher to read a letter as well as
+      // a digit, so single-kind lettered sockets now pair, and the renaming half is no longer a
+      // contrast — both spellings work.
+      //
+      // What still blocks this box is the other half of #213: its CV outputs declare three kinds
+      // because a per-socket Function setting chooses one, so `soleKind` excludes them and there
+      // is nothing to pair. Asserted below against the real manifest, which is the fact that
+      // matters — the fixtures only show the matcher is no longer the reason.
       const droneStudy = TEMPLATES.find((t) => t.id === 'drone-study') ?? template
       const solePitch = {
         ...device,
@@ -387,7 +392,18 @@ describe('T-1 manifest', () => {
         mood: NEUTRAL_MOOD,
         seed: 1,
       })
-      expect(lettered.interDevicePatch?.source).toBeUndefined()
+      // Lettered and single-kind: routes now. Before #214 this was `toBeUndefined()`.
+      expect(lettered.interDevicePatch?.source?.deviceId).toBe(device.id)
+
+      // And the real manifest still does not, because the Function reading stands — the second
+      // gap in #213, which is a design question rather than a matcher bug.
+      const asShipped = resolve({
+        devices: [device, minitaur],
+        template: droneStudy,
+        mood: NEUTRAL_MOOD,
+        seed: 1,
+      })
+      expect(asShipped.interDevicePatch?.source).toBeUndefined()
 
       const RENAMED: Record<string, string> = {
         'cv · a': 'cv 1',
@@ -409,6 +425,8 @@ describe('T-1 manifest', () => {
         mood: NEUTRAL_MOOD,
         seed: 1,
       })
+      // Numbered spelling routes too, and that is now the same fact rather than a contrast: the
+      // matcher reads both, so the box's silkscreen no longer decides whether it can drive.
       expect(withOrdinals.interDevicePatch?.source?.deviceId).toBe(device.id)
     })
   })
