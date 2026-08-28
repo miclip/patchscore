@@ -10,7 +10,12 @@ import {
   type MoodAxis,
   type Role,
 } from './vocabulary'
-import { realisationOf, realisationRank, requiredVoicePolyphony } from './device'
+import {
+  patchVoiceCeiling,
+  realisationOf,
+  realisationRank,
+  requiredVoicePolyphony,
+} from './device'
 import type {
   ArticulationEntry,
   Assignable,
@@ -450,9 +455,14 @@ export function canCarryNotes(
   role: Role,
   notes: number,
 ): boolean {
+  // The fast path stays, and #85 does not belong here. This asks whether the *box* can carry the
+  // notes at all — "the voice sounds that many itself" — and a four-voice synth does, whatever any
+  // one patch spends. A capped recipe is a reason not to *choose* that recipe, never a reason to
+  // report the rig cannot play the part; §7.3 wants `no-recipe` there, not `no-capable-voice`.
   if (assignable.polyphony >= notes) return true
   return recipesFor(device, assignable, role).some(
-    (recipe) => requiredVoicePolyphony(recipe, notes) <= assignable.polyphony,
+    (recipe) =>
+      requiredVoicePolyphony(recipe, notes) <= patchVoiceCeiling(recipe, assignable.polyphony),
   )
 }
 
@@ -515,7 +525,9 @@ export function canStackNotes(
   return recipesFor(device, assignable, role).some(
     (recipe) =>
       realisationOf(recipe) === 'polyphonic-voice' &&
-      requiredVoicePolyphony(recipe, 1) <= assignable.polyphony,
+      // One note each in a stack, so a patch capped at one is fine here — but a cap of zero would
+      // not be, and reading the ceiling keeps the two call sites asking the same question.
+      requiredVoicePolyphony(recipe, 1) <= patchVoiceCeiling(recipe, assignable.polyphony),
   )
 }
 
@@ -567,7 +579,15 @@ export function scoreRecipes(
 ): { recipe: Recipe; distanceSq: number }[] {
   const realisationDecides = notes > 1
   return recipesFor(device, assignable, role)
-    .filter((recipe) => requiredVoicePolyphony(recipe, notes) <= assignable.polyphony)
+    // §12.4/#85. Against the patch's ceiling rather than the box's, which is the whole of the
+    // fix: this is where a recipe is *chosen*, and a UNISON patch on a four-voice synth sounds
+    // one note however many the box has. `canCarryNotes` above deliberately still asks about the
+    // box, because a capped recipe is a reason not to pick this patch and never a reason to tell
+    // a reader their rig cannot play the part.
+    .filter(
+      (recipe) =>
+        requiredVoicePolyphony(recipe, notes) <= patchVoiceCeiling(recipe, assignable.polyphony),
+    )
     .map((recipe) => ({ recipe, distanceSq: characterDistanceSq(recipe.character, want) }))
     .filter((x) => x.distanceSq < MAX_SUBSTITUTION_DISTANCE_SQ)
     .sort(

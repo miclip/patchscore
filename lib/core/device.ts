@@ -1310,6 +1310,29 @@ export function requiredVoicePolyphony(recipe: Recipe, notes: number): number {
 }
 
 /**
+ * §12.4/#85. **How many notes this patch can actually sound**, which is not always what the box
+ * can.
+ *
+ * `realisation` is demand-side: `sampled-chord` says a patch needs *fewer* voices than the
+ * request implies. There was no supply-side counterpart, and two minilogue xd controls are
+ * exactly that — UNISON stacks all four voices onto one note, *"as a mono synth"* (p.17), and a
+ * non-zero VOICE MODE DEPTH under POLY halves four into two by stacking a pair per key.
+ * `Assignable.polyphony: 4` stays correct and stays 4: it is a fact about the box, and what a
+ * patch spends is a fact about the patch.
+ *
+ * Without this a UNISON recipe could be handed a dyad, or a DUO one a triad, and nothing would
+ * catch it — every cited range still right, `requiredVoicePolyphony` still satisfied, and a guide
+ * that reads as correct describing a patch that cannot play the part.
+ *
+ * The lower of the two, because both are real limits: a four-voice box cannot exceed four, and a
+ * patch that stacks them cannot exceed what it stacked them into.
+ */
+export function patchVoiceCeiling(recipe: Recipe, assignablePolyphony: number): number {
+  const cap = recipe.patchPolyphony
+  return cap === undefined ? assignablePolyphony : Math.min(assignablePolyphony, cap)
+}
+
+/**
  * §7.1 ranks a `polyphonic-voice` recipe ahead of a `sampled-chord` one when both can carry a
  * part of more than one note, and ranks it ahead of character fidelity. A chord sample does
  * transpose, so it follows a progression; what it cannot do is change shape — no re-voicing, no
@@ -1340,6 +1363,12 @@ export type Recipe = {
    * with no subject.
    */
   sourceAudio?: SourceAudio
+  /**
+   * §12.4/#85. The most simultaneous notes this patch can sound, when that is fewer than the
+   * voice offers — a UNISON or mono-legato mode, a pair-per-key stack. Omitted means the patch
+   * spends nothing the box does not have, which is the ordinary case and the pre-#85 behaviour.
+   */
+  patchPolyphony?: number
   params: AuthoredParam[]
   patch?: PatchEntry[]
   articulation?: ArticulationEntry[]
@@ -1356,6 +1385,7 @@ export const RecipeSchema = z
     title: z.string().min(1),
     realisation: RealisationSchema.optional(),
     sourceAudio: SourceAudioSchema.optional(),
+    patchPolyphony: z.int().min(1).optional(),
     params: z.array(AuthoredParamSchema),
     patch: z.array(PatchEntrySchema).min(1).optional(),
     articulation: z.array(ArticulationEntrySchema).min(1).optional(),
