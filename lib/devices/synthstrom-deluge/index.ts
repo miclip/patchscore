@@ -720,9 +720,30 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'track',
     title: 'Wavetable pad, slow chorus, wide reverb send',
+    /**
+     * §3/#101. **A wavetable oscillator has no sound until a file is chosen**, and this recipe
+     * said `OSC 1 TYPE Wavetable` and stopped — the reader set the type and got nothing, with no
+     * line telling them why. p.87: the shortcut is "to select audio or wavetable file as
+     * oscillator 1". p.95's CREATING A WAVETABLE SYNTHESIZER is the procedure: *"Navigate the SD
+     * card files to select the wavetable to load. Press (SELECT) to load the desired wavetable
+     * file."*
+     *
+     * Every `Sample` recipe on this box already carries a `sourceAudio`; this was the only
+     * `Wavetable` one and it was the only recipe missing it. The rule was known and applied to
+     * one oscillator type and not the other.
+     */
+    sourceAudio: {
+      need:
+        'A wavetable that drifts rather than steps — soft, vowel- or string-like, with each ' +
+        'cycle close to its neighbour. WAVE sweeps across the cycles, so a table whose frames ' +
+        'jump reads as stepping under a slow pad. Bring your own: the factory card is samples ' +
+        'in SAMPLES/ARTISTS and SAMPLES/DRUMS and the guidebook names no wavetable folder. ' +
+        'Load it and the type below sets itself; any wave file loads, but then Deluge guesses ' +
+        'the cycle size, which is the thing to suspect if it sounds wrong',
+    },
     params: [
       clipType('Synth'),
-      pick('OSC 1 TYPE', 'Wavetable', OSC_TYPES, cite(81)),
+      pick('OSC 1 TYPE', 'Wavetable', OSC_TYPES, cite(81), { hint: 'load-wavetable' }),
       pick('MOD FX TYPE', 'CHORUS', MOD_FX_TYPES, cite(216)),
       num('MOD FX RATE', 9, Z50, cite(229)),
       num('REVERB AMOUNT', 27, Z50, cite(225), { mood: [{ axis: 'space', amount: 18 }] }),
@@ -1140,6 +1161,10 @@ export const device: Device = {
     // create a kit clip". Both from clip view, which is where a reader already is.
     'clip-type': 'From clip view: [SHIFT] + [KIT] or [SYNTH]',
     'osc-type': 'Hold [SHIFT], press the OSC type pad',
+    // #101. Loading the file *is* the gesture, and it sets the type on the way: p.95 step 3 is
+    // "[SHIFT] + [BROWSE] for SAMPLE 1 ... Sample 1 will apply to Oscillator 1", then (SELECT)
+    // accepts the whole note range and opens the browser, and (SELECT) again loads.
+    'load-wavetable': '[SHIFT] + [BROWSE], then (SELECT) twice',
     // #173. Two envelope jogs, written for a reader who has not opened this menu before: one to
     // find the stages at all, one for the patch that is not on any pad — p.120's procedure is
     // drill into the destination, press (SELECT) again, and the modulation sources appear.

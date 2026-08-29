@@ -508,18 +508,29 @@ describe('Deluge manifest', () => {
       const osc = params.find((p) => p.name === 'OSC 1 TYPE')
       if (clip?.kind !== 'enum') throw new Error(`${recipe.id}: CLIP TYPE is not an enum`)
 
-      // The two ways of saying "this recipe loads audio" must not come apart, whichever clip type
+      // The two ways of saying "this recipe loads a file" must not come apart, whichever clip type
       // it lands on. This is the claim that stops a `sourceAudio` recipe quietly losing its
-      // Sample oscillator, or vice versa.
-      const loadsAudio = recipe.sourceAudio !== undefined
-      const sampled = osc?.kind === 'enum' && osc.value === 'Sample'
-      expect(sampled, recipe.id).toBe(loadsAudio)
+      // file-backed oscillator, or vice versa.
+      //
+      // **`Wavetable` loads a file too, and this rule said only `Sample` did.** That is how
+      // `deluge-pad-soft` shipped telling a reader to set OSC 1 to Wavetable and nothing else: the
+      // oscillator has no sound until a file is chosen (p.87, and p.95's CREATING A WAVETABLE
+      // SYNTHESIZER walks the SD-card browser), and every `Sample` recipe here already carried a
+      // `sourceAudio`. One oscillator type had the rule applied and the other did not.
+      const loadsFile = recipe.sourceAudio !== undefined
+      const fileBacked = osc?.kind === 'enum' && (osc.value === 'Sample' || osc.value === 'Wavetable')
+      expect(fileBacked, recipe.id).toBe(loadsFile)
 
-      if (loadsAudio) expect(clip.value, `${recipe.id} loads audio`).toBe('Kit')
-      if (clip.value === 'Synth') expect(loadsAudio, `${recipe.id} is a synth clip`).toBe(false)
+      // **Sampling still implies a kit row; loading a file no longer does.** §5.2 (p.108) is about
+      // where *samples* belong — "kits would more often be used with samples as the primary
+      // elements" — and a wavetable is not a sample. A wavetable pad is a melodic Synth clip that
+      // happens to read a file off the card, which is the one combination this used to forbid.
+      const sampled = osc?.kind === 'enum' && osc.value === 'Sample'
+      if (sampled) expect(clip.value, `${recipe.id} loads a sample`).toBe('Kit')
+      if (clip.value === 'Synth') expect(sampled, `${recipe.id} is a synth clip`).toBe(false)
       // A kit row that loads nothing is a synth row inside a kit. It is only worth the extra
       // explaining for a part that belongs in the drum kit, so it is confined to those roles.
-      if (clip.value === 'Kit' && !loadsAudio) {
+      if (clip.value === 'Kit' && !loadsFile) {
         expect(PERCUSSIVE, `${recipe.id} is a synth row in a kit`).toContain(recipe.role)
       }
     }
