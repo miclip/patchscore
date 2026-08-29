@@ -1007,7 +1007,18 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * all — and it is the same sibling-pair effect `search-symmetry.test.ts` records, where two
    * boxes carrying the same twenty recipes give every request two exactly-equal candidates.
    */
-  it('walks the recorded 118,860 nodes on industrial-techno seed 9', () => {
+  /**
+   * The MicroFreak moves both figures together once more, and again by the most yet: 118,860 ->
+   * 197,832 unrepaired and 118,224 -> 197,192 repaired, 66.4% on each. **The absolute gap holds at
+   * 640 nodes**, against the MC-707's 636, so the one figure that has stayed still through five
+   * devices and a near-tripling of the walk is the distance between the two paths, which is the
+   * claim this fixture exists to make.
+   *
+   * `search-bound.test.ts` records this device moving `industrial-techno` while leaving `weave`
+   * flat, a different shape from the MC-707's row even though the number here looks like a repeat
+   * of it. This seed sits on the direction that pays.
+   */
+  it('walks the recorded 197,832 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1015,13 +1026,14 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(118_860)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(197_832)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
     // stops guarding anything and starts re-recording the measurement a second time. 80,000 is
-    // now 140,000, on the fifth device to push past it and by the widest margin yet.
-    expect(assign(input).search.nodes).toBeLessThan(140_000)
+    // now 260,000, on the sixth device to push past it. Kept deliberately loose: 197,192 sits at
+    // 76% of it, about the slack 140,000 gave the measurement it replaced.
+    expect(assign(input).search.nodes).toBeLessThan(260_000)
   })
 })
 

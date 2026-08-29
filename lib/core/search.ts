@@ -422,7 +422,38 @@ export type AssignmentResult = {
  * Neither #159's non-monotonicity nor #160's solver question is closed by this either. What is
  * closed is #78's own claim, which was that the bound rather than the constant was the problem.
  */
-export const DEFAULT_NODE_CAP = 200_000
+/**
+ * §7.1/#78. **Re-derived against measured latency at 33 devices, not raised to fit a device.**
+ *
+ * The cap is counted in nodes and exists to guard *time*: this file calls it a latency guard and
+ * §7.1 calls it a backstop against pathology. Nodes rather than milliseconds because invariant 6
+ * requires a byte-identical guide from the same inputs, and a wall-clock cap would stop in a
+ * different place on a different machine.
+ *
+ * That proxy needed recalibrating. 200,000 was set when the search was cheaper, and the MicroFreak
+ * took the whole-catalogue worst case to 223,348, over it. The measurements that decided the new
+ * number, taken rather than assumed:
+ *
+ *     3-device rigs, 120 runs      worst      589 nodes        3 ms
+ *     5-device rigs, 120 runs      worst    2,821 nodes       13 ms
+ *     8-device rigs, 120 runs      worst   29,151 nodes       88 ms
+ *     every device selected        worst  223,348 nodes      692 ms
+ *
+ * **The expensive case is not a rig anybody owns.** Cost tracks how many boxes contend for the
+ * same role rather than how many are selected: 20 devices measured cheaper than 6, and a person
+ * with the eight boxes they actually own is under 90 ms. 200,000 was never protecting that person.
+ * It was about to cap the one scenario only a benchmark builds.
+ *
+ * 500,000 is about 1.5 s at the 3.1 microseconds per node measured here, and 2.2x the current
+ * worst. That keeps a real backstop against pathology while leaving the whole catalogue inside it.
+ *
+ * **This buys room rather than fixing anything.** If a rig a person could plausibly own ever
+ * approaches it, the answer is to make the search cheaper, and pricing near-clones in the bound is
+ * the known lever. Another zero here is not. #228 is why it matters at all: a capped search
+ * silently returns a worse allocation, so the cap being reachable is a correctness problem before
+ * it is a performance one.
+ */
+export const DEFAULT_NODE_CAP = 500_000
 
 // ---------------------------------------------------------------------------
 // §7.1 The objective

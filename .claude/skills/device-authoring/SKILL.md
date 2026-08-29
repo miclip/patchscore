@@ -225,13 +225,20 @@ neighbouring device's before assuming a name.
 `prebuild`) and is never hand-edited. `npm run check:registry` fails if it is stale. Every manifest
 is Zod-validated in the generator, so a bad manifest fails the build rather than a request.
 
-**Check what the device costs the search before you call it done.** `DEFAULT_NODE_CAP` is `200_000`
-(`lib/core/search.ts:425`), and §7.1's documented behaviour on a capped search is to degrade to
+**Check what the device costs the search before you call it done.** `DEFAULT_NODE_CAP` is `500_000`
+(`lib/core/search.ts:456`), and §7.1's documented behaviour on a capped search is to degrade to
 greedy — the guide still renders, it just quietly stops being optimal. #78 is the standing issue:
 the DFAM took `industrial-techno`'s worst seed from 108,608 nodes to **195,951** and capped every
-seed, on a device *smaller* than the TR-1000. `liveFloor` fixed the bound rather than the cap.
+seed, on a device *smaller* than the TR-1000. `liveFloor` fixed the bound rather than the cap. The MicroFreak then took the worst seed to
+223,348 and past the old 200,000, and the constant was re-derived to 500,000 against measured
+latency rather than raised to fit it — read the docstring before touching it again.
 
-**The suite does catch capping** — `test/search-symmetry.test.ts:1095`, *"leaves every shipped
+**Sweep every direction, not the total.** The MicroFreak moved `industrial-techno` 68% and `weave`
+by twenty-two nodes, so a figure averaged across the table would have hidden it. And the recipe
+count does not predict the bill: two boxes carrying the same sheet cost far more together than
+either alone (`test/search-bound.test.ts` records both effects, with the measurements).
+
+**The suite does catch capping** — `test/search-symmetry.test.ts:1328`, *"leaves every shipped
 template inside the shipped cap"*, sweeps every template × seed over the whole registry and asserts
 `capped === false` and `method === 'exhaustive'`. So `npm run verify` goes red rather than the guide
 going quietly greedy. What it does **not** give you is the number, and the number is what tells you

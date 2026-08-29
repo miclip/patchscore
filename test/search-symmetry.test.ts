@@ -1308,7 +1308,7 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * `DEFAULT_NODE_CAP` is 200,000, so 132,559 is **66.3% of it and 33.7% headroom stands** —
    * the first time this figure has been over half the cap.
    */
-  const WORST_CASE_NODES = 132_559
+  const WORST_CASE_NODES = 223_348
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))
