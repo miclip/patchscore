@@ -32,6 +32,7 @@ import { device as device_squarp_hapax } from './squarp-hapax/index'
 import { device as device_synthstrom_deluge } from './synthstrom-deluge/index'
 import { device as device_tascam_model_2400 } from './tascam-model-2400/index'
 import { device as device_te_ep_133 } from './te-ep-133/index'
+import { device as device_te_ep_40 } from './te-ep-40/index'
 import { device as device_teenage_engineering_op_xy } from './teenage-engineering-op-xy/index'
 import { device as device_torso_t1 } from './torso-t1/index'
 import { device as device_zoom_livetrak_l_8 } from './zoom-livetrak-l-8/index'
@@ -65,6 +66,7 @@ export const DEVICES: readonly Device[] = [
   device_synthstrom_deluge,
   device_tascam_model_2400,
   device_te_ep_133,
+  device_te_ep_40,
   device_teenage_engineering_op_xy,
   device_torso_t1,
   device_zoom_livetrak_l_8,
@@ -99,6 +101,7 @@ export const DEVICE_FOLDERS: readonly string[] = [
   'synthstrom-deluge',
   'tascam-model-2400',
   'te-ep-133',
+  'te-ep-40',
   'teenage-engineering-op-xy',
   'torso-t1',
   'zoom-livetrak-l-8',

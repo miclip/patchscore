@@ -665,7 +665,7 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
     .map((d) => d.id)
     .sort(byCodeUnit)
 
-  it('is the twelve boxes established to ship one, and a thirteenth has to be added deliberately', () => {
+  it('is the thirteen boxes established to ship one, and a fourteenth has to be added deliberately', () => {
     // The derivation covers whatever is declared; this says which declarations were expected, so
     // a new one is loud in review rather than silently absorbed.
     expect(SHIPPED).toEqual([
@@ -693,6 +693,11 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
       // names nothing inside it. Navigation is not an inventory, so a recipe cannot reference an
       // entry and the band goes in `sourceAudio.prep` instead.
       'te-ep-133',
+      // The EP-40 is the same argument on the same shape of guide, with one band more: the guide
+      // prints the same 1-99 / 100-199 banding and stops at 599, and teenage engineering's own
+      // product page prints a sixth, `600-699 FX`, which one recipe reaches for and cites to the
+      // page rather than to the guide. Six bands and still not one sample named.
+      'te-ep-40',
       // The OP-XY ships factory presets for every engine and category (p.52) and a factory
       // projects folder (p.37), and no page enumerates either. Its three browser screenshots
       // reuse one set of seven names across projects, presets and samples, which is what

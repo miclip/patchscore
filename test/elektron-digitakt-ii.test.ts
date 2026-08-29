@@ -54,6 +54,7 @@ describe('Digitakt II manifest', () => {
       'elektron-digitakt-ii',
       'roland-sp-404mk2',
       'te-ep-133',
+      'te-ep-40',
     ])
   })
 
