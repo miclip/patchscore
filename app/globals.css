@@ -3034,8 +3034,11 @@ html {
    * there — a line pointing at nothing, which reads as a printing fault rather than as a diagram.
    * `.patchbay` is the same claim inside the device picker.
    *
-   * The rack's cables are deliberately NOT here: those are real cables a reader patches, and the
-   * diagram is the one thing on the sheet they will hold the box up against.
+   * **`.rack-section` above hides the whole rack, cables and all**, and has since before either of
+   * these lines existed. An earlier draft of this comment claimed the rack's cables were
+   * deliberately left printing; they are not reached, because their container is gone. Whether
+   * that is right is #225 — the reader §0 describes is standing at a rack with this sheet in
+   * hand, and phase 3 tells them what to patch where.
    */
   .patch-chain,
   .patchbay,
