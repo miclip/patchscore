@@ -16,7 +16,7 @@ import {
   unplayedHooks,
 } from '@/lib/core'
 import { browserEnv } from '@/lib/studio/browser-env'
-import { DEFAULT_GUIDE_LAYOUT, readGuideLayout } from '@/lib/studio/preferences'
+import { DEFAULT_GUIDE_LAYOUT, GUIDE_LAYOUT_KEY, readGuideLayout } from '@/lib/studio/preferences'
 import { templateHref } from '@/lib/studio/catalogue'
 import { downloadGuideMarkdown, printGuide } from '@/lib/studio/export'
 import { occupiedCounts, voicesLabel } from './format'
@@ -194,7 +194,39 @@ export function Guide({
   const [chosen, setLayout] = useState<GuideLayout>(DEFAULT_GUIDE_LAYOUT)
   useEffect(() => {
     if (fixedLayout !== undefined) return
-    setLayout(readGuideLayout(() => window.localStorage))
+    const read = () => setLayout(readGuideLayout(() => window.localStorage))
+    read()
+
+    /**
+     * §8/#230. **Reading it once on mount is not enough, and a phone is where that shows.**
+     *
+     * Reported as "the default open guides thing isn't applying". Both obvious flows work — a
+     * fresh load, and an in-app navigation from /preferences — because each mounts this component
+     * and runs the effect. Two do not:
+     *
+     *  - **Back-forward cache.** Safari restores a page with its DOM and JS state intact and does
+     *    not remount anything, so changing the preference and tapping *back* to the studio shows
+     *    the render from before the change. iOS does this aggressively, which is why it was
+     *    reported from a phone and not from a desktop.
+     *  - **A second tab.** The preference is per-browser, so a studio tab open beside the
+     *    preferences page should follow it, and without a listener it never learns.
+     *
+     * `pageshow` with `persisted` is the bfcache signal — a normal load fires it too, with
+     * `persisted` false, which `read()` above has already handled. `storage` fires only in *other*
+     * tabs, which is exactly the case that needs it. A `null` key means the storage was cleared.
+     */
+    const onShow = (event: PageTransitionEvent) => {
+      if (event.persisted) read()
+    }
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === GUIDE_LAYOUT_KEY || event.key === null) read()
+    }
+    window.addEventListener('pageshow', onShow)
+    window.addEventListener('storage', onStorage)
+    return () => {
+      window.removeEventListener('pageshow', onShow)
+      window.removeEventListener('storage', onStorage)
+    }
   }, [fixedLayout])
   const layout = fixedLayout ?? chosen
   const [exported, setExported] = useState<{ ok: boolean; message: string } | undefined>(undefined)
