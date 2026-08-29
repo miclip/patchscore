@@ -39,7 +39,16 @@ import {
  */
 export type VoiceSpec =
   | { kind: 'fixed'; id: VoiceId; label: string; roles: Role[]; polyphony: number }
-  | { kind: 'pool'; id: PoolId; label: string; count: number; roles: Role[]; polyphony: number }
+  | {
+      kind: 'pool'
+      id: PoolId
+      label: string
+      count: number
+      /** §2.2/#86. The panel's own name for each member, where counting is not what the box does. */
+      memberLabels?: string[]
+      roles: Role[]
+      polyphony: number
+    }
 
 const voiceCommon = {
   id: z.string().min(1),
@@ -50,7 +59,28 @@ const voiceCommon = {
 
 export const VoiceSpecSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('fixed'), ...voiceCommon }),
-  z.strictObject({ kind: z.literal('pool'), count: z.int().min(1), ...voiceCommon }),
+  z.strictObject({
+    kind: z.literal('pool'),
+    count: z.int().min(1),
+    /**
+     * §2.2/#86. **What the panel calls each member**, when an ordinal is not what it calls them.
+     *
+     * A pool's members are interchangeable, so the guide names one by counting: `Track 1`,
+     * `Pad 37`. That works for a box whose panel counts the same way, and fails for one that does
+     * not. The EP-133 has forty-eight pads in four groups of twelve labelled `.`, `0`, `enter` and
+     * `1`-`9` — **nothing on it says `37`**, so a reader told to use `Pad 37` is looking for a
+     * control that is not there, which is the one thing §8 exists to prevent.
+     *
+     * Display only, and that is deliberate. `voiceId` stays `${id}-${ordinal}` and `ordinal` stays
+     * the number, so occupancy keys, recipe lookup and §7.1's symmetry breaking are untouched —
+     * this changes the word a reader sees and nothing the resolver does.
+     *
+     * Length must equal `count`: a partial list would name some members and count others, which
+     * is worse than counting all of them.
+     */
+    memberLabels: z.array(z.string().min(1)).optional(),
+    ...voiceCommon,
+  }),
 ])
 
 // ---------------------------------------------------------------------------
@@ -2248,6 +2278,22 @@ export const DeviceSchema = z
         message: 'at most one recipe per (role, character, voice, realisation) in a device (§3)',
         path: ['recipes'],
       })
+    }
+
+    /**
+     * §2.2/#86. A `memberLabels` list that does not cover the pool would name some members and
+     * count the rest, which reads as two naming schemes on one box and is worse than counting all
+     * of them. Checked here rather than in the schema because the rule relates two fields.
+     */
+    for (const voice of device.voices) {
+      if (voice.kind !== 'pool' || voice.memberLabels === undefined) continue
+      if (voice.memberLabels.length !== voice.count) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `pool '${voice.id}' has ${voice.count} members and ${voice.memberLabels.length} memberLabels; a partial list names some and counts others (§2.2/#86)`,
+          path: ['voices'],
+        })
+      }
     }
 
     // §10. Panel geometry is checked here rather than in `PanelLayoutSchema` because the

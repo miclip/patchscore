@@ -163,7 +163,11 @@ export function expand(device: Device): readonly Assignable[] {
           deviceId: device.id,
           voiceId: `${voice.id}-${ordinal}`,
           poolId: voice.id,
-          label: `${voice.label} ${ordinal}`,
+          /**
+           * §2.2/#86. The panel's own name where the manifest gave one, the counted form where it
+           * did not. `Pad 37` is a control the EP-133 does not have; `D · .` is the one it does.
+           */
+          label: voice.memberLabels?.[ordinal - 1] ?? `${voice.label} ${ordinal}`,
           ordinal,
           roles: Object.freeze([...voice.roles]) as Role[],
           polyphony: voice.polyphony,
