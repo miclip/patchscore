@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  DEFAULT_GUIDE_LAYOUT,
   DEFAULT_JACK_STYLE,
+  GUIDE_LAYOUT_KEY,
   JACK_STYLE_ATTR,
   JACK_STYLE_KEY,
   JACK_STYLE_SCRIPT,
+  readGuideLayout,
   readJackStyle,
+  writeGuideLayout,
   writeJackStyle,
 } from '../lib/studio/preferences'
 
@@ -89,5 +93,67 @@ describe('the pre-paint script cannot break the document', () => {
     expect(run('cables')).toBe('cables')
     expect(run('nonsense')).toBeUndefined()
     expect(run(null)).toBeUndefined()
+  })
+})
+
+/**
+ * §8/#230. The guide-layout preference, which is the *default* a guide opens as — not the studio's
+ * own `Read:` control, which overrides one guide and stores nothing.
+ *
+ * Same fallback discipline as the jack style above, for the same reason: a preference that cannot
+ * be read is the default, because refusing to render a guide over a layout choice would be a far
+ * worse bug than opening it the usual way.
+ */
+describe('the guide-layout preference falls back rather than failing (§8/#230)', () => {
+  it('reads a stored layout', () => {
+    expect(readGuideLayout(good({ [GUIDE_LAYOUT_KEY]: 'sequencer' }))).toBe('sequencer')
+    expect(readGuideLayout(good({ [GUIDE_LAYOUT_KEY]: 'phase' }))).toBe('phase')
+  })
+
+  it('defaults to §8’s phase order when nothing is stored', () => {
+    expect(readGuideLayout(good())).toBe(DEFAULT_GUIDE_LAYOUT)
+    expect(DEFAULT_GUIDE_LAYOUT).toBe('phase')
+  })
+
+  it('defaults when the key holds something else entirely', () => {
+    expect(readGuideLayout(good({ [GUIDE_LAYOUT_KEY]: 'by-sequencer' }))).toBe('phase')
+    expect(readGuideLayout(good({ [GUIDE_LAYOUT_KEY]: '{"layout":"sequencer"}' }))).toBe('phase')
+  })
+
+  it('defaults when there is no storage at all — SSR, or a browser with none', () => {
+    expect(readGuideLayout(() => null)).toBe('phase')
+    expect(readGuideLayout(() => undefined)).toBe('phase')
+  })
+
+  it('defaults when access itself throws, which blocked site data does', () => {
+    expect(
+      readGuideLayout(() => {
+        throw new DOMException('blocked', 'SecurityError')
+      }),
+    ).toBe('phase')
+  })
+
+  it('reports a failed write instead of throwing', () => {
+    expect(writeGuideLayout(good(), 'sequencer')).toBe(true)
+    expect(writeGuideLayout(() => null, 'sequencer')).toBe(false)
+    expect(
+      writeGuideLayout(() => {
+        throw new DOMException('quota', 'QuotaExceededError')
+      }, 'sequencer'),
+    ).toBe(false)
+  })
+
+  it('round-trips through one storage', () => {
+    const source = good()
+    expect(writeGuideLayout(source, 'sequencer')).toBe(true)
+    expect(readGuideLayout(source)).toBe('sequencer')
+  })
+
+  it('keeps its own key, so a permalink carries neither preference', () => {
+    // The rule #138 set for the jack style and §8/#230 keeps: how you read is not what you built.
+    expect(GUIDE_LAYOUT_KEY).not.toBe(JACK_STYLE_KEY)
+    const source = good()
+    writeGuideLayout(source, 'sequencer')
+    expect(readJackStyle(source)).toBe(DEFAULT_JACK_STYLE)
   })
 })

@@ -12,6 +12,7 @@ import {
   unplayedHooks,
 } from '@/lib/core'
 import { browserEnv } from '@/lib/studio/browser-env'
+import { DEFAULT_GUIDE_LAYOUT, readGuideLayout } from '@/lib/studio/preferences'
 import { templateHref } from '@/lib/studio/catalogue'
 import { downloadGuideMarkdown, printGuide } from '@/lib/studio/export'
 import { occupiedCounts } from './format'
@@ -40,15 +41,6 @@ import { PhaseVoices } from './phase-voices'
  * is missing instead of disappearing (invariant 5). `GUIDE_PHASES` is imported rather than
  * restated: one list, read by the Markdown renderer, this view, and the tests.
  */
-/**
- * §8/#230. Where the reader's layout preference is kept.
- *
- * `localStorage`, not the permalink: layout changes no value and no assignment, so it is the
- * reader's preference rather than part of the score. A shared link then renders the way whoever
- * opens it likes, which is better than carrying the sender's choice to them.
- */
-const LAYOUT_KEY = 'patchscore:guide-layout'
-
 /**
  * §8/#230. One box's parts, through §8's three performing phases in §8's order.
  *
@@ -90,30 +82,24 @@ export function Guide({ result, seed }: { result: ResolveResult; seed: number })
   /** §8.1: on by default, off once you know your boxes. Print ignores it (see `@media print`). */
   const [hints, setHints] = useState(true)
   /**
-   * §8/#230. **`'phase'` on the first render, always, and only then whatever the reader chose.**
+   * §8/#230. **A per-visit override, not a setting.**
    *
-   * Reading `localStorage` during render would give the server one layout and the client another
-   * and break hydration — the same rule the export handlers below follow (#12). So the stored
-   * preference arrives in an effect, after the markup the server produced has been matched.
+   * It opens at whatever the Preferences page stored and changes only what is on screen now —
+   * switching here writes nothing back. Trying the other layout on one guide is something a
+   * reader does mid-session to compare two sections, and having that silently become their
+   * default would mean the setting drifts every time they look.
+   *
+   * "How I read guides" is a preference and lives on `/preferences`. "How I want to read this
+   * one" is this control. The second is not a smaller version of the first.
+   *
+   * `DEFAULT_GUIDE_LAYOUT` on the first render, always: the server cannot know what this browser
+   * stored, so reading it during render would mismatch hydration — the rule the export handlers
+   * below already follow (#12). The stored default arrives in an effect instead.
    */
-  const [layout, setLayout] = useState<GuideLayout>('phase')
+  const [layout, setLayout] = useState<GuideLayout>(DEFAULT_GUIDE_LAYOUT)
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(LAYOUT_KEY)
-      if (stored === 'sequencer' || stored === 'phase') setLayout(stored)
-    } catch {
-      // A browser refusing storage is not a reason to render nothing; the default stands.
-    }
+    setLayout(readGuideLayout(() => window.localStorage))
   }, [])
-
-  function chooseLayout(next: GuideLayout) {
-    setLayout(next)
-    try {
-      window.localStorage.setItem(LAYOUT_KEY, next)
-    } catch {
-      // Per-viewer convenience only. Failing to remember it must not fail the page.
-    }
-  }
   const [exported, setExported] = useState<{ ok: boolean; message: string } | undefined>(undefined)
 
   const deviceById = useMemo<Map<DeviceId, Device>>(
@@ -245,12 +231,15 @@ export function Guide({ result, seed }: { result: ResolveResult; seed: number })
           {/*
             §8/#230. A named control rather than a checkbox, because neither option is the
             negation of the other — "not by phase" does not tell a reader what they would get.
+
+            This one is not remembered. The default lives on `/preferences`; changing it here
+            changes this guide and nothing else.
           */}
           <label className="layout-toggle">
             Read
             <select
               value={layout}
-              onChange={(event) => chooseLayout(event.target.value as GuideLayout)}
+              onChange={(event) => setLayout(event.target.value as GuideLayout)}
             >
               <option value="phase">by phase</option>
               <option value="sequencer">by sequencer</option>

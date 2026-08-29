@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Footer } from '@/components/footer'
+import { GuideLayoutPreference } from '@/components/guide-layout-preference'
 import { JackStyleToggle } from '@/components/jack-style-toggle'
 
 /**
@@ -34,6 +35,13 @@ export default function Page() {
           <h2>Pickers</h2>
         </header>
         <JackStyleToggle />
+      </section>
+
+      <section className="panel">
+        <header>
+          <h2>Guides</h2>
+        </header>
+        <GuideLayoutPreference />
       </section>
 
       <Footer permalink={undefined} devices={[]} />

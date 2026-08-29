@@ -3582,6 +3582,22 @@ html {
   margin: 2px 0 0;
 }
 
+/*
+ * §8/#230. A preference answered by choosing rather than by ticking, so its row is a name and a
+ * `select` instead of a box and a name. The 44px target is the same one every control on this
+ * page keeps — a phone is the primary context (#21), and a dropdown is no exception.
+ */
+.pref .pick-choose select {
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--surface-2, transparent);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 4px 8px;
+  min-height: 44px;
+}
+
 /* No cables means no lane for the legend to clear. */
 :root[data-jacks='plain'] .panel .patch-legend {
   padding-left: 0;
