@@ -37,7 +37,7 @@ import {
   type InterDevicePatch,
   type ResolveResult,
   type ResolvedAssignment,
-  type VoiceControlSource, patternDriver, sequencerGroups,} from './pipeline'
+  type VoiceControlSource, patternDriver, sequencerGroups, narrowToGroup, unplayedHooks,} from './pipeline'
 import { GUIDE_PHASES, count, ioText, mixerText, num} from './guide'
 import type { GuideLayout } from './guide'
 import {
@@ -2534,12 +2534,7 @@ function performedHere(
    * is the fix; the genuinely unassigned ones are collected by the caller and shown once, because
    * a gap shown five times and a gap shown nowhere are both wrong (invariant 5).
    */
-  const carried = new Set(assignments.map((a) => a.role))
-  const only: ResolveResult = {
-    ...result,
-    assignments: [...assignments],
-    song: { ...result.song, hooks: result.song.hooks.filter((h) => carried.has(h.forRole)) },
-  }
+  const only = narrowToGroup(result, assignments)
   return [
     /**
      * **Omitted rather than answered when this box carries no hook figure.** `phaseHook`'s empty
@@ -2620,8 +2615,7 @@ export function renderGuide(result: ResolveResult, options: RenderOptions = {}):
    * belongs to no section, so it gets one — once, rather than repeated under every box that does
    * not play it.
    */
-  const played = new Set(result.assignments.map((a) => a.role))
-  const orphanHooks = result.song.hooks.filter((h) => !played.has(h.forRole))
+  const orphanHooks = unplayedHooks(result)
   if (orphanHooks.length > 0) {
     const nobody: ResolveResult = {
       ...result,

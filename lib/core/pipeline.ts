@@ -595,6 +595,49 @@ export type SequencerGroup =
     }
   | { kind: 'undriven'; assignments: readonly ResolvedAssignment[] }
 
+/**
+ * §8/#230/#33. **The parts and hooks one sequencer's section covers**, decided once for both
+ * renderers.
+ *
+ * The standing rule is that a decision lives in `lib/core` and each renderer says it in its own
+ * voice. This is a decision: *which* of the guide's parts and hooks belong under a given box. The
+ * Markdown and React guides then render that subset in their own vocabularies, and neither owns it.
+ *
+ * **Narrowing `assignments` alone is not enough, and that is the whole reason this exists.** The
+ * hook phase is driven by `song.hooks` and looks each hook's role up among the assignments, so a
+ * result narrowed only by assignment reports every *other* box's hook as unassigned — printing
+ * one box's parts as gaps under every other box in the rig. Both renderers would have made that
+ * mistake independently; the Markdown one did, once.
+ *
+ * Everything else is carried through untouched. `song`, `devices` and `interDevicePatch` are
+ * context a subset cannot change, and `shortfalls` is deliberately left whole because no phase
+ * rendered per-section reads it — were one to start, this is where the repeat would have to be
+ * dealt with.
+ */
+export function narrowToGroup(
+  result: ResolveResult,
+  assignments: readonly ResolvedAssignment[],
+): ResolveResult {
+  const carried = new Set(assignments.map((a) => a.role))
+  return {
+    ...result,
+    assignments: [...assignments],
+    song: { ...result.song, hooks: result.song.hooks.filter((h) => carried.has(h.forRole)) },
+  }
+}
+
+/**
+ * §8/#230. The hooks this direction asks for that no box in the rig carries.
+ *
+ * The other half of `narrowToGroup`: those hooks belong to no section, so a layout built from
+ * groups alone would drop them. Invariant 5 — a gap shown nowhere and a gap shown once per box
+ * are both wrong, and this is what lets a renderer show them exactly once.
+ */
+export function unplayedHooks(result: ResolveResult) {
+  const played = new Set(result.assignments.map((a) => a.role))
+  return result.song.hooks.filter((h) => !played.has(h.forRole))
+}
+
 export function sequencerGroups(result: ResolveResult): readonly SequencerGroup[] {
   const byId = new Map(result.devices.map((d) => [d.id, d]))
 

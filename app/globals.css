@@ -2059,6 +2059,55 @@ button:active {
   height: 15px;
 }
 
+/*
+ * §8/#230. The layout control, matching `.hints-toggle` because it sits beside it and does the
+ * same kind of job — a reading preference, not an action.
+ *
+ * A `select` rather than a checkbox: neither option is the negation of the other, and "not by
+ * phase" tells a reader nothing about what they would get instead.
+ */
+.layout-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.layout-toggle select {
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: none;
+  color: var(--ink);
+  background: var(--surface-2, transparent);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 4px 6px;
+  /*
+   * #21: read at the machine, on a phone, one-handed. 44px is the hit target the knobs are held
+   * to and a dropdown is no different — the visual size stays small, the target does not.
+   */
+  min-height: 44px;
+}
+
+/*
+ * §8/#230. Hook / Step programming / Sound design *inside* a sequencer's section. Quieter than
+ * the section heading above it, which is the box you are standing at — the box is the thing the
+ * reader is navigating by in this layout, and the phase is where they are within it.
+ */
+.group-phase {
+  margin: 22px 0 10px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
 .legend {
   margin: 14px 0 0;
   padding: 10px 12px;
