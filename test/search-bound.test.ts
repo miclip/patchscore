@@ -246,6 +246,35 @@ import { TEMPLATES } from '../lib/templates/index'
  * Sizing a sheet against the worst direction alone would have found no reason to trim.
  *
  * Nothing caps, and `industrial-techno` at 74,415 is 49.6% of `DEFAULT_NODE_CAP`.
+ *
+ * ## The MC-707, where the cost is the *pair* rather than the box
+ *
+ * The thirty-second box is the MC-101's engine in an eight-track chassis, and all twenty of its
+ * recipes are the sibling's retargeted onto its own manual. On the reading the three paragraphs
+ * above establish — a pool costs what its recipe sheet costs — twenty recipes over twenty-three
+ * roles should cost about what the last two boxes cost. It costs far more, and the reason is not
+ * in this device at all:
+ *
+ *   - **`industrial-techno` 70,887-74,415 -> 118,223-132,559.** Up 66.7% at the floor and 78% at
+ *     the peak, the largest move any single device has made in this table.
+ *   - **`weave` 45,682-47,202 -> 76,327-78,754**, up 67%, the same proportion.
+ *   - `ambient-dub` 150 -> 156-158, `drone-study` 24 flat, `relay` 47 -> 49, `lydian-house`
+ *     133-289 -> 140-305, `major-key-electro` 133-463 -> 140-675. The small directions keep their
+ *     shape; only `major-key-electro`'s worst seed moves much, 463 -> 675.
+ *
+ * **The pair is the cost, and it was measured rather than inferred.** The same sweep with the
+ * MC-101 removed and this box present gives `industrial-techno` **74,415 on seed 14 — the
+ * baseline's exact count on the baseline's exact seed**. Either box alone costs what the other
+ * alone costs; together they cost 78% more than either. Two boxes carrying the same twenty
+ * recipes give every request they can serve two candidates of *exactly equal* cost, and equal
+ * costs are what the seed permutes among (§7.2).
+ *
+ * So the recipe-sheet rule above is right and incomplete. What it does not price is a second box
+ * whose sheet *duplicates* the first's. Sizing the next near-clone against its own recipe count
+ * will under-predict it by a factor approaching two, and #78 should read this row as the pair's
+ * bill rather than this device's.
+ *
+ * Nothing caps, and `industrial-techno` at 132,559 is 66.3% of `DEFAULT_NODE_CAP`.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -254,32 +283,33 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150,
-      150, 150, 150, 150, 150, 150
+      156, 156, 156, 156, 156, 156, 156, 156, 158, 156, 158, 156, 158, 156, 158, 156, 156, 156,
+      156, 156, 156, 156, 156, 156
     ],
     'drone-study': [
       24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
       24
     ],
     'industrial-techno': [
-      70887, 70888, 71177, 70888, 70888, 70888, 70887, 70887, 70888, 70887, 70887, 70888, 71177,
-      70888, 74415, 70887, 70888, 71167, 70888, 70888, 70888, 70887, 70887, 71177
+      118223, 123808, 118529, 118223, 132559, 118224, 118224, 118224, 118224, 118224, 123808,
+      118223, 118529, 118224, 118223, 118224, 118223, 118529, 118224, 118224, 118224, 123808,
+      118224, 125461
     ],
     'lydian-house': [
-      134, 220, 134, 220, 134, 220, 134, 220, 167, 220, 134, 220, 134, 220, 134, 220, 289, 168,
-      222, 133, 222, 168, 222, 168
+      141, 234, 141, 234, 140, 234, 141, 234, 140, 234, 141, 303, 141, 234, 141, 234, 234, 141,
+      234, 141, 305, 141, 234, 141
     ],
     'major-key-electro': [
-      135, 463, 138, 138, 138, 138, 135, 135, 138, 133, 456, 138, 138, 138, 344, 133, 138, 135,
-      135, 138, 138, 133, 249, 138
+      140, 323, 145, 435, 142, 145, 145, 145, 145, 145, 323, 140, 145, 145, 140, 145, 675, 145,
+      145, 145, 145, 323, 145, 143
     ],
     relay: [
-      47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47,
-      47
+      49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49,
+      49
     ],
     weave: [
-      45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682,
-      45682, 47202, 45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682
+      76327, 78754, 76327, 76327, 76327, 76327, 76327, 76327, 76327, 76327, 78598, 76327, 76327,
+      76327, 76327, 76327, 76327, 76327, 76327, 76327, 76327, 78598, 76327, 76327
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".

@@ -373,6 +373,12 @@ describe('the committed registry', () => {
       // settles it: 358 mm is 14.09", where 385 mm would be 15.16".
       'squarp-hapax',
       'roland-tr-8s',
+      // 425 mm, and the TR-8S above it is the reason this entry is worth a comment: the two are
+      // the same chassis at two widths. Roland print `425(W) x 263(D) x 58(H)` for the MC-707 and
+      // `409 (W) x 263 (D) x 58 (H)` for the TR-8S — identical depth and height, sixteen
+      // millimetres apart across — so they sort adjacent here and share a `panelRiseMm`, which
+      // `test/rack.test.ts` counts as the fifth same-rise pair rather than a coincidence.
+      'roland-mc-707',
       // 436 mm — p.530's `436 x 256 x 67 mm`, with the axis order printed in the row header.
       'akai-mpc-live-iii',
       'roland-tr-1000',
@@ -447,6 +453,14 @@ describe('cross-device imports are declared (invariant 2/#196)', () => {
       // than the XL's, because the two boxes have two different guides: every borrowed citation
       // goes through a table mapping the sibling's guide section to this box's, and that table
       // throws on a section it has not been checked against. Two of the six do not line up.
+      // The MC-707 is the MC-101's engine in an eight-track chassis, so all twenty of its recipes
+      // are the sibling's. The two boxes have their own Reference Manuals and the pages line up
+      // nowhere, so every borrowed citation goes through page tables that throw on a page nothing
+      // in this box's manual has been checked against — and the parameter names, the articulation
+      // lanes and the prose go through tables of their own that throw the same way, because this
+      // box spells out what the sibling's two-line display abbreviates and shipped with a partial
+      // editor the sibling only got in a firmware update.
+      'roland-mc-707 -> roland-mc-101',
       'te-ep-40 -> te-ep-133',
     ])
   })

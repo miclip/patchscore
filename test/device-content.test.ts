@@ -665,7 +665,7 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
     .map((d) => d.id)
     .sort(byCodeUnit)
 
-  it('is the thirteen boxes established to ship one, and a fourteenth has to be added deliberately', () => {
+  it('is the fourteen boxes established to ship one, and a fifteenth has to be added deliberately', () => {
     // The derivation covers whatever is declared; this says which declarations were expected, so
     // a new one is loud in review rather than silently absorbed.
     expect(SHIPPED).toEqual([
@@ -679,6 +679,11 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
       'elektron-digitakt-ii',
       'polyend-tracker-mini',
       'roland-mc-101',
+      // The MC-707 is the same claim off its own manual rather than the sibling's: p.10 offers
+      // "preset tones and drum kits", p.26 sorts them into six banks A-F, and p.7 says the
+      // included SD card "contains various data (settings, sounds, samples, etc.) for this unit".
+      // A bank filter is navigation, not an inventory, so this stays `shipped-library`.
+      'roland-mc-707',
       // The SP-404MK2 opens its SAMPLE MODE chapter with "There are many preset samples
       // available on this unit by factory default" (p.26), and p.266's storage line footnotes
       // "Include preload data". No page counts them or names one, which is the line between

@@ -1282,7 +1282,33 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    *
    * `DEFAULT_NODE_CAP` is 200,000, so 71,675 is **35.8% of it and 64.2% headroom stands**.
    */
-  const WORST_CASE_NODES = 71_675
+  /**
+   * **The MC-707 takes it to 132,559, on `industrial-techno` seed 4.** Up 78%, the largest jump
+   * any single device has caused, and the mechanism is new: **it is not the device, it is the
+   * pair.** Measured three ways on the same sweep —
+   *
+   * | registry | worst |
+   * |---|---|
+   * | MC-101 present, MC-707 absent (the baseline) | 74,415, `industrial-techno` seed 14 |
+   * | MC-707 present, MC-101 removed | **74,415, the same seed and the same count** |
+   * | both present | 132,559, seed 4 |
+   *
+   * Either box alone costs exactly what the other alone costs. Together they cost 78% more than
+   * either, because this device's twenty recipes are the sibling's twenty retargeted — same
+   * roles, same characters, same shape — so every request either can serve now has two candidates
+   * of *exactly equal* cost, and equal costs are precisely what the seed permutes among (§7.2).
+   * The two paragraphs above say pool size is free and what costs is distinct (role, character)
+   * recipes; this adds the corollary they do not cover, which is that recipes distinct from each
+   * other but *identical in cost across two devices* are the expensive kind. A near-clone sibling
+   * is the worst case this search has, and #78 should read it that way rather than as one more
+   * device's share.
+   *
+   * The worst seed moves 14 -> 4, the tie-break permuting among equal costs as before.
+   *
+   * `DEFAULT_NODE_CAP` is 200,000, so 132,559 is **66.3% of it and 33.7% headroom stands** —
+   * the first time this figure has been over half the cap.
+   */
+  const WORST_CASE_NODES = 132_559
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))

@@ -827,10 +827,22 @@ describe('every effective template is schema-valid (§4, §7)', () => {
   })
 
   /**
-   * A full resolve against all fourteen boxes, once per (direction, selection) pair — 84 of them
+   * A full resolve against the whole library, once per (direction, selection) pair — 84 of them
    * at five influences, and it grows with both registries. Past the 5s default, so the timeout is
    * stated here rather than raised globally: this is the one sweep in the suite that is slow for
    * a good reason, and every other test should still fail loudly if it hangs.
+   *
+   * **This test is a canary for search growth, and the MC-707 is what made that visible.** It was
+   * comfortably inside 30s until a near-clone of the MC-101 landed and roughly doubled the worst
+   * case (74,415 -> 132,559 nodes). It then measured 10.6s on a fast laptop and **failed
+   * intermittently on CI, where a runner is two to three times slower** — one ubuntu job of three
+   * timing out per run, a different one each time, which is what a boundary looks like rather
+   * than a bug.
+   *
+   * Raised to 120s, which is headroom rather than a fix. The cause is #228: the same growth that
+   * makes this slow will, further along, silently cap a reader's search and hand them a worse
+   * arrangement with nothing said. If this needs raising a third time, that is the signal to
+   * price a near-clone in the bound rather than to add another zero here.
    */
   it('still resolves on the full library, for every template and every legal pair', () => {
     for (const template of TEMPLATES) {
@@ -846,5 +858,5 @@ describe('every effective template is schema-valid (§4, §7)', () => {
         expect(resolved.shortfalls.map((g) => `${g.requestId}: ${g.reason}`), where).toEqual([])
       }
     }
-  }, 30_000)
+  }, 120_000)
 })

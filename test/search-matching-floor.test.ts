@@ -1000,7 +1000,14 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * evidence gets that the repair is stable — what it still is not is a demonstration that the
    * repair *prunes*, which is next door.
    */
-  it('walks the recorded 71,296 nodes on industrial-techno seed 9', () => {
+  /**
+   * The MC-707 moves both figures together again, and by far the most any device has: 71,296 ->
+   * 118,860 unrepaired and 70,887 -> 118,224 repaired, 66.7% on each. The absolute gap between
+   * them widens from about four hundred nodes to 636, which is the first time it has moved at
+   * all — and it is the same sibling-pair effect `search-symmetry.test.ts` records, where two
+   * boxes carrying the same twenty recipes give every request two exactly-equal candidates.
+   */
+  it('walks the recorded 118,860 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1008,12 +1015,13 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(71_296)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(118_860)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
-    // stops guarding anything and starts re-recording the measurement a second time.
-    expect(assign(input).search.nodes).toBeLessThan(80_000)
+    // stops guarding anything and starts re-recording the measurement a second time. 80,000 is
+    // now 140,000, on the fifth device to push past it and by the widest margin yet.
+    expect(assign(input).search.nodes).toBeLessThan(140_000)
   })
 })
 
