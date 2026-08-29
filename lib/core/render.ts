@@ -2495,6 +2495,20 @@ export const LAYOUT_PREAMBLE = {
     'That is a gap in the rig rather than a patching mistake.',
   ],
   orphanHooks: ['This direction asks for these figures and the rig has no part carrying them.'],
+  /**
+   * **Invariant 5, and the case that nearly shipped when this layout became the default.**
+   *
+   * Phase-major always draws seven phases, so an empty rig still gets a Step programming section
+   * saying "No parts assigned." Sequencer-major builds its middle from groups, and no parts means
+   * no groups means those two phases *disappear* — which is precisely the failure §8 names, a
+   * section that vanishes being indistinguishable from a direction that never had one.
+   *
+   * So a rig carrying nothing says so, in the place the sections would have been.
+   */
+  nothingAssigned: [
+    'No part in this direction is on a box yet, so there is nothing here to program or to dial in.',
+    'Phase 2 above lists what is missing and why.',
+  ],
 } as const
 
 /**
@@ -2590,7 +2604,14 @@ export function renderGuide(result: ResolveResult, options: RenderOptions = {}):
   section(3, GUIDE_PHASES[2] as string, phaseRig(result, occupied))
 
   let n = 4
-  for (const group of sequencerGroups(result)) {
+  const groups = sequencerGroups(result)
+  if (groups.length === 0) {
+    // See `LAYOUT_PREAMBLE.nothingAssigned`. The phases this layout builds from groups cannot
+    // draw themselves when there are none, and silence would read as a direction that asks for
+    // no patterns and no sounds.
+    section(n++, 'Step programming and Sound design', [...LAYOUT_PREAMBLE.nothingAssigned])
+  }
+  for (const group of groups) {
     if (group.kind === 'undriven') {
       /**
        * Invariant 5. These parts have no box to stand at, which the guide already says in as many

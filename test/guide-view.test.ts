@@ -39,8 +39,20 @@ import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './gol
  * would fail on every CSS-driven change while catching none of the things that matter here.
  */
 
+/**
+ * **Pinned to `'phase'` since `DEFAULT_GUIDE_LAYOUT` became `'sequencer'` (§8/#230).**
+ *
+ * This file is the #33 sibling-parity check, and its Markdown counterpart is `renderGuide(result)`
+ * — whose own parameter still defaults to §8's phase order. Letting this side follow the *reader's*
+ * default would have the two siblings rendering different documents and this file comparing them,
+ * which is the one thing it must not do.
+ *
+ * The sequencer layout has its own file. What is asserted here is that the seven phases exist, in
+ * order, and say what is missing when they are empty — a claim about the phase layout, which is
+ * still exactly what a reader gets from `Read: by phase`.
+ */
 function html(result: ResolveResult): string {
-  return renderToStaticMarkup(createElement(Guide, { result, seed: 1 }))
+  return renderToStaticMarkup(createElement(Guide, { result, seed: 1, layout: 'phase' }))
 }
 
 const golden = resolve({

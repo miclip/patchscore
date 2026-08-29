@@ -135,6 +135,40 @@ describe('the layout changes presentation and nothing else (invariant 6)', () =>
   })
 })
 
+describe('a rig carrying nothing still says so (invariant 5)', () => {
+  /**
+   * **The failure this layout nearly shipped as the default.**
+   *
+   * Phase-major always draws seven phases, so an empty rig gets a Step programming section reading
+   * "No parts assigned." Sequencer-major builds its middle from groups, and no parts means no
+   * groups means those two phases were simply *absent* — which §8 names as the thing not to do: a
+   * section that vanishes is indistinguishable from a direction that never asked for one.
+   *
+   * Caught by rendering an empty rig while making the layout the default, not by a test. This is
+   * the test.
+   */
+  it('does not let Step programming and Sound design vanish when nothing is assigned', () => {
+    const result = resolve({ devices: [], template: industrial, mood: moodState({}), seed: 1 })
+    expect(sequencerGroups(result)).toHaveLength(0)
+
+    const md = renderGuide(result, { layout: 'sequencer' })
+    expect(md).toContain('Step programming')
+    expect(md).toContain('Sound design')
+    expect(md).toContain('nothing here to program')
+  })
+
+  it('still names every phase heading the phase layout would, for an empty rig', () => {
+    const result = resolve({ devices: [], template: industrial, mood: moodState({}), seed: 1 })
+    const seq = renderGuide(result, { layout: 'sequencer' })
+    // Not the same headings — that is the change — but no *subject* is dropped: a reader is told
+    // about hooks, about programming and about sound, whichever way they read.
+    for (const subject of ['Song', 'Voice assignment', 'Rig integration', 'Finishing']) {
+      expect(seq, subject).toContain(subject)
+    }
+    expect(seq).toContain('Hooks with nothing to play them')
+  })
+})
+
 describe('the sections are the sequencer groups, and say what they are', () => {
   it('gives each group a section, in the grouping’s own order', () => {
     const result = resolve({

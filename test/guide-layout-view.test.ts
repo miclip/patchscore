@@ -11,11 +11,11 @@ import { Guide } from '../components/guide/guide'
  * `guide-view.test.ts` checks the rest of it: same parts, same values, same holes as its sibling —
  * never by comparing markup to Markdown.
  *
- * The server render is the one that matters here. `Guide` starts at `'phase'` on every first
- * render and only adopts a stored preference in an effect, because reading `localStorage` during
- * render would give the server one layout and the client another and break hydration. So what
- * `renderToStaticMarkup` produces is the phase layout, always — and that is itself the thing worth
- * asserting, rather than an obstacle to working around.
+ * The server render is the one that matters here. `Guide` starts at `DEFAULT_GUIDE_LAYOUT` on
+ * every first render and only adopts a stored preference in an effect, because reading
+ * `localStorage` during render would give the server one layout and the client another and break
+ * hydration. So what `renderToStaticMarkup` produces is the *default* layout, always — and that is
+ * itself the thing worth asserting, rather than an obstacle to working around.
  */
 
 const industrial = TEMPLATES.find((t) => t.id === 'industrial-techno')!
@@ -25,7 +25,7 @@ const view = (result: ReturnType<typeof resolve>) =>
   renderToStaticMarkup(createElement(Guide, { result, seed: 3 }))
 
 describe('the server render is the default layout, so hydration matches (#12)', () => {
-  it('renders §8’s phases and not the sequencer sections', () => {
+  it('renders the sequencer sections, which is what the default now is', () => {
     const result = resolve({
       devices: rig('synthstrom-deluge', 'roland-tr-1000'),
       template: industrial,
@@ -33,10 +33,26 @@ describe('the server render is the default layout, so hydration matches (#12)', 
       seed: 3,
     })
     const html = view(result)
-    // The phase names, which are what the server must produce for the client to match.
+    // Grouped sub-headings, which only the sequencer layout draws — and which the client must
+    // therefore also produce on its first render for hydration to match.
+    expect(html).toContain('group-phase')
     expect(html).toContain('Step programming')
     expect(html).toContain('Sound design')
-    // And not a box used as a section heading, which only the other layout does.
+    // A box used as a section heading, which the phase layout never does.
+    expect(html).toContain('TR-1000')
+  })
+
+  it('still renders §8’s phases when a caller pins that layout', () => {
+    // The override the fixtures and any layout-specific caller rely on.
+    const result = resolve({
+      devices: rig('synthstrom-deluge', 'roland-tr-1000'),
+      template: industrial,
+      mood: moodState({}),
+      seed: 3,
+    })
+    const html = renderToStaticMarkup(
+      createElement(Guide, { result, seed: 3, layout: 'phase' as const }),
+    )
     expect(html).not.toContain('group-phase')
   })
 

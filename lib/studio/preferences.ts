@@ -107,10 +107,24 @@ export const JACK_STYLE_SCRIPT = `try{var s=localStorage.getItem('${JACK_STYLE_K
 export const GUIDE_LAYOUT_KEY = 'patchscore:guide-layout'
 
 /**
- * §8's order is the default, and stays it until somebody has read a session's worth of the other
- * one at a rack. #240 is where that decision is recorded.
+ * **By sequencer, decided at a rack** — #240's first question, answered by reading both.
+ *
+ * §8's phase order was the default while nobody had read a session's worth of the other one, which
+ * was the right way round for an unproven layout and is no longer the situation. A session is
+ * worked a box at a time, and phase-major sends a reader back to the same machine once per phase;
+ * that is walking and menu-diving that the grouping removes.
+ *
+ * **§8's order is not overturned by this**, which is worth being clear about. It still governs the
+ * inside of every section — hook before sound design, so a part is not shaped by whatever preset
+ * turned up — and `renderGuide`'s own parameter still defaults to `'phase'`, because that is the
+ * documented order of the seven phases and the neutral choice for a caller who asks for nothing.
+ * What changed is the outer loop a *reader* gets, which is a product decision rather than a
+ * musical one.
+ *
+ * Reversible from here in one line, and the `Read:` control in the studio switches a single guide
+ * without touching this.
  */
-export const DEFAULT_GUIDE_LAYOUT: GuideLayout = 'phase'
+export const DEFAULT_GUIDE_LAYOUT: GuideLayout = 'sequencer'
 
 function isGuideLayout(value: string | null): value is GuideLayout {
   return value !== null && (GUIDE_LAYOUTS as readonly string[]).includes(value)
