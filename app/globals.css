@@ -3027,6 +3027,18 @@ html {
   .footer,
   .notices,
   .rack-section,
+  /*
+   * The studio's own cables are chrome, not guide content, and paper has no studio around them.
+   * `.patch-chain` is a child of `.columns` rather than of a panel, so the `.panel` rule below
+   * never reached it and a cable ran off the top of the printed page from a control that is not
+   * there — a line pointing at nothing, which reads as a printing fault rather than as a diagram.
+   * `.patchbay` is the same claim inside the device picker.
+   *
+   * The rack's cables are deliberately NOT here: those are real cables a reader patches, and the
+   * diagram is the one thing on the sheet they will hold the box up against.
+   */
+  .patch-chain,
+  .patchbay,
   .panel:not(.guide-panel),
   .guide-actions,
   .hints-toggle {
@@ -3071,6 +3083,25 @@ html {
   */
   .hint {
     visibility: visible !important;
+  }
+
+  /*
+   * **Backgrounds are ink, and browsers refuse to print them unless asked.** A step grid says
+   * which sixteenths are struck by filling a box; with the fill dropped, every step on the sheet
+   * looks empty and the phase that tells a reader what to play says nothing at all. Same for the
+   * accent ring on a clock source and any state carried by a fill rather than by a glyph.
+   *
+   * Scoped to the things whose meaning *is* the fill, rather than set on `body`: the palette
+   * above deliberately spends no toner on card tints, and a blanket rule would undo that.
+   */
+  .step,
+  .step.on,
+  .step.beat,
+  .rack-panel .rack-face,
+  .swatch,
+  .chip {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   /*
