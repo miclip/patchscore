@@ -844,9 +844,13 @@ describe('every effective template is schema-valid (§4, §7)', () => {
    * arrangement with nothing said. If this needs raising a third time, that is the signal to
    * price a near-clone in the bound rather than to add another zero here.
    */
-  it('still resolves on the full library, for every template and every legal pair', () => {
+  it('still resolves on the full library, for every template and every legal pair', async () => {
     for (const template of TEMPLATES) {
       for (const selection of LEGAL_SELECTIONS) {
+        // Yield so the worker can answer the main thread; see the note in
+        // `search-symmetry.test.ts`'s cap sweep. A block this long fails CI with an RPC timeout
+        // while every assertion passes, which is the least debuggable red there is.
+        await new Promise((r) => setImmediate(r))
         const result = applied(template, selection)
         const resolved = resolve({
           devices: DEVICES,

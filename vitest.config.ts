@@ -22,8 +22,8 @@ export default defineConfig({
     /**
      * **Vitest's default is 5 s, and that is a limit on *scheduling* here rather than on work.**
      *
-     * This suite runs exhaustive assignment searches — the worst single case is 221,573 nodes,
-     * about half a second of solid CPU — across many files at once, and Vitest runs files in
+     * This suite runs exhaustive assignment searches — the worst single case is 223,348 nodes,
+     * about seven tenths of a second of solid CPU — across many files at once, and Vitest runs files in
      * parallel workers. A trivial assertion in an unrelated file is then competing for a core
      * with several of those, and on a shared CI runner it can wait longer than five seconds
      * before running at all. `test/intellijel-metropolix.test.ts`'s "contributes zero

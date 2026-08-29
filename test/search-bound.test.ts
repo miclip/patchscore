@@ -357,11 +357,16 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
     expect(Object.keys(RECORDED).sort(byId)).toEqual(TEMPLATES.map((t) => t.id).sort(byId))
   })
 
-  it('walks the recorded nodes on every direction and seed, uncapped', () => {
+  it('walks the recorded nodes on every direction and seed, uncapped', async () => {
     for (const template of TEMPLATES) {
       const row = RECORDED[template.id] as readonly number[]
 
-      const walked = SEEDS.map((seed) => {
+      const walked: number[] = []
+      for (const seed of SEEDS) {
+        // Yield so the worker can answer the main thread; see the note in
+        // `search-symmetry.test.ts`'s cap sweep. A block this long fails CI with an RPC timeout
+        // while every assertion passes, which is the least debuggable red there is.
+        await new Promise((r) => setImmediate(r))
         const result = assign({
           devices: [...DEVICES],
           template,
@@ -372,8 +377,8 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
         const where = `${template.id} seed ${seed}`
         expect(result.search.capped, where).toBe(false)
         expect(result.search.method, where).toBe('exhaustive')
-        return result.search.nodes
-      })
+        walked.push(result.search.nodes)
+      }
 
       // The message is the row in source form, so a library change is re-recorded by pasting it
       // back over the entry above rather than by re-deriving 24 numbers by hand.
