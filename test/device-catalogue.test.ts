@@ -2,7 +2,15 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { CHARACTERS, NEUTRAL_MOOD, ROLES, expand, renderGuide, resolve } from '../lib/core/index'
+import {
+  CHARACTERS,
+  DeviceSchema,
+  NEUTRAL_MOOD,
+  ROLES,
+  expand,
+  renderGuide,
+  resolve,
+} from '../lib/core/index'
 import type { Device } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
@@ -500,5 +508,39 @@ describe('the device routes', () => {
     }
     expect(index).toContain('<DeviceIndex />')
     expect(island.startsWith("'use client'")).toBe(true)
+  })
+})
+
+/**
+ * §2.2/#86. **A pool either names every member or counts every member.**
+ *
+ * The rule is one field wide and easy to half-do, so it is checked across the library rather than
+ * on the two devices that use it: a list shorter than the pool names some members and counts the
+ * rest, which reads as two naming schemes on one box.
+ */
+describe('pool member labels, where a manifest gives them', () => {
+  it('covers the whole pool, on every device that names any of it', () => {
+    for (const d of DEVICES) {
+      for (const voice of d.voices) {
+        if (voice.kind !== 'pool' || voice.memberLabels === undefined) continue
+        expect(voice.memberLabels, `${d.id}/${voice.id}`).toHaveLength(voice.count)
+        expect(new Set(voice.memberLabels).size, `${d.id}/${voice.id} repeats a name`).toBe(
+          voice.count,
+        )
+      }
+    }
+  })
+
+  it('is rejected by the schema when it does not', () => {
+    // The validator relates two fields, so it cannot live in the schema shape itself.
+    const bad = DEVICES.find((d) => d.id === 'te-ep-133')
+    expect(bad).toBeDefined()
+    const broken = {
+      ...bad,
+      voices: bad!.voices.map((v) =>
+        v.kind === 'pool' ? { ...v, memberLabels: ['A · .', 'A · 0'] } : v,
+      ),
+    }
+    expect(DeviceSchema.safeParse(broken).success).toBe(false)
   })
 })

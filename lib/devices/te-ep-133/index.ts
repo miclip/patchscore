@@ -891,6 +891,27 @@ export const device: Device = {
       id: 'pad',
       label: 'Pad',
       count: 48,
+      /**
+       * §2.2/#86. **Nothing on this box says `37`.**
+       *
+       * Forty-eight pads in four groups of twelve, each group a numpad labelled `.`, `0`, `enter`
+       * and `1`-`9`. The counted form the pool would otherwise print — `Pad 37` — names a control
+       * that does not exist, and a reader at the machine looking for it finds four pads marked `1`
+       * and none marked `37`.
+       *
+       * The order is the manifest's own, and it is checkable: guide 14.2's MIDI note map runs
+       * group `a` at notes 36-47, `b` at 48-59, `c` at 60-71 and `d` at 72-83 in exactly that pad
+       * order, so ordinal *n* is note *35 + n*. That makes ordinal 37 group `d`'s `.` pad — which
+       * is what the header above this file already worked out, and what `A · .` … `D · 9` spells.
+       *
+       * Display only (§2.2/#86): `voiceId` is still `pad-37` and the ordinal is still 37, so
+       * nothing the resolver does changes.
+       */
+      memberLabels: ['a', 'b', 'c', 'd'].flatMap((group) =>
+        ['.', '0', 'enter', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map(
+          (pad) => `${group.toUpperCase()} · ${pad}`,
+        ),
+      ),
       roles: PAD_ROLES,
       polyphony: 12,
     },

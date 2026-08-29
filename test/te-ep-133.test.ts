@@ -4,13 +4,17 @@ import {
   DeviceSchema,
   ROLES,
   expand,
+  moodState,
   realisationOf,
+  renderGuide,
+  resolve,
   resolveRecipe,
   type AuthoredParam,
   type Recipe,
 } from '../lib/core/index'
 import { device } from '../lib/devices/te-ep-133/index'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { TEMPLATES } from '../lib/templates/index'
 import { auditDevice } from '../scripts/audit-verified'
 
 /**
@@ -463,5 +467,54 @@ describe('EP–133 K.O. II manifest', () => {
     for (const [key, text] of Object.entries(device.hints ?? {})) {
       expect(text.split(/\s+/).length, key).toBeLessThanOrEqual(8)
     }
+  })
+})
+
+/**
+ * §2.2/#86. **The pool prints the panel's names, not a count.**
+ *
+ * Forty-eight pads in four groups of twelve, each a numpad labelled `.`, `0`, `enter`, `1`-`9`.
+ * The counted form a pool prints by default — `Pad 37` — names a control this box does not have,
+ * and a reader looking for it finds four pads marked `1` and none marked `37`.
+ */
+describe('pool members carry the panel’s own labels (§2.2/#86)', () => {
+  const assignables = expand(device)
+
+  it('names the first and last pads the way the box does', () => {
+    expect(assignables[0]?.label).toBe('A · .')
+    expect(assignables[47]?.label).toBe('D · 9')
+  })
+
+  it('agrees with the note map this file worked out independently', () => {
+    // The header derives ordinal *n* = note *35 + n* from guide 14.2, and concludes "`Pad 37` is
+    // group `d`'s `.` pad". The labels are generated from the group and pad order rather than
+    // from that sentence, so the two agreeing is a check rather than a restatement.
+    expect(assignables[36]?.label).toBe('D · .')
+  })
+
+  it('changes the word and not the identity', () => {
+    // Display only. `voiceId` and `ordinal` are what occupancy, recipe lookup and §7.1's symmetry
+    // breaking key on, and a label that moved them would be a resolver change wearing a name.
+    expect(assignables[36]?.voiceId).toBe('pad-37')
+    expect(assignables[36]?.ordinal).toBe(37)
+    expect(assignables[36]?.poolId).toBe('pad')
+  })
+
+  it('covers every member, because a partial list would name some and count others', () => {
+    const pool = device.voices.find((v) => v.kind === 'pool' && v.id === 'pad')
+    expect(pool?.kind).toBe('pool')
+    if (pool?.kind !== 'pool') throw new Error('expected the pad pool')
+    expect(pool.memberLabels).toHaveLength(pool.count)
+    expect(new Set(pool.memberLabels).size, 'two pads sharing a name').toBe(pool.count)
+  })
+
+  it('never prints the counted form anywhere in a guide', () => {
+    const result = resolve({
+      devices: [device],
+      template: TEMPLATES.find((t) => t.id === 'industrial-techno')!,
+      mood: moodState({}),
+      seed: 3,
+    })
+    expect(renderGuide(result)).not.toMatch(/Pad \d+/)
   })
 })
