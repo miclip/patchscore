@@ -78,7 +78,22 @@ function PerformedHere({
   )
 }
 
-export function Guide({ result, seed }: { result: ResolveResult; seed: number }) {
+export function Guide({
+  result,
+  seed,
+  layout: fixedLayout,
+}: {
+  result: ResolveResult
+  seed: number
+  /**
+   * §8/#230. Pins the layout, ignoring both the stored preference and the control.
+   *
+   * The studio passes nothing and lets the reader decide. This exists for a caller that needs a
+   * particular layout regardless of whose browser it is — and for the fixtures, which have to be
+   * able to assert §8's phase rendering after `DEFAULT_GUIDE_LAYOUT` became `'sequencer'`.
+   */
+  layout?: GuideLayout
+}) {
   /** §8.1: on by default, off once you know your boxes. Print ignores it (see `@media print`). */
   const [hints, setHints] = useState(true)
   /**
@@ -96,10 +111,12 @@ export function Guide({ result, seed }: { result: ResolveResult; seed: number })
    * stored, so reading it during render would mismatch hydration — the rule the export handlers
    * below already follow (#12). The stored default arrives in an effect instead.
    */
-  const [layout, setLayout] = useState<GuideLayout>(DEFAULT_GUIDE_LAYOUT)
+  const [chosen, setLayout] = useState<GuideLayout>(DEFAULT_GUIDE_LAYOUT)
   useEffect(() => {
+    if (fixedLayout !== undefined) return
     setLayout(readGuideLayout(() => window.localStorage))
-  }, [])
+  }, [fixedLayout])
+  const layout = fixedLayout ?? chosen
   const [exported, setExported] = useState<{ ok: boolean; message: string } | undefined>(undefined)
 
   const deviceById = useMemo<Map<DeviceId, Device>>(
@@ -143,6 +160,18 @@ export function Guide({ result, seed }: { result: ResolveResult; seed: number })
             body: bodies['Voice assignment'],
           },
           { key: 'Rig integration', title: 'Rig integration', body: bodies['Rig integration'] },
+          ...(groups.length > 0
+            ? []
+            : [
+                {
+                  key: 'nothing-assigned',
+                  title: 'Step programming and Sound design',
+                  // Invariant 5. With no groups these two phases have nothing to build from and
+                  // would simply be absent — a vanished section reads as a direction that never
+                  // asked for one. See `LAYOUT_PREAMBLE.nothingAssigned`.
+                  body: <p className="quiet">{LAYOUT_PREAMBLE.nothingAssigned.join(' ')}</p>,
+                },
+              ]),
           ...groups.map((group) => ({
             key: group.kind === 'sequencer' ? `group-${group.deviceId}` : 'group-undriven',
             title:
@@ -192,7 +221,7 @@ export function Guide({ result, seed }: { result: ResolveResult; seed: number })
    * server's markup and the client's first markup the same bytes.
    */
   function onDownload() {
-    const outcome = downloadGuideMarkdown(browserEnv(), result, seed)
+    const outcome = downloadGuideMarkdown(browserEnv(), result, seed, layout)
     setExported(
       outcome.ok
         ? { ok: true, message: `Saved ${outcome.name}` }

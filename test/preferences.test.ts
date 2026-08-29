@@ -110,19 +110,22 @@ describe('the guide-layout preference falls back rather than failing (§8/#230)'
     expect(readGuideLayout(good({ [GUIDE_LAYOUT_KEY]: 'phase' }))).toBe('phase')
   })
 
-  it('defaults to §8’s phase order when nothing is stored', () => {
+  it('defaults to the sequencer layout, which #240 settled at a rack', () => {
+    // Was `'phase'` while nobody had read a session's worth of the other one. §8's order still
+    // governs the inside of every section, and `renderGuide`'s own parameter still defaults to
+    // it; what this constant decides is the outer loop a reader gets.
     expect(readGuideLayout(good())).toBe(DEFAULT_GUIDE_LAYOUT)
-    expect(DEFAULT_GUIDE_LAYOUT).toBe('phase')
+    expect(DEFAULT_GUIDE_LAYOUT).toBe('sequencer')
   })
 
   it('defaults when the key holds something else entirely', () => {
-    expect(readGuideLayout(good({ [GUIDE_LAYOUT_KEY]: 'by-sequencer' }))).toBe('phase')
-    expect(readGuideLayout(good({ [GUIDE_LAYOUT_KEY]: '{"layout":"sequencer"}' }))).toBe('phase')
+    expect(readGuideLayout(good({ [GUIDE_LAYOUT_KEY]: 'by-sequencer' }))).toBe('sequencer')
+    expect(readGuideLayout(good({ [GUIDE_LAYOUT_KEY]: '{"layout":"phase"}' }))).toBe('sequencer')
   })
 
   it('defaults when there is no storage at all — SSR, or a browser with none', () => {
-    expect(readGuideLayout(() => null)).toBe('phase')
-    expect(readGuideLayout(() => undefined)).toBe('phase')
+    expect(readGuideLayout(() => null)).toBe('sequencer')
+    expect(readGuideLayout(() => undefined)).toBe('sequencer')
   })
 
   it('defaults when access itself throws, which blocked site data does', () => {
@@ -130,7 +133,7 @@ describe('the guide-layout preference falls back rather than failing (§8/#230)'
       readGuideLayout(() => {
         throw new DOMException('blocked', 'SecurityError')
       }),
-    ).toBe('phase')
+    ).toBe('sequencer')
   })
 
   it('reports a failed write instead of throwing', () => {

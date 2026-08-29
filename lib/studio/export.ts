@@ -1,4 +1,5 @@
 import { renderGuide } from '@/lib/core'
+import type { GuideLayout } from '@/lib/core'
 import type { ResolveResult } from '@/lib/core'
 import type { StudioEnv } from './session'
 
@@ -15,13 +16,20 @@ import type { StudioEnv } from './session'
  */
 
 /**
- * The Markdown is **exactly** `renderGuide(result)` — the same bytes `test/guide-golden.test.ts`
- * pins, and the same file a person reads. Not a re-render, not a variant with a header bolted
- * on: a download that differed from the golden output would be a third renderer nobody is
- * testing, and §8's whole point is that there are two siblings reading one `ResolveResult`.
+ * The Markdown is **exactly** `renderGuide(result, { layout })` — the same bytes
+ * `test/guide-golden.test.ts` pins, and the same file a person reads. Not a re-render, not a
+ * variant with a header bolted on: a download that differed from the rendered output would be a
+ * third renderer nobody is testing, and §8's whole point is that there are two siblings reading
+ * one `ResolveResult`.
+ *
+ * **The layout is passed rather than defaulted** (§8/#230). What downloads has to be what is on
+ * screen: a reader who switched to `by sequencer` and then saved a file laid out by phase would
+ * have been handed a different document from the one they were reading, and would have no reason
+ * to suspect it. That includes the studio's per-visit override, not only the stored preference —
+ * the file follows the guide, not the setting.
  */
-export function guideMarkdown(result: ResolveResult): string {
-  return renderGuide(result)
+export function guideMarkdown(result: ResolveResult, layout?: GuideLayout): string {
+  return renderGuide(result, layout === undefined ? {} : { layout })
 }
 
 /**
@@ -49,6 +57,7 @@ export function downloadGuideMarkdown(
   env: StudioEnv,
   result: ResolveResult,
   seed: number,
+  layout?: GuideLayout,
 ): ExportResult {
   const name = guideFilename(result, seed)
 
@@ -65,7 +74,7 @@ export function downloadGuideMarkdown(
   try {
     // `text/markdown` rather than `text/plain`: it is what the file is, and it stops a browser
     // deciding to display it instead of saving it.
-    save({ name, text: guideMarkdown(result), type: 'text/markdown;charset=utf-8' })
+    save({ name, text: guideMarkdown(result, layout), type: 'text/markdown;charset=utf-8' })
   } catch {
     return { ok: false, message: 'Saving was blocked. Use Print instead, or copy the link.' }
   }
