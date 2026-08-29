@@ -159,7 +159,14 @@ describe('rack geometry (§10)', () => {
     // coincidence: Roland print `425(W) x 263(D) x 58(H)` for one and `409 (W) x 263 (D) x 58 (H)`
     // for the other, so the two agree on depth and height to the millimetre and differ only
     // across. Both rises are the published depth, read off each box's own specifications table.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 6)
+    //
+    // The sixth collision is not a pair of boxes at all, and it is the case this line's last
+    // sentence names: the MicroFreak is undrawn (see `UNDRAWN`), so its rise *is* the
+    // `PANEL_HEIGHT_MM` fallback of 170 mm, which the Tracker Mini reaches by measurement. A
+    // defaulted rise standing beside a measured one is exactly what this count exists to catch —
+    // it is allowed here only because the default is declared rather than silent, and the moment
+    // somebody draws that panel this returns to `- 6`.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 7)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -569,10 +576,37 @@ describe('panel contents', () => {
 // Authored panel layouts (§10)
 // ---------------------------------------------------------------------------
 
+/**
+ * §10. **Boxes whose documentation cannot support a measurement**, with the reason each is here.
+ *
+ * The bar is the one the device-authoring skill sets: a panel with estimated coordinates *"would
+ * be worse than no device — it would look exactly like the two that were done properly"*. So this
+ * is not a convenience list. A box earns a place on it by having no figure anybody could measure,
+ * and the entry says which figures were looked at.
+ *
+ * `device-catalogue.test.ts` has always exercised the undrawn branch on a fixture, describing it
+ * as *"what the next device whose manual has no usable figure will render"*. This is that device.
+ */
+const UNDRAWN = new Map<string, string>([
+  [
+    'arturia-microfreak',
+    'the MicroFreak manual draws the panel only as three separately-cropped photographs — "Top Row" (p.9), "Middle Row" (p.13) and "Bottom Row" (p.15) — at three different scales, none showing the panel’s outer border and none including the keyboard or icon strip. There is no specifications page either: the contents run ch.1 to ch.23 with none, so there is no cited dimension to scale pixels against. Its 311 mm span is Arturia’s published product-page figure (#191), which sizes the enclosure and locates no control',
+  ],
+])
+
 describe('panel layouts', () => {
-  it('every authored box carries a drawing, cited to the figure it was measured from', () => {
+  it('every box whose manual has a usable figure draws one, cited to that figure', () => {
     for (const device of DEVICES) {
       const layout = device.panel
+      if (UNDRAWN.has(device.id)) {
+        // Named, not merely tolerated. A device with no `panel` renders the generated fallback
+        // and the "panel not drawn yet" notice, which is honest — but silence would let the next
+        // device skip the drawing by accident, and §10's whole point is that an *estimated*
+        // panel is indistinguishable from a measured one. So the exception carries its evidence
+        // here and a box drops out of this list the moment somebody draws it.
+        expect(layout, `${device.id} is listed undrawn but has a layout`).toBeUndefined()
+        continue
+      }
       expect(layout, `${device.id} has no panel layout`).toBeDefined()
       if (layout === undefined) continue
       // Same rule as a parameter value: a drawing read off a figure says which figure.
@@ -625,6 +659,7 @@ describe('panel layouts', () => {
   it('allows exactly one voice field, and puts the cells inside it', () => {
     const model = rackModel(real)
     for (const device of DEVICES) {
+      if (UNDRAWN.has(device.id)) continue // No panel, so no authored field to check.
       const fields = device.panel?.features.filter((f) => f.kind === 'voices') ?? []
       // §2.4. A device with no voices contributes no assignables, so it authors no voice field:
       // the region would be filled with nothing on every guide ever rendered, claiming a readout
@@ -746,6 +781,7 @@ describe('panel layouts', () => {
     const model = rackModel(real)
     for (const device of DEVICES) {
       if (device.voices.length === 0) continue // §2.4: no assignables, no region to fill.
+      if (UNDRAWN.has(device.id)) continue // No authored region either — the rack generates one.
       const field = device.panel?.features.find((f) => f.kind === 'voices')
       if (field?.kind !== 'voices') throw new Error('no voice field')
       const cells = model.panels.find((p) => p.deviceId === device.id)?.banks.flatMap((b) => b.cells) ?? []
@@ -1136,7 +1172,11 @@ describe('rack view', () => {
     })
     const html = renderToStaticMarkup(createElement(Rack, { result: rig([undrawn]) }))
     expect(html).toContain('panel not drawn yet')
-    expect(markup(real)).not.toContain('panel not drawn yet')
+    // **The shipped rack says it too, once, and that is the notice working rather than failing.**
+    // This asserted absence while every shipped box was drawn; `UNDRAWN` now names the one that
+    // is not, and the count is exact so a second undrawn device has to come here and say so.
+    const shipped = markup(real).split('panel not drawn yet').length - 1
+    expect(shipped).toBe(UNDRAWN.size)
   })
 
   it('renders the same bytes twice', () => {

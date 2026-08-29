@@ -177,14 +177,16 @@ describe('the kind filter', () => {
     // `intellijel-metropolix` falls between the Euroburo and the Tracker Mini, and `synth`
     // fourth because `korg-minilogue-xd` falls between Metropolix and the Tracker Mini.
     // `groovebox` leads since the MPC Live III landed: `akai-mpc-live-iii` sorts first by folder
-    // name, so it is the registry's first mention of any kind at all.
+    // name, so it is the registry's first mention of any kind at all. `synth` moved to second
+    // with the MicroFreak, whose `arturia-microfreak` sorts between the MPCs and the CRAVE —
+    // which is this comment's own point about reordering without any kind changing.
     expect(kinds).toEqual([
       'groovebox',
+      'synth',
       'semi-modular',
       'sampler',
       'fx-processor',
       'sequencer',
-      'synth',
       'drum-machine',
       'mixer-recorder',
     ])

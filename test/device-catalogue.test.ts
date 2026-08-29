@@ -367,10 +367,10 @@ describe('the panel figure', () => {
    * dimension pair immediately beside a real citation to p.30.
    */
   it('states a height only for a panel somebody drew', () => {
-    // Every shipped device is drawn, so the undrawn branch is exercised on a fixture. It is not
-    // dead code: it is what the next device whose manual has no usable figure will render, and
-    // the failure it guards against is silent — a defaulted height reads exactly like a measured
-    // one, standing next to a real citation.
+    // The undrawn branch is exercised on a fixture *and*, since the MicroFreak, on a shipped
+    // box — that device is the one this comment used to anticipate, "the next device whose
+    // manual has no usable figure". The failure it guards against is silent: a defaulted height
+    // reads exactly like a measured one, standing next to a real citation.
     const undrawn: Device = {
       ...(DEVICES.find((d) => d.id === 'moog-minitaur') as Device),
       panel: undefined,
@@ -389,6 +389,14 @@ describe('the panel figure', () => {
       )
       const span = device.physical.panelSpanMm
       const rise = device.panel?.panelRiseMm
+      if (rise === undefined) {
+        // No drawing, so no height to state — the pair is what reads as a measurement, and a
+        // box with nothing measured must show the span alone and say the drawing is generated.
+        expect(markup, device.id).toContain(`${String(span)} mm wide`)
+        expect(markup, device.id).toContain('drawing convention')
+        expect(markup, device.id).not.toContain(`${String(span)} × `)
+        continue
+      }
       expect(markup, device.id).toContain(`${String(span)} × ${String(rise)} mm`)
       expect(markup, device.id).not.toContain('drawing convention')
     }
