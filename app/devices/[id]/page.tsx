@@ -25,6 +25,8 @@ import {
  */
 const GAP_LABEL: Record<CapabilityGap['kind'], string> = {
   'cited-against': 'Read, answers no',
+  // §2.6/#236. Not a gap in the usual sense, and the label says so: a page answers most of this.
+  partly: 'Read, answers part',
   undocumented: 'Read, does not say',
   unread: 'Document not read',
   unchecked: 'Not checked',

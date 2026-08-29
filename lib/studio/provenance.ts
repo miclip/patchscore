@@ -68,6 +68,7 @@ export type AuditKind =
   | 'undocumented-capability'
   | 'unread-capability'
   | 'cited-against-capability'
+  | 'partly-capability'
 
 /**
  * §2.6/#22. Where a capability finding points: at a **field path**, not a recipe and a parameter.
@@ -108,9 +109,9 @@ export type AuditCounts = {
    * §2.6/#22/#120. **The capability facts a manifest has said something about**, and how.
    *
    * `capabilityFacts` = manualCapabilities + observedCapabilities + citedAgainstCapabilities +
-   * uncheckedCapabilities + undocumentedCapabilities + unreadCapabilities. A fourth identity that
-   * has to add up, on the same terms as the other two — six ways rather than four since #120,
-   * because one state was answering three questions.
+   * uncheckedCapabilities + undocumentedCapabilities + unreadCapabilities + partlyCapabilities.
+   * A fourth identity that has to add up, on the same terms as the other two — seven ways since
+   * #236, six since #120, because one state kept being asked to answer several questions.
    *
    * **Silence is not counted, and that is the whole shape of this number.** A manifest that says
    * nothing about `io.usbAudio` has no entry, contributes nothing here, and owes nothing —
@@ -138,6 +139,12 @@ export type AuditCounts = {
   uncheckedCapabilities: number
   undocumentedCapabilities: number
   unreadCapabilities: number
+  /**
+   * §2.6/#236. Facts a page establishes *part* of. Counted apart from `manualCapabilities`
+   * because the manual does not back the whole claim, and apart from `undocumentedCapabilities`
+   * because it backs most of it — which is the distinction the count existed without.
+   */
+  partlyCapabilities: number
 }
 
 export const ZERO_COUNTS: AuditCounts = {
@@ -155,6 +162,7 @@ export const ZERO_COUNTS: AuditCounts = {
   manualCapabilities: 0,
   observedCapabilities: 0,
   citedAgainstCapabilities: 0,
+  partlyCapabilities: 0,
   uncheckedCapabilities: 0,
   undocumentedCapabilities: 0,
   unreadCapabilities: 0,
@@ -226,7 +234,13 @@ function auditRecipe(deviceId: string, recipe: Recipe, into: DeviceAudit): void 
  * about the *document* rather than about what anybody knows, and "unknown" beside "unchecked" in
  * a report reads as two spellings of the same shrug. The other five say what they are.
  */
-export type EvidenceKind = CiteKind | 'unchecked' | 'undocumented' | 'unread' | 'cited-against'
+export type EvidenceKind =
+  | CiteKind
+  | 'unchecked'
+  | 'undocumented'
+  | 'unread'
+  | 'cited-against'
+  | 'partly'
 
 export function evidenceKind(evidence: CapabilityEvidence): EvidenceKind {
   if (evidence === false) return 'unchecked'
@@ -252,6 +266,12 @@ function auditCapabilities(device: Device, into: DeviceAudit): void {
         break
       case 'observed':
         into.counts.observedCapabilities++
+        break
+      case 'partly':
+        into.counts.partlyCapabilities++
+        // Reported, like the two below it, so somebody can disagree with the split — and because
+        // "what is still open" is exactly the sentence a later author should be trying to close.
+        into.findings.push({ deviceId: device.id, fact, kind: 'partly-capability' })
         break
       case 'cited-against':
         into.counts.citedAgainstCapabilities++
@@ -346,6 +366,7 @@ export function totalCounts(audits: DeviceAudit[]): AuditCounts {
       undocumentedCapabilities:
         acc.undocumentedCapabilities + a.counts.undocumentedCapabilities,
       unreadCapabilities: acc.unreadCapabilities + a.counts.unreadCapabilities,
+      partlyCapabilities: acc.partlyCapabilities + a.counts.partlyCapabilities,
     }),
     { ...ZERO_COUNTS },
   )

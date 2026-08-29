@@ -383,7 +383,9 @@ describe('EP–133 K.O. II manifest', () => {
     ]) {
       const ev = device.capabilityEvidence?.[path]
       expect(ev, path).toMatchObject({ kind: 'cited-against' })
-      if (!ev || !('cite' in ev)) throw new Error(path)
+      // Narrowed on the kind rather than on `'cite' in ev`, which stopped separating the states
+      // when §2.6/#236 added `partly` — it carries a cite too.
+      if (!ev || ev.kind !== 'cited-against') throw new Error(path)
       expect(ev.reason.length, path).toBeGreaterThan(40)
     }
   })

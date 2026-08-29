@@ -1330,21 +1330,32 @@ export const device: Device = {
       cite: ug(18),
     },
     /**
-     * **`unknown`, and it read `ug(35)` for two commits.** That was an overclaim, and the comment
-     * sitting above it was what gave it away: the comment said p.35 proves the synth polyphony
-     * and that no page proves the drum tracks', while the entry beside it said `manual` for the
-     * whole fact. A `voices` entry covers everything the array asserts, and this array asserts
-     * three things — two pools at their counts, six-note polyphony on one, one-note on the other.
+     * **`partly` (§2.6/#236), and the two states it was in before are both in this file's history
+     * for a reason.**
      *
-     * Two of the three are on a page. The third is an authoring choice the `voices` comment
-     * argues for and no document supports, so the composite cannot be `manual`, and this entry
-     * moves from the `caps` line to `gaps ... undocumented` where a partly-evidenced claim
-     * belongs. The pages that *are* good are named in the reason so nothing is lost by the move.
+     * It read `ug(35)` for two commits, which was an overclaim: a `voices` entry covers everything
+     * the array asserts, and this array asserts three things — two pools at their counts, six-note
+     * polyphony on one, one-note on the other. Two of the three are on a page; the third is an
+     * authoring choice no document supports.
+     *
+     * So it moved to `unknown`, and that was an *under*claim of the same fact. `unknown` says a
+     * reading came back with nothing when this one came back with two thirds, and the entry had to
+     * write the missing distinction into its own reason: *"one `voices` path covers all three
+     * claims, so it cannot say two of them are cited and the third is not."* An author narrating a
+     * limit of the model in prose is what #22 exists to stop, and it is what #236 was filed on.
+     *
+     * `partly` says it in the schema instead: the page that proves what it proves, and the half it
+     * leaves open, as two fields because they are two different kinds of thing. The audit now
+     * counts this apart from both `manual` and `undocumented`, which is the honest place for a
+     * fact that is two thirds cited.
      */
     voices: {
-      kind: 'unknown',
-      reason:
-        'p.35 establishes the synth tracks’ six-note polyphony ("Circuit Tracks’ synth engines are six-note polyphonic") and p.64 the eight-track split ("two synths, two MIDI and four drums"), but no page in either document states a drum track’s playback polyphony — whether a step retriggering a sounding sample cuts it or overlaps it is nowhere, and the 1 here is an authoring choice; one `voices` path covers all three claims, so it cannot say two of them are cited and the third is not',
+      kind: 'partly',
+      cite: { kind: 'manual', source: 'Circuit Tracks User Guide v3, pp.35 and 64' },
+      proven:
+        'p.35 gives the synth tracks six-note polyphony ("Circuit Tracks’ synth engines are six-note polyphonic") and p.64 the eight-track split ("two synths, two MIDI and four drums")',
+      open:
+        'no page in either document states a drum track’s playback polyphony — whether a step retriggering a sounding sample cuts it or overlaps it is nowhere — so the 1 here is an authoring choice, argued in the `voices` comment above and supported by nothing',
     },
     'features.perStep': ug(41),
     'features.sidechain.internal': ug(93),

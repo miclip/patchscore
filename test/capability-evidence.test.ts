@@ -53,6 +53,15 @@ const AGAINST = {
   reason: 'the overview calls this a stand-alone instrument',
 } as const
 
+/** §2.6/#236. A page that settles part of a composite claim, and names the half it does not. */
+const PARTLY = {
+  kind: 'partly',
+  cite: { kind: 'manual', source: 'Fixture Manual, p.7' },
+  proven: 'p.7 gives the pool its count',
+  open: 'no page states the per-voice polyphony',
+} as const
+
+
 function patchable(over: Record<string, unknown> = {}) {
   return device({
     jacks: [{ id: 'VCF · IN', direction: 'in', signal: ['audio'] }],
@@ -323,7 +332,7 @@ describe('the audit can see capability facts now (§2.6/#22)', () => {
     )
   }
 
-  it('counts each state apart, and the six add up', () => {
+  it('counts each state apart, and the seven add up', () => {
     const a = audited({
       [jackFact('VCF · IN')]: CITE,
       'io.audioIn': { kind: 'observed', source: 'the unit' },
@@ -331,15 +340,19 @@ describe('the audit can see capability facts now (§2.6/#22)', () => {
       'features.lfo': UNKNOWN,
       'features.sidechain.internal': UNREAD,
       'clock.preferredSource': AGAINST,
+      // §2.6/#236. In the fixture as well as the sum: this identity passed while `partly` existed
+      // and no fixture used it, which is a test agreeing with itself.
+      voices: PARTLY,
     })
-    expect(a.counts.capabilityFacts).toBe(6)
+    expect(a.counts.capabilityFacts).toBe(7)
     expect(a.counts.manualCapabilities).toBe(1)
     expect(a.counts.observedCapabilities).toBe(1)
     expect(a.counts.citedAgainstCapabilities).toBe(1)
     expect(a.counts.uncheckedCapabilities).toBe(1)
     expect(a.counts.undocumentedCapabilities).toBe(1)
     expect(a.counts.unreadCapabilities).toBe(1)
-    // The identity that has to hold, now over six terms rather than four. A count that stops
+    expect(a.counts.partlyCapabilities).toBe(1)
+    // The identity that has to hold, now over seven terms rather than four. A count that stops
     // adding up means a state was added without a home (§2.6).
     expect(
       a.counts.manualCapabilities +
@@ -347,7 +360,8 @@ describe('the audit can see capability facts now (§2.6/#22)', () => {
         a.counts.citedAgainstCapabilities +
         a.counts.uncheckedCapabilities +
         a.counts.undocumentedCapabilities +
-        a.counts.unreadCapabilities,
+        a.counts.unreadCapabilities +
+        a.counts.partlyCapabilities,
     ).toBe(a.counts.capabilityFacts)
   })
 

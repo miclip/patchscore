@@ -508,7 +508,9 @@ describe('EP–40 riddim manifest', () => {
     for (const path of ['io.individualOuts', 'features.sidechain.fromExternalAudio']) {
       const ev = device.capabilityEvidence?.[path]
       expect(ev, path).toMatchObject({ kind: 'cited-against' })
-      if (!ev || !('cite' in ev)) throw new Error(path)
+      // Narrowed on the kind rather than on `'cite' in ev`, which stopped separating the states
+      // when §2.6/#236 added `partly` — it carries a cite too.
+      if (!ev || ev.kind !== 'cited-against') throw new Error(path)
       expect(ev.reason.length, path).toBeGreaterThan(40)
     }
   })
