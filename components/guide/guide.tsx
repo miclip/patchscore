@@ -2,11 +2,13 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import type { Device, DeviceId, GuideLayout, GuidePhase, ResolveResult } from '@/lib/core'
+import type { Device, DeviceId, GuideLayout, GuidePhase, ResolveResult, SequencerGroup } from '@/lib/core'
 import type { ReactNode } from 'react'
 import {
   GUIDE_PHASES,
   LAYOUT_PREAMBLE,
+  devicesInGroup,
+  devicesOutsideGroups,
   narrowToGroup,
   sequencerGroups,
   unplayedHooks,
@@ -51,12 +53,27 @@ import { PhaseVoices } from './phase-voices'
 function PerformedHere({
   result,
   deviceById,
+  rig,
 }: {
   result: ResolveResult
   deviceById: Map<DeviceId, Device>
+  /**
+   * §8/#240. This section's own boxes, drawn before anything is entered on them.
+   *
+   * The reader is standing here now, and its clock, sockets, audio out and mixer channel are what
+   * they need before a single step goes in. Under the phase layout those were read in section 3
+   * and wanted again here, which is the trip this removes.
+   */
+  rig?: readonly Device[]
 }) {
   return (
     <>
+      {rig === undefined || rig.length === 0 ? null : (
+        <>
+          <h4 className="group-phase">Patching</h4>
+          <PhaseRig result={result} occupied={occupiedCounts(result.assignments)} detail={rig} />
+        </>
+      )}
       {/*
         Omitted rather than answered when this box carries no hook. `PhaseHook`'s empty state is a
         sentence about the *template*, and under a narrowed result it would appear beneath a drum
@@ -126,6 +143,12 @@ export function Guide({
   const occupied = useMemo(() => occupiedCounts(result.assignments), [result])
   const groups = useMemo(() => sequencerGroups(result), [result])
   const orphanHooks = useMemo(() => unplayedHooks(result), [result])
+  const uncovered = useMemo(() => devicesOutsideGroups(result), [result])
+  const byId = useMemo(() => new Map(result.devices.map((d) => [d.id, d])), [result])
+  const rigFor = (group: SequencerGroup): Device[] =>
+    devicesInGroup(group)
+      .map((id) => byId.get(id))
+      .filter((d): d is Device => d !== undefined)
 
   /*
    * Keyed by phase name rather than by position. An array aligned to `GUIDE_PHASES` by index
@@ -159,7 +182,16 @@ export function Guide({
             title: 'Voice assignment',
             body: bodies['Voice assignment'],
           },
-          { key: 'Rig integration', title: 'Rig integration', body: bodies['Rig integration'] },
+          {
+            key: 'Rig integration',
+            title: 'Rig integration',
+            /**
+             * §8/#240. Rig-wide facts, plus a block for every box no section below covers — a
+             * mixer, an fx-processor, anything carrying no parts (§2.4). `devicesOutsideGroups`
+             * is what stops the two halves overlapping or leaving a box out entirely.
+             */
+            body: <PhaseRig result={result} occupied={occupied} detail={uncovered} />,
+          },
           ...(groups.length > 0
             ? []
             : [
@@ -188,6 +220,7 @@ export function Guide({
                 <PerformedHere
                   result={narrowToGroup(result, group.assignments)}
                   deviceById={deviceById}
+                  rig={rigFor(group)}
                 />
               </>
             ),

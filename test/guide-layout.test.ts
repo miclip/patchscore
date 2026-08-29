@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   LAYOUT_PREAMBLE,
+  devicesInGroup,
+  devicesOutsideGroups,
   NOTE_CONVENTION,
   moodState,
   renderGuide,
@@ -132,6 +134,71 @@ describe('the layout changes presentation and nothing else (invariant 6)', () =>
     const bare = renderGuide(result, { layout: 'sequencer', hints: false })
     expect(bare).not.toContain('↳ hint:')
     expect(renderGuide(result, { layout: 'sequencer' })).toContain('↳ hint:')
+  })
+})
+
+describe('every box is patched exactly once, wherever its block lands (§8/#240)', () => {
+  /**
+   * #240's second question moved each box's clock, sockets, audio and mixer lines out of phase 3
+   * and into the section where its parts are worked — so the reader is not told the Deluge's MIDI
+   * channel four sections before they touch the Deluge.
+   *
+   * That split is where a box can go missing or be drawn twice, and neither would look like a
+   * bug: a duplicate reads as thoroughness, and an omission reads as a box that needs no patching.
+   */
+  const rigs: [string, ReturnType<typeof rig>][] = [
+    ['two boxes and a mixer', rig('synthstrom-deluge', 'roland-tr-1000', 'tascam-model-2400')],
+    ['a driven box', rig('moog-minitaur', 'squarp-hapax', 'roland-tr-8s')],
+    ['a box nothing drives', rig('moog-minitaur', 'roland-tr-8s')],
+    ['boxes that carry nothing at all', rig('tascam-model-2400', 'empress-zoia-euroburo')],
+    ['the whole library', [...DEVICES]],
+  ]
+
+  for (const [name, devices] of rigs) {
+    it(`names each box once across phase 3 and the sections — ${name}`, () => {
+      const result = resolve({ devices, template: industrial, mood: moodState({}), seed: 3 })
+      const groups = sequencerGroups(result)
+
+      const inSections = groups.flatMap((g) => [...devicesInGroup(g)])
+      const inPhaseThree = devicesOutsideGroups(result).map((d) => d.id)
+      const all = [...inSections, ...inPhaseThree]
+
+      expect(new Set(all).size, `${name}: a box is drawn twice`).toBe(all.length)
+      expect([...all].sort(), `${name}: a box is missing`).toEqual(
+        result.devices.map((d) => d.id).sort(),
+      )
+    })
+  }
+
+  it('keeps a box that carries no parts in phase 3, where it can still be patched', () => {
+    // §2.4: a mixer-recorder contributes zero assignables and belongs to no group. It still has
+    // to be plugged in, and a layout built from groups would otherwise stop mentioning it.
+    const result = resolve({
+      devices: rig('synthstrom-deluge', 'roland-tr-1000', 'tascam-model-2400'),
+      template: industrial,
+      mood: moodState({}),
+      seed: 3,
+    })
+    expect(devicesOutsideGroups(result).map((d) => d.id)).toEqual(['tascam-model-2400'])
+    expect(renderGuide(result, { layout: 'sequencer' })).toContain('Model 2400')
+  })
+
+  it('puts the box a driven part sounds on in the section it is entered from', () => {
+    // Entering the Minitaur's line on the Hapax, a reader needs the Hapax's sockets to patch from
+    // *and* the Minitaur's audio and mixer to hear it. Naming only the host would move half the
+    // answer and strand the other half in phase 3.
+    const result = resolve({
+      devices: rig('moog-minitaur', 'squarp-hapax', 'roland-tr-8s'),
+      template: industrial,
+      mood: moodState({}),
+      seed: 3,
+    })
+    const hapax = sequencerGroups(result).find(
+      (g) => g.kind === 'sequencer' && g.deviceId === 'squarp-hapax',
+    )
+    expect(hapax).toBeDefined()
+    expect([...devicesInGroup(hapax!)]).toContain('moog-minitaur')
+    expect([...devicesInGroup(hapax!)][0]).toBe('squarp-hapax')
   })
 })
 
