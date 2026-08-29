@@ -3110,7 +3110,6 @@ html {
   .site-nav,
   .footer,
   .notices,
-  .rack-section,
   /*
    * The studio's own cables are chrome, not guide content, and paper has no studio around them.
    * `.patch-chain` is a child of `.columns` rather than of a panel, so the `.panel` rule below
@@ -3118,18 +3117,62 @@ html {
    * there — a line pointing at nothing, which reads as a printing fault rather than as a diagram.
    * `.patchbay` is the same claim inside the device picker.
    *
-   * **`.rack-section` above hides the whole rack, cables and all**, and has since before either of
-   * these lines existed. An earlier draft of this comment claimed the rack's cables were
-   * deliberately left printing; they are not reached, because their container is gone. Whether
-   * that is right is #225 — the reader §0 describes is standing at a rack with this sheet in
-   * hand, and phase 3 tells them what to patch where.
+   * **The rack is no longer here (#225), and `:not(.rack-section)` below is why that took two
+   * changes rather than one.** It was hidden by name *and* reached by `.panel:not(.guide-panel)`,
+   * because `rack.tsx` renders it as `panel span-2 rack-section` — so removing the name alone
+   * would have left it hidden and looked like the fix had failed.
    */
   .patch-chain,
   .patchbay,
-  .panel:not(.guide-panel),
+  .panel:not(.guide-panel):not(.rack-section),
   .guide-actions,
   .hints-toggle {
     display: none !important;
+  }
+
+  /*
+   * #225. **The rack prints.** §0's reader is standing at a rack with this sheet in hand; phase 3
+   * tells them what to patch where, and the voice-control cables (#65, #201, #213) name specific
+   * sockets — `cv · a` to `CONTROLLER INPUTS · PITCH CV`. On paper those were words with no
+   * picture behind them.
+   *
+   * #21 already settled the same question for mobile: the diagram must not be hidden, because it
+   * is read at the machine. Paper is that context with less interactivity, not a different one.
+   *
+   * The frame's chrome goes — its gradient is a screen surface, and the drawing is the content.
+   * The SVG needs no width rule: its viewBox is in millimetres and it is `width: 100%; height:
+   * auto`, so it fits the page by scaling and cannot squash or overflow, which is exactly what
+   * #21 asked for and the reason this is not the hard part.
+   */
+  .rack-section {
+    break-inside: avoid;
+  }
+
+  .rack-frame {
+    padding: 0;
+    border-color: var(--rule);
+    background: none;
+  }
+
+  /*
+   * **#21's label ladder is a screen rule, and paper is not a screen.**
+   *
+   * It drops control, jack and bank labels under 1300px, cell numbers under 760, and all text
+   * under 520 — because a 3.4 mm label at about 1.2 px/mm is not small but *absent*, a smear of
+   * grey where a word should be. That is true of a display and false of print, where the same
+   * millimetre resolves at 300 dpi and over.
+   *
+   * A printed page is roughly 640 CSS px wide, which trips every tier. Unhiding the rack without
+   * this would print the one thing the ladder exists to prevent in reverse: a diagram of shapes
+   * with the words stripped out, on the medium that could actually render them.
+   */
+  .rack-frame .rack-feature-label,
+  .rack-frame .rack-jack-label,
+  .rack-frame .rack-bank-label,
+  .rack-frame .rack-cell-label,
+  .rack-frame .rack-more,
+  .rack-frame text {
+    display: inline;
   }
 
   /*
@@ -3185,6 +3228,15 @@ html {
   .step.on,
   .step.beat,
   .rack-panel .rack-face,
+  /*
+   * #225, beside the faces #219 already named. A cable's meaning *is* its colour and its path —
+   * which socket runs to which — and a lit voice cell says where a part landed by being filled.
+   * Dropped to toner-saving, the rack prints as empty outlines and says none of it.
+   */
+  .rack-cable,
+  .rack-bevel,
+  .rack-cell,
+  .rack-jack,
   .swatch,
   .chip {
     -webkit-print-color-adjust: exact;
