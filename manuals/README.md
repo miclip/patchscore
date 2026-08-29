@@ -36,6 +36,10 @@ opened.
 | `SP-404MK2_v4_reference_eng02_W.pdf` | **Roland SP-404MKII Reference Manual, v4.00.** 274pp / 279k chars / **275 ranges** — Roland prints them bare (`0–127`, `40.0–200.0`, `1/4–7/4`) with an en dash and no unit, so a unit-bearing grep reports zero. | [direct](https://static.roland.com/assets/media/pdf/SP-404MK2_v4_reference_eng02_W.pdf), confirmed 2026-08-28 |
 | `te-ep-133/` | **teenage engineering EP–133 K.O. II guide mirror**, 19 pages / 105k chars / 36 ranges. No PDF exists — see the TE note below. | [guide](https://teenage.engineering/guides/ep-133), mirrored 2026-08-28 |
 | `te-ep-40/` | **teenage engineering EP–40 riddim guide mirror**, 19 pages / 107k chars / 39 ranges. No PDF exists. | [guide](https://teenage.engineering/guides/ep-40), mirrored 2026-08-28 |
+| `MC-707_Reference_eng02_W.pdf` | **Roland MC-707 Reference Manual.** 121pp / 383k chars / **980 ranges** — the densest value source in the library. | [direct](https://static.roland.com/assets/media/pdf/MC-707_Reference_eng02_W.pdf), confirmed 2026-08-28 |
+| `MC-707_eng02_W.pdf` | Owner's Manual, 12pp / 8 ranges. Roland's split-manual pattern again (#18) — thin by design; the Reference above is the value source. | [direct](https://static.roland.com/assets/media/pdf/MC-707_eng02_W.pdf), confirmed 2026-08-28 |
+| `MicroFreak_Manual_4_0_3_EN.pdf` | **Arturia MicroFreak**, 137pp / 287k chars / 28 ranges. First Arturia. **Paraphonic**, said 45 times. | [direct](https://dl.arturia.net/products/microfreak/manual/microfreak_Manual_4_0_3_EN.pdf), confirmed 2026-08-28 |
+| `circuit_tracks_user_guide_v3_en.pdf` | **Novation Circuit Tracks**, 109pp / 194k chars / 76 ranges. First Novation. Two 6-voice synth tracks, four drum tracks, **two MIDI tracks that drive other boxes**. | [direct](https://fael-downloads-prod.focusrite.com/customer/prod/downloads/circuit_tracks_user_guide_v3_en.pdf), confirmed 2026-08-28 |
 | `torso-t1/` | **Torso T-1 documentation mirror**, 77 pages / 273k chars / 67 printed ranges. No PDF exists; see the note below and `torso-t1/VERSION`. | [docs](https://docs.torsoelectronics.com/t1/), mirrored 2026-08-28 |
 
 ## The Deluge runs community firmware
