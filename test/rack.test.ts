@@ -160,13 +160,13 @@ describe('rack geometry (§10)', () => {
     // for the other, so the two agree on depth and height to the millimetre and differ only
     // across. Both rises are the published depth, read off each box's own specifications table.
     //
-    // The sixth collision is not a pair of boxes at all, and it is the case this line's last
-    // sentence names: the MicroFreak is undrawn (see `UNDRAWN`), so its rise *is* the
-    // `PANEL_HEIGHT_MM` fallback of 170 mm, which the Tracker Mini reaches by measurement. A
-    // defaulted rise standing beside a measured one is exactly what this count exists to catch —
-    // it is allowed here only because the default is declared rather than silent, and the moment
-    // somebody draws that panel this returns to `- 6`.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 7)
+    // **The sixth collision is gone, and this is the `- 6` the previous comment promised.** It
+    // read: "the MicroFreak is undrawn, so its rise *is* the `PANEL_HEIGHT_MM` fallback of 170 mm,
+    // which the Tracker Mini reaches by measurement ... the moment somebody draws that panel this
+    // returns to `- 6`." Somebody drew it. Its rise is now Arturia's published 233 mm depth, so it
+    // no longer collides with the Tracker Mini, and no panel in the library shares a rise with
+    // another by defaulting to one.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 6)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -588,11 +588,15 @@ describe('panel contents', () => {
  * as *"what the next device whose manual has no usable figure will render"*. This is that device.
  */
 const UNDRAWN = new Map<string, string>([
-  [
-    'arturia-microfreak',
-    'the MicroFreak manual draws the panel only as three separately-cropped photographs — "Top Row" (p.9), "Middle Row" (p.13) and "Bottom Row" (p.15) — at three different scales, none showing the panel’s outer border and none including the keyboard or icon strip. There is no specifications page either: the contents run ch.1 to ch.23 with none, so there is no cited dimension to scale pixels against. Its 311 mm span is Arturia’s published product-page figure (#191), which sizes the enclosure and locates no control',
-  ],
-])
+  // **Empty, since the MicroFreak was drawn.** It was the only entry, and it left on the finding
+  // that its three cropped strips each span the instrument's full width — which fixes a scale
+  // from the published 311 mm and makes every horizontal position measurable after all. What
+  // could not be measured was how the rows stack vertically, and that is carried in the
+  // citation's own text rather than by omitting the drawing.
+  //
+  // The list stays, and so does the branch below. A box earns a place by having no figure anybody
+  // could measure, and the entry has to say which figures were looked at.
+]) as Map<string, string>
 
 describe('panel layouts', () => {
   it('every box whose manual has a usable figure draws one, cited to that figure', () => {
@@ -1012,7 +1016,13 @@ describe('rack view', () => {
     // 43: plus the MC-707's, measured off its p.5 top-panel figure at 447 x 154 px and carrying
     // the EP-133's caveat for the same reason — Roland print no display dimension in either of
     // this box's two manuals, so the drawn box is the bezel opening and not the active area.
-    expect(count('rack-screen')).toBe(43)
+    // 44: plus the MicroFreak's, the small OLED inside the recessed bezel it shares with Preset,
+    // Save and Utility. Arturia print no display dimension anywhere in the manual — there is no
+    // specifications page at all — so the 18 x 11 mm here is measured off the p.9 Top Row strip
+    // like every other horizontal coordinate in that layout, against the published 311 mm width
+    // the strip spans. It carries the EP-133's caveat once more: the drawn box is the visible
+    // glass rather than an active area nobody publishes.
+    expect(count('rack-screen')).toBe(44)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -1083,7 +1093,10 @@ describe('rack view', () => {
     // keybed. `shape: 'key'` is the step row's shape because that is what the box draws — sixteen
     // narrow rounded keys on a 69.43 px pitch under the pads — and the count is a shape census
     // rather than a claim about what is played, which is why they belong here.
-    expect(count('rack-key')).toBe(285)
+    // 300: plus the MicroFreak's fifteen. p.18 calls the keybed 25 keys and p.35 says it spans
+    // two octaves, which is 15 white and 10 black — and white is what this census counts, as it
+    // does for the Matriarch's 29 of 49 and the minilogue xd's 22 of 37.
+    expect(count('rack-key')).toBe(300)
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
@@ -1113,7 +1126,11 @@ describe('rack view', () => {
     // Twenty-six since the MC-707, whose field sits on its sixteen pads at the pad block's own
     // measured rect — the one region where both of its pools are addressed, pads [1]-[8] being
     // the eight tracks in CLIP mode and the sixteen being a kit's instruments in NOTE mode.
-    expect(fields).toHaveLength(26)
+    // Twenty-seven since the MicroFreak was drawn. Its field is the smallest here at 20 x 16 mm,
+    // and deliberately so: the box has one voice of polyphony 4, so the region holds a single
+    // cell, and a cell stretched across the panel would be the Deluge mistake the next test
+    // records. One knob's width beside the knobs is what a single voice should look like.
+    expect(fields).toHaveLength(27)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {
