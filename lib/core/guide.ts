@@ -29,6 +29,28 @@ export const GUIDE_PHASES = [
 
 export type GuidePhase = (typeof GUIDE_PHASES)[number]
 
+/**
+ * §8/#230. **Two ways to walk the same guide**, and the reason there are two.
+ *
+ * `phase` is §8's order and the default: seven phases, each covering every part. `sequencer`
+ * keeps the same content and changes the outer loop — Song, Voice assignment and Rig integration
+ * first, then one section per box the reader stands at, each carrying that box's parts through
+ * Hook, Step programming and Sound design, then Finishing.
+ *
+ * **§8's one musical claim survives either way.** It puts the hook before sound design on purpose,
+ * so a part is not shaped by whatever preset the reader happened to land on. That order holds
+ * inside each section, so this changes what the outer loop is rather than reordering the argument.
+ *
+ * **This is presentation, and it must stay that way.** It reaches no resolver input, so the same
+ * rig and seed resolve to the same allocation and the same values under either layout (invariant
+ * 6) — the two documents are permutations of one another, which is a property worth testing and
+ * is tested. It is deliberately absent from the permalink for the same reason: layout is the
+ * reader's preference, not part of the score, so a shared link renders the way its reader likes.
+ */
+export const GUIDE_LAYOUTS = ['phase', 'sequencer'] as const
+
+export type GuideLayout = (typeof GUIDE_LAYOUTS)[number]
+
 // ---------------------------------------------------------------------------
 // Sentences both renderers say identically (#82)
 // ---------------------------------------------------------------------------

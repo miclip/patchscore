@@ -37,8 +37,9 @@ import {
   type InterDevicePatch,
   type ResolveResult,
   type ResolvedAssignment,
-  type VoiceControlSource, patternDriver,} from './pipeline'
+  type VoiceControlSource, patternDriver, sequencerGroups,} from './pipeline'
 import { GUIDE_PHASES, count, ioText, mixerText, num} from './guide'
+import type { GuideLayout } from './guide'
 import {
   bandTrajectory,
   chainPlan,
@@ -103,6 +104,14 @@ export const SUBORDINATE = {
   note: '↳ note:',
 } as const
 
+/**
+ * What the phase renderers actually need from `RenderOptions`: whether to print hint lines.
+ * Named separately since #230 added `layout`, which is the composing function's business and
+ * none of theirs — `Required<RenderOptions>` would hand all three phases a setting they must
+ * ignore, and a setting a renderer must ignore is one somebody eventually reads by mistake.
+ */
+export type HintSetting = { hints: boolean }
+
 export type RenderOptions = {
   /**
    * §8.1's **Show hints**, on by default. `false` omits every `↳ hint:` line and changes
@@ -110,6 +119,12 @@ export type RenderOptions = {
    * testable here rather than only in a stylesheet.
    */
   hints?: boolean
+  /**
+   * §8/#230. `'phase'` is §8's order and stays the default, so nothing moves for a reader who
+   * asks for nothing. `'sequencer'` groups the middle three phases by the box they are performed
+   * at. Same content either way — see `GUIDE_LAYOUTS`.
+   */
+  layout?: GuideLayout
 }
 
 // ---------------------------------------------------------------------------
@@ -1043,7 +1058,15 @@ function spelling(note: ResolvedNote): string {
   return enharmonic === undefined ? `\`${note.note}\`` : `\`${note.note}\` (\`${enharmonic}\`)`
 }
 
-const NOTE_CONVENTION = [
+/**
+ * Exported since #230 so the cross-layout fixture can name these lines rather than matching their
+ * prose. Under the sequencer layout the hook renderer runs once per box that carries a hook, so
+ * this block repeats — deliberately, because §8 has the reader standing at one machine reading one
+ * section, and the convention belongs beside the notes it governs rather than four sections up.
+ * It is the one thing the two layouts do not render the same number of times, and the fixture
+ * asserts that it is the *only* one.
+ */
+export const NOTE_CONVENTION = [
   'Steps are sixteenths, counted from the start of the hook: 16 to a bar, so step 33 is bar 3.',
   'Notes sharing a step are one chord and share a line.',
   '',
@@ -1552,7 +1575,7 @@ function reStrikeLines(pattern: Pattern, bpm: number, reArticulates: boolean): L
 function articulationLines(
   entries: readonly BoundArticulation[],
   device: Device | undefined,
-  options: Required<RenderOptions>,
+  options: HintSetting,
 ): Line[] {
   const out: Line[] = []
   for (const entry of entries) {
@@ -1581,7 +1604,7 @@ function stepBlock(
   a: ResolvedAssignment,
   entry: ResolvedAssignment['patterns'][number],
   deviceById: Map<DeviceId, Device>,
-  options: Required<RenderOptions>,
+  options: HintSetting,
   bpm: number,
 ): StepBlock {
   const { selection } = entry
@@ -1656,7 +1679,7 @@ export function citationSentence(device: Device): string | undefined {
 function mergeBlocks(
   a: ResolvedAssignment,
   deviceById: Map<DeviceId, Device>,
-  options: Required<RenderOptions>,
+  options: HintSetting,
   bpm: number,
 ): { sections: SectionName[]; block: StepBlock }[] {
   const merged = new Map<string, { sections: SectionName[]; block: StepBlock }>()
@@ -1811,7 +1834,7 @@ function chainLines(result: ResolveResult, a: ResolvedAssignment): Line[] {
 function phaseSteps(
   result: ResolveResult,
   deviceById: Map<DeviceId, Device>,
-  options: Required<RenderOptions>,
+  options: HintSetting,
 ): Line[] {
   const out: Line[] = []
   if (result.assignments.length === 0) {
@@ -1890,7 +1913,7 @@ function phaseSteps(
 function paramLines(
   param: ResolvedParam,
   device: Device | undefined,
-  options: Required<RenderOptions>,
+  options: HintSetting,
   hoisted?: Cite,
 ): Line[] {
   const out: Line[] = []
@@ -1928,7 +1951,7 @@ function paramLines(
 function sourceLines(
   source: ResolvedSourceAudio,
   device: Device | undefined,
-  options: Required<RenderOptions>,
+  options: HintSetting,
 ): Line[] {
   const out: Line[] = [`Source — ${source.need}`]
   if (source.prep === undefined) {
@@ -2096,7 +2119,7 @@ function patchLines(entries: readonly ResolvedPatchEntry[]): Line[] {
 function phaseSound(
   result: ResolveResult,
   deviceById: Map<DeviceId, Device>,
-  options: Required<RenderOptions>,
+  options: HintSetting,
 ): Line[] {
   const out: Line[] = []
   if (result.assignments.length === 0) {
@@ -2454,25 +2477,164 @@ const LEGEND = [
  * A guide of seven phases all saying what is missing is the correct output for an empty rig,
  * and is the reason no phase is conditional on having content (invariant 5).
  */
+/**
+ * §8/#230. **The only sentences the sequencer layout adds**, named so the cross-layout fixture can
+ * permit exactly these and fail anything else.
+ *
+ * Both introduce a section that exists only in this layout, and both exist because the heading
+ * alone would not explain itself: one section has no device name on it, and the other is a list of
+ * figures with no part under them. The phase layout needs neither, because there the same facts
+ * arrive under a heading that already says what they are.
+ *
+ * Keeping them here rather than inline is what lets `guide-layout.test.ts` assert "nothing
+ * invented except these", instead of the far weaker "extra lines are allowed".
+ */
+export const LAYOUT_PREAMBLE = {
+  undriven: [
+    'Each part below sounds on a box that cannot hold a pattern, and nothing here can play it.',
+    'That is a gap in the rig rather than a patching mistake.',
+  ],
+  orphanHooks: ['This direction asks for these figures and the rig has no part carrying them.'],
+} as const
+
+/**
+ * §8/#230. One heading level down, so a phase body can sit inside a sequencer's section.
+ *
+ * The phase bodies already emit `###` and `####` of their own, written for a `##` phase heading
+ * above them. Under the sequencer layout that heading is the *box*, and Hook / Step programming /
+ * Sound design become `###` beneath it — which would collide with the bodies' own `###`.
+ *
+ * Rewriting the level here rather than parameterising every emitter is the smaller change by a
+ * long way: the bodies stay written for one nesting and one caller adjusts them, instead of
+ * threading a depth argument through three phases and everything they call. It touches only lines
+ * that are already headings, so nothing else in the document can be caught by it.
+ */
+function demote(body: readonly Line[]): Line[] {
+  return body.map((line) => (line.startsWith('#') ? `#${line}` : line))
+}
+
+/** The middle three phases, for one box's parts. Narrowed by assignment, nothing else. */
+function performedHere(
+  result: ResolveResult,
+  assignments: readonly ResolvedAssignment[],
+  deviceById: Map<DeviceId, Device>,
+  settings: HintSetting,
+): Line[] {
+  /**
+   * **A narrowed result, not a narrowed renderer.** `phaseSteps` and `phaseSound` iterate
+   * assignments, so a subset is all they need; both also read context a subset cannot change
+   * (`song`, `devices`, `interDevicePatch`), and neither reads `shortfalls`, which is what makes
+   * this safe — were gaps rendered here, every section would repeat all of them.
+   *
+   * **`phaseHook` is the exception, and it had to be handled rather than hoped about.** It is
+   * driven by `song.hooks` rather than by assignments, looking each hook's role up among them —
+   * so under a narrowed result every hook belonging to *another* box reads as `unassigned`, and
+   * the first draft of this printed the Deluge's three parts as gaps under the TR-1000, in every
+   * section, once per box in the rig. Narrowing the hooks to the ones this group actually carries
+   * is the fix; the genuinely unassigned ones are collected by the caller and shown once, because
+   * a gap shown five times and a gap shown nowhere are both wrong (invariant 5).
+   */
+  const carried = new Set(assignments.map((a) => a.role))
+  const only: ResolveResult = {
+    ...result,
+    assignments: [...assignments],
+    song: { ...result.song, hooks: result.song.hooks.filter((h) => carried.has(h.forRole)) },
+  }
+  return [
+    /**
+     * **Omitted rather than answered when this box carries no hook figure.** `phaseHook`'s empty
+     * case says *"This template has no hooks."*, which is true of a template and false of a box —
+     * printed under a drum machine in a direction with three hooks, it is a plain untruth, and it
+     * was one until this guard. The hooks exist; they are under whichever box plays them, and a
+     * heading here with nothing beneath it tells the reader nothing they need.
+     *
+     * This is not a gap being hidden (invariant 5). A hook no box carries is a gap, and it has
+     * its own section further down; a hook carried by the box in the *next* section is not.
+     */
+    ...(only.song.hooks.length === 0
+      ? []
+      : ['### Hook', '', ...demote(phaseHook(only, deviceById)), '']),
+    '### Step programming',
+    '',
+    ...demote(phaseSteps(only, deviceById, settings)),
+    '',
+    '### Sound design',
+    '',
+    ...demote(phaseSound(only, deviceById, settings)),
+  ]
+}
+
 export function renderGuide(result: ResolveResult, options: RenderOptions = {}): string {
-  const settings: Required<RenderOptions> = { hints: options.hints ?? true }
+  const settings: HintSetting = { hints: options.hints ?? true }
+  const layout: GuideLayout = options.layout ?? 'phase'
   const deviceById = new Map(result.devices.map((d) => [d.id, d]))
   const occupied = occupiedCounts(result)
 
-  const bodies: Line[][] = [
-    phaseSong(result),
-    phaseVoiceAssignment(result, deviceById),
-    phaseRig(result, occupied),
-    phaseHook(result, deviceById),
-    phaseSteps(result, deviceById, settings),
-    phaseSound(result, deviceById, settings),
-    phaseFinishing(result),
-  ]
-
   const out: Line[] = [`# ${result.template.name}`, '', ...LEGEND]
-  bodies.forEach((body, i) => {
-    out.push('', `## ${num(i + 1)}. ${GUIDE_PHASES[i] as string}`, '')
+  const section = (n: number, title: string, body: readonly Line[]) => {
+    out.push('', `## ${num(n)}. ${title}`, '')
     out.push(...body)
-  })
+  }
+
+  if (layout === 'phase') {
+    const bodies: Line[][] = [
+      phaseSong(result),
+      phaseVoiceAssignment(result, deviceById),
+      phaseRig(result, occupied),
+      phaseHook(result, deviceById),
+      phaseSteps(result, deviceById, settings),
+      phaseSound(result, deviceById, settings),
+      phaseFinishing(result),
+    ]
+    bodies.forEach((body, i) => section(i + 1, GUIDE_PHASES[i] as string, body))
+    return `${out.join('\n')}\n`
+  }
+
+  section(1, GUIDE_PHASES[0] as string, phaseSong(result))
+  section(2, GUIDE_PHASES[1] as string, phaseVoiceAssignment(result, deviceById))
+  section(3, GUIDE_PHASES[2] as string, phaseRig(result, occupied))
+
+  let n = 4
+  for (const group of sequencerGroups(result)) {
+    if (group.kind === 'undriven') {
+      /**
+       * Invariant 5. These parts have no box to stand at, which the guide already says in as many
+       * words — so they get a section of their own rather than being dropped, and the heading says
+       * why there is no device name on it.
+       */
+      section(n++, 'Nothing in this rig can drive these', [
+        ...LAYOUT_PREAMBLE.undriven,
+        '',
+        ...performedHere(result, group.assignments, deviceById, settings),
+      ])
+      continue
+    }
+    const title = group.drivesOnly
+      ? `${group.deviceName} — drives these, sounds none of them`
+      : group.deviceName
+    section(n++, title, performedHere(result, group.assignments, deviceById, settings))
+  }
+
+  /**
+   * Invariant 5, the other half of the hook narrowing above. A hook whose role no box carries
+   * belongs to no section, so it gets one — once, rather than repeated under every box that does
+   * not play it.
+   */
+  const played = new Set(result.assignments.map((a) => a.role))
+  const orphanHooks = result.song.hooks.filter((h) => !played.has(h.forRole))
+  if (orphanHooks.length > 0) {
+    const nobody: ResolveResult = {
+      ...result,
+      assignments: [],
+      song: { ...result.song, hooks: orphanHooks },
+    }
+    section(n++, 'Hooks with nothing to play them', [
+      ...LAYOUT_PREAMBLE.orphanHooks,
+      '',
+      ...demote(phaseHook(nobody, deviceById)),
+    ])
+  }
+
+  section(n, GUIDE_PHASES[6] as string, phaseFinishing(result))
   return `${out.join('\n')}\n`
 }
