@@ -2,7 +2,13 @@ import type { AssignableKey, Occupancy } from './occupancy'
 import type { DeviceId, HookId, RecipeId, RequestId, SectionName } from './ids'
 import type { Score } from './objective'
 import type { Character, Role } from './vocabulary'
-import { canFollow, compatibleJackSignals, realisationOf, sendTransports } from './device'
+import {
+  canFollow,
+  compatibleJackSignals,
+  patternEntryNotice,
+  realisationOf,
+  sendTransports,
+} from './device'
 import type { Assignable, Device, JackSignalKind, JackSpec, Realisation } from './device'
 import type { RoleRequest, Template } from './template'
 import type { ResolvedParam } from './params'
@@ -547,8 +553,100 @@ function trailingOrdinal(id: string): string | undefined {
  *  - `unrouted` — this pass reached no verdict for the box. The pre-#65 wording stands: point at
  *    the rig diagram rather than invent a driver.
  */
+/**
+ * §8/#230. **The box a reader stands at to enter a part, which is not always the box it sounds on.**
+ *
+ * The guide is phase-major: seven phases, each covering every part in the rig. A session is not.
+ * People work a track at a time — pick the sound source, shape it a little, move on — and
+ * phase-major sends the reader back to the same box three separate times, once per phase.
+ *
+ * This is the grouping the other layout needs, and the rule is **the sequencer, not the device**.
+ * Those are the same thing for almost every rig, which is why device-major looks adequate until it
+ * is not: measured over 84 sampled five-device guides the two groupings were identical in every
+ * one. They come apart only for a box that cannot hold a pattern (§8/#65), where the reader's
+ * hands are on whatever drives it — a Minitaur's part is entered on the Hapax, and a layout that
+ * files it under the Minitaur sends the reader to the wrong panel.
+ *
+ * So this keys on `patternDriver`, which already answers exactly that question, rather than on
+ * `deviceId`. Grouping by device would need a special case for those boxes; grouping by driver
+ * needs none, and gets the ordinary case right for the same reason.
+ *
+ * **A part nothing can drive keeps its own group** rather than being dropped or filed under a box
+ * the reader will not touch. Invariant 5: that is a gap in the rig, the guide already says so in
+ * as many words ("Nothing in this rig can drive it"), and a layout that made it disappear would
+ * be hiding the one thing a reader most needs to know. It sorts last, because it is the group
+ * with nothing to stand at.
+ *
+ * Order is first appearance in `assignments`, so it inherits the resolver's own ordering and is
+ * as deterministic as the allocation is (invariant 6). Nothing here sorts by name.
+ */
+export type SequencerGroup =
+  | {
+      kind: 'sequencer'
+      deviceId: DeviceId
+      deviceName: string
+      assignments: readonly ResolvedAssignment[]
+      /**
+       * Every part in this group sounds somewhere else. True for a Hapax driving a Minitaur and
+       * carrying nothing of its own — the reader stands here, but no sound is made here, and a
+       * renderer that says "on the Hapax" without saying so would be misleading.
+       */
+      drivesOnly: boolean
+    }
+  | { kind: 'undriven'; assignments: readonly ResolvedAssignment[] }
+
+export function sequencerGroups(result: ResolveResult): readonly SequencerGroup[] {
+  const byId = new Map(result.devices.map((d) => [d.id, d]))
+
+  /** The box whose panel this part is entered on, or `undefined` when nothing can drive it. */
+  const hostOf = (a: ResolvedAssignment): DeviceId | undefined => {
+    // A box that sequences itself hosts its own parts. `patternEntryNotice` answers only for the
+    // boxes that declare they cannot, so the common case never consults the patch at all.
+    if (patternEntryNotice(byId.get(a.deviceId)) === undefined) return a.deviceId
+    const driver = patternDriver(result.interDevicePatch, a.deviceId)
+    return driver.state === 'driven' ? driver.deviceId : undefined
+  }
+
+  const order: (DeviceId | undefined)[] = []
+  const grouped = new Map<DeviceId | undefined, ResolvedAssignment[]>()
+  for (const a of result.assignments) {
+    const host = hostOf(a)
+    let bucket = grouped.get(host)
+    if (bucket === undefined) {
+      bucket = []
+      grouped.set(host, bucket)
+      order.push(host)
+    }
+    bucket.push(a)
+  }
+
+  const groups: SequencerGroup[] = []
+  for (const host of order) {
+    const assignments = grouped.get(host) as ResolvedAssignment[]
+    if (host === undefined) continue // appended last, below
+    groups.push({
+      kind: 'sequencer',
+      deviceId: host,
+      deviceName: byId.get(host)?.name ?? host,
+      assignments,
+      drivesOnly: assignments.every((a) => a.deviceId !== host),
+    })
+  }
+  const undriven = grouped.get(undefined)
+  if (undriven !== undefined) groups.push({ kind: 'undriven', assignments: undriven })
+  return groups
+}
+
 export type PatternDriver =
-  | { state: 'driven'; deviceName: string; pitchJack: string; gateJack: string }
+  /**
+   * `deviceId` beside `deviceName` since #230. Phase 5 only ever needed the name, because it
+   * prints a sentence; `sequencerGroups` needs to *group* by the driving box, and grouping on a
+   * display string would fuse two devices that happen to share a name and split one that gets
+   * renamed. The id is already in the cable — `PatchCable.fromDeviceId` — so this exposes what
+   * was there rather than deriving it a second way, which is the drift this file warns about
+   * three lines down.
+   */
+  | { state: 'driven'; deviceId: DeviceId; deviceName: string; pitchJack: string; gateJack: string }
   | { state: 'nothing-drives' }
   | { state: 'source-exhausted'; deviceName: string }
   | { state: 'unrouted' }
@@ -572,6 +670,7 @@ export function patternDriver(
       if (pitch === undefined || gate === undefined) return { state: 'unrouted' }
       return {
         state: 'driven',
+        deviceId: pitch.fromDeviceId,
         deviceName: pitch.fromDeviceName,
         pitchJack: pitch.fromJack,
         gateJack: gate.fromJack,
