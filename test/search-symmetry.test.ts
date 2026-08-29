@@ -1325,11 +1325,27 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * roles makes each search deeper, and every direction authored adds a whole column of them.
    * Whoever raises the number next should read that as the same signal the node cap gives.
    */
-  it('leaves every shipped template inside the shipped cap, with room to spare', () => {
+  it('leaves every shipped template inside the shipped cap, with room to spare', async () => {
     let worst = { nodes: -1, where: '' }
 
     for (const template of TEMPLATES) {
       for (const seed of CAP_SWEEP_SEEDS) {
+        /**
+         * **Yielding is not a performance tweak, it is what keeps this test reportable.**
+         *
+         * 168 exhaustive searches back to back is one unbroken synchronous block, and a Vitest
+         * worker cannot answer the main thread while it holds the event loop. When the MicroFreak
+         * took the worst case to 223,348 nodes the block grew past the RPC window and CI failed
+         * with `[vitest-worker]: Timeout calling "onTaskUpdate"` — **while reporting all 2,525
+         * tests passed**, because nothing here had actually gone wrong. An unhandled worker error
+         * still exits non-zero, so the gate went red for a reason no assertion could explain.
+         *
+         * One `setImmediate` per search bounds the block to a single search rather than the whole
+         * sweep. It changes no assertion and no coverage: every template and seed is still
+         * searched, and the node counts are unaffected because the search itself is synchronous
+         * and deterministic (invariant 6).
+         */
+        await new Promise((resolve) => setImmediate(resolve))
         const result = assign({ devices: [...DEVICES], template, mood: moodState(), seed })
         const where = `${template.id} seed ${seed}`
         expect(result.search.capped, where).toBe(false)
