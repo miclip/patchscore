@@ -106,6 +106,7 @@ describe('device search matches name, maker and kind', () => {
       'akai-mpc-live-iii',
       'akai-mpc-one-g2',
       'akai-mpc-xl',
+      'novation-circuit-tracks',
       'polyend-tracker-mini',
       'roland-mc-101',
       'roland-mc-707',
@@ -202,6 +203,7 @@ describe('the kind filter', () => {
       'akai-mpc-live-iii',
       'akai-mpc-one-g2',
       'akai-mpc-xl',
+      'novation-circuit-tracks',
       'polyend-tracker-mini',
       'roland-mc-101',
       'roland-mc-707',
@@ -345,9 +347,9 @@ describe('selected entries survive any filter', () => {
     const shown = devices({ kind: 'groovebox' }, ['roland-tr-1000'])
     expect(ids(shown.rows)).toContain('roland-tr-1000')
     expect(shown.rows.find((r) => r.item.id === 'roland-tr-1000')?.retained).toBe(true)
-    // Eight grooveboxes since the MC-707 landed; the TR-1000 is a drum machine and is here only
-    // because it is selected, which is what `retained` marks and why it is not counted.
-    expect(shown.matched).toBe(8)
+    // Nine grooveboxes since the Circuit Tracks landed; the TR-1000 is a drum machine and is
+    // here only because it is selected, which is what `retained` marks and why it is not counted.
+    expect(shown.matched).toBe(9)
   })
 
   it('keeps them in registry order rather than appending them at the end', () => {

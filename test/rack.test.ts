@@ -807,6 +807,17 @@ describe('panel layouts', () => {
       // that, this is where the cost is recorded, because the alternative was to author fewer
       // pads than the kit has or more tone tracks than the box has left — bending device data to
       // suit a drawing, when §2.3 makes the drawing the optional half.
+      //
+      // **The floor held when the Circuit Tracks landed, and holding it is what fixed the
+      // panel.** That box declares 2 synth tracks and 4 drum tracks — both hardware counts, with
+      // nothing to trim — so at the 4 columns the packer picks, six cells sit in eight slots and
+      // a quarter of any region goes to nothing before the aspect cap takes the rest. Its field
+      // over the whole 4 x 8 pad block measures **0.529** and fails here; over the top three
+      // rows, with the fourth drawn as a `grid` of pads, it measures **0.555** and passes. The
+      // first number was a panel that read as a box with fewer parts than it has, which is
+      // exactly what this floor exists to catch, so the answer was the drawing rather than the
+      // threshold. `novation-circuit-tracks/panel.ts` records the split as a drawing decision and
+      // not as a claim that the box divides its pads three-and-one.
       expect(covered / (field.w * field.h)).toBeGreaterThan(0.55)
       // And coverage alone is not enough: taking the *first* column count that fits fills the
       // region with a tall thin column of slabs, which covers plenty of area and reads as
@@ -1022,6 +1033,12 @@ describe('rack view', () => {
     // like every other horizontal coordinate in that layout, against the published 311 mm width
     // the strip spans. It carries the EP-133's caveat once more: the drawn box is the visible
     // glass rather than an active area nobody publishes.
+    // **Still 44 after the Circuit Tracks, which draws no screen at all** — the entry is here
+    // because a reader counting thirty-four devices against forty-four screens should find the
+    // absence explained rather than have to check the panel. That box has no display: its
+    // readout *is* the 32 RGB pads, and the User Guide's tempo chapter draws the BPM on them as
+    // two or three large digits (p.85) rather than putting it anywhere else. A `screen` feature
+    // there would be inventing a window the panel does not have.
     expect(count('rack-screen')).toBe(44)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
@@ -1096,6 +1113,12 @@ describe('rack view', () => {
     // 300: plus the MicroFreak's fifteen. p.18 calls the keybed 25 keys and p.35 says it spans
     // two octaves, which is 15 white and 10 black — and white is what this census counts, as it
     // does for the Matriarch's 29 of 49 and the minilogue xd's 22 of 37.
+    // **Still 300 after the Circuit Tracks**, and for a different reason from the screen census
+    // above: that box has a grid, and it is the wrong shape for this list. Its one `grid` is the
+    // fourth row of the 4 x 8 pad block, `shape: 'pad'`, so it lands in `rack-pad`. There is no
+    // keybed — the pads are played as a keyboard in Note View but they are pads, and this census
+    // counts the shape a panel draws rather than what a player does with it, which is the same
+    // rule that put the MC-707's step row *in* the list.
     expect(count('rack-key')).toBe(300)
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
@@ -1130,7 +1153,15 @@ describe('rack view', () => {
     // and deliberately so: the box has one voice of polyphony 4, so the region holds a single
     // cell, and a cell stretched across the panel would be the Deluge mistake the next test
     // records. One knob's width beside the knobs is what a single voice should look like.
-    expect(fields).toHaveLength(27)
+    // Twenty-eight since the Circuit Tracks, whose field is the **top three** of its four pad
+    // rows, with the fourth drawn as an 8 x 1 grid of pads beneath it — the Deluge's arrangement
+    // rather than the MC-707's. It is not on the track-button row it names its parts from, and
+    // the reason is arithmetic rather than taste: two pools cost two bank labels, leaving `h - 13`
+    // for two rows of cells, so the packer needs 19 mm and that row measures 18.66. Over all four
+    // rows the six cells cover 0.529 and fail the floor above; over three they cover 0.555. The
+    // split is a drawing decision and that panel says so — nothing about the box divides its pads
+    // three-and-one.
+    expect(fields).toHaveLength(28)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

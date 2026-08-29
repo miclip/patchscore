@@ -311,6 +311,42 @@ import { TEMPLATES } from '../lib/templates/index'
  * making this the device that pushed the constant past itself, and is 44.7% of the 500,000 that
  * replaced it. `lib/core/search.ts` records why that re-derivation is against measured latency
  * rather than to fit this row.
+ *
+ * ---
+ *
+ * **The Circuit Tracks moves both large directions by the same half**, which puts it back in the
+ * MC-707's shape rather than the MicroFreak's — and the two rows together are why neither shape
+ * should be read as the rule.
+ *
+ *   - **`industrial-techno` 197,191-223,348 -> 282,896-333,077**, up 43.5% at the floor and 49.1%
+ *     at the peak.
+ *   - **`weave` 76,349-78,776 -> 113,021-116,453**, up 48.0% and 47.8%. The row the MicroFreak
+ *     left flat to twenty-two nodes moves in step with the other this time.
+ *   - `ambient-dub` 157-163 -> 163-169, `drone-study` 25 -> 26, `relay` 51 -> 53.
+ *   - **Two directions get cheaper at the peak**: `lydian-house` 143-307 -> 150-250 and
+ *     `major-key-electro` 143-777 -> 153-472. Floors rise, peaks fall. That is the
+ *     non-monotonicity `DEFAULT_NODE_CAP`'s docstring records — a new box can hand the search a
+ *     cheaper early solution on the seed that used to be worst — and it is the reason a total
+ *     taken across this table would have reported a smaller move than any single row did.
+ *
+ * Attributed by measurement: the same sweep with this box removed and everything else present
+ * gives `industrial-techno` 223,348 and `weave` 78,776, both the previous row exactly.
+ *
+ * **The contested-role hypothesis was tested here and does not explain this row.** The paragraph
+ * above leaves it open, and the skill built on it tells the next author to ask which of their
+ * roles are already crowded. This box serves ten tonal roles from a pool of two timbres, `pad`
+ * among them, so it was the obvious candidate. The same sweep with `pad` dropped from the synth
+ * pool **and** its recipe removed gives `industrial-techno` **329,531** — 1.1% of a 109,729-node
+ * rise — and `weave` **116,453**, unmoved to the node. So the cost is spread across the tonal
+ * roles rather than sitting in one of them.
+ *
+ * For whoever sizes the next device: the MC-707 row says a duplicated sheet under-predicts by
+ * two, the MicroFreak row says one crowded role can carry a whole device's bill, and this row
+ * says a box can cost as much as either with neither mechanism present. **None of the three is a
+ * formula.** Measure the sweep before and after, direction by direction, and put both numbers in
+ * the commit.
+ *
+ * Nothing caps. `industrial-techno` at 333,077 is 66.6% of the 500,000 `DEFAULT_NODE_CAP`.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -319,31 +355,32 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      157, 160, 157, 163, 160, 160, 157, 160, 162, 160, 159, 160, 159, 163, 162, 160, 160, 160, 160,
-      157, 163, 157, 160, 160
+      163, 166, 163, 169, 168, 166, 163, 166, 168, 166, 165, 164, 165, 169, 168, 164, 166, 168, 164,
+      165, 169, 165, 164, 168
     ],
     'drone-study': [
-      25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25
+      26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26
     ],
     'industrial-techno': [
-      197191, 207996, 197859, 197191, 223348, 197192, 197192, 197192, 197192, 197192, 207998,
-      197191, 197857, 197192, 197191, 197192, 197191, 197859, 197192, 197192, 197192, 207996,
-      197192, 209713
+      282897, 297550, 283576, 282897, 282896, 282897, 282897, 282897, 282897, 282897, 282898,
+      282897, 283574, 282896, 333077, 282897, 297550, 283576, 282897, 282897, 318424, 282897,
+      282897, 298216
     ],
     'lydian-house': [
-      143, 237, 143, 144, 143, 238, 143, 237, 143, 238, 143, 307, 143, 144, 144, 238, 238, 144, 237,
-      143, 181, 143, 238, 144
+      150, 249, 188, 151, 151, 250, 150, 249, 151, 248, 150, 249, 188, 151, 151, 248, 250, 151, 249,
+      150, 190, 150, 250, 151
     ],
     'major-key-electro': [
-      143, 359, 148, 475, 145, 149, 148, 149, 148, 149, 358, 144, 148, 149, 143, 149, 777, 148, 149,
-      148, 149, 358, 149, 146
+      154, 467, 156, 157, 154, 157, 156, 157, 153, 157, 157, 439, 156, 152, 154, 157, 410, 156, 157,
+      156, 154, 156, 157, 409
     ],
     'relay': [
-      51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51, 51
+      53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53
     ],
     'weave': [
-      76349, 78776, 76349, 76349, 76349, 76349, 76349, 76349, 76349, 76349, 78620, 76349, 76349,
-      76349, 76349, 76349, 76349, 76349, 76349, 76349, 76349, 78620, 76349, 76349
+      113021, 116233, 113021, 113021, 113021, 113021, 113021, 113021, 113021, 113021, 113021,
+      113021, 113021, 113021, 113021, 113021, 116453, 113021, 113021, 113021, 113021, 113021,
+      113021, 116233
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".

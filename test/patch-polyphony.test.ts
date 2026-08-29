@@ -81,6 +81,11 @@ describe('the cap changes nothing for a box that declares none', () => {
       'arturia-microfreak',
       'korg-minilogue-xd',
       'moog-muse',
+      // The Circuit Tracks is the fourth, and its reason is the plainest in the list: p.35 states
+      // six-note polyphony and then qualifies it — "if the Patch you've selected is suitably
+      // polyphonic" — and four of its nine synth recipes put the patch in a Mono polyphony mode
+      // (Programmer's Reference p.3). Its own test asserts the pairing both ways.
+      'novation-circuit-tracks',
     ])
   })
 

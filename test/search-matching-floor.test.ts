@@ -1018,7 +1018,21 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * flat, a different shape from the MC-707's row even though the number here looks like a repeat
    * of it. This seed sits on the direction that pays.
    */
-  it('walks the recorded 197,832 nodes on industrial-techno seed 9', () => {
+  /**
+   * **The Circuit Tracks moves both figures together for a sixth time — and moves the gap.**
+   * 197,832 -> 283,787 unrepaired and 197,192 -> 282,897 repaired, 43.5% on each.
+   *
+   * The paragraph above calls the absolute distance between the two paths the one figure that has
+   * stayed still, at 636 then 640 through five devices and a near-tripling of the walk. **It is
+   * 890 here**, up 39%, and that is the first move worth reading rather than rounding. It is
+   * still small against the walk — three parts in a thousand, where it was three parts in a
+   * thousand before — so what has held is the *proportion* rather than the count, and the earlier
+   * paragraphs were reading a constant into six hundred-odd nodes that were tracking the problem
+   * size all along. Recorded as a correction to that reading rather than as a defect: the repair
+   * is still admissible and still cheap, and this fixture's claim survives with the weaker and
+   * truer form of it.
+   */
+  it('walks the recorded 283,787 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1026,14 +1040,14 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(197_832)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(283_787)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
-    // stops guarding anything and starts re-recording the measurement a second time. 80,000 is
-    // now 260,000, on the sixth device to push past it. Kept deliberately loose: 197,192 sits at
-    // 76% of it, about the slack 140,000 gave the measurement it replaced.
-    expect(assign(input).search.nodes).toBeLessThan(260_000)
+    // stops guarding anything and starts re-recording the measurement a second time. 260,000 is
+    // now 380,000, on the seventh device to push past it. Kept deliberately loose: 282,897 sits
+    // at 74% of it, about the slack 260,000 gave the measurement it replaced.
+    expect(assign(input).search.nodes).toBeLessThan(380_000)
   })
 })
 

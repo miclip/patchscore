@@ -30,9 +30,9 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → MPC XL · Mono Track 1 — *DrumSynth Kick, transient forward and the low band lifted*
+- **`kick`** → MC-101 · Drum Pad 1 — *Tight kick, tuned down, no tail on it*
   - p1 · exact `hard` · every section
-- **`sub`** → MC-101 · TONE Track 1 — *Sine sub, one note at a time, nothing above the fundamental*
+- **`sub`** → Circuit Tracks · Synth 1 — *Mono sine sub, filtered flat, nothing above the fundamental*
   - p1 · exact `dark` · every section
 - **`bass-mid`** → Subsequent 37 · Voice — *Mixer pushed past unity with feedback under it and MultiDrive on top*
   - p2 · exact `dirty` · every section
@@ -87,10 +87,10 @@ None.
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
-- **MPC XL** — groovebox · 1 part
+- **MPC XL** — groovebox · 0 parts
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · 6 individual outs · USB audio · audio in
-  - mixer: 1 part, 6 individual outs: one channel each
+  - mixer: no parts assigned; nothing to patch
 - **MicroFreak** — synth · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI · In: 1/8" TRS, not 5-pin — p.20 and p.7 both direct the reader to "the included MIDI adapters (1/8" TRS jack to 5-pin DIN, gray)" · manual
@@ -167,6 +167,10 @@ None.
   - clock: sends clock · midi-din/usb
   - audio: mono main out · audio in
   - mixer: 1 part, no individual outs: one mono channel for all
+- **Circuit Tracks** — groovebox · 1 part
+  - clock: sends clock · out: midi-din/usb/analog-clock · in: midi-din/usb
+  - audio: stereo main out · audio in
+  - mixer: 1 part, no individual outs: one stereo channel for all
 - **Tracker Mini** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb
   - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284) · manual
@@ -307,9 +311,9 @@ How this box sets a note’s length is not established here, so the durations be
 
 ## 5. Step programming
 
-### `kick` — MPC XL · Mono Track 1
+### `kick` — MC-101 · Drum Pad 1
 
-**DrumSynth Kick, transient forward and the low band lifted** — settings in Sound design
+**Tight kick, tuned down, no tail on it** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -318,22 +322,12 @@ How this box sets a note’s length is not established here, so the durations be
 ```
 - `downbeat` — 1, 9
 
-**On this box** — MPC XL
-
-- `downbeat` → `velocity` 120 on steps 1, 9
-  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
-
 **Build, Breakdown** — 16 steps, band 1
 
 ```
  1 x··· x··· x··· x···
 ```
 - `downbeat` — 1, 5, 9, 13
-
-**On this box** — MPC XL
-
-- `downbeat` → `velocity` 120 on steps 1, 5, 9, 13
-  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -344,14 +338,16 @@ How this box sets a note’s length is not established here, so the durations be
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — MPC XL
+**On this box** — MC-101
 
-- `downbeat` → `velocity` 120 on steps 1, 5, 13
-  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
+- `accent` → `velocity` 120 on step 9
+  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
+- `ghost` → `velocity` 54 on steps 8, 16
+  - ↳ hint: Hold TRACK SEL, press the pad
 
-### `sub` — MC-101 · TONE Track 1
+### `sub` — Circuit Tracks · Synth 1
 
-**Sine sub, one note at a time, nothing above the fundamental** — settings in Sound design
+**Mono sine sub, filtered flat, nothing above the fundamental** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -360,10 +356,10 @@ How this box sets a note’s length is not established here, so the durations be
 ```
 - `downbeat` — 1
 
-**On this box** — MC-101
+**On this box** — Circuit Tracks
 
-- `downbeat` → `note-length` 12 on step 1
-  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
+- `downbeat` → `gate` 4 on step 1
+  - ↳ hint: Synth: press Gate, hold the step
 
 **Build, Breakdown** — 16 steps, band 1
 
@@ -373,10 +369,10 @@ How this box sets a note’s length is not established here, so the durations be
 - `downbeat` — 1, 9
 - `offbeat` — 15
 
-**On this box** — MC-101
+**On this box** — Circuit Tracks
 
-- `downbeat` → `note-length` 12 on steps 1, 9
-  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
+- `downbeat` → `gate` 4 on steps 1, 9
+  - ↳ hint: Synth: press Gate, hold the step
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -386,10 +382,10 @@ How this box sets a note’s length is not established here, so the durations be
 - `downbeat` — 1
 - `offbeat` — 3, 7, 11, 15
 
-**On this box** — MC-101
+**On this box** — Circuit Tracks
 
-- `downbeat` → `note-length` 12 on step 1
-  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
+- `downbeat` → `gate` 4 on step 1
+  - ↳ hint: Synth: press Gate, hold the step
 
 ### `bass-mid` — Subsequent 37 · Voice
 
@@ -628,36 +624,6 @@ How this box sets a note’s length is not established here, so the durations be
 - `accent` — 31 (vel 104)
 
 ## 6. Sound design
-
-### MPC XL
-
-*Values below cite MPC Live III / MPC XL User Guide v3.7.*
-
-#### Mono Track 1 — `kick`: DrumSynth Kick, transient forward and the low band lifted
-
-*Ranges cite manual — MPC Live III / MPC XL User Guide v3.7, p.432.*
-
-- **Track Type** `Plugin`
-- **Plugin** `DrumSynth`
-- **Drum Type** `Kick`
-  - ↳ note: One DrumSynth instrument per plugin track
-- **Velocity** `30` % (0…100 %)
-  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
-- **Gain** `-2` dB (-68…12 dB)
-  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
-  - ↳ note: p.431 prints "-Inf, -68.0 – 0 – +12.0 dB"; -Inf is a setting below the range, not part of it
-- **Transient Attack** `45` % (-100…100 %)
-- **Distortion Drive** `6` dB (0…60 dB)
-- **Distortion Mix** `25` % (0…100 %)
-- **EQ Low Freq** `58` Hz (20…1000 Hz)
-- **EQ Low Gain** `3.5` dB (-12…12 dB)
-  - ↳ note: A `Cut` setting sits below the numeric range on the same page
-- **EQ High Gain** `-1.5` dB (-12…12 dB)
-- **Comp Ratio** `4` (1…100)
-  - ↳ note: p.432 prints the range as 1.0:1 - 100.0:1; this is the left-hand number
-- **Comp Attack** `8` ms (0.1…300 ms)
-  - ↳ note: p.432 prints the low end as 100 us
-- **Comp Threshold** `-14` dB (-60…0 dB)
 
 ### MicroFreak
 
@@ -1011,28 +977,75 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **MOD 1 · MOD AMT** `1` (-5…5)
   - ↳ cite: range manual — Subsequent 37 User's Manual, p.22
 
+### Circuit Tracks
+
+*Values below cite Circuit Tracks Programmer's Reference Guide v3 and Circuit Tracks User Guide v3.*
+
+**Song-wide**
+
+One setting for the whole song — set it once, not once per part below.
+
+- **SWING** `50` (20…80)
+  - ↳ cite: range manual — Circuit Tracks User Guide v3, p.86
+  - ↳ note: One setting for the whole Project, not per track
+  - ↳ hint: Press Tempo/Swing, turn Macro 2
+
+#### Synth 1 — `sub`: Mono sine sub, filtered flat, nothing above the fundamental
+
+Routing — Sidechain this track to the kick drum track — Shift + FX, then a preset in the Synth row
+
+- **POLYPHONY MODE** `Mono`
+- **OSC 1 WAVE** `sine`
+- **OSC 1 LEVEL** `127` (0…127)
+  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.3
+- **OSC 2 LEVEL** `0` (0…127)
+  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.3
+- **FILTER TYPE** `low pass 24dB`
+- **FILTER FREQUENCY** `34` (0…127)
+  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.3
+  - ↳ hint: Synth: Macro 5 · Filter Frequency
+- **FILTER RESONANCE** `0` (0…127)
+  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.3
+  - ↳ hint: Synth: Macro 6 · Resonance
+- **AMP ATTACK** `2` (0…127)
+  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.4
+- **AMP DECAY** `90` (0…127)
+  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.4
+- **AMP SUSTAIN** `110` (0…127)
+  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.4
+- **AMP RELEASE** `24` (0…127)
+  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.4
+- **PORTAMENTO RATE** `18` (0…127)
+  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.3
+  - ↳ note: Only audible in a Mono polyphony mode
+- **SIDECHAIN ATTACK** `0` (0…127)
+  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.12
+- **SIDECHAIN HOLD** `34` (0…127)
+  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.12
+- **SIDECHAIN DECAY** `78` (0…127)
+  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.12
+- **SIDECHAIN DEPTH** `96` (0…127)
+  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.12
+- **REVERB SEND** `0` (0…127)
+  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.12
+  - ↳ hint: Press FX, then turn this track’s Macro
+
 ### MC-101
 
 *Values below cite MC-101 Reference Manual eng01 and MC-101 Update eng08.*
 
-#### TONE Track 1 — `sub`: Sine sub, one note at a time, nothing above the fundamental
+#### Drum Pad 1 — `kick`: Tight kick, tuned down, no tail on it
 
-Routing — Keep the sub mono and dry — the reverb and delay sends stay at 0
+Routing — OUT ASSIGN DRY keeps the kick clear of whatever the kit MFX is doing
 
-*Ranges cite manual — MC-101 Reference Manual eng01, p.45.*
+*Ranges cite manual — MC-101 Reference Manual eng01, p.47.*
 
-- **MONO/POLY** `MONO`
-- **OCT SHIFT** `-1` (-3…3)
-- **CUTOFF** `-34` (-64…63)
-- **RESONANCE** `-18` (-64…63)
-- **ATTACK** `-20` (-64…63)
-- **RELEASE** `-24` (-64…63)
-- **MFX TYPE** `04 Low Boost`
-- **BOOST FREQUENCY** `63`
-- **BOOST GAIN** `5` dB (0…12 dB)
-  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.54
-  - ↳ hint: Hold [SHIFT], press [SOUND]
-- **BOOST WIDTH** `NARROW`
+- **LEVEL** `118` (0…127)
+- **KEY OFFSET** `-2` st (-24…24 st)
+- **CUTOFF OFST** `24` (-100…100)
+- **DECAY OFST** `-34` (-100…100)
+- **RELEASE OFST** `-46` (-100…100)
+- **OUT ASSIGN** `DRY`
 - **REVERB SEND** `0` (0…127)
 - **SHUFFLE** `0` (-50…50)
   - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
@@ -1184,7 +1197,7 @@ The MPC Live III, MPC One G2, MPC XL and Cascadia can duck to another box: patch
 
 The MPC Live III, MPC One G2 and MPC XL can also duck from their own parts.
 
-The TR-1000, TR-6S, TR-8S, Deluge, EP–133 K.O. II, EP–40 riddim and OP-XY duck from their own parts only.
+The Circuit Tracks, TR-1000, TR-6S, TR-8S, Deluge, EP–133 K.O. II, EP–40 riddim and OP-XY duck from their own parts only.
 
 The MicroFreak declares a sidechain and documents no trigger for it.
 
@@ -1198,6 +1211,7 @@ What processes audio in this rig:
 - ZOIA Euroburo — is an effects unit (stereo main out · audio in)
 - Matriarch — carries effects, though no part in this guide reaches them
 - Muse — carries effects, though no part in this guide reaches them
+- Circuit Tracks — carries FX on the panel, and REVERB SEND in its recipes
 - Tracker Mini — carries effects, though no part in this guide reaches them
 - MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and REVERB SEND in its recipes
 - MC-707 — carries FX PRM and FX DEPTH on the panel
