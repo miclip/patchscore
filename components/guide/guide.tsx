@@ -7,6 +7,8 @@ import type { ReactNode } from 'react'
 import {
   GUIDE_PHASES,
   LAYOUT_PREAMBLE,
+  contentNotice,
+  hoistedParams,
   devicesInGroup,
   devicesOutsideGroups,
   narrowToGroup,
@@ -17,12 +19,12 @@ import { browserEnv } from '@/lib/studio/browser-env'
 import { DEFAULT_GUIDE_LAYOUT, readGuideLayout } from '@/lib/studio/preferences'
 import { templateHref } from '@/lib/studio/catalogue'
 import { downloadGuideMarkdown, printGuide } from '@/lib/studio/export'
-import { occupiedCounts } from './format'
+import { occupiedCounts, voicesLabel } from './format'
 import { PhaseFinishing } from './phase-finishing'
 import { PhaseHook } from './phase-hook'
 import { PhaseRig } from './phase-rig'
 import { PhaseSong } from './phase-song'
-import { PhaseSound } from './phase-sound'
+import { PhaseSound, SoundForPart, SoundShared } from './phase-sound'
 import { PhaseSteps } from './phase-steps'
 import { PhaseVoices } from './phase-voices'
 
@@ -54,6 +56,7 @@ function PerformedHere({
   result,
   deviceById,
   rig,
+  hostId,
 }: {
   result: ResolveResult
   deviceById: Map<DeviceId, Device>
@@ -65,7 +68,19 @@ function PerformedHere({
    * and wanted again here, which is the trip this removes.
    */
   rig?: readonly Device[]
+  /** The box being stood at, so a part sounding here needs no device name on its heading. */
+  hostId?: DeviceId
 }) {
+  const byDevice = [...new Set(result.assignments.map((a) => a.deviceId))]
+  const shared = byDevice
+    .map((id) => {
+      const device = deviceById.get(id)
+      if (device === undefined) return undefined
+      const mine = result.assignments.filter((a) => a.deviceId === id)
+      return { device, mine, hoist: hoistedParams(mine.map((a) => a.params)) }
+    })
+    .filter((x): x is { device: Device; mine: typeof result.assignments; hoist: ReturnType<typeof hoistedParams> } => x !== undefined)
+  const hoistFor = new Map(shared.map((x) => [x.device.id, x.hoist]))
   return (
     <>
       {rig === undefined || rig.length === 0 ? null : (
@@ -74,6 +89,64 @@ function PerformedHere({
           <PhaseRig result={result} occupied={occupiedCounts(result.assignments)} detail={rig} />
         </>
       )}
+
+      {/*
+        §8/#107. What every track on this box shares, once, above them all — its citation
+        sentence, whether anything is loaded, and the settings #107 hoists because one control
+        serves every part. Rendered per track it would repeat once per track, and one of its own
+        lines reads "set it once, not once per part".
+      */}
+      {shared.map(({ device, mine, hoist }) => (
+        <div key={device.id}>
+          <h4 className="group-phase">
+            {shared.length === 1 ? 'Shared settings' : `${device.name} — shared settings`}
+          </h4>
+          <SoundShared
+            device={device}
+            content={contentNotice(
+              device,
+              mine.map((a) => a.recipe),
+            )}
+            hoist={hoist}
+            deviceById={deviceById}
+          />
+        </div>
+      ))}
+
+      {/*
+        §8/#230. **One track finished before the next is started**, which is how a session runs.
+        The first version of this kept §8's three phases inside the box, so a Deluge section held
+        every hook, then every pattern, then every sound — phase-major with a smaller scope, and
+        the same jumping about within one machine. The loop is the part.
+      */}
+      {result.assignments.map((a) => {
+        const one = narrowToGroup(result, [a])
+        const hoist = hoistFor.get(a.deviceId)
+        return (
+          <div className="group-part" key={a.requestId}>
+            <h4 className="group-phase">
+              {hostId !== undefined && a.deviceId === hostId
+                ? voicesLabel(a)
+                : `${a.deviceName} · ${voicesLabel(a)}`}
+              <span className="role mono"> {a.role}</span>
+            </h4>
+            {one.song.hooks.length === 0 ? null : (
+              <>
+                <h5 className="group-sub">Hook</h5>
+                <PhaseHook result={one} />
+              </>
+            )}
+            <h5 className="group-sub">Step programming</h5>
+            <PhaseSteps result={one} deviceById={deviceById} />
+            {hoist === undefined ? null : (
+              <>
+                <h5 className="group-sub">Sound design</h5>
+                <SoundForPart a={a} hoist={hoist} deviceById={deviceById} />
+              </>
+            )}
+          </div>
+        )
+      })}
       {/*
         Omitted rather than answered when this box carries no hook. `PhaseHook`'s empty state is a
         sentence about the *template*, and under a narrowed result it would appear beneath a drum
@@ -81,16 +154,6 @@ function PerformedHere({
         are not hidden: they are under whichever box plays them, or in their own section when no
         box does (invariant 5).
       */}
-      {result.song.hooks.length === 0 ? null : (
-        <>
-          <h4 className="group-phase">Hook</h4>
-          <PhaseHook result={result} />
-        </>
-      )}
-      <h4 className="group-phase">Step programming</h4>
-      <PhaseSteps result={result} deviceById={deviceById} />
-      <h4 className="group-phase">Sound design</h4>
-      <PhaseSound result={result} deviceById={deviceById} />
     </>
   )
 }
@@ -221,6 +284,7 @@ export function Guide({
                   result={narrowToGroup(result, group.assignments)}
                   deviceById={deviceById}
                   rig={rigFor(group)}
+                  hostId={group.kind === 'sequencer' ? group.deviceId : undefined}
                 />
               </>
             ),

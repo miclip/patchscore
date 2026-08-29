@@ -275,6 +275,104 @@ function ScopedBlock({ group, owner }: { group: ScopedParams; owner: Device | un
  *
  * A device carrying nothing has nothing to dial and is covered by rig integration above.
  */
+/**
+ * §8/#230/#107. **What a box's parts share**, split from what any one of them sets.
+ *
+ * Its Markdown sibling is `soundShared`, and the split has the same cause: the sequencer layout is
+ * track-major, so rendering these per track repeats them once per track — and one of #107's own
+ * lines reads *"set it once, not once per part"*, which under a six-track Deluge printed five
+ * times is the guide contradicting itself in its own words.
+ *
+ * The phase layout renders it exactly where it always inlined it, so nothing there moves.
+ */
+export function SoundShared({
+  device,
+  content,
+  hoist,
+  deviceById,
+}: {
+  device: Device
+  content: ReturnType<typeof contentNotice>
+  hoist: ReturnType<typeof hoistedParams>
+  deviceById: Map<DeviceId, Device>
+}) {
+  return (
+    <>
+      {/* The markdown renderer's own sentence, so the two cannot say different things. */}
+      {citationSentence(device) === undefined ? null : (
+        <p className="quiet">{citationSentence(device)}</p>
+      )}
+
+      {/* §2.6/#111, before the settings: whether there is anything to load is the box's
+          question, and a cutoff on a box with nothing loaded is a setting with no subject. */}
+      {content === undefined ? null : <ContentBlock notice={content} />}
+
+      {/* #107, above the parts: the order it is done at the box — set the one control the
+          pattern shares, then work through the voices. */}
+      {hoist.groups.map((group) => (
+        <ScopedBlock key={group.scope} group={group} owner={deviceById.get(device.id)} />
+      ))}
+    </>
+  )
+}
+
+/**
+ * §8/#230. **One part's own settings**, split from what its box shares (`SoundShared`).
+ *
+ * Its Markdown sibling is `soundForPart`. `hoist` is the set #107 lifted to the device, filtered
+ * out here so a control serving every part is not printed again under each one.
+ */
+export function SoundForPart({
+  a,
+  hoist,
+  deviceById,
+}: {
+  a: ResolvedAssignment
+  hoist: ReturnType<typeof hoistedParams>
+  deviceById: Map<DeviceId, Device>
+}) {
+  const owner: Device | undefined = deviceById.get(a.deviceId)
+  const own = a.params.filter((p) => !hoist.names.has(p.name))
+  return (
+    <div className="recipe">
+      <h5>
+        <span>{voicesLabel(a)}</span>
+        <span className="role mono">{a.role}</span>
+        <span className="recipe-title">{a.recipe.title}</span>
+      </h5>
+
+      {realisationInstruction(a) === '' ? null : (
+        <p className="quiet">{realisationInstruction(a)}</p>
+      )}
+
+      {a.recipe.sourceAudio === undefined ? null : (
+        <Source source={a.recipe.sourceAudio} owner={owner} />
+      )}
+
+      {a.recipe.routing === undefined ? null : (
+        <p className="quiet">Routing — {a.recipe.routing}</p>
+      )}
+
+      {a.params.length === 0 ? (
+        <p className="quiet">No settings authored for this recipe.</p>
+      ) : own.length === 0 ? (
+        /* Every setting this recipe has is device-level. "No settings authored" would be false —
+           they are authored, and they are above. */
+        <p className="quiet">Nothing to set for this part alone; every setting it has is above.</p>
+      ) : (
+        <Params params={own} owner={owner} />
+      )}
+
+      {a.patch.length === 0 ? null : (
+        <>
+          <h6>Patch</h6>
+          <Patch entries={a.patch} />
+        </>
+      )}
+    </div>
+  )
+}
+
 export function PhaseSound({
   result,
   deviceById,
@@ -308,65 +406,11 @@ export function PhaseSound({
       {carrying.map(({ device, mine, hoist, content }) => (
         <section className="device" key={device.id}>
           <h4>{device.name}</h4>
-          {/* The markdown renderer's own sentence, so the two cannot say different things. */}
-          {citationSentence(device) === undefined ? null : (
-            <p className="quiet">{citationSentence(device)}</p>
-          )}
+          <SoundShared device={device} content={content} hoist={hoist} deviceById={deviceById} />
 
-          {/* §2.6/#111, before the settings: whether there is anything to load is the box's
-              question, and a cutoff on a box with nothing loaded is a setting with no subject. */}
-          {content === undefined ? null : <ContentBlock notice={content} />}
-
-          {/* #107, above the parts: the order it is done at the box — set the one control the
-              pattern shares, then work through the voices. */}
-          {hoist.groups.map((group) => (
-            <ScopedBlock key={group.scope} group={group} owner={deviceById.get(device.id)} />
+          {mine.map((a) => (
+            <SoundForPart key={a.requestId} a={a} hoist={hoist} deviceById={deviceById} />
           ))}
-
-          {mine.map((a) => {
-            const owner: Device | undefined = deviceById.get(a.deviceId)
-            const own = a.params.filter((p) => !hoist.names.has(p.name))
-            return (
-              <div className="recipe" key={a.requestId}>
-                <h5>
-                  <span>{voicesLabel(a)}</span>
-                  <span className="role mono">{a.role}</span>
-                  <span className="recipe-title">{a.recipe.title}</span>
-                </h5>
-
-                {realisationInstruction(a) === '' ? null : (
-                  <p className="quiet">{realisationInstruction(a)}</p>
-                )}
-
-                {a.recipe.sourceAudio === undefined ? null : (
-                  <Source source={a.recipe.sourceAudio} owner={owner} />
-                )}
-
-                {a.recipe.routing === undefined ? null : (
-                  <p className="quiet">Routing — {a.recipe.routing}</p>
-                )}
-
-                {a.params.length === 0 ? (
-                  <p className="quiet">No settings authored for this recipe.</p>
-                ) : own.length === 0 ? (
-                  /* Every setting this recipe has is device-level. "No settings authored" would
-                     be false — they are authored, and they are above. */
-                  <p className="quiet">
-                    Nothing to set for this part alone; every setting it has is above.
-                  </p>
-                ) : (
-                  <Params params={own} owner={owner} />
-                )}
-
-                {a.patch.length === 0 ? null : (
-                  <>
-                    <h6>Patch</h6>
-                    <Patch entries={a.patch} />
-                  </>
-                )}
-              </div>
-            )
-          })}
         </section>
       ))}
     </>

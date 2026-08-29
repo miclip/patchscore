@@ -2148,6 +2148,117 @@ function patchLines(entries: readonly ResolvedPatchEntry[]): Line[] {
   return out
 }
 
+/**
+ * §8/#230/#107. **What a box's parts share, rather than what any one of them sets.**
+ *
+ * Lifted out of `phaseSound` when the sequencer layout became track-major. These lines belong to
+ * the *device* — its citation sentence, whether anything is loaded on it, and the settings #107
+ * hoists because one control serves every part — and rendering them per part repeats them once per
+ * track. One of them reads *"set it once, not once per part"*, which printed five times under a
+ * six-track Deluge is the guide contradicting itself in its own words.
+ *
+ * So the track-major layout prints this once at the top of a box's section and the per-track
+ * blocks below carry only what is theirs. The phase layout calls it in exactly the place it always
+ * inlined it, so its bytes do not move.
+ */
+function soundShared(
+  device: Device,
+  mine: readonly ResolvedAssignment[],
+  options: HintSetting,
+): Line[] {
+  const out: Line[] = []
+  const cites = citationSentence(device)
+  if (cites !== undefined) {
+    out.push('')
+    out.push(`*${cites}*`)
+  }
+  // §2.6/#111. Before the settings, for the reason a part's `Source` line comes before its
+  // parameters: a cutoff on a box with nothing loaded is a setting with no subject, and
+  // whether there *is* anything to load is the box's question, not the part's.
+  const content = contentNotice(
+    device,
+    mine.map((a) => a.recipe),
+  )
+  if (content !== undefined) out.push(...contentLines(content))
+  // #107. Above the parts, because that is the order it is done at the box: set the one
+  // control the pattern shares, then work through the voices.
+  const hoist = hoistedParams(mine.map((a) => a.params))
+  for (const group of hoist.groups) {
+    out.push('')
+    out.push(`**${scopeHeading(group.scope)}**`)
+    out.push('')
+    out.push(scopeSentence(group.scope))
+    out.push('')
+    // No `hoisted` cite: a device-level block has no shared-citation sentence over it, so
+    // every line prints its own evidence in full (§3.2).
+    for (const param of group.params) out.push(...paramLines(param, device, options))
+  }
+  return out
+}
+
+/**
+ * §8/#230. **One part's own settings**, split from what its box shares (`soundShared`).
+ *
+ * The track-major layout renders these per track and the shared block once above them; the phase
+ * layout calls both in the order it always inlined them, so its bytes do not move. `hoisted` is
+ * the set #107 lifted to the device, filtered out here so a control that serves every part is not
+ * printed again under each one.
+ */
+function soundForPart(
+  a: ResolvedAssignment,
+  device: Device,
+  hoist: ReturnType<typeof hoistedParams>,
+  options: HintSetting,
+): Line[] {
+  const out: Line[] = []
+    out.push('')
+    out.push(`#### ${voicesLabel(a)} — \`${a.role}\`: ${a.recipe.title}`)
+    out.push('')
+    // §12.4, and an instruction rather than a note: the two realisations are two different
+    // things to do at the box, and doing the wrong one produces the wrong number of sounds.
+    // A chord you load is not a chord you play. Anything device-specific about the trade —
+    // which slot it spends, which it does not — is the recipe's `routing` line immediately
+    // below, because this renderer knows nothing about any box.
+    const realisation = realisationInstruction(a)
+    if (realisation !== '') {
+      out.push(realisation)
+      out.push('')
+    }
+    if (a.recipe.sourceAudio !== undefined) {
+      out.push(...sourceLines(a.recipe.sourceAudio, device, options))
+      out.push('')
+    }
+    if (a.recipe.routing !== undefined) {
+      out.push(`Routing — ${a.recipe.routing}`)
+      out.push('')
+    }
+    const own = a.params.filter((p) => !hoist.names.has(p.name))
+    if (a.params.length === 0) {
+      out.push('No settings authored for this recipe.')
+    } else if (own.length === 0) {
+      // Every setting this recipe has is device-level. Saying "no settings authored" here
+      // would be false — they are authored, they are above — and saying nothing would leave
+      // a heading with no body under it.
+      out.push('Nothing to set for this part alone; every setting it has is above.')
+    } else {
+      // Computed on what is actually printed. A hoisted parameter still in the tally could
+      // tip a citation into looking dominant when the lines it dominated have left the list.
+      const hoisted = dominantRangeCite(own)
+      if (hoisted !== undefined) {
+        out.push(`*Ranges cite ${citeText(hoisted)}.*`)
+        out.push('')
+      }
+      for (const param of own) out.push(...paramLines(param, device, options, hoisted))
+    }
+    if (a.patch.length > 0) {
+      out.push('')
+      out.push('**Patch**')
+      out.push('')
+      out.push(...patchLines(a.patch))
+    }
+  return out
+}
+
 function phaseSound(
   result: ResolveResult,
   deviceById: Map<DeviceId, Device>,
@@ -2165,78 +2276,10 @@ function phaseSound(
     const mine = result.assignments.filter((a) => a.deviceId === device.id)
     if (mine.length === 0) continue
     out.push(`### ${device.name}`)
-    const cites = citationSentence(device)
-    if (cites !== undefined) {
-      out.push('')
-      out.push(`*${cites}*`)
-    }
-    // §2.6/#111. Before the settings, for the reason a part's `Source` line comes before its
-    // parameters: a cutoff on a box with nothing loaded is a setting with no subject, and
-    // whether there *is* anything to load is the box's question, not the part's.
-    const content = contentNotice(
-      device,
-      mine.map((a) => a.recipe),
-    )
-    if (content !== undefined) out.push(...contentLines(content))
-    // #107. Above the parts, because that is the order it is done at the box: set the one
-    // control the pattern shares, then work through the voices.
+    out.push(...soundShared(device, mine, options))
     const hoist = hoistedParams(mine.map((a) => a.params))
-    for (const group of hoist.groups) {
-      out.push('')
-      out.push(`**${scopeHeading(group.scope)}**`)
-      out.push('')
-      out.push(scopeSentence(group.scope))
-      out.push('')
-      // No `hoisted` cite: a device-level block has no shared-citation sentence over it, so
-      // every line prints its own evidence in full (§3.2).
-      for (const param of group.params) out.push(...paramLines(param, device, options))
-    }
     for (const a of mine) {
-      out.push('')
-      out.push(`#### ${voicesLabel(a)} — \`${a.role}\`: ${a.recipe.title}`)
-      out.push('')
-      // §12.4, and an instruction rather than a note: the two realisations are two different
-      // things to do at the box, and doing the wrong one produces the wrong number of sounds.
-      // A chord you load is not a chord you play. Anything device-specific about the trade —
-      // which slot it spends, which it does not — is the recipe's `routing` line immediately
-      // below, because this renderer knows nothing about any box.
-      const realisation = realisationInstruction(a)
-      if (realisation !== '') {
-        out.push(realisation)
-        out.push('')
-      }
-      if (a.recipe.sourceAudio !== undefined) {
-        out.push(...sourceLines(a.recipe.sourceAudio, device, options))
-        out.push('')
-      }
-      if (a.recipe.routing !== undefined) {
-        out.push(`Routing — ${a.recipe.routing}`)
-        out.push('')
-      }
-      const own = a.params.filter((p) => !hoist.names.has(p.name))
-      if (a.params.length === 0) {
-        out.push('No settings authored for this recipe.')
-      } else if (own.length === 0) {
-        // Every setting this recipe has is device-level. Saying "no settings authored" here
-        // would be false — they are authored, they are above — and saying nothing would leave
-        // a heading with no body under it.
-        out.push('Nothing to set for this part alone; every setting it has is above.')
-      } else {
-        // Computed on what is actually printed. A hoisted parameter still in the tally could
-        // tip a citation into looking dominant when the lines it dominated have left the list.
-        const hoisted = dominantRangeCite(own)
-        if (hoisted !== undefined) {
-          out.push(`*Ranges cite ${citeText(hoisted)}.*`)
-          out.push('')
-        }
-        for (const param of own) out.push(...paramLines(param, device, options, hoisted))
-      }
-      if (a.patch.length > 0) {
-        out.push('')
-        out.push('**Patch**')
-        out.push('')
-        out.push(...patchLines(a.patch))
-      }
+      out.push(...soundForPart(a, device, hoist, options))
     }
     out.push('')
   }
@@ -2555,63 +2598,93 @@ export const LAYOUT_PREAMBLE = {
  * threading a depth argument through three phases and everything they call. It touches only lines
  * that are already headings, so nothing else in the document can be caught by it.
  */
-function demote(body: readonly Line[]): Line[] {
-  return body.map((line) => (line.startsWith('#') ? `#${line}` : line))
+function demote(body: readonly Line[], levels = 1): Line[] {
+  const pad = '#'.repeat(levels)
+  return body.map((line) => (line.startsWith('#') ? `${pad}${line}` : line))
 }
 
-/** The middle three phases, for one box's parts. Narrowed by assignment, nothing else. */
+/**
+ * §8/#230. **One track finished before the next is started**, which is how a session runs.
+ *
+ * The first version of this grouped by box and kept §8's three phases inside it, so a Deluge
+ * section held every hook, then every pattern, then every sound — six tracks' worth of each. That
+ * is phase-major with a smaller scope, and it left the reader doing the same jumping about, just
+ * within one machine instead of across the rack.
+ *
+ * So the loop is the **part**: pick the track, write its figure, program it, dial it in, move on.
+ * The box is still the outer grouping — you stand at one machine, and its patching is done once at
+ * the top — but inside it nothing is collected by phase.
+ *
+ * §8's order survives where it always mattered: hook before sound design, per track, so a part is
+ * not shaped by whatever preset happened to be loaded.
+ */
 function performedHere(
   result: ResolveResult,
   assignments: readonly ResolvedAssignment[],
   deviceById: Map<DeviceId, Device>,
   settings: HintSetting,
   rigLines: readonly Line[] = [],
+  hostId?: DeviceId,
 ): Line[] {
+  const out: Line[] = []
+
   /**
-   * **A narrowed result, not a narrowed renderer.** `phaseSteps` and `phaseSound` iterate
-   * assignments, so a subset is all they need; both also read context a subset cannot change
-   * (`song`, `devices`, `interDevicePatch`), and neither reads `shortfalls`, which is what makes
-   * this safe — were gaps rendered here, every section would repeat all of them.
-   *
-   * **`phaseHook` is the exception, and it had to be handled rather than hoped about.** It is
-   * driven by `song.hooks` rather than by assignments, looking each hook's role up among them —
-   * so under a narrowed result every hook belonging to *another* box reads as `unassigned`, and
-   * the first draft of this printed the Deluge's three parts as gaps under the TR-1000, in every
-   * section, once per box in the rig. Narrowing the hooks to the ones this group actually carries
-   * is the fix; the genuinely unassigned ones are collected by the caller and shown once, because
-   * a gap shown five times and a gap shown nowhere are both wrong (invariant 5).
+   * §8/#240. Patching first, and in this section rather than four above it. The reader is standing
+   * at this box now; its clock, sockets, audio and mixer are what they need before a step goes in.
+   * Once per box rather than once per track, because it is a fact about the machine.
    */
-  const only = narrowToGroup(result, assignments)
-  return [
+  if (rigLines.length > 0) out.push('### Patching', '', ...rigLines, '')
+
+  /**
+   * §8/#107. **What every track on this box shares, once, above them all.**
+   *
+   * `soundShared` is the device's citation sentence, whether anything is loaded on it, and the
+   * settings #107 hoists because one control serves every part. Rendering that per track repeats
+   * it once per track — and one of its own lines reads *"set it once, not once per part"*, which
+   * under a six-track Deluge printed five times is the guide contradicting itself in its own
+   * words. It is the first thing found when this layout became track-major.
+   *
+   * Per device rather than per section, because a driven part sounds on a box that is not the one
+   * being stood at, and its shared settings are still its own.
+   */
+  const hoists = new Map<DeviceId, ReturnType<typeof hoistedParams>>()
+  const inGroup = [...new Set(assignments.map((a) => a.deviceId))]
+  for (const id of inGroup) {
+    const device = deviceById.get(id)
+    if (device === undefined) continue
+    const mine = assignments.filter((a) => a.deviceId === id)
+    hoists.set(id, hoistedParams(mine.map((a) => a.params)))
+    const shared = soundShared(device, mine, settings)
+    if (shared.length === 0) continue
+    const title = inGroup.length === 1 ? 'Shared settings' : `${device.name} — shared settings`
+    out.push(`### ${title}`, '', ...demote(shared, 1), '')
+  }
+
+  for (const a of assignments) {
     /**
-     * §8/#240. **Patching first, and in this section rather than four above it.**
-     *
-     * The reader is standing at this box now. Its clock, its sockets, its audio out and its mixer
-     * channel are what they need before a single step goes in — and under the phase layout they
-     * were read in section 3 and then needed again here, which is the trip this removes.
+     * The voice alone when the part sounds on the box we are standing at — `Track 2` under a
+     * heading that already says Deluge. The full `Device · Voice` when it does not, which is the
+     * driven case: standing at the Hapax, `Track 2` would name a track the Hapax does not have.
      */
-    ...(rigLines.length === 0 ? [] : ['### Patching', '', ...rigLines, '']),
-    /**
-     * **Omitted rather than answered when this box carries no hook figure.** `phaseHook`'s empty
-     * case says *"This template has no hooks."*, which is true of a template and false of a box —
-     * printed under a drum machine in a direction with three hooks, it is a plain untruth, and it
-     * was one until this guard. The hooks exist; they are under whichever box plays them, and a
-     * heading here with nothing beneath it tells the reader nothing they need.
-     *
-     * This is not a gap being hidden (invariant 5). A hook no box carries is a gap, and it has
-     * its own section further down; a hook carried by the box in the *next* section is not.
-     */
-    ...(only.song.hooks.length === 0
-      ? []
-      : ['### Hook', '', ...demote(phaseHook(only, deviceById)), '']),
-    '### Step programming',
-    '',
-    ...demote(phaseSteps(only, deviceById, settings)),
-    '',
-    '### Sound design',
-    '',
-    ...demote(phaseSound(only, deviceById, settings)),
-  ]
+    const where = hostId !== undefined && a.deviceId === hostId ? voicesLabel(a) : whereText(a)
+    out.push(`### ${where} — \`${a.role}\``, '')
+
+    const only = narrowToGroup(result, [a])
+    // Omitted rather than answered where this part carries no figure: `phaseHook`'s empty case is
+    // a sentence about the template, and under one part it would be a plain untruth.
+    if (only.song.hooks.length > 0) {
+      out.push('#### Hook', '', ...demote(phaseHook(only, deviceById), 2), '')
+    }
+    out.push('#### Step programming', '', ...demote(phaseSteps(only, deviceById, settings), 2), '')
+    // `soundForPart`, not `phaseSound` — this part's own settings, without re-printing the box's
+    // heading and shared block above it once for every track.
+    const device = deviceById.get(a.deviceId)
+    const hoist = hoists.get(a.deviceId)
+    if (device !== undefined && hoist !== undefined) {
+      out.push('#### Sound design', '', ...demote(soundForPart(a, device, hoist, settings), 2), '')
+    }
+  }
+  return out
 }
 
 /** §8/#240. This section's boxes, rendered as the same blocks phase 3 would have printed. */
@@ -2703,6 +2776,7 @@ export function renderGuide(result: ResolveResult, options: RenderOptions = {}):
         deviceById,
         settings,
         rigLinesFor(result, group, occupied),
+        group.deviceId,
       ),
     )
   }
