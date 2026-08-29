@@ -315,6 +315,9 @@ describe('the committed registry', () => {
       // 0.73333, so 176 is across. A device authored in the wrong orientation sorts wrong, which
       // is the failure this ordering exists to catch, and it caught this one.
       'te-ep-133',
+      // The EP-40 is the same 176 mm chassis, so it sorts beside its sibling; the tie is broken
+      // by the code-unit order of the ids, which puts `te-ep-133` before `te-ep-40`.
+      'te-ep-40',
       // 178 mm, and portrait like the Tracker Mini above it: the SP-404MK2's specification line
       // reads `178 (W) x 276 (D) x 71 (H)` (p.266), so the span is the smaller of the first two
       // and the 276 is what its `panelRiseMm` carries.
@@ -439,6 +442,12 @@ describe('cross-device imports are declared (invariant 2/#196)', () => {
     expect(found.sort()).toEqual([
       'akai-mpc-one-g2 -> akai-mpc-live-iii',
       'akai-mpc-xl -> akai-mpc-live-iii',
+      // The EP-40 is the K.O. II's hardware below the supertone, so thirteen of its nineteen
+      // recipes are the sibling's part in the sibling's words. It is the One G2's import rather
+      // than the XL's, because the two boxes have two different guides: every borrowed citation
+      // goes through a table mapping the sibling's guide section to this box's, and that table
+      // throws on a section it has not been checked against. Two of the six do not line up.
+      'te-ep-40 -> te-ep-133',
     ])
   })
 })

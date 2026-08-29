@@ -993,8 +993,14 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * repaired walk 58,485 -> 62,885, 7.5% on each. Two devices in a row moving both figures by the
    * same fraction is the note above's reassuring case a second time — the repair is doing neither
    * more work nor less, and the problem is simply a little bigger.
+   *
+   * **The EP-40 makes it three in a row**: the floor goes 63,283 -> 71,296 and the repaired walk
+   * 62,885 -> 70,887, 12.7% on each, with the absolute gap between them unchanged at about four
+   * hundred nodes. Three devices moving both figures together is as good as this fixture's
+   * evidence gets that the repair is stable — what it still is not is a demonstration that the
+   * repair *prunes*, which is next door.
    */
-  it('walks the recorded 63,283 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 71,296 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1002,12 +1008,12 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(63_283)
-    // The ceiling is loosened rather than re-tightened onto 55,217, per the standing note: it was
-    // 20,000, then 25,000, then 35,000, and each time a device pushed the repaired walk past it.
-    // A ceiling sitting one node above the last measurement stops guarding anything and starts
-    // re-recording the measurement a second time.
-    expect(assign(input).search.nodes).toBeLessThan(70_000)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(71_296)
+    // The ceiling is loosened rather than re-tightened onto the last measurement, per the
+    // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
+    // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
+    // stops guarding anything and starts re-recording the measurement a second time.
+    expect(assign(input).search.nodes).toBeLessThan(80_000)
   })
 })
 

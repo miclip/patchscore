@@ -149,7 +149,12 @@ describe('rack geometry (§10)', () => {
     // and the 60 HP trio is now the same story a third time. Still an exact count rather than
     // `toBeGreaterThan(1)`: a rise silently dropped to a shared default is the real target.
     //
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 4)
+    // The fourth pair is the one case where a shared rise is not a coincidence at all: the
+    // EP-133 and the EP-40 both stand 240 mm because they are the same chassis, which teenage
+    // engineering publish as `240 x 176 x 16 mm` for both. Both figures were measured off their
+    // own front view — 288.545 x 393.520 and 289.00 x 394.00, two different drawings on two
+    // different canvases — so the agreement is a check that passed rather than a value copied.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 5)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -960,7 +965,10 @@ describe('rack view', () => {
     // a specular reflection across it and no bezel. So the 176 x 47.9 mm here is the *glass* and
     // not the active area — the guide's "custom display that features 66 unique icons" is inside
     // it somewhere the figure does not delimit, and that panel file says so rather than guessing.
-    expect(count('rack-screen')).toBe(41)
+    // 42: plus the EP-40's, the same full-width band on the same chassis, read off its own
+    // front view and carrying the same caveat — the drawn box is the glass and not the active
+    // area, because neither box's maker prints a display dimension anywhere.
+    expect(count('rack-screen')).toBe(42)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -993,7 +1001,9 @@ describe('rack view', () => {
     // fader of one, like the Grandmother's three and the MPC touch strips — and the only control
     // in this list whose *function* is a roster rather than a fixed job: holding [FADER] and a
     // pad reassigns it to one of the twelve parameters silkscreened above the pads.
-    expect(count('rack-fader')).toBe(151)
+    // 152: plus the EP-40's one, the same slider in the same place on the same chassis. Its
+    // box here is the cap's measured diameter by the slot's measured travel, 13.4 x 39.2 mm.
+    expect(count('rack-fader')).toBe(152)
     // 103: the TR-1000's sixteen step keys, the CRAVE's thirteen-note keyboard, and thirty-seven
     // each from the minilogue xd and the Subsequent 37 — twenty-two white in one grid and
     // fifteen black in six clusters, because a keyboard drawn as an even row of rectangles stops
@@ -1045,9 +1055,11 @@ describe('rack view', () => {
     // of columns. The pad block alone packs 48 cells at 54% and fails the coverage floor above,
     // which is that floor doing its job — a field that cannot hold its own assignables is drawn
     // in the wrong place.
+    // Twenty-five since the EP-40, which is the same chassis and so the same reading: the group
+    // column plus the twelve pads, measured off its own front view rather than copied across.
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(24)
+    expect(fields).toHaveLength(25)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

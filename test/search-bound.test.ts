@@ -212,6 +212,40 @@ import { TEMPLATES } from '../lib/templates/index'
  * nineteen recipes reaching seventeen roles. Size the next device against its recipes.
  *
  * Nothing caps, and `industrial-techno` at 71,675 is 35.8% of `DEFAULT_NODE_CAP`.
+ *
+ * ## The EP-40, which is the same shape of box again and settles the paragraph above
+ *
+ * The thirty-first box is the K.O. II's chassis and workflow: another forty-eight-pad pool over
+ * the whole 23-role vocabulary, and nineteen recipes over eighteen roles, thirteen of them the
+ * sibling's part derived by guarded reference. If the previous paragraph's finding is right — that a pool costs what its *recipe sheet* costs — then a second
+ * one of these should cost about what the first did, and it does, but the interesting part is
+ * *where* it lands rather than how much:
+ *
+ *   - **`industrial-techno` 62,885-71,675 -> 70,887-74,415.** The peak moves 3.8% and the floor
+ *     moves 12.7%, which is the row **flattening**, not spiking: twenty-three of the twenty-four
+ *     seeds now sit within 300 nodes of each other and the twenty-fourth is the only outlier.
+ *     Before this device, six seeds sat above 66,000 and thirteen sat at the floor. A second box
+ *     answering the same requests removes the cheap seeds rather than adding expensive ones —
+ *     there is no longer a seed on which the search gets an easy incumbent early.
+ *   - **`weave` 42,650-44,586 -> 45,682-47,202**, about a fourteenth, and flat on twenty-three of
+ *     the twenty-four seeds for the same reason.
+ *   - `ambient-dub` 144 -> 150, `drone-study` 23 -> 24, `relay` 45 -> 47, `lydian-house`
+ *     126-273 -> 133-289, `major-key-electro` 128-447 -> 133-463: a handful of nodes each, and
+ *     the two-hundred-node directions keep their shape rather than moving their expensive seeds.
+ *
+ * So the SP-404MK2 paragraph's correction holds a second time. Nineteen recipes over eighteen
+ * roles cost about what twenty-one over nineteen did, on a pool of the same size, and neither
+ * figure is what the slot count would predict.
+ *
+ * **And the sheet was measured at two sizes, which sharpens that.** This device was first
+ * authored with twenty-five recipes reaching all twenty-three roles and then trimmed to nineteen
+ * over eighteen. `industrial-techno` did not move by a single node — 70,887-74,415 on both — and
+ * neither did `lydian-house`. `weave` fell 48,123-49,739 -> 45,682-47,202, about 5%, and
+ * `ambient-dub` 153 -> 150. So a direction pays for the recipes that answer *the roles it asks
+ * for*, and six recipes on roles it never requests are free to it and not free to the others.
+ * Sizing a sheet against the worst direction alone would have found no reason to trim.
+ *
+ * Nothing caps, and `industrial-techno` at 74,415 is 49.6% of `DEFAULT_NODE_CAP`.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -220,32 +254,32 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144, 144,
-      144, 144, 144, 144, 144, 144
+      150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150,
+      150, 150, 150, 150, 150, 150
     ],
     'drone-study': [
-      23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
-      23
+      24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
+      24
     ],
     'industrial-techno': [
-      62885, 62885, 63147, 62885, 67428, 62885, 62885, 62885, 66212, 62885, 66212, 62885, 63157,
-      62885, 71419, 71419, 62885, 71675, 67429, 66834, 62885, 71378, 62885, 63157
+      70887, 70888, 71177, 70888, 70888, 70888, 70887, 70887, 70888, 70887, 70887, 70888, 71177,
+      70888, 74415, 70887, 70888, 71167, 70888, 70888, 70888, 70887, 70887, 71177
     ],
     'lydian-house': [
-      127, 208, 127, 208, 127, 208, 127, 208, 158, 208, 127, 208, 127, 208, 127, 208, 273, 159,
-      210, 126, 210, 159, 210, 159
+      134, 220, 134, 220, 134, 220, 134, 220, 167, 220, 134, 220, 134, 220, 134, 220, 289, 168,
+      222, 133, 222, 168, 222, 168
     ],
     'major-key-electro': [
-      133, 444, 128, 130, 330, 133, 447, 133, 330, 133, 332, 133, 133, 133, 130, 130, 133, 130,
-      335, 131, 133, 131, 133, 133
+      135, 463, 138, 138, 138, 138, 135, 135, 138, 133, 456, 138, 138, 138, 344, 133, 138, 135,
+      135, 138, 138, 133, 249, 138
     ],
     relay: [
-      45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45,
-      45
+      47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47,
+      47
     ],
     weave: [
-      42650, 42650, 42650, 42650, 44586, 42650, 42650, 42650, 44168, 42650, 44168, 42650, 42650,
-      42650, 42650, 42650, 42650, 42650, 44586, 42650, 42650, 42650, 42650, 42650
+      45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682,
+      45682, 47202, 45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682, 45682
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".
