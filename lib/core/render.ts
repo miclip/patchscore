@@ -247,6 +247,16 @@ function evidenceLines(evidence: CapabilityEvidence, label = 'value'): string[] 
       return [`unread — ${evidence.reason}`]
     case 'cited-against':
       return [`cited-against ${citeText(evidence.cite)} — ${evidence.reason}`]
+    /**
+     * §2.6/#236. Both halves, in that order. The page comes first because it is the part a reader
+     * can go and check, and what is open comes second because it is what they would otherwise
+     * assume the page covered.
+     */
+    case 'partly':
+      return [
+        `partly ${citeText(evidence.cite)} — ${evidence.proven}`,
+        `still open — ${evidence.open}`,
+      ]
     default:
       return [`${label} ${citeText(evidence)}`]
   }

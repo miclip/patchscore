@@ -132,6 +132,22 @@ export function EvidenceMark({ evidence }: { evidence: CapabilityEvidence }) {
       </span>
     )
   }
+  /*
+   * §2.6/#236. Its own mark rather than borrowing the cited one: a reader who sees `manual` will
+   * take the whole fact as documented, which is the overclaim this state exists to avoid. The
+   * title carries the page, what it proves and what it leaves open — the three things that make
+   * this different from a citation.
+   */
+  if (evidence.kind === 'partly') {
+    return (
+      <span
+        className="prov prov-partly"
+        title={`${evidence.cite.source} — ${evidence.proven}; still open: ${evidence.open}`}
+      >
+        partly cited
+      </span>
+    )
+  }
   return (
     <span className="prov prov-cited" title={evidence.source}>
       {evidence.kind}
@@ -157,6 +173,13 @@ export function evidenceLines(evidence: CapabilityEvidence, label = 'value'): st
       return [`unread — ${evidence.reason}`]
     case 'cited-against':
       return [`cited-against ${citeText(evidence.cite)} — ${evidence.reason}`]
+    // §2.6/#236. Page first — the part a reader can check — then what it leaves open, which is
+    // what they would otherwise assume the page covered.
+    case 'partly':
+      return [
+        `partly ${citeText(evidence.cite)} — ${evidence.proven}`,
+        `still open — ${evidence.open}`,
+      ]
     default:
       return [`${label} ${citeText(evidence)}`]
   }

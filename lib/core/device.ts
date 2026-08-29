@@ -278,6 +278,40 @@ export type UnreadFact = { kind: 'unread'; reason: string }
 export type CitedAgainstFact = { kind: 'cited-against'; reason: string; cite: Cite }
 
 /**
+ * §2.6/#236. **A document that proves part of a claim**, which none of the states above can say.
+ *
+ * `capabilityEvidence` keys one entry per field path, and some fields assert more than one thing.
+ * `voices` is the case that forced this: the Circuit Tracks' array asserts two pools at their
+ * counts, six-note polyphony on one and one-note on the other. p.35 and p.64 establish two of
+ * those three; nothing anywhere states a drum track's playback polyphony, and the 1 is an
+ * authoring choice.
+ *
+ * Every state available was wrong about that. A `Cite` claims the manual backs the whole array.
+ * `unknown` says the reading came back with nothing, when it came back with two thirds. The
+ * manifest picked `unknown` and wrote the missing distinction into its `reason` — *"one `voices`
+ * path covers all three claims, so it cannot say two of them are cited and the third is not"* —
+ * which is an author working around the model in prose, and prose is what #22 exists to stop.
+ *
+ * **The failure this prevents is understatement, not overclaim**, which is why it went unnoticed:
+ * the guide said less than the manual supports and the audit counted a two-thirds-cited fact as
+ * undocumented. Invariant 5 asks for gaps shown honestly, and a gap reported as larger than it is
+ * is still not honest.
+ *
+ * `proven` and `open` rather than one `reason`, because the whole point is that the two halves are
+ * different: one has a page behind it and one does not, and collapsing them into a sentence is the
+ * workaround this replaces.
+ */
+export type PartlyVerifiedFact = {
+  kind: 'partly'
+  /** The page behind the half that *is* established. */
+  cite: Cite
+  /** What that page establishes. */
+  proven: string
+  /** What it leaves open, which is why this is not a plain citation. */
+  open: string
+}
+
+/**
  * §2.6/#22/#120. How a **device capability fact** was checked — `manual` and `observed` from
  * `Verified`, plus `false`, plus the three states above.
  *
@@ -287,7 +321,12 @@ export type CitedAgainstFact = { kind: 'cited-against'; reason: string; cite: Ci
  * (invariant 3): this travels device → renderer, like `unit` and `note`, and no template names
  * any of it.
  */
-export type CapabilityEvidence = Verified | UndocumentedFact | UnreadFact | CitedAgainstFact
+export type CapabilityEvidence =
+  | Verified
+  | UndocumentedFact
+  | UnreadFact
+  | CitedAgainstFact
+  | PartlyVerifiedFact
 
 export const UndocumentedFactSchema = z.strictObject({
   kind: z.literal('unknown'),
@@ -305,11 +344,19 @@ export const CitedAgainstFactSchema = z.strictObject({
   cite: CiteSchema,
 })
 
+export const PartlyVerifiedFactSchema = z.strictObject({
+  kind: z.literal('partly'),
+  cite: CiteSchema,
+  proven: z.string().min(1, 'a partly-verified fact must say what the page establishes'),
+  open: z.string().min(1, 'a partly-verified fact must say what it leaves open'),
+})
+
 export const CapabilityEvidenceSchema = z.union([
   CiteSchema,
   UndocumentedFactSchema,
   UnreadFactSchema,
   CitedAgainstFactSchema,
+  PartlyVerifiedFactSchema,
   z.literal(false),
 ])
 
@@ -1740,6 +1787,10 @@ export function evidenceKey(evidence: CapabilityEvidence): string {
     // sentence, and either one differing makes it a different claim.
     case 'cited-against':
       return `cited-against\u0000${evidence.reason}\u0000${evidence.cite.kind}\u0000${evidence.cite.source}`
+    // Three parts, for the same reason `cited-against` has four: each is part of the claim, and
+    // any one differing makes it a different finding.
+    case 'partly':
+      return `partly\u0000${evidence.proven}\u0000${evidence.open}\u0000${evidence.cite.kind}\u0000${evidence.cite.source}`
     default:
       return `${evidence.kind}\u0000${evidence.source}`
   }

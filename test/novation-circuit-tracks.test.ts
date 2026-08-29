@@ -150,17 +150,26 @@ describe('Circuit Tracks manifest', () => {
     expect(pool('synth-track').polyphony).toBe(6)
     expect(pool('drum-track').polyphony).toBe(1)
 
-    // So the `voices` evidence cannot be `manual`. One path covers the counts, the synth
-    // polyphony and the drum polyphony, and only the first two are on a page — an entry claiming
-    // the whole fact was checked would be the overclaim this device carried for two commits.
+    /**
+     * So the `voices` evidence cannot be `manual` — one path covers the counts, the synth
+     * polyphony and the drum polyphony, and only the first two are on a page. It cannot be
+     * `unknown` either, which this device carried for two commits: that says the reading came
+     * back with nothing when it came back with two thirds.
+     *
+     * `partly` (§2.6/#236) is the state that can say both halves, and this asserts that it does
+     * — the page and what it proves, and separately what it leaves open. Either half missing
+     * would be one of the two wrong states again.
+     */
     const voicesEvidence = device.capabilityEvidence?.['voices']
-    expect(voicesEvidence).toMatchObject({ kind: 'unknown' })
-    if (voicesEvidence === undefined || voicesEvidence === false || !('reason' in voicesEvidence)) {
-      throw new Error('no reasoned non-claim at voices')
+    expect(voicesEvidence).toMatchObject({ kind: 'partly' })
+    if (voicesEvidence === undefined || voicesEvidence === false || voicesEvidence.kind !== 'partly') {
+      throw new Error('no partly-verified fact at voices')
     }
-    // The reason keeps the two good pages rather than losing them to the move.
-    expect(voicesEvidence.reason).toMatch(/p\.35/)
-    expect(voicesEvidence.reason).toMatch(/p\.64/)
+    // The two good pages survive the move, and the open half names what no page settles.
+    expect(voicesEvidence.cite.source).toMatch(/p{1,2}\.35/)
+    expect(voicesEvidence.proven).toMatch(/six-note polyphonic/)
+    expect(voicesEvidence.open).toMatch(/drum track/)
+    expect(voicesEvidence.proven).toMatch(/p\.64/)
   })
 
   it('expands to six assignables, two short of the box’s eight tracks', () => {
@@ -376,6 +385,13 @@ describe('Circuit Tracks manifest', () => {
     for (const [path, fact] of Object.entries(device.capabilityEvidence ?? {})) {
       if (fact === false) throw new Error(`${path}: bare false`)
       if (fact.kind === 'manual' || fact.kind === 'observed' || fact.kind === 'maker') continue
+      // §2.6/#236. `partly` carries the same obligation in two halves rather than one sentence:
+      // what the page proves, and what it leaves open. Both have to be said.
+      if (fact.kind === 'partly') {
+        expect(fact.proven.length, `${path} proven`).toBeGreaterThan(20)
+        expect(fact.open.length, `${path} open`).toBeGreaterThan(20)
+        continue
+      }
       // #117/#120: a bare state is an author giving up in a field that reads like diligence.
       expect(fact.reason.length, path).toBeGreaterThan(40)
     }

@@ -76,7 +76,11 @@ export function countsBlock(label: string, c: AuditCounts): string[] {
   if (c.capabilityFacts > 0) {
     lines.push(
       `    caps   ${n(c.capabilityFacts)} total  ${n(c.manualCapabilities)} manual  ` +
-        `${n(c.observedCapabilities)} observed  ${n(c.citedAgainstCapabilities)} cited-against`,
+        `${n(c.observedCapabilities)} observed  ${n(c.citedAgainstCapabilities)} cited-against  ` +
+        // §2.6/#236. On the `caps` line rather than `gaps`: it points at a page, which is what
+        // this line is for, and calling a two-thirds-cited fact a gap is the understatement the
+        // state was added to stop.
+        `${n(c.partlyCapabilities)} partly`,
       `    gaps   ${n(c.uncheckedCapabilities)} unchecked  ` +
         `${n(c.undocumentedCapabilities)} undocumented  ${n(c.unreadCapabilities)} unread`,
     )

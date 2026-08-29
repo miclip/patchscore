@@ -137,7 +137,7 @@ export type DevicePage = {
  * being acted on.
  */
 export type CapabilityGap = {
-  kind: 'cited-against' | 'undocumented' | 'unread' | 'unchecked'
+  kind: 'cited-against' | 'partly' | 'undocumented' | 'unread' | 'unchecked'
   /** Code unit order (§7.2), inherited from the audit — never manifest key order. */
   facts: readonly string[]
 }
@@ -148,10 +148,13 @@ export type CapabilityGap = {
  * reader scanning this block should meet them in that order rather than in the order `c` sorts
  * before `u`.
  */
-const CAPABILITY_GAP_ORDER = ['cited-against', 'undocumented', 'unread', 'unchecked'] as const
+// `partly` sits after `cited-against` and before `undocumented`: both of those carry a page,
+// and a partly-cited fact is nearer a citation than a silence (§2.6/#236).
+const CAPABILITY_GAP_ORDER = ['cited-against', 'partly', 'undocumented', 'unread', 'unchecked'] as const
 
 const GAP_KIND_OF: Record<string, CapabilityGap['kind']> = {
   'cited-against-capability': 'cited-against',
+  'partly-capability': 'partly',
   'undocumented-capability': 'undocumented',
   'unread-capability': 'unread',
   'unchecked-capability': 'unchecked',
@@ -306,6 +309,9 @@ export function capabilitySentence(counts: AuditCounts): string {
   )
   if (counts.observedCapabilities > 0) {
     parts.push(`${counts.observedCapabilities} of those observed on the unit`)
+  }
+  if (counts.partlyCapabilities > 0) {
+    parts.push(`${counts.partlyCapabilities} partly cited`)
   }
   if (counts.citedAgainstCapabilities > 0) {
     parts.push(`${counts.citedAgainstCapabilities} cited against`)
