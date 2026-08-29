@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ABANDONED_GUIDE_LAYOUT_KEY,
   DEFAULT_GUIDE_LAYOUT,
   DEFAULT_JACK_STYLE,
   GUIDE_LAYOUT_KEY,
@@ -158,5 +159,43 @@ describe('the guide-layout preference falls back rather than failing (§8/#230)'
     const source = good()
     writeGuideLayout(source, 'sequencer')
     expect(readJackStyle(source)).toBe(DEFAULT_JACK_STYLE)
+  })
+})
+
+/**
+ * §8/#230. **The key #239 wrote must not be read as a preference**, which is the bug this pair of
+ * tests exists to pin.
+ *
+ * #239's studio control remembered itself under `patchscore:guide-layout`. #241 split that into a
+ * per-visit override and a stored default, and reused the key — silently promoting every value the
+ * old control had written from "how I wanted to read one guide" into "how I read every guide".
+ * A reader who had tapped it to `by phase` was pinned there, and #242's change of default could
+ * not reach them.
+ *
+ * Reported from an iPhone as "nothing changes on my phone", which is precisely how it looked.
+ */
+describe('the abandoned per-visit key is not read as a preference (§8/#230)', () => {
+  it('ignores a value stored by #239’s control', () => {
+    const stale = good({ [ABANDONED_GUIDE_LAYOUT_KEY]: 'phase' })
+    // The reader who was pinned to `phase` now gets the current default instead.
+    expect(readGuideLayout(stale)).toBe(DEFAULT_GUIDE_LAYOUT)
+    expect(readGuideLayout(stale)).toBe('sequencer')
+  })
+
+  it('keeps the two keys distinct, which is the whole of the fix', () => {
+    expect(GUIDE_LAYOUT_KEY).not.toBe(ABANDONED_GUIDE_LAYOUT_KEY)
+  })
+
+  it('still honours a value stored by the preferences page itself', () => {
+    // The fix must not throw the baby out: a real preference is still a preference.
+    expect(readGuideLayout(good({ [GUIDE_LAYOUT_KEY]: 'phase' }))).toBe('phase')
+  })
+
+  it('does not write to the abandoned key', () => {
+    const source = good()
+    writeGuideLayout(source, 'phase')
+    expect(readGuideLayout(source)).toBe('phase')
+    // Nothing should have been left in the old key for a future version to trip over.
+    expect(source().getItem(ABANDONED_GUIDE_LAYOUT_KEY)).toBeNull()
   })
 })
