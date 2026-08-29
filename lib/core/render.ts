@@ -38,7 +38,7 @@ import {
   type ResolveResult,
   type ResolvedAssignment,
   type VoiceControlSource, type SequencerGroup, patternDriver, sequencerGroups, narrowToGroup, unplayedHooks, devicesInGroup, devicesOutsideGroups,} from './pipeline'
-import { GUIDE_PHASES, count, ioText, mixerText, num} from './guide'
+import { GUIDE_PHASES, count, ioText, mixerText, num, searchCapNotice} from './guide'
 import type { GuideLayout } from './guide'
 import {
   bandTrajectory,
@@ -536,6 +536,25 @@ function gapText(gap: Gap, deviceById: Map<DeviceId, Device>): string {
 
 function phaseVoiceAssignment(result: ResolveResult, deviceById: Map<DeviceId, Device>): Line[] {
   const out: Line[] = []
+
+  /**
+   * §7.1/#228. **Here, because this is the phase the cap affected.**
+   *
+   * A capped search returns a worse *allocation* — same parts, same shape, different boxes
+   * carrying them — and this phase is where the guide says which box carries what. Putting the
+   * notice at the top of the document instead would make it a disclaimer about the whole guide,
+   * when every value in it is exactly as good as it always was; putting it in the gap headings
+   * below would file it with things the rig cannot do, and this is not one of those.
+   */
+  const capped = searchCapNotice(result.search)
+  if (capped !== undefined) {
+    out.push(`**${capped.headline}**`)
+    out.push('')
+    for (const line of capped.detail) {
+      out.push(line)
+      out.push('')
+    }
+  }
 
   if (result.assignments.length === 0) {
     out.push('No parts assigned. Every part this direction asks for is accounted for below.')

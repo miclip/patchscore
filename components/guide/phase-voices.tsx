@@ -6,6 +6,7 @@ import {
   type ResolvedAssignment,
   type Shortfall,
 } from '@/lib/core'
+import { searchCapNotice } from '@/lib/core'
 import { adviceText, count, isStacked, num, voicesLabel } from './format'
 
 /** §3.5. Why this recipe, in the one case where the answer is not "it matched". */
@@ -74,8 +75,25 @@ export function PhaseVoices({
   const unauthored = shortfallsOfKind(result.shortfalls, 'unauthored')
   const notNeeded = shortfallsOfKind(result.shortfalls, 'not-needed')
 
+  /**
+   * §7.1/#228. Here, because this is the phase the cap affected: a capped search returns a
+   * different *allocation*, and this is where the guide says which box carries what.
+   *
+   * `searchCapNotice` decides the words in `lib/core`, so this view and the Markdown guide cannot
+   * drift into saying different things about the same fact (#33).
+   */
+  const capped = searchCapNotice(result.search)
+
   return (
     <>
+      {capped === undefined ? null : (
+        <div className="search-capped" role="note">
+          <p className="search-capped-headline">{capped.headline}</p>
+          {capped.detail.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </div>
+      )}
       {result.assignments.length === 0 ? (
         <p className="quiet">
           No parts assigned. Every part this direction asks for is accounted for below.

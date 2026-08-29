@@ -1,4 +1,5 @@
 import type { Device } from './device'
+import type { SearchReport } from './search'
 /**
  * §8. The shape of the guide document, independent of how it is rendered.
  *
@@ -138,4 +139,56 @@ export function mixerText(device: Device, parts: number): string {
     `${count(parts, 'part')}, ${outs}: ${num(separable)} on their own channels, ` +
     `the rest summed to the ${main} out`
   )
+}
+
+
+// ---------------------------------------------------------------------------
+// §7.1/#228. When the search gave up, said once and in words
+// ---------------------------------------------------------------------------
+
+/**
+ * **A capped search returns a worse allocation and every sentence in the guide stays true.**
+ *
+ * That is the whole defect. Branch-and-bound stops at `DEFAULT_NODE_CAP` and returns the best
+ * arrangement it found, which for a large rig is not the best one there is — same part count, same
+ * shape, different boxes carrying them. `SearchReport.capped` has always recorded it and nothing
+ * outside the tests has ever read it, so a capped run rendered exactly like a complete one.
+ *
+ * Invariant 5 is *"gaps are shown honestly"*, and this is a gap in the **search** rather than in
+ * the rig — which is why it slipped past all three of §7.3's gap headings. They answer "what could
+ * this rig not do"; none of them answers "did we actually look".
+ *
+ * ## The wording is the decision, not the plumbing
+ *
+ * Surfacing `capped` is one line. What the guide *says* is the part worth care, and it must not be
+ * jargon: a node count means nothing to somebody standing at a rack, and "the search was capped"
+ * describes our implementation rather than their guide.
+ *
+ * So it says three things, in this order, because that is the order the reader needs them:
+ *
+ *  1. **What happened** — we stopped early, on purpose, because the rig is big.
+ *  2. **What is still true** — every part and every value below is real. This matters most: the
+ *     risk of saying anything at all is a reader distrusting numbers that are perfectly good.
+ *  3. **What they can do** — search it fully by selecting fewer boxes. Nothing else here is
+ *     actionable, and a notice with no action is just an apology.
+ *
+ * No node counts, no cap, no mention of branch-and-bound. Those live in `search.ts` for whoever is
+ * fixing it, and #78's near-clone pricing is the fix that would attack the cause instead.
+ */
+export type SearchCapNotice = {
+  headline: string
+  detail: readonly string[]
+}
+
+export function searchCapNotice(search: SearchReport): SearchCapNotice | undefined {
+  if (!search.capped) return undefined
+  return {
+    headline: 'The search stopped before it finished',
+    detail: [
+      'This rig has enough boxes that trying every arrangement would take too long, so what ' +
+        'follows is the best one found before we stopped rather than the best one there is.',
+      'Every part below is real and every value is cited as usual. What could be better is which ' +
+        'box carries which part — select fewer boxes and the whole arrangement gets searched.',
+    ],
+  }
 }
