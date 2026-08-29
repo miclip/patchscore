@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → Subharmonicon · Voice — *The ladder filter self-oscillating, opened by a sequencer clock*
+- **`kick`** → MPC XL · Mono Track 1 — *DrumSynth Kick, transient forward and the low band lifted*
   - p1 · exact `hard` · every section
 - **`sub`** → MC-101 · TONE Track 1 — *Sine sub, one note at a time, nothing above the fundamental*
   - p1 · exact `dark` · every section
@@ -70,14 +70,12 @@ None.
   - ↳ note: MIDI B, C and D have the same row and the same four options; set the one the cable is in.
   - ↳ cite: value manual — Hapax Manual (22 June 2026), p.132
 
-**Voice control** — Hapax sends the notes, 6 cables in all. Patch each pair before you play anything:
+**Voice control** — Hapax sends the notes, 4 cables in all. Patch each pair before you play anything:
 
 - pitch: Hapax `Cv out 2` → CRAVE `IN · OSC CV`
 - gate: Hapax `gate out 2` → CRAVE `IN · ENV GATE`
 - pitch: Hapax `Cv out 3` → Cascadia `EXT IN · PITCH`
 - gate: Hapax `gate out 3` → Cascadia `EXT IN · GATE`
-- pitch: Hapax `Cv out 4` → Subharmonicon `IN · VCO 1`
-- gate: Hapax `gate out 4` → Subharmonicon `IN · PLAY`
 
 - Why this box sends them — it is already the clock source, so the cables run from where the tempo does
 
@@ -89,10 +87,10 @@ None.
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
-- **MPC XL** — groovebox · 0 parts
+- **MPC XL** — groovebox · 1 part
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · 6 individual outs · USB audio · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, 6 individual outs: one channel each
 - **CRAVE** — semi-modular · 1 part
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
@@ -151,12 +149,12 @@ None.
   - clock: sends clock · out: midi-din/analog-clock · in: midi-din/usb/analog-clock
   - audio: stereo main out
   - mixer: 1 part, no individual outs: one stereo channel for all
-- **Subharmonicon** — semi-modular · 1 part
+- **Subharmonicon** — semi-modular · 0 parts
   - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
   - IN · MIDI IN: A 3.5 mm socket fed by the supplied five-pin DIN adapter (MIDI Type A). Takes clock, note data and CCs. MIDI clock overrides the internal clock *and* anything at IN · CLOCK · manual
     - ↳ cite: value manual — Moog Subharmonicon Manual, p.37
   - audio: mono main out
-  - mixer: 1 part, no individual outs: one mono channel for all
+  - mixer: no parts assigned; nothing to patch
 - **Subsequent 37** — synth · 1 part
   - clock: sends clock · midi-din/usb
   - audio: mono main out · audio in
@@ -171,6 +169,10 @@ None.
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio
   - mixer: 1 part, no individual outs: one stereo channel for all
+- **MC-707** — groovebox · 0 parts
+  - clock: sends clock · midi-din/usb
+  - audio: stereo main out · 2 individual outs · USB audio · audio in
+  - mixer: no parts assigned; nothing to patch
 - **SP-404MK2** — sampler · 0 parts
   - clock: sends clock · out: midi-din · in: midi-din/usb
   - MIDI OUT, MIDI IN: 3.5mm stereo-mini, not 5-pin — Roland’s TRS/MIDI cable is the BMIDI-5-35 (p.14) · manual
@@ -297,9 +299,9 @@ How this box sets a note’s length is not established here, so the durations be
 
 ## 5. Step programming
 
-### `kick` — Subharmonicon · Voice
+### `kick` — MPC XL · Mono Track 1
 
-**The ladder filter self-oscillating, opened by a sequencer clock** — settings in Sound design
+**DrumSynth Kick, transient forward and the low band lifted** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -308,12 +310,22 @@ How this box sets a note’s length is not established here, so the durations be
 ```
 - `downbeat` — 1, 9
 
+**On this box** — MPC XL
+
+- `downbeat` → `velocity` 120 on steps 1, 9
+  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
+
 **Build, Breakdown** — 16 steps, band 1
 
 ```
  1 x··· x··· x··· x···
 ```
 - `downbeat` — 1, 5, 9, 13
+
+**On this box** — MPC XL
+
+- `downbeat` → `velocity` 120 on steps 1, 5, 9, 13
+  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -323,6 +335,11 @@ How this box sets a note’s length is not established here, so the durations be
 - `downbeat` — 1, 5, 13
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
+
+**On this box** — MPC XL
+
+- `downbeat` → `velocity` 120 on steps 1, 5, 13
+  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
 
 ### `sub` — MC-101 · TONE Track 1
 
@@ -603,6 +620,36 @@ How this box sets a note’s length is not established here, so the durations be
 - `accent` — 31 (vel 104)
 
 ## 6. Sound design
+
+### MPC XL
+
+*Values below cite MPC Live III / MPC XL User Guide v3.7.*
+
+#### Mono Track 1 — `kick`: DrumSynth Kick, transient forward and the low band lifted
+
+*Ranges cite manual — MPC Live III / MPC XL User Guide v3.7, p.432.*
+
+- **Track Type** `Plugin`
+- **Plugin** `DrumSynth`
+- **Drum Type** `Kick`
+  - ↳ note: One DrumSynth instrument per plugin track
+- **Velocity** `30` % (0…100 %)
+  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
+- **Gain** `-2` dB (-68…12 dB)
+  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
+  - ↳ note: p.431 prints "-Inf, -68.0 – 0 – +12.0 dB"; -Inf is a setting below the range, not part of it
+- **Transient Attack** `45` % (-100…100 %)
+- **Distortion Drive** `6` dB (0…60 dB)
+- **Distortion Mix** `25` % (0…100 %)
+- **EQ Low Freq** `58` Hz (20…1000 Hz)
+- **EQ Low Gain** `3.5` dB (-12…12 dB)
+  - ↳ note: A `Cut` setting sits below the numeric range on the same page
+- **EQ High Gain** `-1.5` dB (-12…12 dB)
+- **Comp Ratio** `4` (1…100)
+  - ↳ note: p.432 prints the range as 1.0:1 - 100.0:1; this is the left-hand number
+- **Comp Attack** `8` ms (0.1…300 ms)
+  - ↳ note: p.432 prints the low end as 100 us
+- **Comp Threshold** `-14` dB (-60…0 dB)
 
 ### CRAVE
 
@@ -953,113 +1000,6 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ note: PER-VOICE gives eight separate LFOs, one per voice
   - ↳ hint: Press MORE in that section
 
-### Subharmonicon
-
-*Values below cite Moog Subharmonicon Manual.*
-
-#### Voice — `kick`: The ladder filter self-oscillating, opened by a sequencer clock
-
-Routing — Clock it at IN · CLOCK, or over MIDI at IN · MIDI IN, which overrides both the internal clock and the analog one. Its own grid is four steps advanced by the RHYTHM dividers, so the pattern above is what to aim them at rather than something the box can play literally. This is the BATERIA patch sheet (p.47) read off its own drawing: every mixer level is fully down, RESONANCE is fully up, and what you hear is the filter's own oscillation gated by a clock. The sheet's NOTES are the tuning instruction — "Kick drum tuning is controlled via filter CUTOFF. Adjust VCF DECAY and EG AMT knobs for different kick drum flavors"
-
-*Ranges cite manual — Moog Subharmonicon Manual, p.30.*
-
-- **VCO 1 FREQ** `262` Hz (262…4186 Hz)
-  - ↳ cite: range manual — Moog Subharmonicon Manual, p.18
-  - ↳ hint: Tune to the key; QUANTIZE snaps it
-- **VCO 1 WAVE** `UP`
-  - ↳ hint: Square up, saw down, PWM centre
-- **SUB 1 FREQ (VCO 1)** `1` (1…16)
-  - ↳ cite: range manual — Moog Subharmonicon Manual, p.18
-  - ↳ hint: Divides the VCO pitch by this integer
-- **SUB 2 FREQ (VCO 1)** `1` (1…16)
-  - ↳ cite: range manual — Moog Subharmonicon Manual, p.19
-  - ↳ hint: Divides the VCO pitch by this integer
-- **VCO 2 FREQ** `262` Hz (262…4186 Hz)
-  - ↳ cite: range manual — Moog Subharmonicon Manual, p.19
-  - ↳ hint: Tune to the key; QUANTIZE snaps it
-- **VCO 2 WAVE** `UP`
-  - ↳ hint: Square up, saw down, PWM centre
-- **SUB 1 FREQ (VCO 2)** `1` (1…16)
-  - ↳ cite: range manual — Moog Subharmonicon Manual, p.20
-  - ↳ hint: Divides the VCO pitch by this integer
-- **SUB 2 FREQ (VCO 2)** `1` (1…16)
-  - ↳ cite: range manual — Moog Subharmonicon Manual, p.20
-  - ↳ hint: Divides the VCO pitch by this integer
-- **VCO 1 LEVEL** `0` % travel (0…100 % travel) · manual
-  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
-  - ↳ cite: range unverified — mood leaves this value alone
-- **SUB 1 LEVEL (VCO 1)** `0` % travel (0…100 % travel) · manual
-  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
-  - ↳ cite: range unverified — mood leaves this value alone
-- **SUB 2 LEVEL (VCO 1)** `0` % travel (0…100 % travel) · manual
-  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
-  - ↳ cite: range unverified — mood leaves this value alone
-- **VCO 2 LEVEL** `0` % travel (0…100 % travel) · manual
-  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
-  - ↳ cite: range unverified — mood leaves this value alone
-- **SUB 1 LEVEL (VCO 2)** `0` % travel (0…100 % travel) · manual
-  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
-  - ↳ cite: range unverified — mood leaves this value alone
-- **SUB 2 LEVEL (VCO 2)** `0` % travel (0…100 % travel) · manual
-  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
-  - ↳ cite: range unverified — mood leaves this value alone
-- **CUTOFF** `62` Hz (20…20000 Hz)
-  - ↳ cite: range manual — Moog Subharmonicon Manual, p.23
-- **RESONANCE** `100` % travel (0…100 % travel) · manual
-  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: Full RESONANCE and the ladder sings
-- **VCF ATTACK** `1` ms (1…10000 ms)
-  - ↳ cite: range manual — Moog Subharmonicon Manual, p.24
-- **VCF DECAY** `95` ms (5…10000 ms)
-  - ↳ cite: range manual — Moog Subharmonicon Manual, p.24
-- **VCF EG AMT** `60` % travel from centre (-100…100 % travel from centre)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **VCA ATTACK** `1` ms (1…10000 ms)
-  - ↳ cite: range manual — Moog Subharmonicon Manual, p.24
-- **VCA DECAY** `130` ms (5…10000 ms)
-  - ↳ cite: range manual — Moog Subharmonicon Manual, p.25
-  - ↳ hint: Nothing else sets how long it rings
-- **VOLUME** `100` % travel (0…100 % travel) · manual
-  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
-  - ↳ cite: range unverified — mood leaves this value alone
-- **QUANTIZE** `12-ET`
-- **SEQ OCT** `±1`
-- **SEQ 1 ASSIGN · OSC 1** `UNLIT`
-- **SEQ 1 ASSIGN · SUB 1** `UNLIT`
-- **SEQ 1 ASSIGN · SUB 2** `UNLIT`
-- **SEQ 2 ASSIGN · OSC 2** `UNLIT`
-- **SEQ 2 ASSIGN · SUB 1** `UNLIT`
-- **SEQ 2 ASSIGN · SUB 2** `UNLIT`
-- **RHYTHM 1** `8` (1…16)
-  - ↳ hint: Divides the tempo; 1 is the tempo
-- **RHYTHM 1 · SEQ 1** `LIT`
-- **RHYTHM 1 · SEQ 2** `UNLIT`
-- **RHYTHM 2** `4` (1…16)
-- **RHYTHM 2 · SEQ 1** `UNLIT`
-- **RHYTHM 2 · SEQ 2** `LIT`
-- **RHYTHM 3** `1` (1…16)
-- **RHYTHM 3 · SEQ 1** `UNLIT`
-- **RHYTHM 3 · SEQ 2** `UNLIT`
-- **RHYTHM 4** `16` (1…16)
-- **RHYTHM 4 · SEQ 1** `LIT`
-- **RHYTHM 4 · SEQ 2** `UNLIT`
-
-**Patch**
-
-- `OUT · SEQ 2 CLK` → `IN · VCA` · manual
-  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
-  - ↳ note: Sequencer 2’s own polyrhythm opens the amplifier — this is what makes the drum, since no oscillator reaches the mixer
-- `OUT · SEQ 1 CLK` → `IN · CUTOFF` · manual
-  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
-  - ↳ note: Sequencer 1’s clock kicks the filter, so the drum is pitched by a pulse rather than by a note
-- `OUT · SEQ 1` → `IN · RHYTHM 1` · manual
-  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
-  - ↳ note: The sequencer sets its own divider, so the pattern walks its rate instead of repeating
-- `OUT · SEQ 2` → `IN · RHYTHM 2` · manual
-  - ↳ cite: value manual — Moog Subharmonicon Manual, p.47
-  - ↳ note: The same feedback on the second generator, which is what keeps the two sides from locking
-
 ### Subsequent 37
 
 *Values below cite Subsequent 37 User's Manual.*
@@ -1361,6 +1301,7 @@ What processes audio in this rig:
 - Muse — carries DELAY · CHARACTER, DELAY · CLOCK SYNC, DELAY · FEEDBACK, DELAY · LINK DELAYS, DELAY · MIX, DELAY · SYNC TYPE, DELAY · TIMBRE A / TIMBRE B, DELAY · TIME - L and DELAY · TIME - R in its recipes
 - Tracker Mini — carries effects, though no part in this guide reaches them
 - MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and REVERB SEND in its recipes
+- MC-707 — carries FX PRM and FX DEPTH on the panel
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 - TR-6S — carries MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
 - TR-8S — carries REVERB, DELAY and MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes

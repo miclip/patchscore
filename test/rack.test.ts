@@ -154,7 +154,12 @@ describe('rack geometry (§10)', () => {
     // engineering publish as `240 x 176 x 16 mm` for both. Both figures were measured off their
     // own front view — 288.545 x 393.520 and 289.00 x 394.00, two different drawings on two
     // different canvases — so the agreement is a check that passed rather than a value copied.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 5)
+    //
+    // The fifth pair is the MC-707 and the TR-8S, and it is a shared chassis rather than a
+    // coincidence: Roland print `425(W) x 263(D) x 58(H)` for one and `409 (W) x 263 (D) x 58 (H)`
+    // for the other, so the two agree on depth and height to the millimetre and differ only
+    // across. Both rises are the published depth, read off each box's own specifications table.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 6)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -968,7 +973,10 @@ describe('rack view', () => {
     // 42: plus the EP-40's, the same full-width band on the same chassis, read off its own
     // front view and carrying the same caveat — the drawn box is the glass and not the active
     // area, because neither box's maker prints a display dimension anywhere.
-    expect(count('rack-screen')).toBe(42)
+    // 43: plus the MC-707's, measured off its p.5 top-panel figure at 447 x 154 px and carrying
+    // the EP-133's caveat for the same reason — Roland print no display dimension in either of
+    // this box's two manuals, so the drawn box is the bezel opening and not the active area.
+    expect(count('rack-screen')).toBe(43)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -1003,7 +1011,10 @@ describe('rack view', () => {
     // pad reassigns it to one of the twelve parameters silkscreened above the pads.
     // 152: plus the EP-40's one, the same slider in the same place on the same chassis. Its
     // box here is the cap's measured diameter by the slot's measured travel, 13.4 x 39.2 mm.
-    expect(count('rack-fader')).toBe(152)
+    // 160: plus the MC-707's eight, one level fader per mixer strip on the 138.86 px pitch the
+    // rest of that section is measured on. The first eight-at-once in this list, and the reason
+    // the number moves by more than one for the first time since the Cascadia.
+    expect(count('rack-fader')).toBe(160)
     // 103: the TR-1000's sixteen step keys, the CRAVE's thirteen-note keyboard, and thirty-seven
     // each from the minilogue xd and the Subsequent 37 — twenty-two white in one grid and
     // fifteen black in six clusters, because a keyboard drawn as an even row of rectangles stops
@@ -1032,7 +1043,11 @@ describe('rack view', () => {
     // C, the same answer the Grandmother, the Matriarch and the OP-XY reached. The natural pitch
     // decodes to 23.07 mm, which is a full-size key and is the independent check on that panel's
     // 990 mm span: no other reading of p.118's `99 x 42 x 11 (cm)` puts a full-size key here.
-    expect(count('rack-key')).toBe(269)
+    // 285: plus the MC-707's sixteen step buttons, and the one entry in this list that is not a
+    // keybed. `shape: 'key'` is the step row's shape because that is what the box draws — sixteen
+    // narrow rounded keys on a 69.43 px pitch under the pads — and the count is a shape census
+    // rather than a claim about what is played, which is why they belong here.
+    expect(count('rack-key')).toBe(285)
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
@@ -1059,7 +1074,10 @@ describe('rack view', () => {
     // column plus the twelve pads, measured off its own front view rather than copied across.
     // A voice field is never drawn by the feature renderer: the model owns those cells.
     const fields = DEVICES.flatMap((d) => d.panel?.features.filter((f) => f.kind === 'voices') ?? [])
-    expect(fields).toHaveLength(25)
+    // Twenty-six since the MC-707, whose field sits on its sixteen pads at the pad block's own
+    // measured rect — the one region where both of its pools are addressed, pads [1]-[8] being
+    // the eight tracks in CLIP mode and the sixteen being a kit's instruments in NOTE mode.
+    expect(fields).toHaveLength(26)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {
