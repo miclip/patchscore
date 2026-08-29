@@ -277,16 +277,46 @@ fixture — are from the `liveFloor` work. At **eighteen** devices the same swee
 (`industrial-techno`, seed 9), nothing capped.
 
 At **thirty-two** it measures **132,559** (`industrial-techno`, seed 4) — barely moved, because the
-count is non-monotonic and folder count is not what drives it. At **thirty-three** it is **223,348**
-and over the cap: the MicroFreak is the device that found the ceiling, and the whole of that rise is
-one contested role. `pad` is asked for by one direction and served by 22 of the 33 devices across 39
-recipes, so a thirty-ninth pad recipe costs what a whole device does not — dropping that one role
-from that one manifest takes the same sweep to 99,755, *below* the thirty-two-device baseline.
+count is non-monotonic and folder count is not what drives it. Then two devices in a row each added
+about half again:
 
-**Read that as the sizing rule rather than as a fact about one box.** Ask which of your roles are
-already crowded before counting your recipes: a device adding its first `vox-chop` is nearly free,
-and one adding a third `pad` character may not be. And do not price your headroom off the numbers
-above — measure, because the next contested role may not be this one.
+| devices | worst case | direction, seed | headroom |
+|---|---|---|---|
+| 18 | 132,615 | industrial-techno 9 | — |
+| 32 | 132,559 | industrial-techno 4 | — |
+| 33 | 223,348 | industrial-techno 4 | 2.2x |
+| 34 | **333,077** | industrial-techno 14 | **1.50x** |
+
+**Do not read those numbers off this page — run the command.** They have gone stale twice in two
+devices, which is why the table is now generated rather than remembered:
+
+```bash
+npm run measure:search                                    # the row above, for the tree you have
+npx tsx scripts/measure-search-cost.ts --attribute <id>   # which of one device's roles it pays for
+```
+
+**Read this as the sizing rule rather than as a fact about one box.** Ask which of your roles are
+already crowded before counting your recipes. Two devices have now been attributed, and both say
+the same thing in different shapes:
+
+- **The MicroFreak, one role.** `pad` is asked for by one direction and served by 22 of 33 devices
+  across 39 recipes, so a thirty-ninth pad recipe cost what a whole device does not — dropping that
+  one role from that one manifest took the sweep to 99,755, *below* the thirty-two-device baseline.
+- **The Circuit Tracks, two roles out of sixteen.** `sub` and `kick` carry **96%** of its 109,729
+  nodes; drop just those two and the sweep falls to 227,938 against the 223,348 it would be if the
+  box were not there at all. The other fourteen recipes cost about 4,600 nodes between them. Those
+  two are the most crowded roles in the library — `kick` at 46 recipes, `sub` across 27 devices.
+
+So a device adding its first `vox-chop` is nearly free, and one adding a third `pad` character may
+not be. **A recipe count cannot tell you which**, and neither can a total taken across the table:
+the MicroFreak moved `industrial-techno` by 68% and `weave` by twenty-two nodes, so one direction
+can carry the whole bill while the average looks calm.
+
+**The headroom is the number to watch, not the count.** `DEFAULT_NODE_CAP` was re-derived at 2.2x
+in #229 and is 1.50x now. A capped search does not fail — it silently returns a worse allocation
+(#228) — so this is a correctness margin rather than a speed one, and `measure:search` says so out
+loud below 2x. If it goes on falling, the answer is to make the search cheaper (pricing near-clones
+in the bound is the known lever), not another zero on the constant.
 
 **And run the audit**, before and after:
 
