@@ -614,6 +614,51 @@ export type SequencerGroup =
  * rendered per-section reads it — were one to start, this is where the repeat would have to be
  * dealt with.
  */
+/**
+ * §8/#230/#240. **The boxes a sequencer's section covers**, for the rig detail that belongs beside
+ * the work rather than four sections above it.
+ *
+ * #240's second question: a reader is told the Deluge's MIDI channel and audio out in phase 3, then
+ * asked to touch the Deluge again two sections later. The fix is to put each box's own clock, jacks,
+ * audio and mixer lines in the section where its parts are worked — and that means deciding which
+ * boxes a section is *about*, which is not simply its host.
+ *
+ * Two, in order:
+ *
+ *  - **The host**, the box the reader is standing at.
+ *  - **Every box the section's parts sound on**, which for an ordinary group is the host again and
+ *    for a driven part is somewhere else. Entering the Minitaur's line on the Hapax, the reader
+ *    needs the Hapax's sockets to patch from *and* the Minitaur's audio and mixer channel to hear
+ *    it. Naming only the host would move half the answer and leave the other half in phase 3.
+ *
+ * Deduplicated, host first, then first appearance — no sort, so the order is the resolver's and
+ * stays deterministic (invariant 6).
+ *
+ * **What this does not do is decide where an uncovered box goes.** A mixer or an fx-processor
+ * carries no parts (§2.4), belongs to no group, and still has to be patched; `devicesOutsideGroups`
+ * is the other half, and between them every device in the rig is named exactly once.
+ */
+export function devicesInGroup(group: SequencerGroup): readonly DeviceId[] {
+  const out: DeviceId[] = []
+  if (group.kind === 'sequencer') out.push(group.deviceId)
+  for (const a of group.assignments) if (!out.includes(a.deviceId)) out.push(a.deviceId)
+  return out
+}
+
+/**
+ * §8/#240. The boxes no sequencer section covers, which phase 3 keeps.
+ *
+ * A mixer-recorder and an fx-processor contribute zero assignables by design (§2.4) and appear in
+ * rig integration precisely because a reader still has to patch them. Under a layout built from
+ * groups they belong to none, and a section that simply stopped mentioning them would be the
+ * invariant 5 failure the empty-rig case already taught once: a box that vanishes reads as a box
+ * with nothing to do.
+ */
+export function devicesOutsideGroups(result: ResolveResult): readonly Device[] {
+  const covered = new Set(sequencerGroups(result).flatMap((g) => devicesInGroup(g)))
+  return result.devices.filter((d) => !covered.has(d.id))
+}
+
 export function narrowToGroup(
   result: ResolveResult,
   assignments: readonly ResolvedAssignment[],

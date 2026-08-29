@@ -37,7 +37,7 @@ import {
   type InterDevicePatch,
   type ResolveResult,
   type ResolvedAssignment,
-  type VoiceControlSource, patternDriver, sequencerGroups, narrowToGroup, unplayedHooks,} from './pipeline'
+  type VoiceControlSource, type SequencerGroup, patternDriver, sequencerGroups, narrowToGroup, unplayedHooks, devicesInGroup, devicesOutsideGroups,} from './pipeline'
 import { GUIDE_PHASES, count, ioText, mixerText, num} from './guide'
 import type { GuideLayout } from './guide'
 import {
@@ -841,7 +841,20 @@ function voiceControl(patch: InterDevicePatch): Line[] {
   return out
 }
 
-function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[] {
+/**
+ * §8/#240. `detail` is which boxes get a block of their own here.
+ *
+ * The phase layout passes every device, as this phase always did. The sequencer layout passes only
+ * the boxes no section covers — a mixer, an fx-processor, anything carrying no parts (§2.4) — and
+ * each remaining box's block is printed in the section where its parts are worked. The rig-wide
+ * half above, the clock source and what it rests on, is the same either way: it is a fact about
+ * the rig and belongs where the rig is described.
+ */
+function phaseRig(
+  result: ResolveResult,
+  occupied: Map<DeviceId, number>,
+  detail: readonly Device[] = result.devices,
+): Line[] {
   const out: Line[] = []
   const source = result.clockSource
 
@@ -915,10 +928,29 @@ function phaseRig(result: ResolveResult, occupied: Map<DeviceId, number>): Line[
     out.push('')
   }
 
+  out.push(...deviceRigBlocks(detail, occupied, source))
+  return out
+}
+
+/**
+ * §8/#240. One box's clock, sockets, audio and mixer channel — the half of phase 3 that is about a
+ * device rather than about the rig.
+ *
+ * Lifted out of `phaseRig` so the sequencer layout can print it in the section where that box's
+ * parts are worked, instead of four sections above them. Identical lines either way: this is the
+ * same block moved, not a second rendering of it, which is what keeps the two layouts a
+ * permutation of one another.
+ */
+function deviceRigBlocks(
+  devices: readonly Device[],
+  occupied: Map<DeviceId, number>,
+  source: ClockSource | undefined,
+): Line[] {
+  const out: Line[] = []
   // One block per box rather than a table plus a second list keyed by name. Two renderings of
   // the same three devices made the reader join them by eye, on the phase whose whole job is
   // "what do I plug where" — so clock, audio and channel plan sit together, per box.
-  for (const device of result.devices) {
+  for (const device of devices) {
     const parts = occupied.get(device.id) ?? 0
     // Four cases, not two. A box that does neither read "receives clock only" — wrong about
     // the box and, for a mixer whose manual never says MIDI, wrong about the wire as well.
@@ -2533,6 +2565,7 @@ function performedHere(
   assignments: readonly ResolvedAssignment[],
   deviceById: Map<DeviceId, Device>,
   settings: HintSetting,
+  rigLines: readonly Line[] = [],
 ): Line[] {
   /**
    * **A narrowed result, not a narrowed renderer.** `phaseSteps` and `phaseSound` iterate
@@ -2550,6 +2583,14 @@ function performedHere(
    */
   const only = narrowToGroup(result, assignments)
   return [
+    /**
+     * §8/#240. **Patching first, and in this section rather than four above it.**
+     *
+     * The reader is standing at this box now. Its clock, its sockets, its audio out and its mixer
+     * channel are what they need before a single step goes in — and under the phase layout they
+     * were read in section 3 and then needed again here, which is the trip this removes.
+     */
+    ...(rigLines.length === 0 ? [] : ['### Patching', '', ...rigLines, '']),
     /**
      * **Omitted rather than answered when this box carries no hook figure.** `phaseHook`'s empty
      * case says *"This template has no hooks."*, which is true of a template and false of a box —
@@ -2571,6 +2612,19 @@ function performedHere(
     '',
     ...demote(phaseSound(only, deviceById, settings)),
   ]
+}
+
+/** §8/#240. This section's boxes, rendered as the same blocks phase 3 would have printed. */
+function rigLinesFor(
+  result: ResolveResult,
+  group: SequencerGroup,
+  occupied: Map<DeviceId, number>,
+): Line[] {
+  const byId = new Map(result.devices.map((d) => [d.id, d]))
+  const devices = devicesInGroup(group)
+    .map((id) => byId.get(id))
+    .filter((d): d is Device => d !== undefined)
+  return deviceRigBlocks(devices, occupied, result.clockSource)
 }
 
 export function renderGuide(result: ResolveResult, options: RenderOptions = {}): string {
@@ -2601,7 +2655,13 @@ export function renderGuide(result: ResolveResult, options: RenderOptions = {}):
 
   section(1, GUIDE_PHASES[0] as string, phaseSong(result))
   section(2, GUIDE_PHASES[1] as string, phaseVoiceAssignment(result, deviceById))
-  section(3, GUIDE_PHASES[2] as string, phaseRig(result, occupied))
+  /**
+   * §8/#240. Rig-wide facts, plus a block for every box no section below will cover — a mixer, an
+   * fx-processor, anything carrying no parts (§2.4). Every other box's block moves to the section
+   * where its parts are worked, and `devicesOutsideGroups` is what keeps the two halves from
+   * either overlapping or leaving a box out.
+   */
+  section(3, GUIDE_PHASES[2] as string, phaseRig(result, occupied, devicesOutsideGroups(result)))
 
   let n = 4
   const groups = sequencerGroups(result)
@@ -2621,14 +2681,30 @@ export function renderGuide(result: ResolveResult, options: RenderOptions = {}):
       section(n++, 'Nothing in this rig can drive these', [
         ...LAYOUT_PREAMBLE.undriven,
         '',
-        ...performedHere(result, group.assignments, deviceById, settings),
+        ...performedHere(
+          result,
+          group.assignments,
+          deviceById,
+          settings,
+          rigLinesFor(result, group, occupied),
+        ),
       ])
       continue
     }
     const title = group.drivesOnly
       ? `${group.deviceName} — drives these, sounds none of them`
       : group.deviceName
-    section(n++, title, performedHere(result, group.assignments, deviceById, settings))
+    section(
+      n++,
+      title,
+      performedHere(
+        result,
+        group.assignments,
+        deviceById,
+        settings,
+        rigLinesFor(result, group, occupied),
+      ),
+    )
   }
 
   /**

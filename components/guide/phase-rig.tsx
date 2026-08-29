@@ -1,5 +1,6 @@
 import type {
   ClockSource,
+  Device,
   DeviceId,
   InterDevicePatch,
   ResolveResult,
@@ -159,9 +160,22 @@ function VoiceControl({ patch }: { patch: InterDevicePatch }) {
 export function PhaseRig({
   result,
   occupied,
+  detail,
 }: {
   result: ResolveResult
   occupied: Map<DeviceId, number>
+  /**
+   * §8/#240. Which boxes get a block of their own here.
+   *
+   * Defaults to every device, which is what the phase layout wants and what this phase always
+   * did. The sequencer layout passes only the boxes no section covers — a mixer, an fx-processor,
+   * anything carrying no parts (§2.4) — because each remaining box's block is drawn in the
+   * section where its parts are worked instead.
+   *
+   * The rig-wide half above is unaffected: the clock source and what it rests on are facts about
+   * the rig, and belong where the rig is described whichever way the guide is read.
+   */
+  detail?: readonly Device[]
 }) {
   const source = result.clockSource
 
@@ -260,7 +274,7 @@ export function PhaseRig({
       <VoiceControl patch={result.interDevicePatch} />
 
       <ul className="boxes">
-        {result.devices.map((device) => {
+        {(detail ?? result.devices).map((device) => {
           const parts = occupied.get(device.id) ?? 0
           const clock = clockParts(device)
           return (
