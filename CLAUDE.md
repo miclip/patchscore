@@ -182,9 +182,34 @@ session is running, since it is still moving. That rule is for the **operator**.
 its own work is expected to see a red guard for its whole run — the condition never clears while it
 is seated — so it should enumerate the dirty paths, confirm they are all its own, and commit.
 
-**Send operator messages to `>both`, not to one seat.** A message withheld from a seat arms
-conclave's `authority_conflict` detector against every later instruction touching the files that
-message mentioned. One informational note cost four false-positive pauses in a single run, the last
-matching on `DESIGN.md` alone — which every engine commit touches, by the rule above. Filed
-upstream as conclave#171; until it lands, `>both` avoids the condition entirely. The cost is giving
-up genuinely one-seat messages, which is rarely what an operator note needs.
+**Send an operator message to whichever seat it is for.** `>advisor`, `>implementer` and `>both`
+are all fine, and a one-seat message is a restriction worth keeping when you mean it.
+
+This used to say the opposite, and the reason is worth keeping because the rule outlived it. A
+message withheld from a seat once armed conclave's `authority_conflict` detector against every
+later instruction touching the files that message mentioned — one informational note cost four
+false-positive pauses in a single run, the last matching on `DESIGN.md` alone, which every engine
+commit touches. So this file said to broadcast everything.
+
+**That was fixed upstream in conclave#171**, in `0b6bbe7`, an ancestor of v0.5.9 and everything
+since. Handing the withheld message over in full to the seat that never saw it now moves the
+record, and only the record: the routing log still says what it said, so `/audit` and `asymmetryAt`
+still answer the historical question. That handover *is* the repair the pause asks for.
+
+So the pause this rule was avoiding is cheap and scoped — it stops only the workstream carrying
+that instruction, and it is the **operator's** to answer rather than the advisor's, structurally,
+since the advisor is the seat the message was kept from. Broadcasting to dodge it throws away a
+restriction you had judged worth making.
+
+**The general lesson is the one this paragraph is an instance of: check that a remembered issue
+number is still open before reasoning from it.** Verify against the installed build — `conclave
+--version` names a commit, and the source tree answers `git merge-base --is-ancestor` — rather than
+against what this file last recorded.
+
+Operator-facing behaviour also moved in v0.5.11, all four verified in the source tree rather than
+taken on report: a `/command` given a bare `<<TAG` is refused and its body swallowed rather than
+leaked line by line (#173); a bypassed seat reports a permission as taken rather than as one to
+answer (#177); **a run checks for room before starting and stops deliberately when it runs out
+(#180)**, which is the failure that cost most of one night here before anyone suspected the disk;
+and `invariant_violated` is a new non-zero outcome, so an invariant the orchestrator broke no
+longer reports as a transport failure (#74).
