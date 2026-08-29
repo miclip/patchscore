@@ -104,7 +104,34 @@ export const JACK_STYLE_SCRIPT = `try{var s=localStorage.getItem('${JACK_STYLE_K
  * a guide. Layout is a rearrangement: `guide-layout.test.ts` holds the two renderings to the same
  * content, so this is a question about the page and not about the score.
  */
-export const GUIDE_LAYOUT_KEY = 'patchscore:guide-layout'
+/**
+ * **`-preference`, and not the key #239 wrote.** That suffix is the whole of a bug fix, so it is
+ * worth the paragraph.
+ *
+ * #239 shipped the studio's `Read:` control as a control that *remembered itself*, writing
+ * `patchscore:guide-layout`. #241 then split the two ideas apart — the studio control became a
+ * per-visit override that stores nothing, and this page became the stored default — and reused
+ * that key for the default.
+ *
+ * So every value the old control had written was silently promoted from "how I wanted to read one
+ * guide, once" into "how I want to read every guide, always". A reader who tapped it to `by phase`
+ * to see what that looked like was pinned to `by phase` for good, and #242's change of default
+ * could not reach them: the stored value wins over `DEFAULT_GUIDE_LAYOUT` by design.
+ *
+ * Reported from an iPhone as *"nothing changes"*, which is exactly what it looked like — the
+ * server was sending the sequencer layout and the browser was switching back on hydration.
+ *
+ * A new key is the fix rather than a migration, because there is nothing to migrate: those values
+ * were never preferences. The old key is left alone rather than deleted — it belongs to a version
+ * of the app that no longer exists, and reading it again would be re-making the mistake.
+ */
+export const GUIDE_LAYOUT_KEY = 'patchscore:guide-layout-preference'
+
+/**
+ * The key #239's per-visit control wrote to, kept only so `preferences.test.ts` can hold the two
+ * apart. **Nothing reads it**, and nothing should: see `GUIDE_LAYOUT_KEY` above.
+ */
+export const ABANDONED_GUIDE_LAYOUT_KEY = 'patchscore:guide-layout'
 
 /**
  * **By sequencer, decided at a rack** — #240's first question, answered by reading both.
