@@ -367,10 +367,10 @@ describe('the panel figure', () => {
    * dimension pair immediately beside a real citation to p.30.
    */
   it('states a height only for a panel somebody drew', () => {
-    // The undrawn branch is exercised on a fixture *and*, since the MicroFreak, on a shipped
-    // box — that device is the one this comment used to anticipate, "the next device whose
-    // manual has no usable figure". The failure it guards against is silent: a defaulted height
-    // reads exactly like a measured one, standing next to a real citation.
+    // Exercised on a fixture, because every shipped box is drawn again — the MicroFreak was the
+    // one that briefly was not, and `rack.test.ts`'s `UNDRAWN` records why it stopped being.
+    // The failure guarded against is silent either way: a defaulted height reads exactly like a
+    // measured one, standing next to a real citation.
     const undrawn: Device = {
       ...(DEVICES.find((d) => d.id === 'moog-minitaur') as Device),
       panel: undefined,

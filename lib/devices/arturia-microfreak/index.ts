@@ -1,3 +1,4 @@
+import { MICROFREAK_PANEL } from './panel'
 import type {
   ArticulationEntry,
   CapabilityEvidence,
@@ -140,24 +141,24 @@ import type { Role } from '../../core/vocabulary'
  * *"at knob position 90% you reach a duty cycle of 99%"* becomes *"97%"* at p.118. No recipe uses
  * the Vocoder model, so nothing here depends on either figure.
  *
- * ## No panel drawing, and that is a finding rather than an omission
+ * ## The panel is drawn, and half of it is measured
  *
- * §10 needs a complete, unobstructed, fully-labelled panel figure to measure centroids from, and
- * a cited dimension to scale them against. **This manual has neither.** The front-panel chapter
- * draws the instrument as three separately-cropped photographs — *"Top Row"* (p.9), *"Middle Row"*
- * (p.13), *"Bottom Row"* (p.15) — at three different scales, none showing the panel's outer border,
- * with the keyboard and icon strip in none of them. And there is no specifications page anywhere:
- * the contents run from ch.1 to ch.23 with no such section, and a full-text search for dimensions,
- * weight, mm or inches returns only connector sizes and the boilerplate disclaimer.
+ * This shipped undrawn, on the finding that §10 wants one complete, unobstructed, fully-labelled
+ * figure and this manual has none. **That finding still stands.** The front-panel chapter draws the
+ * instrument as three separately-cropped photographs — *"Top Row"* (p.9), *"Middle Row"* (p.13),
+ * *"Bottom Row"* (p.15) — none showing the outer border, none including the keyboard, and there is
+ * no specifications page anywhere in the 137 pages.
  *
- * So `panel` is omitted and the rack falls back to a generated panel from the jacks and voices
- * below. Estimating coordinates off a cropped photograph would produce a drawing indistinguishable
- * from the measured ones, which is worse than none.
+ * What was wrong was the conclusion: *"estimating coordinates off a cropped photograph would
+ * produce a drawing indistinguishable from the measured ones, which is worse than none."* They are
+ * not indistinguishable. `PanelLayout.verified` is `Cite | false`, and the rack legend prints the
+ * three states apart — *"panel not drawn yet"*, *"panel drawn, uncited"*, *"drawn from <cite>"*.
+ * The choice was never measured-or-nothing.
  *
- * `physical.panelSpanMm` is still required, and #191's `maker` kind is exactly the case: Arturia
- * publishes `55 x 311 x 233 mm` on the MicroFreak product page, with `2.17 x 12.24 x 9.17 in`
- * beside it — 55.1 × 310.9 × 232.9 mm, so the two agree and the 311 mm is the width. Published by
- * the manufacturer and checkable by anyone with the link, which is the whole of what `maker` means.
+ * And the strips give more than they first appear to. **Each spans the instrument's full width**,
+ * corner to corner, against a cited 311 mm — so every horizontal position and every diameter in
+ * `panel.ts` is measured, as is each row's own height. What is inferred is how the three rows stack
+ * vertically, and the citation's own text says so rather than leaving it to be discovered.
  *
  * ## `synth`, not `semi-modular`
  *
@@ -1313,7 +1314,8 @@ export const device: Device = {
   /** 311 mm across, from Arturia's published size. The header says why the manual cannot supply it. */
   physical: { panelSpanMm: 311, verified: MAKER_SIZE },
 
-  /** No `panel`. The header records which figures were looked at and why none of them can be measured. */
+  /** Drawn from pp.9/13/15 — `panel.ts` records which half is measured and which is inferred. */
+  panel: MICROFREAK_PANEL,
 
   jacks: [...JACKS],
 
