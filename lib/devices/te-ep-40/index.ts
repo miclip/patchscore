@@ -2,6 +2,7 @@ import type { Device, Recipe } from '../../core/device'
 import { clockSourceSetupFact, jackFact } from '../../core/device'
 import type { AuthoredEnumParam, Cite, Verified } from '../../core/params'
 import type { Role } from '../../core/vocabulary'
+import { device as ko2 } from '../te-ep-133/index'
 import { EP_40_PANEL } from './panel'
 
 /**
@@ -38,6 +39,29 @@ import { EP_40_PANEL } from './panel'
  * opened and their linked assets listed, which is where the front view `panel.ts` measures came
  * from, and where the dimensions and the polyphony came from. Nothing below is recorded as
  * unrecoverable without that check having been made.
+ *
+ * ## Thirteen of the nineteen parts are the sibling's, derived rather than copied
+ *
+ * Invariant 2/#196 lets a device folder import a sibling, and this one imports `te-ep-133`. The
+ * two boxes are the same hardware for everything below the supertone, so thirteen recipes are the
+ * same part described in the same sentences — and they are documented by **two different guides**,
+ * which makes this `akai-mpc-one-g2`'s import rather than `akai-mpc-xl`'s. The XL shares one PDF
+ * with its sibling and takes its citations unchanged; the One G2 reads its own manual and routes
+ * every borrowed citation through a table that throws on a page it has not mapped. So does this.
+ *
+ * The machinery is at `borrowed()` below and the argument for each guard is there. Two facts are
+ * worth having up here, because they are what makes a prefix swap the wrong answer:
+ *
+ *  - **Two of the six borrowed sections do not line up.** Time stretch is guide 8.2.4 on the
+ *    K.O. II and **8.2.5** here, because supertone parameters take 8.2.3; resampling a chord is
+ *    12.10 there and **12.12** here. Rewriting `/ep-133/` to `/ep-40/` would have produced two
+ *    citations that look precise and name the wrong page.
+ *  - **`PLAY MODE` is four values here and three there**, and every recipe carries it, so not one
+ *    borrowed parameter can keep the legality claim it arrived with.
+ *
+ * The six recipes authored here are the six places the boxes differ in substance: three supertone
+ * parts, the `loop` pad, the chopped vocal, and the impact that reaches a sound-effects band the
+ * sibling's guide does not print.
  *
  * ## This guide prints no parameter range at all
  *
@@ -421,220 +445,201 @@ function supertone(need: string) {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// The thirteen recipes this box shares with its sibling, derived rather than copied
+// ---------------------------------------------------------------------------
+
+/**
+ * §2/invariant 2/#196. **A device folder may import a sibling, and this one does** — but the two
+ * boxes are documented by two *different* guides, so this is `akai-mpc-one-g2`'s import and not
+ * `akai-mpc-xl`'s. The XL and the Live III share one PDF, so the XL takes its sibling's
+ * citations unchanged; the One G2 reads a different manual and therefore routes every borrowed
+ * citation through `pageInV39`, which throws on a page it has not mapped to its own document.
+ * That is the shape here, one level up: a guide *section* rather than a page number.
+ *
+ * **What is shared is the prose, and what is not shared is every claim in it.** Thirteen parts
+ * below are the same part on the same hardware — the same kick from the same numeric band, the
+ * same gesture to record a shaker, the same reason a bass wants `legato` — and the sentences that
+ * say so are the sibling's. Everything with provenance is rebuilt against this box's own guide:
+ *
+ *  - **The citation.** `SECTION_HERE` maps each of the six sections the borrowed recipes cite to
+ *    the section of the EP–40 guide that carries the same fact, and throws on anything else. Two
+ *    of the six do not line up — the time-stretch page is 8.2.4 there and **8.2.5** here, because
+ *    supertone parameters take 8.2.3; and resampling a chord is 12.10 there and **12.12** here.
+ *    A prefix swap would have produced two citations that look precise and name the wrong page,
+ *    which is worse than no citation at all.
+ *  - **The option set.** `PLAY MODE` has *four* values on this box and three on the sibling, so
+ *    every borrowed parameter's legality claim is rebuilt from this file's own lists rather than
+ *    inherited. A value the sibling sets that this box does not offer throws.
+ *  - **The prose is checked for the sibling's fingerprints**, because a sentence naming the other
+ *    box would be as wrong as a citation naming its guide, and nothing else would catch it.
+ *
+ * The six recipes that are *not* here are the ones where the two boxes differ in substance:
+ * three supertone parts, the `loop` pad, the chop-mode vocal, and the impact that reaches the
+ * sound-effects band the sibling's guide does not print.
+ */
+const SIBLING_GUIDE = 'EP–133 K.O. II guide'
+
+/**
+ * Each section of the sibling's guide that a borrowed recipe cites, against the section of this
+ * box's guide that carries the same fact. Read on both sides — this is the table that makes the
+ * import legal, so an entry added without opening both pages is the whole failure mode.
+ */
+const SECTION_HERE: Record<string, string> = {
+  '/ep-133/modes 8.1': SOUND,
+  '/ep-133/modes 8.2.1': PLAY_MODE_PAGE,
+  // 8.2.4 there, 8.2.5 here: this guide inserts supertone parameters at 8.2.3 and pushes the
+  // rest of the sound-edit pages down by one.
+  '/ep-133/modes 8.2.4': TIME_PAGE,
+  '/ep-133/functions 10.1': SAMPLE_FN,
+  '/ep-133/system 14': SYSTEM,
+  // 12.10 there, 12.12 here: this guide's how-to chapter carries two walkthroughs the sibling's
+  // does not, so everything after 12.6 is offset.
+  '/ep-133/how-to 12.10': RESAMPLE_CHORD,
+}
+
+/**
+ * The option sets this box offers, keyed by the parameter name the sibling sets. Rebuilt rather
+ * than inherited: `PLAY MODE` is four values here and three there, so not one of these lists is
+ * the sibling's.
+ */
+const OPTIONS_HERE: Record<string, readonly string[]> = {
+  'PLAY MODE': PLAY_MODES,
+  'SAMPLE SOURCE': SAMPLE_SOURCES,
+  'SAMPLE RATE': SAMPLE_RATES,
+  'TIME STRETCH MODE': TIME_MODES,
+}
+
+/** The section of *this* guide that carries what the sibling cites, or a throw. */
+function sectionHere(source: string): string {
+  const prefix = `${SIBLING_GUIDE}, `
+  const suffix = `, ${MIRRORED}`
+  if (!source.startsWith(prefix) || !source.endsWith(suffix)) {
+    throw new Error(`the EP–133 manifest carries a citation this cannot retarget: ${source}`)
+  }
+  const there = source.slice(prefix.length, source.length - suffix.length)
+  const here = SECTION_HERE[there]
+  if (here === undefined) {
+    throw new Error(
+      `the EP–133 manifest cites '${there}', which nothing in the EP–40 guide has been checked against`,
+    )
+  }
+  return here
+}
+
+/**
+ * Borrowed prose must not name the box it came from. Nothing else would catch a sentence that
+ * says K.O. II in this box's guide, because it carries no citation to check.
+ */
+function ownProse(where: string, text: string): string {
+  if (/ep-133|K\.\s?O\.\s?II/i.test(text)) {
+    throw new Error(`the EP–133 manifest's ${where} names its own box and cannot be borrowed: ${text}`)
+  }
+  return text
+}
+
+/** One borrowed parameter, its option set and its citation rebuilt against this guide. */
+function retargetParam(param: AuthoredEnumParam): AuthoredEnumParam {
+  if (param.verified !== false) {
+    throw new Error(`retargeting a cited point value is not implemented: ${param.name}`)
+  }
+  const options = OPTIONS_HERE[param.name]
+  if (options === undefined) {
+    throw new Error(`the EP–133 manifest sets '${param.name}', which this manifest has no option set for`)
+  }
+  if (!options.includes(param.value)) {
+    throw new Error(
+      `the EP–133 manifest sets ${param.name} to '${param.value}', which is not one of this box's options`,
+    )
+  }
+  const cited = param.options.verified
+  if (cited === undefined || cited === false) {
+    throw new Error(`an uncited option set cannot be retargeted: ${param.name}`)
+  }
+  return pick(param.name, param.value, options, cite(sectionHere(cited.source)), {
+    ...(param.hint === undefined ? {} : { hint: param.hint }),
+    ...(param.note === undefined ? {} : { note: ownProse(`${param.name} note`, param.note) }),
+  })
+}
+
+/**
+ * One recipe from the sibling, re-identified for this box and rebuilt against this guide.
+ *
+ * It throws rather than falling back, and the throw is the point: `gen-registry` imports every
+ * manifest, so a recipe renamed or dropped next door fails the build here instead of quietly
+ * leaving this box a part short.
+ */
+function borrowed(suffix: string): Recipe {
+  const source = ko2.recipes.find((r) => r.id === `ep133-${suffix}`)
+  if (source === undefined) {
+    throw new Error(`the EP–133 manifest carries no recipe 'ep133-${suffix}'`)
+  }
+  const audio = source.sourceAudio
+  if (audio?.prep === undefined) {
+    throw new Error(`ep133-${suffix} has no preparation citation to retarget`)
+  }
+  const prepCite = audio.prep.verified
+  if (prepCite === false) {
+    throw new Error(`ep133-${suffix} has an uncited preparation step`)
+  }
+  for (const param of source.params) {
+    if (param.kind !== 'enum') {
+      throw new Error(
+        `ep133-${suffix} carries a ${param.kind} parameter, and neither guide prints a scale for anything`,
+      )
+    }
+  }
+  return {
+    ...source,
+    id: `ep40-${suffix}`,
+    title: ownProse(`${suffix} title`, source.title),
+    sourceAudio: {
+      ...audio,
+      need: ownProse(`${suffix} need`, audio.need),
+      prep: {
+        text: ownProse(`${suffix} prep`, audio.prep.text),
+        verified: cite(sectionHere(prepCite.source)),
+      },
+    },
+    params: (source.params as AuthoredEnumParam[]).map(retargetParam),
+    ...(source.routing === undefined
+      ? {}
+      : { routing: ownProse(`${suffix} routing`, source.routing) }),
+  }
+}
+
+/**
+ * Nineteen parts: thirteen borrowed from the sibling and rebuilt against this guide, six authored
+ * here because the two boxes differ in substance. Well inside the fifteen-to-twenty the authoring
+ * skill calls covering a device, and deliberately **not** one per role — eighteen of the
+ * twenty-three roles this pool declares are covered and **five are not**: `rim`, `tom`, `ride`,
+ * `metallic` and `arp`. Filling them would be padding the sheet rather than saying anything a
+ * reader needs, and the pool still declares all twenty-three because a pad takes any sound.
+ */
 const recipes: Recipe[] = [
   // -------------------------------------------------------------------------
-  // Drum parts. `oneshot` throughout: guide 8.2.1 makes it monophonic and
-  // whole-sample, which is what a struck part wants and what leaves the
-  // polyphony budget alone.
+  // Borrowed. Same box, same gesture, same numeric band — see `borrowed()` for
+  // what is rebuilt on the way across and what is not.
   // -------------------------------------------------------------------------
-  {
-    id: 'ep40-kick-hard',
-    role: 'kick',
-    character: 'hard',
-    voice: 'pad',
-    title: 'Factory kick, one-shot and forward',
-    sourceAudio: fromLibrary(
-      'A short, dry kick with its weight low and no audible tail',
-      'kicks are sounds 1-99',
-    ),
-    params: [pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
-    routing:
-      'Group A, the drum pad. Trim the head in SOUND EDIT if the sample has a run-up — the start point is on [X] there',
-  },
-  {
-    id: 'ep40-kick-soft',
-    role: 'kick',
-    character: 'soft',
-    voice: 'pad',
-    title: 'Factory kick, round with the tail left on',
-    sourceAudio: fromLibrary(
-      'A soft-attack kick with an audible tail, nothing clipped off the end',
-      'kicks are sounds 1-99',
-    ),
-    params: [pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
-    routing:
-      'Group A. Release is on [Y] in SOUND EDIT ENV — turned up it keeps playing after the pad is let go',
-  },
-  {
-    id: 'ep40-snare-hard',
-    role: 'snare',
-    character: 'hard',
-    voice: 'pad',
-    title: 'Factory snare, cracked',
-    sourceAudio: fromLibrary(
-      'A snare with a hard transient and a short body',
-      'snares are sounds 100-199',
-    ),
-    params: [pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
-    routing: 'Group A',
-  },
-  {
-    id: 'ep40-clap-bright',
-    role: 'clap',
-    character: 'bright',
-    voice: 'pad',
-    title: 'Factory clap, wide',
-    sourceAudio: fromLibrary(
-      'A layered clap with a stereo spread, bright at the top',
-      'claps sit with the snares, sounds 100-199',
-    ),
-    params: [pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
-    routing: 'Group A',
-  },
-  {
-    id: 'ep40-rim-clean',
-    role: 'rim',
-    character: 'clean',
-    voice: 'pad',
-    title: 'Factory rim, dry',
-    sourceAudio: fromLibrary(
-      'A rimshot or cross-stick with no tail at all',
-      'percussion is sounds 300-399',
-    ),
-    params: [pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
-    routing: 'Group A',
-  },
-  {
-    id: 'ep40-ghost-perc-soft',
-    role: 'ghost-perc',
-    character: 'soft',
-    voice: 'pad',
-    title: 'Shaker sampled off the built-in mic',
-    sourceAudio: sampled('A shaker or light percussion hit, recorded close and quiet'),
-    params: [
-      pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' }),
-      pick('SAMPLE SOURCE', 'mic', SAMPLE_SOURCES, cite(SAMPLE_FN), { hint: 'sample' }),
-    ],
-    routing:
-      'Group A. System setting 301 turns pad velocity on for a soft touch, which is what lets a shaker sit under the beat rather than on it',
-  },
-  {
-    id: 'ep40-closed-hat-bright',
-    role: 'closed-hat',
-    character: 'bright',
-    voice: 'pad',
-    title: 'Factory closed hat, clipped short',
-    sourceAudio: fromLibrary(
-      'A closed hi-hat, bright and very short',
-      'hi-hats are sounds 200-299',
-    ),
-    params: [pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
-    routing:
-      'Group A. Hold [TIMING] and the pad for note repeat at the current interval — the fast way to lay hats in',
-  },
-  {
-    id: 'ep40-open-hat-dark',
-    role: 'open-hat',
-    character: 'dark',
-    voice: 'pad',
-    title: 'Factory open hat, closing on its own decay',
-    sourceAudio: fromLibrary(
-      'An open hi-hat with a long decay and no top-end sizzle',
-      'hi-hats are sounds 200-299',
-    ),
-    params: [pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
-    routing:
-      'Group A. Put it in a mute group with the closed hat so the closed hit cuts it, the way a real pair behaves',
-  },
-  {
-    id: 'ep40-ride-bright',
-    role: 'ride',
-    character: 'bright',
-    voice: 'pad',
-    title: 'Factory ride, one hit with the wash left on',
-    sourceAudio: fromLibrary(
-      'A ride cymbal struck once, with a long shimmer and a clear bell',
-      'hi-hats and cymbals are sounds 200-299',
-    ),
-    params: [pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
-    routing:
-      'Group A. Keep it out of the hat mute group — a ride that gets choked by every closed hat stops being a ride',
-  },
-  {
-    id: 'ep40-tom-dark',
-    role: 'tom',
-    character: 'dark',
-    voice: 'pad',
-    title: 'Factory tom, low and dropping',
-    sourceAudio: fromLibrary(
-      'A low tom with a falling pitch and a short body',
-      'percussion is sounds 300-399',
-    ),
-    params: [pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
-    routing: 'Group A',
-  },
-  {
-    id: 'ep40-metallic-bright',
-    role: 'metallic',
-    character: 'bright',
-    voice: 'pad',
-    title: 'Struck metal, played up the keyboard',
-    sourceAudio: sampled('One hit on something metal — a pan, a bike frame, a radiator'),
-    params: [
-      pick('PLAY MODE', 'key', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' }),
-      pick('SAMPLE SOURCE', 'mic', SAMPLE_SOURCES, cite(SAMPLE_FN), { hint: 'sample' }),
-    ],
-    routing:
-      'Group C. Press [KEYS] to transpose the pad across the twelve pads — a metal hit an octave up is where the inharmonic ring lives',
-  },
-  {
-    id: 'ep40-noise-dirty',
-    role: 'noise',
-    character: 'dirty',
-    voice: 'pad',
-    title: 'Reversed noise wash, recorded at the low rate',
-    sourceAudio: sampled('Room noise, tape hiss or a cymbal wash — anything without a pitch'),
-    params: [
-      pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' }),
-      pick('SAMPLE SOURCE', 'line in stereo (in)', SAMPLE_SOURCES, cite(SAMPLE_FN), {
-        hint: 'sample',
-      }),
-      pick('SAMPLE RATE', 'lo — 26,250 Hz', SAMPLE_RATES, cite(SYSTEM), {
-        hint: 'sample-rate',
-        note: 'Set before recording; the guide writes these as “khz” and means Hz',
-      }),
-      pick('TIME STRETCH MODE', 'reverse', TIME_MODES, cite(TIME_PAGE), { hint: 'time-mode' }),
-    ],
-    routing: 'Group D',
-  },
+  borrowed('kick-hard'),
+  borrowed('snare-hard'),
+  borrowed('clap-bright'),
+  borrowed('ghost-perc-soft'),
+  borrowed('closed-hat-bright'),
+  borrowed('open-hat-dark'),
+  borrowed('noise-dirty'),
+  borrowed('sub-dark'),
+  borrowed('bass-mid-dirty'),
+  borrowed('pad-soft'),
+  borrowed('texture-soft'),
+  borrowed('stab-hard'),
+  borrowed('riser-bright'),
 
   // -------------------------------------------------------------------------
-  // Low parts. `legato` rather than `oneshot`: guide 8.2.1 makes it monophonic
-  // and continues from where the last note left off, which is what a bass wants.
+  // Authored here. Three supertone parts, the loop pad, the chopped vocal and
+  // the impact — the six places this box is not its sibling.
   // -------------------------------------------------------------------------
-  {
-    id: 'ep40-sub-dark',
-    role: 'sub',
-    character: 'dark',
-    voice: 'pad',
-    title: 'Factory sub, legato under the kick',
-    sourceAudio: fromLibrary(
-      'A sine or near-sine bass note with no harmonics above the fundamental',
-      'bass is sounds 400-499',
-    ),
-    params: [pick('PLAY MODE', 'legato', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
-    routing:
-      'Group B, the bass pad. Make it the sidechain destination and the kick pad its source — the duck runs on note triggers rather than audio, so it works even where the kick is quiet',
-  },
-  {
-    id: 'ep40-bass-mid-dirty',
-    role: 'bass-mid',
-    character: 'dirty',
-    voice: 'pad',
-    title: 'Bass resampled at the low rate',
-    sourceAudio: sampled('One held bass note with harmonic content through the mids'),
-    params: [
-      pick('PLAY MODE', 'legato', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' }),
-      pick('SAMPLE SOURCE', 'line in mono (in)', SAMPLE_SOURCES, cite(SAMPLE_FN), {
-        hint: 'sample',
-      }),
-      pick('SAMPLE RATE', 'lo — 26,250 Hz', SAMPLE_RATES, cite(SYSTEM), {
-        hint: 'sample-rate',
-        note: 'The guide calls this one “very lo-fi”; set it before recording, not after',
-      }),
-    ],
-    routing: 'Group B. Distortion is on the FX selector if the rate alone is not enough',
-  },
   {
     id: 'ep40-acid-dirty',
     role: 'acid',
@@ -646,31 +651,29 @@ const recipes: Recipe[] = [
     routing:
       'Group B. Hold the pad in MAIN and turn [X] and [Y] for this supertone’s two preset parameters — the guide’s list of what those can be includes filter cutoff and filter resonance, and does not say which supertone carries which',
   },
-
-  // -------------------------------------------------------------------------
-  // Tonal parts. `key` is the guide's own word for polyphonic (guide 8.2.1), so
-  // these are real polyphonic voices rather than chords baked into a sample —
-  // with two deliberate exceptions below.
-  // -------------------------------------------------------------------------
   {
-    id: 'ep40-pad-soft',
-    role: 'pad',
-    character: 'soft',
+    id: 'ep40-lead-bright',
+    role: 'lead',
+    character: 'bright',
     voice: 'pad',
-    title: 'Sustained pad, stretched to the bar',
-    sourceAudio: fromLibrary(
-      'A slow, sustained tone with no transient — strings, a bowed sound, a held synth note',
-      'melodic sounds are 500-599',
-    ),
-    params: [
-      pick('PLAY MODE', 'key', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' }),
-      pick('TIME STRETCH MODE', 'BAR', TIME_MODES, cite(TIME_PAGE), {
-        hint: 'time-mode',
-        note: '[Y] then sets how many bars it is stretched to',
-      }),
-    ],
+    title: 'Supertone lead, legato so it slides between notes',
+    sourceAudio: supertone('One of the ten supertone sounds — the engine’s own lead tones'),
+    params: [pick('PLAY MODE', 'legato', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
     routing:
-      'Group C, the keys pad. Attack is on [X] in SOUND EDIT ENV — turned up it fades the sample in rather than playing it as recorded',
+      'Group C. Press [KEYS] to play it across the twelve pads. The two preset parameters are on [X] and [Y] while the pad is held in MAIN',
+  },
+  {
+    id: 'ep40-sweep-bright',
+    role: 'sweep',
+    character: 'bright',
+    voice: 'pad',
+    title: 'Supertone siren, leant on for the turnaround',
+    sourceAudio: supertone(
+      'One of the ten supertone sounds — the pressure-sensitive siren rather than a bass or lead tone',
+    ),
+    params: [pick('PLAY MODE', 'key', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
+    routing:
+      'Group D. System setting 301 turns pad velocity on, which is what makes the pressure do anything. The two preset knobs are on [X] and [Y] with the pad held',
   },
   {
     id: 'ep40-pad-clean',
@@ -696,64 +699,6 @@ const recipes: Recipe[] = [
       'Group D. Unmute the pad, then hold that group pad and [RECORD] for two seconds until LSS flashes — that stores the loop as armed in this pattern, which is the only way a loop reaches the sequence. This is the one part on the box that carries no steps',
   },
   {
-    id: 'ep40-texture-soft',
-    role: 'texture',
-    character: 'soft',
-    voice: 'pad',
-    title: 'Field recording stretched across bars',
-    sourceAudio: sampled('A field recording or room tone — anything with movement and no beat'),
-    params: [
-      pick('PLAY MODE', 'key', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' }),
-      pick('SAMPLE SOURCE', 'mic', SAMPLE_SOURCES, cite(SAMPLE_FN), { hint: 'sample' }),
-      pick('TIME STRETCH MODE', 'BAR', TIME_MODES, cite(TIME_PAGE), { hint: 'time-mode' }),
-    ],
-    routing: 'Group D',
-  },
-  {
-    id: 'ep40-lead-bright',
-    role: 'lead',
-    character: 'bright',
-    voice: 'pad',
-    title: 'Supertone lead, legato so it slides between notes',
-    sourceAudio: supertone('One of the ten supertone sounds — the engine’s own lead tones'),
-    params: [pick('PLAY MODE', 'legato', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
-    routing:
-      'Group C. Press [KEYS] to play it across the twelve pads. The two preset parameters are on [X] and [Y] while the pad is held in MAIN',
-  },
-  {
-    id: 'ep40-stab-hard',
-    role: 'stab',
-    character: 'hard',
-    voice: 'pad',
-    title: 'Chord stab resampled onto one pad',
-    realisation: 'sampled-chord',
-    sourceAudio: {
-      need: 'A chord, played once and short — the notes are inside the sample rather than played from the pads',
-      prep: {
-        text: 'Load a sound, press [KEYS], press [SAMPLE] then [+] for resampling, then [SHIFT] and a pad to record hands free while you play the chord.',
-        verified: cite(RESAMPLE_CHORD),
-      },
-      hint: 'resample',
-    },
-    params: [pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
-    routing:
-      'Group C. Resampling is what makes this one a sampled chord — the chord is recorded into the pad, so one voice plays all of it',
-  },
-  {
-    id: 'ep40-arp-clean',
-    role: 'arp',
-    character: 'clean',
-    voice: 'pad',
-    title: 'Plucked tone through the note-repeat arpeggio',
-    sourceAudio: fromLibrary(
-      'A short plucked tone with a clean decay — a mallet, a pluck, a muted string',
-      'melodic sounds are 500-599',
-    ),
-    params: [pick('PLAY MODE', 'key', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
-    routing:
-      'Group C. In KEYS mode, hold [TIMING] and several pads and they arpeggiate in the order pressed, at the current note interval',
-  },
-  {
     id: 'ep40-vox-chop-clean',
     role: 'vox-chop',
     character: 'clean',
@@ -770,29 +715,6 @@ const recipes: Recipe[] = [
     ],
     routing:
       '[SHIFT] and [SAMPLE] is CHOP — hold a group pad to pick the mode, then [−]/[+] for the number of slices, and it scatters the phrase across as many pads as it needs. Give it group D, since it takes several',
-  },
-
-  // -------------------------------------------------------------------------
-  // Transitional parts (§4.2) — section-scoped rather than owning a voice.
-  // -------------------------------------------------------------------------
-  {
-    id: 'ep40-riser-bright',
-    role: 'riser',
-    character: 'bright',
-    voice: 'pad',
-    title: 'Riser stretched to the bars it has to fill',
-    sourceAudio: sampled('A rising sweep, noise or tone, recorded longer than the gap it fills'),
-    params: [
-      pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' }),
-      pick('SAMPLE SOURCE', 'line in stereo (in)', SAMPLE_SOURCES, cite(SAMPLE_FN), {
-        hint: 'sample',
-      }),
-      pick('TIME STRETCH MODE', 'BAR', TIME_MODES, cite(TIME_PAGE), {
-        hint: 'time-mode',
-        note: '[Y] sets the bar count — the guide’s example is one bar or two',
-      }),
-    ],
-    routing: 'Group D',
   },
   {
     id: 'ep40-impact-hard',
@@ -812,19 +734,6 @@ const recipes: Recipe[] = [
     params: [pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
     routing:
       'Group D. Keep it out of any mute group — a mute group cuts everything else in it, which is the opposite of what a section marker wants',
-  },
-  {
-    id: 'ep40-sweep-bright',
-    role: 'sweep',
-    character: 'bright',
-    voice: 'pad',
-    title: 'Supertone siren, leant on for the turnaround',
-    sourceAudio: supertone(
-      'One of the ten supertone sounds — the pressure-sensitive siren rather than a bass or lead tone',
-    ),
-    params: [pick('PLAY MODE', 'key', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
-    routing:
-      'Group D. System setting 301 turns pad velocity on, which is what makes the pressure do anything. The two preset knobs are on [X] and [Y] with the pad held',
   },
 ]
 
@@ -1045,17 +954,26 @@ export const device: Device = {
    * it. A recipe cannot reference an entry from a band, so every recipe above still describes its
    * audio in prose and puts the band in `prep`, which is what `reason` says.
    *
-   * **The guide's list is one band short**, and the sixth is on the product page rather than in
-   * the guide: `600-699 FX`. One recipe reaches for it and carries that `maker` citation itself.
+   * **The guide's list is one band short, and the sixth stays out of this field.** The product
+   * page prints `600-699 FX` and the guide never mentions it. `capabilityEvidence.content` is a
+   * single citation covering the whole field, and it names guide 8.1 — so a band 8.1 does not
+   * print cannot be in `location`, however true it is. It reaches a reader on the one recipe that
+   * needs it, `ep40-impact-hard`, whose `prep` carries the product page's `maker` citation itself.
+   * That is the shape §3.1 wants: the claim travels with the source that supports it.
+   *
+   * **The nine-projects fact is out for the same reason.** Guide 7.1's *"by default, all 9
+   * projects will have songs"* — where the K.O. II ships five populated and four empty — is a real
+   * difference between the two boxes and it is not on the page this field cites, so it is recorded
+   * here and not rendered. Every word of `library`, `location` and `reason` is guide 8.1's.
    *
    * The `credits` page lists forty-odd contributors by name and attaches no pack, kit or sample to
    * any of them, so it is not an inventory either.
    */
   content: {
     kind: 'shipped-library',
-    library: 'over 300 factory samples, and all nine projects arrive with songs in them',
+    library: 'over 300 factory samples',
     location:
-      'SOUND mode — hold [SOUND] and type the number; the factory bands are kicks 1-99, snares 100-199, hi-hats 200-299, percussion 300-399, bass 400-499, melodic 500-599, and sound effects 600-699',
+      'SOUND mode — hold [SOUND] and type the number; the factory bands are kicks 1-99, snares 100-199, hi-hats 200-299, percussion 300-399, bass 400-499 and melodic 500-599',
     reason:
       'the sound page gives the count and the number bands and names not one sample; it also says a sample only has a name at all if it was imported or renamed with the EP Sample Tool',
   },

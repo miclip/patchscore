@@ -11,6 +11,7 @@ import {
   type Recipe,
 } from '../lib/core/index'
 import { device } from '../lib/devices/te-ep-40/index'
+import { device as ko2 } from '../lib/devices/te-ep-133/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { auditDevice } from '../scripts/audit-verified'
 
@@ -260,6 +261,78 @@ describe('EP–40 riddim manifest', () => {
   })
 
   // -------------------------------------------------------------------------
+  // Thirteen parts are the sibling's, and the derivation is the thing to hold
+  // -------------------------------------------------------------------------
+
+  describe('the borrowed recipes are derived from the sibling and retargeted onto this guide', () => {
+    /** The thirteen the manifest takes from `te-ep-133`, by the suffix both ids share. */
+    const BORROWED = [
+      'kick-hard', 'snare-hard', 'clap-bright', 'ghost-perc-soft', 'closed-hat-bright',
+      'open-hat-dark', 'noise-dirty', 'sub-dark', 'bass-mid-dirty', 'pad-soft', 'texture-soft',
+      'stab-hard', 'riser-bright',
+    ]
+
+    it('is nineteen parts, thirteen of them the sibling’s', () => {
+      // Fifteen to twenty is what the authoring skill calls covering a device, and the sheet is
+      // deliberately short of the twenty-three roles the pool declares: eighteen are covered and
+      // five are not, because filling them would be padding rather than saying anything.
+      expect(device.recipes).toHaveLength(19)
+      expect(device.recipes.filter((r) => BORROWED.includes(r.id.slice('ep40-'.length)))).toHaveLength(13)
+      expect(new Set(device.recipes.map((r) => r.role)).size).toBe(18)
+    })
+
+    it('keeps the sibling’s prose, which is what makes it a derivation rather than a rewrite', () => {
+      // If these drift apart, the import has stopped buying anything and the file should say so
+      // by inlining them. `routing` is the longest prose a recipe carries, so it is the tell.
+      for (const suffix of BORROWED) {
+        const here = device.recipes.find((r) => r.id === `ep40-${suffix}`)
+        const there = ko2.recipes.find((r) => r.id === `ep133-${suffix}`)
+        expect(there, suffix).toBeDefined()
+        expect(here?.routing, suffix).toBe(there?.routing)
+        expect(here?.sourceAudio?.need, suffix).toBe(there?.sourceAudio?.need)
+        expect(here?.role, suffix).toBe(there?.role)
+        expect(here?.character, suffix).toBe(there?.character)
+      }
+    })
+
+    it('rebuilds every claim, because the two boxes have two guides', () => {
+      // The citation sweep above already refuses a source that is not an `/ep-40/` path, on every
+      // recipe. What this adds is that the borrowed ones genuinely *moved*: two of the six
+      // sections do not line up, so a prefix swap would have left them naming the wrong page.
+      const stab = device.recipes.find((r) => r.id === 'ep40-stab-hard')
+      const stabThere = ko2.recipes.find((r) => r.id === 'ep133-stab-hard')
+      expect(stabThere?.sourceAudio?.prep?.verified).toMatchObject({
+        source: expect.stringContaining('12.10'),
+      })
+      expect(stab?.sourceAudio?.prep?.verified).toMatchObject({
+        source: expect.stringContaining('12.12'),
+      })
+      // And the legality claim is this box's, not the sibling's: four play modes against three.
+      for (const suffix of BORROWED) {
+        const here = device.recipes.find((r) => r.id === `ep40-${suffix}`)
+        const mode = here?.params.find((p) => p.name === 'PLAY MODE')
+        expect(mode?.kind === 'enum' ? mode.options.values : [], suffix).toHaveLength(4)
+      }
+      const modeThere = ko2.recipes[0]?.params.find((p) => p.name === 'PLAY MODE')
+      expect(modeThere?.kind === 'enum' ? modeThere.options.values : []).toHaveLength(3)
+    })
+
+    it('names the sibling’s box nowhere a reader can see it', () => {
+      // Borrowed prose carries no citation to check, so a sentence saying K.O. II would survive
+      // every other assertion in this file. The manifest throws on one at import; this is the
+      // same claim from the outside, over every rendered string rather than the borrowed ones.
+      const rendered = device.recipes.flatMap((r) => [
+        r.title,
+        r.routing ?? '',
+        r.sourceAudio?.need ?? '',
+        r.sourceAudio?.prep?.text ?? '',
+        ...r.params.map((p) => `${p.name} ${p.note ?? ''}`),
+      ])
+      for (const text of rendered) expect(text).not.toMatch(/ep-133|K\.\s?O\.\s?II/i)
+    })
+  })
+
+  // -------------------------------------------------------------------------
   // The supertone: a synth engine with no printed value anywhere in it
   // -------------------------------------------------------------------------
 
@@ -400,9 +473,29 @@ describe('EP–40 riddim manifest', () => {
     const content = device.content
     if (content?.kind !== 'shipped-library') throw new Error('expected a shipped library')
     expect(content.location).toContain('1-99')
-    // The sixth band is the product page's, not the guide's, and it is the one the guide omits.
-    expect(content.location).toContain('600-699')
     expect(content.reason).toContain('EP Sample Tool')
+
+    // **And it claims only what its one citation covers.** `capabilityEvidence.content` is a
+    // single `Cite` naming guide 8.1, so the field may not carry the product page's sixth band
+    // (`600-699 FX`) nor guide 7.1's nine populated projects, however true either is. Both were
+    // in this field once and both were wrong there: a claim under a citation that does not
+    // support it is the defect the whole `verified` discipline exists to catch, and it is
+    // invisible unless something looks.
+    expect(device.capabilityEvidence?.['content']).toMatchObject({
+      kind: 'manual',
+      source: expect.stringContaining('/ep-40/modes 8.1'),
+    })
+    for (const text of [content.library, content.location, content.reason]) {
+      expect(text).not.toContain('600-699')
+      expect(text).not.toMatch(/nine projects|9 projects/)
+    }
+    // It reaches a reader where its source travels with it instead.
+    const impact = device.recipes.find((r) => r.id === 'ep40-impact-hard')
+    expect(impact?.sourceAudio?.prep?.text).toContain('600-699')
+    expect(impact?.sourceAudio?.prep?.verified).toMatchObject({
+      kind: 'maker',
+      source: expect.stringContaining('600-699 FX'),
+    })
     for (const recipe of device.recipes) {
       expect(recipe.sourceAudio?.need, recipe.id).toBeTruthy()
     }

@@ -442,6 +442,12 @@ describe('cross-device imports are declared (invariant 2/#196)', () => {
     expect(found.sort()).toEqual([
       'akai-mpc-one-g2 -> akai-mpc-live-iii',
       'akai-mpc-xl -> akai-mpc-live-iii',
+      // The EP-40 is the K.O. II's hardware below the supertone, so thirteen of its nineteen
+      // recipes are the sibling's part in the sibling's words. It is the One G2's import rather
+      // than the XL's, because the two boxes have two different guides: every borrowed citation
+      // goes through a table mapping the sibling's guide section to this box's, and that table
+      // throws on a section it has not been checked against. Two of the six do not line up.
+      'te-ep-40 -> te-ep-133',
     ])
   })
 })
