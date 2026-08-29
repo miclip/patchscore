@@ -3610,6 +3610,38 @@ html {
   padding-left: 12px;
 }
 
+/*
+ * §7.1/#228. Said once, where the allocation it affected is presented.
+ *
+ * Deliberately not an error colour. Nothing here is wrong — every value below is exactly as good
+ * as it always was, and the only thing in question is which box carries which part. A red box
+ * would tell a reader to distrust numbers that are perfectly sound, which is a worse outcome than
+ * the thing being reported.
+ */
+.search-capped {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border-left: 2px solid var(--ink-dim);
+  background: var(--surface-2, transparent);
+  border-radius: 0 4px 4px 0;
+}
+
+.search-capped p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+
+.search-capped p:last-child {
+  margin-bottom: 0;
+}
+
+.search-capped-headline {
+  font-weight: 600;
+  color: var(--ink);
+}
+
 /* The preferences page's own row. */
 .pref .sub {
   display: block;
