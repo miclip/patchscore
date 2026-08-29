@@ -677,6 +677,10 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
       'akai-mpc-one-g2',
       'akai-mpc-xl',
       'elektron-digitakt-ii',
+      // The Circuit Tracks ships 128 synth Patches and 64 drum samples (p.16) and neither of its
+      // two documents prints a name for any of them — the counts are the whole inventory. Same
+      // line between `shipped-library` and `enumerable` as the four above it.
+      'novation-circuit-tracks',
       'polyend-tracker-mini',
       'roland-mc-101',
       // The MC-707 is the same claim off its own manual rather than the sibling's: p.10 offers

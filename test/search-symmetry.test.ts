@@ -1308,7 +1308,30 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * `DEFAULT_NODE_CAP` is 200,000, so 132,559 is **66.3% of it and 33.7% headroom stands** —
    * the first time this figure has been over half the cap.
    */
-  const WORST_CASE_NODES = 223_348
+  /**
+   * **The Circuit Tracks takes it to 333,077, on `industrial-techno` seed 14.** Up 49%, the
+   * second-largest jump any single device has caused and the largest since the MC-707's pair.
+   *
+   * Attributed by measurement, as the entries above are: the same sweep with this box removed and
+   * everything else present gives 223,348 on seed 4, the previous row exactly.
+   *
+   * **The obvious explanation is measured and wrong**, which is the part worth carrying forward.
+   * `search-bound.test.ts` records the MicroFreak's row as one contested role — `pad` — carrying
+   * a whole device's cost, and the skill built on that row tells the next author to ask which of
+   * their roles are already crowded. This box serves ten tonal roles from a pool of two, `pad`
+   * among them, so it looked like the same story. It is not: the same sweep with `pad` dropped
+   * from the synth pool **and** its recipe removed gives **329,531** on the same seed — 1.1% of
+   * the rise — and leaves `weave` at 116,453, unmoved to the node.
+   *
+   * So the cost here is spread across the tonal roles rather than concentrated in one of them,
+   * and both large directions move together (`weave` is up 48% alongside `industrial-techno`'s
+   * 49%), which is the MC-707's pair-shaped row rather than the MicroFreak's single-role one.
+   * **Two mechanisms have now produced comparable bills**, and a sizing pass that checks only for
+   * a crowded role will miss this one.
+   *
+   * `DEFAULT_NODE_CAP` is 500,000, so 333,077 is **66.6% of it and 33.4% headroom stands**.
+   */
+  const WORST_CASE_NODES = 333_077
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))

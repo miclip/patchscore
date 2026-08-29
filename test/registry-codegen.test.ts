@@ -329,6 +329,12 @@ describe('the committed registry', () => {
       // millimetre above the Minitaur. Both are cited to their makers' own specification tables,
       // so the order is decided by the numbers.
       'roland-tr-6s',
+      // **240 mm, and the second span in this list published rather than printed.** Neither
+      // Circuit Tracks document has a specifications table at all, so this is Novation's own
+      // `Length 240mm, Depth 210mm` — a `maker` cite, like the MicroFreak's below. The Top View
+      // figure corroborates it: 1530 x 1314 px is an aspect of 1.1644 against 240/210's 1.1429,
+      // agreeing to 1.9%, which is what rules out reading the 45 mm height as a panel dimension.
+      'novation-circuit-tracks',
       'zoom-livetrak-l-8',
       // 272 mm, and the only square panel in the library — p.478's `272 x 272 x 53 mm`. That is
       // why its span says less about it than most: the ordering here is by width, and this box

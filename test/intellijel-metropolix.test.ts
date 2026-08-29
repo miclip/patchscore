@@ -334,15 +334,25 @@ describe('Metropolix manifest', () => {
     // (p.22 of that manual) — the same idea as this module's per-step pitch override, arrived at
     // independently and named the same thing. That is what an open list is *supposed* to do when
     // two boxes genuinely share a concept: it lets them agree without anyone having to promote
-    // the word into shared vocabulary. `gate` is still this module's alone.
+    // the word into shared vocabulary.
+    //
+    // **`gate` joined it when the Circuit Tracks landed, and by the same mechanism.** That box's
+    // Gate View is a per-step note length in steps (its User Guide p.45), and the button is
+    // silkscreened `Gate`, so the name is the box's own rather than a borrowing from here. Two
+    // independent arrivals at one word out of a library of twenty-odd lane names is the open
+    // list working, not a fifth vocabulary forming — the two concepts stay each device's own,
+    // and nothing joins on either.
     const others = new Set(
       DEVICES.filter((d) => d.id !== device.id).flatMap((d) => d.features?.perStep ?? []),
     )
     expect(others.size).toBeGreaterThan(10)
-    expect((device.features?.perStep ?? []).filter((k) => others.has(k))).toEqual(['pitch'])
+    expect((device.features?.perStep ?? []).filter((k) => others.has(k))).toEqual(['pitch', 'gate'])
     const dfam = DEVICES.find((d) => d.id === 'moog-dfam')
     expect(dfam?.features?.perStep).toContain('pitch')
     expect(dfam?.features?.perStep).not.toContain('gate')
+    const circuit = DEVICES.find((d) => d.id === 'novation-circuit-tracks')
+    expect(circuit?.features?.perStep).toContain('gate')
+    expect(circuit?.features?.perStep).not.toContain('pitch')
   })
 
   it('cannot turn any of those lanes into an instruction, and the manifest says so', () => {
