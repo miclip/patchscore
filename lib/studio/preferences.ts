@@ -1,4 +1,5 @@
-import type { StorageLike, StorageSource } from '@/lib/core'
+import type { GuideLayout, StorageLike, StorageSource } from '@/lib/core'
+import { GUIDE_LAYOUTS } from '@/lib/core'
 
 /**
  * #138. How the picker draws its controls, as a per-browser preference.
@@ -82,3 +83,59 @@ export const JACK_STYLE_ATTR = 'data-jacks'
  * runs before anything else on the page: a throw here would take the document with it.
  */
 export const JACK_STYLE_SCRIPT = `try{var s=localStorage.getItem('${JACK_STYLE_KEY}');if(s==='plain'||s==='cables'){document.documentElement.setAttribute('${JACK_STYLE_ATTR}',s)}}catch(e){}`
+
+/**
+ * §8/#230. **Which way the guide opens**, as a per-browser preference.
+ *
+ * The same shape as the jack style above and for the same reasons, but the split between this and
+ * the studio's own control is worth stating, because there are two things here and only one of
+ * them is a preference.
+ *
+ * - **This is the default**, set on the Preferences page and stored. It is what a guide opens as.
+ * - **The studio's `Read:` control is a per-visit override.** It starts from this and changes only
+ *   what is on screen now. It deliberately does *not* write back: trying one layout on one guide
+ *   is a thing a reader does mid-session, and silently making it the new default would mean the
+ *   setting drifts every time somebody looks at the other one.
+ *
+ * That is the difference between "how I read guides" and "how I want to read this one", and the
+ * two live in different places on purpose — the second is not a smaller version of the first.
+ *
+ * Nothing here reaches `GuideInputsV1`, so it cannot enter a permalink and cannot change a byte of
+ * a guide. Layout is a rearrangement: `guide-layout.test.ts` holds the two renderings to the same
+ * content, so this is a question about the page and not about the score.
+ */
+export const GUIDE_LAYOUT_KEY = 'patchscore:guide-layout'
+
+/**
+ * §8's order is the default, and stays it until somebody has read a session's worth of the other
+ * one at a rack. #240 is where that decision is recorded.
+ */
+export const DEFAULT_GUIDE_LAYOUT: GuideLayout = 'phase'
+
+function isGuideLayout(value: string | null): value is GuideLayout {
+  return value !== null && (GUIDE_LAYOUTS as readonly string[]).includes(value)
+}
+
+/** Anything unreadable, unrecognised or absent is the default. There is no error state. */
+export function readGuideLayout(source: StorageSource): GuideLayout {
+  try {
+    const storage: StorageLike | null | undefined = source()
+    if (storage === null || storage === undefined) return DEFAULT_GUIDE_LAYOUT
+    const raw = storage.getItem(GUIDE_LAYOUT_KEY)
+    return isGuideLayout(raw) ? raw : DEFAULT_GUIDE_LAYOUT
+  } catch {
+    return DEFAULT_GUIDE_LAYOUT
+  }
+}
+
+/** Reports whether it stuck, so a caller may say so; never throws. */
+export function writeGuideLayout(source: StorageSource, layout: GuideLayout): boolean {
+  try {
+    const storage = source()
+    if (storage === null || storage === undefined) return false
+    storage.setItem(GUIDE_LAYOUT_KEY, layout)
+    return true
+  } catch {
+    return false
+  }
+}
