@@ -1,10 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
-import type { Device, DeviceId, GuidePhase, ResolveResult } from '@/lib/core'
+import { useEffect, useMemo, useState } from 'react'
+import type { Device, DeviceId, GuideLayout, GuidePhase, ResolveResult } from '@/lib/core'
 import type { ReactNode } from 'react'
-import { GUIDE_PHASES } from '@/lib/core'
+import {
+  GUIDE_PHASES,
+  LAYOUT_PREAMBLE,
+  narrowToGroup,
+  sequencerGroups,
+  unplayedHooks,
+} from '@/lib/core'
 import { browserEnv } from '@/lib/studio/browser-env'
 import { templateHref } from '@/lib/studio/catalogue'
 import { downloadGuideMarkdown, printGuide } from '@/lib/studio/export'
@@ -34,9 +40,80 @@ import { PhaseVoices } from './phase-voices'
  * is missing instead of disappearing (invariant 5). `GUIDE_PHASES` is imported rather than
  * restated: one list, read by the Markdown renderer, this view, and the tests.
  */
+/**
+ * §8/#230. Where the reader's layout preference is kept.
+ *
+ * `localStorage`, not the permalink: layout changes no value and no assignment, so it is the
+ * reader's preference rather than part of the score. A shared link then renders the way whoever
+ * opens it likes, which is better than carrying the sender's choice to them.
+ */
+const LAYOUT_KEY = 'patchscore:guide-layout'
+
+/**
+ * §8/#230. One box's parts, through §8's three performing phases in §8's order.
+ *
+ * The order inside here is the one §8 argues for and this layout does not touch: the hook before
+ * sound design, so a part is not shaped by whatever preset turned up. What changes is the outer
+ * loop, which is now the box you are standing at.
+ */
+function PerformedHere({
+  result,
+  deviceById,
+}: {
+  result: ResolveResult
+  deviceById: Map<DeviceId, Device>
+}) {
+  return (
+    <>
+      {/*
+        Omitted rather than answered when this box carries no hook. `PhaseHook`'s empty state is a
+        sentence about the *template*, and under a narrowed result it would appear beneath a drum
+        machine in a direction with three hooks — true of a template, false of a box. The hooks
+        are not hidden: they are under whichever box plays them, or in their own section when no
+        box does (invariant 5).
+      */}
+      {result.song.hooks.length === 0 ? null : (
+        <>
+          <h4 className="group-phase">Hook</h4>
+          <PhaseHook result={result} />
+        </>
+      )}
+      <h4 className="group-phase">Step programming</h4>
+      <PhaseSteps result={result} deviceById={deviceById} />
+      <h4 className="group-phase">Sound design</h4>
+      <PhaseSound result={result} deviceById={deviceById} />
+    </>
+  )
+}
+
 export function Guide({ result, seed }: { result: ResolveResult; seed: number }) {
   /** §8.1: on by default, off once you know your boxes. Print ignores it (see `@media print`). */
   const [hints, setHints] = useState(true)
+  /**
+   * §8/#230. **`'phase'` on the first render, always, and only then whatever the reader chose.**
+   *
+   * Reading `localStorage` during render would give the server one layout and the client another
+   * and break hydration — the same rule the export handlers below follow (#12). So the stored
+   * preference arrives in an effect, after the markup the server produced has been matched.
+   */
+  const [layout, setLayout] = useState<GuideLayout>('phase')
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(LAYOUT_KEY)
+      if (stored === 'sequencer' || stored === 'phase') setLayout(stored)
+    } catch {
+      // A browser refusing storage is not a reason to render nothing; the default stands.
+    }
+  }, [])
+
+  function chooseLayout(next: GuideLayout) {
+    setLayout(next)
+    try {
+      window.localStorage.setItem(LAYOUT_KEY, next)
+    } catch {
+      // Per-viewer convenience only. Failing to remember it must not fail the page.
+    }
+  }
   const [exported, setExported] = useState<{ ok: boolean; message: string } | undefined>(undefined)
 
   const deviceById = useMemo<Map<DeviceId, Device>>(
@@ -44,6 +121,8 @@ export function Guide({ result, seed }: { result: ResolveResult; seed: number })
     [result],
   )
   const occupied = useMemo(() => occupiedCounts(result.assignments), [result])
+  const groups = useMemo(() => sequencerGroups(result), [result])
+  const orphanHooks = useMemo(() => unplayedHooks(result), [result])
 
   /*
    * Keyed by phase name rather than by position. An array aligned to `GUIDE_PHASES` by index
@@ -59,6 +138,67 @@ export function Guide({ result, seed }: { result: ResolveResult; seed: number })
     'Sound design': <PhaseSound result={result} deviceById={deviceById} />,
     Finishing: <PhaseFinishing result={result} />,
   }
+
+  /**
+   * §8/#230. The sections to draw, in order — the one place the two layouts differ.
+   *
+   * Both are built from the same `bodies` and the same phase components; `sequencer` only changes
+   * which of them are grouped and under what heading. Nothing below this line knows which layout
+   * it is drawing, which is what keeps the header, the legend, print and export identical.
+   */
+  const sections: { key: string; title: string; body: ReactNode }[] =
+    layout === 'phase'
+      ? GUIDE_PHASES.map((phase) => ({ key: phase, title: phase, body: bodies[phase] }))
+      : [
+          { key: 'Song', title: 'Song', body: bodies.Song },
+          {
+            key: 'Voice assignment',
+            title: 'Voice assignment',
+            body: bodies['Voice assignment'],
+          },
+          { key: 'Rig integration', title: 'Rig integration', body: bodies['Rig integration'] },
+          ...groups.map((group) => ({
+            key: group.kind === 'sequencer' ? `group-${group.deviceId}` : 'group-undriven',
+            title:
+              group.kind === 'undriven'
+                ? 'Nothing in this rig can drive these'
+                : group.drivesOnly
+                  ? `${group.deviceName} — drives these, sounds none of them`
+                  : group.deviceName,
+            body: (
+              <>
+                {group.kind === 'undriven' ? (
+                  <p className="quiet">{LAYOUT_PREAMBLE.undriven.join(' ')}</p>
+                ) : null}
+                <PerformedHere
+                  result={narrowToGroup(result, group.assignments)}
+                  deviceById={deviceById}
+                />
+              </>
+            ),
+          })),
+          ...(orphanHooks.length === 0
+            ? []
+            : [
+                {
+                  key: 'orphan-hooks',
+                  title: 'Hooks with nothing to play them',
+                  body: (
+                    <>
+                      <p className="quiet">{LAYOUT_PREAMBLE.orphanHooks.join(' ')}</p>
+                      <PhaseHook
+                        result={{
+                          ...result,
+                          assignments: [],
+                          song: { ...result.song, hooks: orphanHooks },
+                        }}
+                      />
+                    </>
+                  ),
+                },
+              ]),
+          { key: 'Finishing', title: 'Finishing', body: bodies.Finishing },
+        ]
 
   /*
    * Both handlers build the environment inside the handler, never during render (#12). Nothing
@@ -102,6 +242,20 @@ export function Guide({ result, seed }: { result: ResolveResult; seed: number })
             />
             Show hints
           </label>
+          {/*
+            §8/#230. A named control rather than a checkbox, because neither option is the
+            negation of the other — "not by phase" does not tell a reader what they would get.
+          */}
+          <label className="layout-toggle">
+            Read
+            <select
+              value={layout}
+              onChange={(event) => chooseLayout(event.target.value as GuideLayout)}
+            >
+              <option value="phase">by phase</option>
+              <option value="sequencer">by sequencer</option>
+            </select>
+          </label>
           <button type="button" className="link-button" onClick={onDownload}>
             Download Markdown
           </button>
@@ -133,13 +287,13 @@ export function Guide({ result, seed }: { result: ResolveResult; seed: number })
         screen in front of you is the one the line is about.
       </p>
 
-      {GUIDE_PHASES.map((phase, i) => (
-        <section className="phase" key={phase} aria-labelledby={`phase-${i + 1}`}>
+      {sections.map((section, i) => (
+        <section className="phase" key={section.key} aria-labelledby={`phase-${i + 1}`}>
           <h3 id={`phase-${i + 1}`}>
             <span className="phase-number mono">{i + 1}</span>
-            {phase}
+            {section.title}
           </h3>
-          {bodies[phase]}
+          {section.body}
         </section>
       ))}
     </article>
