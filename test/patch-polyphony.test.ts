@@ -68,8 +68,20 @@ describe('the cap changes nothing for a box that declares none', () => {
     // *"will stack any currently unused voices on top of the active ones"*, which is dynamic
     // thickness rather than a mono mode, and modelling it as `patchPolyphony: 1` would be the
     // manifest inventing a limit the manual does not state.
+    //
+    // **The MicroFreak is the third, and it is the first to declare the field for a reason that
+    // is not a voice-mode rung at all.** Its four-note paraphony lives in `VoiceSpec.polyphony`,
+    // as the Matriarch's does; what `patchPolyphony: 1` records here is the three separate
+    // printed facts that collapse a *patch* to one note — the `Paraphonic` button being unlit
+    // (p.10), Unison spending all four voices on one note (p.102), and the `Chords` oscillator
+    // model, of which p.42 says "Paraphony deactivates in this mode". Thirteen of its
+    // twenty-two recipes hit one of the three, and its own test asserts the pairing both ways.
     const declaring = DEVICES.filter((d) => d.recipes.some((r) => r.patchPolyphony !== undefined))
-    expect(declaring.map((d) => d.id)).toEqual(['korg-minilogue-xd', 'moog-muse'])
+    expect(declaring.map((d) => d.id)).toEqual([
+      'arturia-microfreak',
+      'korg-minilogue-xd',
+      'moog-muse',
+    ])
   })
 
   it('is the box own polyphony where no recipe caps', () => {

@@ -48,7 +48,7 @@ glance whether the screen in front of you is the one the line is about.
   - p3 · exact `hard` · 3 notes at once on one polyphonic voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
-- **`pad`** → Muse · Timbre 1 — *Both filters low and serial, sixteen-foot underneath, no top at all*
+- **`pad`** → MicroFreak · Voice — *Modal resonator pad, long damping, filter kept low*
   - p4 · exact `dark` · 3 notes at once on one polyphonic voice · every section
 - **`riser`** → TR-8S · CC — *A sample played backwards into the change*
   - p4 · exact `bright` · Build, Breakdown
@@ -91,6 +91,14 @@ None.
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · 6 individual outs · USB audio · audio in
   - mixer: 1 part, 6 individual outs: one channel each
+- **MicroFreak** — synth · 1 part
+  - clock: sends clock · midi-din/usb/analog-clock
+  - MIDI · In: 1/8" TRS, not 5-pin — p.20 and p.7 both direct the reader to "the included MIDI adapters (1/8" TRS jack to 5-pin DIN, gray)" · manual
+    - ↳ cite: value manual — MicroFreak User Manual 4.0.3 p.20
+  - MIDI · Out: 1/8" TRS with the same included adapter. There is no MIDI Thru socket; Utility > MIDI > Thru echoes In to Out in software instead (p.89) · manual
+    - ↳ cite: value manual — MicroFreak User Manual 4.0.3 p.20
+  - audio: mono main out · audio in
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **CRAVE** — semi-modular · 1 part
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
@@ -145,10 +153,10 @@ None.
     - ↳ cite: value manual — Moog Mother-32 User Manual (Version 2), p.54
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **Muse** — synth · 1 part
+- **Muse** — synth · 0 parts
   - clock: sends clock · out: midi-din/analog-clock · in: midi-din/usb/analog-clock
   - audio: stereo main out
-  - mixer: 1 part, no individual outs: one stereo channel for all
+  - mixer: no parts assigned; nothing to patch
 - **Subharmonicon** — semi-modular · 0 parts
   - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
   - IN · MIDI IN: A 3.5 mm socket fed by the supplied five-pin DIN adapter (MIDI Type A). Takes clock, note data and CCs. MIDI clock overrides the internal clock *and* anything at IN · CLOCK · manual
@@ -270,14 +278,14 @@ A step is one note long and nothing here sets a length: `TIE` joins a note to th
 - bar 2 · step 23 · sounds for 2 steps · `Db2` (`C#2`) · 6th · MIDI 37
 - bar 2 · step 27 · sounds for 4 steps · `C2` · 5th · MIDI 36
 
-### `pad` — Muse · Timbre 1
+### `pad` — MicroFreak · Voice
 
-**Both filters low and serial, sixteen-foot underneath, no top at all** — settings in Sound design
+**Modal resonator pad, long damping, filter kept low** — settings in Sound design
 
 8 bars in F minor.
 
-Note length is set per note here — `GATE`. · manual
-- ↳ cite: claim manual — Muse User's Manual v1.4.0, p.84
+A step is one note long and nothing here sets a length: `Tie/Rest` joins a note to the next step, and stacking those is how anything longer is entered. · manual
+- ↳ cite: claim manual — MicroFreak User Manual 4.0.3 p.77
 
 - bar 1 · step 1 · sounds for 64 steps (4 bars) · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
 - bar 5 · step 65 · sounds for 32 steps (2 bars) · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
@@ -577,9 +585,9 @@ How this box sets a note’s length is not established here, so the durations be
 - `first-hit` → `accent` true on step 1
   - ↳ hint: ACCENT [STEP], then step keys
 
-### `pad` — Muse · Timbre 1
+### `pad` — MicroFreak · Voice
 
-**Both filters low and serial, sixteen-foot underneath, no top at all** — settings in Sound design
+**Modal resonator pad, long damping, filter kept low** — settings in Sound design
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
@@ -650,6 +658,84 @@ How this box sets a note’s length is not established here, so the durations be
 - **Comp Attack** `8` ms (0.1…300 ms)
   - ↳ note: p.432 prints the low end as 100 us
 - **Comp Threshold** `-14` dB (-60…0 dB)
+
+### MicroFreak
+
+*Values below cite MicroFreak User Manual 4.0.3 p.113, MicroFreak User Manual 4.0.3 p.56, MicroFreak User Manual 4.0.3 p.63, MicroFreak User Manual 4.0.3 p.53, MicroFreak User Manual 4.0.3 p.28, and MicroFreak User Manual 4.0.3 p.88.*
+
+#### Voice — `pad`: Modal resonator pad, long damping, filter kept low
+
+Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
+
+*Ranges cite manual — MicroFreak User Manual 4.0.3 p.113.*
+
+- **Paraphonic** `On`
+  - ↳ note: p.10: lit, the four voices trigger independently and share the one analog filter
+  - ↳ hint: Press Paraphonic; it blinks slowly
+- **Osc Type** `Modal`
+  - ↳ note: The eighteen models are printed on pp.36–47; p.1 states the count. Wave, Timbre and Shape mean something different under each, so this is set first
+  - ↳ hint: Type knob, watch the display
+- **Wave** `44` (0…100)
+  - ↳ note: Displays as "Inharm" under Modal (knob from p.35’s Wave/Timbre/Shape print order; p.44 names only the display). Range is the knob’s own 0,0–100,0, printed against CC 0–127 on p.113
+- **Timbre** `30` (0…100)
+  - ↳ note: Displays as "Timbre" under Modal (knob from p.35’s Wave/Timbre/Shape print order; p.44 names only the display). Range is the knob’s own 0,0–100,0, printed against CC 0–127 on p.113
+- **Shape** `76` (0…100)
+  - ↳ note: Displays as "Decay" under Modal (knob from p.35’s Wave/Timbre/Shape print order; p.44 names only the display). Range is the knob’s own 0,0–100,0, printed against CC 0–127 on p.113
+- **Filter Type** `LPF`
+  - ↳ note: Silkscreened `Type` inside ANALOG FILTER (p.13); qualified here because the oscillator’s knob carries the same word
+  - ↳ hint: Type button cycles LPF, BPF, HPF
+- **Cutoff** `30` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: No printed scale. p.50 gives the extremes as "approximately 30Hz" fully counter-clockwise and "exceeds 15kHz" fully clockwise — hedged at both ends, so not a range
+- **Resonance** `30` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: No printed scale. p.49 says the clockwise extreme self-oscillates and "will block all sound from the Digital Oscillator" in BPF
+- **Attack** `2200` ms (0…10000 ms)
+  - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.56
+  - ↳ note: p.56: "Attack sets the time, from 0 ms to 10 seconds, the envelope takes to reach its initial level"
+- **Decay / Rel** `6500` ms (0…13000 ms)
+  - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.56
+  - ↳ note: p.56: "Decay/Release adjusts the time, again from 0ms to 13 seconds"
+- **Sustain** `66` % (0…100 %)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: p.55’s worked example is the only figure the manual prints for this knob — "sustain to 90%" — which fixes the unit and not the bounds, so mood may not move it
+- **Filter Amt** `22` (-100…100)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: p.56: "Filter amount is a bipolar control", and p.55’s example sets it to 70. Neither states a limit, so the bounds are unverified and mood-inert
+- **Amp Mod** `On`
+  - ↳ note: p.57: lit, the envelope shapes loudness as well as cutoff; unlit, the gate drives the VCA directly and the envelope still reaches the filter
+- **Cyc Mode** `Run`
+  - ↳ note: p.58: Env cycles once; Run free-runs and resets on MIDI start; Loop retriggers from the keyboard, sequencer or arpeggiator
+- **Rise** `3200` ms (0…10000 ms)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: The manual prints no bounds for this knob; p.58 and p.103 give worked settings in ms and seconds, which fix the unit only
+- **Fall** `2600` ms (0…10000 ms)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: The manual prints no bounds for this knob; p.58 and p.103 give worked settings in ms and seconds, which fix the unit only
+- **Hold** `600` ms (0…10000 ms)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: The manual prints no bounds for this knob; p.58 and p.103 give worked settings in ms and seconds, which fix the unit only
+- **Amount** `32` % (0…100 %)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: p.59 calls it an attenuator; p.58’s worked example is "amount to 50%", the only figure printed for it
+- **LFO Shape** `Triangle`
+  - ↳ note: p.52: "sine, triangle, rising sawtooth, rectangle (square), random (sample & hold) and random gliding"
+- **LFO Sync** `Off`
+  - ↳ note: Press the Rate encoder to toggle. Off, Rate reads in Hz; on, it reads in clock divisions — the same knob, two scales
+  - ↳ hint: Press the LFO Rate encoder
+- **LFO Rate** `0.22` Hz (0.06…100 Hz)
+  - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.53
+  - ↳ note: p.53 twice: "0.06Hz up to 100Hz" and "the LFO ranges from 0.06Hz to 100Hz". p.17 says 0.05Hz for the same knob; the LFO chapter is followed here
+- **Matrix  LFO > Timbre** `16` % (-100…100 %)
+  - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.28
+  - ↳ note: p.30: five sources, seven destinations, 35 points. Pitch, Wave, Timbre and Cutoff are hardwired; Assign 1–3 are whatever knob you assign them to (p.31)
+  - ↳ hint: Turn to the point, press, then set
+- **Glide mode** `Time`
+  - ↳ note: Utility > Preset > Glide mode. The Glide knob reads seconds in Time, clock divisions in Sync and a rate in Rate — three scales on one knob (p.63)
+  - ↳ hint: Utility > Preset > Glide mode
+- **Glide** `0` ms (0…10000 ms)
+  - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.63
+  - ↳ note: p.63: "The glide time is variable from \"off\" to about 10 seconds" — the manual hedges the upper end and prints no other figure
 
 ### CRAVE
 
@@ -810,195 +896,6 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ hint: Hold SHIFT, flip to SELECT
 - **EFFECTS · DEPTH** `28` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
-
-### Muse
-
-*Values below cite Muse User's Manual v1.4.0 Appendix A (MIDI CC) and Muse User's Manual v1.4.0.*
-
-**Song-wide**
-
-One setting for the whole song — set it once, not once per part below.
-
-- **DELAY · CHARACTER** `64` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
-  - ↳ note: Noon, where the default DJ-style filter on the repeats is doing nothing · Send MIDI CC 104 = 64. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **DELAY · CLOCK SYNC** `ON`
-  - ↳ note: Both TIME knobs jump between divisions of the global TEMPO
-- **DELAY · FEEDBACK** `54` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
-  - ↳ note: Single repeat through to infinite · Send MIDI CC 103 = 54. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **DELAY · LINK DELAYS** `OFF`
-  - ↳ note: Off, so TIME-L is the left delay time rather than an offset against the right
-- **DELAY · MIX** `38` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
-  - ↳ note: Send MIDI CC 105 = 38. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **DELAY · SYNC TYPE** `COMBO`
-  - ↳ note: Its printed default — every division rather than only straight, triplet or dotted ones
-  - ↳ hint: Press MORE in that section
-- **DELAY · TIME - L** `48` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
-  - ↳ note: Send MIDI CC 93 = 48. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **DELAY · TIME - R** `72` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
-  - ↳ note: Send MIDI CC 94 = 72. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **DYNAMIC VOICE ALLOCATION** `OFF`
-  - ↳ note: Its printed default. On, a busy timbre steals from the other and the four-each split stops holding
-  - ↳ hint: PROGRAMMER, VOICE CONTROL, MORE
-- **MIDI IN CHANNEL** `1`
-  - ↳ note: TIMBRE A listens here
-  - ↳ hint: PROGRAMMER, MENU, MIDI
-- **MULTI IN B CHANNEL** `2`
-  - ↳ note: TIMBRE B listens here. Both default to 1, so this must be changed or the two timbres double on one channel
-  - ↳ hint: PROGRAMMER, MENU, MIDI
-- **MULTI MODE** `ON`
-  - ↳ note: Its printed default, and what makes the two timbres separately playable
-  - ↳ hint: PROGRAMMER, MENU, MIDI
-- **RECIEVE CC** `ON`
-  - ↳ note: Defaults to OFF, so the box ignores CC until this is set. The manual's spelling
-  - ↳ hint: PROGRAMMER, MENU, MIDI
-- **TIMBRE A VOICE COUNT** `4` (0…8)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ note: Four each. The counts always sum to eight, so setting this sets the other
-  - ↳ hint: PROGRAMMER, VOICE CONTROL, MORE
-
-#### Timbre 1 — `pad`: Both filters low and serial, sixteen-foot underneath, no top at all
-
-Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
-
-*Ranges cite manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.121.*
-
-- **VOICE CONTROL · UNISON** `OFF`
-  - ↳ note: Stacks any currently unused voices onto the active ones — thickness varies with how many notes are held
-- **VOICE CONTROL · MONO** `OFF`
-- **VOICE CONTROL · DETUNE** `22` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
-  - ↳ note: Between voices when poly, between stacked voices under UNISON, between the two oscillators under MONO · Send MIDI CC 92 = 22. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **OSC 1 · OCTAVE** `16'`
-- **OSC 1 · FREQUENCY** `0` st (-7…7 st)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0, p.27
-  - ↳ note: Bipolar, in tune at noon; a perfect fifth either way
-- **OSC 1 · TRI/SAW** `30` (0…127)
-  - ↳ note: Triangle fully counter-clockwise, sawtooth fully clockwise · Send MIDI CC 46 = 30. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **OSC 1 · PULSE WIDTH** `58` (0…127)
-  - ↳ note: A square wave sits at noon · Send MIDI CC 47 = 58. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **OSC 1 · WAVE MIX** `42` (0…127)
-  - ↳ note: The slider: triangle/sawtooth on the left against the pulse wave on the right · Send MIDI CC 48 = 42. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **OSC 2 · OCTAVE** `8'`
-- **OSC 2 · FREQUENCY** `-2` st (-7…7 st)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0, p.27
-- **OSC 2 · TRI/SAW** `26` (0…127)
-  - ↳ note: Send MIDI CC 51 = 26. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **OSC 2 · PULSE WIDTH** `62` (0…127)
-  - ↳ note: Send MIDI CC 52 = 62. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **OSC 2 · WAVE MIX** `38` (0…127)
-  - ↳ note: Send MIDI CC 53 = 38. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **SYNC 2▸1** `OFF`
-  - ↳ note: Locks oscillator 2 to the phase of oscillator 1
-- **MOD OSC · AUDIO** `OFF`
-  - ↳ note: Sub-audio: eight per-voice LFOs, one for each voice
-- **MOD OSC · WAVEFORM** `SINE`
-- **MOD OSC · FREQUENCY** `16` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.120
-  - ↳ note: The range of this knob differs with the AUDIO button above · Send MIDI CC 25 = 16. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **MOD OSC · PITCH AMOUNT** `10` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.120
-  - ↳ note: Send MIDI CC 31 = 10. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **MOD OSC · PITCH ▸ OSC 1** `ON`
-- **MOD OSC · PITCH ▸ OSC 2** `OFF`
-- **MOD OSC · FILTER AMOUNT** `12` (0…127)
-  - ↳ note: Send MIDI CC 39 = 12. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **MOD OSC · FILTER ▸ 1** `ON`
-- **MOD OSC · FILTER ▸ 2** `OFF`
-- **MIXER · OSC 1** `104` (0…127)
-  - ↳ note: Send MIDI CC 58 = 104. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **MIXER · RING MOD** `0` (0…127)
-  - ↳ note: Sum and difference tones of the two oscillators — inharmonic as they detune · Send MIDI CC 60 = 0. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **MIXER · OSC 2** `88` (0…127)
-  - ↳ note: Send MIDI CC 59 = 88. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **MIXER · MOD OSC** `0` (0…127)
-  - ↳ note: Send MIDI CC 61 = 0. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **MIXER · NOISE** `6` (0…127)
-  - ↳ note: White noise · Send MIDI CC 62 = 6. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **MIXER · OVERLOAD** `0` (0…127)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ note: No page prints a scale for this fader and no CC row names it, so this number is relative within this guide rather than a position on the panel
-- **OVERLOAD RANGE** `LOW`
-  - ↳ note: LOW narrows the drive range for finer control
-  - ↳ hint: Press MORE in that section
-- **FILTER · ORDER** `SER`
-  - ↳ note: SERIAL, STEREO or PARALLEL — with HIGH PASS this decides bandpass, stereo lowpass or notch
-- **LINK FILTERS** `OFF`
-  - ↳ note: Off, so FILTER 1 CUTOFF is an absolute cutoff rather than the spacing between the two
-- **FILTER 1 · HIGH PASS** `OFF`
-  - ↳ note: Lowpass
-- **FILTER 1 · CUTOFF** `34` (0…127)
-  - ↳ note: Send MIDI CC 67 = 34. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **FILTER 1 · RESONANCE** `26` (0…127)
-  - ↳ note: Self-oscillates into a sine fully clockwise · Send MIDI CC 68 = 26. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **FILTER 1 · ENVELOPE AMOUNT** `30` (0…127)
-  - ↳ note: Bipolar, no modulation at noon · Send MIDI CC 69 = 30. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **FILTER 1 · KB TRACKING** `1:2`
-- **FILTER 2 · CUTOFF** `30` (0…127)
-  - ↳ note: Send MIDI CC 72 = 30. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **FILTER 2 · RESONANCE** `20` (0…127)
-  - ↳ note: Send MIDI CC 73 = 20. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **FILTER 2 · ENVELOPE AMOUNT** `24` (0…127)
-  - ↳ note: Bipolar, no modulation at noon · Send MIDI CC 75 = 24. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **FILTER 2 · KB TRACKING** `1:2`
-- **FILTER ENV · ATTACK** `90` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
-  - ↳ note: Send MIDI CC 79 = 90. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **FILTER ENV · DECAY** `96` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
-  - ↳ note: Send MIDI CC 80 = 96. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **FILTER ENV · SUSTAIN** `40` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
-  - ↳ note: Send MIDI CC 81 = 40. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **FILTER ENV · RELEASE** `100` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
-  - ↳ note: Send MIDI CC 82 = 100. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **FILTER ENV · LOOP** `OFF`
-  - ↳ note: Looping, the envelope runs like an LFO
-- **VCA ENV · ATTACK** `88` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
-  - ↳ note: Send MIDI CC 86 = 88. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **VCA ENV · DECAY** `84` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
-  - ↳ note: Send MIDI CC 87 = 84. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **VCA ENV · SUSTAIN** `104` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
-  - ↳ note: Send MIDI CC 88 = 104. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **VCA ENV · RELEASE** `104` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.122
-  - ↳ note: Send MIDI CC 89 = 104. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **VCA ENV · VELOCITY** `ON`
-- **VCA · LEVEL** `92` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.120
-  - ↳ note: Send MIDI CC 7 = 92. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-  - ↳ hint: Light TIMBRE A or B first
-- **VCA · PAN** `60` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.120
-  - ↳ note: Bipolar, centred at noon · Send MIDI CC 10 = 60. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **VCA · PAN SPREAD** `46` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.120
-  - ↳ note: All voices sit at the PAN position fully counter-clockwise · Send MIDI CC 9 = 46. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **VCA · PAN SPRD MODE** `L/R`
-  - ↳ hint: Press MORE in that section
-- **DELAY · TIMBRE A / TIMBRE B** `ON`
-  - ↳ note: Two separate buttons, one per timbre — engage the one for the timbre this part is on. Disengaged, this part bypasses the delay on a fully analog path
-- **LFO 1 · WAVEFORM** `TRIANGLE`
-- **LFO 1 · RATE** `0.14` Hz (0.01…40 Hz)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0, p.52
-  - ↳ note: The default range; RATE MIN and RATE MAX in the MORE menu can widen it to 1 kHz
-- **LFO 1 · AMPLITUDE** `22` (0…127)
-  - ↳ cite: range manual — Muse User's Manual v1.4.0 Appendix A (MIDI CC), p.120
-  - ↳ note: An attenuator ahead of every destination · Send MIDI CC 13 = 22. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand
-- **LFO 1 · SYNC** `OFF`
-  - ↳ note: Off, so RATE is the free-running Hz scale rather than tempo divisions
-  - ↳ hint: Press MORE in that section
-- **LFO 1 · LFO TYPE** `PER-VOICE`
-  - ↳ note: PER-VOICE gives eight separate LFOs, one per voice
-  - ↳ hint: Press MORE in that section
 
 ### Subsequent 37
 
@@ -1289,6 +1186,8 @@ The MPC Live III, MPC One G2 and MPC XL can also duck from their own parts.
 
 The TR-1000, TR-6S, TR-8S, Deluge, EP–133 K.O. II, EP–40 riddim and OP-XY duck from their own parts only.
 
+The MicroFreak declares a sidechain and documents no trigger for it.
+
 **Master FX**
 
 What processes audio in this rig:
@@ -1298,7 +1197,7 @@ What processes audio in this rig:
 - MPC XL — carries effects, though no part in this guide reaches them
 - ZOIA Euroburo — is an effects unit (stereo main out · audio in)
 - Matriarch — carries effects, though no part in this guide reaches them
-- Muse — carries DELAY · CHARACTER, DELAY · CLOCK SYNC, DELAY · FEEDBACK, DELAY · LINK DELAYS, DELAY · MIX, DELAY · SYNC TYPE, DELAY · TIMBRE A / TIMBRE B, DELAY · TIME - L and DELAY · TIME - R in its recipes
+- Muse — carries effects, though no part in this guide reaches them
 - Tracker Mini — carries effects, though no part in this guide reaches them
 - MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and REVERB SEND in its recipes
 - MC-707 — carries FX PRM and FX DEPTH on the panel

@@ -225,13 +225,20 @@ neighbouring device's before assuming a name.
 `prebuild`) and is never hand-edited. `npm run check:registry` fails if it is stale. Every manifest
 is Zod-validated in the generator, so a bad manifest fails the build rather than a request.
 
-**Check what the device costs the search before you call it done.** `DEFAULT_NODE_CAP` is `150_000`
-(`lib/core/search.ts:293`), and §7.1's documented behaviour on a capped search is to degrade to
+**Check what the device costs the search before you call it done.** `DEFAULT_NODE_CAP` is `500_000`
+(`lib/core/search.ts:456`), and §7.1's documented behaviour on a capped search is to degrade to
 greedy — the guide still renders, it just quietly stops being optimal. #78 is the standing issue:
 the DFAM took `industrial-techno`'s worst seed from 108,608 nodes to **195,951** and capped every
-seed, on a device *smaller* than the TR-1000. `liveFloor` fixed the bound rather than the cap.
+seed, on a device *smaller* than the TR-1000. `liveFloor` fixed the bound rather than the cap. The MicroFreak then took the worst seed to
+223,348 and past the old 200,000, and the constant was re-derived to 500,000 against measured
+latency rather than raised to fit it — read the docstring before touching it again.
 
-**The suite does catch capping** — `test/search-symmetry.test.ts:1095`, *"leaves every shipped
+**Sweep every direction, not the total.** The MicroFreak moved `industrial-techno` 68% and `weave`
+by twenty-two nodes, so a figure averaged across the table would have hidden it. And the recipe
+count does not predict the bill: two boxes carrying the same sheet cost far more together than
+either alone (`test/search-bound.test.ts` records both effects, with the measurements).
+
+**The suite does catch capping** — `test/search-symmetry.test.ts:1328`, *"leaves every shipped
 template inside the shipped cap"*, sweeps every template × seed over the whole registry and asserts
 `capped === false` and `method === 'exhaustive'`. So `npm run verify` goes red rather than the guide
 going quietly greedy. What it does **not** give you is the number, and the number is what tells you
@@ -267,7 +274,19 @@ to 86,722. Size against that, not against how many folders are in `lib/devices/`
 
 The docstring's headline figures — 66,155 worst case at sixteen devices, 58,869 for the `full-rig`
 fixture — are from the `liveFloor` work. At **eighteen** devices the same sweep measures **132,615**
-(`industrial-techno`, seed 9), nothing capped: about 12% headroom left.
+(`industrial-techno`, seed 9), nothing capped.
+
+At **thirty-two** it measures **132,559** (`industrial-techno`, seed 4) — barely moved, because the
+count is non-monotonic and folder count is not what drives it. At **thirty-three** it is **223,348**
+and over the cap: the MicroFreak is the device that found the ceiling, and the whole of that rise is
+one contested role. `pad` is asked for by one direction and served by 22 of the 33 devices across 39
+recipes, so a thirty-ninth pad recipe costs what a whole device does not — dropping that one role
+from that one manifest takes the same sweep to 99,755, *below* the thirty-two-device baseline.
+
+**Read that as the sizing rule rather than as a fact about one box.** Ask which of your roles are
+already crowded before counting your recipes: a device adding its first `vox-chop` is nearly free,
+and one adding a third `pad` character may not be. And do not price your headroom off the numbers
+above — measure, because the next contested role may not be this one.
 
 **And run the audit**, before and after:
 

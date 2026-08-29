@@ -350,6 +350,13 @@ describe('the committed registry', () => {
       // panel figure: 2.6661 against 304/114's 2.6667.
       'torso-t1',
       'synthstrom-deluge',
+      // **311 mm, and the only span here backing a panel nobody could draw.** The MicroFreak's
+      // manual prints no dimension at all, so this is Arturia's published `55 x 311 x 233 mm`
+      // from the product page — a `maker` cite (#191), corroborated by the inch figures printed
+      // beside it (2.17 x 12.24 x 9.17 in is 55.1 x 310.9 x 232.9 mm). Unlike every other entry
+      // in this list it sizes an enclosure rather than a measured panel, because that manual has
+      // no measurable figure either; `UNDRAWN` in rack.test.ts carries the evidence.
+      'arturia-microfreak',
       // **A real tie, and the first one in this list that is not a coincidence.** The DFAM, the
       // Mother-32 and the Subharmonicon are the same 60 HP Moog enclosure — p.7 of the DFAM
       // manual calls it "an addition to the Mother-32 family", and p.9 of the Subharmonicon's
