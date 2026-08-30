@@ -119,8 +119,14 @@ describe('device search matches name, maker and kind', () => {
 
   it('accepts a hyphenated kind written as two words', () => {
     // 'drum-machine' is hyphenated for the schema's benefit. Nobody types it that way.
-    // Registry order, so the RD-9 leads: `behringer-` sorts before `roland-`.
-    const drumMachines = ['behringer-rd-9', 'roland-tr-1000', 'roland-tr-6s', 'roland-tr-8s']
+    // Registry order, so the two Behringers lead: `behringer-` sorts before `roland-`.
+    const drumMachines = [
+      'behringer-rd-8',
+      'behringer-rd-9',
+      'roland-tr-1000',
+      'roland-tr-6s',
+      'roland-tr-8s',
+    ]
     expect(ids(devices({ query: 'drum-machine' }).rows)).toEqual(drumMachines)
     expect(ids(devices({ query: 'drum machine' }).rows)).toEqual(drumMachines)
     expect(ids(devices({ query: 'semi modular' }).rows)).toEqual([

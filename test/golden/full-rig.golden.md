@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → MPC XL · Mono Track 1 — *DrumSynth Kick, transient forward and the low band lifted*
+- **`kick`** → Deluge · Track 1 — *Synth kick on a kit row — sine, fast pitch drop, decimated*
   - p1 · exact `hard` · every section
 - **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
@@ -40,7 +40,7 @@ glance whether the screen in front of you is the one the line is about.
   - p2 · exact `bright` · every section
 - **`closed-hat`** → TR-6S · CH — *Closed hat bit-crushed into a tick*
   - p2 · exact `dirty` · every section
-- **`metallic`** → RD-9 · CRASH — *Crash tuned down and filtered into a metallic bed*
+- **`metallic`** → RD-8 · CYMBAL — *Cymbal darkened and filtered into a metallic bed*
   - p3 · exact `dark` · every section
 - **`open-hat`** → TR-1000 · OH — *Dull open hat, more air than sizzle*
   - p3 · exact `dark` · every section
@@ -85,10 +85,10 @@ None.
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
-- **MPC XL** — groovebox · 1 part
+- **MPC XL** — groovebox · 0 parts
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · 6 individual outs · USB audio · audio in
-  - mixer: 1 part, 6 individual outs: one channel each
+  - mixer: no parts assigned; nothing to patch
 - **MicroFreak** — synth · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI · In: 1/8" TRS, not 5-pin — p.20 and p.7 both direct the reader to "the included MIDI adapters (1/8" TRS jack to 5-pin DIN, gray)" · manual
@@ -101,10 +101,14 @@ None.
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **RD-9** — drum-machine · 2 parts
+- **RD-8** — drum-machine · 1 part
+  - clock: sends clock · midi-din/usb/analog-clock
+  - audio: mono main out · 11 individual outs · audio in
+  - mixer: 1 part, 11 individual outs: one channel each
+- **RD-9** — drum-machine · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: mono main out · 10 individual outs · audio in
-  - mixer: 2 parts, 10 individual outs: one channel each
+  - mixer: 1 part, 10 individual outs: one channel each
 - **Digitakt II** — sampler · 0 parts
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio · audio in
@@ -213,10 +217,10 @@ None.
     - ↳ cite: value manual — Hapax Manual (22 June 2026), p.28
   - audio: no audio I/O
   - mixer: no parts assigned; nothing to patch
-- **Deluge** — groovebox · 0 parts
+- **Deluge** — groovebox · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: stereo main out · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, no individual outs: one stereo channel for all
 - **Model 2400** — mixer-recorder · 0 parts
   - clock: sends clock, cannot receive · midi-din/usb
   - audio: stereo main out · 8 individual outs · USB audio · audio in
@@ -313,9 +317,9 @@ How this box sets a note’s length is not established here, so the durations be
 
 ## 5. Step programming
 
-### `kick` — MPC XL · Mono Track 1
+### `kick` — Deluge · Track 1
 
-**DrumSynth Kick, transient forward and the low band lifted** — settings in Sound design
+**Synth kick on a kit row — sine, fast pitch drop, decimated** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -324,22 +328,12 @@ How this box sets a note’s length is not established here, so the durations be
 ```
 - `downbeat` — 1, 9
 
-**On this box** — MPC XL
-
-- `downbeat` → `velocity` 120 on steps 1, 9
-  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
-
 **Build, Breakdown** — 16 steps, band 1
 
 ```
  1 x··· x··· x··· x···
 ```
 - `downbeat` — 1, 5, 9, 13
-
-**On this box** — MPC XL
-
-- `downbeat` → `velocity` 120 on steps 1, 5, 9, 13
-  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -350,10 +344,10 @@ How this box sets a note’s length is not established here, so the durations be
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — MPC XL
+**On this box** — Deluge
 
-- `downbeat` → `velocity` 120 on steps 1, 5, 13
-  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
+- `accent` → `velocity` 127 on step 9
+  - ↳ hint: Hold the note pad, turn (SELECT)
 
 ### `sub` — Minitaur · Voice
 
@@ -476,9 +470,9 @@ How this box sets a note’s length is not established here, so the durations be
 - `offbeat` → `substep` 1/4 on steps 3, 7, 11
   - ↳ hint: Press [SUB], then a pad
 
-### `metallic` — RD-9 · CRASH
+### `metallic` — RD-8 · CYMBAL
 
-**Crash tuned down and filtered into a metallic bed** — settings in Sound design
+**Cymbal darkened and filtered into a metallic bed** — settings in Sound design
 
 **Intro, Outro** — 32 steps, band 0
 
@@ -620,36 +614,6 @@ How this box sets a note’s length is not established here, so the durations be
 
 ## 6. Sound design
 
-### MPC XL
-
-*Values below cite MPC Live III / MPC XL User Guide v3.7.*
-
-#### Mono Track 1 — `kick`: DrumSynth Kick, transient forward and the low band lifted
-
-*Ranges cite manual — MPC Live III / MPC XL User Guide v3.7, p.432.*
-
-- **Track Type** `Plugin`
-- **Plugin** `DrumSynth`
-- **Drum Type** `Kick`
-  - ↳ note: One DrumSynth instrument per plugin track
-- **Velocity** `30` % (0…100 %)
-  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
-- **Gain** `-2` dB (-68…12 dB)
-  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
-  - ↳ note: p.431 prints "-Inf, -68.0 – 0 – +12.0 dB"; -Inf is a setting below the range, not part of it
-- **Transient Attack** `45` % (-100…100 %)
-- **Distortion Drive** `6` dB (0…60 dB)
-- **Distortion Mix** `25` % (0…100 %)
-- **EQ Low Freq** `58` Hz (20…1000 Hz)
-- **EQ Low Gain** `3.5` dB (-12…12 dB)
-  - ↳ note: A `Cut` setting sits below the numeric range on the same page
-- **EQ High Gain** `-1.5` dB (-12…12 dB)
-- **Comp Ratio** `4` (1…100)
-  - ↳ note: p.432 prints the range as 1.0:1 - 100.0:1; this is the left-hand number
-- **Comp Attack** `8` ms (0.1…300 ms)
-  - ↳ note: p.432 prints the low end as 100 us
-- **Comp Threshold** `-14` dB (-60…0 dB)
-
 ### MicroFreak
 
 *Values below cite MicroFreak User Manual 4.0.3 p.113, MicroFreak User Manual 4.0.3 p.56, MicroFreak User Manual 4.0.3 p.63, MicroFreak User Manual 4.0.3 p.53, MicroFreak User Manual 4.0.3 p.28, and MicroFreak User Manual 4.0.3 p.88.*
@@ -728,6 +692,65 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.63
   - ↳ note: p.63: "The glide time is variable from \"off\" to about 10 seconds" — the manual hedges the upper end and prints no other figure
 
+### RD-8
+
+*Values below cite RHYTHM DESIGNER RD-8 User Manual.*
+
+**Pattern-wide**
+
+One setting for the whole pattern — set it once, not once per part below.
+
+- **CUTOFF** `2600` Hz (10…15000 Hz)
+  - ↳ cite: range manual — RHYTHM DESIGNER RD-8 User Manual, p.26
+  - ↳ note: One filter for the whole box — every voice on the FX bus shares it (p.13)
+  - ↳ hint: Press SEND, SELECT the voice, SEND again
+- **FILTER** `On`
+  - ↳ note: The ON button engages the filter into the circuit (p.5)
+- **FILTER MODE** `LPF`
+  - ↳ note: The HPF button toggles it; LPF is the default (p.5)
+- **PROB** `90` % (0…100 %)
+  - ↳ cite: range manual — RHYTHM DESIGNER RD-8 User Manual, p.21
+  - ↳ note: Only steps switched on in the PROB menu are affected (p.16)
+  - ↳ hint: SETTINGS > PROB, pick a voice, then steps
+- **PROB PREFERENCE** `Pattern`
+  - ↳ note: p.16 adds that the steps are stored per pattern while the amount is one number
+  - ↳ hint: SETTINGS > CLOCK, TAP/HOLD to page
+- **RESONANCE** `4` (0…10)
+  - ↳ cite: range manual — RHYTHM DESIGNER RD-8 User Manual, p.26
+  - ↳ note: A peak at the cutoff point (p.13)
+- **STEP SIZE** `1/16`
+  - ↳ note: One step is 1/16 of a bar, so sixteen steps make one bar (p.16)
+  - ↳ hint: SETTINGS, then the step-size key
+- **STEP SIZE PREFERENCE** `Pattern`
+  - ↳ hint: SETTINGS > CLOCK, TAP/HOLD to page
+- **SWING** `50` % (50…75 %)
+  - ↳ cite: range manual — RHYTHM DESIGNER RD-8 User Manual, p.21
+  - ↳ note: 50 is straight and 75 is full swing (p.17)
+  - ↳ hint: Press DATA MODE, then turn DATA
+- **SWING PREFERENCE** `Pattern`
+  - ↳ note: Chooses which stored Swing the sequencer uses — Global, Song or Pattern
+  - ↳ hint: SETTINGS > CLOCK, TAP/HOLD to page
+- **WAVE DESIGNER ATTACK** `-3` dB (-15…15 dB)
+  - ↳ cite: range manual — RHYTHM DESIGNER RD-8 User Manual, p.26
+  - ↳ note: 0 dB is 12 o’clock and is bypass (p.12)
+- **WAVE DESIGNER SUSTAIN** `12` dB (-24…24 dB)
+  - ↳ cite: range manual — RHYTHM DESIGNER RD-8 User Manual, p.26
+  - ↳ note: Acts like a compressor upward, and shortens the tail downward (p.12)
+
+#### CYMBAL — `metallic`: Cymbal darkened and filtered into a metallic bed
+
+Routing — Send the cymbal to the FX bus: press SEND, use SELECT to light CYMBAL, press SEND again (p.12)
+
+- **TONE** `30` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: CCW removes high frequency information (p.9)
+- **DECAY** `84` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: How long the cymbal rings (p.9)
+- **LEVEL** `40` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: Level against the other voices (p.9)
+
 ### RD-9
 
 *Values below cite RD-9 User Manual V 1.0.*
@@ -736,8 +759,14 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 
 One setting for the whole pattern — set it once, not once per part below.
 
+- **CUTOFF** `3600` Hz (10…15000 Hz)
+  - ↳ cite: range manual — RD-9 User Manual V 1.0, p.33
+  - ↳ note: One filter for the whole box — every voice on the FX bus shares it (p.15)
+  - ↳ hint: Press SEND, SELECT the voice, SEND again
 - **FILTER** `On`
   - ↳ note: The ON button engages the filter into the circuit (p.6)
+- **FILTER MODE** `HPF`
+  - ↳ note: The HPF button toggles it; LPF is the default (p.6)
 - **PROB** `90` % (0…100 %)
   - ↳ cite: range manual — RD-9 User Manual V 1.0, p.28
   - ↳ note: Only steps switched on in the PROB menu are affected (p.18)
@@ -745,6 +774,9 @@ One setting for the whole pattern — set it once, not once per part below.
 - **PROB PREFERENCE** `Pattern`
   - ↳ note: p.18 adds that the steps are stored per pattern while the amount is one number
   - ↳ hint: SETTINGS > CLOCK, TAP/HOLD to page
+- **RESONANCE** `7` (0…10)
+  - ↳ cite: range manual — RD-9 User Manual V 1.0, p.33
+  - ↳ note: A peak at the cutoff point (p.15)
 - **STEP SIZE** `1/16`
   - ↳ note: One step is 1/16 of a bar, so sixteen steps make one bar (p.19)
   - ↳ hint: SETTINGS, then the step-size key
@@ -757,36 +789,16 @@ One setting for the whole pattern — set it once, not once per part below.
 - **SWING PREFERENCE** `Pattern`
   - ↳ note: Chooses which stored Swing is used — and with it which printed range applies
   - ↳ hint: SETTINGS > CLOCK, TAP/HOLD to page
-
-#### CRASH — `metallic`: Crash tuned down and filtered into a metallic bed
-
-Routing — Send the crash to the FX bus: press SEND, use SELECT to light CRASH pink, press SEND again (p.15)
-
-*Ranges cite manual — RD-9 User Manual V 1.0, p.33.*
-
-- **CRASH TUNE** `20` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ note: Changes the pitch of the crash voice (p.8)
-- **LEVEL** `40` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ note: Level against the other voices (p.10)
-- **FILTER MODE** `LPF`
-  - ↳ note: The HPF button toggles it; LPF is the default (p.6)
-- **CUTOFF** `2600` Hz (10…15000 Hz)
-  - ↳ note: One filter for the whole box — every voice on the FX bus shares it (p.15)
-  - ↳ hint: Press SEND, SELECT the voice, SEND again
-- **RESONANCE** `4` (0…10)
-  - ↳ note: A peak at the cutoff point (p.15)
-- **WAVE DESIGNER ATTACK** `-3` dB (-15…15 dB)
+- **WAVE DESIGNER ATTACK** `4` dB (-15…15 dB)
+  - ↳ cite: range manual — RD-9 User Manual V 1.0, p.33
   - ↳ note: 0 dB is 12 o’clock and is bypass (p.15)
-- **WAVE DESIGNER SUSTAIN** `12` dB (-24…24 dB)
+- **WAVE DESIGNER SUSTAIN** `14` dB (-24…24 dB)
+  - ↳ cite: range manual — RD-9 User Manual V 1.0, p.33
   - ↳ note: Acts like a compressor upward, and shortens the tail downward (p.15)
 
 #### OPEN — `noise`: Open hat held long and high-passed into a noise wash
 
 Routing — Send the hi-hats to the FX bus: press SEND, use SELECT to light OPEN pink, press SEND again (p.15)
-
-*Ranges cite manual — RD-9 User Manual V 1.0, p.33.*
 
 - **ENHANCED MODE** `On`
   - ↳ note: Off, PITCH, PITCH DEPTH and the hi-hat TUNE do nothing (p.10)
@@ -799,17 +811,6 @@ Routing — Send the hi-hats to the FX bus: press SEND, use SELECT to light OPEN
 - **LEVEL** `46` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: Level against the other voices (p.10)
-- **FILTER MODE** `HPF`
-  - ↳ note: The HPF button toggles it; LPF is the default (p.6)
-- **CUTOFF** `3600` Hz (10…15000 Hz)
-  - ↳ note: One filter for the whole box — every voice on the FX bus shares it (p.15)
-  - ↳ hint: Press SEND, SELECT the voice, SEND again
-- **RESONANCE** `7` (0…10)
-  - ↳ note: A peak at the cutoff point (p.15)
-- **WAVE DESIGNER ATTACK** `4` dB (-15…15 dB)
-  - ↳ note: 0 dB is 12 o’clock and is bypass (p.15)
-- **WAVE DESIGNER SUSTAIN** `14` dB (-24…24 dB)
-  - ↳ note: Acts like a compressor upward, and shortens the tail downward (p.15)
 
 ### minilogue xd
 
@@ -1200,6 +1201,57 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
   - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
   - ↳ hint: INST Edit > DelaySend
 
+### Deluge
+
+*Values below cite Deluge Official Guidebook OS 4.1 (OLED) and Deluge community firmware release_1_2_1.*
+
+**Song-wide**
+
+One setting for the whole song — set it once, not once per part below.
+
+- **SWING** `50` % (1…99 %)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
+  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
+  - ↳ hint: Hold [SHIFT], turn (TEMPO)
+
+#### Track 1 — `kick`: Synth kick on a kit row — sine, fast pitch drop, decimated
+
+- **CLIP TYPE** `Kit`
+  - ↳ hint: From clip view: [SHIFT] + [KIT] or [SYNTH]
+- **OSC 1 TYPE** `Sine`
+  - ↳ hint: [AUDITION] + [SYNTH] makes a synth row
+- **ENV 1 ATTACK** `1` (0…50)
+  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/attack.md
+  - ↳ note: the menus recommend at least 1; 0 is likely to click
+  - ↳ hint: Press (SELECT), ENV 1, then ATTACK / DECAY
+- **ENV 1 DECAY** `17` (0…50)
+  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/decay.md
+  - ↳ note: 0 is the shortest decay, 50 the longest
+- **ENV 1 SUSTAIN** `0` (0…50)
+  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/sustain.md
+  - ↳ note: 0 decays away to nothing, which is what a drum does
+- **ENV 1 RELEASE** `5` (0…50)
+  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/release.md
+- **ENV 2 ATTACK** `1` (0…50)
+  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/attack.md
+- **ENV 2 DECAY** `6` (0…50)
+  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/decay.md
+  - ↳ note: this is how fast the pitch falls
+- **ENV 2 SUSTAIN** `25` (0…50)
+  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/sustain.md
+  - ↳ note: p.125: on a pitch destination 25 is the note itself, and below 25 goes flat
+- **ENV 2 → PITCH DEPTH** `22` (-50…50)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.120 and p.122 + community firmware release_1_2_1, automation_view.md
+  - ↳ note: destination is Pitch / Transpose: Overall; positive lifts the attack above the note
+  - ↳ hint: In PITCH, press (SELECT) again, pick ENV 2
+- **DECIMATION** `12` (0…50)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
+- **BITCRUSH** `6` (0…50)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
+- **EQ BASS AMOUNT** `33` (0…50)
+  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
+  - ↳ note: 25 is neutral; above boosts
+
 ## 7. Finishing
 
 **Sidechain**
@@ -1219,6 +1271,7 @@ What processes audio in this rig:
 - MPC Live III — carries effects, though no part in this guide reaches them
 - MPC One G2 — carries effects, though no part in this guide reaches them
 - MPC XL — carries effects, though no part in this guide reaches them
+- RD-8 — carries FX on the panel
 - ZOIA Euroburo — is an effects unit (stereo main out · audio in)
 - Matriarch — carries effects, though no part in this guide reaches them
 - Muse — carries effects, though no part in this guide reaches them
@@ -1229,7 +1282,7 @@ What processes audio in this rig:
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 - TR-6S — carries MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
 - TR-8S — carries REVERB, DELAY and MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
-- Deluge — carries effects, though no part in this guide reaches them
+- Deluge — carries BITCRUSH and DECIMATION in its recipes
 - Model 2400 — is a mixer and recorder (stereo main out · 8 individual outs · USB audio · audio in)
 - OP-XY — carries effects, though no part in this guide reaches them
 - Zoom LiveTrak L-8 — is a mixer and recorder (stereo main out · USB audio · audio in)
