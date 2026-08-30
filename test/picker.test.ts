@@ -2,7 +2,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { ROLES } from '../lib/core/index'
+import { ROLES, moodState, resolve } from '../lib/core/index'
 import type { Role } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { deviceHref, deviceLabel, templateHref } from '../lib/studio/catalogue'
@@ -18,6 +18,7 @@ import {
   templateFields,
   templateView,
   carriesSeveralParts,
+  rolesLeftUnfilled,
 } from '../lib/studio/picker'
 import type { DeviceFilter } from '../lib/studio/picker'
 import { DevicePicker } from '../components/device-picker'
@@ -398,7 +399,7 @@ describe('filtering cannot reach the selection', () => {
   it('leaves its inputs untouched', () => {
     const selected = ['roland-tr-1000']
     const before = JSON.stringify({ selected, kinds: DEVICES.map((d) => d.id) })
-    deviceView(DEVICES, selected, { query: 'polyend', kind: 'groovebox', multiPart: false })
+    deviceView(DEVICES, selected, { ...NO_DEVICE_FILTER, query: 'polyend', kind: 'groovebox' })
     templateView(TEMPLATES, 'ambient-dub', 'techno')
     expect(JSON.stringify({ selected, kinds: DEVICES.map((d) => d.id) })).toBe(before)
     expect(selected).toEqual(['roland-tr-1000'])
@@ -429,11 +430,14 @@ describe('filtering cannot reach the selection', () => {
       expect(source).not.toContain('location')
     }
     // The pure module imports types from core and nothing else — no browser, no session, no
-    // storage. Checked on the import lines rather than the whole file, so the prose above them
-    // stays free to name what it is arguing against.
+    // storage. Asserted as the claim rather than as one exact line: the import grew a name and
+    // wrapped when #86 gave the picker a role filter, and a fixture pinned to the old string
+    // failed on the wrapping while the thing it guards was untouched.
     const pure = readFileSync(new URL('../lib/studio/picker.ts', import.meta.url), 'utf8')
-    const imports = pure.split('\n').filter((line) => line.startsWith('import'))
-    expect(imports).toEqual(["import type { Device, DeviceId, DeviceKind, Template, TemplateId } from '@/lib/core'"])
+    const modules = [...pure.matchAll(/from '([^']+)'/g)].map((m) => m[1])
+    expect(new Set(modules), 'the pure module reached outside core').toEqual(new Set(['@/lib/core']))
+    // Type-only, so nothing here can execute core at runtime either.
+    expect(pure.match(/^import (?!type )/m), 'a value import in the pure module').toBeNull()
     expect(pure).not.toContain('localStorage')
     expect(pure).not.toContain('window.')
   })
@@ -739,5 +743,73 @@ describe('the several-parts filter (§2.2/#86)', () => {
       (r) => !r.retained,
     )
     expect(byName.length).toBeLessThan(shown(true).length)
+  })
+})
+
+/**
+ * §7.3. **"Which of these would fill the hole in my guide?"** — the question the picker could not
+ * answer, and the one somebody with a direction chosen actually has.
+ *
+ * The roles come off the resolve rather than being re-derived, so this filter and the guide's own
+ * Gaps section cannot disagree about what is missing (#33).
+ */
+describe('the fills-a-gap filter (§7.3)', () => {
+  const industrial = TEMPLATES.find((t) => t.id === 'industrial-techno')!
+  const run = (ids: string[]) =>
+    resolve({
+      devices: DEVICES.filter((d) => ids.includes(d.id)),
+      template: industrial,
+      mood: moodState({}),
+      seed: 3,
+    })
+  const offered = (ids: string[]) => {
+    const unfilled = rolesLeftUnfilled(run(ids))
+    return deviceView(DEVICES, ids, { ...NO_DEVICE_FILTER, fillsGap: true }, unfilled).rows.filter(
+      (r) => !r.retained,
+    )
+  }
+
+  it('offers only boxes with a recipe for something the rig is missing', () => {
+    const rig = ['roland-tr-1000']
+    const unfilled = rolesLeftUnfilled(run(rig))
+    expect(unfilled.size).toBeGreaterThan(0)
+    for (const row of offered(rig)) {
+      expect(row.item.recipes.some((r) => unfilled.has(r.role)), row.item.id).toBe(true)
+    }
+  })
+
+  it('never counts a part the direction says it does not need', () => {
+    // `not-needed` is the direction saying it is finished without one. Offering to sell somebody a
+    // box for it would have the picker contradicting the guide beside it.
+    const result = run(['roland-tr-1000'])
+    const unfilled = rolesLeftUnfilled(result)
+    for (const shortfall of result.shortfalls) {
+      if (shortfall.kind !== 'not-needed') continue
+      // Only excluded when nothing else asks for the same role, which is the honest reading.
+      const alsoReal = result.shortfalls.some(
+        (s) => s.kind !== 'not-needed' && s.role === shortfall.role,
+      )
+      if (!alsoReal) expect(unfilled.has(shortfall.role), shortfall.role).toBe(false)
+    }
+  })
+
+  /**
+   * The property worth having, and it is the right way round: the filter narrows *most* when the
+   * rig is closest to complete. A nearly-empty rig has wide gaps that almost any box fills, and a
+   * reader there does not need help choosing; a rig missing one specific thing is where the
+   * question gets asked, and there it excludes half the library.
+   */
+  it('narrows hardest when the rig is nearly there', () => {
+    const wide = offered(['roland-tr-1000']).length
+    const narrow = offered(['roland-tr-1000', 'synthstrom-deluge']).length
+    expect(narrow).toBeLessThan(wide)
+    expect(narrow).toBeLessThan(DEVICES.length)
+  })
+
+  it('is inert when the rig covers its direction, rather than hiding everything', () => {
+    // A filter that emptied the list here would be reporting a hole the rig does not have.
+    const full = DEVICES.map((d) => d.id)
+    expect(rolesLeftUnfilled(run(full)).size).toBe(0)
+    expect(offered(full)).toHaveLength(DEVICES.length)
   })
 })

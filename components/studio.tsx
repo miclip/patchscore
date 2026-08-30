@@ -10,6 +10,8 @@ import type {
   TemplateId,
 } from '@/lib/core'
 import { resolve } from '@/lib/core'
+import type { Role } from '@/lib/core'
+import { rolesLeftUnfilled } from '@/lib/studio/picker'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { INSPIRATIONS } from '@/lib/inspirations'
 import { browserEnv } from '@/lib/studio/browser-env'
@@ -232,6 +234,18 @@ export function Studio({ initialInputs }: StudioProps) {
     [devices, template, inputs],
   )
 
+  /**
+   * §7.3. The roles this direction asked for and did not get, for the picker's "fills a gap"
+   * filter. Read off the resolve rather than re-derived: the guide's Gaps and "Waiting on us"
+   * sections are this same fact, and a second route to it would let the picker disagree with the
+   * page beside it (#33). `not-needed` is excluded in `rolesLeftUnfilled` — a direction that says
+   * it is finished without a ride is not a rig missing one.
+   */
+  const unfilledRoles = useMemo(
+    () => (result === undefined ? new Set<Role>() : rolesLeftUnfilled(result)),
+    [result],
+  )
+
   const onCopy = useCallback(() => {
     void copyStudioLink(browserEnv()).then((outcome) => {
       setCopied(
@@ -355,6 +369,13 @@ export function Studio({ initialInputs }: StudioProps) {
           selected={inputs.devices}
           onToggle={toggleDevice}
           clockSourceId={inputs.clockSourceId}
+          /*
+           * §7.3. The roles this direction asked for and did not get, so the picker can offer the
+           * boxes that would answer them. Computed from the resolve rather than re-derived — the
+           * guide's "Waiting on us" and "Gaps" sections are the same fact, and two routes to it
+           * would let the picker disagree with the page it sits beside (#33).
+           */
+          unfilled={unfilledRoles}
         />
         <GenrePicker selected={inputs.templateId} onSelect={selectTemplate} />
         {/*

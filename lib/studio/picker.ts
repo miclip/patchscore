@@ -1,4 +1,12 @@
-import type { Device, DeviceId, DeviceKind, Template, TemplateId } from '@/lib/core'
+import type {
+  Device,
+  DeviceId,
+  DeviceKind,
+  ResolveResult,
+  Role,
+  Template,
+  TemplateId,
+} from '@/lib/core'
 
 /**
  * #53. Searching and filtering the two picker lists — pure, and deliberately **not symmetric**.
@@ -150,9 +158,27 @@ export type DeviceFilter = {
    * there was no way to ask for it.
    */
   multiPart: boolean
+  /**
+   * §7.3. **Only boxes that would fill a gap in the rig as it stands.**
+   *
+   * The other two filters ask what a box *is*; this one asks what it would *do for you*, which is
+   * the question somebody with a direction chosen and a hole in their guide actually has. It
+   * needs the resolve to answer, so `deviceView` takes the unfilled roles beside the filter
+   * rather than the filter carrying them — a set of roles is not a setting a reader chose.
+   *
+   * Inert with nothing unfilled, which is the honest behaviour: a rig that covers its direction
+   * has no gap to fill, and a filter that then hid everything would be reporting a hole that is
+   * not there.
+   */
+  fillsGap: boolean
 }
 
-export const NO_DEVICE_FILTER: DeviceFilter = { query: '', kind: ANY_KIND, multiPart: false }
+export const NO_DEVICE_FILTER: DeviceFilter = {
+  query: '',
+  kind: ANY_KIND,
+  multiPart: false,
+  fillsGap: false,
+}
 
 /**
  * §2.2. More than one part at once — a pool with several members, or several voices.
@@ -161,6 +187,36 @@ export const NO_DEVICE_FILTER: DeviceFilter = { query: '', kind: ANY_KIND, multi
  * asking what the hardware does, and both shapes answer it: a Deluge's pool of 24 and a TR-1000's
  * eleven named instruments are both boxes that carry a lot at once.
  */
+/**
+ * §7.3. **The roles this direction asked for and did not get**, which is the set a reader is
+ * shopping against.
+ *
+ * `not-needed` is excluded and that is the whole judgement here: a direction that says it is
+ * finished without a ride is not a rig missing a ride, and offering to sell somebody a box for it
+ * would be the guide's own advice contradicted by its picker. The other two kinds are both real
+ * absences — the rig cannot, or nobody has written the recipe — and a different box can answer
+ * either one.
+ */
+export function rolesLeftUnfilled(result: ResolveResult): ReadonlySet<Role> {
+  const out = new Set<Role>()
+  for (const shortfall of result.shortfalls) {
+    if (shortfall.kind === 'not-needed') continue
+    out.add(shortfall.role)
+  }
+  return out
+}
+
+/**
+ * Whether this box has a recipe for something the rig is missing.
+ *
+ * From `recipes` rather than `voices.roles`, for the reason the role search gives: a voice
+ * advertising a role its device cannot actually be asked for would offer a box that changes
+ * nothing (§3).
+ */
+export function fillsAGap(device: Device, unfilled: ReadonlySet<Role>): boolean {
+  return device.recipes.some((recipe) => unfilled.has(recipe.role))
+}
+
 export function carriesSeveralParts(device: Device): boolean {
   let total = 0
   for (const voice of device.voices) total += voice.kind === 'pool' ? voice.count : 1
@@ -234,15 +290,20 @@ export function deviceView(
   devices: readonly Device[],
   selected: readonly DeviceId[],
   filter: DeviceFilter,
+  unfilled: ReadonlySet<Role> = new Set(),
 ): PickerView<Device> {
   const terms = queryTerms(filter.query)
   const chosen = new Set(selected)
-  const filtering = terms.length > 0 || filter.kind !== ANY_KIND || filter.multiPart
+  // `fillsGap` with nothing unfilled is not filtering: there is no gap, so the answer is every
+  // box, and treating it as active would report a hole the rig does not have.
+  const gapping = filter.fillsGap && unfilled.size > 0
+  const filtering = terms.length > 0 || filter.kind !== ANY_KIND || filter.multiPart || gapping
   return view(
     devices,
     (device) =>
       (filter.kind === ANY_KIND || device.kind === filter.kind) &&
       (!filter.multiPart || carriesSeveralParts(device)) &&
+      (!gapping || fillsAGap(device, unfilled)) &&
       matches(deviceFields(device), terms),
     (device) => chosen.has(device.id),
     filtering,
