@@ -5,6 +5,7 @@ import type {
   Recipe,
 } from '../../core/device'
 import { jackFact } from '../../core/device'
+import { RD9_PANEL } from './panel'
 import type { AuthoredEnumParam, AuthoredNumericParam, AuthoredParam, Cite } from '../../core/params'
 
 /**
@@ -867,21 +868,19 @@ export const device: Device = {
   },
 
   /**
-   * §10. **No `panel`, and the absence is a reading rather than an omission.**
+   * §10. **Drawn from the Quick Start Guide, which has the figure the User Manual does not.**
    *
-   * This manual has no complete top-down panel figure. §3 "Front and Rear Panel Control Layout"
-   * (pp.6-8) is eleven separate crops — one per section, each drawn at its own scale with its own
-   * callout numbers — and there is no page anywhere that shows the eleven together. The nearest
-   * thing is §3.1.11 Voice Control on p.8, which is genuinely complete and fully labelled *for
-   * the voice block alone* and shows nothing above or beside it. p.2 is the table of contents,
-   * not a product shot; pp.30-32 are hook-up diagrams drawn in outline with no controls on them.
+   * This box was the library's last `UNDRAWN` entry, and the reason recorded there was right about
+   * the manual: §3 (pp.6-8) draws the panel in eleven separate section crops at their own scales,
+   * no page shows them together, and §15's hook-up diagram on p.30 spans the instrument but is a
+   * *rear* elevation, so it locates sockets rather than knobs. Nothing in that book looks down at
+   * this box.
    *
-   * Composing the crops would mean guessing where each section sits and at what relative size,
-   * which is estimated coordinates in everything but name. `panel` is optional and the rack
-   * generates a fallback from the jacks and voices declared here, which is the honest place to
-   * stop. A future `observed` measurement from a unit, or a Behringer-published panel drawing,
-   * would be the way to fill it.
+   * `QSG_BE_0704-AAB_RD-9_WW.pdf` p.8 does: a complete top view with the chassis outline and every
+   * control in place. One figure, one scale, both axes. See `panel.ts` for the anchor, the 12.8 mm
+   * residual against the specification depth, and the RD-8 cross-check on it.
    */
+  panel: RD9_PANEL,
 
   jacks: [...JACKS],
 
