@@ -38,9 +38,10 @@ describe('every part lands in exactly one group (§8/#230)', () => {
   it('is a permutation of the guide’s own assignments, on every template and seed', async () => {
     for (const template of TEMPLATES) {
       for (let seed = 0; seed < 6; seed++) {
-        // Yield per resolve, per `search-symmetry.test.ts`. This sweep is ~7.5s of unbroken
-        // synchronous work today, well short of the ~30s that failed CI with a worker-RPC
-        // timeout — but that is the direction it grows in as devices land, and the yield is free.
+        // Yield per resolve, per `search-symmetry.test.ts`. This was ~7.5s when written and runs
+        // past 30s at 35 devices: it sweeps the full library on every template and six seeds, and
+        // the search itself got dearer. Hence the raised timeout below — the same reason
+        // `inspirations.test.ts` raised its own — while the yield keeps the worker answering.
         await new Promise((r) => setImmediate(r))
         const result = resolve({
           devices: [...DEVICES],
@@ -57,7 +58,7 @@ describe('every part lands in exactly one group (§8/#230)', () => {
         )
       }
     }
-  })
+  }, 120_000)
 
   it('never puts one part in two groups', () => {
     const result = run([...DEVICES])

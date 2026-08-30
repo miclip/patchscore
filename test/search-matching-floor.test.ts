@@ -1032,7 +1032,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * is still admissible and still cheap, and this fixture's claim survives with the weaker and
    * truer form of it.
    */
-  it('walks the recorded 283,787 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 815,668 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1040,14 +1040,15 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(283_787)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(815_668)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
     // stops guarding anything and starts re-recording the measurement a second time. 260,000 is
-    // now 380,000, on the seventh device to push past it. Kept deliberately loose: 282,897 sits
-    // at 74% of it, about the slack 260,000 gave the measurement it replaced.
-    expect(assign(input).search.nodes).toBeLessThan(380_000)
+    // now 1,200,000, on the eighth device to push past it and by far the widest jump: the RD-9
+    // took the repaired walk from 282,897 to 815,041, and the cap moved to 2,000,000 beneath it.
+    // Kept deliberately loose, as every raise before it was.
+    expect(assign(input).search.nodes).toBeLessThan(1_200_000)
   })
 })
 

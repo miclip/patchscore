@@ -47,11 +47,24 @@ const real = resolve({ devices: DEVICES, template, mood: NEUTRAL_MOOD, seed: 1 }
  * on `noise`, and both of those recipes are patch lists; `ambient-dub` has no such assignment
  * once the Subsequent 37 is in the registry to take its bass.
  */
+/**
+ * §3.3. A rig where a semi-modular actually wins a request, so `internalPatch` is exercised by
+ * real data rather than only by the fixture below it.
+ *
+ * **Seed 2, and it was seed 1 until the RD-9 landed.** The test that reads this already says why:
+ * which box wins a request is the objective's call and moves whenever the library gains a device.
+ * At seed 1 the thirty-fifth box took the assignment that carried the only patch list, leaving
+ * nothing patched to assert on — the same way the Subsequent 37's arrival once took `ambient-dub`'s
+ * bass off the Cascadia.
+ *
+ * Re-pinned rather than loosened. "Some seed has a patched assignment" would pass on a build where
+ * the renderer had stopped drawing them.
+ */
 const patchedRig = resolve({
   devices: DEVICES,
   template: industrialTechno,
   mood: NEUTRAL_MOOD,
-  seed: 1,
+  seed: 2,
 })
 
 /**
@@ -160,13 +173,16 @@ describe('rack geometry (§10)', () => {
     // for the other, so the two agree on depth and height to the millimetre and differ only
     // across. Both rises are the published depth, read off each box's own specifications table.
     //
-    // **The sixth collision is gone, and this is the `- 6` the previous comment promised.** It
-    // read: "the MicroFreak is undrawn, so its rise *is* the `PANEL_HEIGHT_MM` fallback of 170 mm,
-    // which the Tracker Mini reaches by measurement ... the moment somebody draws that panel this
-    // returns to `- 6`." Somebody drew it. Its rise is now Arturia's published 233 mm depth, so it
-    // no longer collides with the Tracker Mini, and no panel in the library shares a rise with
-    // another by defaulting to one.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 6)
+    // **The sixth collision is back, and it is the same one.** The MicroFreak held this slot until
+    // somebody drew it, on a comment that promised `- 6` the moment they did. It went to `- 6`,
+    // and the RD-9 has now taken the slot: it is undrawn (see `UNDRAWN`), so its rise *is* the
+    // `PANEL_HEIGHT_MM` fallback of 170 mm, which the Tracker Mini reaches by measurement.
+    //
+    // A defaulted rise standing beside a measured one is exactly what this count exists to catch,
+    // and it is allowed here for the same reason it was before: the default is *declared* — the
+    // box is named in `UNDRAWN` with the figures somebody looked at — rather than silent. Draw the
+    // RD-9's panel and this returns to `- 6` again.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 7)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -588,14 +604,14 @@ describe('panel contents', () => {
  * as *"what the next device whose manual has no usable figure will render"*. This is that device.
  */
 const UNDRAWN = new Map<string, string>([
-  // **Empty, since the MicroFreak was drawn.** It was the only entry, and it left on the finding
-  // that its three cropped strips each span the instrument's full width — which fixes a scale
-  // from the published 311 mm and makes every horizontal position measurable after all. What
-  // could not be measured was how the rows stack vertically, and that is carried in the
-  // citation's own text rather than by omitting the drawing.
-  //
-  // The list stays, and so does the branch below. A box earns a place by having no figure anybody
-  // could measure, and the entry has to say which figures were looked at.
+  // **The MicroFreak left this list**, on the finding that its three cropped strips each span the
+  // instrument's full width — which fixes a scale from the published 311 mm and makes every
+  // horizontal position measurable after all. That is the bar: a box earns a place here by having
+  // no figure anybody could measure, and its entry has to say which figures were looked at.
+  [
+    'behringer-rd-9',
+    'the RD-9 manual draws the panel once, on p.10, and only the voice section of it — a dashed crop of the top control row with numbered callouts 1-12 (ACCENT through CYMBAL) and no outer border, no step buttons and no transport. Unlike the MicroFreak\u2019s strips it does not span the instrument, so the cited 477 mm width fixes no scale for it and the vertical is unrecoverable twice over. The only other figure in the document is a Logic Pro screenshot on p.29. Its 477 x 264 mm span is cited to the specifications on p.33 and sizes the enclosure; it locates no control',
+  ],
 ]) as Map<string, string>
 
 describe('panel layouts', () => {

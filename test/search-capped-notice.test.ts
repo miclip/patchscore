@@ -116,15 +116,31 @@ describe('the thing the notice is about is real (§7.1)', () => {
    */
   it('a cap really does change which boxes carry the parts', () => {
     /**
-     * **Seed 1, and the seed matters.** At seed 3 a capped search happens to return the identical
-     * allocation — greedy sometimes lands on the optimum, which is why "capped" is not a synonym
-     * for "wrong" and why the notice says *may* rather than *is* worse. What has to be true for
-     * the notice to be worth printing at all is that a cap *can* change the answer, and here it
-     * does: same twelve parts, same shape, different boxes carrying them.
+     * **Seed 2, and the seed matters.** On most seeds a capped search returns the *identical*
+     * allocation — greedy often lands on the optimum, which is why "capped" is not a synonym for
+     * "wrong" and why the notice says a better fit *may* exist rather than does. What has to be
+     * true for the notice to be worth printing at all is that a cap *can* change the answer, and
+     * here it does: same twelve parts, same shape, different boxes carrying them.
+     *
+     * It was seed 1 until the RD-9 landed. Which seeds diverge is a property of the library rather
+     * than of the claim, so this is re-pinned rather than weakened — the alternative is asserting
+     * "some seed differs", which would pass on a build where none did.
+     */
+    /**
+     * `full` lifts the cap explicitly, which it did not have to when this was written: the shipped
+     * `DEFAULT_NODE_CAP` was above the whole-catalogue worst case then and is below it now. The
+     * comparison this test makes is uncapped-against-capped, so the uncapped side has to say so
+     * rather than inherit a default that has moved underneath it.
      */
     const devices = [...DEVICES]
-    const full = assign({ devices, template: industrial, mood: moodState(), seed: 1 })
-    const tight = assign({ devices, template: industrial, mood: moodState(), seed: 1, nodeCap: 2000 })
+    const full = assign({
+      devices,
+      template: industrial,
+      mood: moodState(),
+      seed: 2,
+      nodeCap: 20_000_000,
+    })
+    const tight = assign({ devices, template: industrial, mood: moodState(), seed: 2, nodeCap: 2000 })
 
     expect(full.search.capped).toBe(false)
     expect(tight.search.capped).toBe(true)
