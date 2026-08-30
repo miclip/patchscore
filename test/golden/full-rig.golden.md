@@ -30,19 +30,19 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → Cascadia · Voice — *Sine kick: Envelope B dropped into VCO A pitch, filter bypassed to the amp*
+- **`kick`** → Grandmother · Voice — *Kick with the envelope cabled to Oscillator 1’s pitch*
   - p1 · exact `hard` · every section
 - **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
 - **`bass-mid`** → Subsequent 37 · Voice — *Mixer pushed past unity with feedback under it and MultiDrive on top*
   - p2 · exact `dirty` · every section
-- **`clap`** → TR-8S · HC — *Hand clap with a short room*
+- **`clap`** → Analog Rytm MKII · CP — *CP CLASSIC through the 1-pole highpass, backbeat at velocity 112 with an accent trig*
   - p2 · exact `bright` · every section
 - **`closed-hat`** → TR-6S · CH — *Closed hat bit-crushed into a tick*
   - p2 · exact `dirty` · every section
 - **`metallic`** → RD-8 · CYMBAL — *Cymbal darkened and filtered into a metallic bed*
   - p3 · exact `dark` · every section
-- **`open-hat`** → TR-1000 · OH — *Dull open hat, more air than sizzle*
+- **`open-hat`** → TR-8S · OH — *Open hat with the top rolled off*
   - p3 · exact `dark` · every section
 - **`stab`** → minilogue xd · Voice — *Four-voice stab with the filter snapping shut behind the chord*
   - p3 · exact `hard` · 3 notes at once on one polyphonic voice · every section
@@ -89,12 +89,10 @@ None.
   - ↳ note: MIDI B, C and D have the same row and the same four options; set the one the cable is in.
   - ↳ cite: value manual — Hapax Manual (22 June 2026), p.132
 
-**Voice control** — Hapax sends the notes, 4 cables in all. Patch each pair before you play anything:
+**Voice control** — Hapax sends the notes, 2 cables in all. Patch each pair before you play anything:
 
-- pitch: Hapax `Cv out 2` → Cascadia `EXT IN · PITCH`
-- gate: Hapax `gate out 2` → Cascadia `EXT IN · GATE`
-- pitch: Hapax `Cv out 3` → Minitaur `CONTROLLER INPUTS · PITCH CV`
-- gate: Hapax `gate out 3` → Minitaur `CONTROLLER INPUTS · GATE`
+- pitch: Hapax `Cv out 2` → Minitaur `CONTROLLER INPUTS · PITCH CV`
+- gate: Hapax `gate out 2` → Minitaur `CONTROLLER INPUTS · GATE`
 
 - Why this box sends them — it is already the clock source, so the cables run from where the tempo does
 
@@ -140,6 +138,12 @@ None.
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: mono main out · 10 individual outs · audio in
   - mixer: 1 part, 10 individual outs: one channel each
+- **Analog Rytm MKII** — drum-machine · 1 part
+  - clock: sends clock · out: midi-din/usb/din-sync · in: midi-din/usb
+  - MIDI OUT/SYNC A: OUT PORT FUNC picks MIDI, DIN 24 or DIN 48; a DIN setting carries no MIDI data (p.62) · manual
+    - ↳ cite: value manual — Analog Rytm MKII User Manual OS 1.71, p.12
+  - audio: stereo main out · 8 individual outs · USB audio · audio in
+  - mixer: 1 part, 8 individual outs: one channel each
 - **Digitakt II** — sampler · 0 parts
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio · audio in
@@ -152,10 +156,10 @@ None.
   - clock: receives clock only · analog-clock/midi-din
   - audio: stereo main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **Cascadia** — semi-modular · 1 part
+- **Cascadia** — semi-modular · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: mono main out · audio in
-  - mixer: 1 part, no individual outs: one mono channel for all
+  - mixer: no parts assigned; nothing to patch
 - **Metropolix** — sequencer · 0 parts
   - clock: sends clock · usb/analog-clock
   - audio: no audio I/O
@@ -168,14 +172,14 @@ None.
   - clock: sends clock · analog-clock
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **Grandmother** — semi-modular · 0 parts
+- **Grandmother** — semi-modular · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per the Global Settings (p.37) · manual
     - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
   - MIDI OUT: Everything originating on this box, MIDI Clock included when the Global Setting sends it (p.37) · manual
     - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
   - audio: mono main out · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **Matriarch** — semi-modular · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per Global Setting 1.5 (p.64) · manual
@@ -232,10 +236,10 @@ None.
     - ↳ cite: value manual — SP-404MK2 Reference Manual v4.00, p.14
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
-- **TR-1000** — drum-machine · 2 parts
+- **TR-1000** — drum-machine · 1 part
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
-  - mixer: 2 parts, 10 individual outs: one channel each
+  - mixer: 1 part, 10 individual outs: one channel each
 - **TR-6S** — drum-machine · 1 part
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio
@@ -352,11 +356,9 @@ How this box sets a note’s length is not established here, so the durations be
 
 ## 5. Step programming
 
-### `kick` — Cascadia · Voice
+### `kick` — Grandmother · Voice
 
-**Sine kick: Envelope B dropped into VCO A pitch, filter bypassed to the amp** — settings in Sound design
-
-**Not programmed here** — it has no sequencer, so it is played from whichever controller or sequencer is driving the rig. Enter this figure on the Hapax, which drives it through `Cv out 2` and `gate out 2`.
+**Kick with the envelope cabled to Oscillator 1’s pitch** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -381,11 +383,16 @@ How this box sets a note’s length is not established here, so the durations be
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
+**On this box** — Grandmother
+
+- `accent` → `accent` true on step 9
+  - ↳ hint: REC mode, then TAP adds an accent
+
 ### `sub` — Minitaur · Voice
 
 **One oscillator under the filter, nothing above it** — settings in Sound design
 
-**Not programmed here** — it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage. Enter this figure on the Hapax, which drives it through `Cv out 3` and `gate out 3`.
+**Not programmed here** — it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage. Enter this figure on the Hapax, which drives it through `Cv out 2` and `gate out 2`.
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -416,9 +423,9 @@ How this box sets a note’s length is not established here, so the durations be
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
-### `clap` — TR-8S · HC
+### `clap` — Analog Rytm MKII · CP
 
-**Hand clap with a short room** — settings in Sound design
+**CP CLASSIC through the 1-pole highpass, backbeat at velocity 112 with an accent trig** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -427,10 +434,10 @@ How this box sets a note’s length is not established here, so the durations be
 ```
 - `backbeat` — 13
 
-**On this box** — TR-8S
+**On this box** — Analog Rytm MKII
 
-- `backbeat` → `accent` true on step 13
-  - ↳ hint: ACCENT [STEP], then pads
+- `backbeat` → `velocity` 112, `accent` true on step 13
+  - ↳ hint: Hold the note trig, press [BANK F]
 
 **Build, Breakdown** — 16 steps, band 1
 
@@ -439,10 +446,10 @@ How this box sets a note’s length is not established here, so the durations be
 ```
 - `backbeat` — 5, 13
 
-**On this box** — TR-8S
+**On this box** — Analog Rytm MKII
 
-- `backbeat` → `accent` true on steps 5, 13
-  - ↳ hint: ACCENT [STEP], then pads
+- `backbeat` → `velocity` 112, `accent` true on steps 5, 13
+  - ↳ hint: Hold the note trig, press [BANK F]
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -453,10 +460,10 @@ How this box sets a note’s length is not established here, so the durations be
 - `accent` — 13 (vel 112)
 - `fill` — 14, 15, 16
 
-**On this box** — TR-8S
+**On this box** — Analog Rytm MKII
 
-- `backbeat` → `accent` true on step 5
-  - ↳ hint: ACCENT [STEP], then pads
+- `backbeat` → `velocity` 112, `accent` true on step 5
+  - ↳ hint: Hold the note trig, press [BANK F]
 
 ### `closed-hat` — TR-6S · CH
 
@@ -533,9 +540,9 @@ How this box sets a note’s length is not established here, so the durations be
 - `downbeat` — 17
 - `last-hit` — 32
 
-### `open-hat` — TR-1000 · OH
+### `open-hat` — TR-8S · OH
 
-**Dull open hat, more air than sizzle** — settings in Sound design
+**Open hat with the top rolled off** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -544,22 +551,12 @@ How this box sets a note’s length is not established here, so the durations be
 ```
 - `offbeat` — 7
 
-**On this box** — TR-1000
-
-- `offbeat` → `weak` true on step 7
-  - ↳ hint: Hold [SHIFT], press step keys
-
 **Build, Breakdown** — 16 steps, band 1
 
 ```
  1 ··x· ···· ··x· ····
 ```
 - `offbeat` — 3, 11
-
-**On this box** — TR-1000
-
-- `offbeat` → `weak` true on steps 3, 11
-  - ↳ hint: Hold [SHIFT], press step keys
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -569,11 +566,6 @@ How this box sets a note’s length is not established here, so the durations be
 - `offbeat` — 3, 7, 11
 - `downbeat` — 13
 - `accent` — 15 (vel 106)
-
-**On this box** — TR-1000
-
-- `offbeat` → `weak` true on steps 3, 7, 11
-  - ↳ hint: Hold [SHIFT], press step keys
 
 ### `stab` — minilogue xd · Voice
 
@@ -844,49 +836,20 @@ Routing — Send the hi-hats to the FX bus: press SEND, use SELECT to light OPEN
   - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: Level against the other voices (p.10)
 
-### Cascadia
+### Analog Rytm MKII
 
-*Values below cite Intellijel Cascadia Manual v1.1.*
+*Values below cite Analog Rytm MKII User Manual OS 1.71.*
 
-#### Voice — `kick`: Sine kick: Envelope B dropped into VCO A pitch, filter bypassed to the amp
+#### CP — `clap`: CP CLASSIC through the 1-pole highpass, backbeat at velocity 112 with an accent trig
 
-Routing — played from MIDI IN or EXT IN PITCH/GATE — Cascadia has no sequencer of its own. Envelope B does the pitch drop, Envelope A the body
+*Ranges cite manual — Analog Rytm MKII User Manual OS 1.71, p.79.*
 
-- **VCO A · TZFM/EXP** `EXP`
-- **VCO A · AC/DC** `DC`
-- **VCO A · OCTAVE** `1` (0…7)
-  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.22
-- **VCO A · PITCH** `0` st (-6…6 st)
-  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.22
-- **VCO A · FM 1** `22` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ note: how far the pitch falls
-- **ENVELOPE B · MODE** `ENV`
-- **ENVELOPE B · TYPE** `AD`
-- **ENVELOPE B · RISE** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **ENVELOPE B · FALL** `12` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ note: the drop; longer is a boomier kick
-- **ENVELOPE A · SPEED** `FAST`
-- **ENVELOPE A · HOLD POSITION** `X`
-- **ENVELOPE A · ATTACK** `1` ms (0.2…1500 ms)
-  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.31
-- **ENVELOPE A · DECAY** `190` ms (0.6…2500 ms)
-  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.31
-- **ENVELOPE A · SUSTAIN** `0` V (0…5 V)
-  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.28
-- **MIXER · SUB** `58` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **MIXER · SUB TYPE** `SUB -1`
-- **MIXER · SOFT CLIP** `ON`
-
-**Patch**
-
-- `ENVELOPE B · ENV B` → `VCO A · FM 1`
-  - ↳ note: FM 1 has no normal, so this cable is the whole pitch drop
-- `VCF · LP4` → `VCA A · IN`
-  - ↳ note: breaks the VCF OUT normal — LP4 is always live whatever MODE says (p.49)
+- **MACHINE** `CP CLASSIC`
+  - ↳ note: Press [SRC] twice to change it
+- **TYP** `1-pole Highpass`
+- **HLD** `20` (1…127)
+  - ↳ note: AUTO, the other setting, hands the hold to how long the pad is held
+- **PAN** `0` (-64…63)
 
 ### minilogue xd
 
@@ -971,6 +934,63 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ hint: Hold SHIFT, flip to SELECT
 - **EFFECTS · DEPTH** `28` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
+
+### Grandmother
+
+*Values below cite Moog Grandmother User’s Manual (Version 2).*
+
+#### Voice — `kick`: Kick with the envelope cabled to Oscillator 1’s pitch
+
+Routing — Played from its own 32-note keyboard, from the arpeggiator or the 256-step sequencer, or over MIDI IN. Two cables: + ENV OUT to OSCILLATORS 1 PITCH IN for the drop — there is no normalled envelope-to-pitch route on this box — and KB VEL OUT to CUTOFF IN, without which p.30 says the accent is inaudible
+
+- **OSCILLATOR 1 OCTAVE** `32'`
+- **OSCILLATOR 1 WAVEFORM** `TRIANGLE`
+- **OSCILLATOR 2 OCTAVE** `16'`
+- **OSCILLATOR 2 WAVEFORM** `TRIANGLE`
+- **SYNC** `OFF`
+- **OSCILLATOR 2 FREQUENCY** `0` st (-7…7 st)
+  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.12
+  - ↳ hint: 12 o’clock is unison with Oscillator 1
+- **OSCILLATOR 1** `82` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Past 1 o’clock the mixer starts to overdrive
+- **OSCILLATOR 2** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **NOISE** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **CUTOFF** `120` Hz (10…20000 Hz)
+  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.16
+- **RESONANCE** `30` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Past 3 o’clock the ladder self-oscillates
+- **ENVELOPE AMT** `66` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: 12 o’clock is off; either way from there
+- **KBD TRACK** `OFF`
+- **ATTACK** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **DECAY** `14` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **SUSTAIN** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **RELEASE** `12` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCA MODE** `ENV`
+- **VOLUME** `78` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **MIX** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Fully clockwise is reverb only, no dry
+- **GLIDE** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+
+**Patch**
+
+- `ENVELOPE · + ENV OUT` → `OSCILLATORS · 1 PITCH IN`
+  - ↳ note: The pitch drop — a short DECAY makes it a click, a longer one a boom
+- `ARP/SEQ · KB VEL OUT` → `FILTER · CUTOFF IN` · manual
+  - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.30
+  - ↳ note: Makes a sequencer accent audible — the accent envelope only exists at this jack
 
 ### Minitaur
 
@@ -1153,23 +1173,6 @@ One setting for the whole pattern — set it once, not once per part below.
   - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
   - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
-#### OH — `open-hat`: Dull open hat, more air than sizzle
-
-*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
-
-- **GEN** `606 Open HiHat`
-  - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
-- **TUNE** `-18` % (-100…100 %)
-- **DECAY** `64` % (0…100 %)
-- **TONE** `-35` % (-100…100 %)
-  - ↳ hint: Brightness of the cymbal
-- **RVB SEND** `14` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
-  - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
-- **DLY SEND** `12` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
-  - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
-
 #### CC — `impact`: Crash marking the top of a section
 
 - **GEN** `9X Crash Cymbal`
@@ -1234,21 +1237,22 @@ One setting for the whole pattern — set it once, not once per part below.
   - ↳ note: Pattern-wide: one setting for the whole pattern, not per instrument
   - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
-#### HC — `clap`: Hand clap with a short room
+#### OH — `open-hat`: Open hat with the top rolled off
+
+Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
 
 *Ranges cite manual — TR-8S Reference Manual eng01, p.30.*
 
-- **TONE** `HC category`
-- **TUNE** `24` (-128…127)
+- **TONE** `OH category`
+- **TUNE** `-24` (-128…127)
+- **DECAY** `176` (0…255)
+- **INST FX TYPE** `LPF`
   - ↳ hint: Hold [SHIFT], press [INST]
-- **DECAY** `112` (0…255)
-- **INST FX TYPE** `H BOOST`
-  - ↳ hint: Hold [SHIFT], press [INST]
-- **H BOOST** `96` (0…255)
-  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.32
-- **REVERB SEND** `88` (0…255)
+- **LPF CUTOFF** `132` (0…255)
+  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.31
+- **REVERB SEND** `56` (0…255)
   - ↳ hint: INST Edit > ReverbSend
-- **DELAY SEND** `24` (0…255)
+- **DELAY SEND** `48` (0…255)
   - ↳ hint: INST Edit > DelaySend
 
 #### CC — `riser`: A sample played backwards into the change
@@ -1299,6 +1303,7 @@ What processes audio in this rig:
 - NEUTRON — carries DELAY on the panel
 - RD-8 — carries FX on the panel
 - RD-9 — carries FX on the panel
+- Analog Rytm MKII — carries FX on the panel
 - ZOIA Euroburo — is an effects unit (stereo main out · audio in)
 - Matriarch — carries effects, though no part in this guide reaches them
 - Muse — carries effects, though no part in this guide reaches them

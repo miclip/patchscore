@@ -493,8 +493,28 @@ import { TEMPLATES } from '../lib/templates/index'
  * role is what a device costs. Size the next one by asking which of its roles are already busy,
  * not by counting its recipes — this box authored nineteen and paid for two.
  *
- * Nothing caps. `industrial-techno` at 942,024 is 47.1% of the 2,000,000 `DEFAULT_NODE_CAP`, and
- * the headroom is 2.12x.
+ * **The Analog Rytm MKII took the two expensive directions down by half and by 85%**:
+ * `industrial-techno` 942,024 -> 506,335 and `weave` 203,556 -> 30,005, while the five small
+ * directions rose by a handful of nodes each. Adding a fortieth device made the sweep cheaper.
+ *
+ * Rows have fallen here before — the Tracker Mini's trim took `weave` down about 5% — but that was
+ * a sheet getting *smaller*. This is a device arriving, which has always cost something until now.
+ *
+ * That is the growth curve behaving as `DEFAULT_NODE_CAP`'s docstring says it does rather than a
+ * surprise: the cost is in the *bound*, and the bound is fed by how well the library matches what
+ * a direction asks for. This box answers `industrial-techno`'s drum requests on exact
+ * `(role, character)` keys — kick/hard, snare/hard, closed-hat/clean, clap/bright, rim/clean and
+ * three toms among them — so `liveFloor` returns a larger admissible value earlier and prunes
+ * strictly more. A recipe that matches is worth more to the search than a recipe that
+ * approximates, and this is twenty-one recipes on a box whose roles are the ones these two
+ * directions spend their branching on.
+ *
+ * `weave` falling by 85% is the same effect at its most visible, and it is the direction the
+ * MicroFreak barely moved — which is the other half of the standing warning that a figure
+ * averaged across this table hides what one direction does.
+ *
+ * Nothing caps. `industrial-techno` at 506,335 is 25.3% of the 2,000,000 `DEFAULT_NODE_CAP`, and
+ * the headroom is 3.95x — back above the 2x the constant was derived at, from 2.12x.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -503,34 +523,31 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      188, 190, 188, 193, 192, 189, 188, 190, 193, 189, 190, 188, 190, 192, 193, 188, 190, 193,
-      188, 190, 193, 190, 188, 193
+      194, 196, 194, 267, 199, 196, 194, 263, 199, 196, 196, 261, 196, 199, 199, 194, 264, 198, 262,
+      196, 198, 195, 194, 198
     ],
     'drone-study': [
-      29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-      29
+      30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30
     ],
     'industrial-techno': [
-      858219, 858218, 901540, 942024, 858219, 858219, 858219, 858219, 858219, 858219, 858219,
-      858219, 859781, 898698, 892417, 858219, 858219, 859733, 858218, 907844, 907845, 907844,
-      858219, 859733
+      432982, 438990, 434962, 437875, 440994, 432938, 506335, 434334, 437664, 431610, 431611,
+      434248, 436312, 431611, 439227, 434208, 431611, 441208, 475246, 486477, 431611, 437664,
+      432982, 434857
     ],
     'lydian-house': [
-      169, 283, 169, 170, 170, 284, 169, 283, 170, 282, 169, 283, 169, 170, 170, 282, 284, 170,
-      283, 169, 170, 169, 284, 170
+      173, 291, 173, 174, 174, 292, 173, 291, 174, 292, 173, 291, 173, 174, 174, 292, 292, 174, 289,
+      173, 174, 173, 292, 174
     ],
     'major-key-electro': [
-      182, 180, 181, 182, 179, 182, 181, 182, 181, 182, 177, 829, 181, 182, 182, 829, 182, 178,
-      179, 181, 182, 181, 182, 178
+      190, 188, 188, 190, 190, 185, 188, 190, 189, 187, 188, 187, 189, 190, 190, 184, 190, 189, 189,
+      189, 190, 189, 190, 186
     ],
     'relay': [
-      59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59,
-      59
+      59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59
     ],
     'weave': [
-      168836, 168836, 184216, 203556, 168861, 168836, 168836, 168836, 168836, 168836, 168861,
-      168836, 168836, 184216, 180244, 168836, 168836, 168836, 168836, 192148, 192148, 192172,
-      168836, 168836
+      231, 273, 4384, 479, 3625, 272, 30005, 231, 3622, 997, 4505, 227, 3625, 1019, 391, 227, 277,
+      292, 11789, 19386, 419, 3717, 203, 3454
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".
@@ -629,7 +646,13 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
    *  - **Under the floor** — something got cheaper. Good news and a stale comment: move the band
    *    down and keep the alarm's sensitivity.
    */
-  const WORST_CASE_NODES = 942_024
+  /**
+   * 506,335 since the Analog Rytm MKII, down from 942,024 — the "under the floor" case above,
+   * fired and answered. The band moves down with the measurement so the alarm keeps the
+   * sensitivity it was built with; leaving it at the old figure would mean a 46% rise went
+   * unnoticed.
+   */
+  const WORST_CASE_NODES = 506_335
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))

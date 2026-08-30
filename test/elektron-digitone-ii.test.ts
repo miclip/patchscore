@@ -68,6 +68,7 @@ describe('Digitone II manifest', () => {
     expect(device.kind).toBe('groovebox')
     const elektron = DEVICES.filter((d) => d.maker === 'Elektron').map((d) => [d.id, d.kind])
     expect(elektron).toEqual([
+      ['elektron-analog-rytm-mkii', 'drum-machine'],
       ['elektron-digitakt-ii', 'sampler'],
       ['elektron-digitone-ii', 'groovebox'],
     ])

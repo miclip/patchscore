@@ -1086,8 +1086,19 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    *
    * Four consecutive zeroes, across four devices that between them took the walk down, up, up while
    * moving which seed is worst, and up while moving it back off this one.
+   *
+   * **The Analog Rytm MKII halves both figures and the gap stays at zero — a fifth time.**
+   * 858,219 -> 431,610 unrepaired and 858,219 -> 431,610 repaired, -49.7% on each. This is the
+   * first device to take the walk *down*, and `search-bound.test.ts` records the same fall across
+   * the whole row: the direction's peak went 942,024 -> 506,335. A box whose recipes answer
+   * `industrial-techno`'s drum requests on exact `(role, character)` keys feeds `liveFloor` a
+   * larger admissible value earlier, so it prunes more — which is what the repair is for, arriving
+   * from the library rather than from the bound.
+   *
+   * Five consecutive zeroes now, across five devices that between them took the walk down, up, up,
+   * up, and down again by half.
    */
-  it('walks the recorded 858,219 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 431,610 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1095,7 +1106,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(858_219)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(431_610)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
