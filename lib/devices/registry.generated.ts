@@ -15,6 +15,7 @@ import { device as device_behringer_neutron } from './behringer-neutron/index'
 import { device as device_behringer_rd_8 } from './behringer-rd-8/index'
 import { device as device_behringer_rd_9 } from './behringer-rd-9/index'
 import { device as device_elektron_digitakt_ii } from './elektron-digitakt-ii/index'
+import { device as device_elektron_digitone_ii } from './elektron-digitone-ii/index'
 import { device as device_empress_zoia_euroburo } from './empress-zoia-euroburo/index'
 import { device as device_intellijel_cascadia } from './intellijel-cascadia/index'
 import { device as device_intellijel_metropolix } from './intellijel-metropolix/index'
@@ -56,6 +57,7 @@ export const DEVICES: readonly Device[] = [
   device_behringer_rd_8,
   device_behringer_rd_9,
   device_elektron_digitakt_ii,
+  device_elektron_digitone_ii,
   device_empress_zoia_euroburo,
   device_intellijel_cascadia,
   device_intellijel_metropolix,
@@ -98,6 +100,7 @@ export const DEVICE_FOLDERS: readonly string[] = [
   'behringer-rd-8',
   'behringer-rd-9',
   'elektron-digitakt-ii',
+  'elektron-digitone-ii',
   'empress-zoia-euroburo',
   'intellijel-cascadia',
   'intellijel-metropolix',

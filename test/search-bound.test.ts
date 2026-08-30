@@ -460,6 +460,41 @@ import { TEMPLATES } from '../lib/templates/index'
  *
  * Nothing caps. `industrial-techno` at 832,343 is 41.6% of the 2,000,000 `DEFAULT_NODE_CAP`, and
  * the headroom is 2.40x — the first device since the constant moved to give headroom *back*.
+ *
+ * ---
+ *
+ * **The Digitone II lifts every row, and two of its nineteen recipes carry two thirds of the bill.**
+ * One pool of sixteen tracks at polyphony 4, nineteen recipes over nineteen roles — one apiece.
+ *
+ *   - **`industrial-techno` 784,996-832,343 -> 858,218-942,024.** Floor up 9.3%, peak up 13.2%,
+ *     and the worst seed moves 9 -> 3. The MODEL D's row separated floor and peak; this one moves
+ *     them together, which is the ordinary shape.
+ *   - **`weave` 156,944-179,584 -> 168,836-203,556**, floor up 7.6% and peak up 13.3%, worst seed
+ *     9 -> 3 as well. The two large directions move as one, to within a tenth of a percent at the
+ *     peak.
+ *   - `ambient-dub` 182-187 -> 188-193, `lydian-house` 162-272 -> 169-284, `drone-study` 28 -> 29
+ *     and `relay` 57 -> 59: six nodes, twelve nodes, one node, two nodes. One more device at the
+ *     root and nothing else.
+ *   - **`major-key-electro` 171-319 -> 177-829 is the row worth stopping at.** The floor moves six
+ *     nodes and the peak goes up **2.6x**, and it relocates while it does: the spike was 317-319 on
+ *     seeds 12, 15 and 23, and is 829 on seeds 11 and 15 with 12 and 23 back down at 181 and 178.
+ *     A spike that moves *and* multiplies is new — the MODEL D's row relocated one without growing
+ *     it, and the SP-404MK2's grew one without moving it. It is still nine parts in ten thousand of
+ *     the sweep's worst case, and still not worth chasing.
+ *
+ * **The attribution is two recipes out of nineteen, and it repeats the Circuit Tracks' finding
+ * exactly.** Dropping only `kick` and `sub` from this manifest takes `industrial-techno` to
+ * 871,853 — so those two carry **64%** of the 109,681 nodes the device adds, and the other
+ * seventeen recipes carry the rest. Dropping `pad`, `stab`, `lead` and `arp` together takes it to
+ * 929,764: four recipes on four tonal roles cost 11%. `weave` says the same thing at its own
+ * scale.
+ *
+ * The library crowds `kick` and `sub` harder than anything else, and a new candidate on a crowded
+ * role is what a device costs. Size the next one by asking which of its roles are already busy,
+ * not by counting its recipes — this box authored nineteen and paid for two.
+ *
+ * Nothing caps. `industrial-techno` at 942,024 is 47.1% of the 2,000,000 `DEFAULT_NODE_CAP`, and
+ * the headroom is 2.12x.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -468,34 +503,34 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      182, 184, 182, 187, 186, 183, 182, 184, 187, 183, 184, 182, 184, 186, 187, 182, 184, 187,
-      182, 184, 187, 184, 182, 187
+      188, 190, 188, 193, 192, 189, 188, 190, 193, 189, 190, 188, 190, 192, 193, 188, 190, 193,
+      188, 190, 193, 190, 188, 193
     ],
     'drone-study': [
-      28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28,
-      28
+      29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+      29
     ],
     'industrial-techno': [
-      784996, 823960, 786489, 784997, 784996, 784997, 784997, 784997, 784997, 832343, 784998,
-      832342, 786485, 784997, 784996, 784996, 817643, 786489, 784997, 784996, 784997, 784996,
-      784997, 786487
+      858219, 858218, 901540, 942024, 858219, 858219, 858219, 858219, 858219, 858219, 858219,
+      858219, 859781, 898698, 892417, 858219, 858219, 859733, 858218, 907844, 907845, 907844,
+      858219, 859733
     ],
     'lydian-house': [
-      162, 271, 162, 163, 163, 272, 162, 271, 163, 270, 162, 271, 162, 163, 163, 270, 272, 163,
-      271, 162, 163, 162, 272, 163
+      169, 283, 169, 170, 170, 284, 169, 283, 170, 282, 169, 283, 169, 170, 170, 282, 284, 170,
+      283, 169, 170, 169, 284, 170
     ],
     'major-key-electro': [
-      171, 176, 175, 176, 174, 176, 175, 176, 175, 176, 176, 176, 317, 173, 173, 319, 176, 175,
-      176, 172, 176, 172, 176, 317
+      182, 180, 181, 182, 179, 182, 181, 182, 181, 182, 177, 829, 181, 182, 182, 829, 182, 178,
+      179, 181, 182, 181, 182, 178
     ],
     'relay': [
-      57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57,
-      57
+      59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59,
+      59
     ],
     'weave': [
-      156944, 171916, 156944, 156944, 156968, 156944, 156944, 156944, 156944, 179584, 156969,
-      179584, 156944, 156944, 156944, 156944, 168044, 156944, 156944, 156944, 156944, 156967,
-      156944, 156944
+      168836, 168836, 184216, 203556, 168861, 168836, 168836, 168836, 168836, 168836, 168861,
+      168836, 168836, 184216, 180244, 168836, 168836, 168836, 168836, 192148, 192148, 192172,
+      168836, 168836
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".
@@ -594,7 +629,7 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
    *  - **Under the floor** — something got cheaper. Good news and a stale comment: move the band
    *    down and keep the alarm's sensitivity.
    */
-  const WORST_CASE_NODES = 832_343
+  const WORST_CASE_NODES = 942_024
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))

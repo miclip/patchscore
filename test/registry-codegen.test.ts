@@ -323,6 +323,11 @@ describe('the committed registry', () => {
       // and the 276 is what its `panelRiseMm` carries.
       'roland-sp-404mk2',
       'elektron-digitakt-ii',
+      // **215 mm twice, and the tie that is a shared chassis rather than a coincidence.** The
+      // Digitone II's specification line (p.87) gives the same `W 215 × D 176` as its sibling's,
+      // and both panel figures measure to the same aspect to five decimal places. Stable sort
+      // keeps registry order, which is folder order, so the sampler precedes the synth.
+      'elektron-digitone-ii',
       // 222.3 mm — p.30's `8.75"`, the smallest of the Moogs by some way.
       'moog-minitaur',
       // 224 mm, and the closest pair in the list that is not a tie: one and seven tenths of a

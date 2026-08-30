@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → OP-XY · Track 1 — *Drum sampler kick, tight and forward*
+- **`kick`** → Cascadia · Voice — *Sine kick: Envelope B dropped into VCO A pitch, filter bypassed to the amp*
   - p1 · exact `hard` · every section
 - **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
@@ -89,10 +89,12 @@ None.
   - ↳ note: MIDI B, C and D have the same row and the same four options; set the one the cable is in.
   - ↳ cite: value manual — Hapax Manual (22 June 2026), p.132
 
-**Voice control** — Hapax sends the notes, 2 cables in all. Patch each pair before you play anything:
+**Voice control** — Hapax sends the notes, 4 cables in all. Patch each pair before you play anything:
 
-- pitch: Hapax `Cv out 2` → Minitaur `CONTROLLER INPUTS · PITCH CV`
-- gate: Hapax `gate out 2` → Minitaur `CONTROLLER INPUTS · GATE`
+- pitch: Hapax `Cv out 2` → Cascadia `EXT IN · PITCH`
+- gate: Hapax `gate out 2` → Cascadia `EXT IN · GATE`
+- pitch: Hapax `Cv out 3` → Minitaur `CONTROLLER INPUTS · PITCH CV`
+- gate: Hapax `gate out 3` → Minitaur `CONTROLLER INPUTS · GATE`
 
 - Why this box sends them — it is already the clock source, so the cables run from where the tempo does
 
@@ -142,14 +144,18 @@ None.
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
+- **Digitone II** — groovebox · 0 parts
+  - clock: sends clock · out: midi-din/usb/din-sync · in: midi-din/usb
+  - audio: stereo main out · USB audio · audio in
+  - mixer: no parts assigned; nothing to patch
 - **ZOIA Euroburo** — fx-processor · 0 parts
   - clock: receives clock only · analog-clock/midi-din
   - audio: stereo main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **Cascadia** — semi-modular · 0 parts
+- **Cascadia** — semi-modular · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: mono main out · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **Metropolix** — sequencer · 0 parts
   - clock: sends clock · usb/analog-clock
   - audio: no audio I/O
@@ -270,12 +276,12 @@ None.
     - ↳ cite: value manual — EP–40 riddim guide, /ep-40/tech-specs 16, mirrored 2026-08-28
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
-- **OP-XY** — groovebox · 1 part
+- **OP-XY** — groovebox · 0 parts
   - clock: sends clock · out: midi-din/usb/sync · in: midi-din/usb
   - midi in: 3.5 mm TRS. The manual does not state which TRS type this input is — it names type A only for the multi-out (p.111). Clock arrives here per p.88, which says midi clock is sent and received without saying the transport follows it. · manual
     - ↳ cite: value manual — OP-XY full guide v1.1.15, p.3
   - audio: stereo main out · USB audio · audio in
-  - mixer: 1 part, no individual outs: one stereo channel for all
+  - mixer: no parts assigned; nothing to patch
 - **T-1** — sequencer · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock/ableton-link
   - midi · in: 3.5 mm TRS Type A — Type B adapters are incompatible. Enable Clock under T1 Config > MIDI I/O > TRS > In to follow it. · manual
@@ -346,9 +352,11 @@ How this box sets a note’s length is not established here, so the durations be
 
 ## 5. Step programming
 
-### `kick` — OP-XY · Track 1
+### `kick` — Cascadia · Voice
 
-**Drum sampler kick, tight and forward** — settings in Sound design
+**Sine kick: Envelope B dropped into VCO A pitch, filter bypassed to the amp** — settings in Sound design
+
+**Not programmed here** — it has no sequencer, so it is played from whichever controller or sequencer is driving the rig. Enter this figure on the Hapax, which drives it through `Cv out 2` and `gate out 2`.
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -373,20 +381,11 @@ How this box sets a note’s length is not established here, so the durations be
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — OP-XY
-
-- `accent` → `velocity` 127 on step 9 · manual
-  - ↳ cite: value manual — OP-XY full guide v1.1.15, p.31
-  - ↳ hint: Hold [shift], velocity key, then a sharp
-- `ghost` → `velocity` 32 on steps 8, 16 · manual
-  - ↳ cite: value manual — OP-XY full guide v1.1.15, p.31
-  - ↳ hint: Hold [shift], velocity key, then a sharp
-
 ### `sub` — Minitaur · Voice
 
 **One oscillator under the filter, nothing above it** — settings in Sound design
 
-**Not programmed here** — it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage. Enter this figure on the Hapax, which drives it through `Cv out 2` and `gate out 2`.
+**Not programmed here** — it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage. Enter this figure on the Hapax, which drives it through `Cv out 3` and `gate out 3`.
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -845,6 +844,50 @@ Routing — Send the hi-hats to the FX bus: press SEND, use SELECT to light OPEN
   - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: Level against the other voices (p.10)
 
+### Cascadia
+
+*Values below cite Intellijel Cascadia Manual v1.1.*
+
+#### Voice — `kick`: Sine kick: Envelope B dropped into VCO A pitch, filter bypassed to the amp
+
+Routing — played from MIDI IN or EXT IN PITCH/GATE — Cascadia has no sequencer of its own. Envelope B does the pitch drop, Envelope A the body
+
+- **VCO A · TZFM/EXP** `EXP`
+- **VCO A · AC/DC** `DC`
+- **VCO A · OCTAVE** `1` (0…7)
+  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.22
+- **VCO A · PITCH** `0` st (-6…6 st)
+  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.22
+- **VCO A · FM 1** `22` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: how far the pitch falls
+- **ENVELOPE B · MODE** `ENV`
+- **ENVELOPE B · TYPE** `AD`
+- **ENVELOPE B · RISE** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **ENVELOPE B · FALL** `12` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: the drop; longer is a boomier kick
+- **ENVELOPE A · SPEED** `FAST`
+- **ENVELOPE A · HOLD POSITION** `X`
+- **ENVELOPE A · ATTACK** `1` ms (0.2…1500 ms)
+  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.31
+- **ENVELOPE A · DECAY** `190` ms (0.6…2500 ms)
+  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.31
+- **ENVELOPE A · SUSTAIN** `0` V (0…5 V)
+  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.28
+- **MIXER · SUB** `58` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **MIXER · SUB TYPE** `SUB -1`
+- **MIXER · SOFT CLIP** `ON`
+
+**Patch**
+
+- `ENVELOPE B · ENV B` → `VCO A · FM 1`
+  - ↳ note: FM 1 has no normal, so this cable is the whole pitch drop
+- `VCF · LP4` → `VCA A · IN`
+  - ↳ note: breaks the VCF OUT normal — LP4 is always live whatever MODE says (p.49)
+
 ### minilogue xd
 
 *Values below cite minilogue xd Owner's Manual E 9.*
@@ -1234,37 +1277,13 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
   - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
   - ↳ hint: INST Edit > DelaySend
 
-### OP-XY
-
-*Values below cite OP-XY full guide v1.1.15.*
-
-**Content**
-
-- Ships factory presets for every engine and category, and a factory projects folder — look in shift + a track button for presets, shift + projects for the folder. pp.52 and 37 say both exist, and the only screens that look like inventories reuse one set of seven names across all three browsers, so the Source line below says what the part needs rather than naming a file. · manual
-  - ↳ cite: claim manual — OP-XY full guide v1.1.15, p.52
-
-#### Track 1 — `kick`: Drum sampler kick, tight and forward
-
-Source — A short, dry kick one-shot with its weight low and no audible tail
-
-- Press [sample] from any screen; the white knob sets the record threshold and recording starts when the input crosses it (p.79). Maximum 20 seconds. · manual
-  - ↳ cite: value manual — OP-XY full guide v1.1.15, p.75
-  - ↳ hint: Press [sample], hold [M1] to record
-
-Routing — Percussion group — p.73: any percussive engine routes there automatically
-
-- **ENGINE** `drum sampler`
-  - ↳ hint: Hold [shift], press [M1]
-- **SAMPLE SOURCE** `audio input`
-  - ↳ hint: Press [sample], hold [M1] to record
-
 ## 7. Finishing
 
 **Sidechain**
 
-The MPC Live III, MPC One G2, MPC XL and Cascadia can duck to another box: patch the box you want each to follow into its audio in.
+The MPC Live III, MPC One G2, MPC XL, Digitone II and Cascadia can duck to another box: patch the box you want each to follow into its audio in.
 
-The MPC Live III, MPC One G2 and MPC XL can also duck from their own parts.
+The MPC Live III, MPC One G2, MPC XL and Digitone II can also duck from their own parts.
 
 The Circuit Tracks, TR-1000, TR-6S, TR-8S, Deluge, EP–133 K.O. II, EP–40 riddim and OP-XY duck from their own parts only.
 
