@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assign, moodState } from '../lib/core/index'
+import { DEFAULT_NODE_CAP, assign, moodState } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 
@@ -464,5 +464,57 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
       const recut = `      ${walked.join(', ')},`
       expect(walked, `${template.id} moved — the row is now\n${recut}`).toEqual([...row])
     }
-  }, 180_000)
+  }, 300_000)
+
+  /**
+   * §7.1/#159/#229. **The worst direction, and a band around it — read off the table above rather
+   * than swept for.**
+   *
+   * This assertion used to live in `test/search-symmetry.test.ts`, where it ran its own 168
+   * exhaustive searches over the whole registry to find one number. That was the same 168 searches
+   * the sweep above already walks, so the gate paid ~21M nodes twice for a figure the first run
+   * contains — and in August 2026 the duplication put three sweeps over their CI timeouts at once
+   * while every assertion passed, which is the least debuggable red there is. The history of what
+   * each device did to this number stays in that file; only the arithmetic moved here.
+   *
+   * **Deriving it is sound because the sweep above is what makes it sound.** `RECORDED` is not a
+   * remembered constant: the test above walks every direction and seed uncapped and fails on a
+   * single node's difference, so by the time this runs the table has been proven equal to the live
+   * search on this tree. Asserting over it is asserting over the search.
+   *
+   * The band, not the ceiling, is the point — `capped === false` passes at 1,999,999, which is how
+   * a cost problem stays invisible until it is catastrophic. Five percent either side fires while
+   * there is still somewhere to go.
+   *
+   *  - **Over the ceiling** — something got more expensive. Re-measure with
+   *    `npm run measure:search`, and read the near-clone paragraphs in `search-symmetry.test.ts`
+   *    before reaching for `DEFAULT_NODE_CAP`.
+   *  - **Under the floor** — something got cheaper. Good news and a stale comment: move the band
+   *    down and keep the alarm's sensitivity.
+   */
+  const WORST_CASE_NODES = 718_179
+  const WORST_CASE_MARGIN = 0.05
+  const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
+  const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))
+
+  it('keeps the worst direction inside the recorded band, and inside the cap', () => {
+    let worst = { nodes: -1, where: '' }
+    for (const [id, row] of Object.entries(RECORDED)) {
+      row.forEach((nodes, seed) => {
+        if (nodes > worst.nodes) worst = { nodes, where: `${id} seed ${seed}` }
+      })
+    }
+
+    const found = `worst case is ${worst.nodes} on ${worst.where}, recorded ${WORST_CASE_NODES}`
+    expect(worst.nodes, `${found} — over the recorded band`).toBeLessThanOrEqual(WORST_CASE_CEILING)
+    expect(worst.nodes, `${found} — under the recorded band`).toBeGreaterThanOrEqual(WORST_CASE_FLOOR)
+
+    /**
+     * And the reason the band exists at all. #228: a capped search returns a worse allocation, so
+     * the whole-catalogue figure approaching the cap is a correctness problem before it is a
+     * latency one. This is the catalogue rather than a rig anybody owns — `search-symmetry.test.ts`
+     * gates what a plausible rig costs, which is the number that decides whether a device may land.
+     */
+    expect(worst.nodes, found).toBeLessThan(DEFAULT_NODE_CAP)
+  })
 })

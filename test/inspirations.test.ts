@@ -839,10 +839,27 @@ describe('every effective template is schema-valid (§4, §7)', () => {
    * timing out per run, a different one each time, which is what a boundary looks like rather
    * than a bug.
    *
-   * Raised to 120s, which is headroom rather than a fix. The cause is #228: the same growth that
+   * Raised to 120s, which was headroom rather than a fix. The cause is #228: the same growth that
    * makes this slow will, further along, silently cap a reader's search and hand them a worse
-   * arrangement with nothing said. If this needs raising a third time, that is the signal to
-   * price a near-clone in the bound rather than to add another zero here.
+   * arrangement with nothing said. That third raise came due in August 2026 and was taken as the
+   * signal it was meant to be — see the budget note below, and the deleted sweep it points at.
+   */
+  /**
+   * **300s, and the number is not the fix — the fix was deleting a third of the gate.**
+   *
+   * This test's own note used to say that a third raise would be the signal to price the cost
+   * somewhere real rather than add another zero, and in August 2026 it came due: this sweep,
+   * `search-bound`'s and `search-symmetry`'s all blew their budgets in one CI run with every
+   * assertion passing. The answer was that two of the three were the same 168 exhaustive searches
+   * — see the note in `search-bound.test.ts` — so ~21M nodes came out of the gate for no loss of
+   * coverage, and `search-symmetry` went from 92s to 1.5s.
+   *
+   * What is left here is work nothing else does: 84 full-library resolves, one per (direction,
+   * legal selection), proving no selection strands a request. Measured at 68s on a fast laptop
+   * with the duplication gone. A CI runner sharing a core is two to three times slower, which is
+   * the whole span this budget has to cover, so 300s is headroom over the slowest observed rather
+   * than a guess — and a *fourth* raise means the resolve itself got dearer, which is a cost
+   * problem and not a scheduling one.
    */
   it('still resolves on the full library, for every template and every legal pair', async () => {
     for (const template of TEMPLATES) {
@@ -862,5 +879,5 @@ describe('every effective template is schema-valid (§4, §7)', () => {
         expect(resolved.shortfalls.map((g) => `${g.requestId}: ${g.reason}`), where).toEqual([])
       }
     }
-  }, 120_000)
+  }, 300_000)
 })
