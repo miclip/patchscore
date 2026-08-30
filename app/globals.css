@@ -2111,8 +2111,33 @@ button:active {
   color: var(--ink-dim);
   cursor: pointer;
   white-space: nowrap;
-  /* #21: a real hit target on a phone, without the label growing to match. */
-  min-height: 44px;
+}
+
+/*
+ * #21's 44px hit target, **where there are fingers**.
+ *
+ * It was unconditional, and on a desktop pointer it was buying nothing while costing 44px of
+ * height in a box only the Devices column has — which left the two picker panels visibly uneven
+ * beside each other, two thirds of the gap being this rule.
+ *
+ * `pointer: coarse` is the honest test: a touch screen or a stylus gets the target #21 asked for,
+ * a mouse gets the label's own height. Not a width query — a narrow window on a laptop is still
+ * a mouse, and a phone held sideways is still a finger.
+ */
+@media (pointer: coarse) {
+  .picker-multipart {
+    min-height: 44px;
+  }
+}
+
+/*
+ * §7.3. Greyed rather than gone. A control that vanishes cannot be told from one that was never
+ * built — reported as counting three filters and seeing two — so it stays put and says why it
+ * will not take.
+ */
+.picker-multipart.is-inert {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .picker-multipart input {
