@@ -6,7 +6,12 @@ import type {
   ResolveResult,
   VoiceControlSource,
 } from '@/lib/core'
-import { clockJackNotes, clockSourceBasis, clockSourceSetup, evidenceFor } from '@/lib/core'
+import {
+  clockBasisEvidence,
+  clockJackNotes,
+  clockSourceBasis,
+  clockSourceSetup,
+} from '@/lib/core'
 import { clockParts, count, ioText, list, mixerText, syncText } from './format'
 import { EvidenceMark, evidenceLines } from './instruction'
 
@@ -205,7 +210,8 @@ export function PhaseRig({
    * none, which is invariant 5 rather than a hole.
    */
   const preference =
-    sourceDevice === undefined ? undefined : evidenceFor(sourceDevice, 'clock.preferredSource')
+    // #200/#33. Nothing when the reader chose the box — see `clockBasisEvidence`.
+    clockBasisEvidence(source, sourceDevice)
 
   return (
     <>

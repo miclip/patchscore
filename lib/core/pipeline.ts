@@ -5,11 +5,19 @@ import type { Character, Role } from './vocabulary'
 import {
   canFollow,
   compatibleJackSignals,
+  evidenceFor,
   patternEntryNotice,
   realisationOf,
   sendTransports,
 } from './device'
-import type { Assignable, Device, JackSignalKind, JackSpec, Realisation } from './device'
+import type {
+  Assignable,
+  CapabilityEvidence,
+  Device,
+  JackSignalKind,
+  JackSpec,
+  Realisation,
+} from './device'
 import type { RoleRequest, Template } from './template'
 import type { ResolvedParam } from './params'
 import {
@@ -137,6 +145,40 @@ export function clockSourceBasis(source: ClockSource): ClockSourceBasis {
   if (source.chosen) return 'chosen'
   if (source.claims === 0) return 'tie-break'
   return source.claims === 1 ? 'claimed' : 'contested'
+}
+
+/**
+ * §7.4/#200/#33. **The evidence to print beside the basis, or nothing when the reader decided.**
+ *
+ * `clockSourceBasis` already says that a chosen box needs no justification, and both renderers
+ * already say "you chose it" and stop. What neither stopped doing was printing the box's
+ * `clock.preferredSource` evidence underneath it, which produced this:
+ *
+ *     Why this box — you chose it · undocumented
+ *       ↳ cite: undocumented — the guidebook never states what this box is for; p.253 hedges
+ *         to "can be a controller for external MIDI devices" ...
+ *
+ * The reader put that box in charge, and the guide answered by explaining at length that its
+ * manual never says the box is for that. It reads as the guide arguing with a decision it was
+ * told to take, and the paragraph is doing it in the most authoritative voice the document has.
+ *
+ * The evidence is not wrong and it is not useless — it is the honest answer to *"why did the
+ * guide pick this box"*, and every other basis still prints it. It is only the wrong answer to a
+ * question nobody asked. So the decision lives here, once, and each renderer keeps its own words
+ * (#33): ask for the evidence and render whatever comes back.
+ *
+ * A device page is where somebody who wants to know what this box's manual says about leading a
+ * rig should find it, and it says so there whether or not any guide chose the box.
+ */
+export function clockBasisEvidence(
+  source: ClockSource | undefined,
+  device: Device | undefined,
+): CapabilityEvidence | undefined {
+  // Both are optional because both renderers reach this with a rig that may have no clock source
+  // at all, and neither should have to spell that case out twice.
+  if (source === undefined || device === undefined) return undefined
+  if (clockSourceBasis(source) === 'chosen') return undefined
+  return evidenceFor(device, 'clock.preferredSource')
 }
 
 /**

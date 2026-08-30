@@ -30,6 +30,7 @@ import {
 } from './harmony'
 import {
   clockFollowing,
+  clockBasisEvidence,
   clockSourceBasis,
   songFindings,
   type ClockFollowing,
@@ -911,8 +912,9 @@ function phaseRig(
      * `claim`, not `value` — this citation is for what the box is *for*, and no reader dials it.
      */
     out.push('')
-    const preference =
-      sourceDevice === undefined ? undefined : evidenceFor(sourceDevice, 'clock.preferredSource')
+    // #200/#33. `undefined` when the reader chose the box: there is nothing to justify, and the
+    // evidence underneath used to argue with the choice. The decision is `clockBasisEvidence`'s.
+    const preference = clockBasisEvidence(source, sourceDevice)
     out.push(
       `- ${clockBasisText(source)}` +
         `${preference === undefined ? '' : evidenceMark(preference)}`,
