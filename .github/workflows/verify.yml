@@ -55,7 +55,21 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run verify
+      # A run whose every assertion passed can still exit non-zero: a worker's `onTaskUpdate`
+      # reply misses birpc's 60s deadline, the rejection is collected, and it surfaces as an
+      # unhandled error after all 2778 tests report green. It only happens on the two-core ubuntu
+      # runners, never on macOS and never locally. Tracked in #265 with the measurements.
+      #
+      # **A retry cannot hide a failing test here, and that is why it is allowed.** Invariant 6 is
+      # that the same inputs and seed give byte-identical output on any platform, so an assertion
+      # that fails once fails again; only a non-deterministic infrastructure fault passes the
+      # second time. The retry is announced as a warning rather than swallowed, so the frequency
+      # stays visible in the Actions UI instead of becoming background noise.
+      - name: Verify
+        run: |
+          npm run verify && exit 0
+          echo "::warning title=verify retried::First attempt failed. Re-running once; see #265."
+          npm run verify
 
       - name: Registry is not stale (§9, invariant 2)
         run: npm run check:registry

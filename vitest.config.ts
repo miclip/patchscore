@@ -74,5 +74,19 @@ export default defineConfig({
      * quick, so this is one line of divergence rather than a slower gate for everybody.
      */
     maxWorkers: process.env['CI'] ? 1 : undefined,
+
+    /**
+     * **The dot reporter on CI, because the main thread's other job is writing to a pipe.**
+     *
+     * With one worker, the thread that has to answer `onTaskUpdate` inside 60s is also the one
+     * rendering the reporter. The default reporter prints a line per file and per slow test, and
+     * on Actions stdout is a pipe whose reader is not always prompt; a blocked write is main-thread
+     * time that the RPC deadline is meanwhile spending. Dot output is a fraction of the bytes.
+     *
+     * Nothing is lost from a failure: `dot` still prints the full diff and stack for every failing
+     * test, and the run is deterministic (invariant 6), so a red run can be reproduced locally
+     * with the default reporter. What goes is the per-file chatter of a green run.
+     */
+    reporters: process.env['CI'] ? ['dot'] : ['default'],
   },
 })
