@@ -147,12 +147,23 @@ export function DevicePicker({
             </option>
           ))}
         </select>
-        {/*
-          §2.2/#86. A control rather than a search term. `Circuit Tracks` and `Tracker Mini` have
-          the word in their names, so typing "tracks" would return the two boxes called that
-          rather than the fourteen that have them — and the count is already on every row with no
-          way to ask for it.
-        */}
+      </div>
+
+      {/*
+        The two checkboxes, boxed and named. They were in the row above beside the search box and
+        the kind select, where four controls with no heading did not explain themselves — and
+        these two are the ones carrying the least obvious behaviour, since neither is a property
+        anybody can read off a device's name.
+
+        A `fieldset` and a real `legend`, so the grouping is in the document rather than only in
+        the paint: a screen reader announces it once on entering the group instead of each
+        checkbox restating the context in its own label.
+
+        The search box and the kind select stay out of it. They narrow by what a box *is*, which
+        is what a reader expects of a search row and needs no heading to explain.
+      */}
+      <fieldset className="picker-filters">
+        <legend>Show only</legend>
         {/*
           §7.3. Only shown when there is a gap to fill. A checkbox that can never narrow anything
           is a control teaching a reader the picker is broken — and with a rig that covers its
@@ -171,6 +182,12 @@ export function DevicePicker({
             Fills a gap
           </label>
         )}
+        {/*
+          §2.2/#86. A control rather than a search term. `Circuit Tracks` and `Tracker Mini` have
+          the word in their names, so typing "tracks" would return the two boxes called that
+          rather than the fourteen that have them — and the count is already on every row with no
+          way to ask for it.
+        */}
         <label className="picker-multipart" htmlFor={multiId}>
           <input
             id={multiId}
@@ -182,7 +199,16 @@ export function DevicePicker({
           />
           Several parts
         </label>
-      </div>
+        {/*
+          What the two mean, said once under them rather than in each label — a label long enough
+          to explain itself stops fitting the row, and #53 requires these to survive 390px.
+        */}
+        <p className="picker-filters-note">
+          {gaps.size === 0
+            ? 'Boxes that carry more than one part at a time.'
+            : 'Fills a gap — plays something this direction asks for and your rig cannot. Several parts — carries more than one part at a time.'}
+        </p>
+      </fieldset>
 
       {/*
         Said plainly rather than left as an empty box, and said only when it is true. A filter
