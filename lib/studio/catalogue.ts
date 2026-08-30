@@ -1,7 +1,7 @@
 import type { Device, DeviceKind, Template } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { TEMPLATES } from '@/lib/templates'
-import { ANY_KIND, deviceView, kindsPresent, templateView } from './picker'
+import { ANY_KIND, NO_DEVICE_FILTER, deviceView, kindsPresent, templateView } from './picker'
 import type { DeviceFilter, PickerView } from './picker'
 
 /**
@@ -79,7 +79,7 @@ export const DIRECTION_CATALOGUE: CatalogueSource<Template> = {
 }
 
 /** The filter a catalogue opens on: everything shown, nothing typed. */
-export const NO_CATALOGUE_FILTER: DeviceFilter = { query: '', kind: ANY_KIND }
+export const NO_CATALOGUE_FILTER: DeviceFilter = NO_DEVICE_FILTER
 
 /**
  * The count under the controls. While a search is running it reports what matched against the

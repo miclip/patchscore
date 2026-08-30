@@ -6,7 +6,9 @@ import type { Device, DeviceId } from '@/lib/core'
 import { expand } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceHref, deviceLabel } from '@/lib/studio/catalogue'
-import { ANY_KIND, deviceView, kindsPresent } from '@/lib/studio/picker'
+import { ANY_KIND, deviceView, kindsPresent,
+  NO_DEVICE_FILTER,
+} from '@/lib/studio/picker'
 import type { DeviceFilter } from '@/lib/studio/picker'
 import { patchbay } from '@/lib/studio/patchbay'
 import { PatchCables } from './patch-cables'
@@ -41,10 +43,11 @@ export type DevicePickerProps = {
 }
 
 export function DevicePicker({ selected, onToggle, clockSourceId }: DevicePickerProps) {
-  const [filter, setFilter] = useState<DeviceFilter>({ query: '', kind: ANY_KIND })
+  const [filter, setFilter] = useState<DeviceFilter>(NO_DEVICE_FILTER)
   const ids = useId()
   const searchId = `${ids}-search`
   const kindId = `${ids}-kind`
+  const multiId = `${ids}-multipart`
 
   const kinds = useMemo(() => kindsPresent(DEVICES), [])
   const shown = useMemo(() => deviceView(DEVICES, selected, filter), [selected, filter])
@@ -101,13 +104,13 @@ export function DevicePicker({ selected, onToggle, clockSourceId }: DevicePicker
       */}
       <div className="picker-controls">
         <label className="sr-only" htmlFor={searchId}>
-          Search devices by name, maker or kind
+          Search devices by name, maker, kind or the parts they can play
         </label>
         <input
           id={searchId}
           type="search"
           className="picker-search"
-          placeholder="Search name, maker, kind"
+          placeholder="Search name, maker, kind, part"
           value={filter.query}
           onChange={(event) => setFilter((current) => ({ ...current, query: event.target.value }))}
         />
@@ -129,6 +132,23 @@ export function DevicePicker({ selected, onToggle, clockSourceId }: DevicePicker
             </option>
           ))}
         </select>
+        {/*
+          §2.2/#86. A control rather than a search term. `Circuit Tracks` and `Tracker Mini` have
+          the word in their names, so typing "tracks" would return the two boxes called that
+          rather than the fourteen that have them — and the count is already on every row with no
+          way to ask for it.
+        */}
+        <label className="picker-multipart" htmlFor={multiId}>
+          <input
+            id={multiId}
+            type="checkbox"
+            checked={filter.multiPart}
+            onChange={(event) =>
+              setFilter((current) => ({ ...current, multiPart: event.target.checked }))
+            }
+          />
+          Several parts
+        </label>
       </div>
 
       {/*
