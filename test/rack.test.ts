@@ -80,7 +80,24 @@ const patchedRig = resolve({
   // the field thinned rather than moved: six seeds carry a patch now, none deeper than two, and
   // seeds 5, 18 and 23 tie at that depth. "The most patched" no longer picks one on its own, so
   // the tie goes to the lowest seed — seed 5, two entries on the Grandmother.
-  seed: 5,
+  //
+  // The Octatrack MKII then took seed 5's Grandmother assignment, and the field moved again
+  // rather than thinning. Swept over all twenty-four seeds, eight now carry a patch and the
+  // deepest is still two:
+  //
+  //     seed  2   2 entries   moog-grandmother
+  //     seed  3   2 entries   moog-grandmother
+  //     seed 10   2 entries   intellijel-cascadia
+  //     seed 19   2 entries   behringer-neutron
+  //     seed 21   2 entries   behringer-neutron
+  //     seed  6   1 entry     behringer-crave
+  //     seed 11   1 entry     behringer-crave
+  //     seed 12   1 entry     behringer-crave
+  //
+  // Five seeds tie at the maximum, so the same rule applies — the most patched, and the lowest
+  // seed among those — which lands on seed 2, two entries on the Grandmother. Seed 2 is where
+  // this pin started, before the RD-8 moved it off the Cascadia; it is a different box now.
+  seed: 2,
 })
 
 /**
@@ -1102,7 +1119,13 @@ describe('rack view', () => {
     // **48 with the Analog Rytm MKII**, whose 128 x 64 pixel OLED p.76 specifies the same way —
     // a resolution and no size — so its 78.5 x 55.4 mm is the drawn bezel measured off the p.10
     // front-panel figure, carrying the same caveat one more time.
-    expect(count('rack-screen')).toBe(48)
+    // **49 with the Octatrack MKII**, the third Elektron OLED in a row given a resolution and no
+    // size (p.116, "128 × 64 pixel OLED screen"). Its 74.0 x 56.1 mm is the drawn bezel again,
+    // and it is the one screen in the library carrying its panel's voice field for a reason
+    // other than being the biggest thing on the box: the eight [TRACK] keys are two columns
+    // flanking it, so no single rectangle covers them, and p.19 says this display lists the
+    // tracks anyway.
+    expect(count('rack-screen')).toBe(49)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -1140,7 +1163,10 @@ describe('rack view', () => {
     // 160: plus the MC-707's eight, one level fader per mixer strip on the 138.86 px pitch the
     // rest of that section is measured on. The first eight-at-once in this list, and the reason
     // the number moves by more than one for the first time since the Cascadia.
-    expect(count('rack-fader')).toBe(160)
+    // 161: plus the Octatrack MKII's crossfader, which is one fader drawn as its handle's travel
+    // rather than as its slot — p.12's drawing gives the slot 278.24 to 340.07 and stands the
+    // handle 120.81 to 142.28 across it, and the handle is the part that moves.
+    expect(count('rack-fader')).toBe(161)
     // 103: the TR-1000's sixteen step keys, the CRAVE's thirteen-note keyboard, and thirty-seven
     // each from the minilogue xd and the Subsequent 37 — twenty-two white in one grid and
     // fifteen black in six clusters, because a keyboard drawn as an even row of rectangles stops
@@ -1182,7 +1208,12 @@ describe('rack view', () => {
     // keybed — the pads are played as a keyboard in Note View but they are pads, and this census
     // counts the shape a panel draws rather than what a player does with it, which is the same
     // rule that put the MC-707's step row *in* the list.
-    expect(count('rack-key')).toBe(300)
+    // 316: plus the Octatrack MKII's sixteen [TRIG] keys, on the same rule as the MC-707's step
+    // row — a row of narrow rounded keys is what that panel draws, whatever is trigged with
+    // them. It is the second sixteen-at-once here, and the box's own silkscreen splits the row
+    // in half, `Track Trigs` under keys 1-8 and `Sample/MIDI Trigs` under 9-16, which is drawn
+    // as two labels rather than as two grids because the keys are one continuous row.
+    expect(count('rack-key')).toBe(316)
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
@@ -1257,7 +1288,17 @@ describe('rack view', () => {
     // tracks would leave four cells meaning nothing — and the four left over are steps 13-16,
     // which are not spare, they are the rest of the bar. The twelve pads map one to one, so the
     // field sits on them: 122.0 x 96.5 mm, the only field in this list that is three rows deep.
-    expect(fields).toHaveLength(34)
+    //
+    // **Thirty-five with the Octatrack MKII**, the third Elektron in a row and the third answer.
+    // Its eight [TRACK] keys are the track selectors, and they are the one selector in this list
+    // that *cannot* take the field: two columns of four flanking the display (p.12), so no single
+    // rectangle covers them without swallowing the screen between them. The field goes on the
+    // screen instead, which `PanelFeature` names outright — "draw the voice field on top of one
+    // to show a box whose screen lists its tracks" — and p.19 §5 item 1 says this one does,
+    // drawing a machine icon per track in two columns at the display's own edges, in line with
+    // the two key columns. The Tracker Mini reached the same place for the same reason. The keys
+    // are still drawn and still labelled T1-T8; they carry no readout.
+    expect(fields).toHaveLength(35)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

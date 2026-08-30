@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → Grandmother · Voice — *Kick with the envelope cabled to Oscillator 1’s pitch*
+- **`kick`** → SP-404MK2 · Pad 1 — *Kick one-shot, dry and untouched*
   - p1 · exact `hard` · every section
 - **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
@@ -82,7 +82,7 @@ None.
 
 **Clock source** — Hapax over `midi-din`, carrying 0 parts. Sync everything else to it, except MODEL D and Zoom LiveTrak L-8, which cannot receive clock and run free, and Model 2400, which cannot receive clock — a DAW drives its transport over HUI/MCU, and without one it runs free, and Metropolix and DFAM, which have no `midi-din` input and run free.
 
-- Why this box — 4 boxes here claim that job, so transport, then name, settled it · manual
+- Why this box — 5 boxes here claim that job, so transport, then name, settled it · manual
   - ↳ cite: claim manual — Hapax Manual (22 June 2026), p.130
 
 - On the Hapax, set `settings > sync output > MIDI A` to `CLOCK+TRANSPORT` · manual
@@ -152,6 +152,10 @@ None.
   - clock: sends clock · out: midi-din/usb/din-sync · in: midi-din/usb
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
+- **Octatrack MKII** — sampler · 0 parts
+  - clock: sends clock · midi-din
+  - audio: stereo main out · audio in
+  - mixer: no parts assigned; nothing to patch
 - **ZOIA Euroburo** — fx-processor · 0 parts
   - clock: receives clock only · analog-clock/midi-din
   - audio: stereo main out · audio in
@@ -172,14 +176,14 @@ None.
   - clock: sends clock · analog-clock
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **Grandmother** — semi-modular · 1 part
+- **Grandmother** — semi-modular · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per the Global Settings (p.37) · manual
     - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
   - MIDI OUT: Everything originating on this box, MIDI Clock included when the Global Setting sends it (p.37) · manual
     - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
   - audio: mono main out · audio in
-  - mixer: 1 part, no individual outs: one mono channel for all
+  - mixer: no parts assigned; nothing to patch
 - **Matriarch** — semi-modular · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per Global Setting 1.5 (p.64) · manual
@@ -230,12 +234,12 @@ None.
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · 2 individual outs · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
-- **SP-404MK2** — sampler · 0 parts
+- **SP-404MK2** — sampler · 1 part
   - clock: sends clock · out: midi-din · in: midi-din/usb
   - MIDI OUT, MIDI IN: 3.5mm stereo-mini, not 5-pin — Roland’s TRS/MIDI cable is the BMIDI-5-35 (p.14) · manual
     - ↳ cite: value manual — SP-404MK2 Reference Manual v4.00, p.14
   - audio: stereo main out · USB audio · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, no individual outs: one stereo channel for all
 - **TR-1000** — drum-machine · 1 part
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
@@ -356,9 +360,9 @@ How this box sets a note’s length is not established here, so the durations be
 
 ## 5. Step programming
 
-### `kick` — Grandmother · Voice
+### `kick` — SP-404MK2 · Pad 1
 
-**Kick with the envelope cabled to Oscillator 1’s pitch** — settings in Sound design
+**Kick one-shot, dry and untouched** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -367,12 +371,22 @@ How this box sets a note’s length is not established here, so the durations be
 ```
 - `downbeat` — 1, 9
 
+**On this box** — SP-404MK2
+
+- `downbeat` → `velocity` 120 on steps 1, 9
+  - ↳ hint: Hold [SUB PAD], press a pad
+
 **Build, Breakdown** — 16 steps, band 1
 
 ```
  1 x··· x··· x··· x···
 ```
 - `downbeat` — 1, 5, 9, 13
+
+**On this box** — SP-404MK2
+
+- `downbeat` → `velocity` 120 on steps 1, 5, 9, 13
+  - ↳ hint: Hold [SUB PAD], press a pad
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -383,10 +397,10 @@ How this box sets a note’s length is not established here, so the durations be
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — Grandmother
+**On this box** — SP-404MK2
 
-- `accent` → `accent` true on step 9
-  - ↳ hint: REC mode, then TAP adds an accent
+- `downbeat` → `velocity` 120 on steps 1, 5, 13
+  - ↳ hint: Hold [SUB PAD], press a pad
 
 ### `sub` — Minitaur · Voice
 
@@ -935,63 +949,6 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **EFFECTS · DEPTH** `28` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
 
-### Grandmother
-
-*Values below cite Moog Grandmother User’s Manual (Version 2).*
-
-#### Voice — `kick`: Kick with the envelope cabled to Oscillator 1’s pitch
-
-Routing — Played from its own 32-note keyboard, from the arpeggiator or the 256-step sequencer, or over MIDI IN. Two cables: + ENV OUT to OSCILLATORS 1 PITCH IN for the drop — there is no normalled envelope-to-pitch route on this box — and KB VEL OUT to CUTOFF IN, without which p.30 says the accent is inaudible
-
-- **OSCILLATOR 1 OCTAVE** `32'`
-- **OSCILLATOR 1 WAVEFORM** `TRIANGLE`
-- **OSCILLATOR 2 OCTAVE** `16'`
-- **OSCILLATOR 2 WAVEFORM** `TRIANGLE`
-- **SYNC** `OFF`
-- **OSCILLATOR 2 FREQUENCY** `0` st (-7…7 st)
-  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.12
-  - ↳ hint: 12 o’clock is unison with Oscillator 1
-- **OSCILLATOR 1** `82` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: Past 1 o’clock the mixer starts to overdrive
-- **OSCILLATOR 2** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **NOISE** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **CUTOFF** `120` Hz (10…20000 Hz)
-  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.16
-- **RESONANCE** `30` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: Past 3 o’clock the ladder self-oscillates
-- **ENVELOPE AMT** `66` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: 12 o’clock is off; either way from there
-- **KBD TRACK** `OFF`
-- **ATTACK** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **DECAY** `14` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **SUSTAIN** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **RELEASE** `12` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **VCA MODE** `ENV`
-- **VOLUME** `78` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-- **MIX** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ hint: Fully clockwise is reverb only, no dry
-- **GLIDE** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-
-**Patch**
-
-- `ENVELOPE · + ENV OUT` → `OSCILLATORS · 1 PITCH IN`
-  - ↳ note: The pitch drop — a short DECAY makes it a click, a longer one a boom
-- `ARP/SEQ · KB VEL OUT` → `FILTER · CUTOFF IN` · manual
-  - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.30
-  - ↳ note: Makes a sequencer accent audible — the accent envelope only exists at this jack
-
 ### Minitaur
 
 *Values below cite Moog Minitaur Manual.*
@@ -1159,6 +1116,51 @@ Routing — One VCO only — VCO 2 is down, so there is nothing to beat against 
 - **MOD 1 · DEST** `OSC 2 WAVE`
 - **MOD 1 · MOD AMT** `1` (-5…5)
   - ↳ cite: range manual — Subsequent 37 User's Manual, p.22
+
+### SP-404MK2
+
+*Values below cite SP-404MK2 Reference Manual v4.00.*
+
+**Content**
+
+- Ships preset samples — look in the pads themselves — p.26 says the unit powers up in sample mode with the pads lit orange, playing them. p.26 says they are there and no page in the manual lists or counts one of them, so the Source line below says what the part needs rather than naming a file. · manual
+  - ↳ cite: claim manual — SP-404MK2 Reference Manual v4.00, p.26
+
+**Pattern-wide**
+
+One setting for the whole pattern — set it once, not once per part below.
+
+- **SHUFFLE** `0` (-50…50)
+  - ↳ cite: range manual — SP-404MK2 Reference Manual v4.00, p.97
+  - ↳ note: Pattern-wide: one setting for the whole pattern, not per pad. 0 is straight
+  - ↳ hint: Press [REC], then [RECORD SETTING]
+
+#### Pad 1 — `kick`: Kick one-shot, dry and untouched
+
+Source — A kick one-shot with the transient intact and no room on it
+
+*Ranges cite manual — SP-404MK2 Reference Manual v4.00, p.77.*
+
+- **GATE MODE** `ONE-SHOT`
+  - ↳ note: Button blinking slowly — plays once to the end, and turns LOOP off by itself (p.31)
+  - ↳ hint: Hold [VALUE], press [GATE]
+- **LOOP** `OFF`
+  - ↳ note: Button dark — the sample plays from its beginning on each press
+  - ↳ hint: Press [LOOP]
+- **BUS** `DRY`
+  - ↳ note: Set per pad: hold [REMAIN] and press the pad until it lights for the bus you want
+  - ↳ hint: Hold [REMAIN], press the pad
+- **ATTACK** `0` (0…127)
+  - ↳ hint: Hold [SHIFT], press [PITCH/SPEED]
+- **HOLD** `100` % (1…100 %)
+  - ↳ note: A share of the sample’s whole length, not a time
+  - ↳ hint: Hold [SHIFT], press [PITCH/SPEED]
+- **RELEASE** `10` (0…127)
+  - ↳ hint: Hold [SHIFT], press [PITCH/SPEED]
+- **VOLUME** `118` (0…127)
+  - ↳ cite: range manual — SP-404MK2 Reference Manual v4.00, p.80
+  - ↳ hint: Press [PITCH/SPEED]
+- **FIXED VELOCITY** `Vel`
 
 ### TR-1000
 

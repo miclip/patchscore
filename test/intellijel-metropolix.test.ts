@@ -216,8 +216,11 @@ describe('Metropolix manifest', () => {
       // whose manual calls it "a perfect fit for the centre piece of a setup" (p.283). The other
       // eight carry a reasoned non-claim in `capabilityEvidence`, which is why the list is short
       // rather than because nobody looked. The T-1 is the fourth, on a documentation page that
-      // prints the job in a field labelled Role: "Sequencer and clock hub for hybrid rigs".
+      // prints the job in a field labelled Role: "Sequencer and clock hub for hybrid rigs". The
+      // Octatrack MKII is the fifth and the first with voices of its own, on §2.1.4 LIVE SETUP
+      // HUB (p.11) and §16.1's worked rig, where it drives two other machines (p.96).
       expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
+        'elektron-octatrack-mkii',
         'intellijel-metropolix',
         'polyend-tracker-mini',
         'squarp-hapax',

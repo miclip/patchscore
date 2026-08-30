@@ -383,6 +383,14 @@ describe('the committed registry', () => {
       // the order here is decided by the numbers, and a re-measurement could swap them without
       // any citation becoming wrong.
       'behringer-crave',
+      // **340 mm, and the entry whose rise this ordering cannot check.** Elektron print
+      // `W 340 × D 184 × H 63 mm ... (including knobs, jacks, and rubber feet)` (p.116), and the
+      // span is the safe half: a plan view of a width, with nothing protruding sideways. The
+      // depth is not — p.12's drawn panel is 1.93181 against 340/184's 1.848 — so `panel.ts`
+      // anchors the rise to the drawing at 176.00 mm and records the 8 mm as the parenthesis's
+      // own hardware. Sorting on the span alone is right here, and would have been wrong on the
+      // depth, which is the reverse of the EP-133's case above.
+      'elektron-octatrack-mkii',
       'intellijel-cascadia',
       // 355.6 mm — 70 HP, arithmetic on the MODEL D's own `Module width  70HP` rather than
       // on the 374 mm chassis line two rows above it, which is the same panel still wearing

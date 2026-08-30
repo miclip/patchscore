@@ -220,10 +220,14 @@ describe('T-1 manifest', () => {
       // the Hapax are level on both of the first two — both voiceless, both `midi-din` — so it
       // falls to `compareCodeUnits`, and `squarp-` sorts before `torso-`. Adding a fourth claim
       // must not silently move a rig's clock, and this is the assertion that it did not.
+      //
+      // A fifth has since landed and this still holds, which is the sharper version of the same
+      // check: the Octatrack MKII claims the job and sorts first by id, but it has eight voices,
+      // so #198's top key drops it below both voiceless boxes before id is ever consulted.
       const source = selectClockSource(DEVICES, new Map())
       expect(source?.deviceId).toBe(hapax.id)
       expect(source?.transport).toBe('midi-din')
-      expect(source?.claims).toBe(4)
+      expect(source?.claims).toBe(5)
       // Take the Hapax out and this box leads, which is what says it lost on the tie-break rather
       // than on the claim.
       expect(selectClockSource(DEVICES.filter((d) => d.id !== hapax.id), new Map())?.deviceId).toBe(

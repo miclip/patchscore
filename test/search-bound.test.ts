@@ -513,8 +513,33 @@ import { TEMPLATES } from '../lib/templates/index'
  * MicroFreak barely moved — which is the other half of the standing warning that a figure
  * averaged across this table hides what one direction does.
  *
- * Nothing caps. `industrial-techno` at 506,335 is 25.3% of the 2,000,000 `DEFAULT_NODE_CAP`, and
- * the headroom is 3.95x — back above the 2x the constant was derived at, from 2.12x.
+ * **The Octatrack MKII re-recorded all seven rows and moved two of them hard, in opposite
+ * directions.** It is the second sampler with a fungible pool and the first with only eight
+ * members, and the row-by-row shape is what this matrix is for — the total moved 2.3% and hid
+ * both of the interesting numbers:
+ *
+ *     drone-study           30 ->     31     one more device at the root
+ *     relay                 59 ->     61     two more, both root candidates
+ *     ambient-dub          267 ->    277     seed 3, its worst
+ *     lydian-house         292 ->    304     flat across the seeds that carry it
+ *     major-key-electro    190 ->  1,095     seed 4 alone; every other seed stays near 196
+ *     industrial-techno 506,335 -> 518,084   worst seed moves 6 -> 2
+ *     weave             30,005 ->  16,173    worst seed moves 6 -> 2, and seed 6 falls to 4,442
+ *
+ * `weave` nearly halving and `major-key-electro` going up 5.8x are the same mechanism read from
+ * both ends, and the Analog Rytm MKII's entry above explains it: a recipe that *matches* gives
+ * `liveFloor` a larger admissible value earlier and prunes strictly more, where a recipe that
+ * merely *approximates* is one more branch. This box brings eighteen recipes over eighteen roles
+ * with no two on the same role, so it is an exact answer to a great deal and the only good answer
+ * to almost nothing.
+ *
+ * `major-key-electro` seed 4 is the sharpest single-seed move in this file's history and it is
+ * one seed: the row's other twenty-three sit between 192 and 197, about seven nodes above where
+ * they were, which is the handful every small direction here paid. A figure averaged across that
+ * row would read 233 and say nothing about either half of it.
+ *
+ * Nothing caps. `industrial-techno` at 518,084 is 25.9% of the 2,000,000 `DEFAULT_NODE_CAP`, and
+ * the headroom is 3.86x — still above the 2x the constant was derived at, from 3.95x.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -523,31 +548,31 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      194, 196, 194, 267, 199, 196, 194, 263, 199, 196, 196, 261, 196, 199, 199, 194, 264, 198, 262,
-      196, 198, 195, 194, 198
+      201, 203, 201, 277, 206, 203, 201, 273, 206, 203, 203, 271, 203, 206, 206, 201, 274, 205, 272,
+      203, 205, 202, 201, 205
     ],
     'drone-study': [
-      30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30
+      31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31
     ],
     'industrial-techno': [
-      432982, 438990, 434962, 437875, 440994, 432938, 506335, 434334, 437664, 431610, 431611,
-      434248, 436312, 431611, 439227, 434208, 431611, 441208, 475246, 486477, 431611, 437664,
-      432982, 434857
+      469354, 475882, 518084, 474272, 477726, 469354, 474690, 470768, 474247, 467921, 467921,
+      470682, 472686, 467920, 475882, 470768, 493867, 477950, 467921, 498985, 467921, 474059,
+      469354, 471421
     ],
     'lydian-house': [
-      173, 291, 173, 174, 174, 292, 173, 291, 174, 292, 173, 291, 173, 174, 174, 292, 292, 174, 289,
-      173, 174, 173, 292, 174
+      180, 303, 180, 181, 181, 304, 180, 303, 181, 304, 180, 303, 180, 181, 181, 304, 304, 181, 301,
+      180, 181, 180, 304, 181
     ],
     'major-key-electro': [
-      190, 188, 188, 190, 190, 185, 188, 190, 189, 187, 188, 187, 189, 190, 190, 184, 190, 189, 189,
-      189, 190, 189, 190, 186
+      197, 197, 195, 192, 1095, 197, 194, 197, 196, 197, 194, 195, 194, 194, 197, 196, 197, 196,
+      197, 196, 197, 193, 197, 196
     ],
     'relay': [
-      59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59
+      61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61
     ],
     'weave': [
-      231, 273, 4384, 479, 3625, 272, 30005, 231, 3622, 997, 4505, 227, 3625, 1019, 391, 227, 277,
-      292, 11789, 19386, 419, 3717, 203, 3454
+      238, 285, 16173, 483, 3722, 285, 4442, 238, 3719, 1047, 4629, 234, 3641, 1025, 402, 238, 8219,
+      300, 301, 11700, 431, 3734, 209, 3628
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".

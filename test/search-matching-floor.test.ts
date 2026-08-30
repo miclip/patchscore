@@ -1097,8 +1097,19 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    *
    * Five consecutive zeroes now, across five devices that between them took the walk down, up, up,
    * up, and down again by half.
+   *
+   * **The Octatrack MKII takes it back up 8.4% and the gap stays at zero — a sixth time.**
+   * 431,610 -> 467,921 unrepaired and the same repaired. The interesting half is the comparison:
+   * `search-bound.test.ts` records the direction's peak moving only 506,335 -> 518,084, so this
+   * one seed got dearer by nearly four times what the row's maximum did — while still sitting at
+   * the *bottom* of that row, tied with seeds 10, 18 and 20 and a whisker above seed 13. A seed
+   * near its row's floor can move four times as far as the row's ceiling, which is the standing
+   * reminder in a sharper form than usual: one seed cannot stand in for the table.
+   *
+   * Six consecutive zeroes, across six devices that between them took the walk down, up, up, up,
+   * down by half, and up again.
    */
-  it('walks the recorded 431,610 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 467,921 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1106,7 +1117,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(431_610)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(467_921)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
