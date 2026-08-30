@@ -455,7 +455,7 @@ Source — A dry kick one-shot under 400 ms, attack intact and no room printed o
 
 - **PLAY MODE** `1-Shot`
 - **FILTER TYPE** `Low-pass`
-- **TUNE** `-3` St (-24…24 St)
+- **TUNE** `-3` st (-24…24 st)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.116
 - **CUTOFF** `74` % (0…100 %)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
@@ -499,7 +499,7 @@ Routing — Tracks 1-8 — costs no synth slot, and one loaded sample serves eve
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
 - **RESONANCE** `30` % (0…100 %)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
-- **TUNE** `0` St (-24…24 St)
+- **TUNE** `0` st (-24…24 st)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.116
 - **ENVELOPE · ATTACK** `0` Sec (0…10 Sec)
 - **ENVELOPE · DECAY** `0.3` Sec (0…10 Sec)
