@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { clockSourceBasis, decodeGuideInputs, encodeGuideInputs, moodState, resolve, renderGuide } from '../lib/core/index'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import {
+  clockBasisEvidence,
+  clockSourceBasis,
+  decodeGuideInputs,
+  encodeGuideInputs,
+  evidenceFor,
+  moodState,
+  renderGuide,
+  resolve,
+} from '../lib/core/index'
+import { Guide } from '../components/guide/guide'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 import { JackSpecSchema } from '../lib/core/device'
@@ -259,5 +271,70 @@ describe('a cited setting makes a configurable socket usable (#213)', () => {
       setup: [{ signal: 'gate' as const, path: 'Menu > Thing', value: 'Gate' }],
     }
     expect(JackSpecSchema.safeParse(jack).success).toBe(false)
+  })
+})
+
+/**
+ * §7.4/#200/#33. **A box the reader chose does not get argued with.**
+ *
+ * Reported from a real guide. The Deluge's manifest records `clock.preferredSource` as `unknown`
+ * with a long reason — its guidebook never states what the box is for, p.253 hedges, the
+ * architecture diagram is internal, and the follower case gets equal space. That is a good entry
+ * and the device page should keep showing it.
+ *
+ * What the guide printed, after the reader had put the Deluge in charge themselves:
+ *
+ *     - Why this box — you chose it · undocumented
+ *       ↳ cite: undocumented — the guidebook never states what this box is for; p.253 hedges ...
+ *
+ * The reader is told their own decision is undocumented, in the most authoritative voice the
+ * document has, at the greatest length of any line on the page. The evidence answers "why did the
+ * guide pick this box", which is a question nobody asked here.
+ */
+describe('a chosen clock source is not justified against its own manifest (#200)', () => {
+  const industrial = TEMPLATES.find((t) => t.id === 'industrial-techno')!
+  const base = { devices: [...DEVICES], template: industrial, mood: moodState({}), seed: 3 }
+  // A box whose `clock.preferredSource` is `unknown`, so there *is* something to suppress.
+  const CHOSEN = 'synthstrom-deluge'
+
+  it('has a box in the library this can actually be tested with', () => {
+    // If every manifest gains a citation here the test above stops testing anything, and it
+    // should say so rather than pass on an empty premise.
+    const device = DEVICES.find((d) => d.id === CHOSEN)!
+    expect(evidenceFor(device, 'clock.preferredSource')).toMatchObject({ kind: 'unknown' })
+  })
+
+  it('says the reader chose it, and stops', () => {
+    const chosen = resolve({ ...base, overrides: { clockSourceId: CHOSEN } })
+    expect(chosen.clockSource?.chosen).toBe(true)
+    const md = renderGuide(chosen)
+    expect(md).toContain('Why this box — you chose it')
+    // The mark and the paragraph both go, not just the paragraph.
+    expect(md).not.toContain('you chose it · undocumented')
+    expect(md).not.toContain('undocumented — the guidebook never states what this box is for')
+  })
+
+  it('still explains a box the reader did not choose', () => {
+    // The other half of the claim: this suppresses an answer to a question nobody asked, and
+    // must not delete the answer when somebody did ask it.
+    const derived = resolve({ ...base, devices: DEVICES.filter((d) => d.id === CHOSEN) })
+    expect(derived.clockSource?.chosen).toBe(false)
+    const md = renderGuide(derived)
+    expect(md).toContain('Why this box')
+    expect(md).toContain('undocumented')
+  })
+
+  it('decides it once, so both renderers agree (#33)', () => {
+    // The decision is `clockBasisEvidence`; the wording is each renderer's own.
+    const chosen = resolve({ ...base, overrides: { clockSourceId: CHOSEN } })
+    const device = DEVICES.find((d) => d.id === CHOSEN)!
+    expect(clockBasisEvidence(chosen.clockSource, device)).toBeUndefined()
+
+    const derived = resolve({ ...base, devices: DEVICES.filter((d) => d.id === CHOSEN) })
+    expect(clockBasisEvidence(derived.clockSource, device)).toMatchObject({ kind: 'unknown' })
+
+    const html = renderToStaticMarkup(createElement(Guide, { result: chosen, seed: 3 }))
+    expect(html).toContain('you chose it')
+    expect(html).not.toContain('the guidebook never states what this box is for')
   })
 })
