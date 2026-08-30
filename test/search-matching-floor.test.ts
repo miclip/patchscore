@@ -1108,8 +1108,21 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    *
    * Six consecutive zeroes, across six devices that between them took the walk down, up, up, up,
    * down by half, and up again.
+   *
+   * **The Digitone takes it up another 8.4% and the gap stays at zero — a seventh time.**
+   * 467,921 -> 507,297 unrepaired and the same repaired. The comparison inverts the last entry
+   * rather than repeating it: `search-bound.test.ts` records the direction's peak moving 518,084
+   * -> 566,355, which is 9.3%, so this time the one seed moved slightly *less* than the row's
+   * maximum instead of nearly four times as much. Same standing lesson from the other side — the
+   * relationship between a seed and its row is not stable either, so a fixture pinned to one seed
+   * is a walk being watched rather than a summary of the table.
+   *
+   * The peak also moved again, seed 2 -> seed 4, while this seed stayed near the row's floor.
+   *
+   * Seven consecutive zeroes, across seven devices that between them took the walk down, up, up,
+   * up, down by half, up, and up.
    */
-  it('walks the recorded 467,921 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 507,297 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1117,7 +1130,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(467_921)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(507_297)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement

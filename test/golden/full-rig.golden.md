@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → SP-404MK2 · Pad 1 — *Kick one-shot, dry and untouched*
+- **`kick`** → MPC Live III · Mono Track 1 — *DrumSynth Kick, transient forward and the low band lifted*
   - p1 · exact `hard` · every section
 - **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
@@ -96,10 +96,10 @@ None.
 
 - Why this box sends them — it is already the clock source, so the cables run from where the tempo does
 
-- **MPC Live III** — groovebox · 0 parts
+- **MPC Live III** — groovebox · 1 part
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · 4 individual outs · USB audio · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, 4 individual outs: one channel each
 - **MPC One G2** — groovebox · 0 parts
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · USB audio · audio in
@@ -146,6 +146,10 @@ None.
   - mixer: 1 part, 8 individual outs: one channel each
 - **Digitakt II** — sampler · 0 parts
   - clock: sends clock · midi-din/usb
+  - audio: stereo main out · USB audio · audio in
+  - mixer: no parts assigned; nothing to patch
+- **Digitone** — groovebox · 0 parts
+  - clock: sends clock · out: midi-din/usb/din-sync · in: midi-din/usb
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
 - **Digitone II** — groovebox · 0 parts
@@ -234,12 +238,12 @@ None.
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · 2 individual outs · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
-- **SP-404MK2** — sampler · 1 part
+- **SP-404MK2** — sampler · 0 parts
   - clock: sends clock · out: midi-din · in: midi-din/usb
   - MIDI OUT, MIDI IN: 3.5mm stereo-mini, not 5-pin — Roland’s TRS/MIDI cable is the BMIDI-5-35 (p.14) · manual
     - ↳ cite: value manual — SP-404MK2 Reference Manual v4.00, p.14
   - audio: stereo main out · USB audio · audio in
-  - mixer: 1 part, no individual outs: one stereo channel for all
+  - mixer: no parts assigned; nothing to patch
 - **TR-1000** — drum-machine · 1 part
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
@@ -360,9 +364,9 @@ How this box sets a note’s length is not established here, so the durations be
 
 ## 5. Step programming
 
-### `kick` — SP-404MK2 · Pad 1
+### `kick` — MPC Live III · Mono Track 1
 
-**Kick one-shot, dry and untouched** — settings in Sound design
+**DrumSynth Kick, transient forward and the low band lifted** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -371,10 +375,10 @@ How this box sets a note’s length is not established here, so the durations be
 ```
 - `downbeat` — 1, 9
 
-**On this box** — SP-404MK2
+**On this box** — MPC Live III
 
 - `downbeat` → `velocity` 120 on steps 1, 9
-  - ↳ hint: Hold [SUB PAD], press a pad
+  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
 
 **Build, Breakdown** — 16 steps, band 1
 
@@ -383,10 +387,10 @@ How this box sets a note’s length is not established here, so the durations be
 ```
 - `downbeat` — 1, 5, 9, 13
 
-**On this box** — SP-404MK2
+**On this box** — MPC Live III
 
 - `downbeat` → `velocity` 120 on steps 1, 5, 9, 13
-  - ↳ hint: Hold [SUB PAD], press a pad
+  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -397,10 +401,10 @@ How this box sets a note’s length is not established here, so the durations be
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — SP-404MK2
+**On this box** — MPC Live III
 
 - `downbeat` → `velocity` 120 on steps 1, 5, 13
-  - ↳ hint: Hold [SUB PAD], press a pad
+  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
 
 ### `sub` — Minitaur · Voice
 
@@ -651,6 +655,36 @@ How this box sets a note’s length is not established here, so the durations be
 - `accent` — 31 (vel 104)
 
 ## 6. Sound design
+
+### MPC Live III
+
+*Values below cite MPC Live III / MPC XL User Guide v3.7.*
+
+#### Mono Track 1 — `kick`: DrumSynth Kick, transient forward and the low band lifted
+
+*Ranges cite manual — MPC Live III / MPC XL User Guide v3.7, p.432.*
+
+- **Track Type** `Plugin`
+- **Plugin** `DrumSynth`
+- **Drum Type** `Kick`
+  - ↳ note: One DrumSynth instrument per plugin track
+- **Velocity** `30` % (0…100 %)
+  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
+- **Gain** `-2` dB (-68…12 dB)
+  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
+  - ↳ note: p.431 prints "-Inf, -68.0 – 0 – +12.0 dB"; -Inf is a setting below the range, not part of it
+- **Transient Attack** `45` % (-100…100 %)
+- **Distortion Drive** `6` dB (0…60 dB)
+- **Distortion Mix** `25` % (0…100 %)
+- **EQ Low Freq** `58` Hz (20…1000 Hz)
+- **EQ Low Gain** `3.5` dB (-12…12 dB)
+  - ↳ note: A `Cut` setting sits below the numeric range on the same page
+- **EQ High Gain** `-1.5` dB (-12…12 dB)
+- **Comp Ratio** `4` (1…100)
+  - ↳ note: p.432 prints the range as 1.0:1 - 100.0:1; this is the left-hand number
+- **Comp Attack** `8` ms (0.1…300 ms)
+  - ↳ note: p.432 prints the low end as 100 us
+- **Comp Threshold** `-14` dB (-60…0 dB)
 
 ### MicroFreak
 
@@ -1116,51 +1150,6 @@ Routing — One VCO only — VCO 2 is down, so there is nothing to beat against 
 - **MOD 1 · DEST** `OSC 2 WAVE`
 - **MOD 1 · MOD AMT** `1` (-5…5)
   - ↳ cite: range manual — Subsequent 37 User's Manual, p.22
-
-### SP-404MK2
-
-*Values below cite SP-404MK2 Reference Manual v4.00.*
-
-**Content**
-
-- Ships preset samples — look in the pads themselves — p.26 says the unit powers up in sample mode with the pads lit orange, playing them. p.26 says they are there and no page in the manual lists or counts one of them, so the Source line below says what the part needs rather than naming a file. · manual
-  - ↳ cite: claim manual — SP-404MK2 Reference Manual v4.00, p.26
-
-**Pattern-wide**
-
-One setting for the whole pattern — set it once, not once per part below.
-
-- **SHUFFLE** `0` (-50…50)
-  - ↳ cite: range manual — SP-404MK2 Reference Manual v4.00, p.97
-  - ↳ note: Pattern-wide: one setting for the whole pattern, not per pad. 0 is straight
-  - ↳ hint: Press [REC], then [RECORD SETTING]
-
-#### Pad 1 — `kick`: Kick one-shot, dry and untouched
-
-Source — A kick one-shot with the transient intact and no room on it
-
-*Ranges cite manual — SP-404MK2 Reference Manual v4.00, p.77.*
-
-- **GATE MODE** `ONE-SHOT`
-  - ↳ note: Button blinking slowly — plays once to the end, and turns LOOP off by itself (p.31)
-  - ↳ hint: Hold [VALUE], press [GATE]
-- **LOOP** `OFF`
-  - ↳ note: Button dark — the sample plays from its beginning on each press
-  - ↳ hint: Press [LOOP]
-- **BUS** `DRY`
-  - ↳ note: Set per pad: hold [REMAIN] and press the pad until it lights for the bus you want
-  - ↳ hint: Hold [REMAIN], press the pad
-- **ATTACK** `0` (0…127)
-  - ↳ hint: Hold [SHIFT], press [PITCH/SPEED]
-- **HOLD** `100` % (1…100 %)
-  - ↳ note: A share of the sample’s whole length, not a time
-  - ↳ hint: Hold [SHIFT], press [PITCH/SPEED]
-- **RELEASE** `10` (0…127)
-  - ↳ hint: Hold [SHIFT], press [PITCH/SPEED]
-- **VOLUME** `118` (0…127)
-  - ↳ cite: range manual — SP-404MK2 Reference Manual v4.00, p.80
-  - ↳ hint: Press [PITCH/SPEED]
-- **FIXED VELOCITY** `Vel`
 
 ### TR-1000
 

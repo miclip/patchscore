@@ -548,31 +548,31 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      201, 203, 201, 277, 206, 203, 201, 273, 206, 203, 203, 271, 203, 206, 206, 201, 274, 205, 272,
-      203, 205, 202, 201, 205
+      209, 211, 209, 289, 214, 211, 209, 285, 214, 211, 211, 283, 211, 214, 214, 209, 286, 213, 284,
+      211, 213, 210, 209, 213
     ],
     'drone-study': [
-      31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31
+      32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32
     ],
     'industrial-techno': [
-      469354, 475882, 518084, 474272, 477726, 469354, 474690, 470768, 474247, 467921, 467921,
-      470682, 472686, 467920, 475882, 470768, 493867, 477950, 467921, 498985, 467921, 474059,
-      469354, 471421
+      508793, 540918, 540497, 514130, 566355, 535770, 514575, 510183, 513898, 507297, 532630,
+      510269, 512422, 507296, 515606, 510269, 507297, 517762, 507297, 514575, 507297, 513898,
+      508793, 510948
     ],
     'lydian-house': [
-      180, 303, 180, 181, 181, 304, 180, 303, 181, 304, 180, 303, 180, 181, 181, 304, 304, 181, 301,
-      180, 181, 180, 304, 181
+      186, 313, 186, 187, 187, 314, 186, 313, 187, 314, 186, 313, 186, 187, 187, 314, 314, 187, 311,
+      186, 187, 186, 314, 187
     ],
     'major-key-electro': [
-      197, 197, 195, 192, 1095, 197, 194, 197, 196, 197, 194, 195, 194, 194, 197, 196, 197, 196,
-      197, 196, 197, 193, 197, 196
+      1140, 202, 202, 203, 203, 203, 202, 200, 202, 203, 203, 203, 202, 200, 203, 202, 203, 202,
+      203, 1138, 203, 202, 203, 202
     ],
     'relay': [
-      61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61
+      63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63
     ],
     'weave': [
-      238, 285, 16173, 483, 3722, 285, 4442, 238, 3719, 1047, 4629, 234, 3641, 1025, 402, 238, 8219,
-      300, 301, 11700, 431, 3734, 209, 3628
+      247, 8579, 12970, 512, 16315, 8567, 4729, 243, 3872, 1090, 13233, 247, 3875, 1068, 418, 247,
+      296, 312, 313, 4008, 448, 3974, 217, 3777
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".
@@ -672,12 +672,14 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
    *    down and keep the alarm's sensitivity.
    */
   /**
-   * 506,335 since the Analog Rytm MKII, down from 942,024 — the "under the floor" case above,
-   * fired and answered. The band moves down with the measurement so the alarm keeps the
-   * sensitivity it was built with; leaving it at the old figure would mean a 46% rise went
-   * unnoticed.
+   * 566,355 since the Digitone, up from 506,335 — the "over the ceiling" case above, fired and
+   * answered by re-measuring rather than by widening the margin. `npm run measure:search` reads
+   * 566,355 on `industrial-techno` seed 4, against 518,084 on seed 2 before it: a 9.3% rise for
+   * a device that adds four assignables carrying twenty-two roles, and headroom of 3.53x against
+   * the cap where it was 3.86x. Nothing capped, so the band is tracking a real move rather than
+   * covering for a cost problem.
    */
-  const WORST_CASE_NODES = 506_335
+  const WORST_CASE_NODES = 566_355
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))

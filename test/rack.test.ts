@@ -97,7 +97,20 @@ const patchedRig = resolve({
   // Five seeds tie at the maximum, so the same rule applies — the most patched, and the lowest
   // seed among those — which lands on seed 2, two entries on the Grandmother. Seed 2 is where
   // this pin started, before the RD-8 moved it off the Cascadia; it is a different box now.
-  seed: 2,
+  //
+  // The Digitone then thinned the field harder than any single device before it. It is four
+  // fungible synth tracks that carry twenty-two roles between them, so it takes work off the
+  // one-voice semi-modulars wherever the objective is otherwise indifferent — and those are
+  // exactly the boxes whose recipes are patch lists. Three seeds carry a patch now, where eight
+  // did:
+  //
+  //     seed  7   2 entries   intellijel-cascadia
+  //     seed 13   2 entries   intellijel-cascadia
+  //     seed  5   1 entry     behringer-model-d
+  //
+  // Same rule, unchanged: the most patched, lowest seed among the tie — seed 7, two entries on
+  // the Cascadia.
+  seed: 7,
 })
 
 /**
@@ -233,7 +246,12 @@ describe('rack geometry (§10)', () => {
     // to 1.2215 against the specification's 1.22159 — not two readings that happen to land close,
     // but the same steel case with a different engine inside it. Like the Eurorack pair above, this
     // one will not separate however carefully either is re-measured.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 8)
+    //
+    // **The ninth is the same enclosure a third time.** The Digitone's p.88 prints `W 215 × D 176
+    // × H 63 mm` character for character with its successor's, and its own panel figure measures
+    // 1017 x 832 px = 1.22236. Elektron shipped the Digitone, the Digitakt II and the Digitone II
+    // in one case; three devices, one rise.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 9)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -1125,7 +1143,7 @@ describe('rack view', () => {
     // other than being the biggest thing on the box: the eight [TRACK] keys are two columns
     // flanking it, so no single rectangle covers them, and p.19 says this display lists the
     // tracks anyway.
-    expect(count('rack-screen')).toBe(49)
+    expect(count('rack-screen')).toBe(50)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -1213,7 +1231,12 @@ describe('rack view', () => {
     // them. It is the second sixteen-at-once here, and the box's own silkscreen splits the row
     // in half, `Track Trigs` under keys 1-8 and `Sample/MIDI Trigs` under 9-16, which is drawn
     // as two labels rather than as two grids because the keys are one continuous row.
-    expect(count('rack-key')).toBe(316)
+    // 332: plus the Digitone's sixteen, drawn 8 x 2 rather than 16 x 1 because that is how its
+    // p.12 figure lays them out — two stacked rows of eight inside one bordered block. Same rule
+    // again: narrow rounded keys are what the panel draws. Note the sixteen next to them on that
+    // box are *not* here — the four [T1-T4] track keys are the `voices` field, so they are drawn
+    // by the resolver's census rather than by this one.
+    expect(count('rack-key')).toBe(332)
     expect(count('rack-knob')).toBeGreaterThan(50)
     expect(count('rack-pad')).toBeGreaterThan(50)
 
@@ -1298,7 +1321,14 @@ describe('rack view', () => {
     // drawing a machine icon per track in two columns at the display's own edges, in line with
     // the two key columns. The Tracker Mini reached the same place for the same reason. The keys
     // are still drawn and still labelled T1-T8; they carry no readout.
-    expect(fields).toHaveLength(35)
+    //
+    // **Thirty-six with the Digitone**, the fourth Elektron and the fourth answer — and the one
+    // that is easiest to get wrong by looking at its successor. Its [TRIG] keys are *not* the
+    // track selectors: p.13 item 11 gives it four dedicated [TRACK] keys instead, drawn 2 x 2 in
+    // their own bordered block at the bottom right, so the field goes there and the sixteen
+    // [TRIG] keys stay a plain grid. It is also the smallest field in this list at four cells,
+    // because the pool below it is four synth tracks rather than sixteen.
+    expect(fields).toHaveLength(36)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

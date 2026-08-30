@@ -176,7 +176,7 @@ describe('two notes are one assignable, and the line is drawn at three', () => {
     expect(device.voices).toHaveLength(1)
   })
 
-  it('is one of the two two-note voices in the library', () => {
+  it('is one of the two-note voices, and the only one that narrows into it', () => {
     // Every other polyphony in the registry is 1, 4 or 8. This is the middle value that tests
     // whether the field means notes-within-a-role rather than roles-at-once.
     //
@@ -185,8 +185,20 @@ describe('two notes are one assignable, and the line is drawn at three', () => {
     // Behringer gets there by having exactly two oscillators and a PARAPHONIC switch that lets
     // them take a note each (p.14). Two routes to the same number, and the field means the same
     // thing on both: notes inside one part, never two parts.
+    //
+    // **The Digitone's four are a third route, and they are not a claim about a part at all.**
+    // That box has eight voices shared across four tracks (p.37), and `polyphony` is per
+    // assignable with no way to say "these four draw on one budget", so its manifest divides
+    // eight by four and declares the quotient. The number is arithmetic on a pool rather than a
+    // reading of what one voice does, which is why this assertion still names the two boxes that
+    // reached 2 by reading one.
     const twos = DEVICES.flatMap((d) => expand(d)).filter((a) => a.polyphony === 2)
-    expect(twos.map((a) => a.deviceId)).toEqual(['behringer-neutron', 'moog-subsequent-37'])
+    expect([...new Set(twos.map((a) => a.deviceId))]).toEqual([
+      'behringer-neutron',
+      'elektron-digitone',
+      'moog-subsequent-37',
+    ])
+    expect(twos.filter((a) => a.deviceId === 'elektron-digitone')).toHaveLength(4)
   })
 
   it('carries a two-note part inside that one assignable', () => {
