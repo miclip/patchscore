@@ -187,6 +187,10 @@ whole of each PDF, printed numeric ranges for controls:
 | `DFAM_Manual.pdf` | 44 | 4 | 0.09 |
 | `Grandmother_Manual_Version_2.pdf` | 56 | 3 | 0.05 |
 | `Subharmonicon_Manual.pdf` | 58 | 3 | 0.05 |
+| `RD-9_M_EN.pdf` | Rhythm Designer RD-9 User Manual, English. 38pp / 105k chars / **76 printed ranges** — the strongest value source of the four Behringer manuals here. | [archive.org](https://archive.org/download/behringer-rhythm-designer-rd-9-user-manual) |
+| `RHYTHM_DESIGNER_RD-8_M_EN.pdf` | Rhythm Designer RD-8 User Manual, English. 30pp / 105k chars / 61 ranges. Same architecture as the RD-9 above — see the queue note about authoring the pair. | [archive.org](https://archive.org/download/behringer_rhythm_designer_rd-8_user_manual_en) |
+| `NEUTRON_M_EN.pdf` | Neutron User Manual, English. 34pp / 91k chars / 21 ranges. Semi-modular, so expect a patchbay worth citing and knob values that mostly are not printed. | [archive.org](https://archive.org/download/BehringerNeutronUserManual) |
+| `MODEL_D_M_EN.pdf` | MODEL D User Manual, English. 44pp / 97k chars / **3 ranges**. Longest of the four and the emptiest of numbers — a Minimoog clone documented in prose. Expect a manifest that is mostly provisional, and say so rather than inventing. | [archive.org](https://archive.org/download/behringer_model_d_user_manual_en) |
 
 The Minitaur is ten times the Grandmother's density, which is the whole explanation for its 11%
 against their 85-88%.
@@ -303,3 +307,19 @@ modelling one.
 - Editions matter for citations: parameter ranges can change across firmware. The TR-1000
   Owner's Manual here is v1.11 while its Reference Manual is v1.13, so a citation should record
   which document and which edition it came from.
+
+## Behringer, and two traps
+
+**The MusicTribe CDN is not a route.** `mediadl.musictribe.com` does not resolve at all from here, and
+the README already recorded the Crave's link on it returning 500. Every Behringer manual in this
+folder came from archive.org instead, which is also where the Crave's copy came from.
+
+**Most Behringer documents are multilingual quick-start guides, not manuals.** The Crave's is 275k
+chars of which only a fraction is English, and it yielded cited jacks with provisional knob values.
+The four above are the exception — full English user manuals with no German or French edition bundled
+in, which is why they were chosen over more popular boxes whose only document is a QSG.
+
+**Not obtainable at the time of writing**, and worth another look before anyone assumes they were
+skipped for lack of interest: the **TD-3** (the most popular of the lot — its only document is a QSG
+on the dead CDN), the **UB-Xa**, the **K-2** and the **2600**. archive.org has no English user manual
+for any of them.
