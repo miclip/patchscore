@@ -1367,6 +1367,28 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * `npm run measure:search` still prints above its 2x warning — but it is the first figure since
    * the constant moved to 2,000,000 to spend more than 40% of it, which is worth reading rather
    * than absorbing.
+   *
+   * ---
+   *
+   * **The MODEL D takes it back down, to 832,343 on `industrial-techno` seed 9** — the first
+   * device in this record to *lower* the whole-catalogue worst case, and it does it while raising
+   * every other figure in the table.
+   *
+   * Sixteen recipes over thirteen roles on one monophonic voice, so by the NEUTRON's reading this
+   * is another box putting new candidates onto crowded roles, and every floor in
+   * `search-bound.test.ts` rose accordingly. What the aggregate cannot show and that file can is
+   * that the *peaks* of the two large directions fell — `industrial-techno` 843,270 -> 832,343
+   * and `weave` 195,662 -> 179,584 — and that both moved their worst seed from 0 to 9. This box
+   * gives §7.1 a cheap early solution on the seeds that used to be dearest, so the bound prunes
+   * what those seeds used to walk. That is the non-monotonicity `DEFAULT_NODE_CAP` describes,
+   * seen for the first time at the top of the table rather than on a small direction.
+   *
+   * **This is not a device being cheap and must not be read as one.** It is a device whose cost
+   * lands somewhere other than where the previous maximum was, and the maximum is what this
+   * paragraph reports. Sizing the next one off it would be the recipe-count error in a new
+   * costume.
+   *
+   * 832,343 is 41.6% of `DEFAULT_NODE_CAP`, and the headroom is **2.40x**. Nothing capped.
    */
 
   /**

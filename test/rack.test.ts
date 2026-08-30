@@ -190,7 +190,19 @@ describe('rack geometry (§10)', () => {
     // The two boxes now stand as they should: the RD-9 at 477 x 251.2 beside the RD-8 at
     // 498 x 251.4, siblings measured from two different drawings in two different documents and
     // agreeing on height to two tenths of a millimetre.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 6)
+    //
+    // **The seventh collision is the plainest one yet, and the only pair here that agrees by
+    // standard rather than by coincidence.** The NEUTRON and the MODEL D are both Eurorack
+    // modules, and both rises were measured off the module's own drawn panel — 128.59 mm and
+    // 128.63 mm, each rounded to the 128.6 they share. Neither manual prints a panel height at
+    // all; what they print is `80 HP` and `70HP`, and 3U is the other dimension of the format
+    // those numbers name. Two boxes built to one mechanical standard measuring the same height is
+    // the standard working, so this pair will not separate however carefully either is re-measured
+    // — and every Eurorack module added after them joins it.
+    //
+    // So `- 7`: the RD-9 leaving the fallback took this to `- 6`, and the MODEL D arriving with a
+    // rise the NEUTRON already has spends the one device it adds without adding a rise.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 7)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -1207,7 +1219,12 @@ describe('rack view', () => {
     // lit cell belongs on the control a reader presses. ACCENT stays outside it, exactly as on the
     // RD-8: a global emphasis control is not an assignable, and a cell there would offer the
     // resolver a voice that does not exist.
-    expect(fields).toHaveLength(31)
+    //
+    // **Thirty-two since the MODEL D**, whose field is also in OUTPUT and for the same reason as
+    // the NEUTRON's: one voice, no voice or track selector, and the section the voice finally
+    // leaves by is the only thing on the panel worth pointing at. It gets 24 x 9 mm where the
+    // NEUTRON got 19 x 7, which is 70 HP against 80 HP spending its width on twenty fewer sockets.
+    expect(fields).toHaveLength(32)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

@@ -419,6 +419,47 @@ import { TEMPLATES } from '../lib/templates/index'
  *
  * Nothing caps. `industrial-techno` at 843,270 is 42.2% of the 2,000,000 `DEFAULT_NODE_CAP`, and
  * the headroom is 2.37x — the first figure since the constant moved to spend over 40% of it.
+ *
+ * ---
+ *
+ * **The MODEL D raises every floor in the table and lowers both large peaks.** It is the first
+ * device to move a row in both directions at once, and it does it on the two rows that matter.
+ * One monophonic voice, sixteen recipes over thirteen roles.
+ *
+ *   - **`industrial-techno` 728,390-843,270 -> 784,996-832,343.** The floor rises 7.8% and the
+ *     peak *falls* 1.3%, and the worst seed moves 0 -> 9. The row is flatter than it was: 843,270
+ *     stood 15.8% above its own floor, and 832,343 stands 6.0% above the new one.
+ *   - **`weave` 148,014-195,662 -> 156,944-179,584**, the same shape and more of it — floor up
+ *     6.0%, peak down 8.2%, worst seed 0 -> 9 again. Both large directions move together, which
+ *     is the MC-707's and the RD-8's and the NEUTRON's shape; that they move *apart* at the two
+ *     ends of the row is new.
+ *   - `ambient-dub` 178-183 -> 182-187, `lydian-house` 160-269 -> 162-272 and `major-key-electro`
+ *     168-312 -> 171-319 each rise by two to seven nodes. `drone-study` 27 -> 28 and `relay`
+ *     55 -> 57 are the floor: one more device at the root and nothing else.
+ *   - `major-key-electro`'s spike **moves seeds** rather than growing: it was 312 on seeds 17 and
+ *     21 and is 317-319 on 12, 15 and 23. The RD-8 row removed a spike, the NEUTRON row grew one,
+ *     and this one relocates it. Still four parts in ten thousand of the sweep's worst case, and
+ *     still not worth chasing.
+ *
+ * Attributed by measurement, as every row above is, and this attribution is the strongest the
+ * table has had: the same sweep without this box reproduces **all seven rows to the node**,
+ * including both large ones.
+ *
+ * **The mechanism is the one `DEFAULT_NODE_CAP`'s docstring calls non-monotonicity, seen here
+ * with the floor and the peak separated.** Sixteen new candidates on roles the library crowds is
+ * what lifts every floor — the NEUTRON's mechanism, one device later. What lowers the two peaks
+ * is that the seeds which *were* worst are seeds where this box now gives §7.1 a cheap early
+ * solution, so the bound prunes what those seeds used to walk; seed 9, which was ordinary before,
+ * is left as the most expensive. **Why this box and not the fifteen before it has not been
+ * established**, and the row should not be read as if it had: confirming it means instrumenting
+ * the incumbent on seed 0 rather than counting recipes, which nothing here does.
+ *
+ * For whoever sizes the next device, this row adds to the three above that **a peak can fall
+ * while every floor rises**, so a single worst-case number is not a summary of what a device
+ * costs. Sweep the table.
+ *
+ * Nothing caps. `industrial-techno` at 832,343 is 41.6% of the 2,000,000 `DEFAULT_NODE_CAP`, and
+ * the headroom is 2.40x — the first device since the constant moved to give headroom *back*.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -427,34 +468,34 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      178, 180, 178, 183, 182, 179, 178, 180, 183, 179, 180, 178, 180, 182, 183, 178, 180, 183,
-      178, 180, 183, 180, 178, 183
+      182, 184, 182, 187, 186, 183, 182, 184, 187, 183, 184, 182, 184, 186, 187, 182, 184, 187,
+      182, 184, 187, 184, 182, 187
     ],
     'drone-study': [
-      27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27,
-      27
+      28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28,
+      28
     ],
     'industrial-techno': [
-      843270, 728391, 729834, 728391, 728390, 728391, 774199, 728391, 728391, 728391, 728392,
-      774200, 768535, 728391, 728391, 728390, 728390, 729832, 728390, 728391, 774200, 728390,
-      728391, 729834
+      784996, 823960, 786489, 784997, 784996, 784997, 784997, 784997, 784997, 832343, 784998,
+      832342, 786485, 784997, 784996, 784996, 817643, 786489, 784997, 784996, 784997, 784996,
+      784997, 786487
     ],
     'lydian-house': [
-      160, 268, 160, 161, 161, 269, 160, 268, 161, 267, 160, 268, 160, 161, 161, 267, 269, 161,
-      268, 160, 161, 160, 269, 161
+      162, 271, 162, 163, 163, 272, 162, 271, 163, 270, 162, 271, 162, 163, 163, 270, 272, 163,
+      271, 162, 163, 162, 272, 163
     ],
     'major-key-electro': [
-      173, 173, 172, 173, 170, 173, 172, 173, 172, 173, 173, 173, 172, 173, 173, 168, 170, 312,
-      168, 172, 173, 312, 173, 172
+      171, 176, 175, 176, 174, 176, 175, 176, 175, 176, 176, 176, 317, 173, 173, 319, 176, 175,
+      176, 172, 176, 172, 176, 317
     ],
     'relay': [
-      55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55,
-      55
+      57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57,
+      57
     ],
     'weave': [
-      195662, 148014, 148014, 148014, 148037, 148014, 170086, 148014, 148014, 148014, 148038,
-      170086, 162690, 148014, 148014, 148014, 148014, 148014, 148014, 148014, 170086, 148036,
-      148014, 148014
+      156944, 171916, 156944, 156944, 156968, 156944, 156944, 156944, 156944, 179584, 156969,
+      179584, 156944, 156944, 156944, 156944, 168044, 156944, 156944, 156944, 156944, 156967,
+      156944, 156944
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".
@@ -553,7 +594,7 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
    *  - **Under the floor** — something got cheaper. Good news and a stale comment: move the band
    *    down and keep the alarm's sensitivity.
    */
-  const WORST_CASE_NODES = 843_270
+  const WORST_CASE_NODES = 832_343
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))

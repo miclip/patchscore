@@ -379,6 +379,10 @@ describe('the committed registry', () => {
       // any citation becoming wrong.
       'behringer-crave',
       'intellijel-cascadia',
+      // 355.6 mm — 70 HP, arithmetic on the MODEL D's own `Module width  70HP` rather than
+      // on the 374 mm chassis line two rows above it, which is the same panel still wearing
+      // its wooden end cheeks.
+      'behringer-model-d',
       // **358 mm, and the second span in this list with no page behind it.** Neither the Hapax
       // manual nor its Quickstart prints a dimension anywhere, so this is Squarp's own published
       // figure by way of a retailer, and `physical.verified` is `false` like the OP-XY's. Two

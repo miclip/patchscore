@@ -131,6 +131,7 @@ describe('device search matches name, maker and kind', () => {
     expect(ids(devices({ query: 'drum machine' }).rows)).toEqual(drumMachines)
     expect(ids(devices({ query: 'semi modular' }).rows)).toEqual([
       'behringer-crave',
+      'behringer-model-d',
       'behringer-neutron',
       'intellijel-cascadia',
       'moog-dfam',

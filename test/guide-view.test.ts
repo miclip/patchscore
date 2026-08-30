@@ -1074,8 +1074,12 @@ describe('#121 the page states the clock topology the Markdown states', () => {
     // control mode is not running free — the DAW owns the timeline — and the guide used to say it
     // was, in the one workflow the desk exists for. The L-8 has no such mode and keeps the plain
     // clause. That the two are no longer one phrase is the fix, not a regression.
+    //
+    // The plain clause now names two boxes rather than one — the MODEL D has no clock in either
+    // direction either — so this also holds the agreement across the join: two boxes *run* free.
+    // #144's singular is asserted a block below, on a rig where the L-8 is alone in the clause.
     for (const doc of [fullMd, fullPage]) {
-      expect(doc).toContain('Zoom LiveTrak L-8, which cannot receive clock and runs free')
+      expect(doc).toContain('MODEL D and Zoom LiveTrak L-8, which cannot receive clock and run free')
       expect(doc).toContain('Model 2400, which cannot receive clock — a DAW drives its transport over HUI/MCU')
       expect(doc).toContain('and without one it runs free')
     }

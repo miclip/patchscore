@@ -10,6 +10,7 @@ import { device as device_akai_mpc_one_g2 } from './akai-mpc-one-g2/index'
 import { device as device_akai_mpc_xl } from './akai-mpc-xl/index'
 import { device as device_arturia_microfreak } from './arturia-microfreak/index'
 import { device as device_behringer_crave } from './behringer-crave/index'
+import { device as device_behringer_model_d } from './behringer-model-d/index'
 import { device as device_behringer_neutron } from './behringer-neutron/index'
 import { device as device_behringer_rd_8 } from './behringer-rd-8/index'
 import { device as device_behringer_rd_9 } from './behringer-rd-9/index'
@@ -50,6 +51,7 @@ export const DEVICES: readonly Device[] = [
   device_akai_mpc_xl,
   device_arturia_microfreak,
   device_behringer_crave,
+  device_behringer_model_d,
   device_behringer_neutron,
   device_behringer_rd_8,
   device_behringer_rd_9,
@@ -91,6 +93,7 @@ export const DEVICE_FOLDERS: readonly string[] = [
   'akai-mpc-xl',
   'arturia-microfreak',
   'behringer-crave',
+  'behringer-model-d',
   'behringer-neutron',
   'behringer-rd-8',
   'behringer-rd-9',
