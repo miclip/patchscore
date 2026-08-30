@@ -644,7 +644,7 @@ const recipes: Recipe[] = [
         'Everything below the TUNE line is in the "Sample tone only" block (p.31) and does not exist on an ACB tone',
       ),
       num('TUNE', 0, BIPOLAR, 30, { mood: [{ axis: 'darkness', amount: -40 }] }),
-      num('COARSE TUNE', -5, COARSE, 31, { unit: 'St', note: 'Pitch in semitone steps' }),
+      num('COARSE TUNE', -5, COARSE, 31, { unit: 'st', note: 'Pitch in semitone steps' }),
       num('RATE', -0.7, { min: -1, max: 1 }, 31, {
         step: 0.01,
         note: 'Negative plays backward; -1.00 is full speed in reverse (p.31)',
@@ -694,7 +694,7 @@ const recipes: Recipe[] = [
         'The INST screen icons name four tone kinds — Preset, Sample, Loop, User (p.30). A Loop tone plays repeatedly',
       ),
       num('TUNE', -16, BIPOLAR, 30, { mood: [{ axis: 'darkness', amount: -60 }] }),
-      num('COARSE TUNE', -12, COARSE, 31, { unit: 'St' }),
+      num('COARSE TUNE', -12, COARSE, 31, { unit: 'st' }),
       {
         kind: 'enum',
         name: 'HOLD MODE',
@@ -743,7 +743,7 @@ const recipes: Recipe[] = [
       tone('Sample', 'A User tone — p.30 lists User as "Tones that use imported samples"'),
       ...ctrlCoarse(),
       num('COARSE TUNE', 0, COARSE, 31, {
-        unit: 'St',
+        unit: 'st',
         note: 'The step value; the hook prints the offset per step',
       }),
       {
@@ -784,7 +784,7 @@ const recipes: Recipe[] = [
       tone('Sample', 'A User tone — p.30 lists User as "Tones that use imported samples"'),
       ...ctrlCoarse(),
       num('COARSE TUNE', 0, COARSE, 31, {
-        unit: 'St',
+        unit: 'st',
         note: 'The step value; the hook prints the offset per step',
       }),
       {

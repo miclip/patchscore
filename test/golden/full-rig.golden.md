@@ -1199,7 +1199,7 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
   - ↳ note: Everything below the TUNE line is in the "Sample tone only" block (p.31) and does not exist on an ACB tone
 - **TUNE** `0` (-128…127)
   - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
-- **COARSE TUNE** `-5` St (-24…24 St)
+- **COARSE TUNE** `-5` st (-24…24 st)
   - ↳ note: Pitch in semitone steps
 - **RATE** `-0.7` (-1…1)
   - ↳ note: Negative plays backward; -1.00 is full speed in reverse (p.31)

@@ -478,7 +478,7 @@ const recipes: Recipe[] = [
         'MORPH needs an FM tone; FM COARSE additionally needs one of the FX/HIT–OTHERS categories (p.7)',
       ),
       num('TUNE', -20, BIPOLAR, 7, { mood: [{ axis: 'darkness', amount: -70 }], hint: 'inst-edit' }),
-      num('FM COARSE', -12, COARSE, 7, { unit: 'St', note: 'Pitch in semitone steps' }),
+      num('FM COARSE', -12, COARSE, 7, { unit: 'st', note: 'Pitch in semitone steps' }),
       num('DECAY', 148, UNIT, 7, { mood: [{ axis: 'density', amount: -60 }] }),
       num('MORPH', -40, { min: -128, max: 128 }, 7, {
         mood: [{ axis: 'grit', amount: 90 }],
@@ -510,7 +510,7 @@ const recipes: Recipe[] = [
     params: [
       tone('Sample tone — FX/HIT category', 'COARSE TUNE and ATTACK below are sample-tone only (p.7)'),
       num('TUNE', -8, BIPOLAR, 7, { mood: [{ axis: 'darkness', amount: -60 }] }),
-      num('COARSE TUNE', -5, COARSE, 7, { unit: 'St' }),
+      num('COARSE TUNE', -5, COARSE, 7, { unit: 'st' }),
       num('DECAY', 255, UNIT, 7, { note: 'A one-shot: let it run out rather than cutting it' }),
       num('ATTACK', 0, UNIT, 7, { note: 'Specifies the time over which the level rises (p.7)' }),
       num('LEVEL', 210, UNIT, 7),
@@ -746,7 +746,7 @@ const recipes: Recipe[] = [
         "A Loop tone is a sample tone, which is what lets COARSE TUNE and HOLD MODE below exist: Owner's p.31 lists L Loop among the icons of the SAMPLE screen (p.26 legends it separately on the INST screen, which is what makes it worth saying)",
       ),
       num('TUNE', -16, BIPOLAR, 7, { mood: [{ axis: 'darkness', amount: -60 }] }),
-      num('COARSE TUNE', -12, COARSE, 7, { unit: 'St' }),
+      num('COARSE TUNE', -12, COARSE, 7, { unit: 'st' }),
       {
         kind: 'enum',
         name: 'HOLD MODE',
