@@ -125,10 +125,14 @@ describe('the first box that sends clock and cannot receive it', () => {
     expect(device.clock.canReceiveClock).toBe(false)
     // The boxes that do claim it, and the contrast is the point: a sequencer with no voice of its
     // own exists to drive a rig, and the Tracker Mini's manual calls it "a perfect fit for the
-    // centre piece of a setup" — where a recording desk merely can. Four claims now, ranked only
+    // centre piece of a setup" — where a recording desk merely can. Five claims now, ranked only
     // by #198's voiceless key and the transport below it (§7.4); this desk's absence is the
-    // assertion, and the list is here so a fifth claim has to be looked at rather than sliding in.
+    // assertion, and the list is here so a sixth claim has to be looked at rather than sliding in.
+    //
+    // The Octatrack MKII is the first claimant that is not voiceless, which is exactly what
+    // #198's top key is for: it claims the job and still loses the source to a box with no voice.
     expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
+      'elektron-octatrack-mkii',
       'intellijel-metropolix',
       'polyend-tracker-mini',
       'squarp-hapax',

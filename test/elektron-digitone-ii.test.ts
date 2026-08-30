@@ -71,6 +71,7 @@ describe('Digitone II manifest', () => {
       ['elektron-analog-rytm-mkii', 'drum-machine'],
       ['elektron-digitakt-ii', 'sampler'],
       ['elektron-digitone-ii', 'groovebox'],
+      ['elektron-octatrack-mkii', 'sampler'],
     ])
   })
 

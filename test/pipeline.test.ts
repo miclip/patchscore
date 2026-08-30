@@ -695,8 +695,13 @@ describe('clock source ranks on semantics, not on load (§7.4)', () => {
     // internal clock as being "the synchronisation leader", so the page says what the box is for
     // rather than an author reading it off a title. Four since the T-1, whose documentation puts
     // it in a field of its own — `Role: Sequencer and clock hub for hybrid rigs` — beside Power
-    // and Connections, which is a role sentence rather than a capability page.
+    // and Connections, which is a role sentence rather than a capability page. Five since the
+    // Octatrack MKII, and it is the first claimant with voices of its own: §2.1.4 is headed LIVE
+    // SETUP HUB (p.11) and §16.1 builds that rig, enabling TRANSPORT SEND and CLOCK SEND so two
+    // other machines follow its tempo (p.96). Its eight MIDI tracks cost it no audio track
+    // (p.55), which is the half the Digitakt II fails on the same sentence.
     expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
+      'elektron-octatrack-mkii',
       'intellijel-metropolix',
       'polyend-tracker-mini',
       'squarp-hapax',

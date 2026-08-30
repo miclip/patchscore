@@ -17,6 +17,7 @@ import { device as device_behringer_rd_9 } from './behringer-rd-9/index'
 import { device as device_elektron_analog_rytm_mkii } from './elektron-analog-rytm-mkii/index'
 import { device as device_elektron_digitakt_ii } from './elektron-digitakt-ii/index'
 import { device as device_elektron_digitone_ii } from './elektron-digitone-ii/index'
+import { device as device_elektron_octatrack_mkii } from './elektron-octatrack-mkii/index'
 import { device as device_empress_zoia_euroburo } from './empress-zoia-euroburo/index'
 import { device as device_intellijel_cascadia } from './intellijel-cascadia/index'
 import { device as device_intellijel_metropolix } from './intellijel-metropolix/index'
@@ -60,6 +61,7 @@ export const DEVICES: readonly Device[] = [
   device_elektron_analog_rytm_mkii,
   device_elektron_digitakt_ii,
   device_elektron_digitone_ii,
+  device_elektron_octatrack_mkii,
   device_empress_zoia_euroburo,
   device_intellijel_cascadia,
   device_intellijel_metropolix,
@@ -104,6 +106,7 @@ export const DEVICE_FOLDERS: readonly string[] = [
   'elektron-analog-rytm-mkii',
   'elektron-digitakt-ii',
   'elektron-digitone-ii',
+  'elektron-octatrack-mkii',
   'empress-zoia-euroburo',
   'intellijel-cascadia',
   'intellijel-metropolix',

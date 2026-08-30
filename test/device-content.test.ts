@@ -665,7 +665,7 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
     .map((d) => d.id)
     .sort(byCodeUnit)
 
-  it('is the fifteen boxes established to ship one, and a sixteenth has to be added deliberately', () => {
+  it('is the seventeen boxes established to ship one, and an eighteenth has to be added deliberately', () => {
     // The derivation covers whatever is declared; this says which declarations were expected, so
     // a new one is loud in review rather than silently absorbed.
     expect(SHIPPED).toEqual([
@@ -683,6 +683,12 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
       // which is the trap that would read as `enumerable`.
       'elektron-analog-rytm-mkii',
       'elektron-digitakt-ii',
+      // The Octatrack MKII ships a card rather than an internal library, and the claim is on the
+      // card: p.23 says it "contains a set called PRESETS", p.25 that "the audio pool belonging to
+      // the 'PRESETS' set found on the bundled Compact Flash card is full of samples", and p.27
+      // that the pool is the set folder's `AUDIO` directory. A reader can open it on the box and
+      // browse; no page prints a filename, which is the line again.
+      'elektron-octatrack-mkii',
       // The Circuit Tracks ships 128 synth Patches and 64 drum samples (p.16) and neither of its
       // two documents prints a name for any of them — the counts are the whole inventory. Same
       // line between `shipped-library` and `enumerable` as the four above it.
