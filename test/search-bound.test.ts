@@ -436,12 +436,37 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
     expect(Object.keys(RECORDED).sort(byId)).toEqual(TEMPLATES.map((t) => t.id).sort(byId))
   })
 
-  it('walks the recorded nodes on every direction and seed, uncapped', async () => {
-    for (const template of TEMPLATES) {
+  /**
+   * **One test per direction, because a test that outlives the RPC deadline takes the run down.**
+   *
+   * This was a single test sweeping all seven. It ran 131.7s on a CI runner, and birpc's deadline
+   * for a worker's `onTaskUpdate` reply is 60s (`DEFAULT_TIMEOUT = 6e4`), so the run died with
+   * `[vitest-worker]: Timeout calling "onTaskUpdate"` and every assertion passing. The yields
+   * below already bound each *block* to one search; what was too long was the test itself.
+   *
+   * Split changes no coverage — same directions, same seeds, same rows — and it names the
+   * direction that moved in the test title rather than only in the failure message.
+   */
+  /**
+   * Seeds in chunks of eight, so no single test outlives the deadline even on the direction that
+   * costs the most. `industrial-techno` is roughly six times any other direction here, and a
+   * whole-direction test still ran 54.5s locally against a CI runner half again slower.
+   */
+  const CHUNK = 8
+  const SLICES = TEMPLATES.flatMap((t) =>
+    Array.from({ length: Math.ceil(SEEDS.length / CHUNK) }, (_, i) => {
+      const seeds = SEEDS.slice(i * CHUNK, (i + 1) * CHUNK)
+      return [`${t.id} seeds ${seeds[0]}-${seeds[seeds.length - 1]}`, t, seeds, i * CHUNK] as const
+    }),
+  )
+
+  it.each(SLICES)(
+    'walks the recorded nodes on %s, uncapped',
+    async (_label, template, seeds, offset) => {
       const row = RECORDED[template.id] as readonly number[]
 
       const walked: number[] = []
-      for (const seed of SEEDS) {
+      for (const seed of seeds) {
         // Yield so the worker can answer the main thread; see the note in
         // `search-symmetry.test.ts`'s cap sweep. A block this long fails CI with an RPC timeout
         // while every assertion passes, which is the least debuggable red there is.
@@ -459,12 +484,16 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
         walked.push(result.search.nodes)
       }
 
-      // The message is the row in source form, so a library change is re-recorded by pasting it
-      // back over the entry above rather than by re-deriving 24 numbers by hand.
+      // The message is this slice of the row in source form, so a library change is re-recorded by
+      // pasting the slices back over the entry above rather than by re-deriving 24 numbers by hand.
       const recut = `      ${walked.join(', ')},`
-      expect(walked, `${template.id} moved — the row is now\n${recut}`).toEqual([...row])
-    }
-  }, 300_000)
+      const expected = row.slice(offset, offset + walked.length)
+      expect(walked, `${template.id} seeds ${offset}+ moved — this slice is now\n${recut}`).toEqual([
+        ...expected,
+      ])
+    },
+    300_000,
+  )
 
   /**
    * §7.1/#159/#229. **The worst direction, and a band around it — read off the table above rather

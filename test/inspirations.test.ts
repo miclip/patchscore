@@ -861,9 +861,16 @@ describe('every effective template is schema-valid (§4, §7)', () => {
    * than a guess — and a *fourth* raise means the resolve itself got dearer, which is a cost
    * problem and not a scheduling one.
    */
-  it('still resolves on the full library, for every template and every legal pair', async () => {
-    for (const template of TEMPLATES) {
-      for (const selection of LEGAL_SELECTIONS) {
+  const PAIRS = TEMPLATES.flatMap((t) =>
+    LEGAL_SELECTIONS.map(
+      (selection) => [`${t.id} + [${selection.map((i) => i.id).join(', ')}]`, t, selection] as const,
+    ),
+  )
+
+  it.each(PAIRS)(
+    'still resolves on the full library: %s',
+    async (_label, template, selection) => {
+      {
         // Yield so the worker can answer the main thread; see the note in
         // `search-symmetry.test.ts`'s cap sweep. A block this long fails CI with an RPC timeout
         // while every assertion passes, which is the least debuggable red there is.
@@ -878,6 +885,7 @@ describe('every effective template is schema-valid (§4, §7)', () => {
         const where = `${template.id} + [${selection.map((i) => i.id).join(', ')}]`
         expect(resolved.shortfalls.map((g) => `${g.requestId}: ${g.reason}`), where).toEqual([])
       }
-    }
-  }, 300_000)
+    },
+    300_000,
+  )
 })
