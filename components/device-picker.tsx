@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useId, useMemo, useRef, useState } from 'react'
-import type { Device, DeviceId } from '@/lib/core'
+import type { Device, DeviceId, Role } from '@/lib/core'
 import { expand } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceHref, deviceLabel } from '@/lib/studio/catalogue'
@@ -40,17 +40,32 @@ export type DevicePickerProps = {
    * guide's. Optional: absent means "nobody chose", which is also what it meant before #200.
    */
   clockSourceId?: DeviceId | undefined
+  /**
+   * §7.3. Roles the current direction asked for and did not get. Empty means the rig covers what
+   * it was asked for — the "fills a gap" filter then has nothing to narrow and says so.
+   */
+  unfilled?: ReadonlySet<Role>
 }
 
-export function DevicePicker({ selected, onToggle, clockSourceId }: DevicePickerProps) {
+export function DevicePicker({
+  selected,
+  onToggle,
+  clockSourceId,
+  unfilled,
+}: DevicePickerProps) {
   const [filter, setFilter] = useState<DeviceFilter>(NO_DEVICE_FILTER)
   const ids = useId()
   const searchId = `${ids}-search`
   const kindId = `${ids}-kind`
   const multiId = `${ids}-multipart`
+  const gapId = `${ids}-fillsgap`
 
   const kinds = useMemo(() => kindsPresent(DEVICES), [])
-  const shown = useMemo(() => deviceView(DEVICES, selected, filter), [selected, filter])
+  const gaps = useMemo(() => unfilled ?? new Set<Role>(), [unfilled])
+  const shown = useMemo(
+    () => deviceView(DEVICES, selected, filter, gaps),
+    [selected, filter, gaps],
+  )
 
   /**
    * Selected first, and above the scrolling catalogue rather than inside it.
@@ -138,6 +153,24 @@ export function DevicePicker({ selected, onToggle, clockSourceId }: DevicePicker
           rather than the fourteen that have them — and the count is already on every row with no
           way to ask for it.
         */}
+        {/*
+          §7.3. Only shown when there is a gap to fill. A checkbox that can never narrow anything
+          is a control teaching a reader the picker is broken — and with a rig that covers its
+          direction there is genuinely nothing to offer.
+        */}
+        {gaps.size === 0 ? null : (
+          <label className="picker-multipart" htmlFor={gapId}>
+            <input
+              id={gapId}
+              type="checkbox"
+              checked={filter.fillsGap}
+              onChange={(event) =>
+                setFilter((current) => ({ ...current, fillsGap: event.target.checked }))
+              }
+            />
+            Fills a gap
+          </label>
+        )}
         <label className="picker-multipart" htmlFor={multiId}>
           <input
             id={multiId}
