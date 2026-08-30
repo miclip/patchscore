@@ -213,14 +213,42 @@ describe('RD-9 manifest', () => {
     expect(device.recipes.every((r) => r.sourceAudio === undefined)).toBe(true)
   })
 
-  it('has no panel, because the manual has no complete panel figure', () => {
-    // §3's control layout is eleven separate crops at eleven scales (pp.6-8) and no page shows
-    // them together. Composing them would be estimated coordinates in everything but name.
-    expect(device.panel).toBeUndefined()
-    // The span is still measured, off p.34's `78 x 477 x 264 mm (3.1 x 18.8 x 10.4")` — the
-    // inch conversion confirms 477 mm is the W.
+  it('draws its panel from the Quick Start Guide, which has the figure the manual lacks', () => {
+    // **This test asserted the opposite until somebody found the right document.** §3's control
+    // layout in the User Manual is eleven separate crops at eleven scales (pp.6-8) with no page
+    // showing them together, and §15's hook-up diagram on p.30 spans the instrument but is a rear
+    // elevation, so it locates sockets rather than knobs. Composing the crops would have been
+    // estimated coordinates in everything but name, and this box sat in `UNDRAWN` on that reading.
+    //
+    // The Quick Start Guide prints a complete top view with the chassis outline on its p.8. One
+    // figure, one scale, both axes — so the panel is measured rather than composed.
+    expect(device.panel).toBeDefined()
+    expect(device.panel?.verified).toMatchObject({ kind: 'manual' })
+    expect(device.panel?.verified === false ? '' : device.panel?.verified.source).toContain(
+      'Quick Start Guide',
+    )
+
+    // The span is measured off p.34's `78 x 477 x 264 mm (3.1 x 18.8 x 10.4")` — the inch
+    // conversion confirms 477 mm is the W.
     expect(device.physical.panelSpanMm).toBe(477)
     expect(device.physical.verified).toMatchObject({ source: `${MANUAL}34` })
+
+    /**
+     * **The rise, and the check that says the drawing was read right.**
+     *
+     * 1387 px of drawn chassis against 2634 px of drawn width, anchored to the cited 477 mm, is
+     * 251.2 mm — leaving 12.8 mm of the specification's 264 mm depth behind the top view, which is
+     * the rear jack barrels and the sloped back edge.
+     *
+     * The RD-8 is the independent check: a different box, a different drawing, a different
+     * document, and it leaves 13.6 mm of its own 265 mm depth outside its own top view. Two
+     * siblings agreeing within a millimetre on a figure neither was fitted to is what makes this
+     * a measurement rather than a plausible number.
+     */
+    expect(device.panel?.panelRiseMm).toBe(251.2)
+    const outsideTheTopView = 264 - (device.panel?.panelRiseMm ?? 0)
+    expect(outsideTheTopView).toBeGreaterThan(0)
+    expect(outsideTheTopView).toBeLessThan(20)
   })
 
   // -------------------------------------------------------------------------

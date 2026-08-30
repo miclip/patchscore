@@ -1285,6 +1285,7 @@ What processes audio in this rig:
 - MPC XL — carries effects, though no part in this guide reaches them
 - NEUTRON — carries DELAY on the panel
 - RD-8 — carries FX on the panel
+- RD-9 — carries FX on the panel
 - ZOIA Euroburo — is an effects unit (stereo main out · audio in)
 - Matriarch — carries effects, though no part in this guide reaches them
 - Muse — carries effects, though no part in this guide reaches them

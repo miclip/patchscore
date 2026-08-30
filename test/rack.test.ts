@@ -181,16 +181,16 @@ describe('rack geometry (§10)', () => {
     // for the other, so the two agree on depth and height to the millimetre and differ only
     // across. Both rises are the published depth, read off each box's own specifications table.
     //
-    // **The sixth collision is back, and it is the same one.** The MicroFreak held this slot until
-    // somebody drew it, on a comment that promised `- 6` the moment they did. It went to `- 6`,
-    // and the RD-9 has now taken the slot: it is undrawn (see `UNDRAWN`), so its rise *is* the
-    // `PANEL_HEIGHT_MM` fallback of 170 mm, which the Tracker Mini reaches by measurement.
+    // **The sixth collision is gone, and the comment that predicted it is why.** The MicroFreak
+    // held this slot until somebody drew it, on a note promising `- 6` the moment they did. It
+    // went to `- 6`; the RD-9 then took the slot, undrawn, its rise being the `PANEL_HEIGHT_MM`
+    // fallback of 170 mm that the Tracker Mini reaches by measurement. The same note said to draw
+    // the RD-9's panel and this returns to `- 6` again. It has, and it does.
     //
-    // A defaulted rise standing beside a measured one is exactly what this count exists to catch,
-    // and it is allowed here for the same reason it was before: the default is *declared* — the
-    // box is named in `UNDRAWN` with the figures somebody looked at — rather than silent. Draw the
-    // RD-9's panel and this returns to `- 6` again.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 7)
+    // The two boxes now stand as they should: the RD-9 at 477 x 251.2 beside the RD-8 at
+    // 498 x 251.4, siblings measured from two different drawings in two different documents and
+    // agreeing on height to two tenths of a millimetre.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 6)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -612,14 +612,16 @@ describe('panel contents', () => {
  * as *"what the next device whose manual has no usable figure will render"*. This is that device.
  */
 const UNDRAWN = new Map<string, string>([
-  // **The MicroFreak left this list**, on the finding that its three cropped strips each span the
-  // instrument's full width — which fixes a scale from the published 311 mm and makes every
-  // horizontal position measurable after all. That is the bar: a box earns a place here by having
-  // no figure anybody could measure, and its entry has to say which figures were looked at.
-  [
-    'behringer-rd-9',
-    'the RD-9 manual draws the panel once, on p.10, and only the voice section of it — a dashed crop of the top control row with numbered callouts 1-12 (ACCENT through CYMBAL) and no outer border, no step buttons and no transport. Unlike the MicroFreak\u2019s strips it does not span the instrument, so the cited 477 mm width fixes no scale for it and the vertical is unrecoverable twice over. The only other figure in the document is a Logic Pro screenshot on p.29. Its 477 x 264 mm span is cited to the specifications on p.33 and sizes the enclosure; it locates no control',
-  ],
+  // **Empty, and the RD-9 was the last one out.** The bar for a place here is having no figure
+  // anybody could measure, and an entry has to say which figures were looked at. Two boxes have
+  // left this list rather than been given one, and both left the same way: somebody went back to
+  // the documents. The MicroFreak's three cropped strips turned out to span the instrument's full
+  // width, which fixes a scale from the published 311 mm. The RD-9's User Manual genuinely has no
+  // usable figure — eleven section crops and a rear elevation — but its Quick Start Guide prints a
+  // complete top view on p.8, and that is what it is now drawn from.
+  //
+  // Keep the mechanism. A device with no `panel` still renders the generated fallback honestly,
+  // and the next box whose maker publishes nothing measurable belongs here with its evidence.
 ]) as Map<string, string>
 
 describe('panel layouts', () => {
@@ -1063,7 +1065,11 @@ describe('rack view', () => {
     // readout *is* the 32 RGB pads, and the User Guide's tempo chapter draws the BPM on them as
     // two or three large digits (p.85) rather than putting it anywhere else. A `screen` feature
     // there would be inventing a window the panel does not have.
-    expect(count('rack-screen')).toBe(45)
+    // **46 with the RD-9**, whose four-character display is drawn from the Quick Start Guide's top
+    // view. It is the last box to arrive with a screen rather than the first to have one noticed:
+    // the display was always on the panel, and until p.8 of that document there was no figure to
+    // measure it against.
+    expect(count('rack-screen')).toBe(46)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -1193,7 +1199,15 @@ describe('rack view', () => {
     // sits in OUTPUT under the VOLUME knob. That box has one voice and 80 HP carrying thirty-six
     // knobs, seven buttons and fifty-six sockets, so there is no clear space of the usual size
     // anywhere on it — the panel file records the sweep that established that.
-    expect(fields).toHaveLength(30)
+    //
+    // **Thirty-one with the RD-9**, and its field is the one shape in the list that is two rows
+    // deep on purpose. Three of its nine sections carry two voices each and print the first above
+    // the second — RIM SHOT over CLAP, CLOSED over OPEN, CRASH over RIDE — so the eleven buttons
+    // do not sit on one line the way the RD-8's twelve do. The field spans both rows, because a
+    // lit cell belongs on the control a reader presses. ACCENT stays outside it, exactly as on the
+    // RD-8: a global emphasis control is not an assignable, and a cell there would offer the
+    // resolver a voice that does not exist.
+    expect(fields).toHaveLength(31)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {
