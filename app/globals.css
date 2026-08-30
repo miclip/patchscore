@@ -2070,6 +2070,37 @@ button:active {
  * §2.2/#86. The picker's "several parts" filter, matching the other controls on that row. #53's
  * constraint holds: one row at 390px, so this takes its own width and the search box flexes.
  */
+/*
+ * §2.2/#86/§7.3. The two capability checkboxes, boxed and named.
+ *
+ * They sat in the search row, where four controls with no heading did not explain themselves —
+ * and these two carry the least obvious behaviour of the four, since neither is a property anyone
+ * can read off a device's name. The search box and kind select stay outside: they narrow by what
+ * a box *is*, which a search row already implies.
+ *
+ * A real `fieldset` so the grouping is in the document and not only in the paint.
+ */
+.picker-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  margin: 0 0 10px;
+  padding: 6px 12px 10px;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+
+.picker-filters legend {
+  padding: 0 6px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+
 .picker-multipart {
   display: flex;
   align-items: center;
