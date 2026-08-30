@@ -64,9 +64,19 @@ describe('Hapax manifest', () => {
         .sort()
     expect(placements(b)).toEqual(placements(a))
 
+    /**
+     * Swept against a **small rig rather than the whole library**, for the reason set out at
+     * length in `test/intellijel-metropolix.test.ts`: with thirty-six other boxes on the bench the
+     * resolver is never tempted, so the sweep proves this box was not *needed* rather than that it
+     * was not *usable*. Cut to three boxes and the pressure is on. The A/B above still makes the
+     * whole-library claim exactly. It was 21 full-library resolves under the default 30s timeout.
+     */
+    const pressured = DEVICES.filter((d) =>
+      [device.id, 'roland-tr-1000', 'synthstrom-deluge'].includes(d.id),
+    )
     for (const t of TEMPLATES) {
       for (const seed of [1, 7, 18]) {
-        const r = resolve({ devices: DEVICES, template: t, mood: NEUTRAL_MOOD, seed })
+        const r = resolve({ devices: pressured, template: t, mood: NEUTRAL_MOOD, seed })
         expect(r.assignments.some((x) => x.deviceId === device.id), `${t.id}/${seed}`).toBe(false)
       }
     }

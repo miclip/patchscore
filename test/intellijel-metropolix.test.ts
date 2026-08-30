@@ -81,10 +81,29 @@ describe('Metropolix manifest', () => {
         .sort()
     expect(placements(b)).toEqual(placements(a))
     expect(b.shortfalls.map((g) => g.requestId).sort()).toEqual(a.shortfalls.map((g) => g.requestId).sort())
-    // Nothing is ever assigned to it, on any template or seed.
+    /**
+     * Nothing is ever assigned to it, on any template or seed — swept against a **small rig
+     * rather than the whole library**, because a small rig is both cheaper and the harder test.
+     *
+     * With thirty-six other boxes on the bench the resolver is never once tempted: there is a
+     * better home for every request, so the sweep proves the box was not *needed* rather than
+     * that it was not *usable*. Cut the rig to this device and two sound sources and the pressure
+     * is on — most requests have nowhere good to go, `shortfalls` fills up, and if a track could
+     * ever pass for a voice this is the arrangement that would show it. The A/B above already
+     * makes the whole-library claim, and makes it exactly: adding this box to the full rig moves
+     * no placement and no shortfall.
+     *
+     * It was 21 full-library resolves under the default 30s timeout, which at the Neutron's
+     * 843,270-node worst case is most of a minute of search on a shared CI core — the third site
+     * in one week where a whole-catalogue sweep sat inside a test that reads as a cheap one. See
+     * `search-bound.test.ts` for the other two.
+     */
+    const pressured = DEVICES.filter((d) =>
+      [device.id, 'roland-tr-1000', 'synthstrom-deluge'].includes(d.id),
+    )
     for (const t of TEMPLATES) {
       for (const seed of [1, 7, 18]) {
-        const r = resolve({ devices: DEVICES, template: t, mood: NEUTRAL_MOOD, seed })
+        const r = resolve({ devices: pressured, template: t, mood: NEUTRAL_MOOD, seed })
         expect(r.assignments.some((x) => x.deviceId === device.id), `${t.id}/${seed}`).toBe(false)
       }
     }

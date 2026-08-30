@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { assign, measureSearchShape, moodState } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, industrialTechno } from '../lib/templates/index'
@@ -24,6 +24,38 @@ import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 const LIFTED = 20_000_000
 
 describe('the search shape probe (§7.1/#159)', () => {
+  /**
+   * **One traversal, shared.** Four tests below asked for the *same* probe — the whole library on
+   * `industrial-techno` seed 9, uncapped — and each paid for it separately: roughly twelve seconds
+   * apiece, four unbroken synchronous blocks, for one deterministic result (invariant 6). That is
+   * what a Vitest worker cannot answer the main thread through, and in August 2026 this file was
+   * one of the places CI went red with `[vitest-worker]: Timeout calling "onTaskUpdate"` **while
+   * every assertion passed**.
+   *
+   * Computed once here, with a yield in front of it so the block is bounded. The throw this file
+   * cares about is captured rather than left to escape, so the test that exists to prove the
+   * probe's internal check runs still reports it rather than failing the whole suite from setup.
+   */
+  let full: ReturnType<typeof measureSearchShape>
+  let probeError: unknown
+
+  beforeAll(async () => {
+    await new Promise((r) => setImmediate(r))
+    try {
+      full = measureSearchShape({
+        devices: [...DEVICES],
+        template: industrialTechno,
+        mood: moodState({}),
+        seed: 9,
+        nodeCap: LIFTED,
+      })
+    } catch (error) {
+      probeError = error
+    }
+    // The hook timeout is its own budget and does **not** inherit `testTimeout`: vitest defaults it
+    // to 10s, and this traversal is twelve. Stated here rather than raised globally, so every other
+    // setup in the suite still fails fast.
+  }, 120_000)
   it('observes the traversal without changing it', async () => {
     for (const template of TEMPLATES) {
       /**
@@ -49,13 +81,7 @@ describe('the search shape probe (§7.1/#159)', () => {
   }, 120_000)
 
   it('accounts for every node exactly once', () => {
-    const shape = measureSearchShape({
-      devices: [...DEVICES],
-      template: industrialTechno,
-      mood: moodState({}),
-      seed: 9,
-      nodeCap: LIFTED,
-    })
+    const shape = full
     expect(shape.bounded + shape.expanded).toBe(shape.visited)
     expect(shape.unique + shape.repeats).toBe(shape.visited)
     // Every node was checked, which is what makes the derivation claim below worth anything.
@@ -70,15 +96,10 @@ describe('the search shape probe (§7.1/#159)', () => {
    * pools, stacks and crowding without throwing is the assertion.
    */
   it('confirms the per-device counts are derivable from occupancy, at every node', () => {
-    expect(() =>
-      measureSearchShape({
-        devices: [...DEVICES],
-        template: industrialTechno,
-        mood: moodState({}),
-        seed: 9,
-        nodeCap: LIFTED,
-      }),
-    ).not.toThrow()
+    // The probe throws if `occupiedByDevice` ever disagrees with the live occupancy. It ran once
+    // in `beforeAll` over this same rig; that it came back at all is the assertion.
+    expect(probeError).toBeUndefined()
+    expect(full.visited).toBeGreaterThan(0)
   })
 
   it('honours the cap, so a worst case has to be asked for deliberately', () => {
@@ -92,13 +113,6 @@ describe('the search shape probe (§7.1/#159)', () => {
     expect(capped.visited).toBe(5_000)
     expect(capped.search.capped).toBe(true)
 
-    const full = measureSearchShape({
-      devices: [...DEVICES],
-      template: industrialTechno,
-      mood: moodState({}),
-      seed: 9,
-      nodeCap: LIFTED,
-    })
     expect(full.search.capped).toBe(false)
     expect(full.visited).toBeGreaterThan(capped.visited)
   })
@@ -113,13 +127,7 @@ describe('the search shape probe (§7.1/#159)', () => {
    * moves the worst case without weakening into something that cannot fail.
    */
   it('is bound-dominated, which is the reason a completion memo cannot pay', () => {
-    const shape = measureSearchShape({
-      devices: [...DEVICES],
-      template: industrialTechno,
-      mood: moodState({}),
-      seed: 9,
-      nodeCap: LIFTED,
-    })
+    const shape = full
     expect(shape.bounded / shape.visited).toBeGreaterThan(0.7)
     // Single digits against six figures of nodes. The exact count is in the bench output.
     expect(shape.leaves).toBeLessThan(100)
