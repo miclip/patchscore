@@ -88,5 +88,34 @@ export default defineConfig({
      * with the default reporter. What goes is the per-file chatter of a green run.
      */
     reporters: process.env['CI'] ? ['dot'] : ['default'],
+
+    /**
+     * **Share the module graph across files, because collection was the thing on the clock.**
+     *
+     * The red this fixes reported every test passing and exited 1, on a `[vitest-worker]: Timeout
+     * calling "onTaskUpdate"`. birpc gives a reply 60 seconds. The number that mattered was in
+     * every failing log and took four attempts to look at:
+     *
+     *     collect 59.85s     first attempt
+     *     collect 59.79s     the retry, which failed identically
+     *
+     * Collection, not tests. It sat a fraction under the deadline on the two-core ubuntu runners
+     * and at 26s on a ten-core laptop, which is why this reproduced on one platform and nowhere
+     * else, why it was perfectly deterministic rather than flaky, and why splitting long tests and
+     * capping workers did nothing for it.
+     *
+     * With isolation on, every test file re-executes its own copy of the module graph, and 64 of
+     * 99 files import the whole generated registry. Sharing it takes collect to 17.8s locally and
+     * `prepare` from 1.97s to 0.04s.
+     *
+     * **What this gives up.** Test files no longer get a fresh module registry, so module-level
+     * state is shared between them and file order could matter. Two things make that acceptable
+     * here rather than merely convenient: the engine is pure by construction — invariant 6 says
+     * the same inputs and seed produce byte-identical output, and there is no mutable module state
+     * for a resolve to leak — and `restoreMocks` already resets the mocks that do exist. If a test
+     * ever does need isolation, `isolate: true` can be set on that file's own config rather than
+     * for all 99.
+     */
+    isolate: false,
   },
 })
