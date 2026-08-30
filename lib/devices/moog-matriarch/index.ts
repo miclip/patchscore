@@ -1489,6 +1489,19 @@ export const device: Device = {
   panel: MATRIARCH_PANEL,
 
   /** §3.3. Declared once, cited once, referenced by every cable above. */
+  /**
+   * §10/#263. **Warm-up**, cited. p.8: *"Your Matriarch is an analog instrument and should be allowed 10-15 minutes to warm up
+   * before use"*. A printed range, so both ends are real.
+   *
+   * The rig is what makes this worth carrying: a reader sees which of the boxes in front of them
+   * need the time, and no single manual can tell them that.
+   */
+  warmUp: {
+    note: '10 to 15 minutes from cold before it holds pitch',
+    minutes: { min: 10, max: 15 },
+    verified: cite(8),
+  },
+
   jacks: JACKS,
 
   /**

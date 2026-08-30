@@ -846,6 +846,20 @@ export const device: Device = {
     verified: cite(30),
   },
   panel: MINITAUR_PANEL,
+  /**
+   * §10/#263. **Warm-up**, cited. p.4: *"A warm up period of about 15 minutes is recommended for the Minitaur to reach concert
+   * pitch"*, and it adds that a cold room lengthens it. `min` carries the 15; the *about* lives in
+   * the note, because the manual gives an expectation rather than a threshold.
+   *
+   * The rig is what makes this worth carrying: a reader sees which of the boxes in front of them
+   * need the time, and no single manual can tell them that.
+   */
+  warmUp: {
+    note: 'About 15 minutes from cold before it holds concert pitch',
+    minutes: { min: 15 },
+    verified: cite(4),
+  },
+
   jacks: [...JACKS],
   capabilityEvidence: {
     ...JACK_EVIDENCE,

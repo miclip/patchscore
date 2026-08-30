@@ -294,6 +294,53 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         </section>
       </div>
 
+      {device.warmUp === undefined && device.calibration === undefined ? null : (
+        <section className="panel span-2">
+          <header>
+            <h2>Before it holds pitch</h2>
+            <p className="note">
+              What this box needs of you every session, and what it needs of a technician. Both
+              come from its manual; neither changes with what you are making.
+            </p>
+          </header>
+
+          {device.warmUp === undefined ? null : (
+            <dl className="fact-list">
+              <dt>Warm-up</dt>
+              <dd>{device.warmUp.note}</dd>
+              <dt>Source</dt>
+              <dd>
+                {device.warmUp.verified === false
+                  ? 'not checked against a document.'
+                  : citeText(device.warmUp.verified)}
+              </dd>
+            </dl>
+          )}
+
+          {device.calibration === undefined ? null : (
+            <>
+              <p>
+                <strong>Calibration.</strong> {device.calibration.summary}.
+              </p>
+              {/*
+                The maker's caution, and the reason this page carries a pointer rather than the
+                procedure: every routine in the library is service work done inside the
+                instrument. Printing the steps would read as an invitation to follow them.
+              */}
+              {device.calibration.caution === undefined ? null : (
+                <p className="empty">{device.calibration.caution}.</p>
+              )}
+              <p className="note">
+                The procedure itself is in the manual, not here —{' '}
+                {device.calibration.verified === false
+                  ? 'not checked against a document.'
+                  : citeText(device.calibration.verified)}
+              </p>
+            </>
+          )}
+        </section>
+      )}
+
       <section className="panel span-2">
         <header>
           <h2>What it can play</h2>

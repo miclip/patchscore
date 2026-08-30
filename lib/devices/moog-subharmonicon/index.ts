@@ -1735,6 +1735,19 @@ export const device: Device = {
   panel: SUBHARMONICON_PANEL,
 
   /** §3.3. Declared once, cited once, referenced by the recipes above. */
+  /**
+   * §10/#263. **Warm-up**, cited. p.7: *"Subharmonicon is an analog instrument and should be allowed a few minutes to warm up
+   * before use"*. **"A few" is not a number and does not become one** — no `minutes` here, because
+   * turning it into 5 would be a figure with no source behind it (invariant 5).
+   *
+   * The rig is what makes this worth carrying: a reader sees which of the boxes in front of them
+   * need the time, and no single manual can tell them that.
+   */
+  warmUp: {
+    note: 'A few minutes from cold before it holds pitch',
+    verified: cite(7),
+  },
+
   jacks: JACKS,
 
   /**

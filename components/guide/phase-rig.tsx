@@ -11,8 +11,10 @@ import {
   clockJackNotes,
   clockSourceBasis,
   clockSourceSetup,
+  warmUpNotices,
 } from '@/lib/core'
 import { clockParts, count, ioText, list, mixerText, syncText } from './format'
+import { citeText } from './format'
 import { EvidenceMark, evidenceLines } from './instruction'
 
 /**
@@ -213,8 +215,39 @@ export function PhaseRig({
     // #200/#33. Nothing when the reader chose the box — see `clockBasisEvidence`.
     clockBasisEvidence(source, sourceDevice)
 
+  /**
+   * §10/#263. **Power these on first** — the same decision as the Markdown guide's, in this
+   * renderer's own words (#33). First in the phase because warm-up runs while you patch, and a
+   * reader who meets it last has already spent the time.
+   *
+   * Nothing at all when no box in the rig declares one, which is most rigs: the library is mostly
+   * digital and a heading with an empty list under it reads as a gap in the manuals.
+   */
+  const warming = warmUpNotices(result.devices)
+
   return (
     <>
+      {warming.length === 0 ? null : (
+        <div className="callout">
+          <p>
+            <strong>Power on first</strong> — {count(warming.length, 'box', 'boxes')} here{' '}
+            {warming.length === 1 ? 'needs' : 'need'} time before{' '}
+            {warming.length === 1 ? 'it holds' : 'they hold'} pitch. Switch{' '}
+            {warming.length === 1 ? 'it' : 'them'} on now and patch while{' '}
+            {warming.length === 1 ? 'it settles' : 'they settle'}.
+          </p>
+          <ul className="fact-list">
+            {warming.map(({ device, warmUp }) => (
+              <li key={device.id}>
+                <strong>{device.name}</strong> — {warmUp.note}
+                {warmUp.verified === false ? null : (
+                  <span className="note"> {citeText(warmUp.verified)}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {source === undefined ? (
         // §7.4: a real rig, and a fact to state rather than paper over.
         <p className="callout">

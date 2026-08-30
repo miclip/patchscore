@@ -2146,6 +2146,85 @@ export const PanelLayoutSchema = z.strictObject({
 })
 
 /**
+ * §10/#263. **How long this box needs before it holds pitch.**
+ *
+ * An analog instrument switched on cold drifts until its oscillators reach temperature, and every
+ * manual that says so says it in the first few pages, where nobody standing at a rack is looking.
+ * The rig knows which boxes are in front of you; no single manual can.
+ *
+ * **This is not the musical question.** What a part should be tuned *to* changes with the
+ * direction and belongs in the guide (#264). This is a property of the box, true every session.
+ *
+ * **Calibration is deliberately not here.** Both procedures in the library are service work — the
+ * MODEL D's §5 lifts the front panel to reach trimpots with a voltmeter and SysEx, and the
+ * Mother-32's is four holes and a supplied tool under the maker's own warning that the trimpots
+ * *"are not designed for unlimited use"* and to calibrate *"only when absolutely necessary"*.
+ * Restating those as steps on a public page would read as an invitation to do them.
+ */
+export type WarmUp = {
+  /** The claim in this repo's words, short enough to read standing at a rack (§8). */
+  note: string
+  /**
+   * Minutes, **only where the manual states a number**.
+   *
+   * The library holds all three shapes, which is why this is optional rather than a plain number.
+   * The Matriarch and the Grandmother print `10-15 minutes`, a range. The MODEL D prints
+   * `15 minutes or more`, a floor with no ceiling, so `max` is absent. The Subharmonicon and the
+   * Mother-32 print *"a few minutes"*, which is not a number at all — they carry a `note` and no
+   * `minutes`, because turning "a few" into 5 would be a figure with no source behind it.
+   */
+  minutes?: { min: number; max?: number }
+  verified: Verified
+}
+
+/**
+ * §10/#263. **That a calibration routine exists, and what its maker says about doing it.**
+ *
+ * A pointer, deliberately, and never the steps. Both routines in the library are service work
+ * carried out inside the instrument, and both makers say so in their own words:
+ *
+ *   - the MODEL D's §5 lifts the front panel to reach trimpots on the PCB, with a DC voltmeter
+ *     and SysEx from a computer, under a warning triangle reading *"undertaken only by an
+ *     experienced service technician, to prevent personal injury, or damage to the unit"*
+ *   - the Mother-32's is four holes and a supplied tool, under *"the internal tuning trimpots are
+ *     not designed for unlimited use"* and *"only calibrate ... when it is absolutely necessary"*
+ *
+ * Restating either as a numbered procedure on a public page would read as an invitation to do it,
+ * and a reader who followed one out of curiosity could void a warranty or hurt themselves. Saying
+ * the routine exists, where it is, and what the maker said about it reports the fact — invariant 5
+ * — and sends them to the document that carries the liability.
+ *
+ * **`caution` is optional but nearly mandatory in practice.** Both entries have one because both
+ * manuals do. A routine documented with no caution at all is worth a second look before it lands
+ * here: it may be an ordinary front-panel tuning function, which is not this field.
+ */
+export type Calibration = {
+  /** What the routine adjusts, in a few words. Never how. */
+  summary: string
+  /** The maker's own warning, restated. */
+  caution?: string
+  verified: Verified
+}
+
+export const CalibrationSchema = z.strictObject({
+  summary: z.string().min(1),
+  caution: z.string().min(1).optional(),
+  verified: VerifiedSchema,
+})
+
+export const WarmUpSchema = z.strictObject({
+  note: z.string().min(1),
+  minutes: z
+    .strictObject({
+      min: z.number().finite().positive(),
+      max: z.number().finite().positive().optional(),
+    })
+    .refine((m) => m.max === undefined || m.max >= m.min, 'a warm-up ceiling below its floor')
+    .optional(),
+  verified: VerifiedSchema,
+})
+
+/**
  * §2.4: a device with no voices (a mixer-recorder, an fx-processor) contributes no assignables
  * and still appears in rig integration. `voices` and `recipes` may therefore both be empty.
  */
@@ -2160,6 +2239,15 @@ export type Device = {
   physical: PhysicalSpec
   /** §10. A simplified original drawing of the panel. Optional; the rack generates one without. */
   panel?: PanelLayout
+  /**
+   * §10/#263. How long before this box holds pitch, where the manual says. Absent for every box
+   * whose manual is silent, which is every digital one.
+   */
+  warmUp?: WarmUp
+  /**
+   * §10/#263. That a service calibration exists and what its maker cautions, never its steps.
+   */
+  calibration?: Calibration
   /**
    * §3.3. The patch points this device declares, each cited once. Required only in the sense
    * that a recipe cannot name a jack that is not here — a box nobody patches declares none.
@@ -2219,6 +2307,8 @@ export const DeviceSchema = z
     io: IoSpecSchema,
     physical: PhysicalSpecSchema,
     panel: PanelLayoutSchema.optional(),
+    warmUp: WarmUpSchema.optional(),
+    calibration: CalibrationSchema.optional(),
     jacks: z.array(JackSpecSchema).optional(),
     voices: z.array(VoiceSpecSchema),
     comfortableVoices: z.int().min(1).optional(),
