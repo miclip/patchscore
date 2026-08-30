@@ -70,7 +70,7 @@ describe('the notice answers only for a box that declares it', () => {
     expect(patternEntryNotice(undefined)).toBeUndefined()
   })
 
-  it('names the three boxes in the library that cannot hold a pattern', () => {
+  it('names the four boxes in the library that cannot hold a pattern', () => {
     // Asserted as a set rather than a count, so adding a device that genuinely cannot sequence
     // itself fails this and has to be looked at rather than silently absorbed. It did: the
     // NEUTRON is the third, and it was looked at. p.25's Synthesizer Architecture list is
@@ -78,8 +78,15 @@ describe('the notice answers only for a box that declares it', () => {
     // sequencer or arpeggiator on it, and p.10 §4.3 sets the box up from "an external keyboard
     // with MIDI output". The same reading as the Minitaur's, on a semi-modular rather than a
     // desktop mono.
+    //
+    // The MODEL D is the fourth, and it was looked at too. p.34's Synthesizer Architecture list is
+    // exhaustive — monophonic, analog, three oscillators, one LFO, one VCF, two envelopes — with
+    // no sequencer or arpeggiator on it, and p.12 §4.3 has the reader connect "the MIDI OUT output
+    // of an external MIDI keyboard". Three of the four are now semi-modulars, which is the shape
+    // this notice keeps finding rather than a coincidence.
     const external = DEVICES.filter((d) => patternEntryNotice(d) !== undefined).map((d) => d.id)
     expect([...external].sort()).toEqual([
+      'behringer-model-d',
       'behringer-neutron',
       'intellijel-cascadia',
       'moog-minitaur',

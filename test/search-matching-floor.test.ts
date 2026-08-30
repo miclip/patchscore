@@ -1057,7 +1057,23 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * a property of which rig wins `industrial-techno` at seed 9, not of the repair. Its cost is
    * still nil, which is all this fixture claims.
    */
-  it('walks the recorded 728,391 nodes on industrial-techno seed 9', () => {
+  /**
+   * **The MODEL D puts both figures up again and the gap stays at zero — a third time.** 728,391
+   * -> 832,343 unrepaired and 728,391 -> 832,343 repaired, 14.3% on each.
+   *
+   * This is the seed the fixture is pinned to, and it is worth saying what happened to it rather
+   * than only what happened here. `search-bound.test.ts` records that seed 9 became
+   * `industrial-techno`'s *worst* seed with this device, taking the title from seed 0 while the
+   * direction's peak fell — so this walk got 14.3% dearer in a sweep whose maximum got 1.3%
+   * cheaper. The fixture is measuring one seed and has never claimed otherwise; the two numbers
+   * disagreeing in sign is the clearest reminder yet that it cannot stand in for the table.
+   *
+   * Three consecutive zeroes now, across a device that took the walk down, one that took it up,
+   * and one that took it up while moving which seed is worst. The repair prunes nothing *here*
+   * and costs nothing here, which is the admissibility claim, and that it does prune is still
+   * asserted next door on a rig chosen for it.
+   */
+  it('walks the recorded 832,343 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1065,7 +1081,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(728_391)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(832_343)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
