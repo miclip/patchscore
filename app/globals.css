@@ -2066,6 +2066,30 @@ button:active {
  * A `select` rather than a checkbox: neither option is the negation of the other, and "not by
  * phase" tells a reader nothing about what they would get instead.
  */
+/*
+ * §2.2/#86. The picker's "several parts" filter, matching the other controls on that row. #53's
+ * constraint holds: one row at 390px, so this takes its own width and the search box flexes.
+ */
+.picker-multipart {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  cursor: pointer;
+  white-space: nowrap;
+  /* #21: a real hit target on a phone, without the label growing to match. */
+  min-height: 44px;
+}
+
+.picker-multipart input {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+}
+
 .layout-toggle {
   display: flex;
   align-items: center;

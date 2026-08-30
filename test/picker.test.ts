@@ -17,6 +17,7 @@ import {
   queryTerms,
   templateFields,
   templateView,
+  carriesSeveralParts,
 } from '../lib/studio/picker'
 import type { DeviceFilter } from '../lib/studio/picker'
 import { DevicePicker } from '../components/device-picker'
@@ -397,7 +398,7 @@ describe('filtering cannot reach the selection', () => {
   it('leaves its inputs untouched', () => {
     const selected = ['roland-tr-1000']
     const before = JSON.stringify({ selected, kinds: DEVICES.map((d) => d.id) })
-    deviceView(DEVICES, selected, { query: 'polyend', kind: 'groovebox' })
+    deviceView(DEVICES, selected, { query: 'polyend', kind: 'groovebox', multiPart: false })
     templateView(TEMPLATES, 'ambient-dub', 'techno')
     expect(JSON.stringify({ selected, kinds: DEVICES.map((d) => d.id) })).toBe(before)
     expect(selected).toEqual(['roland-tr-1000'])
@@ -485,7 +486,7 @@ describe('the picker controls', () => {
   it('offers a labelled search box and a kind filter built from the registry', () => {
     const { markup } = deviceMarkup()
     expect(markup).toContain('type="search"')
-    expect(markup).toContain('Search devices by name, maker or kind')
+    expect(markup).toContain('Search devices by name, maker, kind or the parts they can play')
     expect(markup).toContain('Filter devices by kind')
     expect(markup).toContain('All kinds')
     for (const kind of kindsPresent(DEVICES)) {
@@ -670,5 +671,73 @@ describe('#112 a picker row carries two sibling targets', () => {
     expect(rule('.pick-details')).toContain('white-space: nowrap')
     // And nothing here buys the fit with a horizontal scroller.
     expect(rule('.pick')).not.toContain('overflow-x')
+  })
+})
+
+/**
+ * §2.2/#86. **Searching for a box by what it can play**, and filtering for boxes that carry
+ * several parts — the two questions the picker could not answer.
+ *
+ * The rule this file already sets is that a field earns its place by *excluding* something. Roles
+ * were rejected for directions on exactly that test, because every direction requests a kick.
+ * Devices are the other way round, and these fixtures assert the difference rather than assuming
+ * it: if the library ever drifts to where every box serves every role, the first test here fails
+ * and the field should go.
+ */
+describe('devices are searchable by the parts they can play (§2.2/#86)', () => {
+  const view = (query: string) =>
+    deviceView(DEVICES, [], { ...NO_DEVICE_FILTER, query }).rows.filter((r) => !r.retained)
+
+  it('narrows, which is the whole test for a searchable field', () => {
+    // `ride` is the most selective role in the library and `sub` among the least. Both must
+    // exclude something, or the term is noise wearing the costume of a feature.
+    for (const role of ['ride', 'acid', 'vox-chop', 'sub']) {
+      const hits = view(role).length
+      expect(hits, `${role} matched nothing`).toBeGreaterThan(0)
+      expect(hits, `${role} matched everything`).toBeLessThan(DEVICES.length)
+    }
+  })
+
+  it('returns boxes that actually have a recipe for it, not ones that merely advertise the role', () => {
+    // From `recipes`, not `voices.roles`: a voice claiming a role its device cannot serve would
+    // put a box in the results that nothing can ask for it (§3).
+    for (const row of view('acid')) {
+      expect(row.item.recipes.some((r) => r.role === 'acid'), row.item.id).toBe(true)
+    }
+  })
+
+  it('still finds a box by name, maker and kind', () => {
+    // The fields that were there before, unchanged — a new one must not displace them.
+    expect(view('deluge').map((r) => r.item.id)).toContain('synthstrom-deluge')
+    expect(view('roland').length).toBeGreaterThan(1)
+    expect(view('groovebox').length).toBeGreaterThan(1)
+  })
+})
+
+describe('the several-parts filter (§2.2/#86)', () => {
+  const shown = (multiPart: boolean) =>
+    deviceView(DEVICES, [], { ...NO_DEVICE_FILTER, multiPart }).rows.filter((r) => !r.retained)
+
+  it('keeps only boxes that carry more than one part', () => {
+    const kept = shown(true)
+    expect(kept.length).toBeGreaterThan(0)
+    expect(kept.length).toBeLessThan(DEVICES.length)
+    for (const row of kept) expect(carriesSeveralParts(row.item), row.item.id).toBe(true)
+  })
+
+  it('collects boxes no kind filter would, which is why it is not a kind', () => {
+    // They spread across groovebox, sampler and synth — the reason a kind dropdown cannot answer
+    // this and the count on every row had no way to be asked for.
+    const kinds = new Set(shown(true).map((r) => r.item.kind))
+    expect(kinds.size).toBeGreaterThan(1)
+  })
+
+  it('is a control rather than a term, because two boxes are named after it', () => {
+    // Typing "track" finds the boxes called Circuit Tracks and Tracker Mini, not the ones that
+    // have tracks — which is the whole argument for a checkbox.
+    const byName = deviceView(DEVICES, [], { ...NO_DEVICE_FILTER, query: 'track' }).rows.filter(
+      (r) => !r.retained,
+    )
+    expect(byName.length).toBeLessThan(shown(true).length)
   })
 })
