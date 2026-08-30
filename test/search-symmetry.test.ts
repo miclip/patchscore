@@ -1352,7 +1352,23 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * form. A clone of the *product* is not a clone of the *cost*.
    *
    * 718,179 is 35.9% of `DEFAULT_NODE_CAP`, and 2.78x of headroom stands.
+   *
+   * ---
+   *
+   * **The NEUTRON takes it back up, to 843,270 on `industrial-techno` seed 0** — 17.4%, and the
+   * seed moves with it, which is the ordinary shape of this figure rather than anything about
+   * that box. It is a one-voice semi-modular with nineteen recipes over fourteen roles, so it is
+   * the RD-8's opposite in the one way that matters to this number: where a near-clone's recipes
+   * arrive as second candidates of exactly equal cost, these arrive as *new* candidates on roles
+   * the library already crowds — `kick`, `sub` and `pad` among them, which
+   * `search-bound.test.ts` has repeatedly found to be where the bill is.
+   *
+   * 843,270 is 42.2% of `DEFAULT_NODE_CAP`, and the headroom is **2.37x**. Nothing capped, and
+   * `npm run measure:search` still prints above its 2x warning — but it is the first figure since
+   * the constant moved to 2,000,000 to spend more than 40% of it, which is worth reading rather
+   * than absorbing.
    */
+
   /**
    * **The band moved to `test/search-bound.test.ts`, and the sweep that measured it is gone.**
    *

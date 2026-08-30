@@ -79,6 +79,13 @@ describe('the cap changes nothing for a box that declares none', () => {
     const declaring = DEVICES.filter((d) => d.recipes.some((r) => r.patchPolyphony !== undefined))
     expect(declaring.map((d) => d.id)).toEqual([
       'arturia-microfreak',
+      // **The NEUTRON is the fifth, and the first where the field is on most of the recipes
+      // rather than a few.** Its `polyphony: 2` is true only with PARAPHONIC in — p.14: "a
+      // Neutron in Paraphonic mode will handle 2 notes" — so the sixteen recipes that leave the
+      // switch out declare `patchPolyphony: 1` and the three that engage it do not. Same shape as
+      // the MicroFreak's paraphony, at a smaller number and with the switch on the panel rather
+      // than three separate facts spread over three chapters.
+      'behringer-neutron',
       'korg-minilogue-xd',
       'moog-muse',
       // The Circuit Tracks is the fourth, and its reason is the plainest in the list: p.35 states
