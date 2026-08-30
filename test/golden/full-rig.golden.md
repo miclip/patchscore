@@ -30,9 +30,9 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → MC-101 · Drum Pad 1 — *Tight kick, tuned down, no tail on it*
+- **`kick`** → MPC XL · Mono Track 1 — *DrumSynth Kick, transient forward and the low band lifted*
   - p1 · exact `hard` · every section
-- **`sub`** → Circuit Tracks · Synth 1 — *Mono sine sub, filtered flat, nothing above the fundamental*
+- **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
 - **`bass-mid`** → Subsequent 37 · Voice — *Mixer pushed past unity with feedback under it and MultiDrive on top*
   - p2 · exact `dirty` · every section
@@ -40,7 +40,7 @@ glance whether the screen in front of you is the one the line is about.
   - p2 · exact `bright` · every section
 - **`closed-hat`** → TR-6S · CH — *Closed hat bit-crushed into a tick*
   - p2 · exact `dirty` · every section
-- **`metallic`** → Cascadia · Voice — *Ring modulator fed a square, notched rather than filtered*
+- **`metallic`** → RD-9 · CRASH — *Crash tuned down and filtered into a metallic bed*
   - p3 · exact `dark` · every section
 - **`open-hat`** → TR-1000 · OH — *Dull open hat, more air than sizzle*
   - p3 · exact `dark` · every section
@@ -52,7 +52,7 @@ glance whether the screen in front of you is the one the line is about.
   - p4 · exact `dark` · 3 notes at once on one polyphonic voice · every section
 - **`riser`** → TR-8S · CC — *A sample played backwards into the change*
   - p4 · exact `bright` · Build, Breakdown
-- **`noise`** → CRAVE · Voice — *Raw noise through the filter, oscillator out of the mix*
+- **`noise`** → RD-9 · OPEN — *Open hat held long and high-passed into a noise wash*
   - p5, optional · exact `dirty` · every section
 
 ### Gaps
@@ -70,12 +70,10 @@ None.
   - ↳ note: MIDI B, C and D have the same row and the same four options; set the one the cable is in.
   - ↳ cite: value manual — Hapax Manual (22 June 2026), p.132
 
-**Voice control** — Hapax sends the notes, 4 cables in all. Patch each pair before you play anything:
+**Voice control** — Hapax sends the notes, 2 cables in all. Patch each pair before you play anything:
 
-- pitch: Hapax `Cv out 2` → CRAVE `IN · OSC CV`
-- gate: Hapax `gate out 2` → CRAVE `IN · ENV GATE`
-- pitch: Hapax `Cv out 3` → Cascadia `EXT IN · PITCH`
-- gate: Hapax `gate out 3` → Cascadia `EXT IN · GATE`
+- pitch: Hapax `Cv out 2` → Minitaur `CONTROLLER INPUTS · PITCH CV`
+- gate: Hapax `gate out 2` → Minitaur `CONTROLLER INPUTS · GATE`
 
 - Why this box sends them — it is already the clock source, so the cables run from where the tempo does
 
@@ -87,10 +85,10 @@ None.
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
-- **MPC XL** — groovebox · 0 parts
+- **MPC XL** — groovebox · 1 part
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · 6 individual outs · USB audio · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, 6 individual outs: one channel each
 - **MicroFreak** — synth · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI · In: 1/8" TRS, not 5-pin — p.20 and p.7 both direct the reader to "the included MIDI adapters (1/8" TRS jack to 5-pin DIN, gray)" · manual
@@ -99,10 +97,14 @@ None.
     - ↳ cite: value manual — MicroFreak User Manual 4.0.3 p.20
   - audio: mono main out · audio in
   - mixer: 1 part, no individual outs: one mono channel for all
-- **CRAVE** — semi-modular · 1 part
+- **CRAVE** — semi-modular · 0 parts
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
-  - mixer: 1 part, no individual outs: one mono channel for all
+  - mixer: no parts assigned; nothing to patch
+- **RD-9** — drum-machine · 2 parts
+  - clock: sends clock · midi-din/usb/analog-clock
+  - audio: mono main out · 10 individual outs · audio in
+  - mixer: 2 parts, 10 individual outs: one channel each
 - **Digitakt II** — sampler · 0 parts
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio · audio in
@@ -111,10 +113,10 @@ None.
   - clock: receives clock only · analog-clock/midi-din
   - audio: stereo main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **Cascadia** — semi-modular · 1 part
+- **Cascadia** — semi-modular · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: mono main out · audio in
-  - mixer: 1 part, no individual outs: one mono channel for all
+  - mixer: no parts assigned; nothing to patch
 - **Metropolix** — sequencer · 0 parts
   - clock: sends clock · usb/analog-clock
   - audio: no audio I/O
@@ -143,10 +145,10 @@ None.
     - ↳ cite: value manual — Moog Matriarch Manual (012023), p.59
   - audio: stereo main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **Minitaur** — synth · 0 parts
+- **Minitaur** — synth · 1 part
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **Mother-32** — semi-modular · 0 parts
   - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
   - MIDI IN: The only MIDI connector on the box: input only, 5-pin DIN, on the front panel · manual
@@ -167,20 +169,20 @@ None.
   - clock: sends clock · midi-din/usb
   - audio: mono main out · audio in
   - mixer: 1 part, no individual outs: one mono channel for all
-- **Circuit Tracks** — groovebox · 1 part
+- **Circuit Tracks** — groovebox · 0 parts
   - clock: sends clock · out: midi-din/usb/analog-clock · in: midi-din/usb
   - audio: stereo main out · audio in
-  - mixer: 1 part, no individual outs: one stereo channel for all
+  - mixer: no parts assigned; nothing to patch
 - **Tracker Mini** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb
   - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284) · manual
     - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.13
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
-- **MC-101** — groovebox · 1 part
+- **MC-101** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · USB audio
-  - mixer: 1 part, no individual outs: one stereo channel for all
+  - mixer: no parts assigned; nothing to patch
 - **MC-707** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb
   - audio: stereo main out · 2 individual outs · USB audio · audio in
@@ -311,9 +313,9 @@ How this box sets a note’s length is not established here, so the durations be
 
 ## 5. Step programming
 
-### `kick` — MC-101 · Drum Pad 1
+### `kick` — MPC XL · Mono Track 1
 
-**Tight kick, tuned down, no tail on it** — settings in Sound design
+**DrumSynth Kick, transient forward and the low band lifted** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -322,12 +324,22 @@ How this box sets a note’s length is not established here, so the durations be
 ```
 - `downbeat` — 1, 9
 
+**On this box** — MPC XL
+
+- `downbeat` → `velocity` 120 on steps 1, 9
+  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
+
 **Build, Breakdown** — 16 steps, band 1
 
 ```
  1 x··· x··· x··· x···
 ```
 - `downbeat` — 1, 5, 9, 13
+
+**On this box** — MPC XL
+
+- `downbeat` → `velocity` 120 on steps 1, 5, 9, 13
+  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -338,16 +350,16 @@ How this box sets a note’s length is not established here, so the durations be
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — MC-101
+**On this box** — MPC XL
 
-- `accent` → `velocity` 120 on step 9
-  - ↳ hint: SEQ mode: hold [SHIFT], press the pad
-- `ghost` → `velocity` 54 on steps 8, 16
-  - ↳ hint: Hold TRACK SEL, press the pad
+- `downbeat` → `velocity` 120 on steps 1, 5, 13
+  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
 
-### `sub` — Circuit Tracks · Synth 1
+### `sub` — Minitaur · Voice
 
-**Mono sine sub, filtered flat, nothing above the fundamental** — settings in Sound design
+**One oscillator under the filter, nothing above it** — settings in Sound design
+
+**Not programmed here** — it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage. Enter this figure on the Hapax, which drives it through `Cv out 2` and `gate out 2`.
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -355,11 +367,6 @@ How this box sets a note’s length is not established here, so the durations be
  1 x··· ···· ···· ····
 ```
 - `downbeat` — 1
-
-**On this box** — Circuit Tracks
-
-- `downbeat` → `gate` 4 on step 1
-  - ↳ hint: Synth: press Gate, hold the step
 
 **Build, Breakdown** — 16 steps, band 1
 
@@ -369,11 +376,6 @@ How this box sets a note’s length is not established here, so the durations be
 - `downbeat` — 1, 9
 - `offbeat` — 15
 
-**On this box** — Circuit Tracks
-
-- `downbeat` → `gate` 4 on steps 1, 9
-  - ↳ hint: Synth: press Gate, hold the step
-
 **Drop, Peak** — 16 steps, band 3
 
 ```
@@ -381,11 +383,6 @@ How this box sets a note’s length is not established here, so the durations be
 ```
 - `downbeat` — 1
 - `offbeat` — 3, 7, 11, 15
-
-**On this box** — Circuit Tracks
-
-- `downbeat` → `gate` 4 on step 1
-  - ↳ hint: Synth: press Gate, hold the step
 
 ### `bass-mid` — Subsequent 37 · Voice
 
@@ -479,11 +476,9 @@ How this box sets a note’s length is not established here, so the durations be
 - `offbeat` → `substep` 1/4 on steps 3, 7, 11
   - ↳ hint: Press [SUB], then a pad
 
-### `metallic` — Cascadia · Voice
+### `metallic` — RD-9 · CRASH
 
-**Ring modulator fed a square, notched rather than filtered** — settings in Sound design
-
-**Not programmed here** — it has no sequencer, so it is played from whichever controller or sequencer is driving the rig. Enter this figure on the Hapax, which drives it through `Cv out 3` and `gate out 3`.
+**Crash tuned down and filtered into a metallic bed** — settings in Sound design
 
 **Intro, Outro** — 32 steps, band 0
 
@@ -593,9 +588,9 @@ How this box sets a note’s length is not established here, so the durations be
 
 **Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 1)
 
-### `noise` — CRAVE · Voice
+### `noise` — RD-9 · OPEN
 
-**Raw noise through the filter, oscillator out of the mix** — settings in Sound design
+**Open hat held long and high-passed into a noise wash** — settings in Sound design
 
 **Intro, Outro** — 32 steps, band 0
 
@@ -624,6 +619,36 @@ How this box sets a note’s length is not established here, so the durations be
 - `accent` — 31 (vel 104)
 
 ## 6. Sound design
+
+### MPC XL
+
+*Values below cite MPC Live III / MPC XL User Guide v3.7.*
+
+#### Mono Track 1 — `kick`: DrumSynth Kick, transient forward and the low band lifted
+
+*Ranges cite manual — MPC Live III / MPC XL User Guide v3.7, p.432.*
+
+- **Track Type** `Plugin`
+- **Plugin** `DrumSynth`
+- **Drum Type** `Kick`
+  - ↳ note: One DrumSynth instrument per plugin track
+- **Velocity** `30` % (0…100 %)
+  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
+- **Gain** `-2` dB (-68…12 dB)
+  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
+  - ↳ note: p.431 prints "-Inf, -68.0 – 0 – +12.0 dB"; -Inf is a setting below the range, not part of it
+- **Transient Attack** `45` % (-100…100 %)
+- **Distortion Drive** `6` dB (0…60 dB)
+- **Distortion Mix** `25` % (0…100 %)
+- **EQ Low Freq** `58` Hz (20…1000 Hz)
+- **EQ Low Gain** `3.5` dB (-12…12 dB)
+  - ↳ note: A `Cut` setting sits below the numeric range on the same page
+- **EQ High Gain** `-1.5` dB (-12…12 dB)
+- **Comp Ratio** `4` (1…100)
+  - ↳ note: p.432 prints the range as 1.0:1 - 100.0:1; this is the left-hand number
+- **Comp Attack** `8` ms (0.1…300 ms)
+  - ↳ note: p.432 prints the low end as 100 us
+- **Comp Threshold** `-14` dB (-60…0 dB)
 
 ### MicroFreak
 
@@ -703,81 +728,88 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.63
   - ↳ note: p.63: "The glide time is variable from \"off\" to about 10 seconds" — the manual hedges the upper end and prints no other figure
 
-### CRAVE
+### RD-9
 
-*Values below cite CRAVE Quick Start Guide BE_0718-AAJ_WW.*
+*Values below cite RD-9 User Manual V 1.0.*
 
-#### Voice — `noise`: Raw noise through the filter, oscillator out of the mix
+**Pattern-wide**
 
-*Ranges cite manual — CRAVE Quick Start Guide BE_0718-AAJ_WW, p.70.*
+One setting for the whole pattern — set it once, not once per part below.
 
-- **FREQUENCY** `0` (-5…5)
-- **PULSE WIDTH** `50` % (5…95 %)
-- **OSC MOD** `0` (0…10)
-- **MIX** `5` (-5…5)
-  - ↳ note: Negative is oscillator, positive is noise or external audio
-- **CUTOFF** `6` (0…10)
-  - ↳ note: 20 Hz to 20 kHz across the travel
+- **FILTER** `On`
+  - ↳ note: The ON button engages the filter into the circuit (p.6)
+- **PROB** `90` % (0…100 %)
+  - ↳ cite: range manual — RD-9 User Manual V 1.0, p.28
+  - ↳ note: Only steps switched on in the PROB menu are affected (p.18)
+  - ↳ hint: SETTINGS > PROB, pick a voice, then steps
+- **PROB PREFERENCE** `Pattern`
+  - ↳ note: p.18 adds that the steps are stored per pattern while the amount is one number
+  - ↳ hint: SETTINGS > CLOCK, TAP/HOLD to page
+- **STEP SIZE** `1/16`
+  - ↳ note: One step is 1/16 of a bar, so sixteen steps make one bar (p.19)
+  - ↳ hint: SETTINGS, then the step-size key
+- **STEP SIZE PREFERENCE** `Pattern`
+  - ↳ hint: SETTINGS > CLOCK, TAP/HOLD to page
+- **SWING** `50` % (25…75 %)
+  - ↳ cite: range manual — RD-9 User Manual V 1.0, p.28
+  - ↳ note: 50 is straight; below it swings negative, above it shuffles (p.20)
+  - ↳ hint: Press DATA MODE, then turn DATA
+- **SWING PREFERENCE** `Pattern`
+  - ↳ note: Chooses which stored Swing is used — and with it which printed range applies
+  - ↳ hint: SETTINGS > CLOCK, TAP/HOLD to page
+
+#### CRASH — `metallic`: Crash tuned down and filtered into a metallic bed
+
+Routing — Send the crash to the FX bus: press SEND, use SELECT to light CRASH pink, press SEND again (p.15)
+
+*Ranges cite manual — RD-9 User Manual V 1.0, p.33.*
+
+- **CRASH TUNE** `20` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: Changes the pitch of the crash voice (p.8)
+- **LEVEL** `40` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: Level against the other voices (p.10)
+- **FILTER MODE** `LPF`
+  - ↳ note: The HPF button toggles it; LPF is the default (p.6)
+- **CUTOFF** `2600` Hz (10…15000 Hz)
+  - ↳ note: One filter for the whole box — every voice on the FX bus shares it (p.15)
+  - ↳ hint: Press SEND, SELECT the voice, SEND again
 - **RESONANCE** `4` (0…10)
-- **VCF MOD** `0` (0…10)
-- **VOLUME** `7` (0…10)
-- **VCO SHAPE** `pulse`
-- **VCO MOD SOURCE** `env/osc mod`
-- **VCO MOD DEST** `width`
-- **VCF MODE** `low pass`
-- **VCF MOD SOURCE** `env`
-- **VCF MOD POLARITY** `positive`
-- **VCA MODE** `envelope`
-- **ATTACK** `0` (0…10)
-  - ↳ note: 2 ms to 3 s across the travel
-- **DECAY** `2` (0…10)
-  - ↳ note: 2 ms to 5 s across the travel
-- **SUSTAIN** `0` (0…10)
-  - ↳ note: 0 to 8 V across the travel
-- **SUSTAIN SWITCH** `off`
-  - ↳ note: Off: the level decays after the attack
+  - ↳ note: A peak at the cutoff point (p.15)
+- **WAVE DESIGNER ATTACK** `-3` dB (-15…15 dB)
+  - ↳ note: 0 dB is 12 o’clock and is bypass (p.15)
+- **WAVE DESIGNER SUSTAIN** `12` dB (-24…24 dB)
+  - ↳ note: Acts like a compressor upward, and shortens the tail downward (p.15)
 
-**Patch**
+#### OPEN — `noise`: Open hat held long and high-passed into a noise wash
 
-- `OUT · ENV` → `IN · VCF CUTOFF`
-  - ↳ note: The filter closing across each hit
+Routing — Send the hi-hats to the FX bus: press SEND, use SELECT to light OPEN pink, press SEND again (p.15)
 
-### Cascadia
+*Ranges cite manual — RD-9 User Manual V 1.0, p.33.*
 
-*Values below cite Intellijel Cascadia Manual v1.1.*
-
-#### Voice — `metallic`: Ring modulator fed a square, notched rather than filtered
-
-Routing — played from MIDI IN or EXT IN PITCH/GATE — Cascadia has no sequencer of its own. RING MOD is already on mixer channel 1 (p.43); this changes what it eats
-
-- **VCF · MODE** `NT2`
-- **VCF · FREQ** `38` % travel (0…100 % travel)
+- **ENHANCED MODE** `On`
+  - ↳ note: Off, PITCH, PITCH DEPTH and the hi-hat TUNE do nothing (p.10)
+  - ↳ hint: SETTINGS > PREFS, TAP/HOLD to Enhanced Mode
+- **TUNE** `84` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **VCF · Q** `54` % travel (0…100 % travel)
+- **OH DECAY** `94` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **MIXER · IN 1** `82` % travel (0…100 % travel)
+  - ↳ note: The longest tail the voice has (p.11)
+- **LEVEL** `46` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
-- **MIXER · IN 2** `0` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
-  - ↳ note: VCO A’s sine off, so only the ring output is heard
-- **VCO B · OCTAVE** `4` (0…7)
-  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.26
-- **VCO B · PITCH** `3` st (-6…6 st)
-  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.26
-  - ↳ note: detune from VCO A is what makes it clang
-- **VCO B · PITCH SOURCE** `PITCH B`
-- **ENVELOPE A · SPEED** `FAST`
-- **ENVELOPE A · ATTACK** `1` ms (0.2…1500 ms)
-  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.31
-- **ENVELOPE A · DECAY** `320` ms (0.6…2500 ms)
-  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.31
-- **ENVELOPE A · SUSTAIN** `0` V (0…5 V)
-  - ↳ cite: range manual — Intellijel Cascadia Manual v1.1, p.28
-
-**Patch**
-
-- `VCO B · SQUARE` → `RING MOD · IN 2`
-  - ↳ note: breaks the VCO B sine normal — a square through the ring modulator is harsher
+  - ↳ note: Level against the other voices (p.10)
+- **FILTER MODE** `HPF`
+  - ↳ note: The HPF button toggles it; LPF is the default (p.6)
+- **CUTOFF** `3600` Hz (10…15000 Hz)
+  - ↳ note: One filter for the whole box — every voice on the FX bus shares it (p.15)
+  - ↳ hint: Press SEND, SELECT the voice, SEND again
+- **RESONANCE** `7` (0…10)
+  - ↳ note: A peak at the cutoff point (p.15)
+- **WAVE DESIGNER ATTACK** `4` dB (-15…15 dB)
+  - ↳ note: 0 dB is 12 o’clock and is bypass (p.15)
+- **WAVE DESIGNER SUSTAIN** `14` dB (-24…24 dB)
+  - ↳ note: Acts like a compressor upward, and shortens the tail downward (p.15)
 
 ### minilogue xd
 
@@ -862,6 +894,60 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ hint: Hold SHIFT, flip to SELECT
 - **EFFECTS · DEPTH** `28` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
+
+### Minitaur
+
+*Values below cite Moog Minitaur Manual.*
+
+#### Voice — `sub`: One oscillator under the filter, nothing above it
+
+Routing — One VCO only — VCO 2 is down, so there is nothing to beat against and the pitch is dead still.
+
+*Ranges cite manual — Moog Minitaur Manual, p.29.*
+
+- **FINE TUNE** `0` st (-1…1 st)
+  - ↳ note: Centred is in tune. Adjusts both oscillators together, and neither sends nor receives MIDI (p.10)
+- **OSCILLATOR 1** `Square`
+  - ↳ note: The switch LED is off for Sawtooth and on for Square
+- **OSCILLATOR 2** `Square`
+- **VCO 2 FREQ** `0` st (-12…12 st)
+  - ↳ note: Centre is unison with VCO 1; the panel marks only − and +
+- **VCO 1 LVL** `100` % (0…100 %)
+  - ↳ hint: Past 2 o’clock it clips the filter
+- **VCO 2 LVL** `0` % (0…100 %)
+  - ↳ note: The VCOs begin to clip the filter at about 2 o’clock, which is where grit pushes them
+- **CUTOFF** `80` Hz (20…20000 Hz)
+  - ↳ note: The one knob on this panel with a printed scale: 20Hz, 80Hz, 320Hz, 1.2KHz, 5KHz, 20KHz
+- **RES** `5` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: p.29 gives this range as "0 to Self-Oscillation" — a named endpoint, not a number, so this is percent of travel
+- **EG AMOUNT** `0` % (-100…100 %)
+  - ↳ note: How much the filter envelope adds to or subtracts from CUTOFF; centre is none
+- **FILTER ATTACK** `1` ms (1…30000 ms)
+  - ↳ note: 1 ms fully anticlockwise to 30 s fully clockwise; set it by ear
+- **FILTER DECAY/RELEASE** `400` ms (1…30000 ms)
+  - ↳ note: One knob for both segments. In Mode 1 the RELEASE switch decides whether you hear the release at all; in Mode 2 it decides which of the two the knob is editing — see `DECAY/RELEASE MODE`
+- **FILTER SUSTAIN** `100` % (0…100 %)
+- **AMPLIFIER ATTACK** `5` ms (1…30000 ms)
+  - ↳ note: 1 ms fully anticlockwise to 30 s fully clockwise; set it by ear
+- **AMPLIFIER DECAY/RELEASE** `600` ms (1…30000 ms)
+  - ↳ note: One knob for both segments. In Mode 1 the RELEASE switch decides whether you hear the release at all; in Mode 2 it decides which of the two the knob is editing — see `DECAY/RELEASE MODE`
+- **AMPLIFIER SUSTAIN** `100` % (0…100 %)
+- **RELEASE** `Off`
+  - ↳ note: In Mode 1: on, the release time equals the decay time; off, the envelope stops dead at note-off
+- **DECAY/RELEASE MODE** `MODE 1`
+  - ↳ note: Hold RELEASE ON/OFF for one second to toggle; remembered on power-down. Mode 1 links decay and release, which is what the times above assume
+- **LFO RATE** `0.5` Hz (0.01…100 Hz)
+- **VCO LFO AMT** `0` % (0…100 %)
+  - ↳ note: Up to ±1 octave of pitch at full travel (p.16)
+- **VCF LFO AMT** `0` % (0…100 %)
+  - ↳ note: Up to ±5 octaves of cutoff at full travel (p.16)
+- **GLIDE** `Off`
+- **GLIDE RATE** `0` % (0…100 %)
+  - ↳ note: Instantaneous fully anticlockwise to extremely long fully clockwise (p.11)
+- **VOLUME** `70` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ note: Panelled `VOLUME` beside a headphone pictogram — one knob sets the output and the headphones together (p.17)
 
 ### Subsequent 37
 
@@ -976,81 +1062,6 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **MOD 1 · DEST** `OSC 2 WAVE`
 - **MOD 1 · MOD AMT** `1` (-5…5)
   - ↳ cite: range manual — Subsequent 37 User's Manual, p.22
-
-### Circuit Tracks
-
-*Values below cite Circuit Tracks Programmer's Reference Guide v3 and Circuit Tracks User Guide v3.*
-
-**Song-wide**
-
-One setting for the whole song — set it once, not once per part below.
-
-- **SWING** `50` (20…80)
-  - ↳ cite: range manual — Circuit Tracks User Guide v3, p.86
-  - ↳ note: One setting for the whole Project, not per track
-  - ↳ hint: Press Tempo/Swing, turn Macro 2
-
-#### Synth 1 — `sub`: Mono sine sub, filtered flat, nothing above the fundamental
-
-Routing — Sidechain this track to the kick drum track — Shift + FX, then a preset in the Synth row
-
-- **POLYPHONY MODE** `Mono`
-- **OSC 1 WAVE** `sine`
-- **OSC 1 LEVEL** `127` (0…127)
-  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.3
-- **OSC 2 LEVEL** `0` (0…127)
-  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.3
-- **FILTER TYPE** `low pass 24dB`
-- **FILTER FREQUENCY** `34` (0…127)
-  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.3
-  - ↳ hint: Synth: Macro 5 · Filter Frequency
-- **FILTER RESONANCE** `0` (0…127)
-  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.3
-  - ↳ hint: Synth: Macro 6 · Resonance
-- **AMP ATTACK** `2` (0…127)
-  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.4
-- **AMP DECAY** `90` (0…127)
-  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.4
-- **AMP SUSTAIN** `110` (0…127)
-  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.4
-- **AMP RELEASE** `24` (0…127)
-  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.4
-- **PORTAMENTO RATE** `18` (0…127)
-  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.3
-  - ↳ note: Only audible in a Mono polyphony mode
-- **SIDECHAIN ATTACK** `0` (0…127)
-  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.12
-- **SIDECHAIN HOLD** `34` (0…127)
-  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.12
-- **SIDECHAIN DECAY** `78` (0…127)
-  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.12
-- **SIDECHAIN DEPTH** `96` (0…127)
-  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.12
-- **REVERB SEND** `0` (0…127)
-  - ↳ cite: range manual — Circuit Tracks Programmer's Reference Guide v3, p.12
-  - ↳ hint: Press FX, then turn this track’s Macro
-
-### MC-101
-
-*Values below cite MC-101 Reference Manual eng01 and MC-101 Update eng08.*
-
-#### Drum Pad 1 — `kick`: Tight kick, tuned down, no tail on it
-
-Routing — OUT ASSIGN DRY keeps the kick clear of whatever the kit MFX is doing
-
-*Ranges cite manual — MC-101 Reference Manual eng01, p.47.*
-
-- **LEVEL** `118` (0…127)
-- **KEY OFFSET** `-2` st (-24…24 st)
-- **CUTOFF OFST** `24` (-100…100)
-- **DECAY OFST** `-34` (-100…100)
-- **RELEASE OFST** `-46` (-100…100)
-- **OUT ASSIGN** `DRY`
-- **REVERB SEND** `0` (0…127)
-- **SHUFFLE** `0` (-50…50)
-  - ↳ cite: range manual — MC-101 Reference Manual eng01, p.37
-  - ↳ note: One setting for the whole clip, not per step
-  - ↳ hint: Hold [SHIFT], press PAD [CLIP]
 
 ### TR-1000
 
@@ -1211,9 +1222,9 @@ What processes audio in this rig:
 - ZOIA Euroburo — is an effects unit (stereo main out · audio in)
 - Matriarch — carries effects, though no part in this guide reaches them
 - Muse — carries effects, though no part in this guide reaches them
-- Circuit Tracks — carries FX on the panel, and REVERB SEND in its recipes
+- Circuit Tracks — carries FX on the panel
 - Tracker Mini — carries effects, though no part in this guide reaches them
-- MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel, and REVERB SEND in its recipes
+- MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel
 - MC-707 — carries FX PRM and FX DEPTH on the panel
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 - TR-6S — carries MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes

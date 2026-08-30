@@ -423,37 +423,46 @@ export type AssignmentResult = {
  * closed is #78's own claim, which was that the bound rather than the constant was the problem.
  */
 /**
- * §7.1/#78. **Re-derived against measured latency at 33 devices, not raised to fit a device.**
+ * §7.1/#78/#248. **A backstop against pathology, and no longer a proxy for anything else.**
  *
- * The cap is counted in nodes and exists to guard *time*: this file calls it a latency guard and
- * §7.1 calls it a backstop against pathology. Nodes rather than milliseconds because invariant 6
- * requires a byte-identical guide from the same inputs, and a wall-clock cap would stop in a
- * different place on a different machine.
+ * The cap is counted in nodes because invariant 6 requires the same inputs to stop in the same
+ * place on every machine; a wall-clock cap would not. What it is *for* has been re-derived twice
+ * and this note is the third and, with luck, last statement of it.
  *
- * That proxy needed recalibrating. 200,000 was set when the search was cheaper, and the MicroFreak
- * took the whole-catalogue worst case to 223,348, over it. The measurements that decided the new
- * number, taken rather than assumed:
+ * **What a person actually does, measured at 35 devices:**
  *
- *     3-device rigs, 120 runs      worst      589 nodes        3 ms
- *     5-device rigs, 120 runs      worst    2,821 nodes       13 ms
- *     8-device rigs, 120 runs      worst   29,151 nodes       88 ms
- *     every device selected        worst  223,348 nodes      692 ms
+ *      3 devices        43 nodes     1 ms
+ *      5 devices     5,870 nodes    17 ms
+ *      8 devices     1,867 nodes     6 ms
+ *     12 devices     6,628 nodes    19 ms
+ *     all 35       834,964 nodes   ~2.6 s
  *
- * **The expensive case is not a rig anybody owns.** Cost tracks how many boxes contend for the
- * same role rather than how many are selected: 20 devices measured cheaper than 6, and a person
- * with the eight boxes they actually own is under 90 ms. 200,000 was never protecting that person.
- * It was about to cap the one scenario only a benchmark builds.
+ * Three orders of magnitude between a rig somebody owns and the whole catalogue, and the
+ * catalogue is a benchmark rather than a rig. So the cap protects nobody from the first four rows
+ * — it exists for a shape of problem none of them is.
  *
- * 500,000 is about 1.5 s at the 3.1 microseconds per node measured here, and 2.2x the current
- * worst. That keeps a real backstop against pathology while leaving the whole catalogue inside it.
+ * **2,000,000, and the reason is not headroom for the catalogue.** At 500,000 the catalogue swept
+ * past the cap when the thirty-fifth device landed, which degraded that resolve to greedy and
+ * broke a dozen fixtures that use "every device" as a convenient rich rig. Raising it keeps those
+ * honest. It changes nothing for a real rig, which is 300x away either way.
  *
- * **This buys room rather than fixing anything.** If a rig a person could plausibly own ever
- * approaches it, the answer is to make the search cheaper, and pricing near-clones in the bound is
- * the known lever. Another zero here is not. #228 is why it matters at all: a capped search
- * silently returns a worse allocation, so the cap being reachable is a correctness problem before
- * it is a performance one.
+ * **What stops this being the "another zero" #248 warns against** is that the thing which used to
+ * gate on this constant no longer does. `search-symmetry.test.ts` asserted the whole-catalogue
+ * sweep stayed under the cap, which made every new device a coin toss against a benchmark — it
+ * fired on the RD-9 for being the thirty-fifth box rather than for being expensive. That gate now
+ * asserts the promise where the promise is made: a rig of three to twelve boxes stays under a
+ * tenth of the cap. A change that made a *real* rig expensive still fails; a device that merely
+ * makes the catalogue bigger no longer does.
+ *
+ * The catalogue figure is tracked instead, by `npm run measure:search`, which prints it with its
+ * headroom and warns under 2x. And #247 means a capped search now says so in the guide, so the
+ * silent-wrongness that made #228 urgent is reported rather than hidden.
+ *
+ * **If a rig somebody could plausibly own ever approaches this, do not raise it again.** That is
+ * #248's trigger, and the answer there is a dominance rule that makes near-clone branching cheap —
+ * near-clone pairs are what the search actually pays for, and no constant fixes that.
  */
-export const DEFAULT_NODE_CAP = 500_000
+export const DEFAULT_NODE_CAP = 2_000_000
 
 // ---------------------------------------------------------------------------
 // §7.1 The objective

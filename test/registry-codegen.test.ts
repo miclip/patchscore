@@ -394,6 +394,10 @@ describe('the committed registry', () => {
       'roland-mc-707',
       // 436 mm — p.530's `436 x 256 x 67 mm`, with the axis order printed in the row header.
       'akai-mpc-live-iii',
+      // 477 mm, cited to the RD-9's own specifications page (p.33: `78 x 477 x 264 mm`). It lands
+      // between the MPC Live III and the TR-1000 — a nine-millimetre gap to the Roland, which is
+      // the kind of near-tie this ordering is good at holding honest.
+      'behringer-rd-9',
       'roland-tr-1000',
       // The three keyboards, and the widest things in the library that are not mixers. The
       // Subsequent 37 and the Model 2400 are within a millimetre of each other and are not a

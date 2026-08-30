@@ -119,7 +119,8 @@ describe('device search matches name, maker and kind', () => {
 
   it('accepts a hyphenated kind written as two words', () => {
     // 'drum-machine' is hyphenated for the schema's benefit. Nobody types it that way.
-    const drumMachines = ['roland-tr-1000', 'roland-tr-6s', 'roland-tr-8s']
+    // Registry order, so the RD-9 leads: `behringer-` sorts before `roland-`.
+    const drumMachines = ['behringer-rd-9', 'roland-tr-1000', 'roland-tr-6s', 'roland-tr-8s']
     expect(ids(devices({ query: 'drum-machine' }).rows)).toEqual(drumMachines)
     expect(ids(devices({ query: 'drum machine' }).rows)).toEqual(drumMachines)
     expect(ids(devices({ query: 'semi modular' }).rows)).toEqual([
@@ -182,15 +183,18 @@ describe('the kind filter', () => {
     // `groovebox` leads since the MPC Live III landed: `akai-mpc-live-iii` sorts first by folder
     // name, so it is the registry's first mention of any kind at all. `synth` moved to second
     // with the MicroFreak, whose `arturia-microfreak` sorts between the MPCs and the CRAVE —
-    // which is this comment's own point about reordering without any kind changing.
+    // which is this comment's own point about reordering without any kind changing. `drum-machine`
+    // then jumped from seventh to fourth with the RD-9, because `behringer-rd-9` sorts between the
+    // CRAVE and the Digitakt II and so mentions that kind long before any Roland does. Four
+    // devices have now moved this list without adding or removing a single kind.
     expect(kinds).toEqual([
       'groovebox',
       'synth',
       'semi-modular',
+      'drum-machine',
       'sampler',
       'fx-processor',
       'sequencer',
-      'drum-machine',
       'mixer-recorder',
     ])
     // Derived, not enumerated: every kind offered has at least one device behind it, and every
