@@ -70,6 +70,12 @@ describe('Digitone II manifest', () => {
     expect(elektron).toEqual([
       ['elektron-analog-rytm-mkii', 'drum-machine'],
       ['elektron-digitakt-ii', 'sampler'],
+      // Its own predecessor reads the same way on the same argument, and it reaches it over a
+      // page that appears to say otherwise: OS 1.41's manual calls the Digitone a synthesizer
+      // twice, once in silkscreen on the panel figure. That is the maker naming the sound engine,
+      // not classifying the box — four sequenced tracks, 128 patterns, song mode and four MIDI
+      // tracks are the same data structure this box has with twelve fewer tracks.
+      ['elektron-digitone', 'groovebox'],
       ['elektron-digitone-ii', 'groovebox'],
       ['elektron-octatrack-mkii', 'sampler'],
     ])
