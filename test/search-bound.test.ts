@@ -389,6 +389,36 @@ import { TEMPLATES } from '../lib/templates/index'
  * mechanism present. **This one adds that the sign is not predictable either.** Measure.
  *
  * Nothing caps. `industrial-techno` at 718,179 is 35.9% of the 2,000,000 `DEFAULT_NODE_CAP`.
+ *
+ * ---
+ *
+ * **The NEUTRON puts the two large directions back up, and adds a spike to a small one.** One
+ * semi-modular voice, nineteen recipes over fourteen roles.
+ *
+ *   - **`industrial-techno` 673,906-718,179 -> 728,390-843,270**, up 8.1% at the floor and 17.4%
+ *     at the peak. The worst seed moves 16 -> 0.
+ *   - **`weave` 138,768-160,264 -> 148,014-195,662**, up 6.7% and 22.1%. Both large directions
+ *     move together and in the same direction, which is the MC-707's and the RD-8's shape again.
+ *   - **`major-key-electro` 163-169 -> 168-312**, and the peak nearly doubles because the row
+ *     grows a spike where the RD-8 removed one: 312 on seeds 17 and 21, against a row that no
+ *     other seed takes above 173. The RD-8 row above describes the mirror of this on seed 13, and
+ *     neither is explained. **A spike in a two-hundred-node row is worth noticing and not worth
+ *     chasing** — it is four parts in ten thousand of the sweep's worst case.
+ *   - `ambient-dub` 173-178 -> 178-183 and `lydian-house` 158-266 -> 160-269 each rise by two to
+ *     five nodes. `drone-study` 26 -> 27 and `relay` 53 -> 55.
+ *
+ * Attributed by measurement, as every row above is: the same sweep without this box gives
+ * `industrial-techno` 718,179 and `weave` 160,264, both the previous row exactly.
+ *
+ * **The mechanism here is the MicroFreak's rather than the MC-707's, and it is the third row to
+ * say so.** Nothing about this box is a clone of anything: it is the only Behringer semi-modular
+ * beside the CRAVE and its recipes are authored against a different panel entirely. What it does
+ * do is put nineteen new candidates onto roles the library already crowds — `kick`, `sub` and
+ * `pad` among the fourteen, which the MicroFreak and Circuit Tracks rows both found to be where
+ * the bill sits. A new candidate on a crowded role is expensive; a new *folder* is not.
+ *
+ * Nothing caps. `industrial-techno` at 843,270 is 42.2% of the 2,000,000 `DEFAULT_NODE_CAP`, and
+ * the headroom is 2.37x — the first figure since the constant moved to spend over 40% of it.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -397,32 +427,34 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      173, 175, 173, 178, 177, 174, 173, 175, 178, 174, 175, 173, 175, 177, 178, 173, 175, 178,
-      173, 175, 178, 175, 173, 178
+      178, 180, 178, 183, 182, 179, 178, 180, 183, 179, 180, 178, 180, 182, 183, 178, 180, 183,
+      178, 180, 183, 180, 178, 183
     ],
     'drone-study': [
-      26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26
+      27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27,
+      27
     ],
     'industrial-techno': [
-      704439, 709975, 675301, 709975, 709975, 673906, 673907, 704439, 673906, 673907, 673908,
-      704438, 675249, 673907, 709974, 673907, 718179, 675251, 673907, 673907, 673907, 704439,
-      673906, 675251
+      843270, 728391, 729834, 728391, 728390, 728391, 774199, 728391, 728391, 728391, 728392,
+      774200, 768535, 728391, 728391, 728390, 728390, 729832, 728390, 728391, 774200, 728390,
+      728391, 729834
     ],
     'lydian-house': [
-      158, 265, 158, 159, 159, 266, 158, 265, 159, 264, 158, 265, 158, 159, 159, 264, 266, 159,
-      265, 158, 159, 158, 266, 159
+      160, 268, 160, 161, 161, 269, 160, 268, 161, 267, 160, 268, 160, 161, 161, 267, 269, 161,
+      268, 160, 161, 160, 269, 161
     ],
     'major-key-electro': [
-      169, 169, 168, 169, 169, 164, 168, 169, 163, 169, 169, 169, 163, 169, 169, 169, 169, 163,
-      169, 168, 169, 168, 164, 163
+      173, 173, 172, 173, 170, 173, 172, 173, 172, 173, 173, 173, 172, 173, 173, 168, 170, 312,
+      168, 172, 173, 312, 173, 172
     ],
     'relay': [
-      53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53
+      55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55,
+      55
     ],
     'weave': [
-      149448, 153132, 138768, 153132, 153155, 138768, 138768, 149440, 138768, 138768, 138791,
-      149448, 138768, 138768, 153132, 138768, 160264, 138768, 138768, 138768, 138768, 149470,
-      138768, 138768
+      195662, 148014, 148014, 148014, 148037, 148014, 170086, 148014, 148014, 148014, 148038,
+      170086, 162690, 148014, 148014, 148014, 148014, 148014, 148014, 148014, 170086, 148036,
+      148014, 148014
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".
@@ -521,7 +553,7 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
    *  - **Under the floor** — something got cheaper. Good news and a stale comment: move the band
    *    down and keep the alarm's sensitivity.
    */
-  const WORST_CASE_NODES = 718_179
+  const WORST_CASE_NODES = 843_270
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))

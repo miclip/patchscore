@@ -385,6 +385,11 @@ describe('the committed registry', () => {
       // retailers disagree — 385 against 358 — and the inch conversion printed beside the second
       // settles it: 358 mm is 14.09", where 385 mm would be 15.16".
       'squarp-hapax',
+      // 406.4 mm — 80 HP at the Eurorack 5.08, and the widest Eurorack panel in the list. p.26
+      // also prints `424 mm` for the same box, which is the factory chassis with its end cheeks;
+      // `panel.ts` records the aspect check that picks between them, and a device authored off
+      // the wrong one of those two figures would sort four places further down.
+      'behringer-neutron',
       'roland-tr-8s',
       // 425 mm, and the TR-8S above it is the reason this entry is worth a comment: the two are
       // the same chassis at two widths. Roland print `425(W) x 263(D) x 58(H)` for the MC-707 and

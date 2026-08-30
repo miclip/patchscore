@@ -176,11 +176,17 @@ describe('two notes are one assignable, and the line is drawn at three', () => {
     expect(device.voices).toHaveLength(1)
   })
 
-  it('is the only two-note voice in the library', () => {
+  it('is one of the two two-note voices in the library', () => {
     // Every other polyphony in the registry is 1, 4 or 8. This is the middle value that tests
     // whether the field means notes-within-a-role rather than roles-at-once.
+    //
+    // **The NEUTRON is the second, and it arrives at 2 from the other direction.** This box gets
+    // there by *narrowing* — DUO mode splitting a polyphonic keyboard down to a pair — where the
+    // Behringer gets there by having exactly two oscillators and a PARAPHONIC switch that lets
+    // them take a note each (p.14). Two routes to the same number, and the field means the same
+    // thing on both: notes inside one part, never two parts.
     const twos = DEVICES.flatMap((d) => expand(d)).filter((a) => a.polyphony === 2)
-    expect(twos.map((a) => a.deviceId)).toEqual(['moog-subsequent-37'])
+    expect(twos.map((a) => a.deviceId)).toEqual(['behringer-neutron', 'moog-subsequent-37'])
   })
 
   it('carries a two-note part inside that one assignable', () => {

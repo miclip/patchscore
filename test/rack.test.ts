@@ -66,10 +66,13 @@ const patchedRig = resolve({
   mood: NEUTRAL_MOOD,
   // The seed moves with the library, for the reason the assertion that uses this rig spells
   // out: which box wins a request is the objective's call. Seed 2 put the Cascadia to work
-  // until the RD-8 landed and the allocation shifted off every semi-modular; seed 7 gives the
-  // Subharmonicon four patch entries, which is the richest exercise of the path in the
-  // registry today. The *template* is what is pinned here, not the number beside it.
-  seed: 7,
+  // until the RD-8 landed and the allocation shifted off every semi-modular; seed 7 gave the
+  // Subharmonicon four patch entries until the NEUTRON landed and took the assignment. Of the
+  // five seeds that leave anything patched today — 0, 4 and 16 on the NEUTRON, 15 and 18 on the
+  // Grandmother — this is the first, and every one of them carries two entries rather than four,
+  // so there is no richest to pick. The *template* is what is pinned here, not the number
+  // beside it.
+  seed: 0,
 })
 
 /**
@@ -1186,7 +1189,11 @@ describe('rack view', () => {
     // SELECT buttons under them, ACCENT's column excluded — that column is the global emphasis
     // track and is not an assignable, so a cell there would name a part this box cannot carry.
     // The eleven cells land on the eleven buttons a reader presses to select a voice (p.7).
-    expect(fields).toHaveLength(29)
+    // Thirty since the NEUTRON, whose field is the smallest region in the list at 19 x 7 mm and
+    // sits in OUTPUT under the VOLUME knob. That box has one voice and 80 HP carrying thirty-six
+    // knobs, seven buttons and fifty-six sockets, so there is no clear space of the usual size
+    // anywhere on it — the panel file records the sweep that established that.
+    expect(fields).toHaveLength(30)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

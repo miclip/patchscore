@@ -1046,7 +1046,18 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * make, and it is unchanged. That the repair *does* prune is a different claim, asserted next
    * door on a rig chosen for it, and that block is untouched.
    */
-  it('walks the recorded 673,907 nodes on industrial-techno seed 9', () => {
+  /**
+   * **The NEUTRON puts both figures back up together, and the gap stays at zero.** 673,907 ->
+   * 728,391 unrepaired and 673,907 -> 728,391 repaired, 8.1% on each. Two devices running, two
+   * measurements identical to the node.
+   *
+   * A second consecutive zero is worth more than the first was. One could be the coincidence the
+   * paragraph above was careful not to over-read; two, across a device that took the walk down
+   * and a device that took it back up, says the repair genuinely prunes nothing *on this seed* —
+   * a property of which rig wins `industrial-techno` at seed 9, not of the repair. Its cost is
+   * still nil, which is all this fixture claims.
+   */
+  it('walks the recorded 728,391 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1054,7 +1065,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(673_907)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(728_391)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement

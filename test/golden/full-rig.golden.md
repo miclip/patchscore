@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → Deluge · Track 1 — *Synth kick on a kit row — sine, fast pitch drop, decimated*
+- **`kick`** → Grandmother · Voice — *Kick with the envelope cabled to Oscillator 1’s pitch*
   - p1 · exact `hard` · every section
 - **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
@@ -101,6 +101,12 @@ None.
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
+- **NEUTRON** — semi-modular · 0 parts
+  - clock: receives clock only · midi-din/usb
+  - MIDI IN: On the top panel beside VOLUME, not the rear · manual
+    - ↳ cite: value manual — Neutron User Manual, p.8
+  - audio: mono main out · audio in
+  - mixer: no parts assigned; nothing to patch
 - **RD-8** — drum-machine · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: mono main out · 11 individual outs · audio in
@@ -133,14 +139,14 @@ None.
   - clock: sends clock · analog-clock
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **Grandmother** — semi-modular · 0 parts
+- **Grandmother** — semi-modular · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per the Global Settings (p.37) · manual
     - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
   - MIDI OUT: Everything originating on this box, MIDI Clock included when the Global Setting sends it (p.37) · manual
     - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
   - audio: mono main out · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **Matriarch** — semi-modular · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per Global Setting 1.5 (p.64) · manual
@@ -217,10 +223,10 @@ None.
     - ↳ cite: value manual — Hapax Manual (22 June 2026), p.28
   - audio: no audio I/O
   - mixer: no parts assigned; nothing to patch
-- **Deluge** — groovebox · 1 part
+- **Deluge** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
   - audio: stereo main out · audio in
-  - mixer: 1 part, no individual outs: one stereo channel for all
+  - mixer: no parts assigned; nothing to patch
 - **Model 2400** — mixer-recorder · 0 parts
   - clock: sends clock, cannot receive · midi-din/usb
   - audio: stereo main out · 8 individual outs · USB audio · audio in
@@ -317,9 +323,9 @@ How this box sets a note’s length is not established here, so the durations be
 
 ## 5. Step programming
 
-### `kick` — Deluge · Track 1
+### `kick` — Grandmother · Voice
 
-**Synth kick on a kit row — sine, fast pitch drop, decimated** — settings in Sound design
+**Kick with the envelope cabled to Oscillator 1’s pitch** — settings in Sound design
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -344,10 +350,10 @@ How this box sets a note’s length is not established here, so the durations be
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
 
-**On this box** — Deluge
+**On this box** — Grandmother
 
-- `accent` → `velocity` 127 on step 9
-  - ↳ hint: Hold the note pad, turn (SELECT)
+- `accent` → `accent` true on step 9
+  - ↳ hint: REC mode, then TAP adds an accent
 
 ### `sub` — Minitaur · Voice
 
@@ -896,6 +902,63 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **EFFECTS · DEPTH** `28` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
 
+### Grandmother
+
+*Values below cite Moog Grandmother User’s Manual (Version 2).*
+
+#### Voice — `kick`: Kick with the envelope cabled to Oscillator 1’s pitch
+
+Routing — Played from its own 32-note keyboard, from the arpeggiator or the 256-step sequencer, or over MIDI IN. Two cables: + ENV OUT to OSCILLATORS 1 PITCH IN for the drop — there is no normalled envelope-to-pitch route on this box — and KB VEL OUT to CUTOFF IN, without which p.30 says the accent is inaudible
+
+- **OSCILLATOR 1 OCTAVE** `32'`
+- **OSCILLATOR 1 WAVEFORM** `TRIANGLE`
+- **OSCILLATOR 2 OCTAVE** `16'`
+- **OSCILLATOR 2 WAVEFORM** `TRIANGLE`
+- **SYNC** `OFF`
+- **OSCILLATOR 2 FREQUENCY** `0` st (-7…7 st)
+  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.12
+  - ↳ hint: 12 o’clock is unison with Oscillator 1
+- **OSCILLATOR 1** `82` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Past 1 o’clock the mixer starts to overdrive
+- **OSCILLATOR 2** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **NOISE** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **CUTOFF** `120` Hz (10…20000 Hz)
+  - ↳ cite: range manual — Moog Grandmother User’s Manual (Version 2), p.16
+- **RESONANCE** `30` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Past 3 o’clock the ladder self-oscillates
+- **ENVELOPE AMT** `66` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: 12 o’clock is off; either way from there
+- **KBD TRACK** `OFF`
+- **ATTACK** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **DECAY** `14` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **SUSTAIN** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **RELEASE** `12` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **VCA MODE** `ENV`
+- **VOLUME** `78` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+- **MIX** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+  - ↳ hint: Fully clockwise is reverb only, no dry
+- **GLIDE** `0` % travel (0…100 % travel)
+  - ↳ cite: range unverified — mood leaves this value alone
+
+**Patch**
+
+- `ENVELOPE · + ENV OUT` → `OSCILLATORS · 1 PITCH IN`
+  - ↳ note: The pitch drop — a short DECAY makes it a click, a longer one a boom
+- `ARP/SEQ · KB VEL OUT` → `FILTER · CUTOFF IN` · manual
+  - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.30
+  - ↳ note: Makes a sequencer accent audible — the accent envelope only exists at this jack
+
 ### Minitaur
 
 *Values below cite Moog Minitaur Manual.*
@@ -1201,57 +1264,6 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
   - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
   - ↳ hint: INST Edit > DelaySend
 
-### Deluge
-
-*Values below cite Deluge Official Guidebook OS 4.1 (OLED) and Deluge community firmware release_1_2_1.*
-
-**Song-wide**
-
-One setting for the whole song — set it once, not once per part below.
-
-- **SWING** `50` % (1…99 %)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
-  - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
-  - ↳ hint: Hold [SHIFT], turn (TEMPO)
-
-#### Track 1 — `kick`: Synth kick on a kit row — sine, fast pitch drop, decimated
-
-- **CLIP TYPE** `Kit`
-  - ↳ hint: From clip view: [SHIFT] + [KIT] or [SYNTH]
-- **OSC 1 TYPE** `Sine`
-  - ↳ hint: [AUDITION] + [SYNTH] makes a synth row
-- **ENV 1 ATTACK** `1` (0…50)
-  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/attack.md
-  - ↳ note: the menus recommend at least 1; 0 is likely to click
-  - ↳ hint: Press (SELECT), ENV 1, then ATTACK / DECAY
-- **ENV 1 DECAY** `17` (0…50)
-  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/decay.md
-  - ↳ note: 0 is the shortest decay, 50 the longest
-- **ENV 1 SUSTAIN** `0` (0…50)
-  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/sustain.md
-  - ↳ note: 0 decays away to nothing, which is what a drum does
-- **ENV 1 RELEASE** `5` (0…50)
-  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/release.md
-- **ENV 2 ATTACK** `1` (0…50)
-  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/attack.md
-- **ENV 2 DECAY** `6` (0…50)
-  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/decay.md
-  - ↳ note: this is how fast the pitch falls
-- **ENV 2 SUSTAIN** `25` (0…50)
-  - ↳ cite: range manual — Deluge community firmware release_1_2_1, menus/envelope/sustain.md
-  - ↳ note: p.125: on a pitch destination 25 is the note itself, and below 25 goes flat
-- **ENV 2 → PITCH DEPTH** `22` (-50…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.120 and p.122 + community firmware release_1_2_1, automation_view.md
-  - ↳ note: destination is Pitch / Transpose: Overall; positive lifts the attack above the note
-  - ↳ hint: In PITCH, press (SELECT) again, pick ENV 2
-- **DECIMATION** `12` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
-- **BITCRUSH** `6` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.217
-- **EQ BASS AMOUNT** `33` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
-  - ↳ note: 25 is neutral; above boosts
-
 ## 7. Finishing
 
 **Sidechain**
@@ -1271,6 +1283,7 @@ What processes audio in this rig:
 - MPC Live III — carries effects, though no part in this guide reaches them
 - MPC One G2 — carries effects, though no part in this guide reaches them
 - MPC XL — carries effects, though no part in this guide reaches them
+- NEUTRON — carries DELAY on the panel
 - RD-8 — carries FX on the panel
 - ZOIA Euroburo — is an effects unit (stereo main out · audio in)
 - Matriarch — carries effects, though no part in this guide reaches them
@@ -1282,7 +1295,7 @@ What processes audio in this rig:
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 - TR-6S — carries MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
 - TR-8S — carries REVERB, DELAY and MASTER FX on the panel, and DELAY SEND, INST FX TYPE and REVERB SEND in its recipes
-- Deluge — carries BITCRUSH and DECIMATION in its recipes
+- Deluge — carries effects, though no part in this guide reaches them
 - Model 2400 — is a mixer and recorder (stereo main out · 8 individual outs · USB audio · audio in)
 - OP-XY — carries effects, though no part in this guide reaches them
 - Zoom LiveTrak L-8 — is a mixer and recorder (stereo main out · USB audio · audio in)
