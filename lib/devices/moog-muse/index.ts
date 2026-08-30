@@ -1529,6 +1529,35 @@ export const device: Device = {
 
   panel: MUSE_PANEL,
 
+  /**
+   * §10/#263. **The one box in the library with a tuning routine a player runs.**
+   *
+   * p.112: QUICK TUNE *"touches up the tuning for the current temperature conditions and takes a
+   * few seconds"*, and Moog note that it saves its measurements, so the more environments it is
+   * run in the more robust the instrument's tuning becomes. That is a thing to do during a
+   * session, which is why it is `quickTune` and reaches the guide rather than only the device
+   * page.
+   */
+  quickTune: {
+    note: 'Touches up tuning for the current temperature; takes a few seconds',
+    path: 'PROGRAMMER > TUNING > START QUICK TUNE',
+    verified: cite(112),
+  },
+
+  /**
+   * §10/#263. **The same page, and the opposite claim.** Full TUNING and AUTOCAL sit beside QUICK
+   * TUNE under *"the instrument is calibrated & tuned at the factory in a controlled environment,
+   * so do not run full TUNING or AUTOCAL unless there is a significant problem that cannot be
+   * solved by other means"*. A pointer, never steps — see the `Calibration` type. Putting both in
+   * one field would have blurred exactly the distinction that makes either safe to print.
+   */
+  calibration: {
+    summary: 'Full TUNING and AUTOCAL, beside the quick tune on the same settings page',
+    caution:
+      'Moog say the instrument is calibrated and tuned at the factory, and not to run full TUNING or AUTOCAL unless there is a significant problem that cannot be solved by other means',
+    verified: cite(112),
+  },
+
   manual: { title: "Moog Muse User's Manual", edition: 'Version 1.4.0' },
 
   /**

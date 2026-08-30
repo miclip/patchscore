@@ -294,7 +294,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         </section>
       </div>
 
-      {device.warmUp === undefined && device.calibration === undefined ? null : (
+      {device.warmUp === undefined &&
+      device.calibration === undefined &&
+      device.quickTune === undefined ? null : (
         <section className="panel span-2">
           <header>
             <h2>Before it holds pitch</h2>
@@ -315,6 +317,20 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                   : citeText(device.warmUp.verified)}
               </dd>
             </dl>
+          )}
+
+          {device.quickTune === undefined ? null : (
+            <>
+              <p>
+                <strong>Quick tune.</strong> {device.quickTune.note} —{' '}
+                <span className="mono">{device.quickTune.path}</span>.
+              </p>
+              <p className="note">
+                {device.quickTune.verified === false
+                  ? 'not checked against a document.'
+                  : citeText(device.quickTune.verified)}
+              </p>
+            </>
           )}
 
           {device.calibration === undefined ? null : (

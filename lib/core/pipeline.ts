@@ -17,6 +17,7 @@ import type {
   WarmUp,
   JackSignalKind,
   JackSpec,
+  QuickTune,
   Realisation,
 } from './device'
 import type { RoleRequest, Template } from './template'
@@ -187,6 +188,24 @@ export function warmUpNotices(devices: readonly Device[]): { device: Device; war
   const out: { device: Device; warmUp: WarmUp }[] = []
   for (const device of devices) {
     if (device.warmUp !== undefined) out.push({ device, warmUp: device.warmUp })
+  }
+  return out
+}
+
+/**
+ * §10/#263. **Which boxes in this rig have a tuning routine the player runs.**
+ *
+ * Sits beside `warmUpNotices` because it belongs to the same moment: you switch the analog boxes
+ * on, patch while they settle, and touch up the ones that can be touched up once they are warm.
+ * A calibration is not here and never will be — that is service work and it stays on the device
+ * page.
+ */
+export function quickTuneNotices(
+  devices: readonly Device[],
+): { device: Device; quickTune: QuickTune }[] {
+  const out: { device: Device; quickTune: QuickTune }[] = []
+  for (const device of devices) {
+    if (device.quickTune !== undefined) out.push({ device, quickTune: device.quickTune })
   }
   return out
 }

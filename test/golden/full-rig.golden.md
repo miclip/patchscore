@@ -61,9 +61,11 @@ None.
 
 ## 3. Rig integration
 
-**Power on first** — 6 boxes here need time before they hold pitch. Switch them on now and patch while they settle.
+**Power on first** — 7 boxes here need time before they hold pitch. Switch them on now and patch while they settle.
 - **MODEL D** — 15 minutes or more from cold
   - ↳ cite: manual — MODEL D User Manual, p.12
+- **DFAM** — a few minutes from cold before it holds pitch
+  - ↳ cite: manual — Moog DFAM Owner’s Manual, p.6
 - **Grandmother** — 10 to 15 minutes from cold before it holds pitch
   - ↳ cite: manual — Moog Grandmother User’s Manual (Version 2), p.6
 - **Matriarch** — 10 to 15 minutes from cold before it holds pitch
@@ -74,6 +76,9 @@ None.
   - ↳ cite: manual — Moog Mother-32 User Manual (Version 2), p.9
 - **Subharmonicon** — a few minutes from cold before it holds pitch
   - ↳ cite: manual — Moog Subharmonicon Manual, p.7
+
+**Once warm** — run Muse's quick tune: `PROGRAMMER > TUNING > START QUICK TUNE`. Touches up tuning for the current temperature; takes a few seconds.
+  - ↳ cite: manual — Muse User's Manual v1.4.0, p.112
 
 **Clock source** — Hapax over `midi-din`, carrying 0 parts. Sync everything else to it, except MODEL D and Zoom LiveTrak L-8, which cannot receive clock and run free, and Model 2400, which cannot receive clock — a DAW drives its transport over HUI/MCU, and without one it runs free, and Metropolix and DFAM, which have no `midi-din` input and run free.
 
