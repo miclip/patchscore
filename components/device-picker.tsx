@@ -163,7 +163,7 @@ export function DevicePicker({
         is what a reader expects of a search row and needs no heading to explain.
       */}
       <fieldset className="picker-filters">
-        <legend>Show only</legend>
+        <legend>Inspiration filters</legend>
         {/*
           §7.3. Only shown when there is a gap to fill. A checkbox that can never narrow anything
           is a control teaching a reader the picker is broken — and with a rig that covers its
@@ -199,15 +199,6 @@ export function DevicePicker({
           />
           Several parts
         </label>
-        {/*
-          What the two mean, said once under them rather than in each label — a label long enough
-          to explain itself stops fitting the row, and #53 requires these to survive 390px.
-        */}
-        <p className="picker-filters-note">
-          {gaps.size === 0
-            ? 'Boxes that carry more than one part at a time.'
-            : 'Fills a gap — plays something this direction asks for and your rig cannot. Several parts — carries more than one part at a time.'}
-        </p>
       </fieldset>
 
       {/*
