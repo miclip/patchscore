@@ -108,6 +108,8 @@ describe('device search matches name, maker and kind', () => {
       'akai-mpc-live-iii',
       'akai-mpc-one-g2',
       'akai-mpc-xl',
+      // The Digitone II sorts here on folder name, between the MPCs and the Circuit Tracks.
+      'elektron-digitone-ii',
       'novation-circuit-tracks',
       'polyend-tracker-mini',
       'roland-mc-101',
@@ -217,6 +219,7 @@ describe('the kind filter', () => {
       'akai-mpc-live-iii',
       'akai-mpc-one-g2',
       'akai-mpc-xl',
+      'elektron-digitone-ii',
       'novation-circuit-tracks',
       'polyend-tracker-mini',
       'roland-mc-101',
@@ -225,8 +228,10 @@ describe('the kind filter', () => {
       'teenage-engineering-op-xy',
     ])
 
-    // Both conditions, not either: the kind alone returns eight grooveboxes and the query alone
-    // returns one device, and together they return the one that satisfies both.
+    // Both conditions, not either: the kind alone returns ten grooveboxes and the query alone
+    // returns one device, and together they return the one that satisfies both. (This read
+    // "eight" while the list above held nine — a count that went stale one device before the
+    // Digitone II and is corrected here rather than left to drift further.)
     expect(ids(devices({ kind: 'groovebox', query: 'polyend' }).rows)).toEqual([
       'polyend-tracker-mini',
     ])
@@ -361,9 +366,9 @@ describe('selected entries survive any filter', () => {
     const shown = devices({ kind: 'groovebox' }, ['roland-tr-1000'])
     expect(ids(shown.rows)).toContain('roland-tr-1000')
     expect(shown.rows.find((r) => r.item.id === 'roland-tr-1000')?.retained).toBe(true)
-    // Nine grooveboxes since the Circuit Tracks landed; the TR-1000 is a drum machine and is
+    // Ten grooveboxes since the Digitone II landed; the TR-1000 is a drum machine and is
     // here only because it is selected, which is what `retained` marks and why it is not counted.
-    expect(shown.matched).toBe(9)
+    expect(shown.matched).toBe(10)
   })
 
   it('keeps them in registry order rather than appending them at the end', () => {

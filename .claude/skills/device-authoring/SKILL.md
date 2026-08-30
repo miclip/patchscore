@@ -292,8 +292,24 @@ devices, which is why the table is now generated rather than remembered:
 
 ```bash
 npm run measure:search                                    # the row above, for the tree you have
+```
+
+**Run it once before you author and once after, and that is normally the whole measurement.** The
+before/after pair is what the queue notes ask for and what a reviewer reads: it says what your box
+cost and whether the headroom moved.
+
+**`--attribute` is the expensive one, and at this library size it is no longer routine.**
+
+```bash
 npx tsx scripts/measure-search-cost.ts --attribute <id>   # which of one device's roles it pays for
 ```
+
+It drops each of your device's roles in turn and re-sweeps the **whole library** for each, so its
+cost is *roles x devices* and it grows on both axes. At 38 devices it runs for tens of minutes, and
+on the Digitone II — a nineteen-role box — it ran past conclave's 2700s turn watchdog and paused the
+run. Reach for it when the before/after pair shows your box actually moved the number and you need
+to know which role did it. If the sweep barely moved, you already have your answer and attribution
+will only tell you the same thing slowly.
 
 **Read this as the sizing rule rather than as a fact about one box.** Ask which of your roles are
 already crowded before counting your recipes. Two devices have now been attributed, and both say

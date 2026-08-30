@@ -1073,7 +1073,21 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * and costs nothing here, which is the admissibility claim, and that it does prune is still
    * asserted next door on a rig chosen for it.
    */
-  it('walks the recorded 832,343 nodes on industrial-techno seed 9', () => {
+  /**
+   * **The Digitone II puts both figures up once more and the gap stays at zero — a fourth time.**
+   * 832,343 -> 858,219 unrepaired and 832,343 -> 858,219 repaired, 3.1% on each.
+   *
+   * The seed this fixture is pinned to stopped being the direction's worst again, and in the
+   * opposite direction from last time. `search-bound.test.ts` records the peak moving off seed 9
+   * onto seed 3 while the whole row rose 13.2%, so this walk got 3.1% dearer in a sweep whose
+   * maximum got four times that. The previous entry called the two numbers disagreeing in sign the
+   * clearest reminder that one seed cannot stand in for the table; agreeing in sign and by a factor
+   * of four is the same reminder said more quietly.
+   *
+   * Four consecutive zeroes, across four devices that between them took the walk down, up, up while
+   * moving which seed is worst, and up while moving it back off this one.
+   */
+  it('walks the recorded 858,219 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1081,7 +1095,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(832_343)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(858_219)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement

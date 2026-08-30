@@ -67,12 +67,15 @@ const patchedRig = resolve({
   // The seed moves with the library, for the reason the assertion that uses this rig spells
   // out: which box wins a request is the objective's call. Seed 2 put the Cascadia to work
   // until the RD-8 landed and the allocation shifted off every semi-modular; seed 7 gave the
-  // Subharmonicon four patch entries until the NEUTRON landed and took the assignment. Of the
-  // five seeds that leave anything patched today — 0, 4 and 16 on the NEUTRON, 15 and 18 on the
-  // Grandmother — this is the first, and every one of them carries two entries rather than four,
-  // so there is no richest to pick. The *template* is what is pinned here, not the number
+  // Subharmonicon four patch entries until the NEUTRON landed and took the assignment; seed 0
+  // then held it on the NEUTRON until the Digitone II landed and took that assignment too.
+  //
+  // Nine seeds leave something patched today, and unlike last time there *is* a richest: seed 4
+  // puts the Subharmonicon back with four entries, where the other eight carry one or two. So the
+  // rule this line follows changes from "the first" to "the most patched", which is the better
+  // rule and was simply unavailable before. The *template* is what is pinned here, not the number
   // beside it.
-  seed: 0,
+  seed: 4,
 })
 
 /**
@@ -202,7 +205,13 @@ describe('rack geometry (§10)', () => {
     //
     // So `- 7`: the RD-9 leaving the fallback took this to `- 6`, and the MODEL D arriving with a
     // rise the NEUTRON already has spends the one device it adds without adding a rise.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 7)
+    //
+    // **The eighth collision is the tidiest of the lot: two boxes in one enclosure.** The Digitone
+    // II and the Digitakt II both specify `W 215 × D 176 × H 63 mm`, and both panel figures measure
+    // to 1.2215 against the specification's 1.22159 — not two readings that happen to land close,
+    // but the same steel case with a different engine inside it. Like the Eurorack pair above, this
+    // one will not separate however carefully either is re-measured.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 8)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -1081,7 +1090,11 @@ describe('rack view', () => {
     // view. It is the last box to arrive with a screen rather than the first to have one noticed:
     // the display was always on the panel, and until p.8 of that document there was no figure to
     // measure it against.
-    expect(count('rack-screen')).toBe(46)
+    // **47 with the Digitone II**, the 128 x 64 pixel OLED p.87 specifies. Elektron give it a
+    // resolution and no size, so the 73.3 x 50.7 mm here is measured off the p.12 front-panel
+    // figure like every other coordinate in that layout — the drawn bezel, carrying the EP-133's
+    // caveat once more, because a pixel count is not a dimension.
+    expect(count('rack-screen')).toBe(47)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -1224,7 +1237,13 @@ describe('rack view', () => {
     // the NEUTRON's: one voice, no voice or track selector, and the section the voice finally
     // leaves by is the only thing on the panel worth pointing at. It gets 24 x 9 mm where the
     // NEUTRON got 19 x 7, which is 70 HP against 80 HP spending its width on twenty fewer sockets.
-    expect(fields).toHaveLength(32)
+    //
+    // **Thirty-three with the Digitone II**, which is the Digitakt II's answer on the Digitakt II's
+    // chassis: the sixteen [TRIG] keys are the track selectors (p.12 items 16 and 19), so the field
+    // sits on them rather than beside them and no second grid is drawn underneath. The two boxes'
+    // fields measure 124.4 x 40.1 and 170 x 41 mm, which is the same sixteen keys read off two
+    // figures a generation apart.
+    expect(fields).toHaveLength(33)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {
