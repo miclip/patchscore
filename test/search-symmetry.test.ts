@@ -1122,16 +1122,6 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    */
 
   /**
-   * Seeds 0..23, deliberately wider than the eight `SEEDS` the oracle rigs above use. The worst
-   * seed moves as the library grows — it was 18 when the DFAM landed, 5 at the TR-8S prefix, and
-   * 9 until #78's matching repair took `industrial-techno` out of first place entirely — so a
-   * sparse list hides the peak, which is the one thing this sweep exists to find. The oracle
-   * tests keep the short list on purpose: they brute-force every rig, and widening them buys
-   * minutes and nothing else.
-   */
-  const CAP_SWEEP_SEEDS = Array.from({ length: 24 }, (_, i) => i)
-
-  /**
    * The worst case measured on this tree, and a band around it.
    *
    * The band is the point of this test, not the cap. Asserting only `capped === false` passes at
@@ -1363,59 +1353,22 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    *
    * 718,179 is 35.9% of `DEFAULT_NODE_CAP`, and 2.78x of headroom stands.
    */
-  const WORST_CASE_NODES = 718_179
-  const WORST_CASE_MARGIN = 0.05
-  const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
-  const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))
-
   /**
-   * The timeout is not a workaround. This runs `TEMPLATES.length * CAP_SWEEP_SEEDS.length`
-   * exhaustive searches over the whole registry — 168 of them today at twenty-two devices and
-   * seven directions. It first went red on `LANG=C.UTF-8` at the default 5s, which reads like a
-   * locale failure and is not one, and while #78's repair has bought a great deal of headroom
-   * back the timeout stays: a CI runner sharing a core is what it was raised for, not the
-   * node count.
+   * **The band moved to `test/search-bound.test.ts`, and the sweep that measured it is gone.**
    *
-   * The cost grows on both axes this file already warns about: a device that serves more tonal
-   * roles makes each search deeper, and every direction authored adds a whole column of them.
-   * Whoever raises the number next should read that as the same signal the node cap gives.
+   * Everything above stays because it is the history of what the cap has cost, device by device,
+   * and that record is the reason anybody can read a jump in a diff. What it no longer needs is
+   * this file re-deriving the number: `search-bound.test.ts` walks the same 168 searches to pin
+   * every direction and seed *exactly*, so a worst case computed here could only ever agree with
+   * a table that is already checked, one direction at a time, against the live search.
+   *
+   * Two identical sweeps is what it was. 168 exhaustive searches over the whole registry is ~21M
+   * nodes and roughly a third of the gate's cost, run twice for one number that the other run
+   * already contains — and in August 2026 that duplication is what put three sweeps over their
+   * timeouts on CI at once, with every assertion passing. The band is now derived from
+   * `RECORDED` for free, and it is a strictly stronger test for it: a direction that moves
+   * without moving the *worst* direction was invisible to the sweep and fails the table.
    */
-  it('leaves every shipped template inside the shipped cap, with room to spare', async () => {
-    let worst = { nodes: -1, where: '' }
-
-    for (const template of TEMPLATES) {
-      for (const seed of CAP_SWEEP_SEEDS) {
-        /**
-         * **Yielding is not a performance tweak, it is what keeps this test reportable.**
-         *
-         * 168 exhaustive searches back to back is one unbroken synchronous block, and a Vitest
-         * worker cannot answer the main thread while it holds the event loop. When the MicroFreak
-         * took the worst case to 223,348 nodes the block grew past the RPC window and CI failed
-         * with `[vitest-worker]: Timeout calling "onTaskUpdate"` — **while reporting all 2,525
-         * tests passed**, because nothing here had actually gone wrong. An unhandled worker error
-         * still exits non-zero, so the gate went red for a reason no assertion could explain.
-         *
-         * One `setImmediate` per search bounds the block to a single search rather than the whole
-         * sweep. It changes no assertion and no coverage: every template and seed is still
-         * searched, and the node counts are unaffected because the search itself is synchronous
-         * and deterministic (invariant 6).
-         */
-        await new Promise((resolve) => setImmediate(resolve))
-        const result = assign({ devices: [...DEVICES], template, mood: moodState(), seed })
-        const where = `${template.id} seed ${seed}`
-        expect(result.search.method, where).toBe('exhaustive')
-        if (result.search.nodes > worst.nodes) worst = { nodes: result.search.nodes, where }
-      }
-    }
-
-    // Node counts are exactly reproducible (invariant 6), so this is a real two-sided assertion
-    // rather than a flaky one — the same rig on the same seed visits the same nodes everywhere.
-    const found = `worst case is ${worst.nodes} on ${worst.where}, recorded ${WORST_CASE_NODES}`
-    expect(worst.nodes, `${found} — over the recorded band`).toBeLessThanOrEqual(WORST_CASE_CEILING)
-    expect(worst.nodes, `${found} — under the recorded band`).toBeGreaterThanOrEqual(
-      WORST_CASE_FLOOR,
-    )
-  }, 120_000)
 
   /**
    * §7.1. **The promise the cap actually makes, gated on the rigs it is made to.**
