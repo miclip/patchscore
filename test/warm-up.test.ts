@@ -1,7 +1,14 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { DeviceSchema, moodState, renderGuide, resolve, warmUpNotices } from '../lib/core/index'
+import {
+  DeviceSchema,
+  moodState,
+  quickTuneNotices,
+  renderGuide,
+  resolve,
+  warmUpNotices,
+} from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 import { Guide } from '../components/guide/guide'
@@ -154,5 +161,83 @@ describe('calibration is a pointer, never a procedure (#263)', () => {
     const md = guide(['moog-mother-32', 'roland-tr-1000'])
     expect(md).not.toContain('trimpot')
     expect(md).not.toContain('absolutely necessary')
+  })
+})
+
+/**
+ * §10/#263. **The third shape: a tuning routine a player runs.**
+ *
+ * `warmUp` is time you wait. `calibration` is service work behind a maker's caution. This is
+ * neither — a control on the front panel, pressed mid-session, over in seconds. The Muse is the
+ * only box in the library that has one, and the distinction is load-bearing because *its own
+ * manual carries both on one page*: QUICK TUNE beside the full TUNING and AUTOCAL routines that
+ * Moog say not to run unless something is badly wrong.
+ */
+describe('a quick tune is a session action, not service work (#263)', () => {
+  it('is separated from the calibration printed beside it on the same page', () => {
+    const muse = DEVICES.find((d) => d.id === 'moog-muse')!
+    expect(muse.quickTune).toBeDefined()
+    expect(muse.calibration).toBeDefined()
+    // Same page, two fields, because they are two different claims about what a reader should do.
+    expect(muse.quickTune?.verified).toEqual(muse.calibration?.verified)
+    expect(muse.calibration?.caution).toContain('significant problem')
+    expect(muse.quickTune?.note.toLowerCase()).toContain('seconds')
+  })
+
+  it('carries the control a reader presses', () => {
+    const muse = DEVICES.find((d) => d.id === 'moog-muse')!
+    expect(muse.quickTune?.path).toBe('PROGRAMMER > TUNING > START QUICK TUNE')
+  })
+
+  it('reaches the guide, unlike a calibration', () => {
+    // The distinction, tested where it matters: one of these is a thing to do now and the other
+    // is not, and a reader at a rack must be able to tell them apart without reading the manual.
+    const md = guide(['moog-muse', 'moog-dfam', 'roland-tr-1000'])
+    expect(md).toContain('START QUICK TUNE')
+    expect(md).not.toContain('AUTOCAL')
+    expect(md).not.toContain('significant problem')
+  })
+
+  it('comes after the warm-up it depends on', () => {
+    // A quick tune reads the current temperature, so running it cold reads the wrong conditions.
+    const md = guide(['moog-muse', 'moog-dfam', 'roland-tr-1000'])
+    expect(md.indexOf('Power on first')).toBeLessThan(md.indexOf('Once warm'))
+  })
+
+  it('says nothing for the boxes that have none, which is all but one', () => {
+    expect(DEVICES.filter((d) => d.quickTune !== undefined).map((d) => d.id)).toEqual(['moog-muse'])
+    expect(guide(['moog-dfam', 'roland-tr-1000'])).not.toContain('Once warm')
+  })
+
+  it('names it in both renderers (#33)', () => {
+    const result = resolve({
+      devices: rigOf('moog-muse', 'roland-tr-1000'),
+      template: industrial,
+      mood: moodState({}),
+      seed: 3,
+    })
+    expect(quickTuneNotices(result.devices).map((n) => n.device.id)).toEqual(['moog-muse'])
+    const html = renderToStaticMarkup(createElement(Guide, { result, seed: 3 }))
+    expect(html).toContain('Once warm')
+    expect(html).toContain('START QUICK TUNE')
+  })
+})
+
+describe('the DFAM joins the boxes with no printed number (#263)', () => {
+  it('carries the note and no minutes', () => {
+    const dfam = DEVICES.find((d) => d.id === 'moog-dfam')!
+    expect(dfam.warmUp?.minutes).toBeUndefined()
+    expect(dfam.warmUp?.note.toLowerCase()).toContain('a few minutes')
+  })
+
+  /**
+   * **The Subsequent 37 is deliberately absent, and that is the finding.** p.8 prints a number —
+   * "as long as 60 seconds" — but the sentence ends *"if you've left it outside on a cold night"*
+   * and continues "although its oscillators are surprisingly stable". Moog are saying the box is
+   * fast. Authoring that as a warm-up requirement would tell a reader to wait when the manual is
+   * telling them they need not, which is a cited figure carrying an uncited claim.
+   */
+  it('leaves out the box whose number is not a warm-up requirement', () => {
+    expect(DEVICES.find((d) => d.id === 'moog-subsequent-37')?.warmUp).toBeUndefined()
   })
 })

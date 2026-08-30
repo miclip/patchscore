@@ -11,6 +11,7 @@ import {
   clockJackNotes,
   clockSourceBasis,
   clockSourceSetup,
+  quickTuneNotices,
   warmUpNotices,
 } from '@/lib/core'
 import { clockParts, count, ioText, list, mixerText, syncText } from './format'
@@ -224,6 +225,7 @@ export function PhaseRig({
    * digital and a heading with an empty list under it reads as a gap in the manuals.
    */
   const warming = warmUpNotices(result.devices)
+  const tunable = quickTuneNotices(result.devices)
 
   return (
     <>
@@ -246,6 +248,23 @@ export function PhaseRig({
               </li>
             ))}
           </ul>
+        </div>
+      )}
+      {tunable.length === 0 ? null : (
+        <div className="callout">
+          {/*
+            §10/#263. Straight after warm-up, because a quick tune reads the current temperature —
+            running it cold reads the wrong conditions. This renderer's own words (#33).
+          */}
+          {tunable.map(({ device, quickTune }) => (
+            <p key={device.id}>
+              <strong>Once warm</strong> — run {device.name}&rsquo;s quick tune:{' '}
+              <span className="mono">{quickTune.path}</span>. {quickTune.note}.
+              {quickTune.verified === false ? null : (
+                <span className="note"> {citeText(quickTune.verified)}</span>
+              )}
+            </p>
+          ))}
         </div>
       )}
       {source === undefined ? (

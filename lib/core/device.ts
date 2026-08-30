@@ -2178,6 +2178,38 @@ export type WarmUp = {
 }
 
 /**
+ * §10/#263. **A tuning routine a player runs, as opposed to one a technician does.**
+ *
+ * The third shape, and the one the issue originally imagined before the library turned out not to
+ * contain it. `warmUp` is time you wait; `Calibration` is service work behind a maker's caution.
+ * This is neither: a control on the front panel, pressed during a session, which takes seconds.
+ *
+ * The Muse is the only box in the library with one. Its QUICK TUNE *"touches up the tuning for the
+ * current temperature conditions and takes a few seconds"* (p.112) — a normal thing to do after
+ * the rig has warmed, and the same page carries the full TUNING and AUTOCAL routines under *"do
+ * not run ... unless there is a significant problem"*, which is the `calibration` pointer instead.
+ * One page, two different claims, and putting them in one field would have blurred exactly the
+ * distinction that makes either safe to print.
+ *
+ * **`path` is what a reader presses**, in the panel's own words, the way a jack `setup` is. It
+ * belongs in the guide rather than only on the device page, because unlike a calibration it is
+ * something to do *now*, standing at the machine.
+ */
+export type QuickTune = {
+  /** What it does and roughly how long, short enough to read at a rack (§8). */
+  note: string
+  /** The control, as a reader would find it on the panel. */
+  path: string
+  verified: Verified
+}
+
+export const QuickTuneSchema = z.strictObject({
+  note: z.string().min(1),
+  path: z.string().min(1),
+  verified: VerifiedSchema,
+})
+
+/**
  * §10/#263. **That a calibration routine exists, and what its maker says about doing it.**
  *
  * A pointer, deliberately, and never the steps. Both routines in the library are service work
@@ -2249,6 +2281,10 @@ export type Device = {
    */
   calibration?: Calibration
   /**
+   * §10/#263. A front-panel tuning routine a player runs in seconds, unlike `calibration`.
+   */
+  quickTune?: QuickTune
+  /**
    * §3.3. The patch points this device declares, each cited once. Required only in the sense
    * that a recipe cannot name a jack that is not here — a box nobody patches declares none.
    */
@@ -2309,6 +2345,7 @@ export const DeviceSchema = z
     panel: PanelLayoutSchema.optional(),
     warmUp: WarmUpSchema.optional(),
     calibration: CalibrationSchema.optional(),
+    quickTune: QuickTuneSchema.optional(),
     jacks: z.array(JackSpecSchema).optional(),
     voices: z.array(VoiceSpecSchema),
     comfortableVoices: z.int().min(1).optional(),

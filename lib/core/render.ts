@@ -32,6 +32,7 @@ import {
   clockFollowing,
   clockBasisEvidence,
   clockSourceBasis,
+  quickTuneNotices,
   warmUpNotices,
   songFindings,
   type ClockFollowing,
@@ -933,6 +934,25 @@ function phaseRig(
     for (const { device, warmUp } of warming) {
       out.push(`- **${device.name}** — ${lowerFirst(warmUp.note)}`)
       if (warmUp.verified !== false) subordinate(out, '  ', 'cite', citeText(warmUp.verified))
+    }
+    out.push('')
+  }
+
+  /**
+   * §10/#263. **Then touch up the ones that can be.** Straight after warm-up, because that is when
+   * it is done: a quick tune reads the current temperature, so running it cold is running it on
+   * the wrong conditions.
+   *
+   * Rig-wide like the block above, and for the same reason — `result.devices`, not `detail`.
+   */
+  const tunable = quickTuneNotices(result.devices)
+  if (tunable.length > 0) {
+    for (const { device, quickTune } of tunable) {
+      out.push(
+        `**Once warm** — run ${device.name}'s quick tune: \`${quickTune.path}\`. ` +
+          `${quickTune.note}.`,
+      )
+      if (quickTune.verified !== false) subordinate(out, '  ', 'cite', citeText(quickTune.verified))
     }
     out.push('')
   }

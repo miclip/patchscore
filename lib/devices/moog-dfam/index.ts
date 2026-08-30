@@ -1302,6 +1302,17 @@ export const device: Device = {
   panel: DFAM_PANEL,
 
   /** §3.3. Declared once, cited once, referenced by the recipes above. */
+  /**
+   * §10/#263. **Warm-up**, cited. p.6: *"Your DFAM is an all-analog instrument and should be
+   * allowed a few minutes to warm up before use"* — the same sentence Moog print for the
+   * Subharmonicon and the Mother-32, and the same answer: no `minutes`, because "a few" is not a
+   * number and inventing one would look exactly like the entries that state a real figure.
+   */
+  warmUp: {
+    note: 'A few minutes from cold before it holds pitch',
+    verified: cite(6),
+  },
+
   jacks: JACKS,
 
   /**
