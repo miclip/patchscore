@@ -64,7 +64,12 @@ const patchedRig = resolve({
   devices: DEVICES,
   template: industrialTechno,
   mood: NEUTRAL_MOOD,
-  seed: 2,
+  // The seed moves with the library, for the reason the assertion that uses this rig spells
+  // out: which box wins a request is the objective's call. Seed 2 put the Cascadia to work
+  // until the RD-8 landed and the allocation shifted off every semi-modular; seed 7 gives the
+  // Subharmonicon four patch entries, which is the richest exercise of the path in the
+  // registry today. The *template* is what is pinned here, not the number beside it.
+  seed: 7,
 })
 
 /**
@@ -1055,7 +1060,7 @@ describe('rack view', () => {
     // readout *is* the 32 RGB pads, and the User Guide's tempo chapter draws the BPM on them as
     // two or three large digits (p.85) rather than putting it anywhere else. A `screen` feature
     // there would be inventing a window the panel does not have.
-    expect(count('rack-screen')).toBe(44)
+    expect(count('rack-screen')).toBe(45)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -1177,7 +1182,11 @@ describe('rack view', () => {
     // rows the six cells cover 0.529 and fail the floor above; over three they cover 0.555. The
     // split is a drawing decision and that panel says so — nothing about the box divides its pads
     // three-and-one.
-    expect(fields).toHaveLength(28)
+    // Twenty-nine since the RD-8, whose field is the eleven voice-name buttons and the eleven
+    // SELECT buttons under them, ACCENT's column excluded — that column is the global emphasis
+    // track and is not an assignable, so a cell there would name a part this box cannot carry.
+    // The eleven cells land on the eleven buttons a reader presses to select a voice (p.7).
+    expect(fields).toHaveLength(29)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

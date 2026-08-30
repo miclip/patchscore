@@ -24,8 +24,16 @@ import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 const LIFTED = 20_000_000
 
 describe('the search shape probe (§7.1/#159)', () => {
-  it('observes the traversal without changing it', () => {
+  it('observes the traversal without changing it', async () => {
     for (const template of TEMPLATES) {
+      /**
+       * Yield per template, for the reason `search-symmetry.test.ts` records at length: a Vitest
+       * worker cannot answer the main thread while it holds the event loop, and a run that blocks
+       * too long fails with `[vitest-worker]: Timeout calling "onTaskUpdate"` **while reporting
+       * every test passed**. This file runs each direction twice over the full library — once
+       * plain and once probed — which is the most expensive thing in the suite per iteration.
+       */
+      await new Promise((resolve) => setImmediate(resolve))
       const input = { devices: [...DEVICES], template, mood: moodState({}), seed: 3 }
       const plain = assign(input)
       const shape = measureSearchShape(input)
@@ -38,7 +46,7 @@ describe('the search shape probe (§7.1/#159)', () => {
       expect(shape.search.capped, template.id).toBe(plain.search.capped)
       expect(shape.search.method, template.id).toBe(plain.search.method)
     }
-  })
+  }, 120_000)
 
   it('accounts for every node exactly once', () => {
     const shape = measureSearchShape({

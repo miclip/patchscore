@@ -6,6 +6,7 @@ import {
   NEUTRAL_MOOD,
   bandTrajectory,
   dominantRangeCite,
+  hoistedParams,
   fxSources,
   moodState,
   renderGuide,
@@ -494,11 +495,29 @@ describe('range citations hoist in the web view too', () => {
     const out = text(html(real))
     let hoistedRecipes = 0
 
+    // #107's device-level group, computed the way both renderers compute it: over every part one
+    // device carries. A name in here is printed once above the recipes and dropped from each.
+    const hoistedNames = new Map<string, ReadonlySet<string>>()
     for (const a of real.assignments) {
-      const hoisted = dominantRangeCite(a.params)
+      if (hoistedNames.has(a.deviceId)) continue
+      const mine = real.assignments.filter((other) => other.deviceId === a.deviceId)
+      hoistedNames.set(a.deviceId, hoistedParams(mine.map((other) => other.params)).names)
+    }
+
+    for (const a of real.assignments) {
+      // **On the parameters the recipe block actually prints**, which is what `render.ts` does
+      // and says why: "a hoisted parameter still in the tally could tip a citation into looking
+      // dominant when the lines it dominated have left the list." This read `a.params` until the
+      // RD-8 landed, and the two agreed only for as long as no device's *pattern-scoped* group
+      // carried its dominant citation. The RD-8 made that false — its FX bus cites p.26 four
+      // times and hoists whole — and the RD-9 with it, because a second box on the bus took its
+      // `metallic` recipe away and left the one that could hoist.
+      const lifted = hoistedNames.get(a.deviceId) ?? new Set<string>()
+      const own = a.params.filter((p) => !lifted.has(p.name))
+      const hoisted = dominantRangeCite(own)
       if (hoisted === undefined) {
         // No unambiguous repetition: every citation stays where it was.
-        for (const param of a.params) {
+        for (const param of own) {
           if (param.range === undefined || param.range.verified === false) continue
           expect(out).toContain(`range ${param.range.verified.kind} — ${param.range.verified.source}`)
         }
@@ -509,7 +528,7 @@ describe('range citations hoist in the web view too', () => {
       expect(out).toContain(`Ranges cite ${hoisted.kind} — ${hoisted.source}.`)
 
       // Every exception is still on the page; the shared one is not repeated under each line.
-      const exceptions = a.params.filter(
+      const exceptions = own.filter(
         (p) =>
           p.range !== undefined &&
           p.range.verified !== false &&

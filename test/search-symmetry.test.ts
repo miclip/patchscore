@@ -1337,12 +1337,33 @@ describe('the real registry searches exhaustively (§7.1)', () => {
    * benchmark nobody builds, and it grows by construction. The promise the cap makes is now
    * asserted where it is made, on rigs somebody could own, in the test below.
    *
-   * What this band still does is make a jump **visible**: 834,964 is 167% of `DEFAULT_NODE_CAP`,
-   * so the catalogue sweep does cap, and a reader who selects everything is told so by the guide
-   * since #247. `npm run measure:search` prints the figure with its headroom and warns under 2x.
-   * If a rig a person could plausibly own ever approaches the cap, that is #248's trigger.
+   * What this band still does is make a jump **visible**. `npm run measure:search` prints the
+   * figure with its headroom and warns under 2x, and since #247 a capped search says so in the
+   * guide. If a rig a person could plausibly own ever approaches the cap, that is #248's trigger.
+   *
+   * (This paragraph read *"834,964 is 167% of `DEFAULT_NODE_CAP`, so the catalogue sweep does
+   * cap"* until the figure below was re-recorded. That was written against the 500,000 constant
+   * and outlived it by one commit — the same change that stopped this band gating anything raised
+   * the cap to 2,000,000, which the sweep has never been near since.)
+   *
+   * ---
+   *
+   * **The RD-8 takes it *down*, to 718,179 on `industrial-techno` seed 16**, and it is the first
+   * device to move this figure in that direction. Down 14.0%, with `weave` down 29.1% beside it;
+   * `search-bound.test.ts` carries the row direction by direction and the attribution — the same
+   * sweep without this box gives 834,964 on seed 10, the previous figure exactly.
+   *
+   * **The near-clone reading above does not apply to it, and that is the finding.** The MC-707
+   * paragraph calls a near-clone sibling the worst case this search has, because that box's
+   * twenty recipes were the MC-101's retargeted and every request either could serve gained a
+   * second candidate of exactly equal cost. The RD-8 is the RD-9's chassis with the 808 voice set
+   * — congas, claves, maracas and a cow bell against toms, a crash and a ride — so its nineteen
+   * recipes carry different (role, character) pairs and the equal-cost pairing largely does not
+   * form. A clone of the *product* is not a clone of the *cost*.
+   *
+   * 718,179 is 35.9% of `DEFAULT_NODE_CAP`, and 2.78x of headroom stands.
    */
-  const WORST_CASE_NODES = 834_964
+  const WORST_CASE_NODES = 718_179
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))

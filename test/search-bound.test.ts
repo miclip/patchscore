@@ -347,6 +347,48 @@ import { TEMPLATES } from '../lib/templates/index'
  * the commit.
  *
  * Nothing caps. `industrial-techno` at 333,077 is 66.6% of the 500,000 `DEFAULT_NODE_CAP`.
+ *
+ * ---
+ *
+ * **The RD-8 is the first device to make the two large directions cheaper**, and it is a
+ * near-clone of the box directly above it in the registry, which is what makes the row worth
+ * reading rather than filing as noise. (The RD-9 landed between the row above and this one and
+ * left no paragraph of its own; the figures it moved are the ones being compared against here.)
+ *
+ *   - **`industrial-techno` 815,668-834,964 -> 673,906-718,179**, down 17.4% at the floor and
+ *     14.0% at the peak. The worst seed moves 10 -> 16.
+ *   - **`weave` 210,469-226,109 -> 138,768-160,264**, down 34.1% and 29.1%. Both large
+ *     directions move together, which is the MC-707's shape — with the sign reversed.
+ *   - **`major-key-electro` 157-587 -> 163-169**, and the peak falls by 71% because the row's one
+ *     spike is gone: 587 on seed 13, which no other seed came within four hundred nodes of.
+ *   - `ambient-dub` 168-174 -> 173-178 and `lydian-house` 154-258 -> 158-266 each rise by four to
+ *     eight nodes. `drone-study` at 26 and `relay` at 53 are unmoved.
+ *
+ * Attributed by measurement, as every row above is: the same sweep with this box removed and
+ * everything else present gives `industrial-techno` 834,964 and `weave` 226,109, both the
+ * previous row exactly.
+ *
+ * **A product clone is not a cost clone, and this row is the difference.** The MC-707's thesis
+ * was that a sibling doubles the candidates for every request either box can serve, because its
+ * twenty recipes were the first box's retargeted — same roles, same characters, so every request
+ * saw two candidates of *exactly equal* cost, and equal costs are what the seed permutes among
+ * (§7.2). The RD-8 and the RD-9 are the same chassis and the same sequencer with almost no voices
+ * in common: 808 congas, claves, maracas and a cow bell against 909 toms, a crash and a ride. Its
+ * nineteen recipes are authored against a different voice set, so the (role, character) pairs are
+ * not the sibling's and the equal-cost pairing the MC-707 row describes largely does not form.
+ *
+ * **Why the count went down rather than merely up-less has not been established, and this row
+ * should not be read as if it had.** The plain candidate is the non-monotonicity
+ * `DEFAULT_NODE_CAP`'s docstring already records and the Circuit Tracks row already saw on two
+ * small directions — a new box hands the search a cheaper early solution on the seed that used to
+ * be worst, and the bound then prunes what that seed used to walk. Confirming it means
+ * instrumenting the incumbent rather than counting recipes, which nothing here does.
+ *
+ * For whoever sizes the next device: the three rows above say a duplicated sheet under-predicts,
+ * a crowded role can carry a whole bill, and a box can cost as much as either with neither
+ * mechanism present. **This one adds that the sign is not predictable either.** Measure.
+ *
+ * Nothing caps. `industrial-techno` at 718,179 is 35.9% of the 2,000,000 `DEFAULT_NODE_CAP`.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -355,32 +397,32 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      168, 171, 168, 174, 173, 171, 168, 171, 173, 171, 170, 169, 171, 174, 174, 169, 171, 173, 169,
-      170, 174, 170, 169, 173
+      173, 175, 173, 178, 177, 174, 173, 175, 178, 174, 175, 173, 175, 177, 178, 173, 175, 178,
+      173, 175, 178, 175, 173, 178
     ],
     'drone-study': [
       26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26
     ],
     'industrial-techno': [
-      815668, 815668, 816080, 815668, 815668, 815668, 815668, 815668, 815668, 815668, 834964,
-      815668, 816108, 815668, 815668, 815668, 815668, 816080, 815668, 815668, 815668, 815668,
-      834964, 816108
+      704439, 709975, 675301, 709975, 709975, 673906, 673907, 704439, 673906, 673907, 673908,
+      704438, 675249, 673907, 709974, 673907, 718179, 675251, 673907, 673907, 673907, 704439,
+      673906, 675251
     ],
     'lydian-house': [
-      154, 257, 154, 155, 155, 258, 154, 257, 155, 256, 154, 257, 154, 155, 155, 256, 258, 155, 257,
-      154, 155, 154, 258, 155
+      158, 265, 158, 159, 159, 266, 158, 265, 159, 264, 158, 265, 158, 159, 159, 264, 266, 159,
+      265, 158, 159, 158, 266, 159
     ],
     'major-key-electro': [
-      163, 163, 157, 160, 163, 160, 162, 163, 159, 163, 163, 163, 162, 587, 160, 158, 163, 160, 163,
-      159, 163, 159, 163, 162
+      169, 169, 168, 169, 169, 164, 168, 169, 163, 169, 169, 169, 163, 169, 169, 169, 169, 163,
+      169, 168, 169, 168, 164, 163
     ],
     'relay': [
       53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53
     ],
     'weave': [
-      210469, 210469, 210469, 210469, 210469, 210469, 210469, 210469, 210469, 210469, 226109,
-      210469, 210469, 210469, 210469, 210469, 210469, 210469, 210469, 210469, 210469, 210469,
-      226109, 210469
+      149448, 153132, 138768, 153132, 153155, 138768, 138768, 149440, 138768, 138768, 138791,
+      149448, 138768, 138768, 153132, 138768, 160264, 138768, 138768, 138768, 138768, 149470,
+      138768, 138768
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".

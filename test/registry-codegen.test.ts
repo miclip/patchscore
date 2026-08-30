@@ -399,6 +399,12 @@ describe('the committed registry', () => {
       // the kind of near-tie this ordering is good at holding honest.
       'behringer-rd-9',
       'roland-tr-1000',
+      // 498 mm, from the RD-8's own specifications page (p.26: `77 x 498 x 265 mm`, with the
+      // inch conversion beside it confirming 19.6" is the W). It is twenty-one millimetres wider
+      // than its sibling and two narrower than the minilogue below, so the TR-1000 sits between
+      // the two Behringers rather than beside them: the RD-8's twelfth voice column is a real
+      // difference in the box, and the ordering shows it as one.
+      'behringer-rd-8',
       // The three keyboards, and the widest things in the library that are not mixers. The
       // Subsequent 37 and the Model 2400 are within a millimetre of each other and are not a
       // tie: 680 against 680.5, so the order is decided by the numbers rather than by folder

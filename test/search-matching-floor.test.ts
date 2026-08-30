@@ -1032,7 +1032,21 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * is still admissible and still cheap, and this fixture's claim survives with the weaker and
    * truer form of it.
    */
-  it('walks the recorded 815,668 nodes on industrial-techno seed 9', () => {
+  /**
+   * **The RD-8 takes both figures down together — and closes the gap between them to nothing.**
+   * 815,668 -> 673,907 unrepaired and 815,041 -> 673,907 repaired, 17.4% off each. It is the
+   * first device to make this walk cheaper; `search-bound.test.ts` carries the direction-by-
+   * direction row and the attribution, and `search-symmetry.test.ts` the aggregate.
+   *
+   * **The gap is 0 nodes**, against 636, 640, 890 and 627 through the seven devices before it.
+   * The paragraph above already retreated from calling that distance a constant, on the reading
+   * that it tracks problem size rather than standing still; zero is that retreat completed. What
+   * it means here is narrow and worth stating exactly: **on this seed the repair now prunes
+   * nothing** — it costs nothing either, which is the admissibility claim this fixture exists to
+   * make, and it is unchanged. That the repair *does* prune is a different claim, asserted next
+   * door on a rig chosen for it, and that block is untouched.
+   */
+  it('walks the recorded 673,907 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1040,7 +1054,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(815_668)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(673_907)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
