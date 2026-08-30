@@ -32,6 +32,7 @@ import {
   clockFollowing,
   clockBasisEvidence,
   clockSourceBasis,
+  warmUpNotices,
   songFindings,
   type ClockFollowing,
   type ClockSource,
@@ -880,6 +881,17 @@ function voiceControl(patch: InterDevicePatch): Line[] {
  * half above, the clock source and what it rests on, is the same either way: it is a fact about
  * the rig and belongs where the rig is described.
  */
+
+/**
+ * A sentence fragment from an authored `note`, which is written to stand alone on the device page
+ * and follows a box name here. Only the first letter moves, and only when it is a plain capital —
+ * "10 to 15 minutes" keeps its digit and "A few minutes" becomes "a few minutes".
+ */
+function lowerFirst(text: string): string {
+  const head = text.slice(0, 1)
+  return head >= 'A' && head <= 'Z' ? head.toLowerCase() + text.slice(1) : text
+}
+
 function phaseRig(
   result: ResolveResult,
   occupied: Map<DeviceId, number>,
@@ -887,6 +899,43 @@ function phaseRig(
 ): Line[] {
   const out: Line[] = []
   const source = result.clockSource
+
+  /**
+   * §10/#263. **Power these on first**, before any of the cabling below.
+   *
+   * First in the phase because it is the only instruction here that costs nothing to start and
+   * everything to start late: ten minutes of warm-up runs while you patch, and a reader who meets
+   * it at the end has already spent that time doing something else.
+   *
+   * One line for the rig rather than one per box (#35). The boxes without an entry say nothing —
+   * most of the library is digital and needs none — and a rig with no analog instrument in it
+   * gets no heading at all rather than an empty one.
+   */
+  /**
+   * `result.devices`, **not `detail`**. Every other block in this phase is narrowed by `detail`,
+   * because the sequencer layout hands each box's patching to the group its parts are worked in
+   * and passes only what is left. Warm-up is not that kind of fact: it is about the rig in front
+   * of the reader, and a Minitaur inside a sequencer group still has to be switched on early.
+   *
+   * Caught by `guide-layout.test.ts`'s permutation check, which is exactly what that test is for
+   * — the phase layout listed the box and the sequencer layout silently did not.
+   */
+  const warming = warmUpNotices(result.devices)
+  if (warming.length > 0) {
+    // `count` pluralises by adding an `s` unless told otherwise, so "boxes" is passed rather than
+    // discovered — the same note `clockBasisText` carries about "2 boxs".
+    const one = warming.length === 1
+    out.push(
+      `**Power on first** — ${count(warming.length, 'box', 'boxes')} here ` +
+        `${one ? 'needs' : 'need'} time before ${one ? 'it holds' : 'they hold'} pitch. ` +
+        `Switch ${one ? 'it' : 'them'} on now and patch while ${one ? 'it settles' : 'they settle'}.`,
+    )
+    for (const { device, warmUp } of warming) {
+      out.push(`- **${device.name}** — ${lowerFirst(warmUp.note)}`)
+      if (warmUp.verified !== false) subordinate(out, '  ', 'cite', citeText(warmUp.verified))
+    }
+    out.push('')
+  }
 
   if (source === undefined) {
     // §7.4: a real rig, and a fact to state rather than paper over.

@@ -14,6 +14,7 @@ import type {
   Assignable,
   CapabilityEvidence,
   Device,
+  WarmUp,
   JackSignalKind,
   JackSpec,
   Realisation,
@@ -170,6 +171,26 @@ export function clockSourceBasis(source: ClockSource): ClockSourceBasis {
  * A device page is where somebody who wants to know what this box's manual says about leading a
  * rig should find it, and it says so there whether or not any guide chose the box.
  */
+/**
+ * §10/#263. **Which boxes in *this* rig need warming up, in registry order.**
+ *
+ * The decision, once, so both renderers can write their own sentence around it (#33).
+ *
+ * This is the half no manual can do. Every one of these boxes says so somewhere in its own first
+ * pages, and a reader with five machines in front of them would have to have read five manuals and
+ * remembered which three mattered. The rig is the thing that knows.
+ *
+ * Order is the registry's, which is the order every other list in the guide uses, so a reader
+ * comparing two lists is comparing them in the same order rather than re-sorting in their head.
+ */
+export function warmUpNotices(devices: readonly Device[]): { device: Device; warmUp: WarmUp }[] {
+  const out: { device: Device; warmUp: WarmUp }[] = []
+  for (const device of devices) {
+    if (device.warmUp !== undefined) out.push({ device, warmUp: device.warmUp })
+  }
+  return out
+}
+
 export function clockBasisEvidence(
   source: ClockSource | undefined,
   device: Device | undefined,

@@ -1461,6 +1461,30 @@ export const device: Device = {
   panel: MOTHER_32_PANEL,
 
   /** §3.3. Declared once, cited once, referenced by every cable above. */
+  /**
+   * §10/#263. **Warm-up**, cited. p.9: *"Mother-32 is an analog instrument and should be allowed a few minutes to warm up before
+   * use"*. No `minutes`, for the reason the Subharmonicon's entry gives: the manual declines to
+   * put a number on it and so does this.
+   *
+   * The rig is what makes this worth carrying: a reader sees which of the boxes in front of them
+   * need the time, and no single manual can tell them that.
+   */
+  warmUp: {
+    note: 'A few minutes from cold before it holds pitch',
+    verified: cite(9),
+  },
+
+  /**
+   * §10/#263. **A pointer, not a procedure.** This is service work and the manual says so; see the
+   * `Calibration` type for why the steps are deliberately not here.
+   */
+  calibration: {
+    summary: 'VCO offset and gain trims, through four holes in the front panel with the supplied tool',
+    caution:
+      'Moog say the internal tuning trimpots are not designed for unlimited use, and to calibrate only when it is absolutely necessary. The instrument leaves the factory calibrated',
+    verified: cite(62),
+  },
+
   jacks: JACKS,
 
   /**

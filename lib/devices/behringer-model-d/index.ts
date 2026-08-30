@@ -1462,6 +1462,30 @@ export const device: Device = {
   physical: { panelSpanMm: MODEL_D_PANEL_SPAN_MM, verified: cite(SPECS) },
 
   panel: MODEL_D_PANEL,
+  /**
+   * §10/#263. **Warm-up**, cited. p.12 §4.3.1 Warm Up Time: *"We recommend leaving 15 minutes or more time for the MODEL D to
+   * warm up"*. A floor with no ceiling, so `max` is absent rather than guessed at.
+   *
+   * The rig is what makes this worth carrying: a reader sees which of the boxes in front of them
+   * need the time, and no single manual can tell them that.
+   */
+  warmUp: {
+    note: '15 minutes or more from cold',
+    minutes: { min: 15 },
+    verified: cite(12),
+  },
+
+  /**
+   * §10/#263. **A pointer, not a procedure.** This is service work and the manual says so; see the
+   * `Calibration` type for why the steps are deliberately not here.
+   */
+  calibration: {
+    summary: 'PITCH CV, oscillator and octave RANGE calibration, via trimpots on the PCB',
+    caution:
+      'The manual puts it under a warning triangle: undertaken only by an experienced service technician, to prevent personal injury or damage to the unit. The front panel has to be lifted to reach the board, and trimpot damage is not covered under warranty',
+    verified: cite(14),
+  },
+
   jacks: [...JACKS],
 
   /**
