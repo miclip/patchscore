@@ -813,3 +813,35 @@ describe('the fills-a-gap filter (§7.3)', () => {
     expect(offered(full)).toHaveLength(DEVICES.length)
   })
 })
+
+/**
+ * §7.3. **The gap filter stays put when there is no gap.**
+ *
+ * It was removed when the rig covered its direction, on the argument that a checkbox which can
+ * never narrow anything teaches a reader the picker is broken. That was the wrong way round, and
+ * it was reported as counting three filters and seeing two: a control that vanishes cannot be
+ * told from one that was never built.
+ */
+describe('the gap filter is disabled rather than removed (§7.3)', () => {
+  const picker = (unfilled: ReadonlySet<Role>) =>
+    renderToStaticMarkup(
+      createElement(DevicePicker, { selected: [], onToggle: () => {}, unfilled }),
+    )
+
+  it('is on the page either way, so a reader can always count the filters', () => {
+    expect(picker(new Set())).toContain('Fills a gap')
+    expect(picker(new Set(['metallic' as Role]))).toContain('Fills a gap')
+  })
+
+  it('is disabled and says why when nothing is missing', () => {
+    const markup = picker(new Set())
+    expect(markup).toContain('disabled')
+    expect(markup).toContain('Nothing missing')
+  })
+
+  it('is live when the rig leaves something unplayed', () => {
+    const markup = picker(new Set(['metallic' as Role]))
+    // The other checkbox is never disabled, so a `disabled` here would be this one.
+    expect(markup).not.toContain('disabled')
+  })
+})

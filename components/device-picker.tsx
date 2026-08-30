@@ -165,23 +165,38 @@ export function DevicePicker({
       <fieldset className="picker-filters">
         <legend>Inspiration filters</legend>
         {/*
-          §7.3. Only shown when there is a gap to fill. A checkbox that can never narrow anything
-          is a control teaching a reader the picker is broken — and with a rig that covers its
-          direction there is genuinely nothing to offer.
+          §7.3. **Disabled when there is no gap, never removed.**
+
+          It was removed at first, on the argument that a checkbox which can never narrow anything
+          teaches a reader the picker is broken. That is the wrong way round, and it was reported
+          as counting three filters and seeing two: a control that vanishes cannot be told from
+          one that was never built, so a reader is left wondering whether they missed it or it
+          does not exist. Greyed and titled says the same thing without the doubt.
+
+          `title` rather than a sentence under the box, because the box is where a reader looks
+          when they wonder why a control will not take — and the prose that lived there was cut
+          for taking room the row needs at 390px (#53).
         */}
-        {gaps.size === 0 ? null : (
-          <label className="picker-multipart" htmlFor={gapId}>
-            <input
-              id={gapId}
-              type="checkbox"
-              checked={filter.fillsGap}
-              onChange={(event) =>
-                setFilter((current) => ({ ...current, fillsGap: event.target.checked }))
-              }
-            />
-            Fills a gap
-          </label>
-        )}
+        <label
+          className={gaps.size === 0 ? 'picker-multipart is-inert' : 'picker-multipart'}
+          htmlFor={gapId}
+          title={
+            gaps.size === 0
+              ? 'Nothing missing — this direction is already covered'
+              : undefined
+          }
+        >
+          <input
+            id={gapId}
+            type="checkbox"
+            checked={filter.fillsGap}
+            disabled={gaps.size === 0}
+            onChange={(event) =>
+              setFilter((current) => ({ ...current, fillsGap: event.target.checked }))
+            }
+          />
+          Fills a gap
+        </label>
         {/*
           §2.2/#86. A control rather than a search term. `Circuit Tracks` and `Tracker Mini` have
           the word in their names, so typing "tracks" would return the two boxes called that

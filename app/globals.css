@@ -2115,6 +2115,16 @@ button:active {
   min-height: 44px;
 }
 
+/*
+ * §7.3. Greyed rather than gone. A control that vanishes cannot be told from one that was never
+ * built — reported as counting three filters and seeing two — so it stays put and says why it
+ * will not take.
+ */
+.picker-multipart.is-inert {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .picker-multipart input {
   accent-color: var(--accent);
   width: 15px;
