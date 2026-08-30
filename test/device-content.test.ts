@@ -665,7 +665,7 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
     .map((d) => d.id)
     .sort(byCodeUnit)
 
-  it('is the fourteen boxes established to ship one, and a fifteenth has to be added deliberately', () => {
+  it('is the fifteen boxes established to ship one, and a sixteenth has to be added deliberately', () => {
     // The derivation covers whatever is declared; this says which declarations were expected, so
     // a new one is loud in review rather than silently absorbed.
     expect(SHIPPED).toEqual([
@@ -676,6 +676,12 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
       // what is in it, which is the line between `shipped-library` and `enumerable`.
       'akai-mpc-one-g2',
       'akai-mpc-xl',
+      // The Rytm MKII asserts four times over that content is there and names nothing: "several
+      // preset patterns, kits, and Sounds" (p.19), the factory Sounds that a reset restores to
+      // bank A (p.70), and "several preset samples" in "one of the ten subdirectories" (p.58),
+      // with the ten unnamed. p.26's "capacity of 4096 Sounds" is a capacity and not a count,
+      // which is the trap that would read as `enumerable`.
+      'elektron-analog-rytm-mkii',
       'elektron-digitakt-ii',
       // The Circuit Tracks ships 128 synth Patches and 64 drum samples (p.16) and neither of its
       // two documents prints a name for any of them — the counts are the whole inventory. Same

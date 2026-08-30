@@ -75,7 +75,12 @@ const patchedRig = resolve({
   // rule this line follows changes from "the first" to "the most patched", which is the better
   // rule and was simply unavailable before. The *template* is what is pinned here, not the number
   // beside it.
-  seed: 4,
+  //
+  // The Analog Rytm MKII then took seed 4's Subharmonicon assignment and left it with nothing, and
+  // the field thinned rather than moved: six seeds carry a patch now, none deeper than two, and
+  // seeds 5, 18 and 23 tie at that depth. "The most patched" no longer picks one on its own, so
+  // the tie goes to the lowest seed — seed 5, two entries on the Grandmother.
+  seed: 5,
 })
 
 /**
@@ -1094,7 +1099,10 @@ describe('rack view', () => {
     // resolution and no size, so the 73.3 x 50.7 mm here is measured off the p.12 front-panel
     // figure like every other coordinate in that layout — the drawn bezel, carrying the EP-133's
     // caveat once more, because a pixel count is not a dimension.
-    expect(count('rack-screen')).toBe(47)
+    // **48 with the Analog Rytm MKII**, whose 128 x 64 pixel OLED p.76 specifies the same way —
+    // a resolution and no size — so its 78.5 x 55.4 mm is the drawn bezel measured off the p.10
+    // front-panel figure, carrying the same caveat one more time.
+    expect(count('rack-screen')).toBe(48)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -1243,7 +1251,13 @@ describe('rack view', () => {
     // sits on them rather than beside them and no second grid is drawn underneath. The two boxes'
     // fields measure 124.4 x 40.1 and 170 x 41 mm, which is the same sixteen keys read off two
     // figures a generation apart.
-    expect(fields).toHaveLength(33)
+    //
+    // **Thirty-four with the Analog Rytm MKII**, and it is the Elektron sibling that does *not*
+    // take that answer. Its [TRIG] keys carry track names too, but sixteen of them over twelve
+    // tracks would leave four cells meaning nothing — and the four left over are steps 13-16,
+    // which are not spare, they are the rest of the bar. The twelve pads map one to one, so the
+    // field sits on them: 122.0 x 96.5 mm, the only field in this list that is three rows deep.
+    expect(fields).toHaveLength(34)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

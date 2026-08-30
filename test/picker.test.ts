@@ -125,6 +125,7 @@ describe('device search matches name, maker and kind', () => {
     const drumMachines = [
       'behringer-rd-8',
       'behringer-rd-9',
+      'elektron-analog-rytm-mkii',
       'roland-tr-1000',
       'roland-tr-6s',
       'roland-tr-8s',
