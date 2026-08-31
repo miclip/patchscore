@@ -6,6 +6,7 @@ import {
   canFollow,
   clockSourceSetup,
   clockWires,
+  reachableSlots,
   receiveTransports,
   renderGuide,
   resolve,
@@ -13,7 +14,7 @@ import {
 } from '../lib/core/index'
 import { device } from '../lib/devices/moog-mother-32/index'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { industrialTechno } from '../lib/templates/index'
+import { TEMPLATES, acidLineage, industrialTechno } from '../lib/templates/index'
 import { rackModel } from '../components/rack/model'
 import { Guide } from '../components/guide/guide'
 import { clockParts, clockText as guideClockText } from '../components/guide/format'
@@ -34,8 +35,9 @@ import { clockText as pageClockText } from '../lib/studio/device-page'
  * have, on the phase whose whole job is "what do I plug where", and the one claim in the guide a
  * reader cannot check against the panel because there is no socket there to check.
  *
- * This file is deliberately narrow: it covers the clock and nothing else. The rest of a
- * per-device file for this manifest — the recipes, the patchbay, the panel — is still to write.
+ * This file was deliberately narrow, covering the clock and nothing else; the accent block at the
+ * bottom is the first recipe-level claim to join it. The rest of a per-device file for this
+ * manifest — the patchbay, the panel — is still to write.
  */
 describe('Mother-32 clock (§2.3/§7.4)', () => {
   it('sends on one wire and receives on two, and says so in the manifest', () => {
@@ -155,5 +157,84 @@ describe('Mother-32 clock (§2.3/§7.4)', () => {
       resolve({ devices: pair, template: industrialTechno, mood: NEUTRAL_MOOD, seed: 1 }),
     )
     expect(model.isolated.map((p) => p.deviceId)).not.toContain('moog-mother-32')
+  })
+})
+
+
+// ---------------------------------------------------------------------------
+// The accent lane, which is what `m32-acid-dirty` is for (§4.3/#108)
+// ---------------------------------------------------------------------------
+
+/**
+ * The recipe's title is *"Resonant line with accented steps opening the filter"*, its `routing`
+ * says only accented steps push the cutoff, its ASSIGN source is set to Accent and its one patch
+ * cable sums that output into `IN · VCF CUTOFF`. All four of those describe a per-step gesture,
+ * and none of them tells a reader **which steps to mark** — that is what an `articulation` entry
+ * does, and this recipe was the only one on the box making the claim without carrying one.
+ *
+ * Asserted through a rendered guide rather than off the manifest, because the manifest half is
+ * one line and cannot fail interestingly. What can fail is the join: the direction has to emit
+ * `accent` on the `acid` role, the box has to declare the lane in `features.perStep`, the recipe
+ * has to be the one chosen for the request, and §8 has to print the instruction under **On this
+ * box**. Break any of those and the entry is authored, green in the manifest, and invisible on the
+ * page — which is exactly the failure #108 exists to name.
+ */
+describe('Mother-32 accent articulation (§4.3)', () => {
+  const acidRecipe = () => {
+    const found = device.recipes.find((r) => r.id === 'm32-acid-dirty')
+    if (found === undefined) throw new Error('m32-acid-dirty missing from the manifest')
+    return found
+  }
+
+  /** Phase 5's `acid` block, from its heading to the next one. */
+  function acidBlock(): string[] {
+    const only = DEVICES.filter((d) => d.id === device.id)
+    const doc = renderGuide(
+      resolve({ devices: only, template: acidLineage, mood: NEUTRAL_MOOD, seed: 1 }),
+    ).split('\n')
+    const start = doc.indexOf('## 5. Step programming')
+    expect(start, 'the guide has no step programming phase').toBeGreaterThan(-1)
+    const heading = doc.findIndex((l, i) => i > start && l.startsWith('### `acid`'))
+    expect(heading, 'nothing carries the acid line on a one-box rig').toBeGreaterThan(-1)
+    const next = doc.findIndex((l, i) => i > heading && (l.startsWith('### ') || l.startsWith('## ')))
+    return doc.slice(heading, next === -1 ? undefined : next)
+  }
+
+  it('carries the lane on the recipe whose whole subject is accented steps', () => {
+    expect(acidRecipe().articulation).toEqual([
+      { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
+    ])
+    // The lane is the sequencer's own, from p.24's per-step list — not a name this recipe coined.
+    expect(device.features?.perStep).toContain('accent')
+  })
+
+  it('is reached by a direction rather than authored into a hole (#108)', () => {
+    // The trap that check exists for: a slot no direction emits is legal, silent and dead. All
+    // four `acid` bands of the one direction that requests the role emit `accent`, so it is in
+    // the reachable set — which is the whole set the direction emits for the role, not the set
+    // this recipe happens to articulate.
+    const { slots, requested } = reachableSlots(acidRecipe(), TEMPLATES)
+    expect(requested).toBe(true)
+    expect(slots).toContain('accent')
+    for (const entry of acidRecipe().articulation ?? []) expect(slots).toContain(entry.slot)
+  })
+
+  it('prints the instruction under `On this box`, with the hint that says where to press', () => {
+    const block = acidBlock()
+    expect(block[0]).toBe('### `acid` — Mother-32 · Voice')
+    expect(block).toContain('**On this box** — Mother-32')
+    // The accent step differs per band, so the guide says a different step in each block rather
+    // than one instruction for the part. Band 0 leans on 17 and band 1 on 25.
+    expect(block).toContain('- `accent` → `accent` true on step 17')
+    expect(block).toContain('- `accent` → `accent` true on step 25')
+    expect(block).toContain('  - ↳ hint: RESET / ACCENT accents the step being edited')
+  })
+
+  it('says it once per band block rather than once for the part', () => {
+    // Four bands, four accents, four instructions — the count is the assertion, because a
+    // renderer that hoisted this to the part would still contain every string above.
+    const block = acidBlock()
+    expect(block.filter((l) => l === '**On this box** — Mother-32')).toHaveLength(4)
+    expect(block.filter((l) => l.startsWith('- `accent` → `accent` true on step '))).toHaveLength(4)
   })
 })
