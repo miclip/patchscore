@@ -60,6 +60,7 @@ describe('Octatrack MKII manifest', () => {
     // order, which is folder order.
     expect(device.kind).toBe('sampler')
     expect(DEVICES.filter((d) => d.kind === 'sampler').map((d) => d.id)).toEqual([
+      'elektron-digitakt',
       'elektron-digitakt-ii',
       'elektron-octatrack-mkii',
       'roland-sp-404mk2',

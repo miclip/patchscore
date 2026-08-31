@@ -127,8 +127,17 @@ const SHARED_VOCABULARY = new Set(
  * and it is repaired the same way: by naming the word, once, with the reason. Keep this set
  * tiny. A word earns a place here only when a device folder's own vocabulary collides with
  * ordinary English, never to let a template through that really is naming a box.
+ *
+ * **`bars` is the fifth, and neither side may move.** The Digitakt's Werp and Repitch machines
+ * carry a parameter the panel prints as `BARS` — *"Bars sets the total duration of the sample
+ * measured in bars and is relative to the set BPM"* (manual p.84) — and Industrial Techno says
+ * *"a part already playing can lift the eight bars into a drop"*. The device is quoting its own
+ * silkscreen and the direction is using the ordinary English word for a length of music, which is
+ * the unit §8's at-the-machine writing counts in. Renaming the parameter would put a word on the
+ * screen that is not the one on the box; forbidding the direction the word would leave it no way
+ * to say how long a section is.
  */
-const NON_IDENTIFYING_ENGLISH = new Set(['hand', 'key', 'one', 'transient'])
+const NON_IDENTIFYING_ENGLISH = new Set(['bars', 'hand', 'key', 'one', 'transient'])
 
 function tokens(text: string): string[] {
   return text
@@ -201,9 +210,10 @@ describe('invariant 3 — a template never names a device', () => {
    * §invariant 3/#189. **The exemption list is pinned, so it can only grow deliberately.**
    *
    * #189 worried that this set widens with every device until the check passes anything. The
-   * history says otherwise — four words across thirty-six devices, one per genuine collision:
+   * history says otherwise — five words across forty-three devices, one per genuine collision:
    * `key` with the MC-101, `transient` with the TR-8S, `one` with the MPC One G2, `hand` with
-   * the RD-8 — and each carries its reasoning above. It is not drifting.
+   * the RD-8, `bars` with the Digitakt — and each carries its reasoning above. It is not
+   * drifting.
    *
    * What was missing is any reason it *could not*. A device session under time pressure meets a
    * collision, adds a word, and the suite stays green: nothing asks whether the word identifies a
@@ -217,8 +227,8 @@ describe('invariant 3 — a template never names a device', () => {
    * substrings which no token exemption can reach. Every word here is one that identifies nothing
    * on its own, which is why exempting it opens no hole.
    */
-  it('exempts exactly four English words, and adding a fifth is a decision', () => {
-    expect([...NON_IDENTIFYING_ENGLISH].sort()).toEqual(['hand', 'key', 'one', 'transient'])
+  it('exempts exactly five English words, and adding a sixth is a decision', () => {
+    expect([...NON_IDENTIFYING_ENGLISH].sort()).toEqual(['bars', 'hand', 'key', 'one', 'transient'])
   })
 
   it('contains no device id or folder name as a substring', () => {

@@ -15,6 +15,7 @@ import { device as device_behringer_neutron } from './behringer-neutron/index'
 import { device as device_behringer_rd_8 } from './behringer-rd-8/index'
 import { device as device_behringer_rd_9 } from './behringer-rd-9/index'
 import { device as device_elektron_analog_rytm_mkii } from './elektron-analog-rytm-mkii/index'
+import { device as device_elektron_digitakt } from './elektron-digitakt/index'
 import { device as device_elektron_digitakt_ii } from './elektron-digitakt-ii/index'
 import { device as device_elektron_digitone } from './elektron-digitone/index'
 import { device as device_elektron_digitone_ii } from './elektron-digitone-ii/index'
@@ -60,6 +61,7 @@ export const DEVICES: readonly Device[] = [
   device_behringer_rd_8,
   device_behringer_rd_9,
   device_elektron_analog_rytm_mkii,
+  device_elektron_digitakt,
   device_elektron_digitakt_ii,
   device_elektron_digitone,
   device_elektron_digitone_ii,
@@ -106,6 +108,7 @@ export const DEVICE_FOLDERS: readonly string[] = [
   'behringer-rd-8',
   'behringer-rd-9',
   'elektron-analog-rytm-mkii',
+  'elektron-digitakt',
   'elektron-digitakt-ii',
   'elektron-digitone',
   'elektron-digitone-ii',
