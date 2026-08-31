@@ -489,6 +489,7 @@ export const weave: Template = {
       optional: true,
       inessential: { reason: 'the hats already shimmer; this is one more thing up there' },
     },
+
   ],
 
   patterns: PATTERNS,

@@ -953,6 +953,39 @@ const recipes: Recipe[] = [
     articulation: [art('ghost', { velocity: 40, probability: 50 }, 'trig-params')],
   },
   {
+    id: 'dt-ghost-perc-dark',
+    role: 'ghost-perc',
+    character: 'dark',
+    voice: 'track',
+    /**
+     * The other ghost, and the difference from `soft` is where the sound sits rather than how
+     * loud it is. `soft` is a shaker through a highpass — air in the gaps. This is a low tick
+     * pitched down two octaves with the lowpass shut over it, so the gaps get filled with weight
+     * instead of with air. Same job in the pattern, opposite end of the spectrum.
+     *
+     * `TUNE -24` is two octaves on p.82's bipolar scale, which is what turns a conga or a low tom
+     * into something felt rather than heard — and it is the reason the source is a pitched
+     * one-shot rather than a shaker, since there is nothing in a shaker to pitch down.
+     */
+    title: 'Low tick pitched down two octaves, lowpass shut over it, half of it not playing',
+    verified: false,
+    sourceAudio: {
+      need: 'A low conga, tom or woodblock one-shot with a pitch in it, under 200 ms',
+    },
+    params: [
+      machine('ONESHOT'),
+      play('ONESHOT', 'FORWARD'),
+      tune(-24),
+      fltrType('2-pole Lowpass'),
+      freq(34),
+      reso(14),
+      hold(8),
+      ampDec(30),
+      vol(76),
+    ],
+    articulation: [art('ghost', { velocity: 44, probability: 50 }, 'trig-params')],
+  },
+  {
     id: 'dt-metallic-dirty',
     role: 'metallic',
     character: 'dirty',
@@ -1108,6 +1141,51 @@ const recipes: Recipe[] = [
       revSend(56),
     ],
     articulation: [art('last-hit', { velocity: 127, 'note-length': 48 }, 'trig-params')],
+  },
+  {
+    id: 'dt-riser-dark',
+    role: 'riser',
+    character: 'dark',
+    voice: 'track',
+    /**
+     * A riser that gets louder without getting brighter, which is the whole distinction from
+     * `bright` above.
+     *
+     * That one points the single LFO pass at `FILTER: Frequency`, so the climb *is* the top end
+     * opening. Here the same one-shot ramp goes to `AMPLIFIER: Volume` (p.48's destination list)
+     * and the lowpass stays shut at `FREQ 30`, so what rises is pressure rather than brightness.
+     * On a dark direction that is the difference between a build that announces itself and one
+     * that closes in.
+     *
+     * `LFO MODE ONE` and `MULT BPM 8` against `SPD 4` are read the same way as the bright riser:
+     * p.49's table makes that four bars, once, and then it stops. `VOL 40` leaves the headroom
+     * `DEP 56` needs to climb into — a swell has to start below where it ends.
+     */
+    title: 'Low drone swelling on one LFO pass, the filter never opening',
+    verified: false,
+    sourceAudio: {
+      need: 'A sustained low drone, rumble or noise bed that holds for at least four bars',
+    },
+    params: [
+      machine('ONESHOT'),
+      play('ONESHOT', 'FORWARD'),
+      tune(-24),
+      fltrType('2-pole Lowpass'),
+      freq(30),
+      reso(20),
+      lfoWave('RMP'),
+      lfoMode('ONE'),
+      dest('AMPLIFIER: Volume'),
+      spd(4),
+      mult('BPM 8'),
+      phas(0),
+      dep(56),
+      hold(110),
+      ampDec(96),
+      vol(40),
+      revSend(30),
+    ],
+    articulation: [art('last-hit', { velocity: 112, 'note-length': 48 }, 'trig-params')],
   },
   {
     id: 'dt-impact-hard',

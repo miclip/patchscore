@@ -87,6 +87,22 @@ const PATTERNS: Pattern[] = [
   // The part that states the backbeat, so it takes the slot. Band 0 is beat 4 alone, which is
   // the half-time entry, and beat 2 only arrives at band 1 — the clap is the last thing to
   // commit to the bar.
+  // ---- ghost-perc ---------------------------------------------------------------------
+  // Odd sixteenths only. The kick owns 1, 5, 9 and 13 and the clap owns the backbeat, so a low
+  // hit anywhere on a quarter would be competing with one of them for the same air. These land
+  // in the gaps, at velocities in the 40s — felt rather than heard, which is the whole part.
+  variant('house-ghost-perc-b0', 'ghost-perc', 0, 16, at('ghost', 44, 7)),
+  variant('house-ghost-perc-b1', 'ghost-perc', 1, 16, at('ghost', 44, 7, 15)),
+  variant('house-ghost-perc-b2', 'ghost-perc', 2, 16, at('ghost', 42, 3, 7, 11, 15)),
+  variant(
+    'house-ghost-perc-b3',
+    'ghost-perc',
+    3,
+    16,
+    at('ghost', 40, 3, 7, 11, 15),
+    at('ghost', 34, 6, 14),
+  ),
+
   variant('house-clap-b0', 'clap', 0, 16, on('backbeat', 13)),
   variant('house-clap-b1', 'clap', 1, 16, on('backbeat', 5, 13)),
   variant('house-clap-b2', 'clap', 2, 16, on('backbeat', 5, 13), at('ghost', 40, 15)),
@@ -473,6 +489,32 @@ export const lydianHouse: Template = {
       sustain: 'continuous',
       optional: true,
       inessential: { reason: 'the closed hat already owns every offbeat there is' },
+    },
+
+    /**
+     * §3.4/#300. **`dark` rather than `soft`, and the difference is where the hit sits.**
+     *
+     * Every `ghost-perc` in the library was authored `soft` — a shaker, air between the loud
+     * hits — and every direction asked for `soft` or `clean`, so a box authoring anything else
+     * was authoring something unreachable. This asks for the other one: a hit tuned under the
+     * floor, filling the same holes with body instead of air.
+     *
+     * It suits this direction rather than a harder one because the groove here is already gentle
+     * — the kick is `dark`, the pad is `soft`, the hats own the offbeats — so the space left
+     * under it is low and wide. A shaker would be a fifth thing in the top half of the spectrum.
+     *
+     * The two characters are orthogonal, not opposed: `soft` is `force -1` and `dark` is
+     * `tone -1`, distance 2, so §3.5 substitutes between them and the guide says it did. A rig
+     * whose only ghost is a shaker still gets one, reported as the swap it is.
+     */
+    {
+      id: 'r-ghost-perc',
+      role: 'ghost-perc',
+      priority: 4,
+      character: 'dark',
+      sustain: 'continuous',
+      optional: true,
+      inessential: { reason: 'the groove reads without it; this is weight underneath' },
     },
   ],
 

@@ -444,6 +444,35 @@ const recipes: Recipe[] = [
     articulation: [{ slot: 'ghost', set: { weak: true }, hint: 'weak-step' }],
     verified: false,
   },
+  {
+    id: 'tr8s-ghost-perc-dark',
+    role: 'ghost-perc',
+    character: 'dark',
+    voice: 'ht',
+    /**
+     * `soft` puts a mid tom under the groove at `TUNE +20`; this puts a high tom *under the floor*
+     * at `TUNE -70`, which on p.30's bipolar scale is far enough that the tone stops reading as a
+     * tom and starts reading as a thud. The HT voice is used rather than the LT because LT does
+     * not declare `ghost-perc` — and because tuning a high tom down is what leaves the stick noise
+     * in while the body goes, which is the part that makes a ghost audible at low level.
+     *
+     * `LPF` on the INST FX (p.31's list) takes the rest of the top off. Between them the hit
+     * occupies the same slot in the pattern as the `soft` ghost and none of the same spectrum,
+     * which is the point of having both.
+     */
+    title: 'High tom tuned into the floor, lowpassed under the groove',
+    params: [
+      tone('TOM category, ACB — 606Low/Mid/HighTom', 'COLOR is ambience on the 606 toms (p.31)'),
+      num('TUNE', -70, BIPOLAR, 30, { mood: [{ axis: 'darkness', amount: -40 }] }),
+      num('DECAY', 84, UNIT, 30, { mood: [{ axis: 'density', amount: -20 }] }),
+      num('LEVEL', 108, UNIT, 30, { note: 'Under everything; the level slider is this value' }),
+      instFx('LPF'),
+      ...sends(30, 24, 90),
+      shuffle(),
+    ],
+    articulation: [{ slot: 'ghost', set: { weak: true }, hint: 'weak-step' }],
+    verified: false,
+  },
 
   // ---- RS ----------------------------------------------------------------
   {
@@ -653,6 +682,48 @@ const recipes: Recipe[] = [
       num('BIT REDUCE', 3, { min: 0, max: 12 }, 31, { mood: [{ axis: 'grit', amount: 9 }] }),
       instFx('THRU'),
       ...sends(150, 90, 105),
+      shuffle(),
+    ],
+    articulation: [{ slot: 'last-hit', set: { accent: true }, hint: 'accent-step' }],
+    verified: false,
+  },
+  {
+    id: 'tr8s-riser-dark',
+    role: 'riser',
+    character: 'dark',
+    voice: 'cc',
+    /**
+     * The same trick as the bright riser and pointed downward. That one plays a decaying tail
+     * backwards so the tail becomes the rise, and leaves the top open; this plays it backwards an
+     * octave down (`COARSE TUNE -12`, p.31's semitone scale) through the `LPF` on the INST FX, so
+     * what arrives is weight rather than brightness.
+     *
+     * `BIT REDUCE 0` rather than the bright riser's 3: grit reads as brightness on this box, since
+     * the artefacts it adds are all above the fundamental. A dark riser wants none of them, and
+     * leaving the parameter at zero is also what keeps the `grit` mood axis honest — it can add
+     * some back if the direction asks.
+     */
+    title: 'A sample played backwards an octave down, lowpassed into the change',
+    sourceAudio: {
+      need:
+        'A sample with a long decaying tail loaded into the Sample tone; a negative RATE plays ' +
+        'it backwards, so the tail becomes the rise',
+    },
+    params: [
+      tone(
+        'Sample',
+        'Everything below the TUNE line is in the "Sample tone only" block (p.31) and does not exist on an ACB tone',
+      ),
+      num('TUNE', -30, BIPOLAR, 30, { mood: [{ axis: 'darkness', amount: -40 }] }),
+      num('COARSE TUNE', -12, COARSE, 31, { unit: 'st', note: 'Pitch in semitone steps' }),
+      num('RATE', -0.5, { min: -1, max: 1 }, 31, {
+        step: 0.01,
+        note: 'Negative plays backward; -1.00 is full speed in reverse (p.31)',
+      }),
+      num('SPREAD', 12, { min: -50, max: 50 }, 31, { note: 'Skews pitch L/R for a stereo image' }),
+      num('BIT REDUCE', 0, { min: 0, max: 12 }, 31, { mood: [{ axis: 'grit', amount: 9 }] }),
+      instFx('LPF'),
+      ...sends(96, 48, 105),
       shuffle(),
     ],
     articulation: [{ slot: 'last-hit', set: { accent: true }, hint: 'accent-step' }],

@@ -611,6 +611,36 @@ const RECIPES: Recipe[] = [
     verified: false,
   },
   {
+    id: 'tr-ghost-perc-dark',
+    role: 'ghost-perc',
+    character: 'dark',
+    voice: 'track',
+    /**
+     * The `soft` ghost is a shaker through a band-pass at `CUTOFF 58` — the airy end of p.111's
+     * three live types. This is a low drum through a low-pass at 26, which fills the same holes in
+     * the pattern with body instead of air.
+     *
+     * The amp envelope is longer at every stage than the shaker's, and that is the sound rather
+     * than a preference: a low hit with a shaker's 70 ms decay is a click with no pitch in it. The
+     * `BIT DEPTH 12` is the one place this recipe reaches for p.114 — just enough to keep the tail
+     * from sounding clean, which is where a quiet low hit otherwise starts sounding like a mistake.
+     */
+    title: 'Low drum ghosts under the pattern, lowpassed and slightly crushed',
+    sourceAudio: { need: 'A low tom, floor kick or dull conga, no attack spike', hint: 'load-sample' },
+    params: [
+      ...oneShot('Just inside the attack', 'After the body, before the tail ends'),
+      ...filter('Low-pass', 26, 14, -20),
+      num('PANNING', -18, PAN, 110),
+      ...drive(8, 12),
+      ...ampEnv(0.004, 0.22, 0, 0.12),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'ghost', set: { volume: 30, chance: 58, 'random-volume': 18 }, hint: 'pick-fx' },
+    ],
+    verified: false,
+  },
+  {
     id: 'tr-tom-dark',
     role: 'tom',
     character: 'dark',
@@ -819,6 +849,48 @@ const RECIPES: Recipe[] = [
     articulation: [
       { slot: 'first-hit', set: { 'high-pass': 10 }, hint: 'pick-fx' },
       { slot: 'last-hit', set: { 'high-pass': 74, volume: 100 } },
+    ],
+    verified: false,
+  },
+  {
+    id: 'tr-riser-dark',
+    role: 'riser',
+    character: 'dark',
+    voice: 'track',
+    /**
+     * **The darkness here is static, and that is the box rather than a choice.**
+     *
+     * The obvious dark riser closes a low-pass across the bar while the level climbs. This box
+     * will not do it, twice over. Its per-step FX lanes include `high-pass` and no low-pass at
+     * all (p.129's list), so the closing cannot be drawn per step the way the bright riser draws
+     * its opening. And the Instrument Automation page has **one** envelope shaping **one**
+     * destination (p.115) — point it at `Cutoff` and the amp envelope is gone, because there is
+     * no global one underneath it.
+     *
+     * So the two halves cannot both move: either the filter closes or the level swells. The level
+     * is the half that carries a riser, so the filter is set once at `CUTOFF 30` and stays there,
+     * and the climb is `volume` on the step lane from 34 to 100. What arrives is pressure with no
+     * top on it, which is the distinction from `bright` — that one opens a high-pass upward and
+     * is heard as the bottom falling away.
+     *
+     * Recorded rather than worked around: a reader who wants the filter to move as well has to
+     * automate it by hand, and the guide should not imply otherwise.
+     */
+    title: 'Low rumble swelling across the bar with the filter held shut',
+    sourceAudio: {
+      need: 'A long low rumble, sub sweep or bowed low string, several bars of rising energy',
+      hint: 'load-sample',
+    },
+    params: [
+      ...oneShot('At the quiet start', 'At the peak, before any drop'),
+      ...filter('Low-pass', 30, 22, -26),
+      ...ampEnv(1.6, 0.5, 98, 0.4),
+      reverbSend(24, 28),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'first-hit', set: { volume: 34 }, hint: 'pick-fx' },
+      { slot: 'last-hit', set: { volume: 100 } },
     ],
     verified: false,
   },
