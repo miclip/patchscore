@@ -4,6 +4,9 @@ import {
   FORMAT_VERSION,
   IMPLICIT_RIG_ID,
   IMPLICIT_RIG_NAME,
+  MAX_RIG_DEVICES,
+  RECENT_RIGS_MAX,
+  advanceHistory,
   SEED_MAX,
   STUDIO_DOC_VERSION,
   STUDIO_STORAGE_KEY,
@@ -349,5 +352,130 @@ describe('storage that is missing or hostile', () => {
       expect(() => loadStudio(source, CATALOGUE)).not.toThrow()
       expect(() => saveStudio(source, doc, CATALOGUE)).not.toThrow()
     }
+  })
+})
+
+/**
+ * §8.2/#304. What the browser remembers that it did not before: which box leads the rig, and the
+ * rigs that came before this one.
+ *
+ * Both are **optional fields on the existing v1 document**, which is the whole reason there is no
+ * migration to test. The file's own note on #161's `bpm` and `key` says why: a document already
+ * on disk predates them and stays valid, and that is what optional buys where a bumped
+ * `STUDIO_DOC_VERSION` would have thrown a reader's studio away for nothing.
+ */
+describe('the clock source is remembered with the rig (#304)', () => {
+  const RIG = CATALOGUE.devices.slice(0, 3)
+  const LEADER = RIG[1] as string
+
+  it('survives a save and a load, which it did not before', () => {
+    // The gap this closes: `guideInputsFrom` did not carry `clockSourceId` at all, so choosing a
+    // clock source and reloading lost it silently.
+    const storage = fakeStorage()
+    const before = inputs({ devices: RIG, clockSourceId: LEADER })
+    expect(saveStudio(() => storage, studioDoc(before), CATALOGUE).status).toBe('ok')
+
+    const loaded = loadStudio(() => storage, CATALOGUE)
+    if (loaded.status !== 'ok') throw new Error(`expected ok, got ${loaded.status}`)
+    expect(loaded.doc.rig.clockSourceId).toBe(LEADER)
+    expect(guideInputsFrom(loaded.doc).clockSourceId).toBe(LEADER)
+  })
+
+  it('is stored on the rig rather than beside the score', () => {
+    // The design claim, falsifiable: it names a device, so it belongs where the devices are. A
+    // score carrying it would point at a box the next rig may not contain.
+    const doc = studioDoc(inputs({ devices: RIG, clockSourceId: LEADER }))
+    expect(doc.rig.clockSourceId).toBe(LEADER)
+    expect(Object.keys(doc.inputs)).not.toContain('clockSourceId')
+  })
+
+  it('is dropped when its box leaves the rig, rather than pointing at nothing', () => {
+    const stored = studioDoc(inputs({ devices: RIG, clockSourceId: LEADER })).rig
+    const without = RIG.filter((id) => id !== LEADER)
+    const doc = studioDoc(inputs({ devices: without }), stored)
+    expect(doc.rig.clockSourceId).toBeUndefined()
+    expect(doc.rig.devices.map((m) => m.deviceId)).toEqual(without)
+  })
+
+  it('refuses a hand-edited document whose leader is not in the rig', () => {
+    const doc = studioDoc(inputs({ devices: RIG }))
+    const tampered = { ...doc, rig: { ...doc.rig, clockSourceId: CATALOGUE.devices[9] as string } }
+    const storage = fakeStorage(JSON.stringify(tampered))
+    const loaded = loadStudio(() => storage, CATALOGUE)
+    expect(loaded.status).toBe('invalid')
+  })
+})
+
+describe('rigs you had before (#304)', () => {
+  const A = CATALOGUE.devices.slice(0, 2)
+  const B = CATALOGUE.devices.slice(2, 5)
+
+  const docFor = (devices: readonly string[], recent?: readonly StudioDocV1['rig'][]): StudioDocV1 =>
+    studioDoc(inputs({ devices }), undefined, recent)
+
+  it('remembers a rig only once it stops being the current one', () => {
+    const wasA = docFor(A)
+    // Same membership: a direction change or a reroll rewrites the document and is not a new rig.
+    expect(advanceHistory(wasA, A)).toEqual([])
+    const history = advanceHistory(wasA, B)
+    expect(history.map((r) => r.devices.map((m) => m.deviceId))).toEqual([A])
+  })
+
+  it('deduplicates by membership, because every rig shares one id until #16', () => {
+    // The trap this is guarding: `IMPLICIT_RIG_ID` is a constant, so an id-based dedupe would
+    // collapse the whole list to a single entry and the history would never grow past one.
+    const first = docFor(A)
+    const second = { ...docFor(B), recent: advanceHistory(first, B) }
+    const third = advanceHistory(second, A)
+    expect(third.map((r) => r.devices.map((m) => m.deviceId))).toEqual([B, A])
+
+    // Going back to A must not leave two A rows.
+    const fourth = advanceHistory({ ...docFor(A), recent: third }, B)
+    const seen = fourth.map((r) => r.devices.map((m) => m.deviceId).join(','))
+    expect(new Set(seen).size).toBe(seen.length)
+  })
+
+  it('keeps at most RECENT_RIGS_MAX, newest first', () => {
+    let recent: readonly StudioDocV1['rig'][] = []
+    for (let i = 0; i < RECENT_RIGS_MAX + 3; i++) {
+      const devices = CATALOGUE.devices.slice(i, i + 2)
+      recent = advanceHistory({ ...docFor(devices), recent }, ['nothing-else'])
+    }
+    expect(recent.length).toBe(RECENT_RIGS_MAX)
+    // Newest first: the last rig pushed is at the head.
+    const newest = CATALOGUE.devices.slice(RECENT_RIGS_MAX + 2, RECENT_RIGS_MAX + 4)
+    expect(recent[0]?.devices.map((m) => m.deviceId)).toEqual(newest)
+  })
+
+  it('never remembers an empty rig, which is a shortcut back to nothing', () => {
+    expect(advanceHistory(docFor([]), A)).toEqual([])
+  })
+
+  it('round-trips through storage and refuses a document claiming more than the cap', () => {
+    const recent = advanceHistory(docFor(A), B)
+    const storage = fakeStorage()
+    expect(saveStudio(() => storage, docFor(B, recent), CATALOGUE).status).toBe('ok')
+    const loaded = loadStudio(() => storage, CATALOGUE)
+    if (loaded.status !== 'ok') throw new Error(`expected ok, got ${loaded.status}`)
+    expect(loaded.doc.recent?.map((r) => r.devices.map((m) => m.deviceId))).toEqual([A])
+
+    const tooMany = {
+      ...docFor(B),
+      recent: Array.from({ length: RECENT_RIGS_MAX + 1 }, () => docFor(A).rig),
+    }
+    expect(loadStudio(() => fakeStorage(JSON.stringify(tooMany)), CATALOGUE).status).toBe('invalid')
+  })
+
+  /**
+   * #301. A rig stored before the ten-device cap existed is still a rig somebody had. The cap is
+   * a picker rule, not a format rule, so the history must carry it rather than truncate it.
+   */
+  it('carries a remembered rig larger than the picker would now allow', () => {
+    const big = CATALOGUE.devices.slice(0, MAX_RIG_DEVICES + 4)
+    const recent = advanceHistory(docFor(big), A)
+    expect(recent[0]?.devices.length).toBe(MAX_RIG_DEVICES + 4)
+    const storage = fakeStorage()
+    expect(saveStudio(() => storage, docFor(A, recent), CATALOGUE).status).toBe('ok')
+    expect(loadStudio(() => storage, CATALOGUE).status).toBe('ok')
   })
 })

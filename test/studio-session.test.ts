@@ -2,20 +2,21 @@ import { describe, expect, it, vi } from 'vitest'
 import { decodeGuideInputs, DENSITY_DETENTS, encodeGuideInputs, FORMAT_VERSION, guideInputsFrom, loadStudio, MAX_RIG_DEVICES, RESOLVER_VERSION, STUDIO_STORAGE_KEY, studioDoc } from '../lib/core/index'
 import type { GuideInputsV1, StoredRigV1 } from '../lib/core/index'
 import {
-  CATALOGUE,
-  DEFAULT_INPUTS,
-  SYNC_DEBOUNCE_MS,
   bootstrapStudio,
+  CATALOGUE,
   copyStudioLink,
   createStudioSync,
+  DEFAULT_INPUTS,
   derivedSeed,
-  syncStudio,
   songOverrides,
+  SYNC_DEBOUNCE_MS,
+  syncStudio,
   withAxis,
   withBpm,
   withDevice,
   withInspiration,
   withKey,
+  withRig,
   withSeed,
   withTemplate,
 } from '../lib/studio/session'
@@ -1249,5 +1250,67 @@ describe('an unreadable key keeps its guide (#161)', () => {
     expect(loaded.status).toBe('ok')
     if (loaded.status !== 'ok') return
     expect(guideInputsFrom(loaded.doc).key).toBe('H minor')
+  })
+})
+
+/**
+ * §8.2/#304. Swapping the whole rig for one the visitor had before.
+ *
+ * `withRig` is the only path in the app that may hand the resolver more than `MAX_RIG_DEVICES`,
+ * and that is the point rather than an oversight — see the note on the function.
+ */
+describe('restoring a remembered rig (#304)', () => {
+  const rigOf = (ids: readonly string[], clockSourceId?: string): StoredRigV1 => ({
+    id: 'local',
+    name: 'My rig',
+    devices: ids.map((deviceId) => ({ deviceId, settings: {} })),
+    ...(clockSourceId === undefined ? {} : { clockSourceId }),
+  })
+
+  it('replaces the rig rather than merging into it', () => {
+    // A remembered rig is a rig somebody had. Merging would produce a third rig nobody chose.
+    const start = withDevice(DEFAULT_INPUTS, CATALOGUE.devices[0] as string, true)
+    const wanted = [CATALOGUE.devices[5], CATALOGUE.devices[7]] as string[]
+    const after = withRig(start, rigOf(wanted))
+    expect(after.devices).toEqual(wanted)
+  })
+
+  it('puts the devices in registry order, whatever order the rig stored them in', () => {
+    const wanted = [CATALOGUE.devices[7], CATALOGUE.devices[2]] as string[]
+    const after = withRig(DEFAULT_INPUTS, rigOf(wanted))
+    expect(after.devices).toEqual([CATALOGUE.devices[2], CATALOGUE.devices[7]])
+  })
+
+  it('brings the clock source with it, and drops one the rig does not contain', () => {
+    const ids = [CATALOGUE.devices[1], CATALOGUE.devices[3]] as string[]
+    expect(withRig(DEFAULT_INPUTS, rigOf(ids, ids[1])).clockSourceId).toBe(ids[1])
+    // A hand-edited document could name a leader outside its own rig; this is the last gate.
+    expect(withRig(DEFAULT_INPUTS, rigOf(ids, CATALOGUE.devices[9] as string)).clockSourceId).toBeUndefined()
+  })
+
+  it('clears a clock source the previous rig had and this one does not name', () => {
+    const first = [CATALOGUE.devices[1], CATALOGUE.devices[3]] as string[]
+    const withClock = withRig(DEFAULT_INPUTS, rigOf(first, first[0]))
+    expect(withClock.clockSourceId).toBe(first[0])
+    const swapped = withRig(withClock, rigOf([CATALOGUE.devices[6]] as string[]))
+    expect(swapped.clockSourceId).toBeUndefined()
+  })
+
+  /**
+   * #301. The cap is a picker rule, not a format rule. A rig stored before it existed is still
+   * what somebody built, so restoring it loads it whole — and the picker simply refuses to add
+   * an eleventh afterwards.
+   */
+  it('restores a rig larger than the picker would now build, and then refuses to grow it', () => {
+    const big = CATALOGUE.devices.slice(0, MAX_RIG_DEVICES + 3) as string[]
+    const restored = withRig(DEFAULT_INPUTS, rigOf(big))
+    expect(restored.devices).toHaveLength(MAX_RIG_DEVICES + 3)
+
+    const spare = CATALOGUE.devices.find((id) => !restored.devices.includes(id)) as string
+    expect(withDevice(restored, spare, true)).toBe(restored)
+    // And unticking still works, so an oversized rig is not stuck.
+    expect(withDevice(restored, big[0] as string, false).devices).toHaveLength(
+      MAX_RIG_DEVICES + 2,
+    )
   })
 })

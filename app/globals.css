@@ -3940,3 +3940,47 @@ html {
     padding: 2px 1.5px;
   }
 }
+
+/* ------------------------------------------------- §8.2/#304 recent rigs */
+
+/*
+ * A row of shortcuts back to rigs the visitor had before this one. It is not a control that
+ * changes the guide, so it reads quieter than the picker rows below it and sits above them —
+ * before the list rather than inside it, because it replaces the whole list in one click.
+ */
+.picker-recent {
+  margin: 4px 0 10px;
+}
+
+.picker-recent ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.picker-recent button {
+  font: inherit;
+  font-size: 11px;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  padding: 4px 8px;
+  cursor: pointer;
+  /* Wraps rather than truncating: the box names are the whole point of the label. */
+  text-align: left;
+  max-width: 100%;
+}
+
+.picker-recent button:hover {
+  border-color: var(--edge-strong);
+  color: var(--silkscreen);
+}
+
+.picker-recent button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

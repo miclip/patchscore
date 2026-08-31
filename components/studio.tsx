@@ -27,6 +27,7 @@ import {
   createStudioSync,
   withAxis,
   withDevice,
+  withRig,
   withInspiration,
   withSeed,
   withTemplate,
@@ -128,10 +129,20 @@ export function Studio({ initialInputs }: StudioProps) {
    */
   const [bootstrapped, setBootstrapped] = useState(false)
 
+  /**
+   * #304. Rigs the visitor had before this one, read once on entry and never refreshed.
+   *
+   * Not kept in step with every save on purpose: the list is a shortcut back to something
+   * recognisable, and a row that appears and reorders itself under the reader's cursor while
+   * they are ticking boxes is worse than one that is a few edits stale. It settles on reload.
+   */
+  const [recent, setRecent] = useState<readonly StoredRigV1[]>([])
+
   useEffect(() => {
     const boot = bootstrapStudio(browserEnv())
     setInputs(boot.inputs)
     setRig(boot.rig)
+    setRecent(boot.recent)
     setSource(boot.source)
     setPersist(boot.persist)
     setNotices(boot.notices)
@@ -272,6 +283,20 @@ export function Studio({ initialInputs }: StudioProps) {
   }
 
   /**
+   * #304. Swap the whole rig for a remembered one, in one edit rather than ten ticks.
+   *
+   * `withRig` replaces the device list outright instead of folding the two together, because a
+   * remembered rig is a rig somebody had and not a set of suggestions — merging it into the
+   * current one would produce a third rig nobody chose. It is also the only path that may exceed
+   * `MAX_RIG_DEVICES`, and deliberately: the cap is a picker rule, and a rig stored before it
+   * existed is still theirs (#301).
+   */
+  function restoreRig(stored: StoredRigV1) {
+    claimAsOwn()
+    setInputs((current) => withRig(current, stored))
+  }
+
+  /**
    * The influences are deliberately *kept* across a change of direction. They are keyed on
    * `(role, band)` and name no template (§5.1), so they reapply against the new one on their
    * own terms — and anything the new direction has no room for is reported rather than dropped.
@@ -376,6 +401,8 @@ export function Studio({ initialInputs }: StudioProps) {
            * would let the picker disagree with the page it sits beside (#33).
            */
           unfilled={unfilledRoles}
+          recent={recent}
+          onRestoreRig={restoreRig}
         />
         <GenrePicker selected={inputs.templateId} onSelect={selectTemplate} />
         {/*

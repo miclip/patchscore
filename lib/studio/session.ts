@@ -15,6 +15,7 @@ import {
   hash32,
   loadStudio,
   parseKey,
+  advanceHistory,
   saveStudio,
   studioDoc,
 } from '@/lib/core'
@@ -237,6 +238,15 @@ export type Bootstrap = {
    * where there is no rig to preserve and one is created on the first save.
    */
   rig: StoredRigV1 | undefined
+  /**
+   * §8.2/#304. Rigs the visitor had before this one, newest first — read once on entry.
+   *
+   * Empty after a link, and deliberately: a shared guide is somebody else's, and offering to
+   * swap the reader's own past rigs into it would be the page acting on a studio this session
+   * is not allowed to write to (see `persist` below). Their history is intact when they come
+   * back to the bare root.
+   */
+  recent: readonly StoredRigV1[]
   source: 'link' | 'storage' | 'default'
   /**
    * Whether this session may write to local storage — **false for the whole session** when the
@@ -311,7 +321,16 @@ export function bootstrapStudio(
       // A link carries device ids, not a rig — and nothing here creates one. This session is
       // read-only against storage from now on (`persist: false`); the visitor's own rig is left
       // exactly where it was, unread and unwritten.
-      return { inputs: decoded.inputs, rig: undefined, source: 'link', persist: false, notices }
+      // #304: no history either. This session may not write storage, so offering to swap in a
+      // rig from it would be the page acting on a studio it is not allowed to touch.
+      return {
+        inputs: decoded.inputs,
+        rig: undefined,
+        recent: [],
+        source: 'link',
+        persist: false,
+        notices,
+      }
     }
 
     notices.push(
@@ -334,6 +353,7 @@ export function bootstrapStudio(
     return {
       inputs: guideInputsFrom(stored.doc),
       rig: stored.doc.rig,
+      recent: stored.doc.recent ?? [],
       source: 'storage',
       persist: true,
       notices,
@@ -349,7 +369,7 @@ export function bootstrapStudio(
     notices.push({ kind: 'storage-unavailable', message: STORAGE_UNAVAILABLE })
   }
 
-  return { inputs: fallback, rig: undefined, source: 'default', persist: true, notices }
+  return { inputs: fallback, rig: undefined, recent: [], source: 'default', persist: true, notices }
 }
 
 const STORAGE_UNAVAILABLE =
@@ -418,7 +438,19 @@ export function syncStudio(
   // stale address bar is its own bug. Storage is the part that is somebody's property.
   if (!persist) return { query, href, persisted: false, notice: undefined }
 
-  const saved = saveStudio(env.storage, studioDoc(inputs, rig), catalogue)
+  /**
+   * #304. The history is computed from what is on disk rather than carried through the sync
+   * path, because the question — what rig was here before this edit — is answered by the store
+   * and by the new device list, and nothing in between needs to know about it.
+   *
+   * A `loadStudio` that comes back anything other than `ok` yields no history and no error: a
+   * document that cannot be read is already reported by the load path on entry, and losing a
+   * shortcut list is not worth a second notice over the guide somebody is reading.
+   */
+  const stored = loadStudio(env.storage, catalogue)
+  const recent = advanceHistory(stored.status === 'ok' ? stored.doc : undefined, inputs.devices)
+
+  const saved = saveStudio(env.storage, studioDoc(inputs, rig, recent), catalogue)
   const notice: StudioNotice | undefined =
     saved.status === 'unavailable'
       ? { kind: 'storage-unavailable', message: STORAGE_UNAVAILABLE }
@@ -614,6 +646,38 @@ export function withDevice(
   if (on) selected.add(deviceId)
   else selected.delete(deviceId)
   return { ...inputs, devices: catalogue.devices.filter((id) => selected.has(id)) }
+}
+
+/**
+ * §8.2/#304. Swap the rig wholesale for a remembered one.
+ *
+ * **Replaces rather than merges.** A remembered rig is a rig somebody had, not a set of
+ * suggestions; folding it into the current one would produce a third rig nobody chose. Registry
+ * order for the same reason `withDevice` recomputes it — the rig is a set, and click order would
+ * give one guide two links.
+ *
+ * **The only path that may exceed `MAX_RIG_DEVICES`, and deliberately.** The cap is a picker rule
+ * and not a format rule (#301): a rig stored before it existed, or opened from a link that
+ * predates it, is still what somebody built. Truncating it to fit would be the app quietly
+ * editing their studio; the picker simply refuses to add an eleventh afterwards.
+ *
+ * The clock source travels with it, filtered through the same membership check the store applies
+ * — a rig cannot arrive here naming a leader it does not contain, but a hand-edited document
+ * could, and this is the last place before it reaches a guide.
+ */
+export function withRig(
+  inputs: GuideInputsV1,
+  rig: StoredRigV1,
+  catalogue: Catalogue = CATALOGUE,
+): GuideInputsV1 {
+  const wanted = new Set(rig.devices.map((member) => member.deviceId))
+  const devices = catalogue.devices.filter((id) => wanted.has(id))
+  const clockSourceId =
+    rig.clockSourceId !== undefined && devices.includes(rig.clockSourceId)
+      ? rig.clockSourceId
+      : undefined
+  const { clockSourceId: _dropped, ...rest } = inputs
+  return { ...rest, devices, ...(clockSourceId === undefined ? {} : { clockSourceId }) }
 }
 
 export function withTemplate(inputs: GuideInputsV1, templateId: TemplateId): GuideInputsV1 {

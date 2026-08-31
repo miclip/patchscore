@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useId, useMemo, useRef, useState } from 'react'
 import type { Device, DeviceId, Role } from '@/lib/core'
 import { MAX_RIG_DEVICES, expand } from '@/lib/core'
+import type { StoredRigV1 } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceHref, deviceLabel } from '@/lib/studio/catalogue'
 import { ANY_KIND, deviceView, kindsPresent,
@@ -35,6 +36,9 @@ import { PatchCables } from './patch-cables'
 export type DevicePickerProps = {
   selected: readonly DeviceId[]
   onToggle: (id: DeviceId, on: boolean) => void
+  /** §8.2/#304. Rigs the visitor had before this one, newest first. Empty on a link session. */
+  recent?: readonly StoredRigV1[]
+  onRestoreRig?: (rig: StoredRigV1) => void
   /**
    * §7.4/#200. The box the reader put in charge, so this pane's clock line agrees with the
    * guide's. Optional: absent means "nobody chose", which is also what it meant before #200.
@@ -50,6 +54,8 @@ export type DevicePickerProps = {
 export function DevicePicker({
   selected,
   onToggle,
+  recent,
+  onRestoreRig,
   clockSourceId,
   unfilled,
 }: DevicePickerProps) {
@@ -245,6 +251,30 @@ export function DevicePicker({
        * the search read as broken at exactly the moment someone reached for it. Separating the
        * groups gives both: the filter visibly filters, and nothing selected disappears.
        */}
+      {/*
+       * §8.2/#304. **Rigs from before this one, and nothing until there is one to show.**
+       *
+       * A person who has only ever had one rig should not be told there is a history feature; the
+       * row appears the first time it has an answer. Each entry names its boxes rather than a
+       * count, because "3 devices" is not something anyone recognises and "TR-8S, Deluge,
+       * Mother-32" is.
+       */}
+      {onRestoreRig !== undefined && (recent?.length ?? 0) > 0 ? (
+        <div className="picker-recent">
+          <p className="note">Rigs you had before</p>
+          <ul>
+            {(recent ?? []).map((rig) => (
+              <li key={rig.devices.map((m) => m.deviceId).join(',')}>
+                <button type="button" onClick={() => onRestoreRig(rig)}>
+                  {rigLabel(rig)}
+                  <span className="sr-only"> — swap this in as your rig</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {chosen.length > 0 ? (
         <p className="note picker-kept">
           Your rig — {chosen.length} selected. Untick to drop.
@@ -323,6 +353,22 @@ export function DevicePicker({
  * `deviceLabel` rather than `maker` + `name`: one of the thirteen manifests already carries its
  * maker in its name, and this row was the last place still printing `Zoom Zoom LiveTrak L-8`.
  */
+/**
+ * What a remembered rig is called, given that none of them has a name until #16.
+ *
+ * Names the boxes, up to three, then counts the rest: a reader recognises `TR-8S, Deluge,
+ * Mother-32 +2` and recognises nothing at all in `5 devices`. Registry order, which is the order
+ * the rig was stored in, so the same rig always reads the same way.
+ */
+function rigLabel(rig: StoredRigV1): string {
+  const names = rig.devices.map((member) => {
+    const device = DEVICES.find((d) => d.id === member.deviceId)
+    return device === undefined ? member.deviceId : deviceLabel(device)
+  })
+  const shown = names.slice(0, 3).join(', ')
+  return names.length > 3 ? `${shown} +${String(names.length - 3)}` : shown
+}
+
 function pick(
   row: { item: Device; selected: boolean; retained: boolean },
   onToggle: (id: DeviceId, on: boolean) => void,
