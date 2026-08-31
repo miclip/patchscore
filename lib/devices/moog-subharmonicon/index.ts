@@ -787,6 +787,13 @@ const VOICE_ROLES: Role[] = [
  * `subh-metallic-bright` they move the dividers instead — a pitch gesture on any of those would
  * be an instruction with no subject. `subh-sub-dark` and `subh-arp-bright` are left out for
  * #108's reason rather than a musical one: no direction requesting those pairs emits `accent`.
+ *
+ * **`subh-acid-dirty` was in that second list and is not any more.** Its `SEQ 1 ASSIGN` is lit on
+ * pitch and sub 1, so it always passed the musical test above; what it lacked was a direction. The
+ * day one arrived that requests `acid` and emits `accent` in every band, the exclusion had nothing
+ * left holding it up — which is the whole shape of #108's rule working in the direction nobody
+ * writes down: a slot goes dead when the last direction stops emitting it, and comes alive when
+ * the first one starts. Nothing about the box changed.
  */
 const ACCENT_OCTAVE = {
   slot: 'accent' as const,
@@ -1391,6 +1398,7 @@ const RECIPES: Recipe[] = [
       density: -1,
       drives: [TO_SEQ_1, IDLE, IDLE, IDLE],
     }),
+    articulation: [ACCENT_OCTAVE],
     verified: false,
   },
 
