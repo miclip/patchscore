@@ -41,6 +41,10 @@ export const NAV_LINKS: readonly { href: string; label: string }[] = [
   // setting: it explains the sounds a guide asks for by name, and a reader who needs it needs it
   // before they start, not while they are standing at the machine (§8).
   { href: '/drum-machines', label: 'Drum machines' },
+  // Beside the drum-machines page because it is the other half of the same gap: that one says what
+  // an 808 kick sounds like, this one says what a `riser` does. Both are read before you start
+  // rather than at the machine.
+  { href: '/parts', label: 'Parts' },
   // #138. Linked here because the footer alone did not reach it: on the studio page the footer
   // sits below the whole generated guide, some twenty-five screens down, so a preference that
   // changes how the studio looks was unreachable from the studio.

@@ -78,17 +78,23 @@ describe('#112 the navigation landmark', () => {
     expect(markup).toMatch(/aria-label="[^"]+"/)
   })
 
-  it('names the studio, both catalogue halves, the reference and preferences, in that order', () => {
+  it('names the studio, both catalogue halves, both references and preferences, in that order', () => {
     const markup = renderToStaticMarkup(createElement(SiteNav))
     // Preferences is last on purpose: it is not a catalogue half, and it is the one entry a
     // reader goes to rarely. It is *in* the nav at all because the footer could not reach it —
-    // on the studio page the footer sits below the whole generated guide (#138). The reference
-    // (#174) sits above it and below the catalogue, which is where it is read from.
+    // on the studio page the footer sits below the whole generated guide (#138).
+    //
+    // **The reference is now two entries and they sit together**, above preferences and below the
+    // catalogue, which is where both are read from. `/drum-machines` says what an 808 kick sounds
+    // like; `/parts` says what a `riser` does. They are halves of one gap and a reader who needs
+    // one often needs the other, so splitting them across the nav would be worse than the extra
+    // entry costs.
     expect(NAV_LINKS.map((l) => l.href)).toEqual([
       '/',
       '/devices',
       '/directions',
       '/drum-machines',
+      '/parts',
       '/preferences',
     ])
     let at = -1

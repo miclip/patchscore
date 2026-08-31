@@ -76,11 +76,15 @@ describe('#174 the page a crawler and a reader both get', () => {
     expect(String(metadata.description)).toContain('808')
   })
 
-  it('is in the nav, between the catalogue and preferences', () => {
+  it('is in the nav, below the catalogue and beside its companion', () => {
+    // `/parts` now sits between this page and preferences. The two are halves of one gap — this
+    // one says what an 808 kick sounds like, that one says what a `riser` does — so they sit
+    // together rather than either being pushed away from the catalogue.
     const hrefs = NAV_LINKS.map((l) => l.href)
     expect(hrefs).toContain('/drum-machines')
     expect(hrefs.indexOf('/drum-machines')).toBe(hrefs.indexOf('/directions') + 1)
-    expect(hrefs.indexOf('/drum-machines')).toBe(hrefs.indexOf('/preferences') - 1)
+    expect(hrefs.indexOf('/drum-machines')).toBe(hrefs.indexOf('/parts') - 1)
+    expect(hrefs.indexOf('/parts')).toBe(hrefs.indexOf('/preferences') - 1)
   })
 
   it('renders a masthead and the shared footer, like every other authored page', () => {
@@ -100,6 +104,33 @@ describe('#174 the page a crawler and a reader both get', () => {
 })
 
 describe('#174 what the page says about each family', () => {
+  /**
+   * **Origin is per instrument, and it has to explain the sound.** The page used to carry one
+   * global section about where the *names* came from, which was about our sourcing rather than
+   * about drums. Each box now says where it came from itself, in the row after what it suits.
+   *
+   * The rule that keeps this from becoming trivia: an origin line names something that changed
+   * what you hear. Synthesis against recording, a pairing that set the size of the box, a preset
+   * machine from before you could program one.
+   */
+  it('gives every machine its own origin, after the sound rather than before it', () => {
+    const terms = [...MARKUP.matchAll(/<dt>([^<]+)<\/dt>/g)].map((m) => m[1])
+    const origins = terms.filter((t) => t === 'Where it came from')
+    expect(origins.length, 'every machine needs an origin').toBe(
+      terms.filter((t) => t === 'Sounds like').length,
+    )
+    // Sound first: a reader came for the sound, and the history is the explanation behind it.
+    expect(TEXT.indexOf('Sounds like')).toBeLessThan(TEXT.indexOf('Where it came from'))
+  })
+
+  it('ties each origin to something audible', () => {
+    // The failure this guards is a row of dates. Every origin names the thing that makes the
+    // sound what it is — synthesis, recording, or what the box was built alongside.
+    for (const word of ['analogue', 'recordings', 'synthesised', 'FM']) {
+      expect(TEXT).toContain(word)
+    }
+  })
+
   it('covers all seven, each with a sound, a use and a fallback', () => {
     for (const name of FAMILIES) {
       expect(TEXT, `${name} is not on the page`).toContain(name)
