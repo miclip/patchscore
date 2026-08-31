@@ -352,6 +352,11 @@ describe('the committed registry', () => {
       // is as deep as it is wide, so it draws far taller in the rack than the four narrower
       // panels above it.
       'akai-mpc-one-g2',
+      // 282 mm across and 207 mm down, both off the dimension lines on the Play+'s own plan view
+      // (p.15). Landscape, so unlike its portrait sibling at the head of this list the maker's
+      // width and the played span are the same edge — and the two Polyend boxes end up at
+      // opposite ends of the ordering because of it.
+      'polyend-play-plus',
       // **288 mm, and the only span in this list not cited to a page.** The OP-XY's guide
       // publishes no dimension anywhere in 135 pages, so this is teenage engineering's own
       // published figure from their product page rather than from the manual — and `Cite` has no

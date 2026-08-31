@@ -209,7 +209,7 @@ describe('Metropolix manifest', () => {
   // -------------------------------------------------------------------------
 
   describe('clock (§7.4)', () => {
-    it('claims the preference, and is one of the four boxes that do', () => {
+    it('claims the preference, and is one of the six boxes that do', () => {
       expect(device.clock.preferredSource).toBe(true)
       // This was the only claim in the library until #80 went through the nine boxes with no
       // decision recorded either way. Exactly one of them cleared §7.4's bar: the Tracker Mini,
@@ -222,6 +222,11 @@ describe('Metropolix manifest', () => {
       expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
         'elektron-octatrack-mkii',
         'intellijel-metropolix',
+        // The Play+ is the sixth, and it earns the claim the way its sibling does — on a role
+        // sentence rather than on a jack. p.207 heads its first worked configuration "Play+ as
+        // the primary lead" and captions it "Transport control e.g. Play, Stop and Clock is
+        // dictated by Play and its current Tempo."
+        'polyend-play-plus',
         'polyend-tracker-mini',
         'squarp-hapax',
         'torso-t1',
@@ -277,7 +282,7 @@ describe('Metropolix manifest', () => {
       // would win the fall-through if both were absent and this box's `usb` were the only
       // alternative. The Hapax still wins over the T-1 among the voiceless claimants, on the
       // bottom key: `squarp-` sorts before `torso-`.
-      const OTHER_CLAIMS = ['polyend-tracker-mini', 'squarp-hapax', 'torso-t1']
+      const OTHER_CLAIMS = ['polyend-play-plus', 'polyend-tracker-mini', 'squarp-hapax', 'torso-t1']
       const soleClaim = DEVICES.map((d) =>
         OTHER_CLAIMS.includes(d.id)
           ? { ...d, clock: { ...d.clock, preferredSource: undefined } }

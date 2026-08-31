@@ -129,7 +129,21 @@ const patchedRig = resolve({
   // it can do, so the objective goes on reaching past both of them at least as often. Same rule
   // as before: the most patched, and the lowest seed among the four-way tie — seed 2, two entries
   // on the Cascadia. Seed 2 is where this pin started.
-  seed: 2,
+  //
+  // The Play+ then thinned it the way the Digitone did, and harder: it brings sixteen fungible
+  // tracks across two pools declaring twenty-three and twenty-two roles, so it is available for
+  // almost anything the objective is otherwise indifferent about, and the semi-modulars are what
+  // it displaces. Four seeds carry a patch now, where eight did:
+  //
+  //     seed  3   4 entries   moog-subharmonicon
+  //     seed  0   2 entries   behringer-neutron
+  //     seed  5   2 entries   behringer-neutron
+  //     seed 11   1 entry     behringer-crave
+  //
+  // The rule is unchanged and for once it does not need its tie-break: seed 3 is a clear maximum
+  // at four entries, the deepest this pin has been since the Analog Rytm MKII took the last
+  // four-entry Subharmonicon assignment away. It is the same box coming back.
+  seed: 3,
 })
 
 /**
@@ -1170,7 +1184,7 @@ describe('rack view', () => {
     // other than being the biggest thing on the box: the eight [TRACK] keys are two columns
     // flanking it, so no single rectangle covers them, and p.19 says this display lists the
     // tracks anyway.
-    expect(count('rack-screen')).toBe(51)
+    expect(count('rack-screen')).toBe(52)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -1364,7 +1378,7 @@ describe('rack view', () => {
     // are the top row, so the field is one row of eight — 167.8 x 17.2 mm — and the MIDI row is
     // drawn beside it as a plain grid. Covering both rows, which is right on the successor where
     // the sixteen are one pool, would put a readout on eight keys that sound nothing.
-    expect(fields).toHaveLength(37)
+    expect(fields).toHaveLength(38)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

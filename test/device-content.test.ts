@@ -698,6 +698,12 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
       // two documents prints a name for any of them — the counts are the whole inventory. Same
       // line between `shipped-library` and `enumerable` as the four above it.
       'novation-circuit-tracks',
+      // The Play+ ships "Over 5000 stereo and mono samples" (p.13) across the 22 packs p.87's card
+      // drawing counts, and no page lists one. Sixteen pack *names* appear across p.79, p.87 and
+      // p.148, and none of those three is a list — the first is a screen shot with a scrollbar
+      // through it, the second deconstructs a single pack, the third exists to say which packs
+      // carry a synth folder. Same line between `shipped-library` and `enumerable` as the rest.
+      'polyend-play-plus',
       'polyend-tracker-mini',
       'roland-mc-101',
       // The MC-707 is the same claim off its own manual rather than the sibling's: p.10 offers

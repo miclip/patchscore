@@ -1135,8 +1135,22 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    *
    * Eight consecutive zeroes, across eight devices that between them took the walk down, up, up,
    * up, down by half, up, up, and up.
+   *
+   * **The Play+ takes it up 6.2% and the gap stays at zero — a ninth time.**
+   * 547,067 -> 581,048 unrepaired and the same repaired. `search-bound.test.ts` records the
+   * direction's peak moving 631,238 -> 691,974, which is 9.6%, so this seed moved *less* than the
+   * row's maximum for the third consecutive device — the relationship the Digitone and Digitakt
+   * entries above both recorded, now agreeing three times running. It is still not a law: the
+   * entry before those three moved four times the row's maximum in the other direction, and this
+   * box moved a *different* direction (`weave`) 2.15x while moving this one a sixteenth.
+   *
+   * The peak moved seed 3 -> seed 12, and this seed is once again at the row's exact floor —
+   * 581,048, shared with seeds 13, 18 and 20.
+   *
+   * Nine consecutive zeroes, across nine devices that between them took the walk down, up, up,
+   * up, down by half, up, up, up, and up.
    */
-  it('walks the recorded 547,067 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 581,048 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1144,7 +1158,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(547_067)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(581_048)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement

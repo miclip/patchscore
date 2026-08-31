@@ -93,6 +93,13 @@ describe('the cap changes nothing for a box that declares none', () => {
       // polyphonic" — and four of its nine synth recipes put the patch in a Mono polyphony mode
       // (Programmer's Reference p.3). Its own test asserts the pairing both ways.
       'novation-circuit-tracks',
+      // **The Play+ is the sixth, and it declares the field exactly once.** Its synth pool carries
+      // `polyphony: 8` because p.13 calls those tracks "8 Polyphonic MIDI / Synth tracks" and p.91
+      // budgets eight voices across the three slots. One engine contradicts that at the patch:
+      // p.90 introduces ACD as a recreation of "iconic single-oscillator monophonic analog synths",
+      // so `pp-acid-dirty` spends one note and says so, while the two other synth recipes leave the
+      // field off and take the pool's eight.
+      'polyend-play-plus',
     ])
   })
 
