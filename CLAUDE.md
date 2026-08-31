@@ -99,52 +99,41 @@ Layers with a strict contract between them. Roles are the join.
   cross-platform drift. Fixtures assert *relative* outcomes ("the sub goes to the Deluge"), never
   cost numbers, so they survive a re-ordering of the lower keys.
 
-## Search cost is a benchmark, not a user problem (#248)
+## Rigs are capped at ten devices, so search cost is settled (#301)
 
-**Measured at 46 devices, `industrial-techno`, worst of eight seeds:**
+**`MAX_RIG_DEVICES` is 10.** `withDevice` refuses the eleventh tick and `checkGuideInputs` rejects
+a permalink that names more, so a rig larger than ten cannot be reached through the picker or
+through a hand-edited URL. There is no "select all" and there must not be one.
+
+**Measured on the worst rig the product can build, with `npm run measure:search`:**
 
 ```
-rig   worst nodes   worst ms
-  3            43          3
-  5         5,870         22
-  8         1,361          5
- 12        82,166        206
- 16       473,938      1,236
- 20       744,916      1,844
- 46       632,832      1,959
+rig limit      10 devices
+worst rig      83,874 nodes   (industrial-techno seed 15)
+cap         2,000,000
+headroom             24x  —  4.19% of the cap
 ```
 
-A twelve-box rig — a large studio — resolves in 206 ms. Everything a person actually owns is
-imperceptible.
+**This section used to be an argument. It is now a fact, and the difference is the point.** The
+argument kept losing: the whole-catalogue sweep reports a worst case near the cap, and that figure
+has been read as a limit the product is approaching **three separate times** — it blocked a device
+from landing (#248), blocked a test (#293), and nearly blocked a ten-recipe percussion change
+(#300). Each time the repair was to re-explain that nobody owns 46 boxes. #301 stopped explaining
+and made it unreachable instead.
 
-**Three things this table settles, because each of them has been got wrong here before:**
+So:
 
-- **The whole-catalogue figure is not a ceiling that user rigs approach from below.** `measure:search`
-  sweeps all 46 devices and reports ~730k nodes against a 2,000,000 cap. Nobody resolves that rig.
-  Track the number, do not gate on it — that is the repair #248 already made once, when a
-  whole-catalogue assertion in `search-symmetry.test.ts` was blocking devices from landing.
-- **And do not quietly *pay* it either.** #293 found `search-shape.test.ts` resolving all 46 devices
-  across all nine directions — 8512ms, against 98ms for the same nine on an eight-box rig, with
-  every assertion passing identically on both. It asserted no number, so the rule above did not
-  cover it; it was simply the most expensive file in the suite, and #265 walked in through the
-  timeout that cost bought. Benchmarks sweep the catalogue. **A test resolves a rig somebody owns,
-  unless crowding is the thing it is testing** — `search-shape.test.ts` keeps exactly one
-  whole-catalogue traversal, in `beforeAll`, because the probe's derivability check wants pools and
-  stacks and collisions.
-- **Cost is not monotonic in device count.** Eight devices is cheaper than five here, and twenty
-  costs *more* than all forty-six. It depends on which boxes collide on crowded roles, not how many
-  are selected. So "N devices" is never the unit to reason in.
-- **If the many-device case ever matters, the answer is a selection limit, not a search
-  optimisation.** There is no "select all" in the picker and no reason to add one. Capping how many
-  boxes can be chosen at once is a few lines in `lib/studio/picker.ts`; a cross-device dominance
-  rule is a change to the resolver that returns a *different* optimum at equal score, needs a
-  `RESOLVER_VERSION` bump, and fails silently by handing back a worse allocation. The cheap fix is
-  in the UI.
-
-**So do not open the search for performance without a rig somebody owns that is actually slow.**
-#248 stays open for the near-clone *finding* — four measured pairs, three near-free, one that
-tripled a sibling's bill when a recipe flipped sign in the objective's tie-breaking — which is
-interesting about the objective rather than a job to do.
+- **`measure:search` gates on the legal rig and reports the catalogue figure beside it, labelled.**
+  Read the first number. The second is a benchmark and says nothing about anyone's guide.
+- **Cost is not monotonic in device count**, so "N devices" is never the unit to reason in. Eight
+  devices can cost more than twelve; it depends on which boxes collide on crowded roles.
+- **Do not open the search for performance.** At 4% of the cap there is nothing to win, and a
+  cross-device dominance rule would return a *different* optimum at equal score, need a
+  `RESOLVER_VERSION` bump, and fail silently by handing back a worse allocation (#228).
+- **Before adding a request to a direction**, run `measure:search` and read the legal-rig line.
+  A part added to a crowded direction is the one thing that moves it, and it moves the catalogue
+  figure far more than the real one — #300 saw 728k → 1.7M on the catalogue and **+3 ms** on an
+  eight-box rig.
 
 ## Build order
 
