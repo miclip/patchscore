@@ -33,6 +33,7 @@ import { device as device_moog_muse } from './moog-muse/index'
 import { device as device_moog_subharmonicon } from './moog-subharmonicon/index'
 import { device as device_moog_subsequent_37 } from './moog-subsequent-37/index'
 import { device as device_novation_circuit_tracks } from './novation-circuit-tracks/index'
+import { device as device_polyend_play_plus } from './polyend-play-plus/index'
 import { device as device_polyend_tracker_mini } from './polyend-tracker-mini/index'
 import { device as device_roland_mc_101 } from './roland-mc-101/index'
 import { device as device_roland_mc_707 } from './roland-mc-707/index'
@@ -79,6 +80,7 @@ export const DEVICES: readonly Device[] = [
   device_moog_subharmonicon,
   device_moog_subsequent_37,
   device_novation_circuit_tracks,
+  device_polyend_play_plus,
   device_polyend_tracker_mini,
   device_roland_mc_101,
   device_roland_mc_707,
@@ -126,6 +128,7 @@ export const DEVICE_FOLDERS: readonly string[] = [
   'moog-subharmonicon',
   'moog-subsequent-37',
   'novation-circuit-tracks',
+  'polyend-play-plus',
   'polyend-tracker-mini',
   'roland-mc-101',
   'roland-mc-707',

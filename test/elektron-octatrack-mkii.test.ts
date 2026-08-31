@@ -483,6 +483,11 @@ describe('Octatrack MKII manifest', () => {
       expect(DEVICES.filter((d) => d.clock.preferredSource === true).map((d) => d.id)).toEqual([
         'elektron-octatrack-mkii',
         'intellijel-metropolix',
+        // The Play+ is the sixth, and it earns the claim the way its sibling does — on a role
+        // sentence rather than on a jack. p.207 heads its first worked configuration "Play+ as the
+        // primary lead" and captions it "Transport control e.g. Play, Stop and Clock is dictated by
+        // Play and its current Tempo. Digitakt will follow the lead of Play+ as will other devices."
+        'polyend-play-plus',
         'polyend-tracker-mini',
         'squarp-hapax',
         'torso-t1',

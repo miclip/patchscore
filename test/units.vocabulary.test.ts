@@ -85,9 +85,17 @@ describe('unit spellings are one vocabulary (§3.1)', () => {
   })
 
   it('keeps the box-printed units on the boxes that print them', () => {
-    expect([...(used.get('Sec') ?? [])].sort()).toEqual(['polyend-tracker-mini'])
+    // Both Polyend manuals print envelope times as `0.00-10 Sec` in their engine tables, so both
+    // boxes carry the spelling for the same reason (Tracker Mini 2.2.1b p.126, Play+ Rev 2 p.97).
+    expect([...(used.get('Sec') ?? [])].sort()).toEqual(['polyend-play-plus', 'polyend-tracker-mini'])
     for (const id of used.get('Bits') ?? []) {
-      expect(['akai-mpc-live-iii', 'akai-mpc-one-g2', 'akai-mpc-xl', 'polyend-tracker-mini']).toContain(id)
+      expect([
+        'akai-mpc-live-iii',
+        'akai-mpc-one-g2',
+        'akai-mpc-xl',
+        'polyend-play-plus',
+        'polyend-tracker-mini',
+      ]).toContain(id)
     }
   })
 })

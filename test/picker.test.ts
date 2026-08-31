@@ -102,7 +102,7 @@ describe('device search matches name, maker and kind', () => {
       'roland-tr-6s',
       'roland-tr-8s',
     ])
-    expect(ids(devices({ query: 'polyend' }).rows)).toEqual(['polyend-tracker-mini'])
+    expect(ids(devices({ query: 'polyend' }).rows)).toEqual(['polyend-play-plus', 'polyend-tracker-mini'])
     // Kind — the field #53 asked for by name, and the one that groups rather than identifies.
     expect(ids(devices({ query: 'groovebox' }).rows)).toEqual([
       'akai-mpc-live-iii',
@@ -114,6 +114,7 @@ describe('device search matches name, maker and kind', () => {
       'elektron-digitone',
       'elektron-digitone-ii',
       'novation-circuit-tracks',
+      'polyend-play-plus',
       'polyend-tracker-mini',
       'roland-mc-101',
       'roland-mc-707',
@@ -226,6 +227,7 @@ describe('the kind filter', () => {
       'elektron-digitone',
       'elektron-digitone-ii',
       'novation-circuit-tracks',
+      'polyend-play-plus',
       'polyend-tracker-mini',
       'roland-mc-101',
       'roland-mc-707',
@@ -233,11 +235,16 @@ describe('the kind filter', () => {
       'teenage-engineering-op-xy',
     ])
 
-    // Both conditions, not either: the kind alone returns eleven grooveboxes and the query alone
-    // returns one device, and together they return the one that satisfies both. (This read
+    // Both conditions, not either: the kind alone returns twelve grooveboxes and the query alone
+    // returns two devices, and together they return the two that satisfy both. (This read
     // "eight" while the list above held nine — a count that went stale one device before the
     // Digitone II and is corrected here rather than left to drift further.)
+    //
+    // The Play+ makes this a stronger example than it was: `polyend` now matches two devices and
+    // both are grooveboxes, so the AND is no longer demonstrated by a single row that could have
+    // arrived from either half on its own.
     expect(ids(devices({ kind: 'groovebox', query: 'polyend' }).rows)).toEqual([
+      'polyend-play-plus',
       'polyend-tracker-mini',
     ])
     // A query that matches a device of the wrong kind returns nothing, rather than falling back
@@ -354,8 +361,8 @@ describe('selected entries survive any filter', () => {
     // The obvious failure this prevents: losing sight of your own rig because you typed in a
     // search box. The picker is the only place the rig is visible.
     const shown = devices({ query: 'polyend' }, ['roland-tr-1000'])
-    expect(ids(shown.rows)).toEqual(['polyend-tracker-mini', 'roland-tr-1000'])
-    expect(shown.matched).toBe(1)
+    expect(ids(shown.rows)).toEqual(['polyend-play-plus', 'polyend-tracker-mini', 'roland-tr-1000'])
+    expect(shown.matched).toBe(2)
     expect(shown.retained).toBe(1)
 
     const kept = shown.rows.find((r) => r.item.id === 'roland-tr-1000')
@@ -371,10 +378,10 @@ describe('selected entries survive any filter', () => {
     const shown = devices({ kind: 'groovebox' }, ['roland-tr-1000'])
     expect(ids(shown.rows)).toContain('roland-tr-1000')
     expect(shown.rows.find((r) => r.item.id === 'roland-tr-1000')?.retained).toBe(true)
-    // Eleven grooveboxes since the Digitone landed beside its successor; the TR-1000 is a drum
+    // Twelve grooveboxes since the Play+ landed beside its sibling; the TR-1000 is a drum
     // machine and is here only because it is selected, which is what `retained` marks and why it
     // is not counted.
-    expect(shown.matched).toBe(11)
+    expect(shown.matched).toBe(12)
   })
 
   it('keeps them in registry order rather than appending them at the end', () => {

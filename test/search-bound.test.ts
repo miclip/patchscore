@@ -538,8 +538,33 @@ import { TEMPLATES } from '../lib/templates/index'
  * they were, which is the handful every small direction here paid. A figure averaged across that
  * row would read 233 and say nothing about either half of it.
  *
- * Nothing caps. `industrial-techno` at 518,084 is 25.9% of the 2,000,000 `DEFAULT_NODE_CAP`, and
- * the headroom is 3.86x — still above the 2x the constant was derived at, from 3.95x.
+ * **The Play+ moved one direction more than twice as far as the headline one, which is this
+ * table's whole argument for existing.** The total rose 9.7% and `industrial-techno` 9.6%, and a
+ * figure averaged across the row would have reported exactly that and hidden the row that
+ * doubled:
+ *
+ *     drone-study           33 ->     34     one more device at the root
+ *     relay                 64 ->     65     one more root candidate
+ *     major-key-electro    209 ->    216     flat across every seed
+ *     lydian-house         326 ->    335     flat across the seeds that carry it
+ *     ambient-dub          297 ->    308     seed 3, its worst
+ *     industrial-techno 631,238 -> 691,974   worst seed moves 3 -> 12
+ *     weave             17,494 -> 37,593     worst seed moves 3 -> 12, and 2.15x
+ *
+ * `weave` is the direction the MicroFreak moved by twenty-two nodes and the Analog Rytm MKII cut
+ * by 85%, and it is the one this box costs the most. The mechanism is the one the two entries
+ * above describe, running the other way: this manifest brings twenty recipes over twenty roles
+ * with **no two on the same role**, so it is never a second opinion and rarely an exact answer —
+ * one recipe per role means the character asked for is usually a near miss, `liveFloor` gets a
+ * smaller admissible value, and each of those recipes is one more branch that survives the prune.
+ * The Octatrack MKII's entry predicted exactly this shape from exactly this property, and got the
+ * sign right for `major-key-electro` and wrong for `weave`, which is worth keeping.
+ *
+ * Both worst seeds moving from 3 to 12 together is the same event seen twice: seed 12 is where
+ * this box's near misses survive deepest in both directions.
+ *
+ * Nothing caps. `industrial-techno` at 691,974 is 34.6% of the 2,000,000 `DEFAULT_NODE_CAP`, and
+ * the headroom is 2.89x — still above the 2x the constant was derived at, from 3.17x.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -548,30 +573,30 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      215, 217, 215, 297, 220, 217, 215, 293, 220, 217, 217, 291, 217, 220, 220, 215, 294, 219, 292,
-      217, 219, 216, 215, 219
+      222, 224, 222, 308, 227, 224, 222, 304, 227, 224, 224, 302, 224, 227, 227, 222, 305, 226, 303,
+      224, 226, 223, 222, 226
     ],
     'drone-study': [
-      33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33
+      34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34
     ],
     'industrial-techno': [
-      548625, 586409, 550762, 631238, 557719, 548625, 554643, 601067, 553752, 547067, 547068, 550163,
-      552403, 547067, 555483, 550163, 547066, 557964, 547066, 554435, 547066, 580237, 548625, 550716
+      582605, 667542, 637062, 588076, 591989, 582605, 588829, 584229, 588109, 581048, 581049, 584143,
+      691974, 581048, 589938, 584229, 612570, 592241, 581048, 588829, 581048, 588109, 582649, 637195
     ],
     'lydian-house': [
-      193, 325, 193, 194, 194, 326, 193, 325, 194, 326, 193, 325, 193, 194, 194, 326, 326, 194, 323,
-      193, 194, 193, 326, 194
+      198, 334, 198, 199, 199, 335, 198, 334, 199, 335, 198, 334, 198, 199, 199, 335, 335, 199, 332,
+      198, 199, 198, 335, 199
     ],
     'major-key-electro': [
-      209, 208, 204, 208, 209, 209, 208, 209, 203, 209, 209, 209, 208, 209, 206, 208, 206, 208, 207,
-      205, 207, 208, 209, 203
+      213, 215, 214, 213, 216, 213, 215, 216, 215, 216, 216, 214, 214, 216, 216, 215, 216, 215, 216,
+      215, 216, 215, 216, 215
     ],
     'relay': [
-      64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64
+      65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65
     ],
     'weave': [
-      255, 8785, 4712, 17494, 3977, 305, 4854, 8743, 3893, 1120, 5058, 255, 3977, 1120, 423, 255, 300,
-      321, 318, 4030, 453, 12721, 224, 3798
+      260, 22270, 18113, 537, 4130, 311, 5041, 264, 4127, 1163, 5253, 260, 37593, 1163, 446, 264,
+      9145, 333, 334, 4272, 478, 4236, 232, 24471
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".
@@ -687,7 +712,23 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
    * that the roles were already crowded; what differs is that this one arrives beside a sibling
    * already answering most of the same requests. Nothing capped.
    */
-  const WORST_CASE_NODES = 631_238
+  /**
+   * **691,974 on `industrial-techno` seed 12 with the Play+**, against 631,238 on seed 3 before
+   * it: a 9.6% rise, and headroom of 2.89x against the cap where it was 3.17x. This is the third
+   * groovebox in a row to fire the "over the ceiling" case and be answered by re-measuring, and
+   * the three together make the pool-size reading above look thin. The Digitone added four
+   * assignables for 9.3%, the Digitakt eight for 11.5%, and this box adds **sixteen** across two
+   * pools for 9.6% — less than the eight-assignable Digitakt cost. Pool size is plainly not what
+   * is being paid for.
+   *
+   * What this one pays for instead is legible in `weave`, which rose 2.15x while the headline
+   * direction rose a tenth: twenty recipes over twenty roles with no two on the same role are
+   * twenty near misses rather than a few exact answers, and near misses are what survive the
+   * prune. The row-by-row table above is where that shows; the 9.6% here hides it entirely, which
+   * is the standing warning about averaging this table restated by the device that most rewards
+   * reading it. Nothing capped.
+   */
+  const WORST_CASE_NODES = 691_974
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))
