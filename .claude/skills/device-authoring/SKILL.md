@@ -393,6 +393,53 @@ Mechanics worth knowing before you start placing features:
 
 ---
 
+## 5a. What the box needs before it holds pitch (#263)
+
+Three optional fields, and **most manuals answer at least one of them in a place you will not pass
+through while writing recipes**. The Cascadia's was missed for a year because it is one paragraph
+under a knob description in the VCO chapter.
+
+```ts
+warmUp      how long from cold before it holds pitch
+calibration that a service routine exists, and what the maker cautions — never its steps
+quickTune   a front-panel tuning function a player runs mid-session
+```
+
+### Where to look
+
+- **Warm-up** is almost always in the **first few pages**, in a `NOTE:` beside the power-on
+  instructions. Grep the whole text for `warm up`, `warm-up`, `stabilis`, `concert pitch`.
+- **Calibration** is usually an appendix, a service section, or — the case that hides — a
+  paragraph inside a control description. Grep for `calibrat`, `trim pot`, `trimpot`, `tech
+  support`, `factory`.
+- **A quick tune** is a front-panel control, so it appears in the settings or programmer chapter
+  rather than either of the above. Grep for `auto.?tune`, `quick tune`, `tuning`.
+
+### The rules, which are where these go wrong
+
+- **A number only when the manual states one.** The Matriarch and Grandmother print `10-15
+  minutes`; the MODEL D prints `15 minutes or more`, a floor with no ceiling, so `max` is absent.
+  The Subharmonicon, Mother-32 and DFAM print *"a few minutes"* — they carry a `note` and **no
+  `minutes`**, because turning "a few" into 5 is a figure with no source behind it.
+- **A cited number can still be the wrong claim.** The Subsequent 37 prints "as long as 60
+  seconds" and is **deliberately absent**: the sentence ends *"if you've left it outside on a cold
+  night"* and calls the oscillators "surprisingly stable". Moog are saying the box is *fast*.
+  Authoring that would tell a reader to wait when the manual says they need not.
+- **Calibration is a pointer, never a procedure.** Every routine in the library is service work
+  inside the instrument, and the makers say so — a service technician (MODEL D), only when
+  absolutely necessary (Mother-32), or wait to be told by Tech Support (Cascadia). Printing the
+  steps on a public page invites a reader to do something a maker asks them to phone about. Say
+  what it adjusts, quote the caution, cite the page, stop.
+- **A quick tune is not a calibration**, and the Muse proves the distinction matters: p.112 carries
+  QUICK TUNE *and* the full TUNING/AUTOCAL routine, one to run in a session and one not to run at
+  all. Same page, two fields, because they are two different instructions to a reader.
+
+### What the reader gets
+
+`warmUp` and `quickTune` reach the **guide**, at the top of rig integration, before any cabling —
+the time runs while you patch. `calibration` stays on the **device page**, where somebody goes
+deliberately. A box with none of the three says nothing, which is most of the library.
+
 ## 6. When the box does not fit the model
 
 **That is a finding, not a failure** (#57). Authoring the Mother-32 exposed that `ClockSpec` was
