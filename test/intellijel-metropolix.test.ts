@@ -39,7 +39,7 @@ describe('Metropolix manifest', () => {
     expect(device.maker).toBe('Intellijel')
   })
 
-  it('is the library\'s first sequencer, and the kind has since been read the same way twice', () => {
+  it('is the library\'s first sequencer, and the kind has since been read the same way three times', () => {
     // §2.3 gained the kind for exactly this shape: `semi-modular` would imply a normalised audio
     // instrument with voices and recipes, `groovebox` self-contained sound generation. Both would
     // make this manifest state something false.
@@ -49,11 +49,15 @@ describe('Metropolix manifest', () => {
     // socket, and its sixteen tracks per project are the same temptation this file exists to
     // resist, wearing a bigger number. The T-1 is the third, on documentation that says it in a
     // sentence — "The T1 does not generate audio; it controls external instruments" — and its
-    // sixteen tracks per pattern are the temptation a third time. Asserted as a list rather than
-    // a count so a fourth has to be looked at rather than absorbed.
+    // sixteen tracks per pattern are the temptation a third time. The Seq is the fourth, on a
+    // manual that opens "The Polyend Seq is a polyphonic MIDI step sequencer" and then explains
+    // on p.10 that the CV outputs were designed in and taken back out to become a separate
+    // module; its eight tracks are the temptation a fourth time. Asserted as a list rather than
+    // a count so a fifth has to be looked at rather than absorbed.
     expect(device.kind).toBe('sequencer')
     expect(DEVICES.filter((d) => d.kind === 'sequencer').map((d) => d.id)).toEqual([
       'intellijel-metropolix',
+      'polyend-seq',
       'squarp-hapax',
       'torso-t1',
     ])
@@ -209,7 +213,7 @@ describe('Metropolix manifest', () => {
   // -------------------------------------------------------------------------
 
   describe('clock (§7.4)', () => {
-    it('claims the preference, and is one of the seven boxes that do', () => {
+    it('claims the preference, and is one of the eight boxes that do', () => {
       expect(device.clock.preferredSource).toBe(true)
       // This was the only claim in the library until #80 went through the nine boxes with no
       // decision recorded either way. Exactly one of them cleared §7.4's bar: the Tracker Mini,
@@ -227,6 +231,11 @@ describe('Metropolix manifest', () => {
         // the primary lead" and captions it "Transport control e.g. Play, Stop and Clock is
         // dictated by Play and its current Tempo."
         'polyend-play-plus',
+        // The Seq is the eighth, on the same footing as its three siblings and stated as plainly
+        // as any of them: p.10 says "Remember that the Seq can be the heart of a sophisticated
+        // hardware rig, but will also do great with a favorite DAW." It is voiceless and carries
+        // `midi-din`, so it also takes the whole library from the Hapax on the bottom key.
+        'polyend-seq',
         // The Tracker is the seventh, on the same kind of page as its two siblings and no better
         // than theirs: p.253 opens §11.3 "Typical MIDI Configurations" with Tracker as the
         // primary lead, Clock In `Internal` and Clock Out `MIDI Out jack`. The manual documents it
@@ -278,17 +287,23 @@ describe('Metropolix manifest', () => {
       // #198 gave §7.4 the basis it did not have for ranking two authored claims: between two
       // boxes that both claim the field, the one with no voices is the likelier brain. That
       // promotes the Hapax over the Tracker Mini, and this box over the Tracker Mini too — but
-      // the Hapax and this box are both voiceless, so between *them* the keys below decide, and
-      // `midi-din` beats `usb`. The lesson is unchanged and the winner is not.
+      // the voiceless claimants that carry `midi-din` all outrank this box's `usb`, so between
+      // *them* the bottom key decides. The lesson is unchanged and the winner is whichever of
+      // them sorts first: `polyend-seq` now, `squarp-hapax` before the Seq was authored.
       const result = resolve({ devices: DEVICES, template, mood: NEUTRAL_MOOD, seed: 18 })
-      expect(result.clockSource?.deviceId).toBe('squarp-hapax')
+      expect(result.clockSource?.deviceId).toBe('polyend-seq')
       expect(result.clockSource?.transport).toBe('midi-din')
-      // Not because this box was demoted: strip every other claim and it leads again. Three have
-      // to come off now — the Hapax and the T-1 both outrank it on transport, and the Tracker Mini
-      // would win the fall-through if both were absent and this box's `usb` were the only
-      // alternative. The Hapax still wins over the T-1 among the voiceless claimants, on the
-      // bottom key: `squarp-` sorts before `torso-`.
-      const OTHER_CLAIMS = ['polyend-play-plus', 'polyend-tracker-mini', 'squarp-hapax', 'torso-t1']
+      // Not because this box was demoted: strip every other claim and it leads again. Four have
+      // to come off now — the Seq, the Hapax and the T-1 all outrank it on transport, and the
+      // Tracker Mini would win the fall-through if the three were absent and this box's `usb`
+      // were the only alternative.
+      const OTHER_CLAIMS = [
+        'polyend-play-plus',
+        'polyend-seq',
+        'polyend-tracker-mini',
+        'squarp-hapax',
+        'torso-t1',
+      ]
       const soleClaim = DEVICES.map((d) =>
         OTHER_CLAIMS.includes(d.id)
           ? { ...d, clock: { ...d.clock, preferredSource: undefined } }
@@ -299,7 +314,7 @@ describe('Metropolix manifest', () => {
 
     it('says so in the guide, and still exempts the boxes that cannot follow', () => {
       const doc = renderGuide(resolve({ devices: DEVICES, template, mood: NEUTRAL_MOOD, seed: 18 }))
-      expect(doc).toContain('**Clock source** — Hapax over `midi-din`')
+      expect(doc).toContain('**Clock source** — Seq over `midi-din`')
       // §7.4's exemption clause, which must survive the source moving. Asserted against the boxes
       // that are actually deaf rather than against a remembered list.
       for (const deaf of DEVICES.filter((d) => !d.clock.canReceiveClock)) {

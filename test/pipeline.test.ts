@@ -677,7 +677,7 @@ describe('clock source ranks on semantics, not on load (§7.4)', () => {
     ).toBe('z-sequencer-kind')
   })
 
-  it('is claimed by seven devices, and omitted rather than falsified elsewhere', () => {
+  it('is claimed by eight devices, and omitted rather than falsified elsewhere', () => {
     // Metropolix, whose entire output is timing and control for other boxes, and the Tracker
     // Mini, whose manual calls it "a perfect fit for the centre piece of a setup" (p.283) and
     // draws it leading as the first of its typical configurations (p.287). Both claims are about
@@ -708,6 +708,11 @@ describe('clock source ranks on semantics, not on load (§7.4)', () => {
       // primary lead" and captions it "Transport control e.g. Play, Stop and Clock is dictated by
       // Play and its current Tempo. Digitakt will follow the lead of Play+ as will other devices."
       'polyend-play-plus',
+      // The Seq is the eighth, on the same footing as its three siblings and stated as plainly
+      // as any of them: p.10 says "Remember that the Seq can be the heart of a sophisticated
+      // hardware rig, but will also do great with a favorite DAW." It is voiceless and carries
+      // `midi-din`, so it also takes the whole library from the Hapax on the bottom key.
+      'polyend-seq',
       // The Tracker is the seventh, on the same kind of page as its two siblings and no better
       // than theirs: p.253 opens §11.3 "Typical MIDI Configurations" with Tracker as the
       // primary lead, Clock In `Internal` and Clock Out `MIDI Out jack`. The manual documents it

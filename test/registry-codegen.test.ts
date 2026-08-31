@@ -462,6 +462,12 @@ describe('the committed registry', () => {
       // Subsequent 37 has the mirror-image defect and resolves the other way, which is why this
       // list is worth reading beside those two files rather than on its own.
       'moog-grandmother',
+      // 600 mm, and a second entry where the specification line's own words are the trap: p.14
+      // calls 145 mm the Seq's *width* and 600 mm its *length*. The drawing on p.3 settles which
+      // is across, and its aspect agrees with 600/145 to 0.13%. Authored off the word rather than
+      // the figure it would have sorted at the top of this list, between the Tracker Mini and the
+      // Euroburo, which is where a 145 mm box belongs and reads as perfectly plausible.
+      'polyend-seq',
       'moog-subsequent-37',
       'tascam-model-2400',
       // 812.8 mm — a 49-key synthesiser is wider than a 24-channel mixer desk. The only Moog

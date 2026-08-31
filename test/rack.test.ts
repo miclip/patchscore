@@ -1215,7 +1215,9 @@ describe('rack view', () => {
     // print no display dimension, so like the Elektron OLEDs it is the drawn bezel — but the
     // drawing is the figure's own path geometry at one point per millimetre, so this one carries
     // the EP-133's caveat about the active area without also carrying rasterisation error.
-    expect(count('rack-screen')).toBe(53)
+    // **54 with the Seq**, whose four-line TFT is 49.4 x 37.1 mm — the drawn bezel again, p.3
+    // naming it only as "A 4 Line TFT Display" with no dimension and no resolution anywhere.
+    expect(count('rack-screen')).toBe(54)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one

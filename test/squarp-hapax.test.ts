@@ -190,16 +190,27 @@ describe('Hapax manifest', () => {
       })
     })
 
-    it('leads the whole library, over two other boxes that claim the same field', () => {
-      // Three boxes claim it. #198 gave §7.4 a basis for ranking them: between two claimants,
-      // the one with no voices is the likelier brain, because clock and sequencing are the only
-      // thing it can contribute. That puts this box and the Metropolix above the Tracker Mini,
-      // and between the two voiceless ones `midi-din` beats the Metropolix's `usb`.
+    it('led the whole library until a voiceless claimant sorted before it', () => {
+      // #198 gave §7.4 a basis for ranking claimants: between two of them, the one with no voices
+      // is the likelier brain, because clock and sequencing are the only thing it can contribute.
+      // That puts this box and the Metropolix above the Tracker Mini, and between the two
+      // voiceless ones `midi-din` beats the Metropolix's `usb`. On those two keys this box is
+      // still unbeaten.
       //
-      // Before #198 this fell through to `compareCodeUnits` and the Tracker Mini won on
-      // `polyend-` sorting before `squarp-`, which is a rig's clock chosen alphabetically.
+      // **The eighth claimant is the first one to take the library off it, and it did so on the
+      // bottom key alone.** The Seq is voiceless and carries `midi-din`, so it is level with this
+      // box on everything #198 ranks and the tie falls to `compareCodeUnits`, where `polyend-`
+      // sorts before `squarp-`. That is a rig's clock chosen alphabetically — the exact thing
+      // #198 was written to stop happening between a Hapax and a Tracker Mini, reappearing one
+      // key lower between two boxes #198 cannot separate. Recorded here rather than smoothed
+      // over: this assertion is the one that will notice if the bottom key is ever given a
+      // reason instead of an ordering.
       const source = selectClockSource(DEVICES, new Map())
-      expect(source?.deviceId).toBe(device.id)
+      expect(source?.deviceId).toBe('polyend-seq')
+      // Take the Seq out and this box leads again, which is what says it lost on the tie-break
+      // rather than on any of the keys above it.
+      const withoutSeq = DEVICES.filter((d) => d.id !== 'polyend-seq')
+      expect(selectClockSource(withoutSeq, new Map())?.deviceId).toBe(device.id)
       expect(source?.transport).toBe('midi-din')
       expect(source?.occupiedAssignables).toBe(0)
       // The Tracker Mini loses on the voiceless key rather than on transport — it has `midi-din`

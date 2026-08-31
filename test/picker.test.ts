@@ -104,6 +104,7 @@ describe('device search matches name, maker and kind', () => {
     ])
     expect(ids(devices({ query: 'polyend' }).rows)).toEqual([
       'polyend-play-plus',
+      'polyend-seq',
       'polyend-tracker',
       'polyend-tracker-mini',
     ])
@@ -370,11 +371,12 @@ describe('selected entries survive any filter', () => {
     const shown = devices({ query: 'polyend' }, ['roland-tr-1000'])
     expect(ids(shown.rows)).toEqual([
       'polyend-play-plus',
+      'polyend-seq',
       'polyend-tracker',
       'polyend-tracker-mini',
       'roland-tr-1000',
     ])
-    expect(shown.matched).toBe(3)
+    expect(shown.matched).toBe(4)
     expect(shown.retained).toBe(1)
 
     const kept = shown.rows.find((r) => r.item.id === 'roland-tr-1000')
