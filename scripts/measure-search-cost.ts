@@ -23,6 +23,7 @@
 import { DEFAULT_NODE_CAP, assign, moodState } from '../lib/core/index'
 import type { Device } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { MAX_RIG_DEVICES } from '../lib/core/index'
 import { TEMPLATES } from '../lib/templates/index'
 
 /** The sweep the skill's table quotes: every direction, every seed, uncapped so nothing truncates. */
@@ -66,13 +67,63 @@ function n(value: number): string {
   return out
 }
 
+/**
+ * The worst case over rigs the product can actually produce.
+ *
+ * Exhaustive is out — there are C(46, 10) of them — so this sweeps a deterministic sample:
+ * `MAX_RIG_DEVICES` devices taken at a fixed stride from the registry, for every stride that
+ * yields a full rig. Fixed rather than random, so two runs on one tree agree (invariant 6 applies
+ * to measurement as much as to guides).
+ *
+ * A sample can miss the true worst rig, and that is acceptable here because of the margin: the
+ * numbers it returns are orders of magnitude under the cap, so the question it answers is "is the
+ * legal case anywhere near the ceiling" rather than "what is the exact maximum".
+ */
+function worstLegalRig(): Worst {
+  let worst: Worst = { nodes: -1, where: '' } as Worst
+  for (let stride = 1; stride <= Math.floor(DEVICES.length / MAX_RIG_DEVICES) + 1; stride++) {
+    for (let offset = 0; offset < stride; offset++) {
+      const rig: Device[] = []
+      for (let i = offset; i < DEVICES.length && rig.length < MAX_RIG_DEVICES; i += stride) {
+        const d = DEVICES[i]
+        if (d !== undefined) rig.push(d)
+      }
+      if (rig.length < MAX_RIG_DEVICES) continue
+      const got = sweep(rig)
+      if (got.nodes > worst.nodes) worst = got
+    }
+  }
+  return worst
+}
+
 function report(): void {
-  const worst = sweep(DEVICES)
-  const headroom = DEFAULT_NODE_CAP / worst.nodes
-  console.log(`devices        ${DEVICES.length}`)
-  console.log(`worst case     ${n(worst.nodes)} nodes  (${worst.where})`)
+  /**
+   * #301. **The legal rig is the gate; the catalogue is a benchmark.**
+   *
+   * This script printed one number — the whole 46-device catalogue — and that number has been
+   * misread as a limit the product is approaching three separate times: it blocked a device from
+   * landing (#248), blocked a test (#293), and nearly blocked a percussion recipe. Nobody can
+   * select 46 devices. `MAX_RIG_DEVICES` is 10 and `withDevice` refuses the eleventh, so a rig
+   * that size is not reachable through the picker or through a permalink.
+   *
+   * So the headroom warning below is computed against the worst **legal** rig and the catalogue
+   * figure is reported beside it, labelled as what it is. The sample is deterministic — a fixed
+   * stride over the registry rather than a random draw — because a benchmark that moves on its
+   * own tells you nothing (invariant 6 applies to measurement as much as to guides).
+   */
+  const legal = worstLegalRig()
+  const catalogue = sweep(DEVICES)
+  const headroom = DEFAULT_NODE_CAP / legal.nodes
+
+  console.log(`rig limit      ${MAX_RIG_DEVICES} devices  (MAX_RIG_DEVICES)`)
+  console.log(`worst rig      ${n(legal.nodes)} nodes  (${legal.where})`)
   console.log(`cap            ${n(DEFAULT_NODE_CAP)}`)
-  console.log(`headroom       ${headroom.toFixed(2)}x  —  ${((worst.nodes / DEFAULT_NODE_CAP) * 100).toFixed(1)}% of the cap`)
+  console.log(
+    `headroom       ${headroom.toFixed(0)}x  —  ${((legal.nodes / DEFAULT_NODE_CAP) * 100).toFixed(2)}% of the cap`,
+  )
+  console.log('')
+  console.log(`catalogue      ${n(catalogue.nodes)} nodes over all ${DEVICES.length} devices  (${catalogue.where})`)
+  console.log(`               a benchmark, not a rig — nobody can select this many (#301)`)
   /**
    * **2x, because that is where the cap was set from.** #229 re-derived `DEFAULT_NODE_CAP` at
    * 223,348 with 2.2x headroom, so falling under 2x means most of what that bought is already
@@ -81,7 +132,7 @@ function report(): void {
    */
   if (headroom < 2) {
     console.log('')
-    console.log(`   Under 2x, and the cap was set at 2.2x (#229). A capped search returns a worse`)
+    console.log(`   Under 2x on a rig somebody can actually build. A capped search returns a worse`)
     console.log(`   allocation without saying so (#228), so this is a correctness margin rather`)
     console.log(`   than a speed one. Run --attribute on the last device that landed, and price`)
     console.log(`   the next one's crowded roles before authoring them.`)

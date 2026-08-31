@@ -4,6 +4,7 @@ import {
   DENSITY_DETENTS,
   FORMAT_VERSION,
   INSPIRATION_CAP,
+  MAX_RIG_DEVICES,
   SEED_MAX,
   SEED_MIN,
   applyInspirations,
@@ -606,6 +607,10 @@ export function withDevice(
   catalogue: Catalogue = CATALOGUE,
 ): GuideInputsV1 {
   const selected = new Set(inputs.devices)
+  // #301. The ceiling, enforced on the way in rather than reported afterwards: a rig at
+  // `MAX_RIG_DEVICES` refuses the next tick and returns the inputs unchanged, so there is no
+  // state in which a guide is resolved for a rig the format would reject. Removing always works.
+  if (on && !selected.has(deviceId) && selected.size >= MAX_RIG_DEVICES) return inputs
   if (on) selected.add(deviceId)
   else selected.delete(deviceId)
   return { ...inputs, devices: catalogue.devices.filter((id) => selected.has(id)) }

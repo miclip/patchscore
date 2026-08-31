@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useId, useMemo, useRef, useState } from 'react'
 import type { Device, DeviceId, Role } from '@/lib/core'
-import { expand } from '@/lib/core'
+import { MAX_RIG_DEVICES, expand } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceHref, deviceLabel } from '@/lib/studio/catalogue'
 import { ANY_KIND, deviceView, kindsPresent,
@@ -85,6 +85,15 @@ export function DevicePicker({
    */
   const chosen = useMemo(() => shown.rows.filter((row) => row.selected), [shown])
   const rest = useMemo(() => shown.rows.filter((row) => !row.selected), [shown])
+
+  /**
+   * #301. A rig has a ceiling — see `MAX_RIG_DEVICES`.
+   *
+   * **Nothing says so until it is reached.** A cap announced in advance is a rule the reader has
+   * to hold while they work, and nobody picking three boxes needs to know there is a tenth. At
+   * the ceiling it becomes the only thing worth saying, so it is said then and not before.
+   */
+  const atCap = selected.length >= MAX_RIG_DEVICES
 
   /**
    * #138. Derived from the selected devices in registry order, so the cables follow the list
@@ -237,11 +246,14 @@ export function DevicePicker({
        * groups gives both: the filter visibly filters, and nothing selected disappears.
        */}
       {chosen.length > 0 ? (
-        <p className="note picker-kept">Your rig — {chosen.length} selected. Untick to drop.</p>
+        <p className="note picker-kept">
+          Your rig — {chosen.length} selected. Untick to drop.
+          {atCap ? ` That is a full rig; untick one to add another.` : ''}
+        </p>
       ) : null}
 
       <fieldset className="picker-list" ref={listRef}>
-        {[...chosen, ...rest].map((row) => pick(row, onToggle, ids, bay))}
+        {[...chosen, ...rest].map((row) => pick(row, onToggle, ids, bay, atCap))}
         <PatchCables bay={bay} listRef={listRef} />
       </fieldset>
 
@@ -316,6 +328,7 @@ function pick(
   onToggle: (id: DeviceId, on: boolean) => void,
   idPrefix: string,
   bay: ReturnType<typeof patchbay>,
+  atCap: boolean,
 ) {
   const device = row.item
   const assignables = expand(device).length
@@ -338,7 +351,11 @@ function pick(
       : bay.links.find((l) => l.deviceId === device.id)?.kind
 
   return (
-    <div className="pick" key={device.id} data-retained={row.retained ? 'yes' : 'no'}>
+    <div
+      className={`pick${!row.selected && atCap ? ' pick-off' : ''}`}
+      key={device.id}
+      data-retained={row.retained ? 'yes' : 'no'}
+    >
       <label className="pick-choose">
         <input
           type="checkbox"
@@ -346,6 +363,9 @@ function pick(
           data-jack={device.id}
           data-patched={patched ?? 'free'}
           checked={row.selected}
+          // #301. A full rig refuses the next tick rather than silently ignoring it — the same
+          // shape the inspiration picker uses at its cap. Unticking is never disabled.
+          disabled={!row.selected && atCap}
           aria-describedby={subId}
           onChange={(event) => onToggle(device.id, event.target.checked)}
         />

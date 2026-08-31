@@ -403,6 +403,43 @@ function byCodeUnit(a: string, b: string): number {
  * decoder would reject. Returns the first problem or `undefined`; order of checks is the order
  * of the fields, so the message names the earliest thing wrong.
  */
+/**
+ * §7.1/#301. **The most devices a rig may contain, and the reason this exists at all.**
+ *
+ * The search is exponential in the parts a direction asks for against the assignables a rig
+ * offers, and `CLAUDE.md` has had the ruling since #248: *"If the many-device case ever matters,
+ * the answer is a selection limit, not a search optimisation."* A cross-device dominance rule
+ * changes which optimum comes back at equal score, needs a `RESOLVER_VERSION` bump, and fails
+ * silently by handing over a worse allocation. A ceiling on the picker is arithmetic.
+ *
+ * **What kept forcing the question was a rig nobody owns.** `measure:search` sweeps all 46
+ * devices and reports a worst case near the node cap, and that figure has three times been read
+ * as a limit the product is approaching — it blocked a device from landing in #248, blocked a
+ * test in #293, and nearly blocked a percussion recipe here. It is not a ceiling user rigs
+ * approach from below. Measured on rigs people actually have, the same worst case is 173 nodes
+ * at four devices, 5,171 at eight, 1,341 at twelve — three to thirteen milliseconds.
+ *
+ * So the number is not a performance tuning knob and must not be read as one. It is the point
+ * past which the catalogue sweep stops being a benchmark and starts being a claim about the
+ * product, and setting it makes that claim false by construction.
+ *
+ * **Ten, chosen as a product decision rather than derived from the search.** It is more boxes
+ * than a guide can usefully talk you through at a machine — §8 is a person standing at a rack
+ * with their hands busy, not an inventory — and it leaves the measured worst case in the low
+ * thousands of nodes, which is milliseconds. Raising it would need a reason from somebody's
+ * actual studio, and lowering it would start refusing rigs people have.
+ *
+ * **It is a picker rule and deliberately not a format rule.** `checkGuideInputs` does not enforce
+ * it, and the reason is that patchscore.app is public and a permalink is meant to outlive the
+ * build that made it. A link shared when no ceiling existed still names the rig it named; rejecting
+ * it would break somebody's saved guide to enforce a limit that is about what is *useful to
+ * assemble*, not about what the resolver can handle. Such a rig still resolves — the catalogue
+ * sweep is well inside the node cap — it simply cannot be built again from the picker.
+ *
+ * There is no "select all" in the picker and there must not be one.
+ */
+export const MAX_RIG_DEVICES = 10
+
 export function checkGuideInputs(
   inputs: GuideInputsV1,
   catalogue: Catalogue,

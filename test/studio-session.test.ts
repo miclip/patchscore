@@ -1,15 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import {
-  DENSITY_DETENTS,
-  FORMAT_VERSION,
-  RESOLVER_VERSION,
-  STUDIO_STORAGE_KEY,
-  decodeGuideInputs,
-  encodeGuideInputs,
-  guideInputsFrom,
-  loadStudio,
-  studioDoc,
-} from '../lib/core/index'
+import { decodeGuideInputs, DENSITY_DETENTS, encodeGuideInputs, FORMAT_VERSION, guideInputsFrom, loadStudio, MAX_RIG_DEVICES, RESOLVER_VERSION, STUDIO_STORAGE_KEY, studioDoc } from '../lib/core/index'
 import type { GuideInputsV1, StoredRigV1 } from '../lib/core/index'
 import {
   CATALOGUE,
@@ -854,11 +844,61 @@ describe('pure updates', () => {
     // catalogue rather than over its first and last entries: that shorter form only reached
     // every device while the registry happened to hold the landing pair plus two, and it
     // stopped testing anything the moment a fifth device landed.
+    //
+    // #301. A full rig rather than the whole catalogue: `withDevice` now refuses past
+    // `MAX_RIG_DEVICES`, so ticking all 46 would be testing the cap instead of the ordering.
+    // The rig is taken from the *end* of the registry so that reversing it is still a genuine
+    // reordering rather than the registry order arriving by luck.
+    const rig = [...CATALOGUE.devices].slice(-MAX_RIG_DEVICES)
     let inputs = DEFAULT_INPUTS
     for (const id of CATALOGUE.devices) inputs = withDevice(inputs, id as string, false)
     expect(inputs.devices).toEqual([])
-    for (const id of [...CATALOGUE.devices].reverse()) inputs = withDevice(inputs, id as string, true)
-    expect(inputs.devices).toEqual([...CATALOGUE.devices])
+    for (const id of [...rig].reverse()) inputs = withDevice(inputs, id as string, true)
+    expect(inputs.devices).toEqual(rig)
+  })
+
+  /**
+   * #301. The ceiling, and the two halves that make it usable rather than merely present.
+   *
+   * The search never needed it — the worst rig anyone can build measures 4% of the node cap. What
+   * it removes is the standing question, which had cost three separate pieces of work: a
+   * whole-catalogue sweep reports a figure near the cap, and that figure kept being read as a
+   * limit the product was approaching. A rig that size is now unreachable, so the reading is not
+   * available.
+   */
+  describe('a rig has a ceiling (#301)', () => {
+    it('refuses the eleventh device and leaves the inputs untouched', () => {
+      let inputs = DEFAULT_INPUTS
+      for (const id of CATALOGUE.devices) inputs = withDevice(inputs, id as string, false)
+      for (const id of CATALOGUE.devices) inputs = withDevice(inputs, id as string, true)
+      expect(inputs.devices).toHaveLength(MAX_RIG_DEVICES)
+
+      const full = inputs
+      const spare = CATALOGUE.devices.find((id) => !full.devices.includes(id))
+      expect(spare).toBeDefined()
+      // Not merely ignored — the same object back, so nothing downstream re-renders or re-resolves.
+      expect(withDevice(full, spare as string, true)).toBe(full)
+    })
+
+    it('always lets you untick, so a full rig is never stuck', () => {
+      let inputs = DEFAULT_INPUTS
+      for (const id of CATALOGUE.devices) inputs = withDevice(inputs, id as string, false)
+      for (const id of CATALOGUE.devices) inputs = withDevice(inputs, id as string, true)
+      const first = inputs.devices[0] as string
+      const dropped = withDevice(inputs, first, false)
+      expect(dropped.devices).toHaveLength(MAX_RIG_DEVICES - 1)
+      // And the freed slot is usable, which is what makes swapping a box possible at the cap.
+      const spare = CATALOGUE.devices.find((id) => !dropped.devices.includes(id)) as string
+      expect(withDevice(dropped, spare, true).devices).toHaveLength(MAX_RIG_DEVICES)
+    })
+
+    it('re-ticking a device already in the rig is not a new device', () => {
+      let inputs = DEFAULT_INPUTS
+      for (const id of CATALOGUE.devices) inputs = withDevice(inputs, id as string, false)
+      for (const id of CATALOGUE.devices) inputs = withDevice(inputs, id as string, true)
+      const present = inputs.devices[2] as string
+      expect(withDevice(inputs, present, true).devices).toEqual(inputs.devices)
+    })
   })
 
   it('changes one thing at a time', () => {
