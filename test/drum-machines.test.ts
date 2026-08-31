@@ -184,26 +184,24 @@ describe('#174 the claims the page must not make', () => {
     }
   })
 
-  it('cites GEN list p.1 for the names and says outright that it is not the source of the characters', () => {
-    // The narrow fact, which is the only one that page supports: Roland ships generators under
-    // these names. p.1 prints Name, Category and Folder, and describes no sound anywhere on it.
-    expect(TEXT).toContain('TR-1000 Preset GEN/INST List (eng02) v1.20, GEN list p.1')
-    expect(TEXT).toMatch(/name, a category and a folder/)
-    expect(TEXT).toMatch(/describes no sound/)
-    // And the two families that page does not carry are excluded by name, not left to inference.
-    expect(TEXT).toMatch(/LinnDrum and the DX7 do not appear on it/)
-  })
-
-  it('says the characters are ours, in our voice, before a reader believes otherwise', () => {
-    expect(TEXT).toMatch(/Every description here is ours/)
-    expect(TEXT, 'the descriptions must be marked as opinion, however it is worded').toMatch(
-      /\b(taste|opinion)\b/,
-    )
-    // Above the fold in reading order: the disclaimer sits in the opening panel, not in a note
-    // under the citation at the bottom which a reader reaches after believing the page.
-    expect(TEXT.indexOf('Every description here is ours')).toBeLessThan(TEXT.indexOf('TR-808'))
-  })
-
+  /**
+   * **Two fixtures removed here, and it is a reversal rather than a tidy-up.**
+   *
+   * They required the page to cite `GEN list p.1` for the generator names and to say *"Every
+   * description here is ours"* above the fold. Both were #174's own claims and both were right at
+   * the time.
+   *
+   * **The section carrying them was removed because it was out of place, not because it was
+   * wrong.** This page is informational: what the drum sounds are, where they came from, and how
+   * to use them. "Where the names come from" was about *our sourcing* — a paragraph about the
+   * page rather than about drums — and it sat at the bottom of a page a reader comes to for the
+   * sounds.
+   *
+   * What went with it is real and worth naming: the page now cites nothing at all. The narrow fact
+   * it used to carry, that Roland ships generators under these names, is no longer claimed, so
+   * there is nothing left to source. If a cited fact ever returns to this page, the fixture that
+   * held it to the device's own data returns with it — see the note further down by `genList`.
+   */
   it('explains why dialling a sound can beat hunting for one', () => {
     // #174's own argument, and the reason this page exists rather than a glossary: the search has
     // no finish line and the synthesis does.
@@ -232,18 +230,14 @@ describe('#174 at 390px', () => {
     expect(paragraph).not.toContain('white-space: nowrap')
   })
 
-  it('keeps the citation monospace and legible rather than shrinking it to fit', () => {
-    // #21: parameter values stay legible at arm's length. Wrap or scroll; do not shrink type.
-    expect(MARKUP).toContain('<p class="reference-cite mono">')
-    const size = /font-size: (\d+)px/.exec(rule('.reference-cite'))
-    expect(size, '.reference-cite must state a size rather than inherit one').not.toBeNull()
-    expect(Number(size?.[1])).toBeGreaterThanOrEqual(12)
-  })
-
+  // The `.reference-cite` fixture went with the citation itself: #21's rule that a value stays
+  // legible rather than shrinking still holds, but the page has no citation to apply it to.
   it('never hides an overflow instead of reporting it', () => {
+    // `.reference-note` and `.reference-cite` left this list with their rules: both were dead
+    // once the citation section went, and a selector with no rule reads as a missing rule here.
     // The stylesheet's own rule at the top: `overflow-x: hidden` hides a broken layout. Nothing
     // this page added may reach for it.
-    for (const selector of ['.reference-page p', '.reference-note', '.reference-cite', '.machine-facts']) {
+    for (const selector of ['.reference-page p', '.machine-facts']) {
       expect(rule(selector)).not.toContain('overflow-x')
     }
   })
@@ -278,21 +272,15 @@ function genList(): { source: string; values: Set<string> } {
   return { source: source ?? '', values }
 }
 
-describe('the citation is the device\'s, not a copy of it (#174)', () => {
-  it('prints the exact source string the TR-1000 cites for its generator names', () => {
-    const { source } = genList()
-    expect(
-      TEXT,
-      'the page has drifted from the citation roland-tr-1000 actually carries',
-    ).toContain(source)
-  })
-
-  it('quotes only generator names the TR-1000 really ships', () => {
-    const { values } = genList()
-    const quoted = [...MARKUP.matchAll(/<span class="mono">([^<]+)<\/span>/g)].map((m) => m[1])
-    expect(quoted.length, 'the page should still quote some generator names').toBeGreaterThan(0)
-    for (const name of quoted) {
-      expect(values, `${name} is quoted as a TR-1000 generator and is not one`).toContain(name)
-    }
-  })
-})
+/**
+ * **#174's two fixtures are gone with the section they guarded.**
+ *
+ * They held the page's "Where the names come from" block to the TR-1000's own data: the citation
+ * string had to be the one that manifest actually carries, and every generator name quoted in
+ * mono had to be one the box really ships. Both were checks against the page drifting from the
+ * device, and both are vacuous now — the section was removed deliberately, and the page quotes no
+ * device data at all.
+ *
+ * If generator names ever come back to this page, these come back with them. `genList()` above is
+ * left in place for that, because rebuilding it is the fiddly part.
+ */

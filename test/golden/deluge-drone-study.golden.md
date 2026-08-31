@@ -70,9 +70,9 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 Note length is set per note here — `the note’s extent on the grid — hold its start pad and press its end pad`, in grid steps at the current zoom. · manual
 - ↳ cite: claim manual — Deluge Official Guidebook OS 4.1 (OLED), p.48
 
-- bar 1 · step 1 · sounds for 128 steps (8 bars) · `E3` · 5th · MIDI 52
-- bar 9 · step 129 · sounds for 64 steps (4 bars) · `D3` · 4th · MIDI 50
-- bar 13 · step 193 · sounds for 64 steps (4 bars) · `Bb2` (`A#2`) · 2nd · MIDI 46
+- bar 1 · step 1 · held for 128 steps (8 bars) · `E3` · 5th · MIDI 52
+- bar 9 · step 129 · held for 64 steps (4 bars) · `D3` · 4th · MIDI 50
+- bar 13 · step 193 · held for 64 steps (4 bars) · `Bb2` (`A#2`) · 2nd · MIDI 46
 
 ## 5. Step programming
 

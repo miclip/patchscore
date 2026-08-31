@@ -4,10 +4,15 @@ import {
   DeviceSchema,
   ROLES,
   expand,
+  moodState,
+  renderGuide,
+  resolve,
   resolveRecipe,
   type AuthoredParam,
   type Role,
 } from '../lib/core/index'
+import { DEVICES } from '../lib/devices/registry.generated'
+import { TEMPLATES } from '../lib/templates/index'
 import { device } from '../lib/devices/synthstrom-deluge/index'
 import { auditDevice } from '../scripts/audit-verified'
 
@@ -909,5 +914,65 @@ describe('Deluge manifest', () => {
       // The note is what stops a reader setting it once per part. It is one setting.
       expect(swing.note, recipe.id).toContain('song-wide')
     }
+  })
+})
+
+/**
+ * §8/#142. **A held note is not a run of steps, and the wording used to imply it was.**
+ *
+ * Reported from a machine: a reader saw `sounds for 64 steps (4 bars)` in a list whose every other
+ * line is a step to enter, read it as sixty-four steps to program, and went looking for a bug when
+ * the Deluge showed one note. There was no bug — the guide already says, two lines above and in
+ * the box's own words, *hold its start pad and press its end pad*. The number was right and the
+ * sentence was shaped wrong.
+ */
+describe('a long note reads as held rather than as steps to enter', () => {
+  const industrial = TEMPLATES.find((t) => t.id === 'industrial-techno')!
+  const rig = DEVICES.filter((d) => ['synthstrom-deluge', 'roland-tr-1000'].includes(d.id))
+  const md = renderGuide(
+    resolve({ devices: rig, template: industrial, mood: moodState({}), seed: 3 }),
+  )
+
+  it('says held once a note spans a bar', () => {
+    expect(md).toContain('held for 64 steps (4 bars)')
+    // The old shape, which is the thing that was misread.
+    expect(md).not.toContain('sounds for 64 steps')
+  })
+
+  it('leaves a note shorter than a bar exactly as it was', () => {
+    // Nothing to misread here: no bar gloss to mistake the step count against.
+    expect(md).toMatch(/sounds for \d+ steps?/)
+    expect(md).not.toMatch(/held for \d+ steps? ·/)
+  })
+
+  it('still gives the technique beside it, in the box’s own words', () => {
+    // The instruction that makes a held note enterable at all on this device.
+    expect(md).toContain('hold its start pad and press its end pad')
+  })
+})
+
+/**
+ * §3/#101. The three conditions a Deluge wavetable has to meet, all of which fail *quietly* —
+ * guidebook p.110. A reader whose file breaks one gets a pad that will not drift, or an oscillator
+ * type that will not stay set, and no error either way.
+ */
+describe('the wavetable pad says what its file must be', () => {
+  const pad = DEVICES.find((d) => d.id === 'synthstrom-deluge')!.recipes.find(
+    (r) => r.id === 'deluge-pad-soft',
+  )!
+
+  it('requires mono, and says a stereo file becomes a sample instead', () => {
+    expect(pad.sourceAudio?.need).toContain('MONO')
+    expect(pad.sourceAudio?.need).toContain('loads as a sample')
+  })
+
+  it('requires more than 20 ms, because a shorter file has no wave navigation', () => {
+    expect(pad.sourceAudio?.need).toContain('20 ms')
+    expect(pad.sourceAudio?.need).toContain('single-cycle')
+  })
+
+  it('no longer promises a sweep it cannot deliver on every file', () => {
+    // It promised "WAVE sweeps across the cycles" without saying it needed a multi-cycle table.
+    expect(pad.sourceAudio?.need).toContain('multi-cycle')
   })
 })

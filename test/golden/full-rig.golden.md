@@ -370,9 +370,9 @@ A step is one note long and nothing here sets a length: `TIE` joins a note to th
 A step is one note long and nothing here sets a length: `Tie/Rest` joins a note to the next step, and stacking those is how anything longer is entered. · manual
 - ↳ cite: claim manual — MicroFreak User Manual 4.0.3 p.77
 
-- bar 1 · step 1 · sounds for 64 steps (4 bars) · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
-- bar 5 · step 65 · sounds for 32 steps (2 bars) · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
-- bar 7 · step 97 · sounds for 32 steps (2 bars) · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`) · 7th 2nd 4th · MIDI 63 67 70
+- bar 1 · step 1 · held for 64 steps (4 bars) · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
+- bar 5 · step 65 · held for 32 steps (2 bars) · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
+- bar 7 · step 97 · held for 32 steps (2 bars) · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`) · 7th 2nd 4th · MIDI 63 67 70
 
 ### `stab` — minilogue xd · Voice
 

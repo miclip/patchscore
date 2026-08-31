@@ -1168,6 +1168,38 @@ function chordsOf(hook: ResolvedHook): Chord[] {
  * format that reached for a fraction. Under a bar there is no gloss at all: the number already
  * reads, and a bracket saying so is noise on every line of every drum part.
  */
+/**
+ * §8/#142. **A note a bar or longer leads with bars and is called *held*.**
+ *
+ * Reported from a machine: a reader saw `sounds for 64 steps (4 bars)` in a list whose every other
+ * line is a step to program, read it as sixty-four steps to enter, and went looking for the bug
+ * when the Deluge showed one. There was no bug — the pad is one note held for four bars, and the
+ * guide says so two lines above in the box's own words: *hold its start pad and press its end
+ * pad*. The number was right and the shape of the sentence was wrong.
+ *
+ * So the long case reads `held for 64 steps (4 bars)`. **The verb changes and the order does
+ * not.** `held` is what separates a duration from a count of hits, and it is enough on its own.
+ *
+ * Leading with bars was tried and backed out: `format.ts` argues steps first *"because that is the
+ * number a step field takes and the unit the position on the same line is already counted in"*,
+ * which is a better reason than the one for reordering. Under a bar nothing changes either —
+ * `sounds for 3 steps` was never ambiguous, there being no bar gloss to misread it against.
+ */
+function durationPhrase(len: number): string {
+  return `${len >= STEPS_PER_BAR ? 'held for' : 'sounds for'} ${durationText(len)}`
+}
+
+/**
+ * Same, for a chord whose notes may differ in length — and it takes the **shortest**, not the
+ * longest. `held for` has to be true of every note it introduces: a chord of 4 steps and 2 bars
+ * reading "held for 4 steps / 2 bars" says the wrong thing about the first note. One verb cannot
+ * describe two lengths, so the neutral one wins whenever they disagree across the bar line.
+ */
+function durationsPhrase(notes: readonly ResolvedNote[]): string {
+  const shortest = Math.min(...notes.map((n) => n.len))
+  return `${shortest >= STEPS_PER_BAR ? 'held for' : 'sounds for'} ${durationsText(notes)}`
+}
+
 function durationText(len: number): string {
   if (len < STEPS_PER_BAR) return count(len, 'step')
   const bars = Math.floor(len / STEPS_PER_BAR)
@@ -1386,7 +1418,7 @@ function sampledHookLines(
     step: occurrence.step,
     line:
       `- ${whereOf(occurrence.step, framed)}` +
-      (printsNoteDuration(notice) ? ` · sounds for ${durationsText(occurrence.notes)}` : '') +
+      (printsNoteDuration(notice) ? ` · ${durationsPhrase(occurrence.notes)}` : '') +
       ` · sample ${voicing.label} · ${transposeText(occurrence.semitones)} · ` +
       occurrence.notes.map(spelling).join(' '),
   }))
@@ -1482,7 +1514,7 @@ function stackedHookLines(
       step,
       line:
         `- ${whereOf(step, framed)}` +
-        (printsNoteDuration(notice) ? ` · sounds for ${durationText(note.len)}` : '') +
+        (printsNoteDuration(notice) ? ` · ${durationPhrase(note.len)}` : '') +
         ` · ${spelling(note)} · ${degreeName(note.degree)} · MIDI ${num(note.midi)}`,
     }))
     // #142. Note-offs are computed **per voice**, from that voice's own notes: on a stack it is
@@ -1573,7 +1605,7 @@ function hookLines(
     step: chord.step,
     line:
       `- ${whereOf(chord.step, framed)}` +
-      (printsNoteDuration(notice) ? ` · sounds for ${durationsText(chord.notes)}` : '') +
+      (printsNoteDuration(notice) ? ` · ${durationsPhrase(chord.notes)}` : '') +
       ` · ${chord.notes.map(spelling).join(' ')} · ` +
       `${chord.notes.map((n) => degreeName(n.degree)).join(' ')} · ` +
       `MIDI ${chord.notes.map((n) => num(n.midi)).join(' ')}`,

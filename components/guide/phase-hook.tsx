@@ -291,7 +291,17 @@ function SampledHook({
                   <>
                     <span className="token-sep"> · </span>
                     <span className="pos">
-                      <span className="quiet">sounds for </span>
+                      {/*
+                        §8/#142. "held for" once a note spans a bar, in this renderer's own words
+                        (#33). A reader took `sounds for 64 steps (4 bars)` in a list of steps as
+                        sixty-four steps to enter; the verb is what separates a duration from a
+                        count of hits.
+                      */}
+                      <span className="quiet">
+                        {Math.min(...occurrence.notes.map((n) => n.len)) >= STEPS_PER_BAR
+                          ? 'held for '
+                          : 'sounds for '}
+                      </span>
                       <span className="mono">{durationsText(occurrence.notes)}</span>
                     </span>
                   </>
@@ -423,7 +433,9 @@ function StackedHook({
                           <>
                             <span className="token-sep"> · </span>
                             <span className="pos">
-                              <span className="quiet">sounds for </span>
+                              <span className="quiet">
+                                {note.len >= STEPS_PER_BAR ? 'held for ' : 'sounds for '}
+                              </span>
                               <span className="mono">{durationText(note.len)}</span>
                             </span>
                           </>
@@ -580,7 +592,11 @@ function HookBlock({
                   </span>,
                   printsNoteDuration(notice) ? (
                     <span className="pos" key="duration">
-                      <span className="quiet">sounds for </span>
+                      <span className="quiet">
+                        {Math.min(...chord.notes.map((n) => n.len)) >= STEPS_PER_BAR
+                          ? 'held for '
+                          : 'sounds for '}
+                      </span>
                       <span className="mono">{durationsText(chord.notes)}</span>
                     </span>
                   ) : null,
