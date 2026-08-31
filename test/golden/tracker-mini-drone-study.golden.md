@@ -19,15 +19,15 @@ glance whether the screen in front of you is the one the line is about.
 
 **Arrangement** — 132 bars total
 
-| Section | Bars | Energy |
-| --- | ---: | --- |
-| Settle | 9 | `█·········` 0.05 |
-| Gather | 15 | `███·······` 0.28 |
-| Tilt | 21 | `██████····` 0.55 |
-| Vast | 33 | `████████··` 0.78 |
-| Turn | 18 | `██████····` 0.6 |
-| Give | 24 | `███·······` 0.33 |
-| Hush | 12 | `█·········` 0.1 |
+```
+            Settle Gather Tilt     Vast           Turn    Give      Hush
+            9b     15b    21b      33b            18b     24b       12b
+energy      0.05   0.28   0.55     0.78           0.6     0.33      0.1
+
+texture     ██████ ██████ ████████ ██████████████ ███████ █████████ ████
+```
+
+Every part plays throughout. The movement is in the patterns and the energy.
 
 ## 2. Voice assignment
 

@@ -44,6 +44,7 @@ import {
 import { GUIDE_PHASES, count, ioText, mixerText, num, searchCapNotice} from './guide'
 import type { GuideLayout } from './guide'
 import {
+  arrangement,
   bandTrajectory,
   chainPlan,
   isSustainedPart,
@@ -318,11 +319,6 @@ function hintText(device: Device | undefined, hint: string): string {
 // ---------------------------------------------------------------------------
 
 /** A ten-cell meter. Integer cells from a fraction, so no float ever reaches the page. */
-function energyBar(energy: number): string {
-  const filled = Math.round(energy * 10)
-  return `${'█'.repeat(filled)}${'·'.repeat(10 - filled)}`
-}
-
 function phaseSong(result: ResolveResult): Line[] {
   const { template, song } = result
   const out: Line[] = []
@@ -360,14 +356,79 @@ function phaseSong(result: ResolveResult): Line[] {
   }
   out.push('')
 
-  const totalBars = template.structure.reduce((sum, s) => sum + s.bars, 0)
-  out.push(`**Arrangement** — ${num(totalBars)} bars total`)
+  out.push(...arrangementGrid(result))
+  return out
+}
+
+/**
+ * §4.2/#297. The arrangement drawn to scale, in the one place a monospace block is the right tool.
+ *
+ * This replaced a `| Section | Bars | Energy |` table, and the reason is the part the table could
+ * not hold: **which parts play where**. That fact was already in the guide, at the tail of phase
+ * 2's bullets — `p3, optional · sub on the Deluge · Build, Breakdown` — where comparing twelve
+ * parts means diffing twelve comma lists. Comparison is the whole job of an arrangement.
+ *
+ * **A fenced block rather than a Markdown table, because sections are not equal length.** A
+ * 32-bar Drop against a 16-bar Intro is the shape of the track, and a table renders every column
+ * the same width, which draws the opposite of the fact. Column widths here are integer character
+ * counts derived from bars, so the picture is to scale and nothing float-shaped reaches the page
+ * (invariant 6).
+ *
+ * **A name is never truncated to fit.** The width is the larger of the scaled bar count and the
+ * section's own name, so a `Breakdown` stays a `Breakdown` and the proportions bend around it.
+ * Squeezing `Breakdown` into `Break` would be the renderer lying about a template's own word to
+ * protect a picture, which is the wrong way round.
+ *
+ * Energy stays a number rather than becoming a meter. The web guide has room to draw one; here the
+ * value is more precise and costs less width, and the meter the old table drew was ten cells
+ * wide per row, in a block that has none to spare.
+ */
+function arrangementGrid(result: ResolveResult): Line[] {
+  const out: Line[] = []
+  const plan = arrangement(result)
+  out.push(`**Arrangement** — ${num(plan.totalBars)} bars total`)
   out.push('')
-  out.push('| Section | Bars | Energy |')
-  out.push('| --- | ---: | --- |')
-  for (const section of template.structure) {
-    const meter = `\`${energyBar(section.energy)}\` ${num(section.energy)}`
-    out.push(`| ${section.name} | ${num(section.bars)} | ${meter} |`)
+
+  // Integer arithmetic throughout: `TARGET` character columns shared out by bars, floored, never
+  // narrower than the section's own name. No `Math.round` on a ratio, so no platform can disagree.
+  const TARGET = 60
+  const widths = plan.columns.map((column) =>
+    Math.max(
+      column.name.length + 1,
+      Math.max(4, Math.floor((column.bars * TARGET) / Math.max(1, plan.totalBars))),
+    ),
+  )
+  const label = Math.max(10, ...plan.rows.map((r) => r.role.length)) + 2
+  const pad = (text: string, width: number): string =>
+    text.length >= width ? text : text + ' '.repeat(width - text.length)
+  const line = (head: string, cells: readonly string[]): string =>
+    (pad(head, label) + cells.map((c, i) => pad(c, widths[i] as number)).join('')).trimEnd()
+
+  out.push('```')
+  out.push(line('', plan.columns.map((c) => c.name)))
+  out.push(line('', plan.columns.map((c) => `${num(c.bars)}b`)))
+  out.push(line('energy', plan.columns.map((c) => num(c.energy))))
+  if (plan.rows.length === 0) {
+    out.push('')
+    out.push('(no parts assigned)')
+  } else {
+    out.push('')
+    for (const row of plan.rows) {
+      out.push(
+        line(
+          row.role,
+          row.plays.map((p, i) => (p ? '█' : '·').repeat((widths[i] as number) - 1)),
+        ),
+      )
+    }
+  }
+  out.push('```')
+
+  // Said in words as well as drawn, because a grid of full rows looks like a picture that failed
+  // to load. It is instead the commonest true answer about this music, and worth claiming.
+  if (plan.uniform) {
+    out.push('')
+    out.push('Every part plays throughout. The movement is in the patterns and the energy.')
   }
   return out
 }

@@ -3785,3 +3785,113 @@ html {
 :root[data-jacks='plain'] .panel .patch-legend {
   padding-left: 0;
 }
+
+/* --------------------------------------------------- §4.2/#297 arrangement */
+
+/*
+ * The grid fits the width instead of scrolling, which is the opposite of what every other wide
+ * table here does — and deliberately so. `CLAUDE.md` forbids horizontal scrolling on the rack
+ * diagram because relative width was the point and a cable cut off by the viewport is the thing
+ * the diagram exists to show. This is the same case: a Drop twice the length of an Intro is the
+ * shape of the track, and an Outro past the right edge is the arrangement with its ending gone.
+ *
+ * So `table-layout: fixed` with percentage `<col>` widths, and `min-width: 0` to undo the
+ * `min-width: max-content` every other guide table wants. `.table-scroll` stays around it for the
+ * case a floor cannot save.
+ */
+.guide table.arrangement {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 0;
+}
+
+.guide table.arrangement th,
+.guide table.arrangement td {
+  padding: 4px 2px;
+  border-bottom: none;
+}
+
+/* The one column sized to its content: part names are the reader's index into the rows. */
+.guide table.arrangement col.arrangement-label {
+  width: 5.5rem;
+}
+
+.guide table.arrangement th[scope='row'] {
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  padding-right: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guide table.arrangement thead th {
+  vertical-align: bottom;
+  text-align: left;
+}
+
+.arrangement-section {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arrangement-bars {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Cells are the picture: a bar of colour where the part plays, a hairline where it does not. */
+.arrangement-on,
+.arrangement-off {
+  height: 14px;
+}
+
+.arrangement-on {
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.arrangement-off {
+  background: linear-gradient(var(--edge), var(--edge)) center / 100% 1px no-repeat;
+}
+
+.energy-tick {
+  display: flex;
+  align-items: flex-end;
+  width: 8px;
+  height: 14px;
+  margin-top: 3px;
+  background: var(--edge);
+  border-radius: 1px;
+}
+
+.energy-tick > span {
+  display: block;
+  width: 100%;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+/*
+ * #21. At 390px the label column is the thing to give back — a role name is short, and the grid
+ * is what the reader came for. Below that, the floor on a section column is what stops a 16-bar
+ * Intro next to a 32-bar Drop from collapsing to a sliver.
+ */
+@media (max-width: 560px) {
+  .guide table.arrangement col.arrangement-label {
+    width: 4.25rem;
+  }
+
+  .guide table.arrangement th[scope='row'] {
+    font-size: 11px;
+    padding-right: 5px;
+  }
+
+  .guide table.arrangement thead th {
+    font-size: 8.5px;
+  }
+}

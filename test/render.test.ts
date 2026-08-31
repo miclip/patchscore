@@ -997,7 +997,11 @@ describe('song (§8 phase 1)', () => {
     const body = phaseBody(renderGuide(golden()), 1).join('\n')
     expect(body).toContain('| VII | 2 |')
     expect(body).toContain('64 bars total')
-    expect(body).toContain('| Drop | 32 |')
+    // #297. The bars-and-energy table became a grid, because the fact worth reading is which
+    // parts play where and a three-column table could not hold it. Sections and bars are still
+    // here; they are a header now rather than a row.
+    expect(body).toMatch(/Drop\s/)
+    expect(body).toMatch(/32b/)
   })
 
   it('never formats a number through a locale (§7.2)', () => {

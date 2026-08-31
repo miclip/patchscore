@@ -1,4 +1,4 @@
-import type { SectionName } from './ids'
+import type { DeviceId, RequestId, SectionName } from './ids'
 import type { ResolveResult, ResolvedAssignment } from './pipeline'
 import type { DensityBand } from './template'
 import { STEPS_PER_BAR } from './template'
@@ -308,4 +308,90 @@ export function chainPlan(result: ResolveResult, a: ResolvedAssignment): Section
     out.push({ section: entry.section, bars, unitBars, full: (bars - remainder) / unitBars, remainder })
   }
   return out
+}
+
+// ---------------------------------------------------------------------------
+// §4.2/#297. The arrangement as a grid: which parts play where
+// ---------------------------------------------------------------------------
+
+/** One section, as a column. `bars` is the width — sections are not equal length. */
+export type ArrangementColumn = {
+  name: SectionName
+  bars: number
+  energy: number
+}
+
+/** One part, as a row. `plays` is one flag per column, in column order. */
+export type ArrangementRow = {
+  requestId: RequestId
+  role: Role
+  deviceId: DeviceId
+  plays: boolean[]
+  /**
+   * True when the part occupies every section, which is the common case and worth naming.
+   *
+   * A renderer can say "throughout" in a word instead of drawing a solid row, and more usefully
+   * it can tell a reader whether the *grid* is worth looking at: an arrangement where every row
+   * is `throughout` has said its piece in one sentence.
+   */
+  throughout: boolean
+}
+
+/**
+ * §4.2/#297. **When each part enters and leaves, against sections drawn to their real length.**
+ *
+ * The fact was always in the guide and always unreadable. Phase 2 prints each part's sections as
+ * the tail of a dense bullet — `p3, optional · sub on the Deluge · Build, Breakdown` — so a reader
+ * comparing twelve parts is diffing twelve comma lists, and the one thing an arrangement is *for*
+ * is the comparison. `impact` landing on the Drop and the Peak is the shape of the track, and it
+ * was the least visible thing on the page.
+ *
+ * **Mostly solid, and that is information rather than a reason not to draw it.** Measured across
+ * all nine directions on a six-box rig, 21 of 183 parts play fewer than every section. A grid of
+ * full rows says *everything runs throughout, the movement is in the patterns and the energy* —
+ * which is true of this music and worth knowing — and it makes the two rows that are not full
+ * impossible to miss. `throughout` is on every row so a renderer can make that point in words.
+ *
+ * **Presence, not what is struck.** A part can occupy a section and be sustained rather than
+ * patterned; `bandTrajectory` above and phase 5 answer that, and a third glyph here would put two
+ * questions in one picture. This answers *is it in this section*, from `sections`, which is what
+ * `§4.2` occupancy means.
+ *
+ * Pure, and ordered by `structure` then by assignment order — no sort, no comparison, so nothing
+ * here can differ across platforms (invariant 6).
+ */
+export type Arrangement = {
+  columns: ArrangementColumn[]
+  rows: ArrangementRow[]
+  totalBars: number
+  /** True when every row is `throughout`, so a renderer can say so instead of drawing it. */
+  uniform: boolean
+}
+
+export function arrangement(result: ResolveResult): Arrangement {
+  const columns: ArrangementColumn[] = result.template.structure.map((section) => ({
+    name: section.name,
+    bars: section.bars,
+    energy: section.energy,
+  }))
+
+  const rows: ArrangementRow[] = result.assignments.map((a) => {
+    // `sections` is a small list on a small list; a Set per row costs more than it saves and
+    // would put an iteration order in the middle of a function that has none.
+    const plays = columns.map((column) => a.sections.includes(column.name))
+    return {
+      requestId: a.requestId,
+      role: a.role,
+      deviceId: a.deviceId,
+      plays,
+      throughout: plays.every((p) => p),
+    }
+  })
+
+  return {
+    columns,
+    rows,
+    totalBars: columns.reduce((sum, c) => sum + c.bars, 0),
+    uniform: rows.length > 0 && rows.every((r) => r.throughout),
+  }
 }
