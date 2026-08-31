@@ -1,5 +1,6 @@
 import type { TemplateId } from '../core/ids'
 import type { Template } from '../core/template'
+import { acidLineage } from './acid-lineage'
 import { ambientDub } from './ambient-dub'
 import { droneStudy } from './drone-study'
 import { generativeDrift } from './generative-drift'
@@ -24,6 +25,7 @@ import { weave } from './weave'
  * insertion order would make the list depend on the order of the imports above.
  */
 export const TEMPLATES: readonly Template[] = [
+  acidLineage,
   ambientDub,
   droneStudy,
   generativeDrift,
@@ -35,6 +37,7 @@ export const TEMPLATES: readonly Template[] = [
 ]
 
 export {
+  acidLineage,
   ambientDub,
   droneStudy,
   generativeDrift,

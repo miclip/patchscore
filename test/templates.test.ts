@@ -263,13 +263,20 @@ describe('invariant 3 — a template never names a device', () => {
 // ---------------------------------------------------------------------------
 
 /**
- * The review, recorded. Thirteen requests in the library have **both** a hook and variants, so
- * thirteen times over a direction has to answer what its variants are against its hook: the map
- * of where a held note is struck again, or a rhythm of their own. #100 answered "a rhythm" for all
- * thirteen and silenced the two that were maps.
+ * The review, recorded. Fourteen requests in the library have **both** a hook and variants, so
+ * fourteen times over a direction has to answer what its variants are against its hook: the map
+ * of where a held note is struck again, or a rhythm of their own. #100 answered "a rhythm" for the
+ * thirteen that existed then and silenced the two that were maps.
  *
- * Every one of the thirteen was read, and the answer is the direction's own prose in each case:
+ * Every one of the fourteen was read, and the answer is the direction's own prose in each case:
  *
+ *  - **`acid-lineage` `r-acid`** — flagged, and it is the clearest case in the library. Both hooks
+ *    are held lines — notes of 22, 16 and 6 steps across two bars — and the variants strike
+ *    between two and fifteen times inside that same span, so a strike is never a note the hook did
+ *    not already state. The steps between two strikes are not rests either: on this instrument a
+ *    tie into the next step *is* the slide, which is why the direction's own header calls the
+ *    bands "a slide-to-strike ratio, read backwards". Silence the variants here and the direction
+ *    loses the slide map, the accent placement and the whole of what its density knob does.
  *  - **`drone-study` `r-texture`** — flagged. "A re-articulation map: the places the player lifts
  *    and re-strikes a note that is otherwise continuous", against hooks of three notes held four
  *    and eight bars each.
@@ -293,10 +300,10 @@ describe('invariant 3 — a template never names a device', () => {
  *    the next strike. Two grids on one part is exactly what #100 removed.
  *
  * Pinned as an exact set rather than a lower bound, in both directions. A flag appearing on a
- * fourteenth request is a musical claim nobody reviewed; a flag disappearing takes the density
+ * fifteenth request is a musical claim nobody reviewed; a flag disappearing takes the density
  * knob off a part with it, silently, which is the failure this whole change exists to undo.
  */
-const RE_ARTICULATING = ['drone-study/r-texture', 'weave/r-sub'] as const
+const RE_ARTICULATING = ['acid-lineage/r-acid', 'drone-study/r-texture', 'weave/r-sub'] as const
 
 describe('re-articulated hooks (§4.3)', () => {
   it('carries the flag on exactly the reviewed requests, and on no others', () => {

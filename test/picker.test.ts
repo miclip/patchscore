@@ -285,7 +285,9 @@ describe('direction search matches name and authored keys only', () => {
   it('finds a direction by its authored key, and each key genuinely excludes', () => {
     // The test for whether a field belongs in a search is whether it excludes anything.
     expect(shown('dorian')).toEqual(['ambient-dub'])
-    expect(shown('minor')).toEqual(['industrial-techno'])
+    // Two directions author minor keys and both come back; the narrower query still separates
+    // them, which is the exclusion this test is about. `acid-lineage` offers A, C and D minor.
+    expect(shown('minor')).toEqual(['acid-lineage', 'industrial-techno'])
     expect(shown('f minor')).toEqual(['industrial-techno'])
     // 'major' is in both a name and a key set; it still returns exactly the one direction.
     expect(shown('major')).toEqual(['major-key-electro'])
@@ -306,7 +308,19 @@ describe('direction search matches name and authored keys only', () => {
     expect(asking('kick').length).toBeGreaterThan(1)
     expect(asking('bass-mid').length).toBeGreaterThan(1)
     // And no role is a search term, whether one direction asks for it or every one does.
-    for (const role of ROLES) expect(shown(role), role).toEqual([])
+    //
+    // Asserted against the fields the search does read rather than against a hardcoded empty
+    // list, because `acid` stopped returning nothing the day a direction was *named* Acid
+    // Lineage — the word reaches the search through the name, which is a field it is documented
+    // to read, and not through the eleven boxes' worth of `acid` requests behind it. The
+    // computed form is the stronger assertion anyway: were the search to start reading `roles`,
+    // `kick` would return five directions while no direction's name or keys contain the word.
+    for (const role of ROLES) {
+      const byAuthoredField = TEMPLATES.filter((t) =>
+        templateFields(t).some((field) => field.toLowerCase().includes(role)),
+      ).map((t) => t.id)
+      expect(shown(role), role).toEqual(byAuthoredField)
+    }
     expect(shown('kick')).toEqual([])
     expect(shown('bass')).toEqual([])
   })
