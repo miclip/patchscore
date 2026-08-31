@@ -69,6 +69,10 @@ describe('Digitone II manifest', () => {
     const elektron = DEVICES.filter((d) => d.maker === 'Elektron').map((d) => [d.id, d.kind])
     expect(elektron).toEqual([
       ['elektron-analog-rytm-mkii', 'drum-machine'],
+      // The first Digitakt reads `sampler` off its own manual rather than the sibling's: p.59
+      // opens "Digitakt is a very competent and accessible sampler", and eight fungible tracks
+      // each holding whatever is loaded is the same what-a-track-holds argument at half scale.
+      ['elektron-digitakt', 'sampler'],
       ['elektron-digitakt-ii', 'sampler'],
       // Its own predecessor reads the same way on the same argument, and it reaches it over a
       // page that appears to say otherwise: OS 1.41's manual calls the Digitone a synthesizer

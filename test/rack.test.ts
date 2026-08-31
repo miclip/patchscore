@@ -110,7 +110,26 @@ const patchedRig = resolve({
   //
   // Same rule, unchanged: the most patched, lowest seed among the tie — seed 7, two entries on
   // the Cascadia.
-  seed: 7,
+  //
+  // The Digitakt then widened the field where the Digitone had narrowed it, which is worth
+  // recording because the two are the same shape of device. Eight seeds carry a patch now, where
+  // three did, and the depth is unchanged at two:
+  //
+  //     seed  2   2 entries   intellijel-cascadia
+  //     seed  8   2 entries   moog-grandmother
+  //     seed 14   2 entries   intellijel-cascadia
+  //     seed 19   2 entries   intellijel-cascadia
+  //     seed  3   1 entry     behringer-model-d
+  //     seed 18   1 entry     behringer-model-d
+  //     seed 20   1 entry     behringer-crave
+  //     seed 23   1 entry     moog-matriarch
+  //
+  // The Digitone thins the semi-modulars out because four fungible tracks carry twenty-two roles
+  // between them; this box has eight fungible tracks and a sibling already serving most of what
+  // it can do, so the objective goes on reaching past both of them at least as often. Same rule
+  // as before: the most patched, and the lowest seed among the four-way tie — seed 2, two entries
+  // on the Cascadia. Seed 2 is where this pin started.
+  seed: 2,
 })
 
 /**
@@ -250,8 +269,16 @@ describe('rack geometry (§10)', () => {
     // **The ninth is the same enclosure a third time.** The Digitone's p.88 prints `W 215 × D 176
     // × H 63 mm` character for character with its successor's, and its own panel figure measures
     // 1017 x 832 px = 1.22236. Elektron shipped the Digitone, the Digitakt II and the Digitone II
-    // in one case; three devices, one rise.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 9)
+    // in one case; three devices, one rise — which the paragraph below takes to four.
+    //
+    // **The tenth is that same enclosure a fourth time, and the first one built.** All four
+    // manuals print the dimension line character for character — the Digitakt's p.81, the Digitakt
+    // II's p.91, the Digitone's p.88 and the Digitone II's — and this is the only one of the four
+    // whose panel figure was measured off its own vector paths rather than off a raster of it:
+    // 362.921875 x 297.089843 pt = 1.221590, against the specification's 1.221591. Six significant
+    // figures, where the same figure rasterised at 200 dpi read 1.2201 and would have made this
+    // the *worst* agreement of the four rather than the best. Four devices, one rise.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 10)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -1143,7 +1170,7 @@ describe('rack view', () => {
     // other than being the biggest thing on the box: the eight [TRACK] keys are two columns
     // flanking it, so no single rectangle covers them, and p.19 says this display lists the
     // tracks anyway.
-    expect(count('rack-screen')).toBe(50)
+    expect(count('rack-screen')).toBe(51)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -1328,7 +1355,16 @@ describe('rack view', () => {
     // their own bordered block at the bottom right, so the field goes there and the sixteen
     // [TRIG] keys stay a plain grid. It is also the smallest field in this list at four cells,
     // because the pool below it is four synth tracks rather than sixteen.
-    expect(fields).toHaveLength(36)
+    //
+    // **Thirty-seven with the Digitakt**, the fifth Elektron and the fifth answer — and it is the
+    // Digitakt II's answer taken to half of the same panel. Its [TRIG] keys *are* the track
+    // selectors, as its successor's are, but p.17 splits them: TRK 1-8 are the eight audio tracks
+    // and TRK 9-16 are eight dedicated MIDI tracks, and the silkscreen splits them too, legending
+    // the top row `KICK SNARE TOM ...` and the bottom `MIDI A` to `MIDI H`. The eight assignables
+    // are the top row, so the field is one row of eight — 167.8 x 17.2 mm — and the MIDI row is
+    // drawn beside it as a plain grid. Covering both rows, which is right on the successor where
+    // the sixteen are one pool, would put a readout on eight keys that sound nothing.
+    expect(fields).toHaveLength(37)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

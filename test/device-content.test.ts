@@ -665,7 +665,7 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
     .map((d) => d.id)
     .sort(byCodeUnit)
 
-  it('is the seventeen boxes established to ship one, and an eighteenth has to be added deliberately', () => {
+  it('is the eighteen boxes established to ship one, and a nineteenth has to be added deliberately', () => {
     // The derivation covers whatever is declared; this says which declarations were expected, so
     // a new one is loud in review rather than silently absorbed.
     expect(SHIPPED).toEqual([
@@ -682,6 +682,11 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
       // with the ten unnamed. p.26's "capacity of 4096 Sounds" is a capacity and not a count,
       // which is the trap that would read as `enumerable`.
       'elektron-analog-rytm-mkii',
+      // The Digitakt says it once and clearly: p.63 opens the SAMPLES menu on three directories
+      // and "A wide array of preset samples are available in the write protected FACTORY
+      // directory", with p.21 adding preset patterns and Sounds. Not one filename anywhere in the
+      // document, which is the line between `shipped-library` and `enumerable` a fifth time.
+      'elektron-digitakt',
       'elektron-digitakt-ii',
       // The Octatrack MKII ships a card rather than an internal library, and the claim is on the
       // card: p.23 says it "contains a set called PRESETS", p.25 that "the audio pool belonging to

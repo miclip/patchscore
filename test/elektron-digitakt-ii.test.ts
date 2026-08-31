@@ -52,6 +52,7 @@ describe('Digitakt II manifest', () => {
     // and EP-40 are the same argument on a pad grid rather than a track list. Listed in registry
     // order, which is folder order.
     expect(DEVICES.filter((d) => d.kind === 'sampler').map((d) => d.id)).toEqual([
+      'elektron-digitakt',
       'elektron-digitakt-ii',
       'elektron-octatrack-mkii',
       'roland-sp-404mk2',

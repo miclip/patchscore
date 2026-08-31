@@ -1121,8 +1121,22 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    *
    * Seven consecutive zeroes, across seven devices that between them took the walk down, up, up,
    * up, down by half, up, and up.
+   *
+   * **The Digitakt takes it up 7.8% and the gap stays at zero — an eighth time.**
+   * 507,297 -> 547,067 unrepaired and the same repaired. `search-bound.test.ts` records the
+   * direction's peak moving 566,355 -> 631,238, which is 11.5%, so this seed again moved a little
+   * *less* than the row's maximum — the same relationship the Digitone entry above records, from
+   * the sibling box, which is the first time two consecutive entries have agreed about anything.
+   * Two agreements do not make the relationship stable; the entry before them moved four times the
+   * row's maximum in the other direction.
+   *
+   * The peak moved seed 4 -> seed 3, and this seed is still near the row's floor — 547,067 against
+   * a row minimum of 547,066, which three other seeds share.
+   *
+   * Eight consecutive zeroes, across eight devices that between them took the walk down, up, up,
+   * up, down by half, up, up, and up.
    */
-  it('walks the recorded 507,297 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 547,067 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1130,7 +1144,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(507_297)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(547_067)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement

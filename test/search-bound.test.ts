@@ -548,31 +548,30 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      209, 211, 209, 289, 214, 211, 209, 285, 214, 211, 211, 283, 211, 214, 214, 209, 286, 213, 284,
-      211, 213, 210, 209, 213
+      215, 217, 215, 297, 220, 217, 215, 293, 220, 217, 217, 291, 217, 220, 220, 215, 294, 219, 292,
+      217, 219, 216, 215, 219
     ],
     'drone-study': [
-      32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32
+      33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33
     ],
     'industrial-techno': [
-      508793, 540918, 540497, 514130, 566355, 535770, 514575, 510183, 513898, 507297, 532630,
-      510269, 512422, 507296, 515606, 510269, 507297, 517762, 507297, 514575, 507297, 513898,
-      508793, 510948
+      548625, 586409, 550762, 631238, 557719, 548625, 554643, 601067, 553752, 547067, 547068, 550163,
+      552403, 547067, 555483, 550163, 547066, 557964, 547066, 554435, 547066, 580237, 548625, 550716
     ],
     'lydian-house': [
-      186, 313, 186, 187, 187, 314, 186, 313, 187, 314, 186, 313, 186, 187, 187, 314, 314, 187, 311,
-      186, 187, 186, 314, 187
+      193, 325, 193, 194, 194, 326, 193, 325, 194, 326, 193, 325, 193, 194, 194, 326, 326, 194, 323,
+      193, 194, 193, 326, 194
     ],
     'major-key-electro': [
-      1140, 202, 202, 203, 203, 203, 202, 200, 202, 203, 203, 203, 202, 200, 203, 202, 203, 202,
-      203, 1138, 203, 202, 203, 202
+      209, 208, 204, 208, 209, 209, 208, 209, 203, 209, 209, 209, 208, 209, 206, 208, 206, 208, 207,
+      205, 207, 208, 209, 203
     ],
     'relay': [
-      63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63
+      64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64
     ],
     'weave': [
-      247, 8579, 12970, 512, 16315, 8567, 4729, 243, 3872, 1090, 13233, 247, 3875, 1068, 418, 247,
-      296, 312, 313, 4008, 448, 3974, 217, 3777
+      255, 8785, 4712, 17494, 3977, 305, 4854, 8743, 3893, 1120, 5058, 255, 3977, 1120, 423, 255, 300,
+      321, 318, 4030, 453, 12721, 224, 3798
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".
@@ -679,7 +678,16 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
    * the cap where it was 3.86x. Nothing capped, so the band is tracking a real move rather than
    * covering for a cost problem.
    */
-  const WORST_CASE_NODES = 566_355
+  /**
+   * **631,238 on `industrial-techno` seed 3 with the Digitakt**, against 566,355 on seed 4 before
+   * it: an 11.5% rise, and headroom of 3.17x against the cap where it was 3.53x. The comparison
+   * with the entry above is the useful half — the Digitone added four assignables carrying
+   * twenty-two roles for 9.3%, and this box adds eight carrying the same twenty-two for 11.5%, so
+   * twice the pool cost a quarter more rather than twice as much. What the two have in common is
+   * that the roles were already crowded; what differs is that this one arrives beside a sibling
+   * already answering most of the same requests. Nothing capped.
+   */
+  const WORST_CASE_NODES = 631_238
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))

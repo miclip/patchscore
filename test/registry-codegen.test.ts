@@ -322,6 +322,9 @@ describe('the committed registry', () => {
       // reads `178 (W) x 276 (D) x 71 (H)` (p.266), so the span is the smaller of the first two
       // and the 276 is what its `panelRiseMm` carries.
       'roland-sp-404mk2',
+      // 215 mm, and four Elektron boxes share it — one steel case, four engines. The tie keeps
+      // registry order, which is folder order, so the Digitakt sorts ahead of its successor.
+      'elektron-digitakt',
       'elektron-digitakt-ii',
       // **215 mm three times, and the tie that is a shared chassis rather than a coincidence.**
       // The Digitone II's specification line (p.87) gives the same `W 215 × D 176` as its
