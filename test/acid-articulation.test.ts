@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { NEUTRAL_MOOD, reachableSlots, renderGuide, resolve, type Recipe } from '../lib/core/index'
+import {
+  NEUTRAL_MOOD,
+  moodState,
+  reachableSlots,
+  renderGuide,
+  resolve,
+  type Recipe,
+} from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, acidLineage } from '../lib/templates/index'
 
@@ -65,7 +72,18 @@ function recipeOf(deviceId: string, recipeId: string): Recipe {
   return recipe
 }
 
-/** Phase 5's `acid` block on a one-box rig, from its heading to the next part's. */
+/** Phase 5's `acid` block of an already-rendered guide, from its heading to the next part's. */
+function acidBlockOf(guide: string): string[] {
+  const doc = guide.split('\n')
+  const phase = doc.indexOf('## 5. Step programming')
+  expect(phase, 'the guide has no step programming phase').toBeGreaterThan(-1)
+  const heading = doc.findIndex((l, i) => i > phase && l.startsWith('### `acid`'))
+  expect(heading, 'nothing carries the acid line').toBeGreaterThan(-1)
+  const next = doc.findIndex((l, i) => i > heading && (l.startsWith('### ') || l.startsWith('## ')))
+  return doc.slice(heading, next === -1 ? undefined : next)
+}
+
+/** Phase 5's `acid` block on a one-box rig at the neutral mood. */
 function acidBlock(deviceId: string): string[] {
   const only = DEVICES.filter((d) => d.id === deviceId)
   const doc = renderGuide(
@@ -99,8 +117,8 @@ const BOUND = [
 
 /** The two that document no per-step accent, and say so instead of standing something in. */
 const REFUSING = [
-  ['moog-subharmonicon', 'subh-acid-dirty', 'There is no accent on this box.'],
-  ['moog-matriarch', 'mat-acid-bright', 'There is no sequenced accent on this box.'],
+  ['moog-subharmonicon', 'subh-acid-dirty', '**Accent:** there is none on this box.'],
+  ['moog-matriarch', 'mat-acid-bright', '**Accent:** there is none on this box.'],
 ] as const
 
 describe('the acid slots three boxes could not reach before (§4.3/#108)', () => {
@@ -180,16 +198,20 @@ describe('OP-XY — the first articulation on a melodic part here (§4.3)', () =
 })
 
 describe('the two boxes that refuse the accent instead of standing one in (#283)', () => {
-  it.each(REFUSING)('%s articulates nothing on the acid line', (deviceId, recipeId) => {
-    expect(recipeOf(deviceId, recipeId).articulation).toBeUndefined()
+  it.each(REFUSING)('%s articulates no accent on the acid line', (deviceId, recipeId) => {
+    // Not "articulates nothing": the Matriarch gained a `tie` on the offbeat with the 28-recipe
+    // audit, which is its slide and is a lane p.46 declares. The claim is narrower and sharper —
+    // nothing on this box answers the *accent* slot for this role.
+    expect(recipeOf(deviceId, recipeId).articulation ?? []).not.toContainEqual(
+      expect.objectContaining({ slot: 'accent' }),
+    )
   })
 
-  it.each(REFUSING)('%s prints no `On this box` block for it', (deviceId) => {
-    // The whole point, and it has to be read off a rendered guide: an empty `articulation` is
+  it.each(REFUSING)('%s prints no accent instruction for it', (deviceId) => {
+    // The whole point, and it has to be read off a rendered guide: an absent accent entry is
     // invisible in the manifest and indistinguishable from one nobody has written yet. What the
     // reader must not see is an accent instruction, in any band, for a step the box cannot accent.
     const block = acidBlock(deviceId)
-    expect(block.some((l) => l.startsWith('**On this box**'))).toBe(false)
     expect(block.some((l) => l.startsWith('- `accent` → '))).toBe(false)
     // The pattern still asks for the accent — the direction is unchanged and the step is still
     // printed in the grid. It is the device half that is silent, which is the honest shape.
@@ -224,5 +246,187 @@ describe('the two boxes that refuse the accent instead of standing one in (#283)
     )
     expect(octaved.map((r) => r.role)).not.toContain('acid')
     expect(octaved.length).toBeGreaterThan(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The whole audit: 28 recipes, two gestures each (§4.3/#283)
+// ---------------------------------------------------------------------------
+
+/**
+ * #283's standard, applied to every `acid` recipe in the library rather than to the handful that
+ * happened to get attention: *"a device that cannot accent or slide a step is not serving an acid
+ * line the same way, and the guide should say so rather than approximate it."*
+ *
+ * Two gestures make this idiom — the **accent** and the **slide** — and a guide has exactly two
+ * honest ways to deal with each:
+ *
+ *  - **bound** — an `articulation` entry on a lane the device's own `features.perStep` declares,
+ *    so the guide prints "set this step to that" under **On this box**.
+ *  - **stated** — a sentence in the recipe's `routing`, which renders, saying what the reader
+ *    should do instead and why the box cannot be told to do it. Three shapes recur: the gesture is
+ *    *performed* (no sequencer on the box at all, so it arrives with the notes); it is *global*
+ *    (a panel knob or a voice setting that acts on every note rather than a step); or it has *no
+ *    authorable scale* (the lane is real, the manual prints no values for it, and a number here
+ *    would be invented).
+ *
+ * A third possibility is the one this table exists to prevent: silence. A recipe that neither
+ * binds nor states leaves the reader to assume the gesture is unavailable, or worse to assume it
+ * is handled. The fourth — approximating it with a lane that does something else — is what the
+ * Subharmonicon's octave and the Matriarch's ratchet were, and both are now `stated`.
+ *
+ * Pinned as an exact table rather than a sweep with a rule, because every row is a reading of one
+ * manual and the disposition is the conclusion. A recipe changing from `stated` to `bound` is a
+ * new capability claim someone should have to look at; changing the other way is a gesture the
+ * library quietly stopped offering.
+ */
+type Account = 'bound' | 'stated'
+
+/** Lane names that carry a slide. Every one is declared in some device's `features.perStep`. */
+const SLIDE_LANES = ['portamento', 'portamento-time', 'glide', 'tie', 'gate'] as const
+
+const AUDIT: readonly (readonly [device: string, recipe: string, accent: Account, slide: Account])[] =
+  [
+    // Semi-modulars and synths with no sequencer at all: both gestures are played.
+    ['behringer-crave', 'crave-acid-dirty', 'stated', 'stated'],
+    ['behringer-crave', 'crave-acid-bright', 'stated', 'stated'],
+    ['behringer-model-d', 'model-d-acid-bright', 'stated', 'stated'],
+    ['behringer-neutron', 'neutron-acid-bright', 'stated', 'stated'],
+    ['behringer-neutron', 'neutron-acid-dirty', 'stated', 'stated'],
+    ['intellijel-cascadia', 'cascadia-acid-dirty', 'stated', 'stated'],
+    ['intellijel-cascadia', 'cascadia-acid-bright', 'stated', 'stated'],
+    ['moog-minitaur', 'minitaur-acid-dirty', 'stated', 'stated'],
+    ['moog-minitaur', 'minitaur-acid-bright', 'stated', 'stated'],
+    ['moog-minitaur', 'minitaur-acid-hard', 'stated', 'stated'],
+    ['moog-subsequent-37', 'sub37-acid-dirty', 'stated', 'stated'],
+    ['moog-subsequent-37', 'sub37-acid-bright', 'stated', 'stated'],
+    ['moog-subsequent-37', 'sub37-acid-hard', 'stated', 'stated'],
+
+    // Moog sequencers, where the lanes differ box to box and so do the answers.
+    ['moog-grandmother', 'gm-acid-bright', 'bound', 'bound'],
+    ['moog-matriarch', 'mat-acid-bright', 'stated', 'bound'],
+    ['moog-mother-32', 'm32-acid-dirty', 'bound', 'bound'],
+    ['moog-mother-32', 'm32-acid-bright', 'bound', 'bound'],
+    ['moog-subharmonicon', 'subh-acid-dirty', 'stated', 'stated'],
+
+    // Grooveboxes: the accent is nearly always a lane, the slide nearly never.
+    ['elektron-digitone', 'dn-acid-dirty', 'bound', 'bound'],
+    ['elektron-digitone-ii', 'dn2-acid-dirty', 'bound', 'stated'],
+    ['novation-circuit-tracks', 'ct-acid-dirty', 'bound', 'bound'],
+    ['polyend-play-plus', 'pp-acid-dirty', 'bound', 'stated'],
+    ['roland-mc-101', 'mc101-acid-dirty', 'bound', 'stated'],
+    ['roland-mc-707', 'mc707-acid-dirty', 'bound', 'stated'],
+    ['synthstrom-deluge', 'deluge-acid-dirty', 'bound', 'stated'],
+    ['teenage-engineering-op-xy', 'opxy-acid-dirty', 'bound', 'stated'],
+
+    // Samplers whose per-step editing is real and whose manuals print no scale for it.
+    ['te-ep-133', 'ep133-acid-dirty', 'stated', 'stated'],
+    ['te-ep-40', 'ep40-acid-dirty', 'stated', 'stated'],
+  ]
+
+function accentEntries(recipe: Recipe) {
+  return (recipe.articulation ?? []).filter((a) => a.slot === 'accent')
+}
+
+function slideEntries(recipe: Recipe) {
+  return (recipe.articulation ?? []).filter((a) =>
+    Object.keys(a.set).some((k) => (SLIDE_LANES as readonly string[]).includes(k)),
+  )
+}
+
+/**
+ * The moods that reach a recipe other than the one a neutral `dirty` request lands on. Character
+ * selection moves along tone and grit (§6.2), so sweeping those two reaches every `dirty` and
+ * `bright` recipe in the library. Fixed list, fixed seed: this is a deterministic search for the
+ * one mood that selects a given recipe, not a random probe.
+ */
+const MOODS = [
+  {},
+  { grit: 0 },
+  { grit: 100 },
+  { darkness: 0 },
+  { darkness: 100 },
+  { grit: 0, darkness: 100 },
+  { grit: 0, darkness: 0 },
+  { grit: 100, darkness: 0 },
+]
+
+/** The guide that renders `recipeId` on a one-box rig, or `undefined` if no mood reaches it. */
+function guideFor(deviceId: string, recipeId: string): string | undefined {
+  const only = DEVICES.filter((d) => d.id === deviceId)
+  for (const mood of MOODS) {
+    const result = resolve({ devices: only, template: acidLineage, mood: moodState(mood), seed: 1 })
+    const carried = result.assignments.find((a) => a.requestId === 'r-acid')
+    if (carried?.recipe.id === recipeId) return renderGuide(result)
+  }
+  return undefined
+}
+
+describe('every acid recipe accounts for the accent and the slide (#283)', () => {
+  it('covers exactly the acid recipes the library has', () => {
+    // A twenty-ninth recipe fails here rather than slipping in unaudited, and a deleted one fails
+    // too — the table is the audit, so it has to be complete in both directions.
+    const shipped = DEVICES.flatMap((d) =>
+      d.recipes.filter((r) => r.role === 'acid').map((r) => r.id),
+    )
+    expect([...AUDIT.map((row) => row[1])].sort()).toEqual([...shipped].sort())
+    expect(shipped).toHaveLength(28)
+  })
+
+  it.each(AUDIT)('%s / %s accounts for both gestures in the manifest', (deviceId, recipeId, accent, slide) => {
+    const recipe = recipeOf(deviceId, recipeId)
+    const routing = recipe.routing ?? ''
+
+    if (accent === 'bound') {
+      expect(accentEntries(recipe), `${recipeId} claims a bound accent`).not.toHaveLength(0)
+    } else {
+      // Stated, and *only* stated: a label beside a lane doing something else is the approximation
+      // the audit exists to catch, so the absence is asserted with the sentence.
+      expect(accentEntries(recipe), `${recipeId} states its accent and articulates one`).toHaveLength(0)
+      expect(routing, `${recipeId} routing has no **Accent:** sentence`).toContain('**Accent:**')
+    }
+
+    if (slide === 'bound') {
+      expect(slideEntries(recipe), `${recipeId} claims a bound slide`).not.toHaveLength(0)
+    } else {
+      expect(slideEntries(recipe), `${recipeId} states its slide and articulates one`).toHaveLength(0)
+      expect(routing, `${recipeId} routing has no **Slide:** sentence`).toContain('**Slide:**')
+    }
+  })
+
+  it.each(AUDIT)('%s / %s says it on the page, where a reader is', (deviceId, recipeId, accent, slide) => {
+    // The manifest half above cannot fail interestingly; this is the half that can. A `routing`
+    // sentence is only an account if the guide prints it, and a bound lane is only an account if
+    // the instruction reaches phase 5.
+    const doc = guideFor(deviceId, recipeId)
+    if (doc === undefined) {
+      // Two recipes cannot be rendered from this direction, and the reason is structural rather
+      // than a hole: they are `hard`, Acid Lineage requests `dirty`, and `hard`/`soft` is the force
+      // axis — which no mood axis moves (§6.2 moves tone and grit only). Nothing selects them until
+      // a direction asks for a hard acid line, and none does.
+      expect(['minitaur-acid-hard', 'sub37-acid-hard']).toContain(recipeId)
+      return
+    }
+    const block = acidBlockOf(doc)
+    if (accent === 'bound') {
+      expect(block.some((l) => l.startsWith('- `accent` → ')), `${recipeId} accent`).toBe(true)
+    } else {
+      expect(doc, `${recipeId} accent`).toContain('**Accent:**')
+    }
+    if (slide === 'bound') {
+      const printed = block.some((l) =>
+        SLIDE_LANES.some((lane) => l.startsWith('- `') && l.includes(`\`${lane}\``)),
+      )
+      expect(printed, `${recipeId} slide`).toBe(true)
+    } else {
+      expect(doc, `${recipeId} slide`).toContain('**Slide:**')
+    }
+  })
+
+  it('renders 26 of the 28, and names the two it cannot', () => {
+    const rendered = AUDIT.filter(([d, r]) => guideFor(d, r) !== undefined).map(([, r]) => r)
+    expect(rendered).toHaveLength(26)
+    const missing = AUDIT.map(([, r]) => r).filter((r) => !rendered.includes(r))
+    expect(missing).toEqual(['minitaur-acid-hard', 'sub37-acid-hard'])
   })
 })

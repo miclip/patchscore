@@ -402,6 +402,27 @@ function env(attack: number, decay: number, sustain: number, held: 'on' | 'off')
   ]
 }
 
+/**
+ * §4.3/#283. **What this box does about an acid line's two gestures**, said on the page because
+ * neither can be authored as a step here: `features` is omitted for the reason the header gives —
+ * *"`perStep` needs the step vocabulary this guide never enumerates"* — so there is no lane to set
+ * and the honest answer is a sentence rather than a value.
+ *
+ * The accent is real on the `dirty` recipe and unreachable from a pattern: `ASSIGN MODE` is on
+ * `Sequencer Accent` (p.63) and the cable takes it to the cutoff, so accented steps do open the
+ * filter — but which steps those are is entered on the box's own sequencer, and this guide never
+ * says how.
+ */
+const ACCENT_UNREACHABLE =
+  '**Accent:** ASSIGN is on Sequencer Accent (p.63) and the cable carries it to the cutoff, so an accented step opens the filter. Which steps are accented is entered on the sequencer itself — this guide never enumerates a step vocabulary, so the pattern above cannot name them'
+
+const ACCENT_UNPATCHED =
+  '**Accent:** nothing here carries a sequencer accent — that needs ASSIGN on Sequencer Accent and a cable to the cutoff, which is the `dirty` recipe beside this one. On this patch ASSIGN is doing the second envelope instead, so an accented step is played rather than programmed'
+
+/** GLIDE is a panel knob, p.71, one setting for every note rather than a per-step lane. */
+const slide = (value: string): string =>
+  `**Slide:** \`GLIDE ${value}\` above, p.71's "0 to 2 s across the travel". One setting for every note rather than a lane, so the line slides between all of its steps or none of them`
+
 const recipes: Recipe[] = [
   // ---- Low end -----------------------------------------------------------
   {
@@ -505,6 +526,7 @@ const recipes: Recipe[] = [
     voice: 'voice',
     verified: false,
     title: 'Resonant sweep with the accent opening the filter',
+    routing: `${ACCENT_UNREACHABLE}. ${slide('2')}`,
     params: [
       ...core(-1, 50, 0, -5, 2.5, 9, 6, 8),
       sw('VCO SHAPE', 'reverse saw', VCO_SHAPE, 70),
@@ -529,6 +551,7 @@ const recipes: Recipe[] = [
     voice: 'voice',
     verified: false,
     title: 'Thinner acid line, high-pass, glide between steps',
+    routing: `${ACCENT_UNPATCHED}. ${slide('3.5')}`,
     params: [
       ...core(0, 50, 0, -5, 3, 8, 5, 7.5),
       sw('VCO SHAPE', 'reverse saw', VCO_SHAPE, 70),

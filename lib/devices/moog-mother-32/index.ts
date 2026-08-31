@@ -923,7 +923,15 @@ const RECIPES: Recipe[] = [
      * four bands each emit `accent`, so this lands in a rendered guide rather than sitting in the
      * manifest waiting for one.
      */
-    articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
+    articulation: [
+      { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
+      // The other half of the idiom, and the box has the lane for it: GLIDE is per-step here even
+      // though the rate is not (p.26), which is exactly the shape a slide has — the rate is a
+      // setting and which steps slide is a decision. `m32-bass-mid-dirty` pairs the same two
+      // entries. The offbeat strikes are the ones that lean into the next step, so they are where
+      // a line like this slides.
+      { slot: 'offbeat', set: { glide: true }, hint: 'glide-step' },
+    ],
     patch: [
       cable(
         'OUT · ASSIGN',
@@ -955,6 +963,17 @@ const RECIPES: Recipe[] = [
       ...vcfMod('EG', '+', 44),
       ...eg(0, 'OFF', 22, 'EG'),
       glide(16),
+    ],
+    /**
+     * Both gestures, on the lanes p.24 and p.26 declare. The `dirty` recipe beside this one routes
+     * ASSIGN into the cutoff so its accent opens the filter as well as leaning on the step; this
+     * one has no cable going spare, so the accent is the level alone. That is a smaller gesture
+     * and still the box's own — `m32-kick-hard` articulates the same lane with no cable at all,
+     * which is what says the accent is audible without one.
+     */
+    articulation: [
+      { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
+      { slot: 'offbeat', set: { glide: true }, hint: 'glide-step' },
     ],
     patch: [
       cable(

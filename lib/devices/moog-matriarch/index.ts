@@ -937,7 +937,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Acid line: one saw, resonance near self-oscillation, cutoff tracking the keyboard',
-    routing: `${PLAYED}, VOICE MODE 1. No cable — ENVELOPE AMT reaches the cutoff from the panel. **There is no sequenced accent on this box.** p.46 names three lanes — "Notes, Rests, Ties, and Ratchets" — and an accent is not among them. A ratchet repeats the step rather than emphasising it, so the accented steps this direction asks for are left unplayed here rather than approximated`,
+    routing: `${PLAYED}, VOICE MODE 1. No cable — ENVELOPE AMT reaches the cutoff from the panel. **Accent:** there is none on this box. p.46 names three lanes — "Notes, Rests, Ties, and Ratchets" — and an accent is not among them. A ratchet repeats the step rather than emphasising it, so the accented steps this direction asks for are left unplayed here rather than approximated`,
     params: [
       voiceMode('1'),
       ...osc(1, { octave: "8'", wave: 'SAWTOOTH' }),
@@ -948,6 +948,15 @@ const RECIPES: Recipe[] = [
       ...output(70, 'AMP ENV'),
       glide(18),
     ],
+    /**
+     * The slide, on the lane p.46 does declare — and the contrast with the accent above is the
+     * point of authoring it. A tie is a step joined to the next one, which is a per-step decision
+     * this box really can store; `GLIDE 18` above is one knob for the whole instrument (p.12
+     * prints no range for it), so the knob says how far the pitch travels and the tie says which
+     * steps it travels across. Neither half is standing in for the other, which is exactly what
+     * the ratchet was doing on the accent slot.
+     */
+    articulation: [{ slot: 'offbeat', set: { tie: true }, hint: 'tie-step' }],
     verified: false,
   },
 

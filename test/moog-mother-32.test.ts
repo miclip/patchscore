@@ -200,12 +200,18 @@ describe('Mother-32 accent articulation (§4.3)', () => {
     return doc.slice(heading, next === -1 ? undefined : next)
   }
 
-  it('carries the lane on the recipe whose whole subject is accented steps', () => {
+  it('carries both lanes: the accent it is named for and the glide beside it', () => {
+    // The glide arrived with the 28-recipe acid audit: a slide is the other half of this idiom
+    // and this box has the lane, per-step even though the rate is not (p.26). `m32-bass-mid-dirty`
+    // pairs the identical two entries, so neither is a shape this recipe invented.
     expect(acidRecipe().articulation).toEqual([
       { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
+      { slot: 'offbeat', set: { glide: true }, hint: 'glide-step' },
     ])
-    // The lane is the sequencer's own, from p.24's per-step list — not a name this recipe coined.
-    expect(device.features?.perStep).toContain('accent')
+    // Both lanes are the sequencer's own, from p.24's per-step list — not names this recipe coined.
+    expect(device.features?.perStep).toEqual(
+      expect.arrayContaining(['accent', 'glide']),
+    )
   })
 
   it('is reached by a direction rather than authored into a hole (#108)', () => {

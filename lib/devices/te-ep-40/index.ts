@@ -649,7 +649,7 @@ const recipes: Recipe[] = [
     sourceAudio: supertone('One of the ten supertone sounds — the engine’s own bass tones'),
     params: [pick('PLAY MODE', 'legato', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
     routing:
-      'Group B. Hold the pad in MAIN and turn [X] and [Y] for this supertone’s two preset parameters — the guide’s list of what those can be includes filter cutoff and filter resonance, and does not say which supertone carries which',
+      'Group B. Hold the pad in MAIN and turn [X] and [Y] for this supertone’s two preset parameters — the guide’s list of what those can be includes filter cutoff and filter resonance, and does not say which supertone carries which. **Accent:** the per-step velocity is real on this box and has no printed scale anywhere in the guide, so no value is set here rather than one invented. Mark the accented steps by ear on the box itself. **Slide:** `PLAY MODE legato` above is the guide’s own sense of the word — monophonic, and a held note "will continue playing from the same point as it was left off" — which joins the notes without bending the pitch between them. There is no portamento on this box, so an acid line here steps between its notes',
   },
   {
     id: 'ep40-lead-bright',

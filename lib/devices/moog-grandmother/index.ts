@@ -864,7 +864,19 @@ const RECIPES: Recipe[] = [
       glide(18, true),
     ],
     patch: [accentCable()],
-    articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
+    /**
+     * Both halves of the idiom, on the two lanes p.27 declares. The accent is the one every
+     * accented recipe here carries, with the cable p.30 instructs; the tie is what makes the
+     * slide happen, because this box's glide is one knob rather than a lane and only *reaches*
+     * a note that overlaps the one before it. p.10 and p.33 name the legato mode this recipe
+     * already sets, and the manual's own words for what it is for are "Legato glide is useful
+     * when creating acid-style sequences" — so the tie is the missing per-step half of an
+     * instruction the manual gives whole.
+     */
+    articulation: [
+      { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
+      { slot: 'offbeat', set: { tie: true }, hint: 'tie-step' },
+    ],
     verified: false,
   },
 

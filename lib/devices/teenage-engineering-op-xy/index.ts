@@ -471,7 +471,7 @@ const recipes: Recipe[] = [
      */
     articulation: [velocity('accent', 127), velocity('ghost', 32)],
     routing:
-      'Melodic group (p.73). The squelch is M3 cutoff and resonance with envelope amount up (p.44) — the page names all three encoders and scales none of them',
+      'Melodic group (p.73). The squelch is M3 cutoff and resonance with envelope amount up (p.44) — the page names all three encoders and scales none of them. **Slide:** `PLAY MODE legato` above, so the line slides where one step runs into the next. `portamento` is a step component too (p.30) and its values sit in p.31’s table beside the velocities, but only the velocity row of that table has been read off the page — so no per-step portamento value is set here rather than one guessed at',
   },
   {
     id: 'opxy-texture-soft',

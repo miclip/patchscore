@@ -692,6 +692,8 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'WAVETONE acid line, legato slides and the ladder squeezed',
     verified: false,
+    routing:
+      '**Slide:** `PLAY MODE MONO LEG.` above, and the `note-length` on the offbeat trigs below. This box has no portamento lane — its predecessor does, and the difference is real (p.57 lists VEL, LEN and PROB here, and PORT and PTIM there) — so the slide is a legato setting plus notes long enough to run into the next, rather than a step you mark',
     params: [
       syn('WAVETONE'),
       playMode('MONO LEG.'),

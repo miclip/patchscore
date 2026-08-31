@@ -399,8 +399,12 @@ const PROSE: Record<string, string> = {
     'MUTE is a *mute* probability: 0 sounds every time, higher drops more hits',
   'Keep the sub mono and dry — the reverb and delay sends stay at 0':
     'Keep the sub mono and dry — the reverb and delay sends stay at 0',
-  'Ver.1.80 or later — the partial editor is SHIFT + [SOUND], then PARTIAL':
-    'Hold [SHIFT] and press [SOUND] for TONE EDIT; the FILTER tab is where these live',
+  // The sibling's line grew a **Slide:** sentence with the acid audit, so this key grew with it —
+  // which is the guard working as designed. The slide half is retargeted rather than copied: on
+  // this box the tone switch is called `PORTAMENT` and the part-level one is `PORTA SW` (p.41,
+  // p.64), which is the naming swap `NAMES` records above.
+  'Ver.1.80 or later — the partial editor is SHIFT + [SOUND], then PARTIAL. **Slide:** `PRT ON` above is the tone-level portamento switch and it carries no time with it — the part-level `PORTA TIME` that the mid bass recipe uses is a different screen — so the slide here is on or off for the whole part, and none of the nine step lanes is a glide':
+    'Hold [SHIFT] and press [SOUND] for TONE EDIT; the FILTER tab is where these live. **Slide:** `PORTAMENT ON` above is the tone-level portamento switch (p.41) and carries no time with it — `PORTA TIME` belongs to the part layer on p.64, which the mid bass recipe uses and this one does not — so the slide here is on or off for the whole part, and none of this box\u2019s nine step lanes is a glide',
   'Ver.1.80 or later — SuperSAW and DET live in the partial editor':
     'SuperSAW and its DETUNE are on the OSC tab of TONE EDIT',
   'Ver.1.80 or later for the LFO page; draw the sweep with MOTION DESIGNER if you prefer':
