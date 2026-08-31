@@ -731,15 +731,31 @@ const RECIPES: Recipe[] = [
      * Every `Sample` recipe on this box already carries a `sourceAudio`; this was the only
      * `Wavetable` one and it was the only recipe missing it. The rule was known and applied to
      * one oscillator type and not the other.
+     *
+     * **Three conditions the note now states, all p.110, and all of them fail quietly.** A
+     * wavetable must be `WAV or AIFF and MONO`; a stereo file *"is not compatible with the
+     * wavetable engine"* and loads as a sample instead, with no error. And Deluge *"will
+     * interpret any audio file less than 20ms and when loaded in the synth as a single-cycle
+     * waveform"*, for which *"the wavetable navigation parameter is not available"* — so a short
+     * file leaves `WAVE` doing nothing at all.
+     *
+     * The last of those contradicted this recipe's own guidance, which promised that WAVE sweeps
+     * across the cycles. True of a multi-cycle table and false of a single cycle, and the note
+     * did not say which it needed.
      */
     sourceAudio: {
       need:
-        'A wavetable that drifts rather than steps — soft, vowel- or string-like, with each ' +
-        'cycle close to its neighbour. WAVE sweeps across the cycles, so a table whose frames ' +
-        'jump reads as stepping under a slow pad. Bring your own: the factory card is samples ' +
-        'in SAMPLES/ARTISTS and SAMPLES/DRUMS and the guidebook names no wavetable folder. ' +
-        'Load it and the type below sets itself; any wave file loads, but then Deluge guesses ' +
-        'the cycle size, which is the thing to suspect if it sounds wrong',
+        'A multi-cycle wavetable that drifts rather than steps — soft, vowel- or string-like, ' +
+        'with each cycle close to its neighbour. WAVE sweeps across the cycles, so a table whose ' +
+        'frames jump reads as stepping under a slow pad. ' +
+        'It must be WAV or AIFF and MONO (p.110): a stereo file is not compatible with the ' +
+        'wavetable engine and silently loads as a sample instead, which is the thing to suspect ' +
+        'if the type will not stay set. ' +
+        'It must also be longer than 20 ms — Deluge reads anything shorter as a single-cycle ' +
+        'waveform, and wave navigation is not available for single cycles (p.110), so WAVE will ' +
+        'do nothing and the pad will not drift. ' +
+        'Bring your own: the factory card is samples in SAMPLES/ARTISTS and SAMPLES/DRUMS and ' +
+        'the guidebook names no wavetable folder. Load it and the type below sets itself',
     },
     params: [
       clipType('Synth'),

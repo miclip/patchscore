@@ -277,15 +277,28 @@ describe('noteDurationNotice decides the state once, for both renderers (§2.6/#
 // The unit, which is what #142 reported
 // ---------------------------------------------------------------------------
 
+/**
+ * **The format moved once, and #142's three claims are unchanged.** A unit word is present, a bar
+ * gloss is present, and no fraction ever appears — which is what this file was written to hold.
+ *
+ * What changed is the order and the verb, reported from a machine: a reader saw
+ * `sounds for 64 steps (4 bars)` in a list whose every other line is a step to enter, read it as
+ * sixty-four steps to program, and went looking for a bug when the Deluge showed one note. Bars
+ * lead now, because that is the unit somebody is counting once a note spans them, and *held*
+ * replaces *sounds for*, because the verb is what separates a duration from a count of hits.
+ *
+ * Under a bar nothing moved. `sounds for 6 steps` was never ambiguous — there is no bar gloss
+ * beside it to misread the step count against.
+ */
 describe('a duration reads at a glance and never divides (#142)', () => {
   const cases: [number, string][] = [
     [1, 'sounds for 1 step'],
     [6, 'sounds for 6 steps'],
     [15, 'sounds for 15 steps'],
-    [16, 'sounds for 16 steps (1 bar)'],
-    [24, 'sounds for 24 steps (1 bar 8 steps)'],
-    [33, 'sounds for 33 steps (2 bars 1 step)'],
-    [128, 'sounds for 128 steps (8 bars)'],
+    [16, 'held for 16 steps (1 bar)'],
+    [24, 'held for 24 steps (1 bar 8 steps)'],
+    [33, 'held for 33 steps (2 bars 1 step)'],
+    [128, 'held for 128 steps (8 bars)'],
   ]
 
   for (const [len, expected] of cases) {
@@ -311,6 +324,9 @@ describe('a duration reads at a glance and never divides (#142)', () => {
       4,
     )
     for (const doc of both(chord)) {
+      // **`sounds for`, not `held for`, because one of the two is four steps.** The verb has to be
+      // true of every note it introduces, so a chord that disagrees across the bar line takes the
+      // neutral one. `durationsPhrase` reads the shortest note for exactly this.
       expect(doc).toContain('sounds for 4 steps / 32 steps (2 bars)')
     }
   })

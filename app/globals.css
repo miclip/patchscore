@@ -797,22 +797,6 @@ body {
   margin-bottom: 0;
 }
 
-/* The line that says the descriptions are ours. Quiet, and directly under what it qualifies. */
-.reference-note {
-  color: var(--ink-dim);
-  font-size: 13px;
-}
-
-/*
- * The citation, set the way a value is set: monospace, and wrapping rather than shrinking (#21).
- * `break-word` and not `anywhere`, so a long source breaks between its words and keeps the page
- * off a horizontal scroll without splitting `GEN/INST` down the middle.
- */
-.reference-cite {
-  color: var(--ink-dim);
-  font-size: 12px;
-}
-
 /*
  * Sentences against an uppercase tracked term, which is `.fact-list` used for something longer
  * than it was drawn for. Stacked below 640px for `.capability-gaps`' reason: side by side at

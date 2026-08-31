@@ -153,9 +153,6 @@ export default function Page() {
           You do not need the hardware to use any of this, only an idea of what you are
           listening for.
         </p>
-        <p className="reference-note">
-          Every description here is ours. We wrote it from listening, so it is opinion.
-        </p>
       </section>
 
       <div className="columns">
@@ -197,27 +194,6 @@ export default function Page() {
           attack&rdquo; has no finish line. You audition, you reject, you audition again, and
           nothing tells you when to stop. Dialling a kick is finished when the numbers are dialled.
           The guide gives you the values and this page tells you what they are aiming at.
-        </p>
-      </section>
-
-      <section className="panel">
-        <header>
-          <h2>Where the names come from</h2>
-        </header>
-        <p>
-          Roland&rsquo;s own TR-1000 ships sound generators called{' '}
-          <span className="mono">808 Bass Drum</span>, <span className="mono">909 Snare Drum</span>,{' '}
-          <span className="mono">707 Tom</span>, <span className="mono">606 Closed HiHat</span> and{' '}
-          <span className="mono">CR78 Cymbal</span>, among others in the same families.
-        </p>
-        <p className="reference-cite mono">
-          manual — TR-1000 Preset GEN/INST List (eng02) v1.20, GEN list p.1
-        </p>
-        <p>
-          That page prints a name, a category and a folder for each generator. It is our source
-          for the fact that Roland uses these names, and for nothing else here. It describes no
-          sound, so the character of each family above comes from our own listening. The LinnDrum
-          and the DX7 do not appear on it, and nothing said about them here is cited to anything.
         </p>
       </section>
 

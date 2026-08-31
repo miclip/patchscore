@@ -1156,7 +1156,7 @@ describe('the industrial pad hook on a Tracker-only rig (i–VI–VII)', () => {
     }
     const md = renderGuide(played)
     expect(md).toContain(
-      '- bar 1 · step 1 · sounds for 64 steps (4 bars) · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60',
+      '- bar 1 · step 1 · held for 64 steps (4 bars) · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60',
     )
   })
 
