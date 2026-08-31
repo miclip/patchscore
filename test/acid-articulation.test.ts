@@ -4,7 +4,8 @@ import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, acidLineage } from '../lib/templates/index'
 
 /**
- * §4.3/#108. **What a direction landing does to three device folders that never changed.**
+ * §4.3/#108/#283. **What a direction landing does to five device folders that never changed** —
+ * three of them gaining a gesture, and two of them losing one.
  *
  * Before Acid Lineage, the `acid` role had 28 recipes across 20 boxes and no direction requesting
  * it, so every slot on every one of them was unreachable — `unrequestedRecipes` named them as a
@@ -13,14 +14,32 @@ import { TEMPLATES, acidLineage } from '../lib/templates/index'
  *
  * The direction arrived and emits `downbeat`, `offbeat`, `accent` and `ghost` across its four
  * `acid` bands, which turned three long-standing authoring gaps into ordinary ones. Each is bound
- * here with the helper its own file already documents, and none of them is a new capability claim:
+ * with the helper its own file already documents, and none of them is a new capability claim:
  *
  *  - **`dn2-acid-dirty`** already articulated `offbeat` and now leans on `accent` — VEL, p.57's
  *    per-trig lane, through the same `art(..., 'trig-params')` helper eleven siblings use.
  *  - **`opxy-acid-dirty`** had no articulation at all, and gains `accent` and `ghost` through the
  *    `velocity` helper, whose values must be among the ten p.31 prints.
- *  - **`subh-acid-dirty`** gains `ACCENT_OCTAVE`, the constant that file defines for exactly this
- *    and that its header excluded this recipe from *for #108's reason rather than a musical one*.
+ *  - **`m32-acid-dirty`** gains `accent`, on a box whose sequencer has the lane (p.24) and whose
+ *    ASSIGN cable makes that lane a cutoff modulator — so here an accent really is the recipe.
+ *
+ * **And two boxes that must refuse, which is the other half of the same rule.** #283 is explicit
+ * that a device which cannot accent a step should have the guide *say so* rather than approximate
+ * it, because on a 303-lineage line the accent is not a detail of the part — it is the technique.
+ * Both of these had a stand-in and both have lost it on this role alone:
+ *
+ *  - **`subh-acid-dirty`** briefly carried `ACCENT_OCTAVE`, and it was wrong. The Subharmonicon
+ *    has no velocity lane and no accent lane at all — p.26 makes a step "a variable tuning knob
+ *    and an LED" — so the constant answers an accent with a pitch. On a `lead` or a `stab` that is
+ *    a way of leaning on a step; on an acid line the octave button is a separate control used for
+ *    something else, so it puts a different note on the page in answer to a request for emphasis.
+ *  - **`mat-acid-bright`** answered `accent` with `ratchet: 3`. p.46 names three lanes — Rests,
+ *    Ties and Ratchets — and no accent among them, and a ratchet repeats a step rather than
+ *    emphasising it. On `bass-mid` that stands in well enough and still does; on a part whose
+ *    accent pattern *is* the composition, three repeats change the rhythm instead.
+ *
+ * Both keep the substitution on their other roles. The asymmetry is the point rather than an
+ * oversight: #283 is a rule about the `acid` idiom, not about these two boxes.
  *
  * **The join is what is asserted, not the manifest.** Each entry is one line and cannot fail
  * interestingly on its own. What can fail is everything between it and a reader: the direction has
@@ -28,9 +47,14 @@ import { TEMPLATES, acidLineage } from '../lib/templates/index'
  * instruction under **On this box**. Break any of those and the authoring is invisible on the
  * page, which is the failure #108 exists to name.
  *
- * One file rather than three, because it is one claim three times and the setup is the same
- * sentence in each. `moog-subharmonicon.test.ts` and `elektron-digitone-ii.test.ts` keep their own
- * sweeps over every recipe on their box; this is the narrow cross-device one those cannot hold.
+ * A refusal needs the same treatment and needs it more, because an absent `articulation` is
+ * invisible in a manifest and indistinguishable from one nobody has got to yet. Only a rendered
+ * guide can show that no accent instruction reaches the page while the pattern still asks for one.
+ *
+ * One file rather than five, because it is one claim five times and the setup is the same sentence
+ * in each. `moog-subharmonicon.test.ts`, `moog-matriarch.test.ts` and
+ * `elektron-digitone-ii.test.ts` keep their own sweeps over every recipe on their box; this is the
+ * narrow cross-device one those cannot hold.
  */
 
 function recipeOf(deviceId: string, recipeId: string): Recipe {
@@ -70,7 +94,13 @@ function bandBlock(lines: string[], headline: string): string[] {
 const BOUND = [
   ['elektron-digitone-ii', 'dn2-acid-dirty'],
   ['teenage-engineering-op-xy', 'opxy-acid-dirty'],
-  ['moog-subharmonicon', 'subh-acid-dirty'],
+  ['moog-mother-32', 'm32-acid-dirty'],
+] as const
+
+/** The two that document no per-step accent, and say so instead of standing something in. */
+const REFUSING = [
+  ['moog-subharmonicon', 'subh-acid-dirty', 'There is no accent on this box.'],
+  ['moog-matriarch', 'mat-acid-bright', 'There is no sequenced accent on this box.'],
 ] as const
 
 describe('the acid slots three boxes could not reach before (§4.3/#108)', () => {
@@ -149,29 +179,50 @@ describe('OP-XY — the first articulation on a melodic part here (§4.3)', () =
   })
 })
 
-describe('Subharmonicon — an accent that is a pitch, because nothing here is louder (§4.3)', () => {
-  it('is a pitch gesture on a recipe whose sequencer drives pitch', () => {
-    // The musical precondition its own file states: `ACCENT_OCTAVE` goes only where `SEQ 1
-    // ASSIGN` is actually lit on an oscillator, or the instruction has no subject.
-    const recipe = recipeOf('moog-subharmonicon', 'subh-acid-dirty')
-    expect(recipe.articulation).toEqual([
-      { slot: 'accent', set: { pitch: '+1 octave' }, hint: 'accent-octave' },
-    ])
-    const valueOf = (name: string) => {
-      const param = recipe.params.find((p) => p.name === name)
-      return param?.kind === 'enum' ? param.value : undefined
-    }
-    expect(valueOf('SEQ 1 ASSIGN · OSC 1')).toBe('LIT')
-    // And the range that makes it playable: SEQ OCT at ±1 is what gives every step the octave.
-    expect(valueOf('SEQ OCT')).toBe('±1')
+describe('the two boxes that refuse the accent instead of standing one in (#283)', () => {
+  it.each(REFUSING)('%s articulates nothing on the acid line', (deviceId, recipeId) => {
+    expect(recipeOf(deviceId, recipeId).articulation).toBeUndefined()
   })
 
-  it('renders as a step to move rather than a level to raise', () => {
-    const block = acidBlock('moog-subharmonicon')
-    expect(block).toContain('**On this box** — Subharmonicon')
-    expect(block).toContain('- `accent` → `pitch` +1 octave on step 17')
-    expect(block).toContain('  - ↳ hint: No velocity here; move the step instead')
-    // No velocity anywhere in the part, which is the claim the hint is making.
-    expect(block.some((l) => l.includes('`velocity`'))).toBe(false)
+  it.each(REFUSING)('%s prints no `On this box` block for it', (deviceId) => {
+    // The whole point, and it has to be read off a rendered guide: an empty `articulation` is
+    // invisible in the manifest and indistinguishable from one nobody has written yet. What the
+    // reader must not see is an accent instruction, in any band, for a step the box cannot accent.
+    const block = acidBlock(deviceId)
+    expect(block.some((l) => l.startsWith('**On this box**'))).toBe(false)
+    expect(block.some((l) => l.startsWith('- `accent` → '))).toBe(false)
+    // The pattern still asks for the accent — the direction is unchanged and the step is still
+    // printed in the grid. It is the device half that is silent, which is the honest shape.
+    expect(block.some((l) => l.startsWith('- `accent` — '))).toBe(true)
+  })
+
+  it.each(REFUSING)('%s says why in prose the guide actually prints', (deviceId, _r, sentence) => {
+    // Invariant 5 applied to articulation: a gap is shown rather than filled, and shown where the
+    // reader is standing. `routing` is the recipe's own rendered line, so the limitation arrives
+    // beside the settings rather than in a source comment nobody at a machine can see.
+    const only = DEVICES.filter((d) => d.id === deviceId)
+    const doc = renderGuide(
+      resolve({ devices: only, template: acidLineage, mood: NEUTRAL_MOOD, seed: 1 }),
+    )
+    expect(doc).toContain(sentence)
+  })
+
+  it('keeps the substitution on the roles #283 does not govern', () => {
+    // The asymmetry, pinned so it reads as a decision rather than a half-finished edit. The
+    // Matriarch still answers an accent with a ratchet on `bass-mid`, and the Subharmonicon still
+    // answers one with an octave on its pitch-driven melodic recipes.
+    const matriarch = DEVICES.find((d) => d.id === 'moog-matriarch')
+    const ratcheted = (matriarch?.recipes ?? []).filter((r) =>
+      (r.articulation ?? []).some((a) => a.slot === 'accent' && 'ratchet' in a.set),
+    )
+    expect(ratcheted.map((r) => r.role)).not.toContain('acid')
+    expect(ratcheted.length).toBeGreaterThan(0)
+
+    const subh = DEVICES.find((d) => d.id === 'moog-subharmonicon')
+    const octaved = (subh?.recipes ?? []).filter((r) =>
+      (r.articulation ?? []).some((a) => a.slot === 'accent' && a.set['pitch'] === '+1 octave'),
+    )
+    expect(octaved.map((r) => r.role)).not.toContain('acid')
+    expect(octaved.length).toBeGreaterThan(0)
   })
 })
