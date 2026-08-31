@@ -201,10 +201,28 @@ describe('the direction routes', () => {
     )
     expect(source).toContain("from './song-tables'")
     expect(source).toContain('<ProgressionTable')
-    expect(source).toContain('<SectionTable')
     // The meter is markup a copy would not reproduce by accident.
     expect(markup).toContain('meter-cell')
     expect(markup).toContain('aria-label="energy')
+  })
+
+  /**
+   * #297. The two pages stopped sharing the *arrangement*, and that is a difference in what they
+   * can know rather than a copy waiting to drift.
+   *
+   * A guide has a rig, so it can say which parts play in which sections and draw them. A direction
+   * page has a template and no rig — there are no parts to put in rows — so it keeps
+   * `SectionTable`, which answers the question it can answer. Both still come from `song-tables`,
+   * and the progression is still shared, which is what the test above is protecting.
+   */
+  it('keeps the section table here, because a direction page has no parts to grid', async () => {
+    const markup = await markupFor('industrial-techno')
+    const page = readFileSync(new URL('../app/directions/[id]/page.tsx', import.meta.url), 'utf8')
+    expect(page).toContain('<SectionTable')
+    expect(page).toContain("from '@/components/guide/song-tables'")
+    // The grid needs assignments; a direction has none, so it must not appear here.
+    expect(page).not.toContain('<ArrangementGrid')
+    expect(markup).not.toContain('arrangement-on')
   })
 
   it('lists every direction on the index, before anything is typed', () => {

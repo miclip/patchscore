@@ -1,7 +1,7 @@
 import type { ResolveResult } from '@/lib/core'
-import { songFindings } from '@/lib/core'
+import { arrangement, songFindings } from '@/lib/core'
 import { num } from './format'
-import { ProgressionTable, SectionTable } from './song-tables'
+import { ArrangementGrid, ProgressionTable } from './song-tables'
 
 /**
  * §8 phase 1. BPM, key, hook harmony, and the bar-count energy map.
@@ -16,7 +16,7 @@ export function PhaseSong({ result }: { result: ResolveResult }) {
   const { template, song } = result
   const others = song.keys.filter((k) => k !== song.key)
   const findings = songFindings(song)
-  const totalBars = template.structure.reduce((sum, s) => sum + s.bars, 0)
+  const plan = arrangement(result)
 
   return (
     <>
@@ -76,9 +76,14 @@ export function PhaseSong({ result }: { result: ResolveResult }) {
       <ProgressionTable harmony={template.harmony} />
 
       <h4>
-        Arrangement <span className="quiet">{num(totalBars)} bars total</span>
+        Arrangement <span className="quiet">{num(plan.totalBars)} bars total</span>
       </h4>
-      <SectionTable structure={template.structure} />
+      <ArrangementGrid plan={plan} />
+      {plan.uniform ? (
+        <p className="quiet">
+          Every part plays throughout. The movement is in the patterns and the energy.
+        </p>
+      ) : null}
     </>
   )
 }
