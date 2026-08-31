@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { ROLES } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import Page from '../app/parts/page'
+import DrumMachinesPage from '../app/drum-machines/page'
 
 /**
  * The parts page explains the vocabulary a guide uses. Its risk is not being wrong — the
@@ -77,5 +78,36 @@ describe('it stays an informational page', () => {
     for (const phrase of ['opinion', 'our own listening', 'is our source', 'we wrote']) {
       expect(TEXT.toLowerCase(), `the page defends itself with "${phrase}"`).not.toContain(phrase)
     }
+  })
+})
+
+/**
+ * The page shipped 100% wide, because its `<main>` carried `reference-page` and not `shell`.
+ *
+ * `.shell` is where the measure lives — `max-width: 1180px`, centred, with the gutter — and every
+ * other page in the app opens with it. `reference-page` and `catalogue-page` only style what is
+ * inside. So the class list is not decoration here: drop one name and the page runs edge to edge
+ * with no padding, on a phone as well as a laptop, which is §8's primary reading context.
+ *
+ * Asserted **against the sibling page rather than against a literal**, because that is the actual
+ * claim. `/parts` and `/drum-machines` are two halves of the same reference — one says what a
+ * `riser` does, the other what an 808 kick sounds like — and they should not drift apart. A
+ * literal `'shell catalogue-page reference-page'` would pass while the two pages diverged.
+ */
+describe('it is laid out like its sibling (#295)', () => {
+  const mainClass = (markup: string): string => {
+    const found = /<main class="([^"]*)"/.exec(markup)
+    if (found === null) throw new Error('no <main> with a class')
+    return found[1] as string
+  }
+
+  it('opens with the same wrapper the drum-machines page uses', () => {
+    expect(mainClass(MARKUP)).toBe(mainClass(renderToStaticMarkup(createElement(DrumMachinesPage))))
+  })
+
+  it('is inside the shell, so it has a measure and a gutter', () => {
+    // The specific half of the assertion above, named so a failure says what broke rather than
+    // printing two class lists and leaving the reader to diff them.
+    expect(mainClass(MARKUP).split(' ')).toContain('shell')
   })
 })
