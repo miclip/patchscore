@@ -911,6 +911,8 @@ export const device: Device = {
 
   manual: { title: 'CRAVE Quick Start Guide', edition: 'BE_0718-AAJ_WW' },
 
+  productPage: 'https://www.behringer.com/en/products/0718-AAJ',
+
   /**
    * One voice. "Number of voices: Monophonic" (p.70), stated rather than inferred from the panel.
    */

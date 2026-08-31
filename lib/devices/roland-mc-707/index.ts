@@ -973,5 +973,7 @@ export const device: Device = {
 
   manual: { title: 'MC-707 Reference Manual', edition: 'eng02' },
 
+  productPage: 'https://www.roland.com/global/products/mc-707/',
+
   recipes,
 }

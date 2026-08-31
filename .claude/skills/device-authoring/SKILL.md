@@ -440,6 +440,31 @@ quickTune   a front-panel tuning function a player runs mid-session
 the time runs while you patch. `calibration` stays on the **device page**, where somebody goes
 deliberately. A box with none of the three says nothing, which is most of the library.
 
+## 5b. The maker's page (#291)
+
+One field, `productPage`, and one link out. It answers *what is this thing*, which is the question
+a reader has after being told to set `DECAY 38` on a box, and which the library otherwise answered
+with a manual title it deliberately does not host.
+
+**The maker's own page. Never a retailer.** A shop link is a price that goes stale, in a country
+the reader may not be in, for stock we cannot see, and it turns an informational page into a
+storefront. `test/product-page.test.ts` holds a denylist so the pressure to add "and here is where
+to buy one" has to argue with a test. A maker who has retired the box and kept the page up is
+still the right target.
+
+**Fetch it with GET before you write it down.** `curl -I` is not the check: Tascam, among others,
+404s a HEAD for a page it serves. An earlier pass reported fourteen of these dead on HEAD alone
+and nearly shipped an empty column as a finding.
+
+```bash
+curl -sL -o /dev/null -w '%{http_code}\n' -A 'Mozilla/5.0' --max-time 20 '<url>'
+```
+
+A guessed maker URL is the failure mode here, because it 404s silently and reads as a citation
+until somebody clicks it. If the search does not find one, leave the field off: the device page
+prints an invitation to send the link, and an empty box that means *nobody has one* is worth more
+than one that means *we gave up*.
+
 ## 6. When the box does not fit the model
 
 **That is a finding, not a failure** (#57). Authoring the Mother-32 exposed that `ClockSpec` was
@@ -458,6 +483,7 @@ If a change to make the device fit would break an invariant, stop and raise it. 
 - [ ] Capability citations are in `capabilityEvidence`, not comments; every `unknown` / `unread` /
       `cited-against` names a reason, and `unread` names its document.
 - [ ] `content` is declared, or its absence is explained at the `content` path.
+- [ ] `productPage` is the maker's own page and answered 200 to a GET, or is absent on purpose.
 - [ ] The panel's coordinates were measured and its aspect checked; nothing vendor-drawn shipped.
 - [ ] `npm run audit` `caps` line did not regress; the numbers are in the commit message.
 - [ ] The node sweep is not capped, and both figures are in the commit message.

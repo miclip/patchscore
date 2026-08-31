@@ -1560,6 +1560,8 @@ export const device: Device = {
 
   manual: { title: "Moog Muse User's Manual", edition: 'Version 1.4.0' },
 
+  productPage: 'https://www.moogmusic.com/synthesizers/muse/',
+
   /**
    * **Two timbres, four notes each.** The module note is the long form; the short form is that the
    * eight voices are shared between two independent patches whose counts always sum to eight

@@ -992,6 +992,8 @@ export const device: Device = {
 
   manual: { title: 'Digitone II User Manual', edition: 'OS 1.10' },
 
+  productPage: 'https://www.elektron.se/explore/digitone-ii',
+
   /**
    * §2.2. One pool of sixteen. See the module note for why `polyphony` is 4 and not 16, and
    * `capabilityEvidence.voices` for the same thing said where the audit can see it.

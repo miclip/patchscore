@@ -815,5 +815,7 @@ export const device: Device = {
 
   manual: { title: 'OP-XY full guide', edition: 'v1.1.15' },
 
+  productPage: 'https://teenage.engineering/products/op-xy',
+
   recipes,
 }

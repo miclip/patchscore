@@ -1148,6 +1148,8 @@ export const device: Device = {
 
   manual: { title: 'Octatrack MKII User Manual', edition: 'OS 1.40A' },
 
+  productPage: 'https://www.elektron.se/explore/octatrack-mkii',
+
   /**
    * §2.2. One pool of eight, `polyphony: 1`. See the module JSDoc for why the polyphony is a
    * reading rather than a citation, and why the eight MIDI tracks are not here.

@@ -1246,6 +1246,8 @@ export const device: Device = {
 
   manual: { title: 'SP-404MK2 Reference Manual', edition: 'v4.00' },
 
+  productPage: 'https://www.roland.com/global/products/sp-404mk2/',
+
   /**
    * §2.2. One pool of sixteen — `Pads 16 pads + 1 sub pad` (p.266) — carrying every role, because
    * a pad is whatever sample is loaded into it. That is the Digitakt II's and the Tracker Mini's

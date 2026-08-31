@@ -1288,6 +1288,8 @@ export const device: Device = {
 
   manual: { title: "Subsequent 37 User's Manual" },
 
+  productPage: 'https://www.moogmusic.com/synthesizers/subsequent-37/',
+
   /**
    * **One voice, two notes.** p.61: `POLYPHONY: Selectable Monophonic or Duophonic`. The module
    * note above is the long form; the short form is that both oscillators share one filter, one

@@ -1321,6 +1321,8 @@ export const device: Device = {
 
   manual: { title: 'MicroFreak User Manual', edition: '4.0.3 EN, product version 4.0.1' },
 
+  productPage: 'https://www.arturia.com/products/hardware-synths/microfreak/overview',
+
   capabilityEvidence: {
     ...JACK_EVIDENCE,
     [clockSourceSetupFact('midi-din')]: cite(89),

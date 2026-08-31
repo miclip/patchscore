@@ -1436,5 +1436,7 @@ export const device: Device = {
 
   manual: { title: 'DFAM Owner’s Manual', edition: 'Drummer From Another Mother' },
 
+  productPage: 'https://www.moogmusic.com/synthesizers/dfam/',
+
   recipes: RECIPES,
 }

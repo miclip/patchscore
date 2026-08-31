@@ -1399,6 +1399,8 @@ export const device: Device = {
 
   manual: { title: 'Digitakt User Manual', edition: 'OS 1.51' },
 
+  productPage: 'https://www.elektron.se/explore/digitakt',
+
   /**
    * §2.2. **One pool of eight**, `polyphony: 1` — see the module JSDoc for why that needs p.15 and
    * p.17 together rather than either alone, and for why the eight MIDI tracks are not here.

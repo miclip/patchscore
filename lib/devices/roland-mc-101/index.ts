@@ -1116,5 +1116,7 @@ export const device: Device = {
 
   manual: { title: 'MC-101 Reference Manual', edition: 'eng01' },
 
+  productPage: 'https://www.roland.com/global/products/mc-101/',
+
   recipes: [...DRUM_RECIPES, ...TONE_RECIPES],
 }

@@ -1025,5 +1025,7 @@ export const device: Device = {
 
   manual: { title: 'RHYTHM DESIGNER RD-9 User Manual', edition: 'V 1.0' },
 
+  productPage: 'https://www.behringer.com/en/products/0704-AAB',
+
   recipes,
 }

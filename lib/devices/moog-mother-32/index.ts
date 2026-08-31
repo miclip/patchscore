@@ -1660,5 +1660,7 @@ export const device: Device = {
 
   manual: { title: 'Mother-32 User Manual', edition: 'Version 2' },
 
+  productPage: 'https://www.moogmusic.com/synthesizers/mother-32/',
+
   recipes: RECIPES,
 }

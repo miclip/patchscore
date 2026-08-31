@@ -497,6 +497,7 @@ export const device: Device = {
     title: 'Torso T-1 documentation',
     edition: 'docs.torsoelectronics.com/t1/, mirrored 2026-08-28 (firmware 2.1.5)',
   },
+  productPage: 'https://torsoelectronics.com/products/t-1',
 
   /**
    * §2.4. No voices, so no assignables, so no recipes — and sixteen tracks per pattern are the

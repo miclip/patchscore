@@ -1110,5 +1110,7 @@ export const device: Device = {
 
   manual: { title: 'TR-6S Parameter Guide', edition: 'eng02' },
 
+  productPage: 'https://www.roland.com/global/products/tr-6s/',
+
   recipes,
 }

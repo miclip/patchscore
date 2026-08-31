@@ -182,4 +182,6 @@ export const device: Device = {
   recipes: [],
 
   manual: { title: 'ZOIA Euroburo User Manual', edition: 'Rrev2 (firmware 2.30)' },
+
+  productPage: 'https://empresseffects.com/products/zoia-euroburo',
 }

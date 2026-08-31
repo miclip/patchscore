@@ -1678,6 +1678,8 @@ export const device: Device = {
 
   manual: { title: 'MODEL D User Manual', edition: 'MODEL_D_M_EN' },
 
+  productPage: 'https://www.behringer.com/en/products/0718-AAC',
+
   /** One monophonic analog voice — p.34: `Number of voices  Monophonic`. See the header on Poly Chain. */
   voices: [{ kind: 'fixed', id: 'voice', label: 'Voice', roles: [...VOICE_ROLES], polyphony: 1 }],
 

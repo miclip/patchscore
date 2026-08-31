@@ -1491,5 +1491,7 @@ export const device: Device = {
 
   manual: { title: 'Circuit Tracks Programmer’s Reference Guide', edition: 'v3' },
 
+  productPage: 'https://novationmusic.com/products/circuit-tracks',
+
   recipes: [...DRUM_RECIPES, ...SYNTH_RECIPES],
 }

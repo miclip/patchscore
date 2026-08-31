@@ -415,6 +415,8 @@ export const device: Device = {
 
   manual: { title: 'Hapax Manual', edition: '22 June 2026 (hapaxOS 3.10)' },
 
+  productPage: 'https://squarp.net/hapax/',
+
   /**
    * §2.4. No voices, so no assignables, so no recipes — and thirty-two tracks are the reason this
    * needs saying rather than being obvious. See the module JSDoc.

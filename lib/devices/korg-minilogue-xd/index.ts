@@ -963,6 +963,8 @@ export const device: Device = {
 
   manual: { title: "minilogue xd/minilogue xd module Owner's Manual", edition: 'E 9' },
 
+  productPage: 'https://www.korg.com/us/products/synthesizers/minilogue_xd/',
+
   /**
    * **One voice, four notes.** p.66: `Maximum polyphony  4 voices`. The module note above is the
    * long form of why this is one assignable rather than four; the short form is that the four

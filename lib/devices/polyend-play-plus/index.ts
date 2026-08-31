@@ -1523,5 +1523,7 @@ export const device: Device = {
 
   manual: { title: 'Polyend Play+ Manual', edition: 'Rev 2' },
 
+  productPage: 'https://polyend.com/play-plus/',
+
   recipes: [...PERC_RECIPES, ...SYNTH_RECIPES, ...SAMPLE_RECIPES],
 }

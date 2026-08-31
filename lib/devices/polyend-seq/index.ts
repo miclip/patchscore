@@ -335,6 +335,8 @@ export const device: Device = {
 
   manual: { title: 'Polyend Seq Manual', edition: 'Version 2.2.6' },
 
+  productPage: 'https://polyend.com/products/seq/',
+
   /**
    * §2.4. No voices, so no assignables, so no recipes — and eight track buttons under a 256-key
    * grid are the reason this needs saying rather than being obvious. See the module JSDoc.

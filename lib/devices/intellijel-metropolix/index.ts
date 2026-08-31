@@ -191,6 +191,8 @@ export const device: Device = {
 
   manual: { title: 'Metropolix Manual', edition: 'v1.6' },
 
+  productPage: 'https://intellijel.com/shop/desktop/metropolix-solo/',
+
   /**
    * §2.4. No voices, so no assignables, so no recipes — and the two tracks are the reason this
    * needs saying rather than being obvious. See the module JSDoc.

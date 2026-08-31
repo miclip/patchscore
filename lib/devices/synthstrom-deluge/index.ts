@@ -1214,5 +1214,8 @@ export const device: Device = {
     edition: 'OS 4.1 (OLED) + community firmware release_1_2_1 (Chopin)',
   },
 
+  productPage: 'https://synthstrom.com/product/deluge/',
+
+
   recipes: RECIPES,
 }

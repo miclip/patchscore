@@ -8,11 +8,13 @@ import { PanelFigure } from '@/components/rack/panel-figure'
 import type { Device } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceHref, deviceLabel } from '@/lib/studio/catalogue'
+import { REPOSITORY_URL } from '@/lib/studio/feedback'
 import type { CapabilityGap } from '@/lib/studio/device-page'
 import {
   capabilitySentence,
   clockText,
   devicePage,
+  makerLink,
   provenanceSentence,
 } from '@/lib/studio/device-page'
 
@@ -81,6 +83,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   if (device === undefined) notFound()
 
   const page = devicePage(device)
+  const maker = makerLink(device)
   const label = deviceLabel(device)
   const kind = device.kind.replace(/-/g, ' ')
 
@@ -141,6 +144,25 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                   {device.manual.edition === undefined ? '' : `, ${device.manual.edition}`}
                 </dd>
               </>
+            )}
+            {/* #291. The maker's page, or the gap said out loud. A reader who owns the box is
+                the person best placed to close it, so the empty state asks them rather than
+                printing nothing and letting the row look complete. */}
+            <dt>Maker&rsquo;s page</dt>
+            {maker.kind === 'missing' ? (
+              <dd className="note">
+                Not recorded.{' '}
+                <a href={`${REPOSITORY_URL}/issues/new`} target="_blank" rel="noopener noreferrer">
+                  Send us the link
+                </a>{' '}
+                if you know it.
+              </dd>
+            ) : (
+              <dd>
+                <a href={maker.href} target="_blank" rel="noopener noreferrer">
+                  {maker.host}
+                </a>
+              </dd>
             )}
           </dl>
 

@@ -1071,5 +1071,7 @@ export const device: Device = {
 
   manual: { title: 'RHYTHM DESIGNER RD-8 User Manual', edition: 'software V1.1.8' },
 
+  productPage: 'https://www.behringer.com/en/products/0704-AAA',
+
   recipes,
 }
