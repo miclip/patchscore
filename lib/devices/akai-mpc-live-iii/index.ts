@@ -1204,6 +1204,8 @@ export const device: Device = {
 
   manual: { title: 'MPC Live III / MPC XL User Guide', edition: 'v3.7' },
 
+  productPage: 'https://www.akaipro.com/mpc-live-3/',
+
   capabilityEvidence: {
     ...JACK_EVIDENCE,
     'clock.canSendClock': cite(63),

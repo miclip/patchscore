@@ -1657,5 +1657,7 @@ export const device: Device = {
 
   manual: { title: 'Matriarch Manual', edition: '012023' },
 
+  productPage: 'https://www.moogmusic.com/synthesizers/matriarch/',
+
   recipes: RECIPES,
 }

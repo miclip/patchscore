@@ -1369,5 +1369,7 @@ export const device: Device = {
 
   manual: { title: 'Polyend Tracker Mini Manual', edition: '2.2.1b' },
 
+  productPage: 'https://polyend.com/tracker-mini/',
+
   recipes: [...SAMPLE_RECIPES, ...SYNTH_RECIPES],
 }

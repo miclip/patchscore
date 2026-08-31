@@ -610,6 +610,8 @@ export const device: Device = {
 
   manual: { title: 'Digitakt II User Manual', edition: 'OS 1.15A' },
 
+  productPage: 'https://www.elektron.se/explore/digitakt-ii',
+
   /**
    * §2.2. One pool of sixteen, `polyphony: 1` — see the module JSDoc for why that needs p.15 and
    * p.17 together rather than either alone.

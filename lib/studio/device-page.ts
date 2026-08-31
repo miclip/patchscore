@@ -332,6 +332,37 @@ export function capabilitySentence(counts: AuditCounts): string {
 }
 
 /** `Roland TR-1000 — Patchscore`. The maker is in it: people search for the box by both. */
+/**
+ * §10/#291. Where the device page sends a reader who wants the maker's own words.
+ *
+ * Two states, and the second is a state rather than nothing rendered. A missing link is a gap in
+ * the library — invariant 5 — and the reader looking at that row is usually the one person who
+ * owns the box and could close it, so the page asks them instead of quietly printing one row
+ * fewer and looking complete.
+ *
+ * The decision lives here rather than in the JSX so both halves are testable; every device in the
+ * library currently declares the field, which would otherwise make the empty state unreachable
+ * code that nobody notices has rotted.
+ */
+export type MakerLink = { kind: 'link'; href: string; host: string } | { kind: 'missing' }
+
+/**
+ * The host, without the `www.` nobody reads — `moogmusic.com`, `teenage.engineering`.
+ *
+ * The link is labelled with its destination rather than "Product page", so somebody can see they
+ * are being sent to the maker and not to a shop before they tap it. `URL` throws on a malformed
+ * string; the schema has already refused one, and a throw at build time is the right failure.
+ */
+export function makerLink(device: Device): MakerLink {
+  if (device.productPage === undefined) return { kind: 'missing' }
+  const host = new URL(device.productPage).host
+  return {
+    kind: 'link',
+    href: device.productPage,
+    host: host.startsWith('www.') ? host.slice(4) : host,
+  }
+}
+
 export function deviceTitle(device: Device): string {
   return `${deviceLabel(device)} — Patchscore`
 }

@@ -174,4 +174,6 @@ export const device: Device = {
   recipes: [],
 
   manual: { title: 'Model 2400 Owner’s Manual', edition: 'D01438920C' },
+
+  productPage: 'https://tascam.com/us/product/model_2400',
 }

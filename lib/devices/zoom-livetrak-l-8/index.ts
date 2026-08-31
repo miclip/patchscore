@@ -149,6 +149,8 @@ export const device: Device = {
 
   /** §2.4. No voices, so no assignables, so no recipes. Not a placeholder — the box is a mixer. */
   voices: [],
+  productPage: 'https://zoomcorp.com/en/us/digital-mixer-multi-track-recorders/digital-mixer-recorder/LIVETRAK-L-8/',
+
   recipes: [],
 
   manual: { title: 'Zoom LiveTrak L-8 Operation Manual', edition: 'E_02' },

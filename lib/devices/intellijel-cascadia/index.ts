@@ -1617,5 +1617,7 @@ export const device: Device = {
 
   manual: { title: 'Intellijel Cascadia Manual', edition: 'v1.1 (2023.04.18)' },
 
+  productPage: 'https://intellijel.com/shop/eurorack/cascadia/',
+
   recipes: RECIPES,
 }

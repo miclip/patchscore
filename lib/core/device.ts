@@ -2330,6 +2330,22 @@ export type Device = {
   /** A flat lookup keyed by action, referenced by recipes. A few words to jog you. */
   hints?: Record<string, string>
   manual?: ManualRef
+  /**
+   * §10/#291. **The maker's own page for this box.** A link out, and the only one here.
+   *
+   * Not a retailer. A shop link is an affiliate slot with a price on it that goes stale, in a
+   * country the reader may not be in, for stock we cannot see; the maker's page is the one that
+   * still describes the instrument in ten years and has the manual on it. Where a maker has
+   * retired a box and kept the page up, that page is still the right target.
+   *
+   * Optional, and the absence is the ordinary honest gap (invariant 5): the device page prints an
+   * invitation to send the link rather than a dead row or a guessed URL. Guessing is the failure
+   * this field is most exposed to, because a plausible-looking maker URL 404s silently and reads
+   * as a real citation until somebody clicks it. Every entry here was fetched and answered 200 to
+   * a **GET** — `curl -I` is not the check, since Tascam and others 404 a HEAD for a page they
+   * serve.
+   */
+  productPage?: string
   recipes: Recipe[]
 }
 
@@ -2362,6 +2378,10 @@ export const DeviceSchema = z
       .optional(),
     hints: z.record(z.string().min(1), z.string().min(1)).optional(),
     manual: ManualRefSchema.optional(),
+    productPage: z
+      .url({ message: "the maker's product page, as a full URL" })
+      .refine((u) => u.startsWith('https://'), { message: 'https, so the link is not downgraded' })
+      .optional(),
     recipes: z.array(RecipeSchema),
   })
   .superRefine((device, ctx) => {

@@ -1903,5 +1903,8 @@ export const device: Device = {
     edition: 'Semi-Modular Analog Polyrhythmic Synthesizer',
   },
 
+  productPage: 'https://www.moogmusic.com/synthesizers/subharmonicon/',
+
+
   recipes: RECIPES,
 }

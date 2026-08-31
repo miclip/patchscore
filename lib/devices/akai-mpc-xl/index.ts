@@ -291,5 +291,8 @@ export const device: Device = {
 
   hints: liveIII.hints,
 
+  productPage: 'https://www.akaipro.com/mpc-xl/',
+
+
   recipes: liveIII.recipes,
 }

@@ -1135,6 +1135,7 @@ export const device: Device = {
     title: 'EP–40 riddim guide',
     edition: 'teenage.engineering/guides/ep-40, mirrored 2026-08-28 (OS 2.5)',
   },
+  productPage: 'https://teenage.engineering/products/ep-40',
 
   recipes,
 }

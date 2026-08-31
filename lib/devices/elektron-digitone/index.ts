@@ -1321,6 +1321,8 @@ export const device: Device = {
 
   manual: { title: 'Digitone User Manual', edition: 'OS 1.41' },
 
+  productPage: 'https://www.elektron.se/explore/digitone',
+
   /**
    * §2.2. One pool of four synth tracks (p.16). See the module note for why `polyphony` is 2 and
    * not 8, and `capabilityEvidence.voices` for the same thing said where the audit can see it.

@@ -1149,6 +1149,8 @@ export const device: Device = {
 
   manual: { title: 'Analog Rytm MKII User Manual', edition: 'OS 1.71' },
 
+  productPage: 'https://www.elektron.se/explore/analog-rytm-mkii',
+
   /**
    * §2.2. Twelve tracks, `polyphony: 1` each. p.21 names all twelve in the order the pads run —
    * BD, SD, RS, CP, BT, LT, MT, HT, CH, OH, CY, CB — and the eight-circuit coupling behind them

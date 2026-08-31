@@ -924,6 +924,7 @@ export const device: Device = {
     },
   },
   manual: { title: 'Minitaur Manual', edition: '©2012 Moog Music' },
+  productPage: 'https://www.moogmusic.com/synthesizers/minitaur/',
   /**
    * One monophonic analog voice (p.29: "TYPE: Programmable Monophonic Analog Bass Synthesizer").
    * Two oscillators, but they are one voice — both follow the same note.

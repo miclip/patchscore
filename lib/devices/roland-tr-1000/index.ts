@@ -791,6 +791,8 @@ export const device: Device = {
 
   manual: { title: 'TR-1000 Owner’s Manual', edition: 'eng02' },
 
+  productPage: 'https://www.roland.com/global/products/tr-1000/',
+
   recipes: [
     // ---- BD -------------------------------------------------------------------------
     {

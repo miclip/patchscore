@@ -456,6 +456,8 @@ export const device: Device = {
 
   manual: { title: 'MPC Standalone OS User Guide', edition: 'v3.9' },
 
+  productPage: 'https://www.akaipro.com/mpc-one-g2/',
+
   capabilityEvidence: {
     ...JACK_EVIDENCE,
 

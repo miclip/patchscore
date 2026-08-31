@@ -1099,5 +1099,7 @@ export const device: Device = {
 
   manual: { title: 'TR-8S Reference Manual', edition: 'eng01' },
 
+  productPage: 'https://www.roland.com/global/products/tr-8s/',
+
   recipes,
 }

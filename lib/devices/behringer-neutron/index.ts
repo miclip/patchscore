@@ -1401,6 +1401,8 @@ export const device: Device = {
 
   manual: { title: 'Neutron User Manual', edition: 'NEUTRON_M_EN' },
 
+  productPage: 'https://www.behringer.com/en/products/0718-AAB',
+
   /**
    * **One voice at `polyphony: 2`, and the two are the two oscillators.** p.14 §5.15 is the
    * sentence: *"Note that a Neutron in Paraphonic mode will handle 2 notes."* Two pitches through

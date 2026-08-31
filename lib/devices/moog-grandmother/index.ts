@@ -1508,5 +1508,7 @@ export const device: Device = {
 
   manual: { title: 'Grandmother User’s Manual', edition: 'Version 2' },
 
+  productPage: 'https://www.moogmusic.com/synthesizers/grandmother/',
+
   recipes: RECIPES,
 }
