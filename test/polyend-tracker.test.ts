@@ -296,8 +296,10 @@ describe('Tracker manifest', () => {
       expect(assignables.every((a) => a.poolId === 'track')).toBe(true)
     })
 
-    it('authors nineteen recipes over eighteen roles, and leaves five as honest gaps', () => {
-      expect(device.recipes).toHaveLength(19)
+    it('authors twenty-one recipes over eighteen roles, and leaves five as honest gaps', () => {
+      // #300. Twenty-one: a `dark` ghost-perc and a `dark` riser joined the `soft` and `bright`
+      // ones, which are the first two roles on this box carried at more than one character.
+      expect(device.recipes).toHaveLength(21)
       const authored = new Set(device.recipes.map((r) => r.role))
       expect(authored.size).toBe(18)
       const pool = device.voices[0]!

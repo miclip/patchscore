@@ -145,10 +145,14 @@ describe('TR-8S manifest', () => {
   // -------------------------------------------------------------------------
 
   it('carries recipes on distinct (role, character) keys, with unique ids', () => {
-    // Twenty-two rather than the 15-20 the guidance suggests, and eleven slots is the reason: the
+    // Twenty-six rather than the 15-20 the guidance suggests, and eleven slots is the reason: the
     // TR-1000 covers ten with nineteen. It is still one or two per slot, not a parameter dump.
+    //
+    // #300 added the last two: a `dark` ghost-perc on HT and a `dark` riser on CC, the first
+    // second characters either role carries anywhere in the library. Both sit on slots that
+    // already declared the role, so the count grew and the shape did not.
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(24)
+    expect(device.recipes.length).toBeLessThanOrEqual(26)
 
     const pairs = device.recipes.map((r) => `${r.role} ${r.character}`)
     expect(new Set(pairs).size).toBe(pairs.length)

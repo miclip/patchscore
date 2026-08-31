@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_NODE_CAP, assign, moodState } from '../lib/core/index'
+import { DEFAULT_NODE_CAP, MAX_RIG_DEVICES, assign, moodState } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 
@@ -635,23 +635,23 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
       147, 147, 147, 147, 148
     ],
     'ambient-dub': [
-      229, 231, 229, 319, 234, 231, 229, 315, 234, 231, 231, 313, 231, 234, 234, 229, 316, 233, 314,
-      231, 233, 230, 229, 233
+      234, 335, 238, 333, 339, 236, 238, 329, 243, 240, 240, 327, 240, 243, 239, 234, 334, 242, 423,
+      334, 242, 243, 234, 238
     ],
     'drone-study': [
       35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35
     ],
     'generative-drift': [
-      422, 215, 635, 217, 743, 215, 635, 215, 563, 293, 714, 215, 556, 296, 268, 293, 215, 268, 293,
-      556, 217, 556, 293, 563
+      423, 216, 637, 218, 745, 216, 637, 216, 565, 294, 716, 216, 558, 297, 269, 294, 216, 269, 294,
+      558, 218, 558, 294, 565
     ],
     'industrial-techno': [
       623144, 630714, 625534, 629074, 632832, 623152, 629552, 624792, 628767, 621490, 675605, 624792,
       627025, 621489, 630714, 624706, 621490, 687193, 728123, 629346, 621490, 628624, 623152, 625534
     ],
     'lydian-house': [
-      203, 343, 203, 204, 204, 344, 203, 343, 204, 344, 203, 343, 203, 204, 204, 344, 344, 204, 341,
-      203, 204, 203, 344, 204
+      229, 1221, 1104, 1120, 1121, 394, 1105, 393, 1121, 1330, 228, 393, 1105, 701, 307, 1330, 1330,
+      307, 1317, 229, 701, 229, 1213, 230
     ],
     'major-key-electro': [
       404, 222, 220, 1224, 222, 222, 221, 222, 402, 219, 222, 222, 216, 219, 222, 219, 222, 221, 222,
@@ -661,8 +661,8 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
       66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66
     ],
     'weave': [
-      265, 324, 5089, 559, 4208, 324, 5135, 271, 4106, 1165, 26189, 271, 4127, 1165, 457, 267, 324,
-      9432, 22923, 4268, 489, 4238, 239, 4102
+      266, 325, 5091, 560, 4210, 325, 5137, 272, 4108, 1166, 26203, 272, 4129, 1166, 458, 268, 325,
+      9441, 22944, 4270, 490, 4240, 240, 4104
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".
@@ -810,12 +810,21 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
    * It is not free anywhere, though, and `major-key-electro` is where it is paid: 216 to 1,224,
    * a row that had never varied across twenty-four seeds beginning to vary. Nothing capped.
    */
-  const WORST_CASE_NODES = 728_123
-  const WORST_CASE_MARGIN = 0.05
-  const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
-  const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))
-
-  it('keeps the worst direction inside the recorded band, and inside the cap', () => {
+  /**
+   * #301. **The catalogue figure is tracked here and gated nowhere, and that is the change.**
+   *
+   * This held the whole-catalogue worst case in a five percent band. The band was a drift alarm
+   * and it worked as one — it also blocked work three separate times: a device landing (#248), a
+   * test (#293), and a percussion change whose real cost was three milliseconds (#300). A figure
+   * measured over all 46 devices reads like a limit the product is approaching, and it is not one.
+   * Nobody can select 46 devices: `MAX_RIG_DEVICES` is 10 and `withDevice` refuses the eleventh.
+   *
+   * So the catalogue is asserted only against the cap it must not reach, and the *gate* is a rig
+   * somebody can build. `RECORDED` above keeps its exact per-direction table, which is a different
+   * claim and still worth a node of precision: that is `lowerBound` not drifting, a property of
+   * the search rather than of a rig.
+   */
+  it('keeps the catalogue inside the cap, and a rig somebody owns nowhere near it', () => {
     let worst = { nodes: -1, where: '' }
     for (const [id, row] of Object.entries(RECORDED)) {
       row.forEach((nodes, seed) => {
@@ -823,16 +832,35 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
       })
     }
 
-    const found = `worst case is ${worst.nodes} on ${worst.where}, recorded ${WORST_CASE_NODES}`
-    expect(worst.nodes, `${found} — over the recorded band`).toBeLessThanOrEqual(WORST_CASE_CEILING)
-    expect(worst.nodes, `${found} — under the recorded band`).toBeGreaterThanOrEqual(WORST_CASE_FLOOR)
+    // #228: a capped search returns a worse allocation without saying so, so this is a
+    // correctness bound and not a latency one. No band — see above.
+    expect(worst.nodes, `catalogue worst is ${worst.nodes} on ${worst.where}`).toBeLessThan(
+      DEFAULT_NODE_CAP,
+    )
 
     /**
-     * And the reason the band exists at all. #228: a capped search returns a worse allocation, so
-     * the whole-catalogue figure approaching the cap is a correctness problem before it is a
-     * latency one. This is the catalogue rather than a rig anybody owns — `search-symmetry.test.ts`
-     * gates what a plausible rig costs, which is the number that decides whether a device may land.
+     * The number that decides anything. A full legal rig taken at a stride across the registry,
+     * so it spans kinds rather than clustering on one maker, swept over every direction.
+     *
+     * Against a tenth of the cap, which is loose on purpose: a tight band here would recreate
+     * exactly the problem this test stopped having. It watches for an order of magnitude.
      */
-    expect(worst.nodes, found).toBeLessThan(DEFAULT_NODE_CAP)
+    const stride = Math.floor(DEVICES.length / MAX_RIG_DEVICES)
+    const rig = DEVICES.filter((_, i) => i % stride === 0).slice(0, MAX_RIG_DEVICES)
+    expect(rig).toHaveLength(MAX_RIG_DEVICES)
+
+    let legalWorst = { nodes: -1, where: '' }
+    for (const template of TEMPLATES) {
+      for (let seed = 0; seed < 8; seed++) {
+        const result = assign({ devices: rig, template, mood: moodState({}), seed })
+        expect(result.search.capped, `${template.id} seed ${seed}`).toBe(false)
+        if (result.search.nodes > legalWorst.nodes)
+          legalWorst = { nodes: result.search.nodes, where: `${template.id} seed ${seed}` }
+      }
+    }
+    expect(
+      legalWorst.nodes,
+      `a ${MAX_RIG_DEVICES}-device rig cost ${legalWorst.nodes} on ${legalWorst.where}`,
+    ).toBeLessThan(DEFAULT_NODE_CAP / 10)
   })
 })

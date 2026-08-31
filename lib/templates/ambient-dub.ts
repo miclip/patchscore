@@ -293,6 +293,35 @@ export const ambientDub: Template = {
       optional: true,
       inessential: { reason: 'dub is mostly space, and this is the first thing to go' },
     },
+
+    /**
+     * §3.4/#300. **The only riser in the library that is not `bright`, and the geometry is why it
+     * had to be asked for somewhere rather than reached by substitution.**
+     *
+     * `bright` and `dark` are opposite poles on the tone axis — `(0, +1, 0)` against `(0, -1, 0)`,
+     * distance 4 — so §3.5 refuses that substitution outright. Until this request existed, every
+     * riser in the library was bright and every direction asked for bright, which made a dark one
+     * unreachable by construction rather than merely unused.
+     *
+     * It belongs here rather than in a techno direction for two reasons. Musically, a riser that
+     * swells without ever opening is a dub gesture — pressure arriving out of the reverb rather
+     * than a build announcing itself. Structurally, this direction already carries a `transient`
+     * request in `sweep`, where Weave carries none by design: its parts all sound at once, and
+     * section-scoping anything there would let a smaller rig pass by taking turns.
+     *
+     * `Bloom` alone, because `Crest` is the peak and a riser's whole job is the bar before one.
+     * Adding `Recede` would make it a texture that happens to rise.
+     */
+    {
+      id: 'r-riser',
+      role: 'riser',
+      priority: 5,
+      character: 'dark',
+      sustain: 'transient',
+      sections: ['Bloom'],
+      optional: true,
+      inessential: { reason: 'the crest gets there by itself; this is one more thing leaning into it' },
+    },
   ],
 
   patterns: PATTERNS,

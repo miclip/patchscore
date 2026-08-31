@@ -387,6 +387,7 @@ export const industrialTechno: Template = {
       polyphony: 3,
     },
 
+
     // §12.4: a minimum note count, not a device name. A rig that cannot voice three notes at
     // once gets an honest gap here rather than a pad that is secretly monophonic.
     //

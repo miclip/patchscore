@@ -170,7 +170,7 @@ describe('nothing here takes turns (§4.2)', () => {
     // being told it has holes.
     const declared = (t: Template) =>
       t.roles.filter((r) => r.inessential !== undefined).map((r) => r.id)
-    expect(declared(lydianHouse)).toEqual(['r-stab', 'r-open-hat'])
+    expect(declared(lydianHouse)).toEqual(['r-stab', 'r-open-hat', 'r-ghost-perc'])
     expect(declared(weave)).toEqual(['r-rim', 'r-open-hat', 'r-metallic'])
     for (const template of NEW) {
       for (const request of template.roles) {
@@ -369,7 +369,7 @@ describe('both directions finish on one box with several voices', () => {
     // twelve-part direction and told it had four holes; here it is assigned all of both
     // directions, with nothing left to explain.
     for (const [template, requests] of [
-      [lydianHouse, 7],
+      [lydianHouse, 8],
       [weave, 8],
     ] as const) {
       const { filled, gaps, capped } = report(template, [box('roland-mc-101')])
@@ -384,7 +384,7 @@ describe('both directions finish on one box with several voices', () => {
   })
 
   it('finishes Lydian House on four separate boxes, alone', () => {
-    // Not one lucky box. Four of the fourteen carry all seven parts with nothing else in the rig,
+    // Not one lucky box. Four of the fourteen carry all eight parts with nothing else in the rig,
     // and they are four different shapes of box rather than four of a kind.
     const ALONE = [
       'elektron-digitakt-ii',
@@ -398,7 +398,7 @@ describe('both directions finish on one box with several voices', () => {
         id,
         gaps: {},
         capped: false,
-        filled: 7,
+        filled: 8,
       })
     }
   })
@@ -438,7 +438,7 @@ describe('both directions finish on one box with several voices', () => {
     // understates a box that carries everything the direction actually needs, which was #81's
     // complaint about this table.
     const mc101 = box('roland-mc-101')
-    expect(coverage(mc101, lydianHouse)).toMatchObject({ covered: 7, requests: 7, essential: 5, essentialCovered: 5 })
+    expect(coverage(mc101, lydianHouse)).toMatchObject({ covered: 8, requests: 8, essential: 5, essentialCovered: 5 })
     expect(coverage(mc101, weave)).toMatchObject({ covered: 8, requests: 8, essential: 5, essentialCovered: 5 })
     // And the two halves genuinely differ somewhere, or the distinction is untested: a drum
     // machine alone carries every part of Weave it needs except the one pitched one.
