@@ -135,7 +135,7 @@ describe('calibration is a pointer, never a procedure (#263)', () => {
    * read as an invitation, and a reader who followed one could void a warranty or be hurt.
    */
   it('says what it adjusts and what the maker warns, and never how', () => {
-    for (const id of ['behringer-model-d', 'moog-mother-32']) {
+    for (const id of ['behringer-model-d', 'moog-mother-32', 'moog-muse', 'intellijel-cascadia']) {
       const c = DEVICES.find((d) => d.id === id)?.calibration
       expect(c, id).toBeDefined()
       expect(c?.caution, id).toBeTruthy()
@@ -148,11 +148,21 @@ describe('calibration is a pointer, never a procedure (#263)', () => {
     }
   })
 
+  /**
+   * **Four entries, and the cautions escalate.** Worth asserting each maker's own words rather
+   * than a shared phrase, because the difference between them is the information: the MODEL D
+   * says a service technician, the Mother-32 says only when absolutely necessary, and the
+   * Cascadia says wait to be told by the maker.
+   */
   it('keeps the caution the maker actually printed', () => {
     const mother = DEVICES.find((d) => d.id === 'moog-mother-32')!
     expect(mother.calibration?.caution).toContain('absolutely necessary')
     const modelD = DEVICES.find((d) => d.id === 'behringer-model-d')!
     expect(modelD.calibration?.caution).toContain('service technician')
+    // p.22, and the strongest of the four: Intellijel ask a reader to phone before touching it.
+    const cascadia = DEVICES.find((d) => d.id === 'intellijel-cascadia')!
+    expect(cascadia.calibration?.caution).toContain('Intellijel Tech Support')
+    expect(cascadia.calibration?.caution).toContain('never need to touch')
   })
 
   it('stays off the guide, because it is not session work', () => {

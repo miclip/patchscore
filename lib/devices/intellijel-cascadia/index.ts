@@ -1423,6 +1423,32 @@ export const device: Device = {
   /** §10. A simplified original drawing of the panel, read off p.8 (see `panel.ts`). */
   panel: CASCADIA_PANEL,
 
+  /**
+   * §10/#263. **A pointer, and the strongest caution in the library.**
+   *
+   * p.22: four trim pots surround VCO A's PITCH knob — pitch offset, oscillator tracking, high
+   * frequency compensation and octave tracking. Intellijel's own words are *"in general, you
+   * should never need to touch these, as the oscillator was carefully calibrated before leaving
+   * the factory"*, and three of the four add *"needed only if you have a tracking issue and are
+   * instructed to tweak this by Intellijel Tech Support"*.
+   *
+   * That last clause is why this is a pointer rather than a procedure even by the standards of
+   * the other two entries. The MODEL D's says a service technician; the Mother-32's says only
+   * when absolutely necessary. This one says wait to be told by the maker. Printing the four
+   * functions as steps would be inviting a reader to do something Intellijel ask them to phone
+   * about first.
+   *
+   * The pitch offset is the one a player might legitimately want, since it sets what the knob's
+   * noon position means — so the summary names it and stops there.
+   */
+  calibration: {
+    summary:
+      'Four trim pots around VCO A’s PITCH knob: pitch offset, oscillator tracking, high frequency compensation and octave tracking',
+    caution:
+      'Intellijel say you should never need to touch these, as the oscillator was calibrated at the factory, and that three of the four are needed only if you have a tracking issue and are instructed to adjust them by Intellijel Tech Support',
+    verified: cite(22),
+  },
+
   /** §3.3. Declared once, cited once, referenced by every cable below. */
   jacks: JACKS,
 
