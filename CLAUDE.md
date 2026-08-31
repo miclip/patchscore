@@ -123,6 +123,14 @@ imperceptible.
   sweeps all 46 devices and reports ~730k nodes against a 2,000,000 cap. Nobody resolves that rig.
   Track the number, do not gate on it — that is the repair #248 already made once, when a
   whole-catalogue assertion in `search-symmetry.test.ts` was blocking devices from landing.
+- **And do not quietly *pay* it either.** #293 found `search-shape.test.ts` resolving all 46 devices
+  across all nine directions — 8512ms, against 98ms for the same nine on an eight-box rig, with
+  every assertion passing identically on both. It asserted no number, so the rule above did not
+  cover it; it was simply the most expensive file in the suite, and #265 walked in through the
+  timeout that cost bought. Benchmarks sweep the catalogue. **A test resolves a rig somebody owns,
+  unless crowding is the thing it is testing** — `search-shape.test.ts` keeps exactly one
+  whole-catalogue traversal, in `beforeAll`, because the probe's derivability check wants pools and
+  stacks and collisions.
 - **Cost is not monotonic in device count.** Eight devices is cheaper than five here, and twenty
   costs *more* than all forty-six. It depends on which boxes collide on crowded roles, not how many
   are selected. So "N devices" is never the unit to reason in.
