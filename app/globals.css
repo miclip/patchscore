@@ -3805,10 +3805,18 @@ html {
   min-width: 0;
 }
 
+/*
+ * `white-space: normal` overrides the `nowrap` every other guide cell wants, and that override is
+ * the whole fix for what shipped first: at 390px a nowrap header became `BRE…` and `OUT…`, and a
+ * row label became `closed-…`. The Markdown renderer refuses to truncate a section name on the
+ * grounds that it would be lying about the template's own word to protect a picture; the web
+ * renderer was quietly doing exactly that. Names wrap here instead.
+ */
 .guide table.arrangement th,
 .guide table.arrangement td {
-  padding: 4px 2px;
+  padding: 3px 2px;
   border-bottom: none;
+  white-space: normal;
 }
 
 /* The one column sized to its content: part names are the reader's index into the rows. */
@@ -3822,19 +3830,37 @@ html {
   letter-spacing: 0;
   text-transform: none;
   padding-right: 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* `closed-hat` breaks at its own hyphen rather than being cut. */
+  overflow-wrap: anywhere;
 }
 
+/*
+ * Section headers keep the case the template authored. Every other table here uppercases its
+ * column names, and that is right for a fixed label like `DEGREE`; these are a direction's own
+ * words. `Breakdown` is also two characters narrower than `BREAKDOWN` before letter-spacing, which
+ * is what made the uppercase version need truncating in the first place.
+ */
 .guide table.arrangement thead th {
   vertical-align: bottom;
   text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+  /*
+   * `Breakdown` is one unbreakable word, and under `table-layout: fixed` a word wider than its
+   * column overflows into the neighbour rather than widening it. At 390px that is most section
+   * names, so the break is forced. It is the same trade the row labels take: a name broken across
+   * two lines is still the name, and truncating it to `Bre…` would be the renderer discarding a
+   * template's own word — the thing the Markdown grid explicitly refuses to do.
+   */
+  overflow-wrap: anywhere;
 }
 
 .arrangement-section {
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.15;
 }
 
 .arrangement-bars {
@@ -3844,46 +3870,60 @@ html {
   text-transform: none;
 }
 
-/* Cells are the picture: a bar of colour where the part plays, a hairline where it does not. */
+/*
+ * `background-clip: content-box` is the fix for the mass of colour the first version drew.
+ *
+ * A `<td>` background paints the padding box, so twelve adjacent playing cells touched on every
+ * side and rendered as one orange rectangle with the rows invisible inside it — the opposite of a
+ * grid. Clipping to the content box turns the cell padding into real gutters, so each cell becomes
+ * a bar with air around it and the rows read as rows.
+ *
+ * The fill is `--accent-dim` rather than `--accent` for a related reason: playing is the common
+ * case, most of the grid is filled, and the full accent made the page shout in a phase that is
+ * meant to be read past. The gaps carry the information, so they are what should stand out.
+ */
 .arrangement-on,
 .arrangement-off {
-  height: 14px;
+  height: 18px;
+  background-clip: content-box;
 }
 
 .arrangement-on {
-  background: var(--accent);
-  border-radius: 2px;
+  background-color: var(--accent-dim);
 }
 
 .arrangement-off {
-  background: linear-gradient(var(--edge), var(--edge)) center / 100% 1px no-repeat;
+  background-image: linear-gradient(var(--edge), var(--edge));
+  background-position: center;
+  background-size: 100% 1px;
+  background-repeat: no-repeat;
 }
 
 .energy-tick {
   display: flex;
   align-items: flex-end;
-  width: 8px;
-  height: 14px;
-  margin-top: 3px;
+  width: 100%;
+  max-width: 22px;
+  height: 12px;
+  margin-top: 4px;
   background: var(--edge);
   border-radius: 1px;
+  overflow: hidden;
 }
 
 .energy-tick > span {
   display: block;
   width: 100%;
   background: var(--accent);
-  border-radius: 1px;
 }
 
 /*
- * #21. At 390px the label column is the thing to give back — a role name is short, and the grid
- * is what the reader came for. Below that, the floor on a section column is what stops a 16-bar
- * Intro next to a 32-bar Drop from collapsing to a sliver.
+ * #21. At 390px the label column is the thing to give back — a role name is short and wraps, and
+ * the grid is what the reader came for.
  */
 @media (max-width: 560px) {
   .guide table.arrangement col.arrangement-label {
-    width: 4.25rem;
+    width: 4.5rem;
   }
 
   .guide table.arrangement th[scope='row'] {
@@ -3892,6 +3932,11 @@ html {
   }
 
   .guide table.arrangement thead th {
-    font-size: 8.5px;
+    font-size: 10px;
+  }
+
+  .guide table.arrangement th,
+  .guide table.arrangement td {
+    padding: 2px 1.5px;
   }
 }
