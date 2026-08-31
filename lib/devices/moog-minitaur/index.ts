@@ -712,7 +712,7 @@ const recipes: Recipe[] = [
     verified: false,
     title: 'Ladder filter near self-oscillation, glide between every note',
     routing:
-      'Glide is on and the rate is short — p.11 offers EXP as the Taurus curve, "fast and then slows as it approaches the target note", but that is a MIDI-only setting (CC# 92) and cannot be reached from the panel.',
+      'Glide is on and the rate is short — p.11 offers EXP as the Taurus curve, "fast and then slows as it approaches the target note", but that is a MIDI-only setting (CC# 92) and cannot be reached from the panel. **Accent:** there is no sequencer and no arpeggiator here \u2014 Appendix E\u2019s synth-engine list is exhaustive and p.9 has every note arriving over DIN or USB MIDI \u2014 so an accented step is played on whatever drives this box, and nothing here stores which steps are accented. **Slide:** `GLIDE On` with `GLIDE RATE 12%` above, p.11\u2019s instantaneous-to-very-long sweep, one setting for every note rather than a per-step lane',
     params: [
       ...core('Sawtooth', 'Sawtooth', 0, 90, 0, 320, 78, 70),
       ...envelopes(1, 140, 0, 1, 220, 0, 'Off'),
@@ -728,6 +728,8 @@ const recipes: Recipe[] = [
     voice: 'voice',
     verified: false,
     title: 'Thinner line, cutoff up and the envelope doing the shape',
+    routing:
+      '**Accent:** there is no sequencer and no arpeggiator here \u2014 Appendix E\u2019s synth-engine list is exhaustive and p.9 has every note arriving over DIN or USB MIDI \u2014 so an accented step is played on whatever drives this box, and nothing here stores which steps are accented. **Slide:** `GLIDE On` with `GLIDE RATE 8%` above \u2014 shorter than the `dirty` line\u2019s, so the pitch arrives sooner \u2014 and it is one setting for every note rather than a per-step lane',
     params: [
       ...core('Sawtooth', 'Square', 0, 80, 0, 1200, 65, 60),
       ...envelopes(1, 100, 0, 1, 160, 0, 'Off'),
@@ -743,6 +745,8 @@ const recipes: Recipe[] = [
     voice: 'voice',
     verified: false,
     title: 'Every note the same length, filter slammed shut behind each one',
+    routing:
+      '**Accent:** there is no sequencer and no arpeggiator here \u2014 Appendix E\u2019s synth-engine list is exhaustive and p.9 has every note arriving over DIN or USB MIDI \u2014 so an accented step is played on whatever drives this box, and nothing here stores which steps are accented. **Slide:** `GLIDE Off` above, and that is the recipe rather than a gap: this is the acid line played hard and separated, where the two beside it slide. Turning GLIDE on brings the slide back for every note at once',
     params: [
       ...core('Sawtooth', 'Sawtooth', 0, 95, 0, 200, 70, 85),
       ...envelopes(1, 80, 0, 1, 120, 0, 'Off'),

@@ -607,6 +607,22 @@ import { TEMPLATES } from '../lib/templates/index'
  * `sweep` — eight different roles, most of them answered exactly by whichever boxes answer them at
  * all — so `liveFloor` is tight from the first branch and there is little for the seed to permute.
  * Part count is not what this table measures; contention is.
+ *
+ * ## Acid Lineage, the second row added rather than moved
+ *
+ * The ninth direction, and like the eighth it moves nothing above it — the other eight rows
+ * reproduce to the node. Its own row runs 146-236 over the twenty-four seeds, which makes it the
+ * third cheapest direction here, above `drone-study` at 35 and `relay` at 66 and well below
+ * `lydian-house`.
+ *
+ * It asks for five parts, the smallest count in the table after `drone-study`'s one, and the row
+ * is nearly flat: twenty-two of the twenty-four seeds sit within two nodes of 147, and two of them
+ * (0 and 8) explore to 236. The flatness is the same mechanism `generative-drift` shows and not
+ * the part count — four of the five requests are `kick`, `closed-hat`, `clap` and `sub`, the
+ * best-served roles in the library, so an exact answer is available at almost every branch and
+ * `liveFloor` prunes immediately; the fifth is `acid`, which twenty boxes answer and every other
+ * box answers not at all, so there is very little for the seed to permute among equals. Part count
+ * is not what this table measures; contention is.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -614,6 +630,10 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
 
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
+    'acid-lineage': [
+      236, 147, 148, 147, 148, 147, 148, 147, 236, 146, 147, 147, 147, 146, 148, 146, 147, 147, 146,
+      147, 147, 147, 147, 148
+    ],
     'ambient-dub': [
       229, 231, 229, 319, 234, 231, 229, 315, 234, 231, 231, 313, 231, 234, 234, 229, 316, 233, 314,
       231, 233, 230, 229, 233

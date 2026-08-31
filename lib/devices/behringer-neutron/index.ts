@@ -853,7 +853,7 @@ const recipes: Recipe[] = [
     verified: false,
     patchPolyphony: 1,
     title: 'Resonant sweep with the filter tracking the keyboard',
-    routing: 'PORTA TIME does the slides between notes; ENV 2 does the sweep',
+    routing: 'PORTA TIME does the slides between notes; ENV 2 does the sweep. **Accent:** there is no sequencer and no arpeggiator here \u2014 p.25\u2019s architecture list is exhaustive and p.10 \u00a74.3 has every note arriving from an external keyboard \u2014 so an accented step is played on whatever drives this box, and nothing here stores which steps are accented. **Slide:** `PORTA TIME 120 ms` above, off fully left and growing to the right (p.7), one setting for every note rather than a per-step lane',
     params: [
       ...voiceMode('off', 'off'),
       ...osc(1, 0, "16'", 'Sawtooth', 50),
@@ -877,7 +877,7 @@ const recipes: Recipe[] = [
     verified: false,
     patchPolyphony: 1,
     title: 'Acid line squeezed through the overdrive and back into the filter',
-    routing: 'VCF 1 into OD IN by cable so the drive sits after a filter that is already screaming',
+    routing: 'VCF 1 into OD IN by cable so the drive sits after a filter that is already screaming. **Accent:** there is no sequencer and no arpeggiator here \u2014 p.25\u2019s architecture list is exhaustive and p.10 \u00a74.3 has every note arriving from an external keyboard \u2014 so an accented step is played on whatever drives this box, and nothing here stores which steps are accented. **Slide:** `PORTA TIME 90 ms` above, off fully left (p.7), one setting for every note rather than a per-step lane',
     params: [
       ...voiceMode('off', 'off'),
       ...osc(1, 0, "16'", 'Sawtooth', 50),

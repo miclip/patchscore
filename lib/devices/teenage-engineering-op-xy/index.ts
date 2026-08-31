@@ -460,8 +460,18 @@ const recipes: Recipe[] = [
       pick('PLAY MODE', 'legato', PLAY_MODES, cite(43), { hint: 'play-mode' }),
       pick('FX I', 'distortion', SEND_FX, SEND_FX_SET, { hint: 'fx' }),
     ],
+    /**
+     * The first articulation on a melodic part here, and the step components are the same ones
+     * the drum parts use: p.30 names the lanes for a *step*, not for a drum track, and p.31's
+     * table is the same ten printed velocities either way. Both values below are off that table.
+     *
+     * 127 against 32 rather than something in between, because on a line like this the accent is
+     * the loudest thing in it and the quiet steps are what make it read as one — the same
+     * contrast `opxy-kick-hard` uses, on a part where it is the whole idiom rather than a detail.
+     */
+    articulation: [velocity('accent', 127), velocity('ghost', 32)],
     routing:
-      'Melodic group (p.73). The squelch is M3 cutoff and resonance with envelope amount up (p.44) — the page names all three encoders and scales none of them',
+      'Melodic group (p.73). The squelch is M3 cutoff and resonance with envelope amount up (p.44) — the page names all three encoders and scales none of them. **Slide:** `PLAY MODE legato` above, so the line slides where one step runs into the next. `portamento` is a step component too (p.30) and its values sit in p.31’s table beside the velocities, but only the velocity row of that table has been read off the page — so no per-step portamento value is set here rather than one guessed at',
   },
   {
     id: 'opxy-texture-soft',

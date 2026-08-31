@@ -909,6 +909,29 @@ const RECIPES: Recipe[] = [
       glide(22),
       pick('ASSIGN OUTPUT', 'Accent', ASSIGN_SOURCES, cite(59), { hint: 'assign-jack' }),
     ],
+    /**
+     * The one gesture this recipe is entirely *about*, and it was the one recipe on the box not
+     * carrying it. Everything else here already says the accent lane is doing the work — the
+     * title, the `routing` sentence, the ASSIGN source set to Accent and the cable summing that
+     * output into the cutoff — and none of it told the reader *which steps to mark*. The three
+     * sibling recipes above and below author exactly this entry, on the same lane p.24 lists as
+     * per-step ("Accent ... defined per-step"), so this is the file's own convention arriving
+     * where its case is strongest: elsewhere an accent is a louder step, and here it is a louder
+     * step that opens the filter, because the patch cable makes the lane a cutoff modulator.
+     *
+     * Reachable rather than hopeful (#108): the `acid` role is requested by one direction and its
+     * four bands each emit `accent`, so this lands in a rendered guide rather than sitting in the
+     * manifest waiting for one.
+     */
+    articulation: [
+      { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
+      // The other half of the idiom, and the box has the lane for it: GLIDE is per-step here even
+      // though the rate is not (p.26), which is exactly the shape a slide has — the rate is a
+      // setting and which steps slide is a decision. `m32-bass-mid-dirty` pairs the same two
+      // entries. The offbeat strikes are the ones that lean into the next step, so they are where
+      // a line like this slides.
+      { slot: 'offbeat', set: { glide: true }, hint: 'glide-step' },
+    ],
     patch: [
       cable(
         'OUT · ASSIGN',
@@ -940,6 +963,17 @@ const RECIPES: Recipe[] = [
       ...vcfMod('EG', '+', 44),
       ...eg(0, 'OFF', 22, 'EG'),
       glide(16),
+    ],
+    /**
+     * Both gestures, on the lanes p.24 and p.26 declare. The `dirty` recipe beside this one routes
+     * ASSIGN into the cutoff so its accent opens the filter as well as leaning on the step; this
+     * one has no cable going spare, so the accent is the level alone. That is a smaller gesture
+     * and still the box's own — `m32-kick-hard` articulates the same lane with no cable at all,
+     * which is what says the accent is audible without one.
+     */
+    articulation: [
+      { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
+      { slot: 'offbeat', set: { glide: true }, hint: 'glide-step' },
     ],
     patch: [
       cable(

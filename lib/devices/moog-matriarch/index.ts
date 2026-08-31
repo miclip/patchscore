@@ -937,7 +937,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Acid line: one saw, resonance near self-oscillation, cutoff tracking the keyboard',
-    routing: `${PLAYED}, VOICE MODE 1. No cable — ENVELOPE AMT reaches the cutoff from the panel`,
+    routing: `${PLAYED}, VOICE MODE 1. No cable — ENVELOPE AMT reaches the cutoff from the panel. **Accent:** there is none on this box. p.46 names three lanes — "Notes, Rests, Ties, and Ratchets" — and an accent is not among them. A ratchet repeats the step rather than emphasising it, so the accented steps this direction asks for are left unplayed here rather than approximated`,
     params: [
       voiceMode('1'),
       ...osc(1, { octave: "8'", wave: 'SAWTOOTH' }),
@@ -948,7 +948,15 @@ const RECIPES: Recipe[] = [
       ...output(70, 'AMP ENV'),
       glide(18),
     ],
-    articulation: [{ slot: 'accent', set: { ratchet: 3 }, hint: 'ratchet-step' }],
+    /**
+     * The slide, on the lane p.46 does declare — and the contrast with the accent above is the
+     * point of authoring it. A tie is a step joined to the next one, which is a per-step decision
+     * this box really can store; `GLIDE 18` above is one knob for the whole instrument (p.12
+     * prints no range for it), so the knob says how far the pitch travels and the tie says which
+     * steps it travels across. Neither half is standing in for the other, which is exactly what
+     * the ratchet was doing on the accent slot.
+     */
+    articulation: [{ slot: 'offbeat', set: { tie: true }, hint: 'tie-step' }],
     verified: false,
   },
 
@@ -1591,6 +1599,15 @@ export const device: Device = {
    * hardware has for the emphasis the pattern is asking for. The slot and the lane are two
    * different vocabularies (§4.3) and this is the first device in the library where they come
    * apart on a step the pattern actually reaches.
+   *
+   * **`mat-acid-bright` is the one exception, and #283 is why.** That issue governs the `acid`
+   * role and says a box that cannot accent a step should have the guide *say so* rather than
+   * approximate it — because on a 303-lineage line the accent is not a detail of the part, it is
+   * the technique the whole idiom is made of. A ratchet stands in for emphasis well enough on
+   * `bass-mid`, where the pattern wants a step leaned on and does not care how; it does not stand
+   * in on a part whose accent pattern *is* the composition, and repeating a step three times there
+   * changes the rhythm rather than the emphasis. So that recipe articulates nothing and its
+   * `routing` states the limitation, which is the honest answer §4.3 leaves room for.
    *
    * Every slot used below was checked against #108's reachability walk *before* it was written and
    * three were moved as a result: a `fill` on `bass-mid` and on `arp`, and a `last-hit` on `sub`,

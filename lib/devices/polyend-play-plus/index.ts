@@ -652,7 +652,8 @@ const SYNTH_RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'track-synth',
     title: 'Saw through the RD3 filter, envelope hard into resonance',
-    routing: 'ACD on a synth slot of its own — one of the three (p.94)',
+    routing:
+      'ACD on a synth slot of its own — one of the three (p.94). **Slide:** `VOICE · GLIDE MODE Legato` with `GLIDE TIME 0.06 s` above — p.98\u2019s "Legato i.e. Envelopes are not triggered", the slide that does not re-attack. It is a voice setting rather than one of the five step lanes (p.60), so it acts wherever two notes overlap and the pattern\u2019s ties decide where that is',
     patchPolyphony: 1,
     params: [
       ...synthMode('ACD'),

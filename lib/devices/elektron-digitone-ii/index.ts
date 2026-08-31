@@ -692,6 +692,8 @@ const recipes: Recipe[] = [
     voice: 'track',
     title: 'WAVETONE acid line, legato slides and the ladder squeezed',
     verified: false,
+    routing:
+      '**Slide:** `PLAY MODE MONO LEG.` above, and the `note-length` on the offbeat trigs below. This box has no portamento lane — its predecessor does, and the difference is real (p.57 lists VEL, LEN and PROB here, and PORT and PTIM there) — so the slide is a legato setting plus notes long enough to run into the next, rather than a step you mark',
     params: [
       syn('WAVETONE'),
       playMode('MONO LEG.'),
@@ -710,7 +712,15 @@ const recipes: Recipe[] = [
       odRouting('PRE'),
       swing(55),
     ],
-    articulation: [art('offbeat', { velocity: 108, 'note-length': '1/16' }, 'trig-params')],
+    articulation: [
+      art('offbeat', { velocity: 108, 'note-length': '1/16' }, 'trig-params'),
+      // The lean the line is built around, and the reason it is a second entry rather than a
+      // larger number on the first: `offbeat` says how the ordinary steps sit and `accent` says
+      // which one is louder than them, so collapsing the two would leave the part with one
+      // velocity and nothing to be accented against. VEL is p.57's per-trig lane, and 120 over
+      // the 108 above is a jump a listener hears without the step leaving the line.
+      art('accent', { velocity: 120 }, 'trig-params'),
+    ],
   },
   {
     id: 'dn2-clap-bright',

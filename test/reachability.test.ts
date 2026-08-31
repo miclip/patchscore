@@ -121,13 +121,31 @@ describe('#108 no device authors a slot no direction emits', () => {
 // ---------------------------------------------------------------------------
 
 describe('#108 keeps the template-library gaps out of the findings', () => {
-  it('says nothing about a role no direction asks for', () => {
-    // `acid` is legal on five boxes and requested by no direction. Every slot on those recipes is
-    // unreachable, and none of it is a device-folder bug.
+  it('says nothing about a recipe no direction can reach', () => {
+    /**
+     * **This was `acid`, and the change is the point of keeping the history.** The example here
+     * used to be *"`acid` is legal on five boxes and requested by no direction"* — 28 recipes over
+     * 20 boxes, every slot on them unreachable, and none of it a device-folder bug. #283 closed
+     * that by authoring `acid-lineage`, so the whole set became reachable in one commit and the
+     * example had to move.
+     *
+     * What is left is the same finding arriving by the other route: a recipe whose *character* no
+     * direction asks for on that role. `crave-lead-dark` is a `dark` lead and both directions that
+     * request `lead` ask for `bright`, which §3.5 excludes outright rather than ranking last — so
+     * the recipe is legal, authored, and reached through nothing. The `clean` vox-chops and the
+     * `dirty` snares are the same shape.
+     *
+     * The claim being defended never depended on which example carried it: whatever
+     * `unrequestedRecipes` names is a template-library gap (#81), and it must never also appear as
+     * dead authoring in a device folder.
+     */
     const unrequested = DEVICES.flatMap((d) => unrequestedRecipes(d, TEMPLATES))
-    expect(unrequested.map((r) => r.recipeId)).toContain('crave-acid-dirty')
+    expect(unrequested.map((r) => r.recipeId)).toContain('crave-lead-dark')
+    // The role that used to be the example, asserted from the other side now: a direction asks
+    // for it, so nothing about it is unreachable any more.
+    expect(unrequested.map((r) => r.recipeId)).not.toContain('crave-acid-dirty')
     const roles = new Set(unrequested.map((r) => r.role))
-    expect(roles.has('acid')).toBe(true)
+    expect(roles.has('acid')).toBe(false)
     for (const found of DEVICES.flatMap((d) => deadArticulationSlots(d, TEMPLATES))) {
       expect(unrequested.map((r) => r.recipeId)).not.toContain(found.recipeId)
     }

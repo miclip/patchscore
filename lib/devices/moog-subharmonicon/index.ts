@@ -787,6 +787,21 @@ const VOICE_ROLES: Role[] = [
  * `subh-metallic-bright` they move the dividers instead — a pitch gesture on any of those would
  * be an instruction with no subject. `subh-sub-dark` and `subh-arp-bright` are left out for
  * #108's reason rather than a musical one: no direction requesting those pairs emits `accent`.
+ *
+ * **`subh-acid-dirty` is excluded for a third reason, and it is the strongest one.** It passes the
+ * musical test above — `SEQ 1 ASSIGN` is lit on pitch and sub 1 — and since Acid Lineage landed it
+ * passes the reachability test too, so on both of the tests this header states it qualifies. It is
+ * still left out, because #283 governs the `acid` role specifically: *"a device that cannot accent
+ * or slide a step is not serving an acid line the same way, and the guide should say so rather
+ * than approximate it."*
+ *
+ * The substitution that is fine on a `lead` or a `stab` is wrong here, and the difference is what
+ * the gesture *is* rather than how good a stand-in it makes. On those roles an octave is a way of
+ * leaning on a step. On a 303-lineage line the accent is a level and a filter envelope, and the
+ * octave button is a separate control the player uses for something else — so telling a reader to
+ * take step 27 up an octave, in answer to a pattern that asked for step 27 to be emphasised, puts
+ * a different note on the page. That is invariant 5's "never invent an assignment to fill a hole"
+ * arriving one layer down, and the recipe's `routing` says the limitation out loud instead.
  */
 const ACCENT_OCTAVE = {
   slot: 'accent' as const,
@@ -1365,7 +1380,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Ladder filter near self-oscillation, envelope opening it every step',
-    routing: `${CLOCKED}. p.23 is the whole patch: "Pushing the RESONANCE level to its maximum and lowering the CUTOFF value can cause the filter to self-oscillate." This sits just under that, so the resonance sings without taking over, and VCF EG AMT does the rest`,
+    routing: `${CLOCKED}. p.23 is the whole patch: "Pushing the RESONANCE level to its maximum and lowering the CUTOFF value can cause the filter to self-oscillate." This sits just under that, so the resonance sings without taking over, and VCF EG AMT does the rest. **Accent:** there is none on this box. p.26 makes a step "a variable tuning knob and an LED", so there is no velocity lane and no accent lane to mark one step louder than its neighbours. SEQ OCT would take a step up an octave, and that is a different note rather than a louder one — so the accented steps this direction asks for are left unplayed here rather than approximated. **Slide:** there is none either. \`pitch\` is the one per-step lane this box declares, no glide or portamento setting appears anywhere in this recipe, and its four steps are advanced by the RHYTHM dividers rather than tied to one another — so a line here steps between its notes instead of sliding into them`,
     params: voice({
       freq1: 330,
       wave1: 'UP',

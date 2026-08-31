@@ -688,7 +688,8 @@ const TONE_RECIPES: Recipe[] = [
       num('ANL', 34, ANALOG_FEEL, { mood: [{ axis: 'grit', amount: 26 }] }),
       shuffle(),
     ],
-    routing: 'Ver.1.80 or later — the partial editor is SHIFT + [SOUND], then PARTIAL',
+    routing:
+      'Ver.1.80 or later — the partial editor is SHIFT + [SOUND], then PARTIAL. **Slide:** `PRT ON` above is the tone-level portamento switch and it carries no time with it — the part-level `PORTA TIME` that the mid bass recipe uses is a different screen — so the slide here is on or off for the whole part, and none of the nine step lanes is a glide',
     articulation: [{ slot: 'accent', set: { 'motion-filter': 118 }, hint: 'motion-step' }],
     verified: false,
   },

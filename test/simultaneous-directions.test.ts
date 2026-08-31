@@ -95,6 +95,7 @@ function widestChord(template: Template): number {
 describe('both directions are registered and parse (§4)', () => {
   it('slots into the registry by id, in UTF-16 code unit order (§7.2)', () => {
     expect(TEMPLATES.map((t) => t.id)).toEqual([
+      'acid-lineage',
       'ambient-dub',
       'drone-study',
       'generative-drift',

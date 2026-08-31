@@ -891,6 +891,7 @@ const recipes: Recipe[] = [
     verified: false,
     // Moog's own instruction, from the Quickstart: legato glide, EXP, TIME 2, ties between
     // notes of different pitches. The ties are the template's business (§4.3); the rest is here.
+    routing: '**Accent:** this manual documents note, velocity and ratchet *recording* rather than a per-step accent lane, so there is no lane here to mark one step louder than its neighbours \u2014 the accent is in the playing, and nothing on this box stores which steps carry it. **Slide:** the `GLIDE` section above is the slide, and on the `dirty` line it is Moog\u2019s own acid instruction verbatim \u2014 *\"Turn on Legato Glide, set Glide Type to EXP, and set the GLIDE TIME knob to 2\"* (p.21). `LEGATO ON` means the pitch only travels between notes that overlap, so the ties in the pattern above are what decide which steps slide',
     title: 'Legato glide on EXP at 2, resonance up, MultiDrive behind it',
     params: [
       ...program(50),
@@ -912,6 +913,7 @@ const recipes: Recipe[] = [
     voice: 'voice',
     verified: false,
     title: 'Squelch with the cutoff already high and the envelope pushing further',
+    routing: '**Accent:** this manual documents note, velocity and ratchet *recording* rather than a per-step accent lane, so there is no lane here to mark one step louder than its neighbours \u2014 the accent is in the playing, and nothing on this box stores which steps carry it. **Slide:** the `GLIDE` section above, `LEGATO ON` and `TIME 1.5` \u2014 shorter than the `dirty` line\u2019s 2, so the pitch arrives sooner. Legato means the pitch only travels between overlapping notes, so the ties in the pattern above decide which steps slide',
     params: [
       ...program(50),
       ...glide({ on: 'ON', type: 'EXP', osc: 'BOTH', time: 1.5, gated: 'OFF', legato: 'ON' }),
@@ -932,6 +934,7 @@ const recipes: Recipe[] = [
     voice: 'voice',
     verified: false,
     title: 'Four poles, a very short decay and no sustain at all',
+    routing: '**Accent:** this manual documents note, velocity and ratchet *recording* rather than a per-step accent lane, so there is no lane here to mark one step louder than its neighbours \u2014 the accent is in the playing, and nothing on this box stores which steps carry it. **Slide:** the `GLIDE` section above, `LEGATO ON` and `TIME 1` \u2014 the shortest of the three, which is what keeps a line this separated from smearing. Legato means the pitch only travels between overlapping notes, so the ties in the pattern above decide which steps slide',
     params: [
       ...program(50),
       ...glide({ on: 'ON', type: 'EXP', osc: 'BOTH', time: 1, gated: 'OFF', legato: 'ON' }),

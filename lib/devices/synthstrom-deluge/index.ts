@@ -823,6 +823,8 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'track',
     title: 'Saw through the drive ladder, filters in series',
+    routing:
+      '**Slide:** none is programmed here. The four step lanes this box declares are velocity, probability, iteration and automation — none of them a glide — so a slide on this part is a portamento set on the synth itself and applied to every note, not a step you mark',
     params: [
       clipType('Synth'),
       pick('OSC 1 TYPE', 'Analog Saw', OSC_TYPES, cite(81)),

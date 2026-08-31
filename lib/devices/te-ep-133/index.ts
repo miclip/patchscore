@@ -562,7 +562,7 @@ const recipes: Recipe[] = [
     ),
     params: [pick('PLAY MODE', 'legato', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
     routing:
-      'Group B. The filter is one of the six on the FX selector, with cutoff on [X] and resonance on [Y] — turn the group’s fader up to send into it',
+      'Group B. The filter is one of the six on the FX selector, with cutoff on [X] and resonance on [Y] — turn the group’s fader up to send into it. **Accent:** the per-step velocity is real on this box and has no printed scale anywhere in the guide, so no value is set here rather than one invented. Mark the accented steps by ear on the box itself. **Slide:** `PLAY MODE legato` above is the guide’s own sense of the word — monophonic, and a held note "will continue playing from the same point as it was left off" — which joins the notes without bending the pitch between them. There is no portamento on this box, so an acid line here steps between its notes',
   },
 
   // -------------------------------------------------------------------------

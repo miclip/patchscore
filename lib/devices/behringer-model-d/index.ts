@@ -1053,7 +1053,7 @@ const recipes: Recipe[] = [
     voice: 'voice',
     verified: false,
     title: 'One saw, resonance high, filter tracking the keyboard',
-    routing: 'No cables. GLIDE does the slides; both KEYBOARD CONTROL switches keep the peak in tune',
+    routing: 'No cables. GLIDE does the slides; both KEYBOARD CONTROL switches keep the peak in tune. **Accent:** there is no sequencer and no arpeggiator here — p.34\u2019s architecture list is exhaustive and carries neither — so an accented step is something the player does at the keyboard driving it, and nothing on this box stores which steps are accented. **Slide:** `GLIDE 2` above, p.8\u2019s \"portamento between notes\", one setting for every note rather than a per-step lane',
     params: [
       ...perf(0, 2),
       ...osc1("8'", 'saw'),

@@ -837,7 +837,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Resonant ladder squelch, envelope on the cutoff, driven in',
-    routing: `${PLAYED}. Q high enough to whistle: every LP mode self-oscillates (p.46)`,
+    routing: `${PLAYED}. Q high enough to whistle: every LP mode self-oscillates (p.46). **Accent:** and **Slide:** both belong to whatever is driving this box. Cascadia has no sequencer, no arpeggiator and no step editor, so there is no step here to accent and none to slide from \u2014 both gestures arrive with the notes, from the controller or sequencer playing it`,
     params: [
       pick('VCF · MODE', 'LP4', FILTER_MODES, cite(46)),
       travel('VCF · FREQ', 22),
@@ -875,7 +875,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Band-pass squelch with the pulse thinned right down',
-    routing: `${PLAYED}. BP4 keeps the top and drops the weight`,
+    routing: `${PLAYED}. BP4 keeps the top and drops the weight. **Accent:** and **Slide:** both belong to whatever is driving this box. Cascadia has no sequencer, no arpeggiator and no step editor, so there is no step here to accent and none to slide from \u2014 both gestures arrive with the notes, from the controller or sequencer playing it`,
     params: [
       pick('VCF · MODE', 'BP4', FILTER_MODES, cite(46)),
       travel('VCF · FREQ', 46),
