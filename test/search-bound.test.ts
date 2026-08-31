@@ -130,8 +130,9 @@ import { TEMPLATES } from '../lib/templates/index'
  *     on the first branch, and the whole subtree behind the old approximations is pruned. The
  *     seed-to-seed variance collapses with it, from 107-279 to 116/119.
  *
- * The whole sweep is 168 exhaustive searches. It used to take about fifteen seconds, nearly all
- * of it in `industrial-techno`; the repair took it under two.
+ * The whole sweep was 168 exhaustive searches at the time of that repair, and is 192 now that
+ * `generative-drift` has landed. It used to take about fifteen seconds, nearly all of it in
+ * `industrial-techno`; the repair took it under two.
  *
  * ## The Muse, and a cost that lands on one direction rather than across the board
  *
@@ -591,6 +592,21 @@ import { TEMPLATES } from '../lib/templates/index'
  * Still nothing caps. `industrial-techno` at 728,123 is 36.4% of the 2,000,000
  * `DEFAULT_NODE_CAP`, and the headroom is 2.75x — above the 2x the constant was derived at, from
  * 2.89x.
+ *
+ * ## Generative Drift, a row added rather than a row moved
+ *
+ * The eighth direction is the first entry here that is not a device landing, so nothing above it
+ * moved: a direction is a new problem, not a new answer to the seven existing ones, and the other
+ * rows reproduce to the node. Its own row runs 215-743 over the twenty-four seeds, which puts it
+ * between `lydian-house` and `major-key-electro` and nowhere near the cap.
+ *
+ * It asks for eight parts, which is `weave`'s count, and costs three orders of magnitude less than
+ * `weave` does. The difference is what the parts are: `weave` is seven percussion roles competing
+ * for the same drum voices on nearly every box, so the branching is in the ties. This one spreads
+ * its eight over `pad`, `sub`, `arp`, `closed-hat`, `metallic`, `ghost-perc`, `texture` and
+ * `sweep` — eight different roles, most of them answered exactly by whichever boxes answer them at
+ * all — so `liveFloor` is tight from the first branch and there is little for the seed to permute.
+ * Part count is not what this table measures; contention is.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -604,6 +620,10 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
     ],
     'drone-study': [
       35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35
+    ],
+    'generative-drift': [
+      422, 215, 635, 217, 743, 215, 635, 215, 563, 293, 714, 215, 556, 296, 268, 293, 215, 268, 293,
+      556, 217, 556, 293, 563
     ],
     'industrial-techno': [
       623144, 630714, 625534, 629074, 632832, 623152, 629552, 624792, 628767, 621490, 675605, 624792,
