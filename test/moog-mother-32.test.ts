@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   NEUTRAL_MOOD,
   canFollow,
+  moodState,
   clockSourceSetup,
   clockWires,
   reachableSlots,
@@ -186,12 +187,32 @@ describe('Mother-32 accent articulation (§4.3)', () => {
     return found
   }
 
-  /** Phase 5's `acid` block, from its heading to the next one. */
+  /**
+   * Phase 5's `acid` block, from its heading to the next one.
+   *
+   * **At full grit, and the mood is load-bearing rather than decorative.** Acid Lineage authors
+   * `r-acid` as `hard` so that its knobs reach all three authored families (§3.4's geometry), and
+   * at the neutral detent this box therefore serves `m32-acid-bright` — the hi-pass line — rather
+   * than the recipe this block is about. Full grit ties `hard` with `dirty` and loses the tie to
+   * `dirty`, which is where `m32-acid-dirty` lives.
+   *
+   * Worth the sentence because the test passed either way for a while: both acid recipes on this
+   * box carry the same two articulation entries, so every assertion below held while the guide
+   * being read was the other recipe. Green, and about the wrong subject.
+   */
   function acidBlock(): string[] {
     const only = DEVICES.filter((d) => d.id === device.id)
-    const doc = renderGuide(
-      resolve({ devices: only, template: acidLineage, mood: NEUTRAL_MOOD, seed: 1 }),
-    ).split('\n')
+    const result = resolve({
+      devices: only,
+      template: acidLineage,
+      mood: moodState({ grit: 100 }),
+      seed: 1,
+    })
+    expect(
+      result.assignments.find((a) => a.requestId === 'r-acid')?.recipe.id,
+      'full grit no longer reaches the dirty acid recipe on this box',
+    ).toBe('m32-acid-dirty')
+    const doc = renderGuide(result).split('\n')
     const start = doc.indexOf('## 5. Step programming')
     expect(start, 'the guide has no step programming phase').toBeGreaterThan(-1)
     const heading = doc.findIndex((l, i) => i > start && l.startsWith('### `acid`'))

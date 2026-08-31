@@ -357,15 +357,40 @@ export const acidLineage: Template = {
      * placement and everything the density knob does — which on a five-part direction is most of
      * what a reader has to work with.
      *
-     * `dirty` because that is what the recipe library actually authored: 17 of the 28 `acid`
-     * recipes are `dirty`, 9 `bright`, 2 `hard`, and asking for the well-covered one is what makes
-     * this direction resolvable on a rig somebody owns rather than only on the full rack.
+     * ## `hard`, and the reason is §3.4's geometry rather than a count
+     *
+     * The obvious answer is `dirty` — 17 of the 28 authored `acid` recipes are `dirty`, 9 are
+     * `bright` and 2 are `hard` — and it was the answer here first. It is the wrong one, because
+     * of what a *request* character does: mood moves it (§6.2), and it can only move along the two
+     * axes the mood knobs touch. `resolveCharacter` adds tone from `darkness` and grit from
+     * `grit`, and there is no force knob, so a request pinned anywhere on the force axis can be
+     * pushed off it while a request pinned off it can never be pushed on.
+     *
+     * From `hard` the three authored families are all one knob away, and the tie-breaks are code
+     * unit order rather than luck:
+     *
+     *   neutral        (1, 0, 0)  →  `hard` exactly
+     *   grit 100       (1, 0, 1)  →  ties `hard` with `dirty`, and `dirty` sorts first
+     *   darkness 0     (1, 1, 0)  →  ties `hard` with `bright`, and `bright` sorts first
+     *
+     * From `dirty` the force axis is unreachable at any setting of any knob, so the two `hard`
+     * recipes in the library are unreachable from this direction and would stay so. `hard` is the
+     * gateway; `dirty` is a cul-de-sac with more parking.
+     *
+     * **What it costs, recorded because it is a real cost and not a rounding error.** The neutral
+     * default moves on six boxes, and two of those moves are away from the idiom's centre: the
+     * Mother-32 now opens on its hi-pass line rather than the resonant low-pass one, and the
+     * Minitaur opens on `minitaur-acid-hard`, which is the one acid recipe in the library with
+     * `GLIDE Off` — an acid line with no slide, on a direction whose header is half about the
+     * slide. Both are one turn of a knob from the recipe a reader probably wanted, and the guide
+     * says which knob. That is the trade: a worse default on six rigs, against nine recipes and a
+     * whole character family that no setting of any knob could otherwise reach.
      */
     {
       id: 'r-acid',
       role: 'acid',
       priority: 1,
-      character: 'dirty',
+      character: 'hard',
       sustain: 'continuous',
       reArticulatesHook: true,
     },

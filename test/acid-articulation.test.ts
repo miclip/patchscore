@@ -282,46 +282,70 @@ describe('the two boxes that refuse the accent instead of standing one in (#283)
  */
 type Account = 'bound' | 'stated'
 
+/**
+ * The three fixed moods every row is rendered at, and the reason there are exactly three.
+ *
+ * `r-acid` is authored `hard`, which §3.4's geometry makes the gateway to all three authored
+ * families: neutral resolves to `hard` itself, full grit ties `hard` with `dirty` and loses the
+ * tie by code unit order, and the bright-side darkness setting does the same for `bright`. So one
+ * knob position per family reaches every recipe in the library, and each row below names the one
+ * that reaches it. Pinned rather than searched: a row whose mood stops selecting its recipe is a
+ * change in what a reader gets at that setting, which is the thing this table is for.
+ */
+const MOOD_AT = {
+  neutral: {},
+  grit: { grit: 100 },
+  bright: { darkness: 0 },
+} as const
+
+type MoodName = keyof typeof MOOD_AT
+
 /** Lane names that carry a slide. Every one is declared in some device's `features.perStep`. */
 const SLIDE_LANES = ['portamento', 'portamento-time', 'glide', 'tie', 'gate'] as const
 
-const AUDIT: readonly (readonly [device: string, recipe: string, accent: Account, slide: Account])[] =
+const AUDIT: readonly (readonly [
+  device: string,
+  recipe: string,
+  accent: Account,
+  slide: Account,
+  mood: MoodName,
+])[] =
   [
     // Semi-modulars and synths with no sequencer at all: both gestures are played.
-    ['behringer-crave', 'crave-acid-dirty', 'stated', 'stated'],
-    ['behringer-crave', 'crave-acid-bright', 'stated', 'stated'],
-    ['behringer-model-d', 'model-d-acid-bright', 'stated', 'stated'],
-    ['behringer-neutron', 'neutron-acid-bright', 'stated', 'stated'],
-    ['behringer-neutron', 'neutron-acid-dirty', 'stated', 'stated'],
-    ['intellijel-cascadia', 'cascadia-acid-dirty', 'stated', 'stated'],
-    ['intellijel-cascadia', 'cascadia-acid-bright', 'stated', 'stated'],
-    ['moog-minitaur', 'minitaur-acid-dirty', 'stated', 'stated'],
-    ['moog-minitaur', 'minitaur-acid-bright', 'stated', 'stated'],
-    ['moog-minitaur', 'minitaur-acid-hard', 'stated', 'stated'],
-    ['moog-subsequent-37', 'sub37-acid-dirty', 'stated', 'stated'],
-    ['moog-subsequent-37', 'sub37-acid-bright', 'stated', 'stated'],
-    ['moog-subsequent-37', 'sub37-acid-hard', 'stated', 'stated'],
+    ['behringer-crave', 'crave-acid-dirty', 'stated', 'stated', 'grit'],
+    ['behringer-crave', 'crave-acid-bright', 'stated', 'stated', 'neutral'],
+    ['behringer-model-d', 'model-d-acid-bright', 'stated', 'stated', 'neutral'],
+    ['behringer-neutron', 'neutron-acid-bright', 'stated', 'stated', 'neutral'],
+    ['behringer-neutron', 'neutron-acid-dirty', 'stated', 'stated', 'grit'],
+    ['intellijel-cascadia', 'cascadia-acid-dirty', 'stated', 'stated', 'grit'],
+    ['intellijel-cascadia', 'cascadia-acid-bright', 'stated', 'stated', 'neutral'],
+    ['moog-minitaur', 'minitaur-acid-dirty', 'stated', 'stated', 'grit'],
+    ['moog-minitaur', 'minitaur-acid-bright', 'stated', 'stated', 'bright'],
+    ['moog-minitaur', 'minitaur-acid-hard', 'stated', 'stated', 'neutral'],
+    ['moog-subsequent-37', 'sub37-acid-dirty', 'stated', 'stated', 'grit'],
+    ['moog-subsequent-37', 'sub37-acid-bright', 'stated', 'stated', 'bright'],
+    ['moog-subsequent-37', 'sub37-acid-hard', 'stated', 'stated', 'neutral'],
 
     // Moog sequencers, where the lanes differ box to box and so do the answers.
-    ['moog-grandmother', 'gm-acid-bright', 'bound', 'bound'],
-    ['moog-matriarch', 'mat-acid-bright', 'stated', 'bound'],
-    ['moog-mother-32', 'm32-acid-dirty', 'bound', 'bound'],
-    ['moog-mother-32', 'm32-acid-bright', 'bound', 'bound'],
-    ['moog-subharmonicon', 'subh-acid-dirty', 'stated', 'stated'],
+    ['moog-grandmother', 'gm-acid-bright', 'bound', 'bound', 'neutral'],
+    ['moog-matriarch', 'mat-acid-bright', 'stated', 'bound', 'neutral'],
+    ['moog-mother-32', 'm32-acid-dirty', 'bound', 'bound', 'grit'],
+    ['moog-mother-32', 'm32-acid-bright', 'bound', 'bound', 'neutral'],
+    ['moog-subharmonicon', 'subh-acid-dirty', 'stated', 'stated', 'neutral'],
 
     // Grooveboxes: the accent is nearly always a lane, the slide nearly never.
-    ['elektron-digitone', 'dn-acid-dirty', 'bound', 'bound'],
-    ['elektron-digitone-ii', 'dn2-acid-dirty', 'bound', 'stated'],
-    ['novation-circuit-tracks', 'ct-acid-dirty', 'bound', 'bound'],
-    ['polyend-play-plus', 'pp-acid-dirty', 'bound', 'stated'],
-    ['roland-mc-101', 'mc101-acid-dirty', 'bound', 'stated'],
-    ['roland-mc-707', 'mc707-acid-dirty', 'bound', 'stated'],
-    ['synthstrom-deluge', 'deluge-acid-dirty', 'bound', 'stated'],
-    ['teenage-engineering-op-xy', 'opxy-acid-dirty', 'bound', 'stated'],
+    ['elektron-digitone', 'dn-acid-dirty', 'bound', 'bound', 'neutral'],
+    ['elektron-digitone-ii', 'dn2-acid-dirty', 'bound', 'stated', 'neutral'],
+    ['novation-circuit-tracks', 'ct-acid-dirty', 'bound', 'bound', 'neutral'],
+    ['polyend-play-plus', 'pp-acid-dirty', 'bound', 'stated', 'neutral'],
+    ['roland-mc-101', 'mc101-acid-dirty', 'bound', 'stated', 'neutral'],
+    ['roland-mc-707', 'mc707-acid-dirty', 'bound', 'stated', 'neutral'],
+    ['synthstrom-deluge', 'deluge-acid-dirty', 'bound', 'stated', 'neutral'],
+    ['teenage-engineering-op-xy', 'opxy-acid-dirty', 'bound', 'stated', 'neutral'],
 
     // Samplers whose per-step editing is real and whose manuals print no scale for it.
-    ['te-ep-133', 'ep133-acid-dirty', 'stated', 'stated'],
-    ['te-ep-40', 'ep40-acid-dirty', 'stated', 'stated'],
+    ['te-ep-133', 'ep133-acid-dirty', 'stated', 'stated', 'neutral'],
+    ['te-ep-40', 'ep40-acid-dirty', 'stated', 'stated', 'neutral'],
   ]
 
 function accentEntries(recipe: Recipe) {
@@ -335,31 +359,27 @@ function slideEntries(recipe: Recipe) {
 }
 
 /**
- * The moods that reach a recipe other than the one a neutral `dirty` request lands on. Character
- * selection moves along tone and grit (§6.2), so sweeping those two reaches every `dirty` and
- * `bright` recipe in the library. Fixed list, fixed seed: this is a deterministic search for the
- * one mood that selects a given recipe, not a random probe.
+ * The guide this recipe renders in: its own box alone, at the one mood its row names, seed 1.
+ *
+ * Throws rather than returning `undefined` if that mood selects something else. A row is a claim
+ * that a reader at this knob position gets this recipe, and a soft failure here would let the
+ * table drift into describing recipes nobody can reach.
  */
-const MOODS = [
-  {},
-  { grit: 0 },
-  { grit: 100 },
-  { darkness: 0 },
-  { darkness: 100 },
-  { grit: 0, darkness: 100 },
-  { grit: 0, darkness: 0 },
-  { grit: 100, darkness: 0 },
-]
-
-/** The guide that renders `recipeId` on a one-box rig, or `undefined` if no mood reaches it. */
-function guideFor(deviceId: string, recipeId: string): string | undefined {
+function guideFor(deviceId: string, recipeId: string, mood: MoodName): string {
   const only = DEVICES.filter((d) => d.id === deviceId)
-  for (const mood of MOODS) {
-    const result = resolve({ devices: only, template: acidLineage, mood: moodState(mood), seed: 1 })
-    const carried = result.assignments.find((a) => a.requestId === 'r-acid')
-    if (carried?.recipe.id === recipeId) return renderGuide(result)
+  const result = resolve({
+    devices: only,
+    template: acidLineage,
+    mood: moodState(MOOD_AT[mood]),
+    seed: 1,
+  })
+  const carried = result.assignments.find((a) => a.requestId === 'r-acid')
+  if (carried?.recipe.id !== recipeId) {
+    throw new Error(
+      `${deviceId} at the '${mood}' mood carries ${carried?.recipe.id ?? 'nothing'}, not ${recipeId}`,
+    )
   }
-  return undefined
+  return renderGuide(result)
 }
 
 describe('every acid recipe accounts for the accent and the slide (#283)', () => {
@@ -394,19 +414,12 @@ describe('every acid recipe accounts for the accent and the slide (#283)', () =>
     }
   })
 
-  it.each(AUDIT)('%s / %s says it on the page, where a reader is', (deviceId, recipeId, accent, slide) => {
+  it.each(AUDIT)('%s / %s says it on the page, where a reader is', (deviceId, recipeId, accent, slide, mood) => {
     // The manifest half above cannot fail interestingly; this is the half that can. A `routing`
     // sentence is only an account if the guide prints it, and a bound lane is only an account if
-    // the instruction reaches phase 5.
-    const doc = guideFor(deviceId, recipeId)
-    if (doc === undefined) {
-      // Two recipes cannot be rendered from this direction, and the reason is structural rather
-      // than a hole: they are `hard`, Acid Lineage requests `dirty`, and `hard`/`soft` is the force
-      // axis — which no mood axis moves (§6.2 moves tone and grit only). Nothing selects them until
-      // a direction asks for a hard acid line, and none does.
-      expect(['minitaur-acid-hard', 'sub37-acid-hard']).toContain(recipeId)
-      return
-    }
+    // the instruction reaches phase 5. Every row renders — there is no exempt case, which is what
+    // authoring the request as `hard` bought.
+    const doc = guideFor(deviceId, recipeId, mood)
     const block = acidBlockOf(doc)
     if (accent === 'bound') {
       expect(block.some((l) => l.startsWith('- `accent` → ')), `${recipeId} accent`).toBe(true)
@@ -423,10 +436,16 @@ describe('every acid recipe accounts for the accent and the slide (#283)', () =>
     }
   })
 
-  it('renders 26 of the 28, and names the two it cannot', () => {
-    const rendered = AUDIT.filter(([d, r]) => guideFor(d, r) !== undefined).map(([, r]) => r)
-    expect(rendered).toHaveLength(26)
-    const missing = AUDIT.map(([, r]) => r).filter((r) => !rendered.includes(r))
-    expect(missing).toEqual(['minitaur-acid-hard', 'sub37-acid-hard'])
+  it('renders all 28, from three knob positions', () => {
+    // The whole library reachable from one direction, which it was not while `r-acid` asked for
+    // `dirty`: force is the one character axis no mood knob moves, so the two `hard` recipes could
+    // not be selected at any setting and the audit had two rows it could only check on paper.
+    for (const [deviceId, recipeId, , , mood] of AUDIT) {
+      expect(guideFor(deviceId, recipeId, mood).length).toBeGreaterThan(0)
+    }
+    // And the three positions each carry their share, so no family is reachable only in principle.
+    const byMood = new Map<MoodName, number>()
+    for (const [, , , , mood] of AUDIT) byMood.set(mood, (byMood.get(mood) ?? 0) + 1)
+    expect([...byMood.keys()].sort()).toEqual(['bright', 'grit', 'neutral'])
   })
 })
