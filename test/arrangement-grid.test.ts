@@ -7,6 +7,7 @@ import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './gol
 import { DEVICES } from '../lib/devices/registry.generated'
 import { industrialTechno } from '../lib/templates/index'
 import { ArrangementGrid } from '../components/guide/song-tables'
+import { readFileSync } from 'node:fs'
 
 /**
  * §4.2/#297. The arrangement as a grid: parts as rows, sections as columns drawn to their bars.
@@ -185,5 +186,38 @@ describe('the web vocabulary', () => {
   it('is laid out to fit rather than to overflow', () => {
     expect(markup()).toContain('class="arrangement"')
     expect(markup()).toContain('<colgroup>')
+  })
+})
+
+/**
+ * #297. The two faults the first version shipped with, asserted against the stylesheet.
+ *
+ * Both were invisible in the markup and obvious on a phone, which is why they got through: the
+ * fixtures rendered `ArrangementGrid` and checked its classes, and every one of them passed while
+ * the page drew a single orange rectangle.
+ *
+ * A stylesheet assertion is a blunt instrument and this file uses it twice only because the bugs
+ * were structural rather than cosmetic. A `<td>` background paints the padding box, so twelve
+ * playing cells touched on every side and the rows vanished inside one block — the grid drew the
+ * opposite of a grid. And `text-overflow: ellipsis` turned `Breakdown` into `BRE…`, which is the
+ * renderer discarding a template's own word to protect a picture, the exact thing the Markdown
+ * grid refuses to do and is asserted above for.
+ */
+describe('the stylesheet carries the two things the markup cannot say', () => {
+  const css = (): string =>
+    readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
+      .split('§4.2/#297 arrangement')
+      .slice(1)
+      .join('')
+
+  it('clips cell backgrounds to the content box, so rows do not merge', () => {
+    expect(css()).toContain('background-clip: content-box')
+  })
+
+  it('never truncates a name to fit a column', () => {
+    // Wrapping is the sanctioned answer (#21): wrap or scroll, never shrink or cut.
+    expect(css()).not.toContain('text-overflow')
+    expect(css()).toContain('white-space: normal')
+    expect(css()).toContain('overflow-wrap: anywhere')
   })
 })
