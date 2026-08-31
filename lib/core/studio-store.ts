@@ -93,15 +93,59 @@ export type StoredRigV1 = {
   id: string
   name: string
   devices: readonly RigMemberV1[]
+  /**
+   * §7.4/#304. **Which box leads this rig, remembered with the rig rather than with the guide.**
+   *
+   * `clockSourceId` is a `GuideInputsV1` field, so it rides permalinks and changes per score.
+   * That is right for a shared link and wrong for the studio: which box is the clock is a fact
+   * about somebody's desk, not about the track they are making. The Hapax is the clock whatever
+   * direction is selected, and before this the choice was lost on every reload.
+   *
+   * **On the rig and not global**, because it names a device: a preference stored beside the
+   * jack style would point at a box the current rig does not contain. This is the same reasoning
+   * `RigMemberV1` already embodies — membership and per-device state are one fact — one level up.
+   *
+   * Optional, so a document written before this field stays valid, and dropped by `reconcileRig`
+   * the moment its device leaves the rig.
+   */
+  clockSourceId?: DeviceId
 }
 
-/** The whole persisted studio: one rig, and the score inputs currently on screen. */
+/** The whole persisted studio: the current rig, what came before it, and the score on screen. */
 export type StudioDocV1 = {
   version: typeof STUDIO_DOC_VERSION
   rig: StoredRigV1
   /** Not rig state (#16). Template, inspirations, mood, seed — what a *score* is made of. */
   inputs: ScoreInputsV1
+  /**
+   * §8.2/#304. **Rigs the reader has had before this one, newest first.**
+   *
+   * Automatic rather than named, and that is the first cut on purpose. A named list needs a
+   * naming UI and a decision from somebody who came here to make a track; a history needs
+   * neither and answers the question that actually recurs — *what did I have plugged in last
+   * week* — which is a question about the past rather than about organising the future. Names
+   * are #16's job, on the day rigs become first-class and get a server row.
+   *
+   * Bounded at `RECENT_RIGS_MAX` and deduplicated by membership, so switching a direction twenty
+   * times does not push a real rig off the end. `localStorage` is small and shared across the
+   * origin; an unbounded list here is a quota failure that costs somebody their whole studio.
+   *
+   * **A remembered rig may exceed `MAX_RIG_DEVICES`.** The cap is a picker rule and not a format
+   * rule (#301), so a rig stored before it existed is still a rig. Restoring one loads it whole
+   * and refuses additions; truncating it to fit would be the app quietly editing what somebody
+   * built.
+   *
+   * Optional, so a document written before this field stays valid.
+   */
+  recent?: readonly StoredRigV1[]
 }
+
+/**
+ * How many previous rigs to keep. Small deliberately: this is a shortcut back to something
+ * recognisable, not an archive, and the list is read by eye in a picker that already has a
+ * catalogue in it.
+ */
+export const RECENT_RIGS_MAX = 5
 
 /**
  * v1 has one rig and the user never named it, so its id is a constant rather than a generated
@@ -140,11 +184,62 @@ export function implicitRig(devices: readonly DeviceId[]): StoredRigV1 {
  */
 export function reconcileRig(rig: StoredRigV1, devices: readonly DeviceId[]): StoredRigV1 {
   const existing = new Map(rig.devices.map((member) => [member.deviceId, member]))
+  // #304. The clock source is a member like any other: unticking the box that led the rig drops
+  // the choice with it, rather than leaving a rig whose clock names something it does not contain.
+  const clockSourceId =
+    rig.clockSourceId !== undefined && devices.includes(rig.clockSourceId)
+      ? rig.clockSourceId
+      : undefined
   return {
     id: rig.id,
     name: rig.name,
     devices: devices.map((deviceId) => existing.get(deviceId) ?? { deviceId, settings: {} }),
+    ...(clockSourceId === undefined ? {} : { clockSourceId }),
   }
+}
+
+/**
+ * §8.2/#304. The history after this rig becomes the current one.
+ *
+ * Deduplicated **by membership rather than by id**, because every rig carries `IMPLICIT_RIG_ID`
+ * until #16 makes them first-class — an id comparison would collapse the whole list to one entry.
+ * Two rigs holding the same boxes are the same rig here even if their clock source differs, since
+ * what a reader recognises in this list is the set of boxes.
+ *
+ * Pure and order-stable. The incoming rig is *not* added: it is the current one, and a history
+ * containing what you already have is a row that does nothing.
+ */
+export function rememberRig(
+  previous: StoredRigV1 | undefined,
+  recent: readonly StoredRigV1[] | undefined,
+): readonly StoredRigV1[] {
+  const before = recent ?? []
+  if (previous === undefined || previous.devices.length === 0) return before.slice(0, RECENT_RIGS_MAX)
+  const key = (rig: StoredRigV1): string => rig.devices.map((m) => m.deviceId).join('\u0000')
+  const mine = key(previous)
+  return [previous, ...before.filter((rig) => key(rig) !== mine)].slice(0, RECENT_RIGS_MAX)
+}
+
+/**
+ * §8.2/#304. The history a document should carry once the rig holds `devices`.
+ *
+ * **A rig enters the history when it stops being the current one**, which is the only moment it
+ * becomes worth a shortcut back to. Comparison is on membership: a direction change, a mood knob
+ * or a reroll all rewrite the document and none of them is a new rig, so keying on anything
+ * looser would fill five slots with one rig before the reader finished a track.
+ *
+ * Takes the *stored* document rather than the live one, because the question is what was there
+ * before this edit — the caller holds the new devices and the store holds the old rig, and
+ * nothing else needs to be threaded through the sync path to answer it.
+ */
+export function advanceHistory(
+  stored: StudioDocV1 | undefined,
+  devices: readonly DeviceId[],
+): readonly StoredRigV1[] {
+  if (stored === undefined) return []
+  const was = stored.rig.devices.map((member) => member.deviceId)
+  const same = was.length === devices.length && was.every((id, i) => id === devices[i])
+  return same ? (stored.recent ?? []) : rememberRig(stored.rig, stored.recent)
 }
 
 /**
@@ -153,10 +248,25 @@ export function reconcileRig(rig: StoredRigV1, devices: readonly DeviceId[]): St
  * Passing the loaded rig reconciles it rather than overwriting it, so a caller cannot preserve
  * a rig's identity and lose its settings by forgetting a step — there is no step to forget.
  */
-export function studioDoc(inputs: GuideInputsV1, rig?: StoredRigV1): StudioDocV1 {
+export function studioDoc(
+  inputs: GuideInputsV1,
+  rig?: StoredRigV1,
+  recent?: readonly StoredRigV1[],
+): StudioDocV1 {
+  const base = rig === undefined ? implicitRig(inputs.devices) : reconcileRig(rig, inputs.devices)
+  // #304. The input wins over the stored rig: the reader has just chosen, or opened a permalink
+  // that names one, and either way what is on screen is the current answer. `reconcileRig` has
+  // already dropped a stored id whose box has left, so an absent input leaves the rig's own.
+  const clockSourceId = inputs.clockSourceId ?? base.clockSourceId
   return {
     version: STUDIO_DOC_VERSION,
-    rig: rig === undefined ? implicitRig(inputs.devices) : reconcileRig(rig, inputs.devices),
+    rig: {
+      ...base,
+      ...(clockSourceId === undefined || !inputs.devices.includes(clockSourceId)
+        ? {}
+        : { clockSourceId }),
+    },
+    ...(recent === undefined || recent.length === 0 ? {} : { recent: [...recent] }),
     inputs: {
       templateId: inputs.templateId,
       inspirations: [...inputs.inspirations],
@@ -186,6 +296,9 @@ export function guideInputsFrom(doc: StudioDocV1): GuideInputsV1 {
     seed: doc.inputs.seed,
     ...(doc.inputs.bpm === undefined ? {} : { bpm: doc.inputs.bpm }),
     ...(doc.inputs.key === undefined ? {} : { key: doc.inputs.key }),
+    // #304. Read off the rig rather than the score, which is where it is stored and why the
+    // choice now survives a reload at all.
+    ...(doc.rig.clockSourceId === undefined ? {} : { clockSourceId: doc.rig.clockSourceId }),
   }
 }
 
@@ -250,6 +363,8 @@ const StoredRigSchema = z.strictObject({
   id: z.string().min(1),
   name: z.string().min(1),
   devices: z.array(RigMemberSchema),
+  // #304. Optional for the reason #161's two are: a document already on disk predates it.
+  clockSourceId: z.string().regex(PERMALINK_ID).optional(),
 })
 
 const ScoreInputsSchema = z.strictObject({
@@ -277,6 +392,12 @@ const StudioDocSchema = z.strictObject({
   version: z.literal(STUDIO_DOC_VERSION),
   rig: StoredRigSchema,
   inputs: ScoreInputsSchema,
+  /**
+   * #304. Bounded on disk as well as in `rememberRig`, for the reason `INSPIRATION_CAP` is
+   * bounded here: `localStorage` is user-editable, so a document claiming fifty rigs is
+   * corruption to report rather than a history to honour.
+   */
+  recent: z.array(StoredRigSchema).max(RECENT_RIGS_MAX).optional(),
 })
 
 /** First issue only, path included, stored values never echoed back. */
@@ -310,7 +431,37 @@ export function checkStudioDoc(
   if (!parsed.success) return { detail: firstIssue(parsed.error) }
 
   const problem = checkGuideInputs(guideInputsFrom(doc), catalogue)
-  return problem === undefined ? undefined : { detail: problem.detail }
+  if (problem !== undefined) return { detail: problem.detail }
+
+  /**
+   * #304. Two claims the schema cannot make, both about ids rather than shapes.
+   *
+   * A clock source naming a box the rig does not contain is a rig whose leader is not in it —
+   * `reconcileRig` cannot produce one, so a document carrying it was hand-edited or foreign, and
+   * the file's standing rule is that such a document is reported rather than repaired.
+   *
+   * Remembered rigs are checked against the catalogue for the same reason the current one is: an
+   * unknown id is evidence, and #16 freezes shipped ids so it cannot happen in normal use. They
+   * are deliberately *not* checked against `MAX_RIG_DEVICES` — the cap is a picker rule, and a
+   * rig stored before it existed is still a rig somebody had (#301).
+   */
+  if (doc.rig.clockSourceId !== undefined) {
+    const members = doc.rig.devices.map((member) => member.deviceId)
+    if (!members.includes(doc.rig.clockSourceId)) {
+      return { detail: `clock source '${doc.rig.clockSourceId}' is not a device in this rig` }
+    }
+  }
+  for (const rig of doc.recent ?? []) {
+    for (const member of rig.devices) {
+      if (!catalogue.devices.includes(member.deviceId)) {
+        return { detail: `no device '${member.deviceId}' in this build` }
+      }
+    }
+    if (rig.clockSourceId !== undefined && !rig.devices.some((m) => m.deviceId === rig.clockSourceId)) {
+      return { detail: `clock source '${rig.clockSourceId}' is not a device in a remembered rig` }
+    }
+  }
+  return undefined
 }
 
 // ---------------------------------------------------------------------------
@@ -361,7 +512,20 @@ export function loadStudio(source: StorageSource, catalogue: Catalogue): StudioL
   }
 
   const doc = shape.data as StudioDocV1
-  const problem = checkGuideInputs(guideInputsFrom(doc), catalogue)
+  /**
+   * #304. `checkStudioDoc` rather than `checkGuideInputs`, so the way in and the way out agree.
+   *
+   * `saveStudio` has always validated with `checkStudioDoc`; this validated with a subset of it,
+   * and the gap was invisible while the two were the same thing. They stopped being the same
+   * thing the moment a document grew claims that are not expressible as guide inputs — a clock
+   * source naming a box outside its own rig, a remembered rig holding an unknown device — and a
+   * document this build would refuse to write must not be one it will happily read.
+   *
+   * The schema runs twice as a result, once here for the `stored` version and once inside. That
+   * is a parse of a small JSON document on one page load, against a class of bug that only
+   * appears when the two checks drift.
+   */
+  const problem = checkStudioDoc(doc, catalogue)
   if (problem !== undefined) {
     return { status: 'invalid', detail: problem.detail, stored: version }
   }
