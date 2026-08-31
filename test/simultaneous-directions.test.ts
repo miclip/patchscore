@@ -97,6 +97,7 @@ describe('both directions are registered and parse (§4)', () => {
     expect(TEMPLATES.map((t) => t.id)).toEqual([
       'ambient-dub',
       'drone-study',
+      'generative-drift',
       'industrial-techno',
       'lydian-house',
       'major-key-electro',

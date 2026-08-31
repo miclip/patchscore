@@ -2,6 +2,7 @@ import type { TemplateId } from '../core/ids'
 import type { Template } from '../core/template'
 import { ambientDub } from './ambient-dub'
 import { droneStudy } from './drone-study'
+import { generativeDrift } from './generative-drift'
 import { industrialTechno } from './industrial-techno'
 import { lydianHouse } from './lydian-house'
 import { majorKeyElectro } from './major-key-electro'
@@ -25,6 +26,7 @@ import { weave } from './weave'
 export const TEMPLATES: readonly Template[] = [
   ambientDub,
   droneStudy,
+  generativeDrift,
   industrialTechno,
   lydianHouse,
   majorKeyElectro,
@@ -32,7 +34,16 @@ export const TEMPLATES: readonly Template[] = [
   weave,
 ]
 
-export { ambientDub, droneStudy, industrialTechno, lydianHouse, majorKeyElectro, relay, weave }
+export {
+  ambientDub,
+  droneStudy,
+  generativeDrift,
+  industrialTechno,
+  lydianHouse,
+  majorKeyElectro,
+  relay,
+  weave,
+}
 
 const BY_ID: ReadonlyMap<TemplateId, Template> = new Map(TEMPLATES.map((t) => [t.id, t]))
 

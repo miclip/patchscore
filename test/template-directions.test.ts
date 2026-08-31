@@ -48,16 +48,19 @@ function patternedRoles(template: Template): Set<Role> {
 // The registry entries themselves
 // ---------------------------------------------------------------------------
 
-describe('the registry carries seven directions (§4)', () => {
+describe('the registry carries eight directions (§4)', () => {
   it('holds both new templates, in id order, reachable by id', () => {
-    // Seven now, and every arrival has slotted in by id rather than at the end, which is what
+    // Eight now, and every arrival has slotted in by id rather than at the end, which is what
     // the registry's UTF-16 ordering is for (§7.2). The other files own the other arrivals:
     // `small-rig-directions.test.ts` the two a one-voice box can finish, and
-    // `simultaneous-directions.test.ts` the two a box with several voices can. This file stays
-    // the record of the pair that came in with #6.
+    // `simultaneous-directions.test.ts` the two a box with several voices can. `generative-drift`
+    // has no such file — it is a full-rig direction with nothing to prove about a small one — so
+    // this list is the whole of what pins its registration. This file stays the record of the
+    // pair that came in with #6.
     expect(TEMPLATES.map((t) => t.id)).toEqual([
       'ambient-dub',
       'drone-study',
+      'generative-drift',
       'industrial-techno',
       'lydian-house',
       'major-key-electro',
