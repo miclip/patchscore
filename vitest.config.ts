@@ -87,7 +87,19 @@ export default defineConfig({
      * test, and the run is deterministic (invariant 6), so a red run can be reproduced locally
      * with the default reporter. What goes is the per-file chatter of a green run.
      */
-    reporters: process.env['CI'] ? ['dot'] : ['default'],
+    /**
+     * **The default reporter on CI, because it prints per-test durations and `dot` does not.**
+     *
+     * `dot` went in on the theory that the main thread was blocking on stdout writes while it also
+     * had 60s to answer a worker's `onTaskUpdate`. The errors persisted with it, so it bought
+     * nothing — and it cost the one diagnostic that matters for #265, which is which tests run
+     * long *on the runner that fails*. Local timings do not transfer: CI takes 598s against ~350s
+     * here, and the question is whether anything crosses birpc's 60s deadline under that handicap.
+     *
+     * Restored deliberately rather than reverted quietly. If output volume ever does turn out to
+     * matter, this is the line to change back, and there will be a measurement behind it.
+     */
+    reporters: ['default'],
 
     /**
      * **Share the module graph across files, because collection was the thing on the clock.**
