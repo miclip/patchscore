@@ -354,9 +354,14 @@ describe('the committed registry', () => {
       'akai-mpc-one-g2',
       // 282 mm across and 207 mm down, both off the dimension lines on the Play+'s own plan view
       // (p.15). Landscape, so unlike its portrait sibling at the head of this list the maker's
-      // width and the played span are the same edge — and the two Polyend boxes end up at
-      // opposite ends of the ordering because of it.
+      // width and the played span are the same edge — and the two landscape Polyend boxes end up
+      // at the opposite end of the ordering from the portrait one because of it.
       'polyend-play-plus',
+      // The Tracker is the same 282 mm, and not by a value copied across: its own manual places
+      // the identical 1665.334 x 1222.797 drawing frame (p.13, p.14) and dimensions it 282 x 207.
+      // Two documents, one chassis. The tie keeps registry order, which is folder order, so it
+      // sits between its two siblings here and at the far end of the list from the Mini.
+      'polyend-tracker',
       // **288 mm, and the only span in this list not cited to a page.** The OP-XY's guide
       // publishes no dimension anywhere in 135 pages, so this is teenage engineering's own
       // published figure from their product page rather than from the manual — and `Cite` has no

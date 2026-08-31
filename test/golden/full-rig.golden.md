@@ -30,7 +30,7 @@ glance whether the screen in front of you is the one the line is about.
 
 ## 2. Voice assignment
 
-- **`kick`** → MPC Live III · Mono Track 1 — *DrumSynth Kick, transient forward and the low band lifted*
+- **`kick`** → MODEL D · Voice — *Kick with the filter contour patched onto the pitch*
   - p1 · exact `hard` · every section
 - **`sub`** → Minitaur · Voice — *One oscillator under the filter, nothing above it*
   - p1 · exact `dark` · every section
@@ -82,7 +82,7 @@ None.
 
 **Clock source** — Hapax over `midi-din`, carrying 0 parts. Sync everything else to it, except MODEL D and Zoom LiveTrak L-8, which cannot receive clock and run free, and Model 2400, which cannot receive clock — a DAW drives its transport over HUI/MCU, and without one it runs free, and Metropolix and DFAM, which have no `midi-din` input and run free.
 
-- Why this box — 6 boxes here claim that job, so transport, then name, settled it · manual
+- Why this box — 7 boxes here claim that job, so transport, then name, settled it · manual
   - ↳ cite: claim manual — Hapax Manual (22 June 2026), p.130
 
 - On the Hapax, set `settings > sync output > MIDI A` to `CLOCK+TRANSPORT` · manual
@@ -96,10 +96,10 @@ None.
 
 - Why this box sends them — it is already the clock source, so the cables run from where the tempo does
 
-- **MPC Live III** — groovebox · 1 part
+- **MPC Live III** — groovebox · 0 parts
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · 4 individual outs · USB audio · audio in
-  - mixer: 1 part, 4 individual outs: one channel each
+  - mixer: no parts assigned; nothing to patch
 - **MPC One G2** — groovebox · 0 parts
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · USB audio · audio in
@@ -120,10 +120,10 @@ None.
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
-- **MODEL D** — semi-modular · 0 parts
+- **MODEL D** — semi-modular · 1 part
   - clock: no clock in or out
   - audio: mono main out · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **NEUTRON** — semi-modular · 0 parts
   - clock: receives clock only · midi-din/usb
   - MIDI IN: On the top panel beside VOLUME, not the rear · manual
@@ -235,6 +235,12 @@ None.
   - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.15, p.202) · manual
     - ↳ cite: value manual — Polyend Play+ Manual Rev 2, p.15
   - audio: stereo main out · USB audio
+  - mixer: no parts assigned; nothing to patch
+- **Tracker** — groovebox · 0 parts
+  - clock: sends clock · midi-din/usb
+  - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.250) · manual
+    - ↳ cite: value manual — Polyend Tracker Manual 1.9.2a, p.13
+  - audio: stereo main out · audio in
   - mixer: no parts assigned; nothing to patch
 - **Tracker Mini** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb
@@ -376,9 +382,11 @@ How this box sets a note’s length is not established here, so the durations be
 
 ## 5. Step programming
 
-### `kick` — MPC Live III · Mono Track 1
+### `kick` — MODEL D · Voice
 
-**DrumSynth Kick, transient forward and the low band lifted** — settings in Sound design
+**Kick with the filter contour patched onto the pitch** — settings in Sound design
+
+**Not programmed here** — it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage. Enter this figure on whatever is driving it; the rig diagram shows what that is.
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -387,22 +395,12 @@ How this box sets a note’s length is not established here, so the durations be
 ```
 - `downbeat` — 1, 9
 
-**On this box** — MPC Live III
-
-- `downbeat` → `velocity` 120 on steps 1, 9
-  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
-
 **Build, Breakdown** — 16 steps, band 1
 
 ```
  1 x··· x··· x··· x···
 ```
 - `downbeat` — 1, 5, 9, 13
-
-**On this box** — MPC Live III
-
-- `downbeat` → `velocity` 120 on steps 1, 5, 9, 13
-  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -412,11 +410,6 @@ How this box sets a note’s length is not established here, so the durations be
 - `downbeat` — 1, 5, 13
 - `ghost` — 8 (vel 50), 16 (vel 60)
 - `accent` — 9 (vel 112)
-
-**On this box** — MPC Live III
-
-- `downbeat` → `velocity` 120 on steps 1, 5, 13
-  - ↳ hint: Tap the step velocity bar, or turn its Q-Link
 
 ### `sub` — Minitaur · Voice
 
@@ -668,36 +661,6 @@ How this box sets a note’s length is not established here, so the durations be
 
 ## 6. Sound design
 
-### MPC Live III
-
-*Values below cite MPC Live III / MPC XL User Guide v3.7.*
-
-#### Mono Track 1 — `kick`: DrumSynth Kick, transient forward and the low band lifted
-
-*Ranges cite manual — MPC Live III / MPC XL User Guide v3.7, p.432.*
-
-- **Track Type** `Plugin`
-- **Plugin** `DrumSynth`
-- **Drum Type** `Kick`
-  - ↳ note: One DrumSynth instrument per plugin track
-- **Velocity** `30` % (0…100 %)
-  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
-- **Gain** `-2` dB (-68…12 dB)
-  - ↳ cite: range manual — MPC Live III / MPC XL User Guide v3.7, p.431
-  - ↳ note: p.431 prints "-Inf, -68.0 – 0 – +12.0 dB"; -Inf is a setting below the range, not part of it
-- **Transient Attack** `45` % (-100…100 %)
-- **Distortion Drive** `6` dB (0…60 dB)
-- **Distortion Mix** `25` % (0…100 %)
-- **EQ Low Freq** `58` Hz (20…1000 Hz)
-- **EQ Low Gain** `3.5` dB (-12…12 dB)
-  - ↳ note: A `Cut` setting sits below the numeric range on the same page
-- **EQ High Gain** `-1.5` dB (-12…12 dB)
-- **Comp Ratio** `4` (1…100)
-  - ↳ note: p.432 prints the range as 1.0:1 - 100.0:1; this is the left-hand number
-- **Comp Attack** `8` ms (0.1…300 ms)
-  - ↳ note: p.432 prints the low end as 100 us
-- **Comp Threshold** `-14` dB (-60…0 dB)
-
 ### MicroFreak
 
 *Values below cite MicroFreak User Manual 4.0.3 p.113, MicroFreak User Manual 4.0.3 p.56, MicroFreak User Manual 4.0.3 p.63, MicroFreak User Manual 4.0.3 p.53, MicroFreak User Manual 4.0.3 p.28, and MicroFreak User Manual 4.0.3 p.88.*
@@ -775,6 +738,80 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **Glide** `0` ms (0…10000 ms)
   - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.63
   - ↳ note: p.63: "The glide time is variable from \"off\" to about 10 seconds" — the manual hedges the upper end and prints no other figure
+
+### MODEL D
+
+*Values below cite MODEL D User Manual.*
+
+#### Voice — `kick`: Kick with the filter contour patched onto the pitch
+
+Routing — FILT CONT into OSC 1V/OCT is the whole trick: the filter envelope becomes a pitch envelope, and the filter decay time is the only thing shaping it
+
+*Ranges cite manual — MODEL D User Manual, p.34.*
+
+- **TUNE** `0` st (-2…2 st)
+  - ↳ note: Moves OSC 1, 2 and 3 together (p.8). p.12 calls the marks semitones "as a general guide"
+- **GLIDE** `0` (0…10)
+  - ↳ note: Portamento between notes; off fully anticlockwise (p.8)
+- **OSC 1 RANGE** `32'`
+  - ↳ note: Six overlapping ranges across 0.1 Hz to 20 kHz (p.34); LO puts it below audio
+- **OSC 1 WAVEFORM** `triangular`
+- **OSC 2 RANGE** `32'`
+- **OSC 2 FREQUENCY** `0` st (-7…7 st)
+  - ↳ note: Offset from OSC 1 within the selected range; p.12 calls the marks semitones "as a general guide"
+- **OSC 2 WAVEFORM** `triangular`
+- **OSC 3 RANGE** `32'`
+- **OSC 3 CONTROL** `on`
+  - ↳ note: On, so OSC 3 follows the keyboard and TUNE moves it with the other two (p.8, p.9)
+- **OSC 3 FREQUENCY** `0` st (-7…7 st)
+  - ↳ note: Offset from OSC 1, and the only pitch control OSC 3 answers to besides TUNE. p.12 calls the marks semitones "as a general guide"
+- **OSC 3 WAVEFORM** `triangular`
+- **OSC 1** `on`
+- **OSC 1 VOLUME** `10` (0…10)
+- **OSC 2** `off`
+- **OSC 3** `off`
+- **NOISE** `off`
+- **EXT IN** `on`
+  - ↳ hint: Leave EXT empty — the output feeds back
+- **EXT IN VOLUME** `3` (0…10)
+  - ↳ note: Nothing patched at EXT, so this is the output fed back into the mixer — "extra phat bass or extra crunch" (p.12)
+- **MAIN VOLUME** `7` (0…10)
+  - ↳ note: The feedback level depends on this knob as well as on EXT IN VOLUME (p.12)
+- **OSCILLATOR MODULATION** `off`
+- **FILTER MODULATION** `off`
+- **FILTER MODE** `low pass`
+  - ↳ note: 24 dB per octave either way (p.34)
+- **CUTOFF FREQUENCY** `-1` (-4…4)
+  - ↳ note: The one knob on this panel marked -4 to +4. p.15’s calibration table prints a 5 here, which is not on the scale
+- **FILTER EMPHASIS** `3` (0…10)
+  - ↳ note: Resonance — a level boost at the cutoff frequency (p.10)
+- **AMOUNT OF CONTOUR** `4` (0…10)
+  - ↳ note: How far the filter contour shifts the cutoff (p.10)
+- **KEYBOARD CONTROL 1** `off`
+  - ↳ note: A third of maximum tracking on its own, and with switch 2 the maximum (p.10)
+- **KEYBOARD CONTROL 2** `off`
+  - ↳ note: Two thirds of maximum tracking on its own, and with switch 1 the maximum (p.10)
+- **FILTER ATTACK** `1` ms (1…10000 ms)
+  - ↳ note: p.34 gives the travel as 1 ms to 10 s; the knob is silkscreened 10/200/600 M-SEC then 1/5/10 SEC
+- **FILTER DECAY TIME** `55` ms (4…35000 ms)
+  - ↳ note: p.34 gives the travel as "4 ms to >35 s" — an open top end, so this range is its stated floor; the knob is silkscreened only as far as 10 SEC
+- **FILTER SUSTAIN** `0` (0…10)
+  - ↳ note: The cutoff the contour holds after attack and decay (p.10)
+- **FILTER DECAY** `off`
+  - ↳ note: The switch, not the knob: on, the cutoff takes the decay time to fall after a note is released (p.10)
+- **LOUDNESS ATTACK** `1` ms (1…10000 ms)
+  - ↳ note: p.34 gives the travel as 1 ms to 10 s; the knob is silkscreened 10/200/600 M-SEC then 1/5/10 SEC
+- **LOUDNESS DECAY TIME** `220` ms (4…35000 ms)
+  - ↳ note: p.34 gives the travel as "4 ms to >35 s" — an open top end, so this range is its stated floor; the knob is silkscreened only as far as 10 SEC
+- **LOUDNESS SUSTAIN** `0` (0…10)
+  - ↳ note: The level the contour holds after attack and decay (p.10)
+- **LOUD DECAY** `off`
+  - ↳ note: The switch, not the knob: off, the note stops the moment it is released (p.10)
+
+**Patch**
+
+- `FILT CONT` → `OSC 1V/OCT`
+  - ↳ note: supplies the pitch drop. FILT CONT puts out 0 to +4 V (p.34) and OSC 1V/OCT is a volt per octave, so the full contour is four octaves — nothing on this box attenuates a patch cable, and FILTER DECAY TIME is what keeps the sweep short
 
 ### RD-8
 
@@ -1288,9 +1325,9 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
 
 **Sidechain**
 
-The MPC Live III, MPC One G2, MPC XL, Digitone II and Cascadia can duck to another box: patch the box you want each to follow into its audio in.
+The MPC Live III, MPC One G2, MPC XL, Digitone II, Cascadia and Tracker can duck to another box: patch the box you want each to follow into its audio in.
 
-The MPC Live III, MPC One G2, MPC XL and Digitone II can also duck from their own parts.
+The MPC Live III, MPC One G2, MPC XL, Digitone II and Tracker can also duck from their own parts.
 
 The Circuit Tracks, Play+, TR-1000, TR-6S, TR-8S, Deluge, EP–133 K.O. II, EP–40 riddim and OP-XY duck from their own parts only.
 
@@ -1312,6 +1349,7 @@ What processes audio in this rig:
 - Muse — carries effects, though no part in this guide reaches them
 - Circuit Tracks — carries FX on the panel
 - Play+ — carries REVERB SEND on the panel
+- Tracker — carries effects, though no part in this guide reaches them
 - Tracker Mini — carries effects, though no part in this guide reaches them
 - MC-101 — carries MULTI FX, FX PRM and FX DEPTH on the panel
 - MC-707 — carries FX PRM and FX DEPTH on the panel

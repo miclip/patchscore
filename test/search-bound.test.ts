@@ -565,6 +565,32 @@ import { TEMPLATES } from '../lib/templates/index'
  *
  * Nothing caps. `industrial-techno` at 691,974 is 34.6% of the 2,000,000 `DEFAULT_NODE_CAP`, and
  * the headroom is 2.89x — still above the 2x the constant was derived at, from 3.17x.
+ *
+ * **The Tracker then moved two directions in opposite directions, which no total could have
+ * shown.** The headline barely stirred and two rows went five-fold and thirty-percent-down:
+ *
+ *     drone-study            34 ->     35     one more device at the root
+ *     relay                  65 ->     66     one more root candidate
+ *     ambient-dub           308 ->    319     seed 3, its worst, again
+ *     lydian-house          335 ->    344     flat across the seeds that carry it
+ *     industrial-techno 691,974 -> 728,123    +5.2%, worst seed moves 12 -> 18
+ *     major-key-electro     216 ->  1,224     **5.7x**, worst seed moves 4 -> 3
+ *     weave              37,593 -> 26,189     **down 30%**, worst seed moves 12 -> 10
+ *
+ * The two outliers are one mechanism seen from both ends, and it is the *opposite* of the Play+'s.
+ * That box brought twenty recipes over twenty roles with no two on the same role, so it was never
+ * a second opinion and rarely an exact answer. This one brings nineteen over eighteen roles with
+ * one role doubled, and — because it is a sampler with a single fungible pool — it is an *exact*
+ * answer far more often. On `weave` that is worth 30%: a recipe that matches gives `liveFloor` a
+ * larger admissible value and the prune bites earlier, so the branch dies instead of surviving.
+ * On `major-key-electro` the same availability costs five-fold, because that direction was
+ * previously flat at ~215 across every seed — nothing was ever close enough to be worth
+ * exploring, and now something is. A row that has never varied starting to vary is a bigger event
+ * than a row that grew 5%, and it is invisible in a total.
+ *
+ * Still nothing caps. `industrial-techno` at 728,123 is 36.4% of the 2,000,000
+ * `DEFAULT_NODE_CAP`, and the headroom is 2.75x — above the 2x the constant was derived at, from
+ * 2.89x.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -573,30 +599,30 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'ambient-dub': [
-      222, 224, 222, 308, 227, 224, 222, 304, 227, 224, 224, 302, 224, 227, 227, 222, 305, 226, 303,
-      224, 226, 223, 222, 226
+      229, 231, 229, 319, 234, 231, 229, 315, 234, 231, 231, 313, 231, 234, 234, 229, 316, 233, 314,
+      231, 233, 230, 229, 233
     ],
     'drone-study': [
-      34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34
+      35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35
     ],
     'industrial-techno': [
-      582605, 667542, 637062, 588076, 591989, 582605, 588829, 584229, 588109, 581048, 581049, 584143,
-      691974, 581048, 589938, 584229, 612570, 592241, 581048, 588829, 581048, 588109, 582649, 637195
+      623144, 630714, 625534, 629074, 632832, 623152, 629552, 624792, 628767, 621490, 675605, 624792,
+      627025, 621489, 630714, 624706, 621490, 687193, 728123, 629346, 621490, 628624, 623152, 625534
     ],
     'lydian-house': [
-      198, 334, 198, 199, 199, 335, 198, 334, 199, 335, 198, 334, 198, 199, 199, 335, 335, 199, 332,
-      198, 199, 198, 335, 199
+      203, 343, 203, 204, 204, 344, 203, 343, 204, 344, 203, 343, 203, 204, 204, 344, 344, 204, 341,
+      203, 204, 203, 344, 204
     ],
     'major-key-electro': [
-      213, 215, 214, 213, 216, 213, 215, 216, 215, 216, 216, 214, 214, 216, 216, 215, 216, 215, 216,
-      215, 216, 215, 216, 215
+      404, 222, 220, 1224, 222, 222, 221, 222, 402, 219, 222, 222, 216, 219, 222, 219, 222, 221, 222,
+      218, 222, 219, 222, 221
     ],
     'relay': [
-      65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65
+      66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66
     ],
     'weave': [
-      260, 22270, 18113, 537, 4130, 311, 5041, 264, 4127, 1163, 5253, 260, 37593, 1163, 446, 264,
-      9145, 333, 334, 4272, 478, 4236, 232, 24471
+      265, 324, 5089, 559, 4208, 324, 5135, 271, 4106, 1165, 26189, 271, 4127, 1165, 457, 267, 324,
+      9432, 22923, 4268, 489, 4238, 239, 4102
     ],
   }
   // Code unit, not locale: §"Two rules that are easy to break silently".
@@ -728,7 +754,23 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
    * is the standing warning about averaging this table restated by the device that most rewards
    * reading it. Nothing capped.
    */
-  const WORST_CASE_NODES = 691_974
+  /**
+   * **728,123 on `industrial-techno` seed 18 with the Tracker**, against 691,974 on seed 12
+   * before it: a 5.2% rise, and headroom of 2.75x against the cap where it was 2.89x. The
+   * smallest rise of the four grooveboxes in a row, from the one with the *fewest* assignables:
+   * the Digitone added four for 9.3%, the Digitakt eight for 11.5%, the Play+ sixteen for 9.6%,
+   * and this box adds eight for 5.2%.
+   *
+   * What makes it cheap is what the table above reads off `weave`, which *fell* 30%. A sampler
+   * with one fungible pool and nineteen recipes over eighteen roles is an exact answer far more
+   * often than a near miss, and an exact answer gives `liveFloor` a larger admissible value, so
+   * the prune bites earlier and the branch dies rather than surviving. That is the Play+'s
+   * mechanism running backwards, on the direction the Play+ doubled.
+   *
+   * It is not free anywhere, though, and `major-key-electro` is where it is paid: 216 to 1,224,
+   * a row that had never varied across twenty-four seeds beginning to vary. Nothing capped.
+   */
+  const WORST_CASE_NODES = 728_123
   const WORST_CASE_MARGIN = 0.05
   const WORST_CASE_CEILING = Math.floor(WORST_CASE_NODES * (1 + WORST_CASE_MARGIN))
   const WORST_CASE_FLOOR = Math.floor(WORST_CASE_NODES * (1 - WORST_CASE_MARGIN))

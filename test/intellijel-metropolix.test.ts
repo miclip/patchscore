@@ -209,7 +209,7 @@ describe('Metropolix manifest', () => {
   // -------------------------------------------------------------------------
 
   describe('clock (§7.4)', () => {
-    it('claims the preference, and is one of the six boxes that do', () => {
+    it('claims the preference, and is one of the seven boxes that do', () => {
       expect(device.clock.preferredSource).toBe(true)
       // This was the only claim in the library until #80 went through the nine boxes with no
       // decision recorded either way. Exactly one of them cleared §7.4's bar: the Tracker Mini,
@@ -227,6 +227,12 @@ describe('Metropolix manifest', () => {
         // the primary lead" and captions it "Transport control e.g. Play, Stop and Clock is
         // dictated by Play and its current Tempo."
         'polyend-play-plus',
+        // The Tracker is the seventh, on the same kind of page as its two siblings and no better
+        // than theirs: p.253 opens §11.3 "Typical MIDI Configurations" with Tracker as the
+        // primary lead, Clock In `Internal` and Clock Out `MIDI Out jack`. The manual documents it
+        // following too (p.264), which is why the claim stays "this box can lead" — and following
+        // costs it its sequencer, which p.265 says in as many words, where leading costs nothing.
+        'polyend-tracker',
         'polyend-tracker-mini',
         'squarp-hapax',
         'torso-t1',

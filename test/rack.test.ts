@@ -143,7 +143,24 @@ const patchedRig = resolve({
   // The rule is unchanged and for once it does not need its tie-break: seed 3 is a clear maximum
   // at four entries, the deepest this pin has been since the Analog Rytm MKII took the last
   // four-entry Subharmonicon assignment away. It is the same box coming back.
-  seed: 3,
+  //
+  // The Tracker then took seed 3's assignment and left it empty, which is the third Polyend box
+  // doing what the first two did — eight fungible tracks declaring all twenty-three roles, so it
+  // is available wherever the objective is indifferent and the semi-modulars are what it
+  // displaces. Seven seeds carry a patch now, where four did:
+  //
+  //     seed  9   4 entries   moog-subharmonicon
+  //     seed 10   2 entries   moog-grandmother
+  //     seed 12   2 entries   moog-grandmother
+  //     seed 19   2 entries   behringer-neutron
+  //     seed 15   1 entry     behringer-crave
+  //     seed 18   1 entry     behringer-model-d
+  //     seed 21   1 entry     behringer-model-d
+  //
+  // Same rule, and again without its tie-break: seed 9 is a clear maximum at four entries, and it
+  // is the Subharmonicon a third time. That box keeps coming back because its recipes *are*
+  // patch lists, so whenever the objective does hand it a part the pin gets deep.
+  seed: 9,
 })
 
 /**
@@ -292,7 +309,16 @@ describe('rack geometry (§10)', () => {
     // 362.921875 x 297.089843 pt = 1.221590, against the specification's 1.221591. Six significant
     // figures, where the same figure rasterised at 200 dpi read 1.2201 and would have made this
     // the *worst* agreement of the four rather than the best. Four devices, one rise.
-    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 10)
+    //
+    // **The eleventh is a shared chassis for the second time in this list, and the first one
+    // established from two documents rather than from one specification line printed twice.** The
+    // Play+ and the Tracker both stand 207 mm, because Polyend built them in one case: each
+    // manual places the *same* 1665.334 x 1222.797 drawing frame and dimensions it 282 x 207
+    // (Play+ Rev 2 p.15, Tracker 1.9.2a p.13). Both rises were read off their own manual's vector
+    // paths rather than copied across, so the agreement is a check that passed. Like the Eurorack
+    // pair and the four Elektrons, this one will not separate however carefully either is
+    // re-measured — and the third Polyend box is not in it, because the Tracker Mini is portrait.
+    expect(new Set(model.panels.map((p) => p.riseMm)).size).toBe(DEVICES.length - 11)
     for (const panel of model.panels) expect(panel.topMm).toBeGreaterThanOrEqual(0)
 
     // Wrapped, the rule is per row: every panel on a row shares that row's rail line. That is
@@ -1184,7 +1210,12 @@ describe('rack view', () => {
     // other than being the biggest thing on the box: the eight [TRACK] keys are two columns
     // flanking it, so no single rectangle covers them, and p.19 says this display lists the
     // tracks anyway.
-    expect(count('rack-screen')).toBe(52)
+    // **53 with the Tracker**, and it is the largest screen in the library measured off vector
+    // paths rather than a raster: 152.3 x 85.9 mm, the 7-inch 800 x 480 TFT p.14 names. Polyend
+    // print no display dimension, so like the Elektron OLEDs it is the drawn bezel — but the
+    // drawing is the figure's own path geometry at one point per millimetre, so this one carries
+    // the EP-133's caveat about the active area without also carrying rasterisation error.
+    expect(count('rack-screen')).toBe(53)
     expect(count('rack-group')).toBeGreaterThan(3)
     // The TR-1000's eleven instrument faders, the TR-8S's eleven, the Cascadia's thirty-four —
     // that box is set with sliders almost exclusively, which is why its panel is mostly this one
@@ -1378,7 +1409,17 @@ describe('rack view', () => {
     // are the top row, so the field is one row of eight — 167.8 x 17.2 mm — and the MIDI row is
     // drawn beside it as a plain grid. Covering both rows, which is right on the successor where
     // the sixteen are one pool, would put a readout on eight keys that sound nothing.
-    expect(fields).toHaveLength(38)
+    //
+    // **Thirty-nine with the Tracker**, and it is the one place in this list where the field
+    // lands on its controls exactly rather than approximately. p.18 names the gesture — "All 8
+    // tracks are presented by the screen buttons when holding the shift button" — so the eight
+    // dynamic screen buttons under the display *are* the eight tracks, one to one, and the field
+    // is the 151.0 x 16.0 mm band across them. Its two siblings both had to settle: the Play+
+    // covers a selection block and claims no row-for-row correspondence, and the Tracker Mini's
+    // goes on the screen. The 4 x 12 pad grid was the obvious place here and corresponds to
+    // nothing — eight cells over 153 mm is the oversized-cell failure this file records on the
+    // Deluge.
+    expect(fields).toHaveLength(39)
   })
 
   it('draws a rail under every panel and hangs the cables off it', () => {

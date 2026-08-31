@@ -665,7 +665,7 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
     .map((d) => d.id)
     .sort(byCodeUnit)
 
-  it('is the eighteen boxes established to ship one, and a nineteenth has to be added deliberately', () => {
+  it('is the nineteen boxes established to ship one, and a twentieth has to be added deliberately', () => {
     // The derivation covers whatever is declared; this says which declarations were expected, so
     // a new one is loud in review rather than silently absorbed.
     expect(SHIPPED).toEqual([
@@ -704,6 +704,12 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
       // through it, the second deconstructs a single pack, the third exists to say which packs
       // carry a synth folder. Same line between `shipped-library` and `enumerable` as the rest.
       'polyend-play-plus',
+      // The Tracker names its packs and still stops short of an inventory: p.30's folder tree
+      // says "Tracker comes with 9 factory packs installed onto the SD Card" and lists the nine
+      // folder names, and p.183 says the same in prose. Nine folders a reader can open is a
+      // library; what is inside one is printed nowhere, which is the line between
+      // `shipped-library` and `enumerable` a seventh time.
+      'polyend-tracker',
       'polyend-tracker-mini',
       'roland-mc-101',
       // The MC-707 is the same claim off its own manual rather than the sibling's: p.10 offers
