@@ -23,6 +23,39 @@ import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 
 const LIFTED = 20_000_000
 
+/**
+ * **A rig somebody owns**, for the fidelity check below.
+ *
+ * Eight boxes, chosen to exercise the shapes the probe could plausibly drift on rather than to be
+ * large: fixed voices (TR-8S, RD-9), a pool (Tracker Mini), boxes that declare many roles and so
+ * collide on the crowded ones (Deluge, Digitakt), and monosynths that compete for one part each
+ * (Mother-32, minilogue xd, MicroFreak).
+ *
+ * It is not the whole catalogue, and that is the point. Resolving all 46 costs 8512ms across the
+ * nine directions against 98ms here — 87 times the bill — and every assertion below passes
+ * identically on both, because what they claim is that the probe does not perturb the traversal.
+ * That is not a claim 46 devices make truer. `CLAUDE.md` settles the general case: nobody selects
+ * the whole catalogue, there is no "select all" in the picker, and a whole-catalogue assertion in
+ * `search-symmetry.test.ts` had already been removed once for blocking devices from landing.
+ *
+ * The crowded case is not lost. `beforeAll` still traverses all 46 uncapped, deliberately, and the
+ * four tests hanging off it are the ones that are actually about a hard search — including the
+ * probe's own `occupiedByDevice` derivability check, which is exactly the thing that wants pools
+ * and stacks and crowding.
+ */
+const OWNED_RIG = DEVICES.filter((d) =>
+  [
+    'roland-tr-8s',
+    'behringer-rd-9',
+    'polyend-tracker-mini',
+    'synthstrom-deluge',
+    'elektron-digitakt',
+    'moog-mother-32',
+    'korg-minilogue-xd',
+    'arturia-microfreak',
+  ].includes(d.id),
+)
+
 describe('the search shape probe (§7.1/#159)', () => {
   /**
    * **One traversal, shared.** Four tests below asked for the *same* probe — the whole library on
@@ -55,18 +88,57 @@ describe('the search shape probe (§7.1/#159)', () => {
     // The hook timeout is its own budget and does **not** inherit `testTimeout`: vitest defaults it
     // to 10s, and this traversal is twelve. Stated here rather than raised globally, so every other
     // setup in the suite still fails fast.
-  }, 120_000)
-  it('observes the traversal without changing it', async () => {
-    for (const template of TEMPLATES) {
+    //
+    // 300s rather than 120s, and it is **an allowance for a stalled worker, not a claim about the
+    // traversal** (#293). After the rig change below this hook is the only thing in the file that
+    // holds the event loop long enough to miss an `onTaskUpdate`, and birpc's default is 60s, so
+    // the number has to clear two of those on top of twelve seconds of real work. The old 120s was
+    // six times headroom and #265 walked straight through it.
+  }, 300_000)
+  /**
+   * **One test per direction, on a rig somebody owns.** This was a single loop over all nine
+   * directions across the whole catalogue, on one 120s allowance, until it fired on a macOS runner
+   * (#293). Three numbers rewrote what the failure was.
+   *
+   * **It was never nine directions, it was one.** Split out, eight of them take 1–20ms against the
+   * full library and `industrial-techno` takes 8.8 seconds: four hundred times the next slowest,
+   * and 99.8% of the file. A budget covering all nine was a budget for one of them with eight
+   * rounding errors attached.
+   *
+   * **And that one was paying for a rig nobody owns.** The nine directions cost 8512ms across all
+   * 46 devices and 98ms across eight — 87 times the bill — and every assertion here passes
+   * identically on both, because what they claim is that the probe does not perturb the traversal.
+   * 46 devices do not make that truer. See `OWNED_RIG`.
+   *
+   * **It did not fail for being slow.** Across fifteen job-observations it ran between 10.7s and
+   * 23.5s on CI; the failure was over 120s — five times the worst honest run, eleven times the
+   * median. Nothing gets five times slower because a runner is busy. The same job logged 49
+   * unhandled `[vitest-worker]: Timeout calling "onTaskUpdate"`, birpc's default is 60s, and two of
+   * those in series is 120s to the second. The clock was running on a worker that was waiting —
+   * #265, landing inside a test's timer instead of at teardown.
+   *
+   * So the cure is not a bigger number here. These now run in tens of milliseconds and inherit the
+   * global `testTimeout`; nothing in them holds the event loop long enough to miss an RPC. The
+   * stall allowance moved to `beforeAll`, which is the only block left that does.
+   *
+   * The split earns its keep separately from any of that. Nine tests are nine points where vitest
+   * flushes to the main thread, and a worker holding the loop too long is this file's recorded
+   * problem rather than a hypothetical one. A failure names the direction instead of "the loop".
+   * And the day one direction starts costing what `industrial-techno` used to, the timings say so
+   * without anybody instrumenting it.
+   */
+  it.each(TEMPLATES.map((template) => [template.id, template] as const))(
+    'observes the traversal without changing it: %s',
+    async (_id, template) => {
       /**
-       * Yield per template, for the reason `search-symmetry.test.ts` records at length: a Vitest
-       * worker cannot answer the main thread while it holds the event loop, and a run that blocks
-       * too long fails with `[vitest-worker]: Timeout calling "onTaskUpdate"` **while reporting
-       * every test passed**. This file runs each direction twice over the full library — once
+       * Yield before the block, for the reason `search-symmetry.test.ts` records at length: a
+       * Vitest worker cannot answer the main thread while it holds the event loop, and a run that
+       * blocks too long fails with `[vitest-worker]: Timeout calling "onTaskUpdate"` **while
+       * reporting every test passed**. This runs the direction twice over the full library — once
        * plain and once probed — which is the most expensive thing in the suite per iteration.
        */
       await new Promise((resolve) => setImmediate(resolve))
-      const input = { devices: [...DEVICES], template, mood: moodState({}), seed: 3 }
+      const input = { devices: [...OWNED_RIG], template, mood: moodState({}), seed: 3 }
       const plain = assign(input)
       const shape = measureSearchShape(input)
 
@@ -77,8 +149,8 @@ describe('the search shape probe (§7.1/#159)', () => {
       expect(shape.search.nodes, template.id).toBe(plain.search.nodes)
       expect(shape.search.capped, template.id).toBe(plain.search.capped)
       expect(shape.search.method, template.id).toBe(plain.search.method)
-    }
-  }, 120_000)
+    },
+  )
 
   it('accounts for every node exactly once', () => {
     const shape = full
