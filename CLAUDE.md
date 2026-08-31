@@ -99,6 +99,45 @@ Layers with a strict contract between them. Roles are the join.
   cross-platform drift. Fixtures assert *relative* outcomes ("the sub goes to the Deluge"), never
   cost numbers, so they survive a re-ordering of the lower keys.
 
+## Search cost is a benchmark, not a user problem (#248)
+
+**Measured at 46 devices, `industrial-techno`, worst of eight seeds:**
+
+```
+rig   worst nodes   worst ms
+  3            43          3
+  5         5,870         22
+  8         1,361          5
+ 12        82,166        206
+ 16       473,938      1,236
+ 20       744,916      1,844
+ 46       632,832      1,959
+```
+
+A twelve-box rig — a large studio — resolves in 206 ms. Everything a person actually owns is
+imperceptible.
+
+**Three things this table settles, because each of them has been got wrong here before:**
+
+- **The whole-catalogue figure is not a ceiling that user rigs approach from below.** `measure:search`
+  sweeps all 46 devices and reports ~730k nodes against a 2,000,000 cap. Nobody resolves that rig.
+  Track the number, do not gate on it — that is the repair #248 already made once, when a
+  whole-catalogue assertion in `search-symmetry.test.ts` was blocking devices from landing.
+- **Cost is not monotonic in device count.** Eight devices is cheaper than five here, and twenty
+  costs *more* than all forty-six. It depends on which boxes collide on crowded roles, not how many
+  are selected. So "N devices" is never the unit to reason in.
+- **If the many-device case ever matters, the answer is a selection limit, not a search
+  optimisation.** There is no "select all" in the picker and no reason to add one. Capping how many
+  boxes can be chosen at once is a few lines in `lib/studio/picker.ts`; a cross-device dominance
+  rule is a change to the resolver that returns a *different* optimum at equal score, needs a
+  `RESOLVER_VERSION` bump, and fails silently by handing back a worse allocation. The cheap fix is
+  in the UI.
+
+**So do not open the search for performance without a rig somebody owns that is actually slow.**
+#248 stays open for the near-clone *finding* — four measured pairs, three near-free, one that
+tripled a sibling's bill when a recipe flipped sign in the objective's tie-breaking — which is
+interesting about the objective rather than a job to do.
+
 ## Build order
 
 `DESIGN.md §11` is the sequence and the reasoning for it. **Status lives in GitHub issues, not
