@@ -181,7 +181,7 @@ function charactersFor(role: Role): Character[] {
 
 export default function Page() {
   return (
-    <main className="reference-page">
+    <main className="shell catalogue-page reference-page">
       <header className="masthead">
         <h1>Parts</h1>
         <p>
@@ -189,7 +189,7 @@ export default function Page() {
         </p>
       </header>
 
-      <section className="panel span-2">
+      <section className="panel">
         <header>
           <h2>What this page is for</h2>
         </header>
