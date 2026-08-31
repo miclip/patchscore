@@ -85,9 +85,16 @@ describe('unit spellings are one vocabulary (§3.1)', () => {
   })
 
   it('keeps the box-printed units on the boxes that print them', () => {
-    // Both Polyend manuals print envelope times as `0.00-10 Sec` in their engine tables, so both
-    // boxes carry the spelling for the same reason (Tracker Mini 2.2.1b p.126, Play+ Rev 2 p.97).
-    expect([...(used.get('Sec') ?? [])].sort()).toEqual(['polyend-play-plus', 'polyend-tracker-mini'])
+    // All three Polyend boxes carry the spelling for the same reason (Tracker Mini 2.2.1b p.126,
+    // Play+ Rev 2 p.97). The Tracker is the one that prints the *word* rather than the
+    // abbreviation — "Range 0-10 Seconds." (1.9.2a p.120), with `0.020s` on the screen beside it
+    // — so it joins the spelling its siblings already fixed rather than opening a fourth one for
+    // seconds. That is a decision, and this line is where it is recorded.
+    expect([...(used.get('Sec') ?? [])].sort()).toEqual([
+      'polyend-play-plus',
+      'polyend-tracker',
+      'polyend-tracker-mini',
+    ])
     for (const id of used.get('Bits') ?? []) {
       expect([
         'akai-mpc-live-iii',

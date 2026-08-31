@@ -215,7 +215,7 @@ describe('T-1 manifest', () => {
       })
     })
 
-    it('is the fourth claimant and changes nothing, losing to the Hapax on the bottom key', () => {
+    it('is one of seven claimants and changes nothing, losing to the Hapax on the bottom key', () => {
       // #198 ranks two claimants by voicelessness first, then transport, then id. This box and
       // the Hapax are level on both of the first two — both voiceless, both `midi-din` — so it
       // falls to `compareCodeUnits`, and `squarp-` sorts before `torso-`. Adding a fourth claim
@@ -227,10 +227,15 @@ describe('T-1 manifest', () => {
       //
       // A sixth, the Play+, holds it the same way and for the same reason: sixteen tracks across
       // two pools, so voicelessness drops it before `polyend-` is ever compared with `squarp-`.
+      //
+      // A seventh, the Tracker, is the third Polyend box to claim the job and the third to lose
+      // it on the top key: eight tracks of its own, so `polyend-tracker` never reaches an id
+      // comparison either. Three claimants from one maker moving nothing is the sharpest form of
+      // the check — #198's ordering is about what a box *is*, not about how many agree.
       const source = selectClockSource(DEVICES, new Map())
       expect(source?.deviceId).toBe(hapax.id)
       expect(source?.transport).toBe('midi-din')
-      expect(source?.claims).toBe(6)
+      expect(source?.claims).toBe(7)
       // Take the Hapax out and this box leads, which is what says it lost on the tie-break rather
       // than on the claim.
       expect(selectClockSource(DEVICES.filter((d) => d.id !== hapax.id), new Map())?.deviceId).toBe(

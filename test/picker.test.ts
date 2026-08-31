@@ -102,7 +102,11 @@ describe('device search matches name, maker and kind', () => {
       'roland-tr-6s',
       'roland-tr-8s',
     ])
-    expect(ids(devices({ query: 'polyend' }).rows)).toEqual(['polyend-play-plus', 'polyend-tracker-mini'])
+    expect(ids(devices({ query: 'polyend' }).rows)).toEqual([
+      'polyend-play-plus',
+      'polyend-tracker',
+      'polyend-tracker-mini',
+    ])
     // Kind — the field #53 asked for by name, and the one that groups rather than identifies.
     expect(ids(devices({ query: 'groovebox' }).rows)).toEqual([
       'akai-mpc-live-iii',
@@ -115,6 +119,7 @@ describe('device search matches name, maker and kind', () => {
       'elektron-digitone-ii',
       'novation-circuit-tracks',
       'polyend-play-plus',
+      'polyend-tracker',
       'polyend-tracker-mini',
       'roland-mc-101',
       'roland-mc-707',
@@ -228,6 +233,7 @@ describe('the kind filter', () => {
       'elektron-digitone-ii',
       'novation-circuit-tracks',
       'polyend-play-plus',
+      'polyend-tracker',
       'polyend-tracker-mini',
       'roland-mc-101',
       'roland-mc-707',
@@ -235,16 +241,17 @@ describe('the kind filter', () => {
       'teenage-engineering-op-xy',
     ])
 
-    // Both conditions, not either: the kind alone returns twelve grooveboxes and the query alone
-    // returns two devices, and together they return the two that satisfy both. (This read
-    // "eight" while the list above held nine — a count that went stale one device before the
+    // Both conditions, not either: the kind alone returns thirteen grooveboxes and the query
+    // alone returns three devices, and together they return the three that satisfy both. (This
+    // read "eight" while the list above held nine — a count that went stale one device before the
     // Digitone II and is corrected here rather than left to drift further.)
     //
-    // The Play+ makes this a stronger example than it was: `polyend` now matches two devices and
-    // both are grooveboxes, so the AND is no longer demonstrated by a single row that could have
-    // arrived from either half on its own.
+    // The Play+ made this a stronger example than it was and the Tracker makes it stronger again:
+    // `polyend` now matches three devices and all three are grooveboxes, so the AND is not
+    // demonstrated by a single row that could have arrived from either half on its own.
     expect(ids(devices({ kind: 'groovebox', query: 'polyend' }).rows)).toEqual([
       'polyend-play-plus',
+      'polyend-tracker',
       'polyend-tracker-mini',
     ])
     // A query that matches a device of the wrong kind returns nothing, rather than falling back
@@ -361,8 +368,13 @@ describe('selected entries survive any filter', () => {
     // The obvious failure this prevents: losing sight of your own rig because you typed in a
     // search box. The picker is the only place the rig is visible.
     const shown = devices({ query: 'polyend' }, ['roland-tr-1000'])
-    expect(ids(shown.rows)).toEqual(['polyend-play-plus', 'polyend-tracker-mini', 'roland-tr-1000'])
-    expect(shown.matched).toBe(2)
+    expect(ids(shown.rows)).toEqual([
+      'polyend-play-plus',
+      'polyend-tracker',
+      'polyend-tracker-mini',
+      'roland-tr-1000',
+    ])
+    expect(shown.matched).toBe(3)
     expect(shown.retained).toBe(1)
 
     const kept = shown.rows.find((r) => r.item.id === 'roland-tr-1000')
@@ -378,10 +390,10 @@ describe('selected entries survive any filter', () => {
     const shown = devices({ kind: 'groovebox' }, ['roland-tr-1000'])
     expect(ids(shown.rows)).toContain('roland-tr-1000')
     expect(shown.rows.find((r) => r.item.id === 'roland-tr-1000')?.retained).toBe(true)
-    // Twelve grooveboxes since the Play+ landed beside its sibling; the TR-1000 is a drum
-    // machine and is here only because it is selected, which is what `retained` marks and why it
-    // is not counted.
-    expect(shown.matched).toBe(12)
+    // Thirteen grooveboxes since the Tracker landed beside its two siblings; the TR-1000 is a
+    // drum machine and is here only because it is selected, which is what `retained` marks and
+    // why it is not counted.
+    expect(shown.matched).toBe(13)
   })
 
   it('keeps them in registry order rather than appending them at the end', () => {
