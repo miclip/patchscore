@@ -80,21 +80,21 @@ None.
 **Once warm** — run Muse's quick tune: `PROGRAMMER > TUNING > START QUICK TUNE`. Touches up tuning for the current temperature; takes a few seconds.
   - ↳ cite: manual — Muse User's Manual v1.4.0, p.112
 
-**Clock source** — Hapax over `midi-din`, carrying 0 parts. Sync everything else to it, except MODEL D and Zoom LiveTrak L-8, which cannot receive clock and run free, and Model 2400, which cannot receive clock — a DAW drives its transport over HUI/MCU, and without one it runs free, and Metropolix and DFAM, which have no `midi-din` input and run free.
+**Clock source** — Seq over `midi-din`, carrying 0 parts. Sync everything else to it, except MODEL D and Zoom LiveTrak L-8, which cannot receive clock and run free, and Model 2400, which cannot receive clock — a DAW drives its transport over HUI/MCU, and without one it runs free, and Metropolix and DFAM, which have no `midi-din` input and run free.
 
-- Why this box — 7 boxes here claim that job, so transport, then name, settled it · manual
-  - ↳ cite: claim manual — Hapax Manual (22 June 2026), p.130
+- Why this box — 8 boxes here claim that job, so transport, then name, settled it · manual
+  - ↳ cite: claim manual — Polyend Seq Manual 2.2.6, p.10
 
-- On the Hapax, set `settings > sync output > MIDI A` to `CLOCK+TRANSPORT` · manual
-  - ↳ note: MIDI B, C and D have the same row and the same four options; set the one the cable is in.
-  - ↳ cite: value manual — Hapax Manual (22 June 2026), p.132
+- On the Seq, set `Tempo knob + track button > MIDI Out` to `Out1+Clk` · manual
+  - ↳ note: Out2+Clk sends it out MIDI Out 2 instead; set it on the track whose cable is in the port. The plain Out1 and Out2 options send notes with no clock.
+  - ↳ cite: value manual — Polyend Seq Manual 2.2.6, p.5
 
-**Voice control** — Hapax sends the notes, 2 cables in all. Patch each pair before you play anything:
+**Voice control** — Metropolix sends the notes, 2 cables in all. Patch each pair before you play anything:
 
-- pitch: Hapax `Cv out 2` → Minitaur `CONTROLLER INPUTS · PITCH CV`
-- gate: Hapax `gate out 2` → Minitaur `CONTROLLER INPUTS · GATE`
+- pitch: Metropolix `TRK 1 · PITCH` → Minitaur `CONTROLLER INPUTS · PITCH CV`
+- gate: Metropolix `TRK 1 · GATE` → Minitaur `CONTROLLER INPUTS · GATE`
 
-- Why this box sends them — it is already the clock source, so the cables run from where the tempo does
+- Why this box sends them — 3 boxes here claim that job, so the names settled it
 
 - **MPC Live III** — groovebox · 0 parts
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
@@ -235,6 +235,14 @@ None.
   - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.15, p.202) · manual
     - ↳ cite: value manual — Polyend Play+ Manual Rev 2, p.15
   - audio: stereo main out · USB audio
+  - mixer: no parts assigned; nothing to patch
+- **Seq** — sequencer · 0 parts
+  - clock: sends clock · midi-din/usb
+  - MIDI Out 1: Clock leaves here only for a track whose MIDI Out is set to Out1+Clk; MIDI Out 2 is the other 5-pin DIN output and takes Out2+Clk. · manual
+    - ↳ cite: value manual — Polyend Seq Manual 2.2.6, p.2, p.3
+  - MIDI In: Takes the external clock the Tempo knob’s Clock setting follows, and records notes and velocity from a controller onto the tracks that are turned on. · manual
+    - ↳ cite: value manual — Polyend Seq Manual 2.2.6, p.2, p.3
+  - audio: no audio I/O
   - mixer: no parts assigned; nothing to patch
 - **Tracker** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb
@@ -415,7 +423,7 @@ How this box sets a note’s length is not established here, so the durations be
 
 **One oscillator under the filter, nothing above it** — settings in Sound design
 
-**Not programmed here** — it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage. Enter this figure on the Hapax, which drives it through `Cv out 2` and `gate out 2`.
+**Not programmed here** — it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage. Enter this figure on the Metropolix, which drives it through `TRK 1 · PITCH` and `TRK 1 · GATE`.
 
 **Intro, Outro** — 16 steps, band 0
 

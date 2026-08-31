@@ -215,7 +215,7 @@ describe('T-1 manifest', () => {
       })
     })
 
-    it('is one of seven claimants and changes nothing, losing to the Hapax on the bottom key', () => {
+    it('is one of eight claimants and changes nothing, losing on the bottom key', () => {
       // #198 ranks two claimants by voicelessness first, then transport, then id. This box and
       // the Hapax are level on both of the first two — both voiceless, both `midi-din` — so it
       // falls to `compareCodeUnits`, and `squarp-` sorts before `torso-`. Adding a fourth claim
@@ -232,13 +232,21 @@ describe('T-1 manifest', () => {
       // it on the top key: eight tracks of its own, so `polyend-tracker` never reaches an id
       // comparison either. Three claimants from one maker moving nothing is the sharpest form of
       // the check — #198's ordering is about what a box *is*, not about how many agree.
+      //
+      // **An eighth, the Seq, is the first claimant that did move the rig's clock**, and this box
+      // loses to it on the same key it lost to the Hapax on: the Seq is voiceless and carries
+      // `midi-din`, so #198 cannot separate the three of them and `polyend-seq` sorts first. What
+      // this test asserts is unchanged in substance — this box changes nothing — but the box at
+      // the top of the ordering is no longer the Hapax, and that is worth reading twice rather
+      // than editing past. See `test/squarp-hapax.test.ts` for the same event from the other end.
       const source = selectClockSource(DEVICES, new Map())
-      expect(source?.deviceId).toBe(hapax.id)
+      expect(source?.deviceId).toBe('polyend-seq')
       expect(source?.transport).toBe('midi-din')
-      expect(source?.claims).toBe(7)
-      // Take the Hapax out and this box leads, which is what says it lost on the tie-break rather
-      // than on the claim.
-      expect(selectClockSource(DEVICES.filter((d) => d.id !== hapax.id), new Map())?.deviceId).toBe(
+      expect(source?.claims).toBe(8)
+      // Take the two voiceless `midi-din` claimants that sort above it out and this box leads,
+      // which is what says it lost on the tie-break rather than on the claim.
+      const above = new Set(['polyend-seq', hapax.id])
+      expect(selectClockSource(DEVICES.filter((d) => !above.has(d.id)), new Map())?.deviceId).toBe(
         device.id,
       )
     })
