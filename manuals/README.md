@@ -32,7 +32,9 @@ opened.
 | `Muse_Manual-1.4.0.pdf` | **Moog Muse**, 124pp / 196k chars / 18 ranges. Denser than the TR-1000 Reference, and the library's first 8-voice polysynth. | [direct](https://cdn.inmusicbrands.com/Moog/Muse/Muse_Manual-1.4.0.pdf), confirmed 2026-08-28 |
 | `LABYRINTH-MANUAL_1.pdf` | **Moog Labyrinth**, 62pp / 68k chars / 1 range. Enum-dominated, as #184 predicts for this family. Note the space in the CDN filename — `LABYRINTH-MANUAL%201.pdf`, which is why guessing the path failed for a year. | [direct](https://cdn.inmusicbrands.com/Moog/Labyrinth/LABYRINTH-MANUAL%201.pdf), confirmed 2026-08-28 |
 | `Messenger_Manual.pdf` | **Moog Messenger**, 38pp / 66k chars / 4 ranges. Fetched alongside the other two; not in any backlog yet. | [direct](https://cdn.inmusicbrands.com/Moog/Messenger/Messenger_Manual.pdf), confirmed 2026-08-28 |
-| `Spectravox_Quickstart_Guide_v1.0.pdf` | **Do not author from this.** 2pp and **2 characters of extractable text** — an image-only PDF. Kept so nobody re-downloads it expecting a manual. See the note below. | [direct](https://cdn.inmusicbrands.com/Moog/Spectravox/Spectravox%20-%20Quickstart%20Guide%20-%20v1.0.pdf) |
+| `Spectravox_Quickstart_Guide_v1.0.pdf` | **Do not author from this.** 2pp and **2 characters of extractable text** — an image-only PDF. Kept so nobody re-downloads it expecting a manual. | [direct](https://cdn.inmusicbrands.com/Moog/Spectravox/Spectravox%20-%20Quickstart%20Guide%20-%20v1.0.pdf) |
+| `Spectravox_Manual_RevB.pdf` | **Moog Spectravox User Manual, Rev B.** 50pp / 84k chars / **0 printed parameter ranges** — prose and enums throughout, as #184 predicts for this family. Supplied by hand 2026-09-01; not on the CDN paths that were tried. | supplied by the operator, 2026-09-01 |
+| `Labyrinth_Quick_Start_Guide.pdf` | **Do not author values from this.** 2pp and **2 characters of extractable text** — image-only, the same shape as the Spectravox quickstart. Kept as a possible *panel* source, since a 2pp quickstart is usually panel-shaped and §10 needs a figure to measure. | supplied by the operator, 2026-09-01 |
 | `SP-404MK2_v4_reference_eng02_W.pdf` | **Roland SP-404MKII Reference Manual, v4.00.** 274pp / 279k chars / **275 ranges** — Roland prints them bare (`0–127`, `40.0–200.0`, `1/4–7/4`) with an en dash and no unit, so a unit-bearing grep reports zero. | [direct](https://static.roland.com/assets/media/pdf/SP-404MK2_v4_reference_eng02_W.pdf), confirmed 2026-08-28 |
 | `te-ep-133/` | **teenage engineering EP–133 K.O. II guide mirror**, 19 pages / 105k chars / 36 ranges. No PDF exists — see the TE note below. | [guide](https://teenage.engineering/guides/ep-133), mirrored 2026-08-28 |
 | `te-ep-40/` | **teenage engineering EP–40 riddim guide mirror**, 19 pages / 107k chars / 39 ranges. No PDF exists. | [guide](https://teenage.engineering/guides/ep-40), mirrored 2026-08-28 |
@@ -187,10 +189,19 @@ whole of each PDF, printed numeric ranges for controls:
 | `DFAM_Manual.pdf` | 44 | 4 | 0.09 |
 | `Grandmother_Manual_Version_2.pdf` | 56 | 3 | 0.05 |
 | `Subharmonicon_Manual.pdf` | 58 | 3 | 0.05 |
-| `RD-9_M_EN.pdf` | Rhythm Designer RD-9 User Manual, English. 38pp / 105k chars / **76 printed ranges** — the strongest value source of the four Behringer manuals here. | [archive.org](https://archive.org/download/behringer-rhythm-designer-rd-9-user-manual) |
+| `RD-9_M_EN.pdf` | Rhythm Designer RD-9 User Manual, English. 38pp / 105k chars / **76 printed ranges** — the strongest value source of the four Behringer manuals here. | [direct](https://cdn-media.empowertribe.com/861ab611896c48b480e218397fe354c0/M_BE_P0DG6_RD-9_EN.pdf), confirmed 2026-09-01 — same document and version, a byte-different export · [archive.org](https://archive.org/download/behringer-rhythm-designer-rd-9-user-manual) |
 | `RHYTHM_DESIGNER_RD-8_M_EN.pdf` | Rhythm Designer RD-8 User Manual, English. 30pp / 105k chars / 61 ranges. Same architecture as the RD-9 above — see the queue note about authoring the pair. | [archive.org](https://archive.org/download/behringer_rhythm_designer_rd-8_user_manual_en) |
 | `NEUTRON_M_EN.pdf` | Neutron User Manual, English. 34pp / 91k chars / 21 ranges. Semi-modular, so expect a patchbay worth citing and knob values that mostly are not printed. | [archive.org](https://archive.org/download/BehringerNeutronUserManual) |
 | `MODEL_D_M_EN.pdf` | MODEL D User Manual, English. 44pp / 97k chars / **3 ranges**. Longest of the four and the emptiest of numbers — a Minimoog clone documented in prose. Expect a manifest that is mostly provisional, and say so rather than inventing. | [archive.org](https://archive.org/download/behringer_model_d_user_manual_en) |
+| `RD-9_QSG.pdf` | **Rhythm Designer RD-9 Quick Start Guide**, upstream `QSG_BE_0704-AAB_RD-9_WW.pdf`. 29pp / 374k chars — high characters for the page count because Behringer quickstarts are multilingual. Thin as a value source next to `RD-9_M_EN.pdf`, and kept for a different reason: **p.8's `RD-9 Controls` spread is the panel source**, cited by `lib/devices/behringer-rd-9/panel.ts`. The User Manual has no equivalent — it describes controls section by section and never draws the whole panel — so this file is irreplaceable rather than merely convenient. | [direct](https://cdn-media.empowertribe.com/bb232a41ee954b81bd079976af3914db/QSG_BE_0704-AAB_RD-9_WW.pdf), confirmed 2026-09-01 — **byte-identical to the copy here** (md5 `8352cdb…`) |
+| `Analog_Rytm_MKII_User_Manual_ENG_OS1.71.pdf` | **Elektron Analog Rytm MKII, OS 1.71.** 114pp / 347k chars / 43 ranges — the fewest of the four Elektron manuals against the most pages, so expect to hunt. | [direct](https://elektron.se/wp-content/uploads/2024/10/analog_rytm_mkii_user_manual_eng_os1.71_241016.pdf), confirmed 2026-09-01 |
+| `Digitone_User_Manual_ENG_OS1.41.pdf` | **Elektron Digitone, OS 1.41.** 104pp / 309k chars / 156 ranges. | [direct](https://www.elektron.se/wp-content/uploads/2024/09/Digitone_User_Manual_ENG_OS1.41_231108.pdf), confirmed 2026-09-01 |
+| `Digitone-2_User_Manual_ENG_OS1.10.pdf` | **Elektron Digitone II, OS 1.10.** 122pp / 364k chars / 103 ranges. **The CDN carries OS 1.00A, not this build** — the file here is newer than anything linkable, so the support page is the durable route rather than the direct link. | [support page](https://www.elektron.se/support-downloads/digitone-ii), confirmed 2026-09-01 · [direct, OS 1.00A](https://elektron.se/wp-content/uploads/2024/10/Digitone-2-User-Manual_ENG_OS1.00A_241023.pdf) |
+| `Octatrack_MKII_User_Manual_ENG_OS1.40A.pdf` | **Elektron Octatrack MKII, OS 1.40A.** 146pp / 478k chars / 20 ranges — the longest manual in the library and among the emptiest of printed numbers. | [direct](https://www.elektron.se/wp-content/uploads/2024/09/Octatrack-MKII-User-Manual_ENG_OS1.40A_210414.pdf), confirmed 2026-09-01 |
+| `circuit_tracks_programmer_s_reference_guide_v3.pdf` | **Novation Circuit Tracks Programmer's Reference Guide v3.** 22pp / 77k chars / **432 ranges** — by far the densest range-per-page in the library, because it is a MIDI parameter table rather than a manual. The User Guide is the prose; this is the values. | [direct](https://fael-downloads-prod.focusrite.com/customer/prod/downloads/circuit_tracks_programmer_s_reference_guide_v3.pdf), confirmed 2026-09-01 |
+| `Polyend-Play-Manual-1v3.0.pdf` | **Polyend Play+ manual, 1v3.0.** 254pp / 701k chars / 34 ranges. Name trap: the file says *Play* and the document is the **Play+** — the title page reads "An Official Reference for The Polyend Play+". | **Supplied by the operator, 2026-08-30.** polyend.com returns 403 to any automated request — see the note below — so there is no fetchable link to record. |
+| `Polyend-Tracker-Manual-1v9v2a.pdf` | **Polyend Tracker manual, 1v9v2a.** 308pp / 875k chars / 17 ranges. | **Supplied by the operator.** polyend.com returns 403 to automated requests. |
+| `Polyend-Seq-Manual-2v2v6.pdf` | **Polyend Seq manual, 2v2v6.** 16pp / 32k chars / **0 printed ranges** — the smallest document here, which is the shape of a MIDI step sequencer rather than a warning. | **Supplied by the operator, 2026-08-30.** polyend.com returns 403 to automated requests. |
 
 The Minitaur is ten times the Grandmother's density, which is the whole explanation for its 11%
 against their 85-88%.
@@ -247,11 +258,20 @@ return the same answer.
   `<Product>_Manual.pdf` pattern was going to find. Searching the manufacturer's own domain found
   it in one call. Worth remembering before recording the next device as blocked: "no CDN path
   found" may mean the path is not guessable rather than not there.
-- **Moog Spectravox** — still blocked, and for a sharper reason than before. The CDN has exactly
-  one Spectravox document, `Spectravox - Quickstart Guide - v1.0.pdf`, and it is **2 pages with 2
-  characters of extractable text** — an image with no text layer, useless as a source and only a
-  quickstart in any case. Six candidate paths for a full user guide all 404, and the downloads
-  page exposes no direct links. Not workable until a real manual is in hand.
+- ~~**Moog Spectravox**~~ — **resolved 2026-09-01**, and not by finding the path. The CDN still
+  has only the 2-page image quickstart; the operator supplied `Spectravox_Manual_RevB.pdf` by hand.
+  So the lesson from the Labyrinth above does *not* generalise: sometimes a document really is not
+  on the maker's CDN, and "search the manufacturer's domain harder" has an end.
+
+  **Both Moogs are the Model D case, and the counting trap is worth recording.** A first pass
+  measured the Spectravox at 7 ranges and the Labyrinth at 10. Both figures were wrong: the
+  matches are `251-0090` (a part number), `100 – 240` (mains voltage), and prose counts like
+  `BANDS 1-8` and `filters 2-9`. Counted properly the Labyrinth has **one** genuine range
+  (`1–16`) and the Spectravox has **none** — fewer than the Model D's three, which is already
+  described in the device queue as the box that tests whether provisional is written honestly.
+  A manifest from either should come out mostly provisional and say so, and if the recipe count
+  that survives honest citation is too small to be useful, that is a finding to report rather
+  than a reason to pad it.
 - ~~**Deluge guidebook**~~ — resolved. It was an excerpt; the full 284pp guidebook and the
   community firmware docs are both here now.
 
@@ -310,9 +330,28 @@ modelling one.
 
 ## Behringer, and two traps
 
-**The MusicTribe CDN is not a route.** `mediadl.musictribe.com` does not resolve at all from here, and
-the README already recorded the Crave's link on it returning 500. Every Behringer manual in this
-folder came from archive.org instead, which is also where the Crave's copy came from.
+**The MusicTribe CDN is not a route — but `cdn-media.empowertribe.com` is (2026-09-01).**
+`mediadl.musictribe.com` does not resolve at all from here, and this file already recorded the
+Crave's link on it returning 500, so every Behringer manual here came from archive.org instead.
+The RD-9's two documents now come from Music Tribe's own CDN under a different hostname, and the
+quickstart fetched from it is **byte-identical** to the copy in this folder — an official source
+for a file that had none, and the one the RD-9 panel's citation rests on.
+
+**It cannot be guessed, only supplied or searched.** The path is
+`cdn-media.empowertribe.com/<32-hex-hash>/<upstream-filename>`, and the hash is per file with
+nothing derivable about it:
+
+```
+861ab611896c48b480e218397fe354c0/M_BE_P0DG6_RD-9_EN.pdf        the user manual
+bb232a41ee954b81bd079976af3914db/QSG_BE_0704-AAB_RD-9_WW.pdf   the quickstart
+```
+
+A search for the other three Behringer manuals on that host returns nothing, so archive.org stays
+their recorded route until somebody produces a link. The useful part is the **upstream filename**:
+`M_BE_…` for a manual and `QSG_BE_…` for a quickstart, with the product code between. Our local
+names are renamed copies, so the upstream name has to be read off the device folder's citation —
+`behringer-rd-9/panel.ts` is what named `QSG_BE_0704-AAB_RD-9_WW.pdf` and made the search possible
+at all.
 
 **Most Behringer documents are multilingual quick-start guides, not manuals.** The Crave's is 275k
 chars of which only a fraction is English, and it yielded cited jacks with provisional knob values.
