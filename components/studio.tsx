@@ -25,6 +25,7 @@ import {
   withKey,
   copyStudioLink,
   createStudioSync,
+  effectiveMood,
   withAxis,
   withDevice,
   withRig,
@@ -252,6 +253,13 @@ export function Studio({ initialInputs }: StudioProps) {
    * page beside it (#33). `not-needed` is excluded in `rolesLeftUnfilled` — a direction that says
    * it is finished without a ride is not a rig missing one.
    */
+  /**
+   * #310. What the five knobs are showing: `inputs.mood` when the reader has one, and the
+   * direction's own opening mood when they do not. One function with `resolve`'s own fallback
+   * behind it, so the panel cannot show a mood the guide was not resolved at.
+   */
+  const mood = useMemo(() => effectiveMood(inputs), [inputs])
+
   const unfilledRoles = useMemo(
     () => (result === undefined ? new Set<Role>() : rolesLeftUnfilled(result)),
     [result],
@@ -311,8 +319,18 @@ export function Studio({ initialInputs }: StudioProps) {
     setInputs((current) => withInspiration(current, id, on))
   }
 
+  /**
+   * #310. The knob's new value, on top of **the state the reader was looking at** — theirs if
+   * they have one, and the direction's otherwise. So the first move takes the whole mood, and
+   * from then on the four knobs they did not touch stay where they were rather than following
+   * the next direction they pick.
+   *
+   * `effectiveMood(current)` inside the updater rather than the memo below, because `current` is
+   * the inputs this edit actually applies to. It is also the cheap path after the first move —
+   * an explicit mood returns without composing anything.
+   */
   function setAxis(axis: MoodAxis, value: number) {
-    setInputs((current) => withAxis(current, axis, value))
+    setInputs((current) => withAxis(current, axis, value, effectiveMood(current)))
   }
 
   function setSeed(seed: number) {
@@ -432,7 +450,8 @@ export function Studio({ initialInputs }: StudioProps) {
           songDiagnostics={result?.song.diagnostics ?? []}
         />
 
-        <MoodPanel mood={inputs.mood} onChange={setAxis} />
+        {/* #310. The mood in force, which is the direction's until the reader moves a knob. */}
+        <MoodPanel mood={mood} onChange={setAxis} />
 
         <GuideArea
           application={application}

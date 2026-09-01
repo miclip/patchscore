@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { DeviceId } from './ids'
 import { INSPIRATION_CAP } from './inspiration'
-import { MoodStateSchema } from './resolver'
+import { MoodStateSchema } from './vocabulary'
 import {
   BPM_MAX,
   BPM_MIN,
@@ -270,8 +270,11 @@ export function studioDoc(
     inputs: {
       templateId: inputs.templateId,
       inspirations: [...inputs.inspirations],
-      mood: { ...inputs.mood },
       seed: inputs.seed,
+      // #310. Written only when the reader set one, for the reason the two below are: absent is
+      // "open at the direction's mood", and a key present with no value is a second spelling of
+      // it that JSON drops on the way to disk anyway.
+      ...(inputs.mood === undefined ? {} : { mood: { ...inputs.mood } }),
       // Written only when set (#161). `strictObject` would take an explicit `undefined`, but a
       // key present with no value is a second spelling of unset, and JSON drops it on the way to
       // disk anyway — so there would be one shape in memory and another on reload.
@@ -292,8 +295,10 @@ export function guideInputsFrom(doc: StudioDocV1): GuideInputsV1 {
     devices: doc.rig.devices.map((member) => member.deviceId),
     templateId: doc.inputs.templateId,
     inspirations: [...doc.inputs.inspirations],
-    mood: { ...doc.inputs.mood },
     seed: doc.inputs.seed,
+    // #310. A document written before this field became optional still carries all five axes,
+    // and that is the reader's own mood exactly as it was — sticky, and it stays that way.
+    ...(doc.inputs.mood === undefined ? {} : { mood: { ...doc.inputs.mood } }),
     ...(doc.inputs.bpm === undefined ? {} : { bpm: doc.inputs.bpm }),
     ...(doc.inputs.key === undefined ? {} : { key: doc.inputs.key }),
     // #304. Read off the rig rather than the score, which is where it is stored and why the
@@ -372,7 +377,16 @@ const ScoreInputsSchema = z.strictObject({
   // §5's cap, on disk as well as on the wire. `localStorage` is user-editable, so a document
   // claiming three inspirations is corruption to report rather than a selection to honour.
   inspirations: z.array(z.string().regex(PERMALINK_ID)).max(INSPIRATION_CAP),
-  mood: MoodStateSchema,
+  /**
+   * #310. Optional for the reason #161's two below are: a document already on disk predates the
+   * field being optional and stays valid, carrying the mood its reader set. Absent means they
+   * never touched a knob, so the direction's own mood stands — and follows a direction change,
+   * where a stored one would not.
+   *
+   * All five axes when present. `MoodStateSchema` is strict, and a *partial* mood on disk would
+   * be a state the wire format has no spelling for.
+   */
+  mood: MoodStateSchema.optional(),
   seed: z.number().int().min(SEED_MIN).max(SEED_MAX),
   /**
    * #161's two, **optional exactly as #16's later fields will be**: a document already on disk

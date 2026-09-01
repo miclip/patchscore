@@ -145,10 +145,18 @@ describe('#99 the server render honours the query string', () => {
     // The server says nothing about it — the client bootstrap raises the notice, because that is
     // where there is somebody to read it.
     expect(await pageMarkup(DRONE_QUERY.replace('polyend-tracker-mini', 'no-such-box'))).toBe(bare)
-    // Missing the mood axes entirely: malformed, never neutral-by-default (§8.2).
+    // Missing the mood axes on a format that had them: malformed, never neutral-by-default
+    // (§8.2). #310 made *absence* a state from v3 on — the direction's own mood — so the claim
+    // this makes now needs a v2 link, where silence about mood is still corruption.
+    expect(
+      await pageMarkup(`format=2&resolver=${RESOLVER_VERSION}&template=drone-study&seed=1`),
+    ).toBe(bare)
+    // And a v3 link carrying *some* of the axes, which is malformed under every format: a mood
+    // is a total override, so half of one is a hand-edit rather than a partial opinion (#310).
     expect(
       await pageMarkup(
-        `format=${FORMAT_VERSION}&resolver=${RESOLVER_VERSION}&template=drone-study&seed=1`,
+        `format=${FORMAT_VERSION}&resolver=${RESOLVER_VERSION}&template=drone-study` +
+          `&swing=70&seed=1`,
       ),
     ).toBe(bare)
     expect(await pageMarkup('nonsense')).toBe(bare)

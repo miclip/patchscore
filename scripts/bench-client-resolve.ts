@@ -42,7 +42,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { encodeGuideInputs, DENSITY_DETENTS, NEUTRAL_MOOD, type GuideInputsV1 } from '../lib/core/index'
+import { FORMAT_VERSION, encodeGuideInputs, type GuideInputsV1 } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { CATALOGUE } from '../lib/studio/session'
 
@@ -74,15 +74,16 @@ const HEADFUL = argv.includes('--headful')
 
 // ---------------------------------------------------------------------------- the two rigs
 
-const mood = { ...NEUTRAL_MOOD, density: DENSITY_DETENTS[1] }
-
 function inputs(devices: readonly string[], templateId: string, seed: number): GuideInputsV1 {
   return {
-    version: 2,
+    // The stamp this build writes, not a literal: a bench that pins a format goes stale the
+    // moment one is added, and #310 is the bump that proved it.
+    version: FORMAT_VERSION,
     devices: devices as GuideInputsV1['devices'],
     templateId: templateId as GuideInputsV1['templateId'],
     inspirations: [],
-    mood,
+    // #310. No mood, which is what a link the studio writes carries until a knob is moved —
+    // and what the resolve this measures is actually handed.
     seed,
   }
 }

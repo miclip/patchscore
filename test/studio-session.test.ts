@@ -11,6 +11,7 @@ import {
   songOverrides,
   SYNC_DEBOUNCE_MS,
   syncStudio,
+  effectiveMood,
   withAxis,
   withBpm,
   withDevice,
@@ -136,7 +137,11 @@ describe('a drag writes once, not once per pointer move', () => {
       const { state, sync } = draggingSync()
       // A two-second drag at 60Hz, which is what killed the page.
       for (let i = 0; i < 120; i++) {
-        sync.schedule(withAxis(DEFAULT_INPUTS, 'swing', i % 101), undefined, {})
+        sync.schedule(
+          withAxis(DEFAULT_INPUTS, 'swing', i % 101, effectiveMood(DEFAULT_INPUTS)),
+          undefined,
+          {},
+        )
         vi.advanceTimersByTime(16)
       }
       expect(state.replaceCalls).toEqual([])
@@ -152,7 +157,11 @@ describe('a drag writes once, not once per pointer move', () => {
     try {
       const { state, reports, sync } = draggingSync()
       for (let i = 0; i < 120; i++) {
-        sync.schedule(withAxis(DEFAULT_INPUTS, 'swing', i % 101), undefined, {})
+        sync.schedule(
+          withAxis(DEFAULT_INPUTS, 'swing', i % 101, effectiveMood(DEFAULT_INPUTS)),
+          undefined,
+          {},
+        )
         vi.advanceTimersByTime(16)
       }
       vi.advanceTimersByTime(SYNC_DEBOUNCE_MS)
@@ -160,7 +169,7 @@ describe('a drag writes once, not once per pointer move', () => {
       expect(state.replaceCalls).toHaveLength(1)
       expect(state.storeWrites).toBe(1)
       // Not one change stale: the footer permalink and the store are the *last* thing scheduled.
-      const last = withAxis(DEFAULT_INPUTS, 'swing', 119 % 101)
+      const last = withAxis(DEFAULT_INPUTS, 'swing', 119 % 101, effectiveMood(DEFAULT_INPUTS))
       expect(state.replaceCalls[0]).toBe(`/?${encodeGuideInputs(last, CATALOGUE)}`)
       expect(reports).toHaveLength(1)
       expect(reports[0]?.href).toContain(`swing=${119 % 101}`)
@@ -269,7 +278,10 @@ describe('the default is a constant, fit for both renders', () => {
   })
 
   it('sits on the middle density detent, not on a value the control cannot produce', () => {
-    expect(DEFAULT_INPUTS.mood.density).toBe(DENSITY_DETENTS[1])
+    // #310. Off the *effective* mood, because the default carries none of its own: the landing
+    // page opens at its direction's, and the claim worth keeping is that whatever it opens at is
+    // a value the detent control can actually produce.
+    expect(effectiveMood(DEFAULT_INPUTS).density).toBe(DENSITY_DETENTS[1])
   })
 
   it('lands on Industrial Techno by name, not on whichever id sorts first', () => {
@@ -535,7 +547,7 @@ describe('sync writes the canonical query and the studio', () => {
     const changes: GuideInputsV1[] = [
       DEFAULT_INPUTS,
       withSeed(DEFAULT_INPUTS, 2),
-      withAxis(DEFAULT_INPUTS, 'grit', 80),
+      withAxis(DEFAULT_INPUTS, 'grit', 80, effectiveMood(DEFAULT_INPUTS)),
       // A device the default rig has, or unchecking it is a no-op and this proves nothing.
       withDevice(DEFAULT_INPUTS, DEFAULT_INPUTS.devices[0] as string, false),
       withTemplate(DEFAULT_INPUTS, otherTemplate()),
@@ -550,7 +562,8 @@ describe('sync writes the canonical query and the studio', () => {
 
   it('round trips: the URL it wrote is a URL it can boot from', () => {
     const { env, state } = fakeBrowser()
-    const inputs = withAxis(withSeed(DEFAULT_INPUTS, 99), 'darkness', 20)
+    const seeded = withSeed(DEFAULT_INPUTS, 99)
+    const inputs = withAxis(seeded, 'darkness', 20, effectiveMood(seeded))
     syncStudio(env, inputs, undefined)
 
     const boot = bootstrapStudio(env)
@@ -645,8 +658,16 @@ describe('a shared link never writes to the visitor’s studio', () => {
     let inputs = boot.inputs
     for (const next of [
       withDevice(inputs, CATALOGUE.devices[0] as string, true),
-      withAxis(withDevice(inputs, CATALOGUE.devices[0] as string, true), 'grit', 90),
-      withTemplate(withAxis(inputs, 'darkness', 10), CATALOGUE.templates[0] as string),
+      withAxis(
+        withDevice(inputs, CATALOGUE.devices[0] as string, true),
+        'grit',
+        90,
+        effectiveMood(inputs),
+      ),
+      withTemplate(
+        withAxis(inputs, 'darkness', 10, effectiveMood(inputs)),
+        CATALOGUE.templates[0] as string,
+      ),
     ]) {
       inputs = next
       syncStudio(env, inputs, boot.rig, { persist: boot.persist })
@@ -904,8 +925,10 @@ describe('pure updates', () => {
 
   it('changes one thing at a time', () => {
     expect(withSeed(DEFAULT_INPUTS, 9)).toEqual({ ...DEFAULT_INPUTS, seed: 9 })
-    expect(withAxis(DEFAULT_INPUTS, 'swing', 70).mood).toEqual({
-      ...DEFAULT_INPUTS.mood,
+    // #310. One axis moves; the other four arrive from the effective mood, because this is the
+    // edit that takes the whole state off the direction.
+    expect(withAxis(DEFAULT_INPUTS, 'swing', 70, effectiveMood(DEFAULT_INPUTS)).mood).toEqual({
+      ...effectiveMood(DEFAULT_INPUTS),
       swing: 70,
     })
     expect(withTemplate(DEFAULT_INPUTS, 'x').templateId).toBe('x')
@@ -914,7 +937,7 @@ describe('pure updates', () => {
   it('never mutates what it was given', () => {
     const before = JSON.stringify(DEFAULT_INPUTS)
     withSeed(DEFAULT_INPUTS, 3)
-    withAxis(DEFAULT_INPUTS, 'grit', 3)
+    withAxis(DEFAULT_INPUTS, 'grit', 3, effectiveMood(DEFAULT_INPUTS))
     withDevice(DEFAULT_INPUTS, CATALOGUE.devices[0] as string, false)
     expect(JSON.stringify(DEFAULT_INPUTS)).toBe(before)
   })
@@ -1162,7 +1185,7 @@ describe('the song overrides the session carries (#161)', () => {
       withTemplate(set, direction),
       withDevice(set, device, true),
       withSeed(set, 12345),
-      withAxis(set, 'density', 100),
+      withAxis(set, 'density', 100, effectiveMood(set)),
       ...(other === undefined ? [] : [withInspiration(set, other, true)]),
     ]
     // Changing direction is exactly the case where a range moves under the number. It stays.

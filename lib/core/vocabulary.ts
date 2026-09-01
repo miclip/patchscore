@@ -99,6 +99,40 @@ export type MoodAxis = (typeof MOOD_AXES)[number]
 export const MoodAxisSchema = z.enum(MOOD_AXES)
 
 /**
+ * §6. The five continuous 0-100 knobs, applied *after* recipe resolution. Every axis is
+ * always present: a device declines an axis by having no param that declares it (§3.1), not
+ * by the axis being absent from the state, and a partial `MoodState` would make "the knob is
+ * centred" and "the knob was not sent" indistinguishable to `§6.1`'s arithmetic.
+ *
+ * **Here rather than in `resolver.ts`, where it used to live, because `template.ts` needs it**
+ * (#310): a direction may now state the mood it opens at, and a template importing the resolver
+ * would invert the layering — the resolver imports `Template`, and a value import back the other
+ * way is a module cycle waiting for its first non-type edge. This file is the leaf both sides
+ * already depend on, and `MoodState` is `Record<MoodAxis, number>`, which is vocabulary.
+ */
+export type MoodState = Record<MoodAxis, number>
+
+export const MoodStateSchema = z.strictObject(
+  Object.fromEntries(MOOD_AXES.map((axis) => [axis, z.number().min(0).max(100)])) as {
+    [K in MoodAxis]: z.ZodNumber
+  },
+)
+
+/** Every knob centred. `§6.1`'s offset is zero here, so a neutral mood changes nothing. */
+export const NEUTRAL_MOOD: MoodState = Object.freeze(
+  Object.fromEntries(MOOD_AXES.map((axis) => [axis, 50])) as MoodState,
+)
+
+/**
+ * Convenience for tests and callers: a neutral mood with named axes overridden. Also the one
+ * place a direction's `Template.mood` becomes a full state (#310) — an axis the direction does
+ * not mention is centred, which is what "the direction has no opinion about it" means.
+ */
+export function moodState(over: Partial<MoodState> = {}): MoodState {
+  return { ...NEUTRAL_MOOD, ...over }
+}
+
+/**
  * §4.3. How a device's `articulation` addresses steps without knowing which pattern variant
  * it was handed. Never absolute step indices.
  */

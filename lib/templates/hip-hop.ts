@@ -194,7 +194,7 @@ import { at, on, variant } from '../core/authoring'
  * respectively are what make them not their neighbours.
  *
  * ---------------------------------------------------------------------------
- * The swing control exists, is wired, and this direction expects it up
+ * The swing control exists, is wired, and this direction opens with it up
  * ---------------------------------------------------------------------------
  *
  * The section above says the grid cannot carry lateness. This one says where it does live, because
@@ -206,16 +206,17 @@ import { at, on, variant } from '../core/authoring'
  * the feel this direction is about, and a box with no such parameter declines the axis by §6.1 and
  * plays it straight, which the guide reports rather than approximates.
  *
- * **What is missing is a starting value, not a capability — #310.** `Template` has no mood field,
- * so a direction cannot state the mood it wants and cannot open with swing already up. A reader who
- * never touches the control gets a straight programme on a box that would lay back if asked.
- * **This direction expects it up**, and #310 is where the finding lives, so a reader who hits a
- * straight programme has a number to follow rather than a paragraph.
+ * **What was missing was a starting value, not a capability, and #310 added the field.** Until
+ * then `Template` had no mood, so this file could ask for the knob in prose and nothing more: a
+ * reader who never touched it got a straight programme on a box that would have laid back if
+ * asked. `mood: { swing: 65 }` below is that sentence, said where the engine reads it — and the
+ * whole of it is still one knob under the reader's hand, which is the point of a starting value
+ * rather than a setting.
  *
  * **It is not #285, and conflating the two is the mistake this sentence exists to prevent.** #285
  * was a direction unable to vary a parameter *across sections*, and it was closed on the finding
  * that scheduling a filter arc models a different instrument — the arc belonged in the reader's
- * hand. #310 is a direction unable to state an opening value *at all*, which is not a gesture
+ * hand. #310 was a direction unable to state an opening value *at all*, which is not a gesture
  * anybody is performing and not something a section boundary would fix. One is about movement, the
  * other about where the knob starts.
  */
@@ -381,6 +382,31 @@ export const hipHop: Template = {
    * three, which is the same test `acid-lineage`'s keys pass.
    */
   keys: ['F minor', 'C minor', 'G minor'],
+
+  /**
+   * #310. **Swing up, and this is the direction saying so rather than a paragraph asking the
+   * reader to.** The section on the swing control above is what this field replaced.
+   *
+   * 65, and the arithmetic is the reason for the number rather than taste about it. §6.1's
+   * offset is `((state - 50) / 50) * amount`, so 65 is 30% of an axis's travel; on the sampler
+   * that carries a shuffle parameter — `amount: 50`, a control printed symmetrically either side
+   * of straight — that lands on `SHUFFLE +15`. The manual's own steer is that *"settings in the
+   * range of +10-16 generally give a pleasant shuffle feel"*, so the direction opens inside the
+   * band the box's own documentation names, with the whole rest of the travel still under the
+   * reader's hand in both directions.
+   *
+   * **Swing alone.** The other four axes are centred because this direction has no opinion about
+   * them: darkness, grit and space are production choices a reader makes against their own room
+   * and their own boxes, and density has a detent under it whose middle is "sections as
+   * authored" — which is what §4.3's bands above already say. Stating an axis to look thorough
+   * would be moving values on nineteen recipes for no reason anybody could point at.
+   *
+   * **A starting point, not a setting.** The first knob the reader moves takes the whole mood,
+   * including this, and their link carries it from then on (#310). A rig with no shuffle
+   * parameter declines the axis by §6.1 and plays straight, which the guide reports rather than
+   * approximates — the axis being up changes nothing on a box that never declared it.
+   */
+  mood: { swing: 65 },
 
   /**
    * Seven sections, 92 bars, **and the arrangement is a mute desk rather than a build**.

@@ -1,13 +1,12 @@
-import { z } from 'zod'
 import type { AssignableKey } from './occupancy'
 import type { SectionName } from './ids'
 import {
   CHAR,
   CHARACTERS,
-  MOOD_AXES,
   type Character,
   type CharVector,
   type MoodAxis,
+  type MoodState,
   type Role,
 } from './vocabulary'
 import {
@@ -65,28 +64,10 @@ import type {
 // ---------------------------------------------------------------------------
 
 /**
- * §6. The five continuous 0-100 knobs, applied *after* recipe resolution. Every axis is
- * always present: a device declines an axis by having no param that declares it (§3.1), not
- * by the axis being absent from the input, and a partial `MoodState` would make "the knob is
- * centred" and "the knob was not sent" indistinguishable to `§6.1`'s arithmetic.
+ * §6's `MoodState`, `NEUTRAL_MOOD` and `moodState` moved to `vocabulary.ts` in #310, where
+ * `template.ts` can reach them without importing this file. Nothing else about them changed;
+ * `lib/core/index.ts` exports them from there, so every caller through the barrel is unaffected.
  */
-export type MoodState = Record<MoodAxis, number>
-
-export const MoodStateSchema = z.strictObject(
-  Object.fromEntries(MOOD_AXES.map((axis) => [axis, z.number().min(0).max(100)])) as {
-    [K in MoodAxis]: z.ZodNumber
-  },
-)
-
-/** Every knob centred. `§6.1`'s offset is zero here, so a neutral mood changes nothing. */
-export const NEUTRAL_MOOD: MoodState = Object.freeze(
-  Object.fromEntries(MOOD_AXES.map((axis) => [axis, 50])) as MoodState,
-)
-
-/** Convenience for tests and callers: a neutral mood with named axes overridden. */
-export function moodState(over: Partial<MoodState> = {}): MoodState {
-  return { ...NEUTRAL_MOOD, ...over }
-}
 
 // ---------------------------------------------------------------------------
 // §7.2 Ordering primitives

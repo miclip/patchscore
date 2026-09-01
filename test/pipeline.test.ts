@@ -168,7 +168,9 @@ describe('resolve signature (§7)', () => {
     expectTypeOf<ResolveInput>().toEqualTypeOf<{
       devices: readonly Device[]
       template: Template
-      mood: MoodState
+      // #310. Optional: absent is "open at the direction's mood", which is a state and not a
+      // missing value. Every other field stays required.
+      mood?: MoodState | undefined
       seed: number
       // #161. Values, like everything else here: a tempo and a key, never a picker's state.
       overrides?: SongOverrides | undefined
