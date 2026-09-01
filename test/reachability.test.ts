@@ -8,6 +8,7 @@ import {
   type Recipe,
 } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { auditDevice, formatAudit } from '../scripts/audit-verified'
 import { TEMPLATES, droneStudy } from '../lib/templates/index'
 import { device as fixtureDevice, recipe as fixtureRecipe, template as fixtureTemplate } from './fixtures'
 
@@ -239,5 +240,46 @@ describe('#108 reachability follows the resolver, not a restatement of it', () =
     const device = fixtureDevice({ recipes: [fixtureRecipe({ articulation: undefined })] })
     expect(deadArticulationSlots(device, [fixtureTemplate()])).toEqual([])
     expect(unpatternedArticulation(device, [fixtureTemplate()])).toEqual([])
+  })
+})
+
+/**
+ * §3.5/#314. The audit reports unreachable recipes, so the debt is found at authoring time rather
+ * than by writing a script on purpose.
+ *
+ * `unrequestedRecipes` has existed since #81 and was used only by tests, which is why the number
+ * could go unexamined for months: it took an ad-hoc script to turn up 28 dead `acid` recipes
+ * (#283), and another to turn up 13 more. Both were closed by writing a direction. A debt nobody
+ * can see is a debt nobody pays.
+ */
+describe('the audit surfaces unreachable recipes (#314)', () => {
+  const report = formatAudit(
+    DEVICES.map((device) => auditDevice(device)),
+    false,
+  )
+
+  it('prints a REACH block with the count and the devices', () => {
+    expect(report).toContain('REACH')
+    const dead = DEVICES.flatMap((device) => unrequestedRecipes(device, TEMPLATES))
+    expect(report).toMatch(new RegExp(`dead\\s+${String(dead.length)} recipes`))
+    expect(report).toContain(`${String(new Set(dead.map((r) => r.deviceId)).size)} devices`)
+  })
+
+  it('names each one, so the line is actionable rather than a score', () => {
+    // The list is the useful half: a count tells you there is work, a name tells you where.
+    for (const ref of DEVICES.flatMap((d) => unrequestedRecipes(d, TEMPLATES)).slice(0, 12)) {
+      expect(report, ref.recipeId).toContain(ref.deviceId)
+      expect(report, ref.recipeId).toContain(`${ref.role} ${ref.character}`)
+    }
+  })
+
+  /**
+   * The audit is a report and never a gate — it always exits 0, because provisional values are
+   * legal and shown honestly (invariant 5). This line is the same: an unreachable recipe is a
+   * decision waiting to be made, not a build failure.
+   */
+  it('does not make the audit fail', () => {
+    expect(report).toContain('TOTAL')
+    expect(report.trimEnd().endsWith('more') || report.includes('REACH')).toBe(true)
   })
 })

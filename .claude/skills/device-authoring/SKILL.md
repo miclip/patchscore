@@ -486,5 +486,12 @@ If a change to make the device fit would break an invariant, stop and raise it. 
 - [ ] `productPage` is the maker's own page and answered 200 to a GET, or is absent on purpose.
 - [ ] The panel's coordinates were measured and its aspect checked; nothing vendor-drawn shipped.
 - [ ] `npm run audit` `caps` line did not regress; the numbers are in the commit message.
+- [ ] `npm run audit`'s **`REACH`** block does not name your device. A recipe there is authored,
+      cited, counted in the totals and unreachable — no direction asks for its `(role, character)`,
+      and §3.5 refuses a substitution between opposite characters outright, so nothing will ever
+      reach it. **The fix is almost never in the device folder**: either a direction should ask for
+      it, or it should not have been authored. Both are decisions above a manifest, so report it
+      rather than deciding inside a device commit. #283 was 28 dead `acid` recipes across 20
+      devices and took a whole direction to close.
 - [ ] The node sweep is not capped, and both figures are in the commit message.
 - [ ] `npm run verify` passes.
