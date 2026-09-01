@@ -61,9 +61,14 @@ export default defineConfig({
      * that has to answer.
      *
      * The split by machine is the evidence. `ubuntu-latest` has two cores and fails; the macOS
-     * runner has more and passes the same commit every time; this laptop has ten and has never
-     * reproduced it in a full local run. Two cores minus two busy workers leaves nothing for the
-     * coordinator.
+     * runner has more and passes the same commit every time. Two cores minus two busy workers
+     * leaves nothing for the coordinator.
+     *
+     * **This laptop has ten cores and reproduces it too, once they are busy** — which is the
+     * confirmation rather than a contradiction. This line used to say it never had. Sixteen
+     * spinners alongside the suite turns zero errors into fifty-six on the same commit, with every
+     * test passing both times. Core count is not the property that matters; a free core for the
+     * thread answering the RPC is.
      *
      * **It costs almost nothing, which is why the earlier trade flips.** Wall time on two cores
      * was already close to total CPU, because CPU is what this suite spends. The comment above
@@ -131,33 +136,33 @@ export default defineConfig({
     isolate: false,
 
     /**
-     * **On CI, an unhandled error does not fail the run. This is a mask, and here is the case for
-     * it.**
+     * §9/#265. **What this setting used to be, and which of its arguments turned out to be wrong.**
      *
-     * The only unhandled error this suite has ever produced is birpc giving up on an
-     * `onTaskUpdate` reply. It has never once accompanied a failing assertion: every red run in
-     * this class reported every test passing, and there were 2804 of them in the last one.
+     * It was `CI ? true : false` — an unhandled error did not fail the run — and the case made for
+     * it here ran to thirty lines. Most of that case was sound and is not repeated: the error has
+     * never once accompanied a failing assertion, and four earlier fixes were each worth keeping
+     * on their own terms (unyielded blocks removed, a core kept for the main thread, two over-long
+     * sweeps split, the module graph shared, local test CPU 1025s to 350s across them).
      *
-     * `isolate: false` above took collect from 59.8s to 38.8s and cleared it on a 99-file tree.
-     * Landing one more device brought it back — nothing is torn down between files now, and the
-     * Neutron takes the worst-case search from 718,179 nodes to 843,270 — so a single worker holds
-     * the whole suite for 757s under real memory pressure and the transport gives up 48 times.
-     * Every test still passed.
+     * **Three of its conclusions were wrong, and they are corrected here rather than deleted**,
+     * because each was a reasonable reading of the evidence available and the next person will
+     * reach for the same ones.
      *
-     * Four fixes went in before this one, and each was worth keeping on its own terms: unyielded
-     * blocks removed, a core kept for the main thread, two over-long sweeps split, the module
-     * graph shared. Local test CPU went 1025s to 350s across them. None of it stopped a green run
-     * exiting 1, and the next device would move whatever line the last fix bought.
+     *  - *"A suite that has outgrown its runner's transport."* Suite size is not the variable. A
+     *    deliberate sweep found 999s of test CPU across 460 files on an idle machine producing no
+     *    errors at all, while the real suite — a third the size — produces them reliably under
+     *    load. A two-core runner with other work on it will do this to a much smaller suite.
+     *  - *"Under real memory pressure."* It is CPU contention, not memory. The controlled version:
+     *    same commit, same suite, sixteen spinners on a ten-core box, and nothing else changed.
+     *    Load ~3-8 gives zero errors; load ~26 gives fifty-six, with all 3401 tests passing both
+     *    times.
+     *  - *"The real answer is a smaller gate, not a bigger deadline."* Neither. The deadline is
+     *    birpc's 60s default and no configuration reaches it — `createThreadsRpcOptions` passes
+     *    `{ post, on }` and nothing else, verified in vitest 3.2.7 rather than assumed. The answer
+     *    was a mask narrow enough to be honest.
      *
-     * **What this gives up, stated plainly:** a genuine unhandled rejection in product code would
-     * no longer fail CI. Two things bound that. It is `CI` only, so `npm run verify` still fails
-     * on one locally, and CLAUDE.md requires that to pass before any commit. And the engine has no
-     * async path for such a rejection to come from: no LLM calls, no I/O, no network, a pure
-     * deterministic resolver (invariant 6).
-     *
-     * **#265 keeps this open**, with every measurement and the one hypothesis left untested. This
-     * is a suite that has outgrown its runner's transport, and the real answer is a smaller gate,
-     * not a bigger deadline.
+     * **`maxWorkers` above was right all along**, and its reasoning is the one to trust: *"the only
+     * lever is to stop starving the thread"*. That is exactly the mechanism, now measured.
      */
     /**
      * #265. **Off, and the mask moved to `scripts/run-tests.ts` where it can be narrow.**
