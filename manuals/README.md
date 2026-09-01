@@ -189,11 +189,11 @@ whole of each PDF, printed numeric ranges for controls:
 | `DFAM_Manual.pdf` | 44 | 4 | 0.09 |
 | `Grandmother_Manual_Version_2.pdf` | 56 | 3 | 0.05 |
 | `Subharmonicon_Manual.pdf` | 58 | 3 | 0.05 |
-| `RD-9_M_EN.pdf` | Rhythm Designer RD-9 User Manual, English. 38pp / 105k chars / **76 printed ranges** — the strongest value source of the four Behringer manuals here. | [archive.org](https://archive.org/download/behringer-rhythm-designer-rd-9-user-manual) |
+| `RD-9_M_EN.pdf` | Rhythm Designer RD-9 User Manual, English. 38pp / 105k chars / **76 printed ranges** — the strongest value source of the four Behringer manuals here. | [direct](https://cdn-media.empowertribe.com/861ab611896c48b480e218397fe354c0/M_BE_P0DG6_RD-9_EN.pdf), confirmed 2026-09-01 — same document and version, a byte-different export · [archive.org](https://archive.org/download/behringer-rhythm-designer-rd-9-user-manual) |
 | `RHYTHM_DESIGNER_RD-8_M_EN.pdf` | Rhythm Designer RD-8 User Manual, English. 30pp / 105k chars / 61 ranges. Same architecture as the RD-9 above — see the queue note about authoring the pair. | [archive.org](https://archive.org/download/behringer_rhythm_designer_rd-8_user_manual_en) |
 | `NEUTRON_M_EN.pdf` | Neutron User Manual, English. 34pp / 91k chars / 21 ranges. Semi-modular, so expect a patchbay worth citing and knob values that mostly are not printed. | [archive.org](https://archive.org/download/BehringerNeutronUserManual) |
 | `MODEL_D_M_EN.pdf` | MODEL D User Manual, English. 44pp / 97k chars / **3 ranges**. Longest of the four and the emptiest of numbers — a Minimoog clone documented in prose. Expect a manifest that is mostly provisional, and say so rather than inventing. | [archive.org](https://archive.org/download/behringer_model_d_user_manual_en) |
-| `RD-9_QSG.pdf` | **Rhythm Designer RD-9 Quick Start Guide.** 29pp / 374k chars — the character count is high for the page count because Behringer quickstarts are multilingual. Thin as a value source next to `RD-9_M_EN.pdf` above, and kept for a different reason: **p.8's top view is the panel source**, cited by `lib/devices/behringer-rd-9/panel.ts`. | **Provenance not recorded.** Not on archive.org and `mediadl.musictribe.com` does not resolve from here; see the MusicTribe note below. Re-obtain from the product page if it is ever lost. |
+| `RD-9_QSG.pdf` | **Rhythm Designer RD-9 Quick Start Guide**, upstream `QSG_BE_0704-AAB_RD-9_WW.pdf`. 29pp / 374k chars — high characters for the page count because Behringer quickstarts are multilingual. Thin as a value source next to `RD-9_M_EN.pdf`, and kept for a different reason: **p.8's `RD-9 Controls` spread is the panel source**, cited by `lib/devices/behringer-rd-9/panel.ts`. The User Manual has no equivalent — it describes controls section by section and never draws the whole panel — so this file is irreplaceable rather than merely convenient. | [direct](https://cdn-media.empowertribe.com/bb232a41ee954b81bd079976af3914db/QSG_BE_0704-AAB_RD-9_WW.pdf), confirmed 2026-09-01 — **byte-identical to the copy here** (md5 `8352cdb…`) |
 | `Analog_Rytm_MKII_User_Manual_ENG_OS1.71.pdf` | **Elektron Analog Rytm MKII, OS 1.71.** 114pp / 347k chars / 43 ranges — the fewest of the four Elektron manuals against the most pages, so expect to hunt. | [direct](https://elektron.se/wp-content/uploads/2024/10/analog_rytm_mkii_user_manual_eng_os1.71_241016.pdf), confirmed 2026-09-01 |
 | `Digitone_User_Manual_ENG_OS1.41.pdf` | **Elektron Digitone, OS 1.41.** 104pp / 309k chars / 156 ranges. | [direct](https://www.elektron.se/wp-content/uploads/2024/09/Digitone_User_Manual_ENG_OS1.41_231108.pdf), confirmed 2026-09-01 |
 | `Digitone-2_User_Manual_ENG_OS1.10.pdf` | **Elektron Digitone II, OS 1.10.** 122pp / 364k chars / 103 ranges. **The CDN carries OS 1.00A, not this build** — the file here is newer than anything linkable, so the support page is the durable route rather than the direct link. | [support page](https://www.elektron.se/support-downloads/digitone-ii), confirmed 2026-09-01 · [direct, OS 1.00A](https://elektron.se/wp-content/uploads/2024/10/Digitone-2-User-Manual_ENG_OS1.00A_241023.pdf) |
@@ -330,9 +330,28 @@ modelling one.
 
 ## Behringer, and two traps
 
-**The MusicTribe CDN is not a route.** `mediadl.musictribe.com` does not resolve at all from here, and
-the README already recorded the Crave's link on it returning 500. Every Behringer manual in this
-folder came from archive.org instead, which is also where the Crave's copy came from.
+**The MusicTribe CDN is not a route — but `cdn-media.empowertribe.com` is (2026-09-01).**
+`mediadl.musictribe.com` does not resolve at all from here, and this file already recorded the
+Crave's link on it returning 500, so every Behringer manual here came from archive.org instead.
+The RD-9's two documents now come from Music Tribe's own CDN under a different hostname, and the
+quickstart fetched from it is **byte-identical** to the copy in this folder — an official source
+for a file that had none, and the one the RD-9 panel's citation rests on.
+
+**It cannot be guessed, only supplied or searched.** The path is
+`cdn-media.empowertribe.com/<32-hex-hash>/<upstream-filename>`, and the hash is per file with
+nothing derivable about it:
+
+```
+861ab611896c48b480e218397fe354c0/M_BE_P0DG6_RD-9_EN.pdf        the user manual
+bb232a41ee954b81bd079976af3914db/QSG_BE_0704-AAB_RD-9_WW.pdf   the quickstart
+```
+
+A search for the other three Behringer manuals on that host returns nothing, so archive.org stays
+their recorded route until somebody produces a link. The useful part is the **upstream filename**:
+`M_BE_…` for a manual and `QSG_BE_…` for a quickstart, with the product code between. Our local
+names are renamed copies, so the upstream name has to be read off the device folder's citation —
+`behringer-rd-9/panel.ts` is what named `QSG_BE_0704-AAB_RD-9_WW.pdf` and made the search possible
+at all.
 
 **Most Behringer documents are multilingual quick-start guides, not manuals.** The Crave's is 275k
 chars of which only a fraction is English, and it yielded cited jacks with provisional knob values.
