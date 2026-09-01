@@ -159,6 +159,20 @@ export default defineConfig({
      * is a suite that has outgrown its runner's transport, and the real answer is a smaller gate,
      * not a bigger deadline.
      */
-    dangerouslyIgnoreUnhandledErrors: process.env['CI'] ? true : false,
+    /**
+     * #265. **Off, and the mask moved to `scripts/run-tests.ts` where it can be narrow.**
+     *
+     * This was `CI ? true : false`, which stops *any* unhandled error failing the run. The case
+     * for it was that the only one this suite has ever produced is birpc giving up on
+     * `onTaskUpdate` — true, and a fact about history rather than a guarantee. A genuine unhandled
+     * rejection in `lib/core` would have been swallowed on CI and nowhere else, which is the worst
+     * place to lose one.
+     *
+     * `npm test` now forgives that error by name, only when no test failed, and only when every
+     * declared unhandled error is that one. It also announces what it forgave, so the frequency
+     * stays visible rather than decaying into silence — and it works locally, where the old mask
+     * did not and where the failure has become reproducible under machine load.
+     */
+    dangerouslyIgnoreUnhandledErrors: false,
   },
 })
