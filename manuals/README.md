@@ -32,7 +32,9 @@ opened.
 | `Muse_Manual-1.4.0.pdf` | **Moog Muse**, 124pp / 196k chars / 18 ranges. Denser than the TR-1000 Reference, and the library's first 8-voice polysynth. | [direct](https://cdn.inmusicbrands.com/Moog/Muse/Muse_Manual-1.4.0.pdf), confirmed 2026-08-28 |
 | `LABYRINTH-MANUAL_1.pdf` | **Moog Labyrinth**, 62pp / 68k chars / 1 range. Enum-dominated, as #184 predicts for this family. Note the space in the CDN filename — `LABYRINTH-MANUAL%201.pdf`, which is why guessing the path failed for a year. | [direct](https://cdn.inmusicbrands.com/Moog/Labyrinth/LABYRINTH-MANUAL%201.pdf), confirmed 2026-08-28 |
 | `Messenger_Manual.pdf` | **Moog Messenger**, 38pp / 66k chars / 4 ranges. Fetched alongside the other two; not in any backlog yet. | [direct](https://cdn.inmusicbrands.com/Moog/Messenger/Messenger_Manual.pdf), confirmed 2026-08-28 |
-| `Spectravox_Quickstart_Guide_v1.0.pdf` | **Do not author from this.** 2pp and **2 characters of extractable text** — an image-only PDF. Kept so nobody re-downloads it expecting a manual. See the note below. | [direct](https://cdn.inmusicbrands.com/Moog/Spectravox/Spectravox%20-%20Quickstart%20Guide%20-%20v1.0.pdf) |
+| `Spectravox_Quickstart_Guide_v1.0.pdf` | **Do not author from this.** 2pp and **2 characters of extractable text** — an image-only PDF. Kept so nobody re-downloads it expecting a manual. | [direct](https://cdn.inmusicbrands.com/Moog/Spectravox/Spectravox%20-%20Quickstart%20Guide%20-%20v1.0.pdf) |
+| `Spectravox_Manual_RevB.pdf` | **Moog Spectravox User Manual, Rev B.** 50pp / 84k chars / **0 printed parameter ranges** — prose and enums throughout, as #184 predicts for this family. Supplied by hand 2026-09-01; not on the CDN paths that were tried. | supplied by the operator, 2026-09-01 |
+| `Labyrinth_Quick_Start_Guide.pdf` | **Do not author values from this.** 2pp and **2 characters of extractable text** — image-only, the same shape as the Spectravox quickstart. Kept as a possible *panel* source, since a 2pp quickstart is usually panel-shaped and §10 needs a figure to measure. | supplied by the operator, 2026-09-01 |
 | `SP-404MK2_v4_reference_eng02_W.pdf` | **Roland SP-404MKII Reference Manual, v4.00.** 274pp / 279k chars / **275 ranges** — Roland prints them bare (`0–127`, `40.0–200.0`, `1/4–7/4`) with an en dash and no unit, so a unit-bearing grep reports zero. | [direct](https://static.roland.com/assets/media/pdf/SP-404MK2_v4_reference_eng02_W.pdf), confirmed 2026-08-28 |
 | `te-ep-133/` | **teenage engineering EP–133 K.O. II guide mirror**, 19 pages / 105k chars / 36 ranges. No PDF exists — see the TE note below. | [guide](https://teenage.engineering/guides/ep-133), mirrored 2026-08-28 |
 | `te-ep-40/` | **teenage engineering EP–40 riddim guide mirror**, 19 pages / 107k chars / 39 ranges. No PDF exists. | [guide](https://teenage.engineering/guides/ep-40), mirrored 2026-08-28 |
@@ -247,11 +249,20 @@ return the same answer.
   `<Product>_Manual.pdf` pattern was going to find. Searching the manufacturer's own domain found
   it in one call. Worth remembering before recording the next device as blocked: "no CDN path
   found" may mean the path is not guessable rather than not there.
-- **Moog Spectravox** — still blocked, and for a sharper reason than before. The CDN has exactly
-  one Spectravox document, `Spectravox - Quickstart Guide - v1.0.pdf`, and it is **2 pages with 2
-  characters of extractable text** — an image with no text layer, useless as a source and only a
-  quickstart in any case. Six candidate paths for a full user guide all 404, and the downloads
-  page exposes no direct links. Not workable until a real manual is in hand.
+- ~~**Moog Spectravox**~~ — **resolved 2026-09-01**, and not by finding the path. The CDN still
+  has only the 2-page image quickstart; the operator supplied `Spectravox_Manual_RevB.pdf` by hand.
+  So the lesson from the Labyrinth above does *not* generalise: sometimes a document really is not
+  on the maker's CDN, and "search the manufacturer's domain harder" has an end.
+
+  **Both Moogs are the Model D case, and the counting trap is worth recording.** A first pass
+  measured the Spectravox at 7 ranges and the Labyrinth at 10. Both figures were wrong: the
+  matches are `251-0090` (a part number), `100 – 240` (mains voltage), and prose counts like
+  `BANDS 1-8` and `filters 2-9`. Counted properly the Labyrinth has **one** genuine range
+  (`1–16`) and the Spectravox has **none** — fewer than the Model D's three, which is already
+  described in the device queue as the box that tests whether provisional is written honestly.
+  A manifest from either should come out mostly provisional and say so, and if the recipe count
+  that survives honest citation is too small to be useful, that is a finding to report rather
+  than a reason to pad it.
 - ~~**Deluge guidebook**~~ — resolved. It was an excerpt; the full 284pp guidebook and the
   community firmware docs are both here now.
 
