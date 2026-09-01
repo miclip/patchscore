@@ -2,26 +2,30 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  CHARACTERS,
-  DENSITY_BANDS,
-  INSPIRATION_CAP,
-  InspirationSchema,
-  MOOD_AXES,
-  PATTERN_SLOTS,
-  ROLES,
-  TemplateSchema,
   applyInspirations,
   at,
+  characterDistanceSq,
+  CHARACTERS,
+  DENSITY_BANDS,
+  expand,
+  INSPIRATION_CAP,
+  InspirationSchema,
+  MAX_SUBSTITUTION_DISTANCE_SQ,
+  MOOD_AXES,
   moodState,
   on,
+  PATTERN_SLOTS,
   resolve,
+  ROLES,
   slotKey,
-  variant,
+  TemplateSchema,
   type DensityBand,
   type Inspiration,
+  type RoleRequest,
   type Pattern,
   type Role,
   type Template,
+  variant,
 } from '../lib/core/index'
 import { DEVICES, DEVICE_FOLDERS } from '../lib/devices/registry.generated'
 import {
@@ -827,65 +831,94 @@ describe('every effective template is schema-valid (§4, §7)', () => {
   })
 
   /**
-   * A full resolve against the whole library, once per (direction, selection) pair — 84 of them
-   * at five influences, and it grows with both registries. Past the 5s default, so the timeout is
-   * stated here rather than raised globally: this is the one sweep in the suite that is slow for
-   * a good reason, and every other test should still fail loudly if it hangs.
+   * §3.5/#265. **No selection strands a request** — the claim this sweep has always been for,
+   * separated from the 135 exhaustive searches it used to be wrapped in.
    *
-   * **This test is a canary for search growth, and the MC-707 is what made that visible.** It was
-   * comfortably inside 30s until a near-clone of the MC-101 landed and roughly doubled the worst
-   * case (74,415 -> 132,559 nodes). It then measured 10.6s on a fast laptop and **failed
-   * intermittently on CI, where a runner is two to three times slower** — one ubuntu job of three
-   * timing out per run, a different one each time, which is what a boundary looks like rather
-   * than a bug.
+   * It resolved every (direction, selection) pair against all 46 devices and asserted no
+   * shortfalls. That did two jobs and only one of them meant anything:
    *
-   * Raised to 120s, which was headroom rather than a fix. The cause is #228: the same growth that
-   * makes this slow will, further along, silently cap a reader's search and hand them a worse
-   * arrangement with nothing said. That third raise came due in August 2026 and was taken as the
-   * signal it was meant to be — see the budget note below, and the deleted sweep it points at.
+   *  - **Is every request servable by something in the library?** Real, and the thing an
+   *    inspiration can break: a composed template can ask for a `(role, character)` nothing
+   *    authors.
+   *  - **Do they all fit simultaneously on 46 devices?** Vacuous. Forty-six boxes have capacity
+   *    an order of magnitude past any direction, so `no-room` cannot fire, and #301 capped a rig
+   *    at ten — nobody can be in the situation this was checking.
+   *
+   * The first is `§3.5`'s candidacy rule and needs no search: a request is stranded when no
+   * device declares its role on an assignable of sufficient polyphony *and* authors a recipe
+   * inside the substitution radius. `MAX_SUBSTITUTION_DISTANCE_SQ` is the resolver's own constant,
+   * so this cannot drift from what the search would accept.
+   *
+   * **The history is why this is a rewrite rather than another raise.** The budget went 20s, 30s,
+   * 120s, 300s, and the note beside the third said the next one should be the signal to price the
+   * cost somewhere real rather than add a zero. At 77s this was the most expensive file in the
+   * suite and the leading correlate in #265, where a run whose every assertion passes exits 1 on
+   * a birpc deadline. Deleting 135 whole-catalogue searches is that price finally being paid.
+   *
+   * `CLAUDE.md`'s rule, added in #293 and not applied here until now: a test resolves a rig
+   * somebody owns, unless crowding is what it is testing.
    */
-  /**
-   * **300s, and the number is not the fix — the fix was deleting a third of the gate.**
-   *
-   * This test's own note used to say that a third raise would be the signal to price the cost
-   * somewhere real rather than add another zero, and in August 2026 it came due: this sweep,
-   * `search-bound`'s and `search-symmetry`'s all blew their budgets in one CI run with every
-   * assertion passing. The answer was that two of the three were the same 168 exhaustive searches
-   * — see the note in `search-bound.test.ts` — so ~21M nodes came out of the gate for no loss of
-   * coverage, and `search-symmetry` went from 92s to 1.5s.
-   *
-   * What is left here is work nothing else does: 84 full-library resolves, one per (direction,
-   * legal selection), proving no selection strands a request. Measured at 68s on a fast laptop
-   * with the duplication gone. A CI runner sharing a core is two to three times slower, which is
-   * the whole span this budget has to cover, so 300s is headroom over the slowest observed rather
-   * than a guess — and a *fourth* raise means the resolve itself got dearer, which is a cost
-   * problem and not a scheduling one.
-   */
+  /** Every (direction, legal selection) pair — 9 x 15 at five influences, and it grows with both. */
   const PAIRS = TEMPLATES.flatMap((t) =>
     LEGAL_SELECTIONS.map(
       (selection) => [`${t.id} + [${selection.map((i) => i.id).join(', ')}]`, t, selection] as const,
     ),
   )
 
-  it.each(PAIRS)(
-    'still resolves on the full library: %s',
-    async (_label, template, selection) => {
-      {
-        // Yield so the worker can answer the main thread; see the note in
-        // `search-symmetry.test.ts`'s cap sweep. A block this long fails CI with an RPC timeout
-        // while every assertion passes, which is the least debuggable red there is.
-        await new Promise((r) => setImmediate(r))
-        const result = applied(template, selection)
-        const resolved = resolve({
-          devices: DEVICES,
-          template: result.template,
-          mood: MOOD,
-          seed: 7,
-        })
-        const where = `${template.id} + [${selection.map((i) => i.id).join(', ')}]`
-        expect(resolved.shortfalls.map((g) => `${g.requestId}: ${g.reason}`), where).toEqual([])
-      }
-    },
-    300_000,
-  )
+  /** Every assignable the library offers, flattened once. Pure function of device data (§2.2). */
+  const ASSIGNABLES = DEVICES.flatMap((device) => expand(device))
+
+  /**
+   * Whether the library could serve this request at all — role, polyphony and character together,
+   * on one device, because a recipe on a box that cannot hold the part is not an answer.
+   */
+  function servable(request: RoleRequest): boolean {
+    return DEVICES.some((device) => {
+      const holds = ASSIGNABLES.some(
+        (a) =>
+          a.deviceId === device.id &&
+          a.roles.includes(request.role) &&
+          a.polyphony >= (request.polyphony ?? 1),
+      )
+      if (!holds) return false
+      return device.recipes.some(
+        (recipe) =>
+          recipe.role === request.role &&
+          characterDistanceSq(recipe.character, request.character) <
+            MAX_SUBSTITUTION_DISTANCE_SQ,
+      )
+    })
+  }
+
+  it.each(PAIRS)('strands no request: %s', (_label, template, selection) => {
+    const composed = applied(template, selection).template
+    const stranded = composed.roles
+      .filter((request) => !servable(request))
+      .map((request) => `${request.id} (${request.role} ${request.character})`)
+    expect(stranded).toEqual([])
+  })
+
+  /**
+   * The other half, kept as a **sample rather than a sweep**: that the library really does fit a
+   * composed template together, search and all.
+   *
+   * One pair, not 135. The candidacy check above is exhaustive over every pair and is what
+   * catches a stranded request; this catches the residue it cannot see — two `distinct` requests
+   * that could only go to one device, or a crowding interaction — on the direction that asks for
+   * most. If that residue ever bites, it bites here first and the failure names the pair.
+   */
+  it('fits the busiest direction together, on the whole library', async () => {
+    await new Promise((r) => setImmediate(r))
+    const busiest = TEMPLATES.reduce((a, b) => (b.roles.length > a.roles.length ? b : a))
+    const widest = LEGAL_SELECTIONS.reduce((a, b) => (b.length > a.length ? b : a))
+    const result = applied(busiest, widest)
+    const resolved = resolve({
+      devices: DEVICES,
+      template: result.template,
+      mood: MOOD,
+      seed: 7,
+    })
+    const where = `${busiest.id} + [${widest.map((i) => i.id).join(', ')}]`
+    expect(resolved.shortfalls.map((g) => `${g.requestId}: ${g.reason}`), where).toEqual([])
+  }, 120_000)
 })
