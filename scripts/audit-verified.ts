@@ -14,6 +14,10 @@ import { relative } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { AuditCounts, AuditFinding, DeviceAudit } from '../lib/studio/provenance'
 import { auditDevice, libraryCounts, totalCounts } from '../lib/studio/provenance'
+import type { Device, Template } from '../lib/core/index'
+import { unrequestedRecipes } from '../lib/core/index'
+import { DEVICES } from '../lib/devices/registry.generated'
+import { TEMPLATES } from '../lib/templates/index'
 import {
   DEFAULT_DEVICES_ROOT,
   RegistryError,
@@ -88,6 +92,45 @@ export function countsBlock(label: string, c: AuditCounts): string[] {
   return lines
 }
 
+/**
+ * §3.5/#314. **Recipes no direction can ask for**, which is the one debt the rest of this audit
+ * cannot see.
+ *
+ * Every other line here is about a *value*: cited, provisional, unread. This is about whether the
+ * value is reachable at all. A recipe authored for a `(role, character)` that no template requests
+ * is honest work on a page nobody will ever be sent to — green in the manifest, counted in the
+ * totals, and dead.
+ *
+ * **It was invisible until now and it stayed invisible for months.** `unrequestedRecipes` has
+ * existed since #81 and was used only by tests, so the number could only be found by writing a
+ * script on purpose. Doing that in September 2026 turned up 28 unreachable `acid` recipes across
+ * 20 devices (#283) and later 13 more, seven of them one character of `snare`. Both were closed by
+ * writing a *direction*, not by touching a device — which is the finding this line exists to make
+ * routine rather than archaeological.
+ *
+ * **The fix is almost never in the device folder.** §3.5 refuses a substitution between opposite
+ * characters outright — `bright` and `dark` are distance 4 apart — so a direction asking for one
+ * can never reach the other. A recipe appearing here means either a direction should ask for it,
+ * or it should not have been authored. Both are decisions above a manifest.
+ *
+ * Listed rather than counted, because the list is the actionable part and a healthy library keeps
+ * it short. If it ever runs past the cap below, the length is itself the report.
+ */
+function reachBlock(devices: readonly Device[], templates: readonly Template[]): string[] {
+  const dead = devices.flatMap((device) => unrequestedRecipes(device, templates))
+  const lines = [
+    '  REACH',
+    `    dead   ${n(dead.length)} recipes on ${n(new Set(dead.map((r) => r.deviceId)).size).trim()} ` +
+      `devices — authored, and no direction asks for them`,
+  ]
+  const SHOWN = 12
+  for (const ref of dead.slice(0, SHOWN)) {
+    lines.push(`      ${ref.deviceId.padEnd(28)}${ref.role} ${ref.character}`)
+  }
+  if (dead.length > SHOWN) lines.push(`      … and ${String(dead.length - SHOWN)} more`)
+  return lines
+}
+
 /** Two coordinate systems, one line each. A capability fact has no recipe and says so (§2.6). */
 export function findingLine(f: AuditFinding): string {
   return 'fact' in f ? `${f.kind}: ${f.fact}` : `${f.kind}: ${f.recipeId} / ${f.paramName}`
@@ -115,6 +158,7 @@ export function formatAudit(
   }
 
   lines.push(...countsBlock('TOTAL', total ?? totalCounts(ordered)), '')
+  lines.push(...reachBlock(DEVICES, TEMPLATES), '')
   return lines.join('\n')
 }
 
