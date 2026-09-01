@@ -48,9 +48,9 @@ function patternedRoles(template: Template): Set<Role> {
 // The registry entries themselves
 // ---------------------------------------------------------------------------
 
-describe('the registry carries nine directions (§4)', () => {
+describe('the registry carries eleven directions (§4)', () => {
   it('holds both new templates, in id order, reachable by id', () => {
-    // Nine now, and every arrival has slotted in by id rather than at the end, which is what
+    // Eleven now, and every arrival has slotted in by id rather than at the end, which is what
     // the registry's UTF-16 ordering is for (§7.2) — `acid-lineage` sorting to the front of the
     // list rather than to the end of it is that rule doing its job. The other files own the other
     // arrivals: `small-rig-directions.test.ts` the two a one-voice box can finish, and
@@ -63,6 +63,7 @@ describe('the registry carries nine directions (§4)', () => {
     expect(TEMPLATES.map((t) => t.id)).toEqual([
       'acid-lineage',
       'ambient-dub',
+      'breakbeat',
       'drone-study',
       'generative-drift',
       'hip-hop',
