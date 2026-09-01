@@ -97,6 +97,7 @@ describe('both directions are registered and parse (§4)', () => {
     expect(TEMPLATES.map((t) => t.id)).toEqual([
       'acid-lineage',
       'ambient-dub',
+      'breakbeat',
       'drone-study',
       'generative-drift',
       'hip-hop',

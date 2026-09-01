@@ -644,6 +644,31 @@ import { TEMPLATES } from '../lib/templates/index'
  * costs on those four percussion roles, and it is the same shape `weave`'s row has at a larger
  * scale: most seeds sit near 1,100-1,400 and a few explore.
  *
+ * ## Breakbeat, the fourth row added rather than moved
+ *
+ * The eleventh direction, and like the eighth, ninth and tenth it moves nothing above it — the
+ * other ten rows reproduce to the node. Its own row runs 230-65,397 over the twenty-four seeds,
+ * which makes it the second most expensive here: an order of magnitude above `weave`'s 26,203 peak
+ * and an order below `industrial-techno`.
+ *
+ * **The row is bimodal rather than spread, and the cause is measured rather than reasoned about.**
+ * Twenty of the twenty-four seeds sit between 230 and 2,524; the other four (1, 4, 19 and 23) land
+ * near 65,000. Six of its eight requests are percussion — `snare`, `kick`, `closed-hat`, `rim` and
+ * **two** `ghost-perc` — so on a groovebox or a drum machine they compete for one pool of voices
+ * and the branching is in the ties, which is `weave`'s mechanism again.
+ *
+ * The second `ghost-perc` request is the whole of it, and dropping it says so: with
+ * `r-ghost-perc-dark` removed the row collapses to 205-207 over all twenty-four seeds, flat. Two
+ * requests for one role are two branches at every tie that role is in, and the four seeds that
+ * explore are the ones whose tie-break order does not settle the pair early. **The pair is content,
+ * not accident** — the direction's own header argues for it — so the cost is bought deliberately
+ * and recorded here rather than discovered later.
+ *
+ * Nothing about that reaches a rig anybody owns. `npm run measure:search` reports the worst *legal*
+ * rig unchanged at 46,609 nodes on `weave` — this direction did not become the worst ten-device
+ * rig, and it did not move the catalogue benchmark either, which stays 728,123 on
+ * `industrial-techno` (#301: read the first figure, the second is a benchmark).
+ *
  * **The row did not move when five of its eight requests became `transient`**, and the zero is
  * informative rather than lucky. §4.2 frees a voice only across sections a request does not
  * occupy, and all five of this direction's transient requests occupy `Whole` and `Back Harder`, so
@@ -664,6 +689,10 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
     'ambient-dub': [
       234, 335, 238, 333, 339, 236, 238, 329, 243, 240, 240, 327, 240, 243, 239, 234, 334, 242, 423,
       334, 242, 243, 234, 238
+    ],
+    'breakbeat': [
+      688, 65397, 1398, 535, 64966, 230, 233, 538, 233, 538, 233, 537, 1475, 616, 338, 793, 2524,
+      233, 233, 64968, 538, 233, 793, 64967
     ],
     'drone-study': [
       35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35

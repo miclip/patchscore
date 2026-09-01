@@ -2,6 +2,7 @@ import type { TemplateId } from '../core/ids'
 import type { Template } from '../core/template'
 import { acidLineage } from './acid-lineage'
 import { ambientDub } from './ambient-dub'
+import { breakbeat } from './breakbeat'
 import { droneStudy } from './drone-study'
 import { generativeDrift } from './generative-drift'
 import { hipHop } from './hip-hop'
@@ -28,6 +29,7 @@ import { weave } from './weave'
 export const TEMPLATES: readonly Template[] = [
   acidLineage,
   ambientDub,
+  breakbeat,
   droneStudy,
   generativeDrift,
   hipHop,
@@ -41,6 +43,7 @@ export const TEMPLATES: readonly Template[] = [
 export {
   acidLineage,
   ambientDub,
+  breakbeat,
   droneStudy,
   generativeDrift,
   hipHop,
