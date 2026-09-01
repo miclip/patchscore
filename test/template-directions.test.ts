@@ -65,6 +65,7 @@ describe('the registry carries nine directions (§4)', () => {
       'ambient-dub',
       'drone-study',
       'generative-drift',
+      'hip-hop',
       'industrial-techno',
       'lydian-house',
       'major-key-electro',

@@ -4,6 +4,7 @@ import { acidLineage } from './acid-lineage'
 import { ambientDub } from './ambient-dub'
 import { droneStudy } from './drone-study'
 import { generativeDrift } from './generative-drift'
+import { hipHop } from './hip-hop'
 import { industrialTechno } from './industrial-techno'
 import { lydianHouse } from './lydian-house'
 import { majorKeyElectro } from './major-key-electro'
@@ -29,6 +30,7 @@ export const TEMPLATES: readonly Template[] = [
   ambientDub,
   droneStudy,
   generativeDrift,
+  hipHop,
   industrialTechno,
   lydianHouse,
   majorKeyElectro,
@@ -41,6 +43,7 @@ export {
   ambientDub,
   droneStudy,
   generativeDrift,
+  hipHop,
   industrialTechno,
   lydianHouse,
   majorKeyElectro,

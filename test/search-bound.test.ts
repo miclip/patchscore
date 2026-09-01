@@ -623,6 +623,33 @@ import { TEMPLATES } from '../lib/templates/index'
  * `liveFloor` prunes immediately; the fifth is `acid`, which twenty boxes answer and every other
  * box answers not at all, so there is very little for the seed to permute among equals. Part count
  * is not what this table measures; contention is.
+ *
+ * ## Hip-Hop, the third row added rather than moved
+ *
+ * The tenth direction, and like the eighth and ninth it moves nothing above it — the other nine
+ * rows reproduce to the node. Its own row runs 224-3,622 over the twenty-four seeds, which makes
+ * it the fourth most expensive here: above `lydian-house`'s 1,330 peak, below `weave`'s 26,203, and
+ * three orders of magnitude below `industrial-techno`.
+ *
+ * It asks for eight parts, the same count as `generative-drift`, and costs about five times as
+ * much — which is the table's own point restated. Four of the eight are `kick`, `snare`,
+ * `closed-hat` and `ghost-perc`, and on any groovebox or drum machine those four are competing for
+ * the same handful of voices, so the branching is in the ties exactly as it is on `weave`. What
+ * keeps it two orders below `weave` is that the other four requests barely contend at all:
+ * `vox-chop` at `clean` is answered exactly by four boxes and by a distance-2 substitution on nine
+ * more, and `sub`, `stab` and `texture` land on tonal voices the percussion roles never wanted.
+ * Part count is not what this table measures; contention is.
+ *
+ * The 16x spread between the cheapest seed and the dearest is the seed permuting among equal
+ * costs on those four percussion roles, and it is the same shape `weave`'s row has at a larger
+ * scale: most seeds sit near 1,100-1,400 and a few explore.
+ *
+ * **The row did not move when five of its eight requests became `transient`**, and the zero is
+ * informative rather than lucky. §4.2 frees a voice only across sections a request does not
+ * occupy, and all five of this direction's transient requests occupy `Whole` and `Back Harder`, so
+ * no two of them are ever disjoint and the occupancy constraint the search walks is the one it
+ * walked when they were all continuous. Every number here is identical either way. It would stop
+ * being identical the moment two of those section lists stopped overlapping.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -644,6 +671,10 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
     'generative-drift': [
       423, 216, 637, 218, 745, 216, 637, 216, 565, 294, 716, 216, 558, 297, 269, 294, 216, 269, 294,
       558, 218, 558, 294, 565
+    ],
+    'hip-hop': [
+      1349, 224, 2809, 260, 1382, 228, 3622, 228, 1080, 1989, 1113, 2496, 3125, 1957, 1351, 2528,
+      227, 1351, 228, 1080, 227, 1384, 224, 1080
     ],
     'industrial-techno': [
       623144, 630714, 625534, 629074, 632832, 623152, 629552, 624792, 628767, 621490, 675605, 624792,
