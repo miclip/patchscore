@@ -208,6 +208,34 @@ viewports are a primary context and not a fallback. Standing rules, all settled 
 
 ## Conclave
 
+**Use it for substantial work. Do not build these inline.**
+
+A conclave session is Codex advising and Claude implementing, and it exists because the expensive
+mistakes here are ones a second reader catches early: a device authored from the wrong Roland
+document, a direction that re-litigates a decision its spec already settled, a change that
+re-derives a ruling `CLAUDE.md` already made. Reach for it when the work is:
+
+- **a device** — a folder under `lib/devices/`, from a manual
+- **a direction** — a template under `lib/templates/`
+- **an issue with a written spec**, where the issue is the authority and the job is to execute it
+- **anything that will touch `lib/core`**, where an advisor is the cheapest guard against a change
+  that breaks an invariant
+
+Do it inline when the work is small, local and already understood: a fixture update, a copy
+change, a bug with a known cause, a measurement. The test is whether somebody could disagree with
+your *approach* rather than your typing — if yes, seat an advisor.
+
+```bash
+conclave --version                  # names a commit; verify against the installed build
+conclave guard                      # non-zero while participant sessions are live
+conclave sessions                   # what has run, and what state it ended in
+.conclave/queue/launch-next.sh      # the worked invocation, including the setsid dance
+```
+
+`launch-next.sh` is the reference for **how** to start one, not just for the queue: conclave must
+not share a process group with the caller, or a monitor exiting takes the run down with it, and
+that cost a 45-minute turn once already. Read it before hand-rolling an invocation.
+
 Multi-agent build sessions run through the `conclave` CLI (Codex advising, Claude implementing).
 Registrations live in `.claude/settings.json` and `.codex/hooks.json`, both machine-local and
 listed in `.git/info/exclude` — do not commit or hand-edit them. `.conclave/config.json` sets
