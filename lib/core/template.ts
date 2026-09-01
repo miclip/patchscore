@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { HookId, PatternId, RequestId, SectionName, TemplateId } from './ids'
 import {
   CharacterSchema,
+  DENSITY_DETENTS,
   MOOD_AXES,
   MoodStateSchema,
   PatternSlotSchema,
@@ -412,6 +413,21 @@ export const TemplateSchema = z
     mood: MoodStateSchema.partial()
       .refine((m) => MOOD_AXES.some((axis) => m[axis] !== undefined), {
         message: 'mood must state at least one axis, or be absent (#310)',
+      })
+      /**
+       * §6.3/#317. **Density may only be a detent**, unlike the four continuous axes.
+       *
+       * `densityShift` reads density as three zones and `DENSITY_DETENTS` is, in its own words,
+       * "the three values the UI is allowed to produce". The control renders whichever zone a
+       * value falls in and writes that zone's centre back — so a direction opening at `density:
+       * 60` shows the middle zone and, the moment the reader touches it, becomes 50 with no way
+       * back to 60. A value the control can display and never return to is a trap rather than a
+       * default, and the difference is invisible until somebody turns the knob.
+       *
+       * The other four axes are genuinely continuous and take any value in range.
+       */
+      .refine((m) => m.density === undefined || DENSITY_DETENTS.includes(m.density as 12), {
+        message: `density must be one of ${DENSITY_DETENTS.join(', ')} — the values the control can produce (§6.3, #317)`,
       })
       .optional(),
     // Both are load-bearing rather than decorative: Occupancy keys on section names (§4.2)

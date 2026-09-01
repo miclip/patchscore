@@ -246,20 +246,12 @@ export function energyBand(energy: number): DensityBand {
  * busier. Three zones, not four — the knob can move the arrangement by at most one band, so
  * the shape the template authored across its sections survives any setting of it.
  */
+export { DENSITY_DETENTS } from './vocabulary'
+
 export function densityShift(density: number): -1 | 0 | 1 {
   return density < 25 ? -1 : density < 75 ? 0 : 1
 }
 
-/**
- * §12.2. The three values the UI is allowed to produce for density: the centre of each zone
- * `densityShift` defines. Zone centres rather than edges, so a value round-tripped through a
- * permalink lands back on the same detent even if an edge is ever read off by one somewhere.
- *
- * Here rather than in the component for the reason the edges are here: a second copy is a UI
- * that can silently disagree with the guide it produced — and now also a *default* that can
- * silently disagree with the UI.
- */
-export const DENSITY_DETENTS = [12, 50, 87] as const
 
 /**
  * §6.3. The band one request plays in one section: the section's energy band, shifted by

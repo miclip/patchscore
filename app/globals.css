@@ -3984,3 +3984,30 @@ html {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+
+/* ------------------------------------------------- §6/#317 mood provenance */
+
+/*
+ * Where a knob's value came from, when it is not the reader.
+ *
+ * **Always rendered, `visibility` toggled.** #21's rule for the guide's hints, applied here for
+ * the same reason: switching direction changes which axes are credited, and a row that appears
+ * and disappears would reflow the panel under somebody's cursor mid-drag. The `&nbsp;` in the
+ * empty state is what holds the line's height.
+ *
+ * Quiet on purpose. This answers "did I set this?", which is a question somebody asks once and
+ * then stops seeing — it must not compete with the value it is annotating.
+ */
+.knob-source {
+  display: block;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--ink-dim);
+  letter-spacing: 0.02em;
+  /* Reserved whether or not it says anything. */
+  min-height: 1.4em;
+}
+
+.knob-source[data-set='no'] {
+  visibility: hidden;
+}

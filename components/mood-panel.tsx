@@ -22,9 +22,18 @@ const KNOB_AXES = ['darkness', 'grit', 'swing', 'space'] as const
 export type MoodPanelProps = {
   mood: MoodState
   onChange: (axis: MoodAxis, value: number) => void
+  /**
+   * §6/#317. The axes still holding the value the direction opened at, and the direction's name
+   * to credit. A reader seeing swing at 65 on Hip-hop could not tell whether it was theirs.
+   */
+  fromDirection?: Partial<MoodState>
+  directionName?: string
 }
 
-export function MoodPanel({ mood, onChange }: MoodPanelProps) {
+export function MoodPanel({ mood, onChange, fromDirection, directionName }: MoodPanelProps) {
+  const credit = (axis: MoodAxis): string | undefined =>
+    directionName !== undefined && fromDirection?.[axis] !== undefined ? directionName : undefined
+
   return (
     <section className="panel span-2">
       <header>
@@ -41,10 +50,15 @@ export function MoodPanel({ mood, onChange }: MoodPanelProps) {
             label={axis}
             value={mood[axis]}
             hint={HINTS[axis]}
+            source={credit(axis)}
             onChange={(next) => onChange(axis, next)}
           />
         ))}
-        <DensityDetents value={mood.density} onChange={(next) => onChange('density', next)} />
+        <DensityDetents
+          value={mood.density}
+          source={credit('density')}
+          onChange={(next) => onChange('density', next)}
+        />
       </div>
     </section>
   )

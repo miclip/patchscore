@@ -4,6 +4,7 @@ import {
   DENSITY_DETENTS,
   FORMAT_VERSION,
   INSPIRATION_CAP,
+  MOOD_AXES,
   MAX_RIG_DEVICES,
   SEED_MAX,
   SEED_MIN,
@@ -736,6 +737,39 @@ export function withAxis(
  * drawing them at the mood of a direction that is not being resolved would be the one dishonest
  * answer.
  */
+/**
+ * §6/#317. **Which axes on screen are the direction's rather than the reader's.**
+ *
+ * The panel showed swing at 65 on Hip-hop with nothing saying where 65 came from, unlike #161's
+ * song panel, which distinguishes `template` from `user` for tempo and key. Mood is the third
+ * template-owned value and was the only one that did not say.
+ *
+ * **Derived by comparison rather than recorded**, and that is deliberate. `withAxis` writes the
+ * whole effective mood back the moment one knob moves, so after a single twist the inputs carry
+ * all five axes and a stored flag would call every one of them the reader's — including the four
+ * still sitting exactly where the direction put them. Comparing against what the direction states
+ * keeps crediting it for the axes nobody has moved, which is what a reader is actually asking.
+ *
+ * The false positive is real and harmless: a reader who dials swing to exactly 65 on Hip-hop is
+ * told the direction set it. The value *is* what the direction asked for, so the label is not
+ * lying about anything a reader could act on.
+ *
+ * Empty when the direction states no mood, or cannot be composed at all — the same silence
+ * `effectiveMood` falls back through, for the same reason.
+ */
+export function moodFromDirection(inputs: GuideInputsV1): Partial<MoodState> {
+  const application = composeTemplate(inputs)
+  const stated = application?.outcome === 'applied' ? application.template.mood : undefined
+  if (stated === undefined) return {}
+  const showing = effectiveMood(inputs)
+  const credited: Partial<MoodState> = {}
+  for (const axis of MOOD_AXES) {
+    const value = stated[axis]
+    if (value !== undefined && showing[axis] === value) credited[axis] = value
+  }
+  return credited
+}
+
 export function effectiveMood(inputs: GuideInputsV1): MoodState {
   if (inputs.mood !== undefined) return inputs.mood
   const application = composeTemplate(inputs)

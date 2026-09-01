@@ -1,18 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  DENSITY_DETENTS,
-  FORMAT_VERSION,
-  RESOLVER_VERSION,
-  TemplateSchema,
-  decodeGuideInputs,
-  encodeGuideInputs,
-  moodState,
-  renderGuide,
-  resolve,
-  type Catalogue,
-  type GuideInputsV1,
-} from '../lib/core/index'
-import { DEFAULT_INPUTS, effectiveMood, withAxis, withTemplate } from '../lib/studio/session'
+import { type Catalogue, decodeGuideInputs, DENSITY_DETENTS, encodeGuideInputs, FORMAT_VERSION, type GuideInputsV1, type MoodAxis, moodState, renderGuide, resolve, RESOLVER_VERSION, TemplateSchema } from '../lib/core/index'
+import { DEFAULT_INPUTS, effectiveMood, moodFromDirection, withAxis, withTemplate } from '../lib/studio/session'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, templateById } from '../lib/templates/index'
 import { template } from './fixtures'
@@ -79,13 +67,40 @@ describe('Template.mood is schema-valid data, not a convention (#310)', () => {
   })
 
   it('accepts every axis at once, and the bounds the knobs have', () => {
-    const full = { darkness: 0, density: 100, grit: 50, swing: 1, space: 99 }
+    // Density is a detent rather than a bound — see the test below.
+    const full = { darkness: 0, density: 87, grit: 50, swing: 1, space: 99 }
     expect(TemplateSchema.safeParse(template({ mood: full })).success).toBe(true)
   })
 
   it('refuses a value off the knob, so a direction cannot open somewhere unreachable', () => {
     for (const swing of [-1, 101]) {
       expect(TemplateSchema.safeParse(template({ mood: { swing } })).success).toBe(false)
+    }
+  })
+
+  /**
+   * §6.3/#317. The same rule as the test above, on the one axis where "off the knob" is not
+   * about bounds.
+   *
+   * `densityShift` reads density as three zones and `DENSITY_DETENTS` is, in its own words, the
+   * three values the UI is allowed to produce. The control renders whichever zone a value falls
+   * in and writes that zone's centre back — so a direction opening at `density: 60` displays as
+   * the middle zone and becomes 50 the moment anybody touches it, with no way back to 60. In
+   * range, displayable, and unreachable, which is worse than out of range because nothing looks
+   * wrong until the knob moves.
+   */
+  it('accepts only the three densities the control can produce', () => {
+    for (const density of DENSITY_DETENTS) {
+      expect(TemplateSchema.safeParse(template({ mood: { density } })).success, String(density)).toBe(
+        true,
+      )
+    }
+    // In range and off the detents: legal for a reader's own mood, not for a direction's opening.
+    for (const density of [0, 11, 60, 88, 100]) {
+      expect(
+        TemplateSchema.safeParse(template({ mood: { density } })).success,
+        String(density),
+      ).toBe(false)
     }
   })
 
@@ -358,5 +373,74 @@ describe('a direction that states no mood resolves as it always did (#310)', () 
     expect(renderGuide(resolve({ devices, template: HIP_HOP, seed: 4 }))).not.toBe(
       renderGuide(resolve({ devices, template: HIP_HOP, seed: 4, mood: moodState() })),
     )
+  })
+})
+
+/**
+ * §6/#317. Which axes the panel credits to the direction.
+ *
+ * The gap this closes: the panel showed swing at 65 on Hip-hop with nothing saying where 65 came
+ * from, while #161's song panel has distinguished `template` from `user` for tempo and key since
+ * it landed. Mood became the third template-owned value in #310 and was the only one that stayed
+ * silent about its source.
+ */
+describe('crediting the direction for a mood the reader did not set (#317)', () => {
+  const hipHop = TEMPLATES.find((t) => t.id === 'hip-hop')
+  const opening = hipHop?.mood ?? {}
+
+  const inputsFor = (over: Partial<GuideInputsV1> = {}): GuideInputsV1 => ({
+    version: FORMAT_VERSION,
+    devices: [],
+    templateId: 'hip-hop',
+    inspirations: [],
+    seed: 1,
+    ...over,
+  })
+
+  it('credits every axis the direction states, before anyone touches a knob', () => {
+    expect(Object.keys(opening).length).toBeGreaterThan(0)
+    expect(moodFromDirection(inputsFor())).toEqual(opening)
+  })
+
+  /**
+   * The reason this is derived rather than stored, and the assertion that would have caught the
+   * stored version. `withAxis` writes the whole effective mood back on the first twist, so after
+   * one move the inputs carry all five axes — and a flag set at selection time would call every
+   * one of them the reader's, including the ones still sitting where the direction put them.
+   */
+  it('keeps crediting the untouched axes after the reader moves a different one', () => {
+    const showing = effectiveMood(inputsFor())
+    const moved = withAxis(inputsFor(), 'space', 90, showing)
+    expect(moved.mood?.space).toBe(90)
+    // Swing is untouched and still the direction's, so it is still credited.
+    expect(moodFromDirection(moved)).toEqual(opening)
+  })
+
+  it('stops crediting an axis the reader moves off the direction’s value', () => {
+    const axis = Object.keys(opening)[0] as MoodAxis
+    const stated = opening[axis] as number
+    const showing = effectiveMood(inputsFor())
+    const moved = withAxis(inputsFor(), axis, stated === 0 ? 1 : stated - 1, showing)
+    expect(moodFromDirection(moved)[axis]).toBeUndefined()
+  })
+
+  it('credits nothing for a direction that states no mood', () => {
+    const plain = TEMPLATES.find((t) => t.mood === undefined)
+    expect(plain).toBeDefined()
+    expect(moodFromDirection(inputsFor({ templateId: (plain as { id: string }).id }))).toEqual({})
+  })
+
+  /**
+   * Honest about its one false positive rather than hiding it: a reader who dials an axis to
+   * exactly what the direction asked for is told the direction set it. The value *is* what the
+   * direction wanted, so nothing a reader could act on is misreported — and the alternative is
+   * the stale flag the test above rules out.
+   */
+  it('cannot tell a reader who set the direction’s own value apart from the direction', () => {
+    const axis = Object.keys(opening)[0] as MoodAxis
+    const stated = opening[axis] as number
+    const showing = effectiveMood(inputsFor())
+    const same = withAxis(inputsFor(), axis, stated, showing)
+    expect(moodFromDirection(same)[axis]).toBe(stated)
   })
 })

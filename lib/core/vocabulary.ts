@@ -112,6 +112,22 @@ export const MoodAxisSchema = z.enum(MOOD_AXES)
  */
 export type MoodState = Record<MoodAxis, number>
 
+/**
+ * §12.2. The three values the UI is allowed to produce for density: the centre of each zone
+ * `densityShift` defines. Zone centres rather than edges, so a value round-tripped through a
+ * permalink lands back on the same detent even if an edge is ever read off by one somewhere.
+ *
+ * Here rather than in the component for the reason the edges are: a second copy is a UI that can
+ * silently disagree with the guide it produced — and now also a *default* that can silently
+ * disagree with the UI.
+ *
+ * **Beside the vocabulary rather than beside `densityShift` (#317).** `TemplateSchema` needs it to
+ * refuse a direction opening at a density the control cannot return to, and `template.ts` cannot
+ * import from `resolver.ts` — the dependency runs the other way. `resolver.ts` re-exports it, so
+ * every existing importer is unchanged.
+ */
+export const DENSITY_DETENTS = [12, 50, 87] as const
+
 export const MoodStateSchema = z.strictObject(
   Object.fromEntries(MOOD_AXES.map((axis) => [axis, z.number().min(0).max(100)])) as {
     [K in MoodAxis]: z.ZodNumber

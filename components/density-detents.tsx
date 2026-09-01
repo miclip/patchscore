@@ -19,9 +19,11 @@ const SHIFT_WORDS = ['sparser', 'as authored', 'busier'] as const
 export type DensityDetentsProps = {
   value: number
   onChange: (value: number) => void
+  /** §6/#317. The direction's name, when this zone is still the one it opened at. */
+  source?: string
 }
 
-export function DensityDetents({ value, onChange }: DensityDetentsProps) {
+export function DensityDetents({ value, onChange, source }: DensityDetentsProps) {
   const selected = densityShift(value) + 1
 
   return (
@@ -46,6 +48,9 @@ export function DensityDetents({ value, onChange }: DensityDetentsProps) {
         Each section&rsquo;s energy picks its pattern band; this leans the arrangement one band
         either way. A section already at the top or the bottom stays where it is. Falls back to
         the nearest lower band when a template has not authored the one asked for.
+      </span>
+      <span className="knob-source" data-set={source === undefined ? 'no' : 'yes'}>
+        {source === undefined ? '\u00a0' : `${source} set this`}
       </span>
     </fieldset>
   )
