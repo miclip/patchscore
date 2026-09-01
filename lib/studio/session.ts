@@ -8,12 +8,12 @@ import {
   SEED_MAX,
   SEED_MIN,
   applyInspirations,
-  NEUTRAL_MOOD,
   decodeGuideInputs,
   encodeGuideInputs,
   guideInputsFrom,
   hash32,
   loadStudio,
+  moodState,
   parseKey,
   advanceHistory,
   saveStudio,
@@ -27,6 +27,7 @@ import type {
   InspirationId,
   GuideInputsV1,
   MoodAxis,
+  MoodState,
   SongOverrides,
   StorageSource,
   StoredRigV1,
@@ -166,8 +167,18 @@ export const DEFAULT_INPUTS: GuideInputsV1 = {
   devices: CATALOGUE.devices.filter((id) => LANDING_DEVICES.includes(id)),
   templateId: LANDING_TEMPLATE,
   inspirations: [],
-  // §6.3: density's neutral is the middle detent — no lean, sections as authored.
-  mood: { ...NEUTRAL_MOOD, density: DENSITY_DETENTS[1] },
+  /**
+   * **No mood, which is not the same as a neutral one** (#310). Absent means "open at whatever
+   * the direction states", so the landing page opens at the direction's own feel and follows it
+   * when the visitor picks another one — where a mood written here would be a reader's choice
+   * nobody made, sticky from the first frame, and would silence every direction's opening mood
+   * for exactly the visitors who have not touched anything.
+   *
+   * It is byte-identical for a direction that states none: §6.3's density neutral is the middle
+   * detent, `DENSITY_DETENTS[1]` is 50, and 50 is `NEUTRAL_MOOD`'s value for every axis — so
+   * what used to be written here is what `moodState()` returns. Asserted in
+   * `test/template-mood.test.ts` rather than left as arithmetic in a comment.
+   */
   seed: derivedSeed(
     CATALOGUE.devices.filter((id) => LANDING_DEVICES.includes(id)),
     LANDING_TEMPLATE,
@@ -684,8 +695,51 @@ export function withTemplate(inputs: GuideInputsV1, templateId: TemplateId): Gui
   return { ...inputs, templateId }
 }
 
-export function withAxis(inputs: GuideInputsV1, axis: MoodAxis, value: number): GuideInputsV1 {
-  return { ...inputs, mood: { ...inputs.mood, [axis]: value } }
+/**
+ * Move one knob — and, on the first move, **take the whole mood** (#310).
+ *
+ * `effective` is the state the reader is looking at: their own if they have one, and the
+ * direction's otherwise. Writing all five axes from it is what makes a total override honest.
+ * The alternative is a mood that is partly theirs and partly the direction's, and then a
+ * direction change has to decide per axis whose value survives — which needs a provenance flag
+ * per knob, for a control whose position is already on screen.
+ *
+ * So the first knob move is the moment the mood becomes the reader's, exactly as it is the
+ * moment it starts travelling in their links. Every later move is an ordinary edit of a state
+ * they already own, and passing the same `effective` in is a no-op on the other four axes.
+ *
+ * The caller supplies `effective` rather than this reading it off a template, because a mood is
+ * a fact about the composed direction (§7 step 1) and this file's other helpers take the inputs
+ * apart, never put them together. `effectiveMood` is the one function that answers it.
+ */
+export function withAxis(
+  inputs: GuideInputsV1,
+  axis: MoodAxis,
+  value: number,
+  effective: MoodState,
+): GuideInputsV1 {
+  return { ...inputs, mood: { ...effective, [axis]: value } }
+}
+
+/**
+ * #310. **The mood on screen**: the reader's if they have set one, and otherwise the direction's
+ * own, with every axis it does not state centred.
+ *
+ * A pure function of the inputs and nothing else, so the knob positions, the permalink and the
+ * guide cannot disagree about what mood is in force. It composes the direction rather than
+ * reading the base template, for the reason `resolve` applies the same fallback to the
+ * *effective* template: §5 is allowed to grow a mood patch, and the two answers must not be able
+ * to come apart when it does.
+ *
+ * Neutral when the direction cannot be composed at all — an unknown id, or two influences that
+ * refuse each other. The guide is `undefined` there and the panel still has to draw five knobs;
+ * drawing them at the mood of a direction that is not being resolved would be the one dishonest
+ * answer.
+ */
+export function effectiveMood(inputs: GuideInputsV1): MoodState {
+  if (inputs.mood !== undefined) return inputs.mood
+  const application = composeTemplate(inputs)
+  return moodState(application?.outcome === 'applied' ? application.template.mood : undefined)
 }
 
 /**

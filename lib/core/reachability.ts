@@ -1,11 +1,10 @@
 import type { Device, Recipe } from './device'
 import type { Template } from './template'
-import { PATTERN_SLOTS, type PatternSlot } from './vocabulary'
+import { PATTERN_SLOTS, moodState, type PatternSlot } from './vocabulary'
 import {
   DENSITY_DETENTS,
   MAX_SUBSTITUTION_DISTANCE_SQ,
   characterDistanceSq,
-  moodState,
   selectPatterns,
 } from './resolver'
 

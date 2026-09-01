@@ -151,7 +151,7 @@ describe('the stored document keeps #16’s rig/score split', () => {
     const mood = moodState({ grit: 10 })
     const doc = studioDoc(inputs({ mood }))
     mood.grit = 99
-    expect(doc.inputs.mood.grit).toBe(10)
+    expect(doc.inputs.mood?.grit).toBe(10)
   })
 })
 

@@ -1510,6 +1510,11 @@ and nothing else.
 }
 ```
 
+A template may also carry **`mood?: Partial<MoodState>`** — the mood it opens at (§6.4). The
+example above states none, which is the ordinary case and means every knob centred. `hip-hop`
+states `{ swing: 65 }`, because a direction that swings and one that does not are different
+music, and the reader used to have to know that and turn the knob.
+
 Every request carries a stable `id`. Occupancy (§4.2) and the rendered guide both key on it,
 because a template may legitimately request the same role twice — two toms, two stabs — so `role`
 is not an identity.
@@ -2091,12 +2096,40 @@ has no energy to quantise and is an error, not a default band.
 
 ---
 
+### 6.4 Where a mood starts (#310)
+
+A direction states the mood it opens at; the reader's own mood, once they have one, replaces it
+whole. The effective state is `inputs.mood ?? moodState(template.mood)`, applied on the composed
+template, and every axis the direction does not name is centred.
+
+**The reader's mood is a total override, never a per-axis merge.** The alternative — their
+touched axes over the direction's, the rest still following — cannot survive a direction change
+or a reroll without a record of *who set which knob*, which is a provenance flag per axis beside
+a control whose position is already on screen. Instead the studio pays once: the first knob edit
+writes the whole effective state, so a mood in the inputs is always one somebody was looking at.
+
+Consequences, all of them deliberate:
+
+- **Unset follows the direction.** Switching direction moves the knobs with it, until the reader
+  moves one themselves. After that the mood is theirs and it is sticky, exactly as §5.6's tempo
+  is.
+- **A mood on a permalink wins**, for §7.4's reason about the clock source: a link carries the
+  guide its sender saw, so a direction's opening mood must not reach past one.
+- **`RESOLVER_VERSION` does not move for it.** A direction that states no mood resolves byte for
+  byte as it did, and no link written before the field existed could omit a mood.
+
+A device still declines an axis by having no param that declares it, so a direction opening with
+swing up changes nothing on a box with no shuffle control. That is §6.1 working, and the guide
+reports the silence rather than approximating it.
+
+---
+
 ## 7. The resolver
 
 Pure functions, fully unit-testable, no React.
 
 ```
-input:  { devices: Device[], template: Template, mood: MoodState, seed: number,
+input:  { devices: Device[], template: Template, mood?: MoodState, seed: number,
           overrides?: { bpm?: number, key?: string } }        // §5.6
 output: { assignments: Assignment[], shortfalls: Shortfall[], guide: GuideDocument }
 ```
@@ -3185,10 +3218,17 @@ devices, template, inspirations, five mood ints, seed, and §5.6's two optional 
 That packs to roughly 40 bytes.
 
 The overrides are the first **optional** fields in the format, and the reason `FORMAT_VERSION`
-is 2. Absent means unset, which is a real state rather than a default standing in for a missing
-value — so a v1 link opens unchanged, read as a guide that follows its direction, and only the
-stamp it re-encodes with differs. A v1 link that hand-edits them in has them dropped and
+went to 2. Absent means unset, which is a real state rather than a default standing in for a
+missing value — so a v1 link opens unchanged, read as a guide that follows its direction, and
+only the stamp it re-encodes with differs. A v1 link that hand-edits them in has them dropped and
 reported: a field the link's own format does not have is not a field of that link.
+
+`FORMAT_VERSION` is **3**, because §6.4 made the mood optional too — all five axes or none, where
+none means "open at the direction's". Mood stays **required** when reading v1 and v2: every build
+that wrote one of those had the reader's mood as the only mood there was, so silence in an older
+link is corruption rather than a state. A v3 link carrying *some* of the axes is malformed under
+every format, since an override is total. Each optional scalar therefore records the format it
+arrived in — a v2 link is older than this build and still has every field v2 had.
 
 Consequence: old links drift when the resolver changes — same inputs, same seed, different guide.
 This is a real and accepted violation of invariant 6 as originally stated, and is why invariant 6

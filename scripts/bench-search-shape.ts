@@ -1,5 +1,5 @@
 import { measureSearchShape } from '../lib/core/search'
-import { moodState } from '../lib/core/resolver'
+import { moodState } from '../lib/core/vocabulary'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 

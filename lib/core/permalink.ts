@@ -1,7 +1,5 @@
 import type { DeviceId, InspirationId, TemplateId } from './ids'
-import type { MoodAxis } from './vocabulary'
-import { MOOD_AXES } from './vocabulary'
-import type { MoodState } from './resolver'
+import { MOOD_AXES, type MoodAxis, type MoodState } from './vocabulary'
 import { INSPIRATION_CAP } from './inspiration'
 import { RESOLVER_VERSION } from './pipeline'
 
@@ -77,22 +75,27 @@ import { RESOLVER_VERSION } from './pipeline'
  *
  * Never bumped for a resolver change. That is `RESOLVER_VERSION`.
  */
-export const FORMAT_VERSION = 2
+export const FORMAT_VERSION = 3
 
 /**
- * Formats this build can turn into inputs. **v1 is readable, not merely tolerated**: it is v2
- * minus two optional fields, and v2 reads a v1 link as one with both of them unset — which is
- * exactly what "unset" means (follow the direction), so nothing is guessed and no v1 link dies
- * for a field it predates.
+ * Formats this build can turn into inputs. **Older ones are readable, not merely tolerated.**
+ * Each is this one minus fields it predates, and a field a link predates is read as unset —
+ * which is a state and not a guess, so no old link dies for a field it never had.
  *
- * A v1 link that carries `bpm` or `key` is a hand-edit of a format that had no such fields. Those
- * keys are dropped and *reported* under v1, which is what a v1 decoder did with them, rather than
- * honoured under rules the link does not claim to follow.
+ * - **v1** is v2 minus `bpm`, `key` and `clock` (#161, #200).
+ * - **v2** is v3 minus *optional mood* (#310). A v2 link always carries all five axes, because
+ *   every build that wrote one had the reader's mood as the only mood there was. So a v2 link
+ *   decodes with an explicit mood, which is exactly what its author saw, and mood stays
+ *   **required** when reading v1 and v2 — see `decodeGuideInputs`.
  *
- * Everything is re-encoded at `FORMAT_VERSION`. Canonicalisation has one output, and a v1 link
+ * A link that carries a field its own format did not have is a hand-edit of that format. Those
+ * keys are dropped and *reported*, which is what a decoder of that vintage did with them, rather
+ * than honoured under rules the link does not claim to follow.
+ *
+ * Everything is re-encoded at `FORMAT_VERSION`. Canonicalisation has one output, and an old link
  * opened and re-shared is a link this build wrote.
  */
-export const READABLE_FORMATS: ReadonlySet<number> = new Set([1, FORMAT_VERSION])
+export const READABLE_FORMATS: ReadonlySet<number> = new Set([1, 2, FORMAT_VERSION])
 
 /**
  * The tempo override's domain, and the reason it has one: a mechanical guardrail against a typo,
@@ -147,7 +150,20 @@ export type ScoreInputsV1 = {
    * would have stranded every link ever shared.
    */
   inspirations: readonly InspirationId[]
-  mood: MoodState
+  /**
+   * #310. **The reader's own mood, or `undefined` for "open at the direction's"** — which is a
+   * state and not a missing value, exactly as `bpm` and `key` below are.
+   *
+   * **Total, and sticky once set.** An explicit mood here is all five axes and it wins over the
+   * direction's, for #304's reason about the clock source: a link carries the guide its sender
+   * saw, and letting a direction's default reach past it would rewrite what somebody shared.
+   * Unset follows the direction, so switching direction moves the knobs with it.
+   *
+   * There is no per-axis unset. The studio writes the whole effective state on the first knob
+   * edit, so the state on the wire is always one somebody was looking at; a partial mood on a
+   * v3 link is malformed rather than half-honoured.
+   */
+  mood?: MoodState | undefined
   seed: number
   /**
    * #161. The user's own tempo, absolute and sticky, or `undefined` for "follow the direction".
@@ -224,7 +240,7 @@ export type Catalogue = {
 
 /**
  * ```
- * format=2&resolver=5&device=polyend-tracker-mini&device=roland-tr-1000&template=industrial-techno
+ * format=3&resolver=5&device=polyend-tracker-mini&device=roland-tr-1000&template=industrial-techno
  *   &darkness=50&density=50&grit=50&swing=50&space=50&bpm=140&key=A%20minor&seed=1
  * ```
  *
@@ -265,10 +281,32 @@ const SCALARS: readonly string[] = [FORMAT, RESOLVER, TEMPLATE, BPM, KEY, SEED, 
 /**
  * The scalars a link may simply not have (#161). Every other known scalar is required, because
  * a guide with no seed is a link we cannot honour rather than one with a sensible default — but
- * these two have a meaning for absence that is not a default at all: *follow the direction*.
+ * these have a meaning for absence that is not a default at all: *follow the direction*.
  * Spelling that with a placeholder would give one state two encodings.
  */
 const OPTIONAL_SCALARS: readonly string[] = [BPM, KEY, CLOCK]
+
+/**
+ * The format each optional scalar arrived in. A link is read under **its own** format, so a
+ * field the link predates is an unknown key to it — dropped and reported — however well this
+ * build understands the spelling.
+ *
+ * A map rather than the single `formatVersion < FORMAT_VERSION` test this replaced: that test
+ * was correct while every optional field arrived in the same version, and #310 is the bump that
+ * breaks it. Without this, a v2 link would have its `bpm` thrown away for being older than v3.
+ */
+const SCALAR_SINCE: ReadonlyMap<string, number> = new Map([
+  [BPM, 2],
+  [KEY, 2],
+  [CLOCK, 2],
+])
+
+/**
+ * #310. The format mood stopped being required in. Below this a link must carry all five axes:
+ * every build that wrote one had the reader's mood as the only mood there was, so silence in a
+ * v1 or v2 link is corruption rather than "follow the direction".
+ */
+const MOOD_OPTIONAL_SINCE = 3
 
 /**
  * Every key this build understands. Anything else is dropped and reported (`dropped`), which is
@@ -501,12 +539,16 @@ export function checkGuideInputs(
     }
   }
 
-  for (const axis of MOOD_ORDER_V1) {
-    const value = inputs.mood[axis]
-    if (!isInt(value, 0, 100)) {
-      return {
-        reason: 'out-of-range',
-        detail: `mood '${axis}' must be a whole number 0-100, got ${String(value)}`,
+  // #310. Absent is the unset state — open at the direction's mood — and always legal. Present
+  // means all five axes, checked as they always were.
+  if (inputs.mood !== undefined) {
+    for (const axis of MOOD_ORDER_V1) {
+      const value = inputs.mood[axis]
+      if (!isInt(value, 0, 100)) {
+        return {
+          reason: 'out-of-range',
+          detail: `mood '${axis}' must be a whole number 0-100, got ${String(value)}`,
+        }
       }
     }
   }
@@ -548,8 +590,9 @@ export function checkGuideInputs(
  *
  * **Canonical.** Two inputs that mean the same guide produce byte-identical strings: devices are
  * written in registry order whatever order they arrived in, the fields are always in the same
- * order, and mood is always written in full. That is what makes an encode-decode-encode fixed
- * point testable, and what stops one guide having two links.
+ * order, and a mood that is written is written in full — all five axes or none of them (#310).
+ * That is what makes an encode-decode-encode fixed point testable, and what stops one guide
+ * having two links.
  *
  * It writes **only understood state**. A link decoded with unknown fields re-encodes without
  * them — this build has no value to write back — which is why `dropped` is reported at decode
@@ -583,7 +626,11 @@ export function encodeGuideInputs(inputs: GuideInputsV1, catalogue: Catalogue): 
     ...devices.map((id) => `${DEVICE}=${id}`),
     `${TEMPLATE}=${inputs.templateId}`,
     ...inspirations.map((id) => `${INSPIRATION}=${id}`),
-    ...MOOD_ORDER_V1.map((axis) => `${axis}=${inputs.mood[axis]}`),
+    // #310. All five axes or none. A mood is written exactly when the reader set one; a link
+    // with no axes is a link that opens at whatever mood its direction states.
+    ...(inputs.mood === undefined
+      ? []
+      : MOOD_ORDER_V1.map((axis) => `${axis}=${(inputs.mood as MoodState)[axis]}`)),
     // #161. Written only when set: an unset override is *absent*, which is how it reads back.
     ...(inputs.bpm === undefined ? [] : [`${BPM}=${inputs.bpm}`]),
     ...(inputs.clockSourceId === undefined ? [] : [`${CLOCK}=${inputs.clockSourceId}`]),
@@ -627,9 +674,10 @@ function parseInt10(text: string): number | undefined {
  * Three things are deliberately *not* symmetrical:
  *
  * - An **unknown key** is dropped and reported. The format is meant to grow.
- * - A **missing known scalar** is malformed. A guide with no seed, or no `grit`, is not a guide
- *   with a sensible default — it is a link we cannot honour, and quietly substituting neutral
- *   would render something its author never saw.
+ * - A **missing known scalar** is malformed. A guide with no seed is not a guide with a sensible
+ *   default — it is a link we cannot honour, and quietly substituting one would render something
+ *   its author never saw. The five mood axes are the one set that may be absent *together*
+ *   (#310), and a link missing only some of them is still malformed for exactly this reason.
  * - A **repeated known scalar** is malformed rather than last-wins. Two seeds in one link is a
  *   link that means two things, and picking one of them is guessing.
  *
@@ -707,11 +755,12 @@ export function decodeGuideInputs(text: string, catalogue: Catalogue): DecodedGu
   }
 
   // #161. A field the *link's own format* does not have is not a field of that link, however
-  // well this build understands the spelling. Under v1 the two overrides are unknown keys, so
-  // they take the unknown-key path: dropped, and reported as dropped.
-  if (formatVersion < FORMAT_VERSION) {
-    for (const optional of OPTIONAL_SCALARS) {
-      if (scalars.delete(optional)) dropped.add(optional)
+  // well this build understands the spelling. Under v1 the three later scalars are unknown keys,
+  // so they take the unknown-key path: dropped, and reported as dropped. Per field since #310 —
+  // a v2 link is older than this build and still has every one of them.
+  for (const optional of OPTIONAL_SCALARS) {
+    if (formatVersion < (SCALAR_SINCE.get(optional) ?? 1) && scalars.delete(optional)) {
+      dropped.add(optional)
     }
   }
 
@@ -725,13 +774,27 @@ export function decodeGuideInputs(text: string, catalogue: Catalogue): DecodedGu
   const templateId = scalars.get(TEMPLATE)
   if (templateId === undefined) return fail('malformed', `missing field '${TEMPLATE}'`)
 
-  const mood: Record<string, number> = {}
-  for (const axis of MOOD_ORDER_V1) {
-    const raw = scalars.get(axis)
-    if (raw === undefined) return fail('malformed', `missing mood axis '${axis}'`)
-    const value = parseInt10(raw)
-    if (value === undefined) return fail('malformed', `mood '${axis}' is not a whole number`)
-    mood[axis] = value
+  /**
+   * #310. **All five axes, or none of them.** None is the unset state — this link opens at
+   * whatever mood its direction states — and it is only a state from v3 on: a v1 or v2 link
+   * silent about mood is corruption, because every build that wrote one wrote all five.
+   *
+   * One to four axes is malformed under every format. A mood is a total override, so a link
+   * carrying `swing` alone does not mean "swing from me and the rest from the direction" — it
+   * means somebody hand-edited a link, and reading it either way would be guessing which.
+   */
+  const axesPresent = MOOD_ORDER_V1.filter((axis) => scalars.has(axis))
+  let mood: MoodState | undefined
+  if (axesPresent.length > 0 || formatVersion < MOOD_OPTIONAL_SINCE) {
+    const partial: Record<string, number> = {}
+    for (const axis of MOOD_ORDER_V1) {
+      const raw = scalars.get(axis)
+      if (raw === undefined) return fail('malformed', `missing mood axis '${axis}'`)
+      const value = parseInt10(raw)
+      if (value === undefined) return fail('malformed', `mood '${axis}' is not a whole number`)
+      partial[axis] = value
+    }
+    mood = partial as MoodState
   }
 
   const seedText = scalars.get(SEED)
@@ -767,7 +830,7 @@ export function decodeGuideInputs(text: string, catalogue: Catalogue): DecodedGu
     devices: lists.get(DEVICE) as string[],
     templateId,
     inspirations: lists.get(INSPIRATION) as string[],
-    mood: mood as MoodState,
+    ...(mood === undefined ? {} : { mood }),
     seed,
     ...(bpm === undefined ? {} : { bpm }),
     ...(key === undefined ? {} : { key }),

@@ -2,9 +2,12 @@ import { z } from 'zod'
 import type { HookId, PatternId, RequestId, SectionName, TemplateId } from './ids'
 import {
   CharacterSchema,
+  MOOD_AXES,
+  MoodStateSchema,
   PatternSlotSchema,
   RoleSchema,
   type Character,
+  type MoodState,
   type PatternSlot,
   type Role,
 } from './vocabulary'
@@ -370,6 +373,24 @@ export type Template = {
   name: string
   bpm: BpmSpec
   keys: string[]
+  /**
+   * #310. **The mood this direction opens at**, seeding the studio the way `bpm` already seeds
+   * the tempo: the direction proposes and the reader disposes. Absent means every knob centred,
+   * which is what every direction did before this field existed.
+   *
+   * `Partial`, so a direction states only the axes it has an opinion about. An axis it does not
+   * name is centred (`moodState`), not inherited from anywhere — there is no second layer here.
+   *
+   * **Not a device fact and not a per-request one.** Swing is a property of the piece; a
+   * direction that wanted one part late and another straight would be asking for §4.3's grid,
+   * which is where that already lives. And invariant 3 still holds both ways: this names an axis
+   * from the shared vocabulary, never a device and never a parameter.
+   *
+   * **The reader's own mood, when they have one, replaces this whole state rather than merging
+   * with it** — see `ScoreInputsV1.mood`. A merge would need a per-axis record of who set what,
+   * which is a second provenance flag for a knob the reader can always see the position of.
+   */
+  mood?: Partial<MoodState> | undefined
   structure: Section[]
   harmony: Harmony
   hooks: Hook[]
@@ -382,6 +403,17 @@ export const TemplateSchema = z
     id: z.string().min(1),
     name: z.string().min(1),
     bpm: BpmSpecSchema,
+    /**
+     * #310. Every axis optional, and the object as a whole optional — but not *empty*. `{}` and
+     * absent are the same state (every knob centred), and one state with two spellings is how
+     * two authors come to disagree about which one means "no opinion". Strict, like every schema
+     * here: a misspelled axis is a direction that silently opens neutral on the axis it meant.
+     */
+    mood: MoodStateSchema.partial()
+      .refine((m) => MOOD_AXES.some((axis) => m[axis] !== undefined), {
+        message: 'mood must state at least one axis, or be absent (#310)',
+      })
+      .optional(),
     // Both are load-bearing rather than decorative: Occupancy keys on section names (§4.2)
     // and harmony resolution needs a key to resolve degrees against (§4.1). A template with
     // neither parses but cannot produce a guide, and validation exists to fail the build.

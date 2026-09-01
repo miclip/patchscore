@@ -583,6 +583,11 @@ export function applyInspirations(
       progression: template.harmony.progression.map((p) => ({ ...p })),
     },
     keys: [...template.keys],
+    // #310. Copied for the reason every array here is: the base template is never mutated, and
+    // `...template` would share the object. No inspiration patches mood today — a `swing` shift
+    // is a device-facing offset and §5's patches are structural — so this carries it through
+    // untouched, which is what a direction opening at its own mood needs.
+    ...(template.mood === undefined ? {} : { mood: { ...template.mood } }),
     hooks: template.hooks.map((h) => ({ ...h, notes: h.notes.map((n) => ({ ...n })) })),
     roles: [...template.roles.map((r) => ({ ...r })), ...addedRoles],
     patterns: [

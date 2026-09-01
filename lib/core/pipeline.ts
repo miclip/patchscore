@@ -1,7 +1,7 @@
 import type { AssignableKey, Occupancy } from './occupancy'
 import type { DeviceId, HookId, RecipeId, RequestId, SectionName } from './ids'
 import type { Score } from './objective'
-import type { Character, Role } from './vocabulary'
+import { moodState, type Character, type MoodState, type Role } from './vocabulary'
 import {
   canFollow,
   compatibleJackSignals,
@@ -32,7 +32,6 @@ import {
   resolveSourceAudio,
   selectPatterns,
   type BoundArticulation,
-  type MoodState,
   type PatternSelection,
   type ResolvedPatchEntry,
   type ResolvedSourceAudio,
@@ -1254,6 +1253,13 @@ export type ResolvedAssignment = {
  * arrangement phase. A permalink shared before this replays as a materially different guide, so
  * the stamp announces it — the same reading that bumped this to 2, for the same field.
  *
+ * **#310 did not move it, and the reading is #161's.** A direction may now open at a mood, and
+ * `ResolveInput.mood` became optional to let it. A link carrying a mood — which is every link
+ * any build before #310 ever wrote — resolves byte for byte as it did, because an explicit mood
+ * is used exactly as it was. What changed is that there is now an input state there was no way
+ * to write down before, so the stamp that moves is `FORMAT_VERSION`. Asserted rather than
+ * assumed, in `test/template-mood.test.ts`.
+ *
  * It lives beside `ResolveInput` because that is the contract it versions. `permalink.ts`
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
@@ -1304,7 +1310,22 @@ export type ResolveInput = {
   devices: readonly Device[]
   /** Effective template: base composed with inspiration patches (§5), done by the caller. */
   template: Template
-  mood: MoodState
+  /**
+   * #310. **The reader's mood, or `undefined` to open at the direction's** — the effective state
+   * is `mood ?? moodState(template.mood)`, and a direction stating none of it opens neutral,
+   * which is what every guide did before the field existed.
+   *
+   * **Total, never merged per axis.** A reader's mood replaces the direction's whole state
+   * rather than layering over the axes they touched. The alternative — merge, and let an
+   * untouched axis keep following the direction — reads well until a reroll or a direction
+   * change has to decide which axes are the reader's, and answering that needs a per-axis
+   * provenance flag beside a knob whose position is already on screen. The studio pays for
+   * totality where the cost belongs: the first knob edit writes the whole effective state, so
+   * what the reader sees is what they now own.
+   *
+   * `undefined` is a real state, not a missing one, exactly as #161's two overrides are.
+   */
+  mood?: MoodState | undefined
   seed: number
   /**
    * #161's fourth layer, applied on top of the effective template. Omitted or all-`undefined`
@@ -1502,7 +1523,10 @@ function resolveSong(
 }
 
 export function resolve(input: ResolveInput): ResolveResult {
-  const { devices, template, mood, seed } = input
+  const { devices, template, seed } = input
+  // #310. The one place the two mood layers meet, so nothing downstream sees anything but a
+  // full `MoodState` — §6.1's arithmetic has no reading for an absent axis.
+  const mood = input.mood ?? moodState(template.mood)
   const deviceById = new Map(devices.map((d) => [d.id, d]))
   const requestById = new Map(template.roles.map((r) => [r.id, r]))
 

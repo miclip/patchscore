@@ -1,7 +1,7 @@
 import type { AssignableKey, Occupancy } from './occupancy'
 import type { DeviceId, RequestId, SectionName } from './ids'
 import type { Score } from './objective'
-import type { Character, Role } from './vocabulary'
+import type { Character, MoodState, Role } from './vocabulary'
 import { realisationOf } from './device'
 import type { Assignable, Device, Recipe } from './device'
 import type { RoleRequest, Template } from './template'
@@ -16,7 +16,6 @@ import {
   resolveRecipe,
   sectionsFor,
   stackRecipes,
-  type MoodState,
 } from './resolver'
 // §7.2's one seeded stream, shared with §4.1's hook and key choice. See `seed.ts`.
 import { hash32, seededShuffle } from './seed'
