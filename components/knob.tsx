@@ -63,9 +63,17 @@ export type KnobProps = {
   onChange: (value: number) => void
   /** One line under the control. §10's restraint applies: a jog, not documentation. */
   hint?: string
+  /**
+   * §6/#317. Where this value came from, when it is not the reader — the direction's name.
+   *
+   * The row is always rendered and only its `visibility` changes, so switching direction cannot
+   * reflow the panel under someone's cursor. That is #21's rule for the guide's hints applied to
+   * a control that changes for exactly the same reason.
+   */
+  source?: string
 }
 
-export function Knob({ label, value, onChange, hint }: KnobProps) {
+export function Knob({ label, value, onChange, hint, source }: KnobProps) {
   const anchor = useRef<DragAnchor | null>(null)
   /**
    * Non-null only while the field holds text that is not the committed value - mid-typing
@@ -198,6 +206,9 @@ export function Knob({ label, value, onChange, hint }: KnobProps) {
       />
 
       {hint === undefined ? null : <span className="knob-hint">{hint}</span>}
+      <span className="knob-source" data-set={source === undefined ? 'no' : 'yes'}>
+        {source === undefined ? '\u00a0' : `${source} set this`}
+      </span>
     </div>
   )
 }

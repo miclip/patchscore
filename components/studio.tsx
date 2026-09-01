@@ -26,6 +26,7 @@ import {
   copyStudioLink,
   createStudioSync,
   effectiveMood,
+  moodFromDirection,
   withAxis,
   withDevice,
   withRig,
@@ -259,6 +260,8 @@ export function Studio({ initialInputs }: StudioProps) {
    * behind it, so the panel cannot show a mood the guide was not resolved at.
    */
   const mood = useMemo(() => effectiveMood(inputs), [inputs])
+  /** #317. The axes still holding what the direction opened at, so the panel can credit it. */
+  const fromDirection = useMemo(() => moodFromDirection(inputs), [inputs])
 
   const unfilledRoles = useMemo(
     () => (result === undefined ? new Set<Role>() : rolesLeftUnfilled(result)),
@@ -451,7 +454,17 @@ export function Studio({ initialInputs }: StudioProps) {
         />
 
         {/* #310. The mood in force, which is the direction's until the reader moves a knob. */}
-        <MoodPanel mood={mood} onChange={setAxis} />
+        <MoodPanel
+          mood={mood}
+          onChange={setAxis}
+          /*
+           * #317. Which knobs are still showing the direction's own opening values, and whose
+           * name to put on them. Derived by comparison rather than stored — see
+           * `moodFromDirection`, which explains why a flag would go stale after one twist.
+           */
+          fromDirection={fromDirection}
+          directionName={application?.outcome === 'applied' ? application.template.name : undefined}
+        />
 
         <GuideArea
           application={application}
