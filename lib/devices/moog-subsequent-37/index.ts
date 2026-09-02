@@ -335,6 +335,21 @@ type GlideSpec = {
  * target note. Three different things behind one number.
  */
 function glide(spec: GlideSpec): AuthoredParam[] {
+  /**
+   * **Off is one line, not six.**
+   *
+   * `GLIDE · ON` gates the whole section: with it dark, `TYPE`, `OSC`, `TIME`, `GATED` and
+   * `LEGATO` do nothing at all. Printing them anyway gave fourteen of this box's recipes a screen
+   * of glide settings under a switch that says the glide is off — five values a reader can set
+   * carefully and hear no difference from, which is worse than saying nothing because it looks
+   * like instruction.
+   *
+   * The one line that survives is the one that does work: a reader whose panel still has glide on
+   * from the last patch needs telling to turn it off, and that is all they need.
+   */
+  if (spec.on === 'OFF') {
+    return [sw('GLIDE · ON', spec.on, OFF_ON, 21, { note: 'Must be lit for any glide at all' })]
+  }
   return [
     sw('GLIDE · ON', spec.on, OFF_ON, 21, { note: 'Must be lit for any glide at all' }),
     sw('GLIDE · TYPE', spec.type, GLIDE_TYPES, 21, {

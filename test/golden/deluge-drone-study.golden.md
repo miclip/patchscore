@@ -83,7 +83,6 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 
 ### `texture` — Deluge · Track 1
 
-**DX7 bed sent to the reverb and the delay** — settings in Sound design
 
 **The hook is the notes; the steps below are where they are struck again** — see Hook above for what to play and how long each note is held. This map is 4 bars long and repeats inside the hook; the chain lengths below are counted in the hook.
 

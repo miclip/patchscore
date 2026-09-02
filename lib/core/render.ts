@@ -2075,9 +2075,20 @@ function phaseSteps(
   for (const a of result.assignments) {
     out.push(`### \`${a.role}\` — ${whereText(a)}`)
     out.push('')
-    // Same reason as phase 4: this phase says what to play and not what it sounds like, so a
-    // reader stopping here would think the sound was missing.
-    out.push(`**${a.recipe.title}** — settings in Sound design`)
+    /**
+     * Same reason as phase 4: this phase says what to play and not what it sounds like, so a
+     * reader stopping here would think the sound was missing.
+     *
+     * **Except where this phase is only a pointer at phase 4.** A part whose hook is its rhythm
+     * gets no grid here — just a line saying so and where to look — and phase 4 printed this
+     * exact sentence a few lines above. The reason for repeating it does not survive that: a
+     * reader being sent to Hook cannot conclude the sound is missing, because Hook is where the
+     * title is. Printing it in both made the two adjacent sections read as the same block twice,
+     * which is what it looked like on a phone.
+     */
+    if (a.hookAuthority === undefined) {
+      out.push(`**${a.recipe.title}** — settings in Sound design`)
+    }
     // #100. Before the blocks, and instead of them: a variant was still selected for this part
     // (the band it asks for is what §8's arrangement phase reads), but the hook is what gets
     // played, so printing a grid here would restate the contradiction this replaced.

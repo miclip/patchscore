@@ -170,11 +170,18 @@ export function ArrangementGrid({ plan }: { plan: Arrangement }) {
                 </span>
               </th>
               {row.plays.map((plays, i) => (
-                <td
-                  key={plan.columns[i]?.name ?? String(i)}
-                  aria-hidden="true"
-                  className={plays ? 'arrangement-on' : 'arrangement-off'}
-                />
+                <td key={plan.columns[i]?.name ?? String(i)} aria-hidden="true">
+                  {/*
+                   * The bar is a child element, not the cell's own background.
+                   *
+                   * It was `background-clip: content-box` on an empty `<td>`, which Chrome paints
+                   * and Safari does not: with no content, Safari takes the content box as zero
+                   * high and clips the whole fill away. The grid rendered correctly on a laptop
+                   * and completely blank on a phone — labels and headers present, every cell
+                   * invisible. An element with its own height always paints, in every engine.
+                   */}
+                  <span className={plays ? 'arrangement-on' : 'arrangement-off'} />
+                </td>
               ))}
             </tr>
           ))}

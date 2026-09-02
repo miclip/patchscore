@@ -393,9 +393,17 @@ export function PhaseSteps({
               {a.deviceName} · {voicesLabel(a)}
             </span>
           </h4>
-          {/* Same reason as the hook phase: this one says what to play, not what it sounds
-              like, so a reader stopping here would think the sound was missing. */}
-          <SoundRef title={a.recipe.title} />
+          {/*
+           * Same reason as the hook phase: this one says what to play, not what it sounds like,
+           * so a reader stopping here would think the sound was missing.
+           *
+           * **Except where this phase is only a pointer at that one.** A part whose hook is its
+           * rhythm gets `HookPointer` and no grid, and the hook phase printed this exact sentence
+           * a few lines above. A reader being sent to Hook cannot conclude the sound is missing,
+           * because Hook is where the title is — so the two sections read as one block printed
+           * twice, which is how it looked on a phone.
+           */}
+          {a.hookAuthority === undefined ? <SoundRef title={a.recipe.title} /> : null}
           {a.hookAuthority !== undefined ? (
             <HookPointer a={a} />
           ) : isSustainedPart(a) ? (

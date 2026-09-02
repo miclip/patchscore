@@ -600,7 +600,9 @@ describe('every mode-dependent range is paired with the switch that selects it',
     // GLIDE TIME has the panel's `0 ... 10` calibration and no seconds figure anywhere in 61
     // pages, so it is authored unitless against that calibration. A millisecond value beside it
     // would be a fabrication wearing a page number.
-    for (const recipe of device.recipes) {
+    const withGlide = device.recipes.filter((r) => paramNamed(r, 'GLIDE · TIME') !== undefined)
+    expect(withGlide.length, 'no recipe turns glide on').toBeGreaterThan(0)
+    for (const recipe of withGlide) {
       const time = paramNamed(recipe, 'GLIDE · TIME')
       if (time?.kind !== 'numeric') throw new Error(`${recipe.id}: no GLIDE TIME`)
       expect([time.range.min, time.range.max]).toEqual([0, 10])
@@ -609,7 +611,7 @@ describe('every mode-dependent range is paired with the switch that selects it',
     }
     // And the glide TYPE always travels with it: the knob means a rate under LCR and a time
     // under LCT, which is one number behind three different things (p.21).
-    for (const recipe of device.recipes) {
+    for (const recipe of withGlide) {
       const type = paramNamed(recipe, 'GLIDE · TYPE')
       if (type?.kind !== 'enum') throw new Error(`${recipe.id}: no GLIDE TYPE`)
       expect(type.options.values).toEqual(['LCR', 'LCT', 'EXP'])
@@ -667,7 +669,18 @@ describe('every range is cited and every point is not (§3.2)', () => {
         const p = paramNamed(r, name)
         return p?.kind === 'numeric' ? [p] : []
       })
-      expect(found.length, name).toBe(device.recipes.length)
+      /**
+       * Every recipe, except the one control that is not on every recipe: since #319 the glide
+       * section collapses to its switch when the switch is off, so `GLIDE · TIME` appears only
+       * where glide is on. The claim being made here is about *citation*, not about presence —
+       * so it asserts the count it should have and the test below owns the collapse.
+       */
+      const expected =
+        name === 'GLIDE · TIME'
+          ? device.recipes.filter((r) => paramNamed(r, 'GLIDE · TIME') !== undefined).length
+          : device.recipes.length
+      expect(expected, `${name}: nothing carries it`).toBeGreaterThan(0)
+      expect(found.length, name).toBe(expected)
       for (const param of found) {
         expect([param.range.min, param.range.max], name).toEqual([0, 10])
         expect(param.range.verified, name).toEqual({
@@ -940,5 +953,52 @@ describe('the KNOB SHIFT strip, split, would read as an effect', () => {
       },
     }
     expect(fxSources([split], [])).not.toEqual([])
+  })
+})
+
+/**
+ * §3/#319. **A switched-off section is one line, not six.**
+ *
+ * `GLIDE · ON` gates the whole glide section: with it dark, `TYPE`, `OSC`, `TIME`, `GATED` and
+ * `LEGATO` do nothing. Fourteen of this box's recipes printed all six anyway, so a reader got a
+ * screen of glide settings under a switch saying the glide is off — five values they could set
+ * carefully and hear no difference from. Worse than silence, because it reads as instruction.
+ */
+describe('the glide section collapses when it is off (#319)', () => {
+  const GATED = ['GLIDE · TYPE', 'GLIDE · OSC', 'GLIDE · TIME', 'GLIDE · GATED', 'GLIDE · LEGATO']
+
+  it('prints only the switch on a recipe whose glide is off', () => {
+    const off = device.recipes.filter((r) => {
+      const on = paramNamed(r, 'GLIDE · ON')
+      return on?.kind === 'enum' && on.value === 'OFF'
+    })
+    expect(off.length, 'no recipe has glide off').toBeGreaterThan(0)
+    for (const recipe of off) {
+      for (const name of GATED) {
+        expect(paramNamed(recipe, name), `${recipe.id} still prints ${name}`).toBeUndefined()
+      }
+    }
+  })
+
+  it('still prints all six where the glide is on, because there they do something', () => {
+    const on = device.recipes.filter((r) => {
+      const sw = paramNamed(r, 'GLIDE · ON')
+      return sw?.kind === 'enum' && sw.value === 'ON'
+    })
+    expect(on.length, 'no recipe has glide on').toBeGreaterThan(0)
+    for (const recipe of on) {
+      for (const name of GATED) {
+        expect(paramNamed(recipe, name), `${recipe.id} is missing ${name}`).toBeDefined()
+      }
+    }
+  })
+
+  it('never leaves a gated control without its switch', () => {
+    // The failure this forbids is the mirror of the one it fixes: a TIME with no ON beside it is
+    // a value a reader cannot act on for the opposite reason.
+    for (const recipe of device.recipes) {
+      const gated = GATED.some((name) => paramNamed(recipe, name) !== undefined)
+      if (gated) expect(paramNamed(recipe, 'GLIDE · ON'), recipe.id).toBeDefined()
+    }
   })
 })
