@@ -363,13 +363,13 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 A step is one note long and nothing here sets a length: `TIE` joins a note to the next step, and stacking those is how anything longer is entered. · manual
 - ↳ cite: claim manual — Subsequent 37 User's Manual, p.17
 
-- bar 1 · step 1 · sounds for 3 steps · `F1` · root · MIDI 29
-- bar 1 · step 7 · sounds for 2 steps · `F1` · root · MIDI 29
-- bar 1 · step 11 · sounds for 3 steps · `Bb1` (`A#1`) · 4th · MIDI 34
-- bar 1 · step 15 · sounds for 2 steps · `F1` · root · MIDI 29
-- bar 2 · step 17 · sounds for 3 steps · `F1` · root · MIDI 29
-- bar 2 · step 23 · sounds for 2 steps · `Db2` (`C#2`) · 6th · MIDI 37
-- bar 2 · step 27 · sounds for 4 steps · `C2` · 5th · MIDI 36
+- bar 1 · step 1 · sounds for 3 steps · `F2` · root · MIDI 41
+- bar 1 · step 7 · sounds for 2 steps · `F2` · root · MIDI 41
+- bar 1 · step 11 · sounds for 3 steps · `Bb2` (`A#2`) · 4th · MIDI 46
+- bar 1 · step 15 · sounds for 2 steps · `F2` · root · MIDI 41
+- bar 2 · step 17 · sounds for 3 steps · `F2` · root · MIDI 41
+- bar 2 · step 23 · sounds for 2 steps · `Db3` (`C#3`) · 6th · MIDI 49
+- bar 2 · step 27 · sounds for 4 steps · `C3` · 5th · MIDI 48
 
 ### `pad` — MicroFreak · Voice
 
@@ -1162,25 +1162,25 @@ Routing — One VCO only — VCO 2 is down, so there is nothing to beat against 
   - ↳ note: 1.0 is 1:1 tracking centred on C3; 2.0 is 2:1
 - **ENV · KNOB SHIFT** `OFF`
   - ↳ note: Unlit, or the eight knobs below are DELAY, HOLD, VEL AMT and KB TRACK instead
-- **FILTER EG · ATTACK** `2` ms (1…10000 ms)
+- **FILTER EG · ATTACK** `2` ms (0.1…10000 ms)
   - ↳ cite: range manual — Subsequent 37 User's Manual, p.30
-- **FILTER EG · DECAY** `260` ms (1…10000 ms)
+- **FILTER EG · DECAY** `260` ms (0.1…10000 ms)
   - ↳ cite: range manual — Subsequent 37 User's Manual, p.30
 - **FILTER EG · SUSTAIN** `2` (0…10)
   - ↳ cite: range manual — Subsequent 37 User's Manual, p.31
   - ↳ note: 0 to 100%, calibrated 1 to 10
-- **FILTER EG · RELEASE** `200` ms (1…10000 ms)
+- **FILTER EG · RELEASE** `200` ms (0.1…10000 ms)
   - ↳ cite: range manual — Subsequent 37 User's Manual, p.31
 - **FILTER EG · LOOP** `OFF`
   - ↳ note: On, the envelope repeats for as long as a note is held — a multistage LFO
-- **AMP EG · ATTACK** `2` ms (1…10000 ms)
+- **AMP EG · ATTACK** `2` ms (0.1…10000 ms)
   - ↳ cite: range manual — Subsequent 37 User's Manual, p.32
-- **AMP EG · DECAY** `500` ms (1…10000 ms)
+- **AMP EG · DECAY** `500` ms (0.1…10000 ms)
   - ↳ cite: range manual — Subsequent 37 User's Manual, p.32
 - **AMP EG · SUSTAIN** `6.5` (0…10)
   - ↳ cite: range manual — Subsequent 37 User's Manual, p.32
   - ↳ note: 0 to 100%, calibrated 1 to 10
-- **AMP EG · RELEASE** `180` ms (1…10000 ms)
+- **AMP EG · RELEASE** `180` ms (0.1…10000 ms)
   - ↳ cite: range manual — Subsequent 37 User's Manual, p.32
 - **AMP EG · MULTI TRIG** `ON`
   - ↳ note: On, every note re-attacks even when you play legato

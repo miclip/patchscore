@@ -205,7 +205,7 @@ export const ambientDub: Template = {
       id: 'dub-hook-bass-1',
       forRole: 'bass-mid',
       bars: 2,
-      baseOctave: 1,
+      baseOctave: 2,
       notes: [
         { step: 1, degree: 1, octave: 0, len: 6 },
         { step: 11, degree: 5, octave: 0, len: 4 },
@@ -217,7 +217,7 @@ export const ambientDub: Template = {
       id: 'dub-hook-bass-2',
       forRole: 'bass-mid',
       bars: 2,
-      baseOctave: 1,
+      baseOctave: 2,
       notes: [
         { step: 1, degree: 1, octave: 0, len: 8 },
         { step: 11, degree: 4, octave: 0, len: 3 },

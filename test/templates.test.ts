@@ -644,3 +644,52 @@ describe('industrial-techno resolves (§7)', () => {
     expect(flatten(a)).toEqual(flatten(b))
   })
 })
+
+// ---------------------------------------------------------------------------
+// Where the low end sits
+// ---------------------------------------------------------------------------
+
+/**
+ * #37. A `bass-mid` hook may not be authored in the sub's octave.
+ *
+ * Every `bass-mid` hook in the library except Lydian House's put its tonic on C1 — 32.7 Hz, the
+ * same octave the `sub` hooks use, which is the one thing the split of those two roles exists to
+ * prevent. `/parts` says `sub` is "felt more than heard" and `bass-mid` is "the bass you hear"
+ * with "enough upper harmonics to survive a small speaker". Authored an octave apart on paper and
+ * the same octave in fact.
+ *
+ * Found by playing it. A Sub 37 with both oscillators at 16' sounds an octave below the key, so
+ * Industrial Techno's bass landed on the bottom key of a 37-key board at C1, and read as a dark
+ * drone rather than a line. Two symptoms, one cause: 32.7 Hz sits at the edge where the ear stops
+ * resolving pitch and starts hearing cycles, and `OSC 2 FREQUENCY` detunes in cents, so the beat
+ * rate scales with the fundamental and a detune that is warmth at C2 is a slow pulse an octave
+ * down.
+ *
+ * Industrial Techno's own comment had said the bass tonic sits "two octaves below" middle C since
+ * it was written. C1 is three. The comment was right and the value was not.
+ *
+ * **The floor is the tonic, not the lowest note.** Relay and Lydian House both dip a leading tone
+ * or an accent below it, which is a different thing from living there.
+ */
+describe('bass-mid is not the sub (#37)', () => {
+  it('puts every bass-mid tonic at C2 or above, clear of the sub octave', () => {
+    const low = TEMPLATES.flatMap((t) =>
+      t.hooks
+        .filter((h) => h.forRole === 'bass-mid' && h.baseOctave < 2)
+        .map((h) => `${t.id}/${h.id} at C${String(h.baseOctave)}`),
+    )
+    expect(low).toEqual([])
+  })
+
+  /**
+   * The complement, and the reason this is a floor rather than a fixed octave: `sub` is *supposed*
+   * to be down there. A rule that pushed every low hook up would have broken the role that works.
+   */
+  it('leaves the sub hooks where they are', () => {
+    const subs = TEMPLATES.flatMap((t) =>
+      t.hooks.filter((h) => h.forRole === 'sub').map((h) => h.baseOctave),
+    )
+    expect(subs.length).toBeGreaterThan(0)
+    expect([...new Set(subs)]).toEqual([1])
+  })
+})

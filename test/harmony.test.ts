@@ -206,15 +206,17 @@ describe('resolveHook (§4.1)', () => {
 describe('industrial-techno hooks resolve (§4.1)', () => {
   it('turns the bass hook into notes a reader can play in F minor', () => {
     const bass = industrialTechno.hooks.find((h) => h.id === 'it-hook-bass-1') as Hook
-    expect(bass.baseOctave).toBe(1)
+    // C2, not C1: a bass-mid tonic in the sub's octave beat against itself and stopped
+    // reading as a line (#37). test/templates.test.ts holds the floor for every direction.
+    expect(bass.baseOctave).toBe(2)
     // i - i - v - i - VII - i(8ve up), which is the line as authored.
-    expect(notesOf(bass, 'F minor')).toEqual(['F1', 'F1', 'C2', 'F1', 'Eb2', 'F2'])
+    expect(notesOf(bass, 'F minor')).toEqual(['F2', 'F2', 'C3', 'F2', 'Eb3', 'F3'])
   })
 
   it('transposes the same hook by changing nothing but the key', () => {
     const bass = industrialTechno.hooks.find((h) => h.id === 'it-hook-bass-1') as Hook
-    expect(notesOf(bass, 'A minor')).toEqual(['A1', 'A1', 'E2', 'A1', 'G2', 'A2'])
-    expect(notesOf(bass, 'C minor')).toEqual(['C1', 'C1', 'G1', 'C1', 'Bb1', 'C2'])
+    expect(notesOf(bass, 'A minor')).toEqual(['A2', 'A2', 'E3', 'A2', 'G3', 'A3'])
+    expect(notesOf(bass, 'C minor')).toEqual(['C2', 'C2', 'G2', 'C2', 'Bb2', 'C3'])
   })
 
   it('voices the pad across the progression, above the bass and below the ceiling', () => {

@@ -281,7 +281,7 @@ export const industrialTechno: Template = {
       id: 'it-hook-bass-1',
       forRole: 'bass-mid',
       bars: 2,
-      baseOctave: 1,
+      baseOctave: 2,
       notes: [
         { step: 1, degree: 1, octave: 0, len: 6 },
         { step: 9, degree: 1, octave: 0, len: 2 },
@@ -295,7 +295,7 @@ export const industrialTechno: Template = {
       id: 'it-hook-bass-2',
       forRole: 'bass-mid',
       bars: 2,
-      baseOctave: 1,
+      baseOctave: 2,
       notes: [
         { step: 1, degree: 1, octave: 0, len: 3 },
         { step: 7, degree: 1, octave: 0, len: 2 },
