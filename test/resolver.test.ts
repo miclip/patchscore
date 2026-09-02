@@ -828,6 +828,98 @@ describe('resolveParam provenance (§3.2, obligations 5 and 5a)', () => {
   })
 })
 
+/**
+ * §3.1/#324. **The MIDI instruction is composed here, after mood, and that is the whole point.**
+ *
+ * The Muse authored it as prose in the device folder — `Send MIDI CC 87 = ${value}` written at
+ * authoring time — so a value mood then moved left the guide printing `54 → 36` on the line and
+ * *"send 54"* underneath it. The number the reader is told to send was the one struck through
+ * above it, and no arrangement of authored text can fix that: the device folder runs before the
+ * mood knobs are read.
+ *
+ * So a device declares `midiCc` and the resolver writes the sentence. These pin the property that
+ * makes it worth the field: **the instruction names `value`, never `provenance.from`**, in every
+ * branch — moved, unmoved, clamped, and inhibited.
+ */
+describe('the MIDI instruction is composed against the resolved value (§3.1/#324)', () => {
+  /** CC 87 on 0..127, moved +18 when density is at the floor — the Muse's VCA ENV DECAY. */
+  function decay(over: Record<string, unknown> = {}) {
+    return numericParam({
+      name: 'VCA ENV · DECAY',
+      value: 54,
+      range: { min: 0, max: 127, verified: MANUAL },
+      midiCc: 87,
+      mood: [{ axis: 'density', amount: -18 }],
+      ...over,
+    })
+  }
+
+  it('names the moved value, not the value it moved from', () => {
+    const resolved = resolveParam(decay(), MANUAL, moodState({ density: 0 }))
+    expect(resolved.value).toBe(72)
+    expect(resolved.note).toBe('Send MIDI CC 87 = 72')
+    // The bug this replaces, stated as the thing that must not happen: `from` is where the
+    // reader is coming from, and it is struck through on the line above.
+    expect(resolved.provenance).toMatchObject({ state: 'derived', from: 54 })
+    expect(resolved.note).not.toContain('= 54')
+  })
+
+  it('names the authored value when the knobs are centred', () => {
+    const resolved = resolveParam(decay(), MANUAL, moodState())
+    expect(resolved.value).toBe(54)
+    expect(resolved.note).toBe('Send MIDI CC 87 = 54')
+    expect(resolved.provenance).toEqual({ state: 'authored', cite: MANUAL })
+  })
+
+  it('names the clamped value, because that is the one the reader dials', () => {
+    // §6.1 clamps to the range before this runs. An instruction naming the unclamped arithmetic
+    // would be a value the instrument cannot take.
+    const resolved = resolveParam(
+      decay({ value: 120, mood: [{ axis: 'density', amount: -18 }] }),
+      MANUAL,
+      moodState({ density: 0 }),
+    )
+    expect(resolved.value).toBe(127)
+    expect(resolved.note).toBe('Send MIDI CC 87 = 127')
+  })
+
+  it('names the authored value when an unverified range inhibits mood (§3.2)', () => {
+    const resolved = resolveParam(
+      decay({ range: { min: 0, max: 127, verified: false } }),
+      MANUAL,
+      moodState({ density: 0 }),
+    )
+    expect(resolved.value).toBe(54)
+    expect(resolved.note).toBe('Send MIDI CC 87 = 54')
+  })
+
+  it('keeps an authored note in front of the instruction, joined the way notes are joined', () => {
+    const resolved = resolveParam(
+      decay({ note: 'Bipolar, centred at noon' }),
+      MANUAL,
+      moodState({ density: 0 }),
+    )
+    expect(resolved.note).toBe('Bipolar, centred at noon · Send MIDI CC 87 = 72')
+  })
+
+  it('says nothing at all about MIDI on a control that declares no CC', () => {
+    const resolved = resolveParam(decay({ midiCc: undefined }), MANUAL, moodState({ density: 0 }))
+    expect(resolved.note).toBeUndefined()
+    expect(resolved.midiCc).toBeUndefined()
+    // And an authored note is left exactly as authored, rather than acquiring a separator.
+    const withNote = resolveParam(
+      decay({ midiCc: undefined, note: 'Bipolar, centred at noon' }),
+      MANUAL,
+      moodState(),
+    )
+    expect(withNote.note).toBe('Bipolar, centred at noon')
+  })
+
+  it('carries the number itself, so a consumer need not read the sentence', () => {
+    expect(resolveParam(decay(), MANUAL, moodState()).midiCc).toBe(87)
+  })
+})
+
 describe('resolveParam inheritance (obligation 5c, §3.1)', () => {
   it('inherits the recipe citation when the param omits one', () => {
     const param = numericParam({ verified: undefined, range: { min: 0, max: 100 } })

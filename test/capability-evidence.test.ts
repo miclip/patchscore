@@ -4,6 +4,7 @@ import {
   CONTENT_FACT,
   DAW_TRANSPORT_FACT,
   PATTERN_ENTRY_FACT,
+  CONTROL_POSITION_FACT,
   CapabilityEvidenceSchema,
   DeviceSchema,
   clockJackNotes,
@@ -141,9 +142,9 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
 
   it('accepts every scalar fact in the closed list', () => {
     for (const fact of CAPABILITY_FACTS) {
-      // §2.6/#111, §8/#65. Two paths need a declaration beside the citation, because both are
-      // positive claims about the box rather than readings of a control: what it ships, and
-      // whether it can hold a pattern at all. A page with nothing behind it is refused for both
+      // §2.6/#111, §8/#65, §3.1/#324. Some paths need a declaration beside the citation, because
+      // each is a positive claim about the box rather than a reading of a control: what it ships,
+      // whether it can hold a pattern at all, and what its panel prints beside a control. A page with nothing behind it is refused for both
       // (`test/device-content.test.ts`, `test/pattern-entry.test.ts`). `noteDuration` is the
       // third of that kind and the shared fixture already declares it. Every other path accepts
       // a citation on its own — `features.*` and `clock.preferredSource` deliberately so.
@@ -159,11 +160,31 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
                   dawTransport: { protocol: 'HUI over USB' } as const,
                   clock: { canSendClock: true, canReceiveClock: false, transport: ['usb'] } as const,
                 }
-              : {}
+              : fact === CONTROL_POSITION_FACT
+                ? // §3.1/#324. The fourth of that kind: that a panel prints no scale a value can
+                  // be set by is a positive claim about the box, read off its drawings.
+                  {
+                    controlPositions: {
+                      kind: 'unmapped',
+                      controls: 'The knobs',
+                      markings: 'unnumbered ticks',
+                      exact: 'MIDI CC',
+                    } as const,
+                  }
+                : {}
+      /**
+       * §3.1/#324 is the one path that refuses a citation rather than requiring one: what it
+       * declares is that no page maps a panel mark to a value, and no page asserts an absence.
+       * Its evidence is the reading, so this fixture hands it the reading.
+       */
+      const found =
+        fact === CONTROL_POSITION_FACT
+          ? ({ kind: 'unknown', reason: 'the drawings mark it and the CC table values it' } as const)
+          : CITE
       const parsed = DeviceSchema.safeParse(
         patchable({
           ...declaring,
-          capabilityEvidence: { [jackFact('VCF · IN')]: CITE, [fact]: CITE },
+          capabilityEvidence: { [jackFact('VCF · IN')]: CITE, [fact]: found },
         }),
       )
       expect(parsed.success, fact).toBe(true)

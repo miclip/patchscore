@@ -8,8 +8,14 @@ import type {
   ResolvedSourceAudio,
 } from '@/lib/core'
 import { citationSentence } from '@/lib/core'
-import { contentNotice, dominantRangeCite, hoistedParams } from '@/lib/core'
-import type { CapabilityEvidence, ContentNotice, ParamScope, ScopedParams } from '@/lib/core'
+import { contentNotice, controlPositionNotice, dominantRangeCite, hoistedParams } from '@/lib/core'
+import type {
+  CapabilityEvidence,
+  ContentNotice,
+  ControlPositionNotice,
+  ParamScope,
+  ScopedParams,
+} from '@/lib/core'
 import { citeLines, citeText, count, hintText, isStacked, num, voicesLabel } from './format'
 import { EvidenceMark, Instruction, ParamLine, ProvenanceMark, evidenceLines } from './instruction'
 
@@ -228,6 +234,63 @@ function ContentBlock({ notice }: { notice: ContentNotice }) {
 }
 
 /**
+ * §3.1/#324. **How a reader sets a control the panel prints no scale for**, once for the box
+ * rather than once for each of its parameters — 76 of them, on the rig #324 reported.
+ *
+ * Hand-written to match `controlPositionText` in `lib/core/render.ts` word for word, the same
+ * arrangement `contentText` above lives under. The two renderers share no code path by design
+ * (#33), so importing the sentence would make this view a dependent of the Markdown guide rather
+ * than its sibling; `controlPositionNotice` decides the verdict and hands over the panel's own
+ * three phrases, and the words are each renderer's own.
+ *
+ * **The sentence reports the reading, not a result about the document.** An `unknown` finding
+ * holds that the manual was read and the page was not found; it does not hold that no such page
+ * exists, and an earlier draft claimed that while opening with *Not established*. The state still
+ * has to be in the sentence rather than only in the `undocumented` mark beside it, because a mark
+ * is a word at the end of a line that a reader on a phone will miss. What the panel does print is
+ * said first, because that is the part they can see in front of them.
+ *
+ * `mapped` is what stops this reading as a claim about every control on the box. On the Muse it
+ * names the eight ENVELOPE faders, which do carry a printed scale (#325) — the one positive claim
+ * here, and the only one with a page under it.
+ *
+ * `test/control-positions.test.ts` asserts the sentence in both renderers and both layouts,
+ * because two copies of one sentence is exactly the thing that drifts.
+ */
+function controlPositionText(notice: ControlPositionNotice): string {
+  const exception =
+    notice.mapped === undefined ? '' : ` The exception is ${notice.mapped.controls}.`
+  return (
+    `${notice.controls} carry ${notice.markings}. The manual was read and no page mapping a ` +
+    `mark to a ${notice.exact} value was found, so ${notice.exact} gives the exact setting and ` +
+    `by hand these are set by ear.${exception}`
+  )
+}
+
+function ControlPositionBlock({ notice }: { notice: ControlPositionNotice }) {
+  return (
+    <div className="callout">
+      <p>
+        <strong>Setting by hand</strong> — {controlPositionText(notice)}{' '}
+        <EvidenceMark evidence={notice.evidence} />
+      </p>
+      {/* Visible rather than only in the mark's title: no hover on a phone at the rack, and no
+          attributes at all on a printed guide. `claim`, not `value` — nobody dials this. */}
+      {evidenceLines(notice.evidence, 'claim').map((cite) => (
+        <p className="subordinate cite" key={cite}>
+          {cite}
+        </p>
+      ))}
+      {/* The exception's page, under the reading that found nothing. Two claims, two kinds of
+          evidence; printing the page under the reading's word would merge them. */}
+      {notice.mapped === undefined ? null : (
+        <p className="subordinate cite">mapped {citeText(notice.mapped.cite)}</p>
+      )}
+    </div>
+  )
+}
+
+/**
  * #107's heading and its reason, hand-written to match the Markdown renderer word for word — the
  * same arrangement `realisationInstruction` above already lives under. The two renderers share no
  * code path by design (#33), so importing the sentence from `lib/core/render.ts` would make this
@@ -296,6 +359,9 @@ export function SoundShared({
   hoist: ReturnType<typeof hoistedParams>
   deviceById: Map<DeviceId, Device>
 }) {
+  // §3.1/#324. Computed here rather than passed in, because unlike `content` it asks nothing
+  // about which parts were assigned — only what this box's panel prints.
+  const positions = controlPositionNotice(device)
   return (
     <>
       {/* The markdown renderer's own sentence, so the two cannot say different things. */}
@@ -306,6 +372,11 @@ export function SoundShared({
       {/* §2.6/#111, before the settings: whether there is anything to load is the box's
           question, and a cutoff on a box with nothing loaded is a setting with no subject. */}
       {content === undefined ? null : <ContentBlock notice={content} />}
+
+      {/* §3.1/#324, above the settings and once for the box: how to reach a value exactly on a
+          panel that prints no scale is a fact about the panel, and it used to print on every
+          parameter line the box had. */}
+      {positions === undefined ? null : <ControlPositionBlock notice={positions} />}
 
       {/* #107, above the parts: the order it is done at the box — set the one control the
           pattern shares, then work through the voices. */}

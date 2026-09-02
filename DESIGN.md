@@ -1102,6 +1102,116 @@ numerics, and `options.values.includes(value)` for enums. A param whose authored
 outside its own declared range fails the build — that is an authoring typo, not a provenance
 question.
 
+**A fact about the panel is not a fact about the parameter, and `note` is the wrong home for it**
+(#324). The Muse's CC helper appended one sentence to every value it built — *"the knob carries no
+scale and no page maps its position to a CC value, so there is no printed setting for it by hand"* —
+and on the rig #324 reported — TR-1000 + Deluge + Muse + Subsequent 37, industrial-techno seed 3 —
+**76 resolved parameters carried that tail**, 25 words each, on a page §8 says is read at the
+machine and §8/#21 says is usually a phone.
+
+**It was not one claim about one panel. It was two problems in one sentence, and they are worth
+keeping apart.**
+
+*It was false on eight of the 41 controls it addressed* (#325). The FILTER and VCA ENVELOPE faders
+are drawn on p.38 with five lines across four faders, and p.19 reads a position off them in the
+manual's own words. Those eight have a printed setting, and telling a reader there is none is the
+invented-hole failure invariant 5 forbids, wearing the clothes of honesty.
+
+*And it was over-worded about the other 33.* The claim itself holds for them — no page maps a mark
+on any of them to a value — but they are **not "the rotary controls"**, which is how the report
+described them and how the fix was nearly written. p.33 draws the MIXER as six vertical faders and
+p.28 calls WAVE MIX *"2 knobs and a slider"*, so seven of the 33 are sliders. A notice worded around
+knobs would have silently dropped them out of the claim, which is the same hole in the other
+direction.
+
+So what is left after both corrections is one fact about one manual, true of a named 33 controls at
+once, and it is declared once on the device:
+
+```ts
+type ControlPositions = {
+  kind: 'unmapped'
+  controls: string      // 'The knobs, and the MIXER and WAVE MIX faders'
+  markings: string      // 'unnumbered ticks and lines' — what the panel does print
+  exact: string         // 'MIDI CC' — the addressing that is exact
+  mapped?: { controls: string; cite: Cite }   // the controls this does not cover, and the page
+}
+```
+
+**Only the negative case is declarable**, as at `patternEntry` (§8/#65): a panel that prints real
+scales needs no field, because the figure beside the control is already the instruction.
+`controlPositionNotice(device)` decides the state once for both renderers (#33) and §8 phase 6
+prints it **once per device, above that device's settings**, in the same shared block `contentNotice`
+and #107's hoisted params sit in — so it survives the sequencer layout without repeating per track.
+
+**The evidence at `controlPositions` is an `unknown` finding and never a citation, which is the
+opposite of every other capability fact.** What the declaration asserts is an absence — the manual
+was read and it pairs no mark with a value — and a citation names a document that *asserts*
+something. No document asserts that nothing asserts it. §2.6/#120's three reasoned non-claims exist
+for this, and this is the middle one: `unread` is a named document nobody can open, `cited-against`
+is a document answering no, and `unknown` is the documents opened and the reading running out. So
+`DeviceSchema` requires `unknown` here and **refuses a page**, for the reason `CLAUDE.md` gives as
+*a cited range can still be the wrong range*: a page beside a claim it does not make reads as
+evidence and is not. The pages the author read are not lost — they are what the reading *covered*,
+so they belong in the finding's `reason`, which both renderers print under the word *undocumented*.
+**And the notice's own sentence reports the reading rather than its result.** It says *the manual
+was read and no page mapping a mark to a MIDI CC value was found*, which is what the finding holds;
+*the manual maps no mark to a value* would be a positive claim about a whole document that nobody
+has established. An earlier draft made that claim while opening with *Not established*, which is a
+contradiction inside one sentence — the second half asserting what the first half disclaims. The
+state belongs in the prose rather than only in the `undocumented` mark, because a mark at the end of
+a line is a thing a reader on a phone will miss.
+
+**`mapped` is the one positive claim in the declaration, so it carries a `Cite` rather than prose.**
+*A page maps these positions* is checkable by anyone holding the document, which is the definition
+of a cited claim in §3.2, and left as free text the page number would be a string inside a sentence
+that no audit can see and the next rewording can drop. It renders under the reading, with its own
+word, because two claims of different kinds under one word would merge them.
+
+**The decision reads the declaration and never a note's text.** Hoisting by string equality is the
+obvious fix and the wrong one: each of those 76 notes began with its own CC number and value, so
+only the tail matched, and a fix keyed on whole strings would have left every word of it in place. A rule keyed on
+the *device id* is worse — it is not a fact about the Muse, it is a fact about panels that print no
+scale, and the next box like it would have to be added to a list nobody would think to look at.
+
+**And it is what stops the notice becoming the claim it replaced.** A panel is rarely uniform, and
+the two corrections above are both corrections to the *scope* of one sentence rather than to the
+sentence. `mapped` carries the first of them — the eight faders p.19 maps — and `controls` carries
+the second, which is why it reads *"The knobs, and the MIXER and WAVE MIX faders"* and not *"the
+rotary controls"*. A device-level notice that swept the faders in, or that quietly dropped the
+sliders out, would be the same false claim moved up a level.
+
+**The measurement, and the observable it is stated in: on the rig #324 reported, 76 resolved
+parameters carried the tail before and zero carry it after, with one notice in its place.** Counted
+on `ResolvedParam`s, because a parameter's note is what the sentence was appended to and therefore
+what the fix is about; and keyed on `midiCc` rather than on the shape of the sentence, for the same
+reason the notice is — a reworded instruction must not quietly stop being counted.
+
+### `midiCc`, and why the resolver writes the sentence
+
+**What the parameter line kept is the instruction, and the instruction cannot be authored** (#324).
+A device declares the number:
+
+```ts
+type AuthoredNumericParam = { …; midiCc?: number }        // 0-127, optional, cited by the range
+type ResolvedParam        = { …; midiCc?: number }        // carried through, sentence in `note`
+```
+
+and `resolveParam` composes `Send MIDI CC 87 = 36` **after mood**, joining any authored note in
+front of it with the library's ` · `.
+
+The order is the whole point. Mood moves a numeric value after it is authored (§6.1), so a sentence
+written in a device folder carries the value the author typed and not the one the reader is looking
+at. The Muse shipped exactly that: `VCA ENV · DECAY` under a density knob rendered `54 → 36` on the
+line, with *"send 54"* underneath — the number struck through above it. Two of the eight envelope
+faders and both filter cutoffs declare mood, so the guide was wrong on the controls a reader watches
+most. Composing after the arithmetic and after the clamp makes the two numbers the same by
+construction, and **`provenance.from` must never appear in the instruction**: it is what the reader
+is moving away from.
+
+`ResolvedParam.provenance` is untouched by this and stays required (invariant 4). `midiCc` is not a
+fifth shared vocabulary (invariant 3) — no template names a CC and nothing joins on one; it travels
+device → resolver → renderer exactly as `unit` and `note` do.
+
 ### 3.2 Provenance is three-state, because a legal value is not a verified value
 
 Invariant 4 originally read "no parameter value that isn't manual-verified or explicitly flagged

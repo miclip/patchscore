@@ -760,6 +760,85 @@ export const DawTransportSchema = z.strictObject({
   protocol: z.string().min(1, 'name the protocol the manual names'),
 })
 
+/**
+ * §3.1/#324. **A panel whose continuous controls cannot be set by looking at them.**
+ *
+ * Some boxes print a scale beside every control and some print none. Where none is printed, a
+ * parameter value is only reachable exactly over MIDI, and by hand the reader is listening rather
+ * than reading — which is a real thing to tell somebody standing at the machine, and the honest
+ * form of invariant 5: state the gap rather than invent a knob position to fill it.
+ *
+ * **It is one fact about one manual, and it belongs once per device.** The Muse carried it as a
+ * sentence appended to every parameter its CC helper built — 76 resolved parameters carried it on
+ * the rig #324 reported, 25 words each, on a page §8 says is read at the machine on a phone (#21).
+ * The placement was wrong; so, in two ways, was the scope of the claim (#325, and see `mapped`).
+ *
+ * **Only the negative case is declarable**, exactly as at `patternEntry`. A box whose panel prints
+ * real scales needs no field; the value beside the control is already the instruction. This says
+ * the opposite, so it carries a citation like every other capability fact.
+ *
+ * **`mapped` is the part that keeps the claim from over-reaching.** A panel is rarely all one
+ * kind: the Muse's two ENVELOPE banks *are* scaled — five printed lines, and p.19 reads the second
+ * from the bottom as 25% — while its knobs and its other faders are not (#325). A device with such
+ * an exception names it here, and both renderers print it, because a notice that quietly covered
+ * the scaled controls too would be the same false negative claim #325 removed, moved up a level.
+ *
+ * **The exception carries its own page, and it is a `Cite` rather than prose.** It is the one
+ * positive claim in this declaration — *a page maps these positions* — and a positive claim
+ * about a document is checkable by anyone holding it, so it is cited the way §3.2 cites every
+ * other one. Left as free text the page number would be a string inside a sentence, which cannot
+ * be audited, cannot be grouped with the device's other citations, and drifts out of the reader's
+ * view the first time somebody rewords the sentence around it.
+ *
+ * ## The evidence at this fact is `unknown`, and a page there would be the wrong claim
+ *
+ * The declaration's own half is an **absence**: the manual was read and it does not pair a mark
+ * with a value. No page says that, and no page ever could — a citation names a document that
+ * *asserts* something, and the assertion here is that nothing asserts it. §2.6/#120's three
+ * reasoned non-claims exist for exactly this, and this is the middle one: `unread` needs a named
+ * document nobody can open, `cited-against` needs a document answering no, and `unknown` is the
+ * documents opened and the reading running out. So `DeviceSchema` requires an `unknown` finding
+ * here and **refuses a citation**, which is the same discipline `CLAUDE.md` states as *a cited
+ * range can still be the wrong range* — a page beside a claim it does not make reads as evidence
+ * and is not.
+ *
+ * The pages a reader would want are not lost by that: they are what the author *read*, so they
+ * belong in the `reason`, which both renderers print under the notice. What changes is the word
+ * over them. It says undocumented rather than manual, which is true.
+ *
+ * The three prose fields are the author's words about their own panel, as `reason` and `location`
+ * are elsewhere. The renderers own the sentence around them (#33) and neither owns the facts.
+ */
+export const CONTROL_POSITION_FACT = 'controlPositions'
+
+/** The one positive claim here: controls a page *does* map, and the page that maps them. */
+export type MappedControls = { controls: string; cite: Cite }
+
+export type ControlPositions = {
+  kind: 'unmapped'
+  /** The controls this is true of: `'The knobs, and the MIXER and WAVE MIX faders'`. */
+  controls: string
+  /** What the panel *does* draw beside them, which is not a scale: `'unnumbered ticks'`. */
+  markings: string
+  /** The addressing that is exact, and the only one: `'MIDI CC'`. */
+  exact: string
+  /** Controls this explicitly excludes, because a page does map their position. */
+  mapped?: MappedControls
+}
+
+export const MappedControlsSchema = z.strictObject({
+  controls: z.string().min(1, 'name the controls the page maps, in the panel\'s own words'),
+  cite: CiteSchema,
+})
+
+export const ControlPositionsSchema = z.strictObject({
+  kind: z.literal('unmapped'),
+  controls: z.string().min(1, 'name the controls this is true of, in the panel\'s own words'),
+  markings: z.string().min(1, 'say what the panel does print beside them, since it prints something'),
+  exact: z.string().min(1, 'name the addressing that is exact'),
+  mapped: MappedControlsSchema.optional(),
+})
+
 export const CAPABILITY_FACTS = [
   'clock.canSendClock',
   'clock.canReceiveClock',
@@ -778,6 +857,7 @@ export const CAPABILITY_FACTS = [
   NOTE_DURATION_FACT,
   PATTERN_ENTRY_FACT,
   DAW_TRANSPORT_FACT,
+  CONTROL_POSITION_FACT,
 ] as const
 
 export type CapabilityFact = (typeof CAPABILITY_FACTS)[number]
@@ -953,6 +1033,62 @@ export function patternEntryNotice(device: Device | undefined): PatternEntryNoti
   const evidence = evidenceFor(device, PATTERN_ENTRY_FACT)
   if (evidence === undefined || !isCite(evidence)) return undefined
   return { state: 'external', reason: device.patternEntry.reason, evidence }
+}
+
+/**
+ * §3.1/#324. **What the Sound-design phase should say about setting this box's controls by
+ * hand** — decided once, so the Markdown guide and the page cannot disagree about the panel
+ * somebody is standing in front of.
+ *
+ * The arrangement `contentNotice` and `patternEntryNotice` sit in (#33): one verdict here, two
+ * hand-written vocabularies around it.
+ *
+ * **It reads the declaration, never a parameter's prose and never a device id.** The fact used to
+ * live as a tail appended to each parameter's note, so the obvious dedupe is to match that string
+ * and hoist it — which fails the moment a note is reworded, and fails silently, because a
+ * mismatched string simply prints 41 times again. It is a claim about the panel, so it is asked
+ * of the panel's declaration.
+ *
+ * Returns `undefined` for the ordinary box, like `patternEntryNotice`: most panels print a scale
+ * somewhere, and a sentence about the ones that do not would be noise under every other device.
+ *
+ * Not gated on the guide actually containing a value for such a control. Every parameter a
+ * declaring box authors is on the panel this describes, and the alternative — sniffing the
+ * parameters for the addressing named in `exact` — is the string matching this exists to avoid.
+ */
+export type ControlPositionNotice = {
+  state: 'unmapped'
+  controls: string
+  markings: string
+  exact: string
+  mapped: MappedControls | undefined
+  /**
+   * The reading, not a page. `UndocumentedFact` rather than the whole `CapabilityEvidence` union
+   * so a renderer cannot be handed a citation for an absence and print *manual* over it — the
+   * type is the claim, exactly as `ResolvedParam.provenance` is (invariant 4).
+   */
+  evidence: UndocumentedFact
+}
+
+export function controlPositionNotice(
+  device: Device | undefined,
+): ControlPositionNotice | undefined {
+  const positions = device?.controlPositions
+  if (device === undefined || positions === undefined) return undefined
+  const evidence = evidenceFor(device, CONTROL_POSITION_FACT)
+  // `DeviceSchema` refuses every other state at this key, so this is the hand-built-fixture path
+  // rather than a state a shipped manifest can be in. It falls silent rather than throwing, for
+  // the reason `contentNotice` does: a page somebody is holding at the machine should render
+  // honestly or not at all, never crash.
+  if (evidence === undefined || evidence === false || evidence.kind !== 'unknown') return undefined
+  return {
+    state: 'unmapped',
+    controls: positions.controls,
+    markings: positions.markings,
+    exact: positions.exact,
+    mapped: positions.mapped,
+    evidence,
+  }
 }
 
 /**
@@ -2320,6 +2456,12 @@ export type Device = {
    */
   dawTransport?: DawTransport
   /**
+   * §3.1/#324. Declared only by a box whose panel prints no scale a reader can set a value by —
+   * see `ControlPositions`. Absence is the ordinary case, not ignorance: most panels print
+   * something, and the value beside the control is already the instruction.
+   */
+  controlPositions?: ControlPositions
+  /**
    * §2.6/#22. **Who checked the capability facts above, keyed by field path.**
    *
    * Optional, and silence is the honest default — an author cites what they checked. Required in
@@ -2370,6 +2512,7 @@ export const DeviceSchema = z
     noteDuration: NoteDurationSchema.optional(),
     patternEntry: PatternEntrySchema.optional(),
     dawTransport: DawTransportSchema.optional(),
+    controlPositions: ControlPositionsSchema.optional(),
     capabilityEvidence: z
       .record(z.string().min(1), CapabilityEvidenceSchema)
       .refine((m) => Object.keys(m).length > 0, {
@@ -2774,6 +2917,35 @@ export const DeviceSchema = z
         code: 'custom',
         message: `'${PATTERN_ENTRY_FACT}' carries a citation but no patternEntry is declared; a reading that supports no claim is 'cited-against' (§8/#65)`,
         path: ['capabilityEvidence', PATTERN_ENTRY_FACT],
+      })
+    }
+
+    /**
+     * §3.1/#324. **An absence is `unknown`, never a page.** What the declaration asserts is that
+     * no page pairs a panel mark with a value, and a citation beside that claim would name a
+     * document making it — which no document does. The pages the author read belong in the
+     * finding's `reason`, where both renderers print them under the word *undocumented*.
+     */
+    const positionEvidence = evidence[CONTROL_POSITION_FACT]
+    if (device.controlPositions !== undefined) {
+      if (positionEvidence === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `controlPositions is declared '${device.controlPositions.kind}' with no finding at '${CONTROL_POSITION_FACT}'; record the reading as 'unknown' with the pages it covered (§3.1/#324)`,
+          path: ['capabilityEvidence', CONTROL_POSITION_FACT],
+        })
+      } else if (positionEvidence === false || positionEvidence.kind !== 'unknown') {
+        ctx.addIssue({
+          code: 'custom',
+          message: `'${CONTROL_POSITION_FACT}' is evidence of kind '${positionEvidence === false ? 'unchecked' : positionEvidence.kind}', but that no page maps a mark to a value is an absence and no page asserts it; record it as 'unknown' (§3.1/#324)`,
+          path: ['capabilityEvidence', CONTROL_POSITION_FACT],
+        })
+      }
+    } else if (positionEvidence !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `'${CONTROL_POSITION_FACT}' carries a finding but no controlPositions is declared; a reading that supports no claim says nothing (§3.1/#324)`,
+        path: ['capabilityEvidence', CONTROL_POSITION_FACT],
       })
     }
 

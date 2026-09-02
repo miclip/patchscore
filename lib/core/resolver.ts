@@ -796,6 +796,36 @@ function moodContribution(
 }
 
 /**
+ * §3.1/#324. **The MIDI instruction, composed against the value the guide is about to print.**
+ *
+ * It is written here rather than in a device folder because of *when*, not where: mood moves a
+ * numeric value after it is authored, so a sentence a device wrote down carries the value the
+ * author typed and not the one the reader sees. The Muse shipped that bug on 41 controls — a line
+ * reading `54 → 36` above a note reading *"Send MIDI CC 87 = 54"*, where the number the reader is
+ * told to send is the one struck through above it. Composing after mood makes the two the same
+ * number by construction, and there is no arrangement of authored prose that does.
+ *
+ * **An authored note keeps its place in front.** It says something about the control that this
+ * cannot — *"Bipolar, centred at noon"* — and the joint is ` · `, which is the separator the
+ * library's notes already use.
+ *
+ * The value is the resolved one in every branch, including the unmoved one, so this needs no
+ * knowledge of whether mood ran. `provenance.from` is the *starting* point and must never appear
+ * here: it is what the reader is moving away from.
+ */
+function midiInstruction(ccNumber: number, value: number): string {
+  return `Send MIDI CC ${ccNumber} = ${value}`
+}
+
+function noteWithInstruction(
+  note: string | undefined,
+  instruction: string | undefined,
+): string | undefined {
+  if (instruction === undefined) return note
+  return note === undefined ? instruction : `${note} · ${instruction}`
+}
+
+/**
  * §7 step 9, and the only place an `AuthoredParam` becomes a `ResolvedParam`.
  *
  * §3.2's two gates are orthogonal, which is why §3.1 gives the range its own `verified`:
@@ -886,6 +916,13 @@ export function resolveParam(
     provenance = { state: 'authored', cite: point }
   }
 
+  // §3.1/#324. After the mood arithmetic and after the clamp, so the number in the sentence is
+  // the number on the line. `value`, never `param.value` and never `provenance.from`.
+  const note = noteWithInstruction(
+    param.note,
+    param.midiCc === undefined ? undefined : midiInstruction(param.midiCc, value),
+  )
+
   return {
     name: param.name,
     value,
@@ -895,7 +932,8 @@ export function resolveParam(
     range: { min: param.range.min, max: param.range.max, verified: rangeCite },
     provenance,
     ...(param.hint === undefined ? {} : { hint: param.hint }),
-    ...(param.note === undefined ? {} : { note: param.note }),
+    ...(param.midiCc === undefined ? {} : { midiCc: param.midiCc }),
+    ...(note === undefined ? {} : { note }),
     ...(param.scope === undefined ? {} : { scope: param.scope }),
   }
 }
