@@ -2335,6 +2335,18 @@ button:active {
  * cell is the thing Markdown cannot express, which is why this view is not converted Markdown.
  */
 .instruction {
+  padding: 3px 0;
+  min-width: 0;
+}
+
+/*
+ * The grid is one row — instruction and hint — and the subordinate note/cite lines are siblings
+ * of it rather than members. A grid track sized to `max-content` counts every item in it, and a
+ * citation is much the longest string on the row, so inside the grid it set the column width and
+ * flung the hint clear of the value it annotates. Spanning both columns does not help: a spanning
+ * item still contributes to the tracks it spans.
+ */
+.instruction-row {
   display: grid;
   /*
    * `max-content`, not `1fr`. The hint sits beside the thing it annotates or it does not work,
@@ -2351,7 +2363,6 @@ button:active {
   grid-template-columns: minmax(0, max-content) minmax(0, 14rem);
   align-items: baseline;
   column-gap: 16px;
-  padding: 3px 0;
   min-width: 0;
   /*
    * Still capped, now as a backstop rather than as the mechanism: a long note or citation makes
@@ -2378,13 +2389,9 @@ button:active {
   display: none;
 }
 
-.instruction:has(.hint:empty) {
+.instruction-row:has(.hint:empty) {
   grid-template-columns: minmax(0, 1fr);
   max-width: 62ch;
-}
-
-.instruction-main {
-  min-width: 0;
 }
 
 .instruction-line {
@@ -2914,7 +2921,7 @@ button:active {
  * anyway cost a screen and a half of blank page per guide on a phone.
  */
 @media (max-width: 700px) {
-  .instruction {
+  .instruction-row {
     grid-template-columns: minmax(0, 1fr);
     row-gap: 0;
   }

@@ -31,17 +31,27 @@ export type InstructionProps = {
 export function Instruction({ children, hint, cites, note }: InstructionProps) {
   return (
     <div className="instruction">
-      <div className="instruction-main">
+      {/*
+        The grid is this row, not the whole block, and the subordinate lines sit *outside* it.
+        The hint column is sized to its own instruction, so anything sharing that column widens
+        it — and a citation is far the longest string here ("range manual — TR-1000 Reference
+        Manual (eng02) v1.13+, p.71"). Inside the grid it pushed the hint hundreds of pixels
+        clear of the value it annotates, on exactly the rows carrying the most evidence.
+
+        Spanning both columns is not enough: a spanning item still contributes to the tracks it
+        spans. Only leaving the grid stops it counting.
+      */}
+      <div className="instruction-row">
         <div className="instruction-line">{children}</div>
-        {note === undefined ? null : <p className="subordinate note">{note}</p>}
-        {(cites ?? []).map((cite) => (
-          <p className="subordinate cite" key={cite}>
-            {cite}
-          </p>
-        ))}
+        {/* Always rendered. The column exists whether or not there is anything in it. */}
+        <p className="hint">{hint}</p>
       </div>
-      {/* Always rendered. The column exists whether or not there is anything in it. */}
-      <p className="hint">{hint}</p>
+      {note === undefined ? null : <p className="subordinate note">{note}</p>}
+      {(cites ?? []).map((cite) => (
+        <p className="subordinate cite" key={cite}>
+          {cite}
+        </p>
+      ))}
     </div>
   )
 }
