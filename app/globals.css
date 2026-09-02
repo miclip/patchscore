@@ -2335,18 +2335,38 @@ button:active {
  * cell is the thing Markdown cannot express, which is why this view is not converted Markdown.
  */
 .instruction {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 14rem);
-  align-items: baseline;
-  column-gap: 16px;
   padding: 3px 0;
   min-width: 0;
+}
+
+/*
+ * The grid is one row — instruction and hint — and the subordinate note/cite lines are siblings
+ * of it rather than members. A grid track sized to `max-content` counts every item in it, and a
+ * citation is much the longest string on the row, so inside the grid it set the column width and
+ * flung the hint clear of the value it annotates. Spanning both columns does not help: a spanning
+ * item still contributes to the tracks it spans.
+ */
+.instruction-row {
+  display: grid;
   /*
-   * Cap the pair, or the 1fr column stretches to the shell and strands the hint against the
-   * far edge. On a wide screen "offbeat -> WEAK true on steps 3, 7, 11" is short, so the hint
-   * that belongs to it ended up hundreds of pixels away with nothing in between — legible, and
-   * impossible to associate at a glance. The reserved column only works if it is beside the
-   * thing it annotates.
+   * `max-content`, not `1fr`. The hint sits beside the thing it annotates or it does not work,
+   * and a `1fr` first column stretches to whatever room it is given, so a hint belonging to
+   * "TUNE 0" was parked at the far end of a 62ch column with nothing in between. Capping the
+   * pair (below) bounded that at 62ch rather than fixing it — the stranding is caused by the
+   * column filling, not by the shell being wide, so the cap treated the symptom.
+   *
+   * Sized to content, each hint lands one 16px gap from its own instruction. The hint edge is
+   * then ragged down the block, which is the trade this makes deliberately: association beats
+   * alignment for a column of jogs read at a machine, and the ragged edge is what proximity
+   * costs.
+   */
+  grid-template-columns: minmax(0, max-content) minmax(0, 14rem);
+  align-items: baseline;
+  column-gap: 16px;
+  min-width: 0;
+  /*
+   * Still capped, now as a backstop rather than as the mechanism: a long note or citation makes
+   * `max-content` wide, and without this such a row would run to the shell edge.
    *
    * 62ch is the measure used for prose elsewhere in the guide; 14rem is the hint column and
    * 16px the gap. Capping here rather than on a parent keeps the reserved-cell behaviour and
@@ -2355,8 +2375,23 @@ button:active {
   max-width: calc(62ch + 14rem + 16px);
 }
 
-.instruction-main {
-  min-width: 0;
+/*
+ * §8.1 reserves the hint cell so the toggle changes `visibility` and never reflows the page.
+ * That promise is about rows whose hint can *appear*. A parameter with no hint authored has
+ * nothing to show in either state, so reserving for it buys nothing the rule was written to
+ * protect — and it is the common case: two thirds of the rows in a typical guide carry no hint,
+ * which on a phone was about 1450px of blank space in a single guide, since the narrow layout
+ * reserves the cell as a whole second row.
+ *
+ * So the reservation follows the hint. Rows that have one keep every guarantee they had.
+ */
+.hint:empty {
+  display: none;
+}
+
+.instruction-row:has(.hint:empty) {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 62ch;
 }
 
 .instruction-line {
@@ -2878,11 +2913,15 @@ button:active {
 /* --------------------------------------------------------- narrow screens */
 /*
  * §8.1: "On mobile the hint becomes a reserved second grid row with a fixed min-height."
- * Reserved whether or not there is a hint, and whether or not hints are on — so the toggle
- * still changes nothing but `visibility`.
+ * Reserved whether or not hints are on, so the toggle still changes nothing but `visibility`.
+ *
+ * No longer reserved where no hint is authored — `.hint:empty` is `display: none`, so this
+ * `min-height` never applies to a row that has nothing to reveal. That row cannot reflow under
+ * the toggle because it cannot change, which is the whole of what §8.1 asks for. Reserving it
+ * anyway cost a screen and a half of blank page per guide on a phone.
  */
 @media (max-width: 700px) {
-  .instruction {
+  .instruction-row {
     grid-template-columns: minmax(0, 1fr);
     row-gap: 0;
   }
