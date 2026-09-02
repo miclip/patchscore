@@ -363,13 +363,13 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 A step is one note long and nothing here sets a length: `TIE` joins a note to the next step, and stacking those is how anything longer is entered. · manual
 - ↳ cite: claim manual — Subsequent 37 User's Manual, p.17
 
-- bar 1 · step 1 · sounds for 3 steps · `F1` · root · MIDI 29
-- bar 1 · step 7 · sounds for 2 steps · `F1` · root · MIDI 29
-- bar 1 · step 11 · sounds for 3 steps · `Bb1` (`A#1`) · 4th · MIDI 34
-- bar 1 · step 15 · sounds for 2 steps · `F1` · root · MIDI 29
-- bar 2 · step 17 · sounds for 3 steps · `F1` · root · MIDI 29
-- bar 2 · step 23 · sounds for 2 steps · `Db2` (`C#2`) · 6th · MIDI 37
-- bar 2 · step 27 · sounds for 4 steps · `C2` · 5th · MIDI 36
+- bar 1 · step 1 · sounds for 3 steps · `F2` · root · MIDI 41
+- bar 1 · step 7 · sounds for 2 steps · `F2` · root · MIDI 41
+- bar 1 · step 11 · sounds for 3 steps · `Bb2` (`A#2`) · 4th · MIDI 46
+- bar 1 · step 15 · sounds for 2 steps · `F2` · root · MIDI 41
+- bar 2 · step 17 · sounds for 3 steps · `F2` · root · MIDI 41
+- bar 2 · step 23 · sounds for 2 steps · `Db3` (`C#3`) · 6th · MIDI 49
+- bar 2 · step 27 · sounds for 4 steps · `C3` · 5th · MIDI 48
 
 ### `pad` — MicroFreak · Voice
 

@@ -284,7 +284,7 @@ export const majorKeyElectro: Template = {
       id: 'electro-hook-bass-1',
       forRole: 'bass-mid',
       bars: 2,
-      baseOctave: 1,
+      baseOctave: 2,
       notes: [
         { step: 1, degree: 1, octave: 0, len: 4 },
         { step: 7, degree: 1, octave: 0, len: 2 },

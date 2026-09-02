@@ -115,18 +115,18 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 No note-length field on this box — a note runs until the next note on the same voice, and `OFF` is how you stop one sooner. The rows below are what you enter, in the order you enter them. · manual
 - ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.105
 
-- bar 1 · step 1 · `F1` · root · MIDI 29
+- bar 1 · step 1 · `F2` · root · MIDI 41
 - bar 1 · step 4 · `OFF`
-- bar 1 · step 7 · `F1` · root · MIDI 29
+- bar 1 · step 7 · `F2` · root · MIDI 41
 - bar 1 · step 9 · `OFF`
-- bar 1 · step 11 · `Bb1` (`A#1`) · 4th · MIDI 34
+- bar 1 · step 11 · `Bb2` (`A#2`) · 4th · MIDI 46
 - bar 1 · step 14 · `OFF`
-- bar 1 · step 15 · `F1` · root · MIDI 29
-- bar 2 · step 17 · `F1` · root · MIDI 29
+- bar 1 · step 15 · `F2` · root · MIDI 41
+- bar 2 · step 17 · `F2` · root · MIDI 41
 - bar 2 · step 20 · `OFF`
-- bar 2 · step 23 · `Db2` (`C#2`) · 6th · MIDI 37
+- bar 2 · step 23 · `Db3` (`C#3`) · 6th · MIDI 49
 - bar 2 · step 25 · `OFF`
-- bar 2 · step 27 · `C2` · 5th · MIDI 36
+- bar 2 · step 27 · `C3` · 5th · MIDI 48
 - bar 2 · step 31 · `OFF`
 
 ### `pad` — Tracker Mini · Track 5, Track 6 and Track 7

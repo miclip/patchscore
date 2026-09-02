@@ -185,7 +185,7 @@ export const relay: Template = {
       id: 'relay-hook-bass-1',
       forRole: 'bass-mid',
       bars: 2,
-      baseOctave: 1,
+      baseOctave: 2,
       notes: [
         { step: 1, degree: 1, octave: 0, len: 6 },
         { step: 7, degree: 1, octave: 0, len: 2 },
@@ -201,7 +201,7 @@ export const relay: Template = {
       id: 'relay-hook-bass-2',
       forRole: 'bass-mid',
       bars: 2,
-      baseOctave: 1,
+      baseOctave: 2,
       notes: [
         { step: 1, degree: 1, octave: 0, len: 8 },
         { step: 11, degree: 5, octave: -1, len: 2 },
