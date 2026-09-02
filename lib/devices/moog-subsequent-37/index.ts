@@ -188,12 +188,28 @@ const BIPOLAR: Omit<NumericRange, 'verified'> = { min: -5, max: 5 }
  * Milliseconds rather than seconds because that is the unit a reader can act on: `DECAY 600 ms`
  * is a number, `DECAY 0.6 s` beside `ATTACK 0.004 s` is a decimal-point hunt at the machine.
  *
- * The panel disagrees with the prose at the bottom of this scale and the disagreement is
- * recorded rather than resolved: the silkscreen reads `M-SEC .1` where the prose says 1
- * millisecond, a decade apart. The prose is what the range cites, because it is stated in words
- * on four separate pages and the silkscreen is one ambiguous tick label.
+ * **The panel and the prose disagree at the bottom of this scale by a decade, and the panel
+ * wins (#323).**
+ *
+ * This note used to say the opposite — that the prose was stated in words on four pages while
+ * the silkscreen was "one ambiguous tick label" — and a photograph of the instrument says that
+ * reading was wrong. It is not one tick. Both the ATTACK and DECAY knobs carry a complete
+ * logarithmic legend: `M-SEC .1` at the floor, ticks at `1` and `10`, and `10 SEC` at the
+ * ceiling. A unit, both endpoints and the intermediate marks.
+ *
+ * So the two sources are not a considered sentence against a stray mark. They are Moog
+ * describing the control in prose and Moog labelling the same control on the metal, and where
+ * those differ the one printed beside the knob is the one a reader is looking at while they
+ * turn it.
+ *
+ * The prose figure is kept in this note rather than deleted, because a reader who checks pp.30-33
+ * will find `1 millisecond` there and should not have to wonder which of us is confused.
+ *
+ * **Nothing authored here moves.** Every value in the library is at or above 1 ms, so widening
+ * the floor makes no recipe legal that was not legal before; what changes is that the range a
+ * reader is shown now matches the range on their instrument.
  */
-const EG_MS: Omit<NumericRange, 'verified'> = { min: 1, max: 10000 }
+const EG_MS: Omit<NumericRange, 'verified'> = { min: 0.1, max: 10000 }
 
 // ---------------------------------------------------------------------------
 // Param helpers (§3.1: the range is cited, the point is taste)

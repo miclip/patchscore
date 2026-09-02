@@ -691,10 +691,19 @@ describe('every range is cited and every point is not (§3.2)', () => {
     }
   })
 
-  it('gives every envelope time the range the prose states, in milliseconds', () => {
-    // pp.30-33, once per stage: "Its value ranges from 1 millisecond to 10 seconds". The panel
-    // silkscreen reads `M-SEC .1` at the same end, a decade apart; the prose is what the range
-    // cites, because it is stated in words on four pages and the tick label is one glyph.
+  /**
+   * §3.2/#323. **The panel's floor, not the prose's**, and this test used to assert the reverse.
+   *
+   * pp.30-33 say "Its value ranges from 1 millisecond to 10 seconds", once per stage. The
+   * instrument says otherwise: ATTACK and DECAY both carry a full logarithmic legend reading
+   * `M-SEC .1` at the floor, ticks at `1` and `10`, and `10 SEC` at the ceiling — a unit and both
+   * endpoints, not the "one glyph" this comment previously called it. A photograph settled it.
+   *
+   * Where Moog's prose and Moog's own silkscreen disagree, the range a reader is shown should be
+   * the one printed beside the knob they are turning. Every authored value is at or above 1 ms,
+   * so nothing became legal that was not legal before.
+   */
+  it('gives every envelope time the range the panel prints, in milliseconds', () => {
     for (const recipe of device.recipes) {
       for (const name of [
         'FILTER EG · ATTACK',
@@ -706,7 +715,7 @@ describe('every range is cited and every point is not (§3.2)', () => {
       ]) {
         const param = paramNamed(recipe, name)
         if (param?.kind !== 'numeric') throw new Error(`${recipe.id}: no ${name}`)
-        expect([param.range.min, param.range.max], `${recipe.id} ${name}`).toEqual([1, 10000])
+        expect([param.range.min, param.range.max], `${recipe.id} ${name}`).toEqual([0.1, 10000])
         expect(param.unit).toBe('ms')
       }
     }
