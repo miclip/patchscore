@@ -675,6 +675,19 @@ import { TEMPLATES } from '../lib/templates/index'
  * no two of them are ever disjoint and the occupancy constraint the search walks is the one it
  * walked when they were all continuous. Every number here is identical either way. It would stop
  * being identical the moment two of those section lists stopped overlapping.
+ *
+ * **`acid-lineage` alone re-recorded when the Tracker Mini authored `acid + dirty`** (§2.3/#25),
+ * every seed by two nodes: 236 -> 238 at its worst, 146 -> 148 at its cheapest. The first of the
+ * three reasons above, the library moving, and it moved in the narrowest possible way. Two nodes
+ * is two more root candidates — the recipe is written on both pools, because a recipe names one
+ * voice — and nothing deeper, since `resolveRecipe` still returns one resolution per
+ * `(assignable, role, character)` and this key had none before. No other row moved: this is the
+ * one direction in the library that requests `acid`.
+ *
+ * The synth-slot resource that landed with it costs nothing here, and that is worth stating
+ * because it is a *feasibility* constraint inside the walk. It can only refuse candidates, never
+ * add them, and this direction asks for one part per synth patch — so nothing is ever refused and
+ * the walk is what the extra candidates alone make it.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -683,8 +696,8 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
     'acid-lineage': [
-      236, 147, 148, 147, 148, 147, 148, 147, 236, 146, 147, 147, 147, 146, 148, 146, 147, 147, 146,
-      147, 147, 147, 147, 148
+      238, 149, 150, 149, 150, 149, 150, 149, 238, 148, 149, 149, 149, 148, 150, 148, 149, 149, 148,
+      149, 149, 149, 149, 150
     ],
     'ambient-dub': [
       234, 335, 238, 333, 339, 236, 238, 329, 243, 240, 240, 327, 240, 243, 239, 234, 334, 242, 423,

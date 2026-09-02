@@ -346,7 +346,28 @@ const AUDIT: readonly (readonly [
     // Samplers whose per-step editing is real and whose manuals print no scale for it.
     ['te-ep-133', 'ep133-acid-dirty', 'stated', 'stated', 'neutral'],
     ['te-ep-40', 'ep40-acid-dirty', 'stated', 'stated', 'neutral'],
+
+    // One patch, written twice: a recipe names one voice and the Tracker Mini hosts synths on
+    // both its pools, so the manifest carries a twin per pool (§2.2). Both are audited, because
+    // the table is a table of records — and both render the same guide, because the box loads
+    // one patch (§2.3/#25) and `guideFor` knows it.
+    ['polyend-tracker-mini', 'tm-acid-dirty-sample', 'bound', 'bound', 'grit'],
+    ['polyend-tracker-mini', 'tm-acid-dirty-synth', 'bound', 'bound', 'grit'],
   ]
+
+/**
+ * §2.3/#25. **What this recipe *loads*, which is not always the recipe record.**
+ *
+ * A recipe that spends a device-global resource declares what it is (`sharedAs`), and two records
+ * declaring the same thing are one patch — the Tracker Mini's cross-pool twins, which exist twice
+ * only because a recipe names one voice. The resolver carries one of the pair and the guide is
+ * identical either way, so a row naming either twin is satisfied by the guide that renders.
+ *
+ * Falls back to the recipe id, which is what identity means for every other row in this table.
+ */
+function patchOf(deviceId: string, recipe: Recipe): string {
+  return `${deviceId}\u0000${recipe.consumes?.[0]?.sharedAs ?? recipe.id}`
+}
 
 function accentEntries(recipe: Recipe) {
   return (recipe.articulation ?? []).filter((a) => a.slot === 'accent')
@@ -374,7 +395,8 @@ function guideFor(deviceId: string, recipeId: string, mood: MoodName): string {
     seed: 1,
   })
   const carried = result.assignments.find((a) => a.requestId === 'r-acid')
-  if (carried?.recipe.id !== recipeId) {
+  const wanted = patchOf(deviceId, recipeOf(deviceId, recipeId))
+  if (carried === undefined || patchOf(deviceId, recipeOf(deviceId, carried.recipe.id)) !== wanted) {
     throw new Error(
       `${deviceId} at the '${mood}' mood carries ${carried?.recipe.id ?? 'nothing'}, not ${recipeId}`,
     )
@@ -384,13 +406,13 @@ function guideFor(deviceId: string, recipeId: string, mood: MoodName): string {
 
 describe('every acid recipe accounts for the accent and the slide (#283)', () => {
   it('covers exactly the acid recipes the library has', () => {
-    // A twenty-ninth recipe fails here rather than slipping in unaudited, and a deleted one fails
+    // A thirty-first recipe fails here rather than slipping in unaudited, and a deleted one fails
     // too — the table is the audit, so it has to be complete in both directions.
     const shipped = DEVICES.flatMap((d) =>
       d.recipes.filter((r) => r.role === 'acid').map((r) => r.id),
     )
     expect([...AUDIT.map((row) => row[1])].sort()).toEqual([...shipped].sort())
-    expect(shipped).toHaveLength(28)
+    expect(shipped).toHaveLength(30)
   })
 
   it.each(AUDIT)('%s / %s accounts for both gestures in the manifest', (deviceId, recipeId, accent, slide) => {
@@ -436,7 +458,7 @@ describe('every acid recipe accounts for the accent and the slide (#283)', () =>
     }
   })
 
-  it('renders all 28, from three knob positions', () => {
+  it('renders all 30, from three knob positions', () => {
     // The whole library reachable from one direction, which it was not while `r-acid` asked for
     // `dirty`: force is the one character axis no mood knob moves, so the two `hard` recipes could
     // not be selected at any setting and the audit had two rows it could only check on paper.

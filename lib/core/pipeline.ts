@@ -1253,6 +1253,18 @@ export type ResolvedAssignment = {
  * arrangement phase. A permalink shared before this replays as a materially different guide, so
  * the stamp announces it — the same reading that bumped this to 2, for the same field.
  *
+ * **6** — §2.3/#25. A device may declare a **global resource** its recipes consume, and the
+ * resolver refuses an allocation that would exceed one. The Tracker Mini's three synth slots are
+ * the first, so a rig containing that box can now be handed a *different* allocation for
+ * identical permalink inputs: a fourth distinct synth patch that used to be assigned is now a
+ * `no-room` shortfall naming the slots, and the parts that do land may sit on different voices
+ * because the search reached a different optimum. Two things did **not** move, and stating them
+ * is the point of the entry. `Score` is untouched — no key was added, none re-ordered — because
+ * this excludes allocations rather than ranking them; and the suffix bound is untouched, because
+ * it stays deliberately optimistic about resources and so remains admissible. A permalink shared
+ * before this replays an allocation the box cannot hold, under a stamp that would have claimed it
+ * was current, which is exactly the drift this constant announces.
+ *
  * **#310 did not move it, and the reading is #161's.** A direction may now open at a mood, and
  * `ResolveInput.mood` became optional to let it. A link carrying a mood — which is every link
  * any build before #310 ever wrote — resolves byte for byte as it did, because an explicit mood
@@ -1264,7 +1276,7 @@ export type ResolvedAssignment = {
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
  */
-export const RESOLVER_VERSION = 5
+export const RESOLVER_VERSION = 6
 
 /**
  * #161. The two decisions the user may take back off the direction: tempo and key. Both

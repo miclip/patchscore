@@ -2,8 +2,8 @@ import type { AssignableKey, Occupancy } from './occupancy'
 import type { DeviceId, RequestId, SectionName } from './ids'
 import type { Score } from './objective'
 import type { Character, MoodState, Role } from './vocabulary'
-import { realisationOf } from './device'
-import type { Assignable, Device, Recipe } from './device'
+import { realisationOf, sharedAs } from './device'
+import type { Assignable, Device, Recipe, ResourceSpec } from './device'
 import type { RoleRequest, Template } from './template'
 import {
   assignableKey,
@@ -85,8 +85,13 @@ export type GapReason = (typeof GAP_REASONS)[number]
  * Why the objective ranked some other allocation higher. `no-room` rather than
  * `rig-too-small` deliberately: crowding is often fixed by raising `comfortableVoices` rather
  * than by buying anything, and the name must not prejudge which.
+ *
+ * `resource` (§2.3/#25) is the one cause here that is **not** the objective ranking something
+ * else higher: the box has a free voice and cannot load another patch into it. It sits under
+ * `no-room` all the same, because the reader's question is the same one and so are their three
+ * actions — the room that ran out is behind the voices rather than among them.
  */
-export const NO_ROOM_CAUSES = ['contended', 'crowding', 'distinct'] as const
+export const NO_ROOM_CAUSES = ['contended', 'crowding', 'distinct', 'resource'] as const
 export type NoRoomCause = (typeof NO_ROOM_CAUSES)[number]
 
 /**
@@ -564,6 +569,12 @@ type Ctx = {
   /** Every selected device, in the order the caller passed them. */
   deviceIds: DeviceId[]
   comfortable: Map<DeviceId, number>
+  /**
+   * §2.3/#25. The resources each device declares, by id. **Absent for every device that declares
+   * none**, which is nearly all of them — so the ordinary rig produces an empty map and every
+   * resource check below short-circuits on the recipe's own `consumes` before it is ever read.
+   */
+  resources: Map<DeviceId, Map<string, ResourceSpec>>
   requests: RoleRequest[]
   wanted: Character[]
   sections: SectionName[][]
@@ -871,6 +882,15 @@ function cheapestCandidate(candidates: readonly Cost[]): Cost | undefined {
  * `optionalMisses`. Both outrank everything a landed option can charge, so a member whose only
  * escape from `A` is a miss is exactly the member `compareGiveUp` hands `A` to.
  *
+ * **It is deliberately optimistic about resources** (§2.3/#25), and says nothing about them at
+ * all. The ladder is static, so the suffix it costs may use more distinct patches than the box
+ * can load at once — a completion this bound prices is not always one the search can reach. That
+ * is the same relaxation it already makes for occupancy, crowding and `distinct`, and it errs the
+ * same way: dropping a constraint can only widen a request's option set, so the per-request
+ * minimum can only fall and the floor stays below anything reachable. Tightening it would mean
+ * asking, per node, which recipes are still loadable — and a floor that reads live budget state
+ * is exactly the sort of thing that stops being admissible without anybody noticing.
+ *
  * **One step, not a matching.** Nothing here iterates: the repaired costs are not re-bucketed,
  * and a bucket is broken against the *original* cheapest rather than against what its neighbours
  * were just moved onto. A full assignment relaxation would be a stronger bound and a solver
@@ -1150,6 +1170,7 @@ function buildCtx(input: AssignInput, repair = true): Ctx {
   const assignableOwner = new Map<AssignableKey, Device>()
   const assignables: Assignable[] = []
   const comfortable = new Map<DeviceId, number>()
+  const resources = new Map<DeviceId, Map<string, ResourceSpec>>()
   const deviceIds: DeviceId[] = []
   // §12.4/#40. Pool members, grouped by the pool they belong to, for stack planning below.
   // Insertion order is device order then the order `expand` emits pools in, so iterating this is
@@ -1161,6 +1182,10 @@ function buildCtx(input: AssignInput, repair = true): Ctx {
     const expanded = expand(device)
     // §2.3: `comfortableVoices` omitted means the device is comfortable with all of them.
     comfortable.set(device.id, device.comfortableVoices ?? expanded.length)
+    // §2.3/#25. Only devices that declare a budget get an entry; the rest are absent, not empty.
+    if (device.resources !== undefined && device.resources.length > 0) {
+      resources.set(device.id, new Map(device.resources.map((r) => [r.id, r])))
+    }
     deviceIds.push(device.id)
     for (const assignable of expanded) {
       assignables.push(assignable)
@@ -1346,6 +1371,7 @@ function buildCtx(input: AssignInput, repair = true): Ctx {
     deviceById,
     deviceIds,
     comfortable,
+    resources,
     requests,
     wanted,
     sections,
@@ -1402,6 +1428,27 @@ type State = {
    */
   crowd: number
   idle: number
+  /**
+   * §2.3/#25. **What is currently loaded, and how many requests are holding each of them.**
+   *
+   * Keyed by `(device, resource, sharingKey)` — the sharing key rather than the recipe id,
+   * because several recipe records can be one loaded patch (`ResourceUse.sharedAs`), and by
+   * resource as well because one recipe may spend two of them under different identities.
+   *
+   * The count is of *requests*, and it is the whole of "one loaded thing, not one assignment":
+   * the second request to take a patch finds it already loaded and spends nothing, and the
+   * budget comes back only when the last holder lets go. See `charge`.
+   *
+   * Empty for every rig whose devices declare no resources, which is every rig today — nothing is
+   * written here for a recipe that consumes nothing.
+   */
+  resourceHolders: Map<string, number>
+  /**
+   * §2.3/#25. What is spent of each `(device, resource)` right now. Derived from
+   * `resourceHolders` and the recipes' declarations, carried rather than recomputed for the same
+   * reason `crowd` is.
+   */
+  resourceUsed: Map<string, number>
 }
 
 function emptyState(ctx: Ctx): State {
@@ -1417,6 +1464,8 @@ function emptyState(ctx: Ctx): State {
     chosen: new Array(ctx.requests.length).fill(null),
     crowd: 0,
     idle: 0,
+    resourceHolders: new Map(),
+    resourceUsed: new Map(),
   }
   // Seeded from the scans rather than from what an empty rig obviously scores, so the cache and
   // its definition cannot disagree at the root even if either definition changes.
@@ -1555,6 +1604,126 @@ function lowerBound(ctx: Ctx, state: State, next: number): Score {
 }
 
 /**
+ * `${deviceId}\u0000${resourceId}` — what is spent of one budget. A resource id is unique only
+ * within its device, so the pair is the key.
+ *
+ * The separator is a NUL rather than a `/` because `DeviceId` and the ids beside it are bare
+ * `string` and `AssignInput` takes device objects a caller may build at runtime (#4) — the same
+ * reason `canonicalState` length-prefixes its pieces instead of joining them.
+ */
+function resourceKey(deviceId: DeviceId, resourceId: string): string {
+  return `${deviceId}\u0000${resourceId}`
+}
+
+/**
+ * §2.3/#25. `${deviceId}\u0000${resourceId}\u0000${sharingKey}` — one *loaded thing*, which is
+ * the unit the budget is actually spent by.
+ *
+ * The sharing key defaults to the recipe's id (`sharedAs`), so an ordinary recipe is its own
+ * identity and nothing about the ordinary case had to be written down. Where several recipe
+ * records are one patch — the Tracker Mini's cross-pool twins, which exist twice only because a
+ * recipe can name one voice — they declare the same key and hold one entry between them.
+ */
+function holderKey(deviceId: DeviceId, resourceId: string, key: string): string {
+  return `${deviceId}\u0000${resourceId}\u0000${key}`
+}
+
+/**
+ * §2.3/#25. Move what this candidate loads in or out of the loaded set, and the budget with it.
+ *
+ * `delta` is +1 from `apply` and -1 from `undo`. The count is of requests holding each loaded
+ * thing, so the budget moves **only on the 0→1 and 1→0 transitions** — this is where "the same
+ * patch on three tracks is one slot" is actually implemented, and where a shared patch is
+ * released only once the last part using it has gone.
+ *
+ * Per consumption rather than per recipe, because identity is per consumption: two recipe records
+ * that are one patch hold one entry (`sharedAs`), and one recipe spending two resources may share
+ * each of them with a different set of siblings.
+ *
+ * A stack (§12.4/#40) is one candidate on one recipe however many voices it takes, so it charges
+ * once. That is right rather than a simplification: the box loads the patch once and plays it
+ * from several tracks, which is exactly the case this whole field exists to model.
+ */
+function charge(state: State, candidate: Candidate, delta: 1 | -1): void {
+  const consumes = candidate.recipe.consumes
+  if (consumes === undefined || consumes.length === 0) return
+  for (const use of consumes) {
+    const holder = holderKey(
+      candidate.deviceId,
+      use.resource,
+      sharedAs(candidate.recipe, use),
+    )
+    const before = state.resourceHolders.get(holder) ?? 0
+    const after = before + delta
+    if (after <= 0) state.resourceHolders.delete(holder)
+    else state.resourceHolders.set(holder, after)
+    // Loaded before and still loaded after: this patch never left the box.
+    if (before > 0 && after > 0) continue
+    const held = resourceKey(candidate.deviceId, use.resource)
+    const next = (state.resourceUsed.get(held) ?? 0) + delta * (use.amount ?? 1)
+    if (next <= 0) state.resourceUsed.delete(held)
+    else state.resourceUsed.set(held, next)
+  }
+}
+
+/**
+ * §2.3/#25. **Whether this candidate's recipe can be loaded on top of what is already loaded.**
+ *
+ * A feasibility test and not a cost: an over-budget candidate is not a worse assignment to be
+ * ranked below the others, it is one the box cannot hold, so it never enters the candidate list
+ * at all (§7.1) and `Score` never hears about it.
+ *
+ * Pruning here is sound *and* complete, and both halves rest on one fact: charges only grow as
+ * the search descends. If a prefix is over a limit then so is every completion containing it, so
+ * refusing the candidate throws away nothing feasible; and every feasible full assignment has
+ * every prefix feasible, so nothing feasible is unreachable. Which order the requests are
+ * decided in cannot matter either — feasibility is a property of the *set* of loaded things,
+ * and a set has no order.
+ *
+ * A recipe naming a resource its device does not declare is refused rather than waved through.
+ * `DeviceSchema` makes that unreachable for a validated manifest, and `AssignInput` takes device
+ * objects a caller may build at runtime (#4), so the unvalidated case has to land somewhere —
+ * and the honest direction is the gap, not a guide the box cannot hold (invariant 5).
+ */
+function fitsResources(ctx: Ctx, state: State, candidate: Candidate): boolean {
+  const consumes = candidate.recipe.consumes
+  if (consumes === undefined || consumes.length === 0) return true
+  const declared = ctx.resources.get(candidate.deviceId)
+  for (const use of consumes) {
+    // Already loaded costs nothing to use again, and it is asked per consumption because that is
+    // where identity lives: a cross-pool twin of a patch already in a slot loads nothing.
+    const holder = holderKey(candidate.deviceId, use.resource, sharedAs(candidate.recipe, use))
+    if ((state.resourceHolders.get(holder) ?? 0) > 0) continue
+    const limit = declared?.get(use.resource)?.limit
+    if (limit === undefined) return false
+    const used = state.resourceUsed.get(resourceKey(candidate.deviceId, use.resource)) ?? 0
+    if (used + (use.amount ?? 1) > limit) return false
+  }
+  return true
+}
+
+/**
+ * §7.3/#25. The first resource this candidate cannot fit under, for the gap sentence. `undefined`
+ * when it fits — the caller has already asked `fitsResources` and is here to name the reason.
+ */
+function exhaustedResource(
+  ctx: Ctx,
+  state: State,
+  candidate: Candidate,
+): { spec: ResourceSpec; used: number } | undefined {
+  const declared = ctx.resources.get(candidate.deviceId)
+  for (const use of candidate.recipe.consumes ?? []) {
+    const holder = holderKey(candidate.deviceId, use.resource, sharedAs(candidate.recipe, use))
+    if ((state.resourceHolders.get(holder) ?? 0) > 0) continue
+    const spec = declared?.get(use.resource)
+    if (spec === undefined) continue
+    const used = state.resourceUsed.get(resourceKey(candidate.deviceId, use.resource)) ?? 0
+    if (used + (use.amount ?? 1) > spec.limit) return { spec, used }
+  }
+  return undefined
+}
+
+/**
  * §4.2/#40. Every key the candidate occupies gets the same request id in every section the
  * request needs — which is where the one-request-to-many-assignables mapping actually happens,
  * and it needed no new shape to express (see `occupancy.ts`).
@@ -1583,6 +1752,7 @@ function apply(ctx: Ctx, state: State, index: number, candidate: Candidate): voi
   state.sampledChords += candidate.sampledChord
   state.stackedChords += candidate.stacked
   state.roleFitPenalty += candidate.roleFit
+  charge(state, candidate, 1)
   state.chosen[index] = candidate
 }
 
@@ -1606,6 +1776,7 @@ function undo(ctx: Ctx, state: State, index: number, candidate: Candidate): void
   state.sampledChords -= candidate.sampledChord
   state.stackedChords -= candidate.stacked
   state.roleFitPenalty -= candidate.roleFit
+  charge(state, candidate, -1)
   state.chosen[index] = null
 }
 
@@ -1875,7 +2046,12 @@ function materialiseStacks(ctx: Ctx, state: State, index: number): Candidate[] {
  */
 function orderedCandidates(ctx: Ctx, state: State, index: number): Candidate[] {
   const free = (ctx.voiceable[index] ?? []).filter(
-    (c) => isFree(ctx, state, index, c) && !violatesDistinct(ctx, state, index, c),
+    (c) =>
+      isFree(ctx, state, index, c) &&
+      !violatesDistinct(ctx, state, index, c) &&
+      // §2.3/#25. A recipe the box has no slot left to load is not a candidate — feasibility,
+      // not cost, so it is filtered here rather than ranked below its siblings.
+      fitsResources(ctx, state, c),
   )
   // Symmetry breaking runs on the legal set, not on the whole pool: a member excluded here by
   // occupancy or by `distinct` is not a candidate to be represented by anything.
@@ -1887,7 +2063,7 @@ function orderedCandidates(ctx: Ctx, state: State, index: number): Candidate[] {
   const legal = [
     ...breakPoolSymmetry(state, free),
     ...materialiseStacks(ctx, state, index).filter(
-      (c) => !violatesDistinct(ctx, state, index, c),
+      (c) => !violatesDistinct(ctx, state, index, c) && fitsResources(ctx, state, c),
     ),
   ]
   if (legal.length < 2) return legal
@@ -2035,6 +2211,14 @@ function search(
  *  - **The prior same-role `distinct` device choices** (§12.6), carried by hand because a device
  *    can be busy from a request that rule does not touch, and as a *set* because
  *    `violatesDistinct` asks membership and never a count or an order.
+ *  - **What is loaded against a device budget** (§2.3/#25) — the `(device, resource, sharing
+ *    key)` triples, as a *set* and not as counts, for the same reason: `fitsResources` asks
+ *    whether a thing is already loaded and derives every budget total from the same membership,
+ *    so two nodes holding one patch once and twice face an identical remaining search. Keyed on
+ *    the sharing key rather than the recipe id, or two nodes loading one patch through its two
+ *    cross-pool records would spell differently while facing the same search. Empty for every rig
+ *    whose devices declare no resources, which leaves this spelling byte-identical to the pre-#25
+ *    one on every rig in the library.
  *
  * `occupiedByDevice` is deliberately absent: every `AssignableKey` is `${deviceId}/${voiceId}`,
  * so the per-device counts `crowdOverflow` reads are a function of the occupancy already here.
@@ -2073,6 +2257,13 @@ function canonicalState(ctx: Ctx, state: State, index: number): string {
     distinct.add(`${request.role}/${taken.deviceId}`)
   }
   for (const entry of [...distinct].sort(compareCodeUnits)) parts.push(piece(entry))
+
+  // §2.3/#25. The loaded set, which is not derivable from occupancy: two nodes can occupy the
+  // same voices in the same sections and differ on which patches are loaded behind them.
+  parts.push(piece('|resources'))
+  const loaded: string[] = []
+  for (const [key, holders] of state.resourceHolders) if (holders > 0) loaded.push(key)
+  for (const entry of loaded.sort(compareCodeUnits)) parts.push(piece(entry))
 
   return parts.join('')
 }
@@ -2223,8 +2414,8 @@ function firstWhere(
  * question a gap answers is "why did this part not get made", and that is a fact about the
  * assignment that won, not about what was theoretically reachable at the start.
  *
- * The three sub-causes of `no-room` are checked in an order derived from the objective rather
- * than chosen by taste:
+ * The sub-causes of `no-room` are checked in an order derived from the objective rather than
+ * chosen by taste:
  *
  *  - A candidate that is **free and distinct-legal** in the finished allocation could have
  *    been taken without displacing anyone, so the only key that can have argued against it is
@@ -2232,6 +2423,10 @@ function firstWhere(
  *  - Otherwise, if a candidate is free but the `distinct` rule (§12.6) forbids it, that rule
  *    is what is binding.
  *  - Otherwise every candidate is carrying something else, which is contention.
+ *
+ * `resource` (§2.3/#25) sits between the first two: a candidate free and distinct-legal that the
+ * box still cannot load a patch for is not crowded, and calling it crowding would print a false
+ * number about a box well inside its comfortable voices.
  */
 function classify(ctx: Ctx, state: State, index: number): Gap {
   const request = ctx.requests[index] as RoleRequest
@@ -2272,7 +2467,10 @@ function classify(ctx: Ctx, state: State, index: number): Gap {
 
   const freeAndLegal = firstWhere(
     voiceable,
-    (c) => isFree(ctx, state, index, c) && !distinctBlocked(ctx, state, index, c),
+    (c) =>
+      isFree(ctx, state, index, c) &&
+      !distinctBlocked(ctx, state, index, c) &&
+      fitsResources(ctx, state, c),
   )
   if (freeAndLegal !== undefined) {
     const deviceId = freeAndLegal.deviceId
@@ -2283,6 +2481,33 @@ function classify(ctx: Ctx, state: State, index: number): Gap {
       capable: named,
       because: 'crowding',
       detail: `your ${ctx.deviceById.get(deviceId)?.name ?? deviceId} is already at ${occupied} of ${ctx.comfortable.get(deviceId) ?? occupied} comfortable voices`,
+    }
+  }
+
+  /**
+   * §2.3/#25. A voice was free and legal and the box still could not take the part, because the
+   * patch had nowhere to load. Checked ahead of `distinct` and after `crowding`, in the order the
+   * three become binding: if any candidate is free, distinct-legal *and* loadable, crowding is
+   * what argued against it; if one is free and distinct-legal and only the budget refused it,
+   * that budget is the binding thing and saying "crowding" here would be a false sentence about a
+   * box sitting well inside its comfortable voices.
+   */
+  const starved = firstWhere(
+    voiceable,
+    (c) => isFree(ctx, state, index, c) && !distinctBlocked(ctx, state, index, c),
+  )
+  if (starved !== undefined) {
+    const short = exhaustedResource(ctx, state, starved)
+    const deviceName = ctx.deviceById.get(starved.deviceId)?.name ?? starved.deviceId
+    return {
+      ...base,
+      reason: 'no-room',
+      capable: named,
+      because: 'resource',
+      detail:
+        short === undefined
+          ? `your ${deviceName} cannot load another patch for this part`
+          : `your ${deviceName} has ${short.spec.limit} ${short.spec.label} and ${short.used} are already loaded`,
     }
   }
 

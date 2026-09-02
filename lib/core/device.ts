@@ -853,6 +853,7 @@ export const CAPABILITY_FACTS = [
   'features.sidechain.internal',
   'features.sidechain.fromExternalAudio',
   'features.lfo',
+  'resources',
   CONTENT_FACT,
   NOTE_DURATION_FACT,
   PATTERN_ENTRY_FACT,
@@ -1629,6 +1630,63 @@ export function realisationRank(recipe: Recipe): number {
 }
 
 /**
+ * §2.3/#25. **What one recipe spends of a device-global resource** — see `ResourceSpec`.
+ *
+ * `amount` omitted means one, which is what a slot-shaped resource always costs. A recipe that
+ * declares nothing spends nothing, and that is the ordinary case: every recipe in the library
+ * was written before this field existed and none of them had to change.
+ *
+ * ## `sharedAs`, and the thing it exists to stop being counted twice
+ *
+ * The budget is spent by **a patch loaded into the box**, and a recipe id is only *usually* the
+ * name of one. The Tracker Mini is where the two come apart: recipe lookup keys on
+ * `poolId ?? voiceId` (§2.2), so a synth recipe authored for one pool cannot reach the other, and
+ * `onBothPools` writes every synth-based recipe twice — identical but for `id`, `voice` and a
+ * routing line. Those twins are **one patch**. Counting them as two would refuse the fourth part
+ * on a box holding three patches while only two are loaded, which is the same class of false
+ * statement as the guide this whole field exists to prevent, pointing the other way.
+ *
+ * So the unit is the sharing key, and the recipe id is its default. An ordinary recipe writes
+ * nothing and gets its own id, which is what makes every existing consumption correct without
+ * saying anything; twins written from one source declare that source's id and cost one between
+ * them. It is per *consumption* rather than per recipe because a recipe may spend two different
+ * resources whose identity is shared differently — one patch in the slot, one voice per part.
+ *
+ * `DeviceSchema` refuses two recipes that share a key for one resource and disagree about the
+ * amount: the pair claims to be one thing, and one thing has one cost.
+ */
+export type ResourceUse = {
+  /** A resource this device declares. `DeviceSchema` refuses one it does not. */
+  resource: string
+  /** How much of it, defaulting to 1. */
+  amount?: number
+  /**
+   * What is *actually* being loaded, where several recipe records are one of it. Defaults to the
+   * recipe's own id, which is right for every recipe that is the only copy of itself.
+   */
+  sharedAs?: string
+}
+
+export const ResourceUseSchema = z.strictObject({
+  resource: z.string().min(1),
+  amount: z.int().min(1).optional(),
+  sharedAs: z.string().min(1).optional(),
+})
+
+/**
+ * §2.3/#25. What this consumption loads, as the resolver counts it. The recipe's own id unless
+ * the recipe says otherwise — see `ResourceUse.sharedAs`.
+ *
+ * One function rather than `use.sharedAs ?? recipe.id` written at each site, because the default
+ * is the whole of the rule for every recipe in the library and a second spelling of it could
+ * drift: the search charges on this, the search's feasibility test reads it, and `DeviceSchema`
+ * validates against it.
+ */
+export function sharedAs(recipe: Recipe, use: ResourceUse): string {
+  return use.sharedAs ?? recipe.id
+}
+
+/**
  * `verified` here is a *default citation* only. It is inherited by any param, patch entry or
  * articulation entry that does not carry its own (§3.1) — all three of those now genuinely
  * carry one, which they did not until #49. It is not itself a provenance state.
@@ -1654,6 +1712,11 @@ export type Recipe = {
    * spends nothing the box does not have, which is the ordinary case and the pre-#85 behaviour.
    */
   patchPolyphony?: number
+  /**
+   * §2.3/#25. What loading this patch spends of the box's global budgets — see `ResourceUse`.
+   * Omitted means nothing, which is what nearly every recipe on nearly every box costs.
+   */
+  consumes?: ResourceUse[]
   params: AuthoredParam[]
   patch?: PatchEntry[]
   articulation?: ArticulationEntry[]
@@ -1671,6 +1734,7 @@ export const RecipeSchema = z
     realisation: RealisationSchema.optional(),
     sourceAudio: SourceAudioSchema.optional(),
     patchPolyphony: z.int().min(1).optional(),
+    consumes: z.array(ResourceUseSchema).min(1).optional(),
     params: z.array(AuthoredParamSchema),
     patch: z.array(PatchEntrySchema).min(1).optional(),
     articulation: z.array(ArticulationEntrySchema).min(1).optional(),
@@ -2393,6 +2457,50 @@ export const WarmUpSchema = z.strictObject({
 })
 
 /**
+ * §2.3/#25. **A device-global budget that assignments draw on, distinct from the voices they
+ * occupy.**
+ *
+ * The Tracker Mini has three project-global synth slots shared across all sixteen tracks: every
+ * track can play, and only three distinct synth patches can be loaded at once. Nothing in §2.1
+ * could say that. `expand()` produces sixteen assignables and `comfortableVoices` bounds
+ * *occupied tracks*, not a shared thing sitting behind them, so the resolver could hand out four
+ * distinct synth recipes and print a guide the box cannot hold. Two more boxes want the same
+ * missing thing — the Digitone II's sixteen voices across sixteen tracks, the Muse's eight shared
+ * between two timbres — which is what made it a model gap rather than one box's quirk.
+ *
+ * **The unit is the loaded patch, not the assignment**, and that is the whole subtlety: the
+ * same patch on three tracks is one slot, three different patches on one track apiece is three.
+ * §7.1 charges it that way, and it is also why the pre-#25 containment worked as an authoring
+ * rule — "at most three distinct synth recipes authored" guarantees every resolvable guide is
+ * realisable, without the resolver knowing anything.
+ *
+ * **It is a feasibility constraint and never a cost.** `Score` ranks allocations; this one
+ * excludes them. So it does not enter the vector, no key was re-ordered to make room for it, and
+ * an over-budget allocation is not an expensive one — it is not an allocation.
+ *
+ * `label` is the box's own word for the thing, plural and in a reader's language — `synth slots`,
+ * never `synth-slot` — because §7.3 puts it in a sentence read at the machine when a part could
+ * not be made for want of one.
+ *
+ * A limit is a manual-read number like any other capability fact, and `capabilityEvidence` takes
+ * a citation for it at `resources` (§2.6). Optional there, as every scalar fact is.
+ */
+export type ResourceSpec = {
+  /** Referenced by `ResourceUse.resource`, and unique within a device. */
+  id: string
+  /** How many are available at once, across the whole box. */
+  limit: number
+  /** What to call them in a gap sentence: 'synth slots'. */
+  label: string
+}
+
+export const ResourceSpecSchema = z.strictObject({
+  id: z.string().min(1),
+  limit: z.int().min(1),
+  label: z.string().min(1),
+})
+
+/**
  * §2.4: a device with no voices (a mixer-recorder, an fx-processor) contributes no assignables
  * and still appears in rig integration. `voices` and `recipes` may therefore both be empty.
  */
@@ -2431,6 +2539,11 @@ export type Device = {
    * Omitted means it defaults to the assignable count.
    */
   comfortableVoices?: number
+  /**
+   * §2.3/#25. Device-global budgets that recipes consume — see `ResourceSpec`. Omitted by nearly
+   * every box, and the omission means what it says: nothing behind the voices runs out.
+   */
+  resources?: ResourceSpec[]
   features?: DeviceFeatures
   /**
    * §2.6/#111. What audio this box plays — see `DeviceContent`. Optional, and the omission is
@@ -2507,6 +2620,7 @@ export const DeviceSchema = z
     jacks: z.array(JackSpecSchema).optional(),
     voices: z.array(VoiceSpecSchema),
     comfortableVoices: z.int().min(1).optional(),
+    resources: z.array(ResourceSpecSchema).min(1).optional(),
     features: DeviceFeaturesSchema.optional(),
     content: DeviceContentSchema.optional(),
     noteDuration: NoteDurationSchema.optional(),
@@ -2569,6 +2683,78 @@ export const DeviceSchema = z
         path: ['recipes'],
       })
     }
+
+    /**
+     * §2.3/#25. **Resource ids are unique, and a recipe spends only what its device declares.**
+     *
+     * An undeclared resource is refused rather than ignored, because ignoring it *is* the failure
+     * the field exists to prevent: a consumption the resolver silently drops produces exactly the
+     * guide the box cannot hold, now with a citation on top of it.
+     *
+     * A recipe asking for more than the whole limit is refused for a quieter version of the same
+     * thing. It could never be assigned in any rig, in any direction, so it would present forever
+     * as a gap with no reachable fix — and the author would be told nothing at the one moment the
+     * mistake is cheap to correct.
+     */
+    const resourceLimit = new Map<string, number>()
+    for (const resource of device.resources ?? []) {
+      if (resourceLimit.has(resource.id)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `resource ids must be unique within a device: ${resource.id}`,
+          path: ['resources'],
+        })
+        continue
+      }
+      resourceLimit.set(resource.id, resource.limit)
+    }
+    /**
+     * §2.3/#25. Two recipes sharing a key for one resource claim to be **one loaded thing**, and
+     * one thing has one cost. Disagreeing amounts would make the charge depend on which of the
+     * two the search happened to place first — a guide that differs by traversal order, which is
+     * invariant 6's failure wearing a device manifest.
+     */
+    const sharedAmount = new Map<string, number>()
+    device.recipes.forEach((recipe, i) => {
+      const named = new Set<string>()
+      ;(recipe.consumes ?? []).forEach((use, j) => {
+        if (named.has(use.resource)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `recipe '${recipe.id}' names resource '${use.resource}' twice; one entry says the whole cost`,
+            path: ['recipes', i, 'consumes', j],
+          })
+        }
+        named.add(use.resource)
+        const limit = resourceLimit.get(use.resource)
+        if (limit === undefined) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `recipe '${recipe.id}' consumes '${use.resource}', which this device does not declare (§2.3/#25)`,
+            path: ['recipes', i, 'consumes', j],
+          })
+          return
+        }
+        const amount = use.amount ?? 1
+        if (amount > limit) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `recipe '${recipe.id}' spends ${amount} of '${use.resource}' and this device has ${limit}; it could never be assigned`,
+            path: ['recipes', i, 'consumes', j],
+          })
+        }
+        const shared = `${use.resource}\u0000${sharedAs(recipe, use)}`
+        const agreed = sharedAmount.get(shared)
+        if (agreed === undefined) sharedAmount.set(shared, amount)
+        else if (agreed !== amount) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `recipe '${recipe.id}' spends ${amount} of '${use.resource}' as '${sharedAs(recipe, use)}', which another recipe spends ${agreed} of; one loaded thing has one cost (§2.3/#25)`,
+            path: ['recipes', i, 'consumes', j],
+          })
+        }
+      })
+    })
 
     /**
      * §2.2/#86. A `memberLabels` list that does not cover the pool would name some members and
