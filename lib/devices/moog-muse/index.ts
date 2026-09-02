@@ -273,12 +273,80 @@ type NumExtra = {
  * likely false. It is exactly the failure `CLAUDE.md` describes: a figure that reads as precise,
  * carries a citation beside it, and is made up.
  *
- * So the note gives the exact instruction and then states the gap rather than filling it. A reader
- * dialling by hand is told there is no printed position, which is the honest thing to hand them
- * and is what invariant 5 asks for.
+ * So the note gives the exact instruction, and the gap is stated rather than filled — which is
+ * what invariant 5 asks for. **Where that gap is stated moved in #324.** It was a second sentence
+ * appended here to all 41 controls, which reached a reader as 76 resolved parameters carrying one
+ * 25-word sentence on the rig #324 reported, on a page §8 says is read at the machine, on a
+ * phone (#21). It is one fact about one manual, so it is now declared once on the device at
+ * `controlPositions` and rendered once above this box's settings by both renderers.
+ *
+ * What is left on the parameter line is the instruction itself, which is the part that varies per
+ * control — and **it is no longer written here either.** This helper authors `midiCc` and
+ * `resolveParam` composes the sentence after mood, because a sentence written at authoring time
+ * carries the authored value and mood then moves it (#324). See `ccParam` below.
+ *
+ * **The device-level notice is about what this helper builds and not what `fader` builds** (#325).
+ * Its `mapped` field names the ENVELOPE faders as the exception, because those eight do carry a
+ * printed scale.
  */
 function cc(name: string, value: number, ccNumber: number, extra: NumExtra = {}): AuthoredParam {
-  const how = `Send MIDI CC ${ccNumber} = ${value}. The knob carries no scale and no page maps its position to a CC value, so there is no printed setting for it by hand`
+  return ccParam(name, value, ccNumber, extra)
+}
+
+/**
+ * The eight ENVELOPE faders: FILTER ENVELOPE and VCA ENVELOPE, ATTACK/DECAY/SUSTAIN/RELEASE,
+ * CC 79-82 and 86-89. Addressed over the same Appendix A scale as `cc`, and **without its closing
+ * sentence, because on these eight that sentence is false** (#325).
+ *
+ * Two pages, both checked against the rendered PDF rather than a text dump:
+ *
+ *  - **The panel prints a scale.** PDF p.38, the ENVELOPES module drawing: each bank of four
+ *    vertical faders is crossed by five horizontal lines — bottom, three between, top, so four
+ *    equal intervals to count along. The rotary controls drawn in the same figure (CUTOFF, VCA
+ *    LEVEL, PAN, FEEDBACK, MIX) carry at most an unnumbered tick arc, and on PAN an `L 0 R`
+ *    centre mark; none of that names a value, let alone a CC value.
+ *  - **And a page maps a position to a value.** Printed p.19: *"the ATTACK, DECAY, SUSTAIN, and
+ *    RELEASE sliders of the FILTER ENVELOPE all set to around 25% (or the second line from the
+ *    bottom)"*. Five lines, four intervals, so the second from the bottom is 25% — the manual
+ *    states the mapping and demonstrates it in one sentence.
+ *
+ * **What this helper deliberately does not do is print a fader line beside the CC value.** p.19
+ * licenses exactly one pairing — 25% is the second line — and says nothing about where CC 52, or
+ * any other authored number, sits on that travel. Deriving a line from a CC value needs
+ * CC-to-percent to be linear, which is the same unstated assumption the note above `cc` rejects
+ * for knobs; `CLAUDE.md`'s *"a cited range can still be the wrong range"* is about exactly this
+ * shape, two printed scales for one control with no page converting between them. So the value
+ * stays on the Appendix A scale it was authored on, and the note stops after the instruction that
+ * sets it.
+ *
+ * **Since #324 this builds the same parameter `cc` does**, because the sentence that separated
+ * them moved off the parameter line and onto the device. The name is kept, and is the reason
+ * these eight are still visible as a group: `controlPositions.mapped` on the device excludes
+ * *the ENVELOPE faders* from a notice that would otherwise be a false claim about them, and this
+ * is what says which controls that phrase is naming. `test/moog-muse.test.ts` pins the set at
+ * eight, so a control moved between the two helpers is a failing test rather than a quiet change
+ * to what the box claims about its own panel.
+ */
+function fader(name: string, value: number, ccNumber: number, extra: NumExtra = {}): AuthoredParam {
+  return ccParam(name, value, ccNumber, extra)
+}
+
+/**
+ * What both CC paths share: the Appendix A range, the taste point, and the CC number.
+ *
+ * **The number is declared and the sentence is not written here** (#324). `resolveParam` composes
+ * *"Send MIDI CC 87 = 36"* after mood has moved the value, which is the only place it can be
+ * written without going stale — this helper used to interpolate the *authored* number into a note,
+ * so `VCA ENV · DECAY` under a density knob printed `54 → 36` on the line and told the reader to
+ * send `54` underneath it. Two of the eight faders and several of the knobs carry mood, so the
+ * guide was wrong wherever it was most obviously wrong.
+ */
+function ccParam(
+  name: string,
+  value: number,
+  ccNumber: number,
+  extra: NumExtra,
+): AuthoredParam {
   return {
     kind: 'numeric',
     name,
@@ -286,7 +354,7 @@ function cc(name: string, value: number, ccNumber: number, extra: NumExtra = {})
     range: { ...CC, verified: ccCite(ccNumber) },
     verified: false,
     ...extra,
-    note: extra.note === undefined ? how : `${extra.note} · ${how}`,
+    midiCc: ccNumber,
   }
 }
 
@@ -622,17 +690,21 @@ function filters(
 /**
  * FILTER ENVELOPE (pp.38-41), normalised to FILTER CUTOFF.
  *
- * The manual prints no time unit for any stage — not milliseconds, not seconds, not percent as a
- * bounded range. The only envelope figures it prints anywhere are p.19's initialized VCA envelope,
- * *"ATTACK set to 0%, DECAY 25%, SUSTAIN 90%, and RELEASE set around 35%"*, which is a percent
- * scale whose bounds are never stated for these faders. See the module note.
+ * The manual prints no time unit for any stage — not milliseconds and not seconds. Its only
+ * envelope figures are percentages of fader travel: p.19's initialized VCA envelope, *"ATTACK set
+ * to 0%, DECAY 25%, SUSTAIN 90%, and RELEASE set around 35%"*, and the FILTER ENVELOPE's four
+ * sliders *"all set to around 25% (or the second line from the bottom)"* on the same page.
+ *
+ * That second quotation is a printed position, so these eight controls go through `fader` rather
+ * than `cc` — see the note there for why the percentage is not converted into the CC value beside
+ * it, or the CC value into a fader line.
  */
 function filterEnv(attack: number, decay: number, sustain: number, release: number, loop = 'OFF'): AuthoredParam[] {
   return [
-    cc('FILTER ENV · ATTACK', attack, 79),
-    cc('FILTER ENV · DECAY', decay, 80),
-    cc('FILTER ENV · SUSTAIN', sustain, 81),
-    cc('FILTER ENV · RELEASE', release, 82),
+    fader('FILTER ENV · ATTACK', attack, 79),
+    fader('FILTER ENV · DECAY', decay, 80),
+    fader('FILTER ENV · SUSTAIN', sustain, 81),
+    fader('FILTER ENV · RELEASE', release, 82),
     sw('FILTER ENV · LOOP', loop, OFF_ON, 39, {
       note: 'Looping, the envelope runs like an LFO',
     }),
@@ -651,10 +723,10 @@ function vcaEnv(
   velocity: string,
 ): AuthoredParam[] {
   return [
-    cc('VCA ENV · ATTACK', attack, 86),
-    cc('VCA ENV · DECAY', decay, 87, { mood: [{ axis: 'density', amount: -18 }] }),
-    cc('VCA ENV · SUSTAIN', sustain, 88),
-    cc('VCA ENV · RELEASE', release, 89, { mood: [{ axis: 'space', amount: 22 }] }),
+    fader('VCA ENV · ATTACK', attack, 86),
+    fader('VCA ENV · DECAY', decay, 87, { mood: [{ axis: 'density', amount: -18 }] }),
+    fader('VCA ENV · SUSTAIN', sustain, 88),
+    fader('VCA ENV · RELEASE', release, 89, { mood: [{ axis: 'space', amount: 22 }] }),
     sw('VCA ENV · VELOCITY', velocity, OFF_ON, 39),
   ]
 }
@@ -1485,6 +1557,52 @@ export const device: Device = {
         'p.116 gives `SOUND ENGINE  Analog` and lists every module — oscillators, ring modulator, noise, mixer, filters, envelopes, VCA, delay — with no sample player among them, and pp.117-118 show no audio input of any kind; the 224 factory patches p.12 counts are stored panel settings rather than audio a recipe could load, so no recipe here carries `sourceAudio`',
     },
     noteDuration: { kind: 'manual', source: `${MANUAL}, p.84` },
+    /**
+     * §3.1/#324. **A reading that finished and came back empty**, which is `unknown` and not a
+     * page: the claim is that no page pairs a panel mark with a value, and no document asserts
+     * that. The pages read are in the reason, and both renderers print them.
+     *
+     * The two halves of the reading are in there because they are what makes it a finding rather
+     * than a shrug — the drawings say marks exist, Appendix A says values exist, and the join
+     * between them is what is missing.
+     */
+    controlPositions: {
+      kind: 'unknown',
+      reason:
+        "the module drawings show what the panel prints beside a continuous control — p.28's WAVE MIX knobs carry a tick arc with waveform symbols at the two ends and its FM AMOUNT knob one labelled `1◂2` and `1▸2`, p.33's six MIXER faders carry horizontal lines with no figures against them, and p.38's CUTOFF, VCA LEVEL, PAN, FEEDBACK and MIX carry the same unnumbered tick arcs — while Appendix A (pp.120-122) gives every one of them a CC number over `0-127`; no page in either set pairs a mark with a value, and the manual documents no on-screen readout when a panel control is turned (p.90's encoders are the PROGRAMMER's)",
+    },
+  },
+
+  /**
+   * §3.1/#324. **The panel prints marks, and not one of them names a value.**
+   *
+   * `controls` is deliberately not *"the rotary controls"*, which is what #325 said and what the
+   * panel disproves: p.33 draws the MIXER as six vertical faders and p.28 calls WAVE MIX *"2
+   * knobs and a slider"*, so seven of the 33 controls this covers are not rotary at all. They are
+   * in the same state as the knobs — a mark to move to, and no page saying what value it is — and
+   * a notice worded around knobs would silently drop them.
+   *
+   * `mapped` is the eight the claim must not reach (#325). The ENVELOPE faders are drawn with
+   * five lines on p.38 and p.19 reads the second from the bottom as 25%, which is a printed
+   * setting, so telling a reader there is none would be false where it matters most: they are the
+   * controls a reader is most likely to want to set by hand while playing.
+   */
+  controlPositions: {
+    kind: 'unmapped',
+    controls: 'The knobs, and the MIXER and WAVE MIX faders',
+    markings: 'unnumbered ticks and lines',
+    exact: 'MIDI CC',
+    /**
+     * The one positive claim here, and the only cited one: p.19 sets the FILTER ENVELOPE's four
+     * sliders *"to around 25% (or the second line from the bottom)"*, which pairs a printed
+     * position with a value in the manual's own words. p.38 draws both banks with five lines
+     * across four faders, so the second from the bottom is a quarter of the travel.
+     */
+    mapped: {
+      controls:
+        'the FILTER and VCA ENVELOPE faders, where the second printed line from the bottom is 25%',
+      cite: { kind: 'manual', source: `${MANUAL}, pp.19, 38` },
+    },
   },
 
   /**

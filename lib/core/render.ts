@@ -1,10 +1,17 @@
 import type { PatternDriver } from './pipeline'
-import type { CapabilityEvidence, ContentNotice, Device, NoteDurationNotice } from './device'
+import type {
+  CapabilityEvidence,
+  ContentNotice,
+  ControlPositionNotice,
+  Device,
+  NoteDurationNotice,
+} from './device'
 import {
   clockJackNotes,
   clockSourceSetup,
   clockWires,
   contentNotice,
+  controlPositionNotice,
   evidenceFor,
   noteDurationNotice,
   patternEntryNotice,
@@ -2314,6 +2321,54 @@ function contentLines(notice: ContentNotice): Line[] {
 }
 
 /**
+ * §3.1/#324. **How a reader sets a control the panel prints no scale for**, said once for the
+ * device instead of once for each of its parameters — 76 of them, on the rig #324 reported.
+ *
+ * Restated in `components/guide/phase-sound.tsx` for the web guide, exactly as `contentText` is,
+ * and **local rather than exported**: §8's two renderers are siblings that share no code path, so
+ * the page reaching in here for a sentence would make it a dependent of the Markdown guide.
+ * `controlPositionNotice` decides *whether* a box is in this state and hands over the panel's own
+ * three phrases; each renderer writes the sentence around them.
+ *
+ * **The sentence reports the reading, and stops short of stating its result as a fact about the
+ * document.** *The manual was read and no page mapping a mark to a value was found* is what an
+ * `unknown` finding actually holds. *The manual maps no mark to a value* is a positive claim about
+ * a whole document that nobody has established — and an earlier draft made exactly that claim while
+ * opening with *Not established*, which is a contradiction inside one sentence. The state still has
+ * to be in the prose rather than only in the `· undocumented` mark: a mark is a word at the end of
+ * a line that a reader can miss, and #21's reader is holding a phone in bad light. What the panel
+ * *does* print is stated first, because it is the part they can see in front of them.
+ *
+ * `mapped` is printed whenever the declaration carries it, and its whole job is to stop this
+ * reading as a claim about every control on the box. On the Muse it is the eight ENVELOPE faders,
+ * which do carry a printed scale — a notice that swept them in would be the false negative claim
+ * #325 removed from the parameter lines, back again one level up. It is the one **positive** claim
+ * in the notice, so it carries its own page below, beside the reading that found nothing.
+ */
+function controlPositionText(notice: ControlPositionNotice): string {
+  const exception =
+    notice.mapped === undefined ? '' : ` The exception is ${notice.mapped.controls}.`
+  return (
+    `${notice.controls} carry ${notice.markings}. The manual was read and no page mapping a ` +
+    `mark to a ${notice.exact} value was found, so ${notice.exact} gives the exact setting and ` +
+    `by hand these are set by ear.${exception}`
+  )
+}
+
+function controlPositionLines(notice: ControlPositionNotice): Line[] {
+  const out: Line[] = ['', '**Setting by hand**', '']
+  out.push(`- ${controlPositionText(notice)}${evidenceMark(notice.evidence)}`)
+  // `claim`, not `value`: what a panel prints is a fact about the box, and nobody dials it.
+  for (const cite of evidenceLines(notice.evidence, 'claim')) subordinate(out, '  ', 'cite', cite)
+  // The exception's page, under the reading that found nothing — two different kinds of evidence
+  // for two different claims, and printing one under the other's word would merge them.
+  if (notice.mapped !== undefined) {
+    subordinate(out, '  ', 'cite', `mapped ${citeText(notice.mapped.cite)}`)
+  }
+  return out
+}
+
+/**
  * #107's heading, in words. Restated in `components/guide/phase-sound.tsx` for the web guide,
  * exactly as `fxText` and `realisationInstruction` are — and **local, not exported**: §8's two
  * renderers are siblings that share no code path, so the web guide reaching in here for a
@@ -2384,6 +2439,11 @@ function soundShared(
     mine.map((a) => a.recipe),
   )
   if (content !== undefined) out.push(...contentLines(content))
+  // §3.1/#324. Once for the box, above its settings: how to reach a value exactly on a panel
+  // that prints no scale is a fact about the panel, and it used to print on every parameter
+  // line the box had.
+  const positions = controlPositionNotice(device)
+  if (positions !== undefined) out.push(...controlPositionLines(positions))
   // #107. Above the parts, because that is the order it is done at the box: set the one
   // control the pattern shares, then work through the voices.
   const hoist = hoistedParams(mine.map((a) => a.params))
