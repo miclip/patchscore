@@ -1162,8 +1162,27 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    *
    * Ten consecutive zeroes, across ten devices that between them took the walk down, up, up, up,
    * down by half, up, up, up, up, and up.
+   *
+   * **One recipe takes it up 0.24% and the gap stays at zero — an eleventh time.**
+   * 621,490 -> 622,990 unrepaired and the same repaired. Every entry above it is a device; this
+   * one is `tr1000-metallic-dirty`, a single recipe on a track the TR-1000 already declared for
+   * the role. So the eleventh zero is the cheapest evidence in this list that the repair does not
+   * depend on how much content arrives at once — the ten before it each brought a manifest, and
+   * this one brought seven parameters.
+   *
+   * `search-bound.test.ts` records the direction's peak moving 728,123 -> 729,675, which is
+   * 0.21%, so this seed again moved a shade *more* than the row's maximum, as the Tracker entry
+   * above did. Both figures are small enough that the comparison is arithmetic rather than a
+   * finding.
+   *
+   * The peak stayed on seed 18 — the first entry here that does not move it — and this seed is
+   * still one node off the row's floor, 622,990 against 622,989 on seed 13, exactly the pairing
+   * the entry above recorded.
+   *
+   * Eleven consecutive zeroes, across ten devices and one recipe that between them took the walk
+   * down, up, up, up, down by half, up, up, up, up, up, and up.
    */
-  it('walks the recorded 621,490 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 622,990 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1171,7 +1190,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(621_490)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(622_990)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement

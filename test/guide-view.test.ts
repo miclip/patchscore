@@ -706,6 +706,10 @@ describe('pattern-global settings are set once per device, not once per part (#1
    * parts and `SHUFFLE` under each of the TR-1000's five, each with a note explaining that the
    * other eight were the same number. Both renderers, because #33 makes them siblings and a fix
    * in one would leave the other repeating.
+   *
+   * Nine is what the issue reported and stays the historical figure; the TR-1000 carries a sixth
+   * part on this rig since `tr1000-metallic-dirty` was authored, so the same bug today would
+   * print ten. The counts below are the live ones, which is the point of asserting them.
    */
   const landing = resolve({
     devices: DEVICES.filter((d) => DEFAULT_INPUTS.devices.includes(d.id)),
@@ -723,7 +727,7 @@ describe('pattern-global settings are set once per device, not once per part (#1
 
   it('resolves the nine repetitions the issue reported, so the counts below are not vacuous', () => {
     expect(partsSetting('SWING', 'polyend-tracker-mini')).toBe(4)
-    expect(partsSetting('SHUFFLE', 'roland-tr-1000')).toBe(5)
+    expect(partsSetting('SHUFFLE', 'roland-tr-1000')).toBe(6)
   })
 
   it('names each of them exactly once, in both renderers', () => {

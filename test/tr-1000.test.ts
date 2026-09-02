@@ -187,8 +187,9 @@ describe('TR-1000 manifest', () => {
       'tr1000-open-hat-dark': [62],
       'tr1000-impact-hard': [62],
       'tr1000-ride-clean': [62],
+      'tr1000-metallic-dirty': [62],
     }
-    expect(Object.keys(PAGES)).toHaveLength(19)
+    expect(Object.keys(PAGES)).toHaveLength(20)
     for (const recipe of device.recipes) {
       const allowed = PAGES[recipe.id]
       expect(allowed, recipe.id).toBeDefined()
@@ -224,7 +225,7 @@ describe('TR-1000 manifest', () => {
       expect(p, `${r.id} has no GEN`).toBeDefined()
       return { id: r.id, param: p as AuthoredParam }
     })
-    expect(gens).toHaveLength(19)
+    expect(gens).toHaveLength(20)
 
     for (const { id, param } of gens) {
       expect(param.kind, id).toBe('enum')
@@ -232,22 +233,38 @@ describe('TR-1000 manifest', () => {
       // The citation belongs to the *option set*: "909 Bass Drum appears in the list under
       // BD_E" is checkable, while "reach for it for a hard kick" is taste. The two claims are
       // asserted apart, because collapsing them is exactly the overclaim this test used to pin.
-      expect(param.options.verified, id).toEqual({
-        kind: 'manual',
-        source: 'TR-1000 Preset GEN/INST List (eng02) v1.20, GEN list p.1',
-      })
+      //
+      // One set is not drawn from the list and must not claim to be. `METALLIC_GENS` is the
+      // block header the Reference Manual prints on p.62 — `CR78 HiHat, CR78 Cymbal`, over the
+      // row that gives them `METALLIC`, which no other block on that page carries — so the page
+      // licensing the parameter is the page enumerating the set, and that is the page it cites.
+      // Asserted as its own branch rather than by relaxing the equality, because "any manual
+      // page will do" is the check going quiet.
+      expect(param.options.verified, id).toEqual(
+        id === 'tr1000-metallic-dirty'
+          ? { kind: 'manual', source: 'TR-1000 Reference Manual (eng02) v1.13+, p.62' }
+          : { kind: 'manual', source: 'TR-1000 Preset GEN/INST List (eng02) v1.20, GEN list p.1' },
+      )
       expect(param.verified, id).toBe(false)
       // The value has to be one of the offered generators, and the offer has to be a real
       // choice - a one-element option list is a value pretending to be a decision.
       expect(param.options.values, id).toContain(param.value)
-      expect(param.options.values.length, id).toBeGreaterThan(2)
+      // Three is the floor everywhere except where the manual itself offers fewer. p.62 gives
+      // `METALLIC` to exactly two generators — its block header is `CR78 HiHat, CR78 Cymbal`
+      // and no other block on that rendered page carries the parameter — so the option set on
+      // `tr1000-metallic-dirty` is the whole printed set rather than a narrowed one. Widening
+      // it to satisfy this floor would offer a generator without the knob the recipe sets, which
+      // is the failure the option sets exist to prevent. Two is still a choice; one would not
+      // be, and the exception is named rather than a hole in the rule.
+      const floor = id === 'tr1000-metallic-dirty' ? 1 : 2
+      expect(param.options.values.length, id).toBeGreaterThan(floor)
       // The old enum held a folder ('ACB'), which never named a sound. None may come back.
       expect(['Analog', 'ACB', 'FM', 'PCM', 'Sample'], id).not.toContain(param.value)
     }
 
-    // Every recipe reaches for a different generator; 19 recipes sharing three names would
+    // Every recipe reaches for a different generator; 20 recipes sharing three names would
     // mean the option sets are decoration.
-    expect(new Set(gens.map((g) => (g.param as { value: string }).value)).size).toBe(19)
+    expect(new Set(gens.map((g) => (g.param as { value: string }).value)).size).toBe(20)
   })
 
   it('offers a closed-hat recipe no open hats, and the reverse (§3.1)', () => {
@@ -266,8 +283,10 @@ describe('TR-1000 manifest', () => {
   })
 
   it('keeps every GEN option verbatim from one page of the list', () => {
-    // The citation names GEN list p.1 and nothing else. If an option ever comes from another
-    // page, the citation stops covering it - so the shape of every name is pinned here.
+    // Nineteen of the twenty option sets cite GEN list p.1 and nothing else, and the twentieth
+    // cites the Reference Manual page that prints its two names as a block header. Either way an
+    // option that came from somewhere neither page covers would be uncited in practice, so the
+    // shape of every name is pinned here.
     const seen = new Set<string>()
     for (const recipe of device.recipes) {
       const p = (recipe.params as AuthoredParam[]).find((x) => x.name === 'GEN')
