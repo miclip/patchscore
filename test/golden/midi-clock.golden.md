@@ -29,6 +29,7 @@ sub         ██████ ██████ ██████████
 bass-mid    ██████ ██████ ██████████████ █████████ ██████████████ ██████
 clap        ██████ ██████ ██████████████ █████████ ██████████████ ██████
 closed-hat  ██████ ██████ ██████████████ █████████ ██████████████ ██████
+metallic    ██████ ██████ ██████████████ █████████ ██████████████ ██████
 open-hat    ██████ ██████ ██████████████ █████████ ██████████████ ██████
 stab        ██████ ██████ ██████████████ █████████ ██████████████ ██████
 impact      ······ ······ ██████████████ ········· ██████████████ ······
@@ -47,6 +48,8 @@ pad         ██████ ██████ ██████████
   - p2 · exact `bright` · every section
 - **`closed-hat`** → TR-1000 · CH — *Grainy CR-78 hat with a metallic edge*
   - p2 · exact `dirty` · every section
+- **`metallic`** → TR-1000 · RC — *CR-78 metal ringing across the bar line*
+  - p3 · substituted — asked `dark`, authored `dirty` · every section
 - **`open-hat`** → TR-1000 · OH — *Dull open hat, more air than sizzle*
   - p3 · exact `dark` · every section
 - **`stab`** → Tracker Mini · Track 2, Track 3 and Track 4 — *Single-note sample struck short, one note per track*
@@ -59,12 +62,6 @@ pad         ██████ ██████ ██████████
 ### Gaps
 
 None.
-
-### Waiting on us
-
-Your rig can make these. Nobody has written the recipe yet, so they are not in the guide below — that is our backlog, not a limit of your boxes.
-
-- `metallic` `dark` (p3) — Tracker Mini (16 voices), TR-1000 RS/CC/RC could carry it, dial it by ear
 
 ### Not needed for this direction
 
@@ -90,10 +87,10 @@ Industrial Techno is finished without these.
     - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.13
   - audio: stereo main out · USB audio · audio in
   - mixer: 8 parts, no individual outs: one stereo channel for all
-- **TR-1000** — drum-machine · 5 parts
+- **TR-1000** — drum-machine · 6 parts
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
-  - mixer: 5 parts, 10 individual outs: one channel each
+  - mixer: 6 parts, 10 individual outs: one channel each
 
 ## 4. Hook
 
@@ -360,6 +357,54 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 - `accent` → `accent` true on step 15
   - ↳ hint: ACCENT [STEP], then step keys
 
+### `metallic` — TR-1000 · RC
+
+**CR-78 metal ringing across the bar line** — settings in Sound design
+
+**Intro, Outro** — 32 steps, band 0
+
+```
+ 1 ···· ···· ···· ····
+17 x··· ···· ···· ····
+```
+- `downbeat` — 17
+
+**On this box** — TR-1000
+
+- `downbeat` → `accent` true on step 17
+  - ↳ hint: ACCENT [STEP], then step keys
+
+**Build, Breakdown** — 32 steps, band 1
+
+```
+ 1 x··· ···· ···· ····
+17 x··· ···· ···· ····
+```
+- `downbeat` — 1, 17
+
+**On this box** — TR-1000
+
+- `downbeat` → `accent` true on steps 1, 17
+  - ↳ hint: ACCENT [STEP], then step keys
+
+**Drop, Peak** — 32 steps, band 3
+
+```
+ 1 x··· ··x· ··x· ····
+17 x··· ··x· ··x· ···x
+```
+- `accent` — 1 (vel 110)
+- `offbeat` — 7, 11, 23, 27
+- `downbeat` — 17
+- `last-hit` — 32
+
+**On this box** — TR-1000
+
+- `downbeat` → `accent` true on step 17
+  - ↳ hint: ACCENT [STEP], then step keys
+- `offbeat` → `weak` true on steps 7, 11, 23, 27
+  - ↳ hint: Hold [SHIFT], press step keys
+
 ### `open-hat` — TR-1000 · OH
 
 **Dull open hat, more air than sizzle** — settings in Sound design
@@ -616,6 +661,23 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
+#### RC — `metallic`: CR-78 metal ringing across the bar line
+
+*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
+
+- **GEN** `CR78 Cymbal`
+  - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
+- **TUNE** `18` % (-100…100 %)
+- **DECAY** `46` % (0…100 %)
+- **METALLIC** `88` % (0…100 %)
+  - ↳ hint: Metal-like overtone level
+- **RVB SEND** `20` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
+- **DLY SEND** `14` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
+
 #### OH — `open-hat`: Dull open hat, more air than sizzle
 
 *Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
@@ -667,8 +729,8 @@ What processes audio in this rig:
 
 Sections that program identically, part for part — build one and copy it:
 
-- **band 0** — Intro, Outro · 7 parts, 12 strikes
-- **band 1** — Build, Breakdown · 7 parts, 23 strikes
-- **band 3** — Drop, Peak · 8 parts, 60 strikes
+- **band 0** — Intro, Outro · 8 parts, 13 strikes
+- **band 1** — Build, Breakdown · 8 parts, 25 strikes
+- **band 3** — Drop, Peak · 9 parts, 67 strikes
 
 `pad` is held rather than struck, so there is no grid here to vary.

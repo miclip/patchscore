@@ -900,6 +900,114 @@ const RECIPES: Recipe[] = [
     verified: false,
   },
 
+  /**
+   * §3/#101. **Two chops off one preparation, and the preparation is the cited half.**
+   *
+   * A vocal chop is the clearest case the `need`/`prep` split was made for. *Which* voice to load
+   * is taste and no page states it, so `need` stays prose and uncited. *How to get from a file on
+   * the card to one slice per pad* is a procedure the guidebook prints in seven numbered steps —
+   * p.183, SLICING AUDIO ACROSS A NEW KIT — so it goes in `prep` with the page on it. Without
+   * that half a reader loads a four-second phrase onto one pad and hears the whole thing every
+   * time a step fires, which is not a chop and reads as the recipe being wrong.
+   *
+   * **The two characters are not one sound with the crusher on and off.** They part at the
+   * playback mode as well, and p.81 prints the difference: `ONCE` is *"Sample plays once all the
+   * way through"*, `CUT` *"aims to play all the way through but will cut at the triggering note
+   * end"*. So `clean` lets each slice ring past the step that fired it, which is what holds a
+   * phrase together across a bar, and `dirty` gates every slice to its note, which is what makes
+   * a stab out of the same audio. The drive filter and the two degradation controls sit on
+   * `dirty` only.
+   *
+   * `clean` carries **no `DECIMATION` and no `BITCRUSH` at all**, deliberately: this is the one
+   * of the pair a reader reaches for when the vocal is the part the rest is arranged around, and
+   * the character asks for the sample sounding like itself. `dirty`'s 16 and 10 keep it clear of
+   * every other degraded recipe here — 21/13, 17/7, 14/9, 13/21 and 12/6 are all taken — so no
+   * two of them are the same setting wearing two labels.
+   */
+  {
+    id: 'deluge-vox-chop-clean',
+    role: 'vox-chop',
+    character: 'clean',
+    voice: 'track',
+    title: 'Vocal phrase sliced across a kit, played dry',
+    sourceAudio: {
+      need:
+        'A lyric-free vocal — sustained vowels, hums, or single syllables (ah, oh, mm), one ' +
+        'phrase of a few seconds carrying no words to follow. Dry and close: reverb recorded ' +
+        'into the source smears every slice point once it is cut. Bring your own — the factory ' +
+        'card is SAMPLES/ARTISTS and SAMPLES/DRUMS and the guidebook names no vocal folder',
+      prep: {
+        text:
+          'p.183, SLICING AUDIO ACROSS A NEW KIT: [SHIFT] + [KIT] from clip view, find the file ' +
+          'in the browser, hold (SELECT) with it in focus to open the sampling context menu, ' +
+          'highlight SLICE and press (SELECT), turn (SELECT) to set how many slices (16 is the ' +
+          'default), then press (SELECT) to slice it across the pads. One pad is then one slice, ' +
+          'which is what the step pattern below plays',
+        verified: cite(183),
+      },
+      hint: 'slice-kit',
+    },
+    params: [
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Sample', OSC_TYPES, cite(81)),
+      pick('REPEAT MODE', 'ONCE', REPEAT_MODES, cite(81), {
+        note: 'p.81: the slice plays all the way through, past the step that fired it',
+      }),
+      num('EQ BASS AMOUNT', 20, Z50, cite(219), { note: '25 is neutral; below cuts' }),
+      num('EQ TREBLE AMOUNT', 28, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -6 }] }),
+      num('REVERB AMOUNT', 9, Z50, cite(225), { mood: [{ axis: 'space', amount: 9 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'accent', set: { velocity: 116 }, hint: 'note-velocity' },
+      { slot: 'ghost', set: { probability: 60 }, hint: 'note-probability' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'deluge-vox-chop-dirty',
+    role: 'vox-chop',
+    character: 'dirty',
+    voice: 'track',
+    title: 'Sliced vocal gated to the step, driven and crushed',
+    sourceAudio: {
+      need:
+        'A lyric-free vocal — sustained vowels, hums, or single syllables (ah, oh, mm), one ' +
+        'phrase of a few seconds carrying no words to follow. It is going through a drive filter ' +
+        'and two degradation controls, so a clean close recording leaves somewhere to go; a ' +
+        'source that is already crushed arrives with nothing left to take off it. Bring your ' +
+        'own — the factory card is SAMPLES/ARTISTS and SAMPLES/DRUMS and the guidebook names no ' +
+        'vocal folder',
+      prep: {
+        text:
+          'p.183, SLICING AUDIO ACROSS A NEW KIT: [SHIFT] + [KIT] from clip view, find the file ' +
+          'in the browser, hold (SELECT) with it in focus to open the sampling context menu, ' +
+          'highlight SLICE and press (SELECT), turn (SELECT) to set how many slices (16 is the ' +
+          'default), then press (SELECT) to slice it across the pads. One pad is then one slice, ' +
+          'which is what the step pattern below plays',
+        verified: cite(183),
+      },
+      hint: 'slice-kit',
+    },
+    params: [
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Sample', OSC_TYPES, cite(81)),
+      pick('REPEAT MODE', 'CUT', REPEAT_MODES, cite(81), {
+        note: 'p.81: the slice cuts at the end of the note that fired it',
+      }),
+      pick('LPF MODE', 'DRIVE', LPF_MODES, cite(83)),
+      num('DECIMATION', 16, Z50, cite(217), { mood: [{ axis: 'grit', amount: 16 }] }),
+      num('BITCRUSH', 10, Z50, cite(217), { mood: [{ axis: 'grit', amount: 10 }] }),
+      num('EQ BASS AMOUNT', 18, Z50, cite(219), { note: '25 is neutral; below cuts' }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'accent', set: { velocity: 127 }, hint: 'note-velocity' },
+      { slot: 'offbeat', set: { probability: 80 }, hint: 'note-probability' },
+    ],
+    verified: false,
+  },
+
   // ---- transitional ---------------------------------------------------------------
   {
     id: 'deluge-riser-bright',
@@ -1198,6 +1306,9 @@ export const device: Device = {
     'dx7-new': 'CUSTOM 1 + [SYNTH] makes a DX7 synth',
     'max-voices': 'VOICE menu, then MAX VOICES',
     'swing-amount': 'Hold [SHIFT], turn (TEMPO)',
+    // #101. The jog for p.183's slicing procedure, which `sourceAudio.prep` carries in full: the
+    // step a reader loses is that SLICE lives behind a press-and-hold on the file, not in a menu.
+    'slice-kit': 'Hold (SELECT) on the file, pick SLICE',
     // Community views this rig has. Neither is used by a recipe; both change how a part is
     // played in, so they are reachable as jogs rather than buried in a comment.
     'performance-view': 'From song view, press [KEYBOARD]',

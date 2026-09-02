@@ -395,10 +395,12 @@ describe('Deluge manifest', () => {
       throw new Error('the dirty kick should carry two numerics')
     }
     // Measured against the company it now keeps rather than against a number pulled from the air:
-    // the three other `dirty` recipes here sit at decimation 13-17 and bitcrush 7-21.
+    // the four other `dirty` recipes here sit at decimation 13-17 and bitcrush 7-21. The
+    // `vox-chop` pair added the fourth at 16/10 and moved neither bound, which is the point of
+    // asserting the company rather than a constant.
     const others = device.recipes.filter((r) => r.character === 'dirty' && r.role !== 'kick')
     expect(others.map((r) => r.id).sort()).toEqual([
-      'deluge-acid-dirty', 'deluge-bass-mid-dirty', 'deluge-noise-dirty',
+      'deluge-acid-dirty', 'deluge-bass-mid-dirty', 'deluge-noise-dirty', 'deluge-vox-chop-dirty',
     ])
     expect(others.length).toBeGreaterThanOrEqual(3)
     const floor = Math.min(
@@ -444,13 +446,15 @@ describe('Deluge manifest', () => {
   // Content and citation discipline (§3.2)
   // -------------------------------------------------------------------------
 
-  it('carries 15-21 recipes on distinct (role, character, voice) triples (§3)', () => {
-    // The ceiling moved by one at #173, when the kick became three recipes rather than one. That
-    // is the guideline stretching rather than breaking: CLAUDE.md's "roughly 15-20 recipes covers
-    // a device well" is about coverage, and three devices in the library already sit above it —
-    // the TR-8S at 22, the DFAM and the Tracker Mini at 21.
+  it('carries 15-23 recipes on distinct (role, character, voice) triples (§3)', () => {
+    // The ceiling moved by one at #173, when the kick became three recipes rather than one, and
+    // by two again for the `vox-chop` pair. That is the guideline stretching rather than
+    // breaking: CLAUDE.md's "roughly 15-20 recipes covers a device well" is about coverage, and
+    // three devices in the library already sit above it — the TR-8S at 22, the DFAM and the
+    // Tracker Mini at 21. Both new ones are asked for: a direction requests `vox-chop` `clean`
+    // and another requests it `dirty`, so neither lands in the audit's REACH block.
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(21)
+    expect(device.recipes.length).toBeLessThanOrEqual(23)
 
     const triples = device.recipes.map((r) => `${r.role}\u0000${r.character}\u0000${r.voice}`)
     expect(new Set(triples).size).toBe(triples.length)

@@ -305,6 +305,11 @@ function mod(target: string, amount: number, wave: string, note: string): Author
  * The option sets are a curated subset, not the whole category — p.1 lists these, and the list
  * runs to 25 pages of them. The citation claims exactly that each named generator appears on
  * p.1 under that category. It claims nothing about the choice, which is taste.
+ *
+ * **`METALLIC_GENS` is the exception to the paragraph above and carries its own citation.** It
+ * is not drawn from the list at all; the Reference Manual prints its two names itself, as the
+ * header of the block that gives them `METALLIC`. Its comment says why, and `gen()` takes the
+ * page as an argument so the exception is written at the call site rather than assumed here.
  */
 const GEN_CITE = {
   kind: 'manual',
@@ -393,18 +398,51 @@ const CRASH_GENS = [
 const RIDE_GENS = ['9X Ride Cymbal', '707 Ride Cymbal', 'CR78 Metallic']
 
 /**
+ * The two generators p.62 gives a `METALLIC` parameter to, and the reason this list is not
+ * `CLOSED_HAT_GENS`. p.62's block header is literally `CR78 HiHat, CR78 Cymbal`, and the row
+ * under it is `METALLIC  0.0%-100.0%  "Adjusts the level of the metal-like overtones."` **No
+ * other block on p.62 exposes `METALLIC`** — that is the fact this set rests on, and it is the
+ * whole of it. The page's other hat blocks are not uniform and it would be wrong to say they
+ * were: the 9X hats reach `TUNE`, `DECAY` and `ERROR`, the 606 hats reach `TONE` over the 606
+ * Common `TUNE`/`DECAY`, and `9X Open HiHat` and `606 Open HiHat` add `MUTE TRG` on top of
+ * either. What every one of them has in common is only the absence that matters here.
+ *
+ * Offering the wider hat set would let a reader switch to `808 Closed HiHat` and leave a
+ * `METALLIC` value on screen that the box no longer has a knob for - the two-printed-scales
+ * trap in its other shape, where the second scale is no scale at all.
+ *
+ * **This set is cited to p.62 rather than to the GEN list, and the difference is the point.**
+ * Every other option set here claims "these names appear on GEN list p.1 under this category",
+ * which is a claim about a document. This one claims something narrower and stronger: p.62 prints
+ * these two names together as the heading of the block that gives them `METALLIC`, so the page
+ * that licenses the parameter is the same page that enumerates the set. Citing the list instead
+ * would name a document for a set the list did not draw, and would leave `CR78 Cymbal` resting on
+ * a page nobody here has opened.
+ *
+ * SELECT GEN picks the category per track with no restriction printed (Reference p.37, steps
+ * 1-5), so the RC track can reach either of them.
+ */
+const METALLIC_GENS = ['CR78 HiHat', 'CR78 Cymbal']
+
+/**
  * BD-HT sound layers A and B together, so those tracks have two GEN slots and the recipe's
  * `MIX` balances them. What is authored here is layer A; layer B is not authored at all rather
  * than guessed (invariant 5).
+ *
+ * **`where` defaults to the GEN list and is a parameter because one option set is not from it.**
+ * A citation has to name the document that prints the set it sits on, and `METALLIC_GENS` is
+ * printed by the Reference Manual's own p.62 block header rather than by the list — see its
+ * comment. Defaulting rather than requiring keeps the other nineteen call sites saying what they
+ * said, and makes the one exception visible at the site instead of hidden in a helper.
  */
-function gen(value: string, options: string[]): AuthoredEnumParam {
+function gen(value: string, options: string[], where: Cite = GEN_CITE): AuthoredEnumParam {
   return {
     kind: 'enum',
     name: 'GEN',
     value,
     // The list is the legality claim and is cited; which generator this recipe reaches for is
     // taste, and stays provisional exactly as a numeric point does (§3.2).
-    options: { values: options, verified: GEN_CITE },
+    options: { values: options, verified: where },
     verified: false,
     hint: 'Hold [SHIFT]+[GEN], select with [C6]',
   }
@@ -1175,6 +1213,51 @@ export const device: Device = {
       articulation: [
         { slot: 'offbeat', set: { 'alt-inst': true }, hint: 'alt-inst' },
         { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
+      ],
+      verified: false,
+    },
+    /**
+     * The RC track playing the *metallic* part rather than the ride. RS, CC and RC all declare
+     * the role and this is the one that can be spared: `metallic` is one ring every four bars,
+     * and on the directions that ask for it the CC track is already carrying the crash, so
+     * authoring it there buys the ring by dropping `impact`. RC costs nothing a direction was
+     * already using.
+     *
+     * **`METALLIC` is the only parameter on this box that names metal, and p.62 gives it to two
+     * generators.** The block header is `CR78 HiHat, CR78 Cymbal`; `TUNE` and `DECAY` come from
+     * `CR78 Common` above it. `CR78 Cymbal` is the one of the two this recipe reaches for,
+     * because `tr1000-closed-hat-dirty` already holds `CR78 HiHat` and a generator authored
+     * twice would make the option sets decoration.
+     *
+     * `GEN` is carried, with `METALLIC_GENS` as its option set, so that the three values stay
+     * one page's pairing: every generator a reader can switch to from here still has the knob
+     * this recipe tells them to set.
+     *
+     * Longer `DECAY` and more `METALLIC` than `tr1000-closed-hat-dirty`, because the two parts
+     * want opposite things from the CR-78 sound: the hat wants the hit and none of the ring,
+     * this wants the ring. Both points are provisional, as every point on this box is.
+     */
+    {
+      id: 'tr1000-metallic-dirty',
+      role: 'metallic',
+      character: 'dirty',
+      voice: 'rc',
+      title: 'CR-78 metal ringing across the bar line',
+      params: [
+        gen('CR78 Cymbal', METALLIC_GENS, cite(62)),
+        num('TUNE', 18, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -24 }] }),
+        num('DECAY', 46, PCT, '%', 62, { mood: [{ axis: 'density', amount: -12 }] }),
+        num('METALLIC', 88, PCT, '%', 62, {
+          mood: [{ axis: 'grit', amount: 12 }],
+          hint: 'Metal-like overtone level',
+        }),
+        send('RVB', 20, 20),
+        send('DLY', 14, 14),
+        shuffle(),
+      ],
+      articulation: [
+        { slot: 'downbeat', set: { accent: true }, hint: 'accent-step' },
+        { slot: 'offbeat', set: { weak: true }, hint: 'weak-step' },
       ],
       verified: false,
     },
