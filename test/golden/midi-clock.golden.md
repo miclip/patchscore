@@ -269,7 +269,6 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 
 ### `bass-mid` — Tracker Mini · Synth Track 1
 
-**Wide detuned reese, filter well down** — settings in Sound design
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
@@ -405,7 +404,6 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 
 ### `stab` — Tracker Mini · Track 2, Track 3 and Track 4
 
-**Single-note sample struck short, one note per track** — settings in Sound design
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
@@ -432,7 +430,6 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 
 ### `pad` — Tracker Mini · Track 5, Track 6 and Track 7
 
-**Slow detuned pad, long swell** — settings in Sound design
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 

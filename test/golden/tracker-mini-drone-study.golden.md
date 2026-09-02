@@ -89,7 +89,6 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 
 ### `texture` — Tracker Mini · Track 1
 
-**Granular bed, slow grains, filtered back** — settings in Sound design
 
 **The hook is the notes; the steps below are where they are struck again** — see Hook above for what to play and how long each note is held. This map is 4 bars long and repeats inside the hook; the chain lengths below are counted in the hook.
 

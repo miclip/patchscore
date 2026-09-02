@@ -3871,12 +3871,18 @@ html {
 }
 
 /*
- * `background-clip: content-box` is the fix for the mass of colour the first version drew.
+ * **The bar is a child of the cell, not the cell's own background, and that is a bug fix.**
  *
- * A `<td>` background paints the padding box, so twelve adjacent playing cells touched on every
- * side and rendered as one orange rectangle with the rows invisible inside it — the opposite of a
- * grid. Clipping to the content box turns the cell padding into real gutters, so each cell becomes
- * a bar with air around it and the rows read as rows.
+ * The first version painted the `<td>` and the cells merged into one orange rectangle, because a
+ * table cell's background covers its padding box. The second clipped it with
+ * `background-clip: content-box`, which separated them on Chrome and **erased them entirely on
+ * Safari**: an empty cell has no content, Safari takes the content box as zero high, and clipping
+ * to it paints nothing. The grid read correctly on a laptop and rendered blank on a phone — every
+ * header and row label present, every cell gone.
+ *
+ * A `<span>` with its own height paints in every engine and needs no clipping, and the cell's
+ * padding still supplies the gutters. Two rendering bugs from one decision, both from treating a
+ * cell background as if it were a shape.
  *
  * The fill is `--accent-dim` rather than `--accent` for a related reason: playing is the common
  * case, most of the grid is filled, and the full accent made the page shout in a phase that is
@@ -3884,14 +3890,17 @@ html {
  */
 .arrangement-on,
 .arrangement-off {
-  height: 18px;
-  background-clip: content-box;
+  display: block;
+  width: 100%;
+  height: 14px;
 }
 
 .arrangement-on {
   background-color: var(--accent-dim);
+  border-radius: 2px;
 }
 
+/* Absent: a hairline through the middle, so the row still reads as a row. */
 .arrangement-off {
   background-image: linear-gradient(var(--edge), var(--edge));
   background-position: center;

@@ -460,7 +460,6 @@ How this box sets a note’s length is not established here, so the durations be
 
 ### `bass-mid` — Subsequent 37 · Voice
 
-**Mixer pushed past unity with feedback under it and MultiDrive on top** — settings in Sound design
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
@@ -610,7 +609,6 @@ How this box sets a note’s length is not established here, so the durations be
 
 ### `stab` — minilogue xd · Voice
 
-**Four-voice stab with the filter snapping shut behind the chord** — settings in Sound design
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
@@ -637,7 +635,6 @@ How this box sets a note’s length is not established here, so the durations be
 
 ### `pad` — MicroFreak · Voice
 
-**Modal resonator pad, long damping, filter kept low** — settings in Sound design
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
@@ -1118,16 +1115,6 @@ Routing — One VCO only — VCO 2 is down, so there is nothing to beat against 
   - ↳ hint: PRESET EDIT, ARPEGGIATOR, SWING
 - **GLIDE · ON** `OFF`
   - ↳ note: Must be lit for any glide at all
-- **GLIDE · TYPE** `LCR`
-  - ↳ note: LCR is constant rate, LCT constant time, EXP fast then slowing
-- **GLIDE · OSC** `BOTH`
-- **GLIDE · TIME** `0` (0…10)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.21
-  - ↳ note: The panel calibration; this manual prints no glide time in seconds
-- **GLIDE · GATED** `OFF`
-  - ↳ note: On, the pitch only glides while a key is held
-- **GLIDE · LEGATO** `OFF`
-  - ↳ note: On, glide happens only between overlapping notes
 - **OSC 1 · OCTAVE** `16'`
 - **OSC 1 · WAVE** `SAWTOOTH`
   - ↳ note: The knob is continuous; these are its four named points
