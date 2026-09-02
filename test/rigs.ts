@@ -253,7 +253,15 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
    * of them and scores each. If the argument is wrong, the oracle finds the better set and the
    * two `Score`s diverge — which is a failing test rather than a guide nobody can explain.
    */
-  type Cand = { voices: Assignable[]; distance: number; sampledChord: number; stacked: number; fit: number }
+  type Cand = {
+    voices: Assignable[]
+    /** §2.3/#25. Which patch this loads, so the oracle can count *distinct* recipes. */
+    recipe: Recipe
+    distance: number
+    sampledChord: number
+    stacked: number
+    fit: number
+  }
   const cands: Cand[][] = []
   const sections: string[][] = []
   for (const r of requests) {
@@ -276,6 +284,7 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
       if (res.outcome === 'unvoiced') continue
       list.push({
         voices: [a],
+        recipe: res.recipe,
         distance: quantiseDistance(res.distanceSq),
         sampledChord: notes > 1 && res.recipe.realisation === 'sampled-chord' ? 1 : 0,
         stacked: 0,
@@ -311,6 +320,7 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
         for (const combo of combinations(members, notes)) {
           list.push({
             voices: combo,
+            recipe: res.recipe,
             distance: quantiseDistance(res.distanceSq),
             sampledChord: 0,
             stacked: 1,
@@ -372,8 +382,43 @@ export function bruteForceBest(devices: Device[], t: Template, seedlessMood = mo
     ] as unknown as Score
   }
 
+  /**
+   * §2.3/#25, restated independently and **checked at the leaf rather than pruned on the way
+   * down**, which is the point of an oracle: the search argues that a prefix over budget can be
+   * abandoned, and this makes no such argument. It enumerates whole assignments and throws away
+   * the ones the boxes could not hold, so if that argument is wrong the two disagree.
+   *
+   * The unit is the distinct `(device, resource, sharing key)` triple, so one patch on six tracks
+   * spends one slot and so do two recipe records that declare themselves one patch; a recipe
+   * naming a resource its device never declared is infeasible, as it is in the search.
+   */
+  function realisable(): boolean {
+    const used = new Map<string, number>()
+    const loaded = new Set<string>()
+    for (const c of chosen) {
+      if (c === null || c === undefined) continue
+      const deviceId = (c.voices[0] as Assignable).deviceId
+      for (const use of c.recipe.consumes ?? []) {
+        const key = `${deviceId}\u0000${use.resource}\u0000${use.sharedAs ?? c.recipe.id}`
+        if (loaded.has(key)) continue
+        loaded.add(key)
+        const held = `${deviceId}\u0000${use.resource}`
+        used.set(held, (used.get(held) ?? 0) + (use.amount ?? 1))
+      }
+    }
+    for (const [held, amount] of used) {
+      const [deviceId, resourceId] = held.split('\u0000')
+      const spec = devices
+        .find((d) => d.id === deviceId)
+        ?.resources?.find((r) => r.id === resourceId)
+      if (spec === undefined || amount > spec.limit) return false
+    }
+    return true
+  }
+
   function rec(i: number): void {
     if (i === requests.length) {
+      if (!realisable()) return
       const s = score()
       if (best === undefined || compareScore(s, best) < 0) best = s
       return

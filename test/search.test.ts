@@ -242,9 +242,11 @@ describe('unvoiced neither fills nor occupies (§3.5, §7.3)', () => {
 // ---------------------------------------------------------------------------
 
 describe('gap reasons (§7.3)', () => {
-  it('names exactly the three, and does not collapse them', () => {
+  it('names exactly three reasons, and does not collapse them', () => {
+    // The top level stays three-wide (§7.3) — that is the claim, and the sub-causes are a field
+    // precisely so a new one costs nothing here. `resource` (§2.3/#25) is the first to prove it.
     expect(GAP_REASONS).toEqual(['no-capable-voice', 'no-recipe', 'no-room'])
-    expect(NO_ROOM_CAUSES).toEqual(['contended', 'crowding', 'distinct'])
+    expect(NO_ROOM_CAUSES).toEqual(['contended', 'crowding', 'distinct', 'resource'])
   })
 
   it('no-capable-voice: nothing in the rig declares the role - the fix is buying', () => {

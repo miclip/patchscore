@@ -240,7 +240,7 @@ export type Catalogue = {
 
 /**
  * ```
- * format=3&resolver=5&device=polyend-tracker-mini&device=roland-tr-1000&template=industrial-techno
+ * format=3&resolver=6&device=polyend-tracker-mini&device=roland-tr-1000&template=industrial-techno
  *   &darkness=50&density=50&grit=50&swing=50&space=50&bpm=140&key=A%20minor&seed=1
  * ```
  *

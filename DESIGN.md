@@ -230,6 +230,11 @@ export const device: Device = {
   // Defaults to the assignable count. Cascadia declares 1.
   comfortableVoices: 8,
 
+  // §2.3/#25. Device-global budgets that recipes consume, distinct from the voices they occupy.
+  // The Tracker Mini declares
+  //   resources: [{ id: 'synth-slot', limit: 3, label: 'synth slots' }],
+  // Omitted by nearly every box, this one included: nothing behind its voices runs out.
+
   features: {
     perStep: ['velocity', 'probability', 'substep', 'cycle', 'start-timing'],
     sidechain: { internal: true, fromExternalAudio: false },
@@ -261,6 +266,71 @@ export const device: Device = {
 
 `hints` is a flat lookup keyed by action, authored once per device and referenced by
 recipes. A few words to jog you, nothing more. Every string under ~8 words.
+
+#### Device-global resources
+
+The Tracker Mini has **three project-global synth slots shared across all sixteen tracks**: every
+track can play, and only three distinct synth patches can be loaded at once. Nothing above can say
+that. `expand()` produces sixteen assignables and `comfortableVoices` bounds *occupied tracks*,
+not a shared thing sitting behind them, so the resolver could hand out four distinct synth recipes
+and print a guide the box cannot hold. Two more boxes want the same missing thing — the Digitone
+II's sixteen voices across sixteen tracks, the Muse's eight shared between two timbres — which is
+what made it a gap in the model rather than one box's quirk (#25).
+
+```ts
+// on Device
+resources: [{ id: 'synth-slot', limit: 3, label: 'synth slots' }],
+// on Recipe
+consumes: [{ resource: 'synth-slot' }],          // amount defaults to 1
+                                                 // sharedAs defaults to the recipe id
+```
+
+**The unit is the loaded patch, not the assignment**, and that is the whole subtlety: the same
+patch on three tracks is one slot, three different patches on one track apiece is three. It is
+also why the constraint was checkable at authoring time before it was expressible at all — "at
+most three distinct synth recipes authored" was the Tracker Mini's containment, guaranteeing every
+resolvable guide was realisable without the resolver knowing anything.
+
+**What that containment cost was expressiveness**, and the manifest now says the thing instead of
+obeying it: the Tracker Mini declares its three slots, every synth recipe consumes one, and
+`acid + dirty` on ACD — wanted under the cap and dropped to fit — is authored as a fourth patch.
+The resolver loads three of the four and reports the rest as `no-room` naming the slots (§7.3), on
+a box whose other thirteen tracks are free.
+
+**A recipe id is only *usually* the name of one patch, and `sharedAs` is where the two come
+apart.** Recipe lookup keys on `poolId ?? voiceId` (§2.2), so a synth recipe authored for one of
+the Tracker Mini's pools cannot reach the other, and `onBothPools` writes every synth-based recipe
+twice — identical but for `id`, `voice` and a routing line. Those twins are one patch. Counted as
+two they would refuse a fourth part on a box holding three patches while only two are loaded,
+which is this field's own failure pointing the other way. So consumption is counted per
+`(device, resource, sharing key)`, the key defaults to the recipe's id, and twins written from one
+source declare that source's id and cost one between them. It is declared per *consumption* rather
+than per recipe because one recipe may spend two resources whose identity is shared differently.
+The schema refuses two recipes that share a key for one resource and disagree about the amount:
+the pair claims to be one thing, and one thing has one cost — and a charge that depended on which
+of the two the search placed first would make a guide depend on traversal order (invariant 6).
+
+**It is a feasibility constraint and never a cost** (§7.1). `Score` ranks allocations; this one
+excludes them, so it enters no key of the vector and reorders none. `label` is the box's own word
+for the thing, plural and in a reader's language — `synth slots`, never `synth-slot` — because
+§7.3 puts it in a sentence read at the machine when a part could not be made for want of one.
+
+**It does not subsume `comfortableVoices`, and #14 stays its own work.** The two look alike from a
+distance — both are per-device numbers a rig can run out of — and they differ on both halves of
+what a limit is. A resource is **hard feasibility**, counted by *loaded sharing keys*: over the
+limit is not an allocation at all, and one patch on twelve tracks counts once. `comfortableVoices`
+is a **soft objective cost**, counted by *occupied assignables*: over it is a worse guide the
+objective may still choose, and one patch on twelve tracks counts twelve. Expressing the second as
+the first would have to give up either the softness or the counting rule, and neither is a detail.
+So the Deluge's CPU ceiling (#14) is still an open question with its own answer to find, and this
+field is not it.
+
+The schema refuses what an author cannot have meant: two resources under one id, a recipe
+consuming a resource its device never declared, and a recipe spending more than the whole limit.
+The last of those is refused because it could never be assigned in any rig under any direction, so
+it would present forever as a gap with no reachable fix, and the author would be told nothing at
+the one moment the mistake is cheap. A limit is a manual-read number like any other capability
+fact, so `capabilityEvidence` takes a citation for it at `resources` (§2.6).
 
 `physical.panelSpanMm` is **the front-panel horizontal span in normal playing orientation** —
 how much room the box takes up in a row of panels sitting in front of a player. It is deliberately
@@ -807,6 +877,9 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   voice: 'bd',                 // matches poolId ?? voiceId
   title: 'Short, hard, forward kick',
   realisation: 'polyphonic-voice',  // §12.4. Omitted means this. See below.
+  consumes: [{ resource: 'synth-slot' }],  // §2.3/#25. What loading this patch spends of a
+                                           // device-global budget. Omitted means nothing, which
+                                           // is nearly every recipe on nearly every box.
   params: [ /* AuthoredParam[], §3.1 */ ],
   patch: [ /* §3.3, semi-modular only */ ],
 
@@ -902,8 +975,9 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   three of the Tracker Mini's synth recipes sit on `track-sample`, because tracks 1-8 host synths
   as readily as tracks 9-16. So each device folder states the rule in its own terms (the Tracker
   Mini keys on `PLAY MODE`, a sample-instrument parameter; the Digitakt II has no synth engine at
-  all and so declares one on every recipe) and its own test enforces it, exactly as the Tracker
-  Mini's three-synth-slot cap is enforced.
+  all and so declares one on every recipe) and its own test enforces it. The Tracker Mini's
+  three synth slots used to be enforced the same way and are not any more: they are a declared
+  resource (§2.3/#25), which is what a rule becomes once the model can hold it.
 - A recipe never authors hits, step counts or bar structure. If you catch yourself writing
   `hits: [1, 5, 9, 13]` inside a device folder, that pattern belongs to a template (§4.3) —
   four-on-the-floor is a property of the genre, not of the TR-1000.
@@ -2353,6 +2427,27 @@ Every component is an integer, so comparison is exact — no float summation, an
 cross-platform drift (invariant 6). `recipeDistance` is the only non-integer input and is quantised
 to `round(d * 1000)` before it enters the vector.
 
+**Feasibility is not cost, and a device-global resource is feasibility** (§2.3/#25). A guide
+needing four synth patches on a box that loads three is not an expensive allocation to be ranked
+below the others — it is not an allocation. So `resources` enters no key of the vector and
+reorders none: a candidate whose recipe has nowhere left to load is filtered out of the candidate
+list rather than scored badly. Charges are counted per **`(device, resource,
+sharing key)`**, so a patch two requests both take is loaded once and released only when the last
+of them goes — and two recipe records that declare themselves one patch (§2.3's `sharedAs`) hold
+one charge between them.
+
+Pruning on it is sound *and* complete, and both halves rest on one fact: charges only grow as the
+search descends. A prefix already over a limit is contained in no feasible completion, so
+refusing it throws away nothing; and every feasible assignment has every prefix feasible, so
+nothing feasible becomes unreachable. Which order the requests are decided in cannot matter
+either — feasibility is a property of the *set* of loaded things, and a set has no order.
+
+The suffix bound stays **optimistic about resources** and says nothing about them at all: the
+suffix it prices may use more distinct patches than the box can hold at once. That is the same
+relaxation it already makes for occupancy, crowding and `distinct`, and it errs the same way —
+dropping a constraint can only widen a request's option set, so the per-request minimum can only
+fall and the floor stays below anything the search can reach.
+
 **Fixtures, not feel.** §12.3's tuning problem changes shape rather than disappearing: instead of
 four magic numbers there is one ordering of six keys, and an ordering is testable. The fixture set
 is a table of `(rig, template, mood) → expected assignment`, hand-authored from real rigs —
@@ -2678,9 +2773,11 @@ nothing could carry it, nothing is authored for what could, or something else wo
 things to do — but §12.4 broke the one-to-one, and the honest record of that is worth more than
 the symmetry:
 
-- `no-room`'s three sub-causes **share an action**: change the arrangement, or the rig's
-  configuration. They are a field rather than three siblings purely so the top level stays
-  three-wide and readable, which is the original argument and still holds.
+- `no-room`'s sub-causes **share an action**: change the arrangement, or the rig's
+  configuration. They are a field rather than siblings purely so the top level stays three-wide
+  and readable, which is the original argument and still holds — and it has now been paid for
+  once: `resource` (§2.3/#25) joined them as a fourth without touching the reason vocabulary or
+  anything that reads it.
 - `no-capable-voice`'s two sub-causes **do not share an action** — one is buying, the other is
   authoring or asking for less. They are still a field, because a top-level reason names a
   *state* of the search ("nothing could carry this") and both of these are that state. Promoting
@@ -2692,7 +2789,8 @@ the symmetry:
 // no-capable-voice
 because: 'no-such-role' | 'polyphony'            // plus the note count that was asked for
 // no-room
-because: 'contended' | 'crowding' | 'distinct'   // plus a sentence naming the specific thing
+because: 'contended' | 'crowding' | 'distinct' | 'resource'   // plus a sentence naming the
+                                                              // specific thing
 ```
 
 `no-capable-voice` gained its sub-cause with §12.4. Once a recipe can reach a note count its
@@ -2728,9 +2826,19 @@ to name a voice that can do the job stays true.
 | `contended` | "the LT is carrying sub" |
 | `crowding` | "your Tracker Mini is already at 8 of 8 comfortable voices" |
 | `distinct` | "the second tom needs a different device and you only have one that can" |
+| `resource` | "your Tracker Mini has 3 synth slots and 3 are already loaded" |
 
 `no-room` is the name rather than `rig-too-small` deliberately: crowding is often fixed by raising
 `comfortableVoices` rather than by buying anything, and the name must not prejudge which.
+
+`resource` (§2.3/#25) is the one cause here that is **not** the objective ranking something else
+higher: the box has a free voice and cannot load another patch into it. It sits under `no-room`
+all the same, because the reader's question is the same one and so are their three actions — the
+room that ran out is behind the voices rather than among them. It is checked *after* `crowding`
+and *before* `distinct`, in the order the three become binding: if any candidate is free,
+distinct-legal and loadable, crowding is what argued against it; if one is free and distinct-legal
+and only the budget refused it, then saying "crowding" would be a false sentence about a box
+sitting well inside its comfortable voices.
 
 A `no-recipe` gap **must name the assignable that could have carried it** — "nothing authored for
 a soft kick; your TR-1000 BD can do it, dial it by ear". That hands the user the voice assignment

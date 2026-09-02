@@ -3,6 +3,7 @@ import {
   CHARACTERS,
   DeviceSchema,
   ROLES,
+  assign,
   expand,
   moodState,
   realisationOf,
@@ -11,7 +12,10 @@ import {
   resolveParams,
   resolveRecipe,
   type AuthoredParam,
+  type Character,
   type Recipe,
+  type Role,
+  type Template,
 } from '../lib/core/index'
 import {
   DUPLICATED_SYNTH_RECIPES,
@@ -31,6 +35,31 @@ function pool(id: string) {
 
 function recipesOn(voice: string): Recipe[] {
   return device.recipes.filter((r) => r.voice === voice)
+}
+
+/**
+ * §2.3/#25. A bare two-section template carrying the given requests, all required and all at one
+ * priority, for the synth-slot cases below. Hand-built rather than borrowed from `TEMPLATES`:
+ * those are musical statements that will change, and a test about how many patches load must not
+ * fail because a direction gained a part.
+ */
+function synthTemplate(
+  roles: { id: string; role: Role; character: Character }[],
+): Template {
+  return {
+    id: 'tm-slot-probe',
+    name: 'Slot probe',
+    bpm: { min: 120, max: 140, default: 130 },
+    keys: ['A minor'],
+    structure: [
+      { name: 'Intro', bars: 16, energy: 0.3 },
+      { name: 'Drop', bars: 32, energy: 0.9 },
+    ],
+    harmony: { cycleBars: 8, progression: [{ degree: 'i', bars: 8 }] },
+    hooks: [],
+    patterns: [],
+    roles: roles.map((r) => ({ ...r, priority: 1, sustain: 'continuous' as const })),
+  }
 }
 
 /** Everything a twin must carry identically. `id`, `voice` and `routing` are what may differ. */
@@ -173,10 +202,12 @@ describe('Tracker Mini manifest', () => {
     const twinned = recipesOn('track-synth')
     expect(twinned).toHaveLength(DUPLICATED_SYNTH_RECIPES)
 
-    // 3 recipes authored once and carried twice: exactly what an engine allowing a recipe to
+    // 4 recipes authored once and carried twice: exactly what an engine allowing a recipe to
     // name several pools would save today. If this number grows, the schema change gets
-    // cheaper — which is the whole reason it is asserted rather than described.
-    expect(DUPLICATED_SYNTH_RECIPES).toBe(3)
+    // cheaper — which is the whole reason it is asserted rather than described. It went 3 to 4
+    // when the synth-slot authoring cap became a declared resource (§2.3/#25) and `acid + dirty`
+    // could finally be written.
+    expect(DUPLICATED_SYNTH_RECIPES).toBe(4)
 
     for (const synthRecipe of twinned) {
       // Matched on realisation too, because `pad + soft` on the sample pool is now authored
@@ -504,9 +535,23 @@ describe('Tracker Mini manifest', () => {
      * written escaped here because this test is about exact bytes in a name.
      */
     const SAMPLE_PREFIX = 'ENVELOPE \u00b7 '
-    /** The engine tables' `Amplifier Env` row, which sits beside another envelope on its page. */
-    const ENGINE_PREFIX = 'AMP ENV '
-    const ENGINE_PAGES = ['156', '159']
+    /**
+     * The engine tables' amplifier row, which sits beside another envelope on its own page — and
+     * **the section is named differently by different engines, so the prefix is keyed by page.**
+     * FAT (p.156) and VAP (p.159) head that column `Amplifier Env`; ACD (p.154) heads it
+     * `Amplifier`, with `Modulation` as its second envelope on p.155. Both are `0.00-10 Sec` /
+     * `0.00-100%`, so the range still distinguishes nothing and the section name is still the
+     * only thing that locates the control.
+     *
+     * A single prefix across all three would have put a word on ACD's parameters that is not
+     * printed on the page they cite, which is #154 reported again one engine along.
+     */
+    const ENGINE_PREFIXES: Record<string, string> = {
+      '154': 'AMPLIFIER ',
+      '156': 'AMP ENV ',
+      '159': 'AMP ENV ',
+    }
+    const ENGINE_PAGES = Object.keys(ENGINE_PREFIXES)
 
     const envelopeParams = device.recipes.flatMap((recipe) =>
       (recipe.params as AuthoredParam[])
@@ -535,12 +580,16 @@ describe('Tracker Mini manifest', () => {
         throw new Error(`${recipe}: ${param.name} cites no page`)
       const page = cite.source.slice(CITE_PREFIX.length)
 
-      if (param.name.startsWith(ENGINE_PREFIX)) {
-        // `Amplifier Env` is a row in an engine's table. p.126 has no such row.
+      const prefix = Object.values(ENGINE_PREFIXES).find((p) => param.name.startsWith(p))
+      if (prefix !== undefined) {
+        // An amplifier row in an engine's table. p.126 has no such row — and the engine has to
+        // be the one whose page prints that section name, or the discriminator discriminates
+        // nothing.
         expect(ENGINE_PAGES, `${recipe}: ${param.name}`).toContain(page)
-        expect(ENV_STAGES, `${recipe}: ${param.name}`).toContain(
-          param.name.slice(ENGINE_PREFIX.length),
+        expect(ENGINE_PREFIXES[page], `${recipe}: ${param.name} is not p.${page}'s word`).toBe(
+          prefix,
         )
+        expect(ENV_STAGES, `${recipe}: ${param.name}`).toContain(param.name.slice(prefix.length))
         engine.push(`${recipe}/${param.name}`)
       } else {
         // p.126's envelope. An engine page here would mean a value read off the wrong one of two
@@ -594,14 +643,18 @@ describe('Tracker Mini manifest', () => {
   // Content and citation discipline (§3.1, §3.2)
   // -------------------------------------------------------------------------
 
-  it('carries 15-21 recipes on distinct (role, character, voice, realisation) keys (§3)', () => {
-    // The upper bound moved from 20 to 21 with `tm-stab-hard-note` (#40). It is a guideline about
-    // authoring effort — "roughly 15-20 recipes covers a device well" — not a fact about the box,
-    // and the one it makes room for is the second half of a pair the ranking needs both halves of:
-    // a stab that is *played* across three tracks beside the one that is *loaded* as a chord.
-    // The bound that is a fact about the box is the synth-slot one below, and that has not moved.
+  it('carries 15-23 recipes on distinct (role, character, voice, realisation) keys (§3)', () => {
+    // The upper bound moved from 20 to 21 with `tm-stab-hard-note` (#40), and from 21 to 23 with
+    // `tm-acid-dirty` on both pools (§2.3/#25). It is a guideline about authoring effort —
+    // "roughly 15-20 recipes covers a device well" — not a fact about the box, and this box pays
+    // for two of its own: every synth recipe is written twice because a recipe names one voice,
+    // and the chord stab is a pair the ranking needs both halves of.
+    //
+    // **The bound that is a fact about the box is no longer here.** It was the three-synth-slot
+    // authoring cap; the slots are declared now and the resolver enforces them, which is what
+    // `only three synth patches load at once` below actually tests.
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(21)
+    expect(device.recipes.length).toBeLessThanOrEqual(23)
 
     const keys = device.recipes.map(
       (r) => `${r.role}\u0000${r.character}\u0000${r.voice}\u0000${realisationOf(r)}`,
@@ -725,22 +778,34 @@ describe('Tracker Mini manifest', () => {
     }
   })
 
-  it('authors at most three distinct synth recipes, one per project synth slot', () => {
-    // **The project has three synth slots (p.32, p.146), shared across all sixteen tracks.**
-    // The limit is on distinct recipes, not on tracks: the same patch on several tracks still
-    // occupies one slot, so three recipes spread over sixteen tracks is realisable, while a
-    // fourth distinct synth recipe describes a state the box cannot hold — every guide the
-    // resolver can produce from it would be unbuildable.
-    //
-    // The engine has no concept of a device-global shared resource, so this is enforced at
-    // authoring time, where it is cheap and checkable, rather than at resolve time.
-    const distinct = new Set(
-      device.recipes
-        .filter((r) => (r.params as AuthoredParam[]).some((p) => p.name === 'MODEL'))
-        .map((r) => `${r.role} ${r.character}`),
-    )
+  /**
+   * §2.3/#25. **Every synth recipe declares the slot it loads into, and the twins declare that
+   * they are one patch.**
+   *
+   * This replaces the authoring cap the manifest used to carry — "at most three distinct synth
+   * recipes", checked here, because a device-global shared resource was a thing the engine could
+   * not express. It can now, so the claim being tested moves from what is *authored* to what the
+   * resolver *does*, which is what the cap was standing in for all along.
+   */
+  it('declares the three synth slots and spends one per loaded patch', () => {
     expect(SYNTH_SLOTS).toBe(3)
-    expect(distinct.size).toBeLessThanOrEqual(SYNTH_SLOTS)
+    expect(device.resources).toEqual([{ id: 'synth-slot', limit: 3, label: 'synth slots' }])
+
+    // Every recipe that names a synth MODEL consumes a slot, and nothing else does: a sample
+    // instrument and a MIDI part cost none (p.32's diagram counts the 48 instrument slots apart).
+    for (const recipe of device.recipes) {
+      const synth = (recipe.params as AuthoredParam[]).some((p) => p.name === 'MODEL')
+      expect((recipe.consumes ?? []).length > 0, recipe.id).toBe(synth)
+    }
+
+    // The twins share an identity, or the pair would spend two slots for the one patch the box
+    // actually loads (§2.3's `sharedAs`). The key is the authored base id both are expanded from.
+    for (const recipe of device.recipes) {
+      for (const use of recipe.consumes ?? []) {
+        expect(use.resource).toBe('synth-slot')
+        expect(use.sharedAs, recipe.id).toBe(recipe.id.replace(/-(sample|synth)$/, ''))
+      }
+    }
 
     // MODEL still offers all five engines. The options are what the box has; narrowing them to
     // what happens to be authored would hide the rest of the device.
@@ -751,10 +816,84 @@ describe('Tracker Mini manifest', () => {
       expect(model.options.values).toEqual(['ACD', 'FAT', 'VAP', 'WTFM', 'PERC'])
     }
 
-    // `acid` is legal on both pools and authored on neither, because the third slot went
-    // elsewhere — a gap shown, not filled (§5).
+    // `acid` is authored now, on ACD (p.154), and it is the fourth patch — the thing the cap
+    // made unwritable. `WTFM` is the engine still waiting for a recipe somebody wants.
     expect(new Set<string>(pool('track-sample').roles)).toContain('acid')
-    expect(device.recipes.some((r) => r.role === 'acid')).toBe(false)
+    expect(device.recipes.filter((r) => r.role === 'acid')).toHaveLength(2)
+
+    // WTFM is the engine still waiting for a recipe somebody wants to write — documented,
+    // offered in every MODEL list, and selected by none. An ordinary authoring gap now that the
+    // slot cap is not the reason for it.
+    const chosen = new Set(
+      device.recipes.flatMap((r) =>
+        (r.params as AuthoredParam[])
+          .filter((p) => p.name === 'MODEL' && p.kind === 'enum')
+          .map((p) => (p as { value: string }).value),
+      ),
+    )
+    expect([...chosen].sort()).toEqual(['ACD', 'FAT', 'VAP'])
+  })
+
+  it('loads three of four synth patches and says which slot ran out, on free tracks', () => {
+    // The four authored patches, one request each. Three fit; the fourth is a `no-room` gap
+    // naming the slots, on a box with thirteen tracks still empty — which is the whole point of
+    // the resource being a thing apart from `comfortableVoices`.
+    const result = assign({
+      devices: [device],
+      template: synthTemplate([
+        { id: 'r-bass', role: 'bass-mid', character: 'dark' },
+        { id: 'r-lead', role: 'lead', character: 'bright' },
+        { id: 'r-pad', role: 'pad', character: 'soft' },
+        { id: 'r-acid', role: 'acid', character: 'dirty' },
+      ]),
+      mood: moodState(),
+      seed: 1,
+    })
+
+    expect(result.assignments).toHaveLength(3)
+    expect(result.shortfalls).toHaveLength(1)
+    const gap = result.shortfalls[0]
+    expect(gap).toMatchObject({ reason: 'no-room', because: 'resource' })
+    expect(gap?.reason === 'no-room' ? gap.detail : '').toContain('3 synth slots')
+
+    // Three tracks of sixteen are carrying anything at all. The rig is nowhere near full; the
+    // slots are what ran out, and the sentence says so rather than blaming crowding.
+    expect(result.occupancy.size).toBe(3)
+    expect(expand(device)).toHaveLength(16)
+
+    // Three loaded patches, counted the way the box counts them.
+    expect(new Set(result.assignments.map((a) => a.recipe.consumes?.[0]?.sharedAs)).size).toBe(3)
+  })
+
+  it('spends one slot on a patch playing from both pools at once', () => {
+    // Nine leads cannot fit in one pool of eight, so the ninth takes the other pool — and the
+    // other pool's record of the same patch. Both twins are in use, and the box has loaded one
+    // thing: two more patches fit alongside, which they could not if the pair cost two slots.
+    const leads = Array.from({ length: 9 }, (_, i) => ({
+      id: `r-lead-${String(i + 1)}`,
+      role: 'lead' as const,
+      character: 'bright' as const,
+    }))
+    const result = assign({
+      devices: [device],
+      template: synthTemplate([
+        ...leads,
+        { id: 'r-bass', role: 'bass-mid', character: 'dark' },
+        { id: 'r-pad', role: 'pad', character: 'soft' },
+      ]),
+      mood: moodState(),
+      seed: 1,
+    })
+
+    expect(result.shortfalls).toEqual([])
+    expect(result.assignments).toHaveLength(11)
+
+    // Four recipe *records* in use across three loaded patches: the lead's twins are one of them.
+    const records = new Set(result.assignments.map((a) => a.recipe.id))
+    expect(records).toContain('tm-lead-bright-sample')
+    expect(records).toContain('tm-lead-bright-synth')
+    expect(records.size).toBe(4)
+    expect(new Set(result.assignments.map((a) => a.recipe.consumes?.[0]?.sharedAs)).size).toBe(3)
   })
 
   it('addresses steps only by PatternSlot, and uses every per-step feature it declares', () => {

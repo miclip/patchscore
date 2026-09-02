@@ -65,21 +65,25 @@ import { TRACKER_MINI_PANEL } from './panel'
  *  - **Volume is not authored.** p.116 prints its range as "-inf dB to 24.00 dB". `-inf` is not
  *    a finite number and `NumericRange` rightly refuses it, and inventing a floor of -60 dB to
  *    make it fit would be exactly the invented claim §3.1 exists to prevent.
- *  - **At most three distinct synth recipes**, because the project has **3 synth slots** (p.32,
- *    p.146) shared across all sixteen tracks. The cap is on *distinct recipes*, not on tracks:
- *    the same patch on several tracks still occupies one slot, so three recipes across sixteen
- *    tracks is realisable while a fourth describes a state the box cannot hold. It is checkable
- *    at authoring time, which is why it is an authoring rule and not a resolver constraint —
- *    a device-global shared resource is a modelling concept the engine does not have, and
- *    improvising one inside a device folder would be the wrong place for it.
- *    `test/tracker-mini.test.ts` fails if a fourth appears. Two pairs were dropped to fit:
- *    `stab + hard` (authored on FAT, then removed) and `acid + dirty` (wanted on ACD, never
- *    authored) — both remain legal on both pools and resolve as honest gaps.
- *  - **ACD and WTFM are attributable but unauthored.** Their parameter tables are headed by the
- *    model's *logo*, a graphic, so text extraction loses it — but the rendered pages carry it
- *    plainly (ACD p.154, WTFM p.162), and all five engines are documented. They go unused only
- *    because of the three-slot cap above. `acid` is therefore legal on both pools and authored
- *    on neither: a gap shown honestly rather than a guess.
+ *  - **The three synth slots are declared, not capped** (§2.3/#25). The project has **3 synth
+ *    slots** (p.32, p.146) shared across all sixteen tracks, and the manifest now says so:
+ *    `resources` carries the limit and every synth recipe `consumes` one. The unit is the loaded
+ *    patch rather than the track — the same patch on several tracks occupies one slot — and the
+ *    cross-pool twins below declare `sharedAs` so the pair counts as the one patch it is.
+ *
+ *    This used to be an authoring rule: at most three distinct synth recipes, guarded by a test,
+ *    because a device-global shared resource was a concept the engine did not have and
+ *    improvising one inside a device folder would have been the wrong place for it. Both halves
+ *    of that were right, and what changed is that the engine has the concept. What the cap cost
+ *    was expressiveness — three synth flavours across every genre, forever — and the first thing
+ *    bought back with it is `acid + dirty` on ACD below, which was wanted and dropped to fit.
+ *    A fourth patch is now a fourth patch: the resolver loads three of them and reports the rest
+ *    as `no-room`, naming the slots (§7.3), on a box whose tracks are still free.
+ *  - **WTFM is attributable but unauthored.** Its parameter table is headed by the model's
+ *    *logo*, a graphic, so text extraction loses it — but the rendered page carries it plainly
+ *    (p.162), and all five engines are documented. It goes unused for want of a recipe somebody
+ *    wanted to write, which is an ordinary authoring gap rather than a limit of the box. ACD was
+ *    in the same position until the slot cap lifted and `acid + dirty` was authored off p.154.
  *  - **Pool ordinals always start at 1** (§2.2), so `track-synth` expands to "Synth Track 1..8"
  *    while the panel calls those tracks 9-16. Each pool-B recipe carries the mapping in its
  *    `routing` line, which is the only place the guide can say it today.
@@ -296,6 +300,24 @@ const LFO_SPEEDS = [
   '1/24', '1/32', '1/48', '1/64',
 ]
 
+/**
+ * p.154, ACD's three. The table prints them as one Range cell — *"Filter types: Low Pass State
+ * Variable 12dB; Low Pass State Variable 24dB; Low Pass RD3"* — and they are listed here in the
+ * order it prints them, spelled as it spells them.
+ */
+const ACD_FILTERS = [
+  'Low Pass State Variable 12dB',
+  'Low Pass State Variable 24dB',
+  'Low Pass RD3',
+]
+
+/**
+ * p.155, ACD's Voice section, continued from p.154: *"Slide between notes: Always, Overlap,
+ * Legato i.e. Envelopes are not triggered, Legato Overlap."* Four options, and which one is set
+ * decides what `GLIDE TIME` beside it means — so the pair is authored together or neither is.
+ */
+const ACD_GLIDE_MODES = ['Always', 'Overlap', 'Legato', 'Legato Overlap']
+
 /** p.156, the three FAT filter emulations. */
 const FAT_FILTERS = ['Low Pass MG 24dB', 'Low Pass OB 24dB', 'Low Pass OB 12dB']
 
@@ -358,26 +380,49 @@ const SYNTH_POOL_ROLES: Role[] = SAMPLE_POOL_ROLES.filter((r) => r !== 'vox-chop
 // ---------------------------------------------------------------------------
 
 /**
+ * §2.3/#25. **The project's three synth slots**, shared across all sixteen tracks.
+ *
+ * p.32's audio-structure diagram states it as a number — *"48 Instrument and 3 Synth slots are
+ * available per Project"*, drawn as `Synth 1`, `Synth 2`, `Synth 3` — and p.146 says it again in
+ * prose: *"Tracker Mini has 3 synthesizer slots each of which can be assigned 1 of 5 synthesizer
+ * models."* Two independent statements of the same fact, which is why the evidence names both.
+ *
+ * `label` is what the guide calls them when a part cannot be made for want of one (§7.3), so it
+ * is the manual's own word and plural: a reader is looking for *synth slots* on p.146.
+ */
+export const SYNTH_SLOT = 'synth-slot'
+export const SYNTH_SLOTS = 3
+
+/**
  * One authored synth recipe becomes two: tracks 1-8 host synths as readily as tracks 9-16, and
  * a recipe can name only one voice. **This is the step 4 finding, in the one place it costs
  * something.** Expanding from a single source keeps the twins from drifting; it does not make
  * the duplication cheaper, and `DUPLICATED_SYNTH_RECIPES` below is the number an engine that
  * let a recipe name several pools would save today.
+ *
+ * **`sharedAs` is the base id, and it is load-bearing** (§2.3/#25). The two records are one
+ * patch: the box loads it into one of three synth slots and both pools play it from there. The
+ * default identity is the recipe id, which is right for a recipe that is the only copy of
+ * itself and wrong for exactly this pair — counted apart they would spend two slots for one
+ * loaded thing, and the guide would refuse a fourth part on a box holding two.
  */
 function onBothPools(
-  base: Omit<Recipe, 'id' | 'voice' | 'routing'> & { id: string },
+  base: Omit<Recipe, 'id' | 'voice' | 'routing' | 'consumes'> & { id: string },
 ): [Recipe, Recipe] {
+  const consumes = [{ resource: SYNTH_SLOT, sharedAs: base.id }]
   return [
     {
       ...base,
       id: `${base.id}-sample`,
       voice: 'track-sample',
+      consumes,
       routing: 'Tracks 1-8 — costs one of the three project synth slots',
     },
     {
       ...base,
       id: `${base.id}-synth`,
       voice: 'track-synth',
+      consumes,
       routing: 'Synth Track n is panel track n+8 — costs one of the three project synth slots',
     },
   ]
@@ -458,16 +503,76 @@ const SYNTH_RECIPES: Recipe[] = [
     articulation: [{ slot: 'accent', set: { volume: 100 }, hint: 'pick-fx' }],
     verified: false,
   }),
+  /**
+   * ---- ACD: "recreation of iconic single-oscillator monophonic analog synths" (p.146) --------
+   *
+   * §2.3/#25. **The fourth synth patch, and the first thing the declared slots bought back.**
+   * `acid + dirty` was wanted while the three-recipe authoring cap stood and was dropped to fit
+   * — the manifest recorded it as legal on both pools and authored on neither. The slots are a
+   * declared resource now, so a fourth patch is a fourth patch: the box loads three at a time
+   * and the resolver says which three, rather than the library pretending the fourth is
+   * unwritable.
+   *
+   * Parameters are p.154's ACD table, read off the rendered page — the table is headed by the
+   * model's logo, a graphic, so `pdftotext` loses which engine it belongs to. `GLIDE MODE` and
+   * `GLIDE TIME` come from the same table continued on p.155, and they are here because a 303
+   * lineage without slide is not this part: p.146's *"homage to Japanese legends"* is what the
+   * role is asking for, and the manual gives the Voice section its own printed scales.
+   *
+   * **The amplifier stages are `AMPLIFIER ...`, not `AMP ENV ...`, and that is #154's rule rather
+   * than an inconsistency.** ACD has two envelopes on its two pages — `Amplifier` on p.154 and
+   * `Modulation` on p.155, both printed `0.00-10 Sec` / `0.00-100%` — so the range distinguishes
+   * nothing and only the section name locates the control. FAT and VAP head that column
+   * `Amplifier Env`, and this table heads it `Amplifier`; each recipe uses the word printed on
+   * the page it cites, in this box's own `SECTION STAGE` spelling, because a name a reader cannot
+   * find on the page it points at is the whole of what #154 reported.
+   *
+   * `FILTER RESONANCE` carries the `grit` axis rather than `darkness`: on an RD3 filter,
+   * resonance is what the dirt *is*, and the cutoff beside it already carries darkness.
+   */
+  ...onBothPools({
+    id: 'tm-acid-dirty',
+    role: 'acid',
+    character: 'dirty',
+    title: 'Squelching single-oscillator line, resonance up and envelope biting',
+    params: [
+      pick('MODEL', 'ACD', SYNTH_MODELS, 146),
+      pick('FILTER TYPE', 'Low Pass RD3', ACD_FILTERS, 154),
+      num('SAW MIX', 100, PCT, 154, { unit: '%' }),
+      num('SQUARE MIX', 0, PCT, 154, { unit: '%' }),
+      num('SUB MIX', 28, PCT, 154, { unit: '%' }),
+      num('FILTER CUTOFF', 380, AUDIO_HZ, 154, {
+        unit: 'Hz',
+        mood: [{ axis: 'darkness', amount: -160 }],
+      }),
+      num('FILTER RESONANCE', 78, PCT, 154, {
+        unit: '%',
+        mood: [{ axis: 'grit', amount: 18 }],
+      }),
+      num('FILTER ENV AMT', 62, BIPOLAR_PCT, 154, { unit: '%' }),
+      num('FILTER NOTE TRACK', 40, NOTE_TRACK, 154, { unit: '%' }),
+      secs('AMPLIFIER DECAY', 0.22, SECONDS_10, 154),
+      num('AMPLIFIER SUSTAIN', 0, PCT, 154, { unit: '%' }),
+      pick('GLIDE MODE', 'Legato', ACD_GLIDE_MODES, 155),
+      secs('GLIDE TIME', 0.05, SECONDS_3, 155),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'accent', set: { volume: 100 }, hint: 'pick-fx' },
+      { slot: 'offbeat', set: { glide: 40 }, hint: 'pick-fx' },
+    ],
+    verified: false,
+  }),
 ]
 
 /**
- * What a recipe naming several pools would save today. Pinned by the manifest test, and capped
- * at three by the project's three synth slots (p.32, p.146).
+ * What a recipe naming several pools would save today. Pinned by the manifest test.
+ *
+ * No longer capped at three. It was, while "at most three distinct synth recipes" was an
+ * authoring rule standing in for a resource the engine could not express (§2.3/#25); the slots
+ * are declared now, so this number is free to grow with the authoring.
  */
 export const DUPLICATED_SYNTH_RECIPES = SYNTH_RECIPES.length / 2
-
-/** p.32, p.146. Three slots, shared across all sixteen tracks. */
-export const SYNTH_SLOTS = 3
 
 /**
  * Sample-based recipes. These stay on `track-sample` because tracks 9-16 cannot load a sample
@@ -1227,6 +1332,18 @@ export const device: Device = {
     content: cite(34),
     noteDuration: cite(105),
 
+    /**
+     * §2.6/#22. Two pages state the same number and both are named, because they are different
+     * kinds of reading: p.32's audio-structure diagram *draws* three synth slots beside the 48
+     * instrument slots, and p.146 says it in prose. A capability that changes what the resolver
+     * can produce is worth the second reading.
+     */
+    resources: {
+      kind: 'manual',
+      source:
+        'Polyend Tracker Mini Manual 2.2.1b, p.32 (Audio Structure) and p.146 (Synthesizer Options)',
+    },
+
     [jackFact('MIDI Out')]: cite(13),
     [jackFact('MIDI In')]: cite(13),
     [clockSourceSetupFact('midi-din')]: cite(54),
@@ -1366,6 +1483,18 @@ export const device: Device = {
    * occupied in any section).
    */
   comfortableVoices: 12,
+
+  /**
+   * §2.3/#25. The three synth slots, and the one thing on this box that **is** a feasibility
+   * limit rather than a taste judgement — see `SYNTH_SLOT` above for the two pages that state it.
+   *
+   * It reads the other way round from `comfortableVoices` directly above, which is why the pair
+   * is worth reading together. Crowding is a cost the objective weighs and a reader may disagree
+   * with; this is a number the box has. Sixteen tracks and three loaded patches are both true at
+   * once, so the guide can fill twelve tracks from three synth patches quite happily and cannot
+   * fill two from four.
+   */
+  resources: [{ id: SYNTH_SLOT, limit: SYNTH_SLOTS, label: 'synth slots' }],
 
   manual: { title: 'Polyend Tracker Mini Manual', edition: '2.2.1b' },
 
