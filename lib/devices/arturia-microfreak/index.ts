@@ -98,6 +98,48 @@ import type { Role } from '../../core/vocabulary'
  * on the range, on the Minitaur's precedent for `RES`. Extending p.113's 0–100 to the filter
  * because the same box displays both would be exactly the cited-wrong-range error.
  *
+ * ## The re-read of the filter and envelope ranges, and what it settled
+ *
+ * pp.50, 55, 56 and 58 were read again in full, on the question of whether any of the uncited
+ * ranges below could be cited after all. None of them can, and the reasons differ by page.
+ *
+ * **`Cutoff` stays uncited.** p.50's two figures fail a `NumericRange` in two different ways.
+ * The counter-clockwise end is *"approximately 30Hz"*, which is a figure with an admitted error
+ * bar and no stated size, so it does not fix a minimum. The clockwise end *"exceeds 15kHz"*,
+ * which is a floor on the maximum and not the maximum. A range is exact and closed at both ends;
+ * writing `{ min: 30, max: 15_000 }` against p.50 would print a precision the page refuses to
+ * claim, at both ends, in opposite directions. `Resonance` has no figures at all.
+ *
+ * **p.56 bounds two of the four envelope knobs and only two.** §9.3.1 gives Attack *"from 0 ms to
+ * 10 seconds"* and §9.3.2 gives Decay/Release *"again from 0ms to 13 seconds"*. §9.3.3 on Sustain
+ * describes what the stage does and prints no figure anywhere on the page. §9.4 on Filter Amount
+ * says what it controls and closes with *"Filter amount is a bipolar control"*, which fixes the
+ * sign and neither limit. So `cite(56)` sits on `Attack` and `Decay / Rel`, and putting it on the
+ * other two would cite a page for something it does not say.
+ *
+ * **p.58's cycling-envelope figures are one worked example.** They appear inside a walkthrough
+ * that opens *"To get a feel for the effect of changes you make to the stages of the envelope,
+ * connect it to the pitch of the Digital Oscillator"* and then instructs *"set Rise to about 200
+ * ms, hold to 0, fall to 0ms and amount to 50%"*. Every figure there is one setting the reader is
+ * asked to dial, the first of them approximate. Four points on a knob are not that knob's bounds.
+ *
+ * ## What the manual documents about on-screen values
+ *
+ * Printed pp.11, 35 and 53 were rendered and read as images rather than taken from the text dump.
+ *
+ * p.35 documents current-value feedback at the oscillator. Changing `Type` shows *"a graphic
+ * representation of that Type and its current values in the display"*, and of the three parameter
+ * knobs it says *"turn a parameter knob, and the display will tell you what is being changed"*.
+ * p.53 documents the LFO rate: *"If Sync is 'off' the values in the OLED window will be displayed
+ * in Hz"*, and under sync *"the values are displayed as division values"*. p.11 says only that the
+ * display *"will display valuable information about the knobs you turn and the buttons you push"*,
+ * which names no form for that information.
+ *
+ * The images add no value claim the text had not already carried: p.11's photograph is the OLED
+ * showing a preset name, p.35's is the four `DIGITAL OSCILLATOR` knobs with no display in the
+ * frame, and p.53 carries no screen photograph. The ranges above rest on pp.50 and 56 and on
+ * none of this.
+ *
  * ## One knob, eighteen meanings — the oscillator models
  *
  * p.35 states the convention this manifest has to survive: *"For each Oscillator Type, we selected
@@ -392,6 +434,8 @@ const FILTER_TYPES = ['LPF', 'BPF', 'HPF'] as const
  * list of parameters where a reader would have no way to tell which knob was meant.
  *
  * `Cutoff` and `Resonance` are percent of travel; the header has the reasoning and the pages.
+ * p.50 was read again and still cannot be cited: *"approximately"* leaves the minimum with an
+ * error bar of unstated size and *"exceeds"* gives a floor on the maximum instead of the maximum.
  */
 function filter(type: (typeof FILTER_TYPES)[number], cutoff: number, resonance: number): AuthoredParam[] {
   return [
@@ -418,6 +462,10 @@ function filter(type: (typeof FILTER_TYPES)[number], cutoff: number, resonance: 
  * the range is unverified and mood may not move it. `Filter Amt` is the same shape, with p.56's
  * *"Filter amount is a bipolar control"* fixing the sign and p.55's *"filter amount to 70"* the
  * only number printed.
+ *
+ * p.56 was read again in full to check that split. It bounds Attack in §9.3.1 and Decay/Release
+ * in §9.3.2, and its Sustain and Filter Amount sections print no figure at all, so two of these
+ * four carry `cite(56)` and two cannot. The header has the reading.
  */
 function envelope(
   attack: number,
@@ -520,6 +568,12 @@ const CYC_MODES = ['Env', 'Run', 'Loop'] as const
  * worked figures — rise 200 ms and 2.5 s, fall 0 ms and 150 ms, hold 0 ms — which establish the
  * unit and nothing else, so the ranges are unverified. `Amount` is the attenuator, stated in
  * percent by p.58's *"amount to 50%"*.
+ *
+ * p.58's four figures were re-read in place. They sit inside the walkthrough that begins *"To get
+ * a feel for the effect of changes you make to the stages of the envelope"*, which asks the reader
+ * to set one value on each knob, the first of them *"about 200 ms"*. p.103's rise 2.5 s, fall
+ * 150 ms and hold 0 ms are the same shape, a numbered *"To create this effect"* list for
+ * modulating Unison spread. Example settings, so they stay out of the ranges.
  */
 function cyclingEnv(
   mode: (typeof CYC_MODES)[number],
