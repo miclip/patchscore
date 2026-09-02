@@ -108,11 +108,15 @@ through a hand-edited URL. There is no "select all" and there must not be one.
 **Measured on the worst rig the product can build, with `npm run measure:search`:**
 
 ```
-rig limit      10 devices
-worst rig      83,874 nodes   (industrial-techno seed 15)
+rig limit      10 devices  (MAX_RIG_DEVICES)
+worst rig      46,609 nodes   (weave seed 15)
 cap         2,000,000
-headroom             24x  —  4.19% of the cap
+headroom             43x  —  2.33% of the cap
 ```
+
+It got *cheaper* at #25, from 83,874 nodes, and the direction of that is worth keeping: a
+feasibility constraint prunes the tree rather than complicating it. An infeasible partial
+assignment is cut, where an expensive one still has to be explored.
 
 **This section used to be an argument. It is now a fact, and the difference is the point.** The
 argument kept losing: the whole-catalogue sweep reports a worst case near the cap, and that figure
