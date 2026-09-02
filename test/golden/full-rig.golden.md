@@ -1175,6 +1175,7 @@ Routing — One VCO only — VCO 2 is down, so there is nothing to beat against 
   - ↳ note: On, the envelope repeats for as long as a note is held — a multistage LFO
 - **AMP EG · ATTACK** `2` ms (1…10000 ms)
   - ↳ cite: range manual — Subsequent 37 User's Manual, p.32
+  - ↳ note: The VCA opens fast here; a click on the first note is the attack, not a fault
 - **AMP EG · DECAY** `500` ms (1…10000 ms)
   - ↳ cite: range manual — Subsequent 37 User's Manual, p.32
 - **AMP EG · SUSTAIN** `6.5` (0…10)

@@ -615,7 +615,26 @@ function ampEg(
   loop: 'OFF' | 'ON' = 'OFF',
 ): AuthoredParam[] {
   return [
-    num('AMP EG · ATTACK', attack, EG_MS, 32, { unit: 'ms' }),
+    /**
+     * §3/#320. **Under about 10 ms the VCA opens fast enough to click on the first note**, and
+     * the manual never says so — it prints the range (p.32, "1 millisecond to 10 seconds") and
+     * nothing about what a 2 ms attack sounds like.
+     *
+     * Reported from a Subsequent 37 on a desk, not measured here, so it is a `note` rather than a
+     * range or a cited claim. It stays prose for a second reason as well: the threshold is a
+     * judgement about a sound, and turning "about 10" into an authored bound would make a
+     * recipe's own value illegal on a box where the transient is the point — an `acid` line with
+     * no sustain wants that click.
+     *
+     * What the reader needs is to know the tick is the instrument rather than a mistake they
+     * made, and which knob removes it.
+     */
+    num('AMP EG · ATTACK', attack, EG_MS, 32, {
+      unit: 'ms',
+      ...(attack < 10
+        ? { note: 'The VCA opens fast here; a click on the first note is the attack, not a fault' }
+        : {}),
+    }),
     num('AMP EG · DECAY', decay, EG_MS, 32, {
       unit: 'ms',
       mood: [{ axis: 'density', amount: -Math.round(decay * 0.4) }],
