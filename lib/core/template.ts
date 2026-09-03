@@ -74,6 +74,30 @@ export type RoleRequest = {
    */
   inessential?: { reason: string }
   /**
+   * §4.1/#334. **Which note this part plays, when the step grid already owns its rhythm.**
+   *
+   * Twenty of the library's devices are addressed by note — a Deluge track, a Digitakt, a
+   * Tracker. On those the guide printed which steps to hit and never which note to place there,
+   * because a pitch reached the page only where a *hook* existed, and whether a hook exists is a
+   * musical decision about a part rather than anything to do with whether the box needs a note.
+   *
+   * **Not a hook, and deliberately less than one.** A hook is a figure — notes and their own
+   * rhythm — and §4.3/#100 makes a resolved hook the part's pattern, replacing the grid.
+   * Authoring one for a `sub` that holds the root under an authored rhythm would delete that
+   * rhythm and then need `reArticulatesHook` to switch it back on. Building something and
+   * immediately disabling half of it is a sign the concept is wrong, so this is the smaller
+   * concept: a degree, and no claim on the pattern.
+   *
+   * A degree in the key rather than a note name, so it transposes with the song like everything
+   * else in §4.1, and `baseOctave` for the reason a hook carries one — an offset with no origin
+   * is not a note. Purely musical, naming no device: invariant 3 is untouched.
+   *
+   * **Forbidden together with a hook for the same role**, which the schema does not check
+   * because a request cannot see the template's hooks — `test/templates.test.ts` does. Two
+   * authorities over one part's notes is what #100 exists to prevent.
+   */
+  pitch?: RequestPitch
+  /**
    * §12.4. A *minimum note count*, matched against the assignable's `polyphony`. A number, not
    * a device name, so it does not breach invariant 3.
    */
@@ -118,6 +142,18 @@ export type RoleRequest = {
   reArticulatesHook?: true
 }
 
+/**
+ * §4.1/#334. A single degree in the key, with the octave it is counted from. The same two fields
+ * a `HookNote` carries, minus the two that are about rhythm — which is the whole difference
+ * between saying "this note" and saying "this figure".
+ */
+export type RequestPitch = { degree: number; baseOctave: number }
+
+export const RequestPitchSchema = z.strictObject({
+  degree: z.int().min(1),
+  baseOctave: z.int(),
+})
+
 export const RoleRequestSchema = z
   .strictObject({
     id: z.string().min(1),
@@ -134,6 +170,7 @@ export const RoleRequestSchema = z
           .min(1, 'a request the direction can do without needs a reason saying why (§4.4)'),
       })
       .optional(),
+    pitch: RequestPitchSchema.optional(),
     polyphony: z.int().min(1).optional(),
     distinct: z.boolean().optional(),
     // `true` only. `false` would be a second way to write the default, and two spellings of

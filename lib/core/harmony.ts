@@ -1,5 +1,5 @@
 import type { HookId, TemplateId } from './ids'
-import type { Hook, HookNote } from './template'
+import type { Hook, HookNote, RequestPitch } from './template'
 import type { Role } from './vocabulary'
 import { compareCodeUnits } from './resolver'
 import { saltSeed, seededPick } from './seed'
@@ -188,6 +188,47 @@ function spell(
   const marks = accidental >= 0 ? '#'.repeat(accidental) : 'b'.repeat(-accidental)
   // `semitone` is already the MIDI number: `absoluteSemitone` counts from C-1, which is MIDI 0.
   return { note: `${letter}${marks}${octave}`, midi: semitone }
+}
+
+/**
+ * §4.1/#334. **One note, for a part whose rhythm the step grid already owns.**
+ *
+ * A hook is a *figure* — notes and their own rhythm — and §4.3/#100 makes a resolved hook the
+ * part's pattern, replacing the grid. That is right for a line somebody hums and wrong for a
+ * `sub` holding the root under a pattern the direction already authored: authoring a hook there
+ * would delete the rhythm and then need a flag to bring it back.
+ *
+ * So this resolves a degree and nothing else. No steps, no lengths, no authority over the grid
+ * — it answers "which note", which on the twenty note-addressed devices in the library is the
+ * half of the instruction that was missing (#334).
+ *
+ * Shares `spell` with hooks, so a `sub` on degree 1 and a hook note on degree 1 in the same key
+ * are the same pitch and the same spelling. A second spelling path would be a second chance to
+ * disagree with `Cb4` versus `B3`.
+ */
+export type PitchResolution =
+  | { outcome: 'resolved'; note: string; midi: number }
+  | { outcome: 'unresolved'; reason: 'unparsed-key' | 'unspellable'; detail: string }
+
+export function resolvePitch(pitch: RequestPitch, key: string): PitchResolution {
+  const parsed = parseKey(key)
+  if (parsed === undefined) {
+    return {
+      outcome: 'unresolved',
+      reason: 'unparsed-key',
+      detail: `'${key}' is not '<A-G><#|b> <mode>' with a mode in ${MODES.join(', ')}`,
+    }
+  }
+  // `step` and `len` are a hook note's business and carry no meaning here; `spell` reads neither.
+  const spelt = spell(parsed, pitch.baseOctave, {
+    step: 1,
+    degree: pitch.degree,
+    octave: 0,
+    len: 1,
+  })
+  return 'unspellable' in spelt
+    ? { outcome: 'unresolved', reason: 'unspellable', detail: spelt.unspellable }
+    : { outcome: 'resolved', note: spelt.note, midi: spelt.midi }
 }
 
 /**

@@ -2145,6 +2145,21 @@ function phaseSteps(
      * resolved, and they carried the notice before. Whether a grid is *suppressed* is the
      * question; whether it came back empty is a different one.
      */
+    /**
+     * §4.1/#334. **Which note to place**, above the grid that says where.
+     *
+     * Only where a grid follows and the part has no hook: a hook already prints every note with
+     * its degree and MIDI number in phase 4, so repeating one of them here would be a second
+     * authority over the same part — the thing #100 exists to prevent.
+     *
+     * Twenty of the library's devices are addressed by note, and before this the guide told a
+     * reader which steps to hit and never what to put on them.
+     */
+    if (!replacesGrid && a.hookAuthority === undefined && a.pitch !== undefined) {
+      out.push('')
+      out.push(`**Note** — \`${a.pitch.note}\` · MIDI ${num(a.pitch.midi)}`)
+    }
+
     if (!replacesGrid) {
       const entry = patternEntryNotice(deviceById.get(a.deviceId))
       if (entry !== undefined) {

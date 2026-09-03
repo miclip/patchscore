@@ -433,6 +433,8 @@ How this box sets a note’s length is not established here, so the durations be
 
 **One oscillator under the filter, nothing above it** — settings in Sound design
 
+**Note** — `F1` · MIDI 29
+
 **Not programmed here** — it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage. Enter this figure on the Metropolix, which drives it through `TRK 1 · PITCH` and `TRK 1 · GATE`.
 
 **Intro, Outro** — 16 steps, band 0

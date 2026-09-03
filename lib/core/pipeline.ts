@@ -37,7 +37,7 @@ import {
   type ResolvedSourceAudio,
 } from './resolver'
 import { assign, type SearchReport, type Shortfall } from './search'
-import { chooseHook, chooseKey, parseKey, type HookChoice } from './harmony'
+import { chooseHook, chooseKey, parseKey, resolvePitch, type HookChoice } from './harmony'
 import type { InspirationDiagnostic } from './inspiration'
 
 /**
@@ -1186,6 +1186,19 @@ export type ResolvedAssignment = {
    * Resolved rather than optional, for the same reason `recipe.realisation` is: both renderers
    * have to branch on it, and an optional field is one a renderer can forget to read.
    */
+  /**
+   * §4.1/#334. **Which note to place**, where the direction said so and the step grid keeps the
+   * rhythm. Resolved against the song's key, so it transposes with everything else.
+   *
+   * Absent means the direction authored no pitch for this part — which stays honest rather than
+   * defaulting to the tonic: right most of the time, invisible when wrong, and a musical
+   * decision belongs in the template (§4.1), not in a fallback here.
+   *
+   * Independent of `hookAuthority`. A hook already carries notes, so a part with one needs
+   * nothing from this; a part with neither is a part the guide cannot fully instruct, and
+   * saying so is invariant 5.
+   */
+  pitch: { note: string; midi: number } | undefined
   hookAuthority: HookId | undefined
   /**
    * §4.3/§8. **The direction's answer to what this part's variants mean against its hook**, from
@@ -1575,6 +1588,25 @@ export function resolve(input: ResolveInput): ResolveResult {
     ),
   )
 
+  /**
+   * §4.1/#334. A request's authored pitch, spelled for this song's key.
+   *
+   * `undefined` on three different absences, and they are all the same answer to a reader: the
+   * direction authored none, the song has no key, or the degree cannot be spelled in it. The
+   * last is the interesting one — it is invariant 5 again, and printing an unspellable note
+   * would be worse than printing none.
+   */
+  const resolveRequestPitch = (
+    request: RoleRequest,
+    songKey: string | undefined,
+  ): { note: string; midi: number } | undefined => {
+    if (request.pitch === undefined || songKey === undefined) return undefined
+    const resolved = resolvePitch(request.pitch, songKey)
+    return resolved.outcome === 'resolved'
+      ? { note: resolved.note, midi: resolved.midi }
+      : undefined
+  }
+
   // Steps 8 and 9.
   const assignments: ResolvedAssignment[] = allocation.assignments.map((a) => {
     const request = requestById.get(a.requestId) as RoleRequest
@@ -1603,6 +1635,7 @@ export function resolve(input: ResolveInput): ResolveResult {
       params: resolveParams(a.recipe, mood),
       patch: resolvePatch(a.recipe),
       sections: a.sections,
+      pitch: resolveRequestPitch(request, key),
       hookAuthority: hookAuthorityByRole.get(a.role),
       reArticulatesHook: request.reArticulatesHook === true,
       patterns: a.sections.map((section) => {

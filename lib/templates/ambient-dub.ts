@@ -259,7 +259,15 @@ export const ambientDub: Template = {
     // above is a seventh-flavoured stack and a rig that can only sound three of its notes
     // would be playing a different chord under a guide that says otherwise.
     { id: 'r-pad', role: 'pad', priority: 1, character: 'soft', sustain: 'continuous', polyphony: 4 },
-    { id: 'r-sub', role: 'sub', priority: 1, character: 'dark', sustain: 'continuous' },
+    // §4.1/#334. The root, at the octave every authored `sub` hook uses. See industrial-techno.
+    {
+      id: 'r-sub',
+      role: 'sub',
+      priority: 1,
+      character: 'dark',
+      sustain: 'continuous',
+      pitch: { degree: 1, baseOctave: 1 },
+    },
 
     { id: 'r-bass-mid', role: 'bass-mid', priority: 2, character: 'dark', sustain: 'continuous' },
     { id: 'r-kick', role: 'kick', priority: 2, character: 'soft', sustain: 'continuous' },
