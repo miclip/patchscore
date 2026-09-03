@@ -2750,19 +2750,26 @@ button:active {
     grid-column: 1;
   }
 
+  /*
+   * `contents`, so the toggle and the offer place themselves. Wrapping them together made the
+   * pill jump from the right edge to the left the moment it was opened — the control moving
+   * because you pressed it, which is the one thing a control must not do.
+   */
   .placement {
-    grid-column: 2;
-    grid-row: 1;
-    margin: 0;
-    justify-content: flex-end;
+    display: contents;
   }
 
-  /* Opened, it is a row of boxes rather than one pill: take the whole width, under everything. */
-  .placement:has(.placement-options) {
+  .placement-toggle {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  /* The offer is a row of boxes, so it takes the width rather than a right-hand column. */
+  .placement-options,
+  .placement-refused-why {
     grid-column: 1 / -1;
-    grid-row: auto;
     margin: 6px 0 0;
-    justify-content: flex-start;
   }
 }
 
@@ -2803,18 +2810,43 @@ button:active {
  * beside it rather than in a `title` — a hover has no touch equivalent, and "why is my box not
  * on the list" is the question this answers (§7.5/#329).
  */
+/*
+ * §7.5/#340. **The reason is not a pill and must not sit in the row of them.**
+ *
+ * Rendered inline it read as a run-on — `[Automatic] [MPC Live III] [Tracker Mini] nobody has
+ * written a dark sub for your Tracker Mini yet [TR-1000]` — a sentence wedged between controls,
+ * breaking the one row the reader is scanning.
+ *
+ * `order` and a full-width basis move it visually without touching the markup: every reason
+ * lands after every pill, one per line. The DOM order is unchanged, so it is still announced
+ * immediately after the button it is about — which is why it is a sibling of that button and not
+ * a `title` (no hover on touch) or text inside a disabled control (not reliably announced).
+ *
+ * Each sentence names its own box, so it does not need to sit beside it to be understood.
+ */
 .placement-option:disabled {
   cursor: default;
   opacity: 0.55;
   border-style: dashed;
 }
 
+/*
+ * `contents`, so the pill joins the row of pills and the sentence does not. As a flex box this
+ * was sized to its sentence, which left a hole in the row the width of the reason and indented
+ * the reason under the pill it belonged to.
+ */
 .placement-unavailable {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 8px;
-  min-width: 0;
+  display: contents;
+}
+
+/*
+ * `order` puts every reason after every pill and `flex-basis` gives each its own line, so the
+ * row stays a row. Visual only: the DOM order is untouched, so a screen reader still reads the
+ * sentence immediately after the button it is about.
+ */
+.placement-why {
+  order: 1;
+  flex-basis: 100%;
 }
 
 .placement-why,
