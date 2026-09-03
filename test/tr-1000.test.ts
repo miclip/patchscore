@@ -68,9 +68,9 @@ describe('TR-1000 manifest', () => {
 
   // §3's key is (role, character, voice); this device happens to satisfy the stricter
   // per-device form, which is a fact about its content, not the rule.
-  it('carries 15-20 recipes, no two of them sharing a (role, character)', () => {
+  it('carries 15-22 recipes, no two of them sharing a (role, character)', () => {
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(20)
+    expect(device.recipes.length).toBeLessThanOrEqual(22)
 
     const pairs = device.recipes.map((r) => `${r.role} ${r.character}`)
     expect(new Set(pairs).size).toBe(pairs.length)
@@ -140,6 +140,12 @@ describe('TR-1000 manifest', () => {
       { unit: undefined, min: -100, max: 100 },
       // MOD DEST: p.71 prints `1-3` and no unit — it is an assignment-slot number (#58).
       { unit: undefined, min: 1, max: 3 },
+      // The two ranges the VA and FILTER blocks add, and the only ones on this box printed in
+      // anything but percent or semitones. `1ms-1000ms` is p.63's own single unit; `8.2Hz-44.7kHz`
+      // is p.65's, carried in the finer of the two units it prints, which moves a decimal point
+      // and invents nothing. See `MS` and `CUTOFF_HZ` in the manifest.
+      { unit: 'ms', min: 1, max: 1000 },
+      { unit: 'Hz', min: 8.2, max: 44700 },
     ]
     for (const recipe of device.recipes) {
       for (const param of recipe.params as AuthoredParam[]) {
@@ -177,6 +183,10 @@ describe('TR-1000 manifest', () => {
       'tr1000-snare-dirty': [63],
       'tr1000-tom-dark': [60],
       'tr1000-tom-bright': [60],
+      // The one recipe drawing on two tables: `VA Common` is the GEN block on p.63, and the
+      // per-instrument `FILTER` block is p.65's, which p.38 sends the reader to by name.
+      'tr1000-bass-mid-dark': [63, 65],
+      'tr1000-bass-mid-dirty': [63],
       'tr1000-rim-clean': [60],
       'tr1000-ghost-perc-soft': [62],
       'tr1000-clap-bright': [62],
@@ -189,7 +199,7 @@ describe('TR-1000 manifest', () => {
       'tr1000-ride-clean': [62],
       'tr1000-metallic-dirty': [62],
     }
-    expect(Object.keys(PAGES)).toHaveLength(20)
+    expect(Object.keys(PAGES)).toHaveLength(22)
     for (const recipe of device.recipes) {
       const allowed = PAGES[recipe.id]
       expect(allowed, recipe.id).toBeDefined()
@@ -225,7 +235,7 @@ describe('TR-1000 manifest', () => {
       expect(p, `${r.id} has no GEN`).toBeDefined()
       return { id: r.id, param: p as AuthoredParam }
     })
-    expect(gens).toHaveLength(20)
+    expect(gens).toHaveLength(22)
 
     for (const { id, param } of gens) {
       expect(param.kind, id).toBe('enum')
@@ -262,9 +272,9 @@ describe('TR-1000 manifest', () => {
       expect(['Analog', 'ACB', 'FM', 'PCM', 'Sample'], id).not.toContain(param.value)
     }
 
-    // Every recipe reaches for a different generator; 20 recipes sharing three names would
+    // Every recipe reaches for a different generator; 22 recipes sharing three names would
     // mean the option sets are decoration.
-    expect(new Set(gens.map((g) => (g.param as { value: string }).value)).size).toBe(20)
+    expect(new Set(gens.map((g) => (g.param as { value: string }).value)).size).toBe(22)
   })
 
   it('offers a closed-hat recipe no open hats, and the reverse (§3.1)', () => {
@@ -457,6 +467,7 @@ describe('TR-1000 manifest', () => {
       'tr1000-kick-hard',
       'tr1000-sub-dark',
       'tr1000-snare-hard',
+      'tr1000-bass-mid-dark',
     ])
     for (const recipe of routed) {
       // The send does not make the routing line redundant: one says where the track leaves the

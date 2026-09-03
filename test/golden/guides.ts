@@ -17,15 +17,18 @@ import { droneStudy, industrialTechno } from '../../lib/templates/index'
  * identically, a device whose every point is provisional. A hand-built rig small enough to read
  * is a rig too small to show any of that.
  *
- * Four fixtures, chosen to differ in the thing §8 is worst at. The first three are the same
- * template on three rigs; the fourth is the one that changes template, for the reason given
- * under it:
+ * Six fixtures, chosen to differ in the thing §8 is worst at. Four are Industrial Techno on four
+ * rigs; the last two change template, for the reasons given under them:
  *
  *  - **full-rig** — every registry device, the rig that fills most parts and exercises pool
  *    voices, merged section blocks, a resolved hook and — since #49 — a real patch list.
  *  - **tr-1000** — one drum machine, which cannot carry a tonal part at all. Most of the
  *    template becomes gaps, so this is the fixture that proves invariant 5 renders honestly at
  *    scale rather than only in the one-gap case.
+ *  - **tr-6s** — one drum machine a size down, and the only fixture here that renders all three
+ *    of §7.3's shortfall headings at once. `tr-1000` did until its LT took `bass-mid`; the full
+ *    argument is beside `TR_6S` below, because it is a claim about which absences a guide has to
+ *    keep showing rather than about the renderer.
  *  - **midi-clock** — Tracker Mini + TR-1000, added with #103/#104 as the one rig here that
  *    resolved onto `midi-din`. `tr-1000` still cannot reach the phase-3 material those issues
  *    added, being a source whose manual prints neither a clock-output menu nor a note on its MIDI
@@ -44,14 +47,15 @@ import { droneStudy, industrialTechno } from '../../lib/templates/index'
  *         18, 24 and 12 bars against a 16-bar harmonic cycle, so phase 5 opens with "Not every
  *         section is a whole number of repeats, and that is deliberate" and every section line
  *         has to say where the copy is cut — `21 bars — 1 copy of 16 bars, then one cut to 5
- *         bars`. Industrial Techno's sections divide, so all three files above render that
+ *         bars`. Industrial Techno's sections divide, so all four files above render that
  *         arithmetic's easy case and none of them renders the sentence at all. This is the one
  *         reason that is true nowhere else in this directory.
  *      3. **A deferred part that still has a grid (§4.3).** `texture` resolves to
  *         `drone-hook-upper`, so the hook owns the notes — and Drone Study declares
  *         `reArticulatesHook`, so phase 5 prints the strike map under the pointer rather than
  *         instead of it. That shape exists nowhere else in this directory: `full-rig` and
- *         `midi-clock` pin three plain deferrals each, where the pointer *replaces* the grid.
+ *         `midi-clock` pin three plain deferrals each and the two one-box techno guides one
+ *         each, where the pointer *replaces* the grid.
  *
  *         It was the opposite claim until §4.3's flag landed — this file pinned the deferral as
  *         the *whole* of the phase, which is what #100 made it and what left the density knob
@@ -60,9 +64,14 @@ import { droneStudy, industrialTechno } from '../../lib/templates/index'
  *
  *    Nothing else about this fixture is load-bearing. Its key is not F minor, which is a
  *    consequence of running a second template on the shared seed rather than a reason to keep the
- *    file: §4's enharmonic reading is pinned by the three techno guides and by `harmony.test.ts`,
+ *    file: §4's enharmonic reading is pinned by the four techno guides and by `harmony.test.ts`,
  *    and a fixture that also claimed it would be a claim on bytes nobody would think to check
  *    when this file changed for one of the three reasons above.
+ *
+ *  - **tracker-mini-drone-study** — the same direction on a box whose envelope has something to
+ *    say about the grid the third reason above describes. Its argument is beside `TRACKER_MINI`
+ *    below, for the same reason the TR-6S's is beside its own rig: it is one claim about one
+ *    device, and it reads where the rig is built.
  *
  * **`full-rig` used to be the third case and #80 changed that**, which is worth recording because
  * it looks like a fixture losing its purpose. It resolved onto `usb`, because the Metropolix was
@@ -78,8 +87,9 @@ import { droneStudy, industrialTechno } from '../../lib/templates/index'
  *
  * Seed 18 because it resolves `F minor` — the key whose third is `Eb`, so #32's enharmonic
  * reading (`Eb2` beside `D#2`) is exercised by the committed bytes and not by a unit test alone.
- * One seed across all four, so no fixture has a seed of its own to explain; what it resolves to
- * under a second template is a consequence of that and not a thing this directory pins.
+ * One seed across all six, so no fixture has a seed of its own to explain; what it resolves to
+ * under a second template is a consequence of that and not a thing this directory pins — the two
+ * Drone Study files land on `A phrygian` and neither claims anything by doing so.
  */
 
 const SEED = 18
@@ -128,9 +138,35 @@ const DELUGE = DEVICES.filter((d) => d.id === 'synthstrom-deluge')
  */
 const TRACKER_MINI = DEVICES.filter((d) => d.id === 'polyend-tracker-mini')
 
+/**
+ * §7.3/#81. **The one fixture that renders `### Waiting on us`**, which is the whole of why it
+ * is here.
+ *
+ * `tr-1000` pinned all three shortfall states at once — a limit of the boxes, a recipe nobody
+ * has written, and a part the direction is finished without — until the TR-1000's LT took
+ * `bass-mid` and closed that guide's only unauthored line. Closing it is the outcome
+ * `authored-rig-coverage.test.ts` pushes toward and not a regression, but the byte-level pin on
+ * the middle heading went with it, and `render.test.ts`'s synthetic Golden Techno rig is not the
+ * same claim: what that block has to survive is a *real* guide at real scale, where the line
+ * names a real track on a real box and forty-odd assignables compete for it.
+ *
+ * The TR-6S is that guide one box down. Alone on Industrial Techno at seed 18 it fills five
+ * requests and reports all three kinds — `open-hat` unauthored, `sub`, `metallic` and `impact`
+ * contended out of the room it has, `stab` with no voice for it at all, and `pad` and `riser`
+ * excused by the direction. It also carries both `rig-limit` reasons in one guide, which is a
+ * second thing `tr-1000` used to be alone in: `no-room` and `no-capable-voice` print different
+ * sentences and a fixture with only one of them pins only one.
+ *
+ * Nothing else about it is load-bearing. It is deliberately the *smallest* Roland here rather
+ * than an interesting one: this file wants a guide with holes of every kind, and a box that runs
+ * out of tracks is how you get one without inventing a rig nobody owns.
+ */
+const TR_6S = DEVICES.filter((d) => d.id === 'roland-tr-6s')
+
 export const GUIDE_NAMES = [
   'full-rig',
   'tr-1000',
+  'tr-6s',
   'midi-clock',
   'deluge-drone-study',
   'tracker-mini-drone-study',
@@ -138,20 +174,21 @@ export const GUIDE_NAMES = [
 export type GuideName = (typeof GUIDE_NAMES)[number]
 
 /**
- * The three fixtures that render **Industrial Techno**, and so the three a six-section, F-minor,
+ * The fixtures that render **Industrial Techno**, and so the ones a six-section, F-minor,
  * band-0-through-3 assertion is allowed to speak for.
  *
  * Named rather than derived, because the alternative — a test filtering `GUIDE_NAMES` by reading
  * each fixture's own template — would make the assertion agree with whatever the fixture does,
- * which is the one thing a fixture test must not do. Adding a fifth fixture on a fourth template
- * leaves this list alone and the techno assertions keep meaning what they meant.
+ * which is the one thing a fixture test must not do. A fixture on a fourth template leaves this
+ * list alone and the techno assertions keep meaning what they meant.
  */
-export const TECHNO_GUIDE_NAMES = ['full-rig', 'tr-1000', 'midi-clock'] as const
+export const TECHNO_GUIDE_NAMES = ['full-rig', 'tr-1000', 'tr-6s', 'midi-clock'] as const
 
 /** The rendered guide for one fixture name. Pure — the same bytes on every call. */
 const RIGS: Record<GuideName, Fixture> = {
   'full-rig': { devices: DEVICES, template: industrialTechno },
   'tr-1000': { devices: TR_1000, template: industrialTechno },
+  'tr-6s': { devices: TR_6S, template: industrialTechno },
   'midi-clock': { devices: MIDI_CLOCK, template: industrialTechno },
   'deluge-drone-study': { devices: DELUGE, template: droneStudy },
   'tracker-mini-drone-study': { devices: TRACKER_MINI, template: droneStudy },
@@ -169,7 +206,9 @@ export function guidePath(name: GuideName): string {
 }
 
 /**
- * `npm run gen:guides` writes both files, and is the only way they are ever regenerated.
+ * `npm run gen:guides` writes every file in `GUIDE_NAMES`, and is the only way any of them is
+ * ever regenerated. It rewrites all six on each run, so a fixture whose bytes did not move comes
+ * back byte-identical and the diff is the review.
  *
  * Named alone (`tsx test/golden/guides.ts full-rig`) it prints one guide to stdout and writes
  * nothing, which is how the cross-locale test captures another locale's answer without touching

@@ -66,11 +66,20 @@ describe('the four-box rig leaves nothing unauthored (§7.3)', () => {
   /**
    * The half that keeps the assertion above from being vacuous. `unauthored` is a derived kind —
    * `no-recipe` on a request the direction actually needs — so a rename or a mis-derivation would
-   * make the test above pass by finding nothing anywhere. The TR-1000 on its own still has holes
-   * of exactly this kind, and saying so here means the empty list is a fact about the rig rather
-   * than about the query.
+   * make the test above pass by finding nothing anywhere. A drum machine on its own still has
+   * holes of exactly this kind, and saying so here means the empty list is a fact about the rig
+   * rather than about the query.
+   *
+   * **The control was the TR-1000 until its LT took `bass-mid`**, which closed its last hole of
+   * this kind: across every direction and all eight seeds that box now reports none, which is
+   * the outcome this file exists to reach rather than a reason to keep pointing at it. The TR-8S
+   * is the same shape one box back — a drum machine that cannot carry the tonal roles and has
+   * `bass-mid` among the parts nobody has written for it.
    */
   it('still reports them for a rig that has them, so the empty list means something', () => {
-    expect(unauthoredHoles([box('roland-tr-1000')]).length).toBeGreaterThan(0)
+    expect(unauthoredHoles([box('roland-tr-8s')]).length).toBeGreaterThan(0)
+    // The retired control, asserted rather than deleted: it is a claim about the library that
+    // would otherwise regress silently the next time a recipe moved.
+    expect(unauthoredHoles([box('roland-tr-1000')])).toEqual([])
   })
 })

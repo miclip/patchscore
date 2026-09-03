@@ -576,21 +576,29 @@ describe('industrial-techno resolves (§7)', () => {
     })
   })
 
-  it('fills six of twelve on the TR-1000 alone, with a reason for each of the six', () => {
+  it('fills seven of twelve on the TR-1000 alone, with a reason for each of the five', () => {
     expect(report([tr1000()])).toEqual({
       method: 'exhaustive',
       capped: false,
-      filled: ['r-clap', 'r-closed-hat', 'r-impact', 'r-kick', 'r-metallic', 'r-open-hat'],
+      filled: [
+        'r-bass-mid',
+        'r-clap',
+        'r-closed-hat',
+        'r-impact',
+        'r-kick',
+        'r-metallic',
+        'r-open-hat',
+      ],
       gaps: {
         // One voice on this box declares both kick and sub, so the loser is contended out
         // rather than uncarriable. Which of the two loses is a seed-7 tie-break, not a law -
         // the test below pins the part that holds for every seed.
         'r-sub': 'no-room/contended',
-        // The box has a voice for these and nobody has authored the recipe. Fixed by writing
-        // content, which is a different job from buying a device (§3.5, §7.3). `r-metallic`
-        // used to be on this list and is not any more: the RC track now carries a CR-78 ring,
-        // which is the authoring answer the line above describes rather than a purchase.
-        'r-bass-mid': 'no-recipe',
+        // The box has a voice for this and nobody has authored the recipe. Fixed by writing
+        // content, which is a different job from buying a device (§3.5, §7.3). Two entries have
+        // left this list by that route: `r-metallic`, when the RC track took a CR-78 ring, and
+        // `r-bass-mid`, when the LT took the `VA`/FM bass pair. Both are the authoring answer
+        // the line above describes rather than a purchase.
         'r-noise': 'no-recipe',
         // Nothing in a drum machine declares a tonal role. Fixed by buying a device.
         'r-stab': 'no-capable-voice',
