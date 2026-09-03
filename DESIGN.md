@@ -3124,6 +3124,143 @@ Three things, all of them chosen rather than overlooked:
   moves the source to the box that sorts *last*. The outcome staying put is not evidence the field
   did nothing; authoring it to move the outcome would be the same error from the other side.
 
+### 7.5 Placements
+
+**The reader can move a part onto another box in the rig**, overriding §7.1's ranking for that one
+request. The resolver decides which box plays which part; sometimes the reader disagrees and has a
+reason the model cannot see, because one box is across the room, another is already patched, and a
+third just sounds better to them tonight. Before #340 the only recourse was a reroll, which hands
+back a different guide entirely.
+
+```ts
+SongOverrides.placements?: readonly { requestId: RequestId; deviceId: DeviceId }[]
+```
+
+**Keyed by request, not by role.** A direction may request one role twice, which is why
+`Occupancy` is keyed by request (§4.2); a placement keyed by role could not say which of the two
+pads it meant. **It names a device, not a voice.** Which ordinal of a pool a part lands on is a
+device-model detail a reader has no reason to reason about, and the objective already places
+within a box sensibly.
+
+It sits on `SongOverrides` for §7.4/#200's reason. A placement changes the guide rather than the
+view, and invariant 6 says the same inputs reproduce the same bytes, so it is an *input* a link
+carries and not an edit of a resolved guide. §8.2 already refused to encode output into a
+permalink; #16's saved score is the separate object that freezes output, and this is not that.
+
+#### A placement is a feasibility constraint, and it is honoured
+
+It excludes allocations. It does not rank them, so **nothing about it enters `Score`** — the same
+ruling §2.3/#25 made for device resources, and the same machinery. Every candidate on another box
+is removed as the search context is built, before the ladder, the suffix floor and the bound are
+derived from the candidate lists, so an accepted placement prunes the tree rather than
+complicating it.
+
+**A placed request also loses its miss branch**, and that half is what makes it a placement rather
+than a preference. Removing the candidates elsewhere says the part may not go to another box; it
+does not stop the search leaving the part out instead, and an allocation that drops a placed part
+has not honoured the placement, it has decided the reader was wrong. So an accepted placement is
+filled, on the box it names, in every allocation the search will consider — including the greedy
+fallback, which settles the placements first because it cannot back out of a voice.
+
+Deciding a placed request ahead of the requests above it cost one assumption elsewhere. §12.6's
+`distinct` rule was asked backwards in the search — a later request could not have a device yet —
+and once the fallback places one early, it can. The rule now reads every request already decided
+rather than only the ones below, which is what classification always did and what §12.6 always
+meant. It moves no result that has no placement in it: inside the search proper nothing above the
+current request is ever chosen.
+
+Measured on a ten-device rig running `industrial-techno` at seed 9, one placement takes the
+search from 18,096 nodes to 3,352, and three take it to 111. #25 found the same direction when
+device resources became a constraint, and it is the reason to keep placements out of `Score`: an
+excluded allocation is cut, where a merely expensive one still has to be explored.
+
+What survives the filter is `voiceable` and `stacks`. `roleOnly` and `capable` are left whole,
+because §7.3 reads them to say what *could* have carried the part; narrowing them would report a
+placed part as `no-recipe` — "nobody has written it" — for a recipe that exists on the box beside
+it.
+
+**The rest of the allocation pays for it.** A part the reader did not place may land somewhere
+worse, or go unfilled, even where §4.4 ranks it above the placed one — placing the sub may push
+the pad somewhere worse, and placing a low-priority part on the only voice that plays the kick
+costs the kick. §4.4's `optional` does not change this either: it says the *direction* is content
+to lose that part, and a placement is the reader speaking.
+
+None of that is silent in the resolver. The displaced part becomes an ordinary §7.3 shortfall
+naming what is carrying the voice it wanted, which both renderers already print; the placements
+themselves are reported in `ResolveResult.placements`. What the resolver must never do is take the
+trade back on the reader's behalf.
+
+**Phase 1 stops at that report.** Neither renderer reads `placements` yet, nothing writes one but
+a hand-edited link, and `StudioDocV1` has no field for one. So every sentence below about what a
+refusal *says* is a sentence about the result the resolver hands over, not about anything on the
+page today — the control that shows it, on the part in the guide and in both renderers (#33, #21),
+is phase 2. Saying it the other way round would be describing a feature by its plan.
+
+#### An impossible placement is refused and reported
+
+The clock source is the precedent, and the whole rule transfers: a device that cannot send clock is
+refused rather than obeyed, and the ranking stands (§7.4/#200). Four refusals, each leaving the
+part to §7.1:
+
+- `unknown-request` — the direction has no such request. A stale link.
+- `device-not-in-rig` — the box is not among the effective devices. The other stale case.
+- `cannot-serve` — the box is here and cannot make this part: no voice for the role, no way to
+  sound the notes (§12.4), no recipe near enough the character (§3.5), or nowhere to load the
+  patch even standing empty (§2.3/#25). The refusal carries a sentence saying which, because "why
+  is my box not on the list" is a useful thing to be able to tell a reader about their own rig
+  (#329/#334) — which phase 2 will, from this report.
+- `conflicted` — it could not hold at the same time as a placement that outranks it.
+
+**Refusals are their own result and not `Shortfall`s.** A shortfall says a part was not made; a
+refused placement usually means the opposite, that the part is there and simply not where it was
+asked for. Folding one into the other would tell a reader their track has a hole in it because
+they picked the wrong box for a part they can hear.
+
+#### The order is the direction's, never the link's
+
+Two links carrying the same set of placements have to produce the same guide, so a permalink's
+field order must not settle a musical outcome. Placements are sorted before anything is decided:
+by the request's priority (§4.4, ascending, most important first), then by request id in UTF-16
+code unit order (§7.2), then by device id. Nothing downstream reads the caller's array again.
+
+That order is also the conflict rule. Each placement in turn is accepted if it can be honoured
+alongside the ones already accepted, so the more important part keeps the box and a part that
+cannot fit beside it is refused and falls back to the ranking. A refusal does not end the walk:
+the placements after it are still considered, and one that fits is still accepted, so the accepted
+set is the precedence-ordered greedy subset rather than a prefix of the order.
+
+It is not the *largest* set that could have been honoured, and that is the intended trade.
+Refusing one important placement can sometimes make room for two unimportant ones, and taking that
+deal would move a part the reader cares about because two they care less about outvoted it.
+Precedence decides, and the count follows from it.
+
+The check that decides "can be honoured alongside" runs over the placed requests alone and uses
+the search's own candidate path, so occupancy (§4.2), `distinct` (§12.6) and the resource budget
+(§2.3/#25) decide it rather than a second copy of those rules written beside them. Crowding is not
+among them: it is a `Score` key, and a reader may crowd a box on purpose. **It is exhaustive**: it
+tries every legal candidate at every placement and answers "no way to honour this" only once it
+has run out, because a refusal is a claim about the reader's rig and a search that stopped early
+cannot support one. Its depth is the number of placements, which the direction
+bounds, and its branching is one device's legal candidates for one request with free pool members
+already collapsed to a representative — if a pathological set on one many-voiced box ever made
+that slow, the repair is to memoise the states proved infeasible, which keeps the answer exact.
+
+The same request named twice is one statement. An exact repeat collapses; a second device for a
+request already placed conflicts with the first and is refused, rather than silently overriding
+it.
+
+#### What does not move
+
+**`RESOLVER_VERSION` stays at 6.** §7's rule is that the stamp tracks the engine, and a bump says
+a link's own inputs now resolve to different bytes. This widens the input set instead, exactly as
+#161's tempo and key did: a link carrying no placement resolves as it always did, which
+`test/placements.test.ts` asserts against a rendered guide rather than assuming. A link carrying
+one could not have been written by a build with no field to write it in. `FORMAT_VERSION` is the
+stamp that moves, and it moved to **4** when the encoding landed — §8.2 has the wire form.
+
+Pinning a part to a specific voice within a device is out of scope, for the reason a placement
+names a device in the first place.
+
 ---
 
 ## 8. Guide output
@@ -3432,8 +3569,9 @@ instruction alone, never invent one.
 ### 8.2 Persistence
 
 `localStorage` plus a URL-encoded permalink. **Inputs only, never resolved output** —
-devices, template, inspirations, five mood ints, seed, and §5.6's two optional song overrides.
-That packs to roughly 40 bytes.
+devices, template, inspirations, five mood ints, seed, §5.6's two optional song overrides, the
+chosen clock source, and §7.5's placements. That packs to roughly 40 bytes plus a field per part
+the reader moved.
 
 The overrides are the first **optional** fields in the format, and the reason `FORMAT_VERSION`
 went to 2. Absent means unset, which is a real state rather than a default standing in for a
@@ -3441,12 +3579,36 @@ missing value — so a v1 link opens unchanged, read as a guide that follows its
 only the stamp it re-encodes with differs. A v1 link that hand-edits them in has them dropped and
 reported: a field the link's own format does not have is not a field of that link.
 
-`FORMAT_VERSION` is **3**, because §6.4 made the mood optional too — all five axes or none, where
-none means "open at the direction's". Mood stays **required** when reading v1 and v2: every build
-that wrote one of those had the reader's mood as the only mood there was, so silence in an older
-link is corruption rather than a state. A v3 link carrying *some* of the axes is malformed under
-every format, since an override is total. Each optional scalar therefore records the format it
-arrived in — a v2 link is older than this build and still has every field v2 had.
+v3 made the mood optional too — all five axes or none, where none means "open at the direction's".
+Mood stays **required** when reading v1 and v2: every build that wrote one of those had the
+reader's mood as the only mood there was, so silence in an older link is corruption rather than a
+state. A link carrying *some* of the axes is malformed under every format, since an override is
+total. Each optional scalar therefore records the format it arrived in — a v2 link is older than
+this build and still has every field v2 had.
+
+`FORMAT_VERSION` is **4**, for §7.5's placements. They are written as a repeated readable field,
+`placement=<requestId>:<deviceId>`, one per part the reader moved, canonically ordered by request
+id and then device id in code units. A colon because a repeated field needs no separator between
+elements but a pair needs one between its halves, and `PERMALINK_ID` admits neither colons nor
+anything else that would need escaping.
+
+Placements are where the format's two kinds of bad value are furthest apart, so they are worth
+stating. **Corruption** is refused: a pair that is not a pair, an id that could split a field in
+half, one part placed on two boxes, or a device this build does not ship. **Staleness** is
+decoded and handed to the resolver: a device this build ships that the link's rig does not select,
+and a well-formed request id the direction no longer has. §7.5 refuses each of those by name in
+`ResolveResult.placements`, where refusing the whole link would leave the reader in front of
+nothing at all; phase 2 is what shows that report. A v1-v3 link carrying `placement=` has it
+dropped and reported, like any other field a link's own format never had.
+
+**A link carries placements; `localStorage` does not, and that is phase 1's boundary rather than
+an omission.** The two persistences answer different questions — a link is the whole input state
+of one guide, and `StudioDocV1` is the rig and score a person keeps between visits. Nothing in
+phase 1 can author a placement except by hand-editing a URL, so a stored field would have no
+writer, and adding one now would settle the doc's schema and version question before the control
+that motivates it exists. The consequence, stated rather than discovered: a placed link resolves
+and re-shares exactly as it should, and its placements do not survive a reload from storage. That
+decision belongs with phase 2's control, which is what will write them.
 
 Consequence: old links drift when the resolver changes — same inputs, same seed, different guide.
 This is a real and accepted violation of invariant 6 as originally stated, and is why invariant 6

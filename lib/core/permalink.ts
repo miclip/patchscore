@@ -1,4 +1,5 @@
 import type { DeviceId, InspirationId, TemplateId } from './ids'
+import type { Placement } from './search'
 import { MOOD_AXES, type MoodAxis, type MoodState } from './vocabulary'
 import { INSPIRATION_CAP } from './inspiration'
 import { RESOLVER_VERSION } from './pipeline'
@@ -75,7 +76,7 @@ import { RESOLVER_VERSION } from './pipeline'
  *
  * Never bumped for a resolver change. That is `RESOLVER_VERSION`.
  */
-export const FORMAT_VERSION = 3
+export const FORMAT_VERSION = 4
 
 /**
  * Formats this build can turn into inputs. **Older ones are readable, not merely tolerated.**
@@ -87,6 +88,8 @@ export const FORMAT_VERSION = 3
  *   every build that wrote one had the reader's mood as the only mood there was. So a v2 link
  *   decodes with an explicit mood, which is exactly what its author saw, and mood stays
  *   **required** when reading v1 and v2 — see `decodeGuideInputs`.
+ * - **v3** is v4 minus `placement` (§7.5/#340). A v3 link places nothing, which is a state and
+ *   not a missing value: every guide before #340 was the resolver's own allocation.
  *
  * A link that carries a field its own format did not have is a hand-edit of that format. Those
  * keys are dropped and *reported*, which is what a decoder of that vintage did with them, rather
@@ -95,7 +98,7 @@ export const FORMAT_VERSION = 3
  * Everything is re-encoded at `FORMAT_VERSION`. Canonicalisation has one output, and an old link
  * opened and re-shared is a link this build wrote.
  */
-export const READABLE_FORMATS: ReadonlySet<number> = new Set([1, 2, FORMAT_VERSION])
+export const READABLE_FORMATS: ReadonlySet<number> = new Set([1, 2, 3, FORMAT_VERSION])
 
 /**
  * The tempo override's domain, and the reason it has one: a mechanical guardrail against a typo,
@@ -200,6 +203,26 @@ export type ScoreInputsV1 = {
    * `selectClockSource` already refuses an ineligible id by falling back to the ranking.
    */
   clockSourceId?: DeviceId | undefined
+  /**
+   * §7.5/#340. **The parts the reader moved onto a box of their choosing**, or `undefined` for
+   * "let §7.1 allocate everything", which is every link before v4.
+   *
+   * Carried for `clockSourceId`'s reason: it changes which box the guide names, so invariant 6
+   * makes it an input rather than a view setting. It is still not resolver *output* — §8.2 refuses
+   * to encode that — because what is written down is the request and the box the reader picked,
+   * not the voice the search then chose or anything else it decided.
+   *
+   * **Absent and empty are one state**, as for every list in this format: a link that places
+   * nothing writes no `placement` field, and that is how it reads back.
+   *
+   * Two kinds of staleness are deliberately *not* corruption, and both are the clock source's
+   * precedent again. A device this build ships but the link's own rig does not select, and a
+   * well-formed request id this direction no longer has, both decode — `resolvePlacements`
+   * refuses each of them by name in `ResolveResult.placements` (§7.5), which leaves a guide that
+   * resolves rather than a link that will not open. A device id the build does not ship at all is
+   * corruption, exactly as it is in the rig and in `clock`.
+   */
+  placements?: readonly Placement[] | undefined
 }
 
 /**
@@ -240,8 +263,9 @@ export type Catalogue = {
 
 /**
  * ```
- * format=3&resolver=6&device=polyend-tracker-mini&device=roland-tr-1000&template=industrial-techno
- *   &darkness=50&density=50&grit=50&swing=50&space=50&bpm=140&key=A%20minor&seed=1
+ * format=4&resolver=6&device=polyend-tracker-mini&device=roland-tr-1000&template=industrial-techno
+ *   &darkness=50&density=50&grit=50&swing=50&space=50&bpm=140&placement=r-kick:roland-tr-1000
+ *   &key=A%20minor&seed=1
  * ```
  *
  * `bpm` and `key` are written only when the user set them (#161); a link without them is a link
@@ -263,6 +287,19 @@ const BPM = 'bpm'
 const KEY = 'key'
 const SEED = 'seed'
 const CLOCK = 'clock'
+const PLACEMENT = 'placement'
+
+/**
+ * §7.5/#340. `placement=<requestId>:<deviceId>`, one field per placed part.
+ *
+ * A colon rather than a second field name or a packed list, and the reason is the rule two
+ * comments below: a repeated field needs no separator *between elements*, but a placement's
+ * element is a pair and something has to sit between its halves. `PERMALINK_ID` admits letters,
+ * digits and interior hyphens and nothing else, so a colon cannot occur inside either half and
+ * the split has exactly one reading. It is also legal in a query string unescaped, so the field
+ * stays eyeballable — `placement=r-kick:roland-tr-1000` says what it does.
+ */
+const PLACEMENT_PAIR = ':'
 
 /**
  * Repeated once per element, so a list needs no separator character and no escaping — and the
@@ -273,7 +310,7 @@ const CLOCK = 'clock'
  * there is no difference between "absent" and "empty" for a list, and inventing one would mean an
  * empty rig had to be spelled with a placeholder nobody could guess.
  */
-const REPEATED: readonly string[] = [DEVICE, INSPIRATION]
+const REPEATED: readonly string[] = [DEVICE, INSPIRATION, PLACEMENT]
 
 /** Scalars. Exactly one of each, always — a second occurrence is malformed, not last-wins. */
 const SCALARS: readonly string[] = [FORMAT, RESOLVER, TEMPLATE, BPM, KEY, SEED, CLOCK]
@@ -307,6 +344,18 @@ const SCALAR_SINCE: ReadonlyMap<string, number> = new Map([
  * v1 or v2 link is corruption rather than "follow the direction".
  */
 const MOOD_OPTIONAL_SINCE = 3
+
+/**
+ * §7.5/#340. The same rule as `SCALAR_SINCE`, for the one repeated field that has a birthday. A
+ * v1-v3 link carrying `placement=` is a hand-edit of a format that had no such field, so it is
+ * dropped and reported rather than honoured under rules the link does not claim to follow — and
+ * a placement is exactly the kind of field where honouring it anyway would move a part somewhere
+ * the link's author never saw.
+ *
+ * `device` and `inspiration` are not in here: both have existed since v1, and a field with no
+ * birthday needs no entry.
+ */
+const REPEATED_SINCE: ReadonlyMap<string, number> = new Map([[PLACEMENT, 4]])
 
 /**
  * Every key this build understands. Anything else is dropped and reported (`dropped`), which is
@@ -578,6 +627,45 @@ export function checkGuideInputs(
     }
   }
 
+  /**
+   * §7.5/#340. Three checks, and what is *not* checked is the point of the shape.
+   *
+   * Both halves must be permalink-safe ids, because a value that could hold a `&` or an `=` would
+   * split a field in half; the request must appear once, because two boxes for one part is a link
+   * that means two things and picking one of them is guessing (the resolver refuses the second,
+   * but a link this build *wrote* would never carry it); and the device must be one this build
+   * ships, exactly as the rig's ids and `clock` are checked.
+   *
+   * The request id is checked for spelling and never against the direction, and a device that is
+   * in the catalogue but not in this link's rig is left alone. Both are stale rather than corrupt,
+   * and §7.5 reports them beside the guide instead of refusing to open it (invariant 5).
+   */
+  const placedRequests = new Set<string>()
+  for (const placement of inputs.placements ?? []) {
+    if (!PERMALINK_ID.test(placement.requestId)) {
+      return {
+        reason: 'malformed',
+        detail: `placement part '${placement.requestId}' is not a permalink-safe id`,
+      }
+    }
+    if (!PERMALINK_ID.test(placement.deviceId)) {
+      return {
+        reason: 'malformed',
+        detail: `placement device '${placement.deviceId}' is not a permalink-safe id`,
+      }
+    }
+    if (placedRequests.has(placement.requestId)) {
+      return {
+        reason: 'malformed',
+        detail: `part '${placement.requestId}' is placed twice; a part goes on one box`,
+      }
+    }
+    placedRequests.add(placement.requestId)
+    if (!catalogue.devices.includes(placement.deviceId)) {
+      return { reason: 'unknown-id', detail: `no device '${placement.deviceId}' in this build` }
+    }
+  }
+
   return undefined
 }
 
@@ -634,6 +722,22 @@ export function encodeGuideInputs(inputs: GuideInputsV1, catalogue: Catalogue): 
     // #161. Written only when set: an unset override is *absent*, which is how it reads back.
     ...(inputs.bpm === undefined ? [] : [`${BPM}=${inputs.bpm}`]),
     ...(inputs.clockSourceId === undefined ? [] : [`${CLOCK}=${inputs.clockSourceId}`]),
+    /**
+     * §7.5/#340. Sorted by request id and then device id, in UTF-16 code units (§7.2), so one
+     * set of placements has one spelling however the caller ordered them.
+     *
+     * That is **not** the order the resolver takes them in, which is by the request's priority
+     * (§4.4) and settles which placement wins a conflict. Nothing here knows a direction's
+     * priorities — the encoder holds ids and not a `Template` — and it does not need to: this
+     * order exists to make the bytes canonical, and `resolvePlacements` re-sorts into precedence
+     * before it decides anything. Two orders for two jobs, and neither can stand in for the other.
+     */
+    ...[...(inputs.placements ?? [])]
+      .sort(
+        (a, b) =>
+          byCodeUnit(a.requestId, b.requestId) || byCodeUnit(a.deviceId, b.deviceId),
+      )
+      .map((one) => `${PLACEMENT}=${one.requestId}${PLACEMENT_PAIR}${one.deviceId}`),
     // The one value in the format that needs escaping. A key holds a space and may hold a `#`,
     // which is a fragment delimiter and would truncate the link at it — `PERMALINK_ID` exists
     // partly so ids never need this, and a key is not an id. `decodeURIComponent` on the way
@@ -764,6 +868,16 @@ export function decodeGuideInputs(text: string, catalogue: Catalogue): DecodedGu
     }
   }
 
+  // §7.5/#340. The same rule for the one repeated field with a birthday. Emptied rather than
+  // deleted, because the list is what the reader below expects to find; reported either way.
+  for (const [field, since] of REPEATED_SINCE) {
+    const list = lists.get(field)
+    if (formatVersion < since && list !== undefined && list.length > 0) {
+      list.length = 0
+      dropped.add(field)
+    }
+  }
+
   const resolver = scalars.get(RESOLVER)
   if (resolver === undefined) return fail('malformed', `missing field '${RESOLVER}'`)
   const encodedResolver = parseInt10(resolver)
@@ -825,6 +939,20 @@ export function decodeGuideInputs(text: string, catalogue: Catalogue): DecodedGu
     return fail('malformed', `field '${CLOCK}' names a device this build does not ship`)
   }
 
+  /**
+   * §7.5/#340. `<requestId>:<deviceId>`, split at the **first** colon. A second one leaves a
+   * colon inside the device half, which `PERMALINK_ID` refuses in `checkGuideInputs` below — so
+   * every shape that is not one clean pair fails, and none of them fails silently.
+   */
+  const placements: Placement[] = []
+  for (const pair of lists.get(PLACEMENT) as string[]) {
+    const colon = pair.indexOf(PLACEMENT_PAIR)
+    if (colon <= 0 || colon === pair.length - 1) {
+      return fail('malformed', `'${pair}' is not a part:device placement`)
+    }
+    placements.push({ requestId: pair.slice(0, colon), deviceId: pair.slice(colon + 1) })
+  }
+
   const inputs: GuideInputsV1 = {
     version: FORMAT_VERSION,
     devices: lists.get(DEVICE) as string[],
@@ -835,6 +963,9 @@ export function decodeGuideInputs(text: string, catalogue: Catalogue): DecodedGu
     ...(bpm === undefined ? {} : { bpm }),
     ...(key === undefined ? {} : { key }),
     ...(clockSourceId === undefined ? {} : { clockSourceId }),
+    // Absent and empty are one state for a list, so an empty one is written as no field at all
+    // — which is what makes encode-decode-encode a fixed point for a guide that places nothing.
+    ...(placements.length === 0 ? {} : { placements }),
   }
 
   // Everything above was syntax. This is meaning: ids this build has, numbers in their domain.

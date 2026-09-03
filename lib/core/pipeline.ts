@@ -36,7 +36,13 @@ import {
   type ResolvedPatchEntry,
   type ResolvedSourceAudio,
 } from './resolver'
-import { assign, type SearchReport, type Shortfall } from './search'
+import {
+  assign,
+  type Placement,
+  type PlacementReport,
+  type SearchReport,
+  type Shortfall,
+} from './search'
 import { chooseHook, chooseKey, parseKey, resolvePitch, type HookChoice } from './harmony'
 import type { InspirationDiagnostic } from './inspiration'
 
@@ -1328,6 +1334,21 @@ export type SongOverrides = {
    * the choice on eligible panels alone.
    */
   clockSourceId?: DeviceId | undefined
+  /**
+   * §7.5/#340. **The boxes the reader moved parts onto**, overriding §7.1's ranking for those
+   * requests and only those.
+   *
+   * Here for the same reason `clockSourceId` is: it changes the guide rather than the view, so
+   * invariant 6 makes it an *input* — a shared link carries it and reproduces the guide the
+   * sender saw. It is never an edit of a resolved guide, which is what §8.2 refused when it
+   * refused to encode output into a permalink.
+   *
+   * A placement the rig cannot honour is refused rather than obeyed, and every refusal is
+   * reported in `ResolveResult.placements` (§7.5). **Order is not information**: the resolver
+   * sorts before it decides anything, so two links carrying the same set resolve byte for byte
+   * alike.
+   */
+  placements?: readonly Placement[] | undefined
 }
 
 export type ResolveInput = {
@@ -1451,6 +1472,20 @@ export type ResolveResult = {
   assignments: ResolvedAssignment[]
   /** §7.3. Unfilled requests, each tagged with what its absence means (#81). */
   shortfalls: Shortfall[]
+  /**
+   * §7.5/#340. What became of the reader's placements — the ones the search ran under, and the
+   * ones it refused, each carrying the sentence that explains the refusal.
+   *
+   * Its own field rather than more `shortfalls`, because a refused placement is not usually a
+   * missing part: the part is there, on the box the ranking picked. Empty lists for a guide that
+   * placed nothing, which is every guide before #340.
+   *
+   * **Nothing renders this yet.** Phase 1 is the resolver and the permalink; the control that
+   * shows it, and lets somebody make a placement without hand-editing a URL, is phase 2 (§7.5).
+   * What the guide already shows is the *effect*: the part is named on the box it was placed on,
+   * and anything displaced is an ordinary §7.3 shortfall.
+   */
+  placements: PlacementReport
   occupancy: Occupancy
   score: Score
   search: SearchReport
@@ -1564,7 +1599,15 @@ export function resolve(input: ResolveInput): ResolveResult {
   }
 
   // Steps 2, 3, 4, 6 and 7.
-  const allocation = assign({ devices, template, mood, seed })
+  // §7.5/#340. Absent and empty are the same statement, so the pipeline does not have to know
+  // which one a link wrote: `assign` takes the empty list down the path it took before #340.
+  const allocation = assign({
+    devices,
+    template,
+    mood,
+    seed,
+    placements: input.overrides?.placements ?? [],
+  })
 
   // Step 10, hoisted above steps 8 and 9 because #100 made them depend on it: whether a part
   // defers to its hook is a fact about the *song*, and it has to be known before the part is
@@ -1671,6 +1714,7 @@ export function resolve(input: ResolveInput): ResolveResult {
     },
     assignments,
     shortfalls: allocation.shortfalls,
+    placements: allocation.placements,
     occupancy: allocation.occupancy,
     score: allocation.score,
     search: allocation.search,

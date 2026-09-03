@@ -16,7 +16,7 @@ import {
   renderGuide,
   resolve,
 } from '../lib/core/index'
-import type { MoodState, Catalogue, GuideInputsV1 } from '../lib/core/index'
+import type { MoodState, Catalogue, GuideInputsV1, Placement } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, templateById } from '../lib/templates/index'
 import { GOLDEN_DEVICES, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
@@ -634,5 +634,187 @@ describe('song overrides on the wire (#161)', () => {
     expect(render(decoded.inputs)).toBe(render(state))
     // And the guide really is a different one, or the equality above proves nothing.
     expect(render(state)).not.toBe(render({ ...state, bpm: undefined, key: undefined }))
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('placements on the wire (§7.5/#340, v4)', () => {
+  const canonical = encodeGuideInputs(goldenInputs(), GOLDEN)
+
+  /** Two placements whose canonical order is the reverse of how they are written here. */
+  const two: readonly Placement[] = [
+    { requestId: 'r-sub', deviceId: 'a-drum' },
+    { requestId: 'r-kick', deviceId: 'B-tracker' },
+  ]
+
+  it('writes one field per placement, as `part:device`, in request id order', () => {
+    const encoded = encodeGuideInputs(goldenInputs({ placements: two }), GOLDEN)
+    expect(encoded).toBe(
+      `${canonical.replace('&seed=', '&placement=r-kick:B-tracker&placement=r-sub:a-drum&seed=')}`,
+    )
+    // Eyeballable, like everything else in the format: two ids and the colon between them.
+    for (const field of encoded.split('&').filter((one) => one.startsWith('placement='))) {
+      expect(field.slice('placement='.length)).toMatch(/^[A-Za-z0-9-]+:[A-Za-z0-9-]+$/)
+    }
+  })
+
+  it('gives one set of placements one spelling, whatever order the caller held them in', () => {
+    // The §7.2 locale trap is live here: `B-tracker` and `a-drum` sort the other way round under
+    // ICU collation, so an order derived by anything but code units shows up as a different link.
+    const forwards = encodeGuideInputs(goldenInputs({ placements: two }), GOLDEN)
+    const backwards = encodeGuideInputs(goldenInputs({ placements: [...two].reverse() }), GOLDEN)
+    expect(backwards).toBe(forwards)
+  })
+
+  it('round-trips, and encode -> decode -> encode is a fixed point', () => {
+    const encoded = encodeGuideInputs(goldenInputs({ placements: two }), GOLDEN)
+    const decoded = decodeGuideInputs(encoded, GOLDEN)
+    expect(decoded.ok).toBe(true)
+    if (!decoded.ok) return
+    expect(decoded.inputs.placements).toEqual([
+      { requestId: 'r-kick', deviceId: 'B-tracker' },
+      { requestId: 'r-sub', deviceId: 'a-drum' },
+    ])
+    expect(encodeGuideInputs(decoded.inputs, GOLDEN)).toBe(encoded)
+  })
+
+  it('writes nothing for a guide that places nothing, and reads that back as unset', () => {
+    // Absent and empty are one state for a list, and giving them two spellings would give one
+    // guide two links.
+    expect(encodeGuideInputs(goldenInputs({ placements: [] }), GOLDEN)).toBe(canonical)
+    const decoded = decodeGuideInputs(canonical, GOLDEN)
+    expect(decoded.ok).toBe(true)
+    if (!decoded.ok) return
+    expect(decoded.inputs.placements).toBeUndefined()
+  })
+
+  it('drops a placement from a link whose own format had no such field, and says it did', () => {
+    // v1, v2 and v3 all predate #340. A link carrying the field is a hand-edit of a format that
+    // never had it, and honouring it would move a part its author never saw moved.
+    const encoded = encodeGuideInputs(goldenInputs({ placements: two }), GOLDEN)
+    for (const older of [1, 2, 3]) {
+      const link = encoded.replace(`format=${FORMAT_VERSION}`, `format=${older}`)
+      const decoded = decodeGuideInputs(link, GOLDEN)
+      expect(decoded.ok).toBe(true)
+      if (!decoded.ok) continue
+      expect(decoded.inputs.placements).toBeUndefined()
+      expect(decoded.dropped).toContain('placement')
+    }
+  })
+
+  it('refuses a pair that is not a pair', () => {
+    for (const bad of ['r-kick', 'r-kick:', ':a-drum', 'r-kick:a-drum:B-tracker']) {
+      const decoded = decodeGuideInputs(`${canonical}&placement=${bad}`, GOLDEN)
+      expect(decoded.ok).toBe(false)
+      if (!decoded.ok) expect(decoded.reason).toBe('malformed')
+    }
+  })
+
+  it('refuses an id that could split a field in half', () => {
+    for (const bad of ['r kick:a-drum', 'r-kick:a drum', '-kick:a-drum', 'r-kick:a-drum-']) {
+      const decoded = decodeGuideInputs(`${canonical}&placement=${encodeURIComponent(bad)}`, GOLDEN)
+      expect(decoded.ok).toBe(false)
+      if (!decoded.ok) expect(decoded.reason).toBe('malformed')
+    }
+    expect(() =>
+      encodeGuideInputs(
+        goldenInputs({ placements: [{ requestId: 'r kick', deviceId: 'a-drum' }] }),
+        GOLDEN,
+      ),
+    ).toThrow(GuideInputsError)
+  })
+
+  it('refuses one part placed twice, rather than picking one of the two boxes', () => {
+    const decoded = decodeGuideInputs(
+      `${canonical}&placement=r-kick:a-drum&placement=r-kick:B-tracker`,
+      GOLDEN,
+    )
+    expect(decoded.ok).toBe(false)
+    if (!decoded.ok) expect(decoded.reason).toBe('malformed')
+    expect(() =>
+      encodeGuideInputs(
+        goldenInputs({
+          placements: [
+            { requestId: 'r-kick', deviceId: 'a-drum' },
+            { requestId: 'r-kick', deviceId: 'B-tracker' },
+          ],
+        }),
+        GOLDEN,
+      ),
+    ).toThrow(GuideInputsError)
+  })
+
+  it('reads the pair the server hands it, colon percent-encoded (#99)', () => {
+    // `queryFromSearchParams` re-encodes every value the framework already decoded, so the server
+    // sees `%3A` where the client sees `:`. One URL has to mean one guide on both, which is the
+    // disagreement #99 was: a guide on the server and a broken link on the client, with nothing
+    // saying why.
+    const decoded = decodeGuideInputs(`${canonical}&placement=r-kick%3AB-tracker`, GOLDEN)
+    expect(decoded.ok).toBe(true)
+    if (!decoded.ok) return
+    expect(decoded.inputs.placements).toEqual([{ requestId: 'r-kick', deviceId: 'B-tracker' }])
+  })
+
+  it('refuses a box this build does not ship, exactly as the rig and the clock do', () => {
+    const decoded = decodeGuideInputs(`${canonical}&placement=r-kick:no-such-box`, GOLDEN)
+    expect(decoded.ok).toBe(false)
+    if (!decoded.ok) expect(decoded.reason).toBe('unknown-id')
+  })
+
+  it('keeps a stale placement decodable, because §7.5 answers it better than a broken link', () => {
+    // A box this build ships that this link's rig does not select, and a part the direction no
+    // longer has. Neither is corruption: the resolver refuses each by name in its placement
+    // report (invariant 5), where refusing to open the link would leave the reader with nothing.
+    const stale = goldenInputs({
+      devices: ['a-drum'],
+      placements: [
+        { requestId: 'r-kick', deviceId: 'B-tracker' },
+        { requestId: 'r-ghost', deviceId: 'a-drum' },
+      ],
+    })
+    const decoded = decodeGuideInputs(encodeGuideInputs(stale, GOLDEN), GOLDEN)
+    expect(decoded.ok).toBe(true)
+    if (!decoded.ok) return
+    expect(decoded.inputs.placements).toEqual([
+      { requestId: 'r-ghost', deviceId: 'a-drum' },
+      { requestId: 'r-kick', deviceId: 'B-tracker' },
+    ])
+  })
+
+  it('carries them into the guide: encode -> decode -> resolve -> render is byte-identical', () => {
+    const template = templateById('industrial-techno')
+    expect(template).toBeDefined()
+    if (template === undefined) return
+
+    const rig = ['roland-tr-8s', 'polyend-tracker-mini']
+    const state: GuideInputsV1 = {
+      version: FORMAT_VERSION,
+      devices: rig,
+      templateId: template.id,
+      inspirations: [],
+      mood: NEUTRAL_MOOD,
+      seed: 9,
+      // The TR-8S, which is *not* where §7.1 puts the kick on this rig — a placement that
+      // changes nothing would make the negative control below vacuous.
+      placements: [{ requestId: 'r-kick', deviceId: 'roland-tr-8s' }],
+    }
+    const decoded = decodeGuideInputs(encodeGuideInputs(state, REGISTRY), REGISTRY)
+    expect(decoded.ok).toBe(true)
+    if (!decoded.ok) return
+
+    const render = (inputs: GuideInputsV1) =>
+      renderGuide(
+        resolve({
+          devices: DEVICES.filter((d) => rig.includes(d.id)),
+          template,
+          mood: inputs.mood,
+          seed: inputs.seed,
+          overrides: { placements: inputs.placements },
+        }),
+      )
+    expect(render(decoded.inputs)).toBe(render(state))
+    // And the placement really moved something, or the equality above proves nothing.
+    expect(render(state)).not.toBe(render({ ...state, placements: undefined }))
   })
 })

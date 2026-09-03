@@ -881,7 +881,15 @@ export function withKey(inputs: GuideInputsV1, key: string | undefined): GuideIn
  * call sites picking them apart by hand is how one of them comes to forget a field.
  */
 export function songOverrides(inputs: GuideInputsV1): SongOverrides {
-  return { bpm: inputs.bpm, key: inputs.key, clockSourceId: inputs.clockSourceId }
+  return {
+    bpm: inputs.bpm,
+    key: inputs.key,
+    clockSourceId: inputs.clockSourceId,
+    // §7.5/#340. The link's placements reach the resolver here or nowhere: both renderers go
+    // through this one function, so a placement carried by a link but not passed on would be a
+    // field that survives the round trip and changes nothing about the guide.
+    placements: inputs.placements,
+  }
 }
 
 /**

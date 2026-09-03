@@ -213,6 +213,77 @@ export function shortfallOf(gap: Gap, request: RoleRequest): Shortfall {
   return { ...gap, kind: 'rig-limit' }
 }
 
+/**
+ * §7.5/#340. **Where the reader put a part**, overriding §7.1's ranking for that one request.
+ *
+ * Keyed by `requestId` and never by role: a direction may request one role twice, which is the
+ * same reason `Occupancy` is keyed by request (§4.2). A placement keyed by role could not say
+ * which of the two pads it meant.
+ *
+ * It names a **device and not a voice**. Which ordinal of a pool a part lands on is a
+ * device-model detail a reader has no reason to reason about, and the objective already places
+ * within a box sensibly.
+ */
+export type Placement = {
+  requestId: RequestId
+  deviceId: DeviceId
+}
+
+/**
+ * §7.5/#340. Why a placement was not applied. Every one of these leaves the ranking standing —
+ * a refused placement is dropped, never obeyed and never half-obeyed, exactly as a clock source
+ * the box cannot send is (§7.4/#200).
+ *
+ *  - `unknown-request` — the direction has no such request. A stale link, or one hand-written.
+ *  - `device-not-in-rig` — the box is not among the effective devices. The other stale case.
+ *  - `cannot-serve` — the box is here and cannot make this part: no voice for the role, no way
+ *    to sound the notes, no recipe near enough the character (§3.5), or nowhere to load the patch
+ *    even standing empty (§2.3/#25). The `detail` says which, because "why is my box not on the
+ *    list" is a useful thing to be able to tell a reader about their own rig (#329/#334) rather
+ *    than a shrug. Nothing renders it yet — see §7.5 on where phase 1 stops.
+ *  - `conflicted` — it could not hold at the same time as the placements that outrank it. See
+ *    `resolvePlacements` for what outranks what, and why it cannot be array order.
+ */
+export const PLACEMENT_REFUSALS = [
+  'unknown-request',
+  'device-not-in-rig',
+  'cannot-serve',
+  'conflicted',
+] as const
+export type PlacementRefusal = (typeof PLACEMENT_REFUSALS)[number]
+
+/** The placement as asked for, plus what became of it. */
+export type RefusedPlacement = Placement & {
+  because: PlacementRefusal
+  /** A sentence about *this* rig, in §7.3's register — see `Gap.detail`. */
+  detail: string
+}
+
+/**
+ * §7.5/#340. **What the reader asked for and what the resolver did with it.**
+ *
+ * A result of its own rather than a `Shortfall`, and that is the point of the type: a shortfall
+ * says a part was not made, and a refused placement usually means the opposite — the part is
+ * there, it is simply not where it was asked for. Folding one into the other would tell a reader
+ * their track has a hole in it because they picked the wrong box for a part they can hear.
+ *
+ * Both lists are in the canonical order `resolvePlacements` sorts into, never the caller's.
+ */
+export type PlacementReport = {
+  /**
+   * The placements the search was run under, and **honoured**: each of these requests is filled,
+   * on the device named here. The search cannot decide otherwise — the candidates elsewhere are
+   * gone before it starts, and a placed request has no miss branch to fall through.
+   *
+   * That is what makes it a placement rather than a preference, and it is paid for by the rest
+   * of the allocation: a part the reader did not place may lose its voice, or go unfilled, even
+   * where §4.4 ranks it higher. The guide reports that as an ordinary §7.3 shortfall, which is
+   * the trade being visible rather than the placement being ignored.
+   */
+  accepted: readonly Placement[]
+  refused: readonly RefusedPlacement[]
+}
+
 /** §7.1: "If the cap is hit, fall back to the greedy result **and log it** — no silent truncation." */
 export type SearchReport = {
   /** Nodes visited before the search finished or hit the cap. */
@@ -233,6 +304,11 @@ export type AssignmentResult = {
    * which of them it is talking about.
    */
   shortfalls: Shortfall[]
+  /**
+   * §7.5/#340. What became of the reader's placements. Empty lists for the guide that asked for
+   * none, which is every guide before #340.
+   */
+  placements: PlacementReport
   search: SearchReport
 }
 
@@ -662,6 +738,16 @@ type Ctx = {
    * second writer. Entries below `from` are stale by construction and never read.
    */
   scratch: FloorScratch
+  /**
+   * §7.5/#340. The device each request was **placed** on by the reader, or `undefined` where the
+   * reader said nothing — which is every request of every guide that placed none.
+   *
+   * Parallel to `requests`, and it carries the accepted placements only. It does two jobs the
+   * candidate filter cannot do on its own: it tells `search` which requests may not take the miss
+   * branch, and it tells `greedy` which ones to settle before it starts, since neither of those
+   * is a statement about candidates.
+   */
+  placedOn: readonly (DeviceId | undefined)[]
   /**
    * §7.1/#78. Whether `liveFloor` applies the matching repair. **Always true in `assign`**, and
    * false only through `measureAssignWithoutMatchingRepair`, which exists so a test can run the
@@ -1163,7 +1249,16 @@ function buildSuffixFloor(
   return floors
 }
 
-function buildCtx(input: AssignInput, repair = true): Ctx {
+function buildCtx(
+  input: AssignInput,
+  repair = true,
+  /**
+   * §7.5/#340. The **accepted** placements only, by request. `resolvePlacements` decides which
+   * those are against a ctx built without any of them, so this is never asked to enforce a
+   * placement the rig cannot honour.
+   */
+  placed?: ReadonlyMap<RequestId, DeviceId>,
+): Ctx {
   const { template, devices, mood, seed } = input
 
   const deviceById = new Map<DeviceId, Device>()
@@ -1263,7 +1358,27 @@ function buildCtx(input: AssignInput, repair = true): Ctx {
         roleFit: assignable.roles.indexOf(request.role),
       })
     }
-    voiceable.push(candidates)
+    /**
+     * §7.5/#340. **A placement is a feasibility constraint, not a cost.** Every candidate on
+     * another box is removed here, before anything is derived from the list, so the ladder, the
+     * suffix floor and the bound are all built against the reduced set — the placement prunes the tree
+     * rather than complicating it, which is #25's ruling and its machinery. Nothing about it
+     * reaches `Score`.
+     *
+     * `roleOnly` and `capable` are deliberately left whole. They describe the *rig*, and §7.3
+     * reads them to say what could have carried the part; narrowing them would make a placed
+     * part report `no-recipe` — "nobody has written it" — for a recipe that exists on the box
+     * next to it. A placement is only ever accepted when the named device has a candidate for
+     * the request, so this filter never empties a list that had something in it.
+     *
+     * This is half of what honouring a placement takes. It says the part may not go to another
+     * box; `search` supplies the other half by refusing the miss branch, which says it may not be
+     * left out instead.
+     */
+    const placedOn = placed?.get(request.id)
+    const kept =
+      placedOn === undefined ? candidates : candidates.filter((c) => c.deviceId === placedOn)
+    voiceable.push(kept)
 
     // §12.4/#40. One plan per pool that could spread this request. `canStackNotes` holds the
     // gate — a pool, wide enough, with a `polyphonic-voice` recipe, and not already polyphonic
@@ -1296,10 +1411,12 @@ function buildCtx(input: AssignInput, repair = true): Ctx {
         })
       }
     }
-    stacks.push(plans)
+    const keptPlans =
+      placedOn === undefined ? plans : plans.filter((p) => p.deviceId === placedOn)
+    stacks.push(keptPlans)
 
     reach.push(
-      new Set([...candidates.map((c) => c.deviceId), ...plans.map((p) => p.deviceId)]),
+      new Set([...kept.map((c) => c.deviceId), ...keptPlans.map((p) => p.deviceId)]),
     )
   }
 
@@ -1384,6 +1501,7 @@ function buildCtx(input: AssignInput, repair = true): Ctx {
     overlap,
     ladderSlot,
     ladder,
+    placedOn: requests.map((request) => placed?.get(request.id)),
     stackFloor: stacks.map((list) => cheapestCandidate(list)),
     scratch: {
       cost: new Array<Cost | null>(requests.length).fill(null),
@@ -1799,25 +1917,18 @@ function undoMiss(ctx: Ctx, state: State, index: number): void {
  * `deviceId`. A local authoring statement, made by the person who knows whether two toms are
  * meant to be two boxes — deliberately *not* a `Score` key, because inserting one silently
  * reorders every key beneath it.
- */
-function violatesDistinct(ctx: Ctx, state: State, index: number, candidate: Candidate): boolean {
-  const request = ctx.requests[index] as RoleRequest
-  if (request.distinct !== true) return false
-  for (let i = 0; i < index; i++) {
-    const other = ctx.requests[i] as RoleRequest
-    const taken = state.chosen[i]
-    if (taken === null || taken === undefined) continue
-    if (other.distinct !== true || other.role !== request.role) continue
-    if (taken.deviceId === candidate.deviceId) return true
-  }
-  return false
-}
-
-/**
- * The same rule as `violatesDistinct`, but scanning *every* other request rather than only the
- * ones already decided. The search can only look backwards — later requests have no device
- * yet — while classification runs against a finished allocation, where the constraint is
- * symmetric and looking only backwards would miss the request that actually blocked this one.
+ *
+ * **Every other request is scanned, not only the ones below `index`.** This was two functions
+ * until #340: the search looked backwards, because a later request could not have a device yet,
+ * and classification looked everywhere, because it runs against a finished allocation where the
+ * rule is symmetric. §7.5's placements ended the premise of the first — `greedy` settles the
+ * placed requests before its pass, so a request *above* `index` can already hold a device, and
+ * the backward scan let an earlier tom land on the box a later placed tom was already on. The
+ * two readings only ever differed where one of them was wrong.
+ *
+ * It changes no search result. Inside the DFS every entry above `index` is `null` by
+ * construction — `undo` clears one on the way out — so the extra half of the scan finds nothing
+ * there, which `test/search-bound.test.ts` holds to by walking recorded node counts.
  */
 function distinctBlocked(ctx: Ctx, state: State, index: number, candidate: Candidate): boolean {
   const request = ctx.requests[index] as RoleRequest
@@ -2048,7 +2159,7 @@ function orderedCandidates(ctx: Ctx, state: State, index: number): Candidate[] {
   const free = (ctx.voiceable[index] ?? []).filter(
     (c) =>
       isFree(ctx, state, index, c) &&
-      !violatesDistinct(ctx, state, index, c) &&
+      !distinctBlocked(ctx, state, index, c) &&
       // §2.3/#25. A recipe the box has no slot left to load is not a candidate — feasibility,
       // not cost, so it is filtered here rather than ranked below its siblings.
       fitsResources(ctx, state, c),
@@ -2063,7 +2174,7 @@ function orderedCandidates(ctx: Ctx, state: State, index: number): Candidate[] {
   const legal = [
     ...breakPoolSymmetry(state, free),
     ...materialiseStacks(ctx, state, index).filter(
-      (c) => !violatesDistinct(ctx, state, index, c) && fitsResources(ctx, state, c),
+      (c) => !distinctBlocked(ctx, state, index, c) && fitsResources(ctx, state, c),
     ),
   ]
   if (legal.length < 2) return legal
@@ -2178,6 +2289,12 @@ function search(
       if (capped) return
     }
 
+    // §7.5/#340. A placed request has no miss branch. The reader said this part goes on that
+    // box, and an allocation that leaves it out has not honoured the placement — it has quietly
+    // decided the reader was wrong. `resolvePlacements` accepted it only after proving the
+    // placed set can be honoured together, so refusing the branch cannot empty the search.
+    if (ctx.placedOn[index] !== undefined) return
+
     // The miss branch is explored last: filling is usually better, so taking it first would
     // delay a good incumbent and weaken every bound below. It is explored at all because
     // leaving a low-priority part out can genuinely beat crowding a box to fit it.
@@ -2210,7 +2327,7 @@ function search(
  *    would split states the search cannot tell apart.
  *  - **The prior same-role `distinct` device choices** (§12.6), carried by hand because a device
  *    can be busy from a request that rule does not touch, and as a *set* because
- *    `violatesDistinct` asks membership and never a count or an order.
+ *    `distinctBlocked` asks membership and never a count or an order.
  *  - **What is loaded against a device budget** (§2.3/#25) — the `(device, resource, sharing
  *    key)` triples, as a *set* and not as counts, for the same reason: `fitsResources` asks
  *    whether a thing is already loaded and derives every budget total from the same membership,
@@ -2317,6 +2434,10 @@ export type SearchShape = {
  * `origin/spike/search-memo-measured` measured directly, saving 0.4% of nodes at 2.2x the wall
  * clock. The cost of this search is `lowerBound`, evaluated at nodes that never expand. Anything
  * meant to make it cheaper should be measured against that rather than against redundant work.
+ *
+ * §7.5/#340's placements are not applied here. What this measures is what a rig and a direction
+ * cost the search, and a placement only ever removes candidates from that — so the figure with
+ * none applied is the one to read, and the only one `measure:search` reports.
  */
 export function measureSearchShape(input: AssignInput): SearchShape {
   const ctx = buildCtx(input)
@@ -2381,10 +2502,23 @@ export function measureSearchShape(input: AssignInput): SearchShape {
 /**
  * §7.1's fallback: one pass, best candidate at each step, no backtracking. Deterministic on
  * the same ordering — and on the same seed — as the exhaustive search.
+ *
+ * §7.5/#340 adds a pass in front of it. The placed requests are settled first, by the same
+ * backtracking check that accepted them, because greedy cannot back out of a voice: filling in
+ * request order would let an unplaced part take a placed part's only voice, and the fallback
+ * would print a guide that ignores a placement the resolver said it had accepted. Everything
+ * after that is the one pass it always was, over the requests the first pass left alone.
+ *
+ * It cannot fail here. `resolvePlacements` ran the same function over the same placements on a
+ * ctx whose only difference is the candidates on *other* devices, which `placeAll` skips anyway —
+ * so the two explore the same space and the acceptance is the proof that this one succeeds.
  */
 function greedy(ctx: Ctx): Solution {
   const state = emptyState(ctx)
+  const placed = placedPins(ctx)
+  if (placed.length > 0) placeAll(ctx, state, placed, 0)
   for (let index = 0; index < ctx.requests.length; index++) {
+    if (state.chosen[index] !== null) continue
     const candidate = orderedCandidates(ctx, state, index)[0]
     if (candidate === undefined) applyMiss(ctx, state, index)
     else apply(ctx, state, index, candidate)
@@ -2562,6 +2696,217 @@ function firstOccupant(
 }
 
 // ---------------------------------------------------------------------------
+// §7.5/#340 Placements
+// ---------------------------------------------------------------------------
+
+/** A placement that named a real request, resolved to that request's index in `ctx.requests`. */
+type Pin = { index: number; deviceId: DeviceId }
+
+/**
+ * §7.5/#340. **Puts every placement on the box it names, all at once, or answers that there is no
+ * way to.** Exhaustive: it tries every legal candidate at every placement and only answers `false`
+ * once it has run out, so a `false` is a proof and not a budget running down. A refusal is a claim
+ * about the reader's rig, and a search that stopped early cannot support one.
+ *
+ * On success the placements are left applied to `state`, which is what `greedy` wants;
+ * `resolvePlacements` hands it a state it then throws away. On failure it unwinds completely.
+ *
+ * `orderedCandidates` is the one candidate path, rather than a second copy of "free, distinct,
+ * loadable" written for this — occupancy (§4.2), `distinct` (§12.6) and the resource budget
+ * (§2.3/#25) are exactly the constraints that decide whether two placements can hold together,
+ * and a check that re-derived them could disagree with the search that runs afterwards.
+ *
+ * Crowding is deliberately *not* a constraint here: it is a `Score` key, and a reader may crowd a
+ * box on purpose. Feasibility asks what is possible, not what is comfortable.
+ *
+ * **What it costs.** Depth is the number of placements, which cannot exceed the direction's
+ * requests; branching is one device's legal candidates for one request, with free pool members
+ * already collapsed to a representative by `breakPoolSymmetry`. Unplaced requests are not
+ * modelled at all. A rig somebody owns settles this in tens of steps. If a pathological set of
+ * placements on one many-voiced box ever made it slow, the repair is to memoise the states it
+ * proved infeasible, which keeps the answer exact — not to stop early, which cannot.
+ */
+function placeAll(ctx: Ctx, state: State, pins: readonly Pin[], at: number): boolean {
+  if (at === pins.length) return true
+  const pin = pins[at] as Pin
+  for (const candidate of orderedCandidates(ctx, state, pin.index)) {
+    if (candidate.deviceId !== pin.deviceId) continue
+    apply(ctx, state, pin.index, candidate)
+    if (placeAll(ctx, state, pins, at + 1)) return true
+    undo(ctx, state, pin.index, candidate)
+  }
+  return false
+}
+
+/**
+ * §7.5/#340. The accepted placements as `placeAll` takes them, in request order — which is
+ * precedence order (§4.4, then §7.2's code units), because `ctx.requests` is sorted that way.
+ */
+function placedPins(ctx: Ctx): Pin[] {
+  const pins: Pin[] = []
+  ctx.placedOn.forEach((deviceId, index) => {
+    if (deviceId !== undefined) pins.push({ index, deviceId })
+  })
+  return pins
+}
+
+/**
+ * §7.5/#340/§7.3. Why this box cannot make this part, or `undefined` when it can. The three
+ * causes are §7.3's own, asked of one device instead of of the whole rig, and they are told apart
+ * because the reader's next move differs: buy something, ask for fewer notes, or wait for us to
+ * author the recipe (§3.5, #31).
+ */
+function whyCannotServe(ctx: Ctx, index: number, deviceId: DeviceId): string | undefined {
+  if ((ctx.voiceable[index] ?? []).some((c) => c.deviceId === deviceId)) return undefined
+  if ((ctx.stacks[index] ?? []).some((plan) => plan.deviceId === deviceId)) return undefined
+
+  const request = ctx.requests[index] as RoleRequest
+  const name = ctx.deviceById.get(deviceId)?.name ?? deviceId
+  const here = (list: readonly Assignable[]) => list.some((a) => a.deviceId === deviceId)
+  if (!here(ctx.roleOnly[index] ?? [])) return `your ${name} has no voice that plays ${request.role}`
+  if (!here(ctx.capable[index] ?? [])) {
+    const notes = request.polyphony ?? 1
+    return `no voice on your ${name} can sound ${String(notes)} notes of ${request.role} at once`
+  }
+  return `nobody has written a ${ctx.wanted[index] as Character} ${request.role} for your ${name} yet`
+}
+
+/**
+ * §7.5/#340. **Which placements the search runs under, and what to tell the reader about the
+ * rest.** Decided against a `ctx` built with no placement applied, so every answer here is about
+ * the rig and the direction rather than about an already-constrained search.
+ *
+ * **Order is imposed before anything is decided.** A permalink's field order must not settle a
+ * musical outcome — two links carrying the same set of placements have to produce the same guide
+ * (invariant 6) — so the list is sorted by the request's own priority (§4.4, ascending, most
+ * important first), then by request id in UTF-16 code unit order (§7.2), then by device id.
+ * Nothing below reads the caller's array again.
+ *
+ * That order is also the conflict rule. Each placement in turn is accepted if it can be honoured
+ * alongside the ones already accepted, so **the more important part keeps the box** and a part
+ * that cannot fit beside it is refused and falls back to the ranking. A refusal does not stop the
+ * walk: the placements after it are still considered, and one that fits is still accepted. So the
+ * accepted set is the precedence-ordered greedy subset, not a prefix of the order.
+ *
+ * It is not the *largest* set that could have been honoured, and that is the intended trade.
+ * Refusing one important placement can sometimes make room for two unimportant ones, and taking
+ * that deal would mean a part the reader cares about moves because two they care less about
+ * outvoted it. Precedence decides, and the count follows from it.
+ *
+ * The same request named twice is one statement rather than two: an exact repeat collapses, and a
+ * second device for a request already placed conflicts with the first and is refused, rather than
+ * silently overriding it.
+ */
+function resolvePlacements(
+  ctx: Ctx,
+  asked: readonly Placement[],
+): { report: PlacementReport; accepted: Map<RequestId, DeviceId> } {
+  const indexOf = new Map<RequestId, number>()
+  ctx.requests.forEach((request, index) => indexOf.set(request.id, index))
+  const priorityOf = (requestId: RequestId): number => {
+    const index = indexOf.get(requestId)
+    // An unknown request has no priority to sort by. It is refused whatever it sorts next to;
+    // this only settles where its refusal appears in the report.
+    if (index === undefined) return Number.MAX_SAFE_INTEGER
+    return (ctx.requests[index] as RoleRequest).priority
+  }
+
+  const seen = new Set<string>()
+  const ordered = [...asked]
+    .filter((placement) => {
+      const key = `${placement.requestId}\u0000${placement.deviceId}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .sort(
+      (a, b) =>
+        priorityOf(a.requestId) - priorityOf(b.requestId) ||
+        compareCodeUnits(a.requestId, b.requestId) ||
+        compareCodeUnits(a.deviceId, b.deviceId),
+    )
+
+  const accepted: Placement[] = []
+  const pins: Pin[] = []
+  const refused: RefusedPlacement[] = []
+  const deviceName = (deviceId: DeviceId): string => ctx.deviceById.get(deviceId)?.name ?? deviceId
+
+  for (const placement of ordered) {
+    const index = indexOf.get(placement.requestId)
+    if (index === undefined) {
+      refused.push({
+        ...placement,
+        because: 'unknown-request',
+        detail: `this direction has no part called '${placement.requestId}'`,
+      })
+      continue
+    }
+    if (!ctx.deviceById.has(placement.deviceId)) {
+      refused.push({
+        ...placement,
+        because: 'device-not-in-rig',
+        detail: `'${placement.deviceId}' is not one of the boxes in this rig`,
+      })
+      continue
+    }
+    const already = pins.find((pin) => pin.index === index)
+    if (already !== undefined) {
+      refused.push({
+        ...placement,
+        because: 'conflicted',
+        detail: `this part is already placed on your ${deviceName(already.deviceId)}`,
+      })
+      continue
+    }
+    const cannot = whyCannotServe(ctx, index, placement.deviceId)
+    if (cannot !== undefined) {
+      refused.push({ ...placement, because: 'cannot-serve', detail: cannot })
+      continue
+    }
+
+    const pin: Pin = { index, deviceId: placement.deviceId }
+    // A throwaway state: `placeAll` leaves its answer applied, and what is wanted here is the
+    // answer rather than the allocation. The final search builds its own.
+    if (placeAll(ctx, emptyState(ctx), [...pins, pin], 0)) {
+      pins.push(pin)
+      accepted.push(placement)
+      continue
+    }
+    /**
+     * The box could have made this part; what it cannot do is make it *here*. Two different
+     * sentences, told apart by whether anything the reader placed is in the way:
+     *
+     *  - Something is. Name it, because the trade is the thing to tell the reader (#340) — and
+     *    it is a conflict between two placements, which is what `conflicted` means.
+     *  - Nothing is, and the box still refuses it standing empty. §2.3/#25's budget is the only
+     *    thing that does that: a voice is free, and the patch has nowhere to load. Reported as
+     *    `cannot-serve`, since calling it a conflict would name a rival that does not exist.
+     */
+    const holders = pins
+      .filter((other) => other.deviceId === placement.deviceId)
+      .map((other) => (ctx.requests[other.index] as RoleRequest).role)
+    if (holders.length === 0) {
+      refused.push({
+        ...placement,
+        because: 'cannot-serve',
+        detail: `your ${deviceName(placement.deviceId)} cannot load a patch for this part`,
+      })
+      continue
+    }
+    refused.push({
+      ...placement,
+      because: 'conflicted',
+      detail: `your ${deviceName(placement.deviceId)} cannot carry this as well as the ${holders.join(', ')} you placed there`,
+    })
+  }
+
+  return {
+    report: { accepted, refused },
+    accepted: new Map(accepted.map((one) => [one.requestId, one.deviceId])),
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
 
@@ -2574,12 +2919,36 @@ export type AssignInput = {
   template: Template
   mood: MoodState
   seed: number
+  /**
+   * §7.5/#340. The reader's placements, in whatever order they were written down. Order carries
+   * no meaning here and must not: `resolvePlacements` sorts before it decides anything, so two
+   * links expressing the same set resolve to the same bytes (invariant 6).
+   */
+  placements?: readonly Placement[]
   nodeCap?: number
 }
 
 /** §7 step 6. Search assignments against the lexicographic objective, producing `Occupancy`. */
 export function assign(input: AssignInput): AssignmentResult {
-  return assignFrom(buildCtx(input))
+  return assignWith(input, true)
+}
+
+/**
+ * §7.5/#340. One build of the ctx for a guide with no placements, and two for one that has them:
+ * the first with nothing applied, which is what `resolvePlacements` has to judge them against,
+ * and the second under the ones it accepted.
+ *
+ * The zero-placement path is the *same* single call it always was, and that is a requirement
+ * rather than an optimisation — `RESOLVER_VERSION` did not move at #340, so a link carrying no
+ * placement has to reach the search having touched none of this.
+ */
+function assignWith(input: AssignInput, repair: boolean): AssignmentResult {
+  const asked = input.placements ?? []
+  const base = buildCtx(input, repair)
+  if (asked.length === 0) return assignFrom(base, { accepted: [], refused: [] })
+  const { report, accepted } = resolvePlacements(base, asked)
+  const ctx = accepted.size === 0 ? base : buildCtx(input, repair, accepted)
+  return assignFrom(ctx, report)
 }
 
 /**
@@ -2594,10 +2963,10 @@ export function assign(input: AssignInput): AssignmentResult {
  * the one field the two are *meant* to differ on. See `test/search-matching-floor.test.ts`.
  */
 export function measureAssignWithoutMatchingRepair(input: AssignInput): AssignmentResult {
-  return assignFrom(buildCtx(input, false))
+  return assignWith(input, false)
 }
 
-function assignFrom(ctx: Ctx): AssignmentResult {
+function assignFrom(ctx: Ctx, placements: PlacementReport): AssignmentResult {
   const outcome = search(ctx)
 
   // §7.1: on the cap, the greedy result stands and the fallback is reported. Reporting it in
@@ -2642,6 +3011,7 @@ function assignFrom(ctx: Ctx): AssignmentResult {
     occupancy: state.occupancy,
     score: scoreOf(ctx, state),
     shortfalls,
+    placements,
     search: {
       nodes: outcome.nodes,
       nodeCap: ctx.nodeCap,

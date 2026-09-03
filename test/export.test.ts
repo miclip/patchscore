@@ -28,15 +28,29 @@ import { templateById } from '../lib/templates/index'
 
 const REPO_ROOT = join(import.meta.dirname, '..')
 
+/**
+ * The whole catalogue resolved, which is a couple of seconds of search and is asked for eleven
+ * times in this file. Resolved **once**: every caller passes the same constants — `DEVICES`,
+ * `DEFAULT_INPUTS`, the registry's template — so invariant 6 says every call returns the same
+ * guide, and computing it eleven times only spends the time again.
+ *
+ * Shared safely because export reads a `ResolveResult` and never writes one: `guideMarkdown`,
+ * `guideFilename` and `downloadGuideMarkdown` all take it as input. Nothing here asserts less
+ * for it — the same object reaches the same assertions.
+ */
+let resolved: ResolveResult | undefined
+
 function fullRig(): ResolveResult {
+  if (resolved !== undefined) return resolved
   const template = templateById(DEFAULT_INPUTS.templateId)
   if (template === undefined) throw new Error('no template in the registry')
-  return resolve({
+  resolved = resolve({
     devices: DEVICES,
     template,
     mood: DEFAULT_INPUTS.mood,
     seed: DEFAULT_INPUTS.seed,
   })
+  return resolved
 }
 
 /** Only the two members export touches; the rest throw if anything reaches for them. */
