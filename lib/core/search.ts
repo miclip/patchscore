@@ -2813,7 +2813,22 @@ function whyCannotServe(ctx: Ctx, index: number, deviceId: DeviceId): string | u
     const notes = request.polyphony ?? 1
     return `no voice on your ${name} can sound ${String(notes)} notes of ${request.role} at once`
   }
-  return `your ${name} cannot make a ${ctx.wanted[index] as Character} ${request.role}`
+  /*
+   * **Availability, not capability, and the difference is not pedantry.** This branch is reached
+   * *after* the two above have passed, so the box has a voice for the role and can sound the
+   * notes — it can make this part. What is missing is a recipe near enough the character.
+   *
+   * So "your TR-1000 cannot make a dirty bass-mid" is **false**: its LT voice plays `bass-mid`
+   * and nobody has authored one. That wording was tried and caught by a reader who owns the box.
+   *
+   * And "nobody has written one yet" is our backlog wearing the clothes of a fact about the
+   * reader's rig — what the guide's "Waiting on us" block was, and why it went. Somebody
+   * standing at a rack cannot act on it.
+   *
+   * So this says only that the option is not there. True either way, and it blames neither the
+   * hardware nor bores the reader with our queue.
+   */
+  return `no ${ctx.wanted[index] as Character} ${request.role} for your ${name}`
 }
 
 /**

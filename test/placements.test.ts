@@ -296,7 +296,7 @@ describe('an impossible placement is refused and reported, never obeyed (§7.5/#
     const unwritten = search([alpha, mute], kickOnly, [{ requestId: 'r-kick', deviceId: 'mute' }])
     expect(unwritten.placements.refused[0]?.because).toBe('cannot-serve')
     expect(unwritten.placements.refused[0]?.detail).toBe(
-      'your Mute cannot make a hard kick',
+      'no hard kick for your Mute',
     )
     expect(landedOn(unwritten, 'r-kick')).toBe('alpha/v')
   })
@@ -748,7 +748,7 @@ describe('a refused placement is rendered in both guides (§7.5/#340, §8)', () 
       [
         'ours to fix, and it must not read as a limit of the reader’s box (§3.5)',
         withPlacement([alpha, mute], kickOnly, { requestId: 'r-kick', deviceId: 'mute' }),
-        'your Mute cannot make a hard kick',
+        'no hard kick for your Mute',
       ],
       [
         'a free voice and nowhere to load the patch (§2.3/#25)',
