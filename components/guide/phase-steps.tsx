@@ -408,18 +408,29 @@ export function PhaseSteps({
             <HookPointer a={a} />
           ) : isSustainedPart(a) ? (
             <SustainedRef />
-          ) : (
-            // §8/#65. Qualifies the grid below rather than replacing it.
-            (() => {
-              const entry = patternEntryNotice(deviceById.get(a.deviceId))
-              return entry === undefined ? null : (
-                <EnteredElsewhereRef
-                  reason={entry.reason}
-                  driver={patternDriver(result.interDevicePatch, a.deviceId)}
-                />
-              )
-            })()
-          )}
+          ) : null}
+          {/*
+            §8/#65. Qualifies the grid below rather than replacing it — so it is keyed on whether
+            a grid is suppressed, not on which sentence printed above it.
+
+            It used to be the last arm of that ternary, which put it out of reach of a
+            re-articulating part (§4.3): those take `HookPointer` and *still print a grid*, so on
+            a box with no sequencer the guide told a reader to program steps on a machine that
+            cannot hold them — the instruction #65 removed, through a path #65 predates. The
+            Markdown sibling had the identical fault in the identical shape (#33: one decision,
+            two vocabularies — including, it turns out, one bug twice).
+          */}
+          {(a.hookAuthority !== undefined && !a.reArticulatesHook) || isSustainedPart(a)
+            ? null
+            : (() => {
+                const entry = patternEntryNotice(deviceById.get(a.deviceId))
+                return entry === undefined ? null : (
+                  <EnteredElsewhereRef
+                    reason={entry.reason}
+                    driver={patternDriver(result.interDevicePatch, a.deviceId)}
+                  />
+                )
+              })()}
           {mergeBlocks(a).map((block) => (
             <div className="block" key={block.sections.join(',')}>
               <h5>{block.sections.join(', ')}</h5>

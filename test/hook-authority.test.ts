@@ -1,9 +1,15 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { NEUTRAL_MOOD, renderGuide, resolve, type ResolveResult } from '../lib/core/index'
+import {
+  NEUTRAL_MOOD,
+  renderGuide,
+  resolve,
+  type ResolveResult,
+  type Template,
+} from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { droneStudy, industrialTechno } from '../lib/templates/index'
+import { TEMPLATES, droneStudy, industrialTechno } from '../lib/templates/index'
 import { Guide } from '../components/guide/guide'
 import { mergeBlocks } from '../components/guide/phase-steps'
 
@@ -187,5 +193,56 @@ describe('a resolved hook is the part’s rhythm (#100)', () => {
     expect(bass?.hookAuthority).toBeDefined()
     expect(mergeBlocks(bass!)).toEqual([])
     expect(markup).toContain('The hook is the pattern')
+  })
+})
+
+/**
+ * §8/#65/#335. The "cannot be programmed here" notice qualifies a grid; it must reach every part
+ * that prints one.
+ *
+ * It was the `else` arm of the chain that picks the sentence above the grid, which put it out of
+ * reach of a re-articulating part — and those are exactly the parts that print a headline *and
+ * then a grid*. So on a box with no sequencer the guide told a reader to program steps on a
+ * machine that cannot hold them, which is the instruction #65 removed, through a path #65
+ * predates.
+ *
+ * **Both renderers had it, in the same shape.** #33 keeps one decision in `lib/core` and two
+ * hand-written vocabularies around it; here the decision was written twice and so was the bug.
+ *
+ * The condition is whether a grid is *suppressed*, not whether it came back empty: 504
+ * assignments in the library reach this point with no variant resolved and carried the notice
+ * before.
+ */
+describe('a box with no sequencer says so above every grid (#335)', () => {
+  const minitaur = DEVICES.filter((d) => d.id.includes('minitaur'))
+
+  it.each(['acid-lineage', 'weave'])(
+    'reaches a re-articulating part on %s, which prints a headline and then a grid',
+    (templateId) => {
+      const template = TEMPLATES.find((t) => t.id === templateId) as Template
+      const result = resolve({
+        devices: minitaur,
+        template,
+        mood: NEUTRAL_MOOD,
+        seed: 1,
+      })
+      const reArticulating = result.assignments.filter((a) => a.reArticulatesHook)
+      expect(reArticulating.length).toBeGreaterThan(0)
+      expect(renderGuide(result)).toContain('Not programmed here')
+    },
+  )
+
+  /**
+   * The complement, and the reason this is keyed on suppression rather than on "has a hook": a
+   * part whose hook *is* the pattern prints no grid, so a notice qualifying one would qualify
+   * nothing. Losing that distinction is the likely way this regresses.
+   */
+  it('stays away from a part whose hook replaces the grid', () => {
+    const template = TEMPLATES.find((t) => t.id === 'drone-study') as Template
+    const result = resolve({ devices: minitaur, template, mood: NEUTRAL_MOOD, seed: 1 })
+    for (const a of result.assignments) {
+      if (a.hookAuthority === undefined || a.reArticulatesHook) continue
+      expect(mergeBlocks(a)).toEqual([])
+    }
   })
 })

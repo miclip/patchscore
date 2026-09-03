@@ -2107,10 +2107,13 @@ function phaseSteps(
     // grid, so there is nothing to draw. A pad reaches this branch only when its hook did not
     // resolve — where one did, `deferred` is already true and says where to look instead.
     const sustained = isSustainedPart(a)
-    const blocks =
-      (deferred && !a.reArticulatesHook) || sustained
-        ? []
-        : mergeBlocks(a, deviceById, options, result.song.bpm)
+    /**
+     * The two sentences that *replace* a grid rather than qualifying one: a deferred part whose
+     * hook is the pattern, and a sustained part with nothing to strike. Everything else is a part
+     * a reader programs, whether or not any variant resolved.
+     */
+    const replacesGrid = (deferred && !a.reArticulatesHook) || sustained
+    const blocks = replacesGrid ? [] : mergeBlocks(a, deviceById, options, result.song.bpm)
     if (deferred) {
       out.push('')
       // The sentence needs a length, so it needs a pattern; a re-articulating part whose every
@@ -2125,9 +2128,24 @@ function phaseSteps(
     } else if (sustained) {
       out.push('')
       out.push(SUSTAINED_NOT_STRUCK)
-    } else {
-      // §8/#65. After the recipe pointer and before the blocks, in the same place the two
-      // sentences above sit: it qualifies the grid that follows rather than replacing it.
+    }
+
+    /**
+     * §8/#65. After the recipe pointer and before the blocks, in the same place the sentences
+     * above sit: it qualifies the grid that follows rather than replacing it.
+     *
+     * **Keyed on `replacesGrid`, not on the branch above.** It used to be the `else` of that
+     * chain, which put it out of reach of a re-articulating part (§4.3) — and those print a
+     * headline *and then a grid*, so on a box with no sequencer the guide told a reader to
+     * program steps on a machine that cannot hold them. That is the instruction #65 removed,
+     * reappearing through a path #65 predates: `acid-lineage/acid` and `weave/sub` on a
+     * Minitaur, with 616 such assignments across the library.
+     *
+     * Not keyed on `blocks` being non-empty either: 504 assignments reach here with no variant
+     * resolved, and they carried the notice before. Whether a grid is *suppressed* is the
+     * question; whether it came back empty is a different one.
+     */
+    if (!replacesGrid) {
       const entry = patternEntryNotice(deviceById.get(a.deviceId))
       if (entry !== undefined) {
         out.push('')
