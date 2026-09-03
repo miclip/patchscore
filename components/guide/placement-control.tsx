@@ -121,18 +121,22 @@ export function PlacementOffer({
             {choice.name}
           </button>
         ) : (
-          <span key={choice.deviceId} className="placement-unavailable">
-            {/*
-              `disabled` rather than absent: the box is in their rig and they will look for it.
-              The sentence sits outside the button, where a screen reader reads it in flow — text
-              inside a disabled control is not reliably announced, and a `title` would put it
-              behind a hover that touch does not have.
-            */}
-            <button type="button" className="placement-option" disabled>
-              {choice.name}
-            </button>
-            <span className="placement-why">{choice.why}</span>
-          </span>
+          /*
+            `disabled` rather than absent: the box is in their rig and they will look for it.
+
+            **And that is all it says.** The reason used to print beside it — "nobody has written
+            a dirty closed-hat for your Tracker Mini yet" — which is a sentence about our
+            authoring backlog wearing the clothes of information about the reader's rig. It is
+            the same thing the guide's "Waiting on us" block was doing before it was removed for
+            the same reason: somebody standing at a rack cannot act on what we have not written,
+            and a dimmed control already says this one is not available.
+
+            Where a placement the reader *asked for* is refused, that still reaches them — see
+            `placement-refused-why` above. The difference is whether they made the choice.
+          */
+          <button key={choice.deviceId} type="button" className="placement-option" disabled>
+            {choice.name}
+          </button>
         ),
       )}
     </div>

@@ -158,18 +158,33 @@ describe('what the control offers (§7.5/#340 phase 2)', () => {
     const html = offer(automatic)
     // One disabled control, and it is the one box that cannot make a kick.
     expect(html.match(/<button[^>]*disabled/g)?.length).toBe(1)
-    const spareButton = html.slice(html.indexOf('placement-unavailable'))
-    expect(spareButton).toContain('disabled')
-    expect(spareButton).toContain('Spare')
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>Spare</)
   })
 
-  it('says why an unavailable box is unavailable, on screen and not behind a hover', () => {
-    // §7.5/#329: the sentence is already computed in `lib/core`, and a `title` would put it
-    // behind a gesture that touch does not have (#21).
+  /**
+   * §7.5/#340. **A box that cannot take the part is dimmed and says nothing more.**
+   *
+   * The reason used to print beside it — "nobody has written a dirty closed-hat for your Tracker
+   * Mini yet". That is a sentence about our authoring backlog wearing the clothes of information
+   * about the reader's rig, and it is the same thing the guide's "Waiting on us" block was doing
+   * before it was removed for the same reason: somebody standing at a rack cannot act on what
+   * nobody has written, and a dimmed control already says this one is unavailable.
+   *
+   * Still no `title`: a tooltip would put anything we did say behind a hover that touch does not
+   * have (#21). If the reason comes back it needs an affordance, not an attribute.
+   *
+   * **A placement the reader asked for and did not get is still reported** — they made a choice
+   * and the guide did something else, which they have to be told. That is the refused-placement
+   * test below, and it is the line this removal does not cross: an option nobody chose is owed
+   * no explanation; a choice that was overridden is.
+   */
+  it('says nothing more than that, and hides nothing behind a hover', () => {
     const html = offer(automatic)
-    expect(plain(html)).toContain(SPARE_CANNOT)
+    expect(plain(html)).not.toContain(SPARE_CANNOT)
     expect(html).not.toContain('title=')
+    expect(html).not.toContain('placement-why')
   })
+
 
   it('always offers Automatic, so a placement can be undone from where it was made', () => {
     const html = offer(accepted)
