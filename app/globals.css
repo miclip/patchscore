@@ -2772,10 +2772,16 @@ button:active {
     justify-self: end;
   }
 
-  /* The offer is a row of boxes, so it takes the width rather than a right-hand column. */
+  /*
+   * The offer takes the width rather than a right-hand column — it is a row of boxes and would
+   * wrap into a column otherwise — but it is **right-aligned**, so it opens under the pill that
+   * opened it. Left-aligned it appeared at the far edge from the control the reader just
+   * pressed, with the whole part between them.
+   */
   .placement-options,
   .placement-refused-why {
     grid-column: 1 / -1;
+    justify-content: flex-end;
     margin: 6px 0 0;
   }
 }
