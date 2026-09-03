@@ -39,6 +39,7 @@ import {
 import {
   assign,
   type Placement,
+  type PlacementOptions,
   type PlacementReport,
   type SearchReport,
   type Shortfall,
@@ -1486,6 +1487,11 @@ export type ResolveResult = {
    * and anything displaced is an ordinary §7.3 shortfall.
    */
   placements: PlacementReport
+  /**
+   * §7.5/#340 phase 2. Where each request *could* go, and why a box is not on the offer.
+   * Independent of what was placed — see `placementOptionsFor`.
+   */
+  options: PlacementOptions
   occupancy: Occupancy
   score: Score
   search: SearchReport
@@ -1715,6 +1721,7 @@ export function resolve(input: ResolveInput): ResolveResult {
     assignments,
     shortfalls: allocation.shortfalls,
     placements: allocation.placements,
+    options: allocation.options,
     occupancy: allocation.occupancy,
     score: allocation.score,
     search: allocation.search,

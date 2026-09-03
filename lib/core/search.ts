@@ -252,6 +252,46 @@ export const PLACEMENT_REFUSALS = [
 ] as const
 export type PlacementRefusal = (typeof PLACEMENT_REFUSALS)[number]
 
+/**
+ * §7.5/#340 phase 2. **Where a part could go**, for a reader deciding where to put it.
+ *
+ * Phase 1 could only answer *what happened to the placement you asked for*. A control has to ask
+ * the question the other way round — which boxes are worth offering — and that is the same
+ * judgement `cannot-serve` already makes, so it is exposed here rather than written a second
+ * time in a component. Two routes to one answer is how a menu comes to offer a box the resolver
+ * then refuses.
+ *
+ * `why` is present exactly when `canServe` is false, and is the same sentence a refusal carries.
+ * §7.5 says that is worth surfacing: *"why is my box not on the list"* is a useful thing to be
+ * able to tell somebody about their own rig (#329/#334) rather than a shrug.
+ *
+ * Devices are in code unit order (§7.2), not rig order, so one rig produces one list.
+ */
+export type PlacementOption = {
+  deviceId: DeviceId
+  canServe: boolean
+  why?: string
+}
+
+export type PlacementOptions = readonly { requestId: RequestId; options: readonly PlacementOption[] }[]
+
+/**
+ * Computed against a ctx with **no placement applied**, for the same reason `resolvePlacements`
+ * judges against one: the answer must be about the rig and the direction, not about a search
+ * already narrowed by an earlier choice. Otherwise placing one part would quietly shorten the
+ * menu offered for the next, and a reader would see boxes disappear for no stated reason.
+ */
+function placementOptionsFor(ctx: Ctx): PlacementOptions {
+  const deviceIds = [...ctx.deviceById.keys()].sort(compareCodeUnits)
+  return ctx.requests.map((request, index) => ({
+    requestId: request.id,
+    options: deviceIds.map((deviceId) => {
+      const why = whyCannotServe(ctx, index, deviceId)
+      return why === undefined ? { deviceId, canServe: true } : { deviceId, canServe: false, why }
+    }),
+  }))
+}
+
 /** The placement as asked for, plus what became of it. */
 export type RefusedPlacement = Placement & {
   because: PlacementRefusal
@@ -309,6 +349,11 @@ export type AssignmentResult = {
    * none, which is every guide before #340.
    */
   placements: PlacementReport
+  /**
+   * §7.5/#340 phase 2. Where each request *could* go — what a control offers, and why a box is
+   * missing from the offer. Independent of what was placed.
+   */
+  options: PlacementOptions
   search: SearchReport
 }
 
@@ -2945,10 +2990,13 @@ export function assign(input: AssignInput): AssignmentResult {
 function assignWith(input: AssignInput, repair: boolean): AssignmentResult {
   const asked = input.placements ?? []
   const base = buildCtx(input, repair)
-  if (asked.length === 0) return assignFrom(base, { accepted: [], refused: [] })
+  // Always from `base`. See `placementOptionsFor`: the offer is about the rig and the direction,
+  // so placing one part must not shorten the menu for the next.
+  const options = placementOptionsFor(base)
+  if (asked.length === 0) return assignFrom(base, { accepted: [], refused: [] }, options)
   const { report, accepted } = resolvePlacements(base, asked)
   const ctx = accepted.size === 0 ? base : buildCtx(input, repair, accepted)
-  return assignFrom(ctx, report)
+  return assignFrom(ctx, report, options)
 }
 
 /**
@@ -2966,7 +3014,11 @@ export function measureAssignWithoutMatchingRepair(input: AssignInput): Assignme
   return assignWith(input, false)
 }
 
-function assignFrom(ctx: Ctx, placements: PlacementReport): AssignmentResult {
+function assignFrom(
+  ctx: Ctx,
+  placements: PlacementReport,
+  options: PlacementOptions,
+): AssignmentResult {
   const outcome = search(ctx)
 
   // §7.1: on the cap, the greedy result stands and the fallback is reported. Reporting it in
@@ -3012,6 +3064,7 @@ function assignFrom(ctx: Ctx, placements: PlacementReport): AssignmentResult {
     score: scoreOf(ctx, state),
     shortfalls,
     placements,
+    options,
     search: {
       nodes: outcome.nodes,
       nodeCap: ctx.nodeCap,
