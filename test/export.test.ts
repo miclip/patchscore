@@ -257,6 +257,9 @@ describe('the print stylesheet', () => {
       '.guide-actions',
       // The toggle itself: a checkbox printed onto paper is a control nobody can operate.
       '.hints-toggle',
+      // §7.5/#340 phase 2, and the same test: a button on paper does nothing. What it would have
+      // said about a refused placement is in the guide's own list, which prints.
+      '.placement',
     ]) {
       expect(block, `${selector} is not hidden in print`).toContain(selector)
     }

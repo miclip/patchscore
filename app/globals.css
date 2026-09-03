@@ -2703,6 +2703,94 @@ button:active {
   font-size: 13px;
 }
 
+/*
+ * §7.5/#340 phase 2. The control that moves a part onto another box, on the part's own row.
+ *
+ * Collapsed to one line until asked for. A ten-box rig and a twelve-part direction is a hundred
+ * and twenty buttons, and a guide is not readable underneath that.
+ *
+ * `touch-action` is on the buttons themselves and nothing wider, the rule the knob already
+ * follows: put it on a row or a panel and the page stops scrolling past the control, which on a
+ * phone is the whole page (#21). `manipulation` and not `none` — there is nothing to drag here,
+ * only a tap whose 300ms wait is worth removing.
+ */
+.placement {
+  margin: 6px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  min-width: 0;
+}
+
+.placement-toggle,
+.placement-option {
+  /* #21: 44px targets, because this is read at the machine with hands busy. */
+  min-height: 44px;
+  padding: 4px 12px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.placement-toggle[aria-expanded='true'] {
+  border-color: var(--accent);
+}
+
+/*
+ * What the pill is, ahead of what it says. Quiet enough that the state is still the loud half of
+ * the line, present enough that the control is never a bare "Automatic".
+ */
+.placement-label {
+  color: var(--ink-dim);
+}
+
+.placement-option[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/*
+ * A box that cannot make this part is shown and not offered. Dimmed and inert, with the reason
+ * beside it rather than in a `title` — a hover has no touch equivalent, and "why is my box not
+ * on the list" is the question this answers (§7.5/#329).
+ */
+.placement-option:disabled {
+  cursor: default;
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.placement-unavailable {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.placement-why,
+.placement-refused-why {
+  font-size: 12px;
+  color: var(--ink-dim);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.placement-options {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  min-width: 0;
+}
+
 .part-head,
 .box-head {
   display: flex;
@@ -3279,6 +3367,13 @@ html {
   .patchbay,
   .panel:not(.guide-panel):not(.rack-section),
   .guide-actions,
+  /*
+   * §7.5/#340 phase 2. The placement control is chrome by the same test as the hints toggle: a
+   * button printed onto paper is a control nobody can operate. Nothing is lost with it — a
+   * placement the guide refused is named in the "Placements not applied" list above, which is
+   * guide content and prints.
+   */
+  .placement,
   .hints-toggle {
     display: none !important;
   }

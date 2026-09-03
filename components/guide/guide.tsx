@@ -2,7 +2,15 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import type { Device, DeviceId, GuideLayout, GuidePhase, ResolveResult, SequencerGroup } from '@/lib/core'
+import type {
+  Device,
+  DeviceId,
+  GuideLayout,
+  GuidePhase,
+  RequestId,
+  ResolveResult,
+  SequencerGroup,
+} from '@/lib/core'
 import type { ReactNode } from 'react'
 import {
   GUIDE_PHASES,
@@ -162,9 +170,16 @@ export function Guide({
   result,
   seed,
   layout: fixedLayout,
+  onPlacement,
 }: {
   result: ResolveResult
   seed: number
+  /**
+   * §7.5/#340 phase 2. Passed through to the voice assignment phase, which is where a part is
+   * named on a box and therefore where moving it belongs. Absent for a caller with no session
+   * behind it, and then no control is drawn.
+   */
+  onPlacement?: ((requestId: RequestId, deviceId: DeviceId | undefined) => void) | undefined
   /**
    * §8/#230. Pins the layout, ignoring both the stored preference and the control.
    *
@@ -252,7 +267,9 @@ export function Guide({
    */
   const bodies: Record<GuidePhase, ReactNode> = {
     Song: <PhaseSong result={result} />,
-    'Voice assignment': <PhaseVoices result={result} deviceById={deviceById} />,
+    'Voice assignment': (
+      <PhaseVoices result={result} deviceById={deviceById} onPlacement={onPlacement} />
+    ),
     'Rig integration': <PhaseRig result={result} occupied={occupied} />,
     Hook: <PhaseHook result={result} />,
     'Step programming': <PhaseSteps result={result} deviceById={deviceById} />,

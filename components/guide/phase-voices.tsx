@@ -2,11 +2,14 @@ import {
   shortfallsOfKind,
   type Device,
   type DeviceId,
+  type RequestId,
   type ResolveResult,
   type ResolvedAssignment,
   type Shortfall,
 } from '@/lib/core'
 import { searchCapNotice } from '@/lib/core'
+import { placementRow } from '../placement-controls'
+import { PlacementControl } from './placement-control'
 import { adviceText, count, isStacked, num, refusalText, voicesLabel } from './format'
 
 /** §3.5. Why this recipe, in the one case where the answer is not "it matched". */
@@ -69,9 +72,19 @@ function realisationText(a: ResolvedAssignment): string {
 export function PhaseVoices({
   result,
   deviceById,
+  onPlacement,
 }: {
   result: ResolveResult
   deviceById: Map<DeviceId, Device>
+  /**
+   * §7.5/#340 phase 2. Move one part onto a box, or `undefined` to hand it back to §7.1.
+   *
+   * Optional, and where it is absent no control is drawn rather than one drawn and inert. The
+   * device pages and the fixtures render a guide with no session behind it, and a menu there
+   * would offer a choice nothing could carry — `Rack` takes `onClockSource` the same way and
+   * for the same reason.
+   */
+  onPlacement?: ((requestId: RequestId, deviceId: DeviceId | undefined) => void) | undefined
 }) {
   const sectionCount = result.template.structure.length
   // §7.3/#81. Three lists, so the reader is never left working out which of the three kinds of
@@ -123,6 +136,13 @@ export function PhaseVoices({
                 {realisationText(a) === '' ? null : ` · ${realisationText(a)}`} ·{' '}
                 {a.sections.length === sectionCount ? 'every section' : a.sections.join(', ')}
               </p>
+              {onPlacement === undefined ? null : (
+                <PlacementControl
+                  row={placementRow(result, a.requestId, deviceById)}
+                  role={a.role}
+                  onPlacement={onPlacement}
+                />
+              )}
             </li>
           ))}
         </ul>
