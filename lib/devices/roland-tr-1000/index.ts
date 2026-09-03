@@ -59,6 +59,33 @@ import { TR_1000_PANEL } from './panel'
  */
 const PCT = { min: 0, max: 100 } //        0.0%-100.0%
 const BIPOLAR = { min: -100, max: 100 } // -100.0%-0.0%-100.0%
+/**
+ * **`COARSE` is settled per generator. The category is not the unit and neither is the
+ * instrument.** Only the generator's own parameter table answers, and two tables under one
+ * category heading disagree:
+ *
+ *  - p.60, under `CATEGORY: ACB`, `8X Bass Drum`, `8X Snare Drum`, `8X Tom`, `8X Rim Shot` and
+ *    `8X Closed HiHat` each print `COARSE  -12St-0-12St  Sets the pitch in semitones.`, while
+ *    `8X Hand Clap`, a few tables down that same page and the same category, prints
+ *    `FILTER CLAPS SPEED MIX CLAP DCY TAIL DCY` and no `COARSE` at all;
+ *  - p.62 splits again: `9X Rim Shot` carries it, and `9X Hand Clap`, `9X Closed HiHat`,
+ *    `9X Open HiHat`, `9X Crash Cymbal` and `9X Ride Cymbal` do not.
+ *
+ * **The instrument is not the unit either, which is the trap worth naming.** `8X Closed HiHat`
+ * (p.60) prints `COARSE`; `9X Closed HiHat` (p.62) prints `TUNE DECAY ERROR` and stops. Same
+ * instrument, same category, different generator, opposite answer.
+ *
+ * And do not reach for the obvious mnemonic. "The pitched instruments have it" reads well and
+ * p.61 falsifies it: `8X Open HiHat` prints `COARSE`, and so does `8X Crash Cymbal`, whose
+ * explanation column reads *"Pitch of the cymbal in semitones"*. There is no rule above the
+ * table. Read the table.
+ *
+ * Where a generator has no `COARSE`, its recipe keeps `TUNE` alone. That is an honest state and
+ * not a hole to fill (invariant 5). Where it has one, cite it to the page carrying *that
+ * generator's* table: p.60 and p.61 for the 8X family, p.62 for 9X, p.63 for FM, and the FM
+ * range is `-24St-24St` rather than `-12St-0-12St`. A citation naming the right document and the
+ * wrong table proves nothing.
+ */
 const SEMITONES = { min: -12, max: 12 } // -12St-0-12St
 const SEMITONES_24 = { min: -24, max: 24 } // -24St-24St
 
@@ -881,6 +908,7 @@ export const device: Device = {
         gen('8X Bass Drum', BD_GENS),
         num('TUNE', -8, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -18 }] }),
         num('DECAY', 44, PCT, '%', 60),
+        num('COARSE', -2, SEMITONES, 'St', 60, { hint: 'A whole tone down' }),
         num('ATTACK', 76, PCT, '%', 60, { hint: 'This is the click' }),
         num('EXCITE', 62, PCT, '%', 60, { mood: [{ axis: 'grit', amount: 30 }], hint: 'Odd-harmonic distortion' }),
         num('BODY DEP', 40, PCT, '%', 60),
@@ -1030,6 +1058,7 @@ export const device: Device = {
         num('TUNE', 20, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -18 }] }),
         num('TONE', 30, BIPOLAR, '%', 60),
         num('DECAY', 8, PCT, '%', 60, { hint: 'Floor it; the tail is the enemy' }),
+        num('COARSE', 3, SEMITONES, 'St', 60, { hint: 'A minor third up, to cut' }),
         num('BODY', 25, PCT, '%', 60),
         send('RVB', 8, 8),
         send('DLY', 0),
