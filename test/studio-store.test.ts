@@ -479,3 +479,141 @@ describe('rigs you had before (#304)', () => {
     expect(loadStudio(() => storage, CATALOGUE).status).toBe('ok')
   })
 })
+
+/**
+ * §7.5/#340. The parts the reader moved onto a box of their own choosing, remembered between
+ * visits — the same gap #304 closed for the clock source, and closed the same way: the store
+ * knew nothing about the field, so the choice was lost on every reload without a word.
+ */
+describe('the parts you placed by hand are remembered (#340)', () => {
+  const RIG = CATALOGUE.devices.slice(0, 3)
+  const PLACED = [
+    { requestId: 'r-kick', deviceId: RIG[0] as string },
+    { requestId: 'r-snare', deviceId: RIG[1] as string },
+  ]
+
+  it('survives a save and a load', () => {
+    const storage = fakeStorage()
+    const before = inputs({ devices: RIG, placements: PLACED })
+    expect(saveStudio(() => storage, studioDoc(before), CATALOGUE).status).toBe('ok')
+
+    const loaded = loadStudio(() => storage, CATALOGUE)
+    if (loaded.status !== 'ok') throw new Error(`expected ok, got ${loaded.status}`)
+    expect(loaded.doc.inputs.placements).toEqual(PLACED)
+    expect(guideInputsFrom(loaded.doc).placements).toEqual(PLACED)
+    // And the reloaded studio addresses the same guide as the one that was saved.
+    expect(encodeGuideInputs(guideInputsFrom(loaded.doc), CATALOGUE)).toBe(
+      encodeGuideInputs(before, CATALOGUE),
+    )
+  })
+
+  it('survives a second save of what was loaded, which is what a reload does', () => {
+    const storage = fakeStorage()
+    saveStudio(() => storage, studioDoc(inputs({ devices: RIG, placements: PLACED })), CATALOGUE)
+    const first = loadStudio(() => storage, CATALOGUE)
+    if (first.status !== 'ok') throw new Error(`expected ok, got ${first.status}`)
+
+    // Round two: the loaded document rebuilt from its own inputs and its own rig, as `syncStudio`
+    // does on every edit. A field carried in but not back out would vanish on the second write.
+    const again = studioDoc(guideInputsFrom(first.doc), first.doc.rig, first.doc.recent)
+    expect(saveStudio(() => storage, again, CATALOGUE).status).toBe('ok')
+    const second = loadStudio(() => storage, CATALOGUE)
+    if (second.status !== 'ok') throw new Error(`expected ok, got ${second.status}`)
+    expect(second.doc).toEqual(first.doc)
+    expect(second.doc.inputs.placements).toEqual(PLACED)
+  })
+
+  it('is stored with the score rather than with the rig', () => {
+    // The design claim, falsifiable. A placement names a request as well as a device, and
+    // requests belong to the direction — so it follows the score, where #304's clock source,
+    // which names only a box, follows the rig.
+    const doc = studioDoc(inputs({ devices: RIG, placements: PLACED }))
+    expect(doc.inputs.placements).toEqual(PLACED)
+    expect(doc.rig).not.toHaveProperty('placements')
+    expect(doc.version).toBe(STUDIO_DOC_VERSION)
+  })
+
+  it('keeps a placement whose box has left the rig, rather than editing what was asked for', () => {
+    // The other half of the difference from #304. A stale clock source *must* go, because
+    // `checkStudioDoc` refuses a document whose leader is outside its rig; nothing refuses a
+    // stale placement, on disk or on the wire, because the resolver reports it by name. Dropping
+    // it here would lose the choice for good the moment somebody unticked a box to try another.
+    const stale = studioDoc(inputs({ devices: RIG.slice(1), placements: PLACED }))
+    expect(stale.inputs.placements).toEqual(PLACED)
+    expect(saveStudio(() => fakeStorage(), stale, CATALOGUE).status).toBe('ok')
+  })
+
+  it('writes nothing at all when nothing was placed', () => {
+    // Absent and empty are one state, as everywhere else in this format.
+    expect(studioDoc(inputs()).inputs).not.toHaveProperty('placements')
+    expect(studioDoc(inputs({ placements: [] })).inputs).not.toHaveProperty('placements')
+    expect(guideInputsFrom(studioDoc(inputs()))).not.toHaveProperty('placements')
+  })
+
+  it('loads a document written before placements existed, unchanged', () => {
+    // The reason `STUDIO_DOC_VERSION` stays at 1: this is a v1 document with no such field, and
+    // it must still be a v1 document this build reads without a migration.
+    const old = JSON.stringify(studioDoc(inputs({ devices: RIG })))
+    expect(old).not.toContain('placements')
+    const loaded = loadStudio(stored(old), CATALOGUE)
+    if (loaded.status !== 'ok') throw new Error(`expected ok, got ${loaded.status}`)
+    expect(loaded.doc).toEqual(JSON.parse(old))
+    expect(loaded.doc.inputs).not.toHaveProperty('placements')
+    expect(guideInputsFrom(loaded.doc)).not.toHaveProperty('placements')
+  })
+
+  it('copies rather than aliases, in both directions', () => {
+    const live = [{ requestId: 'r-kick', deviceId: RIG[0] as string }]
+    const doc = studioDoc(inputs({ devices: RIG, placements: live }))
+    live.push({ requestId: 'r-snare', deviceId: RIG[1] as string })
+    ;(live[0] as { deviceId: string }).deviceId = RIG[2] as string
+    expect(doc.inputs.placements).toEqual([{ requestId: 'r-kick', deviceId: RIG[0] as string }])
+
+    // And back out: what a caller edits is never the stored document's own array or its rows.
+    const out = guideInputsFrom(doc).placements as { requestId: string; deviceId: string }[]
+    expect(out).not.toBe(doc.inputs.placements)
+    expect(out[0]).not.toBe(doc.inputs.placements?.[0])
+    out[0]!.deviceId = 'somewhere-else'
+    expect(doc.inputs.placements?.[0]?.deviceId).toBe(RIG[0] as string)
+  })
+
+  describe('a stored placement that is not one is corruption, never half-honoured', () => {
+    const valid = JSON.stringify(studioDoc(inputs({ devices: RIG, placements: PLACED })))
+    const withPlacements = (json: string) =>
+      valid.replace(/"placements":\[.*?\]/, `"placements":${json}`)
+
+    const bad: ReadonlyArray<readonly [string, string]> = [
+      ['a device this build does not ship', withPlacements('[{"requestId":"r-kick","deviceId":"aphex-widget"}]')],
+      ['one part placed on two boxes', withPlacements(
+        `[{"requestId":"r-kick","deviceId":"${RIG[0]}"},{"requestId":"r-kick","deviceId":"${RIG[1]}"}]`,
+      )],
+      ['a part id no permalink could carry', withPlacements(`[{"requestId":"r kick","deviceId":"${RIG[0]}"}]`)],
+      ['a placement with no device', withPlacements('[{"requestId":"r-kick"}]')],
+      ['a placement carrying an extra key', withPlacements(
+        `[{"requestId":"r-kick","deviceId":"${RIG[0]}","voiceId":"bd"}]`,
+      )],
+      ['a placement that is a bare string', withPlacements('["r-kick:tr-1000"]')],
+      ['placements that are not a list', withPlacements('{"r-kick":"tr-1000"}')],
+    ]
+
+    for (const [what, json] of bad) {
+      it(`rejects ${what}`, () => {
+        expect(json).not.toBe(valid)
+        const result = loadStudio(stored(json), CATALOGUE)
+        expect(result.status).toBe('invalid')
+        if (result.status !== 'invalid') return
+        expect(result.detail.length).toBeGreaterThan(0)
+        expect(result).not.toHaveProperty('doc')
+      })
+    }
+
+    it('refuses to save what it would refuse to load', () => {
+      const doc = studioDoc(inputs({ devices: RIG, placements: [{ requestId: 'r-kick', deviceId: 'aphex-widget' }] }))
+      const storage = fakeStorage()
+      const result = saveStudio(() => storage, doc, CATALOGUE)
+      expect(result.status).toBe('invalid')
+      if (result.status === 'invalid') expect(result.detail).toContain('aphex-widget')
+      expect(storage.value).toBeNull()
+    })
+  })
+})

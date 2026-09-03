@@ -17,6 +17,7 @@ import {
   withDevice,
   withInspiration,
   withKey,
+  withPlacement,
   withRig,
   withSeed,
   withTemplate,
@@ -1335,5 +1336,81 @@ describe('restoring a remembered rig (#304)', () => {
     expect(withDevice(restored, big[0] as string, false).devices).toHaveLength(
       MAX_RIG_DEVICES + 2,
     )
+  })
+})
+
+/**
+ * §7.5/#340. `withPlacement` is the input edit behind "put this part on that box". The resolver
+ * half — what an accepted placement does to the allocation, and how a refused one is reported —
+ * lives in `test/placements.test.ts`; what is asserted here is only the shape of the inputs it
+ * writes, because that shape is what a permalink carries.
+ */
+describe('withPlacement', () => {
+  const inputs: GuideInputsV1 = { ...DEFAULT_INPUTS, devices: [...DEFAULT_INPUTS.devices] }
+
+  it('sets a placement where the inputs carried none', () => {
+    const set = withPlacement(inputs, 'r-kick', 'roland-tr-1000')
+    expect(set.placements).toEqual([{ requestId: 'r-kick', deviceId: 'roland-tr-1000' }])
+    expect(songOverrides(set).placements).toEqual(set.placements)
+    // The call is not an edit in place: the inputs it was handed still carry nothing.
+    expect(inputs.placements).toBeUndefined()
+  })
+
+  it('replaces the box for a request rather than adding a second', () => {
+    // One box per part. Two placements for one request could not both hold, so a caller naming
+    // another box is moving the part, not asking for both.
+    const moved = withPlacement(
+      withPlacement(inputs, 'r-kick', 'roland-tr-1000'),
+      'r-kick',
+      'elektron-digitakt-ii',
+    )
+    expect(moved.placements).toEqual([{ requestId: 'r-kick', deviceId: 'elektron-digitakt-ii' }])
+  })
+
+  it('holds several placements in code unit order however they were set', () => {
+    const written = withPlacement(
+      withPlacement(withPlacement(inputs, 'r-sub', 'synthstrom-deluge'), 'r-kick', 'roland-tr-1000'),
+      'r-hats',
+      'elektron-digitakt-ii',
+    )
+    expect(written.placements).toEqual([
+      { requestId: 'r-hats', deviceId: 'elektron-digitakt-ii' },
+      { requestId: 'r-kick', deviceId: 'roland-tr-1000' },
+      { requestId: 'r-sub', deviceId: 'synthstrom-deluge' },
+    ])
+    // The same order the encoder writes (§8.2), so the inputs a caller holds and the link they
+    // copy agree, and a different click order is the same set and the same bytes.
+    const other = withPlacement(
+      withPlacement(withPlacement(inputs, 'r-kick', 'roland-tr-1000'), 'r-hats', 'elektron-digitakt-ii'),
+      'r-sub',
+      'synthstrom-deluge',
+    )
+    expect(other.placements).toEqual(written.placements)
+    expect(encodeGuideInputs(other, CATALOGUE)).toBe(encodeGuideInputs(written, CATALOGUE))
+  })
+
+  it('clears one placement and leaves the rest standing', () => {
+    const both = withPlacement(withPlacement(inputs, 'r-kick', 'roland-tr-1000'), 'r-sub', 'synthstrom-deluge')
+    const one = withPlacement(both, 'r-kick', undefined)
+    expect(one.placements).toEqual([{ requestId: 'r-sub', deviceId: 'synthstrom-deluge' }])
+  })
+
+  it('removes the field when the last placement is cleared, rather than leaving it empty', () => {
+    // Absent and empty are one state for every list in the format: a guide that places nothing
+    // writes no placement field, and that is how it reads back.
+    const cleared = withPlacement(withPlacement(inputs, 'r-kick', 'roland-tr-1000'), 'r-kick', undefined)
+    expect('placements' in cleared).toBe(false)
+    expect(encodeGuideInputs(cleared, CATALOGUE)).toBe(encodeGuideInputs(inputs, CATALOGUE))
+  })
+
+  it('is a no-op on a request that has no placement', () => {
+    expect('placements' in withPlacement(inputs, 'r-kick', undefined)).toBe(false)
+  })
+
+  it('leaves every other input alone', () => {
+    const rich: GuideInputsV1 = { ...inputs, bpm: 132, key: 'F minor', clockSourceId: 'roland-tr-1000', seed: 4 }
+    const set = withPlacement(rich, 'r-kick', 'synthstrom-deluge')
+    const { placements: _placed, ...rest } = set
+    expect(rest).toEqual(rich)
   })
 })

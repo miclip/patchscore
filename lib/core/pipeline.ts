@@ -39,6 +39,7 @@ import {
 import {
   assign,
   type Placement,
+  type PlacementOptions,
   type PlacementReport,
   type SearchReport,
   type Shortfall,
@@ -1480,12 +1481,18 @@ export type ResolveResult = {
    * missing part: the part is there, on the box the ranking picked. Empty lists for a guide that
    * placed nothing, which is every guide before #340.
    *
-   * **Nothing renders this yet.** Phase 1 is the resolver and the permalink; the control that
-   * shows it, and lets somebody make a placement without hand-editing a URL, is phase 2 (§7.5).
-   * What the guide already shows is the *effect*: the part is named on the box it was placed on,
-   * and anything displaced is an ordinary §7.3 shortfall.
+   * **Both renderers read this, and so does the control** (#340 phase 2). §8's voice assignment
+   * phase names every refusal, in Markdown and in the view; the control on the part row reads it
+   * to say whether this part is where the reader put it, where they asked and could not have it,
+   * or wherever the ranking chose. The guide also shows the *effect* on its own: the part is
+   * named on the box it was placed on, and anything displaced is an ordinary §7.3 shortfall.
    */
   placements: PlacementReport
+  /**
+   * §7.5/#340 phase 2. Where each request *could* go, and why a box is not on the offer.
+   * Independent of what was placed — see `placementOptionsFor`.
+   */
+  options: PlacementOptions
   occupancy: Occupancy
   score: Score
   search: SearchReport
@@ -1715,6 +1722,7 @@ export function resolve(input: ResolveInput): ResolveResult {
     assignments,
     shortfalls: allocation.shortfalls,
     placements: allocation.placements,
+    options: allocation.options,
     occupancy: allocation.occupancy,
     score: allocation.score,
     search: allocation.search,

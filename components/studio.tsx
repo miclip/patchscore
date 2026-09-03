@@ -6,6 +6,7 @@ import type {
   GuideInputsV1,
   InspirationId,
   MoodAxis,
+  RequestId,
   StoredRigV1,
   TemplateId,
 } from '@/lib/core'
@@ -23,6 +24,7 @@ import {
   withBpm,
   withClockSource,
   withKey,
+  withPlacement,
   copyStudioLink,
   createStudioSync,
   effectiveMood,
@@ -362,6 +364,19 @@ export function Studio({ initialInputs }: StudioProps) {
     setInputs((current) => withClockSource(current, deviceId))
   }
 
+  /**
+   * §7.5/#340 phase 2. Moving one part onto a box, or handing it back to §7.1's allocation.
+   *
+   * An input rather than a view setting, exactly as the clock source is: it changes which box
+   * the guide names, so invariant 6 makes it something the permalink has to carry. Nothing is
+   * validated here — a box that cannot make the part is not offered by the control, and one the
+   * reader reaches anyway is refused by name in `ResolveResult.placements` rather than silently
+   * dropped.
+   */
+  function setPlacement(requestId: RequestId, deviceId: DeviceId | undefined) {
+    setInputs((current) => withPlacement(current, requestId, deviceId))
+  }
+
   return (
     <main className="shell">
       <header className="masthead">
@@ -471,6 +486,7 @@ export function Studio({ initialInputs }: StudioProps) {
           result={result}
           seed={inputs.seed}
           onClockSource={setClockSource}
+          onPlacement={setPlacement}
         />
       </div>
 

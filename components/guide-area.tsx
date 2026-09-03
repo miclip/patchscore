@@ -2,7 +2,7 @@
 
 import type { InspirationApplication, ResolveResult } from '@/lib/core'
 import { Guide } from './guide/guide'
-import type { DeviceId } from '@/lib/core'
+import type { DeviceId, RequestId } from '@/lib/core'
 import { Rack } from './rack/rack'
 
 /**
@@ -31,9 +31,21 @@ export type GuideAreaProps = {
   seed: number
   /** §7.4/#200. Passed to the rack, which is where a box is put in charge of the clock. */
   onClockSource: (deviceId: DeviceId | undefined) => void
+  /**
+   * §7.5/#340 phase 2. Passed to the guide, which is where a part is named on a box. Optional
+   * for the same reason `Guide`'s copy is: a caller with no session behind it draws no control
+   * rather than an inert one.
+   */
+  onPlacement?: ((requestId: RequestId, deviceId: DeviceId | undefined) => void) | undefined
 }
 
-export function GuideArea({ application, result, seed, onClockSource }: GuideAreaProps) {
+export function GuideArea({
+  application,
+  result,
+  seed,
+  onClockSource,
+  onPlacement,
+}: GuideAreaProps) {
   if (application?.outcome === 'refused') {
     return (
       <section className="panel span-2">
@@ -69,7 +81,7 @@ export function GuideArea({ application, result, seed, onClockSource }: GuideAre
           top of page 1 is a printed guide somebody has to explain.
         */
         <section className="panel span-2 guide-panel">
-          <Guide result={result} seed={seed} />
+          <Guide result={result} seed={seed} onPlacement={onPlacement} />
         </section>
       )}
     </>

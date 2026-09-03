@@ -29,6 +29,8 @@ import type {
   GuideInputsV1,
   MoodAxis,
   MoodState,
+  Placement,
+  RequestId,
   SongOverrides,
   StorageSource,
   StoredRigV1,
@@ -910,4 +912,44 @@ export function withClockSource(
     return rest
   }
   return { ...inputs, clockSourceId }
+}
+
+/**
+ * §7.5/#340. Put one part on a box the reader picked, or hand it back to §7.1's allocation with
+ * `undefined`.
+ *
+ * **One box per part.** Setting a request that already has a placement replaces it rather than
+ * adding a second: two placements for one request could not both hold, and a caller that wants
+ * the part somewhere else is saying so, not asking for both.
+ *
+ * **Canonically ordered**, by request id then device id in UTF-16 code units — the same order
+ * `encodeGuideInputs` writes, so the inputs a caller holds and the link they copy agree, and two
+ * readers who placed the same parts in a different order hold the same inputs. It is not the
+ * order the resolver takes them in: `resolvePlacements` re-sorts into request priority (§4.4),
+ * which is what settles a conflict.
+ *
+ * **Absent and empty are one state** (§8.2), so clearing the last placement removes the field.
+ *
+ * Unvalidated for `withClockSource`'s reason: a request this direction does not have, or a box
+ * that has left the rig, is refused by name in `ResolveResult.placements` and the guide resolves
+ * around it. A rig or direction edit therefore needs no cleanup pass over the inputs.
+ */
+export function withPlacement(
+  inputs: GuideInputsV1,
+  requestId: RequestId,
+  deviceId: DeviceId | undefined,
+): GuideInputsV1 {
+  const kept = (inputs.placements ?? []).filter((one) => one.requestId !== requestId)
+  const next: Placement[] =
+    deviceId === undefined ? [...kept] : [...kept, { requestId, deviceId }]
+  if (next.length === 0) {
+    const { placements: _dropped, ...rest } = inputs
+    return rest
+  }
+  next.sort(
+    (a, b) =>
+      (a.requestId < b.requestId ? -1 : a.requestId > b.requestId ? 1 : 0) ||
+      (a.deviceId < b.deviceId ? -1 : a.deviceId > b.deviceId ? 1 : 0),
+  )
+  return { ...inputs, placements: next }
 }

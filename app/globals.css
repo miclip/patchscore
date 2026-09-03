@@ -2703,6 +2703,171 @@ button:active {
   font-size: 13px;
 }
 
+/*
+ * §7.5/#340 phase 2. The control that moves a part onto another box, on the part's own row.
+ *
+ * Collapsed to one line until asked for. A ten-box rig and a twelve-part direction is a hundred
+ * and twenty buttons, and a guide is not readable underneath that.
+ *
+ * `touch-action` is on the buttons themselves and nothing wider, the rule the knob already
+ * follows: put it on a row or a panel and the page stops scrolling past the control, which on a
+ * phone is the whole page (#21). `manipulation` and not `none` — there is nothing to drag here,
+ * only a tap whose 300ms wait is worth removing.
+ */
+.placement {
+  margin: 6px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  min-width: 0;
+}
+
+/*
+ * §7.5/#340. **Wide screens put the collapsed control beside the part, not under it.**
+ *
+ * Collapsed is the common case — every part carries one, and a direction asks for a dozen — so
+ * a row each buys twelve rows of scroll on a page §8 already makes somebody scroll too much
+ * (#341). There is room: the part's own line ends well short of the panel edge, and the pill is
+ * one pill.
+ *
+ * Opened it spans the full width instead, because the offer is a row of boxes and squeezing it
+ * into a right-hand column would wrap it into a column of its own.
+ *
+ * Narrow screens keep the stack. Below the breakpoint there is no spare width to move it into,
+ * and #21's reader is the one holding the phone.
+ */
+@media (min-width: 701px) {
+  .parts > li:has(.placement) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: 12px;
+  }
+
+  .parts > li:has(.placement) > .part-head,
+  .parts > li:has(.placement) > .subordinate {
+    grid-column: 1;
+  }
+
+  /*
+   * `contents`, so the toggle and the offer place themselves. Wrapping them together made the
+   * pill jump from the right edge to the left the moment it was opened — the control moving
+   * because you pressed it, which is the one thing a control must not do.
+   */
+  .placement {
+    display: contents;
+  }
+
+  /*
+   * Spans the head and the subordinate line rather than sitting in the first alone. #21 makes it
+   * a 44px target, which is taller than the one line it shared — so row 1 grew to the button and
+   * the two text lines were pushed apart by the difference, leaving a hole under the part's name.
+   * Across both rows the target costs nothing: the two lines are about that tall together.
+   */
+  .placement-toggle {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: center;
+    justify-self: end;
+  }
+
+  /*
+   * The offer takes the width rather than a right-hand column — it is a row of boxes and would
+   * wrap into a column otherwise — but it is **right-aligned**, so it opens under the pill that
+   * opened it. Left-aligned it appeared at the far edge from the control the reader just
+   * pressed, with the whole part between them.
+   */
+  .placement-options,
+  .placement-refused-why {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    margin: 6px 0 0;
+  }
+}
+
+.placement-toggle,
+.placement-option {
+  /* #21: 44px targets, because this is read at the machine with hands busy. */
+  min-height: 44px;
+  padding: 4px 12px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.placement-toggle[aria-expanded='true'] {
+  border-color: var(--accent);
+}
+
+/*
+ * What the pill is, ahead of what it says. Quiet enough that the state is still the loud half of
+ * the line, present enough that the control is never a bare "Automatic".
+ */
+.placement-label {
+  color: var(--ink-dim);
+}
+
+.placement-option[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/*
+ * A box that cannot make this part is shown and not offered. Dimmed and inert, with the reason
+ * beside it rather than in a `title` — a hover has no touch equivalent, and "why is my box not
+ * on the list" is the question this answers (§7.5/#329).
+ */
+/*
+ * §7.5/#340. **The reason is not a pill and must not sit in the row of them.**
+ *
+ * Rendered inline it read as a run-on — `[Automatic] [MPC Live III] [Tracker Mini] nobody has
+ * written a dark sub for your Tracker Mini yet [TR-1000]` — a sentence wedged between controls,
+ * breaking the one row the reader is scanning.
+ *
+ * `order` and a full-width basis move it visually without touching the markup: every reason
+ * lands after every pill, one per line. The DOM order is unchanged, so it is still announced
+ * immediately after the button it is about — which is why it is a sibling of that button and not
+ * a `title` (no hover on touch) or text inside a disabled control (not reliably announced).
+ *
+ * Each sentence names its own box, so it does not need to sit beside it to be understood.
+ */
+/*
+ * A real box, not `contents`: it carries the `title` and must receive the hover a native tooltip
+ * needs. It wraps the pill alone now — when it also held the reason sentence it was sized to
+ * that sentence and punched a hole in the row.
+ */
+.placement-unavailable {
+  display: inline-flex;
+}
+
+.placement-option:disabled {
+  cursor: default;
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.placement-refused-why {
+  font-size: 12px;
+  color: var(--ink-dim);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.placement-options {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  min-width: 0;
+}
+
 .part-head,
 .box-head {
   display: flex;
@@ -3279,6 +3444,13 @@ html {
   .patchbay,
   .panel:not(.guide-panel):not(.rack-section),
   .guide-actions,
+  /*
+   * §7.5/#340 phase 2. The placement control is chrome by the same test as the hints toggle: a
+   * button printed onto paper is a control nobody can operate. Nothing is lost with it — a
+   * placement the guide refused is named in the "Placements not applied" list above, which is
+   * guide content and prints.
+   */
+  .placement,
   .hints-toggle {
     display: none !important;
   }

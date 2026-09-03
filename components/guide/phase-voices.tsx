@@ -2,12 +2,15 @@ import {
   shortfallsOfKind,
   type Device,
   type DeviceId,
+  type RequestId,
   type ResolveResult,
   type ResolvedAssignment,
   type Shortfall,
 } from '@/lib/core'
 import { searchCapNotice } from '@/lib/core'
-import { adviceText, count, isStacked, num, voicesLabel } from './format'
+import { placementRow } from '../placement-controls'
+import { PlacementControl } from './placement-control'
+import { adviceText, count, isStacked, num, refusalText, voicesLabel } from './format'
 
 /** §3.5. Why this recipe, in the one case where the answer is not "it matched". */
 function recipeWhy(a: ResolvedAssignment) {
@@ -56,6 +59,11 @@ function realisationText(a: ResolvedAssignment): string {
  * lines, not the name of the section. A reader who has to ask what "Advice" means has been told
  * nothing, and softening the word is the opposite of invariant 5's honesty.
  *
+ * §7.5/#340 adds a fourth heading above the three, and it is deliberately not one of them: a
+ * refused placement is not an absence at all — the part is in the list above it, on the box the
+ * ranking chose. Omitted entirely when nothing was refused, which is every guide that placed
+ * nothing.
+ *
  * **Three headings since #81**, because `Gaps` was carrying three unrelated situations and a
  * reader could not tell which one a line was. What is under `Gaps` now is only the kind the
  * word is honest about: this rig cannot make this part. An unwritten recipe is ours to fix and
@@ -64,9 +72,19 @@ function realisationText(a: ResolvedAssignment): string {
 export function PhaseVoices({
   result,
   deviceById,
+  onPlacement,
 }: {
   result: ResolveResult
   deviceById: Map<DeviceId, Device>
+  /**
+   * §7.5/#340 phase 2. Move one part onto a box, or `undefined` to hand it back to §7.1.
+   *
+   * Optional, and where it is absent no control is drawn rather than one drawn and inert. The
+   * device pages and the fixtures render a guide with no session behind it, and a menu there
+   * would offer a choice nothing could carry — `Rack` takes `onClockSource` the same way and
+   * for the same reason.
+   */
+  onPlacement?: ((requestId: RequestId, deviceId: DeviceId | undefined) => void) | undefined
 }) {
   const sectionCount = result.template.structure.length
   // §7.3/#81. Three lists, so the reader is never left working out which of the three kinds of
@@ -118,9 +136,38 @@ export function PhaseVoices({
                 {realisationText(a) === '' ? null : ` · ${realisationText(a)}`} ·{' '}
                 {a.sections.length === sectionCount ? 'every section' : a.sections.join(', ')}
               </p>
+              {onPlacement === undefined ? null : (
+                <PlacementControl
+                  row={placementRow(result, a.requestId, deviceById)}
+                  role={a.role}
+                  onPlacement={onPlacement}
+                />
+              )}
             </li>
           ))}
         </ul>
+      )}
+
+      {result.placements.refused.length === 0 ? null : (
+        <>
+          <h4>Placements not applied</h4>
+          <p className="quiet">
+            You asked for these parts on a particular box. Each line says why the guide could not
+            do it — the part itself is where the ranking put it, unless a gap below says otherwise.
+          </p>
+          <ul className="advice">
+            {result.placements.refused.map((one) => (
+              <li key={`${one.requestId}\u0000${one.deviceId}`}>
+                <span className="role mono">{one.requestId}</span>
+                <span className="arrow" aria-hidden="true">
+                  →
+                </span>
+                <span className="mono quiet">{one.deviceId}</span>
+                <span className="advice-text">{refusalText(one)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       <h4>Gaps</h4>
