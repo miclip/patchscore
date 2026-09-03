@@ -200,14 +200,19 @@ describe('the format carries an absent mood, and older links keep theirs (#310)'
   }
 
   it('bumped the format and not the engine', () => {
-    expect(FORMAT_VERSION).toBe(3)
     /**
      * Named rather than asserted against a variable, so a bump is a decision somebody wrote down
-     * rather than a number that drifted. #310 did not move it and still has not: the engine went
-     * 5 to 6 for §2.3/#25's device-global resources, which is a change to what the resolver
-     * *decides* and carries its own entry in `RESOLVER_VERSION`'s history. What this test is
-     * about is that widening the input set is not that kind of change — the reading beside
-     * `SongOverrides`, applied to a second field.
+     * rather than a number that drifted. #310 took this to 3 for the optional mood; §7.5/#340
+     * took it to 4 for `placement`, which is the same kind of change again — a field that exists
+     * now and did not before, whose absence an older link must be read as a state rather than as
+     * corruption.
+     */
+    expect(FORMAT_VERSION).toBe(4)
+    /**
+     * The engine went 5 to 6 for §2.3/#25's device-global resources, which is a change to what
+     * the resolver *decides* and carries its own entry in `RESOLVER_VERSION`'s history. What this
+     * test is about is that widening the input set is not that kind of change — the reading
+     * beside `SongOverrides`, applied to #161's two fields, then #200's, then #340's.
      */
     expect(RESOLVER_VERSION).toBe(6)
   })
