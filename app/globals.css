@@ -2723,6 +2723,49 @@ button:active {
   min-width: 0;
 }
 
+/*
+ * §7.5/#340. **Wide screens put the collapsed control beside the part, not under it.**
+ *
+ * Collapsed is the common case — every part carries one, and a direction asks for a dozen — so
+ * a row each buys twelve rows of scroll on a page §8 already makes somebody scroll too much
+ * (#341). There is room: the part's own line ends well short of the panel edge, and the pill is
+ * one pill.
+ *
+ * Opened it spans the full width instead, because the offer is a row of boxes and squeezing it
+ * into a right-hand column would wrap it into a column of its own.
+ *
+ * Narrow screens keep the stack. Below the breakpoint there is no spare width to move it into,
+ * and #21's reader is the one holding the phone.
+ */
+@media (min-width: 701px) {
+  .parts > li:has(.placement) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: 12px;
+  }
+
+  .parts > li:has(.placement) > .part-head,
+  .parts > li:has(.placement) > .subordinate {
+    grid-column: 1;
+  }
+
+  .placement {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+    justify-content: flex-end;
+  }
+
+  /* Opened, it is a row of boxes rather than one pill: take the whole width, under everything. */
+  .placement:has(.placement-options) {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    margin: 6px 0 0;
+    justify-content: flex-start;
+  }
+}
+
 .placement-toggle,
 .placement-option {
   /* #21: 44px targets, because this is read at the machine with hands busy. */
