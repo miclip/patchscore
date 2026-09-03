@@ -122,21 +122,29 @@ export function PlacementOffer({
           </button>
         ) : (
           /*
-            `disabled` rather than absent: the box is in their rig and they will look for it.
+            `disabled` rather than absent: the box is in their rig and they will look for it, and
+            dimmed is the whole of what it says on the page. The reason used to print beside it —
+            "nobody has written a dirty closed-hat for your Tracker Mini yet" — a sentence about
+            our authoring backlog dressed as information about the reader's rig, and the same
+            thing the guide's "Waiting on us" block was doing before it came out.
 
-            **And that is all it says.** The reason used to print beside it — "nobody has written
-            a dirty closed-hat for your Tracker Mini yet" — which is a sentence about our
-            authoring backlog wearing the clothes of information about the reader's rig. It is
-            the same thing the guide's "Waiting on us" block was doing before it was removed for
-            the same reason: somebody standing at a rack cannot act on what we have not written,
-            and a dimmed control already says this one is not available.
+            **The `title` is an addition, not the only route.** #21 refuses a hover-*only*
+            affordance because touch has none — but the baseline here is a dimmed control that
+            says "not this one" without it, so a pointer gets the detail and a finger loses
+            nothing. That is the difference from putting the sentence behind a tooltip while
+            there was nothing else.
 
-            Where a placement the reader *asked for* is refused, that still reaches them — see
-            `placement-refused-why` above. The difference is whether they made the choice.
+            On the wrapper rather than the button: a `disabled` control does not reliably fire
+            the pointer events a native tooltip needs, so a `title` on it often never appears.
+
+            Where a placement the reader *asked for* is refused, that still reaches them on the
+            page — see `placement-refused-why` above. The difference is whether they chose it.
           */
-          <button key={choice.deviceId} type="button" className="placement-option" disabled>
-            {choice.name}
-          </button>
+          <span key={choice.deviceId} className="placement-unavailable" title={choice.why}>
+            <button type="button" className="placement-option" disabled>
+              {choice.name}
+            </button>
+          </span>
         ),
       )}
     </div>

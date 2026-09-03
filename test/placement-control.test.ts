@@ -178,11 +178,24 @@ describe('what the control offers (§7.5/#340 phase 2)', () => {
    * test below, and it is the line this removal does not cross: an option nobody chose is owed
    * no explanation; a choice that was overridden is.
    */
-  it('says nothing more than that, and hides nothing behind a hover', () => {
+  it('says nothing more on the page, and puts the reason in a tooltip', () => {
     const html = offer(automatic)
+    // Not printed beside the pill any more.
     expect(plain(html)).not.toContain(SPARE_CANNOT)
-    expect(html).not.toContain('title=')
     expect(html).not.toContain('placement-why')
+    // But available to a pointer, as an addition to the dimming rather than instead of it.
+    expect(html).toContain(`title="${SPARE_CANNOT}"`)
+  })
+
+  /**
+   * A `disabled` control does not reliably fire the pointer events a native tooltip needs, so the
+   * `title` has to sit on something that does. Pinned because it looks like a pointless wrapper
+   * and reads as one right up until somebody flattens it and the tooltip silently stops.
+   */
+  it('hangs the tooltip on the wrapper, not on the disabled button', () => {
+    const html = offer(automatic)
+    expect(html).toMatch(/<span[^>]*placement-unavailable[^>]*title=/)
+    expect(html).not.toMatch(/<button[^>]*disabled[^>]*title=/)
   })
 
 

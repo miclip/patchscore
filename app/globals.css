@@ -2837,6 +2837,15 @@ button:active {
  *
  * Each sentence names its own box, so it does not need to sit beside it to be understood.
  */
+/*
+ * A real box, not `contents`: it carries the `title` and must receive the hover a native tooltip
+ * needs. It wraps the pill alone now — when it also held the reason sentence it was sized to
+ * that sentence and punched a hole in the row.
+ */
+.placement-unavailable {
+  display: inline-flex;
+}
+
 .placement-option:disabled {
   cursor: default;
   opacity: 0.55;
