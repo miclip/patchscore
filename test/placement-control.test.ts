@@ -164,8 +164,7 @@ describe('what the control offers (§7.5/#340 phase 2)', () => {
   /**
    * §7.5/#340. **A box that cannot take the part is dimmed and says nothing more.**
    *
-   * The reason used to print beside it — "nobody has written a dirty closed-hat for your Tracker
-   * Mini yet". That is a sentence about our authoring backlog wearing the clothes of information
+   * The reason used to print beside it, in wording since removed at source. That is a sentence about our authoring backlog wearing the clothes of information
    * about the reader's rig, and it is the same thing the guide's "Waiting on us" block was doing
    * before it was removed for the same reason: somebody standing at a rack cannot act on what
    * nobody has written, and a dimmed control already says this one is unavailable.

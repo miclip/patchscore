@@ -124,7 +124,8 @@ export function PlacementOffer({
           /*
             `disabled` rather than absent: the box is in their rig and they will look for it, and
             dimmed is the whole of what it says on the page. The reason used to print beside it —
-            "nobody has written a dirty closed-hat for your Tracker Mini yet" — a sentence about
+            "nobody has written a dirty closed-hat for your Tracker Mini yet" (since reworded at
+            source) — a sentence about
             our authoring backlog dressed as information about the reader's rig, and the same
             thing the guide's "Waiting on us" block was doing before it came out.
 

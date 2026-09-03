@@ -2813,7 +2813,7 @@ function whyCannotServe(ctx: Ctx, index: number, deviceId: DeviceId): string | u
     const notes = request.polyphony ?? 1
     return `no voice on your ${name} can sound ${String(notes)} notes of ${request.role} at once`
   }
-  return `nobody has written a ${ctx.wanted[index] as Character} ${request.role} for your ${name} yet`
+  return `your ${name} cannot make a ${ctx.wanted[index] as Character} ${request.role}`
 }
 
 /**
