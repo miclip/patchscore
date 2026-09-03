@@ -3,6 +3,7 @@ import type { DeviceId } from '@/lib/core'
 import type { Cite, Provenance, ResolvedParam, ResolvedRange } from '@/lib/core'
 import { STEPS_PER_BAR, clockFollowing, clockWires, sameCite } from '@/lib/core'
 import type { Gap, ResolvedHook, ResolvedNote } from '@/lib/core'
+import type { PlacementRefusal, RefusedPlacement } from '@/lib/core'
 import type { FxSource, SidechainReading } from '@/lib/core'
 import { noDuckers, pumpIsBoxByBox } from '@/lib/core'
 
@@ -196,6 +197,33 @@ export function adviceText(gap: Gap, deviceById: Map<DeviceId, Device>): string 
     return polyphonyShortfall(gap.notes, gap.roleVoices)
   }
   return `${capableText(gap.capable, deviceById)} could carry it — dial it by ear`
+}
+
+/**
+ * §7.5/#340. Why a placement was not applied, in the web guide's own words.
+ *
+ * **A second copy on purpose**, like `adviceText` and `polyphonyShortfall` above it: the two
+ * renderers share no code path, so a sentence appears in both because somebody put it in both.
+ * What they *do* share is `PLACEMENT_REFUSALS`, and that is the whole point of keying this table
+ * by the union — a fifth refusal is a change to what the resolver can mean, and it must fail to
+ * compile in both copies rather than fall through a `default` here into silence.
+ *
+ * **`detail` is shown verbatim, and first.** It is the resolver's sentence about this rig, and
+ * `cannot-serve` alone stands for four different answers (#329/#334). Deciding which one applied
+ * would be this file giving a second opinion on a question §7.5 has already answered; all that is
+ * added is what to do about it.
+ */
+const REFUSAL_PROSE: Record<PlacementRefusal, (detail: string) => string> = {
+  'unknown-request': (detail) =>
+    `${detail}, so nothing moved; this link is older than the direction, or was typed by hand`,
+  'device-not-in-rig': (detail) =>
+    `${detail}, so nothing moved; tick that box in the picker and ask for it again`,
+  'cannot-serve': (detail) => `${detail} — this part is where the ranking put it instead`,
+  'conflicted': (detail) => `${detail} — this one gave way, and is where the ranking put it`,
+}
+
+export function refusalText(refused: RefusedPlacement): string {
+  return REFUSAL_PROSE[refused.because](refused.detail)
 }
 
 // ---------------------------------------------------------------------------

@@ -1,3 +1,5 @@
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import {
   FORMAT_VERSION,
@@ -18,6 +20,7 @@ import { box, keys, makeRecipe, placement as landedOn, request, withRoles } from
 import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
 import { CATALOGUE, DEFAULT_INPUTS, songOverrides } from '../lib/studio/session'
 import { resolveEntry } from '../lib/studio/entry'
+import { PhaseVoices } from '../components/guide/phase-voices'
 
 /**
  * §7.5/#340. **The reader can move a part onto another box in the rig.**
@@ -460,11 +463,19 @@ describe('a guide that places nothing resolves exactly as it did (invariant 6)',
     expect(RESOLVER_VERSION).toBe(6)
   })
 
-  it('renders byte for byte the same with no placements, none asked for, and none accepted', () => {
+  it('renders byte for byte the same with no placements, and none asked for', () => {
     const untouched = renderGuide(resolve(base))
     expect(renderGuide(resolve({ ...base, overrides: {} }))).toBe(untouched)
     expect(renderGuide(resolve({ ...base, overrides: { placements: [] } }))).toBe(untouched)
-    // And a link whose every placement is refused: the ranking stands, so do the bytes.
+  })
+
+  it('adds the refusal block and nothing else, for a link whose placements all failed', () => {
+    // The ranking stands when every placement is refused, so every *other* byte of the guide
+    // stands with it. Before #340 phase 2 this asserted the whole document was identical, which
+    // was the same claim in a world where the report rendered nowhere. Cutting the block back out
+    // is what is left of it, and it is the stronger half: the refusals are additive, and a
+    // refused placement cannot quietly move a part.
+    const untouched = renderGuide(resolve(base))
     const stale = resolve({
       ...base,
       overrides: {
@@ -475,13 +486,20 @@ describe('a guide that places nothing resolves exactly as it did (invariant 6)',
         ],
       },
     })
-    expect(renderGuide(stale)).toBe(untouched)
     expect(stale.placements.accepted).toEqual([])
     expect(stale.placements.refused.map((r) => r.because)).toEqual([
       'cannot-serve',
       'device-not-in-rig',
       'unknown-request',
     ])
+
+    const md = renderGuide(stale)
+    expect(md).not.toBe(untouched)
+    const from = md.indexOf('### Placements not applied')
+    const to = md.indexOf('### Gaps')
+    expect(from).toBeGreaterThan(-1)
+    expect(to).toBeGreaterThan(from)
+    expect(md.slice(0, from) + md.slice(to)).toBe(untouched)
   })
 
   it('reports empty rather than absent, for a guide that placed nothing', () => {
@@ -542,5 +560,218 @@ describe('a link carries placements all the way to the guide (§7.5/#340, §8.2)
     // kick took the TR-8S voice it was using. That much a reader can see today, because a
     // shortfall is rendered where the placement report is not (§7.5, phase 1).
     expect(result.shortfalls.map((one) => one.requestId)).toContain('r-sub')
+  })
+})
+
+/**
+ * §7.5/#340 phase 2, and §8's two renderers. **The report is shown, not merely computed.**
+ *
+ * A refused placement that renders nowhere is a reader wondering why the part they moved is on
+ * the wrong box, and that is the one question the resolver already has an answer for. Both
+ * guides carry the four refusals under one neutral heading, above the gaps rather than among
+ * them: the part is in the list right above it, so filing it under `Gaps` would tell somebody
+ * their track is missing a part they can hear.
+ *
+ * The two vocabularies are written out twice, as every sentence in this tree is (#33). What they
+ * share is `PLACEMENT_REFUSALS` — both tables are keyed by the union, so a fifth kind is a
+ * compile error in both rather than a line that quietly says nothing in one of them.
+ */
+describe('a refused placement is rendered in both guides (§7.5/#340, §8)', () => {
+  const golden = {
+    devices: GOLDEN_DEVICES,
+    template: GOLDEN_TEMPLATE,
+    mood: GOLDEN_MOOD,
+    seed: GOLDEN_SEED,
+  }
+  const deviceById = new Map(GOLDEN_DEVICES.map((d) => [d.id, d]))
+
+  const view = (result: ReturnType<typeof resolve>) =>
+    renderToStaticMarkup(createElement(PhaseVoices, { result, deviceById }))
+
+  /** Markup back to prose, so an assertion reads as the sentence the reader sees. */
+  const plain = (html: string) =>
+    html
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&#x27;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+
+  /** One guide carrying all four refusals, and an accepted placement to cause the conflict. */
+  const everything = resolve({
+    ...golden,
+    overrides: {
+      placements: [
+        // Honoured, and the reason the next line cannot be: the Golden Drum has one tom voice.
+        { requestId: 'r-tom-1', deviceId: 'a-drum' },
+        { requestId: 'r-tom-2', deviceId: 'a-drum' },
+        // The Cascade plays bass-mid and lead, and no drum.
+        { requestId: 'r-kick', deviceId: 'A-cascade' },
+        // A box this rig does not have.
+        { requestId: 'r-sub', deviceId: 'a-machine-you-sold' },
+        // A part this direction does not have.
+        { requestId: 'r-ghost', deviceId: 'a-drum' },
+      ],
+    },
+  })
+
+  it('produces one of each refusal, which is what the rest of this block reads', () => {
+    expect(everything.placements.accepted).toEqual([{ requestId: 'r-tom-1', deviceId: 'a-drum' }])
+    expect([...everything.placements.refused].map((one) => one.because).sort()).toEqual([
+      'cannot-serve',
+      'conflicted',
+      'device-not-in-rig',
+      'unknown-request',
+    ])
+  })
+
+  it('says all four in the Markdown guide, each with the resolver’s own sentence', () => {
+    const md = renderGuide(everything)
+    expect(md).toContain('### Placements not applied')
+    // The part and the box it was asked for, on every line, whether or not the sentence names them.
+    for (const one of everything.placements.refused) {
+      expect(md).toContain(`- \`${one.requestId}\` → \`${one.deviceId}\` — ${one.detail},`)
+    }
+    // And the four sentences, whole.
+    expect(md).toContain(
+      "this direction has no part called 'r-ghost', so nothing was moved; the link is older " +
+        'than this direction, or was typed by hand',
+    )
+    expect(md).toContain(
+      "'a-machine-you-sold' is not one of the boxes in this rig, so nothing was moved; tick " +
+        'that box in the picker and ask for it again',
+    )
+    expect(md).toContain(
+      'your Golden Cascade has no voice that plays kick, so this part is where the ranking put ' +
+        'it instead',
+    )
+    expect(md).toContain(
+      'your Golden Drum cannot carry this as well as the tom you placed there, so this one gave ' +
+        'way and is where the ranking put it instead',
+    )
+  })
+
+  it('says all four in the web guide, in its own words and the same facts', () => {
+    const html = view(everything)
+    expect(html).toContain('Placements not applied')
+    const text = plain(html)
+    for (const one of everything.placements.refused) {
+      expect(text).toContain(one.requestId)
+      expect(text).toContain(one.deviceId)
+      // Verbatim: the sentence the resolver wrote about this rig, not a paraphrase of it.
+      expect(text).toContain(one.detail)
+    }
+    expect(text).toContain(
+      "this direction has no part called 'r-ghost', so nothing moved; this link is older than " +
+        'the direction, or was typed by hand',
+    )
+    expect(text).toContain(
+      "'a-machine-you-sold' is not one of the boxes in this rig, so nothing moved; tick that " +
+        'box in the picker and ask for it again',
+    )
+    expect(text).toContain(
+      'your Golden Cascade has no voice that plays kick — this part is where the ranking put it ' +
+        'instead',
+    )
+    expect(text).toContain(
+      'your Golden Drum cannot carry this as well as the tom you placed there — this one gave ' +
+        'way, and is where the ranking put it',
+    )
+  })
+
+  it('keeps a refusal out of the gaps, where it would read as a hole in the rig (§7.3)', () => {
+    const md = renderGuide(everything)
+    expect(md.indexOf('### Placements not applied')).toBeLessThan(md.indexOf('### Gaps'))
+    const html = view(everything)
+    expect(html.indexOf('Placements not applied')).toBeLessThan(html.indexOf('Gaps'))
+    // `r-ghost` is not a part of this direction at all, so nothing may report it as missing.
+    expect(everything.shortfalls.map((one) => one.requestId)).not.toContain('r-ghost')
+  })
+
+  it('draws nothing at all when no placement was asked for, in either renderer', () => {
+    const untouched = resolve(golden)
+    expect(untouched.placements.refused).toEqual([])
+    expect(renderGuide(untouched)).not.toContain('Placements not applied')
+    // The Markdown claim is pinned harder than this by the golden files, which are committed
+    // bytes and are unchanged by #340 phase 2.
+    const html = view(untouched)
+    expect(html).not.toContain('Placements not applied')
+    expect(html).toBe(view(resolve({ ...golden, overrides: { placements: [] } })))
+  })
+
+  /**
+   * §7.5's `cannot-serve` is one refusal standing for four different answers (#329/#334), and
+   * the renderers must not flatten them: "buy a box", "stack it by hand", "we owe you a recipe"
+   * and "the box is full" send a reader four different places. Each is asserted verbatim,
+   * because a renderer that re-derived which one applied would be a second opinion on a question
+   * the resolver has already answered.
+   */
+  describe('the four cannot-serve answers reach both guides whole', () => {
+    const withPlacement = (devices: Device[], template: Template, one: Placement) =>
+      resolve({
+        devices,
+        template,
+        mood: moodState(),
+        seed: 1,
+        overrides: { placements: [one] },
+      })
+
+    const mute = box('mute', {
+      name: 'Mute',
+      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['kick'], polyphony: 1 }],
+      recipes: [],
+    })
+    const starved = box('starved', {
+      name: 'Starved',
+      voices: [{ kind: 'fixed', id: 'v', label: 'V', roles: ['kick'], polyphony: 1 }],
+      resources: [{ id: 'slot', limit: 1, label: 'sample slots' }],
+      recipes: [
+        makeRecipe('starved-kick', 'kick', 'hard', 'v', {
+          consumes: [{ resource: 'slot', amount: 2 }],
+        }),
+      ],
+    })
+    const chord = withRoles([request({ id: 'r-kick', role: 'kick', polyphony: 3 })])
+
+    const cases: ReadonlyArray<readonly [string, ReturnType<typeof resolve>, string]> = [
+      [
+        'no voice for the role — the one case where buying a box is the answer',
+        withPlacement([alpha, spare], kickOnly, { requestId: 'r-kick', deviceId: 'spare' }),
+        'your Spare has no voice that plays kick',
+      ],
+      [
+        'the voice plays it and cannot sound the chord (§12.4)',
+        withPlacement([alpha, beta], chord, { requestId: 'r-kick', deviceId: 'beta' }),
+        'no voice on your Beta can sound 3 notes of kick at once',
+      ],
+      [
+        'ours to fix, and it must not read as a limit of the reader’s box (§3.5)',
+        withPlacement([alpha, mute], kickOnly, { requestId: 'r-kick', deviceId: 'mute' }),
+        'nobody has written a hard kick for your Mute yet',
+      ],
+      [
+        'a free voice and nowhere to load the patch (§2.3/#25)',
+        withPlacement([alpha, starved], kickOnly, { requestId: 'r-kick', deviceId: 'starved' }),
+        'your Starved cannot load a patch for this part',
+      ],
+    ]
+
+    for (const [what, result, detail] of cases) {
+      it(`says ${what}`, () => {
+        expect(result.placements.refused[0]?.because).toBe('cannot-serve')
+        expect(result.placements.refused[0]?.detail).toBe(detail)
+        expect(renderGuide(result)).toContain(
+          `${detail}, so this part is where the ranking put it instead`,
+        )
+        const html = renderToStaticMarkup(
+          createElement(PhaseVoices, {
+            result,
+            deviceById: new Map(result.devices.map((d) => [d.id, d])),
+          }),
+        )
+        expect(plain(html)).toContain(`${detail} — this part is where the ranking put it instead`)
+      })
+    }
   })
 })

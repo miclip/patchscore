@@ -27,7 +27,13 @@ import type { Pattern, PatternHit } from './template'
 import { STEPS_PER_BAR } from './template'
 import { reStrikesHeldNote, tightestReStrike } from './timing'
 import type { BoundArticulation, ResolvedPatchEntry, ResolvedSourceAudio } from './resolver'
-import { shortfallsOfKind, type Gap, type Shortfall } from './search'
+import {
+  shortfallsOfKind,
+  type Gap,
+  type PlacementRefusal,
+  type RefusedPlacement,
+  type Shortfall,
+} from './search'
 import {
   chordVoicings,
   enharmonicAlternative,
@@ -615,6 +621,34 @@ function gapText(gap: Gap, deviceById: Map<DeviceId, Device>): string {
   return `${capableText(gap.capable, deviceById)} could carry it, dial it by ear`
 }
 
+/**
+ * §7.5/#340. Why a placement was not applied, in the guide's own words.
+ *
+ * **Keyed by the union rather than switched on.** `PLACEMENT_REFUSALS` is the single semantic
+ * decision — a fifth kind is a change to what the resolver can mean, and it has to fail to
+ * compile here and again in the web guide's own copy of this table rather than fall through a
+ * `default` into a sentence that says nothing.
+ *
+ * **`detail` is printed verbatim, and first.** It is the resolver's sentence about *this* rig:
+ * which box, which role, how many notes, which part is already sitting there. Nothing here
+ * re-derives any of it — `cannot-serve` alone has four different answers behind it (#329/#334),
+ * and a renderer that decided which one applied would be a second opinion on a question §7.5 has
+ * already answered. What is added is only what to do about it.
+ */
+const REFUSAL_PROSE: Record<PlacementRefusal, (detail: string) => string> = {
+  'unknown-request': (detail) =>
+    `${detail}, so nothing was moved; the link is older than this direction, or was typed by hand`,
+  'device-not-in-rig': (detail) =>
+    `${detail}, so nothing was moved; tick that box in the picker and ask for it again`,
+  'cannot-serve': (detail) => `${detail}, so this part is where the ranking put it instead`,
+  'conflicted': (detail) =>
+    `${detail}, so this one gave way and is where the ranking put it instead`,
+}
+
+function refusalText(refused: RefusedPlacement): string {
+  return REFUSAL_PROSE[refused.because](refused.detail)
+}
+
 function phaseVoiceAssignment(result: ResolveResult, deviceById: Map<DeviceId, Device>): Line[] {
   const out: Line[] = []
 
@@ -655,6 +689,30 @@ function phaseVoiceAssignment(result: ResolveResult, deviceById: Map<DeviceId, D
         `  - p${num(a.priority)}${a.optional ? ', optional' : ''} · ${recipeWhy(a)}` +
           `${realisation === '' ? '' : ` · ${realisation}`} · ${sections}`,
       )
+    }
+  }
+
+  /**
+   * §7.5/#340. **Here, and above the gaps.** A refused placement is not a hole in the rig — the
+   * part is in the list right above this, on the box the ranking chose — so filing it under
+   * `Gaps` would tell a reader their track is missing something they can hear. It sits with the
+   * parts because that is where somebody who moved one goes looking for it.
+   *
+   * Omitted entirely when nothing was refused, which is every guide that placed nothing: the
+   * heading exists only where there is something under it, exactly as `Waiting on us` does.
+   * `refused` is already in `resolvePlacements`' canonical order, never the caller's.
+   */
+  if (result.placements.refused.length > 0) {
+    out.push('')
+    out.push('### Placements not applied')
+    out.push('')
+    out.push(
+      'You asked for these parts on a particular box. Each line says why the guide could not ' +
+        'do it — the part itself is where the ranking put it, unless a gap below says otherwise.',
+    )
+    out.push('')
+    for (const one of result.placements.refused) {
+      out.push(`- \`${one.requestId}\` → \`${one.deviceId}\` — ${refusalText(one)}`)
     }
   }
 

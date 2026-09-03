@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { DeviceId } from './ids'
+import type { Placement } from './search'
 import { INSPIRATION_CAP } from './inspiration'
 import { MoodStateSchema } from './vocabulary'
 import {
@@ -280,8 +281,43 @@ export function studioDoc(
       // disk anyway — so there would be one shape in memory and another on reload.
       ...(inputs.bpm === undefined ? {} : { bpm: inputs.bpm }),
       ...(inputs.key === undefined ? {} : { key: inputs.key }),
+      /**
+       * §7.5/#340. Written only when the reader placed something, for the reason the three above
+       * are: absent and empty are the same state in this format, and a key with no value is a
+       * second spelling of it that JSON drops on the way to disk anyway.
+       *
+       * **On the score and not on the rig**, where #304 put the clock source. The two look alike
+       * — both name a device — but a placement also names a *request*, and requests belong to the
+       * direction. A placement follows the direction it was made in; one stored on the rig would
+       * outlive its direction and hand a part to a box in a score that has no such part.
+       *
+       * A placement whose box has just left the rig is kept rather than dropped, which is the
+       * other half of that difference. `checkStudioDoc` refuses a document whose clock source is
+       * outside its own rig, so `reconcileRig` has to drop that one; nothing refuses a stale
+       * placement, on disk or on the wire, because `resolvePlacements` names it as
+       * `device-not-in-rig` beside the guide (§7.5). Re-ticking the box gets the part back.
+       */
+      ...(inputs.placements === undefined || inputs.placements.length === 0
+        ? {}
+        : { placements: copyPlacements(inputs.placements) }),
     },
   }
+}
+
+/**
+ * §7.5/#340. A placement list copied element by element, in both directions across this boundary.
+ *
+ * Spreading the array alone would leave its elements shared, so a later edit to live session
+ * state would reach into a document that is supposed to be a snapshot of it. That is the bug
+ * `[...inputs.inspirations]` and `{ ...inputs.mood }` already guard against, one level deeper
+ * because a placement is an object rather than a string.
+ *
+ * Field by field rather than `{ ...one }`, so what is written is exactly the two keys the strict
+ * schema accepts: a stray key arriving from an untyped path would otherwise be stored happily and
+ * refused on the way back in.
+ */
+function copyPlacements(placements: readonly Placement[]): Placement[] {
+  return placements.map((one) => ({ requestId: one.requestId, deviceId: one.deviceId }))
 }
 
 /**
@@ -304,6 +340,12 @@ export function guideInputsFrom(doc: StudioDocV1): GuideInputsV1 {
     // #304. Read off the rig rather than the score, which is where it is stored and why the
     // choice now survives a reload at all.
     ...(doc.rig.clockSourceId === undefined ? {} : { clockSourceId: doc.rig.clockSourceId }),
+    // §7.5/#340. Carried back for the reason the clock source above is: a choice that does not
+    // survive a reload is a choice the studio quietly forgot. Empty reads back as absent, since
+    // that is the one state this format has for "nothing placed".
+    ...(doc.inputs.placements === undefined || doc.inputs.placements.length === 0
+      ? {}
+      : { placements: copyPlacements(doc.inputs.placements) }),
   }
 }
 
@@ -400,6 +442,30 @@ const ScoreInputsSchema = z.strictObject({
    */
   bpm: z.number().int().min(BPM_MIN).max(BPM_MAX).optional(),
   key: z.string().max(KEY_MAX_LENGTH).optional(),
+  /**
+   * §7.5/#340. Optional for the reason the three above are, and why `STUDIO_DOC_VERSION` stays
+   * at 1: every document already on disk predates the reader being able to move a part, and
+   * absent means §7.1 allocates everything — which is what those documents meant when they were
+   * written.
+   *
+   * **Shape only.** What makes a *set* of placements legal — one box per part, a device this
+   * build ships — is `checkGuideInputs`'s rule, and `checkStudioDoc` runs the document through
+   * that same gate, so a stored placement and a linked one cannot come to disagree. Both ids are
+   * checked against `PERMALINK_ID` here for the reason every other stored id is: one that could
+   * not survive a permalink is already broken.
+   *
+   * Uncapped, exactly as on the wire. A cap here and none in the format would make a link this
+   * build opens a document it then refuses to save, and `checkGuideInputs` already bars a
+   * repeated request, so the list cannot grow by naming one part over and over.
+   */
+  placements: z
+    .array(
+      z.strictObject({
+        requestId: z.string().regex(PERMALINK_ID),
+        deviceId: z.string().regex(PERMALINK_ID),
+      }),
+    )
+    .optional(),
 })
 
 const StudioDocSchema = z.strictObject({
