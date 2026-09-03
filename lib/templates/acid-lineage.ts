@@ -420,6 +420,8 @@ export const acidLineage: Template = {
       character: 'dark',
       sustain: 'continuous',
       inessential: { reason: 'the squelch already owns the bottom; a part under it is weight' },
+      // §4.1/#334. The root, at the octave every authored `sub` hook uses. See industrial-techno.
+      pitch: { degree: 1, baseOctave: 1 },
     },
   ],
 

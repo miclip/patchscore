@@ -362,7 +362,21 @@ export const industrialTechno: Template = {
    */
   roles: [
     { id: 'r-kick', role: 'kick', priority: 1, character: 'hard', sustain: 'continuous' },
-    { id: 'r-sub', role: 'sub', priority: 1, character: 'dark', sustain: 'continuous' },
+    /*
+     * §4.1/#334. The root, at the octave every authored `sub` hook in the library uses.
+     *
+     * A pitch and not a hook: the step grid below already owns this part's rhythm, and a
+     * resolved hook would replace it (§4.3/#100). A sub holding the root under an authored
+     * pattern is the case that distinction exists for.
+     */
+    {
+      id: 'r-sub',
+      role: 'sub',
+      priority: 1,
+      character: 'dark',
+      sustain: 'continuous',
+      pitch: { degree: 1, baseOctave: 1 },
+    },
 
     {
       id: 'r-closed-hat',

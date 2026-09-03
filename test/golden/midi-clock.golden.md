@@ -241,6 +241,8 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 
 **Kick tuned down into a sustained sub** — settings in Sound design
 
+**Note** — `F1` · MIDI 29
+
 **Intro, Outro** — 16 steps, band 0
 
 ```

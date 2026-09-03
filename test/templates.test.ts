@@ -12,6 +12,7 @@ import {
   bandFor,
   moodState,
   resolve,
+  resolvePitch,
   sectionsFor,
   selectPattern,
   type DensityBand,
@@ -692,5 +693,58 @@ describe('bass-mid is not the sub (#37)', () => {
     )
     expect(subs.length).toBeGreaterThan(0)
     expect([...new Set(subs)]).toEqual([1])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Which note to place
+// ---------------------------------------------------------------------------
+
+/**
+ * §4.1/#334. A part whose rhythm the grid owns can still say which note to play.
+ *
+ * Twenty of the library's devices are addressed by note. Before this, a pitch reached the page
+ * only where a *hook* existed — and whether a hook exists is a musical decision about a part,
+ * unrelated to whether the box needs a note to be playable. So a `sub` on a Deluge printed which
+ * steps to hit and nothing to put on them.
+ *
+ * A hook was the wrong instrument for it: §4.3/#100 makes a resolved hook the part's pattern,
+ * replacing the grid, so authoring one here would have deleted the rhythm and then needed
+ * `reArticulatesHook` to restore it.
+ */
+describe('a request can carry a pitch without carrying a hook (#334)', () => {
+  it('never authors both for one role, since that is two authorities over one part', () => {
+    const both = TEMPLATES.flatMap((t) => {
+      const hooked = new Set(t.hooks.map((h) => h.forRole))
+      return t.roles
+        .filter((r) => r.pitch !== undefined && hooked.has(r.role))
+        .map((r) => `${t.id}/${r.id}`)
+    })
+    expect(both).toEqual([])
+  })
+
+  /**
+   * The octave is the one every authored `sub` hook uses. #37 pins those at 1 after a library of
+   * `bass-mid` hooks turned out to be living in the sub's octave — a pitch authored a third
+   * octave down would reintroduce that by another route.
+   */
+  it('puts every authored sub pitch at the octave the sub hooks use', () => {
+    const octaves = TEMPLATES.flatMap((t) =>
+      t.roles.filter((r) => r.role === 'sub' && r.pitch !== undefined).map((r) => r.pitch?.baseOctave),
+    )
+    expect(octaves.length).toBeGreaterThan(0)
+    expect([...new Set(octaves)]).toEqual([1])
+  })
+
+  it('resolves to a note in every key its template offers', () => {
+    for (const template of TEMPLATES) {
+      for (const key of template.keys) {
+        for (const request of template.roles) {
+          if (request.pitch === undefined) continue
+          const resolved = resolvePitch(request.pitch, key)
+          expect(resolved.outcome, `${template.id} ${request.id} in ${key}`).toBe('resolved')
+        }
+      }
+    }
   })
 })

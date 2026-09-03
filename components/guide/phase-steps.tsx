@@ -410,6 +410,18 @@ export function PhaseSteps({
             <SustainedRef />
           ) : null}
           {/*
+            §4.1/#334. Which note to place, above the grid that says where. Only where a grid
+            follows and the part has no hook — a hook prints every note with its degree and MIDI
+            number in phase 4, and a second authority over one part's notes is what #100 exists
+            to prevent. This renderer's own words, per #33.
+          */}
+          {a.hookAuthority !== undefined || isSustainedPart(a) || a.pitch === undefined ? null : (
+            <p className="sound-ref">
+              <strong>Note</strong> — <span className="mono">{a.pitch.note}</span>
+              <span className="quiet"> · MIDI {num(a.pitch.midi)}</span>
+            </p>
+          )}
+          {/*
             §8/#65. Qualifies the grid below rather than replacing it — so it is keyed on whether
             a grid is suppressed, not on which sentence printed above it.
 

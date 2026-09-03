@@ -402,7 +402,15 @@ export const generativeDrift: Template = {
     // agreeing with the bar there is nothing for the other four to be out of phase with, and
     // without the pad the piece is a percussion study.
     { id: 'r-pad', role: 'pad', priority: 1, character: 'soft', sustain: 'continuous', polyphony: 3 },
-    { id: 'r-sub', role: 'sub', priority: 1, character: 'dark', sustain: 'continuous' },
+    // §4.1/#334. The root, at the octave every authored `sub` hook uses. See industrial-techno.
+    {
+      id: 'r-sub',
+      role: 'sub',
+      priority: 1,
+      character: 'dark',
+      sustain: 'continuous',
+      pitch: { degree: 1, baseOctave: 1 },
+    },
 
     // The two cycles a listener follows. `clean` on the hat rather than `dirty` for the reason
     // Weave gives — the two are opposites on the grit axis and §3.5 refuses the substitution
