@@ -95,6 +95,60 @@ import { SP_404MK2_PANEL } from './panel'
  * Transposition preserves the recorded voicing and nothing else, so a changed chord shape is a
  * second sample (§4.1). The Hook phase lists which and the semitone offset for each trigger.
  *
+ * ## No trigger note, because nothing on this box names one (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 246 of them, all on the one pad pool, and the reason is sharper here than on the other
+ * samplers in the library: **there is no note to author, because nothing on this box names one.**
+ *
+ * **A step is timing.** p.97 opens TR-REC with *"Here's how to create a pattern by setting the
+ * sample playback timing at the position you like on the steps"*, and p.99's step 9 closes it the
+ * same way — *"Press pads [1]-[16] to select the step (timing) at which the sample plays back."*
+ * The sample itself was chosen two steps earlier and by pad: p.98's step 7 is *"Press pads
+ * [1]-[16] while holding down the [SUB PAD] button to select the sample."*
+ *
+ * **What sits where a trigger note would is a setting the reader chooses, and it is not a note.**
+ * p.98 gives `PITCH` the range `-12-+12` and the sentence *"Sets the sample pitch"*, and
+ * `PITCH MODE` decides who owns it: under `CHROMATIC` *"each step that's input can be played back
+ * at a different pitch"*, and the scale and the note come from the `[VALUE]` knob in the reader's
+ * hands; under `PAD` *"the sample's pitch is input as a fixed pitch... all of the steps you input
+ * play back at the pitch you set in PITCH"*. **No page prints a default for either**, and no page
+ * anywhere in the 274 prints a note that plays a pad's sample.
+ *
+ * `TriggerNote` is a `note` and a `midi` number (§2.1). Neither of this box's two answers can
+ * supply one: `CHROMATIC` hands the choice to the reader step by step, and `PAD` is a number off
+ * a scale whose **unit this manual never states** — see `pitch` below, where that finding is
+ * already recorded and where it stays deliberately unwritten. So a trigger note here would have
+ * to be invented twice over, which is #325 with an extra step.
+ *
+ * **The external note is not constant either**, so nothing can be borrowed from the MIDI side.
+ * p.268's implementation chart gives two different Note Number rows for the two MIDI modes —
+ * `35-51 (B1-E♭3, MIDI mode A)` against `0, 12-91 (C-1, C0-G6, MIDI mode B)` — and pp.271-272
+ * print the map itself. Under mode A the ten banks sit on `CH 1`-`CH 10` with each bank's pads at
+ * notes 36-51, in the order `4, 3, 2, 1, 8, 7, 6, 5, 12, 11, 10, 9, 16, 15, 14, 13` (the grid read
+ * from its bottom row up), with note 35 reserved for `EXT SOURCE`; under mode B the same pads
+ * spread over 12-91 on `CH 1-9` and `CH 2-10`. Rows above and below each block are marked *"Blank
+ * (for Note Offset)"*, so the reader can slide the whole map. Four things therefore decide which
+ * note reaches a pad — MIDI mode, bank, channel and Note Offset — and a pool-wide `triggerNote`
+ * would name one pad of sixteen under one of two modes before the reader touched the offset.
+ *
+ * So the 246 blanks are correct output. What a guide could gain here one day is a `PITCH` value
+ * beside the grid rather than a note, and the recipes already author that where one has something
+ * to say about it.
+ *
+ * ## The octave convention, read and recorded rather than used
+ *
+ * Recorded because the library now holds two boxes that disagree about it by an octave, and
+ * nothing on a rendered page would show which one a note came from.
+ *
+ * This manual pairs numbers with names in both places it prints them: p.268's `0, 12-91 (C-1,
+ * C0-G6)` and `36-60 (C2-C4)`, and pp.271-272's map, where `60` reads `C4`, `48` reads `C3`, `36`
+ * reads `C2` and `12` reads `C0`. **Zero is `C-1`, so middle C is `C4` and 60 is `C4`** — the
+ * scientific pitch notation reading, and **an octave above the MPCs**, whose own guides print
+ * `0-127 or C-2 to G8` (v3.7 p.359, v3.9 p.334). #352 found this trap on the Tracker Mini and it
+ * is the same trap: a note name is only worth what the box's numbering makes it. **No value is
+ * authored from any of it.**
+ *
  * ## The two-printed-scales trap, twice, and it is the manual's own footnote both times
  *
  * `CLAUDE.md`'s rule is that a cited range can still be the wrong range where a manual prints
@@ -1258,6 +1312,14 @@ export const device: Device = {
    *
    * `polyphony: 1` — see the module note for why the 32-voice figure does not settle it and
    * CHROMATIC's `POLY` mode cannot be modelled.
+   *
+   * **No `triggerNote`** (§2.1/#334), and for a reason particular to this box: a step is timing
+   * (p.97, p.99), the sample is chosen by pad before any step (p.98), and what stands where a
+   * trigger note would is `PITCH` and `PITCH MODE` — a number the reader sets or a pitch they
+   * pick per step, with no default printed for either and no unit printed for the number. The
+   * external map is not constant either: pp.271-272 give the pads different notes under MIDI
+   * modes A and B, per bank and per channel, with Note Offset on top. See the head note; the
+   * tests are in `test/roland-sp-404mk2.test.ts`.
    */
   voices: [
     {
