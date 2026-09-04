@@ -646,7 +646,10 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **MOD DEST** `1` (1…3)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ note: Which of the three assignment slots this uses
-- **MOD TARGET** `FILTER`
+- **MOD CATEGORY** `FLT` · observed
+  - ↳ cite: value observed — TR-1000 unit, firmware 1.2.1, MOD TARGET screen
+- **MOD TARGET** `CUTOFF` · observed
+  - ↳ cite: value observed — TR-1000 unit, firmware 1.2.1, MOD TARGET screen
 - **MOD AMOUNT** `22` % (-100…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
 - **RVB SEND** `30` % (0…100 %)

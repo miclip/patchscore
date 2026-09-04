@@ -1,7 +1,12 @@
-import type { Device } from '../../core/device'
-import { jackFact } from '../../core/device'
-import type { AuthoredEnumParam, AuthoredNumericParam, AuthoredParam, Cite } from '../../core/params'
-import { TR_1000_PANEL } from './panel'
+import type { Device } from "../../core/device";
+import { jackFact } from "../../core/device";
+import type {
+  AuthoredEnumParam,
+  AuthoredNumericParam,
+  AuthoredParam,
+  Cite,
+} from "../../core/params";
+import { TR_1000_PANEL } from "./panel";
 
 /**
  * Roland TR-1000 (§2.3). Ten instrument tracks, four of them layer tracks.
@@ -57,8 +62,8 @@ import { TR_1000_PANEL } from './panel'
  * *bounds*, and they are the cited claim; the point value inside them is taste and stays
  * `verified: false`.
  */
-const PCT = { min: 0, max: 100 } //        0.0%-100.0%
-const BIPOLAR = { min: -100, max: 100 } // -100.0%-0.0%-100.0%
+const PCT = { min: 0, max: 100 }; //        0.0%-100.0%
+const BIPOLAR = { min: -100, max: 100 }; // -100.0%-0.0%-100.0%
 /**
  * **`COARSE` is settled per generator. The category is not the unit and neither is the
  * instrument.** Only the generator's own parameter table answers, and two tables under one
@@ -86,8 +91,8 @@ const BIPOLAR = { min: -100, max: 100 } // -100.0%-0.0%-100.0%
  * range is `-24St-24St` rather than `-12St-0-12St`. A citation naming the right document and the
  * wrong table proves nothing.
  */
-const SEMITONES = { min: -12, max: 12 } // -12St-0-12St
-const SEMITONES_24 = { min: -24, max: 24 } // -24St-24St
+const SEMITONES = { min: -12, max: 12 }; // -12St-0-12St
+const SEMITONES_24 = { min: -24, max: 24 }; // -24St-24St
 
 /**
  * The two ranges on this box that are printed **across two units**, and the one place a value
@@ -105,8 +110,8 @@ const SEMITONES_24 = { min: -24, max: 24 } // -24St-24St
  * `VA Common`'s `A. HOLD` at all. Where the finer unit is not printed, the range does not get
  * authored (invariant 5).
  */
-const MS = { min: 1, max: 1000 } // 1ms-1000ms
-const CUTOFF_HZ = { min: 8.2, max: 44700 } // 8.2Hz-44.7kHz
+const MS = { min: 1, max: 1000 }; // 1ms-1000ms
+const CUTOFF_HZ = { min: 8.2, max: 44700 }; // 8.2Hz-44.7kHz
 
 /**
  * A range citation. The page is the Parameter list page carrying the table for that generator:
@@ -114,7 +119,10 @@ const CUTOFF_HZ = { min: 8.2, max: 44700 } // 8.2Hz-44.7kHz
  * are their own blocks on those pages, and a generator gets its common block *plus* its own.
  */
 function cite(page: number): Cite {
-  return { kind: 'manual', source: `TR-1000 Reference Manual (eng02) v1.13+, p.${page}` }
+  return {
+    kind: "manual",
+    source: `TR-1000 Reference Manual (eng02) v1.13+, p.${page}`,
+  };
 }
 
 /**
@@ -124,7 +132,10 @@ function cite(page: number): Cite {
  * the wrong document by omission.
  */
 function owner(page: number | string): Cite {
-  return { kind: 'manual', source: `TR-1000 Owner’s Manual (eng02), p.${page}` }
+  return {
+    kind: "manual",
+    source: `TR-1000 Owner’s Manual (eng02), p.${page}`,
+  };
 }
 
 /**
@@ -143,14 +154,14 @@ function num(
   extra: Partial<AuthoredNumericParam> = {},
 ): AuthoredNumericParam {
   return {
-    kind: 'numeric',
+    kind: "numeric",
     name,
     value,
     range: { ...bounds, verified: cite(page) },
     unit,
     verified: false,
     ...extra,
-  }
+  };
 }
 
 /**
@@ -186,14 +197,16 @@ function num(
  * reverb at all is a different sound rather than a drier one.
  */
 function send(
-  which: 'RVB' | 'DLY',
+  which: "RVB" | "DLY",
   value: number,
   space?: number,
 ): AuthoredNumericParam {
-  return num(`${which} SEND`, value, PCT, '%', 71, {
-    hint: which === 'RVB' ? 'reverb-send' : 'delay-send',
-    ...(space === undefined ? {} : { mood: [{ axis: 'space', amount: space }] }),
-  })
+  return num(`${which} SEND`, value, PCT, "%", 71, {
+    hint: which === "RVB" ? "reverb-send" : "delay-send",
+    ...(space === undefined
+      ? {}
+      : { mood: [{ axis: "space", amount: space }] }),
+  });
 }
 
 /**
@@ -237,16 +250,16 @@ function send(
  */
 function shuffle(): AuthoredNumericParam {
   return {
-    kind: 'numeric',
-    name: 'SHUFFLE',
+    kind: "numeric",
+    name: "SHUFFLE",
     value: 0,
     range: { min: -100, max: 100, verified: cite(26) },
-    mood: [{ axis: 'swing', amount: 100 }],
-    hint: 'ptn-shuffle',
-    note: 'Pattern-wide: one setting for every track, saved with the pattern',
-    scope: 'pattern',
+    mood: [{ axis: "swing", amount: 100 }],
+    hint: "ptn-shuffle",
+    note: "Pattern-wide: one setting for every track, saved with the pattern",
+    scope: "pattern",
     verified: false,
-  }
+  };
 }
 
 /**
@@ -293,44 +306,77 @@ function shuffle(): AuthoredNumericParam {
  * the part moves across bars rather than wobbling within one.
  *
  * **`TARGET` is a `text` param because the manual's Value column is literally `-`.** It names no
- * legal set at all, so there is nothing to cite and nothing to pick from; what the recipe can
- * honestly say is which parameter it means, and `FILTER` is one this recipe already sets.
+ * legal set at all, so there is nothing to cite and nothing to pick from — and the screen's own
+ * list is long, so enumerating it would build an option set for a slot with one occupant.
+ *
+ * The values are `observed` instead (#332), and reading the screen changed their shape as well as
+ * their content. **The target is chosen in two steps: a category, then a parameter within it.**
+ * `FLT` is the category and `CUTOFF` is the target. This used to be one `MOD TARGET` reading
+ * `FILTER`, which named the category alone — and a filter has several modulatable parameters, so
+ * it pointed a reader at a screen and then stopped talking. Two params, because two selections is
+ * what the box asks for; collapsing them into one string would be our punctuation standing in for
+ * the box's own navigation.
  *
  * Names are prefixed `MOD` where the table prints them bare. A flat `AMOUNT` beside `CLAPS` and
  * `SPEED` would be unreadable at the machine, and the same reasoning already gave `RVB SEND` its
  * prefix. The screen itself is reached by SHIFT + [FILTER] (p.39), which is the hint.
  */
-function mod(target: string, amount: number, wave: string, note: string): AuthoredParam[] {
+const MOD_TARGET_OBSERVED: Cite = {
+  kind: "observed",
+  source: "TR-1000 unit, firmware 1.2.1, MOD TARGET screen",
+};
+
+function mod(
+  category: string,
+  target: string,
+  amount: number,
+  wave: string,
+  note: string,
+): AuthoredParam[] {
   return [
     {
-      kind: 'enum',
-      name: 'MOD WAVE',
+      kind: "enum",
+      name: "MOD WAVE",
       value: wave,
-      options: { values: ['SINE', 'TRI', 'SAW', 'SQR', 'S&H'], verified: cite(71) },
+      options: {
+        values: ["SINE", "TRI", "SAW", "SQR", "S&H"],
+        verified: cite(71),
+      },
       verified: false,
-      hint: 'mod-screen',
+      hint: "mod-screen",
     },
     // The tempo-synced rate. See above for why this is text and why the division is an endpoint.
     {
-      kind: 'text',
-      name: 'MOD NOTE',
+      kind: "text",
+      name: "MOD NOTE",
       value: note,
       verified: false,
-      note: 'Tempo-synced rate; if the screen offers a SYNC selector, point it at NOTE',
+      note: "Tempo-synced rate; if the screen offers a SYNC selector, point it at NOTE",
     },
     // Built inline rather than through `num`, which takes a unit: the table prints none for
     // DEST, and an empty string is not "no unit", it is a schema error waiting to happen.
     {
-      kind: 'numeric',
-      name: 'MOD DEST',
+      kind: "numeric",
+      name: "MOD DEST",
       value: 1,
       range: { min: 1, max: 3, verified: cite(71) },
       verified: false,
-      note: 'Which of the three assignment slots this uses',
+      note: "Which of the three assignment slots this uses",
     },
-    { kind: 'text', name: 'MOD TARGET', value: target, verified: false },
-    num('MOD AMOUNT', amount, BIPOLAR, '%', 71),
-  ]
+    {
+      kind: "text",
+      name: "MOD CATEGORY",
+      value: category,
+      verified: MOD_TARGET_OBSERVED,
+    },
+    {
+      kind: "text",
+      name: "MOD TARGET",
+      value: target,
+      verified: MOD_TARGET_OBSERVED,
+    },
+    num("MOD AMOUNT", amount, BIPOLAR, "%", 71),
+  ];
 }
 
 /**
@@ -349,13 +395,13 @@ function sel(
   extra: Partial<AuthoredEnumParam> = {},
 ): AuthoredEnumParam {
   return {
-    kind: 'enum',
+    kind: "enum",
     name,
     value,
     options: { values, verified: cite(page) },
     verified: false,
     ...extra,
-  }
+  };
 }
 
 /**
@@ -383,55 +429,61 @@ function sel(
  * page as an argument so the exception is written at the call site rather than assumed here.
  */
 const GEN_CITE = {
-  kind: 'manual',
-  source: 'TR-1000 Preset GEN/INST List (eng02) v1.20, GEN list p.1',
-} as const
+  kind: "manual",
+  source: "TR-1000 Preset GEN/INST List (eng02) v1.20, GEN list p.1",
+} as const;
 
 const BD_GENS = [
-  '808 Bass Drum',
-  '909 Bass Drum',
-  '8X Bass Drum',
-  '9X Bass Drum',
-  '707 Bass 1-2',
-  '606 Bass Drum',
-  'CR78 Bass Drum',
-  'FM Kick Model1',
-  'FM Kick Model2',
-]
+  "808 Bass Drum",
+  "909 Bass Drum",
+  "8X Bass Drum",
+  "9X Bass Drum",
+  "707 Bass 1-2",
+  "606 Bass Drum",
+  "CR78 Bass Drum",
+  "FM Kick Model1",
+  "FM Kick Model2",
+];
 
 const SD_GENS = [
-  '808 Snare Drum',
-  '909 Snare Drum',
-  '8X Snare Drum',
-  '9X Snare Drum',
-  '707 Snare 1-2',
-  '606 Snare Drum',
-  'CR78 Snare Drum',
-  'FM Snare Model',
-]
+  "808 Snare Drum",
+  "909 Snare Drum",
+  "8X Snare Drum",
+  "9X Snare Drum",
+  "707 Snare 1-2",
+  "606 Snare Drum",
+  "CR78 Snare Drum",
+  "FM Snare Model",
+];
 
 const TOM_GENS = [
-  '808 Low Tom',
-  '808 High Tom',
-  '909 Low Tom',
-  '909 High Tom',
-  '8X Tom',
-  '9X Tom',
-  '707 Tom',
-  '606 Tom',
-  'FM Tom Model',
-]
+  "808 Low Tom",
+  "808 High Tom",
+  "909 Low Tom",
+  "909 High Tom",
+  "8X Tom",
+  "9X Tom",
+  "707 Tom",
+  "606 Tom",
+  "FM Tom Model",
+];
 
-const STICK_GENS = ['808 Rim Shot', '909 Rim Shot', '8X Rim Shot', '9X Rim Shot', 'CR78 Rim Shot-CL']
+const STICK_GENS = [
+  "808 Rim Shot",
+  "909 Rim Shot",
+  "8X Rim Shot",
+  "9X Rim Shot",
+  "CR78 Rim Shot-CL",
+];
 
 const CLAP_GENS = [
-  '808 Hand Clap',
-  '909 Hand Clap',
-  '8X Hand Clap',
-  '9X Hand Clap',
-  '707 Clap-Tamb',
-  'FM Clap Model',
-]
+  "808 Hand Clap",
+  "909 Hand Clap",
+  "8X Hand Clap",
+  "9X Hand Clap",
+  "707 Clap-Tamb",
+  "FM Clap Model",
+];
 
 /**
  * HIHAT_E splits by name, not by a column: the list gives Closed and Open as separate
@@ -440,33 +492,33 @@ const CLAP_GENS = [
  * what a CR-78 hat is.
  */
 const CLOSED_HAT_GENS = [
-  '808 Closed HiHat',
-  '8X Closed HiHat',
-  '9X Closed HiHat',
-  '707 Closed HiHat',
-  '606 Closed HiHat',
-  'CR78 HiHat',
-]
+  "808 Closed HiHat",
+  "8X Closed HiHat",
+  "9X Closed HiHat",
+  "707 Closed HiHat",
+  "606 Closed HiHat",
+  "CR78 HiHat",
+];
 
 const OPEN_HAT_GENS = [
-  '808 Open HiHat',
-  '8X Open HiHat',
-  '9X Open HiHat',
-  '707 Open HiHat',
-  '606 Open HiHat',
-]
+  "808 Open HiHat",
+  "8X Open HiHat",
+  "9X Open HiHat",
+  "707 Open HiHat",
+  "606 Open HiHat",
+];
 
 const CRASH_GENS = [
-  '808 Cymbal',
-  '8X Crash Cymbal',
-  '9X Crash Cymbal',
-  '707 Crash Cymbal',
-  '606 Crash Cymbal',
-  'CR78 Cymbal',
-  'FM Cymbal Model',
-]
+  "808 Cymbal",
+  "8X Crash Cymbal",
+  "9X Crash Cymbal",
+  "707 Crash Cymbal",
+  "606 Crash Cymbal",
+  "CR78 Cymbal",
+  "FM Cymbal Model",
+];
 
-const RIDE_GENS = ['9X Ride Cymbal', '707 Ride Cymbal', 'CR78 Metallic']
+const RIDE_GENS = ["9X Ride Cymbal", "707 Ride Cymbal", "CR78 Metallic"];
 
 /**
  * **The synth voices, and the one option set on this box that is not a drum.** GEN list p.1
@@ -492,7 +544,7 @@ const RIDE_GENS = ['9X Ride Cymbal', '707 Ride Cymbal', 'CR78 Metallic']
  * be an invitation to a screen this file cannot describe. Worth revisiting if Roland
  * documents them.
  */
-const OSC_GENS = ['VA Sine', 'VA Tri', 'VA Sqr', 'VA Saw', 'VA Super Saw']
+const OSC_GENS = ["VA Sine", "VA Tri", "VA Sqr", "VA Saw", "VA Super Saw"];
 
 /**
  * The two generators p.62 gives a `METALLIC` parameter to, and the reason this list is not
@@ -519,7 +571,7 @@ const OSC_GENS = ['VA Sine', 'VA Tri', 'VA Sqr', 'VA Saw', 'VA Super Saw']
  * SELECT GEN picks the category per track with no restriction printed (Reference p.37, steps
  * 1-5), so the RC track can reach either of them.
  */
-const METALLIC_GENS = ['CR78 HiHat', 'CR78 Cymbal']
+const METALLIC_GENS = ["CR78 HiHat", "CR78 Cymbal"];
 
 /**
  * BD-HT sound layers A and B together, so those tracks have two GEN slots and the recipe's
@@ -532,24 +584,28 @@ const METALLIC_GENS = ['CR78 HiHat', 'CR78 Cymbal']
  * comment. Defaulting rather than requiring keeps the other nineteen call sites saying what they
  * said, and makes the one exception visible at the site instead of hidden in a helper.
  */
-function gen(value: string, options: string[], where: Cite = GEN_CITE): AuthoredEnumParam {
+function gen(
+  value: string,
+  options: string[],
+  where: Cite = GEN_CITE,
+): AuthoredEnumParam {
   return {
-    kind: 'enum',
-    name: 'GEN',
+    kind: "enum",
+    name: "GEN",
     value,
     // The list is the legality claim and is cited; which generator this recipe reaches for is
     // taste, and stays provisional exactly as a numeric point does (§3.2).
     options: { values: options, verified: where },
     verified: false,
-    hint: 'Hold [SHIFT]+[GEN], select with [C6]',
-  }
+    hint: "Hold [SHIFT]+[GEN], select with [C6]",
+  };
 }
 
 export const device: Device = {
-  id: 'roland-tr-1000',
-  name: 'TR-1000',
-  maker: 'Roland',
-  kind: 'drum-machine',
+  id: "roland-tr-1000",
+  name: "TR-1000",
+  maker: "Roland",
+  kind: "drum-machine",
 
   /**
    * MIDI IN/OUT1/OUT2-THRU, both OUT connectors switchable to DIN SYNC; USB clock; CLK OUT
@@ -593,13 +649,13 @@ export const device: Device = {
   clock: {
     canSendClock: true,
     canReceiveClock: true,
-    transport: ['midi-din', 'din-sync', 'usb', 'analog-clock', 'trigger'],
+    transport: ["midi-din", "din-sync", "usb", "analog-clock", "trigger"],
   },
 
   // MIX OUT L/MONO+R, ten INDIVIDUAL OUT/TRIGGER OUT jacks (BD-RC), ANALOG FX OUT L/R,
   // EXTERNAL IN L/R, USB-C audio to a computer. All four claims are the p.12 connector tables;
   // the citations are in `capabilityEvidence` below, one per field.
-  io: { main: 'stereo', individualOuts: 10, audioIn: true, usbAudio: true },
+  io: { main: "stereo", individualOuts: 10, audioIn: true, usbAudio: true },
 
   /**
    * §10/#103. **The sockets clock actually uses, so the rack stops inventing them.**
@@ -628,19 +684,34 @@ export const device: Device = {
   jacks: [
     // p.12, MIDI connectors: `OUT1 connector or DIN SYNC 1 connector`, `IN connector`. Named
     // with the section, as §3.3 requires — a bare `IN` is unresolvable on a box with this many.
-    { id: 'MIDI OUT1', direction: 'out', signal: ['clock', 'midi'], clock: ['midi-din'] },
-    { id: 'MIDI IN', direction: 'in', signal: ['clock', 'midi'], clock: ['midi-din'] },
     {
-      id: 'DIN SYNC 1',
-      direction: 'out',
+      id: "MIDI OUT1",
+      direction: "out",
+      signal: ["clock", "midi"],
+      clock: ["midi-din"],
+    },
+    {
+      id: "MIDI IN",
+      direction: "in",
+      signal: ["clock", "midi"],
+      clock: ["midi-din"],
+    },
+    {
+      id: "DIN SYNC 1",
+      direction: "out",
       // DIN sync is clock and run/stop and nothing else — no notes travel over it, which is why
       // `midi` is absent here and present on MIDI OUT1, the connector this shares.
-      signal: ['clock'],
-      clock: ['din-sync'],
-      note: 'The same connector as MIDI OUT1, switched to DIN SYNC',
+      signal: ["clock"],
+      clock: ["din-sync"],
+      note: "The same connector as MIDI OUT1, switched to DIN SYNC",
     },
     // p.12: "Use this jack to output synchronization signals to an external device."
-    { id: 'CLK OUT', direction: 'out', signal: ['clock'], clock: ['analog-clock'] },
+    {
+      id: "CLK OUT",
+      direction: "out",
+      signal: ["clock"],
+      clock: ["analog-clock"],
+    },
     /**
      * p.12 describes `TRG IN` only as "Connect a device that has a TRIGGER OUT jack here" — it
      * is p.32 that makes it a clock input, and it is a *setting*, not a property of the hole:
@@ -652,14 +723,14 @@ export const device: Device = {
      * for: one socket, and p.32's parameter chooses what arriving pulses mean.
      */
     {
-      id: 'TRG IN',
-      direction: 'in',
+      id: "TRG IN",
+      direction: "in",
       // The two-kind case `signal` is a list for, and the same socket as the `clock` list below:
       // p.12 documents it as a trigger input, p.32's `Trig In = Sync` makes arriving pulses the
       // clock instead. One hole, two meanings, and a setting chooses.
-      signal: ['trigger', 'clock'],
-      clock: ['analog-clock', 'trigger'],
-      note: 'Set Trig In = Sync (Owner’s Manual p.32) or the pulses are not treated as clock',
+      signal: ["trigger", "clock"],
+      clock: ["analog-clock", "trigger"],
+      note: "Set Trig In = Sync (Owner’s Manual p.32) or the pulses are not treated as clock",
     },
   ],
 
@@ -678,7 +749,10 @@ export const device: Device = {
    */
   physical: {
     panelSpanMm: 486,
-    verified: { kind: 'manual', source: 'TR-1000 Reference Manual eng02, p.74 (Main specifications)' },
+    verified: {
+      kind: "manual",
+      source: "TR-1000 Reference Manual eng02, p.74 (Main specifications)",
+    },
   },
   /** §10. A simplified original drawing of the panel, read off the manual (see `panel.ts`). */
   panel: TR_1000_PANEL,
@@ -726,16 +800,76 @@ export const device: Device = {
    * is 1 everywhere (§12.4: polyphony counts notes, never roles).
    */
   voices: [
-    { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick', 'sub'], polyphony: 1 },
-    { kind: 'fixed', id: 'sd', label: 'SD', roles: ['snare', 'clap', 'ghost-perc'], polyphony: 1 },
-    { kind: 'fixed', id: 'lt', label: 'LT', roles: ['tom', 'sub', 'bass-mid'], polyphony: 1 },
-    { kind: 'fixed', id: 'ht', label: 'HT', roles: ['tom', 'ghost-perc'], polyphony: 1 },
-    { kind: 'fixed', id: 'rs', label: 'RS', roles: ['rim', 'ghost-perc', 'metallic'], polyphony: 1 },
-    { kind: 'fixed', id: 'hc', label: 'HC', roles: ['clap', 'snare', 'ghost-perc'], polyphony: 1 },
-    { kind: 'fixed', id: 'ch', label: 'CH', roles: ['closed-hat', 'ghost-perc'], polyphony: 1 },
-    { kind: 'fixed', id: 'oh', label: 'OH', roles: ['open-hat', 'noise'], polyphony: 1 },
-    { kind: 'fixed', id: 'cc', label: 'CC', roles: ['impact', 'metallic', 'noise'], polyphony: 1 },
-    { kind: 'fixed', id: 'rc', label: 'RC', roles: ['ride', 'metallic', 'closed-hat'], polyphony: 1 },
+    {
+      kind: "fixed",
+      id: "bd",
+      label: "BD",
+      roles: ["kick", "sub"],
+      polyphony: 1,
+    },
+    {
+      kind: "fixed",
+      id: "sd",
+      label: "SD",
+      roles: ["snare", "clap", "ghost-perc"],
+      polyphony: 1,
+    },
+    {
+      kind: "fixed",
+      id: "lt",
+      label: "LT",
+      roles: ["tom", "sub", "bass-mid"],
+      polyphony: 1,
+    },
+    {
+      kind: "fixed",
+      id: "ht",
+      label: "HT",
+      roles: ["tom", "ghost-perc"],
+      polyphony: 1,
+    },
+    {
+      kind: "fixed",
+      id: "rs",
+      label: "RS",
+      roles: ["rim", "ghost-perc", "metallic"],
+      polyphony: 1,
+    },
+    {
+      kind: "fixed",
+      id: "hc",
+      label: "HC",
+      roles: ["clap", "snare", "ghost-perc"],
+      polyphony: 1,
+    },
+    {
+      kind: "fixed",
+      id: "ch",
+      label: "CH",
+      roles: ["closed-hat", "ghost-perc"],
+      polyphony: 1,
+    },
+    {
+      kind: "fixed",
+      id: "oh",
+      label: "OH",
+      roles: ["open-hat", "noise"],
+      polyphony: 1,
+    },
+    {
+      kind: "fixed",
+      id: "cc",
+      label: "CC",
+      roles: ["impact", "metallic", "noise"],
+      polyphony: 1,
+    },
+    {
+      kind: "fixed",
+      id: "rc",
+      label: "RC",
+      roles: ["ride", "metallic", "closed-hat"],
+      polyphony: 1,
+    },
   ],
 
   /**
@@ -776,14 +910,14 @@ export const device: Device = {
    */
   features: {
     perStep: [
-      'velocity',
-      'probability',
-      'substep',
-      'cycle',
-      'start-timing',
-      'accent',
-      'weak',
-      'alt-inst',
+      "velocity",
+      "probability",
+      "substep",
+      "cycle",
+      "start-timing",
+      "accent",
+      "weak",
+      "alt-inst",
     ],
 
     /**
@@ -849,26 +983,27 @@ export const device: Device = {
    * duration beside a drum voice and imply there is somewhere to put it.
    */
   noteDuration: {
-    kind: 'trigger',
-    reason: "the instrument's own envelope ends it, and `DECAY` is what sets that",
+    kind: "trigger",
+    reason:
+      "the instrument's own envelope ends it, and `DECAY` is what sets that",
   },
 
   capabilityEvidence: {
     noteDuration: cite(59),
-    'clock.canSendClock': owner(30),
-    'clock.canReceiveClock': owner(30),
-    'clock.transport': owner(12),
+    "clock.canSendClock": owner(30),
+    "clock.canReceiveClock": owner(30),
+    "clock.transport": owner(12),
 
-    'io.main': owner(12),
-    'io.individualOuts': owner(12),
-    'io.audioIn': owner(12),
-    'io.usbAudio': owner(12),
+    "io.main": owner(12),
+    "io.individualOuts": owner(12),
+    "io.audioIn": owner(12),
+    "io.usbAudio": owner(12),
 
     voices: owner(14),
 
-    'features.perStep': owner('17-18'),
-    'features.sidechain.internal': cite(56),
-    'features.sidechain.fromExternalAudio': cite(56),
+    "features.perStep": owner("17-18"),
+    "features.sidechain.internal": cite(56),
+    "features.sidechain.fromExternalAudio": cite(56),
     /**
      * §2.6's read-and-silent state, and the reason it exists — `unknown` in the strictest sense,
      * which is why #120 left it exactly where it was while three states grew around it. This is
@@ -881,41 +1016,41 @@ export const device: Device = {
      * that citation wearing this field's name. See the `clock` comment for what p.30, p.7 and
      * p.13 actually say.
      */
-    'clock.preferredSource': {
-      kind: 'unknown',
+    "clock.preferredSource": {
+      kind: "unknown",
       reason:
-        'p.7 positions this as “the most complete rhythm machine ever made” and “an integral part of their studios”; p.30’s sync chapter is receive-framed and its one topology note places the TR-1000 in the middle of another chain, so no page states that leading a rig is its job',
+        "p.7 positions this as “the most complete rhythm machine ever made” and “an integral part of their studios”; p.30’s sync chapter is receive-framed and its one topology note places the TR-1000 in the middle of another chain, so no page states that leading a rig is its job",
     },
 
-    'features.lfo': {
-      kind: 'unknown',
+    "features.lfo": {
+      kind: "unknown",
       reason:
-        'p.71 gives DEST 1-3 as assignment slots for one LFO, not a count, and TARGET’s Value column is literally “-”; neither `count` nor `destinations` has an answer the manual prints',
+        "p.71 gives DEST 1-3 as assignment slots for one LFO, not a count, and TARGET’s Value column is literally “-”; neither `count` nor `destinations` has an answer the manual prints",
     },
 
     // The five clock-carrying sockets, all on p.12's TRIGGER/CV and MIDI connector tables.
-    [jackFact('MIDI OUT1')]: owner(12),
-    [jackFact('MIDI IN')]: owner(12),
-    [jackFact('DIN SYNC 1')]: owner(12),
-    [jackFact('CLK OUT')]: owner(12),
-    [jackFact('TRG IN')]: owner(12),
+    [jackFact("MIDI OUT1")]: owner(12),
+    [jackFact("MIDI IN")]: owner(12),
+    [jackFact("DIN SYNC 1")]: owner(12),
+    [jackFact("CLK OUT")]: owner(12),
+    [jackFact("TRG IN")]: owner(12),
   },
 
   /** Gestures, straight off the panel. Jogs, not documentation (invariant 7). */
   hints: {
-    'accent-step': 'ACCENT [STEP], then step keys',
-    'weak-step': 'Hold [SHIFT], press step keys',
-    'sub-step': 'Press [SUB], then step keys',
-    'alt-inst': 'Hold LAYER [B], press step keys',
-    'step-edit': 'Hold step key, turn [C1]-[C5]',
-    'layer-ab': 'LAYER [A]/[B] selects the layer',
-    'select-gen': 'Hold [SHIFT], press [GEN]',
-    'motion-rec': 'MOTION [REC] lit, then move knob',
-    'mod-screen': 'Hold [SHIFT], press [FILTER]',
-    'filter-screen': 'Press [FILTER], no [SHIFT]',
-    'ptn-shuffle': 'Hold [SHIFT], press [PTN SELECT]',
-    'reverb-send': 'Hold [BD]-[RC], turn REVERB [LEVEL]',
-    'delay-send': 'Hold [BD]-[RC], turn DELAY [LEVEL]',
+    "accent-step": "ACCENT [STEP], then step keys",
+    "weak-step": "Hold [SHIFT], press step keys",
+    "sub-step": "Press [SUB], then step keys",
+    "alt-inst": "Hold LAYER [B], press step keys",
+    "step-edit": "Hold step key, turn [C1]-[C5]",
+    "layer-ab": "LAYER [A]/[B] selects the layer",
+    "select-gen": "Hold [SHIFT], press [GEN]",
+    "motion-rec": "MOTION [REC] lit, then move knob",
+    "mod-screen": "Hold [SHIFT], press [FILTER]",
+    "filter-screen": "Press [FILTER], no [SHIFT]",
+    "ptn-shuffle": "Hold [SHIFT], press [PTN SELECT]",
+    "reverb-send": "Hold [BD]-[RC], turn REVERB [LEVEL]",
+    "delay-send": "Hold [BD]-[RC], turn DELAY [LEVEL]",
   },
 
   /**
@@ -925,195 +1060,243 @@ export const device: Device = {
    */
   comfortableVoices: 8,
 
-  manual: { title: 'TR-1000 Owner’s Manual', edition: 'eng02' },
+  manual: { title: "TR-1000 Owner’s Manual", edition: "eng02" },
 
-  productPage: 'https://www.roland.com/global/products/tr-1000/',
+  productPage: "https://www.roland.com/global/products/tr-1000/",
 
   recipes: [
     // ---- BD -------------------------------------------------------------------------
     {
-      id: 'tr1000-kick-hard',
-      role: 'kick',
-      character: 'hard',
-      voice: 'bd',
-      title: 'Tight forward kick, fast tail',
+      id: "tr1000-kick-hard",
+      role: "kick",
+      character: "hard",
+      voice: "bd",
+      title: "Tight forward kick, fast tail",
       params: [
-        gen('909 Bass Drum', BD_GENS),
-        num('PITCH', -12, BIPOLAR, '%', 59, { mood: [{ axis: 'darkness', amount: -18 }], hint: 'Tuning; TUNE is the pitch envelope' }),
-        num('DECAY', 32, PCT, '%', 59),
-        num('TUNE', 30, BIPOLAR, '%', 59, { hint: 'Pitch-envelope intensity, not tuning' }),
-        num('ATTACK', 74, PCT, '%', 59),
-        send('RVB', 0),
-        send('DLY', 0),
-        shuffle(),
-      ],
-      articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
-      routing: 'INDIVIDUAL OUT BD — effects are bypassed on that jack',
-      verified: false,
-    },
-    {
-      id: 'tr1000-kick-dark',
-      role: 'kick',
-      character: 'dark',
-      voice: 'bd',
-      title: 'Low long kick that owns the bottom',
-      params: [
-        gen('808 Bass Drum', BD_GENS),
-        num('TUNE', -45, BIPOLAR, '%', 59, { mood: [{ axis: 'darkness', amount: -20 }] }),
-        num('TONE', -20, BIPOLAR, '%', 59),
-        num('DECAY', 78, PCT, '%', 59, { mood: [{ axis: 'density', amount: -20 }] }),
-        send('RVB', 0),
-        send('DLY', 0),
-        shuffle(),
-      ],
-      articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
-      verified: false,
-    },
-    {
-      id: 'tr1000-kick-dirty',
-      role: 'kick',
-      character: 'dirty',
-      voice: 'bd',
-      title: 'Saturated kick with an audible click',
-      params: [
-        gen('8X Bass Drum', BD_GENS),
-        num('TUNE', -8, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -18 }] }),
-        num('DECAY', 44, PCT, '%', 60),
-        num('COARSE', -2, SEMITONES, 'St', 60, { hint: 'A whole tone down' }),
-        num('ATTACK', 76, PCT, '%', 60, { hint: 'This is the click' }),
-        num('EXCITE', 62, PCT, '%', 60, { mood: [{ axis: 'grit', amount: 30 }], hint: 'Odd-harmonic distortion' }),
-        num('BODY DEP', 40, PCT, '%', 60),
-        send('RVB', 0),
-        send('DLY', 0),
+        gen("909 Bass Drum", BD_GENS),
+        num("PITCH", -12, BIPOLAR, "%", 59, {
+          mood: [{ axis: "darkness", amount: -18 }],
+          hint: "Tuning; TUNE is the pitch envelope",
+        }),
+        num("DECAY", 32, PCT, "%", 59),
+        num("TUNE", 30, BIPOLAR, "%", 59, {
+          hint: "Pitch-envelope intensity, not tuning",
+        }),
+        num("ATTACK", 74, PCT, "%", 59),
+        send("RVB", 0),
+        send("DLY", 0),
         shuffle(),
       ],
       articulation: [
-        { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
-        { slot: 'ghost', set: { weak: true }, hint: 'weak-step' },
+        { slot: "accent", set: { accent: true }, hint: "accent-step" },
+      ],
+      routing: "INDIVIDUAL OUT BD — effects are bypassed on that jack",
+      verified: false,
+    },
+    {
+      id: "tr1000-kick-dark",
+      role: "kick",
+      character: "dark",
+      voice: "bd",
+      title: "Low long kick that owns the bottom",
+      params: [
+        gen("808 Bass Drum", BD_GENS),
+        num("TUNE", -45, BIPOLAR, "%", 59, {
+          mood: [{ axis: "darkness", amount: -20 }],
+        }),
+        num("TONE", -20, BIPOLAR, "%", 59),
+        num("DECAY", 78, PCT, "%", 59, {
+          mood: [{ axis: "density", amount: -20 }],
+        }),
+        send("RVB", 0),
+        send("DLY", 0),
+        shuffle(),
+      ],
+      articulation: [
+        { slot: "accent", set: { accent: true }, hint: "accent-step" },
       ],
       verified: false,
     },
     {
-      id: 'tr1000-sub-dark',
-      role: 'sub',
-      character: 'dark',
-      voice: 'bd',
-      title: 'Kick tuned down into a sustained sub',
+      id: "tr1000-kick-dirty",
+      role: "kick",
+      character: "dirty",
+      voice: "bd",
+      title: "Saturated kick with an audible click",
       params: [
-        gen('9X Bass Drum', BD_GENS),
-        num('COARSE', -12, SEMITONES, 'St', 61, { hint: 'An octave down, in semitones' }),
-        num('TUNE', -70, BIPOLAR, '%', 61, { mood: [{ axis: 'darkness', amount: -20 }] }),
-        num('DECAY', 92, PCT, '%', 61, { mood: [{ axis: 'density', amount: -25 }] }),
-        num('P. AMOUNT', 12, PCT, '%', 61, { hint: 'Near-flat pitch envelope' }),
-        num('DRIVE', 18, PCT, '%', 61),
-        send('RVB', 0),
-        send('DLY', 0),
+        gen("8X Bass Drum", BD_GENS),
+        num("TUNE", -8, BIPOLAR, "%", 60, {
+          mood: [{ axis: "darkness", amount: -18 }],
+        }),
+        num("DECAY", 44, PCT, "%", 60),
+        num("COARSE", -2, SEMITONES, "St", 60, { hint: "A whole tone down" }),
+        num("ATTACK", 76, PCT, "%", 60, { hint: "This is the click" }),
+        num("EXCITE", 62, PCT, "%", 60, {
+          mood: [{ axis: "grit", amount: 30 }],
+          hint: "Odd-harmonic distortion",
+        }),
+        num("BODY DEP", 40, PCT, "%", 60),
+        send("RVB", 0),
+        send("DLY", 0),
         shuffle(),
       ],
-      routing: 'INDIVIDUAL OUT BD so the sub stays out of the bus effects',
+      articulation: [
+        { slot: "accent", set: { accent: true }, hint: "accent-step" },
+        { slot: "ghost", set: { weak: true }, hint: "weak-step" },
+      ],
+      verified: false,
+    },
+    {
+      id: "tr1000-sub-dark",
+      role: "sub",
+      character: "dark",
+      voice: "bd",
+      title: "Kick tuned down into a sustained sub",
+      params: [
+        gen("9X Bass Drum", BD_GENS),
+        num("COARSE", -12, SEMITONES, "St", 61, {
+          hint: "An octave down, in semitones",
+        }),
+        num("TUNE", -70, BIPOLAR, "%", 61, {
+          mood: [{ axis: "darkness", amount: -20 }],
+        }),
+        num("DECAY", 92, PCT, "%", 61, {
+          mood: [{ axis: "density", amount: -25 }],
+        }),
+        num("P. AMOUNT", 12, PCT, "%", 61, {
+          hint: "Near-flat pitch envelope",
+        }),
+        num("DRIVE", 18, PCT, "%", 61),
+        send("RVB", 0),
+        send("DLY", 0),
+        shuffle(),
+      ],
+      routing: "INDIVIDUAL OUT BD so the sub stays out of the bus effects",
       verified: false,
     },
 
     // ---- SD -------------------------------------------------------------------------
     {
-      id: 'tr1000-snare-hard',
-      role: 'snare',
-      character: 'hard',
-      voice: 'sd',
-      title: 'Cracking snare, short and centred',
+      id: "tr1000-snare-hard",
+      role: "snare",
+      character: "hard",
+      voice: "sd",
+      title: "Cracking snare, short and centred",
       params: [
-        gen('909 Snare Drum', SD_GENS),
-        num('TUNE', 16, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -20 }] }),
-        num('TONE', 62, PCT, '%', 60),
-        num('SNAPPY', 70, PCT, '%', 60),
-        send('RVB', 0),
-        send('DLY', 0),
+        gen("909 Snare Drum", SD_GENS),
+        num("TUNE", 16, BIPOLAR, "%", 60, {
+          mood: [{ axis: "darkness", amount: -20 }],
+        }),
+        num("TONE", 62, PCT, "%", 60),
+        num("SNAPPY", 70, PCT, "%", 60),
+        send("RVB", 0),
+        send("DLY", 0),
         shuffle(),
       ],
       articulation: [
-        { slot: 'backbeat', set: { accent: true }, hint: 'accent-step' },
-        { slot: 'ghost', set: { weak: true }, hint: 'weak-step' },
+        { slot: "backbeat", set: { accent: true }, hint: "accent-step" },
+        { slot: "ghost", set: { weak: true }, hint: "weak-step" },
       ],
-      routing: 'INDIVIDUAL OUT SD — effects are bypassed on that jack',
+      routing: "INDIVIDUAL OUT SD — effects are bypassed on that jack",
       verified: false,
     },
     {
-      id: 'tr1000-snare-bright',
-      role: 'snare',
-      character: 'bright',
-      voice: 'sd',
-      title: 'Thin high snare that cuts over a busy top',
+      id: "tr1000-snare-bright",
+      role: "snare",
+      character: "bright",
+      voice: "sd",
+      title: "Thin high snare that cuts over a busy top",
       params: [
-        gen('606 Snare Drum', SD_GENS),
-        num('TUNE', 45, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -25 }] }),
-        num('DECAY', 30, PCT, '%', 62),
-        num('SNAPPY', 55, BIPOLAR, '%', 62),
-        send('RVB', 24, 20),
-        send('DLY', 12, 12),
-        shuffle(),
-      ],
-      articulation: [{ slot: 'backbeat', set: { accent: true }, hint: 'accent-step' }],
-      verified: false,
-    },
-    {
-      id: 'tr1000-snare-dirty',
-      role: 'snare',
-      character: 'dirty',
-      voice: 'sd',
-      title: 'Ragged snare with an FM edge',
-      params: [
-        gen('FM Snare Model', SD_GENS),
-        num('TUNE', 10, BIPOLAR, '%', 63, { mood: [{ axis: 'darkness', amount: -20 }] }),
-        num('DECAY', 34, PCT, '%', 63),
-        num('FM DEPTH', 68, PCT, '%', 63, { mood: [{ axis: 'grit', amount: 25 }] }),
-        num('NOISE', 45, PCT, '%', 63),
-        num('COARSE', 0, SEMITONES_24, 'St', 63),
-        send('RVB', 18, 16),
-        send('DLY', 14, 14),
+        gen("606 Snare Drum", SD_GENS),
+        num("TUNE", 45, BIPOLAR, "%", 62, {
+          mood: [{ axis: "darkness", amount: -25 }],
+        }),
+        num("DECAY", 30, PCT, "%", 62),
+        num("SNAPPY", 55, BIPOLAR, "%", 62),
+        send("RVB", 24, 20),
+        send("DLY", 12, 12),
         shuffle(),
       ],
       articulation: [
-        { slot: 'backbeat', set: { accent: true }, hint: 'accent-step' },
-        { slot: 'fill', set: { substep: '1/2' }, hint: 'sub-step' },
+        { slot: "backbeat", set: { accent: true }, hint: "accent-step" },
+      ],
+      verified: false,
+    },
+    {
+      id: "tr1000-snare-dirty",
+      role: "snare",
+      character: "dirty",
+      voice: "sd",
+      title: "Ragged snare with an FM edge",
+      params: [
+        gen("FM Snare Model", SD_GENS),
+        num("TUNE", 10, BIPOLAR, "%", 63, {
+          mood: [{ axis: "darkness", amount: -20 }],
+        }),
+        num("DECAY", 34, PCT, "%", 63),
+        num("FM DEPTH", 68, PCT, "%", 63, {
+          mood: [{ axis: "grit", amount: 25 }],
+        }),
+        num("NOISE", 45, PCT, "%", 63),
+        num("COARSE", 0, SEMITONES_24, "St", 63),
+        send("RVB", 18, 16),
+        send("DLY", 14, 14),
+        shuffle(),
+      ],
+      articulation: [
+        { slot: "backbeat", set: { accent: true }, hint: "accent-step" },
+        { slot: "fill", set: { substep: "1/2" }, hint: "sub-step" },
       ],
       verified: false,
     },
 
     // ---- LT / HT --------------------------------------------------------------------
     {
-      id: 'tr1000-tom-dark',
-      role: 'tom',
-      character: 'dark',
-      voice: 'lt',
-      title: 'Low tom with a slow fall',
+      id: "tr1000-tom-dark",
+      role: "tom",
+      character: "dark",
+      voice: "lt",
+      title: "Low tom with a slow fall",
       params: [
-        gen('909 Low Tom', TOM_GENS),
-        num('TUNE', -55, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -18 }] }),
-        num('COLOR', 35, PCT, '%', 60, { hint: 'Ambience, i.e. noise amount' }),
-        num('DECAY', 72, PCT, '%', 60, { mood: [{ axis: 'density', amount: -18 }] }),
-        send('RVB', 20, 18),
-        send('DLY', 8, 8),
+        gen("909 Low Tom", TOM_GENS),
+        num("TUNE", -55, BIPOLAR, "%", 60, {
+          mood: [{ axis: "darkness", amount: -18 }],
+        }),
+        num("COLOR", 35, PCT, "%", 60, { hint: "Ambience, i.e. noise amount" }),
+        num("DECAY", 72, PCT, "%", 60, {
+          mood: [{ axis: "density", amount: -18 }],
+        }),
+        send("RVB", 20, 18),
+        send("DLY", 8, 8),
         shuffle(),
       ],
-      articulation: [{ slot: 'fill', set: { substep: '1/3' }, hint: 'sub-step' }],
+      articulation: [
+        { slot: "fill", set: { substep: "1/3" }, hint: "sub-step" },
+      ],
       verified: false,
     },
     {
-      id: 'tr1000-tom-bright',
-      role: 'tom',
-      character: 'bright',
-      voice: 'ht',
-      title: 'High tom, tight enough to sit in a fill',
+      id: "tr1000-tom-bright",
+      role: "tom",
+      character: "bright",
+      voice: "ht",
+      title: "High tom, tight enough to sit in a fill",
       params: [
-        gen('909 High Tom', TOM_GENS),
-        num('TUNE', 40, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -22 }] }),
-        num('COLOR', 25, PCT, '%', 60),
-        num('DECAY', 40, PCT, '%', 60, { mood: [{ axis: 'density', amount: -12 }] }),
-        send('RVB', 26, 20),
-        send('DLY', 10, 10),
+        gen("909 High Tom", TOM_GENS),
+        num("TUNE", 40, BIPOLAR, "%", 60, {
+          mood: [{ axis: "darkness", amount: -22 }],
+        }),
+        num("COLOR", 25, PCT, "%", 60),
+        num("DECAY", 40, PCT, "%", 60, {
+          mood: [{ axis: "density", amount: -12 }],
+        }),
+        send("RVB", 26, 20),
+        send("DLY", 10, 10),
         shuffle(),
       ],
-      articulation: [{ slot: 'fill', set: { substep: '1/3' }, hint: 'sub-step' }],
+      articulation: [
+        { slot: "fill", set: { substep: "1/3" }, hint: "sub-step" },
+      ],
       verified: false,
     },
 
@@ -1168,43 +1351,47 @@ export const device: Device = {
      * `FILTER` included, is layer A, as everywhere else on this box.
      */
     {
-      id: 'tr1000-bass-mid-dark',
-      role: 'bass-mid',
-      character: 'dark',
-      voice: 'lt',
-      title: 'Plucked triangle bass with the top rolled off',
+      id: "tr1000-bass-mid-dark",
+      role: "bass-mid",
+      character: "dark",
+      voice: "lt",
+      title: "Plucked triangle bass with the top rolled off",
       params: [
-        gen('VA Tri', OSC_GENS),
-        num('COARSE', -12, SEMITONES, 'St', 63, {
-          hint: 'Register, in semitones',
-          note: 'Sets the register once; the line itself goes in on TUNE',
+        gen("VA Tri", OSC_GENS),
+        num("COARSE", -12, SEMITONES, "St", 63, {
+          hint: "Register, in semitones",
+          note: "Sets the register once; the line itself goes in on TUNE",
         }),
-        num('TUNE', 0, BIPOLAR, '%', 63, {
-          hint: 'motion-rec',
-          note: 'The hook’s notes go in as motion on the [TUNE] knob, by ear',
+        num("TUNE", 0, BIPOLAR, "%", 63, {
+          hint: "motion-rec",
+          note: "The hook’s notes go in as motion on the [TUNE] knob, by ear",
         }),
-        num('PW', 42, PCT, '%', 63, { hint: 'Waveform shape' }),
-        num('P. AMOUNT', 0, BIPOLAR, '%', 63, { hint: 'Flat: no pitch envelope on a bass note' }),
-        num('A. ATTACK', 3, MS, 'ms', 63),
-        num('A. DECAY', 420, MS, 'ms', 63, { mood: [{ axis: 'density', amount: -250 }] }),
-        sel('FILTER MODEL', 'SV FILTER', ['SV FILTER', 'EQUALIZER'], 65, {
-          hint: 'filter-screen',
+        num("PW", 42, PCT, "%", 63, { hint: "Waveform shape" }),
+        num("P. AMOUNT", 0, BIPOLAR, "%", 63, {
+          hint: "Flat: no pitch envelope on a bass note",
         }),
-        sel('FILTER SW', 'ON', ['OFF', 'ON'], 65),
-        sel('FILTER TYPE', 'LPF', ['LPF', 'HPF', 'BPF'], 65),
-        num('FILTER CUTOFF', 620, CUTOFF_HZ, 'Hz', 65, {
-          mood: [{ axis: 'darkness', amount: -400 }],
+        num("A. ATTACK", 3, MS, "ms", 63),
+        num("A. DECAY", 420, MS, "ms", 63, {
+          mood: [{ axis: "density", amount: -250 }],
         }),
-        num('FILTER RESO', 22, PCT, '%', 65),
-        send('RVB', 0),
-        send('DLY', 0),
+        sel("FILTER MODEL", "SV FILTER", ["SV FILTER", "EQUALIZER"], 65, {
+          hint: "filter-screen",
+        }),
+        sel("FILTER SW", "ON", ["OFF", "ON"], 65),
+        sel("FILTER TYPE", "LPF", ["LPF", "HPF", "BPF"], 65),
+        num("FILTER CUTOFF", 620, CUTOFF_HZ, "Hz", 65, {
+          mood: [{ axis: "darkness", amount: -400 }],
+        }),
+        num("FILTER RESO", 22, PCT, "%", 65),
+        send("RVB", 0),
+        send("DLY", 0),
         shuffle(),
       ],
       articulation: [
-        { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
-        { slot: 'ghost', set: { weak: true }, hint: 'weak-step' },
+        { slot: "accent", set: { accent: true }, hint: "accent-step" },
+        { slot: "ghost", set: { weak: true }, hint: "weak-step" },
       ],
-      routing: 'INDIVIDUAL OUT LT so the bass stays out of the bus effects',
+      routing: "INDIVIDUAL OUT LT so the bass stays out of the bus effects",
       verified: false,
     },
     /**
@@ -1231,235 +1418,304 @@ export const device: Device = {
      * switches lands on a tom, which is a fair thing for a track labelled LT to offer.
      */
     {
-      id: 'tr1000-bass-mid-dirty',
-      role: 'bass-mid',
-      character: 'dirty',
-      voice: 'lt',
-      title: 'FM bass with the modulator up',
+      id: "tr1000-bass-mid-dirty",
+      role: "bass-mid",
+      character: "dirty",
+      voice: "lt",
+      title: "FM bass with the modulator up",
       params: [
-        gen('FM Tom Model', TOM_GENS),
-        num('TUNE', -38, BIPOLAR, '%', 63, {
-          hint: 'motion-rec',
-          note: 'The hook’s notes go in as motion on the [TUNE] knob, by ear',
+        gen("FM Tom Model", TOM_GENS),
+        num("TUNE", -38, BIPOLAR, "%", 63, {
+          hint: "motion-rec",
+          note: "The hook’s notes go in as motion on the [TUNE] knob, by ear",
         }),
-        num('DECAY', 76, PCT, '%', 63, { mood: [{ axis: 'density', amount: -24 }] }),
-        num('FM DEPTH', 58, PCT, '%', 63, {
-          mood: [{ axis: 'grit', amount: 30 }],
-          hint: 'Modulator level; this is the dirt',
+        num("DECAY", 76, PCT, "%", 63, {
+          mood: [{ axis: "density", amount: -24 }],
         }),
-        num('FM FBK', 30, PCT, '%', 63, { hint: 'Modulator feedback, on top of the depth' }),
-        num('FM FREQ', 42, PCT, '%', 63, { hint: 'Modulator frequency, in place of FM RATIO' }),
-        num('NOISE', 14, PCT, '%', 63),
-        num('LPF FREQ', 46, PCT, '%', 63, { mood: [{ axis: 'darkness', amount: -30 }] }),
-        num('HPF FREQ', 0, PCT, '%', 63, { hint: 'Nothing off the bottom' }),
-        num('P. AMOUNT', 0, PCT, '%', 63, { hint: 'Flat: no pitch envelope on a bass note' }),
-        send('RVB', 0),
-        send('DLY', 0),
+        num("FM DEPTH", 58, PCT, "%", 63, {
+          mood: [{ axis: "grit", amount: 30 }],
+          hint: "Modulator level; this is the dirt",
+        }),
+        num("FM FBK", 30, PCT, "%", 63, {
+          hint: "Modulator feedback, on top of the depth",
+        }),
+        num("FM FREQ", 42, PCT, "%", 63, {
+          hint: "Modulator frequency, in place of FM RATIO",
+        }),
+        num("NOISE", 14, PCT, "%", 63),
+        num("LPF FREQ", 46, PCT, "%", 63, {
+          mood: [{ axis: "darkness", amount: -30 }],
+        }),
+        num("HPF FREQ", 0, PCT, "%", 63, { hint: "Nothing off the bottom" }),
+        num("P. AMOUNT", 0, PCT, "%", 63, {
+          hint: "Flat: no pitch envelope on a bass note",
+        }),
+        send("RVB", 0),
+        send("DLY", 0),
         shuffle(),
       ],
       articulation: [
-        { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
-        { slot: 'ghost', set: { weak: true }, hint: 'weak-step' },
+        { slot: "accent", set: { accent: true }, hint: "accent-step" },
+        { slot: "ghost", set: { weak: true }, hint: "weak-step" },
       ],
       verified: false,
     },
 
     // ---- RS -------------------------------------------------------------------------
     {
-      id: 'tr1000-rim-clean',
-      role: 'rim',
-      character: 'clean',
-      voice: 'rs',
-      title: 'Dry rim, no tail at all',
+      id: "tr1000-rim-clean",
+      role: "rim",
+      character: "clean",
+      voice: "rs",
+      title: "Dry rim, no tail at all",
       params: [
-        gen('8X Rim Shot', STICK_GENS),
-        num('TUNE', 20, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -18 }] }),
-        num('TONE', 30, BIPOLAR, '%', 60),
-        num('DECAY', 8, PCT, '%', 60, { hint: 'Floor it; the tail is the enemy' }),
-        num('COARSE', 3, SEMITONES, 'St', 60, { hint: 'A minor third up, to cut' }),
-        num('BODY', 25, PCT, '%', 60),
-        send('RVB', 8, 8),
-        send('DLY', 0),
+        gen("8X Rim Shot", STICK_GENS),
+        num("TUNE", 20, BIPOLAR, "%", 60, {
+          mood: [{ axis: "darkness", amount: -18 }],
+        }),
+        num("TONE", 30, BIPOLAR, "%", 60),
+        num("DECAY", 8, PCT, "%", 60, {
+          hint: "Floor it; the tail is the enemy",
+        }),
+        num("COARSE", 3, SEMITONES, "St", 60, {
+          hint: "A minor third up, to cut",
+        }),
+        num("BODY", 25, PCT, "%", 60),
+        send("RVB", 8, 8),
+        send("DLY", 0),
         shuffle(),
       ],
       verified: false,
     },
     {
-      id: 'tr1000-ghost-perc-soft',
-      role: 'ghost-perc',
-      character: 'soft',
-      voice: 'rs',
-      title: 'Barely-there rim under the backbeat',
+      id: "tr1000-ghost-perc-soft",
+      role: "ghost-perc",
+      character: "soft",
+      voice: "rs",
+      title: "Barely-there rim under the backbeat",
       params: [
-        gen('9X Rim Shot', STICK_GENS),
-        num('TUNE', -10, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -14 }] }),
-        num('DECAY', 12, PCT, '%', 62),
-        num('COARSE', -3, SEMITONES, 'St', 62),
-        num('FREQ MOD', 20, PCT, '%', 62),
-        send('RVB', 22, 20),
-        send('DLY', 14, 14),
+        gen("9X Rim Shot", STICK_GENS),
+        num("TUNE", -10, BIPOLAR, "%", 62, {
+          mood: [{ axis: "darkness", amount: -14 }],
+        }),
+        num("DECAY", 12, PCT, "%", 62),
+        num("COARSE", -3, SEMITONES, "St", 62),
+        num("FREQ MOD", 20, PCT, "%", 62),
+        send("RVB", 22, 20),
+        send("DLY", 14, 14),
         shuffle(),
       ],
-      articulation: [{ slot: 'ghost', set: { weak: true }, hint: 'weak-step' }],
+      articulation: [{ slot: "ghost", set: { weak: true }, hint: "weak-step" }],
       verified: false,
     },
 
     // ---- HC -------------------------------------------------------------------------
     {
-      id: 'tr1000-clap-bright',
-      role: 'clap',
-      character: 'bright',
-      voice: 'hc',
-      title: 'Wide clap sitting on top of the snare',
+      id: "tr1000-clap-bright",
+      role: "clap",
+      character: "bright",
+      voice: "hc",
+      title: "Wide clap sitting on top of the snare",
       params: [
-        gen('9X Hand Clap', CLAP_GENS),
-        num('FILTER', 35, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -30 }], hint: 'Clap brightness' }),
-        num('CLAPS', 70, PCT, '%', 62),
-        num('SPEED', 55, PCT, '%', 62),
-        num('MIX', 20, BIPOLAR, '%', 62, { hint: 'Clap against tail, not layers' }),
-        num('TAIL DCY', 62, PCT, '%', 62, { mood: [{ axis: 'density', amount: -18 }] }),
+        gen("9X Hand Clap", CLAP_GENS),
+        num("FILTER", 35, BIPOLAR, "%", 62, {
+          mood: [{ axis: "darkness", amount: -30 }],
+          hint: "Clap brightness",
+        }),
+        num("CLAPS", 70, PCT, "%", 62),
+        num("SPEED", 55, PCT, "%", 62),
+        num("MIX", 20, BIPOLAR, "%", 62, {
+          hint: "Clap against tail, not layers",
+        }),
+        num("TAIL DCY", 62, PCT, "%", 62, {
+          mood: [{ axis: "density", amount: -18 }],
+        }),
         // #58. A tempo-synced triangle on this recipe's own FILTER: one cycle per bar, so the
         // two backbeat claps in a bar sit at different points of the sweep.
-        ...mod('FILTER', 22, 'TRI', '1/1'),
-        send('RVB', 30, 22),
-        send('DLY', 14, 14),
+        ...mod("FLT", "CUTOFF", 22, "TRI", "1/1"),
+        send("RVB", 30, 22),
+        send("DLY", 14, 14),
         shuffle(),
       ],
-      articulation: [{ slot: 'backbeat', set: { accent: true }, hint: 'accent-step' }],
+      articulation: [
+        { slot: "backbeat", set: { accent: true }, hint: "accent-step" },
+      ],
       verified: false,
     },
     {
-      id: 'tr1000-clap-soft',
-      role: 'clap',
-      character: 'soft',
-      voice: 'hc',
-      title: 'Soft clap layered behind, not in front',
+      id: "tr1000-clap-soft",
+      role: "clap",
+      character: "soft",
+      voice: "hc",
+      title: "Soft clap layered behind, not in front",
       params: [
-        gen('808 Hand Clap', CLAP_GENS),
-        num('CLP SIZE', -25, BIPOLAR, '%', 59, { mood: [{ axis: 'darkness', amount: -20 }], hint: 'Thickness of the sound' }),
-        num('TAIL LVL', 38, PCT, '%', 59, { mood: [{ axis: 'density', amount: -12 }] }),
-        send('RVB', 34, 24),
-        send('DLY', 10, 10),
+        gen("808 Hand Clap", CLAP_GENS),
+        num("CLP SIZE", -25, BIPOLAR, "%", 59, {
+          mood: [{ axis: "darkness", amount: -20 }],
+          hint: "Thickness of the sound",
+        }),
+        num("TAIL LVL", 38, PCT, "%", 59, {
+          mood: [{ axis: "density", amount: -12 }],
+        }),
+        send("RVB", 34, 24),
+        send("DLY", 10, 10),
         shuffle(),
       ],
-      articulation: [{ slot: 'ghost', set: { weak: true }, hint: 'weak-step' }],
+      articulation: [{ slot: "ghost", set: { weak: true }, hint: "weak-step" }],
       verified: false,
     },
 
     // ---- CH -------------------------------------------------------------------------
     {
-      id: 'tr1000-closed-hat-clean',
-      role: 'closed-hat',
-      character: 'clean',
-      voice: 'ch',
-      title: 'Clipped closed hat, straight sixteenths',
+      id: "tr1000-closed-hat-clean",
+      role: "closed-hat",
+      character: "clean",
+      voice: "ch",
+      title: "Clipped closed hat, straight sixteenths",
       params: [
-        gen('9X Closed HiHat', CLOSED_HAT_GENS),
-        num('TUNE', 10, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -22 }] }),
-        num('DECAY', 14, PCT, '%', 62, { mood: [{ axis: 'density', amount: -6 }] }),
-        num('ERROR', 8, PCT, '%', 62, { hint: 'Noise into the DA converter' }),
-        send('RVB', 6, 6),
-        send('DLY', 0),
-        shuffle(),
-      ],
-      articulation: [{ slot: 'offbeat', set: { weak: true }, hint: 'weak-step' }],
-      verified: false,
-    },
-    {
-      id: 'tr1000-closed-hat-dirty',
-      role: 'closed-hat',
-      character: 'dirty',
-      voice: 'ch',
-      title: 'Grainy CR-78 hat with a metallic edge',
-      params: [
-        gen('CR78 HiHat', CLOSED_HAT_GENS),
-        num('TUNE', -5, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -20 }] }),
-        num('DECAY', 20, PCT, '%', 62, { mood: [{ axis: 'density', amount: -8 }] }),
-        num('METALLIC', 72, PCT, '%', 62, { mood: [{ axis: 'grit', amount: 20 }], hint: 'Metal-like overtone level' }),
-        send('RVB', 10, 10),
-        send('DLY', 8, 8),
+        gen("9X Closed HiHat", CLOSED_HAT_GENS),
+        num("TUNE", 10, BIPOLAR, "%", 62, {
+          mood: [{ axis: "darkness", amount: -22 }],
+        }),
+        num("DECAY", 14, PCT, "%", 62, {
+          mood: [{ axis: "density", amount: -6 }],
+        }),
+        num("ERROR", 8, PCT, "%", 62, { hint: "Noise into the DA converter" }),
+        send("RVB", 6, 6),
+        send("DLY", 0),
         shuffle(),
       ],
       articulation: [
-        { slot: 'offbeat', set: { weak: true }, hint: 'weak-step' },
-        { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
+        { slot: "offbeat", set: { weak: true }, hint: "weak-step" },
+      ],
+      verified: false,
+    },
+    {
+      id: "tr1000-closed-hat-dirty",
+      role: "closed-hat",
+      character: "dirty",
+      voice: "ch",
+      title: "Grainy CR-78 hat with a metallic edge",
+      params: [
+        gen("CR78 HiHat", CLOSED_HAT_GENS),
+        num("TUNE", -5, BIPOLAR, "%", 62, {
+          mood: [{ axis: "darkness", amount: -20 }],
+        }),
+        num("DECAY", 20, PCT, "%", 62, {
+          mood: [{ axis: "density", amount: -8 }],
+        }),
+        num("METALLIC", 72, PCT, "%", 62, {
+          mood: [{ axis: "grit", amount: 20 }],
+          hint: "Metal-like overtone level",
+        }),
+        send("RVB", 10, 10),
+        send("DLY", 8, 8),
+        shuffle(),
+      ],
+      articulation: [
+        { slot: "offbeat", set: { weak: true }, hint: "weak-step" },
+        { slot: "accent", set: { accent: true }, hint: "accent-step" },
       ],
       verified: false,
     },
 
     // ---- OH -------------------------------------------------------------------------
     {
-      id: 'tr1000-open-hat-bright',
-      role: 'open-hat',
-      character: 'bright',
-      voice: 'oh',
-      title: 'Open hat that rings into the next downbeat',
+      id: "tr1000-open-hat-bright",
+      role: "open-hat",
+      character: "bright",
+      voice: "oh",
+      title: "Open hat that rings into the next downbeat",
       params: [
-        gen('9X Open HiHat', OPEN_HAT_GENS),
-        num('TUNE', 28, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -26 }] }),
-        num('DECAY', 58, PCT, '%', 62, { mood: [{ axis: 'density', amount: -16 }] }),
-        num('ERROR', 10, PCT, '%', 62),
-        send('RVB', 16, 16),
-        send('DLY', 20, 18),
+        gen("9X Open HiHat", OPEN_HAT_GENS),
+        num("TUNE", 28, BIPOLAR, "%", 62, {
+          mood: [{ axis: "darkness", amount: -26 }],
+        }),
+        num("DECAY", 58, PCT, "%", 62, {
+          mood: [{ axis: "density", amount: -16 }],
+        }),
+        num("ERROR", 10, PCT, "%", 62),
+        send("RVB", 16, 16),
+        send("DLY", 20, 18),
         shuffle(),
       ],
-      articulation: [{ slot: 'offbeat', set: { accent: true }, hint: 'accent-step' }],
+      articulation: [
+        { slot: "offbeat", set: { accent: true }, hint: "accent-step" },
+      ],
       verified: false,
     },
     {
-      id: 'tr1000-open-hat-dark',
-      role: 'open-hat',
-      character: 'dark',
-      voice: 'oh',
-      title: 'Dull open hat, more air than sizzle',
+      id: "tr1000-open-hat-dark",
+      role: "open-hat",
+      character: "dark",
+      voice: "oh",
+      title: "Dull open hat, more air than sizzle",
       params: [
-        gen('606 Open HiHat', OPEN_HAT_GENS),
-        num('TUNE', -18, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -20 }] }),
-        num('DECAY', 64, PCT, '%', 62, { mood: [{ axis: 'density', amount: -16 }] }),
-        num('TONE', -35, BIPOLAR, '%', 62, { hint: 'Brightness of the cymbal' }),
-        send('RVB', 14, 12),
-        send('DLY', 12, 12),
+        gen("606 Open HiHat", OPEN_HAT_GENS),
+        num("TUNE", -18, BIPOLAR, "%", 62, {
+          mood: [{ axis: "darkness", amount: -20 }],
+        }),
+        num("DECAY", 64, PCT, "%", 62, {
+          mood: [{ axis: "density", amount: -16 }],
+        }),
+        num("TONE", -35, BIPOLAR, "%", 62, {
+          hint: "Brightness of the cymbal",
+        }),
+        send("RVB", 14, 12),
+        send("DLY", 12, 12),
         shuffle(),
       ],
-      articulation: [{ slot: 'offbeat', set: { weak: true }, hint: 'weak-step' }],
+      articulation: [
+        { slot: "offbeat", set: { weak: true }, hint: "weak-step" },
+      ],
       verified: false,
     },
 
     // ---- CC / RC --------------------------------------------------------------------
     {
-      id: 'tr1000-impact-hard',
-      role: 'impact',
-      character: 'hard',
-      voice: 'cc',
-      title: 'Crash marking the top of a section',
+      id: "tr1000-impact-hard",
+      role: "impact",
+      character: "hard",
+      voice: "cc",
+      title: "Crash marking the top of a section",
       params: [
-        gen('9X Crash Cymbal', CRASH_GENS),
-        num('TUNE', 0, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -20 }] }),
-        num('DECAY', 84, PCT, '%', 62, { mood: [{ axis: 'density', amount: -20 }] }),
-        send('RVB', 42, 26),
-        send('DLY', 18, 16),
-        shuffle(),
-      ],
-      articulation: [{ slot: 'first-hit', set: { accent: true }, hint: 'accent-step' }],
-      verified: false,
-    },
-    {
-      id: 'tr1000-ride-clean',
-      role: 'ride',
-      character: 'clean',
-      voice: 'rc',
-      title: 'Even ride holding the top of the bar',
-      params: [
-        gen('9X Ride Cymbal', RIDE_GENS),
-        num('TUNE', 12, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -16 }] }),
-        num('DECAY', 74, PCT, '%', 62, { mood: [{ axis: 'density', amount: -14 }] }),
-        send('RVB', 14, 14),
-        send('DLY', 8, 8),
+        gen("9X Crash Cymbal", CRASH_GENS),
+        num("TUNE", 0, BIPOLAR, "%", 62, {
+          mood: [{ axis: "darkness", amount: -20 }],
+        }),
+        num("DECAY", 84, PCT, "%", 62, {
+          mood: [{ axis: "density", amount: -20 }],
+        }),
+        send("RVB", 42, 26),
+        send("DLY", 18, 16),
         shuffle(),
       ],
       articulation: [
-        { slot: 'offbeat', set: { 'alt-inst': true }, hint: 'alt-inst' },
-        { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
+        { slot: "first-hit", set: { accent: true }, hint: "accent-step" },
+      ],
+      verified: false,
+    },
+    {
+      id: "tr1000-ride-clean",
+      role: "ride",
+      character: "clean",
+      voice: "rc",
+      title: "Even ride holding the top of the bar",
+      params: [
+        gen("9X Ride Cymbal", RIDE_GENS),
+        num("TUNE", 12, BIPOLAR, "%", 62, {
+          mood: [{ axis: "darkness", amount: -16 }],
+        }),
+        num("DECAY", 74, PCT, "%", 62, {
+          mood: [{ axis: "density", amount: -14 }],
+        }),
+        send("RVB", 14, 14),
+        send("DLY", 8, 8),
+        shuffle(),
+      ],
+      articulation: [
+        { slot: "offbeat", set: { "alt-inst": true }, hint: "alt-inst" },
+        { slot: "accent", set: { accent: true }, hint: "accent-step" },
       ],
       verified: false,
     },
@@ -1485,28 +1741,32 @@ export const device: Device = {
      * this wants the ring. Both points are provisional, as every point on this box is.
      */
     {
-      id: 'tr1000-metallic-dirty',
-      role: 'metallic',
-      character: 'dirty',
-      voice: 'rc',
-      title: 'CR-78 metal ringing across the bar line',
+      id: "tr1000-metallic-dirty",
+      role: "metallic",
+      character: "dirty",
+      voice: "rc",
+      title: "CR-78 metal ringing across the bar line",
       params: [
-        gen('CR78 Cymbal', METALLIC_GENS, cite(62)),
-        num('TUNE', 18, BIPOLAR, '%', 62, { mood: [{ axis: 'darkness', amount: -24 }] }),
-        num('DECAY', 46, PCT, '%', 62, { mood: [{ axis: 'density', amount: -12 }] }),
-        num('METALLIC', 88, PCT, '%', 62, {
-          mood: [{ axis: 'grit', amount: 12 }],
-          hint: 'Metal-like overtone level',
+        gen("CR78 Cymbal", METALLIC_GENS, cite(62)),
+        num("TUNE", 18, BIPOLAR, "%", 62, {
+          mood: [{ axis: "darkness", amount: -24 }],
         }),
-        send('RVB', 20, 20),
-        send('DLY', 14, 14),
+        num("DECAY", 46, PCT, "%", 62, {
+          mood: [{ axis: "density", amount: -12 }],
+        }),
+        num("METALLIC", 88, PCT, "%", 62, {
+          mood: [{ axis: "grit", amount: 12 }],
+          hint: "Metal-like overtone level",
+        }),
+        send("RVB", 20, 20),
+        send("DLY", 14, 14),
         shuffle(),
       ],
       articulation: [
-        { slot: 'downbeat', set: { accent: true }, hint: 'accent-step' },
-        { slot: 'offbeat', set: { weak: true }, hint: 'weak-step' },
+        { slot: "downbeat", set: { accent: true }, hint: "accent-step" },
+        { slot: "offbeat", set: { weak: true }, hint: "weak-step" },
       ],
       verified: false,
     },
   ],
-}
+};
