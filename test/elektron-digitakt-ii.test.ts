@@ -126,17 +126,18 @@ describe('Digitakt II manifest', () => {
     it('uses only the scalar subset that stays true for every hit in a slot', () => {
       // `bindArticulation` applies one `set` to *every* step carrying the slot. So a key may only
       // appear here if it is a scalar, identical across those hits, and carries no state between
-      // them. These six are: VEL and LEN (p.53), PROB (p.53, "re-evaluated every time a trig is
-      // set to play"), micro timing (p.45), and RTRG with RATE (p.54).
+      // them. These seven are: VEL and LEN (p.53), PROB (p.53, "re-evaluated every time a trig is
+      // set to play"), micro timing (p.45), RTRG with RATE (p.54), and PORT (p.55), which p.53
+      // makes lockable to a step along with every other track parameter.
       expect([...used].sort()).toEqual([...ARTICULABLE_PER_STEP].sort())
     })
 
     it('declares the capabilities it cannot reach, and reaches none of them', () => {
       // **The honest half.** `features.perStep` is a description of the box, so the documented
-      // per-trig capabilities are all named. Three of the nine cannot survive the limitation
+      // per-trig capabilities are all named. Three of the ten cannot survive the limitation
       // above and no recipe touches them.
       const declared = device.features?.perStep ?? []
-      expect(declared).toHaveLength(9)
+      expect(declared).toHaveLength(10)
       const unreachable = declared.filter((k) => !used.has(k))
       expect(unreachable.sort()).toEqual(['condition', 'fill', 'sample-lock'])
       for (const key of unreachable) {
@@ -194,8 +195,18 @@ describe('Digitakt II manifest', () => {
   // -------------------------------------------------------------------------
 
   it('carries recipes on distinct (role, character) keys, with unique ids', () => {
-    expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(20)
+    // Not the usual 15-20 bound, and the pool is the reason. A track here is whatever is loaded
+    // into it, so `roles` carries all 23 rather than the handful a fixed-voice box can offer —
+    // and a role declared with no recipe resolves `unvoiced`, which is the reader being told to
+    // dial it by ear on a box that could have been told what to load. So the target is one recipe
+    // per declared role, and the ceiling is two: `tom` has both because §3.5 refuses a
+    // substitution between `bright` and `dark` and two directions ask for opposite ends of it.
+    const roles = device.voices[0]?.roles ?? []
+    for (const role of roles) {
+      expect(device.recipes.map((r) => r.role), `no recipe for ${role}`).toContain(role)
+    }
+    expect(device.recipes.length).toBeGreaterThanOrEqual(roles.length)
+    expect(device.recipes.length).toBeLessThanOrEqual(roles.length * 2)
     const pairs = device.recipes.map((r) => `${r.role} ${r.character}`)
     expect(new Set(pairs).size).toBe(pairs.length)
     const ids = device.recipes.map((r) => r.id)
@@ -533,16 +544,18 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 222 is #334's figure for this device and it is expected to stay put, because nothing here is
-   * a gap to close. The number moves when a direction gains or loses a part, and a diff is a
-   * prompt to re-read the head note rather than a failure. What must not move is the relationship
-   * — no part ever gets a `trigger`, because the pool has no note to give one.
+   * 270 is #334's figure for this device. It was 222 until the eight unauthored roles were
+   * filled: a role the pool declares and no recipe serves is a `no-recipe` shortfall rather than
+   * a part, so those parts were not drawing a blank grid, they were not being placed at all. The
+   * number moves when a direction gains or loses a part, or when this box gains a recipe, and a
+   * diff is a prompt to re-read the head note rather than a failure. What must not move is the
+   * relationship — no part ever gets a `trigger`, because the pool has no note to give one.
    */
-  it('leaves 222 grid parts blank, and pins how many there are', () => {
+  it('leaves 270 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(246)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(222)
+    expect(grid.length).toBe(294)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(270)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -574,8 +587,13 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['clap', 18],
       ['metallic', 18],
       ['open-hat', 18],
+      ['rim', 18],
       ['snare', 18],
+      ['tom', 12],
+      ['arp', 6],
       ['impact', 6],
+      ['noise', 6],
+      ['ride', 6],
       ['vox-chop', 6],
     ])
   })
@@ -584,11 +602,16 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
     // part with no variant anywhere nothing to program.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(114)
+    expect(hooked.length).toBe(138)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(18)
+    expect(noPattern.length).toBe(30)
+    // `sweep` joins the list rather than the grid, and that is the recipe working as authored: no
+    // direction writes a step variant for the role, so there is nothing to program and
+    // `dt2-sweep-soft` articulates nothing. See its comment, and `lib/core/reachability.ts`.
     expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/sweep',
       'ambient-dub/texture',
+      'generative-drift/sweep',
       'hip-hop/texture',
       'industrial-techno/riser',
     ])

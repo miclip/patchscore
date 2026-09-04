@@ -73,6 +73,31 @@ import { DIGITAKT_II_PANEL } from './panel'
  * but a vocabulary that can say *which kind of address a voice uses* — until then, a pool holding
  * a sliced voice authors nothing here.
  *
+ * ## One recipe per declared role, and why narrowing the pool was not an option
+ *
+ * The pool declares all 23 roles, and eight of them carried no recipe: `acid`, `arp`, `lead`,
+ * `noise`, `ride`, `rim`, `sweep` and `tom`. That combination is worse than it looks. A role a
+ * device declares and does not author resolves to a `no-recipe` shortfall, so the part is not
+ * placed at all — over the eleven directions at seeds 1-6 this box was dropping 96 parts, and it
+ * is now dropping 12.
+ *
+ * **Narrowing `roles` would have closed the same eight gaps and been a lie.** It is the honest
+ * repair on a fixed-voice box, where a snare drum voice is a snare drum and cannot be told to be
+ * a ride. Here a track is whatever is loaded into it, which is the argument the voices comment
+ * below already makes, and there is no role in §2.2's vocabulary a sixteen-track sampler cannot
+ * carry. Taking `ride` off the list would say this box cannot play a ride cymbal.
+ *
+ * So the target here is one recipe per declared role rather than the usual fifteen to twenty, and
+ * the ceiling is two. `tom` is the only role with both, because §3.5 refuses a substitution
+ * between opposite characters and two directions ask for opposite ends of it; `arp` needs one,
+ * because the `bright` and `clean` requests are two apart and either serves the other.
+ *
+ * **What it cost the search is the part worth recording: nothing on the rig anyone can build.**
+ * `measure:search` reports the worst legal rig unmoved at 46,609 nodes on `weave` seed 15, the
+ * same direction and seed as before, and the catalogue benchmark up 146 nodes in 729,808. That is
+ * #301's point arriving as a measurement rather than an argument: a recipe is priced by the role
+ * it lands in, and eight of these nine landed in roles the crowded directions do not contend for.
+ *
  * ## Numbers: this manual prints almost none
  *
  * Across the whole of "11. TRACK PARAMETERS" (pp.53-60) and APPENDIX A, exactly **three** numeric
@@ -151,6 +176,21 @@ const AMP_MODES = ['AHD', 'ADSR'] as const
 const LFO_MODES = ['FRE', 'TRG', 'HLD', 'ONE', 'HLF'] as const
 
 /**
+ * SOUND SETTINGS > TRACK > PORTAMENTO, p.38. Three printed option lists on one screen, and the
+ * fourth setting on it is deliberately not here: `AMOUNT` names 100 as a full glide and prints
+ * no scale that 100 sits on, so a value would be a number with no bounds behind it.
+ *
+ * These live in a menu rather than on the PARAMETER pages, which is why `portSlope` carries the
+ * route in a note. The switch that puts them in force is `PORT` on TRIG PAGE 2 (p.55), and it is
+ * absent for the reason `LFO WAVE` is: the manual describes it in prose ("turns the portamento
+ * on/off") and prints no on-screen token for either state.
+ */
+const PORT_SLOPES = ['CONSTANT RATE', 'CONSTANT TIME'] as const
+const PORT_STYLES = ['GLIDE', 'GLISSANDO'] as const
+/** p.38's LEGATO ONLY, whose two states the page does print. */
+const PORT_LEGATO = ['ON', 'OFF'] as const
+
+/**
  * §2.3's per-step vocabulary: the per-trig capabilities this manual documents.
  *
  * **Six of these nine are reachable from `articulation` and three are not**, which is a sharper
@@ -163,6 +203,13 @@ const LFO_MODES = ['FRE', 'TRG', 'HLD', 'ONE', 'HLF'] as const
  * `micro-timing` (p.45), and `retrig` with `retrig-rate` (RTRG and RATE, p.54 — the rate is
  * paired with the switch because "these hits retrig" without a rate is not an instruction anyone
  * can carry out).
+ *
+ * `portamento` is here on the strength of two pages rather than one. `PORT` is a TRIG PAGE 2
+ * parameter (p.55), and p.53 says of the whole chapter that *"the track parameters may be locked
+ * to other settings on any step of the pattern"*; Appendix B.2 lists Portamento On/Off among the
+ * trig parameters it gives a CC for (p.109). So which steps glide is a per-step decision on this
+ * box, and #283's slide is bindable rather than merely stated. `PTIM`, the time it glides over,
+ * is left out for the usual reason: p.55 prints no scale for it.
  *
  * Declared and deliberately unreachable:
  *
@@ -178,6 +225,7 @@ const PER_STEP = [
   'micro-timing',
   'retrig',
   'retrig-rate',
+  'portamento',
   'condition',
   'fill',
   'sample-lock',
@@ -191,6 +239,7 @@ export const ARTICULABLE_PER_STEP = [
   'micro-timing',
   'retrig',
   'retrig-rate',
+  'portamento',
 ] as const
 
 // ---------------------------------------------------------------------------
@@ -232,6 +281,16 @@ const play = (m: (typeof PLAY_MODES)[number]) => pick('PLAY', m, PLAY_MODES, 94)
 const fltr = (m: (typeof FLTR_MACHINES)[number]) => pick('FLTR MACHINE', m, FLTR_MACHINES, 104)
 const ampMode = (m: (typeof AMP_MODES)[number]) => pick('AMP MODE', m, AMP_MODES, 56)
 const lfoMode = (m: (typeof LFO_MODES)[number]) => pick('LFO MODE', m, LFO_MODES, 58)
+const portSlope = (m: (typeof PORT_SLOPES)[number]) =>
+  pick(
+    'PORT SLOPE',
+    m,
+    PORT_SLOPES,
+    38,
+    'SOUND SETTINGS > TRACK > PORTAMENTO. Turn PORT on (TRIG PAGE 2) or none of these bite',
+  )
+const portStyle = (m: (typeof PORT_STYLES)[number]) => pick('PORT STYLE', m, PORT_STYLES, 38)
+const portLegato = (m: (typeof PORT_LEGATO)[number]) => pick('PORT LEGATO ONLY', m, PORT_LEGATO, 38)
 /** AMP `HOLD`, the one unipolar range the manual prints. Only exists when MODE is AHD (p.56). */
 const hold = (v: number) =>
   num('HOLD', v, { min: 0, max: 126 }, 56, {
@@ -358,6 +417,22 @@ const recipes: Recipe[] = [
     articulation: [art('backbeat', { velocity: 110 }, 'trig-params')],
   },
   {
+    id: 'dt2-rim-clean',
+    role: 'rim',
+    character: 'clean',
+    voice: 'track',
+    title: 'Rim click, EQ narrowed to the wood',
+    verified: false,
+    sourceAudio: {
+      need: 'A rimshot or cross-stick one-shot under 80 ms, close and dry, with no room on it',
+    },
+    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), hold(2)],
+    articulation: [
+      art('backbeat', { velocity: 102 }, 'trig-params'),
+      art('ghost', { velocity: 44, probability: 70 }, 'trig-params'),
+    ],
+  },
+  {
     id: 'dt2-closed-hat-clean',
     role: 'closed-hat',
     character: 'clean',
@@ -402,6 +477,21 @@ const recipes: Recipe[] = [
     articulation: [art('offbeat', { velocity: 108, 'note-length': 16 }, 'trig-params')],
   },
   {
+    id: 'dt2-ride-bright',
+    role: 'ride',
+    character: 'bright',
+    voice: 'track',
+    title: 'Ride let ring on the offbeat',
+    verified: false,
+    sourceAudio: {
+      need:
+        'A ride cymbal one-shot with the bow ring left on it, two seconds or longer; a gated ' +
+        'ride has nothing for HOLD to hold',
+    },
+    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), hold(88)],
+    articulation: [art('offbeat', { velocity: 96, 'note-length': 24 }, 'trig-params')],
+  },
+  {
     id: 'dt2-ghost-perc-soft',
     role: 'ghost-perc',
     character: 'soft',
@@ -426,6 +516,76 @@ const recipes: Recipe[] = [
     },
     params: [src('ONESHOT'), play('FORWARD'), fltr('COMB+'), ampMode('AHD'), hold(40)],
     articulation: [art('offbeat', { velocity: 96 }, 'trig-params')],
+  },
+  {
+    id: 'dt2-tom-dark',
+    role: 'tom',
+    character: 'dark',
+    voice: 'track',
+    title: 'Low tom under the 4-pole, retrigged across the fill',
+    verified: false,
+    /**
+     * `VFAD` is here because `RTRG` is: p.54 defines it as the velocity curve of the retrig, and
+     * -32 "fades out to half the velocity during the set length". A roll that arrives at the same
+     * weight it left is a machine playing a fill, so the curve is part of the gesture rather than
+     * a decoration on it.
+     */
+    sourceAudio: {
+      need: 'A low tom one-shot with the pitch drop already recorded into it, skin and all',
+    },
+    params: [src('ONESHOT'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('AHD'), hold(44), vfad(-32)],
+    articulation: [
+      art('accent', { velocity: 116 }, 'trig-params'),
+      art('fill', { retrig: true, 'retrig-rate': '1/24' }, 'retrig'),
+    ],
+  },
+  {
+    id: 'dt2-tom-bright',
+    role: 'tom',
+    character: 'bright',
+    voice: 'track',
+    title: 'Mid tom with the stick left in',
+    verified: false,
+    /**
+     * The second tom, and the only role on this box carrying two recipes for a reason other than
+     * taste: §3.5 refuses a substitution between opposite characters, and `bright` and `dark` are
+     * opposites. One recipe here would leave whichever direction asked for the other end with no
+     * tom on a box that plainly has sixteen tracks to put one on.
+     */
+    sourceAudio: {
+      need: 'A mid or high tom one-shot recorded close, with the stick attack intact',
+    },
+    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), hold(26)],
+    articulation: [
+      art('offbeat', { velocity: 104 }, 'trig-params'),
+      art('fill', { velocity: 120 }, 'trig-params'),
+    ],
+  },
+  {
+    id: 'dt2-noise-dirty',
+    role: 'noise',
+    character: 'dirty',
+    voice: 'track',
+    title: 'Noise burst through the legacy filter, struck rather than held',
+    verified: false,
+    /**
+     * `LEGACY` rather than `LOWPASS 4`: p.108 gives it a 2-pole, 12 dB/octave slope against the
+     * 4-pole's 24 dB (p.105), and on a source that is all top end the shallower slope is what
+     * leaves the part audible after the filter has done its job.
+     *
+     * Struck rather than looped, because the direction that asks for `noise` patterns it on
+     * `offbeat` and `accent`. A bed would be `FORWARD LOOP` and a different recipe.
+     */
+    sourceAudio: {
+      need:
+        'A noise recording with movement in it, such as tape hiss, a vinyl run-out or a cymbal ' +
+        'wash; flat white noise gives the filter nothing to reveal',
+    },
+    params: [src('ONESHOT'), play('FORWARD'), fltr('LEGACY'), ampMode('AHD'), hold(10)],
+    articulation: [
+      art('offbeat', { velocity: 90 }, 'trig-params'),
+      art('accent', { velocity: 112 }, 'trig-params'),
+    ],
   },
   {
     id: 'dt2-vox-chop-bright',
@@ -459,6 +619,113 @@ const recipes: Recipe[] = [
     },
     params: [src('STRETCH'), play('FORWARD LOOP'), fltr('LOWPASS 4'), ampMode('ADSR'), lfoMode('FRE'), fade(24)],
     articulation: [art('downbeat', { 'note-length': 64 }, 'trig-params')],
+  },
+  {
+    id: 'dt2-lead-bright',
+    role: 'lead',
+    character: 'bright',
+    voice: 'track',
+    title: 'One sample played as a line, a note lock on every trig',
+    verified: false,
+    /**
+     * A lead on this box is one track and one voice (p.15), so it is monophonic by construction
+     * and nothing here has to say so. The pitch comes from the same place the stab's does: `NOTE`
+     * on TRIG PAGE 1, locked per step (p.53), with `TUNE` snapping to semitones by hand if the
+     * line is played in rather than written (p.93).
+     *
+     * `ADSR` rather than `AHD`, because a lead is held for whatever `LEN` the trig carries and an
+     * AHD envelope decides that itself. `HOLD` is therefore absent, and p.56 says it would be
+     * unavailable anyway.
+     */
+    sourceAudio: {
+      need:
+        'A single sustained tone of known pitch, one note only, with a clean start; every trig ' +
+        'repitches this one file, so anything recorded into it transposes with it',
+    },
+    params: [src('ONESHOT'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('ADSR')],
+    articulation: [art('downbeat', { velocity: 110, 'note-length': 12 }, 'trig-params')],
+  },
+  {
+    id: 'dt2-arp-clean',
+    role: 'arp',
+    character: 'clean',
+    voice: 'track',
+    title: 'Arpeggio written onto the grid, one note to a trig',
+    verified: false,
+    /**
+     * **This box has no arpeggiator.** The word does not occur anywhere in the manual, and the
+     * index (p.116) has no entry for one. So an `arp` here is a figure placed on the sequencer,
+     * a `NOTE` lock to each trig (p.53), and that is what the guide should say rather than
+     * pointing at a control the reader will go looking for and not find.
+     *
+     * Written out rather than warped from a recorded arpeggio, which the STRETCH machine would
+     * also do: a recording moves as a block under a `NOTE` lock, so it keeps whatever chord it
+     * was played over and stops following the direction's harmony after the first change.
+     *
+     * `clean` covers the `bright` request too, at §3.5's substitution distance of 2.
+     */
+    sourceAudio: {
+      need: 'A short plucked or struck tone of known pitch, one note, decaying inside one step',
+    },
+    params: [src('ONESHOT'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('AHD'), hold(8)],
+    articulation: [
+      art('offbeat', { velocity: 92, 'note-length': 4 }, 'trig-params'),
+      art('ghost', { velocity: 56, probability: 80 }, 'trig-params'),
+    ],
+  },
+  {
+    id: 'dt2-acid-hard',
+    role: 'acid',
+    character: 'hard',
+    voice: 'track',
+    title: 'Sampled acid line, the glide completing in a fixed time',
+    verified: false,
+    /**
+     * The slide is what makes this role that role, and this box has one: `PORT` on TRIG PAGE 2
+     * (p.55), configured in SOUND SETTINGS > TRACK > PORTAMENTO (p.38). Three of that screen's
+     * four settings are here.
+     *
+     *  - `SLOPE CONSTANT TIME`, because p.38's other slope takes longer over wider intervals, and
+     *    a line that glides for a different length of time depending on the interval stops
+     *    sitting on the sixteenths.
+     *  - `STYLE GLIDE`, p.38's continuous portamento. `GLISSANDO` quantises to semitones, which
+     *    is a staircase rather than a slide.
+     *  - `LEGATO ONLY ON`, so the glide happens between held notes and the unheld ones land flat.
+     *    That is the 303 behaviour this role is named after, and it is why the accents below are
+     *    the interesting trigs rather than all of them.
+     *
+     * `AMOUNT` is the fourth and stays off: p.38 names 100 as a full glide and prints no scale
+     * for it, so any value would be a number with nothing behind it.
+     *
+     * **`LEGATO ONLY OFF` is the setting that lets the sequencer decide.** p.38's `ON` glides
+     * only from a note still being held, which on a grid means engineering an overlap in `LEN`
+     * before the glide will happen at all. `OFF` glides from the last note played, so the `PORT`
+     * lock below is the whole decision about which steps slide.
+     */
+    sourceAudio: {
+      need:
+        'A short saw or square bass tone of one known pitch, with no filter movement recorded ' +
+        'into it; the filter is the part this recipe is for',
+    },
+    routing:
+      '**Slide:** `PORT` is on TRIG PAGE 2 and locks per step like the rest of the track ' +
+      'parameters (p.53, p.55), so the accented steps below carry the glide and the others step ' +
+      'flat. How it glides is the PORTAMENTO block in SOUND SETTINGS > TRACK, set above; `PTIM` ' +
+      'sets how long it takes and this manual prints no scale for it, so find that one by ear',
+    params: [
+      src('ONESHOT'),
+      play('FORWARD'),
+      fltr('LOWPASS 4'),
+      ampMode('AHD'),
+      hold(6),
+      portSlope('CONSTANT TIME'),
+      portStyle('GLIDE'),
+      portLegato('OFF'),
+    ],
+    articulation: [
+      art('offbeat', { velocity: 88 }, 'trig-params'),
+      art('accent', { velocity: 127, portamento: true }, 'portamento'),
+    ],
   },
   {
     id: 'dt2-riser-bright',
@@ -550,6 +817,39 @@ const recipes: Recipe[] = [
     },
     params: [src('STRETCH'), play('FORWARD LOOP'), fltr('LOWPASS 4'), ampMode('ADSR'), lfoMode('FRE'), fade(32)],
     articulation: [art('downbeat', { 'note-length': 96 }, 'trig-params')],
+  },
+  {
+    id: 'dt2-sweep-soft',
+    role: 'sweep',
+    character: 'soft',
+    voice: 'track',
+    title: 'A recorded sweep stretched to land on the change',
+    verified: false,
+    /**
+     * §4.2's transitional roles, and the sampler's answer to one: load the sweep rather than
+     * build it. `STRETCH` is what makes that a bar count rather than a guess, since p.96 has it
+     * stretching a sample "to the tempo of your project or pattern" with `BARS` setting the
+     * sample's duration in bars. A four-bar sweep set to four bars ends where the section does,
+     * at any BPM the direction picks.
+     *
+     * **The LFO would be the other way to do this and it cannot be authored here.** A sweep is an
+     * LFO walking the cutoff, and naming an LFO without naming what it moves is the instruction
+     * #332 found unfinishable. p.114 lists the audio-track destinations and prints the filter's
+     * as `FILTER: (machine dependent parameters)`, so the on-screen spelling of the cutoff
+     * destination appears nowhere in this manual. Writing one would put a word on the screen the
+     * box does not show, which is the same reason `LFO WAVE` is absent from this manifest.
+     *
+     * **No articulation, and this one is checked rather than assumed** (#108). No direction
+     * authors a step variant for `sweep`, so `selectPattern` returns `none` in every section and
+     * there is no slot for a gesture to address. See `lib/core/reachability.ts` on why that is a
+     * standing state of the template library and not a hole in this recipe.
+     */
+    sourceAudio: {
+      need:
+        'A recording of a sweep, four bars or longer, that arrives at its top or bottom exactly ' +
+        'at the end; BARS stretches it to the section, so where it ends is where the change is',
+    },
+    params: [src('STRETCH'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('ADSR')],
   },
 ]
 
@@ -704,6 +1004,7 @@ export const device: Device = {
     'trig-params': 'Hold a [TRIG] key, turn DATA ENTRY',
     'micro-timing': 'Hold [TRIG], press [LEFT]/[RIGHT]',
     retrig: 'Press [TRIG PARAMETERS] twice',
+    portamento: 'Press [TRIG PARAMETERS] twice, hold [TRIG]',
     machine: 'Hold [FUNC], press [SRC]',
   },
 
