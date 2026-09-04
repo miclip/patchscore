@@ -2,11 +2,19 @@ import { describe, expect, it } from 'vitest'
 import {
   DeviceSchema,
   NEUTRAL_MOOD,
+  expand,
+  isSustainedPart,
+  moodState,
+  noteInstruction,
+  renderGuide,
   resolve,
   type AuthoredParam,
   type Recipe,
+  type ResolvedAssignment,
+  type Role,
 } from '../lib/core/index'
 import { device } from '../lib/devices/polyend-play-plus/index'
+import { DEVICES } from '../lib/devices/registry.generated'
 import { device as trackerMini } from '../lib/devices/polyend-tracker-mini/index'
 import { TEMPLATES } from '../lib/templates/index'
 
@@ -550,5 +558,330 @@ describe('Play+ manifest', () => {
     const pools = new Set(result.assignments.map((a) => byId.get(a.recipe?.id ?? '')))
     expect(pools.has('track-sample')).toBe(true)
     expect(pools.has('track-synth')).toBe(true)
+  })
+})
+
+/**
+ * §2.1/#334. **This box authors no trigger note on either pool, and the two pools decline for
+ * different reasons** — which is why one assertion could not have covered both.
+ *
+ * **`track-sample`: the note exists and the number does not.** p.67's `Sample` is *"The sample
+ * that is selected and used as a steps sound source. Typically would be set in the work step then
+ * placed on the grid"*, so a step carries its sound before any note is considered. p.64 then
+ * gives the note a default in so many words: *"Play+ assumes the note 'C4' as the default for the
+ * sample and adjustments would therefore reference this expected default."* That is the fact
+ * `TriggerNote` exists for, and it is still unauthorable, because the type is a `note` **and** a
+ * `midi` and no page in the 254 anchors `C4` to a number — p.211's MIDI-mode table gives `Note`
+ * as *"MIDI Note Tune"* with no number beside it.
+ *
+ * **The one `Middle C` in the manual is the connected Tracker's.** p.226 prints two settings
+ * columns; `Middle C  C-5` stands in the left one, under `Tracker:` and `Config > MIDI`. Under
+ * that setting the Tracker Mini's `C5` is 60 (#352), so borrowing the line would make this box's
+ * `C4` 48 — a whole octave, invisible on the page.
+ *
+ * **`track-synth`: there is no one note to have.** PERC gives each part its own address — Kick
+ * `C4`, Snare `D4`, Hi Hat `E4-G4`, Cymbal `A4`, Percussion `B4`, Toms `C0-B3` and `C5` up
+ * (pp.111-113) — while `ACD` and `WTFM` on the same pool take musical notes. A pool-wide value
+ * would have to be one of six drum addresses and a pitch at once.
+ */
+describe('trigger notes: read for, and declined (§2.1/#334)', () => {
+  const SEEDS = [1, 2, 3, 4, 5, 6]
+
+  it('authors none on either pool, and none on any recipe either', () => {
+    // Both halves, because the field exists in two places and only one of them is a pool.
+    expect(device.voices.filter((v) => v.triggerNote !== undefined)).toEqual([])
+    const claiming = device.recipes.filter(
+      (r) => (r as Recipe & { triggerNote?: unknown }).triggerNote !== undefined,
+    )
+    expect(claiming.map((r) => r.id)).toEqual([])
+  })
+
+  it('stays off the library roster of boxes that author one', () => {
+    // `test/tracker-mini.test.ts` pins that roster exactly; this is the same fact asked from the
+    // side of the box that declines, so a note added here fails in its own file as well as there.
+    const authoring = DEVICES.filter((d) => d.voices.some((v) => v.triggerNote !== undefined))
+    expect(authoring.map((d) => d.id)).not.toContain('polyend-play-plus')
+  })
+
+  it('expands to sixteen members across two pools, none of which carries a note', () => {
+    const members = expand(device)
+    expect(members.length).toBe(16)
+    expect(members.filter((m) => m.poolId === 'track-sample').length).toBe(8)
+    expect(members.filter((m) => m.poolId === 'track-synth').length).toBe(8)
+    expect(members.filter((m) => m.triggerNote !== undefined)).toEqual([])
+  })
+
+  /**
+   * **The synth pool's reason, read off the recipes rather than restated.**
+   *
+   * Six PERC recipes, six distinct note addresses, on the same pool as two ordinary synth patches
+   * that take musical notes. This is what a pool-wide `triggerNote` would have had to be, and it
+   * fails if PERC ever loses a part group or a `routing` stops naming its address.
+   */
+  it('carries six PERC note addresses on the same pool as two ordinary patches', () => {
+    const perc = synthRecipes.filter((r) => percGroup(r) !== undefined)
+    const plain = synthRecipes.filter((r) => percGroup(r) === undefined)
+    expect(perc.length).toBe(6)
+    expect(plain.length).toBe(2)
+
+    // pp.111-113, one address per part group, each already recorded where the reader meets it.
+    const ADDRESSES: Record<string, string> = {
+      KICK: 'C4',
+      SNARE: 'D4',
+      'HI HAT': 'E4-G4',
+      CYMBAL: 'A4',
+      PERCUSSION: 'B4',
+      TOM: 'C0-B3',
+    }
+    const seen = new Set<string>()
+    for (const recipe of perc) {
+      const group = percGroup(recipe)
+      if (group === undefined) throw new Error('expected a PERC group')
+      const address = ADDRESSES[group]
+      expect(address, `${recipe.id} is a PERC part this test has no address for`).toBeDefined()
+      expect(recipe.routing ?? '', recipe.id).toContain(address ?? '')
+      seen.add(group)
+    }
+    // Six *distinct* groups: the point is that they differ, not merely that six exist.
+    expect([...seen].sort()).toEqual(['CYMBAL', 'HI HAT', 'KICK', 'PERCUSSION', 'SNARE', 'TOM'])
+  })
+
+  /**
+   * The sample pool's reason, from the other side: `Note` is deliberately not authored as a
+   * parameter either (see the head note's "What is deliberately not authored"), so there is no
+   * value anywhere in this manifest that a trigger note could be quietly promoted from.
+   */
+  it('authors no Note parameter on any sample recipe, and no note-named enum option anywhere', () => {
+    const noteName = /^[A-G](#|b)?-?\d$/
+
+    for (const recipe of sampleRecipes) {
+      expect(named(recipe, 'NOTE'), recipe.id).toBeUndefined()
+    }
+    for (const recipe of device.recipes) {
+      for (const param of params(recipe)) {
+        if (param.kind !== 'enum') continue
+        expect(
+          param.options.values.filter((v) => noteName.test(v)),
+          `${recipe.id}/${param.name}`,
+        ).toEqual([])
+      }
+    }
+  })
+
+  /**
+   * A part phase 5 draws a grid for: not owned by a hook (#100), not sustained (§4.2), and with at
+   * least one section whose variant resolved (§6.3).
+   *
+   * One definition, used by the sweep and by the page test. `noteInstruction` answers `none` for a
+   * hooked or sustained part as well as for a blank grid part, so a page test asking it whether a
+   * grid exists would count parts that draw none and then pass against a guide with nothing in it.
+   */
+  function drawsGrid(a: ResolvedAssignment): boolean {
+    return (
+      a.hookAuthority === undefined &&
+      !isSustainedPart(a) &&
+      a.patterns.some((p) => p.selection.outcome !== 'none')
+    )
+  }
+
+  /** Every part this box takes, split by what phase 5 actually draws for it. */
+  function sweep() {
+    const grid: { where: string; role: Role; kind: string; poolId: string }[] = []
+    const hooked: string[] = []
+    const sustained: string[] = []
+    const noPattern: string[] = []
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          const where = `${template.id}/${a.role}`
+          const carrier = a.assignables[0]
+          if (drawsGrid(a)) {
+            grid.push({
+              where,
+              role: a.role,
+              kind: noteInstruction(a).kind,
+              poolId: carrier?.poolId ?? carrier?.voiceId ?? 'none',
+            })
+          } else if (a.hookAuthority !== undefined) hooked.push(where)
+          else if (isSustainedPart(a)) sustained.push(where)
+          else noPattern.push(where)
+        }
+      }
+    }
+    return { grid, hooked, sustained, noPattern }
+  }
+
+  /**
+   * **The measurement, taken rather than remembered.** Every direction against this box alone,
+   * seeds 1-6.
+   *
+   * 240 is #334's figure for this device and it is expected to stay put, because nothing here is
+   * a gap to close. The number moves when a direction gains or loses a part, and a diff is a
+   * prompt to re-read the head note rather than a failure. What must not move is the relationship
+   * — no part ever gets a `trigger`, because neither pool has a note to give one.
+   */
+  it('leaves 240 grid parts blank, and pins how many there are', () => {
+    const { grid } = sweep()
+
+    expect(grid.length).toBe(264)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(240)
+
+    // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
+    // prints are the direction's own.
+    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch'])
+  })
+
+  /**
+   * **The split, which a total would hide, and it runs the opposite way to the Roland pair's.**
+   *
+   * The synth pool is blank end to end — every part on it is PERC or an ordinary patch, and
+   * neither has a pool-wide note. The sample pool is where all 24 of this box's printed notes
+   * land, and they come from the direction rather than from the device.
+   */
+  it('splits the blanks the way the two pools differ', () => {
+    const byPool = new Map<string, { grid: number; blank: number }>()
+    for (const g of sweep().grid) {
+      const entry = byPool.get(g.poolId) ?? { grid: 0, blank: 0 }
+      entry.grid += 1
+      if (g.kind === 'none') entry.blank += 1
+      byPool.set(g.poolId, entry)
+    }
+    expect([...byPool].sort()).toEqual([
+      ['track-sample', { grid: 96, blank: 72 }],
+      ['track-synth', { grid: 168, blank: 168 }],
+    ])
+  })
+
+  it('prints a note only where the direction asked for a pitch of its own', () => {
+    // §4.1's precedence with one arm missing. The 24 that carry a note are `sub` parts on the
+    // sample pool, where the pitch is the direction's musical decision (#340) and owes this box
+    // nothing — and none of them is on a synth track.
+    const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
+    expect(pitched.length).toBe(24)
+    expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
+    expect([...new Set(pitched.map((g) => g.poolId))]).toEqual(['track-sample'])
+  })
+
+  it('leaves the blanks on the roles a step already answers', () => {
+    // Pinned by role, not only by total: a count alone would survive one role's parts being
+    // swapped for another's.
+    const counts = new Map<Role, number>()
+    for (const g of sweep().grid) {
+      if (g.kind !== 'none') continue
+      counts.set(g.role, (counts.get(g.role) ?? 0) + 1)
+    }
+    expect(
+      [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
+    ).toEqual([
+      ['closed-hat', 42],
+      ['ghost-perc', 42],
+      ['kick', 42],
+      ['clap', 18],
+      ['open-hat', 18],
+      ['rim', 18],
+      ['snare', 18],
+      ['metallic', 12],
+      ['arp', 6],
+      ['impact', 6],
+      ['noise', 6],
+      ['ride', 6],
+      ['tom', 6],
+    ])
+  })
+
+  it('accounts for every part that draws no grid, by which reason', () => {
+    // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
+    // part with no variant anywhere nothing to program.
+    const { grid, hooked, sustained, noPattern } = sweep()
+    expect(hooked.length).toBe(78)
+    expect(sustained).toEqual([])
+    expect(noPattern.length).toBe(30)
+    expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/sweep',
+      'ambient-dub/texture',
+      'generative-drift/sweep',
+      'hip-hop/texture',
+      'industrial-techno/riser',
+    ])
+
+    // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
+    // classify — which is what would make the 240 above an undercount rather than a measurement.
+    let assignments = 0
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        assignments += resolve({ devices: [device], template, mood: moodState(), seed })
+          .assignments.length
+      }
+    }
+    expect(grid.length + hooked.length + sustained.length + noPattern.length).toBe(assignments)
+  })
+
+  /**
+   * The resolved field itself, across every part rather than only the ones that draw a grid.
+   * `noteInstruction` folds the trigger arm in with the pitch arm, so this is the one assertion
+   * that a hooked or sustained part did not quietly acquire one either.
+   */
+  it('resolves no trigger note on any assignment, in any direction', () => {
+    let seen = 0
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          seen += 1
+          expect(a.triggerNote, `${template.id}/${a.role} seed ${String(seed)}`).toBeUndefined()
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(0)
+  })
+
+  /**
+   * §8. **The reader-facing half**, checked on the page rather than only on the resolver.
+   *
+   * The count of parts that actually draw a grid is asserted non-zero first, or an empty render
+   * would pass this forever. The negative is the fragile kind here more than anywhere: `C4` is
+   * printed in this box's own manual and would read as correct on the page.
+   */
+  it('never prints a trigger note on a rendered page, across every direction and seed', () => {
+    let drawn = 0
+    for (const template of TEMPLATES) {
+      for (const seed of [1, 7]) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        drawn += result.assignments.filter(drawsGrid).length
+        expect(renderGuide(result), `${template.id} seed ${String(seed)}`).not.toContain(
+          'Trigger note',
+        )
+      }
+    }
+    expect(drawn).toBeGreaterThan(0)
+  })
+
+  /**
+   * §2.1/#352. **The octave the borrowed line would have cost, asserted rather than described.**
+   *
+   * p.226's `Middle C  C-5` is the connected Tracker's setting. Under it, `C5` is MIDI 60 — the
+   * finding `test/tracker-mini.test.ts` already carries — so reading `C4` off p.64 under the same
+   * convention gives 48, where scientific pitch notation gives 60. Twelve semitones apart, with
+   * nothing on a rendered page to show which one a reader was handed.
+   *
+   * This asserts the arithmetic, not a value in the manifest, and that is the point: there is no
+   * value, and this is what the next author would need before there could be one.
+   */
+  it('records what the missing anchor would decide, without authoring a note from it', () => {
+    const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    const midiOf = (name: string, octave: number, middleCOctave: number) =>
+      (octave + (4 - middleCOctave) + 1) * 12 + NAMES.indexOf(name)
+
+    // Scientific pitch notation, where middle C is C4: p.64's C4 reads as 60.
+    expect(midiOf('C', 4, 4)).toBe(60)
+    // The Tracker's `Middle C C-5`, where C5 is 60 — so the same C4 reads as 48.
+    expect(midiOf('C', 5, 5)).toBe(60)
+    expect(midiOf('C', 4, 5)).toBe(48)
+    // An octave apart, which is the whole reason neither is written down.
+    expect(midiOf('C', 4, 4) - midiOf('C', 4, 5)).toBe(12)
+
+    // Nothing above is authored anywhere, which is the state this test exists to keep.
+    expect(device.voices.some((v) => v.triggerNote !== undefined)).toBe(false)
   })
 })

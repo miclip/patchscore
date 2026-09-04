@@ -85,6 +85,53 @@ import { PLAY_PLUS_PANEL } from './panel'
  *    names are not a numeric range and not a practical enum at 108 entries, so both sit as `text`
  *    with the span in the `note` where a reader can act on it.
  *
+ * ## No trigger note on either pool, and the two pools decline for different reasons (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 240, and the two pools have to be answered separately because they fail differently.
+ *
+ * ### `track-sample`: the note exists, and the number that would make it authorable does not
+ *
+ * A step on a sample track already carries its own sound. p.67's `Sample` is *"The sample that is
+ * selected and used as a steps sound source. Typically would be set in the work step then placed
+ * on the grid"*, so what a step needs is a sample and a position, and it has both before any note
+ * is considered.
+ *
+ * There **is** a note beside it, and p.64 gives it a default: `Note` *"Sets the pitch note for
+ * the sample"*, adjusted *"in semitones, 1 note per iteration"*, and — *"Play+ assumes the note
+ * 'C4' as the default for the sample and adjustments would therefore reference this expected
+ * default."* That is exactly the fact `TriggerNote` was built for, and it still cannot be
+ * authored, because **`TriggerNote` is a `note` *and* a `midi`** and no page in the 254 anchors
+ * `C4` to a number. p.211's MIDI-mode table gives `Note` as *"MIDI Note Tune — Tunes the MIDI
+ * note in semitone steps"*, with no number; the only numbered range on that page is a program
+ * change. §2.1 refuses `verified: false` on this field precisely so the missing half cannot be
+ * filled in by habit, and the habit here is expensive: read as scientific pitch notation `C4` is
+ * 60, and one octave is the difference between a sample playing as recorded and playing wrong.
+ *
+ * **The one `Middle C` in the manual is not this box's.** p.226's Tracker MIDI Integration prints
+ * two settings columns, and `Middle C  C-5` stands in the left one, under `Tracker:` and
+ * `Config > MIDI` — the *connected Tracker's* configuration page. The Play+ column beside it is
+ * `Menu > MIDI > CC Mapping > Jack Channel 1` and carries CC numbers only. Borrowing that line
+ * would be authoring this box from a screenshot of another one, and #352 is what it would cost:
+ * under `Middle C C-5` the Tracker Mini's `C5` **is** 60, so the same reading would make this
+ * box's `C4` 48.
+ *
+ * ### `track-synth`: there is no one note, because PERC's parts each have their own
+ *
+ * A pool's `triggerNote` addresses every member alike, and this pool holds two incompatible
+ * kinds of patch. On an ordinary synth patch — `ACD` and `WTFM` below — a note is a musical
+ * pitch the part plays, which is the direction's business and not a fixed address. On `PERC` the
+ * note *is* the address, and there are six of them: Kick `C4`, Snare `D4`, Hi Hat `E4-G4`, Cymbal
+ * `A4`, Percussion `B4`, Toms `C0-B3` and `C5` up (pp.111-113). Those are already recorded, on
+ * each PERC recipe's `routing`, which is the honest place for an instruction that addresses one
+ * part rather than the pool.
+ *
+ * So a pool-wide value would have to be one of six drum addresses and a musical pitch at once,
+ * and #334's third category — a note that selects *which sound* rather than which pitch — is the
+ * one `TriggerNote` explicitly declines to model until the vocabulary can say it.
+ *
+ * So the 240 blanks are correct output. The tests are in `test/polyend-play-plus.test.ts`.
+ *
  * ## Citation regime
  *
  * Legality is cited, authority almost never is. Every *range* and every *option set* is the
@@ -1447,6 +1494,16 @@ export const device: Device = {
    * a state the box can genuinely hold — one synth, every voice — and the manual's own example
    * spends them 3/3/2. A patch that needs its own share says so: the ACD recipe declares
    * `patchPolyphony: 1` because p.90 calls that engine monophonic.
+   *
+   * **No `triggerNote` on either pool** (§2.1/#334), declined separately because the two pools
+   * fail differently. On `track-sample` the fact exists and half of it is missing: p.64 states
+   * *"Play+ assumes the note 'C4' as the default for the sample"*, and no page in the 254 anchors
+   * `C4` to a number, so the required `midi` would have to be invented — and p.226's `Middle C
+   * C-5` belongs to the *connected Tracker's* `Config > MIDI`, not to this box. On `track-synth`
+   * there is no single note to have: PERC gives each part its own address (Kick `C4`, Snare `D4`,
+   * Hi Hat `E4-G4`, Cymbal `A4`, Percussion `B4`, Toms `C0-B3` and `C5` up, pp.111-113, carried on
+   * each recipe's `routing`) while an ordinary patch takes musical notes. See the head note; the
+   * tests are in `test/polyend-play-plus.test.ts`.
    */
   voices: [
     {
