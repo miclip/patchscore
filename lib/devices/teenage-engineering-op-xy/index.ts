@@ -87,6 +87,50 @@ import { OP_XY_PANEL } from './panel'
  * eight more places to put a part. p.5 calls all sixteen "tracks" and p.1's highlights say "16
  * programmable tracks"; p.42 is the one that governs here — *"instrument mode holds 8 instrument
  * tracks"*.
+ *
+ * ## No trigger note, because one pool holds both kinds of track (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 240, all on the one `track` pool, and the reason here is **structural** rather than a
+ * page nobody has read yet.
+ *
+ * **The keyboard means whatever the track's engine makes it mean.** p.11 puts a drum sampler on
+ * track 1 and *"the musical keyboard will now have 24 different drum sounds. one on each key"*;
+ * p.14 puts a synth engine on track 7 and *"the musical keyboard will play the 24 different
+ * notes."* The same twenty-four keys, on tracks nothing distinguishes, meaning two different
+ * things — and p.42 is what puts those tracks in one pool: *"an instrument can either be a
+ * sampler or a built-in synth engine."*
+ *
+ * `VoiceSpec.triggerNote` on a pool addresses **every member alike**; that is the whole
+ * definition of putting it there rather than on a member. Ten of the twenty recipes below load a
+ * sampler and ten load a synth engine, and all twenty sit on `voice: 'track'`. One note for that
+ * pool would be an addressing claim about a drum key and about a pitch at the same time.
+ *
+ * **Nothing narrower is printed either.** p.79 is the drum sampler, and it maps by recording
+ * rather than by table: *"the drum sampler allows you to trigger 24 different one shot samples
+ * across the musical keyboard"*, with key select being *"press a key to select it, it will light
+ * up and you can then record a sample to it."* Which sample sits on which key is the reader's own
+ * session, so there is no fixed map to read off even for the drum case. p.25 is the same shape
+ * from the sequencer side — *"keep holding record and begin playing on the keyboard. the notes
+ * will fill the sequencer"* — whatever was played.
+ *
+ * **And the box states no octave convention, so no `midi` is derivable.** p.11 does name the
+ * tutorial kit's keys, and names them without an octave: the lowest *'f'* for the kick, the *'g'*
+ * adjacent to it for the snare, *'c#'* for the hi-hat. p.14 then puts the octave under the
+ * reader's thumb — *"you can use the ( - ) and ( + ) buttons to change octaves."* The one place
+ * the guide writes a note *with* an octave is p.85, and it writes it about a file: *"the pitch of
+ * a sample can be set within the wav file's meta data, if not found OP–XY will look at the name,
+ * allowing you to write the note value there for example 'a3'."* That is metadata the reader
+ * authors, and nothing anchors it to a number — the guide's only reference table is §23, p.122,
+ * which is CCs end to end, and §24-§25 close the book with boot and credits. There is no MIDI
+ * implementation chart and no note map anywhere in it.
+ *
+ * §2.1 refuses `verified: false` on `TriggerNote` for exactly this case: a plausible `F2` written
+ * here would read as correct on the page and address nothing at the machine, and turning p.11's
+ * bare *'f'* into a MIDI number would need a mapping this manual does not contain.
+ *
+ * So the 240 blanks are correct output rather than a gap to close. The tests are in
+ * `test/teenage-engineering-op-xy.test.ts`.
  */
 
 /**
@@ -679,6 +723,16 @@ export const device: Device = {
    * model cannot express is that the eight share it, the same shape as the Tracker Mini's three
    * synth slots: a device-global budget the engine has no concept of. No template in this library
    * comes near it, so it is recorded here rather than improvised into the resolver.
+   *
+   * **No `triggerNote`** (§2.1/#334). A pool's note addresses every member alike, and this pool
+   * holds sampler tracks and synth-engine tracks together (p.42) — the same twenty-four keys are
+   * twenty-four drum sounds on one track (p.11) and twenty-four notes on the next (p.14), so one
+   * value would have to be a drum key and a pitch at once. Nothing narrower is printed either:
+   * the drum sampler's key map is made by recording rather than by table (p.79), and the guide
+   * states no octave convention to turn p.11's bare *'f'* into a `midi` — p.14 gives the octave
+   * buttons to the reader, p.85's `a3` is a filename the reader writes, and the only reference
+   * table in the book (§23, p.122) is CCs. See the head note; the tests are in
+   * `test/teenage-engineering-op-xy.test.ts`.
    */
   voices: [
     {
