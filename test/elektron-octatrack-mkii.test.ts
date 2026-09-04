@@ -5,11 +5,17 @@ import {
   NEUTRAL_MOOD,
   ROLES,
   expand,
+  isSustainedPart,
+  moodState,
+  noteInstruction,
   realisationOf,
+  renderGuide,
   resolve,
   resolveRecipe,
   type AuthoredParam,
   type Recipe,
+  type ResolvedAssignment,
+  type Role,
 } from '../lib/core/index'
 import { ARTICULABLE_PER_STEP, device } from '../lib/devices/elektron-octatrack-mkii/index'
 import { DEVICES } from '../lib/devices/registry.generated'
@@ -713,5 +719,289 @@ describe('Octatrack MKII says what audio to load (§3/#101)', () => {
     })
     expect(result.assignments.length).toBeGreaterThan(0)
     for (const a of result.assignments) expect(a.recipe.sourceAudio, a.recipe.id).toBeDefined()
+  })
+})
+
+/**
+ * §2.1/#334. **This box authors no trigger note, and its manual draws the line itself.**
+ *
+ * p.66 §12.4 lists the trig types, and the first two settle it: §12.4.1, *"Sample trigs trig the
+ * machine of the track, making the sample assigned to the machine play"*, against §12.4.2, *"Note
+ * trigs trig notes on the MIDI tracks"*. A step on an audio track is the first kind — it fires
+ * the machine and has no note on it to write. p.68's default TRIG mode agrees: `[TRIG 9–16]`
+ * *"trig the machines of the eight tracks"*.
+ *
+ * External note addressing exists and none of it is this field:
+ *
+ *  - p.70 §12.8 makes it a project setting, `AUDIO NOTE IN`, whose first option is `OFF` — *"No
+ *    incoming MIDI notes affect the tracks, meaning tracks or machines can't be triggered
+ *    externally."*
+ *  - p.137's C.1 maps the eight tracks to eight *different* notes, `C2 (36)`–`G2 (43)`, where
+ *    `triggerNote` sits on the pool and reaches every member alike.
+ *  - p.137's `C6 (84)` *"Track Sample Pitch 0"* is the middle of a transpose table, not an
+ *    address.
+ *
+ * The slice map on p.139 is #369's, not this field's.
+ */
+describe('trigger notes: read for, and declined (§2.1/#334)', () => {
+  const SEEDS = [1, 2, 3, 4, 5, 6]
+
+  it('authors none on the pool, and none on any recipe either', () => {
+    // Both halves, because the field exists in two places and only one of them is the pool.
+    expect(device.voices.filter((v) => v.triggerNote !== undefined)).toEqual([])
+    const claiming = device.recipes.filter(
+      (r) => (r as Recipe & { triggerNote?: unknown }).triggerNote !== undefined,
+    )
+    expect(claiming.map((r) => r.id)).toEqual([])
+  })
+
+  it('stays off the library roster of boxes that author one', () => {
+    // `test/tracker-mini.test.ts` pins that roster exactly; this is the same fact asked from the
+    // side of the box that declines, so a note added here fails in its own file as well as there.
+    const authoring = DEVICES.filter((d) => d.voices.some((v) => v.triggerNote !== undefined))
+    expect(authoring.map((d) => d.id)).not.toContain('elektron-octatrack-mkii')
+  })
+
+  it('expands to eight audio members on one pool, none of which carries a note', () => {
+    // The eight MIDI tracks are the ones p.66 gives note trigs to, and they are not voices here
+    // because they make no sound — so there is no second pool to hold an exception in.
+    expect(device.voices.length).toBe(1)
+    const members = expand(device)
+    expect(members.length).toBe(8)
+    expect(members.every((m) => m.poolId === 'track')).toBe(true)
+    expect(members.filter((m) => m.triggerNote !== undefined)).toEqual([])
+  })
+
+  /**
+   * **p.137's map, asserted as arithmetic rather than described.** Eight tracks, eight different
+   * notes, `C2 (36)` through `G2 (43)` in semitone steps. `triggerNote` reaches every member of a
+   * pool alike (§2.2), so any single value would be wrong for seven of the eight — and this is
+   * the assertion that says so in numbers instead of prose.
+   */
+  it('is addressed externally by eight different notes, which one pool-wide field cannot be', () => {
+    const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    // p.137 prints `C4 (60)`, so this table's octave numbering puts C0 at 12 and MIDI 0 at C-1.
+    const midiOf = (name: string, octave: number) => (octave + 1) * 12 + NAMES.indexOf(name)
+
+    expect(midiOf('C', 2)).toBe(36) //  "Audio Track 1  Sample Trigger"
+    expect(midiOf('G', 2)).toBe(43) //  "Audio Track 8  Sample Trigger"
+    // Eight consecutive semitones for eight tracks: one per member, which is the point.
+    expect(midiOf('G', 2) - midiOf('C', 2) + 1).toBe(expand(device).length)
+  })
+
+  /**
+   * p.137's `C6 (84)` is the one note in the appendix that means "original pitch", and it means
+   * it as the zero of a transpose table rather than as an address. Asserted as the middle of that
+   * table, because reading it alone is exactly how it would get miscited into `triggerNote`.
+   */
+  it('reads C6 as the zero of a transpose table, not as an address', () => {
+    const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    const midiOf = (name: string, octave: number) => (octave + 1) * 12 + NAMES.indexOf(name)
+
+    expect(midiOf('C', 6)).toBe(84) //  "Track Sample Pitch 0"
+    expect(midiOf('C', 5)).toBe(72) //  "Track Sample Pitch -12", one octave down
+    expect(midiOf('E', 6)).toBe(88) //  "Track Sample Pitch +4", four semitones up
+    // The offsets are the note's distance from C6, which is what makes it a scale and not a name.
+    expect(midiOf('C', 5) - midiOf('C', 6)).toBe(-12)
+    expect(midiOf('E', 6) - midiOf('C', 6)).toBe(4)
+  })
+
+  /**
+   * §2.1/#369. **The second slice-addressed box**, recorded here so the follow-up cannot be lost
+   * and so nobody reaches for `triggerNote` to solve it.
+   *
+   * p.139 maps `C0 (12)`–`D#5 (75)` onto *"Slice 1 – Slice 64"*, sixty-four consecutive
+   * semitones, and p.70 makes the mode conditional on `SLIC` being `ON`. `ot-vox-chop-bright` is
+   * the recipe that turns it on, so the case is live on a real guide.
+   */
+  it('carries one sliced recipe, which is #369 and not a trigger note', () => {
+    const sliced = device.recipes.filter((r) => {
+      const p = named(r, 'SLIC')
+      return p?.kind === 'enum' && p.value === 'ON'
+    })
+    expect(sliced.map((r) => r.id)).toEqual(['ot-vox-chop-bright'])
+
+    const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    const midiOf = (name: string, octave: number) => (octave + 1) * 12 + NAMES.indexOf(name)
+    expect(midiOf('C', 0)).toBe(12) //  "The first slice is played on C0"
+    expect(midiOf('D#', 5)).toBe(75) // the far end of the same row
+    // Sixty-four consecutive semitones for sixty-four slices: an ordinal, not a pitch.
+    expect(midiOf('D#', 5) - midiOf('C', 0) + 1).toBe(64)
+
+    // And the field stays empty on the box that has it, which is the state #369 inherits.
+    expect(device.voices.some((v) => v.triggerNote !== undefined)).toBe(false)
+  })
+
+  /**
+   * A part phase 5 draws a grid for: not owned by a hook (#100), not sustained (§4.2), and with
+   * at least one section whose variant resolved (§6.3).
+   */
+  function drawsGrid(a: ResolvedAssignment): boolean {
+    return (
+      a.hookAuthority === undefined &&
+      !isSustainedPart(a) &&
+      a.patterns.some((p) => p.selection.outcome !== 'none')
+    )
+  }
+
+  /** Every part this box takes, split by what phase 5 actually draws for it. */
+  function sweep() {
+    const grid: { where: string; role: Role; kind: string }[] = []
+    const hooked: string[] = []
+    const sustained: string[] = []
+    const noPattern: string[] = []
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          const where = `${template.id}/${a.role}`
+          if (drawsGrid(a)) grid.push({ where, role: a.role, kind: noteInstruction(a).kind })
+          else if (a.hookAuthority !== undefined) hooked.push(where)
+          else if (isSustainedPart(a)) sustained.push(where)
+          else noPattern.push(where)
+        }
+      }
+    }
+    return { grid, hooked, sustained, noPattern }
+  }
+
+  /**
+   * **The measurement, taken rather than remembered.** Every direction against this box alone,
+   * seeds 1-6. The number moves when a direction gains or loses a part, and a diff is a prompt to
+   * re-read the head note rather than a failure. What must not move is the relationship — no part
+   * ever gets a `trigger`, because the pool has no note to give one.
+   */
+  it('leaves 186 grid parts blank, and pins how many there are', () => {
+    const { grid } = sweep()
+
+    expect(grid.length).toBe(210)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(186)
+
+    // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
+    // prints are the direction's own.
+    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch'])
+  })
+
+  it('prints a note only where the direction asked for a pitch of its own', () => {
+    // §4.1's precedence with one arm missing. The 24 are `sub` parts.
+    const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
+    expect(pitched.length).toBe(24)
+    expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
+  })
+
+  it('leaves the blanks on the roles a loaded sample answers, the sliced one included', () => {
+    // Pinned by role, not only by total: a count alone would survive one role's parts being
+    // swapped for another's. `vox-chop` appearing here is `ot-vox-chop-bright` reaching a page,
+    // which is what makes #369 a live case rather than a note in a folder.
+    const counts = new Map<Role, number>()
+    for (const g of sweep().grid) {
+      if (g.kind !== 'none') continue
+      counts.set(g.role, (counts.get(g.role) ?? 0) + 1)
+    }
+    expect(
+      [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
+    ).toEqual([
+      ['kick', 48],
+      ['closed-hat', 42],
+      ['ghost-perc', 24],
+      ['clap', 18],
+      ['metallic', 18],
+      ['snare', 18],
+      ['impact', 6],
+      ['open-hat', 6],
+      ['vox-chop', 6],
+    ])
+  })
+
+  it('accounts for every part that draws no grid, by which reason', () => {
+    // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
+    // part with no variant anywhere nothing to program.
+    const { grid, hooked, sustained, noPattern } = sweep()
+    expect(hooked.length).toBe(126)
+    expect(sustained).toEqual([])
+    expect(noPattern.length).toBe(24)
+    expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/sweep',
+      'ambient-dub/texture',
+      'hip-hop/texture',
+      'industrial-techno/riser',
+    ])
+
+    // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
+    // classify — which is what would make the 186 above an undercount rather than a measurement.
+    let assignments = 0
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        assignments += resolve({ devices: [device], template, mood: moodState(), seed })
+          .assignments.length
+      }
+    }
+    expect(grid.length + hooked.length + sustained.length + noPattern.length).toBe(assignments)
+  })
+
+  /**
+   * The resolved field itself, across every part rather than only the ones that draw a grid.
+   * `noteInstruction` folds the trigger arm in with the pitch arm, so this is the one assertion
+   * that a hooked part did not quietly acquire one either.
+   */
+  it('resolves no trigger note on any assignment, the sliced part included', () => {
+    let seen = 0
+    let slicedParts = 0
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          seen += 1
+          if (a.role === 'vox-chop') slicedParts += 1
+          expect(a.triggerNote, `${template.id}/${a.role} seed ${String(seed)}`).toBeUndefined()
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(0)
+    // The sliced role actually occurs, or the clause above would be vacuous.
+    expect(slicedParts).toBeGreaterThan(0)
+  })
+
+  /**
+   * §8. **The reader-facing half**, checked on the page rather than only on the resolver.
+   *
+   * The count of parts that actually draw a grid is asserted non-zero first, or an empty render
+   * would pass this forever.
+   */
+  it('never prints a trigger note on a rendered page, across every direction and seed', () => {
+    let drawn = 0
+    for (const template of TEMPLATES) {
+      for (const seed of [1, 7]) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        drawn += result.assignments.filter(drawsGrid).length
+        expect(renderGuide(result), `${template.id} seed ${String(seed)}`).not.toContain(
+          'Trigger note',
+        )
+      }
+    }
+    expect(drawn).toBeGreaterThan(0)
+  })
+
+  /**
+   * §2.1/#352. **The octave convention — and this box does not share its siblings'.**
+   *
+   * p.137's table prints `C4 (60)`, where the Digitakt, Digitakt II, Digitone and Digitone II
+   * manuals all print `C5` for 60. Same maker, two conventions, so a note name copied between two
+   * Elektron folders would land an octave out with nothing to catch it.
+   *
+   * This asserts the arithmetic, not a value in the manifest, and that is the point.
+   */
+  it('records an octave convention an octave off its siblings, without authoring a note', () => {
+    const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    // C4 = 60 means MIDI 0 is C-1, so MIDI n is octave floor(n / 12) - 1.
+    const midiOf = (name: string, octave: number) => (octave + 1) * 12 + NAMES.indexOf(name)
+
+    expect(midiOf('C', 4)).toBe(60) //  p.137, "Combo rec"
+    expect(midiOf('C', 1)).toBe(24) //  p.137, "Audio Track 1 Play"
+    expect(midiOf('C', 0)).toBe(12) //  p.139, the first slice
+    // The sibling manuals put 60 an octave up, at C5, on the same maker's own pages.
+    expect(midiOf('C', 5)).toBe(72)
+
+    expect(device.voices.some((v) => v.triggerNote !== undefined)).toBe(false)
   })
 })
