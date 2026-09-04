@@ -293,14 +293,30 @@ function shuffle(): AuthoredNumericParam {
  * the part moves across bars rather than wobbling within one.
  *
  * **`TARGET` is a `text` param because the manual's Value column is literally `-`.** It names no
- * legal set at all, so there is nothing to cite and nothing to pick from; what the recipe can
- * honestly say is which parameter it means, and `FILTER` is one this recipe already sets.
+ * legal set at all, so there is nothing to cite and nothing to pick from — and the screen's own
+ * list is long, so enumerating it would build an option set for a slot with one occupant.
+ *
+ * The values are `observed` instead (#332), and reading the screen changed their shape as well as
+ * their content. **The target is chosen in two steps: a category, then a parameter within it.**
+ * `FLT` is the category and `CUTOFF` is the target. This used to be one `MOD TARGET` reading
+ * `FILTER`, which named the category alone — and a filter has several modulatable parameters, so
+ * it pointed a reader at a screen and then stopped talking. Two params, because two selections is
+ * what the box asks for; collapsing them into one string would be our punctuation standing in for
+ * the box's own navigation.
  *
  * Names are prefixed `MOD` where the table prints them bare. A flat `AMOUNT` beside `CLAPS` and
  * `SPEED` would be unreadable at the machine, and the same reasoning already gave `RVB SEND` its
  * prefix. The screen itself is reached by SHIFT + [FILTER] (p.39), which is the hint.
  */
-function mod(target: string, amount: number, wave: string, note: string): AuthoredParam[] {
+const MOD_TARGET_OBSERVED: Cite = { kind: 'observed', source: 'TR-1000 unit, MOD TARGET screen' }
+
+function mod(
+  category: string,
+  target: string,
+  amount: number,
+  wave: string,
+  note: string,
+): AuthoredParam[] {
   return [
     {
       kind: 'enum',
@@ -328,7 +344,8 @@ function mod(target: string, amount: number, wave: string, note: string): Author
       verified: false,
       note: 'Which of the three assignment slots this uses',
     },
-    { kind: 'text', name: 'MOD TARGET', value: target, verified: false },
+    { kind: 'text', name: 'MOD CATEGORY', value: category, verified: MOD_TARGET_OBSERVED },
+    { kind: 'text', name: 'MOD TARGET', value: target, verified: MOD_TARGET_OBSERVED },
     num('MOD AMOUNT', amount, BIPOLAR, '%', 71),
   ]
 }
@@ -1320,7 +1337,7 @@ export const device: Device = {
         num('TAIL DCY', 62, PCT, '%', 62, { mood: [{ axis: 'density', amount: -18 }] }),
         // #58. A tempo-synced triangle on this recipe's own FILTER: one cycle per bar, so the
         // two backbeat claps in a bar sit at different points of the sweep.
-        ...mod('FILTER', 22, 'TRI', '1/1'),
+        ...mod('FLT', 'CUTOFF', 22, 'TRI', '1/1'),
         send('RVB', 30, 22),
         send('DLY', 14, 14),
         shuffle(),

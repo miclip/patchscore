@@ -99,7 +99,7 @@ describe('TR-1000 manifest', () => {
     }
   })
 
-  it('cites every range and option set, and no point (§3.2)', () => {
+  it('cites every range and option set, and only the two read points (§3.2)', () => {
     // The two gates come apart here exactly as §3.2 says they should. The Reference Manual
     // states the *bounds* for each generator's parameters, so every range is cited and mood is
     // free to move inside it. It states nothing about which value suits a hard kick, so every
@@ -118,9 +118,13 @@ describe('TR-1000 manifest', () => {
     }
 
     const counts = auditDevice(device).counts
-    // Every point on this device is now provisional, GEN included: nothing here is a value a
-    // human checked, and the audit says so.
-    expect(counts.provisionalPoints).toBe(counts.params)
+    // Every point on this device is provisional, GEN included, with **two exceptions** (#332):
+    // `MOD CATEGORY` and `MOD TARGET`, which were read off the MOD screen. They are the one place
+    // here where somebody checked a value rather than chose one — and they had to be, because the
+    // value they replaced named a category where a parameter belonged and so could not be acted
+    // on. `manualPoints` stays zero: p.71's TARGET row prints a dash, so no page states these.
+    expect(counts.observedPoints).toBe(2)
+    expect(counts.provisionalPoints).toBe(counts.params - 2)
     expect(counts.manualPoints).toBe(0)
     expect(counts.unverifiedRanges).toBe(0)
     expect(counts.moodInert).toBe(0)
@@ -338,9 +342,12 @@ describe('TR-1000 manifest', () => {
     expect(by.has('MOD TIME')).toBe(false)
     expect(by.has('MOD STEP')).toBe(false)
 
-    // The target, and it is a parameter this same recipe sets — so the guide is coherent about
-    // what moves rather than naming something the reader was never told to dial.
-    expect(by.get('MOD TARGET')?.value).toBe('FILTER')
+    // The target, in the two steps the box asks for: a category, then a parameter inside it
+    // (#332). The MOD screen has its own abbreviated vocabulary — `FLT` there is the section the
+    // recipe sets as `FILTER` — so the coherence check is that the category names a section this
+    // same recipe touches, rather than that the two strings match.
+    expect(by.get('MOD CATEGORY')?.value).toBe('FLT')
+    expect(by.get('MOD TARGET')?.value).toBe('CUTOFF')
     const recipe = device.recipes.find((r) => r.id === 'tr1000-clap-bright')
     expect((recipe?.params as AuthoredParam[]).some((p) => p.name === 'FILTER')).toBe(true)
 
@@ -359,8 +366,14 @@ describe('TR-1000 manifest', () => {
       if (param.kind === 'enum') {
         expect(param.options.verified, param.name).toMatchObject({ source: expect.stringContaining('p.71') })
       }
-      // Legality is cited, authority never is — this file's regime, unchanged (§3.2).
-      expect(param.verified, param.name).toBe(false)
+      // Legality is cited, authority never is — this file's regime, with the two read points as
+      // its only exception (#332). Those two are `observed`, not `manual`: p.71's TARGET row
+      // prints a dash, so the citation is somebody at the screen and never a page.
+      if (param.name === 'MOD CATEGORY' || param.name === 'MOD TARGET') {
+        expect(param.verified, param.name).toMatchObject({ kind: 'observed' })
+      } else {
+        expect(param.verified, param.name).toBe(false)
+      }
     }
   })
 
@@ -403,7 +416,8 @@ describe('TR-1000 manifest', () => {
     expect(doc).toContain('Wide clap sitting on top of the snare')
     expect(doc).toContain('**MOD WAVE** `TRI`')
     expect(doc).toContain('**MOD NOTE** `1/1`')
-    expect(doc).toContain('**MOD TARGET** `FILTER`')
+    expect(doc).toContain('**MOD CATEGORY** `FLT`')
+    expect(doc).toContain('**MOD TARGET** `CUTOFF`')
     expect(doc).toContain('**MOD AMOUNT** `22` % (-100…100 %)')
   })
 
