@@ -146,7 +146,16 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
     // Counted by distinct control rather than by instance. 34 percent, the two signed envelope
     // amounts, the sided pan, the two cutoffs in Hz, and the two DELAY TIME knobs that #346 took
     // off the number line entirely.
-    expect(distinct(percentParams)).toHaveLength(34)
+    //
+    // **35 controls are observed and only 34 of them are CC-numbered.** `MIXER · OVERLOAD` was
+    // read at #329 and no CC row names it, so it is on the same scale by the same citation and
+    // outside this count. `observedParams` selects on the citation, which is why it appears here
+    // at all — and keeping the two numbers apart is the point of the test rather than a nuisance.
+    expect(distinct(percentParams)).toHaveLength(35)
+    expect(distinct(percentParams.filter((param) => param.midiCc !== undefined))).toHaveLength(34)
+    expect(
+      distinct(percentParams.filter((param) => param.midiCc === undefined)),
+    ).toEqual(['MIXER · OVERLOAD'])
     expect(distinct(signedParams)).toEqual([
       'FILTER 1 · ENVELOPE AMOUNT',
       'FILTER 2 · ENVELOPE AMOUNT',
@@ -478,9 +487,10 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
 })
 
 describe('Muse envelope faders carry no false negative claim (#325)', () => {
-  it('covers all eight faders and the other 26 controls, so neither side is vacuous', () => {
+  it('covers all eight faders and the other 27 controls, so neither side is vacuous', () => {
     expect(distinct(faderParams)).toEqual(Object.keys(FADERS).sort())
-    expect(distinct(knobParams)).toHaveLength(26)
+    // 27 since #329 put `MIXER · OVERLOAD` on the observed percent scale with the rest.
+    expect(distinct(knobParams)).toHaveLength(27)
   })
 
   it('authors the fader’s CC number and no prose at all', () => {
@@ -513,13 +523,18 @@ describe('Muse envelope faders carry no false negative claim (#325)', () => {
     }
   })
 
-  it('authors a CC number on the other 26 too, and no MIDI prose anywhere (#324)', () => {
+  it('authors a CC number on all but the one control that has none, and no MIDI prose (#324)', () => {
     for (const param of knobParams) {
       expect(param.note ?? '').not.toContain(NO_PRINTED_POSITION)
       // No device folder writes this sentence any more. A note here, where there is one, is
       // something about the control that the instruction cannot say.
       expect(param.note ?? '').not.toContain('Send MIDI CC')
-      expect(param.midiCc).toBeGreaterThanOrEqual(0)
+      // `MIXER · OVERLOAD` is the exception and the only one: p.34 prints no scale for the fader
+      // *and* no CC row names it, so #329 could give it the screen's scale and still not give it
+      // a controller number. Asserted by name rather than skipped, so a second one cannot appear
+      // here quietly.
+      if (param.name === 'MIXER · OVERLOAD') expect(param.midiCc).toBeUndefined()
+      else expect(param.midiCc).toBeGreaterThanOrEqual(0)
     }
   })
 
