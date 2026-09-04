@@ -75,6 +75,63 @@ import { MC_101_PANEL } from './panel'
  *    parameters and are deliberately not authored: §3's rule is that a recipe never authors
  *    step counts or bar structure, and clip length is exactly that.
  *
+ * ## No trigger note on either pool, because the pads are three surfaces (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 240, split across both pools, and its own Reference Manual answers them. **Read from
+ * this box's documents rather than carried over from the MC-707** — the sibling reaches the same
+ * conclusion, but its pages are not evidence about this one, and two of the numbers below differ.
+ *
+ * **This box has sixteen pads and no separate step buttons, so the same sixteen keys are three
+ * different surfaces.** p.17 is the page that says so: `CLIP` mode puts the sixteen clips of a
+ * track on them, `SEQ` mode makes them steps, `NOTE` mode makes them notes or instruments. That
+ * is a sharper version of the sibling's argument, not a weaker one — on an MC-707 the steps have
+ * buttons of their own.
+ *
+ * **In NOTE mode p.17 gives them two more meanings, one per track type.** `TONE track`: *"For a
+ * TONE track, you can play the pads as a keyboard"*, with the diagram laying them out as one —
+ * `C D E F G A B C` along the lower row, the accidentals above. `DRUM track`: *"In a drum kit, 16
+ * instruments are assigned to the pads, one instrument to each pad."*
+ *
+ * **Neither pool has one note to carry.** `VoiceSpec.triggerNote` addresses every member of a
+ * pool alike, and:
+ *
+ *  - On `tone-track` the pad *is* the note, so the note is whatever the reader plays. p.21's
+ *    step-recording picks the step first and the pitch second — *"Press the pad of the step that
+ *    you want to input"*, then `[NOTE]`, then *"Press pads (keys) to enter notes. The pad that
+ *    you input is lit"* — and p.17 moves the whole keyboard underneath that, with `[OCT-]
+ *    [OCT+]: Shift octaves` and the NOTE MODE SETTING table's `Octave -5-+5` and `Transpose
+ *    -6-+6`. Three tracks sharing one note would be three parts told to play the same pitch.
+ *  - On `drum-pad` the note is not how a step is written at all. p.23's TR-REC is instrument
+ *    first and steps second: *"Press the pad corresponding to the instrument that you want to
+ *    edit"*, then `[SEQ]`, then *"Press the pad of the step for which you want to input a note."*
+ *    One note for the pool would name one instrument of the kit for every one of them.
+ *
+ * ## The octave reading, and why this box's own books cannot anchor one
+ *
+ * The Reference Manual **exposes octave shifting in three places and anchors a note number
+ * nowhere.** p.17's `[OCT-] [OCT+]` and `Octave -5-+5`; p.17's LOOPER pitch shift *"in a range of
+ * -2-+2 octaves"*; p.45's `Oct Shift (Octave Shift) -3-+3`, *"Shifts the pitch of the keyboard in
+ * units of one octave."* No page in the 89 pairs a MIDI number with a note name.
+ *
+ * **That is a real difference from the sibling and it has a cause.** The MC-707's p.68 states
+ * *"If this is 60, the C4 key (middle C) is the reference key"* on its `Cutoff Keyfollow Base
+ * Point` row. This book's Parameter List is the *part offset* layer only — p.45 prints `Cutoff
+ * (Cutoff Offset) -64-+63` where the sibling prints an absolute `Cutoff 0-1023` — so the row
+ * carrying that sentence is simply not in this document. Nothing here is authored from the
+ * sibling's page: a citation is to the book that prints it.
+ *
+ * **The one note-shaped value in either book is a sample's pitch, not a trigger.** `MC-101 Update
+ * eng08` p.15 (Ver.1.50) gives the user sample editor `OrgKey  C-1-G9`, *"Specifies the pitch of
+ * the sample"* — endpoints as note *names*, with no number beside either, and the same fact the
+ * MC-707 calls `Original Key`. It describes the pitch a recording already has, which is the
+ * sampler-side value `TriggerNote` deliberately does not model.
+ *
+ * Beware one false positive in a text search of the Reference: this box's four knobs are named
+ * `[C1]`-`[C4]`, so `C4` on p.22 and p.23 is a control, not a pitch.
+ *
+ * So the 240 blanks are correct output.
+ *
  * ## Two manual defects, quoted rather than repaired
  *
  * The Reference Manual carries uncorrected MC-707 text in two places, and both contradict the
@@ -1035,6 +1092,16 @@ export const device: Device = {
    * here — a TONE track *"can also be used as a pitched sampler"* (p.16), so the twin is real,
    * and §7.1 would never choose it over the polyphonic recipe already sitting on that voice.
    * Measured since: chosen in 0 of 24 (6 characters x 4 note counts) cases.
+   *
+   * **No `triggerNote` on either pool** (§2.1/#334), and for two different reasons — which is why
+   * it could not have been one answer. p.17 makes the same sixteen pads clips, steps, a keyboard
+   * or a kit depending on the mode and the track type. On `tone-track` the pad is the note, so
+   * the note is the reader's: p.21 records whichever key is pressed, and `[OCT-] [OCT+]`,
+   * `Octave -5-+5` and `Transpose -6-+6` (p.17) move the whole surface. On `drum-pad` a step is
+   * not written by note at all: p.23's TR-REC selects the instrument pad first, then the steps.
+   * `OrgKey` (Update p.15, Ver.1.50) is a sample's own pitch, not a sequencer trigger, and this
+   * box's Reference anchors no note number anywhere. See the head note; the tests are in
+   * `test/mc-101.test.ts`.
    */
   voices: [
     { kind: 'pool', id: 'drum-pad', label: 'Drum Pad', count: 8, roles: DRUM_PAD_ROLES, polyphony: 1 },
