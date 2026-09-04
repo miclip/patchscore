@@ -1914,7 +1914,22 @@ export const device: Device = {
   hints: {
     'edit-submenu': 'Press MORE in that section',
     'timbre-select': 'Light TIMBRE A or B first',
-    'voice-count': 'PROGRAMMER, VOICE CONTROL, MORE',
+    /*
+     * §8.1/#348. **VOICE CONTROL is a panel module with its own MORE button**, not somewhere
+     * inside the PROGRAMMER. PDF p.106 is headed "VOICE CONTROL MORE MENU" and carries
+     * `TIMBRE A VOICE COUNT` under it.
+     *
+     * This used to read `PROGRAMMER, VOICE CONTROL, MORE`, which sends a reader to the
+     * PROGRAMMER first and leaves them looking for something that is not there. The PROGRAMMER
+     * is where a MORE menu *appears* — p.90: "where you will navigate settings for the MORE
+     * menus found throughout Muse" — not the way in.
+     *
+     * `midi-settings` below is genuinely reached through the PROGRAMMER (p.90 gives it the
+     * configuration and MIDI/CV menus) and is correct as it stands. The distinction is whether
+     * the menu belongs to a panel module or to the PROGRAMMER itself, so each of these is
+     * checked against its own page rather than corrected by a rule.
+     */
+    'voice-count': 'VOICE CONTROL, then MORE',
     'midi-settings': 'PROGRAMMER, MENU, MIDI',
     'init-patch': 'Press INIT for a blank patch',
     'save-patch': 'SAVE, name it, CONFIRM',
