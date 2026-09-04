@@ -3,12 +3,20 @@ import {
   DeviceSchema,
   NEUTRAL_MOOD,
   ROLES,
+  expand,
+  isSustainedPart,
+  moodState,
+  noteInstruction,
+  renderGuide,
   resolve,
   type AuthoredParam,
   type Recipe,
+  type ResolvedAssignment,
+  type Role,
 } from '../lib/core/index'
 import { ARTICULABLE_PER_STEP, device } from '../lib/devices/elektron-digitakt/index'
 import { device as digitaktII } from '../lib/devices/elektron-digitakt-ii/index'
+import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 import { auditDevice } from '../scripts/audit-verified'
 
@@ -525,5 +533,289 @@ describe('Digitakt manifest', () => {
         expect(['authored', 'derived', 'provisional']).toContain(p.provenance.state)
       }
     }
+  })
+})
+
+/**
+ * §2.1/#334. **This box authors no trigger note, and its reason is narrower than the
+ * successor's — two of the Digitakt II's three arguments do not apply here.**
+ *
+ * Read from this manual rather than inherited. Like the successor it prints both halves — p.23,
+ * *"MIDI note numbers 12-84, that corresponds to notes C1-C7 (C5, MIDI note 60, being middle
+ * C)"* — and like the successor it cannot put one on the pool.
+ *
+ *  - **No MIDI argument.** The eight MIDI tracks here are separate hardware, and APPENDIX A has
+ *    no `MIDI` machine. The pool is eight audio tracks and nothing else.
+ *  - **No `GRID` argument.** Four machines: `ONESHOT`, `WERP`, `REPITCH`, `SLICE`.
+ *  - **`SLICE` remains, and it is enough.** p.86: *"Slice Select lets you set which slice to
+ *    play. If set to NOTE you can use the TRIG keys in CHROMATIC mode or incoming MIDI note data
+ *    to determine which slice to play. (NOTE, 1-64)"*, with p.24 and p.86 both warning that then
+ *    *"All the settings in the KEYBOARD SETUP menu are ignored… Instead slices plays from C1 and
+ *    upwards."*
+ *
+ * **And `C1` is where this box's chromatic range starts too** (p.23's `12-84`, `C1-C7`). One note
+ * name, two meanings, one parameter apart on the same track. The successor has no such collision:
+ * its span starts at `E2`. This is the box where a note name is least safe.
+ *
+ * The one slice recipe fixes a slice *number* rather than `NOTE` — recorded below rather than
+ * relied on, because that is a fact about the recipes and the field lives on the pool.
+ */
+describe('trigger notes: read for, and declined (§2.1/#334)', () => {
+  const SEEDS = [1, 2, 3, 4, 5, 6]
+
+  it('authors none on the pool, and none on any recipe either', () => {
+    // Both halves, because the field exists in two places and only one of them is the pool.
+    expect(device.voices.filter((v) => v.triggerNote !== undefined)).toEqual([])
+    const claiming = device.recipes.filter(
+      (r) => (r as Recipe & { triggerNote?: unknown }).triggerNote !== undefined,
+    )
+    expect(claiming.map((r) => r.id)).toEqual([])
+  })
+
+  it('stays off the library roster of boxes that author one', () => {
+    // `test/tracker-mini.test.ts` pins that roster exactly; this is the same fact asked from the
+    // side of the box that declines, so a note added here fails in its own file as well as there.
+    const authoring = DEVICES.filter((d) => d.voices.some((v) => v.triggerNote !== undefined))
+    expect(authoring.map((d) => d.id)).not.toContain('elektron-digitakt')
+  })
+
+  it('expands to eight audio members on one pool, none of which carries a note', () => {
+    expect(device.voices.length).toBe(1)
+    const members = expand(device)
+    expect(members.length).toBe(8)
+    expect(members.every((m) => m.poolId === 'track')).toBe(true)
+    expect(members.filter((m) => m.triggerNote !== undefined)).toEqual([])
+  })
+
+  /**
+   * **The two arguments that do not carry over, asserted so the successor's reasoning cannot be
+   * copied in later without somebody noticing it no longer fits.**
+   *
+   * The pool is eight against the Digitakt II's sixteen, because MIDI tracks are separate
+   * hardware here rather than members; and no machine on this box is `MIDI` or `GRID`.
+   */
+  it('holds no MIDI or GRID machine, unlike the successor', () => {
+    const machines = new Set<string>()
+    for (const recipe of device.recipes) {
+      const param = named(recipe, 'MACHINE')
+      expect(param?.kind, recipe.id).toBe('enum')
+      if (param?.kind !== 'enum') throw new Error('expected an enum MACHINE')
+      for (const option of param.options.values) machines.add(option)
+    }
+    expect([...machines].sort()).toEqual(['ONESHOT', 'REPITCH', 'SLICE', 'WERP'])
+
+    // The successor's pool is twice this one and carries both of the machines this box lacks —
+    // the contrast that makes the narrower reason worth stating.
+    expect(digitaktII.voices[0]?.kind === 'pool' ? digitaktII.voices[0].count : 0).toBe(16)
+    expect(device.voices[0]?.kind === 'pool' ? device.voices[0].count : 0).toBe(8)
+  })
+
+  /**
+   * **`SLICE` is the argument that remains**, and both halves of it are checked: the parameter's
+   * cited option set admits `NOTE`, and the one authored slice recipe does not use it.
+   */
+  it('admits note-addressed slicing on the pool, while the one slice recipe fixes a number', () => {
+    const sliced = device.recipes.filter((r) => choice(r, 'MACHINE') === 'SLICE')
+    expect(sliced.map((r) => r.id)).toEqual(['dt-vox-chop-bright'])
+
+    const recipe = sliced[0]
+    if (recipe === undefined) throw new Error('expected the slice recipe')
+    const slice = named(recipe, 'SLICE')
+    expect(slice?.kind).toBe('numeric')
+
+    // p.86's `(NOTE, 1-64)` — the mode a reader can reach on any of the eight tracks, which is
+    // why the field cannot sit on the pool even though no recipe selects it.
+    expect(recipe.voice).toBe('track')
+  })
+
+  /**
+   * A part phase 5 draws a grid for: not owned by a hook (#100), not sustained (§4.2), and with at
+   * least one section whose variant resolved (§6.3).
+   *
+   * One definition, used by the sweep and by the page test. `noteInstruction` answers `none` for a
+   * hooked or sustained part as well as for a blank grid part, so a page test asking it whether a
+   * grid exists would count parts that draw none and then pass against a guide with nothing in it.
+   */
+  function drawsGrid(a: ResolvedAssignment): boolean {
+    return (
+      a.hookAuthority === undefined &&
+      !isSustainedPart(a) &&
+      a.patterns.some((p) => p.selection.outcome !== 'none')
+    )
+  }
+
+  /** Every part this box takes, split by what phase 5 actually draws for it. */
+  function sweep() {
+    const grid: { where: string; role: Role; kind: string }[] = []
+    const hooked: string[] = []
+    const sustained: string[] = []
+    const noPattern: string[] = []
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          const where = `${template.id}/${a.role}`
+          if (drawsGrid(a)) grid.push({ where, role: a.role, kind: noteInstruction(a).kind })
+          else if (a.hookAuthority !== undefined) hooked.push(where)
+          else if (isSustainedPart(a)) sustained.push(where)
+          else noPattern.push(where)
+        }
+      }
+    }
+    return { grid, hooked, sustained, noPattern }
+  }
+
+  /**
+   * **The measurement, taken rather than remembered.** Every direction against this box alone,
+   * seeds 1-6.
+   *
+   * 216 is #334's figure for this device and it is expected to stay put, because nothing here is
+   * a gap to close. The number moves when a direction gains or loses a part, and a diff is a
+   * prompt to re-read the head note rather than a failure. What must not move is the relationship
+   * — no part ever gets a `trigger`, because the pool has no note to give one.
+   */
+  it('leaves 216 grid parts blank, and pins how many there are', () => {
+    const { grid } = sweep()
+
+    expect(grid.length).toBe(240)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(216)
+
+    // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
+    // prints are the direction's own.
+    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch'])
+  })
+
+  it('prints a note only where the direction asked for a pitch of its own', () => {
+    // §4.1's precedence with one arm missing. The 24 that carry a note are `sub` parts, where the
+    // pitch is the direction's musical decision (#340) and owes this box nothing.
+    const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
+    expect(pitched.length).toBe(24)
+    expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
+  })
+
+  it('leaves the blanks on the roles a loaded sample answers', () => {
+    // Pinned by role, not only by total: a count alone would survive one role's parts being
+    // swapped for another's.
+    const counts = new Map<Role, number>()
+    for (const g of sweep().grid) {
+      if (g.kind !== 'none') continue
+      counts.set(g.role, (counts.get(g.role) ?? 0) + 1)
+    }
+    expect(
+      [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
+    ).toEqual([
+      ['closed-hat', 48],
+      ['kick', 48],
+      ['ghost-perc', 36],
+      ['clap', 18],
+      ['metallic', 18],
+      ['snare', 18],
+      ['open-hat', 12],
+      ['impact', 6],
+      ['tom', 6],
+      ['vox-chop', 6],
+    ])
+  })
+
+  it('accounts for every part that draws no grid, by which reason', () => {
+    // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
+    // part with no variant anywhere nothing to program.
+    const { grid, hooked, sustained, noPattern } = sweep()
+    expect(hooked.length).toBe(108)
+    expect(sustained).toEqual([])
+    expect(noPattern.length).toBe(24)
+    expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/riser',
+      'ambient-dub/texture',
+      'hip-hop/texture',
+      'industrial-techno/riser',
+    ])
+
+    // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
+    // classify — which is what would make the 216 above an undercount rather than a measurement.
+    let assignments = 0
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        assignments += resolve({ devices: [device], template, mood: moodState(), seed })
+          .assignments.length
+      }
+    }
+    expect(grid.length + hooked.length + sustained.length + noPattern.length).toBe(assignments)
+  })
+
+  /**
+   * The resolved field itself, across every part rather than only the ones that draw a grid, and
+   * the sliced part named separately — it is the one a pool-wide note would misdescribe worst.
+   */
+  it('resolves no trigger note on any assignment, the sliced part included', () => {
+    let seen = 0
+    let slicedSeen = 0
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          seen += 1
+          expect(a.triggerNote, `${template.id}/${a.role} seed ${String(seed)}`).toBeUndefined()
+          if (a.recipe.id !== 'dt-vox-chop-bright') continue
+          slicedSeen += 1
+          for (const assignable of a.assignables) {
+            expect(assignable.triggerNote, `${template.id} seed ${String(seed)}`).toBeUndefined()
+          }
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(0)
+    expect(slicedSeen).toBeGreaterThan(0)
+  })
+
+  /**
+   * §8. **The reader-facing half**, checked on the page rather than only on the resolver.
+   *
+   * The count of parts that actually draw a grid is asserted non-zero first, or an empty render
+   * would pass this forever.
+   */
+  it('never prints a trigger note on a rendered page, across every direction and seed', () => {
+    let drawn = 0
+    for (const template of TEMPLATES) {
+      for (const seed of [1, 7]) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        drawn += result.assignments.filter(drawsGrid).length
+        expect(renderGuide(result), `${template.id} seed ${String(seed)}`).not.toContain(
+          'Trigger note',
+        )
+      }
+    }
+    expect(drawn).toBeGreaterThan(0)
+  })
+
+  /**
+   * §2.1/#352. **The collision, asserted as arithmetic rather than described.**
+   *
+   * p.23 gives the chromatic span as `12-84`, `C1-C7`, with `C5` at 60. p.24 and p.86 make the
+   * first slice `C1` under `SLICE NOTE`. So MIDI 12 is simultaneously the lowest playable pitch
+   * and the first slice, decided by one parameter on the same track — and the successor, whose
+   * span starts at `E2` (28), has no such collision.
+   *
+   * There is no value in the manifest for this to check, and that is the point: this is what the
+   * next author would need before there could be one.
+   */
+  it('records the octave convention and the C1 collision without authoring a note', () => {
+    const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    // C5 = 60 means octave numbering starts at zero, so MIDI n is octave floor(n / 12).
+    const midiOf = (name: string, octave: number) => octave * 12 + NAMES.indexOf(name)
+
+    expect(midiOf('C', 5)).toBe(60) //   p.23, middle C
+    expect(midiOf('C', 0)).toBe(0) //    p.23's "Note numbers 0-7 ... C0 through to G0"
+    expect(midiOf('G', 0)).toBe(7) //    the other end of that same sentence
+    expect(midiOf('C', 1)).toBe(12) //   p.23's chromatic floor — and p.24/p.86's first slice
+    expect(midiOf('C', 7)).toBe(84) //   p.23's chromatic ceiling
+
+    // The collision this box has and its successor does not: there, the chromatic span opens at
+    // E2 while slices still start at C1, so the two never share a note name.
+    expect(midiOf('E', 2)).toBe(28)
+    expect(midiOf('E', 2)).not.toBe(midiOf('C', 1))
+
+    // Nothing above is authored anywhere, which is the state this test exists to keep.
+    expect(device.voices.some((v) => v.triggerNote !== undefined)).toBe(false)
   })
 })

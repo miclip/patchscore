@@ -105,6 +105,54 @@ import { DIGITAKT_PANEL } from './panel'
  * the BPM does is a specific effect rather than a default, and it is not one any direction here
  * asks for. The machine is in the option set because the box has it.
  *
+ * ## No trigger note, and the collision here is on one note name (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 216, all on the one `track` pool. Like the successor it prints both halves of a
+ * `TriggerNote` — p.23: *"MIDI note numbers 12-84, that corresponds to notes C1-C7 (C5, MIDI note
+ * 60, being middle C)"* — and like the successor it cannot put one on the pool. **The reason is
+ * narrower here, and two of the successor's three arguments do not apply.**
+ *
+ * **The MIDI argument is gone, and saying so is the point of reading this manual separately.**
+ * On the Digitakt II one pool of sixteen holds audio and MIDI tracks alike, so a pool-wide note
+ * would have reached a MIDI track. Here the eight MIDI tracks are separate hardware tracks that
+ * cost nothing (see `comfortableVoices`), there is **no `MIDI` machine** in APPENDIX A, and the
+ * pool is eight audio tracks and nothing else. Nothing in this decline rests on MIDI.
+ *
+ * **The `GRID` machine argument is gone too**: this box has four machines, `ONESHOT`, `WERP`,
+ * `REPITCH` and `SLICE`, and no `GRID`.
+ *
+ * **What remains is `SLICE`, and it is enough.** p.86's `A.5.5 SLICE` gives the parameter as
+ * `(NOTE, 1-64)`: *"Slice Select lets you set which slice to play. If set to NOTE you can use the
+ * TRIG keys in CHROMATIC mode or incoming MIDI note data to determine which slice to play."* Set
+ * to `NOTE`, p.24 and p.86 both warn that *"All the settings in the KEYBOARD SETUP menu are
+ * ignored… Instead slices plays from C1 and upwards, wrapping around after the last slice."*
+ *
+ * **And that lands on the same note name the chromatic range starts at.** p.23's playable span is
+ * `12-84`, `C1-C7`. So on one audio track `C1` is the bottom of the pitch range, and on the same
+ * track with `SLICE` set to `NOTE` it is the *first slice* — one parameter apart, same name,
+ * nothing on a rendered page to separate them. The successor does not have this collision: its
+ * chromatic span starts at `E2` while its slices start at `C1`. **This is the box where a note
+ * name is least safe, and it is the older and simpler of the two.**
+ *
+ * A pool's `triggerNote` reaches every member alike, and any of the eight can be put in
+ * note-addressed slice mode by the reader. A pool-wide `C5` would be claiming an original pitch
+ * for a track where `C5` is the forty-ninth slice.
+ *
+ * **The one slice recipe here does not use that mode, and that is recorded rather than relied
+ * on.** `dt-vox-chop-bright` fixes `SLICE 1` — see its own note for why (per-trig identity is
+ * outside what `articulation` can carry, #57). So no authored recipe is note-addressed today.
+ * That is a fact about the recipes, not about the pool, and the pool is where the field lives.
+ *
+ * ## The octave convention, recorded and deliberately not used
+ *
+ * p.23 states it and confirms it from the floor: `C5` is MIDI 60, and *"Note numbers 0-7
+ * correspond to notes C0 through to G0, the leftmost octave"* — those eight trigger the eight
+ * tracks' Sounds rather than pitches. So `0` is `C0`, the same numbering as the Digitakt II, the
+ * Digitone II and the Tracker Mini, and an octave below the SP-404MK2's. Recorded because the
+ * library holds two conventions and a rendered note name shows neither (#352). **No value is
+ * authored from it.**
+ *
  * ## Mood, and the one axis this box declines
  *
  * Because the ranges are printed, eight controls carry real offsets: `FREQ` for `darkness`, `BR`,
@@ -1490,6 +1538,16 @@ export const device: Device = {
    */
   voices: [
     {
+      /**
+       * **No `triggerNote`** (§2.1/#334). p.23 prints both halves — *"C1-C7 (C5, MIDI note 60,
+       * being middle C)"* — and a pool's note still reaches every member alike. Any of these
+       * eight can be put in note-addressed slice mode, where p.24 and p.86 say the keyboard
+       * settings are ignored and *"slices plays from C1 and upwards"*. `C1` is therefore both the
+       * bottom of this box's pitch range and its first slice, one parameter apart on the same
+       * track. Unlike the successor, nothing here rests on MIDI tracks: those are separate
+       * hardware and there is no `MIDI` machine. See the head note; the tests are in
+       * `test/elektron-digitakt.test.ts`.
+       */
       kind: 'pool',
       id: 'track',
       label: 'Audio track',
