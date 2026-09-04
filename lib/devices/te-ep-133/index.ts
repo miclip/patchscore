@@ -149,6 +149,45 @@ import { EP_133_PANEL } from './panel'
  *    exists, and #86 is where a pool that wants to name its members belongs.
  *  - **The polyphony is the device's, not the pad's.** See `voices` below.
  *
+ * ## No trigger note, and that is a reading rather than an omission (§2.1/#334)
+ *
+ * #334 counts the parts across the library whose grid says which steps to hit and never what to
+ * write on them. This box has 252 of them, every one on the pad pool, and the answer is not the
+ * one the two Polyend boxes reached: **nothing is written on a step here at all.**
+ *
+ * Guide 9.2, the step sequencer's own page: *"hold (RECORD) and press a pad to record the chosen
+ * pad to that step. when a pad is recorded to a given step it will light up."* The instruction at
+ * the machine is a pad press and the confirmation is the pad lighting, so the grid is already
+ * complete without a note, and one printed beside it would name a second way to do a thing this
+ * box does one way.
+ *
+ * **`VoiceSpec.triggerNote` is one note that addresses a voice, and this pool has no such note.**
+ * The Tracker's `C5` is one fact about eight interchangeable tracks (§2.1). Guide 14.2 gives each
+ * of these forty-eight pads its own instead — `36`/`c2` at group `a`'s `.` through `83`/`b5` at
+ * group `d`'s `9`, one per pad, the same table the ordinal mapping above is read off. The note
+ * therefore follows from *which pad an assignment landed on* and is not a property of the pool,
+ * and a pool's `triggerNote` reaches every member alike: authoring one would tell a reader to
+ * address forty-eight pads with a note that reaches one of them.
+ *
+ * **The box does have a root note, and it is the reader's.** Guide 8.2.5: *"the (knobY) knob
+ * controls the MIDI root note. this allows you to set the MIDI root note of your sample and ensure
+ * that the root note on the device matches with the root note on the sample."* No value and no
+ * default is printed anywhere, because there is none to print — it is set per pad to whatever the
+ * loaded sample's own pitch is, and guide 12.9 step 6 has it governing the MIDI that pad *sends*.
+ * `ep133-lead-bright` carries that in `routing`, which is the honest place for it: an instruction
+ * to go and set a control, not a value cited to a page that prints no value. Keys mode is the same
+ * shape — guide 9.3 turns the twelve pads into a chromatic keyboard for one sample, and *"holding
+ * (KEYS) and selecting a pad will transpose the scale"*.
+ *
+ * So the 252 blanks are correct output rather than the gap #334 is about, and
+ * `test/te-ep-133.test.ts` pins the count with the blank arm named — the way the Polyend files pin
+ * theirs at zero, and for the same reason: a number that moves is a prompt to re-read the box.
+ * **What would be wrong here is a note.** If a reader driving this box from an external sequencer
+ * ever needs one, the thing missing is a *per-member address* — `35 + ordinal`, derived rather
+ * than authored — and not a value to put in the field this box declines. `capabilityEvidence`
+ * cannot record that either: §2.6's paths are closed and none of them names a trigger note, so
+ * adding one is an engine change rather than a device's to make.
+ *
  * ## The FX selector is one slot for the whole box, so no recipe names an effect
  *
  * Guide 11: *"the (FX) button is where you'll find delay, reverb, distortion, chorus, filter, and
@@ -912,6 +951,14 @@ export const device: Device = {
           (pad) => `${group.toUpperCase()} · ${pad}`,
         ),
       ),
+      /**
+       * §2.1/#334. **No `triggerNote`, and it was read for rather than left out.** Guide 9.2
+       * records a step by pressing the pad, so nothing is written on a step; guide 14.2 gives
+       * each of the forty-eight pads its own note, `36`-`83`, so there is none this pool shares.
+       * A pool's trigger note reaches every member alike, which is the shape the fact would have
+       * to take and the shape this box refuses. See the header for the reading and
+       * `test/te-ep-133.test.ts` for what holds it in place.
+       */
       roles: PAD_ROLES,
       polyphony: 12,
     },
