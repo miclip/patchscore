@@ -179,9 +179,23 @@ describe('a resolved hook is the part’s rhythm (#100)', () => {
     expect(markup).toContain('step-grid')
     expect(markup).toContain('The hook is the notes; the steps below are where they are struck')
     expect(markup).not.toContain('The hook is the pattern')
-    // Phase 4 is Hook. The pointer is a link on the page, because on a phone the heading above
-    // this one is a scroll away (#21).
+    /*
+     * The pointer is a link on the page, because on a phone the heading above this one is a
+     * scroll away (#21). **Where it points is the layout's business, not this test's** (#341):
+     * this is the default sequencer layout, where Hook is an `h5` inside the same box's tab, so
+     * the target is that heading and not `#phase-4` — a section that layout does not draw. Pin
+     * the phase layout's answer separately, below.
+     */
+    expect(markup).toMatch(/href="#part-[a-z0-9-]+-hook"/)
+  })
+
+  it('points at §8’s Hook section when that is the section being drawn (#341)', () => {
+    // The same pointer under the phase layout, where Hook *is* a section and phase 4 is it.
+    const markup = renderToStaticMarkup(
+      createElement(Guide, { result: drone(), seed: 1, layout: 'phase' as const }),
+    )
     expect(markup).toContain('href="#phase-4"')
+    expect(markup).toContain('id="phase-4"')
   })
 
   it('still replaces the grid on the page for a part with no such claim (§8)', () => {

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   Device,
   DeviceId,
@@ -28,6 +28,8 @@ import { DEFAULT_GUIDE_LAYOUT, GUIDE_LAYOUT_KEY, readGuideLayout } from '@/lib/s
 import { templateHref } from '@/lib/studio/catalogue'
 import { downloadGuideMarkdown, printGuide } from '@/lib/studio/export'
 import { occupiedCounts, voicesLabel } from './format'
+import { GuideNavContext, currentSection, phaseAnchor } from './nav'
+import type { GuideNav, GuideSection } from './nav'
 import { PhaseFinishing } from './phase-finishing'
 import { PhaseHook } from './phase-hook'
 import { PhaseRig } from './phase-rig'
@@ -53,6 +55,17 @@ import { PhaseVoices } from './phase-voices'
  * is missing instead of disappearing (invariant 5). `GUIDE_PHASES` is imported rather than
  * restated: one list, read by the Markdown renderer, this view, and the tests.
  */
+/**
+ * §8/#341. The DOM id of one part's Hook or Sound design heading under the sequencer layout.
+ *
+ * Keyed on the **request** id rather than the role, for the reason `Occupancy` is: a template may
+ * request the same role twice, and two headings sharing an id is a link that lands on whichever
+ * the browser saw first.
+ */
+function partAnchor(requestId: RequestId, phase: 'hook' | 'sound'): string {
+  return `part-${requestId}-${phase}`
+}
+
 /**
  * §8/#230. One box's parts, through §8's three performing phases in §8's order.
  *
@@ -130,29 +143,48 @@ function PerformedHere({
       {result.assignments.map((a) => {
         const one = narrowToGroup(result, [a])
         const hoist = hoistFor.get(a.deviceId)
+        /*
+         * §8/#341. The two headings a cross-phase pointer aims at, named per part rather than
+         * per phase, because under this layout there is one of each *per box*. `#phase-6` is
+         * meaningless here — there is no Sound design section to land on — and before #341 it
+         * resolved to whichever section happened to be sixth, which was a box.
+         *
+         * Both are on the page and a scroll away, which is what a pointer is for. Nothing here
+         * has to be opened before it can be landed on.
+         */
+        const nav: GuideNav = {
+          hook: one.song.hooks.length === 0 ? undefined : partAnchor(a.requestId, 'hook'),
+          sound: hoist === undefined ? undefined : partAnchor(a.requestId, 'sound'),
+        }
         return (
-          <div className="group-part" key={a.requestId}>
-            <h4 className="group-phase">
-              {hostId !== undefined && a.deviceId === hostId
-                ? voicesLabel(a)
-                : `${a.deviceName} · ${voicesLabel(a)}`}
-              <span className="role mono"> {a.role}</span>
-            </h4>
-            {one.song.hooks.length === 0 ? null : (
-              <>
-                <h5 className="group-sub">Hook</h5>
-                <PhaseHook result={one} />
-              </>
-            )}
-            <h5 className="group-sub">Step programming</h5>
-            <PhaseSteps result={one} deviceById={deviceById} />
-            {hoist === undefined ? null : (
-              <>
-                <h5 className="group-sub">Sound design</h5>
-                <SoundForPart a={a} hoist={hoist} deviceById={deviceById} />
-              </>
-            )}
-          </div>
+          <GuideNavContext.Provider value={nav} key={a.requestId}>
+            <div className="group-part">
+              <h4 className="group-phase">
+                {hostId !== undefined && a.deviceId === hostId
+                  ? voicesLabel(a)
+                  : `${a.deviceName} · ${voicesLabel(a)}`}
+                <span className="role mono"> {a.role}</span>
+              </h4>
+              {one.song.hooks.length === 0 ? null : (
+                <>
+                  <h5 className="group-sub" id={partAnchor(a.requestId, 'hook')}>
+                    Hook
+                  </h5>
+                  <PhaseHook result={one} />
+                </>
+              )}
+              <h5 className="group-sub">Step programming</h5>
+              <PhaseSteps result={one} deviceById={deviceById} />
+              {hoist === undefined ? null : (
+                <>
+                  <h5 className="group-sub" id={partAnchor(a.requestId, 'sound')}>
+                    Sound design
+                  </h5>
+                  <SoundForPart a={a} hoist={hoist} deviceById={deviceById} />
+                </>
+              )}
+            </div>
+          </GuideNavContext.Provider>
         )
       })}
       {/*
@@ -163,6 +195,30 @@ function PerformedHere({
         box does (invariant 5).
       */}
     </>
+  )
+}
+
+/**
+ * §8/#341. One section of the guide, and there is one kind of them.
+ *
+ * It briefly had a second: a `tabpanel` with `data-active`, drawn when the sequencer layout put
+ * its boxes in a tab strip. The strip is gone (see `nav.ts` for why it lost) and with it the only
+ * reason this component ever had a mode. Every section is on the page, labelled by its own
+ * visible heading, in both layouts.
+ *
+ * The heading is visible again for the same reason it went `sr-only` in the first place: under
+ * tabs the selected tab read `4 TRACKER MINI` and this printed it a line below, so one of the two
+ * had to go. Nothing else is naming the section now, and this is the only label there is.
+ */
+function Panel({ section }: { section: GuideSection & { n: number } }) {
+  return (
+    <section className="phase" aria-labelledby={section.anchorId}>
+      <h3 id={section.anchorId}>
+        <span className="phase-number mono">{section.n}</span>
+        {section.title}
+      </h3>
+      {section.body}
+    </section>
   )
 }
 
@@ -246,6 +302,21 @@ export function Guide({
   const layout = fixedLayout ?? chosen
   const [exported, setExported] = useState<{ ok: boolean; message: string } | undefined>(undefined)
 
+  /**
+   * §8/#341. **Where the reader is, for the jump-nav to mark.**
+   *
+   * `undefined` until something has been measured or pressed, and read through `currentSection`'s
+   * own rule below — the first section. That is not a placeholder: a reader at the top of the
+   * guide *is* in Song, and it is also the only value the server can know, so the first client
+   * render matches its markup without measuring anything (#12).
+   *
+   * View state, and it stays view state: §8.2 puts inputs in the permalink and nothing else, and
+   * where somebody had scrolled to ninety seconds ago is not a fact about how they read guides.
+   */
+  const [reading, setReading] = useState<string | undefined>(undefined)
+  const jumpRef = useRef<HTMLElement | null>(null)
+  const jumpLinks = useRef(new Map<string, HTMLAnchorElement>())
+
   const deviceById = useMemo<Map<DeviceId, Device>>(
     () => new Map(result.devices.map((d) => [d.id, d])),
     [result],
@@ -284,19 +355,31 @@ export function Guide({
    * which of them are grouped and under what heading. Nothing below this line knows which layout
    * it is drawing, which is what keeps the header, the legend, print and export identical.
    */
-  const sections: { key: string; title: string; body: ReactNode }[] =
+  const sections: GuideSection[] =
     layout === 'phase'
-      ? GUIDE_PHASES.map((phase) => ({ key: phase, title: phase, body: bodies[phase] }))
+      ? GUIDE_PHASES.map((phase) => ({
+          key: phase,
+          title: phase,
+          anchorId: phaseAnchor(phase),
+          body: bodies[phase],
+        }))
       : [
-          { key: 'Song', title: 'Song', body: bodies.Song },
+          {
+            key: 'Song',
+            title: 'Song',
+            anchorId: phaseAnchor('Song'),
+            body: bodies.Song,
+          },
           {
             key: 'Voice assignment',
             title: 'Voice assignment',
+            anchorId: phaseAnchor('Voice assignment'),
             body: bodies['Voice assignment'],
           },
           {
             key: 'Rig integration',
             title: 'Rig integration',
+            anchorId: phaseAnchor('Rig integration'),
             /**
              * §8/#240. Rig-wide facts, plus a block for every box no section below covers — a
              * mixer, an fx-processor, anything carrying no parts (§2.4). `devicesOutsideGroups`
@@ -310,40 +393,46 @@ export function Guide({
                 {
                   key: 'nothing-assigned',
                   title: 'Step programming and Sound design',
+                  anchorId: 'section-nothing-assigned',
                   // Invariant 5. With no groups these two phases have nothing to build from and
                   // would simply be absent — a vanished section reads as a direction that never
                   // asked for one. See `LAYOUT_PREAMBLE.nothingAssigned`.
                   body: <p className="quiet">{LAYOUT_PREAMBLE.nothingAssigned.join(' ')}</p>,
                 },
               ]),
-          ...groups.map((group) => ({
-            key: group.kind === 'sequencer' ? `group-${group.deviceId}` : 'group-undriven',
-            title:
-              group.kind === 'undriven'
-                ? 'Nothing in this rig can drive these'
-                : group.drivesOnly
-                  ? `${group.deviceName} — drives these, sounds none of them`
-                  : group.deviceName,
-            body: (
-              <>
-                {group.kind === 'undriven' ? (
-                  <p className="quiet">{LAYOUT_PREAMBLE.undriven.join(' ')}</p>
-                ) : null}
-                <PerformedHere
-                  result={narrowToGroup(result, group.assignments)}
-                  deviceById={deviceById}
-                  rig={rigFor(group)}
-                  hostId={group.kind === 'sequencer' ? group.deviceId : undefined}
-                />
-              </>
-            ),
-          })),
+          ...groups.map((group) => {
+            const key = group.kind === 'sequencer' ? `group-${group.deviceId}` : 'group-undriven'
+            return {
+              key,
+              title:
+                group.kind === 'undriven'
+                  ? 'Nothing in this rig can drive these'
+                  : group.drivesOnly
+                    ? `${group.deviceName} — drives these, sounds none of them`
+                    : group.deviceName,
+              anchorId: `section-${key}`,
+              body: (
+                <>
+                  {group.kind === 'undriven' ? (
+                    <p className="quiet">{LAYOUT_PREAMBLE.undriven.join(' ')}</p>
+                  ) : null}
+                  <PerformedHere
+                    result={narrowToGroup(result, group.assignments)}
+                    deviceById={deviceById}
+                    rig={rigFor(group)}
+                    hostId={group.kind === 'sequencer' ? group.deviceId : undefined}
+                  />
+                </>
+              ),
+            }
+          }),
           ...(orphanHooks.length === 0
             ? []
             : [
                 {
                   key: 'orphan-hooks',
                   title: 'Hooks with nothing to play them',
+                  anchorId: 'section-orphan-hooks',
                   body: (
                     <>
                       <p className="quiet">{LAYOUT_PREAMBLE.orphanHooks.join(' ')}</p>
@@ -358,8 +447,132 @@ export function Guide({
                   ),
                 },
               ]),
-          { key: 'Finishing', title: 'Finishing', body: bodies.Finishing },
+          {
+            key: 'Finishing',
+            title: 'Finishing',
+            anchorId: phaseAnchor('Finishing'),
+            body: bodies.Finishing,
+          },
         ]
+
+  /**
+   * §8/#341. **One number per section, counted over the whole guide.**
+   *
+   * The nav entry and the heading it points at carry the same number, in both layouts, because
+   * they are built from the same list. Under the sequencer layout that list is Song, Voice
+   * assignment, Rig integration, a section per box, and Finishing; under the phase layout it is
+   * §8's seven. Nothing below this line asks which.
+   */
+  const numbered = sections.map((section, i) => ({ ...section, n: i + 1 }))
+  /** The section the jump-nav marks. The first until something says otherwise; see `nav.ts`. */
+  const here =
+    reading !== undefined && sections.some((s) => s.key === reading) ? reading : sections[0]?.key
+
+  /*
+   * The latest sections, for the measuring effect below — which must *not* re-run on every
+   * render. `sections` is rebuilt each time, so depending on it directly would restart the
+   * listeners every time the hints checkbox moved. Written in an effect rather than during
+   * render, and declared above the effect that reads it so it is current before that one runs.
+   */
+  const sectionsRef = useRef<GuideSection[]>(sections)
+  useEffect(() => {
+    sectionsRef.current = sections
+  })
+
+  /**
+   * §8/#341. **The jump-nav says where you are, not just where you could go.**
+   *
+   * A sticky bar that never changes is a list of links; what makes it worth the 44px it costs on
+   * a phone is that it answers "which of the seven am I in" while you are two metres down with
+   * your hands on a box. The line it measures against is the bar's **own bottom edge**, so the
+   * marked phase is the one whose content is under the reader's eye rather than the one nearest
+   * the top of the document.
+   *
+   * Measured on scroll rather than watched with an `IntersectionObserver`, and the reason is the
+   * 28px between one section and the next: an observer aimed at a one-pixel band below the bar
+   * sees *nothing* while a gap crosses it, so the answer has to be held rather than read, and a
+   * held answer is a second state to keep right. Reading the tops outright has one answer at every
+   * scroll position and no gap case at all. It is throttled to a frame, which is as often as a
+   * result could be drawn anyway.
+   *
+   * Both layouts. It ran for the phase layout alone while the sequencer layout had tabs, on the
+   * argument that a selected tab already says where you are; the sections it marks now are the
+   * boxes, and the rule does not care which they are.
+   */
+  useEffect(() => {
+    let frame = 0
+    const measure = () => {
+      frame = 0
+      const nav = jumpRef.current
+      if (nav === null) return
+      const heads: { key: string; top: number }[] = []
+      /*
+       * **The line is where a jumped-to heading comes to rest**, and that is `scroll-margin-top`
+       * rather than the bar's bottom edge. Measuring against the bar alone is off by the
+       * difference between the two, and the way it shows is the worst one available: press
+       * "5 Step programming", land on it, and the bar marks 4 — the reader is looking straight
+       * at the heading it is disagreeing with. Read from the element rather than written as 60
+       * here, so the two cannot drift apart when the rule in the stylesheet changes, and so the
+       * two layouts need no separate answer.
+       *
+       * Still at least the bar's own bottom, because a heading scrolled up behind the bar has
+       * gone past whatever the stylesheet says about landing.
+       */
+      let rest = 0
+      for (const section of sectionsRef.current) {
+        const el = window.document.getElementById(section.anchorId)
+        if (el === null) continue
+        heads.push({ key: section.key, top: el.getBoundingClientRect().top })
+        if (rest === 0) rest = parseFloat(window.getComputedStyle(el).scrollMarginTop) || 0
+      }
+      /*
+       * Two pixels of slack on the end test, because `scrollHeight` is an integer and the sum on
+       * its left is fractional on any display that is not at 1x — an exact comparison never fires
+       * on a retina screen, which is most of them.
+       */
+      const doc = window.document.documentElement
+      const atEnd = window.scrollY + window.innerHeight >= doc.scrollHeight - 2
+      const next = currentSection(
+        heads,
+        Math.max(nav.getBoundingClientRect().bottom, rest),
+        atEnd,
+      )
+      if (next !== undefined) setReading(next)
+    }
+    const onScroll = () => {
+      if (frame === 0) frame = window.requestAnimationFrame(measure)
+    }
+    measure()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      if (frame !== 0) window.cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [layout])
+
+  /**
+   * §8/#341/#21. **The marked link is brought into the nav's own scroll, never the page's.**
+   *
+   * Seven phases do not fit 390px, so by phase 5 the mark is off the right-hand end of a bar the
+   * reader can see — which is worse than not marking it, because the bar now looks like it has
+   * stopped tracking. A rig of boxes is longer still and the section names are longer than the
+   * phase names, so the sequencer layout needs this more than the phase layout does, not less.
+   * `scrollLeft` on the nav and nothing else: `scrollIntoView` would be entitled to scroll the
+   * page as well, and moving the page under somebody who is reading it is the one thing this must
+   * not do.
+   */
+  useEffect(() => {
+    if (here === undefined) return
+    const nav = jumpRef.current
+    const link = jumpLinks.current.get(here)
+    if (nav === null || link === undefined) return
+    const left = link.offsetLeft
+    const right = left + link.offsetWidth
+    if (left < nav.scrollLeft) nav.scrollLeft = left
+    else if (right > nav.scrollLeft + nav.clientWidth) nav.scrollLeft = right - nav.clientWidth
+  }, [here, layout])
 
   /*
    * Both handlers build the environment inside the handler, never during render (#12). Nothing
@@ -383,7 +596,7 @@ export function Guide({
   }
 
   return (
-    <article className="guide" data-hints={hints ? 'on' : 'off'}>
+    <article className="guide" data-hints={hints ? 'on' : 'off'} data-layout={layout}>
       <header className="guide-head">
         {/*
           #112. The guide names the direction on every phase and, until now, never linked to the
@@ -451,14 +664,61 @@ export function Guide({
         screen in front of you is the one the line is about.
       </p>
 
-      {sections.map((section, i) => (
-        <section className="phase" key={section.key} aria-labelledby={`phase-${i + 1}`}>
-          <h3 id={`phase-${i + 1}`}>
-            <span className="phase-number mono">{i + 1}</span>
-            {section.title}
-          </h3>
-          {section.body}
-        </section>
+      {/*
+        §8/#341. **The jump-nav, and it is the whole answer for both layouts.**
+
+        The complaint was one — there is a lot of scrolling — and for a while the answer was two,
+        a jump-nav here and a tab strip for the sequencer layout. `nav.ts` records why that lost.
+        What is left is the control that never had to hide anything: it says where you are in the
+        guide and what is next, and every section stays on the page underneath it.
+
+        The sections it lists are whatever the layout drew. §8 orders the seven phases
+        deliberately — Hook before Sound design, because you write the line and then design the
+        sound that plays it — and forbids reordering; a rig is worked through a box at a time in
+        the order the guide sets out. Both are a sequence, which is what this marks.
+
+        Sticky, so it is still there after two metres of scroll, and it scrolls inside itself
+        (#21) because neither seven phases nor a rack of boxes fits 390px and the page body never
+        scrolls sideways.
+      */}
+      <nav className="guide-jump" aria-label="Sections" ref={jumpRef}>
+        <ol>
+          {numbered.map((section) => (
+            <li key={section.key}>
+              <a
+                href={`#${section.anchorId}`}
+                /*
+                  `step`, not `page` or `true`: these are the steps of one process in a fixed
+                  order, which is exactly what §8 says the phases are and what a rig worked
+                  through a box at a time is. It is also the whole accessible half of the mark —
+                  the underline below is the visible half, and neither is allowed to be the only
+                  one.
+                */
+                aria-current={section.key === here ? 'step' : undefined}
+                ref={(el) => {
+                  if (el === null) jumpLinks.current.delete(section.key)
+                  else jumpLinks.current.set(section.key, el)
+                }}
+                /*
+                  Marked on press, before anything has scrolled. Smooth scrolling takes the best
+                  part of a second on a long guide, and a bar that waits for it looks broken at
+                  the moment the reader is looking straight at it. No `preventDefault`: the hash
+                  still lands in the URL and the browser still does the scrolling, and the
+                  measurement above confirms the same answer when it settles.
+                */
+                onClick={() => setReading(section.key)}
+              >
+                <span className="jump-number mono">{section.n}</span>
+                <span className="jump-title">{section.title}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+
+      {/* Every section, in order, all of them on the page. Both layouts, no exceptions. */}
+      {numbered.map((section) => (
+        <Panel key={section.key} section={section} />
       ))}
     </article>
   )

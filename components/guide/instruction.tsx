@@ -1,8 +1,8 @@
-import { Fragment } from 'react'
+import { Fragment, useContext } from 'react'
 import type { PatternDriver } from '@/lib/core'
 import type { ReactNode } from 'react'
 import type { CapabilityEvidence, Cite, Provenance, ResolvedParam } from '@/lib/core'
-import { GUIDE_PHASES } from '@/lib/core'
+import { GuideNavContext } from './nav'
 import { citeLines, citeText, count, num, rangeText, valueParts } from './format'
 
 /**
@@ -285,14 +285,30 @@ export function TokenList({
 }
 
 /**
- * Derived from `GUIDE_PHASES` rather than written as `#phase-6`, so it cannot drift if the
- * list ever changes — §8 forbids reordering, but a hard-coded anchor would break silently and
- * a derived one breaks at the type level.
+ * §8/#341. **A pointer out of this phase, aimed by whoever is drawing the page.**
+ *
+ * The anchor is still derived rather than written as `#phase-6` — §8 forbids reordering, but a
+ * hard-coded anchor breaks silently — and `nav.ts` does that deriving now, because under the
+ * sequencer layout the answer is not a phase anchor at all. Sound design is an `h5` beside the
+ * steps there, in the same box's section, and `#phase-6` names a section that layout never
+ * renders.
+ *
+ * An ordinary anchor, and that is the whole of it: every section is on the page, so the browser's
+ * own handling does the landing and copy-link, middle-click and a keyboard activation all work
+ * without a handler. It carried one while the sequencer layout had tabs, to open a panel and wait
+ * a frame before scrolling — `scrollIntoView` on an element that is `display: none` does nothing
+ * and reads as a dead link. Nothing is hidden now, so nothing has to be opened first.
+ *
+ * Two states, and the second is the one invariant 5 asks for: a target that is rendered gets a
+ * link, and a target nothing renders gets none. A pointer to a section with nothing in it is the
+ * false trail `SustainedRef` exists to avoid, not an improvement on one.
  */
-const SOUND_DESIGN_ANCHOR = `#phase-${GUIDE_PHASES.indexOf('Sound design') + 1}`
-
-/** Derived for the same reason `SOUND_DESIGN_ANCHOR` is. */
-const HOOK_ANCHOR = `#phase-${GUIDE_PHASES.indexOf('Hook') + 1}`
+function PhaseLink({ to, children }: { to: 'hook' | 'sound'; children: ReactNode }) {
+  const nav = useContext(GuideNavContext)
+  const id = nav[to]
+  if (id === undefined) return <>{children}</>
+  return <a href={`#${id}`}>{children}</a>
+}
 
 /**
  * §8 puts Hook and Step programming before Sound design on purpose — write the line, then
@@ -306,7 +322,7 @@ const HOOK_ANCHOR = `#phase-${GUIDE_PHASES.indexOf('Hook') + 1}`
 export function SoundRef({ title }: { title: string }) {
   return (
     <p className="sound-ref">
-      <strong>{title}</strong> — settings in <a href={SOUND_DESIGN_ANCHOR}>Sound design</a>
+      <strong>{title}</strong> — settings in <PhaseLink to="sound">Sound design</PhaseLink>
     </p>
   )
 }
@@ -331,8 +347,8 @@ export function HookRef() {
         #142: "steps and note lengths" was true of a piano roll and false of a tracker, where
         phase 4 prints no lengths because the box has no field for them.
       */}
-      <strong>The hook is the pattern</strong> — see <a href={HOOK_ANCHOR}>Hook</a> for its steps
-      and what each one carries. Nothing separate to program here.
+      <strong>The hook is the pattern</strong> — see <PhaseLink to="hook">Hook</PhaseLink> for its
+      steps and what each one carries. Nothing separate to program here.
     </p>
   )
 }
@@ -419,7 +435,8 @@ export function ReArticulationRef({ bars }: { bars: number }) {
   return (
     <p className="sound-ref hook-ref">
       <strong>The hook is the notes; the steps below are where they are struck again</strong> — see{' '}
-      <a href={HOOK_ANCHOR}>Hook</a> for what to play and how long each note is held. This map is{' '}
+      <PhaseLink to="hook">Hook</PhaseLink> for what to play and how long each note is held. This map
+      is{' '}
       {count(bars, 'bar')} long and repeats inside the hook; the chain lengths below are counted in
       the hook.
     </p>

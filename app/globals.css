@@ -2294,6 +2294,100 @@ button:active {
   letter-spacing: 0;
 }
 
+/* -------------------------------------------------- #341 getting about the guide */
+/*
+ * The guide is one long scroll and §8 says it is read standing at a rack, so it gets a way
+ * through that is not the scrollbar. **One** way, shared by both layouts.
+ *
+ * It briefly had two. The sequencer layout got a tab strip, on the argument that boxes are
+ * independent and what a closed tab hides belongs to a machine you are not touching; the phases
+ * are sequential and §8 forbids reordering them, so they got this bar instead. `nav.ts` carries
+ * why that lost, and the shape of the loss is visible from here: the strip needed a print rule to
+ * put its closed panels back, a `display: none` it could be undone from, and an `sr-only` on the
+ * heading it was repeating. This needed none of them, because it hides nothing.
+ *
+ * It scrolls **inside itself** (#21). Neither seven phases nor a rack of boxes fits 390px and the
+ * page body never scrolls sideways. The container carries no `touch-action`; the links do, which
+ * is the rule the knob settled — put it on a strip and the page stops scrolling past the control,
+ * and on a phone that strip is stuck to the top of the guide.
+ */
+
+/*
+ * Sticky, because its whole job is to still be there two metres down; it names where you are in a
+ * sequence rather than offering a row of independent things to open.
+ */
+.guide-jump {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  margin-top: 16px;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--panel-1);
+  border-bottom: 1px solid var(--edge);
+}
+
+.guide-jump ol {
+  display: flex;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-jump li {
+  flex: 0 0 auto;
+}
+
+.guide-jump a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px;
+  color: var(--ink-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  touch-action: manipulation;
+}
+
+.guide-jump a:hover {
+  color: var(--silkscreen);
+}
+
+/*
+ * #341. **Where you are, and it is not a hover state.**
+ *
+ * A sticky bar earns its 44px by answering "which of the seven am I in" while somebody is two
+ * metres down with their hands on a box — and that reader is on a phone, where there is no hover
+ * at all and the pointer is a finger. So the mark is drawn from `aria-current`, which is the same
+ * fact a screen reader is given, rather than from `:hover` or a class only the mouse can reach.
+ *
+ * Two cues, not one. The rule under the link is a shape and survives a display that renders the
+ * accent as grey; the brighter ink is the second. Colour alone would make this the one control on
+ * the page whose state a reader has to be able to see a hue to read.
+ */
+.guide-jump a[aria-current='step'] {
+  color: var(--silkscreen);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.guide-jump a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.jump-number {
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
 .guide h4 {
   display: flex;
   flex-wrap: wrap;
@@ -3238,8 +3332,24 @@ h4 > .token-sep,
 /* The anchor lands with the heading clear of the panel edge rather than flush against it. */
 .phase > h4[id],
 .phase,
-.phase > h3 {
+.phase > h3,
+/* #341: `SoundRef` and `HookRef` land on these under the sequencer layout. */
+.phase h5[id] {
   scroll-margin-top: 16px;
+}
+
+/*
+ * #341. The jump-nav is stuck to the top of the viewport, so 16px would put the heading you
+ * jumped to underneath it. Both layouts, because both have the bar — it was scoped to the phase
+ * layout while the sequencer layout had a tab strip, which did not stick.
+ *
+ * `guide.tsx` reads this value off the element rather than repeating it, so the phase the bar
+ * marks is the one whose heading came to rest under it.
+ */
+.guide .phase > h3,
+.guide .phase > h4[id],
+.guide .phase h5[id] {
+  scroll-margin-top: 60px;
 }
 
 html {
@@ -3444,6 +3554,15 @@ html {
   .patchbay,
   .panel:not(.guide-panel):not(.rack-section),
   .guide-actions,
+  /*
+   * #341. **Navigation is chrome; every section is content.**
+   *
+   * A sticky jump-nav printed onto paper is a row of dead links stamped at the top of the first
+   * sheet. The rule the hints toggle already follows: a printout is taken to a machine precisely
+   * because the reader does not have the app in front of them, so what prints is the guide,
+   * whole — and it does, because nothing on screen was hiding any of it.
+   */
+  .guide-jump,
   /*
    * §7.5/#340 phase 2. The placement control is chrome by the same test as the hints toggle: a
    * button printed onto paper is a control nobody can operate. Nothing is lost with it — a
