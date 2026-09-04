@@ -5,14 +5,22 @@ import {
   ROLES,
   bearsPattern,
   expand,
+  isSustainedPart,
+  moodState,
+  noteInstruction,
   realisationOf,
+  renderGuide,
+  resolve,
   resolveRecipe,
   type AuthoredParam,
   type Recipe,
+  type ResolvedAssignment,
+  type Role,
 } from '../lib/core/index'
 import { device } from '../lib/devices/te-ep-40/index'
 import { device as ko2 } from '../lib/devices/te-ep-133/index'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { TEMPLATES } from '../lib/templates/index'
 import { auditDevice } from '../scripts/audit-verified'
 
 /**
@@ -590,5 +598,252 @@ describe('EP–40 riddim manifest', () => {
     for (const [key, text] of Object.entries(device.hints ?? {})) {
       expect(text.split(/\s+/).length, key).toBeLessThanOrEqual(8)
     }
+  })
+})
+
+/**
+ * §2.1/#334. **This box authors no trigger note, and `memberLabels` is why.**
+ *
+ * Guide §14.2's MIDI note map is forty-eight rows, one per pad — `36 c2` through `83 b5`, four
+ * groups of twelve in pad order `.`, `0`, `enter`, `1`-`9` — so ordinal *n* is note *35 + n*.
+ * This field reaches every member of a pool alike, so one value would be true of one pad in
+ * forty-eight, and would claim the members are interchangeable when the whole point of this
+ * pool's labels is that they are not.
+ *
+ * §9.2 programs a step by pressing the pad it is for: *"hold (RECORD) and press a pad to record
+ * the chosen pad to that step."* §9.4's KEYS mode transposes **one selected sample** across twelve
+ * pads and is off unless the reader turns it on. §12.11 step 6 is the only working description of
+ * a root note — adjusted *"to the root note of your sample"*, with no default printed — and
+ * §8.2.6, which should define the control, is the copy-paste defect this file already records.
+ */
+describe('trigger notes: read for, and declined (§2.1/#334)', () => {
+  const SEEDS = [1, 2, 3, 4, 5, 6]
+
+  it('authors none on the pool, and none on any recipe either', () => {
+    // Both halves, because the field exists in two places and only one of them is the pool.
+    expect(device.voices.filter((v) => v.triggerNote !== undefined)).toEqual([])
+    const claiming = device.recipes.filter(
+      (r) => (r as Recipe & { triggerNote?: unknown }).triggerNote !== undefined,
+    )
+    expect(claiming.map((r) => r.id)).toEqual([])
+  })
+
+  it('stays off the library roster of boxes that author one', () => {
+    // `test/tracker-mini.test.ts` pins that roster exactly; this is the same fact asked from the
+    // side of the box that declines, so a note added here fails in its own file as well as there.
+    const authoring = DEVICES.filter((d) => d.voices.some((v) => v.triggerNote !== undefined))
+    expect(authoring.map((d) => d.id)).not.toContain('te-ep-40')
+  })
+
+  it('expands to forty-eight members on one pool, none of which carries a note', () => {
+    expect(device.voices.length).toBe(1)
+    const members = expand(device)
+    expect(members.length).toBe(48)
+    expect(members.every((m) => m.poolId === 'pad')).toBe(true)
+    expect(members.filter((m) => m.triggerNote !== undefined)).toEqual([])
+  })
+
+  /**
+   * **The note map, asserted as arithmetic against the labels the manifest already carries.**
+   * Guide §14.2 opens at `36 c2` and closes at `83 b5`: forty-eight consecutive semitones for
+   * forty-eight pads, ordinal *n* at note *35 + n*. One pool-wide value cannot be forty-eight
+   * different notes, and this is the assertion that says so in numbers rather than in prose.
+   */
+  it('gives every pad its own note, which one pool-wide field cannot be', () => {
+    const pool = device.voices[0]
+    if (pool?.kind !== 'pool') throw new Error('expected a pool')
+
+    const FIRST = 36 // guide 14.2, `36 c2`, group `a`'s `.` pad
+    const LAST = 83 //  and `83 b5`, group `d`'s `9`
+    expect(LAST - FIRST + 1).toBe(pool.count)
+    expect(pool.memberLabels?.length).toBe(pool.count)
+
+    // Ordinal n is note 35 + n, which is the arithmetic `memberLabels` is built on: the first
+    // label is group A's `.` and the last is group D's `9`.
+    expect(pool.memberLabels?.[0]).toBe('A · .')
+    expect(pool.memberLabels?.[pool.count - 1]).toBe('D · 9')
+    expect(FIRST - 1).toBe(35)
+  })
+
+  /**
+   * The near miss, pinned so it is not mistaken for a citation. §9.4's KEYS mode plays *"a
+   * selected sample across a 12 note keyboard"* — one pad transposed, a mode the reader turns on,
+   * not a common note that plays forty-eight samples as recorded. Nothing in the manifest authors
+   * it, and this asserts that no recipe reaches for a note-shaped parameter instead.
+   */
+  it('authors no note-shaped parameter on any recipe, KEYS mode included', () => {
+    for (const recipe of device.recipes) {
+      expect(named(recipe, 'ROOT'), recipe.id).toBeUndefined()
+      expect(named(recipe, 'ROOT NOTE'), recipe.id).toBeUndefined()
+      expect(named(recipe, 'NOTE'), recipe.id).toBeUndefined()
+      expect(named(recipe, 'KEYS'), recipe.id).toBeUndefined()
+    }
+  })
+
+  /**
+   * A part phase 5 draws a grid for: not owned by a hook (#100), not sustained (§4.2), and with
+   * at least one section whose variant resolved (§6.3).
+   */
+  function drawsGrid(a: ResolvedAssignment): boolean {
+    return (
+      a.hookAuthority === undefined &&
+      !isSustainedPart(a) &&
+      a.patterns.some((p) => p.selection.outcome !== 'none')
+    )
+  }
+
+  /** Every part this box takes, split by what phase 5 actually draws for it. */
+  function sweep() {
+    const grid: { where: string; role: Role; kind: string }[] = []
+    const hooked: string[] = []
+    const sustained: string[] = []
+    const noPattern: string[] = []
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          const where = `${template.id}/${a.role}`
+          if (drawsGrid(a)) grid.push({ where, role: a.role, kind: noteInstruction(a).kind })
+          else if (a.hookAuthority !== undefined) hooked.push(where)
+          else if (isSustainedPart(a)) sustained.push(where)
+          else noPattern.push(where)
+        }
+      }
+    }
+    return { grid, hooked, sustained, noPattern }
+  }
+
+  /**
+   * **The measurement, taken rather than remembered.** Every direction against this box alone,
+   * seeds 1-6. The number moves when a direction gains or loses a part, and a diff is a prompt to
+   * re-read the head note rather than a failure. What must not move is the relationship — no part
+   * ever gets a `trigger`, because the pool has no note to give one.
+   */
+  it('leaves 204 grid parts blank, and pins how many there are', () => {
+    const { grid } = sweep()
+
+    expect(grid.length).toBe(228)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(204)
+
+    // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
+    // prints are the direction's own.
+    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch'])
+  })
+
+  it('prints a note only where the direction asked for a pitch of its own', () => {
+    // §4.1's precedence with one arm missing. The 24 are `sub` parts.
+    const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
+    expect(pitched.length).toBe(24)
+    expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
+  })
+
+  it('leaves the blanks on the roles a loaded sample answers', () => {
+    // Pinned by role, not only by total: a count alone would survive one role's parts being
+    // swapped for another's.
+    const counts = new Map<Role, number>()
+    for (const g of sweep().grid) {
+      if (g.kind !== 'none') continue
+      counts.set(g.role, (counts.get(g.role) ?? 0) + 1)
+    }
+    expect(
+      [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
+    ).toEqual([
+      ['closed-hat', 48],
+      ['ghost-perc', 42],
+      ['kick', 42],
+      ['clap', 18],
+      ['open-hat', 18],
+      ['snare', 18],
+      ['impact', 6],
+      ['noise', 6],
+      ['vox-chop', 6],
+    ])
+  })
+
+  it('accounts for every part that draws no grid, by which reason', () => {
+    // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
+    // part with no variant anywhere nothing to program.
+    const { grid, hooked, sustained, noPattern } = sweep()
+    expect(hooked.length).toBe(126)
+    expect(sustained).toEqual([])
+    expect(noPattern.length).toBe(30)
+    expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/sweep',
+      'ambient-dub/texture',
+      'generative-drift/sweep',
+      'hip-hop/texture',
+      'industrial-techno/riser',
+    ])
+
+    // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
+    // classify — which is what would make the 204 above an undercount rather than a measurement.
+    let assignments = 0
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        assignments += resolve({ devices: [device], template, mood: moodState(), seed })
+          .assignments.length
+      }
+    }
+    expect(grid.length + hooked.length + sustained.length + noPattern.length).toBe(assignments)
+  })
+
+  /**
+   * The resolved field itself, across every part rather than only the ones that draw a grid.
+   * `noteInstruction` folds the trigger arm in with the pitch arm, so this is the one assertion
+   * that a hooked part did not quietly acquire one either.
+   */
+  it('resolves no trigger note on any assignment, in any direction', () => {
+    let seen = 0
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          seen += 1
+          expect(a.triggerNote, `${template.id}/${a.role} seed ${String(seed)}`).toBeUndefined()
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(0)
+  })
+
+  /**
+   * §8. **The reader-facing half**, checked on the page rather than only on the resolver.
+   *
+   * The count of parts that actually draw a grid is asserted non-zero first, or an empty render
+   * would pass this forever.
+   */
+  it('never prints a trigger note on a rendered page, across every direction and seed', () => {
+    let drawn = 0
+    for (const template of TEMPLATES) {
+      for (const seed of [1, 7]) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        drawn += result.assignments.filter(drawsGrid).length
+        expect(renderGuide(result), `${template.id} seed ${String(seed)}`).not.toContain(
+          'Trigger note',
+        )
+      }
+    }
+    expect(drawn).toBeGreaterThan(0)
+  })
+
+  /**
+   * §2.1/#352. **The octave convention, recorded and deliberately not used.**
+   *
+   * Guide §14.2 opens at `36 c2`, so this guide prints `c4` for MIDI 60 — the SP-404MK2's
+   * convention and the Octatrack's, an octave below the Digitakt and Digitone manuals' `C5`.
+   * Asserted as arithmetic, not as a value in the manifest, which is the point.
+   */
+  it('records the octave convention without authoring a note from it', () => {
+    const NAMES = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
+    // `36 c2` means MIDI 0 is c-1, so MIDI n is octave floor(n / 12) - 1.
+    const midiOf = (name: string, octave: number) => (octave + 1) * 12 + NAMES.indexOf(name)
+
+    expect(midiOf('c', 2)).toBe(36) //  guide 14.2, the first row
+    expect(midiOf('b', 5)).toBe(83) //  and the last
+    expect(midiOf('c', 4)).toBe(60) //  so this guide's name for 60 is `c4`
+    // The Elektron samplers put 60 an octave up, at C5, which is the whole reason to record it.
+    expect(midiOf('c', 5)).toBe(72)
+
+    expect(device.voices.some((v) => v.triggerNote !== undefined)).toBe(false)
   })
 })
