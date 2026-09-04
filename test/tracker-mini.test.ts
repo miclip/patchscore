@@ -1210,17 +1210,23 @@ describe('every sample-track grid part gets its note (§2.1)', () => {
   })
 
   /**
-   * What makes the sweep above the whole story. The trigger note is authored on one pool of one
-   * device, so every other box in the library renders exactly what it rendered before — not
-   * because a test checked each of them, but because there is nothing on them to render.
+   * What makes the sweep above the whole story. Trigger notes are authored on two pools across
+   * the whole library, so every other box renders exactly what it rendered before — not because a
+   * test checked each of them, but because there is nothing on them to render.
+   *
+   * **The list is deliberately whole-library and lives here rather than in one device's file.**
+   * It was written when the Mini was the only box carrying one; the Tracker joined it, and the
+   * roster moving is the event this is for. A third entry means somebody has decided a new box's
+   * note is a fact about hardware rather than the reader's choice, which is a claim that wants a
+   * citation read rather than a test widened.
    */
-  it('is the only device in the library that authors one, so no other guide moves', () => {
+  it('names every device in the library that authors one, so no other guide moves', () => {
     const authoring = DEVICES.filter((d) => d.voices.some((v) => v.triggerNote !== undefined))
-    expect(authoring.map((d) => d.id)).toEqual(['polyend-tracker-mini'])
+    expect(authoring.map((d) => d.id)).toEqual(['polyend-tracker', 'polyend-tracker-mini'])
 
     const voices = authoring.flatMap((d) =>
       d.voices.filter((v) => v.triggerNote !== undefined).map((v) => v.id),
     )
-    expect(voices).toEqual(['track-sample'])
+    expect(voices).toEqual(['track', 'track-sample'])
   })
 })
