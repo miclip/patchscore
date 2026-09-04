@@ -899,3 +899,89 @@ describe('song overrides (#161)', () => {
     expect(moved.shortfalls).toEqual(bare.shortfalls)
   })
 })
+
+// ---------------------------------------------------------------------------
+// §2.1 — the trigger note reaches the assignment
+// ---------------------------------------------------------------------------
+
+describe('ResolvedAssignment.triggerNote (§2.1)', () => {
+  const NOTE = { note: 'C5', midi: 60, verified: MANUAL } as const
+
+  /**
+   * One box, two pools that disagree: a sample pool that answers the note question for itself and
+   * a synth pool that leaves it to the reader. Hand-built rather than borrowed from the library,
+   * so this fails on propagation and never on a device folder gaining a part.
+   */
+  const twoPools = box('c-sampler', {
+    kind: 'groovebox',
+    voices: [
+      {
+        kind: 'pool',
+        id: 'sample',
+        label: 'Sample',
+        count: 2,
+        roles: ['kick', 'vox-chop'],
+        polyphony: 1,
+        triggerNote: NOTE,
+      },
+      { kind: 'pool', id: 'synth', label: 'Synth', count: 2, roles: ['lead'], polyphony: 1 },
+    ],
+    comfortableVoices: 4,
+    recipes: [
+      { ...kickRecipe(), id: 'sample-kick', voice: 'sample' },
+      { ...kickRecipe(), id: 'sample-chop', role: 'vox-chop', voice: 'sample' },
+      { ...kickRecipe(), id: 'synth-lead', role: 'lead', voice: 'synth' },
+    ],
+  })
+
+  const scene3 = scene({
+    roles: [
+      request({ id: 'r-kick', role: 'kick' }),
+      request({ id: 'r-chop', role: 'vox-chop', priority: 2 }),
+      request({ id: 'r-lead', role: 'lead', priority: 3 }),
+    ],
+  })
+
+  const noteFor = (result: ResolveResult, requestId: string) =>
+    result.assignments.find((a) => a.requestId === requestId)?.triggerNote
+
+  it('carries the voice note to every part on it, and nothing where nothing was authored', () => {
+    const result = resolve({ devices: [twoPools], template: scene3, mood: moodState(), seed: 1 })
+    expect(result.assignments).toHaveLength(3)
+
+    // The voice's own, unchanged, whichever recipe landed on it: nothing between the manifest
+    // and the page may move it (§2.1).
+    expect(noteFor(result, 'r-kick')).toEqual(NOTE)
+    expect(noteFor(result, 'r-chop')).toEqual(NOTE)
+    // Absent, and honest: on a synth track the note is the reader's to choose.
+    expect(noteFor(result, 'r-lead')).toBeUndefined()
+  })
+
+  it('is a field of its own, never confused with the request pitch beside it', () => {
+    // `pitch` is a musical decision resolved against the song's key; this is addressing. A part
+    // may have either, both or neither, and they answer different questions.
+    const withPitch = scene({
+      roles: [request({ id: 'r-kick', role: 'kick', pitch: { degree: 1, baseOctave: 2 } })],
+    })
+    const result = resolve({
+      devices: [twoPools],
+      template: withPitch,
+      mood: moodState(),
+      seed: 1,
+      overrides: { key: 'A minor' },
+    })
+    const kick = result.assignments.find((a) => a.requestId === 'r-kick')
+    expect(kick?.pitch?.note).toBe('A2')
+    expect(kick?.triggerNote).toEqual(NOTE)
+  })
+
+  it('does not move a value the resolver decides, so RESOLVER_VERSION stands', () => {
+    // Same rig, same seed, and every allocation-bearing field identical with the field stripped:
+    // this is carried information, not a new decision (§7 step 9's version note).
+    const result = resolve({ devices: [twoPools], template: scene3, mood: moodState(), seed: 1 })
+    const again = resolve({ devices: [twoPools], template: scene3, mood: moodState(), seed: 1 })
+    expect(result.score).toEqual(again.score)
+    expect(result.assignments.map((a) => [a.requestId, a.recipe.id, a.assignables[0]?.voiceId]))
+      .toEqual(again.assignments.map((a) => [a.requestId, a.recipe.id, a.assignables[0]?.voiceId]))
+  })
+})

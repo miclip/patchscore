@@ -19,6 +19,7 @@ import type {
   JackSpec,
   QuickTune,
   Realisation,
+  TriggerNote,
 } from './device'
 import type { RoleRequest, Template } from './template'
 import type { ResolvedParam } from './params'
@@ -1206,6 +1207,26 @@ export type ResolvedAssignment = {
    * saying so is invariant 5.
    */
   pitch: { note: string; midi: number } | undefined
+  /**
+   * §2.1. **The note that plays this part's sound as it is**, where the box says so — the
+   * carrying voice's own, unchanged. There is no per-recipe override and deliberately none: see
+   * `TriggerNote` for the sliced case that would have needed one and what it would first need
+   * the vocabulary to be able to say.
+   *
+   * `undefined` is the ordinary answer and an honest one — it means the note is the reader's to
+   * choose, which is what a note on a synth track is, and it is not a gap to report.
+   *
+   * **Not a pitch, and not comparable to `pitch` above.** That field is a musical decision the
+   * direction made, resolved against the song's key. This one is addressing: `C5` on a Tracker
+   * Mini sample track means "play it as recorded", and the sound that comes out is whatever the
+   * sample is. A consumer that transposed one by the other would be reading a filing system as a
+   * melody.
+   *
+   * Resolved rather than left for a renderer to look up, for the reason `hookAuthority` and
+   * `realisation` are: a fact each renderer derives for itself is a fact the two can come to
+   * disagree about.
+   */
+  triggerNote: TriggerNote | undefined
   hookAuthority: HookId | undefined
   /**
    * §4.3/§8. **The direction's answer to what this part's variants mean against its hook**, from
@@ -1686,6 +1707,10 @@ export function resolve(input: ResolveInput): ResolveResult {
       patch: resolvePatch(a.recipe),
       sections: a.sections,
       pitch: resolveRequestPitch(request, key),
+      // The head of the stack answers for all of it: a stack is members of one pool on one
+      // device (§12.4), and a pool's members carry the pool's own note. Not the bug
+      // `Assignment.assignables` warns about — there is one value here, not one per voice.
+      triggerNote: a.assignables[0]?.triggerNote,
       hookAuthority: hookAuthorityByRole.get(a.role),
       reArticulatesHook: request.reArticulatesHook === true,
       patterns: a.sections.map((section) => {

@@ -61,6 +61,7 @@ import {
   bandTrajectory,
   chainPlan,
   isSustainedPart,
+  noteInstruction,
   type BandGroup,
   type SectionChain,
 } from './arrangement'
@@ -2204,18 +2205,34 @@ function phaseSteps(
      * question; whether it came back empty is a different one.
      */
     /**
-     * §4.1/#334. **Which note to place**, above the grid that says where.
+     * §4.1/§2.1/#334. **Which note to place**, above the grid that says where.
      *
-     * Only where a grid follows and the part has no hook: a hook already prints every note with
-     * its degree and MIDI number in phase 4, so repeating one of them here would be a second
-     * authority over the same part — the thing #100 exists to prevent.
-     *
-     * Twenty of the library's devices are addressed by note, and before this the guide told a
+     * Twenty of the library's devices are addressed by note, and before #334 the guide told a
      * reader which steps to hit and never what to put on them.
+     *
+     * Which note, and whether there is one at all, is `noteInstruction`'s decision and not this
+     * renderer's — the web sibling asks the same function and gets the same answer, per #33. All
+     * that is written twice is the ink.
+     *
+     * **The two arms print differently because they are different claims.** A pitch is the
+     * direction's musical decision and carries no citation; a trigger note is a cited fact about
+     * the box, so it carries its provenance the way every other hardware value on the page does
+     * (invariant 4).
      */
-    if (!replacesGrid && a.hookAuthority === undefined && a.pitch !== undefined) {
+    const note = noteInstruction(a)
+    if (note.kind === 'pitch') {
       out.push('')
-      out.push(`**Note** — \`${a.pitch.note}\` · MIDI ${num(a.pitch.midi)}`)
+      out.push(`**Note** — \`${note.note}\` · MIDI ${num(note.midi)}`)
+    } else if (note.kind === 'trigger') {
+      out.push('')
+      // Bare, and that is the accurate form. `C5` is where the sample plays as recorded, not the
+      // only note it answers to — every other note plays it transposed (p.128) — so a gloss
+      // saying "the note this voice answers to" claims more than the citation supports.
+      //
+      // No unmarked arm, because §2.1 admits no uncited trigger note: `verified` is a `Cite`, so
+      // there is always a kind to print and always a page to print under it.
+      out.push(`**Trigger note** — \`${note.note}\` · MIDI ${num(note.midi)} · ${note.verified.kind}`)
+      subordinate(out, '', 'cite', citeText(note.verified))
     }
 
     if (!replacesGrid) {

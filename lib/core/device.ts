@@ -28,6 +28,67 @@ import {
 // ---------------------------------------------------------------------------
 
 /**
+ * §2.1/§4.1. **Which note plays this voice's sound as it is**, on a box where that is not the
+ * reader's free choice.
+ *
+ * Most voices do not need one. A synth track plays the note you write on the step, and the note
+ * *is* the pitch. A sample track is different: the Tracker Mini's `track-sample` plays a loaded
+ * sample at its recorded pitch only at `C5`, and any other note is the same sample transposed
+ * (p.128, *"Note value affects pitch"*). That is not musical information — it is how the box is
+ * addressed — so it belongs to the device and not to any direction.
+ *
+ * **On the voice, and both alternatives fail on real data.** A device-wide field cannot say it:
+ * the Tracker Mini's two pools disagree, `track-sample` having a trigger note and `track-synth`
+ * having none, and one field per device would be wrong about one of them. Per recipe would repeat
+ * one fact about the track on every sample recipe the folder ever gains, which is the duplication
+ * `poolId ?? voiceId` lookup exists to prevent.
+ *
+ * **Not a fifth shared vocabulary (invariant 3).** It is a value a device authors about itself,
+ * in the same class as `polyphony` or a cited range. No template names it and no template can.
+ *
+ * **`note` and `midi` are two spellings of one addressing fact, and they are not
+ * interchangeable.** Octave numbering is a convention each maker picks for itself — §4.1 of
+ * `DESIGN.md` records that drift and deliberately declines to model note *naming*, which this is
+ * not. The Tracker Mini is the case that proves the point: its Middle C setting ships as `C-5`,
+ * so the `C5` its screen prints is MIDI 60, not the 72 scientific pitch notation would give. An
+ * author reading a note name off a manual page **must** find that box's own octave mapping before
+ * writing `midi`, and cite it — a MIDI number derived from SPN by habit is an invented value
+ * however carefully the note name beside it was read.
+ *
+ * **This models the whole-sample case only, and the boundary is deliberate.** A *sliced*
+ * instrument is addressed by note too, and it is not the same fact: on the Tracker Mini's Beat
+ * Slice mode `C2` selects the first slice and the next semitone the next slice, so a note there
+ * is a slice address rather than a pitch or an original-pitch marker. Nothing in this vocabulary
+ * can say that, and authoring a slice base in this field would make two different kinds of value
+ * share one name — which reads as correct right up to the first sliced instrument somebody uses
+ * for something pitched. #334 named this as its third category and nobody has designed it yet.
+ * Until something can say it, a sliced voice authors nothing here.
+ *
+ * **`verified` is a `Cite`, so an uncited trigger note cannot be authored at all.** Not
+ * `Verified`, and the difference is invariant 5 rather than invariant 4. Most authored values are
+ * a starting point a reader adjusts, and `false` is the honest word for one nobody has checked
+ * against a document. This is not that kind of value: a note that does not address the voice does
+ * not sound it, so a guessed one is not a rough setting but an instruction that fails at the
+ * machine — and it would fail invisibly, since the reader has no way to tell an uncited `C5` from
+ * a cited one. There is no state between "the manual says which note" and "we do not model this
+ * voice's addressing", so the schema refuses `false` exactly as it refuses omission.
+ */
+export type TriggerNote = {
+  /** As the device's own screen spells it: 'C5' on a box whose middle C is C5. */
+  note: string
+  /** The MIDI note number that note sends **on this box**, under its own default octave mapping. */
+  midi: number
+  /** A citation, never `false`: an uncited trigger note is not authorable (see above). */
+  verified: Cite
+}
+
+export const TriggerNoteSchema = z.strictObject({
+  note: z.string().min(1),
+  midi: z.int().min(0).max(127),
+  verified: CiteSchema,
+})
+
+/**
  * Some devices have fixed, named voices (TR-1000: BD, SD, LT...). Others have fungible
  * capacity (Tracker Mini: 16 tracks, as *two* pools — 1-8 take samples, synths or MIDI, 9-16
  * take synths or MIDI only). Modelling only the first does not survive contact with the second,
@@ -38,7 +99,15 @@ import {
  * can sound while serving one role.
  */
 export type VoiceSpec =
-  | { kind: 'fixed'; id: VoiceId; label: string; roles: Role[]; polyphony: number }
+  | {
+      kind: 'fixed'
+      id: VoiceId
+      label: string
+      roles: Role[]
+      polyphony: number
+      /** §2.1. The note that addresses this voice, where the box has one. See `TriggerNote`. */
+      triggerNote?: TriggerNote
+    }
   | {
       kind: 'pool'
       id: PoolId
@@ -48,6 +117,12 @@ export type VoiceSpec =
       memberLabels?: string[]
       roles: Role[]
       polyphony: number
+      /**
+       * §2.1. The note that addresses every member of this pool, where the box has one. On the
+       * pool rather than the member: the ordinals are interchangeable and they are addressed
+       * alike, which is the same reason recipe lookup keys on `poolId`.
+       */
+      triggerNote?: TriggerNote
     }
 
 const voiceCommon = {
@@ -55,6 +130,7 @@ const voiceCommon = {
   label: z.string().min(1),
   roles: z.array(RoleSchema).min(1),
   polyphony: z.int().min(1),
+  triggerNote: TriggerNoteSchema.optional(),
 }
 
 export const VoiceSpecSchema = z.discriminatedUnion('kind', [
@@ -106,6 +182,12 @@ export type Assignable = {
   ordinal?: number
   roles: Role[]
   polyphony: number
+  /**
+   * §2.1. The voice's own trigger note, carried through expansion unchanged — a pool's members
+   * share the pool's, because they are addressed alike. Nothing between here and the page
+   * changes it: there is no per-recipe override, deliberately (see `TriggerNote`).
+   */
+  triggerNote?: TriggerNote
 }
 
 /**

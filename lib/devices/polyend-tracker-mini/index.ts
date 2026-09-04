@@ -119,6 +119,40 @@ function cite(page: number): Cite {
   return { kind: 'manual', source: `Polyend Tracker Mini Manual 2.2.1b, p.${page}` }
 }
 
+/**
+ * §2.1. **The citation `track-sample`'s trigger note rests on, and it names four pages.**
+ *
+ * p.90 states the note plainly: *"The default note value is C5 which plays a sample at its
+ * original pitch value."* That is the whole of the note-name claim.
+ *
+ * It is not the whole of the *MIDI* claim, and this is the `CLAUDE.md` hazard about a cited range
+ * being the wrong range, wearing note names instead of knob values. `C5` is a number only once you
+ * know which octave numbering this box uses, and the box has a setting for it: `[Menu] > Config >
+ * MIDI > Middle C`, whose options are C-3, C-4, C-5 and C-6 (p.54, repeated p.285). p.298's
+ * set-up table gives the value it ships with as `C-5`, and p.288 confirms it from the other side
+ * — an Ableton Live example whose instruction is to adjust *"Middle C ... from C-5 to C-3"*, Live
+ * being a host that calls middle C `C3`.
+ *
+ * So on this box, out of the box, the `C5` printed on p.90 **is** middle C: MIDI 60. Scientific
+ * pitch notation would have said 72, and `DESIGN.md §4.1` is the standing note that SPN is a
+ * convention rather than a fact about instruments. Citing p.90 alone beside a MIDI number would
+ * be citing a page that does not contain one.
+ *
+ * **The sentence after that one on p.90 is not authored anywhere, and that is deliberate.** It
+ * reads *"The first slice of a beat slice sample will be triggered using note C2"* — and a slice
+ * address is not the same kind of value as this field holds. `C5` says *play it as recorded*;
+ * `C2` says *play the first of the pieces*, with the next semitone the next piece. Nothing in the
+ * vocabulary can say which of the two a voice is doing, so `tm-vox-chop-dirty` carries no trigger
+ * note: putting `C2` in this field would give two different kinds of value one name. #334 named
+ * this as its third category and nobody has designed it yet.
+ */
+const TRIGGER_NOTE_CITE: Cite = {
+  kind: 'manual',
+  source:
+    'Polyend Tracker Mini Manual 2.2.1b, p.90 (C5 plays a sample at its original pitch); ' +
+    'p.54, p.298, p.288 (Middle C setting, shipped as C-5, so that C5 is MIDI 60)',
+}
+
 function num(
   name: string,
   value: number,
@@ -1391,6 +1425,15 @@ export const device: Device = {
       count: 8,
       roles: SAMPLE_POOL_ROLES,
       polyphony: 1,
+      /**
+       * §2.1. **The note that plays a loaded sample as it was recorded**, which on a sample track
+       * is a fact about the box rather than a musical choice — write anything else on the step and
+       * the same sample comes out transposed (p.128: *"Note value affects pitch"*).
+       *
+       * On this pool and not the other: `track-synth` has no sample to be at its original pitch,
+       * so its note is the reader's, and a device-wide field could not have said both.
+       */
+      triggerNote: { note: 'C5', midi: 60, verified: TRIGGER_NOTE_CITE },
     },
     /**
      * §12.4: **no `sampled-chord` recipe addresses this pool, and it is not an oversight.** The

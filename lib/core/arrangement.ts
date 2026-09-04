@@ -1,5 +1,6 @@
 import type { DeviceId, RequestId, SectionName } from './ids'
 import type { ResolveResult, ResolvedAssignment } from './pipeline'
+import type { Cite } from './params'
 import type { DensityBand } from './template'
 import { STEPS_PER_BAR } from './template'
 import { bearsPattern, type Role } from './vocabulary'
@@ -122,6 +123,54 @@ export function isSustainedPart(a: ResolvedAssignment): boolean {
     a.patterns.length > 0 &&
     a.patterns.every((p) => p.selection.outcome === 'none')
   )
+}
+
+/**
+ * §4.1/§2.1. **What to write on the steps**, decided once for both renderers.
+ *
+ * Phase 5 says which steps to hit. Two different facts can say what to put on them, they come
+ * from opposite ends of the architecture, and a part may have either, both or neither:
+ *
+ *  - **`pitch`** is the direction's, resolved against the song's key (#334). A musical decision.
+ *  - **`triggerNote`** is the device's, cited to its manual (§2.1). Addressing: `C5` plays a
+ *    Tracker Mini sample as recorded, and what comes out is whatever the sample is.
+ *
+ * **Pitch wins where both exist**, and the case that settles it is real rather than
+ * hypothetical: a `sub` on a Tracker Mini sample track. p.128's *"Note value affects pitch"*
+ * means that track answers to pitch, so the direction asking for the tonic is playable and is
+ * the instruction — and the trigger note is precisely the default the pitch is replacing. Saying
+ * `C5` there would tell a reader to play a sub at the sample's recorded pitch, which is the one
+ * thing the direction did not ask for.
+ *
+ * **Neither is printed where a hook owns the part or the part is sustained.** A hook prints every
+ * note with its degree and its MIDI number in phase 4, and a second authority over one part's
+ * notes is what #100 exists to prevent; a sustained part has no grid for a note to sit above.
+ * Both of those are the condition the two renderers already agreed on before this existed, and
+ * folding them in here is the point — the precedence and its guard are one decision, so neither
+ * renderer can hold half of it.
+ *
+ * **A discriminated result, with `none` a member rather than an absence.** The two arms are
+ * printed differently and must be: one is taste and carries no citation, the other is a claim
+ * about hardware and always carries one — `Cite`, never `Verified`, because §2.1 refuses to let
+ * an uncited trigger note exist. A renderer handed a bare `{ note, midi }` would have had to ask
+ * which it was holding, which is precedence recreated in the place this function exists to take
+ * it out of.
+ *
+ * Lives here for the reason `isSustainedPart` does: this module derives facts and renders
+ * nothing, and two spellings of one claim are one drift away from disagreeing on the page.
+ */
+export type NoteInstruction =
+  | { kind: 'none' }
+  | { kind: 'pitch'; note: string; midi: number }
+  | { kind: 'trigger'; note: string; midi: number; verified: Cite }
+
+const NO_NOTE: NoteInstruction = { kind: 'none' }
+
+export function noteInstruction(a: ResolvedAssignment): NoteInstruction {
+  if (a.hookAuthority !== undefined || isSustainedPart(a)) return NO_NOTE
+  if (a.pitch !== undefined) return { kind: 'pitch', ...a.pitch }
+  if (a.triggerNote !== undefined) return { kind: 'trigger', ...a.triggerNote }
+  return NO_NOTE
 }
 
 /** First occurrence wins. A template may request one role twice; `pad and pad` is noise. */

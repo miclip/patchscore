@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { bandTrajectory, resolve, type ResolveResult, type SectionName, type Template } from '../lib/core/index'
+import {
+  bandTrajectory,
+  noteInstruction,
+  resolve,
+  type ResolveResult,
+  type ResolvedAssignment,
+  type SectionName,
+  type Template,
+} from '../lib/core/index'
 import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
 
 /**
@@ -274,5 +282,82 @@ describe('roles are named once, however many times a template requests them', ()
     const roles = intro?.fallbacks.flatMap((f) => f.roles) ?? []
     expect(roles).toEqual([...new Set(roles)])
     expect(roles).toContain('pad')
+  })
+})
+
+
+// ---------------------------------------------------------------------------
+// §4.1/§2.1 — which note to place
+// ---------------------------------------------------------------------------
+
+/**
+ * The precedence, derived once for both renderers. Asserted here rather than through either
+ * one's prose, for the reason the trajectory above is: a test pinned to a renderer's wording
+ * would have to be written twice and would fail on a comma.
+ */
+describe('noteInstruction decides which note a grid carries (§4.1/§2.1)', () => {
+  const PITCH = { note: 'A1', midi: 33 }
+  const TRIGGER = {
+    note: 'C5',
+    midi: 60,
+    verified: { kind: 'manual', source: 'Fixture Manual, p.90' },
+  } as const
+
+  /**
+   * The fields the decision reads, and nothing else. A whole `ResolvedAssignment` here would be
+   * fifteen fields of noise around four that matter — and `isSustainedPart` reads `role` and
+   * `patterns`, which is why both are named.
+   */
+  const part = (over: Partial<ResolvedAssignment> = {}): ResolvedAssignment =>
+    ({
+      role: 'kick',
+      patterns: [],
+      pitch: undefined,
+      triggerNote: undefined,
+      hookAuthority: undefined,
+      ...over,
+    }) as ResolvedAssignment
+
+  it('prefers the direction pitch to the device trigger note', () => {
+    // The live case is a `sub` on a Tracker Mini sample track: that track answers to pitch, so
+    // the tonic the direction asked for is the instruction and `C5` is the default it replaces.
+    expect(noteInstruction(part({ pitch: PITCH, triggerNote: TRIGGER }))).toEqual({
+      kind: 'pitch',
+      ...PITCH,
+    })
+  })
+
+  it('falls to the trigger note where the direction authored no pitch', () => {
+    expect(noteInstruction(part({ triggerNote: TRIGGER }))).toEqual({ kind: 'trigger', ...TRIGGER })
+  })
+
+  it('says nothing where neither exists, which is most parts on most boxes', () => {
+    expect(noteInstruction(part())).toEqual({ kind: 'none' })
+  })
+
+  it('says nothing where a hook owns the part, whichever note it holds', () => {
+    // #100: the hook prints every note with its degree and MIDI number in phase 4, and a second
+    // authority over one part's notes is the thing that rule exists to prevent.
+    for (const over of [{ pitch: PITCH }, { triggerNote: TRIGGER }]) {
+      expect(noteInstruction(part({ ...over, hookAuthority: 'h-1' }))).toEqual({ kind: 'none' })
+    }
+  })
+
+  it('says nothing where the part is sustained, since there is no grid to sit above', () => {
+    const sustained = {
+      role: 'pad' as const,
+      patterns: [{ section: 'Intro', selection: { outcome: 'none' as const, band: 1 as const }, articulation: [] }],
+    }
+    expect(noteInstruction(part({ ...sustained, triggerNote: TRIGGER }))).toEqual({ kind: 'none' })
+    expect(noteInstruction(part({ ...sustained, pitch: PITCH }))).toEqual({ kind: 'none' })
+  })
+
+  it('carries the citation on the trigger arm and none on the pitch arm', () => {
+    // Two different claims: one is a cited fact about hardware, the other a musical decision
+    // resolved against the key. A renderer must be able to tell them apart without asking.
+    const trigger = noteInstruction(part({ triggerNote: TRIGGER }))
+    const pitch = noteInstruction(part({ pitch: PITCH }))
+    expect(trigger.kind === 'trigger' ? trigger.verified : undefined).toEqual(TRIGGER.verified)
+    expect(Object.keys(pitch)).toEqual(['kind', 'note', 'midi'])
   })
 })

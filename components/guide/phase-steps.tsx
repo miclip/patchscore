@@ -13,12 +13,13 @@ import {
   STEPS_PER_BAR,
   chainPlan,
   isSustainedPart,
+  noteInstruction,
   patternDriver,
   patternEntryNotice,
   reStrikesHeldNote,
   tightestReStrike,
 } from '@/lib/core'
-import { citeLines, count, hintText, num, voicesLabel } from './format'
+import { citeLines, citeText, count, hintText, num, voicesLabel } from './format'
 import {
   HookRef,
   Instruction,
@@ -367,6 +368,53 @@ function HookPointer({ a }: { a: ResolvedAssignment }) {
   return <ReArticulationRef bars={first.pattern.length / STEPS_PER_BAR} />
 }
 
+/**
+ * §4.1/§2.1/#334. **Which note to place**, above the grid that says where.
+ *
+ * The decision is `noteInstruction`'s, not this renderer's — the Markdown sibling asks the same
+ * function and gets the same answer, per #33. What is written twice is the ink, and the two arms
+ * take different ink because they are different claims: a pitch is the direction's musical
+ * decision and carries no citation, where a trigger note is a cited fact about the box and
+ * always carries its provenance the way every other hardware value on this page does — always,
+ * because §2.1 refuses to let an uncited one be authored.
+ *
+ * The citation is *visible* rather than only in the mark's title, for the reason phase 3's are: a
+ * reader on a phone at the rack has no hover.
+ */
+function NoteLine({ a }: { a: ResolvedAssignment }) {
+  const note = noteInstruction(a)
+  if (note.kind === 'none') return null
+  if (note.kind === 'pitch') {
+    return (
+      <p className="sound-ref">
+        <strong>Note</strong> — <span className="mono">{note.note}</span>
+        <span className="quiet"> · MIDI {num(note.midi)}</span>
+      </p>
+    )
+  }
+  return (
+    <>
+      <p className="sound-ref">
+        <strong>Trigger note</strong> — <span className="mono">{note.note}</span>
+        {/*
+          Bare. `C5` is where the sample plays as recorded, not the only note the voice answers
+          to — every other note plays it transposed — so a gloss would claim more than the
+          citation supports.
+        */}
+        <span className="quiet"> · MIDI {num(note.midi)}</span>{' '}
+        {/*
+          One arm only: §2.1 admits no uncited trigger note, so there is always a kind to draw
+          and always a page beneath it.
+        */}
+        <span className="prov prov-cited" title={note.verified.source}>
+          {note.verified.kind}
+        </span>
+      </p>
+      <p className="subordinate cite">{citeText(note.verified)}</p>
+    </>
+  )
+}
+
 /** §8 phase 5. The selected template variant per part, with this device's articulation bound. */
 export function PhaseSteps({
   result,
@@ -409,18 +457,7 @@ export function PhaseSteps({
           ) : isSustainedPart(a) ? (
             <SustainedRef />
           ) : null}
-          {/*
-            §4.1/#334. Which note to place, above the grid that says where. Only where a grid
-            follows and the part has no hook — a hook prints every note with its degree and MIDI
-            number in phase 4, and a second authority over one part's notes is what #100 exists
-            to prevent. This renderer's own words, per #33.
-          */}
-          {a.hookAuthority !== undefined || isSustainedPart(a) || a.pitch === undefined ? null : (
-            <p className="sound-ref">
-              <strong>Note</strong> — <span className="mono">{a.pitch.note}</span>
-              <span className="quiet"> · MIDI {num(a.pitch.midi)}</span>
-            </p>
-          )}
+          <NoteLine a={a} />
           {/*
             §8/#65. Qualifies the grid below rather than replacing it — so it is keyed on whether
             a grid is suppressed, not on which sentence printed above it.
