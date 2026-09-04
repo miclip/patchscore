@@ -120,10 +120,30 @@ describe('#112 the navigation landmark', () => {
   })
 
   it('is on every route, exactly once, with the same links', async () => {
-    // The claim the four hand-written copies could not make. Rendered through the layout, so
-    // this fails if the nav is ever moved back into the pages and one of them forgets it.
+    /*
+     * The claim the four hand-written copies could not make. Rendered through the layout, so
+     * this fails if the nav is ever moved back into the pages and one of them forgets it.
+     *
+     * **Counted by name, not by tag** (#341). The studio route renders a guide, and the guide has
+     * navigation of its own: a jump-nav through its sections, which is in-page and not a site
+     * landmark. Counting every `<nav>` made this test assert something it never meant — that no
+     * page may contain one — and it passed only because that bar happened to be drawn for one of
+     * the two guide layouts. So: exactly one *site* nav, and every other nav on the page is named
+     * something else, which is the distinguishability this file's first test asks for.
+     */
     for (const { name, markup } of await routes()) {
-      expect(markup.match(/<nav\b/g)?.length ?? 0, `${name} should have exactly one nav`).toBe(1)
+      expect(
+        markup.match(/<nav class="site-nav"/g)?.length ?? 0,
+        `${name} should have exactly one site nav`,
+      ).toBe(1)
+      const labels = [...markup.matchAll(/<nav\b[^>]*aria-label="([^"]*)"/g)].map((m) => m[1])
+      expect(labels, `${name} has an unnamed navigation landmark`).toHaveLength(
+        markup.match(/<nav\b/g)?.length ?? 0,
+      )
+      expect(
+        labels.filter((l) => l === 'Site'),
+        `${name} has more than one landmark calling itself Site`,
+      ).toHaveLength(1)
       for (const link of NAV_LINKS) {
         expect(markup, `${name} cannot reach ${link.href}`).toContain(
           `<a href="${link.href}">${link.label}</a>`,

@@ -236,6 +236,50 @@ import { EP_40_PANEL } from './panel'
  * Mute groups, solo, live state's per-button lockout and the note-repeat arpeggiator are
  * performance gestures with no value to author; the ones that change how a part sits are named in
  * `routing` instead.
+ *
+ * ## No trigger note, because every pad already has its own note (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 204, all on the one `pad` pool, and it declines for the reason §2.2 made this pool
+ * unusual in the first place: **the forty-eight members are not interchangeable, and the note map
+ * is where that shows.**
+ *
+ * Guide §14.2's MIDI note map is forty-eight rows, one per pad — `36 c2` through `83 b5`, four
+ * groups of twelve, in pad order `.`, `0`, `enter`, `1`-`9`. **This manifest already relies on
+ * that map**: `memberLabels` below is checked against it, and the arithmetic recorded there is
+ * that ordinal *n* is note *35 + n*. Every pad has its own note. `triggerNote` sits on the pool
+ * and reaches every member alike, so no single value could be true of more than one of the
+ * forty-eight — and the field would be claiming, of a pool whose whole point is that its members
+ * are *not* interchangeable, that they are.
+ *
+ * The box does not want a note from the reader either. §9.2 programs a step by pressing the pad
+ * it is for — *"hold (RECORD) and press a pad to record the chosen pad to that step"* — and §9.2
+ * is the whole of step entry. A pad is chosen, not addressed.
+ *
+ * **§9.4's KEYS mode is the near miss, and it is a mode rather than a root.** It *"let's you play
+ * a selected sample across a 12 note keyboard"*, one pad at a time, with *"holding KEYS and
+ * selecting a pad will transpose the scale"*. That is a transposition applied to one chosen
+ * sample, not a common note that plays forty-eight samples as recorded — and it is off unless the
+ * reader turns it on.
+ *
+ * **Nor does the guide print a default root note anywhere.** §12.11's step 6 is the only place the
+ * control is described working: *"change midi root note — use the (knoby) knob to change the root
+ * note of the midi notes, this allows you to sync your midi to the root note of your sample"*.
+ * Adjusted to match whatever is loaded, with no printed default, and reached only on a pad
+ * configured to send MIDI out.
+ *
+ * **And the guide's own definition of that control is broken**, which the contradictions section
+ * above already records: §8.2.6's `root note` paragraph is a verbatim copy of its `midi channel`
+ * paragraph, so the control is named and never described. That defect was noted there as a
+ * documentation fault; here it is the reason there is nothing to cite. §2.1 refuses an uncited
+ * trigger note, and this is a box where the one page that should define a root note does not.
+ *
+ * ## The octave convention, recorded and deliberately not used
+ *
+ * §14.2's map opens at `36 c2` and closes at `83 b5`, so this guide prints `c4` for MIDI 60 —
+ * the SP-404MK2's convention and the Octatrack's, an octave below the Digitakt and Digitone
+ * manuals' `C5`. Recorded because the library holds two conventions an octave apart and a
+ * rendered note name shows neither (#352). **No value is authored from it.**
  */
 
 const GUIDE = 'EP–40 riddim guide'
@@ -919,6 +963,14 @@ export const device: Device = {
    */
   voices: [
     {
+      /**
+       * **No `triggerNote`** (§2.1/#334), and `memberLabels` below is why: guide §14.2 gives each
+       * of the forty-eight pads its own note, ordinal *n* at note *35 + n*. This field reaches
+       * every member of a pool alike, so one value would be true of one pad in forty-eight — and
+       * would claim these members are interchangeable, which is the one thing this pool exists to
+       * deny. §9.2 programs a step by pressing the pad it is for, not by naming a note. See the
+       * head note; the tests are in `test/te-ep-40.test.ts`.
+       */
       kind: 'pool',
       id: 'pad',
       label: 'Pad',

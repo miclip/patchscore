@@ -271,6 +271,28 @@ import { MUSE_PANEL } from './panel'
  *
  * `MIDI CLOCK OUT` defaults to `OFF`, which is exactly the #104 case: a reader told to make the
  * Muse the clock source, who does nothing else, gets silence. `sourceSetup` carries the menu path.
+ *
+ * ## No trigger note, and no blanks either (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. **This
+ * box has none** — every grid part it takes is a `sub`, and every one of those carries the
+ * direction's own pitch. So this section is not a repair; it is the record of why the field is
+ * declined on a box the sweep barely touches, written down before somebody adds a recipe and asks.
+ *
+ * `TriggerNote` means *the note that plays this part's sound as it is* — a loaded sample's
+ * original pitch. **There is no sample here to have one**, and `capabilityEvidence.content`
+ * already carries the pages that say so: p.116's `SOUND ENGINE  Analog` with a module list that
+ * has no sample player in it, and pp.117-118 with no audio input to record one through. A patch
+ * on this box is a set of panel positions, not a file. The same three pages the `voices` evidence
+ * cites — pp.8, 106, 116 — are the ones that make it two analog timbres rather than a pool of
+ * loaded sounds.
+ *
+ * p.27 says what a note does here instead, on the control that would carry it: `FREQUENCY`
+ * *"detunes each oscillator from the pitch associated with a keyboard note"*, and *"when set to
+ * noon will be in tune with the keyboard note (if a C is pressed, a C will sound based on the
+ * OCTAVE setting)"*. A pressed C sounds a C. That is musical pitch — the direction's under §4.1,
+ * reaching the page through `RoleRequest.pitch` and its hooks — not an address this folder could
+ * cite, and not an "as recorded" root, because nothing is recorded.
  */
 
 // ---------------------------------------------------------------------------
@@ -2084,6 +2106,14 @@ export const device: Device = {
    */
   voices: [
     {
+      /**
+       * **No `triggerNote`** (§2.1/#334). The field is a loaded sample's original pitch and there
+       * is no sample here — `capabilityEvidence.content` carries p.116's `SOUND ENGINE  Analog`
+       * and a module list with no sample player in it. p.27 says what a note does instead:
+       * `FREQUENCY` *"detunes each oscillator from the pitch associated with a keyboard note"*,
+       * and at noon *"if a C is pressed, a C will sound"*. Musical pitch, which §4.1 leaves to the
+       * direction. See the head note; the tests are in `test/moog-muse.test.ts`.
+       */
       kind: 'pool',
       id: 'timbre',
       label: 'Timbre',

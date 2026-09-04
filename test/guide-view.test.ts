@@ -63,6 +63,21 @@ function html(result: ResolveResult): string {
   return renderToStaticMarkup(createElement(Guide, { result, seed: 1, layout: 'phase' }))
 }
 
+/**
+ * The guide **below** its jump-nav (#341).
+ *
+ * The nav names all seven phases in order at the top of the page, which is a different claim
+ * from the one this file makes and would satisfy every assertion below without a single section
+ * being rendered. So the phase assertions read the body, and the nav is checked where it belongs,
+ * in `guide-nav.test.ts`.
+ */
+function sectionsOf(result: ResolveResult): string {
+  const out = html(result)
+  const end = out.indexOf('</nav>')
+  expect(end, 'the phase layout should draw a jump-nav').toBeGreaterThan(-1)
+  return out.slice(end)
+}
+
 const golden = resolve({
   devices: GOLDEN_DEVICES,
   template: GOLDEN_TEMPLATE,
@@ -163,7 +178,7 @@ function occurrences(haystack: string, needle: string): number {
 
 describe('the guide view renders every phase (§8)', () => {
   it('renders all seven phases in order, for a full rig', () => {
-    const out = html(golden)
+    const out = sectionsOf(golden)
     const positions = GUIDE_PHASES.map((phase) => out.indexOf(`>${phase}<`))
     expect(positions.every((p) => p > -1)).toBe(true)
     expect([...positions].sort((a, b) => a - b)).toEqual(positions)
@@ -176,7 +191,7 @@ describe('the guide view renders every phase (§8)', () => {
       mood: NEUTRAL_MOOD,
       seed: 1,
     })
-    const out = html(empty)
+    const out = sectionsOf(empty)
     for (const phase of GUIDE_PHASES) expect(out).toContain(`>${phase}<`)
     // A phase with nothing in it says so rather than disappearing — flatly, in as few words
     // as the fact takes.

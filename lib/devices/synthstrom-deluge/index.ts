@@ -91,6 +91,35 @@ import { DELUGE_PANEL } from './panel'
  * loading and processing power available, but around 64 is the limit for most basic synth sounds"
  * (p.99), with voices released by priority as load demands. Nothing here claims a hardware
  * capacity — `count` and `comfortableVoices` below mean different things, and neither is it.
+ *
+ * ## No trigger note, because a Kit row is addressed by row and a Synth row by pitch (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 228, all on the one `track` pool, and #334 named it in the filing — *"the deluge isn't
+ * showing which note to place for steps"*. **The answer is that neither of the two things a row
+ * can be wants a note from this field.**
+ *
+ * p.20's Clip View diagram says both in one callout: *"Synth: pitch is represented by the rows of
+ * the grid. Lower rows are the lower notes and increases in pitch as the rows increase. Kit: each
+ * row represents an individual sound, for example a drum / percussion sound such as a kick on the
+ * bottom row, snare second bottom row, etc..."* — and a step is placed *"at the desired column
+ * step for its time position and row for synth pitch or kit sound by pressing a pad to toggle it
+ * on (lit) / off (unlit)"*.
+ *
+ *  - **A Kit row is an address, and the address is the row.** Which sound a step plays is which
+ *    row it is on. There is no note in that gesture to write down.
+ *  - **A Synth row is pitch**, which §4.1 gives to the direction. It reaches the page through
+ *    `RoleRequest.pitch` and its hooks, resolved against the song's key.
+ *
+ * **The one place a Kit row does take a note is routing outward, not sounding.** p.287's quick
+ * reference: *"Set kit row MIDI note — [AUDITION] + turn (UPPER) - **must be set as a MIDI row**"*,
+ * beside the same condition on the row's MIDI channel. A row set as a MIDI row sends to something
+ * else; it is no longer playing the kit sound the note would supposedly address. Reading that line
+ * as this field's citation is the mistake this note exists to prevent.
+ *
+ * And the pool could not carry it if the note existed: one `track` pool of 24 holds Synth clips
+ * and Kit clips alike, `triggerNote` reaches every member of a pool the same way (§2.2), and the
+ * two kinds of row do not even agree on what a note would mean.
  */
 
 // ---------------------------------------------------------------------------
@@ -1235,6 +1264,15 @@ export const device: Device = {
      * multi-note part, so a chord-sample twin on this voice would lose every comparison it could
      * ever be in. The Deluge is the box a sampled chord loses *to*, which is the outcome §7.1 is
      * for — see `test/polyphony.test.ts`.
+     */
+    /**
+     * **No `triggerNote`** (§2.1/#334). p.20 says a step is placed *"at the desired column step
+     * for its time position and row for synth pitch or kit sound"* — a Kit row *is* the address,
+     * and a Synth row is pitch, which §4.1 leaves to the direction. p.287's *"Set kit row MIDI
+     * note"* is the near miss and carries its own disqualifier: *"must be set as a MIDI row"*,
+     * which is routing outward rather than sounding the kit. One pool holds both kinds of clip
+     * and this field reaches every member alike, so it could not carry either meaning even if one
+     * existed. See the head note; the tests are in `test/deluge.test.ts`.
      */
     { kind: 'pool', id: 'track', label: 'Track', count: 24, roles: TRACK_ROLES, polyphony: 8 },
   ],
