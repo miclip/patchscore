@@ -250,7 +250,7 @@ describe('the two boxes that refuse the accent instead of standing one in (#283)
 })
 
 // ---------------------------------------------------------------------------
-// The whole audit: 28 recipes, two gestures each (§4.3/#283)
+// The whole audit: 31 recipes, two gestures each (§4.3/#283)
 // ---------------------------------------------------------------------------
 
 /**
@@ -347,6 +347,12 @@ const AUDIT: readonly (readonly [
     ['te-ep-133', 'ep133-acid-dirty', 'stated', 'stated', 'neutral'],
     ['te-ep-40', 'ep40-acid-dirty', 'stated', 'stated', 'neutral'],
 
+    // And the sampler that binds both, which is the row worth reading twice: the slide is not a
+    // dedicated lane here but a track parameter, and p.53 makes every track parameter lockable to
+    // a step. So `PORT` is marked on the accented trigs the way a 303 marks them, and the glide
+    // the lock switches on is shaped in a settings menu rather than on the step.
+    ['elektron-digitakt-ii', 'dt2-acid-hard', 'bound', 'bound', 'neutral'],
+
     // One patch, written twice: a recipe names one voice and the Tracker Mini hosts synths on
     // both its pools, so the manifest carries a twin per pool (§2.2). Both are audited, because
     // the table is a table of records — and both render the same guide, because the box loads
@@ -406,13 +412,13 @@ function guideFor(deviceId: string, recipeId: string, mood: MoodName): string {
 
 describe('every acid recipe accounts for the accent and the slide (#283)', () => {
   it('covers exactly the acid recipes the library has', () => {
-    // A thirty-first recipe fails here rather than slipping in unaudited, and a deleted one fails
-    // too — the table is the audit, so it has to be complete in both directions.
+    // A thirty-second recipe fails here rather than slipping in unaudited, and a deleted one
+    // fails too — the table is the audit, so it has to be complete in both directions.
     const shipped = DEVICES.flatMap((d) =>
       d.recipes.filter((r) => r.role === 'acid').map((r) => r.id),
     )
     expect([...AUDIT.map((row) => row[1])].sort()).toEqual([...shipped].sort())
-    expect(shipped).toHaveLength(30)
+    expect(shipped).toHaveLength(31)
   })
 
   it.each(AUDIT)('%s / %s accounts for both gestures in the manifest', (deviceId, recipeId, accent, slide) => {
@@ -458,7 +464,7 @@ describe('every acid recipe accounts for the accent and the slide (#283)', () =>
     }
   })
 
-  it('renders all 30, from three knob positions', () => {
+  it('renders all 31, from three knob positions', () => {
     // The whole library reachable from one direction, which it was not while `r-acid` asked for
     // `dirty`: force is the one character axis no mood knob moves, so the two `hard` recipes could
     // not be selected at any setting and the audit had two rows it could only check on paper.
