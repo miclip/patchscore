@@ -108,6 +108,67 @@ import { MPC_LIVE_III_PANEL } from './panel'
  * track triggers pads by fixed note number, so a pad sounds its own sample at its own pitch and
  * nothing in the pattern transposes it; a chord is unreachable however many voices exist.
  *
+ * ## No trigger note, and the box splits the question exactly where the pools do (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 246 of them, and the answer is not the Tracker's `C5`: **there is nothing to author
+ * here, and the three pools give two different reasons for it.**
+ *
+ * **A `pad` part is addressed by pad rather than by note.** p.196, the step sequencer's default
+ * mode: *"To add a note, select a drum track, and press a pad to select it for sequencing... Press
+ * a Step Button 1-16 to add a note at the selected step."* The pad is chosen before any step is,
+ * so the instruction is already complete. p.205 has the box saying the same thing in its own event
+ * list — *"Pad/Note: This is the pad and/or corresponding MIDI note number. For drum tracks, you
+ * will see the pad number. For keygroup tracks, plugin tracks, and midi tracks, you will see the
+ * note"* — and the line it draws there is exactly the line between `pad` and the two plugin pools.
+ * The pools cut this box where the box cuts itself, which is worth knowing for its own sake.
+ *
+ * **The number behind a pad is the reader's anyway.** p.126's `Edit Pad Note Map` *"lets you
+ * assign specific MIDI notes to your MPC pads"*, with three preset layouts — `Chromatic C1`,
+ * `Chromatic C-2` and `Classic MPC` — and no page says which is in force. So a trigger note on
+ * `pad` would be wrong under two of the three presets and unverifiable under the third, which is
+ * the pad map being a setting rather than a fact about the hardware.
+ *
+ * **A plugin-track part is addressed by a note that is played, not printed.** p.197: *"To add a
+ * note to the step, play a MIDI note from the pads, an external instrument, or other source routed
+ * to the current track."* Which note is a musical decision, and a direction that has one already
+ * supplies it as `RequestPitch` (#340) — the 24 `sub` parts in the sweep. Where a direction has
+ * none, this manual offers nothing to fall back on. **DrumSynth is the plugin most of these
+ * percussion parts load and it prints no note at all**: pp.431 and 433 give it no note parameter,
+ * no key range and no default, where the appendix prints `Key Low` and `Key High` for a sample
+ * layer (p.441) and a polyphony for every other bundled instrument checked. p.431's `One-Shot` is
+ * the closest the page comes — *"Allows the drum sound to play entirely when triggered"* — and it
+ * says a note triggers the sound without saying which note.
+ *
+ * So the 246 blanks are correct output: 96 on `pad`, 144 on `mono-track`, 6 on `poly-track`.
+ * Inventing a `C3` to fill them would be #325 again, and on this folder it would not stay here:
+ * `akai-mpc-xl` and `akai-mpc-one-g2` both take `voices: liveIII.voices` **by reference**, so a
+ * note added here appears on two other boxes with nothing in either file saying it did. Neither
+ * guard catches it — `shared()` throws when a fact stops being carried and `pageInV39` throws on
+ * an unmapped citation, and a new field on a shared pool is neither.
+ *
+ * **That is a constraint on this manifest and not an answer for those two.** Nothing here says
+ * what the XL or the One G2 should carry, and the One G2 especially is documented by a different
+ * document — `MPC Standalone OS User Guide v3.9`, which is what `pageInV39` exists to cross — so
+ * its answer is a reading of that manual and belongs to its own review.
+ *
+ * ## The octave convention, read and recorded rather than used
+ *
+ * Recorded because a note authored against this box without it would be an octave out, silently.
+ * p.359, a pad's MIDI parameters: *"Note: This is the MIDI note number the pad will send to the
+ * software when you press it (0-127 or C-2 to G8)."* Zero is `C-2`, so on this box's numbering
+ * **middle C is `C3` and 60 is `C3`**, not the `C4` scientific pitch notation would give. That is
+ * the Tracker Mini's trap (#352) on a different manual, and the appendix agrees with p.359
+ * wherever it prints a key range: `C-2 - G8` for a sample layer's `Key Low` and `Key High`
+ * (p.441). **No value is authored from any of this** — the convention says how to write a note,
+ * not which note to write, and this manual never supplies the second half.
+ *
+ * **`pdftotext` nearly manufactured a contradiction here.** Its extract of p.126 reads *"Chromatic
+ * C-2 (an ascending chromatic scale, beginning with C-"* / *"2)"*, which greps as `C2` and looks
+ * like a label disagreeing with its own gloss. The rendered page shows `C-2` in both places,
+ * hyphenated across a line break. `CLAUDE.md`'s rule about rendering rather than grepping the
+ * dump, earning its keep on a note name rather than on a specifications table.
+ *
   * ## The `Sync` switch, six times over
  *
  * `CLAUDE.md` asks that a control with more than one printed scale carry the switch that selects
@@ -1268,6 +1329,15 @@ export const device: Device = {
    * instrument sounds, and that is exactly the field `polyphony` is. Declaring narrower role
    * lists would hide capability the box has, and §12.4's note-count check already does the real
    * filtering — a three-note stab simply will not land on a monophonic instrument.
+   *
+   * **No `triggerNote` on any of the three** (§2.1/#334), and each declines for its own reason:
+   * `pad` is addressed by pad (p.196, p.205) and its note map is the reader's (p.126); a plugin
+   * track takes whatever note is played into the step (p.197), which is the direction's business
+   * where it has one and unstated by this manual where it does not, since DrumSynth prints no
+   * note parameter at all (pp.431, 433). See the head note for the reading. What holds it is in
+   * `test/akai-mpc-live-iii.test.ts`, and it has to: these objects are the XL's and the One G2's
+   * `voices` as well, so a note added here would land on two manifests that have not been read
+   * for it.
    */
   voices: [
     { kind: 'pool', id: 'pad', label: 'Pad', count: 16, roles: [...PAD_ROLES], polyphony: 1 },
