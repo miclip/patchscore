@@ -126,6 +126,57 @@ import { MC_707_PANEL } from './panel'
  *    deliberately unauthored: §3's rule is that a recipe never authors step counts or bar
  *    structure.
  *
+ * ## No trigger note on either pool, because the pads are two different surfaces (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 240, split across both pools, and the Reference Manual answers them on one page.
+ *
+ * **p.23 puts the same sixteen pads under two meanings, one per track type.** Under `TONE track`:
+ * *"For a TONE track, you can play the pads as a keyboard"*, and the diagram beside it lays the
+ * pads out as one — `C D E F G A B C` along the lower row, the accidentals above. Under `DRUM
+ * track`: *"In a drum kit, 16 instruments are assigned to the pads, one instrument to each pad."*
+ * A keyboard on one track and a kit on the next, and the two are separate pools here precisely
+ * because they are not the same kind of thing.
+ *
+ * **Neither pool has one note to carry.** `VoiceSpec.triggerNote` addresses every member of a
+ * pool alike, and:
+ *
+ *  - On `tone-track` the pad *is* the note, so the note is whatever the reader plays. p.28's
+ *    step-recording is *"Press pads (keys) to enter notes. The pad that you input is lit"*, and
+ *    p.23 puts the register under the reader's thumb as well — `[OCT-] [OCT+]: Shift octaves`,
+ *    with the NOTE MODE `PAD` tab printing `OCTAVE -5-+5` and `TRANSPOSE -6-+6` as *"the octave
+ *    for pad performance"* and *"the key transpose for pad performance"*. Seven tracks sharing
+ *    one note would be seven parts told to play the same pitch.
+ *  - On `drum-pad` the note is not how a step is written at all. p.30's TR-REC is pad first and
+ *    steps second: *"Press a pad (key) to select the pad that you want to edit… Press the step
+ *    buttons for the steps at which you want to input notes."* One note for the pool would name
+ *    one pad of the kit for every one of them.
+ *
+ * **`Source Key` is not this field and the page says so.** p.76's INST COMMON gives it `0-127`
+ * and the sentence *"Specifies the pitch in semitone steps relative to 60 (the original pitch of
+ * the instrument)"*; p.46's `Original Key`, `C-1-G9`, *"Registers the sample's pitch"*, is the
+ * same fact for a sampled wave. Both describe the pitch a recorded sound already has, which is
+ * the sampler-side value `TriggerNote` deliberately does not model — reading either as the note
+ * that fires a step would be a filing system read as a melody.
+ *
+ * ## The octave convention, recorded and deliberately not used
+ *
+ * Recorded because the library holds two conventions an octave apart and nothing on a rendered
+ * page would show which one a note came from (#352).
+ *
+ * **This box anchors on `60 = C4`.** p.68's `Cutoff Keyfollow Base Point`, `0-127`, states it in
+ * prose: *"If this is 60, the C4 key (middle C) is the reference key."* p.23's CHORD MODE EDIT
+ * screen agrees from the other side, printing `NOTE1 60 (C4)` and `NOTE3 67 (G4)`, and p.76's
+ * `Source Key` uses the same 60 as its origin. So `0` is `C-1` and this box reads like the
+ * SP-404MK2 rather than like the MPCs, whose guides print `0-127 or C-2 to G8`.
+ *
+ * **One page disagrees with the other three and it is the range label, not the arithmetic.**
+ * p.24's chord `NOTE1-4` prints `1 (C-1)-127 (G9)`, and `1 = C-1` cannot hold beside `60 = C4` —
+ * it would put 60 at `B3` and `C4` at 61. `127 = G9` is right under `0 = C-1` and wrong under
+ * `1 = C-1`, so the low endpoint is the slipped one: the parameter's *selectable* floor is 1
+ * because `OFF` takes 0, and the note name beside it was written a semitone out. Read as the
+ * defect it is, listed with the others below. **No value is authored from any of this.**
+ *
  * ## Manual defects, quoted rather than repaired
  *
  * p.75 prints `Reveb Send Level` and `TVC Cutoff Offset`; the first is a plain misspelling and
@@ -885,6 +936,15 @@ export const device: Device = {
    * carries all sixteen pads), and a TONE track does not need the substitute, because it can be a
    * pitched sampler (p.20) and §7.1 would never choose the baked chord over the polyphonic recipe
    * already on that voice.
+   *
+   * **No `triggerNote` on either pool** (§2.1/#334), and for two different reasons — which is
+   * why it could not have been one answer. p.23 makes the same sixteen pads a keyboard on a TONE
+   * track and a kit of sixteen instruments on a DRUM track. On `tone-track` the pad is the note,
+   * so the note is the reader's: p.28 records whichever key is pressed, and p.23's `[OCT-]
+   * [OCT+]`, `OCTAVE -5-+5` and `TRANSPOSE -6-+6` move the whole surface. On `drum-pad` a step is
+   * not written by note at all: p.30's TR-REC selects a pad first, then the steps. `Source Key`
+   * (p.76) and `Original Key` (p.46) are the instrument's own original pitch relative to 60, not
+   * a sequencer trigger. See the head note; the tests are in `test/roland-mc-707.test.ts`.
    */
   voices: [
     { kind: 'pool', id: 'drum-pad', label: 'Drum Pad', count: 8, roles: rolesOf('drum-pad'), polyphony: 1 },
