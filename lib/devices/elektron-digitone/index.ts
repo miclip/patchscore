@@ -127,6 +127,56 @@ import { DIGITONE_PANEL } from './panel'
  *    below are the footers, checked at pp.5, 6, 7, 8, 47, 88 and 93 — printed folio equals PDF
  *    page throughout this document.
  *
+ * ## No trigger note, because there is no recording here to be at pitch (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 126, all on the one `track` pool, and it declines for the same reason its successor
+ * does — **`TriggerNote` is a sampler's fact and there is no sampler here** — reached off this
+ * manual rather than inherited from that one.
+ *
+ * The field holds *the note that plays this part's sound as it is*: a loaded sample's original
+ * pitch, where writing anything else transposes the recording. p.15 draws the audio voice and
+ * there is nothing in it to record into — `AUDIO ENGINE` into overdrive, into the two filters,
+ * into the amp — which is the same page `capabilityEvidence.content` already carries a
+ * `cited-against` on, beside p.89's *"At its core, the Digitone is a four operator Frequency
+ * Modulation (FM) synth"*. A synth has no "as recorded" pitch to be at. Its note is the pitch you
+ * want, which under §4.1 is the direction's decision and reaches the page through
+ * `RoleRequest.pitch`.
+ *
+ * **Two further pages say the note is musical content rather than an address, and each is enough
+ * on its own.**
+ *
+ *  - **p.33 puts several notes on one trig.** §10.2.1 makes the note the content of the step —
+ *    *"NOTE TRIGS trigger notes on synth tracks and MIDI tracks"* against *"LOCK TRIGS trigger
+ *    parameter locks (but does not trigger notes)"* — and §10.2.3's TRACK NOTE method is *"an
+ *    alternative way to enter note trigs in GRID RECORDING mode that gives you more control over
+ *    what note values you want to add to a specific step in the sequencer"*, its screen printing
+ *    `C 5`, `D#5` and `G 5` together on one step. A single `TriggerNote` cannot be a chord.
+ *  - **p.36 makes those notes scale content.** §10.4's TRACK NOTE menu is `SCALE`, which *"sets
+ *    the tracks scale"*, `ROOT`, which *"sets the root note for the chosen scale"*, and `CHORD`,
+ *    which *"adds a three-note chord based on the SCALE and ROOT settings when you press a key"*.
+ *    Those are the direction's decisions, resolved against the song's key.
+ *
+ * **The nearest thing this box has to the field is `ROOT`, and p.46 rules it out in its own
+ * sentence.** §11.2.1: *"Root sets the default note value that the note trigs placed in GRID
+ * RECORDING mode have. If you change the root note and have additional notes added on the same
+ * trig, then the additional notes are offset and transposed accordingly. (C0–G10)"* A default the
+ * reader is expected to change, spanning the entire MIDI range, and one the additional notes move
+ * with — not a note that plays this part's sound as it is.
+ *
+ * ## The octave convention, recorded and deliberately not used
+ *
+ * p.24 §8.4: *"MIDI note numbers 0–127 (corresponding to notes C0–G10, the first through to
+ * eleventh octaves in the MIDI range) triggers the Sound of the active track."* So `0` is `C0`
+ * and `C5` is 60, which p.46's TRIG PARAMETERS screen confirms by printing the pair as `C 5 (60)`
+ * beside `ROOT`.
+ *
+ * That is the same numbering as the Digitone II, the Digitakt II and the Tracker Mini, and an
+ * octave below the SP-404MK2's. It is recorded because the library holds two conventions an
+ * octave apart and a rendered note name shows neither (#352). **No value is authored from it** —
+ * a pitch on this box is the direction's, resolved against the song's key, and that is a
+ * different field from the one being declined.
+ *
  * ## `LEN` has a range and no unit, and that is a claim rather than an omission
  *
  * p.46: *"Trig Length sets the duration of the notes... (0.125–128, INF)"*. No page in this
@@ -1336,6 +1386,15 @@ export const device: Device = {
    */
   voices: [
     {
+      /**
+       * **No `triggerNote`** (§2.1/#334), because the field is a sampler's fact and there is no
+       * sampler here. It holds a loaded sample's original pitch; p.15's audio voice is an FM
+       * engine through overdrive, two filters and an amp, with nothing in it to record into, so
+       * there is no "as recorded" pitch to name. p.33 puts three notes on one trig, p.36 makes
+       * them scale and root content, and p.46's `ROOT` is *"the default note value"* over
+       * `C0–G10` rather than a note this box answers to. Musical content, which §4.1 leaves to
+       * the direction. See the head note; the tests are in `test/elektron-digitone.test.ts`.
+       */
       kind: 'pool',
       id: 'track',
       label: 'Synth track',
