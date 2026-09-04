@@ -4,13 +4,17 @@ import {
   DeviceSchema,
   ROLES,
   expand,
+  isSustainedPart,
   moodState,
+  noteInstruction,
   realisationOf,
   renderGuide,
   resolve,
   resolveRecipe,
   type AuthoredParam,
   type Recipe,
+  type ResolvedAssignment,
+  type Role,
 } from '../lib/core/index'
 import { device } from '../lib/devices/te-ep-133/index'
 import { DEVICES } from '../lib/devices/registry.generated'
@@ -516,5 +520,191 @@ describe('pool members carry the panel’s own labels (§2.2/#86)', () => {
       seed: 3,
     })
     expect(renderGuide(result)).not.toMatch(/Pad \d+/)
+  })
+})
+
+/**
+ * §2.1/#334. **This box authors no trigger note, and the absence is the claim rather than an
+ * unfinished job.**
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. Two
+ * Polyend boxes answered it with a note their manuals print; this one answers it the other way,
+ * and the reading is in the manifest header. Two pages carry it:
+ *
+ *  - **Guide 9.2** records a step by *"hold (RECORD) and press a pad"*. Nothing is written on a
+ *    step, so the grid is already complete.
+ *  - **Guide 14.2** gives each of the forty-eight pads its own MIDI note, `36`/`c2` through
+ *    `83`/`b5`. There is no note the pool shares, and a pool's `triggerNote` reaches every member
+ *    alike.
+ *
+ * So what these tests hold in place is a **negative**, which is the fragile kind: nothing fails
+ * when somebody adds a plausible note, and a `C3` here would read as correct on the page and
+ * address one pad in forty-eight at the machine. The count below is what makes the change
+ * visible.
+ */
+describe('trigger notes: read for, and declined (§2.1/#334)', () => {
+  const SEEDS = [1, 2, 3, 4, 5, 6]
+
+  it('authors none on the pool, and none on any recipe either', () => {
+    // Both halves, because the field exists in two places and only one of them is the pool.
+    expect(device.voices.filter((v) => v.triggerNote !== undefined)).toEqual([])
+    const claiming = device.recipes.filter(
+      (r) => (r as Recipe & { triggerNote?: unknown }).triggerNote !== undefined,
+    )
+    expect(claiming.map((r) => r.id)).toEqual([])
+  })
+
+  it('stays off the library roster of boxes that author one', () => {
+    // `test/tracker-mini.test.ts` pins that roster exactly; this is the same fact asked from the
+    // side of the box that declines, so a note added here fails in its own file as well as there.
+    const authoring = DEVICES.filter((d) => d.voices.some((v) => v.triggerNote !== undefined))
+    expect(authoring.map((d) => d.id)).not.toContain('te-ep-133')
+  })
+
+  it('has one note per pad rather than one note for the pool', () => {
+    // Guide 14.2, the reason there is nothing to author: group `a` at 36-47, `b` at 48-59, `c` at
+    // 60-71, `d` at 72-83, in pad order — so ordinal *n* is note *35 + n*, forty-eight distinct
+    // notes over forty-eight pads. A single `triggerNote` would claim one of them for all of them.
+    // `flatMap` rather than `map`: `ordinal` is optional on an `Assignable` because a fixed
+    // voice has none, so the length assertion below is also the check that every pad has one.
+    const notes = expand(device).flatMap((a) => (a.ordinal === undefined ? [] : [35 + a.ordinal]))
+    expect(notes.length).toBe(48)
+    expect(new Set(notes).size).toBe(48)
+    expect(notes[0]).toBe(36)
+    expect(notes[47]).toBe(83)
+  })
+
+  /**
+   * A part phase 5 draws a grid for: not owned by a hook (#100), not sustained (§4.2), and with
+   * at least one section whose variant resolved (§6.3).
+   *
+   * **One definition, used by the sweep and by the page test below.** `noteInstruction` returns
+   * `none` for a hooked or sustained part as well as for a blank grid part, so a page test asking
+   * it whether a grid exists would have counted parts that draw none — and would then have gone
+   * on passing against a guide with nothing in it.
+   */
+  function drawsGrid(a: ResolvedAssignment): boolean {
+    return (
+      a.hookAuthority === undefined &&
+      !isSustainedPart(a) &&
+      a.patterns.some((p) => p.selection.outcome !== 'none')
+    )
+  }
+
+  /** Every part this box takes, split by what phase 5 actually draws for it. */
+  function sweep() {
+    const grid: { where: string; role: Role; kind: string }[] = []
+    const hooked: string[] = []
+    const sustained: string[] = []
+    const noPattern: string[] = []
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          const where = `${template.id}/${a.role}`
+          if (drawsGrid(a)) grid.push({ where, role: a.role, kind: noteInstruction(a).kind })
+          else if (a.hookAuthority !== undefined) hooked.push(where)
+          else if (isSustainedPart(a)) sustained.push(where)
+          else noPattern.push(where)
+        }
+      }
+    }
+    return { grid, hooked, sustained, noPattern }
+  }
+
+  /**
+   * **The measurement, taken rather than remembered.** Every direction against this box alone,
+   * seeds 1-6.
+   *
+   * The number is #334's own for this device and it is expected to stay put: 252 grid parts print
+   * no note, and that is the box being reported accurately rather than a gap. It moves when a
+   * direction gains or loses a part, and a diff here is a prompt to re-read this file's header
+   * rather than a failure. What must not move is the *relationship* — no part ever gets a
+   * `trigger`, because the pool has no note to give one.
+   */
+  it('leaves every pad part blank, and pins how many there are', () => {
+    const { grid } = sweep()
+
+    expect(grid.length).toBe(276)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(252)
+
+    // The claim, named rather than left to the count: the `trigger` arm is empty and the only
+    // notes this box ever prints are the direction's own.
+    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch'])
+  })
+
+  it('prints a note only where the direction asked for a pitch of its own', () => {
+    // §4.1's precedence with one arm missing. The 24 that do carry a note are `sub` parts, where
+    // the pitch is the direction's musical decision (#340) and owes this box nothing.
+    const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
+    expect(pitched.length).toBe(24)
+    expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
+  })
+
+  it('leaves the blanks where a pad press is the whole instruction', () => {
+    // Pinned by role rather than by total alone, which would survive one role's parts being
+    // swapped for another's. Percussion dominates, and guide 9.2 is the answer for all of it:
+    // the reader holds RECORD and presses the pad holding the sound.
+    const counts = new Map<Role, number>()
+    for (const g of sweep().grid) {
+      if (g.kind !== 'none') continue
+      counts.set(g.role, (counts.get(g.role) ?? 0) + 1)
+    }
+    expect(
+      [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
+    ).toEqual([
+      ['closed-hat', 48],
+      ['kick', 48],
+      ['ghost-perc', 42],
+      ['clap', 18],
+      ['open-hat', 18],
+      ['rim', 18],
+      ['snare', 18],
+      ['metallic', 12],
+      ['arp', 6],
+      ['impact', 6],
+      ['noise', 6],
+      ['tom', 6],
+      ['vox-chop', 6],
+    ])
+  })
+
+  it('accounts for every part that draws no grid, by which reason', () => {
+    // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
+    // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
+    // produces no sustained part at all across the sweep.
+    const { hooked, sustained, noPattern } = sweep()
+    expect(hooked.length).toBe(132)
+    expect(sustained).toEqual([])
+    expect(noPattern.length).toBe(18)
+    expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/texture',
+      'hip-hop/texture',
+      'industrial-techno/riser',
+    ])
+  })
+
+  /**
+   * §8. **The reader-facing half**, checked on the page rather than only on the resolver.
+   *
+   * A guide that never says `Trigger note` for this box is the whole acceptance criterion, and it
+   * is worth nothing unless the guides being searched actually draw grids — so that is asserted
+   * first, or an empty render would pass this test forever.
+   */
+  it('never prints a trigger note on a rendered page, across every direction and seed', () => {
+    let drawn = 0
+    for (const template of TEMPLATES) {
+      for (const seed of [1, 7]) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        // `drawsGrid`, not `noteInstruction(a).kind === 'none'`: that answer is also what a hooked
+        // or sustained part gives, so counting it would have called a guide with no grid in it a
+        // guide with grids and left this test unable to fail.
+        drawn += result.assignments.filter(drawsGrid).length
+        expect(renderGuide(result), `${template.id} seed ${String(seed)}`).not.toContain(
+          'Trigger note',
+        )
+      }
+    }
+    expect(drawn).toBeGreaterThan(0)
   })
 })
