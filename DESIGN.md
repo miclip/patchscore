@@ -132,11 +132,50 @@ and a smaller one could not. Whether the box is *happy* at a given load is a sep
 belongs to `comfortableVoices` (§12.4) — the crowding key, not the capacity one.
 
 ```ts
+type TriggerNote = { note: string; midi: number; verified: Verified }
+
 type VoiceSpec =
-  | { kind: 'fixed'; id: string; label: string; roles: Role[]; polyphony: number }
+  | { kind: 'fixed'; id: string; label: string; roles: Role[]; polyphony: number;
+      triggerNote?: TriggerNote }
   | { kind: 'pool';  id: string; label: string; count: number;
-      roles: Role[]; polyphony: number }
+      roles: Role[]; polyphony: number; triggerNote?: TriggerNote }
 ```
+
+**`triggerNote` is which note plays the voice's sound as it is, where that is not the reader's
+free choice.** A synth track plays the note you write and the note *is* the pitch. A sample track
+is not like that: the Tracker Mini's `track-sample` plays a loaded sample at its recorded pitch
+only at `C5`, and writing anything else there gets the same sample transposed.
+
+It sits on the voice because both alternatives fail on that same box. A device-wide field cannot
+say it — `track-sample` has a trigger note and `track-synth` has none, and one field per device
+would be wrong about one of them. Per recipe would repeat one fact about the track on every sample
+recipe the folder ever gains, which is the duplication `poolId ?? voiceId` lookup exists to
+prevent. Nothing overrides it: it flows from the voice, through `Assignable`, to the page.
+
+**It models the whole-sample case only.** A *sliced* instrument is addressed by note as well, and
+that is not the same fact: under the Tracker Mini's Beat Slice mode `C2` selects the first slice
+and the next semitone the next slice, so the note is a slice address rather than a pitch or an
+original-pitch marker. Nothing here can say which of the two a voice is doing, and authoring a
+slice base in this field would give two different kinds of value one name — which reads as correct
+until the first sliced instrument somebody uses for something pitched. §4.1's third category names
+this and does not design it; until something can say it, a sliced voice authors nothing.
+
+It is a value a device authors about itself, in the class of `polyphony` or a cited range, and not
+a fifth shared vocabulary (invariant 3): no template names it and none can.
+
+**`note` and `midi` are two spellings of one addressing fact, and they are not interchangeable.**
+Octave numbering is a convention each maker picks (§4.1), so the MIDI number cannot be derived
+from the note name by habit. The Tracker Mini proves it: its `Middle C` setting ships as `C-5`, so
+the `C5` its screen prints is MIDI **60**, where scientific pitch notation would have said 72.
+An author must find the box's own octave mapping and cite it beside the note.
+
+**`verified` is a `Cite`, so an uncited trigger note cannot be authored — invariant 5, not
+invariant 4.** Most authored values are a starting point and `false` is the honest word for one
+nobody has checked. This is not that kind of value: a note that does not address the voice does
+not sound it, so a guess is an instruction that fails at the machine rather than a rough setting,
+and it fails invisibly because nothing distinguishes a guessed `C5` from a read one on the page.
+There is no state between "the manual says which note" and "we do not model this voice's
+addressing", so the schema refuses `false` exactly as it refuses omission.
 
 ### 2.2 One resolved shape
 
@@ -151,6 +190,8 @@ type Assignable = {
   ordinal?: number      // 1..count, for pool members
   roles:    Role[]
   polyphony: number
+  triggerNote?: TriggerNote   // §2.1, carried through unchanged; a pool's members share the pool's
+                              // own, and nothing downstream overrides it
 }
 
 function expand(device: Device): Assignable[]
@@ -1785,6 +1826,36 @@ Fixing that needs per-device note-naming data, which this design does not model 
 carelessly is device knowledge leaking toward the template, which is what invariant 3 exists to
 stop. So: the convention is named here, the risk is recorded here, and `Device` gains no
 note-naming field.
+
+**§2.1's `triggerNote` is not that field, and the difference is the whole of why it is allowed.**
+Note *naming* would be a scheme for spelling any note the template produces on any box — a
+transformation applied to musical output, which is the leak this section refuses. A trigger note is
+one cited fact about one voice, saying which note plays its sound as it is: `C5` plays a Tracker
+Mini sample as recorded, and what comes out is whatever the sample is. It transforms nothing, no
+template can reach it, and it is never compared against a hook's pitch. What this section *does*
+bind it to is the citation rule — because octave numbering is a convention, a `midi` written beside
+a note name read off a manual page has to cite the box's own mapping, not scientific pitch notation.
+
+#### A note is not always a pitch, and the third category is still unmodelled
+
+`RoleRequest.pitch` and `VoiceSpec.triggerNote` between them cover a part that wants a musical note
+and a voice that wants one particular note. There is a third: **a voice on which a note is neither**
+— a *slice address*. Under the Tracker Mini's Beat Slice mode `C2` triggers the first slice of the
+loaded sample and each semitone above it the next slice, so a note there names a piece of audio and
+carries no pitch at all.
+
+Nothing in this design can say that, and the consequence is visible today. Where a direction
+authors a hook for a role a sliced recipe fills — `major-key-electro`'s `vox-chop` on the Tracker
+Mini's `tm-vox-chop-dirty` — the hook supplies `G4`, which on that instrument selects whichever
+slice sits twenty-odd semitones up. §4.3/#100 gives the hook authority and phase 5 prints no note
+of its own, so nothing false reaches the page; that suppression is currently the honest answer
+rather than a gap being hidden.
+
+It is not a conflict to arbitrate. A device folder replacing a direction's notes would be a device
+deciding music (invariant 3), and printing both would hand a reader two instructions for one step,
+which is exactly what #100 exists to prevent. What is missing is a way for a voice to say *notes
+here address slices*, and until one exists no correct answer is available for a hooked part on a
+sliced recipe. Recorded here so the next attempt starts from the gap rather than from the symptom.
 
 **Resolution never clamps or transposes to fit what a voice can reach.** `Assignable` carries no
 note range, and inventing one at the template layer would be the same leak. A hook states musical

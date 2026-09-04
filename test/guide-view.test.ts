@@ -14,7 +14,14 @@ import {
 } from '../lib/core/index'
 import type { ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { TEMPLATES, ambientDub, droneStudy, industrialTechno, relay } from '../lib/templates/index'
+import {
+  TEMPLATES,
+  ambientDub,
+  droneStudy,
+  industrialTechno,
+  majorKeyElectro,
+  relay,
+} from '../lib/templates/index'
 import { DEFAULT_INPUTS } from '../lib/studio/session'
 import { readFileSync } from 'node:fs'
 import { applyInspirations } from '../lib/core/index'
@@ -1270,5 +1277,87 @@ describe('the song overrides read the same in both guides (#161)', () => {
       expect(guide).not.toContain('you set this')
       expect(guide).not.toContain('do not change with the tempo')
     }
+  })
+})
+
+
+/**
+ * §4.1/§2.1/#334. **Which note to place**, in both vocabularies.
+ *
+ * `noteInstruction` decides which of the two notes a part gets and whether it gets one at all;
+ * these renderers only choose the ink. So what is checked here is that they choose it for the
+ * same parts and print the same note and the same number — the #33 claim, on the one field where
+ * the two candidates come from opposite ends of the architecture.
+ */
+describe('the note above the grid reads the same in both guides (§4.1/§2.1)', () => {
+  const trackerMini = DEVICES.filter((d) => d.id === 'polyend-tracker-mini')
+
+  it('prints the whole-sample note on Tracker Mini percussion in both', () => {
+    const result = resolve({
+      devices: trackerMini,
+      template: industrialTechno,
+      mood: moodState(),
+      seed: 1,
+    })
+    const kick = result.assignments.find((a) => a.role === 'kick')
+    expect(kick?.assignables[0]?.poolId).toBe('track-sample')
+
+    for (const guide of [renderGuide(result), text(html(result))]) {
+      expect(guide).toContain('Trigger note')
+      expect(guide).toContain('C5')
+      expect(guide).toContain('MIDI 60')
+      // Invariant 4: a cited fact about hardware carries its page, visibly, in both.
+      expect(guide).toContain('Polyend Tracker Mini Manual 2.2.1b, p.90')
+    }
+  })
+
+  it('keeps the pitch wording for a direction pitch, in both, unchanged by the new arm', () => {
+    // `sub` is the role that carries an authored pitch (#334), and every direction that authors
+    // one puts it at the octave the sub hooks use.
+    const result = resolve({
+      devices: DEVICES.filter((d) => d.id === 'synthstrom-deluge'),
+      template: industrialTechno,
+      mood: moodState(),
+      seed: 1,
+    })
+    const sub = result.assignments.find((a) => a.role === 'sub')
+    expect(sub?.pitch).toBeDefined()
+
+    for (const guide of [renderGuide(result), text(html(result))]) {
+      expect(guide).toContain('Note')
+      expect(guide).toContain(sub?.pitch?.note as string)
+      expect(guide).toContain(`MIDI ${String(sub?.pitch?.midi)}`)
+    }
+    // The pitch arm carries no citation of its own: it is a musical decision, not a hardware
+    // claim, and marking it would say the direction's taste came off a manual page.
+    expect(renderGuide(result)).not.toContain('**Trigger note**')
+  })
+
+  /**
+   * §4.1's third category. `major-key-electro`'s `vox-chop` lands on `tm-vox-chop-dirty`, a Beat
+   * Slice patch, and the direction hooks that role — so the hook is the authority (#100) and
+   * phase 5 prints no note of its own in either guide.
+   *
+   * That suppression is the honest answer rather than a gap being hidden. On a sliced instrument
+   * a note is a *slice address*, so the track's `C5` would be false there and the hook's `G4` is
+   * the wrong kind of value; nothing in the vocabulary can yet say which. Printing neither is the
+   * only thing available that is not a lie.
+   */
+  it('says nothing above the grid where a hook owns the part, in both', () => {
+    const result = resolve({
+      devices: trackerMini,
+      template: majorKeyElectro,
+      mood: moodState(),
+      seed: 1,
+    })
+    const chop = result.assignments.find((a) => a.role === 'vox-chop')
+    expect(chop?.recipe.id).toBe('tm-vox-chop-dirty')
+    expect(chop?.hookAuthority).toBeDefined()
+    // The voice still carries one — this is the decision suppressing it, not an absence upstream.
+    expect(chop?.triggerNote?.note).toBe('C5')
+
+    const md = renderGuide(result).split('### `vox-chop`')[1]?.split('###')[0] as string
+    const web = text(html(result)).split('vox-chop')[1] as string
+    for (const part of [md, web]) expect(part).not.toContain('Trigger note')
   })
 })

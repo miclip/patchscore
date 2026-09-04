@@ -5,7 +5,9 @@ import {
   ROLES,
   assign,
   expand,
+  isSustainedPart,
   moodState,
+  noteInstruction,
   realisationOf,
   renderGuide,
   resolve,
@@ -22,6 +24,7 @@ import {
   SYNTH_SLOTS,
   device,
 } from '../lib/devices/polyend-tracker-mini/index'
+import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 import { auditDevice } from '../scripts/audit-verified'
 
@@ -1007,5 +1010,217 @@ describe('time parameters (§6.1)', () => {
       expect(Math.abs(steps - Math.round(steps)), `${p.name} ${p.value} on step ${p.step}`)
         .toBeLessThan(1e-9)
     }
+  })
+})
+
+/**
+ * §2.1. **Which note plays a loaded sample as it is**, on the one box in the library whose sample
+ * tracks answer that for themselves.
+ */
+describe('trigger notes (§2.1)', () => {
+  const sampleNote = pool('track-sample').triggerNote
+
+  it('gives the sample pool the note that plays a sample as recorded, and the synth pool none', () => {
+    // p.90: "The default note value is C5 which plays a sample at its original pitch value."
+    expect(sampleNote?.note).toBe('C5')
+    // p.128's "Note value affects pitch" is why this is addressing rather than taste: any other
+    // note is the same sample transposed.
+    expect(pool('track-synth').triggerNote).toBeUndefined()
+  })
+
+  it('numbers that note by this box\'s own octave mapping, not by scientific pitch notation', () => {
+    // The box ships with `Middle C = C-5` (p.298, and p.288 adjusts *from* C-5 to match Ableton
+    // Live), so the C5 its screen prints is middle C. SPN would have said 72, and 72 is a note
+    // this box never sends for a whole sample.
+    expect(sampleNote?.midi).toBe(60)
+  })
+
+  it('cites the octave mapping and not only the page the note name appears on', () => {
+    // The hazard `CLAUDE.md` records for ranges, wearing note names: p.90 prints `C5` and no
+    // number at all, so a citation naming p.90 alone would not support the `midi` beside it.
+    const source = sampleNote?.verified.source as string
+    expect(source).toContain(`${CITE_PREFIX}90`)
+    expect(source).toContain('p.298')
+    expect(source).toContain('Middle C')
+  })
+
+  /**
+   * §4.1's third category, left unmodelled on purpose.
+   *
+   * p.90's next sentence reads "The first slice of a beat slice sample will be triggered using
+   * note C2" — and that `C2` is a *slice address*, not a pitch and not an original-pitch marker.
+   * The field holds one kind of value; putting a slice base in it would give two kinds one name,
+   * which reads as correct until the first sliced instrument somebody uses for something pitched.
+   *
+   * So `tm-vox-chop-dirty` carries nothing of its own, and the assertion is on the whole folder
+   * rather than on that recipe: the moment any recipe here claims a trigger note, somebody has
+   * either designed the missing vocabulary or reintroduced the confusion this avoids.
+   */
+  it('authors no recipe-level note, so a slice base cannot wear a trigger note\'s name', () => {
+    const claiming = device.recipes.filter(
+      (r) => (r as Recipe & { triggerNote?: unknown }).triggerNote !== undefined,
+    )
+    expect(claiming.map((r) => r.id)).toEqual([])
+  })
+
+  /**
+   * §4.1's third category, held closed.
+   *
+   * The pool's `C5` says *play the sample as recorded*, which is true of an ordinary sample
+   * instrument and false of a sliced one — under Beat Slice the note names a piece of audio, and
+   * `C5` selects whichever piece sits thirty-six semitones up. Nothing here can distinguish the
+   * two, so the guarantee this rests on is that no shipped guide asks: the one direction reaching
+   * `tm-vox-chop-dirty` hooks that role, and #100 gives a hooked part's notes to its hook.
+   *
+   * **If this fails, nobody has broken it by accident.** It means a direction now asks for a
+   * sliced patch without a hook, and the answer is to design the missing vocabulary rather than
+   * to widen this test — the trigger note printed there would be wrong.
+   */
+  it('never prints its sliced patch a note, across every direction and seed', () => {
+    for (const template of TEMPLATES) {
+      for (let seed = 0; seed < 16; seed++) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          if (a.recipe.id !== 'tm-vox-chop-dirty') continue
+          expect(noteInstruction(a).kind, `${template.id} seed ${String(seed)}`).toBe('none')
+        }
+      }
+    }
+  })
+
+  it('reaches a resolved assignment, from the voice and unchanged', () => {
+    const result = resolve({
+      devices: [device],
+      template: synthTemplate([
+        { id: 'r-kick', role: 'kick', character: 'hard' },
+        { id: 'r-lead', role: 'lead', character: 'bright' },
+      ]),
+      mood: moodState(),
+      seed: 1,
+    })
+
+    // Whatever recipe won, a part on a sample track carries the track's note and a part on a
+    // synth track carries none — pinning which recipe wins would make this fail on an unrelated
+    // objective change instead of on the thing it is about.
+    expect(result.assignments.length).toBeGreaterThan(0)
+    for (const a of result.assignments) {
+      const expected = a.assignables[0]?.poolId === 'track-sample' ? 'C5' : undefined
+      expect(a.triggerNote?.note, a.recipe.id).toBe(expected)
+      expect(a.triggerNote?.midi, a.recipe.id).toBe(expected === undefined ? undefined : 60)
+    }
+  })
+})
+
+/**
+ * §2.1. **The measurement this change is for**, taken rather than asserted from memory.
+ *
+ * Every direction against this box alone, seeds 1-6 — 11 directions, 66 resolutions. A part on
+ * `track-sample` that draws a grid is one the guide used to tell which steps to hit and never
+ * what to put on them; the question this pins is whether all of them now get a note and none of
+ * them gets a blank.
+ *
+ * **A grid exists when some section selected a variant**, which is the renderer's own condition
+ * and not a paraphrase of it. A part whose every section came back `none` prints "no pattern
+ * authored" and no steps, so counting it among the grid parts inflates the population with parts
+ * that have nothing to program — twelve of them, `ambient-dub/texture` and `hip-hop/texture` at
+ * six seeds apiece. They still carry the note, because it is a fact about the track either way;
+ * they are just not what this measures.
+ *
+ * **The counts are a measurement, not a target.** They move when a direction gains or loses a
+ * part, and a diff here is a prompt to re-read the numbers rather than a failure. What must not
+ * move is the *relationship*: `blank` stays 0, and every instruction is the pool's own `C5`.
+ */
+describe('every sample-track grid part gets its note (§2.1)', () => {
+  const SEEDS = [1, 2, 3, 4, 5, 6]
+
+  /** Parts on `track-sample`, split by what phase 5 actually draws for them. */
+  function sweep() {
+    const grid: { where: string; role: Role; kind: string; note?: string; midi?: number }[] = []
+    const hooked: string[] = []
+    const sustained: string[] = []
+    const noPattern: string[] = []
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          if (a.assignables[0]?.poolId !== 'track-sample') continue
+          const where = `${template.id}/${a.role}`
+          if (a.hookAuthority !== undefined) hooked.push(where)
+          else if (isSustainedPart(a)) sustained.push(where)
+          else if (!a.patterns.some((p) => p.selection.outcome !== 'none')) noPattern.push(where)
+          else {
+            const note = noteInstruction(a)
+            grid.push({
+              where: `${where}/seed ${String(seed)}`,
+              role: a.role,
+              kind: note.kind,
+              ...(note.kind === 'none' ? {} : { note: note.note, midi: note.midi }),
+            })
+          }
+        }
+      }
+    }
+    return { grid, hooked, sustained, noPattern }
+  }
+
+  it('leaves no grid part on a sample track without a note, and pins how many there are', () => {
+    const { grid } = sweep()
+
+    // The population, as measured on this library.
+    expect(grid.length).toBe(216)
+
+    // The claim. Zero blanks, and the blank arm named so a regression cannot hide as a count.
+    expect(grid.filter((g) => g.kind === 'none')).toEqual([])
+    expect([...new Set(grid.map((g) => g.kind))]).toEqual(['trigger'])
+    expect([...new Set(grid.map((g) => `${g.note as string}/${String(g.midi)}`))]).toEqual([
+      'C5/60',
+    ])
+  })
+
+  it('reaches the percussion the direction library actually asks this box for', () => {
+    // Pinned by role, not only by total: a count alone would survive one role's parts being
+    // swapped for another's, and what this change is for is the drum tracks.
+    const counts = new Map<Role, number>()
+    for (const g of sweep().grid) counts.set(g.role, (counts.get(g.role) ?? 0) + 1)
+    expect(
+      [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
+    ).toEqual([
+      ['kick', 48],
+      ['closed-hat', 42],
+      ['ghost-perc', 42],
+      ['clap', 18],
+      ['open-hat', 18],
+      ['rim', 18],
+      ['snare', 18],
+      ['ride', 6],
+      ['tom', 6],
+    ])
+  })
+
+  it('accounts for every sample-track part that draws no grid, by which reason', () => {
+    // None of these is a hole in this change, and each says which rule answered it: #100 gives a
+    // hooked part's notes to its hook, and §6.3 leaves a part with no variant anywhere nothing to
+    // program. Asserted rather than assumed — "hook or sustained" was the guess, and this box
+    // produces no sustained sample-track part at all across the sweep.
+    const { hooked, sustained, noPattern } = sweep()
+    expect(hooked.length).toBe(65)
+    expect(sustained).toEqual([])
+    expect(noPattern.length).toBe(12)
+    expect([...new Set(noPattern)].sort()).toEqual(['ambient-dub/texture', 'hip-hop/texture'])
+  })
+
+  /**
+   * What makes the sweep above the whole story. The trigger note is authored on one pool of one
+   * device, so every other box in the library renders exactly what it rendered before — not
+   * because a test checked each of them, but because there is nothing on them to render.
+   */
+  it('is the only device in the library that authors one, so no other guide moves', () => {
+    const authoring = DEVICES.filter((d) => d.voices.some((v) => v.triggerNote !== undefined))
+    expect(authoring.map((d) => d.id)).toEqual(['polyend-tracker-mini'])
+
+    const voices = authoring.flatMap((d) =>
+      d.voices.filter((v) => v.triggerNote !== undefined).map((v) => v.id),
+    )
+    expect(voices).toEqual(['track-sample'])
   })
 })

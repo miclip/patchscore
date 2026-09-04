@@ -20,6 +20,7 @@ import {
   ResolvedParamSchema,
   RoleRequestSchema,
   TemplateSchema,
+  TriggerNoteSchema,
   VerifiedSchema,
   VoiceSpecSchema,
   type ArticulationEntry,
@@ -41,6 +42,7 @@ import {
   type ResolvedParam,
   type RoleRequest,
   type Template,
+  type TriggerNote,
   type Verified,
   type VoiceSpec,
 } from '../lib/core/index'
@@ -63,6 +65,9 @@ describe('schemas and types stay in step', () => {
 
     expectTypeOf<AuthoredParam>().toExtend<z.infer<typeof AuthoredParamSchema>>()
     expectTypeOf<z.infer<typeof AuthoredParamSchema>>().toExtend<AuthoredParam>()
+
+    expectTypeOf<TriggerNote>().toExtend<z.infer<typeof TriggerNoteSchema>>()
+    expectTypeOf<z.infer<typeof TriggerNoteSchema>>().toExtend<TriggerNote>()
 
     expectTypeOf<VoiceSpec>().toExtend<z.infer<typeof VoiceSpecSchema>>()
     expectTypeOf<z.infer<typeof VoiceSpecSchema>>().toExtend<VoiceSpec>()

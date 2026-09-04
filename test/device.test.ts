@@ -5,12 +5,14 @@ import {
   DeviceSchema,
   JackSignalKindSchema,
   RecipeSchema,
+  TriggerNoteSchema,
   VoiceSpecSchema,
   clockSourceSetupFact,
   evidenceFor,
   expand,
   jackFact,
   type Assignable,
+  type TriggerNote,
   type Verified,
 } from '../lib/core/index'
 import { device, poolDevice, recipe } from './fixtures'
@@ -109,6 +111,89 @@ describe('Assignable (§2.2, §4.2)', () => {
     expect(keys).toEqual(['deviceId', 'label', 'ordinal', 'polyphony', 'poolId', 'roles', 'voiceId'])
     expect(keys).not.toContain('occupancy')
     expect(keys).not.toContain('sections')
+  })
+})
+
+describe('TriggerNote (§2.1)', () => {
+  const CITE = { kind: 'manual', source: 'Fixture Manual, p.90' } as const
+  const good = { note: 'C5', midi: 60, verified: CITE }
+
+  it('accepts a cited note', () => {
+    expect(TriggerNoteSchema.safeParse(good).success).toBe(true)
+  })
+
+  it('refuses an uncited one, whether it says so or stays silent (invariant 5)', () => {
+    // `Cite`, not `Verified`, and the difference is not pedantry. A note that does not address
+    // the voice does not sound it, so a guessed one is an instruction that fails at the machine
+    // rather than a rough setting a reader nudges — and it fails invisibly, since nothing on the
+    // page distinguishes a guessed `C5` from a read one. There is no state between "the manual
+    // says which note" and "we do not model this voice's addressing".
+    expect(TriggerNoteSchema.safeParse({ ...good, verified: false }).success).toBe(false)
+    expect(TriggerNoteSchema.safeParse({ note: 'C5', midi: 60 }).success).toBe(false)
+  })
+
+  it('holds `midi` to a whole MIDI note number', () => {
+    expect(TriggerNoteSchema.safeParse({ ...good, midi: -1 }).success).toBe(false)
+    expect(TriggerNoteSchema.safeParse({ ...good, midi: 128 }).success).toBe(false)
+    expect(TriggerNoteSchema.safeParse({ ...good, midi: 60.5 }).success).toBe(false)
+    expect(TriggerNoteSchema.safeParse({ ...good, midi: 0 }).success).toBe(true)
+    expect(TriggerNoteSchema.safeParse({ ...good, midi: 127 }).success).toBe(true)
+  })
+
+  it('needs a note the box actually prints, and nothing else', () => {
+    expect(TriggerNoteSchema.safeParse({ ...good, note: '' }).success).toBe(false)
+    expect(TriggerNoteSchema.safeParse({ ...good, octave: 5 }).success).toBe(false)
+  })
+
+  it('is optional on both voice shapes', () => {
+    const fixed = { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 }
+    const pooled = { kind: 'pool', id: 't', label: 'T', count: 8, roles: ['pad'], polyphony: 1 }
+    expect(VoiceSpecSchema.safeParse(fixed).success).toBe(true)
+    expect(VoiceSpecSchema.safeParse({ ...fixed, triggerNote: good }).success).toBe(true)
+    expect(VoiceSpecSchema.safeParse({ ...pooled, triggerNote: good }).success).toBe(true)
+    expect(VoiceSpecSchema.safeParse({ ...fixed, triggerNote: { note: 'C5' } }).success).toBe(false)
+
+  })
+
+  it('is a fact about a voice, and a recipe may not carry one', () => {
+    // A patch that wanted a different note from its track's would be a *sliced* instrument, where
+    // a note is a slice address rather than a pitch or an original-pitch marker — a different
+    // kind of value with the same shape. Until the vocabulary can say which of the two a voice
+    // is doing, one name for both is the thing this refuses (§4.1's third category).
+    expect(RecipeSchema.safeParse({ ...recipe(), triggerNote: good }).success).toBe(false)
+  })
+})
+
+describe('expand carries the trigger note (§2.1, §2.2)', () => {
+  const NOTE: TriggerNote = {
+    note: 'C5',
+    midi: 60,
+    verified: { kind: 'manual', source: 'Fixture Manual, p.90' },
+  }
+
+  it('gives every member of a pool the pool\'s own, and leaves a silent voice silent', () => {
+    const box = poolDevice({
+      voices: [
+        { kind: 'pool', id: 'sample', label: 'Sample', count: 3, roles: ['pad'], polyphony: 1, triggerNote: NOTE },
+        { kind: 'pool', id: 'synth', label: 'Synth', count: 2, roles: ['pad'], polyphony: 1 },
+      ],
+    })
+    const out = expand(box)
+    const sample = out.filter((a) => a.poolId === 'sample')
+    const synth = out.filter((a) => a.poolId === 'synth')
+
+    expect(sample).toHaveLength(3)
+    for (const a of sample) expect(a.triggerNote).toEqual(NOTE)
+    expect(synth).toHaveLength(2)
+    // Absent, not defaulted: a track whose note the reader chooses says nothing.
+    for (const a of synth) expect(Object.keys(a)).not.toContain('triggerNote')
+  })
+
+  it('carries a fixed voice\'s own', () => {
+    const box = device({
+      voices: [{ kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1, triggerNote: NOTE }],
+    })
+    expect(expand(box)[0]?.triggerNote).toEqual(NOTE)
   })
 })
 

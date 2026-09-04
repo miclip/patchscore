@@ -131,6 +131,9 @@ export function expand(device: Device): readonly Assignable[] {
           label: voice.label,
           roles: Object.freeze([...voice.roles]) as Role[],
           polyphony: voice.polyphony,
+          // §2.1. Carried through, never defaulted: a voice with no trigger note is one whose
+          // note the reader chooses, and inventing one here would be invariant 5's failure.
+          ...(voice.triggerNote === undefined ? {} : { triggerNote: voice.triggerNote }),
         }),
       )
       continue
@@ -152,6 +155,8 @@ export function expand(device: Device): readonly Assignable[] {
           ordinal,
           roles: Object.freeze([...voice.roles]) as Role[],
           polyphony: voice.polyphony,
+          // §2.1. Every member of a pool is addressed alike, so each carries the pool's own.
+          ...(voice.triggerNote === undefined ? {} : { triggerNote: voice.triggerNote }),
         }),
       )
     }

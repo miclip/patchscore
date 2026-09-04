@@ -203,6 +203,9 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 
 **Tight one-shot kick, tuned down, no tail** — settings in Sound design
 
+**Trigger note** — `C5` · MIDI 60 · manual
+- ↳ cite: manual — Polyend Tracker Mini Manual 2.2.1b, p.90 (C5 plays a sample at its original pitch); p.54, p.298, p.288 (Middle C setting, shipped as C-5, so that C5 is MIDI 60)
+
 **Intro, Outro** — 16 steps, band 0
 
 ```
