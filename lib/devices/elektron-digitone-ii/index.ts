@@ -77,6 +77,49 @@ import { DIGITONE_II_PANEL } from './panel'
  * minilogue xd's `SHAPE`, arriving in a field that has no room for the switch — so the lane stays
  * declared, because the box does it, and unreachable, because the guide cannot say it.
  *
+ * ## No trigger note, because nothing on this box has an original pitch (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 216, all on the one `track` pool, and it declines for the plainest reason in the whole
+ * class: **`TriggerNote` is a sampler's fact, and there is no sampler here.**
+ *
+ * The field holds *the note that plays this part's sound as it is* — a loaded sample's original
+ * pitch, where writing anything else transposes the recording. Every machine on this box is a
+ * synthesis engine (`FM TONE`, `FM DRUM`, `WAVETONE`, `SWARMER`), and a synth has no "as
+ * recorded" pitch to be at. Its note is the pitch you want, which under §4.1 is the direction's
+ * decision and belongs in the template.
+ *
+ * The library already states this rule from the other side, on the Tracker Mini's `track-synth`:
+ * *"has no sample to be at its original pitch, so its note is the reader's."* The Digitone II is
+ * the first box where that is true of the whole instrument, so there is no second pool to hold
+ * the exception in — which is the same structural point as the Digitakt II's, arrived at from the
+ * opposite direction.
+ *
+ * **The manual is consistent about it across three chapters.**
+ *
+ *  - p.42 defines what a step is: *"NOTE TRIGS trigger preset notes or MIDI notes"*, against
+ *    *"LOCK TRIGS trigger parameter locks (but do not trigger notes)"*. The note is the content
+ *    of the trig, not an address it is sent to.
+ *  - p.44's NOTE EDIT is the sharpest evidence, because it shows **several notes on one step** —
+ *    the screen prints `E 5`, `G 5` and `C 5` with their own time, length and velocity, and the
+ *    text is *"Press and turn DATA ENTRY knob A to select any note in the Chromatic scale."* A
+ *    single `TriggerNote` cannot be a chord, and `polyphony: 4` below is the model agreeing.
+ *  - p.57 names it: *"Trig Note sets the pitch of the note when trigged."* The same page warns
+ *    that *"MIDI tracks have a different set of parameters on the TRIG, SYN, FLTR, and AMP
+ *    pages"*, so the pool's third kind of track does not share the meaning either.
+ *
+ * ## The octave convention, recorded and deliberately not used
+ *
+ * p.24 states it outright: *"MIDI note numbers 16-84, that corresponds to notes E2-C7 (C5, MIDI
+ * note 60, being middle C)"*, and confirms it from the floor — *"Note numbers 0-15 correspond to
+ * notes C0 through to D#1"*. p.38 agrees from a third place, keytracking being *"centered around
+ * middle C (C5)"*, and p.57's TRIG screen prints the pair as `C 5 (60)`.
+ *
+ * So `C5` is 60 here and `0` is `C0`: the same numbering as the Digitakt II and the Tracker Mini,
+ * and an octave below the SP-404MK2's. It is recorded because the library holds two conventions
+ * and a rendered note name shows neither (#352). **No value is authored from it** — a pitch on
+ * this box is the direction's, resolved against the song's key, and that is a different field.
+ *
  * ## Numbers: this manual prints almost none, again
  *
  * Elektron documents what a parameter does and leaves the range to the screen, so across the
@@ -1005,6 +1048,15 @@ export const device: Device = {
    */
   voices: [
     {
+      /**
+       * **No `triggerNote`** (§2.1/#334), because the field is a sampler's fact and there is no
+       * sampler here. It holds a loaded sample's original pitch; every machine on this box is a
+       * synthesis engine, which has none. p.42 makes the note the content of a trig (*"NOTE TRIGS
+       * trigger preset notes or MIDI notes"*), p.44's NOTE EDIT puts three of them on one step,
+       * and p.57 says *"Trig Note sets the pitch of the note when trigged"* — musical content,
+       * which §4.1 leaves to the direction. See the head note; the tests are in
+       * `test/elektron-digitone-ii.test.ts`.
+       */
       kind: 'pool',
       id: 'track',
       label: 'Track',
