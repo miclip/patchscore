@@ -4,10 +4,17 @@ import {
   DeviceSchema,
   ROLES,
   expand,
+  isSustainedPart,
+  moodState,
+  noteInstruction,
   realisationOf,
+  renderGuide,
+  resolve,
   resolveRecipe,
   type AuthoredParam,
   type Recipe,
+  type ResolvedAssignment,
+  type Role,
 } from '../lib/core/index'
 import {
   ARTICULABLE_PER_STEP,
@@ -15,6 +22,7 @@ import {
   device,
 } from '../lib/devices/roland-sp-404mk2/index'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { TEMPLATES } from '../lib/templates/index'
 import { auditDevice } from '../scripts/audit-verified'
 
 /**
@@ -418,5 +426,245 @@ describe('SP-404MK2 manifest', () => {
     for (const [key, text] of Object.entries(device.hints ?? {})) {
       expect(text.split(/\s+/).length, key).toBeLessThanOrEqual(8)
     }
+  })
+})
+
+/**
+ * §2.1/#334. **This box authors no trigger note, and the reason is its own rather than the one
+ * the other samplers give.**
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. The
+ * SP-404MK2 has 246, all on the one pad pool, and three readings answer them:
+ *
+ *  - **A step is timing.** p.97 introduces TR-REC as *"setting the sample playback timing at the
+ *    position you like on the steps"*, and p.99's step 9 is *"Press pads [1]-[16] to select the
+ *    step (timing) at which the sample plays back."*
+ *  - **The sample is chosen by pad, before any step.** p.98's step 7: *"Press pads [1]-[16] while
+ *    holding down the [SUB PAD] button to select the sample."*
+ *  - **What stands where a trigger note would is a setting the reader chooses.** p.98's `PITCH`
+ *    has the range `-12-+12` and `PITCH MODE` gives it either to the step (`CHROMATIC`, where the
+ *    scale and the note come from the `[VALUE]` knob) or to the pad (`PAD`, where *"all of the
+ *    steps you input play back at the pitch you set in PITCH"*). No default is printed for
+ *    either, and `TriggerNote` carries a `note` and a `midi` — neither of which this box states
+ *    anywhere.
+ *
+ * And the external map cannot be borrowed: pp.268 and 271-272 give the pads different notes under
+ * MIDI modes A and B, per bank, per channel, with `Note Offset` sliding the whole map.
+ */
+describe('trigger notes: read for, and declined (§2.1/#334)', () => {
+  const SEEDS = [1, 2, 3, 4, 5, 6]
+
+  /**
+   * A part phase 5 draws a grid for: not owned by a hook (#100), not sustained (§4.2), and with at
+   * least one section whose variant resolved (§6.3).
+   *
+   * One definition, used by the sweep and by the page test. `noteInstruction` answers `none` for a
+   * hooked or sustained part as well as for a blank grid part, so a page test asking it whether a
+   * grid exists would count parts that draw none and then pass against a guide with nothing in it.
+   */
+  function drawsGrid(a: ResolvedAssignment): boolean {
+    return (
+      a.hookAuthority === undefined &&
+      !isSustainedPart(a) &&
+      a.patterns.some((p) => p.selection.outcome !== 'none')
+    )
+  }
+
+  /** Every part this box takes, split by what phase 5 actually draws for it. */
+  function sweep() {
+    const grid: { where: string; role: Role; kind: string }[] = []
+    const hooked: string[] = []
+    const sustained: string[] = []
+    const noPattern: string[] = []
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          const where = `${template.id}/${a.role}`
+          if (drawsGrid(a)) grid.push({ where, role: a.role, kind: noteInstruction(a).kind })
+          else if (a.hookAuthority !== undefined) hooked.push(where)
+          else if (isSustainedPart(a)) sustained.push(where)
+          else noPattern.push(where)
+        }
+      }
+    }
+    return { grid, hooked, sustained, noPattern }
+  }
+
+  it('authors none on the pool, and none on any recipe', () => {
+    expect(device.voices.filter((v) => v.triggerNote !== undefined)).toEqual([])
+    const claiming = device.recipes.filter(
+      (r) => (r as Recipe & { triggerNote?: unknown }).triggerNote !== undefined,
+    )
+    expect(claiming.map((r) => r.id)).toEqual([])
+  })
+
+  it('stays off the library roster of boxes that author one', () => {
+    const authoring = DEVICES.filter((d) => d.voices.some((v) => v.triggerNote !== undefined))
+    expect(authoring.map((d) => d.id)).not.toContain('roland-sp-404mk2')
+  })
+
+  /**
+   * What this box actually offers in place of a note, asserted where it lives rather than only in
+   * prose — and asserted no further than the pages go.
+   *
+   * `PITCH` is a **numeric** parameter on p.80's printed range, paired with the `VINYL MODE`
+   * switch that decides which of the two printed scales applies, and **it declares no unit**. That
+   * last one is the manifest's own long-standing finding (see the `pitch` helper): the manual
+   * prints `-12.00-+12.00` and never says what of, and the single page in 274 that uses the word
+   * semitone is about a different control. So the honest statement of why no trigger note exists
+   * is that this box answers pitch with a number the reader sets, not that the number is an
+   * interval — and a test that said "semitones" would be asserting the thing the manifest
+   * deliberately declines to.
+   */
+  it('offers a numeric PITCH with its switch and no unit, rather than any note', () => {
+    const pitched = device.recipes.filter((r) =>
+      (r.params as AuthoredParam[]).some((p) => p.name === 'PITCH'),
+    )
+    expect(pitched.length).toBeGreaterThan(0)
+    for (const recipe of pitched) {
+      const params = recipe.params as AuthoredParam[]
+      const param = params.find((p) => p.name === 'PITCH')
+      expect(param?.kind, recipe.id).toBe('numeric')
+      if (param?.kind !== 'numeric') throw new Error('expected a numeric PITCH')
+      // p.80's range, cited to p.80, and the switch that governs it travels with it (see the
+      // module note) — because p.80 prints two scales for this control and the value is only
+      // legal against one of them.
+      expect(param.range?.min, recipe.id).toBe(-12)
+      expect(param.range?.max, recipe.id).toBe(12)
+      expect((param.range?.verified as { source?: string } | undefined)?.source, recipe.id)
+        .toContain('p.80')
+      expect(param.unit, recipe.id).toBeUndefined()
+      expect(params.some((p) => p.name === 'VINYL MODE'), recipe.id).toBe(true)
+    }
+  })
+
+  /**
+   * The other half, and the one a trigger note would have had to come from: `PITCH MODE` is an
+   * enum of the two the guide prints, and neither names a note.
+   */
+  it('carries PITCH MODE as the two named modes, neither of which is a note', () => {
+    const modes = device.recipes
+      .flatMap((r) => r.params as AuthoredParam[])
+      .filter((p) => p.name === 'PITCH MODE')
+    for (const param of modes) {
+      expect(param.kind).toBe('enum')
+      if (param.kind !== 'enum') throw new Error('expected an enum PITCH MODE')
+      expect([...param.options.values].sort()).toEqual(['CHROMATIC', 'PAD'])
+    }
+  })
+
+  /**
+   * **The measurement, taken rather than remembered.** Every direction against this box alone,
+   * seeds 1-6.
+   *
+   * 246 is #334's figure for this device and it is expected to stay put, because nothing here is
+   * a gap to close. The number moves when a direction gains or loses a part, and a diff is a
+   * prompt to re-read the head note rather than a failure. What must not move is the relationship
+   * — no part ever gets a `trigger`, because the pool has no note to give one.
+   */
+  it('leaves 246 grid parts blank, and pins how many there are', () => {
+    const { grid } = sweep()
+
+    expect(grid.length).toBe(270)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(246)
+
+    // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
+    // prints are the direction's own.
+    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch'])
+  })
+
+  it('prints a note only where the direction asked for a pitch of its own', () => {
+    // §4.1's precedence with one arm missing. The 24 that carry a note are `sub` parts, where the
+    // pitch is the direction's musical decision (#340) and owes this box nothing.
+    const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
+    expect(pitched.length).toBe(24)
+    expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
+  })
+
+  it('leaves the blanks on the roles a pad press answers', () => {
+    // Pinned by role, not only by total: a count alone would survive one role's parts being
+    // swapped for another's, and percussion is what this box is being asked for.
+    const counts = new Map<Role, number>()
+    for (const g of sweep().grid) {
+      if (g.kind !== 'none') continue
+      counts.set(g.role, (counts.get(g.role) ?? 0) + 1)
+    }
+    expect(
+      [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
+    ).toEqual([
+      ['closed-hat', 48],
+      ['kick', 48],
+      ['ghost-perc', 42],
+      ['clap', 18],
+      ['metallic', 18],
+      ['open-hat', 18],
+      ['rim', 18],
+      ['snare', 18],
+      ['impact', 6],
+      ['tom', 6],
+      ['vox-chop', 6],
+    ])
+  })
+
+  it('accounts for every part that draws no grid, by which reason', () => {
+    // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
+    // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
+    // produces no sustained part at all across the sweep.
+    const { hooked, sustained, noPattern } = sweep()
+    expect(hooked.length).toBe(114)
+    expect(sustained).toEqual([])
+    expect(noPattern.length).toBe(18)
+    expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/texture',
+      'hip-hop/texture',
+      'industrial-techno/riser',
+    ])
+  })
+
+  /**
+   * §8. **The reader-facing half**, checked on the page rather than only on the resolver.
+   *
+   * The count of parts that actually draw a grid is asserted non-zero first, or an empty render
+   * would pass this forever.
+   */
+  it('never prints a trigger note on a rendered page, across every direction and seed', () => {
+    let drawn = 0
+    for (const template of TEMPLATES) {
+      for (const seed of [1, 7]) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        drawn += result.assignments.filter(drawsGrid).length
+        expect(renderGuide(result), `${template.id} seed ${String(seed)}`).not.toContain(
+          'Trigger note',
+        )
+      }
+    }
+    expect(drawn).toBeGreaterThan(0)
+  })
+
+  /**
+   * §2.1/#352. **The octave convention, recorded because the library now holds two boxes that
+   * disagree about it by an octave.**
+   *
+   * This manual pairs numbers with names in both places it prints them: p.268's `0, 12-91 (C-1,
+   * C0-G6)` and `36-60 (C2-C4)`, and pp.271-272's note map, where `60` reads `C4`, `48` reads
+   * `C3`, `36` reads `C2`. Zero is `C-1`, so 60 is `C4` — scientific pitch notation, and an octave
+   * above the MPC guides' `0-127 or C-2 to G8`.
+   *
+   * This asserts the *arithmetic*, not a value in the manifest, and that is the point: there is no
+   * value, and this is what the next author needs before there can be one.
+   */
+  it('records the octave convention without authoring a note from it', () => {
+    // 0 = C-1 means octave numbering starts one below zero, so MIDI n is octave floor(n / 12) - 1.
+    const octave = (midi: number) => Math.floor(midi / 12) - 1
+    expect(octave(0)).toBe(-1) //   C-1, p.268's floor
+    expect(octave(12)).toBe(0) //   C0, the same row
+    expect(octave(36)).toBe(2) //   C2, pp.271-272
+    expect(octave(48)).toBe(3) //   C3
+    expect(octave(60)).toBe(4) //   C4 — middle C here, where an MPC's 60 is C3
+    expect(octave(91)).toBe(6) //   G6, p.268's mode B ceiling
+
+    // Nothing above is authored anywhere, which is the state this test exists to keep.
+    expect(device.voices.some((v) => v.triggerNote !== undefined)).toBe(false)
   })
 })
