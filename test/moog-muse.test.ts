@@ -19,13 +19,32 @@ import { industrialTechno } from '../lib/templates/index'
  *
  * **#349: the scale under all of it was wrong.** The manifest was authored on Appendix A's
  * `0-127` because the manual prints no other number for these controls. The instrument prints one:
- * a value on the screen as the control is turned, in percent for 37 of the 41 and in Hz for the two
- * filter cutoffs. Those 39 are now authored on the scale the reader can see, cited `observed`; the
- * two `DELAY · TIME` knobs stay on the CC scale because under `CLOCK SYNC` they show divisions,
- * which is #346 rather than this.
+ * a value on the screen as the control is turned. Thirty-nine of the 41 are now authored on the
+ * scale the reader can see, cited `observed`; the two `DELAY · TIME` knobs stay on the CC scale
+ * because under `CLOCK SYNC` they show divisions, which is #346 rather than this.
+ *
+ * **And the scale is not one scale.** The three bipolar controls were the last read, and none is
+ * a percentage: both `FILTER · ENVELOPE AMOUNT` knobs are signed `-100…100`, and `VCA · PAN` is a
+ * side and a distance, `100L` through `0` to `100R`, authored as a magnitude from centre. So the
+ * split is 34 percent, 2 signed, 1 sided, 2 Hz, 2 divisions.
+ *
+ * **The two envelope amounts were read separately**, at the same session at the box, and share a
+ * helper because they share a scale rather than because either was carried across from the other.
+ * They sit on one module and the sibling argument would have made the second free, which is
+ * exactly why it matters that it was not used: `FILTER 2 · CUTOFF` is the one inference this
+ * folder makes, and this file asserts it is still the only one.
+ *
+ * **Pan is authored only at centre**, which is where every recipe puts it and the only point the
+ * reading settles. A side has no representation here yet and the tests say so, so a recipe that
+ * wants a hard-left pad has to settle that first rather than find an unexercised branch.
+ *
+ * **One thing follows and this file pins it.** The resting position of a bipolar control is now a
+ * *cited point* — the reading says which number noon is — so the Muse has non-provisional points
+ * where it had none, and `verified` on a point is no longer uniform across the file.
  *
  * What this file pins is the shape of that outcome: which controls are on which scale, that the
- * counts are what the reading found, and that nothing here asserts a CC *value* any more.
+ * counts are what the reading found, which points the reading settles, and that nothing here
+ * asserts a CC *value* any more.
  */
 
 /** The claim that was false on a fader and now lives on the device. It must appear on neither. */
@@ -67,31 +86,192 @@ const percentParams = observedParams.filter((param) => param.unit === '%')
 const hzCutoffs = observedParams.filter((param) => param.unit === 'Hz')
 const appendixA = numerics.filter((param) => rangeSource(param).includes('Appendix A'))
 const faderParams = percentParams.filter((param) => param.name in FADERS)
-/** The other 29. Not *the rotary controls*: several are the MIXER and WAVE MIX sliders. */
+/** The other 26. Not *the rotary controls*: several are the MIXER and WAVE MIX sliders. */
 const knobParams = percentParams.filter((param) => !(param.name in FADERS))
+/** Both signed controls: `-100…100`, `0` at noon, no unit at all. */
+const signedParams = observedParams.filter((param) => param.name.endsWith('ENVELOPE AMOUNT'))
+/** The sided one: a magnitude from centre, and centre is the only point any recipe uses. */
+const panParams = observedParams.filter((param) => param.name === 'VCA · PAN')
+/**
+ * Every point the reading settles, across all 18 recipes. A bipolar control at rest is where the
+ * observation lands and nothing else here is — see the file note.
+ */
+const citedPoints = numerics.filter((param) => param.verified !== false)
 
 const distinct = (params: readonly AuthoredNumericParam[]) =>
   [...new Set(params.map((param) => param.name))].sort()
 
 describe('the Muse is authored on the scales its screen shows (#349)', () => {
-  it('splits the 41 CC-numbered controls 37 / 2 / 2, which is what the reading found', () => {
-    // The three families, counted by distinct control rather than by instance. 37 percent, the
-    // two filter cutoffs in Hz, and the two DELAY TIME knobs left on the CC scale for #346.
-    expect(distinct(percentParams)).toHaveLength(37)
+  it('splits the 41 CC-numbered controls 34 / 2 / 1 / 2 / 2, which is what the reading found', () => {
+    // Counted by distinct control rather than by instance. 34 percent, the two signed envelope
+    // amounts, the sided pan, the two cutoffs in Hz, and the two DELAY TIME knobs left on the CC
+    // scale for #346.
+    expect(distinct(percentParams)).toHaveLength(34)
+    expect(distinct(signedParams)).toEqual([
+      'FILTER 1 · ENVELOPE AMOUNT',
+      'FILTER 2 · ENVELOPE AMOUNT',
+    ])
+    expect(distinct(panParams)).toEqual(['VCA · PAN'])
     expect(distinct(hzCutoffs)).toEqual(['FILTER 1 · CUTOFF', 'FILTER 2 · CUTOFF'])
     expect(distinct(appendixA)).toEqual(['DELAY · TIME - L', 'DELAY · TIME - R'])
     // And they are disjoint and exhaustive over the controls that carry a CC number.
     const withCc = numerics.filter((param) => param.midiCc !== undefined)
-    expect(distinct(withCc)).toHaveLength(37 + 2 + 2)
+    expect(distinct(withCc)).toHaveLength(34 + 2 + 1 + 2 + 2)
   })
 
   it('cites the observation, with the firmware in the source string', () => {
-    for (const param of [...percentParams, ...hzCutoffs]) {
+    for (const param of [...percentParams, ...hzCutoffs, ...signedParams, ...panParams]) {
       expect(param.range.verified, param.name).toEqual(OBSERVED)
-      // §3.1's split holds either way round: the range is a claim somebody checked, the point is
-      // taste. Re-scaling changed which claim the range makes and nothing about the point.
+    }
+    // §3.1's split, and it now cuts both ways on one device. The range is always a claim somebody
+    // checked. The point is taste everywhere except at a bipolar control's rest position, which
+    // is the one place the same reading also says what the number is.
+    for (const param of [...percentParams, ...hzCutoffs]) {
       expect(param.verified, param.name).toBe(false)
     }
+  })
+
+  /**
+   * The controls the bipolar reading moved, and the reason pan is a separate test: it is not the
+   * same shape. A sign and a side are different answers to *which way*, and `NumericRange` can
+   * express the first and not the second.
+   */
+  it('puts both signed controls on -100…100 with no unit, and noon at 0', () => {
+    // Two controls across 18 recipes.
+    expect(signedParams.length).toBe(36)
+    const ccs: Readonly<Record<string, number>> = {
+      'FILTER 1 · ENVELOPE AMOUNT': 69,
+      'FILTER 2 · ENVELOPE AMOUNT': 75,
+    }
+    for (const param of signedParams) {
+      expect(param.range.min, param.name).toBe(-100)
+      expect(param.range.max, param.name).toBe(100)
+      // No unit: the screen shows a bare signed number, and a `%` here would be the relabelling
+      // #349 refused. Not `''` — absent, so the renderer prints nothing rather than a space.
+      expect(param.unit, param.name).toBeUndefined()
+      expect(param.value, param.name).toBeGreaterThanOrEqual(-100)
+      expect(param.value, param.name).toBeLessThanOrEqual(100)
+      // The note and the number finally agree. On `0-100 %` the note said noon and the value said
+      // `50`, which is the contradiction this range exists to end.
+      expect(param.note, param.name).toBe('Bipolar, no modulation at noon')
+      // The Appendix A rows never moved, and the two controls keep their own.
+      expect(param.midiCc, param.name).toBe(ccs[param.name])
+    }
+    // Rescaled from travel by `2x-100`, so every point stayed on the five-grid and none went
+    // negative — the recipes were all at or above noon already.
+    expect(signedParams.every((param) => param.value >= 0)).toBe(true)
+    expect(new Set(signedParams.map((param) => param.value)).size).toBeGreaterThan(4)
+    // Both controls actually move across the recipes, so neither side of the pair is a column of
+    // one repeated number that a wrong rescaling would hide in.
+    for (const name of Object.keys(ccs)) {
+      const values = signedParams.filter((param) => param.name === name).map((p) => p.value)
+      expect(new Set(values).size, name).toBeGreaterThan(3)
+    }
+  })
+
+  it('authors PAN as a magnitude, because the screen shows a side rather than a sign', () => {
+    expect(panParams.length).toBe(18)
+    for (const param of panParams) {
+      // `0…100`, not `-100…100`. No screen on this box shows `-40`; it shows `40L`, and the two
+      // conventions for what a negative pan means disagree, so a signed range would be inventing
+      // one of them. The shape the instrument does show is stated in the note.
+      expect(param.range.min, param.name).toBe(0)
+      expect(param.range.max, param.name).toBe(100)
+      expect(param.note).toBe('Bipolar, centred at noon — the screen reads 100L through 0 to 100R')
+      expect(param.midiCc).toBe(10)
+      // Every recipe centres it, and centre carries no side — `0L` is not a thing the box prints.
+      expect(param.value, param.name).toBe(0)
+      expect(param.unit, param.name).toBeUndefined()
+    }
+  })
+
+  /**
+   * **The range is exercised at one point, and the helper offers no other.** An earlier pass gave
+   * `panParam` an optional `'L' | 'R'` that became the parameter's `unit`. Nothing called it, `L`
+   * is not a unit and is in no vocabulary this library shares, and the rendered bounds would have
+   * come out side-specific — `40 L (0…100 L)`, a range the instrument does not have. It was
+   * deleted rather than tested, because a tested branch nothing uses is still a decision taken in
+   * advance of the recipe that needs it.
+   *
+   * This test is what makes that a commitment instead of a current fact: a future off-centre pan
+   * has to settle how a side is represented, and it will arrive here first.
+   */
+  it('offers no way to author a pan off centre, so the question stays open', () => {
+    expect(new Set(panParams.map((param) => param.value))).toEqual(new Set([0]))
+    // No `L`/`R` reached a unit anywhere on this device, which is the shape the deleted branch
+    // would have produced.
+    expect(numerics.filter((param) => param.unit === 'L' || param.unit === 'R')).toEqual([])
+    // And the whole unit vocabulary of this device is three real units and the absence of one.
+    // `L` would have been a fourth entry that is not a unit at all, which is the objection.
+    expect([...new Set(numerics.map((param) => param.unit))].sort()).toEqual([
+      '%',
+      'Hz',
+      'st',
+      undefined,
+    ])
+  })
+
+  /**
+   * **Both envelope amounts were read; neither was carried across from the other.** They are the
+   * same control on the same module, which is exactly the argument that would have made the
+   * second one free — and the whole value of naming `FILTER 2 · CUTOFF` as *the* inference in
+   * this folder is that it stays the only one. The test states that as a property of the file
+   * rather than as a claim in a comment: the two amounts must agree in every respect that comes
+   * from the reading, and a recipe at rest must print the same number on both lines.
+   */
+  it('gives the two envelope amounts one scale, because each was read at the box', () => {
+    const byName = (name: string) => numerics.filter((param) => param.name === name)
+    const one = byName('FILTER 1 · ENVELOPE AMOUNT')
+    const two = byName('FILTER 2 · ENVELOPE AMOUNT')
+    expect(one).toHaveLength(18)
+    expect(two).toHaveLength(18)
+    // Everything the reading decides is identical across the pair; only the CC and the point
+    // differ, and the point is taste.
+    const shape = (param: AuthoredNumericParam) =>
+      `${param.range.min}…${param.range.max} ${param.unit ?? '(none)'} ${param.note ?? ''}`
+    expect([...new Set([...one, ...two].map(shape))]).toEqual([
+      '-100…100 (none) Bipolar, no modulation at noon',
+    ])
+    // The recipe that wants no filter envelope at all now prints one number twice, which is what
+    // two readings of the same scale should produce.
+    const atRest = device.recipes
+      .find((recipe) => recipe.id === 'muse-sub-clean')
+      ?.params.filter(isNumeric)
+      .filter((param) => param.name.endsWith('ENVELOPE AMOUNT'))
+      .map((param) => `${param.name}=${param.value}${param.unit ?? ''}`)
+    expect(atRest).toEqual([
+      'FILTER 1 · ENVELOPE AMOUNT=0',
+      'FILTER 2 · ENVELOPE AMOUNT=0',
+    ])
+  })
+
+  /**
+   * §3.1. **The reading settles a point as well as a range, in one place.** `verified` on a point
+   * asks whether anybody checked the number, and for the rest position of a bipolar control
+   * somebody did — the note says the knob is at noon and the observation says which number that
+   * is. It says nothing about where a lead's envelope amount should sit, so every other point on
+   * this device is still taste.
+   */
+  it('cites the resting position of a bipolar control and nothing else', () => {
+    // Stated as the rule rather than as a total, because the total is a fact about how many
+    // recipes happen to want no envelope and would change with the next recipe added.
+    const atNoon = [...signedParams, ...panParams].filter((param) => param.value === 0)
+    expect(citedPoints).toHaveLength(atNoon.length)
+    for (const param of citedPoints) {
+      expect(param.verified, param.name).toEqual(OBSERVED)
+      expect(param.value, param.name).toBe(0)
+    }
+    expect(distinct(citedPoints)).toEqual([
+      'FILTER 1 · ENVELOPE AMOUNT',
+      'FILTER 2 · ENVELOPE AMOUNT',
+      'VCA · PAN',
+    ])
+    // All 18 pans are centred, so the pan half of that is not a sample.
+    expect(citedPoints.filter((param) => param.name === 'VCA · PAN')).toHaveLength(18)
+    // Not vacuous in the other direction: a non-zero amount on the same control is still taste.
+    const offNoon = signedParams.filter((param) => param.value !== 0)
+    expect(offNoon.length).toBeGreaterThan(0)
+    for (const param of offNoon) expect(param.verified).toBe(false)
   })
 
   it('gives every percent control the same range and the unit the screen shows', () => {
@@ -116,23 +296,21 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
   })
 
   it('honours the positions the manual does anchor, in the manual’s own numbers', () => {
-    // p.42: PAN is bipolar and centred at noon, which on a 0-100 readout is 50. Every recipe
-    // centres it, so this is a stated position rather than taste — and the one place a percent
-    // value here has a right answer.
-    const pans = percentParams.filter((param) => param.name === 'VCA · PAN')
-    expect(pans.length).toBeGreaterThan(0)
-    for (const param of pans) expect(param.value).toBe(50)
-    // The same reading on the other bipolar control, where it changes the sound rather than the
-    // image: a recipe that wants no filter envelope sets ENVELOPE AMOUNT to noon. `0` there is
-    // not *off*, it is fully inverted — which is what a unipolar assumption produces, and what
-    // three of these recipes carried before #349's authoring pass.
+    // p.42: PAN is bipolar and centred at noon, and the screen puts noon at `0`. Every recipe
+    // centres it, so this is a stated position rather than taste — and the reading is what makes
+    // it a *cited* one, which is the assertion the previous version of this test could not make.
+    expect(panParams.length).toBeGreaterThan(0)
+    for (const param of panParams) expect(param.value).toBe(0)
+    // The same reading on the other two bipolar controls, where it changes the sound rather than
+    // the image: a recipe that wants no filter envelope sets both ENVELOPE AMOUNTs to noon, and
+    // noon is `0` on the signed scale each of their screens shows.
     for (const id of ['muse-sub-dark', 'muse-sub-clean', 'muse-bass-mid-dark']) {
       const amounts = device.recipes
         .find((recipe) => recipe.id === id)
         ?.params.filter(isNumeric)
         .filter((param) => param.name.endsWith('ENVELOPE AMOUNT'))
       expect(amounts, id).toHaveLength(2)
-      for (const param of amounts ?? []) expect(param.value, `${id} ${param.name}`).toBe(50)
+      expect(amounts?.map((param) => param.value), id).toEqual([0, 0])
     }
     // p.36: "setting RESONANCE fully clockwise allows you to use either filter as a sine wave
     // oscillator". `muse-sub-clean` is the recipe that does it, so its RESONANCE is the maximum
@@ -157,8 +335,12 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
    * can stand in for it. The tests that come closest are the anchors above, where a musical reading
    * and an arithmetic one give different answers and the manual says which is right.
    */
-  it('puts every percent point on a five-step grid, so a reader can land on it', () => {
-    const offGrid = percentParams.filter((param) => param.value % 5 !== 0)
+  it('puts every observed point on a five-step grid, so a reader can land on it', () => {
+    // Not only the percent ones: the rescaling took both signed controls off percent and
+    // `2x-100` maps the grid onto itself, so the rule that made the old values dialable makes
+    // the new ones dialable too. A rescaling that had landed on `17` would be caught here.
+    const dialable = [...percentParams, ...signedParams, ...panParams]
+    const offGrid = dialable.filter((param) => param.value % 5 !== 0)
     expect(offGrid.map((param) => `${param.name}=${param.value}`)).toEqual([])
     // Not vacuous: the grid is used across its width rather than being three round numbers.
     expect(new Set(percentParams.map((param) => param.value)).size).toBeGreaterThan(12)
@@ -201,9 +383,9 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
 })
 
 describe('Muse envelope faders carry no false negative claim (#325)', () => {
-  it('covers all eight faders and the other 29 controls, so neither side is vacuous', () => {
+  it('covers all eight faders and the other 26 controls, so neither side is vacuous', () => {
     expect(distinct(faderParams)).toEqual(Object.keys(FADERS).sort())
-    expect(distinct(knobParams)).toHaveLength(29)
+    expect(distinct(knobParams)).toHaveLength(26)
   })
 
   it('authors the fader’s CC number and no prose at all', () => {
@@ -236,7 +418,7 @@ describe('Muse envelope faders carry no false negative claim (#325)', () => {
     }
   })
 
-  it('authors a CC number on the other 29 too, and no MIDI prose anywhere (#324)', () => {
+  it('authors a CC number on the other 26 too, and no MIDI prose anywhere (#324)', () => {
     for (const param of knobParams) {
       expect(param.note ?? '').not.toContain(NO_PRINTED_POSITION)
       // No device folder writes this sentence any more. A note here, where there is one, is
@@ -407,14 +589,42 @@ describe('the Muse’s MIDI instruction names the controller (#324/#349)', () =>
 
   it('leaves an unmoved control naming its authored value, with its own note in front', () => {
     const neutral = museParams(moodState())
-    const bipolar = neutral.filter((p) => p.name === 'FILTER 1 · ENVELOPE AMOUNT')
+    const bipolar = neutral.filter((p) => p.name.endsWith('ENVELOPE AMOUNT'))
     expect(bipolar.length).toBeGreaterThan(0)
     for (const param of bipolar) {
-      // Unmoved: `provisional` with no `from` at all, which is the state a centred knob leaves.
-      expect(param.provenance).toEqual({ state: 'provisional' })
-      // The authored prose keeps its place; the instruction is appended behind it.
-      expect(param.note).toBe('Bipolar, no modulation at noon · MIDI CC 69')
-      expect(param.unit).toBe('%')
+      // The authored prose keeps its place; the instruction is appended behind it, naming the
+      // control's own Appendix A row — 69 on FILTER 1, 75 on FILTER 2.
+      expect(param.note, param.name).toBe(`Bipolar, no modulation at noon · MIDI CC ${param.midiCc}`)
+      // No unit reaches the reader, because the screen shows a bare signed number.
+      expect(param.unit).toBeUndefined()
+      expect(param.range?.min).toBe(-100)
+      expect(param.range?.max).toBe(100)
+      // This control declares no mood, so nothing is ever `derived` here. What it *is* now
+      // depends on the point: `authored` at noon, where the reading settles it, and
+      // `provisional` anywhere else. Both carry no `from`, which is the unmoved shape.
+      const expected = param.value === 0
+        ? { state: 'authored', cite: OBSERVED }
+        : { state: 'provisional' }
+      expect(param.provenance, `${param.name}=${param.value}`).toEqual(expected)
+    }
+  })
+
+  /**
+   * The pan line as the reader gets it: a cited point, a magnitude range, and the shape of the
+   * screen stated in the prose because the range cannot state it.
+   */
+  it('renders PAN centred, cited, and with the L/R shape in its own note', () => {
+    const pans = museParams(moodState()).filter((p) => p.name === 'VCA · PAN')
+    expect(pans.length).toBeGreaterThan(0)
+    for (const param of pans) {
+      expect(param.value).toBe(0)
+      expect(param.unit).toBeUndefined()
+      expect(param.range?.min).toBe(0)
+      expect(param.range?.max).toBe(100)
+      expect(param.provenance).toEqual({ state: 'authored', cite: OBSERVED })
+      expect(param.note).toBe(
+        'Bipolar, centred at noon — the screen reads 100L through 0 to 100R · MIDI CC 10',
+      )
     }
   })
 })

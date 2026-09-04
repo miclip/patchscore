@@ -105,8 +105,10 @@ import { MUSE_PANEL } from './panel'
  * one scale:
  *
  * ```
- * percent    37   every oscillator, resonance, envelope stage, level, amount, pan, detune,
- *                 mixer and delay macro control
+ * percent    34   every oscillator, resonance, envelope stage, level, detune, mixer and
+ *                 delay macro control
+ * signed      2   both FILTER · ENVELOPE AMOUNT knobs, -100…100 with 0 at noon
+ * side        1   VCA · PAN, which reads 100L through 0 to 100R
  * Hz          2   FILTER 1 · CUTOFF, FILTER 2 · CUTOFF
  * divisions   2   DELAY · TIME - L / R, under the CLOCK SYNC every recipe engages — #346
  * ```
@@ -116,10 +118,25 @@ import { MUSE_PANEL } from './panel'
  * frequency and reads in percent. See `OBSERVED` for what the finding covers and the one control
  * in it that is inferred.
  *
- * The first two families are authored here on the scale the screen shows, cited `observed` —
+ * The first four families are authored here on the scale the screen shows, cited `observed` —
  * *"somebody who turned the knob and read the limits, with the firmware version in the source
- * string"*. **The third is not**, and stays on the Appendix A scale it was already wrong on:
+ * string"*. **The last is not**, and stays on the Appendix A scale it was already wrong on:
  * naming the division a knob lands on is #346's job and needs a reading nobody has taken.
+ *
+ * ## The three bipolar controls
+ *
+ * `FILTER 1 · ENVELOPE AMOUNT`, `FILTER 2 · ENVELOPE AMOUNT` and `VCA · PAN` all carried a note
+ * saying they rest at noon while the number beside them said `50`. On a `0-100 %` readout that is
+ * not a contradiction so much as a control whose scale nobody had looked at closely enough — and
+ * when they were looked at, none of the three reads in percent. The two envelope amounts are
+ * signed, `-100` to `100`, each read at the box in its own right. `PAN` is a side and a distance,
+ * `100L` through `0` to `100R`, which is not a signed number at all; it is authored as a magnitude
+ * from centre, and since every recipe here sits at centre no recipe has yet had to say which side.
+ *
+ * All three are now authored the way the screen states them, and the resting position each recipe
+ * uses is a **cited point** rather than taste, because the reading settles where noon is. The CC
+ * numbers are untouched — 69, 75 and 10 — because the Appendix A rows never moved; it is still
+ * only the value half of the instruction that is gone.
  *
  * **What this did not license, and it is the whole discipline of the change: no value here was
  * converted.** `CC 46 = 120` did not become `94 %`. That arithmetic assumes CC value and displayed
@@ -306,8 +323,10 @@ const CC: Omit<NumericRange, 'verified'> = { min: 0, max: 127 }
  * settled every one of the 41 controls Appendix A numbers**, at firmware 1.4.0:
  *
  * ```
- * percent    37   every oscillator, resonance, envelope stage, level, amount, pan, detune,
- *                 mixer and delay macro control
+ * percent    34   every oscillator, resonance, envelope stage, level, detune, mixer and
+ *                 delay macro control
+ * signed      2   both FILTER · ENVELOPE AMOUNT knobs, -100…100 with 0 at noon
+ * side        1   VCA · PAN, which reads 100L through 0 to 100R
  * Hz          2   FILTER 1 · CUTOFF, FILTER 2 · CUTOFF
  * divisions   2   DELAY · TIME - L / R, under the CLOCK SYNC every recipe engages
  * ```
@@ -322,18 +341,29 @@ const CC: Omit<NumericRange, 'verified'> = { min: 0, max: 127 }
  * the same module. Two identical ladders behind one pair of knobs, and the manual describes them
  * as a pair throughout (pp.35-37).
  *
+ * **That is the only one.** `FILTER 2 · ENVELOPE AMOUNT` sits on the same module and would have
+ * taken the same argument in one line; it was read instead, separately, and both amounts carry the
+ * citation on their own account. Naming the inference above is worth something only while there is
+ * exactly one, so the second was taken to the box rather than reasoned into place.
+ *
+ * **The reading also settles some points and not others**, which is why `verified` on a point is
+ * not uniform across this file. Where a control's own note says it rests at noon, the observation
+ * says which number noon is — so `FILTER 1 · ENVELOPE AMOUNT 0` and `VCA · PAN 0` are cited
+ * points. Nothing about the reading says a lead wants `80`, so every other point here is taste,
+ * exactly as it was.
+ *
  * **The firmware is in the string and is not decoration.** A screen readout is a property of the
  * software, and 1.4.0 is the version the reading was taken on — the same version the manual this
  * folder otherwise cites is written for, which is why the two agree about everything else.
  */
 const OBSERVED: Cite = { kind: 'observed', source: 'Muse, firmware 1.4.0' }
 
-/** `0-100 %`, what the screen shows for 37 of the 41 controls Appendix A numbers (#349). */
+/** `0-100 %`, what the screen shows for 34 of the 41 controls Appendix A numbers (#349). */
 const PERCENT: NumericRange = { min: 0, max: 100, verified: OBSERVED }
 
 /**
- * `20 Hz - 20 kHz`, the two filter cutoffs, which are the one family on this panel that does not
- * read in percent. Full audio range, which is what every other Moog ladder in this library is
+ * `20 Hz - 20 kHz`, the two filter cutoffs — the one family here that reads in a real unit rather
+ * than in a bare number. Full audio range, which is what every other Moog ladder in this library is
  * authored over — `moog-mother-32` has it from a printed sentence, *"change the Filter's Cutoff
  * frequency from 20Hz to 20kHz"*, and this box prints no such sentence anywhere.
  *
@@ -344,6 +374,49 @@ const PERCENT: NumericRange = { min: 0, max: 100, verified: OBSERVED }
  * frequency where a fixed number of Hz is not. See the module note.
  */
 const CUTOFF_HZ: NumericRange = { min: 20, max: 20000, verified: OBSERVED }
+
+/**
+ * `-100…100`, both filter `ENVELOPE AMOUNT` knobs — the two controls on this panel whose screen
+ * puts a **sign** on the number (#349's reading, re-read for the bipolar controls).
+ *
+ * The note on this parameter has always said *"Bipolar, no modulation at noon"*, and until now the
+ * number beside it contradicted the sentence: on `0-100 %` the resting position is `50`, which
+ * reads as half of something rather than as none of it. The screen shows `0` there and a sign
+ * either side of it, so the value and the note now say the same thing.
+ *
+ * **The recipe points were rescaled, and that is not the conversion #349 refused.** `2x-100` is
+ * the exact restatement of a position on the knob's travel as a position on the printed scale —
+ * the same physical place on the same knob, relabelled by the scale that is actually in force.
+ * What #349 refused was `CC 46 = 120` becoming `94 %`, which assumes a linear map between two
+ * *different* quantities that no page states. There is no taper assumption here and nothing is
+ * being inferred: noon is noon on both scales, and each end is each end.
+ *
+ * **Both controls were read, rather than one being carried across from the other.** They sit on
+ * the same module and the sibling argument would have been easy to make, but it is not what
+ * happened and the distinction is the whole of `OBSERVED`'s discipline: `FILTER 2 · CUTOFF` is
+ * inferred and says so, and it remains the only inference in this folder.
+ */
+const BIPOLAR_AMOUNT: NumericRange = { min: -100, max: 100, verified: OBSERVED }
+
+/**
+ * `0…100`, `VCA · PAN` — a **magnitude**, because the screen's scale is not a signed number.
+ *
+ * The readout is `100L` through `0` to `100R`: a side and a distance, not a negative and a
+ * positive. `NumericRange` has one number line and no field for a side, so the honest range is
+ * the distance from centre.
+ *
+ * **Authoring this as `-100…100` was the alternative and it would have been a false claim.** No
+ * screen on this box ever shows `-40`; it shows `40L`. A reader told to set `-40` has to invent
+ * which side that is, and the two conventions in circulation disagree. The `100L / 0 / 100R`
+ * shape is stated in the note instead, where it is a fact about the instrument rather than a
+ * number the guide made up.
+ *
+ * **Every recipe centres the knob, so the range is only ever exercised at `0`** — which is why
+ * `panParam` writes the centre and offers no way to leave it. Where a side would go if one were
+ * ever wanted is an open question with a rendered consequence, and it is left open there rather
+ * than answered here by an unused branch.
+ */
+const PAN_MAGNITUDE: NumericRange = { min: 0, max: 100, verified: OBSERVED }
 
 // ---------------------------------------------------------------------------
 // Param helpers (§3.1: the range is cited, the point is taste)
@@ -427,6 +500,74 @@ function percentParam(
     unit: '%',
     ...extra,
     midiCc: ccNumber,
+  }
+}
+
+/**
+ * A filter `ENVELOPE AMOUNT`, on the signed scale its screen shows (#349). **Both of them**: two
+ * separate readings, taken at the same session at the box, which agreed on `-100 to 100`.
+ *
+ * **Two observations, one scale — and the helper is shared for the scale, not for the reading.**
+ * The distinction is the point rather than pedantry: a shared helper is what an inference would
+ * look like from inside this file, so it has to be said here that neither control's range comes
+ * from the other's. `FILTER 2 · CUTOFF` is the single place this manifest infers a scale from a
+ * neighbour, and it stays the single place — see `OBSERVED`.
+ *
+ * **The point authority splits with the value, and that is the interesting half.** At `0` the
+ * position is not taste: the note says there is no modulation at noon and the screen says noon is
+ * `0`, so the reading settles where the knob goes and the point is cited to the observation. Any
+ * other number is a judgment about how much envelope this patch wants, exactly as it always was,
+ * and stays `verified: false`.
+ *
+ * That is §3.1 used as intended rather than a special case. `verified` on a point asks *did
+ * somebody check this number* — and for the resting position of a bipolar control somebody did.
+ * The same reading does not tell anyone that a lead wants `80`.
+ */
+function envAmount(filter: 1 | 2, value: number, extra: NumExtra = {}): AuthoredParam {
+  return {
+    kind: 'numeric',
+    name: `FILTER ${filter} · ENVELOPE AMOUNT`,
+    value,
+    range: BIPOLAR_AMOUNT,
+    // The observation covers noon and nothing else on either control. See `BIPOLAR_AMOUNT`.
+    verified: value === 0 ? OBSERVED : false,
+    ...extra,
+    midiCc: filter === 1 ? 69 : 75,
+  }
+}
+
+/**
+ * `VCA · PAN`, centred. **It takes no argument, because every recipe here centres it and there is
+ * no settled way to write one that does not.**
+ *
+ * `0` with no unit is what the screen shows at noon — not `0L`, not `0 %` — and p.42 says the
+ * knob rests there, so the point carries the observation rather than being taste. That is the
+ * whole of what this helper knows.
+ *
+ * **An off-centre pan is a design question, not a missing parameter.** The screen reads `40L`: a
+ * distance and a side, and `NumericRange` has one number line with no room for the second half.
+ * The obvious dodge is to put the side in `unit`, and a first pass here did exactly that. It is
+ * wrong in three ways at once — `L` and `R` are not units and are not in the vocabulary the rest
+ * of the library uses; the rendered bounds would become side-specific, so `40 L (0…100 L)` claims
+ * a range that does not exist; and nothing would exercise it, so the first recipe to want a
+ * hard-left pad would be the first to find out what it prints.
+ *
+ * So the branch is not here. A recipe that wants an off-centre pan has to settle the
+ * representation first — a signed range with a stated convention, a second param naming the side,
+ * or something else — and that is a decision with a rendered consequence, which makes it a
+ * decision somebody should take deliberately rather than inherit from a helper written in
+ * advance. Deleting the unused half is what forces that.
+ */
+function panParam(): AuthoredParam {
+  return {
+    kind: 'numeric',
+    name: 'VCA · PAN',
+    value: 0,
+    range: PAN_MAGNITUDE,
+    // Noon is where the reading lands, and it is the only point on this control it settles.
+    verified: OBSERVED,
+    note: 'Bipolar, centred at noon — the screen reads 100L through 0 to 100R',
+    midiCc: 10,
   }
 }
 
@@ -760,6 +901,9 @@ function mixer(
  * FILTERS (pp.35-37). Two ladder filters, one of them switchable to highpass, in one of three
  * routings — and three switches that decide what the FILTER 1 knobs mean.
  *
+ * Both `ENVELOPE AMOUNT` knobs go through `envAmount`, on the signed `-100…100` their screens
+ * show, with `0` at noon. Each was read at the box; neither is inferred from the other.
+ *
  * `LINK FILTERS` is `OFF` in every recipe. That is not a preference: with it on, FILTER 1's CUTOFF
  * becomes a spacing control (the panel prints `(SPACING)` under it), and under `LINK MODE: ALL
  * KNOBS` its RESONANCE and ENVELOPE AMOUNT do too. Off, all three are absolute and the numbers
@@ -802,13 +946,13 @@ function filters(
       mood: [{ axis: 'darkness', amount: -Math.round(cutoff1 / 2) }],
     }),
     cc('FILTER 1 · RESONANCE', res1, 68, { note: 'Self-oscillates into a sine fully clockwise' }),
-    cc('FILTER 1 · ENVELOPE AMOUNT', env1, 69, { note: 'Bipolar, no modulation at noon' }),
+    envAmount(1, env1, { note: 'Bipolar, no modulation at noon' }),
     sw('FILTER 1 · KB TRACKING', kb1, KB_TRACKING, 36),
     cutoff('FILTER 2 · CUTOFF', cutoff2, 72, {
       mood: [{ axis: 'darkness', amount: -Math.round(cutoff2 / 2) }],
     }),
     cc('FILTER 2 · RESONANCE', res2, 73),
-    cc('FILTER 2 · ENVELOPE AMOUNT', env2, 75, { note: 'Bipolar, no modulation at noon' }),
+    envAmount(2, env2, { note: 'Bipolar, no modulation at noon' }),
     sw('FILTER 2 · KB TRACKING', kb2, KB_TRACKING, 36),
   ]
 }
@@ -868,13 +1012,17 @@ function vcaEnv(
  * VCA (pp.42-44). Every control here is **per timbre** — p.42 says "the currently active timbre
  * (A/B)" of both LEVEL and PAN — which is why the block carries the hint that reaches them.
  *
+ * **`PAN` is not a parameter of this function.** Its screen is `100L / 0 / 100R` rather than a
+ * percentage, and every recipe centres it, so `panParam` writes the centre and takes nothing.
+ * Moving a pad off centre is a change to how a side is represented at all — see `panParam`.
+ *
  * `PAN SPRD MODE` stays at its printed default `L/R` (p.44): under `EVEN` the manual names two
  * different knobs for the spread width on facing pages, and that is not resolved here.
  */
-function vca(level: number, pan: number, panSpread: number): AuthoredParam[] {
+function vca(level: number, panSpread: number): AuthoredParam[] {
   return [
     cc('VCA · LEVEL', level, 7, { hint: 'timbre-select' }),
-    cc('VCA · PAN', pan, 10, { note: 'Bipolar, centred at noon' }),
+    panParam(),
     cc('VCA · PAN SPREAD', panSpread, 9, {
       note: 'All voices sit at the PAN position fully counter-clockwise',
     }),
@@ -1131,8 +1279,10 @@ function arp(direction: string, octaveRange: number, gateLength: number, clockDi
  *  - `muse-pad-bright` is a *"sawtooth pair"*, so `TRI/SAW` is `100` and `WAVE MIX` is again `0`.
  *    The two controls do not move together and reading the note is the only way to know it.
  *  - `muse-sub-clean` wants no filter envelope at all, and `ENVELOPE AMOUNT` is bipolar with none
- *    at noon, so it is `50`. It had been `0`, which on a bipolar control is not *off* — it is
- *    fully inverted, and it was the reading a unipolar assumption produces.
+ *    at noon, so both filters sit at `0` on the signed scale their screens show. It is worth
+ *    knowing what `0` used to mean here: before #349 the value was `0` on a *percent* readout,
+ *    where that is not *off* but fully inverted — the reading a unipolar assumption produces. The
+ *    number is the same and it is now the right number for the opposite reason.
  *
  * **Percent points are multiples of five so a reader can land on them.** §8's reader is at the
  * machine with their hands on a knob and their eyes on the screen: *set it to 75* survives that
@@ -1141,8 +1291,10 @@ function arp(direction: string, octaveRange: number, gateLength: number, clockDi
  * out is that these were chosen from the patch; the grid only makes them dialable.
  *
  * Where the manual anchors a position, the anchor is exact: a square wave is `50` on `PULSE WIDTH`
- * (p.19), a bipolar control at rest is `50`, a self-oscillating ladder is `100` on `RESONANCE`
- * (p.36). The cutoffs are in Hz and are corners rather than positions.
+ * (p.19), a self-oscillating ladder is `100` on `RESONANCE` (p.36), and a bipolar control at rest
+ * is `0` — both `ENVELOPE AMOUNT` knobs and `VCA · PAN`. Those resting positions are the points
+ * here that carry a citation; every other number in this file is taste. The cutoffs are in Hz and
+ * are corners rather than positions.
  */
 const recipes: Recipe[] = [
   // ---- pad: the reason an eight-voice box is in the library ---------------
@@ -1164,11 +1316,11 @@ const recipes: Recipe[] = [
       // Two triangles into a clean ladder with no drive wanted: high enough to be present, short
       // of the unity gain p.19 puts at the top of the fader.
       ...mixer(65, 0, 65, 0, 0, 0),
-      ...filters('STR', 'OFF', 1200, 15, 60, '1:2', 1400, 10, 55, '1:2'),
+      ...filters('STR', 'OFF', 1200, 15, 20, '1:2', 1400, 10, 10, '1:2'),
       ...filterEnv(65, 50, 60, 75),
       // "Nothing arriving at once" is the whole patch, and this is where it lives.
       ...vcaEnv(70, 50, 90, 80, 'ON'),
-      ...vca(65, 50, 65),
+      ...vca(65, 65),
       ...sharedDelay(),
       ...delayRouting('ON'),
       ...lfo1('TRIANGLE', 0.24, 20, 'PER-VOICE'),
@@ -1191,10 +1343,10 @@ const recipes: Recipe[] = [
       // is top, and no ring modulator, which is more of it.
       ...mixer(70, 0, 60, 0, 0, 0),
       // Resonance is a peak, and a peak is something above the fundamental. Both low.
-      ...filters('SER', 'OFF', 500, 10, 55, '1:2', 420, 10, 55, '1:2'),
+      ...filters('SER', 'OFF', 500, 10, 10, '1:2', 420, 10, 10, '1:2'),
       ...filterEnv(70, 60, 50, 80),
       ...vcaEnv(75, 55, 90, 85, 'ON'),
-      ...vca(65, 50, 50),
+      ...vca(65, 50),
       ...sharedDelay(),
       ...delayRouting('ON'),
       ...lfo1('TRIANGLE', 0.14, 15, 'PER-VOICE'),
@@ -1219,10 +1371,10 @@ const recipes: Recipe[] = [
       // FILTER 1 is the highpass: a corner low enough to thin the bottom, and no envelope on it,
       // because sweeping a highpass corner reads as a filter sweep rather than as air. The
       // resonance the title is about is FILTER 2's, at the top.
-      ...filters('PAR', 'ON', 180, 35, 50, '1:1', 6000, 45, 60, '1:1'),
+      ...filters('PAR', 'ON', 180, 35, 0, '1:1', 6000, 45, 20, '1:1'),
       ...filterEnv(55, 60, 65, 70),
       ...vcaEnv(55, 55, 90, 75, 'ON'),
-      ...vca(65, 50, 70),
+      ...vca(65, 70),
       ...sharedDelay(),
       ...delayRouting('ON'),
       ...lfo1('TRIANGLE', 0.42, 20, 'PER-VOICE'),
@@ -1248,12 +1400,13 @@ const recipes: Recipe[] = [
       ...modOsc('OFF', 'SQUARE', 25, 0, { osc1: 'OFF', osc2: 'OFF' }, 0, { f1: 'OFF', f2: 'OFF' }),
       ...mixer(90, 15, 90, 0, 0, 40),
       // Clamped shut and opened by the envelope rather than by the knob: the corner sits under
-      // the note and ENVELOPE AMOUNT well above noon is what throws it up on each attack.
-      ...filters('SER', 'OFF', 300, 55, 85, '1:1', 450, 35, 70, '1:2'),
+      // the note and ENVELOPE AMOUNT well above noon is what throws it up on each attack. `70` on
+      // the signed scale is over a third of the way up from centre.
+      ...filters('SER', 'OFF', 300, 55, 70, '1:1', 450, 35, 40, '1:2'),
       // Nothing sustains: both envelopes are over before the key is.
       ...filterEnv(0, 20, 0, 15),
       ...vcaEnv(0, 25, 0, 20, 'ON'),
-      ...vca(80, 50, 25),
+      ...vca(80, 25),
       ...sharedDelay(),
       ...delayRouting('OFF'),
       ...lfo1('SQUARE', 4.8, 0),
@@ -1275,10 +1428,10 @@ const recipes: Recipe[] = [
       ...osc2("4'", 2, 0, 35, 100, 'OFF'),
       ...modOsc('OFF', 'SINE', 30, 0, { osc1: 'OFF', osc2: 'OFF' }, 20, { f1: 'OFF', f2: 'ON' }),
       ...mixer(85, 0, 85, 10, 0, 0),
-      ...filters('PAR', 'ON', 150, 25, 50, '1:1', 8000, 30, 75, '1:1'),
+      ...filters('PAR', 'ON', 150, 25, 0, '1:1', 8000, 30, 50, '1:1'),
       ...filterEnv(0, 30, 0, 20),
       ...vcaEnv(0, 30, 0, 20, 'ON'),
-      ...vca(80, 50, 45),
+      ...vca(80, 45),
       ...sharedDelay(),
       ...delayRouting('ON'),
       ...lfo1('TRIANGLE', 3.2, 0),
@@ -1301,10 +1454,10 @@ const recipes: Recipe[] = [
       // "Over the top of the mix" is a level instruction: the ring modulator is the loudest thing
       // in the fader bank, above both oscillators rather than beside them.
       ...mixer(70, 85, 70, 25, 15, 96, 'HIGH'),
-      ...filters('SER', 'OFF', 700, 55, 70, '1:2', 800, 40, 60, '1:2'),
+      ...filters('SER', 'OFF', 700, 55, 40, '1:2', 800, 40, 20, '1:2'),
       ...filterEnv(0, 25, 10, 20),
       ...vcaEnv(0, 30, 10, 25, 'ON'),
-      ...vca(75, 50, 35),
+      ...vca(75, 35),
       ...sharedDelay(),
       ...delayRouting('OFF'),
       ...lfo1('RANDOM', 7.5, 20),
@@ -1331,10 +1484,10 @@ const recipes: Recipe[] = [
       ...mixer(75, 0, 70, 0, 0, 18),
       // Both corners above the line and KB TRACKING at 1:1, so the filter rises with the melody
       // instead of dulling its top octave.
-      ...filters('SER', 'OFF', 2000, 30, 60, '1:1', 3200, 20, 55, '1:1'),
+      ...filters('SER', 'OFF', 2000, 30, 20, '1:1', 3200, 20, 10, '1:1'),
       ...filterEnv(5, 40, 55, 30),
       ...vcaEnv(5, 40, 90, 30, 'ON'),
-      ...vca(80, 50, 0),
+      ...vca(80, 0),
       ...sharedDelay(),
       ...delayRouting('ON'),
       ...pitchLfo(5.2, 50, 60, { osc1: 'ON', osc2: 'ON' }),
@@ -1358,10 +1511,10 @@ const recipes: Recipe[] = [
       ...mixer(85, 10, 85, 0, 0, 52),
       // "At the edge" is just short of the self-oscillation p.36 puts at fully clockwise, and the
       // envelope amount is the other half of the title.
-      ...filters('SER', 'OFF', 550, 85, 90, '1:1', 900, 35, 60, '1:2'),
+      ...filters('SER', 'OFF', 550, 85, 80, '1:1', 900, 35, 20, '1:2'),
       ...filterEnv(0, 30, 25, 25),
       ...vcaEnv(0, 35, 90, 25, 'ON'),
-      ...vca(85, 50, 0),
+      ...vca(85, 0),
       ...sharedDelay(),
       ...delayRouting('OFF'),
       ...pitchLfo(6.4, 50, 55, { osc1: 'ON', osc2: 'ON' }),
@@ -1387,10 +1540,10 @@ const recipes: Recipe[] = [
       // "Driven into the mixer" is the instruction: both oscillators at the unity-gain end of
       // their faders, which is where p.19 says the drive is.
       ...mixer(95, 50, 95, 35, 15, 108, 'HIGH'),
-      ...filters('SER', 'OFF', 800, 60, 65, '1:1', 750, 45, 55, '1:2'),
+      ...filters('SER', 'OFF', 800, 60, 30, '1:1', 750, 45, 10, '1:2'),
       ...filterEnv(5, 35, 35, 30),
       ...vcaEnv(0, 40, 85, 35, 'ON'),
-      ...vca(75, 50, 0),
+      ...vca(75, 0),
       ...sharedDelay(),
       ...delayRouting('ON'),
       ...pitchLfo(7.8, 70, 65, { osc1: 'ON', osc2: 'ON' }),
@@ -1416,10 +1569,10 @@ const recipes: Recipe[] = [
       ...mixer(85, 0, 80, 0, 0, 34),
       // "Snapping the top off each note" is a large positive envelope amount on a corner that is
       // otherwise under the note, with a decay short enough to be a snap.
-      ...filters('SER', 'OFF', 380, 40, 85, '1:2', 550, 20, 60, '1:2'),
+      ...filters('SER', 'OFF', 380, 40, 70, '1:2', 550, 20, 20, '1:2'),
       ...filterEnv(0, 25, 0, 20),
       ...vcaEnv(0, 35, 80, 20, 'ON'),
-      ...vca(90, 50, 0),
+      ...vca(90, 0),
       ...sharedDelay(),
       ...delayRouting('OFF'),
       ...lfo1('TRIANGLE', 0.8, 0),
@@ -1442,10 +1595,10 @@ const recipes: Recipe[] = [
       ...mixer(85, 0, 65, 0, 0, 20),
       // "Nothing above the fundamental" rules out both a resonant peak and a filter that opens,
       // so the envelope amounts are at the noon their note calls no modulation.
-      ...filters('SER', 'OFF', 220, 10, 50, '1:2', 180, 5, 50, '1:2'),
+      ...filters('SER', 'OFF', 220, 10, 0, '1:2', 180, 5, 0, '1:2'),
       ...filterEnv(0, 40, 30, 30),
       ...vcaEnv(0, 45, 85, 30, 'ON'),
-      ...vca(90, 50, 0),
+      ...vca(90, 0),
       ...sharedDelay(),
       ...delayRouting('OFF'),
       ...lfo1('TRIANGLE', 0.5, 0),
@@ -1469,10 +1622,10 @@ const recipes: Recipe[] = [
       // "Sitting under the note" puts the ring modulator well below the oscillators, which is the
       // opposite instruction to `muse-stab-dirty`'s and the same control.
       ...mixer(90, 40, 90, 20, 10, 114, 'HIGH'),
-      ...filters('SER', 'OFF', 450, 50, 70, '1:2', 500, 35, 55, '1:2'),
+      ...filters('SER', 'OFF', 450, 50, 40, '1:2', 500, 35, 10, '1:2'),
       ...filterEnv(0, 30, 15, 25),
       ...vcaEnv(0, 40, 80, 25, 'ON'),
-      ...vca(85, 50, 0),
+      ...vca(85, 0),
       ...sharedDelay(),
       ...delayRouting('OFF'),
       ...lfo1('RANDOM', 5.5, 15),
@@ -1496,10 +1649,10 @@ const recipes: Recipe[] = [
       ...mixer(95, 0, 0, 0, 0, 0),
       // A sub is a fundamental and nothing else: no resonant peak, and no envelope on either
       // corner, which is noon on a bipolar amount rather than zero.
-      ...filters('SER', 'OFF', 160, 0, 50, '1:2', 130, 0, 50, 'OFF'),
+      ...filters('SER', 'OFF', 160, 0, 0, '1:2', 130, 0, 0, 'OFF'),
       ...filterEnv(0, 40, 50, 30),
       ...vcaEnv(0, 50, 95, 30, 'OFF'),
-      ...vca(95, 50, 0),
+      ...vca(95, 0),
       ...sharedDelay(),
       ...delayRouting('OFF'),
       ...lfo1('TRIANGLE', 0.1, 0),
@@ -1516,18 +1669,19 @@ const recipes: Recipe[] = [
     params: [
       // p.36's tip: "setting RESONANCE fully clockwise allows you to use either filter as a sine
       // wave oscillator" — with KB TRACKING at 1:1 it plays. RESONANCE is `100` because fully
-      // clockwise is what the page says, and ENVELOPE AMOUNT is `50` because an envelope on this
-      // filter would bend the pitch of the sine rather than shape a tone.
+      // clockwise is what the page says, and both ENVELOPE AMOUNTs are `0` — noon on the signed
+      // scale — because an envelope on this filter would bend the pitch of the sine rather than
+      // shape a tone.
       ...voice('OFF', 'ON', 0),
       ...midiSetup(),
       ...osc1("16'", 0, 0, 50, 0),
       ...osc2("16'", 0, 0, 50, 0, 'OFF'),
       ...modOsc('OFF', 'SINE', 10, 0, { osc1: 'OFF', osc2: 'OFF' }, 0, { f1: 'OFF', f2: 'OFF' }),
       ...mixer(0, 0, 0, 0, 0, 0),
-      ...filters('SER', 'OFF', 200, 100, 50, '1:1', 140, 0, 50, 'OFF'),
+      ...filters('SER', 'OFF', 200, 100, 0, '1:1', 140, 0, 0, 'OFF'),
       ...filterEnv(0, 40, 50, 30),
       ...vcaEnv(5, 45, 95, 35, 'OFF'),
-      ...vca(90, 50, 0),
+      ...vca(90, 0),
       ...sharedDelay(),
       ...delayRouting('OFF'),
       ...lfo1('TRIANGLE', 0.1, 0),
@@ -1551,11 +1705,11 @@ const recipes: Recipe[] = [
       // the rate is at the bottom of the knob and the pitch amount is the audible one.
       ...modOsc('OFF', 'SINE', 5, 30, { osc1: 'ON', osc2: 'ON' }, 20, { f1: 'ON', f2: 'ON' }),
       ...mixer(60, 0, 60, 0, 15, 0),
-      ...filters('STR', 'OFF', 600, 20, 55, '1:2', 700, 15, 55, '1:2'),
+      ...filters('STR', 'OFF', 600, 20, 10, '1:2', 700, 15, 10, '1:2'),
       ...filterEnv(85, 65, 60, 90),
       ...vcaEnv(90, 60, 90, 95, 'OFF'),
       // A texture sits under everything else, and the pair is wide.
-      ...vca(55, 50, 85),
+      ...vca(55, 85),
       ...sharedDelay(),
       ...delayRouting('ON'),
       ...lfo1('TRIANGLE', 0.08, 35, 'PER-VOICE'),
@@ -1577,10 +1731,10 @@ const recipes: Recipe[] = [
       // The title names the two loud things, so the oscillators are the support and the noise and
       // ring modulator are above them.
       ...mixer(40, 75, 40, 45, 85, 120, 'HIGH'),
-      ...filters('PAR', 'ON', 160, 45, 50, 'OFF', 2200, 40, 60, 'OFF'),
+      ...filters('PAR', 'ON', 160, 45, 0, 'OFF', 2200, 40, 20, 'OFF'),
       ...filterEnv(75, 60, 50, 85),
       ...vcaEnv(80, 60, 85, 90, 'OFF'),
-      ...vca(55, 50, 80),
+      ...vca(55, 80),
       ...sharedDelay(),
       ...delayRouting('ON'),
       ...lfo1('RANDOM', 1.6, 50, 'PER-VOICE'),
@@ -1602,11 +1756,11 @@ const recipes: Recipe[] = [
       ...osc2("4'", 0, 0, 50, 0, 'OFF'),
       ...mixer(70, 0, 60, 0, 0, 0),
       // A pluck is a filter envelope on an otherwise still corner.
-      ...filters('SER', 'OFF', 1500, 15, 65, '1:1', 2000, 10, 55, '1:2'),
+      ...filters('SER', 'OFF', 1500, 15, 30, '1:1', 2000, 10, 10, '1:2'),
       ...filterEnv(0, 30, 0, 15),
       // "Nothing on the tail": no sustain and the shortest release on the device.
       ...vcaEnv(0, 30, 0, 10, 'ON'),
-      ...vca(70, 50, 40),
+      ...vca(70, 40),
       ...arp('ORD', 2, 34, 'STRGHT'),
       ...sharedDelay(),
       ...delayRouting('ON'),
@@ -1625,11 +1779,11 @@ const recipes: Recipe[] = [
       ...osc1("8'", 0, 100, 50, 0),
       ...osc2("4'", 2, 100, 50, 0, 'OFF'),
       ...mixer(65, 0, 60, 0, 5, 0),
-      ...filters('PAR', 'ON', 140, 25, 50, '1:1', 7000, 30, 70, '1:1'),
+      ...filters('PAR', 'ON', 140, 25, 0, '1:1', 7000, 30, 40, '1:1'),
       ...filterEnv(0, 35, 5, 20),
       // "Long repeats" is the delay, not the release: the note itself is still short.
       ...vcaEnv(0, 35, 5, 25, 'ON'),
-      ...vca(70, 50, 55),
+      ...vca(70, 55),
       ...arp('RND', 4, 22, 'COMBO'),
       ...sharedDelay(),
       ...delayRouting('ON'),
