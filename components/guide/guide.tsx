@@ -249,7 +249,15 @@ function Panel({
       tabIndex={inTabs ? 0 : undefined}
       data-active={inTabs ? (tab ? 'true' : 'false') : undefined}
     >
-      <h3 id={section.anchorId}>
+      {/*
+        §8/#341. **Kept, and hidden when a tab is already saying it.** Under tabs the selected tab
+        reads `4 TRACKER MINI` and this printed it again directly beneath — the same words twice,
+        a line apart.
+
+        Not removed: the id is what `SoundRef` and `HookRef` target, and a heading is how somebody
+        navigating by headings finds a section. `sr-only` keeps both and takes the space back.
+      */}
+      <h3 id={section.anchorId} className={inTabs ? 'sr-only' : undefined}>
         <span className="phase-number mono">{section.n}</span>
         {section.title}
       </h3>
