@@ -73,6 +73,25 @@ import { DEVICES } from '../lib/devices/registry.generated'
  *    spelling considered and rejected was a bare `%`, which on this library's other devices means
  *    a number the box itself displays.
  */
+/**
+ * The 2026-09-04 addition when #381 re-read the Muse's envelope faders:
+ *
+ *  - **`s`** — seconds, for the six envelope time stages, which that box's screen shows as
+ *    `0-10 s`. The reading is `observed` and the firmware is in the citation.
+ *
+ *    **This is a third spelling of time and it was weighed against the two that exist.** `ms` is
+ *    ours and is the wrong scale — a 6-second texture swell reads `6000 ms`, which is a number
+ *    somebody has to divide before they can set a fader. `Sec` is not ours: `test/units.vocabulary
+ *    .test.ts` classifies it as *the box's own, checked against its manual*, printed 49 times in
+ *    the Polyend documents, so putting it on a Moog would be borrowing one manufacturer's
+ *    abbreviation for another's screen. By that file's own rule `s` is this box's spelling and
+ *    belongs beside `Sec` rather than instead of it.
+ *
+ *    **The `Sec`/`ms` drift this list already records is now a three-way one**, and that is worth
+ *    saying plainly rather than leaving for somebody to notice. Folding all three into one
+ *    spelling is content work across four device folders and is not #381; it is the same shape of
+ *    repair as `St`/`st`, and it gets reviewed here when somebody takes it.
+ */
 const REVIEWED_UNITS = [
   '%',
   '% travel',
@@ -85,6 +104,7 @@ const REVIEWED_UNITS = [
   'c',
   'dB',
   'ms',
+  's',
   'st',
   '°',
 ]

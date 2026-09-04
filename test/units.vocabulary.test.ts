@@ -19,6 +19,10 @@ import { DEVICES } from '../lib/devices/registry.generated'
  *    differently because two Roland manuals do.
  *  - **`Sec` on the Tracker Mini.** Printed 49 times in that manual.
  *  - **`Bits` on the Tracker Mini and the MPCs.** Printed as `Bits`.
+ *  - **`s` on the Muse** (#381). Not from a manual — that box prints no time unit anywhere — but
+ *    from the screen, which shows `0-10 s` on the six envelope time stages. Same rule, different
+ *    document: it is the box's own spelling, read off the box, and the citation carries the
+ *    firmware. `Sec` was the alternative and it is the Polyend screens' word, not this one's.
  *
  * The list is exhaustive on purpose. A device authored tomorrow that invents a fourth spelling of
  * semitones fails here rather than passing quietly, which is the whole point: the drift this fixes
@@ -38,9 +42,11 @@ const VOCABULARY = new Set([
   '% travel',
   '% travel from centre',
   '°',
-  // The box's own, checked against its manual. See the note above.
+  // The box's own, checked against its manual — or, for `s`, against its screen. See the note
+  // above.
   'St',
   'Sec',
+  's',
   'Bits',
 ])
 
