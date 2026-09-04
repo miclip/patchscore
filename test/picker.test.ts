@@ -868,14 +868,16 @@ describe('the fills-a-gap filter (§7.3)', () => {
    * question gets asked, and there it excludes half the library.
    */
   it('narrows hardest when the rig is nearly there', () => {
-    // The second box used to be the Deluge, and the pair stopped demonstrating anything when the
-    // TR-1000 gained a `metallic` recipe: that rig now fills every request `industrial-techno`
-    // makes, so the filter goes inert and offers the whole library — which is the *next* test's
-    // subject, not this one's. The Muse is the rig this test wants, and more exactly than the
-    // Deluge ever was: it leaves `stab` and nothing else, which is the one-specific-thing case
-    // the paragraph above describes.
+    // The second box has now been replaced twice, both times because the TR-1000 learned to
+    // carry a part it had a voice for and the pair stopped leaving a hole. It was the Deluge
+    // until `tr1000-metallic-dirty`, then the Muse until the LT took `bass-mid`; each time the
+    // rig went on to fill every request `industrial-techno` makes, so the filter goes inert and
+    // offers the whole library — which is the *next* test's subject, not this one's. The
+    // minilogue xd is the rig this test wants: it leaves `stab` and nothing else, which is the
+    // one-specific-thing case the paragraph above describes. A dozen boxes leave exactly that,
+    // so the pairing is not delicate; what keeps moving is which of them the TR-1000 still needs.
     const wide = offered(['roland-tr-1000']).length
-    const narrow = offered(['roland-tr-1000', 'moog-muse']).length
+    const narrow = offered(['roland-tr-1000', 'korg-minilogue-xd']).length
     expect(narrow).toBeLessThan(wide)
     expect(narrow).toBeLessThan(DEVICES.length)
   })

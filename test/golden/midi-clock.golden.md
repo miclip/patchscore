@@ -42,8 +42,8 @@ pad         ██████ ██████ ██████████
   - p1 · exact `hard` · every section
 - **`sub`** → TR-1000 · BD — *Kick tuned down into a sustained sub*
   - p1 · exact `dark` · every section
-- **`bass-mid`** → Tracker Mini · Synth Track 1 — *Wide detuned reese, filter well down*
-  - p2 · substituted — asked `dirty`, authored `dark` · every section
+- **`bass-mid`** → TR-1000 · LT — *FM bass with the modulator up*
+  - p2 · exact `dirty` · every section
 - **`clap`** → TR-1000 · HC — *Wide clap sitting on top of the snare*
   - p2 · exact `bright` · every section
 - **`closed-hat`** → TR-1000 · CH — *Grainy CR-78 hat with a metallic edge*
@@ -72,7 +72,7 @@ Industrial Techno is finished without these.
 
 ## 3. Rig integration
 
-**Clock source** — Tracker Mini over `midi-din`, carrying 8 parts. Sync everything else to it.
+**Clock source** — Tracker Mini over `midi-din`, carrying 7 parts. Sync everything else to it.
 
 - Why this box — its manual says leading a rig is its job · manual
   - ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.283
@@ -81,16 +81,16 @@ Industrial Techno is finished without these.
   - ↳ note: Off, USB, MIDI Out jack, USB + MIDI Out jack — clock leaves only by the routing set here
   - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.54
 
-- **Tracker Mini** — groovebox · 8 parts
+- **Tracker Mini** — groovebox · 7 parts
   - clock: sends clock · midi-din/usb
   - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284) · manual
     - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.13
   - audio: stereo main out · USB audio · audio in
-  - mixer: 8 parts, no individual outs: one stereo channel for all
-- **TR-1000** — drum-machine · 6 parts
+  - mixer: 7 parts, no individual outs: one stereo channel for all
+- **TR-1000** — drum-machine · 7 parts
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
-  - mixer: 6 parts, 10 individual outs: one channel each
+  - mixer: 7 parts, 10 individual outs: one channel each
 
 ## 4. Hook
 
@@ -103,28 +103,22 @@ which not every maker agrees with — the MIDI number is the form nothing disagr
 
 Where a role has more than one hook authored, rerolling the seed picks a different one.
 
-### `bass-mid` — Tracker Mini · Synth Track 1
+### `bass-mid` — TR-1000 · LT
 
-**Wide detuned reese, filter well down** — settings in Sound design
+**FM bass with the modulator up** — settings in Sound design
 
 2 bars in F minor.
 
-No note-length field on this box — a note runs until the next note on the same voice, and `OFF` is how you stop one sooner. The rows below are what you enter, in the order you enter them. · manual
-- ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.105
+A step is a trigger, not a note with a length: the instrument's own envelope ends it, and `DECAY` is what sets that. · manual
+- ↳ cite: claim manual — TR-1000 Reference Manual (eng02) v1.13+, p.59
 
 - bar 1 · step 1 · `F2` · root · MIDI 41
-- bar 1 · step 4 · `OFF`
 - bar 1 · step 7 · `F2` · root · MIDI 41
-- bar 1 · step 9 · `OFF`
 - bar 1 · step 11 · `Bb2` (`A#2`) · 4th · MIDI 46
-- bar 1 · step 14 · `OFF`
 - bar 1 · step 15 · `F2` · root · MIDI 41
 - bar 2 · step 17 · `F2` · root · MIDI 41
-- bar 2 · step 20 · `OFF`
 - bar 2 · step 23 · `Db3` (`C#3`) · 6th · MIDI 49
-- bar 2 · step 25 · `OFF`
 - bar 2 · step 27 · `C3` · 5th · MIDI 48
-- bar 2 · step 31 · `OFF`
 
 ### `pad` — Tracker Mini · Track 5, Track 6 and Track 7
 
@@ -266,7 +260,7 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 - `downbeat` — 1
 - `offbeat` — 3, 7, 11, 15
 
-### `bass-mid` — Tracker Mini · Synth Track 1
+### `bass-mid` — TR-1000 · LT
 
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
@@ -515,22 +509,6 @@ Source — A dry kick one-shot under 400 ms, attack intact and no room printed o
 - **ENVELOPE · DECAY** `0.28` Sec (0…10 Sec)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.126
 
-#### Synth Track 1 — `bass-mid`: Wide detuned reese, filter well down
-
-Routing — Synth Track n is panel track n+8 — costs one of the three project synth slots
-
-*Ranges cite manual — Polyend Tracker Mini Manual 2.2.1b, p.156.*
-
-- **MODEL** `FAT`
-- **FILTER TYPE** `Low Pass OB 24dB`
-- **FATNESS** `78` (0…100)
-  - ↳ hint: Press [Edit Patch] screen button
-- **BRIGHTNESS** `22` (0…100)
-- **TIMBRE** `40` (0…100)
-- **FILTER CUTOFF** `620` Hz (20…20000 Hz)
-- **FILTER RESONANCE** `18` % (0…100 %)
-- **AMP ENV RELEASE** `0.35` Sec (0…10 Sec)
-
 #### Track 2, Track 3 and Track 4 — `stab`: Single-note sample struck short, one note per track
 
 Polyphony — 3 notes, one on each of 3 voices. **Every voice takes these same settings**: it is one sound played 3 times over, not 3 sounds, and a difference between them is a difference you will hear inside the chord. Which voice takes which note is in Hook.
@@ -609,6 +587,35 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **P. AMOUNT** `12` % (0…100 %)
   - ↳ hint: Near-flat pitch envelope
 - **DRIVE** `18` % (0…100 %)
+- **RVB SEND** `0` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
+- **DLY SEND** `0` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
+
+#### LT — `bass-mid`: FM bass with the modulator up
+
+*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.63.*
+
+- **GEN** `FM Tom Model`
+  - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
+- **TUNE** `-38` % (-100…100 %)
+  - ↳ note: The hook’s notes go in as motion on the [TUNE] knob, by ear
+  - ↳ hint: MOTION [REC] lit, then move knob
+- **DECAY** `76` % (0…100 %)
+- **FM DEPTH** `58` % (0…100 %)
+  - ↳ hint: Modulator level; this is the dirt
+- **FM FBK** `30` % (0…100 %)
+  - ↳ hint: Modulator feedback, on top of the depth
+- **FM FREQ** `42` % (0…100 %)
+  - ↳ hint: Modulator frequency, in place of FM RATIO
+- **NOISE** `14` % (0…100 %)
+- **LPF FREQ** `46` % (0…100 %)
+- **HPF FREQ** `0` % (0…100 %)
+  - ↳ hint: Nothing off the bottom
+- **P. AMOUNT** `0` % (0…100 %)
+  - ↳ hint: Flat: no pitch envelope on a bass note
 - **RVB SEND** `0` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]

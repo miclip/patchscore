@@ -103,8 +103,13 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
     // #81. The three headings are the finding, not decoration: a limit of the boxes, a recipe
     // we have not written, and a part the direction is finished without are three different
     // things to do about it. One rig shows all three at once only because it is too small for
-    // the direction, which is exactly why this fixture is the one that pins them.
-    const one = guideText('tr-1000')
+    // the direction, which is exactly why a one-drum-machine fixture is the one that pins them.
+    //
+    // **It was `tr-1000` until the TR-1000's LT took `bass-mid`**, which closed that guide's only
+    // unauthored line. `tr-6s` is the same shape one box down and carries all three, plus both
+    // `rig-limit` reasons — `no room` where a track is already busy, and no capable voice at all
+    // for a tonal part. See the fixture's own note in `golden/guides.ts`.
+    const one = guideText('tr-6s')
 
     expect(one).toContain('### Gaps')
     expect(one).toContain('This rig cannot make these parts.')
@@ -120,6 +125,18 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
     // The one word all three used to collapse into. Its absence is the regression guard: a
     // renderer that went back to one undifferentiated list would print it again.
     expect(one).not.toContain('capable but unauthored')
+  })
+
+  it('prints no heading a rig has nothing to put under (§7.3)', () => {
+    // The other half of the test above, and the reason it is a separate one: the three headings
+    // are printed only where there is a line for them, so a fixture that shows all three cannot
+    // tell you whether any of them is unconditional. `tr-1000` is the case that says so — same
+    // direction, same one-drum-machine shape, and since its LT took `bass-mid` it has nothing
+    // left that nobody has written a recipe for.
+    const drums = guideText('tr-1000')
+    expect(drums).toContain('### Gaps')
+    expect(drums).toContain('### Not needed for this direction')
+    expect(drums).not.toContain('### Waiting on us')
   })
 
   it('renders nothing as derived, because the fixtures hold every knob centred (§6.1)', () => {
@@ -200,23 +217,25 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
   })
 
   it('lets the hook stand as the whole of step programming (#100)', () => {
-    // Where the hook carries its own rhythm the pointer still *replaces* the grid, and these two
-    // are where that is pinned — three deferred parts each, none of them claiming its variants
-    // re-articulate anything (§4.3).
+    // Where the hook carries its own rhythm the pointer still *replaces* the grid, and these
+    // three are where that is pinned — none of them claiming its variants re-articulate
+    // anything (§4.3).
     //
-    // `tr-1000` is excluded and is not an exception being carved out: a drum machine carries no
-    // tonal part, so nothing in that guide is hooked and there is no deferral to pin. It is
-    // asserted the other way below.
-    for (const name of ['full-rig', 'midi-clock'] as const) {
+    // `tr-1000` was excluded on the reading that a drum machine carries no tonal part, so
+    // nothing in that guide could be hooked. The reading was right and the conclusion was not:
+    // #100's discriminator is an authored hook rather than a role group, and `bass-mid` — which
+    // the TR-1000's LT now carries — is a `low` role that has one. So the drum-machine guide
+    // defers exactly one part, which is the smallest case of this shape here and the reason it
+    // is worth keeping in the loop rather than excusing again.
+    for (const name of ['full-rig', 'midi-clock', 'tr-1000'] as const) {
       const doc = guideText(name)
       expect(doc, name).toContain('**The hook is the pattern**')
       expect(doc, name).toContain('Nothing separate to program here.')
       expect(doc, name).not.toContain('where they are struck again')
     }
-    // The one rig here with no hooked part at all: neither sentence, and every part keeps its grid.
-    const drums = guideText('tr-1000')
-    expect(drums).not.toContain('**The hook is the pattern**')
-    expect(drums).not.toContain('where they are struck again')
+    // One deferral rather than the three the other two carry. A second hooked part arriving on a
+    // drum machine is a thing to look at rather than to absorb.
+    expect(guideText('tr-1000').split('**The hook is the pattern**')).toHaveLength(2)
   })
 
   it('lets the band reach a deferred part where the direction says it should (§4.3)', () => {

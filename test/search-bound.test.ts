@@ -688,6 +688,20 @@ import { TEMPLATES } from '../lib/templates/index'
  * because it is a *feasibility* constraint inside the walk. It can only refuse candidates, never
  * add them, and this direction asks for one part per synth patch — so nothing is ever refused and
  * the walk is what the extra candidates alone make it.
+ *
+ * **The TR-1000's two `bass-mid` recipes re-recorded exactly the five directions that request
+ * `bass-mid`**, and left the other six untouched: `ambient-dub` 234 -> 235 at its worst seed,
+ * `lydian-house` and `major-key-electro` by one and by seven, `relay` 66 -> 67 flat across all
+ * twenty-four, and `industrial-techno` 729,675 -> 729,808. The first of the three reasons above,
+ * in its narrowest form — one more root candidate on a request that had none from this box, and
+ * nothing deeper, because `resolveRecipe` still returns one resolution per `(assignable, role,
+ * character)` and the LT had no `bass-mid` resolution before.
+ *
+ * `industrial-techno` moving by 133 where the others move by one is the direction asking for
+ * `bass-mid` at `dirty` on a rig where the box now answers it exactly rather than being absent
+ * from the request — a different cost at every tie the LT is in, not a wider tree. Nothing here
+ * reaches a rig anybody owns: `npm run measure:search` reports the worst legal rig unchanged at
+ * 46,609 nodes on `weave`, which asks for no `bass-mid` at all.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -700,8 +714,8 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
       149, 149, 149, 149, 150
     ],
     'ambient-dub': [
-      234, 335, 238, 333, 339, 236, 238, 329, 243, 240, 240, 327, 240, 243, 239, 234, 334, 242, 423,
-      334, 242, 243, 234, 238
+      235, 336, 239, 334, 340, 237, 239, 330, 244, 241, 241, 328, 241, 244, 240, 235, 335, 243, 424,
+      335, 243, 244, 235, 239
     ],
     'breakbeat': [
       688, 65397, 1398, 535, 64966, 230, 233, 538, 233, 538, 233, 537, 1475, 616, 338, 793, 2524,
@@ -719,20 +733,20 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
       228, 1352, 229, 1081, 228, 1385, 225, 1081
     ],
     'industrial-techno': [
-      624644, 632215, 627035, 630575, 634334, 624652, 631054, 626292, 630268, 622990, 677141,
-      626292, 628526, 622989, 632215, 626206, 622990, 688731, 729675, 630848, 622990, 630125,
-      624652, 627035
+      624777, 632348, 627168, 630708, 634467, 624785, 631187, 626425, 630401, 623123, 677274,
+      626425, 628659, 623122, 632348, 626339, 623123, 688864, 729808, 630981, 623123, 630258,
+      624785, 627168
     ],
     'lydian-house': [
-      229, 1221, 1104, 1120, 1121, 394, 1105, 393, 1121, 1330, 228, 393, 1105, 701, 307, 1330, 1330,
-      307, 1317, 229, 701, 229, 1213, 230
+      230, 1222, 1105, 1121, 1122, 395, 1106, 394, 1122, 1331, 229, 394, 1106, 702, 308, 1331,
+      1331, 308, 1318, 230, 702, 230, 1214, 231
     ],
     'major-key-electro': [
-      406, 223, 221, 1226, 223, 223, 222, 223, 404, 220, 223, 223, 217, 220, 223, 220, 223, 222,
-      223, 219, 223, 220, 223, 222
+      408, 224, 222, 1233, 224, 224, 223, 224, 406, 221, 224, 224, 218, 221, 224, 221, 224, 223,
+      224, 220, 224, 221, 224, 223
     ],
     'relay': [
-      66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66
+      67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67, 67
     ],
     'weave': [
       236, 328, 1294, 567, 273, 328, 1294, 274, 342, 1185, 22728, 274, 344, 1185, 241, 270, 328,

@@ -90,6 +90,25 @@ const SEMITONES = { min: -12, max: 12 } // -12St-0-12St
 const SEMITONES_24 = { min: -24, max: 24 } // -24St-24St
 
 /**
+ * The two ranges on this box that are printed **across two units**, and the one place a value
+ * here is a restatement of the manual's rather than a transcription of it.
+ *
+ *  - `A. ATTACK` and `A. DECAY` in `VA Common` (p.63) print `1ms-1000ms`, one unit and no
+ *    conversion — `MS` is just those two numbers;
+ *  - `FILTER : CUTOFF` (p.65) prints `8.2Hz-44.7kHz`, and a `NumericRange` holds two numbers
+ *    and one unit. So the bound is carried in Hz and `44.7kHz` becomes `44700`.
+ *
+ * That conversion is exact and it is the only kind allowed here: kHz to Hz moves a decimal
+ * point and invents nothing. It is *not* licence to turn `a few minutes` into `5`, and it is
+ * not licence to pick the coarser unit either — `0ms-6s` would lose every value under a second
+ * if it were carried in seconds, which is why no parameter on this box is authored from
+ * `VA Common`'s `A. HOLD` at all. Where the finer unit is not printed, the range does not get
+ * authored (invariant 5).
+ */
+const MS = { min: 1, max: 1000 } // 1ms-1000ms
+const CUTOFF_HZ = { min: 8.2, max: 44700 } // 8.2Hz-44.7kHz
+
+/**
  * A range citation. The page is the Parameter list page carrying the table for that generator:
  * p.59 ANALOG, p.60-62 ACB, p.63 FM. `Global`, `606 Common`, `CR78 Common` and `707/727 Common`
  * are their own blocks on those pages, and a generator gets its common block *plus* its own.
@@ -315,6 +334,31 @@ function mod(target: string, amount: number, wave: string, note: string): Author
 }
 
 /**
+ * One enum whose legal set the Reference Manual prints beside the parameter, rather than in the
+ * GEN list. `gen()` is the same shape with the list as its default document; this is for the
+ * `FILTER` block's three selectors, whose values are printed in their own Value column on p.65.
+ *
+ * Same split as everywhere else on this box (§3.1): the *set* is cited, and the selection
+ * inside it stays `verified: false`.
+ */
+function sel(
+  name: string,
+  value: string,
+  values: string[],
+  page: number,
+  extra: Partial<AuthoredEnumParam> = {},
+): AuthoredEnumParam {
+  return {
+    kind: 'enum',
+    name,
+    value,
+    options: { values, verified: cite(page) },
+    verified: false,
+    ...extra,
+  }
+}
+
+/**
  * Generators, by name, from the Preset GEN/INST List.
  *
  * `GEN` used to hold one of `Analog / ACB / FM / PCM / Sample`. Those five are real — both
@@ -423,6 +467,32 @@ const CRASH_GENS = [
 ]
 
 const RIDE_GENS = ['9X Ride Cymbal', '707 Ride Cymbal', 'CR78 Metallic']
+
+/**
+ * **The synth voices, and the one option set on this box that is not a drum.** GEN list p.1
+ * gives Category `OSC` six entries — `VA Sine`, `VA Tri`, `VA Sqr`, `VA Saw`, `VA Super Saw`
+ * and `VA Noise` — and their parameter table is `VA Common` on p.63: `COARSE` in semitones, a
+ * pitch envelope in four stages, and an amp envelope. That is a synthesizer voice, which is
+ * what a `bass-mid` needs and what no drum generator here offers.
+ *
+ * **`VA Noise` is the one left out, and p.63 is what leaves it out.** Its own block replaces
+ * the waveform controls with `TONE` and `COLOR` (noise frequency and white/pink), and the
+ * footnote on `VA Common`'s `MODEL` reads *"Only applies to Sine, Tri, Sqr, Saw, and Super
+ * Saw"* — the five above, by name. A reader switching to it from a bass recipe would be left
+ * holding a `PW` value the box no longer has a knob for, which is the trap `METALLIC_GENS`
+ * documents. It belongs to `noise`, a role the OH and CC tracks already declare.
+ *
+ * **Category `Bass` is not offered, and that is the harder call.** p.1 lists exactly two
+ * entries under it, `808 Bass Line` and `909 Bass Line`, and they are the most bass-shaped
+ * names on the box. Neither manual mentions either one again: the Reference Manual's parameter
+ * list has no block under either name, and the string "Bass Line" does not appear in the
+ * Owner's Manual at all. Every other option set here is a legality claim a reader can act on —
+ * switch to this name and the knobs below still exist. For those two there is no page that
+ * says what the knobs would be, so offering them beside a recipe of `VA Common` values would
+ * be an invitation to a screen this file cannot describe. Worth revisiting if Roland
+ * documents them.
+ */
+const OSC_GENS = ['VA Sine', 'VA Tri', 'VA Sqr', 'VA Saw', 'VA Super Saw']
 
 /**
  * The two generators p.62 gives a `METALLIC` parameter to, and the reason this list is not
@@ -842,6 +912,7 @@ export const device: Device = {
     'select-gen': 'Hold [SHIFT], press [GEN]',
     'motion-rec': 'MOTION [REC] lit, then move knob',
     'mod-screen': 'Hold [SHIFT], press [FILTER]',
+    'filter-screen': 'Press [FILTER], no [SHIFT]',
     'ptn-shuffle': 'Hold [SHIFT], press [PTN SELECT]',
     'reverb-send': 'Hold [BD]-[RC], turn REVERB [LEVEL]',
     'delay-send': 'Hold [BD]-[RC], turn DELAY [LEVEL]',
@@ -1043,6 +1114,153 @@ export const device: Device = {
         shuffle(),
       ],
       articulation: [{ slot: 'fill', set: { substep: '1/3' }, hint: 'sub-step' }],
+      verified: false,
+    },
+
+    /**
+     * ## The LT playing a bass part
+     *
+     * The voice has declared `bass-mid` since the seed manifest and nothing had ever been
+     * authored for it, which `lib/core/search.ts` names as the shape of the problem: a box that
+     * *can* make the part and has no recipe near the character reads to a stranger as a box that
+     * cannot. Three directions ask for `bass-mid` at `dark` (`ambient-dub`, `lydian-house`,
+     * `relay`) and two at `dirty` (`industrial-techno`, `major-key-electro`), so both of these
+     * are reachable and neither is decoration.
+     *
+     * **How the notes get in, said once here rather than in every note below.** A `bass-mid`
+     * carries a hook (#100), so the guide hands the reader `F2`, `Bb2`, `Db3` — and this box
+     * has no field that takes any of those. p.30's MOTION table records `[TUNE]`, `[DECAY]`,
+     * `[MIX]` and `[CTRL 1-3]` for BASS DRUM-HIGH TOM, and p.30's per-step form is *"holding
+     * down the step key ... use the [C1]-[C6/VALUE] knobs to record the motions of the
+     * controllers into the step"*. So the line **is** enterable, one step at a time, and it is
+     * enterable **by ear**: `TUNE` is *"Adjusts the tuning (pitch)"* with no scale printed
+     * beside it, and `NOTE` — the one parameter in the whole list that takes a pitch as a note
+     * name (`C-1-G-9`, p.63) — belongs to `FM Perc Model` and to nothing else.
+     *
+     * That is why both recipes carry the same `note` on `TUNE` and the `motion-rec` hint. It is
+     * also where this stops short of `pad` and `stab`, which the comment above `voices` keeps
+     * off the box: one note dialled by ear is a thing a player does, and four of them at once,
+     * held in tune against a chord chart, is not.
+     *
+     * **Two generators rather than one, because the characters want different circuits.**
+     * `dark` takes a `VA` oscillator: `VA Common` is a synth voice with `COARSE` in semitones
+     * and an amp envelope, and the register of a bass part is not something a drum generator
+     * lets you state. `dirty` takes `FM Tom Model`, whose modulator is the box's own answer to
+     * grit — the same argument `tr1000-snare-dirty` makes with `FM Snare Model`, and the reason
+     * `VA` does not carry the dirty one: `VA Common` has no distortion parameter at all, and
+     * the box's `DRIVE` lives in ANALOG FX, which is kit state rather than the track's.
+     *
+     * **The `FILTER` block is authored here and nowhere else on this box, and it is the same
+     * class of thing as the sends.** p.38 reaches it by selecting the track and pressing
+     * `[FILTER]`, and sends the reader to "FILTER" (p.65) for the values; the recipes already
+     * carry `MIXER` (p.71) and `PTN SETTING` (p.26) parameters on the same footing. It appears
+     * only on the `dark` recipe because only that one needs it: `FM Common` gives the dirty
+     * recipe an `LPF FREQ` of its own, and a second filter in series would be two cutoffs
+     * fighting over one part.
+     *
+     * `MODEL` comes with it, because p.65's block splits on it exactly the way the TR-8S's INST
+     * table splits on tone: under `SV FILTER` the page prints `CUTOFF`, `RESO` and `TYPE`, and
+     * under `EQUALIZER` it prints six bands and none of those three. A cutoff authored without
+     * saying which of the two is selected is a value read off the wrong printed scale.
+     *
+     * The LT is a layer track, and p.38 says so about the filter too — *"When [BD]-[LT] is
+     * selected, use the LAYER [A] [B] buttons to select layer A/B"* — so every value below,
+     * `FILTER` included, is layer A, as everywhere else on this box.
+     */
+    {
+      id: 'tr1000-bass-mid-dark',
+      role: 'bass-mid',
+      character: 'dark',
+      voice: 'lt',
+      title: 'Plucked triangle bass with the top rolled off',
+      params: [
+        gen('VA Tri', OSC_GENS),
+        num('COARSE', -12, SEMITONES, 'St', 63, {
+          hint: 'Register, in semitones',
+          note: 'Sets the register once; the line itself goes in on TUNE',
+        }),
+        num('TUNE', 0, BIPOLAR, '%', 63, {
+          hint: 'motion-rec',
+          note: 'The hook’s notes go in as motion on the [TUNE] knob, by ear',
+        }),
+        num('PW', 42, PCT, '%', 63, { hint: 'Waveform shape' }),
+        num('P. AMOUNT', 0, BIPOLAR, '%', 63, { hint: 'Flat: no pitch envelope on a bass note' }),
+        num('A. ATTACK', 3, MS, 'ms', 63),
+        num('A. DECAY', 420, MS, 'ms', 63, { mood: [{ axis: 'density', amount: -250 }] }),
+        sel('FILTER MODEL', 'SV FILTER', ['SV FILTER', 'EQUALIZER'], 65, {
+          hint: 'filter-screen',
+        }),
+        sel('FILTER SW', 'ON', ['OFF', 'ON'], 65),
+        sel('FILTER TYPE', 'LPF', ['LPF', 'HPF', 'BPF'], 65),
+        num('FILTER CUTOFF', 620, CUTOFF_HZ, 'Hz', 65, {
+          mood: [{ axis: 'darkness', amount: -400 }],
+        }),
+        num('FILTER RESO', 22, PCT, '%', 65),
+        send('RVB', 0),
+        send('DLY', 0),
+        shuffle(),
+      ],
+      articulation: [
+        { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
+        { slot: 'ghost', set: { weak: true }, hint: 'weak-step' },
+      ],
+      routing: 'INDIVIDUAL OUT LT so the bass stays out of the bus effects',
+      verified: false,
+    },
+    /**
+     * The dirty half, and the two readings of p.63 it rests on.
+     *
+     * **`P. AMOUNT` is `0.0%-100.0%` here and `0-1000` two blocks down.** The page gives it to
+     * `FM Kick Model1, FM Kick Model2, FM Snare Model, FM Tom Model` as a percentage, and gives
+     * `FM Perc Model` its own block where the same name runs `0-1000` with no unit printed.
+     * One page, one parameter name, two scales, and the generator picks.
+     *
+     * **`FM RATIO` is deliberately absent, and `FM FREQ` is here in its place.** `FM Common`
+     * prints `FM RATIO 0.100-25.600` with a footnote directly under it: *"FM Tom Model's FM
+     * modulator uses a fixed pitch and is measured in percentage."* So the ratio does not
+     * describe this generator's modulator, and the generator's own block carries `FM FREQ
+     * 0.0%-100.0%`, *"Adjusts the frequency of modulator 1"*. Authoring the ratio anyway would
+     * be a number off a scale the manual says is not in force.
+     *
+     * `HPF FREQ` at 0 is an instruction rather than an omission, the way the sends are: the LT
+     * track carries a tom in most kits, and a tom is where somebody has already taken the
+     * bottom off.
+     *
+     * The option set is `TOM_GENS`, the list's own `TOM_E` category, because that is what the
+     * LT track is. Every name in it is a tom and only one of them has a modulator; a reader who
+     * switches lands on a tom, which is a fair thing for a track labelled LT to offer.
+     */
+    {
+      id: 'tr1000-bass-mid-dirty',
+      role: 'bass-mid',
+      character: 'dirty',
+      voice: 'lt',
+      title: 'FM bass with the modulator up',
+      params: [
+        gen('FM Tom Model', TOM_GENS),
+        num('TUNE', -38, BIPOLAR, '%', 63, {
+          hint: 'motion-rec',
+          note: 'The hook’s notes go in as motion on the [TUNE] knob, by ear',
+        }),
+        num('DECAY', 76, PCT, '%', 63, { mood: [{ axis: 'density', amount: -24 }] }),
+        num('FM DEPTH', 58, PCT, '%', 63, {
+          mood: [{ axis: 'grit', amount: 30 }],
+          hint: 'Modulator level; this is the dirt',
+        }),
+        num('FM FBK', 30, PCT, '%', 63, { hint: 'Modulator feedback, on top of the depth' }),
+        num('FM FREQ', 42, PCT, '%', 63, { hint: 'Modulator frequency, in place of FM RATIO' }),
+        num('NOISE', 14, PCT, '%', 63),
+        num('LPF FREQ', 46, PCT, '%', 63, { mood: [{ axis: 'darkness', amount: -30 }] }),
+        num('HPF FREQ', 0, PCT, '%', 63, { hint: 'Nothing off the bottom' }),
+        num('P. AMOUNT', 0, PCT, '%', 63, { hint: 'Flat: no pitch envelope on a bass note' }),
+        send('RVB', 0),
+        send('DLY', 0),
+        shuffle(),
+      ],
+      articulation: [
+        { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
+        { slot: 'ghost', set: { weak: true }, hint: 'weak-step' },
+      ],
       verified: false,
     },
 
