@@ -60,6 +60,63 @@ import { MPC_XL_PANEL } from './panel'
  *
  * None of the five reaches a recipe.
  *
+ * ## No trigger note, and this manual names this box while saying so (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. The
+ * XL has 246 of them, and there is nothing to write. **The pages are the sibling's pages, and
+ * that is a fact about the document rather than an inheritance**: p.195 heads the chapter
+ * `Hardware Step Sequencing` and opens *"MPC Live III and MPC XL feature expanding step
+ * sequencing control using the hardware Step Buttons"*, then lists the sixteen modes — `1 - Drum
+ * Seq`, `2 - Note Seq` — that pp.196 and 197 describe. So the two procedures below are addressed
+ * to this box by name, on the row of Step Buttons this chassis has.
+ *
+ * **A `pad` part is addressed by pad.** p.196, Drum Sequencing: *"To add a note, select a drum
+ * track, and press a pad to select it for sequencing... Press a Step Button 1-16 to add a note at
+ * the selected step."* The pad is chosen before any step is, so the instruction is complete
+ * without a note. p.205's List Edit says the same in the box's own columns — *"Pad/Note: This is
+ * the pad and/or corresponding MIDI note number. For drum tracks, you will see the pad number.
+ * For keygroup tracks, plugin tracks, and midi tracks, you will see the note"* — and the line it
+ * draws is the line between `pad` and the two plugin pools.
+ *
+ * **The number behind a pad is the reader's.** p.126's `Edit Pad Note Map` *"lets you assign
+ * specific MIDI notes to your MPC pads"* with three preset layouts — `Chromatic C1`, `Chromatic
+ * C-2` and `Classic MPC` — and no page says which is loaded. A note authored on `pad` would be
+ * wrong under two of the three and unverifiable under the third.
+ *
+ * **A plugin-track part is addressed by a note that is played, not printed.** p.197, Note
+ * Sequencing: *"To add a note to the step, play a MIDI note from the pads, an external
+ * instrument, or other source routed to the current track."* Which note is a musical decision and
+ * arrives as `RequestPitch` (#340) where a direction has one — the 24 `sub` parts. Where a
+ * direction has none, nothing here fills the gap: **DrumSynth is the plugin most of these
+ * percussion parts load and pp.431-433 print no note at all**, giving `Model`, `One-Shot`,
+ * `Velocity`, `Velocity 2`, `Gain`, the eight parameter knobs, Trans/Dist, EQ/Comp and the
+ * Multi's Send FX, and no note parameter, no key range and no default. p.431's `One-Shot` —
+ * *"Allows the drum sound to play entirely when triggered"* — says a note triggers the sound
+ * without saying which.
+ *
+ * ## Why a shared manifest still had to be read
+ *
+ * This file takes `recipes` **and** `voices` from the sibling by reference, so a `triggerNote`
+ * authored there would appear on this box with no line of this manifest mentioning it — and,
+ * because the manual is shared, wearing a page number that is genuinely this box's. That is the
+ * more dangerous shape of the One G2's problem rather than a milder one: there is no wrong-manual
+ * tell to catch it, only an unread claim that looks read. `shared()` does not help, because it
+ * throws when a fact *stops* being carried and never when one appears.
+ *
+ * So the sharing is an implementation constraint on this file — the reason the reading is written
+ * down here and held by `test/akai-mpc-xl.test.ts` — and not a verdict borrowed from the Live
+ * III. The pages above were opened for this box.
+ *
+ * ## The octave convention, read and recorded rather than used
+ *
+ * Recorded because a note authored against this box without it would be an octave out, silently.
+ * p.359, a pad's MIDI parameters: *"Note: This is the MIDI note number the pad will send to the
+ * software when you press it (0-127 or C-2 to G8)."* Zero is `C-2`, so on this box's numbering
+ * **middle C is `C3` and 60 is `C3`**, not the `C4` scientific pitch notation would give — the
+ * Tracker Mini's trap (#352) on this manual. p.441 agrees where it prints a sample layer's `Key
+ * Low` and `Key High` as `C-2 - G8`. **No value is authored from any of it**: the convention says
+ * how to write a note, and this manual never supplies which note to write.
+ *
  * ## The panel is its own drawing
  *
  * `panel.ts` is measured off p.377 and shares nothing with the sibling's, which is the point:
@@ -274,6 +331,13 @@ export const device: Device = {
    * §2.2. The sibling's three pools, unchanged, because the architecture they model is in the
    * shared half of the manual: p.44's six track types, p.47's 128 pads as 16 across eight banks,
    * pp.428-521's plugins. p.532 confirms this chassis has the same sixteen pads and eight banks.
+   *
+   * **No `triggerNote` on any of them, and the head note reads this manual for why** rather than
+   * treating the sibling's answer as inherited: p.195 addresses the step sequencer to this box by
+   * name, p.196 selects the pad before its steps, p.126 makes the pad's own note the reader's,
+   * and pp.431-433 give DrumSynth no note parameter at all. The reference is why it had to be
+   * written down — a note added on these shared objects would arrive here on a page number that
+   * is genuinely this box's, so nothing would look wrong.
    */
   voices: liveIII.voices,
 
