@@ -30,6 +30,49 @@ import { DIGITAKT_II_PANEL } from './panel'
  * is not reachable by any patch here, and the way out is §12.4's `sampled-chord` — a sample that
  * *already contains* the chord, which is one note as far as the track is concerned.
  *
+ * ## No trigger note, and this is the box where the manual supplies both halves (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 222, all on the one `track` pool, and it is the **first decline in this class where the
+ * evidence for authoring one is complete** — which is why the reason has to be about where the
+ * field lives rather than about a missing citation.
+ *
+ * **Both halves are printed.** p.25 states the convention outright: *"MIDI note numbers 16-84,
+ * that corresponds to notes E2-C7 (C5, MIDI note 60, being middle C)"*. And p.53's TRIG page
+ * screenshot shows the box's own display pairing them — `NOTE` reading `C 5 (60)` on an audio
+ * track. So `{ note: 'C5', midi: 60 }` could be written here with a real citation, which is more
+ * than the OP-XY, the SP-404MK2 or either Roland groovebox could offer.
+ *
+ * **It still cannot go on this pool, because a pool's note reaches every member alike and this
+ * pool holds three different kinds of track.**
+ *
+ *  - **Whole-sample tracks** — `ONESHOT`, `WERP`, `STRETCH`, `REPITCH` — where `C5` does mean
+ *    *play it as recorded*. This is the one case `TriggerNote` models.
+ *  - **Sliced tracks**, and one is authored: `dt2-vox-chop-bright` selects `SLICE`. p.26 gives
+ *    their note its own meaning — *"Slices play from C1 and upwards, wrapping around after the
+ *    last slice, when using the Grid and Slice machines and set SLICE to NOTE"* — so the note
+ *    there is a **slice address**, base `C1`, next semitone the next slice. `TriggerNote` refuses
+ *    this explicitly: a slice base in that field would give two kinds of value one name, which is
+ *    #334's third category and undesigned. **p.26's `C1` is therefore read and deliberately not
+ *    authored.**
+ *  - **MIDI tracks.** p.53's own warning: *"Please note that MIDI tracks has a different set of
+ *    parameters on the TRIG, SRC, FLTR, and AMP page."* A `NOTE` there is a note being sent out,
+ *    not a loaded sample's original pitch. `MIDI` is a cited member of the `SRC MACHINE` set
+ *    (p.93) and p.17 makes any of the sixteen tracks one, so the pool holds it whether or not a
+ *    recipe has yet selected it.
+ *
+ * **The Tracker Mini is why this is a rule and not a preference.** That box splits samples and
+ * synths into *two* pools, so `track-sample` can carry `C5`/60 and `track-synth` carry none — and
+ * its manifest says of its own Beat Slice recipe that it "carries no trigger note". It does not:
+ * `triggerNote` is on the pool, there is no per-recipe override by design, and `tm-vox-chop-dirty`
+ * resolves with `C5`/60 on it. Nothing reaches a page today only because that part is hook-owned
+ * in every direction and seed measured. **A comment cannot exempt a member from its pool's note**,
+ * and this box has no second pool to move the exemption into.
+ *
+ * So the 222 blanks are correct output. What would change that is not another page of the manual
+ * but a vocabulary that can say *which kind of address a voice uses* — until then, a pool holding
+ * a sliced voice authors nothing here.
+ *
  * ## Numbers: this manual prints almost none
  *
  * Across the whole of "11. TRACK PARAMETERS" (pp.53-60) and APPENDIX A, exactly **three** numeric
@@ -621,6 +664,18 @@ export const device: Device = {
    */
   voices: [
     {
+      /**
+       * **No `triggerNote`** (§2.1/#334), and not for want of a citation — this box prints both
+       * halves. p.25 gives the convention (*"C5, MIDI note 60, being middle C"*) and p.53's TRIG
+       * screen shows `NOTE  C 5 (60)` on an audio track.
+       *
+       * A pool's note reaches every member alike, and this one pool holds three kinds of track:
+       * whole-sample machines, where `C5` means *play it as recorded*; sliced ones, where p.26
+       * makes the note a slice address from `C1` up and `TriggerNote` declines to model it
+       * (`dt2-vox-chop-bright` is one); and MIDI tracks, whose TRIG page p.53 says is a different
+       * set of parameters entirely. There is no second pool to put the exemption in — see the
+       * head note, and `test/elektron-digitakt-ii.test.ts` for what holds it.
+       */
       kind: 'pool',
       id: 'track',
       label: 'Track',
