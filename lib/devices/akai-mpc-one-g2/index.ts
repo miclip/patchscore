@@ -55,6 +55,68 @@ import { MPC_ONE_G2_PANEL, MPC_ONE_G2_PANEL_SPAN_MM } from './panel'
  *
  * A page map with no per-parameter escape would have got the last one wrong and looked right.
  *
+ * ## No trigger note, read on this document rather than inherited (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 246 of them, and the answer is that there is nothing to write. **The reading is this
+ * file's own**, because the pages that answer it are not the sibling's pages and one of them does
+ * not exist here at all.
+ *
+ * **A `pad` part is addressed by pad.** p.181, the step sequencer: *"Use the `Pad -/+` buttons at
+ * the bottom of the screen to select the pad whose steps you want to enter or delete. The current
+ * pad number is shown in the upper-left corner."* Then, third: *"Press the pads of your MPC
+ * hardware... Each pad corresponds to a step in the bar."* The pad is chosen before any step is,
+ * the pads *are* the steps on this chassis (p.179, and see `hints`), and no note is named
+ * anywhere in the procedure. p.186's List Edit says the same in the box's own columns —
+ * *"`Pad/Note`: This is the pad and/or corresponding MIDI note number. For drum tracks, you will
+ * see the pad number. For keygroup tracks, plugin tracks, and midi tracks, you will see the
+ * note"* — and p.167's Grid View draws it: a drum track gets *"all available pads in a vertical
+ * view"*, where a keygroup, plugin, MIDI or CV track gets *"a vertical 'piano roll' keyboard"*.
+ * Three pages, one distinction, and it is the same line the three pools are drawn on.
+ *
+ * **The number behind a pad is the reader's.** p.128's `Edit Pad Note Map` *"lets you assign
+ * specific MIDI notes to your MPC hardware pads"*, with three preset layouts — `Chromatic C1`,
+ * `Chromatic C-2` and `Classic MPC` — and no page saying which is loaded. A note authored on
+ * `pad` would be wrong under two of the three and unverifiable under the third.
+ *
+ * **A plugin-track part has a note and this document never states it.** The piano roll on p.167
+ * is where it lives, so the note is a musical decision — supplied as `RequestPitch` (#340) where
+ * a direction has one, which is the 24 `sub` parts. Where a direction has none, nothing here
+ * fills the gap: **DrumSynth is the plugin most of these percussion parts load and it is named on
+ * three pages, pp.441-443**, which print `Model`, `One-Shot`, `Velocity`, `Velocity 2`, `Gain`,
+ * the eight parameter knobs, Trans/Dist, EQ/Comp and the Multi's Send FX, and **no note
+ * parameter, no key range and no default note**. `capabilityEvidence.voices` already records
+ * those same three pages answering nothing about polyphony; they answer nothing about addressing
+ * either. p.441's `One-Shot` — *"Allows the drum sound to play entirely when triggered"* — says a
+ * note triggers the sound without saying which.
+ *
+ * **The page the sibling leans on does not exist in this document.** v3.7 p.197 is a `Note
+ * Sequencing` mode whose instruction is *"play a MIDI note from the pads, an external instrument,
+ * or other source"*; v3.9 has no such section, because this document's step sequencer is the
+ * pad-per-step one on p.181. So the plugin-track half of the reading rests on p.167 and p.186
+ * here, and copying the sibling's citation across would have named a page this manual does not
+ * have. That is `PAGES` and `pageInV39`'s whole reason, arriving at a fact rather than a value.
+ *
+ * ## Why this could not have been left to the sibling
+ *
+ * `voices` is `liveIII.voices` — the same objects, not copies — so a `triggerNote` authored on
+ * the Live III's pools would appear on this box automatically. **And it would arrive carrying a
+ * citation to a manual that does not describe this box**, because `retargetRecipe` rewrites
+ * citations inside *recipes* and nothing rewrites a field on a shared voice: `pageInV39` would
+ * never see it, and the guard that exists precisely to stop a v3.7 page number reaching a One G2
+ * reader would be looking the other way. The test file asserts the sharing for that reason, and
+ * asserts nothing about what the siblings should carry.
+ *
+ * ## The octave convention, read and recorded rather than used
+ *
+ * Recorded because a note authored against this box without it would be an octave out, silently.
+ * p.334, a pad's MIDI parameters: *"`Note`: This is the MIDI note number the pad will send to the
+ * software when you press it (0-127 or C-2 to G8)."* Zero is `C-2`, so on this box's numbering
+ * **middle C is `C3` and 60 is `C3`**, not the `C4` scientific pitch notation would give — the
+ * Tracker Mini's trap (#352) on a third manual. p.519 agrees where it prints a sample layer's
+ * `Key Low` and `Key High` as `C-2 - G8`. **No value is authored from any of it**: the convention
+ * says how to write a note, and this document never supplies which note to write.
+ *
  * ## The differences that are hardware, and what each costs
  *
  * **A bare `p.NNN` anywhere in this file is a page of the v3.9 guide.** The siblings' figures are
@@ -508,6 +570,13 @@ export const device: Device = {
    * shared operation chapters and this document prints all of it: p.45's six track types and 128
    * tracks, p.49's 128 pads as sixteen across eight banks, pp.422-454's plugins. p.477 confirms
    * this chassis has the same sixteen pads and the same eight banks.
+   *
+   * **No `triggerNote` on any of them, and the head note reads this document for why** rather
+   * than taking the sibling's answer: p.181 selects the pad before its steps, p.128 makes the
+   * pad's own note the reader's, and pp.441-443 give DrumSynth no note parameter at all. The
+   * sharing is the reason it had to be read here — a cited field added to these objects would
+   * reach this box wearing a v3.7 page number, which is the one thing this whole manifest exists
+   * to prevent.
    */
   voices: liveIII.voices,
 
