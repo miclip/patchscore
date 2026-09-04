@@ -13,7 +13,7 @@ import type { Device, GuideLayout, ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { industrialTechno } from '../lib/templates/index'
 import { Guide } from '../components/guide/guide'
-import { device as fixtureDevice, recipe } from './fixtures'
+import { device as fixtureDevice, recipe, template as fixtureTemplate } from './fixtures'
 
 /**
  * §3.1/#324. **One fact about one manual, printed once.**
@@ -49,6 +49,15 @@ const DECLARATION = {
   controls: 'The knobs',
   markings: 'unnumbered ticks',
   exact: 'MIDI CC',
+} as const
+
+/**
+ * The same declaration carrying the one positive claim, which is what the renderers print as the
+ * exception. **A fixture rather than a shipped device since #349** — see the describe below.
+ */
+const DECLARATION_WITH_MAPPED = {
+  ...DECLARATION,
+  mapped: { controls: 'the ENVELOPE faders', cite: CITE },
 } as const
 
 /** The shared fixture, which already carries the evidence every other required fact needs. */
@@ -119,8 +128,16 @@ describe('controlPositions is a reasoned finding, checked in both directions (§
   it('says nothing about a box that declares nothing, which is nearly all of them', () => {
     expect(controlPositionNotice(withPositions({}))).toBeUndefined()
     expect(controlPositionNotice(undefined)).toBeUndefined()
+    // **Nothing in the catalogue declares this since #349**, and the empty list is the assertion
+    // rather than an accident of it. The Muse was the only box that ever did; the instrument turned
+    // out to show a value on screen as a control is turned, which makes the notice's closing clause
+    // — *by hand these are set by ear* — false exactly where a reader would act on it. See the note
+    // at `controlPositions` in `lib/devices/moog-muse/index.ts`.
+    //
+    // The mechanism stays, tested on fixtures, because the state it describes is real and common:
+    // a panel whose marks no page maps to a value, on a box with no screen to fall back to.
     const declaring = DEVICES.filter((d) => controlPositionNotice(d) !== undefined).map((d) => d.id)
-    expect(declaring).toEqual(['moog-muse'])
+    expect(declaring).toEqual([])
   })
 
   it('leaves the exception undefined where a panel has none, so no sentence is invented', () => {
@@ -137,31 +154,67 @@ describe('controlPositions is a reasoned finding, checked in both directions (§
   })
 
   it('carries the panel’s own phrases through, and the exception with them', () => {
-    const notice = controlPositionNotice(DEVICES.find((d) => d.id === 'moog-muse'))
+    const notice = controlPositionNotice(
+      withPositions({
+        controlPositions: DECLARATION_WITH_MAPPED,
+        capabilityEvidence: { ...evidence, [CONTROL_POSITION_FACT]: FOUND_NOTHING },
+      }),
+    )
     expect(notice?.state).toBe('unmapped')
+    expect(notice?.controls).toBe('The knobs')
+    expect(notice?.markings).toBe('unnumbered ticks')
     expect(notice?.exact).toBe('MIDI CC')
-    // #325. The eight ENVELOPE faders are scaled and p.19 maps a line to a percentage, so the
-    // notice must name them as the exception rather than sweep them in.
-    expect(notice?.mapped?.controls).toContain('ENVELOPE')
     // The exception is the one positive claim here, so it travels with its own page rather than
     // as a page number inside a sentence.
-    expect(notice?.mapped?.cite).toEqual({
-      kind: 'manual',
-      source: "Muse User's Manual v1.4.0, pp.19, 38",
-    })
+    expect(notice?.mapped?.controls).toBe('the ENVELOPE faders')
+    expect(notice?.mapped?.cite).toEqual(CITE)
     // And the declaration's own half is the reading, not a page: `undocumented`, with the pages
     // that were opened in the reason where a reader can go and check them.
     expect(notice?.evidence.kind).toBe('unknown')
-    expect(notice?.evidence.reason).toContain('pp.120-122')
-    expect(notice?.evidence.reason).toContain('p.33')
+    expect(notice?.evidence.reason).toContain('pp.4-9')
+  })
+
+  /**
+   * #349, stated as a test because a withdrawn declaration is easy to re-add by reflex. The Muse's
+   * panel really does print unnumbered ticks, so a later author reading only the drawings would
+   * declare this again — and print *by hand these are set by ear* over values the box displays.
+   */
+  it('is not declared by the Muse, whose screen shows the value as a control is turned', () => {
+    const muse = DEVICES.find((d) => d.id === 'moog-muse')
+    expect(muse?.controlPositions).toBeUndefined()
+    // `DeviceSchema` requires the pair, so the evidence had to go with it — and this is the half
+    // a reflex would leave behind, since it reads as a reading somebody did.
+    expect(muse?.capabilityEvidence?.[CONTROL_POSITION_FACT]).toBeUndefined()
   })
 })
 
 /** The rig #324 measured on, and the template it measured. */
 const RIG = ['roland-tr-1000', 'synthstrom-deluge', 'moog-muse', 'moog-subsequent-37']
-const result: ResolveResult = resolve({
+const museResult: ResolveResult = resolve({
   devices: DEVICES.filter((d) => RIG.includes(d.id)),
   template: industrialTechno,
+  mood: moodState(),
+  seed: 3,
+})
+
+/**
+ * **A guide built on a fixture, because since #349 no shipped device declares this** — see the
+ * withdrawal test above.
+ *
+ * The renderer half of this file could have gone with the Muse, and it must not. The two sentences
+ * in `render.ts` and `components/guide/phase-sound.tsx` are hand-written copies of each other, and
+ * #33's whole point is that nothing but a test keeps them in step. Deleting the coverage because
+ * the catalogue happens to have no user today would leave two copies of a paragraph free to drift
+ * until the next box that needs it — which is a panel with no screen, and there will be one.
+ */
+const noticeResult: ResolveResult = resolve({
+  devices: [
+    withPositions({
+      controlPositions: DECLARATION_WITH_MAPPED,
+      capabilityEvidence: { ...evidence, [CONTROL_POSITION_FACT]: FOUND_NOTHING },
+    }),
+  ],
+  template: fixtureTemplate(),
   mood: moodState(),
   seed: 3,
 })
@@ -171,6 +224,11 @@ const LAYOUTS: readonly GuideLayout[] = ['phase', 'sequencer']
 const TAIL = 'no page maps its position to a CC value'
 /** The load-bearing half of the notice, in the wording both renderers author separately. */
 const NOTICE = 'no page mapping a mark to a MIDI CC value was found'
+/** The whole sentence, which is what the two renderers must agree on word for word. */
+const SENTENCE =
+  'The knobs carry unnumbered ticks. The manual was read and no page mapping a mark to a ' +
+  'MIDI CC value was found, so MIDI CC gives the exact setting and by hand these are set by ' +
+  'ear. The exception is the ENVELOPE faders.'
 
 function occurrences(haystack: string, needle: string): number {
   return haystack.split(needle).length - 1
@@ -179,33 +237,33 @@ function occurrences(haystack: string, needle: string): number {
 describe('the notice reaches a reader once per device, both renderers, both layouts', () => {
   for (const layout of LAYOUTS) {
     it(`prints it once in the Markdown guide (${layout} layout)`, () => {
-      const md = renderGuide(result, { layout })
+      const md = renderGuide(noticeResult, { layout })
       expect(occurrences(md, 'Setting by hand')).toBe(1)
       expect(occurrences(md, NOTICE)).toBe(1)
-      expect(md).toContain('The knobs, and the MIXER and WAVE MIX faders carry')
+      expect(md).toContain('The knobs carry unnumbered ticks')
       expect(md).toContain('by hand these are set by ear')
-      expect(md).toContain('The exception is the FILTER and VCA ENVELOPE faders')
+      expect(md).toContain('The exception is the ENVELOPE faders')
       // The state a reader is left in, said in words and marked at the end of the line.
       // The reading, reported as a reading: what was looked for and not found, never a claim
       // that the document contains no such page.
       expect(md).toContain('The manual was read and no page mapping a mark')
       expect(md).not.toContain('Not established')
       expect(md).toContain('· undocumented')
-      expect(md).toContain("mapped manual — Muse User's Manual v1.4.0, pp.19, 38")
+      expect(md).toContain('mapped manual — A Manual, p.1')
     })
 
     it(`prints it once in the web guide (${layout} layout)`, () => {
       const html = renderToStaticMarkup(
-        createElement(Guide, { result, seed: 3, layout }),
+        createElement(Guide, { result: noticeResult, seed: 3, layout }),
       )
       expect(occurrences(html, 'Setting by hand')).toBe(1)
       expect(occurrences(html, NOTICE)).toBe(1)
       expect(html).toContain('by hand these are set by ear')
-      expect(html).toContain('The exception is the FILTER and VCA ENVELOPE faders')
+      expect(html).toContain('The exception is the ENVELOPE faders')
       expect(html).toContain('The manual was read and no page mapping a mark')
       expect(html).not.toContain('Not established')
       expect(html).toContain('undocumented')
-      expect(html).toContain('mapped manual — Muse User&#x27;s Manual v1.4.0, pp.19, 38')
+      expect(html).toContain('mapped manual — A Manual, p.1')
     })
   }
 
@@ -215,16 +273,15 @@ describe('the notice reaches a reader once per device, both renderers, both layo
    * the middle of it is exactly what a fragment check would miss.
    */
   it('says the same sentence in both renderers', () => {
-    const notice = controlPositionNotice(DEVICES.find((d) => d.id === 'moog-muse'))
-    if (notice === undefined) throw new Error('the Muse stopped declaring its panel')
-    const sentence =
-      `${notice.controls} carry ${notice.markings}. The manual was read and no page mapping a ` +
-      `mark to a ${notice.exact} value was found, so ${notice.exact} gives the exact setting and ` +
-      `by hand these are set by ear. The exception is ${notice.mapped?.controls}.`
-    const html = renderToStaticMarkup(createElement(Guide, { result, seed: 3, layout: 'phase' }))
-    expect(renderGuide(result)).toContain(sentence)
+    // Spelled out rather than rebuilt from the notice's own fields, which is the change #349
+    // forced and an improvement on what was here: a sentence assembled from the same three
+    // phrases the renderers assemble it from would pass while both renderers drifted together.
+    const html = renderToStaticMarkup(
+      createElement(Guide, { result: noticeResult, seed: 3, layout: 'phase' }),
+    )
+    expect(renderGuide(noticeResult)).toContain(SENTENCE)
     // React escapes the apostrophe-free sentence unchanged; nothing in it needs entities.
-    expect(html).toContain(sentence)
+    expect(html).toContain(SENTENCE)
   })
 })
 
@@ -243,18 +300,23 @@ describe('and the parameter lines carry none of it (#324)', () => {
     // Keyed on `midiCc`, the typed metadata, rather than on the shape of the sentence. Matching
     // the prose would be the same mistake #324 rejected for the dedupe: a reworded instruction
     // would quietly stop being counted and the measurement would report a fix it had not made.
-    const built = result.assignments.flatMap((a) => a.params).filter((p) => p.midiCc !== undefined)
+    const built = museResult.assignments
+      .flatMap((a) => a.params)
+      .filter((p) => p.midiCc !== undefined)
     expect(built).toHaveLength(76)
     expect(built.filter((p) => p.note?.includes(TAIL))).toEqual([])
-    // And the one sentence that replaced all 76, once.
-    expect(occurrences(renderGuide(result), NOTICE)).toBe(1)
+    // **And since #349, not even the one sentence that replaced all 76.** The Muse withdrew the
+    // declaration when the instrument contradicted its closing clause, so this rig — #324's own
+    // rig, the one the measurement was taken on — now prints no panel notice at all.
+    expect(occurrences(renderGuide(museResult), NOTICE)).toBe(0)
+    expect(renderGuide(museResult)).not.toContain('Setting by hand')
   })
 
   it('leaves no copy of the old tail anywhere in either renderer or either layout', () => {
     for (const layout of LAYOUTS) {
-      expect(renderGuide(result, { layout })).not.toContain(TAIL)
+      expect(renderGuide(museResult, { layout })).not.toContain(TAIL)
       expect(
-        renderToStaticMarkup(createElement(Guide, { result, seed: 3, layout })),
+        renderToStaticMarkup(createElement(Guide, { result: museResult, seed: 3, layout })),
       ).not.toContain(TAIL)
     }
   })
