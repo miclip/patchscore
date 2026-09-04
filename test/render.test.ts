@@ -1646,8 +1646,15 @@ describe('the guide cites the document the values came from (#89)', () => {
       for (const document of rangeDocuments(device)) expect(sentence).toContain(document)
       // Strike out every cited document and only the scaffolding may remain. A declared title
       // leaking back in would survive this; a wording change would not break it.
+      //
+      // **Longest first**, because one cited title can contain another. The Muse cites its manual
+      // and `<same title> Appendix A (MIDI CC)`, which is a second document inside one book by
+      // design; striking the shorter one first eats the prefix of the longer and leaves
+      // `Appendix A (MIDI CC)` looking like a title nothing cites. Order here is the test's own
+      // arithmetic and says nothing about the sentence, which names both documents correctly.
       let bare = sentence
-      for (const document of rangeDocuments(device)) bare = bare.split(document).join('')
+      const cited = [...rangeDocuments(device)].sort((a, b) => b.length - a.length)
+      for (const document of cited) bare = bare.split(document).join('')
       expect(bare.replace(/Values below cite|and|[.,\s]/g, ''), device.id).toBe('')
     }
   })

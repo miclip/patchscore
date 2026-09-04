@@ -829,19 +829,25 @@ describe('resolveParam provenance (§3.2, obligations 5 and 5a)', () => {
 })
 
 /**
- * §3.1/#324. **The MIDI instruction is composed here, after mood, and that is the whole point.**
+ * §3.1/#324, narrowed at #349. **The MIDI instruction names the controller and no value at all.**
  *
- * The Muse authored it as prose in the device folder — `Send MIDI CC 87 = ${value}` written at
- * authoring time — so a value mood then moved left the guide printing `54 → 36` on the line and
- * *"send 54"* underneath it. The number the reader is told to send was the one struck through
- * above it, and no arrangement of authored text can fix that: the device folder runs before the
- * mood knobs are read.
+ * The history is worth keeping, because the field survives the sentence that justified it. The
+ * Muse authored the instruction as prose in the device folder — `Send MIDI CC 87 = ${value}`
+ * written at authoring time — so a value mood then moved left the guide printing `54 → 36` on the
+ * line and *"send 54"* underneath it. #324 moved the composition here, after mood, which is the
+ * only place the number in the sentence can be the number on the line.
  *
- * So a device declares `midiCc` and the resolver writes the sentence. These pin the property that
- * makes it worth the field: **the instruction names `value`, never `provenance.from`**, in every
- * branch — moved, unmoved, clamped, and inhibited.
+ * **#349 removed the number instead.** The one device that declares `midiCc` re-authored its
+ * controls on the scale its screen shows — percent, and Hz for the two filter cutoffs — and no
+ * page maps either onto a CC value, so `Send MIDI CC 67 = 74` beside `74 %` names a number that
+ * lands somewhere nobody has measured. What is left is which controller addresses the control,
+ * which is true, useful to anything automating the box, and cannot go stale.
+ *
+ * So these pin the property the field is now worth having for: **the instruction is the same in
+ * every branch** — moved, unmoved, clamped and inhibited — because it depends on nothing the mood
+ * knobs can change. A regression to an instruction carrying a value fails four of these at once.
  */
-describe('the MIDI instruction is composed against the resolved value (§3.1/#324)', () => {
+describe('the MIDI instruction names the controller and asserts no value (§3.1/#324, #349)', () => {
   /** CC 87 on 0..127, moved +18 when density is at the floor — the Muse's VCA ENV DECAY. */
   function decay(over: Record<string, unknown> = {}) {
     return numericParam({
@@ -854,43 +860,44 @@ describe('the MIDI instruction is composed against the resolved value (§3.1/#32
     })
   }
 
-  it('names the moved value, not the value it moved from', () => {
+  it('names neither the moved value nor the value it moved from', () => {
     const resolved = resolveParam(decay(), MANUAL, moodState({ density: 0 }))
     expect(resolved.value).toBe(72)
-    expect(resolved.note).toBe('Send MIDI CC 87 = 72')
-    // The bug this replaces, stated as the thing that must not happen: `from` is where the
-    // reader is coming from, and it is struck through on the line above.
+    expect(resolved.note).toBe('MIDI CC 87')
+    // Both numbers are on the line above — `72` as the value and `54` struck through — and
+    // neither belongs in an instruction that no longer promises what sending one would do.
     expect(resolved.provenance).toMatchObject({ state: 'derived', from: 54 })
-    expect(resolved.note).not.toContain('= 54')
+    expect(resolved.note).not.toContain('72')
+    expect(resolved.note).not.toContain('54')
   })
 
-  it('names the authored value when the knobs are centred', () => {
+  it('says the same thing when the knobs are centred', () => {
     const resolved = resolveParam(decay(), MANUAL, moodState())
     expect(resolved.value).toBe(54)
-    expect(resolved.note).toBe('Send MIDI CC 87 = 54')
+    expect(resolved.note).toBe('MIDI CC 87')
     expect(resolved.provenance).toEqual({ state: 'authored', cite: MANUAL })
   })
 
-  it('names the clamped value, because that is the one the reader dials', () => {
-    // §6.1 clamps to the range before this runs. An instruction naming the unclamped arithmetic
-    // would be a value the instrument cannot take.
+  it('says the same thing where the value was clamped', () => {
+    // §6.1 clamps to the range before this runs. The clamp is visible in `value`, which is what
+    // the reader dials; the instruction beside it has nothing to be wrong about.
     const resolved = resolveParam(
       decay({ value: 120, mood: [{ axis: 'density', amount: -18 }] }),
       MANUAL,
       moodState({ density: 0 }),
     )
     expect(resolved.value).toBe(127)
-    expect(resolved.note).toBe('Send MIDI CC 87 = 127')
+    expect(resolved.note).toBe('MIDI CC 87')
   })
 
-  it('names the authored value when an unverified range inhibits mood (§3.2)', () => {
+  it('says the same thing when an unverified range inhibits mood (§3.2)', () => {
     const resolved = resolveParam(
       decay({ range: { min: 0, max: 127, verified: false } }),
       MANUAL,
       moodState({ density: 0 }),
     )
     expect(resolved.value).toBe(54)
-    expect(resolved.note).toBe('Send MIDI CC 87 = 54')
+    expect(resolved.note).toBe('MIDI CC 87')
   })
 
   it('keeps an authored note in front of the instruction, joined the way notes are joined', () => {
@@ -899,7 +906,7 @@ describe('the MIDI instruction is composed against the resolved value (§3.1/#32
       MANUAL,
       moodState({ density: 0 }),
     )
-    expect(resolved.note).toBe('Bipolar, centred at noon · Send MIDI CC 87 = 72')
+    expect(resolved.note).toBe('Bipolar, centred at noon · MIDI CC 87')
   })
 
   it('says nothing at all about MIDI on a control that declares no CC', () => {

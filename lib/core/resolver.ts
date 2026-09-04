@@ -796,25 +796,26 @@ function moodContribution(
 }
 
 /**
- * §3.1/#324. **The MIDI instruction, composed against the value the guide is about to print.**
+ * §3.1/#324, narrowed at #349. **The controller is named and no value is asserted.**
  *
- * It is written here rather than in a device folder because of *when*, not where: mood moves a
- * numeric value after it is authored, so a sentence a device wrote down carries the value the
- * author typed and not the one the reader sees. The Muse shipped that bug on 41 controls — a line
- * reading `54 → 36` above a note reading *"Send MIDI CC 87 = 54"*, where the number the reader is
- * told to send is the one struck through above it. Composing after mood makes the two the same
- * number by construction, and there is no arrangement of authored prose that does.
+ * This used to read `Send MIDI CC 87 = 72`, composed here rather than in the device folder so the
+ * number in the sentence was the number on the line after mood had moved it. That was right for as
+ * long as the value on the line *was* a CC value. It is not: the one box that declares `midiCc`
+ * authors its controls on the scale its screen shows — percent, and Hz for the filter cutoffs —
+ * and no page maps either onto a CC value. `Send MIDI CC 67 = 74` beside `74 %` would be telling a
+ * reader to send a number that lands somewhere nobody has measured.
+ *
+ * So what survives is the half that is still true and still worth printing: **which controller
+ * addresses this control**, which is what identifies it to anything automating the box. The
+ * composition stays here rather than moving back into device prose because a note written at
+ * authoring time is what #324 removed, and nothing about #349 makes that safe again.
  *
  * **An authored note keeps its place in front.** It says something about the control that this
- * cannot — *"Bipolar, centred at noon"* — and the joint is ` · `, which is the separator the
+ * cannot — *"Bipolar, no modulation at noon"* — and the joint is ` · `, which is the separator the
  * library's notes already use.
- *
- * The value is the resolved one in every branch, including the unmoved one, so this needs no
- * knowledge of whether mood ran. `provenance.from` is the *starting* point and must never appear
- * here: it is what the reader is moving away from.
  */
-function midiInstruction(ccNumber: number, value: number): string {
-  return `Send MIDI CC ${ccNumber} = ${value}`
+function midiInstruction(ccNumber: number): string {
+  return `MIDI CC ${ccNumber}`
 }
 
 function noteWithInstruction(
@@ -916,11 +917,11 @@ export function resolveParam(
     provenance = { state: 'authored', cite: point }
   }
 
-  // §3.1/#324. After the mood arithmetic and after the clamp, so the number in the sentence is
-  // the number on the line. `value`, never `param.value` and never `provenance.from`.
+  // §3.1/#324, narrowed at #349: the instruction names the controller and asserts no value, so
+  // there is nothing here that mood can leave stale. See `midiInstruction`.
   const note = noteWithInstruction(
     param.note,
-    param.midiCc === undefined ? undefined : midiInstruction(param.midiCc, value),
+    param.midiCc === undefined ? undefined : midiInstruction(param.midiCc),
   )
 
   return {
