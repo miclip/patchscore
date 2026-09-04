@@ -133,6 +133,72 @@ import { OCTATRACK_MKII_PANEL } from './panel'
  *
  * What is left is four lanes that stay true as a slot-wide scalar, and they are what
  * `ARTICULABLE_PER_STEP` names. See `PER_STEP` for which is which.
+ *
+ * ## No trigger note, because a step here is a sample trig and not a note trig (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 186, all on the one `track` pool, and **the manual draws the line itself, on one page,
+ * between the two things a step can be.**
+ *
+ * p.66 §12.4 lists the trig types, and the first two are the whole argument:
+ *
+ *  - §12.4.1 SAMPLE TRIGS — *"Sample trigs trig the machine of the track, making the sample
+ *    assigned to the machine play."*
+ *  - §12.4.2 NOTE TRIGS — *"Note trigs trig notes on the MIDI tracks."*
+ *
+ * A step on an audio track is the first kind. It fires the machine; there is no note on it to
+ * write. p.65 §12.3.1 says the same thing procedurally — *"Place for example sample trigs on the
+ * sequencer by pressing the [TRIG] keys"* — and p.68's §12.7.1 TRACKS, *"This is the default TRIG
+ * mode"*, has `[TRIG 9–16]` *"trig the machines of the eight tracks"* rather than sound a pitch.
+ * The eight audio tracks this manifest models are the ones with no note trig on them, and the
+ * eight MIDI tracks that do have one are not voices here (see the head of this note).
+ *
+ * ## What the external note map does say, and why none of it is `TriggerNote`
+ *
+ * The box *can* be addressed by note from outside, and it is worth being precise about what that
+ * proves, because APPENDIX C looks at a glance like the citation this field wants.
+ *
+ *  - **It is optional.** p.70 §12.8 makes external addressing a project setting, `AUDIO NOTE IN`,
+ *    whose first option is `OFF` — *"No incoming MIDI notes affect the tracks, meaning tracks or
+ *    machines can't be triggered externally."* A note the reader can switch off entirely is not
+ *    the note that plays this part's sound.
+ *  - **It is eight different notes, not one.** p.137's C.1 STANDARD NOTE MAPPING gives `C2 (36)`
+ *    through `G2 (43)` as *"Audio Track 1 Sample Trigger"* through *"Audio Track 8 Sample
+ *    Trigger"*, one per track. `triggerNote` sits on the pool and reaches every member alike
+ *    (§2.2), so any single value would be wrong for seven of the eight.
+ *  - **The one note that does mean original pitch is a transpose table.** p.137 gives `C6 (84)`
+ *    as *"Track Sample Pitch 0"*, between `C5 (72)` at `-12` and `E6 (88)` at `+4`. That is a
+ *    semitone offset applied to whatever is loaded, not an address, and p.69's CHROMATIC mode is
+ *    the same fact on the panel — *"the PTCH parameter of the SRC MAIN page will be temporarily
+ *    adjusted to a semitone in a 2-octave range"*, with the root note *"found on octave 0 and
+ *    located on [TRIG] key 13"*. A key position in an optional trig mode.
+ *
+ * So the pitch a reader wants is the direction's, under §4.1, reaching the page through
+ * `RoleRequest.pitch`.
+ *
+ * ## This is the second slice-addressed box, and that is #369 rather than this field
+ *
+ * `ot-vox-chop-bright` authors `SLIC ON`, so the case is live on a real guide rather than
+ * hypothetical. p.69 §12.7.4: *"If a sample contains slices, this mode can be used to trigger the
+ * individual slices"*, and p.139's map is `C0 (12) – D#5 (75)` for *"Slice 1 – Slice 64"*, with
+ * *"The first slice is played on C0, the next on C#0 and so on."*
+ *
+ * **A slice-select note is an ordinal in disguise and must not be written into `TriggerNote`**,
+ * which means original pitch and is printed to the reader as addressing. The Digitakt hit the
+ * same thing from its own manual (#367) and declined for its own reasons; two boxes make it a
+ * design question rather than a device one, and it is #369's. Nothing here waits on that: this
+ * decline stands on p.66 whatever #369 decides.
+ *
+ * ## The octave convention, recorded and deliberately not used — and it is not the Digitakt's
+ *
+ * **p.137's table prints `C4 (60)`**, against the Digitakt, Digitakt II, Digitone and Digitone II
+ * manuals, which all print `C5` for 60. Same maker, two conventions, and this is the box that
+ * breaks the family pattern — so a note name copied between two Elektron folders would land an
+ * octave out with nothing to catch it. The table is internally consistent about it: `C1 (24)`,
+ * `C2 (36)`, `C4 (60)`, `C6 (84)`, and p.139's `C0 (12)`.
+ *
+ * It is recorded because the library holds two conventions an octave apart and a rendered note
+ * name shows neither (#352). **No value is authored from it.**
  */
 
 const MANUAL = 'Octatrack MKII User Manual OS 1.40A'
@@ -726,6 +792,12 @@ const recipes: Recipe[] = [
      * The obvious articulation is a per-trig slice or sample lock, and it is exactly what §4.3
      * cannot carry (see `PER_STEP`). What it can carry is where the slices land, so this one
      * nudges rather than pretending to choose.
+     *
+     * **This is the recipe that makes #369 live rather than hypothetical.** With `SLIC ON` the
+     * box will take a note per slice from outside — p.139 maps `C0 (12)`–`D#5 (75)` onto slices
+     * 1-64 — and that note is an ordinal, not the pitch a sample plays at. It is deliberately not
+     * written into `triggerNote` (§2.1/#334), which means original pitch and prints to the reader
+     * as addressing. #369 owns what the guide should say instead.
      */
     sourceAudio: {
       need:
@@ -1160,6 +1232,15 @@ export const device: Device = {
    */
   voices: [
     {
+      /**
+       * **No `triggerNote`** (§2.1/#334). p.66 splits the two kinds of step and gives this pool
+       * the one with no note on it: *"Sample trigs trig the machine of the track, making the
+       * sample assigned to the machine play"*, against *"Note trigs trig notes on the MIDI
+       * tracks"*. External note addressing exists but is a project setting that can be `OFF`
+       * (p.70), and p.137 maps the eight tracks to eight *different* notes, `C2 (36)`–`G2 (43)`,
+       * where this field reaches every member alike. The pitch a reader wants is the direction's,
+       * under §4.1. See the head note; the tests are in `test/elektron-octatrack-mkii.test.ts`.
+       */
       kind: 'pool',
       id: 'track',
       label: 'Track',
