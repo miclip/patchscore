@@ -288,23 +288,34 @@ describe('the notice reaches a reader once per device, both renderers, both layo
 describe('and the parameter lines carry none of it (#324)', () => {
   /**
    * **#324's measurement, and the observable it is stated in.** The report was that the sentence
-   * printed on nearly every sound-design step. The number behind it is **76 resolved parameters
+   * printed on nearly every sound-design step. The number behind it was **76 resolved parameters
    * whose notes carried the tail before, and zero after** — counted on `ResolvedParam`s, which is
    * what an author appended the sentence to and therefore what the fix is about.
+   *
+   * **It is 72 since #346**, and the four that left are not a regression. That issue authored the
+   * Muse's two `DELAY · TIME` knobs as `enum` params over clock divisions, and `AuthoredEnumParam`
+   * has no `midiCc` field — two controls on two assignments, so four lines leave a set keyed on
+   * that field. They are still parameter lines in this guide, so the assertion below widens to the
+   * whole rig rather than shrinking with the count.
    *
    * The test is the *before* and the *after* in one place. `built` is the set that would carry the
    * tail if anything re-appended it, and the filter under it is what does — so this fails loudly
    * whether the helper regresses or the Muse's parameters quietly stop going through it.
    */
-  it('counts the 76 parameters that carried the tail, and zero tails on any of them', () => {
+  it('counts the parameters that carried the tail, and zero tails on any of them', () => {
     // Keyed on `midiCc`, the typed metadata, rather than on the shape of the sentence. Matching
     // the prose would be the same mistake #324 rejected for the dedupe: a reworded instruction
     // would quietly stop being counted and the measurement would report a fix it had not made.
     const built = museResult.assignments
       .flatMap((a) => a.params)
       .filter((p) => p.midiCc !== undefined)
-    expect(built).toHaveLength(76)
+    expect(built).toHaveLength(72)
     expect(built.filter((p) => p.note?.includes(TAIL))).toEqual([])
+    // Every parameter line, not only the ones a CC number reaches: the four #346 moved off
+    // `midiCc` are still lines a reader gets, and the tail must be absent from those too.
+    expect(
+      museResult.assignments.flatMap((a) => a.params).filter((p) => p.note?.includes(TAIL)),
+    ).toEqual([])
     // **And since #349, not even the one sentence that replaced all 76.** The Muse withdrew the
     // declaration when the instrument contradicted its closing clause, so this rig — #324's own
     // rig, the one the measurement was taken on — now prints no panel notice at all.

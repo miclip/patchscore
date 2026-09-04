@@ -9,6 +9,7 @@ import {
   resolve,
 } from '../lib/core/index'
 import type {
+  AuthoredEnumParam,
   AuthoredNumericParam,
   AuthoredParam,
   Recipe,
@@ -20,8 +21,8 @@ import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 
 /**
- * #325, then #324, then #349. One control's scale, argued three times, and each round left
- * something in this file.
+ * #325, then #324, then #349, then #346. One control's scale, argued four times, and each round
+ * left something in this file.
  *
  * **#325: on eight of the 41 controls a blanket claim was false.** PDF p.38 draws both ENVELOPE
  * banks with their four faders crossed by five horizontal lines, and printed p.19 maps a line to a
@@ -33,14 +34,21 @@ import { TEMPLATES, industrialTechno } from '../lib/templates/index'
  *
  * **#349: the scale under all of it was wrong.** The manifest was authored on Appendix A's
  * `0-127` because the manual prints no other number for these controls. The instrument prints one:
- * a value on the screen as the control is turned. Thirty-nine of the 41 are now authored on the
- * scale the reader can see, cited `observed`; the two `DELAY · TIME` knobs stay on the CC scale
- * because under `CLOCK SYNC` they show divisions, which is #346 rather than this.
+ * a value on the screen as the control is turned. Thirty-nine of the 41 were re-authored on the
+ * scale the reader can see, cited `observed`; the two `DELAY · TIME` knobs stayed on the CC scale
+ * because under `CLOCK SYNC` they show divisions, which needed a reading nobody had taken.
+ *
+ * **#346 took it, and the last two controls are not numbers.** A division is a name, not a point
+ * on a scale, so they are `enum` params over the nine contiguous divisions the reading covers —
+ * which is why the assertions below moved off `range` and onto `options`, and why nothing on this
+ * device cites Appendix A any more. The tests that used to pin those two on the CC scale were
+ * pinning the defect; two of them passed vacuously the moment the params changed kind, which is
+ * the failure this file is otherwise built to avoid.
  *
  * **And the scale is not one scale.** The three bipolar controls were the last read, and none is
  * a percentage: both `FILTER · ENVELOPE AMOUNT` knobs are signed `-100…100`, and `VCA · PAN` is a
  * side and a distance, `100L` through `0` to `100R`, authored as a magnitude from centre. So the
- * split is 34 percent, 2 signed, 1 sided, 2 Hz, 2 divisions.
+ * split is 34 percent, 2 signed, 1 sided, 2 Hz, and 2 that are no kind of number at all.
  *
  * **The two envelope amounts were read separately**, at the same session at the box, and share a
  * helper because they share a scale rather than because either was carried across from the other.
@@ -76,11 +84,25 @@ const FADERS: Readonly<Record<string, number>> = {
   'VCA ENV · RELEASE': 89,
 }
 
-/** #349. The one observation this manifest rests on, and the first `observed` cite in the library. */
+/**
+ * #349 and #346. The observation this manifest rests on, and the first `observed` cite in the
+ * library. Two readings at one box on one firmware, which is one piece of evidence and one cite.
+ */
 const OBSERVED = { kind: 'observed', source: 'Muse, firmware 1.4.0' }
+
+/**
+ * #346, stated here rather than imported. The nine divisions the reading covers, in the duration
+ * order `COMBO` sweeps them — a second statement of what somebody saw, so that editing the
+ * manifest's list is a failing test rather than a test that agrees with itself.
+ */
+const DIVISIONS = ['1/16', '1/8 T', '1/16 D', '1/8', '1/4 T', '1/8 D', '1/4', '1/2 T', '1/4 D']
 
 function isNumeric(param: AuthoredParam): param is AuthoredNumericParam {
   return param.kind === 'numeric'
+}
+
+function isEnum(param: AuthoredParam): param is AuthoredEnumParam {
+  return param.kind === 'enum'
 }
 
 function rangeSource(param: AuthoredNumericParam): string {
@@ -98,7 +120,11 @@ const numerics = device.recipes.flatMap((recipe) => recipe.params).filter(isNume
 const observedParams = numerics.filter((param) => rangeSource(param) === OBSERVED.source)
 const percentParams = observedParams.filter((param) => param.unit === '%')
 const hzCutoffs = observedParams.filter((param) => param.unit === 'Hz')
-const appendixA = numerics.filter((param) => rangeSource(param).includes('Appendix A'))
+/** #346. The two controls that take a division, across all 18 recipes. */
+const divisionParams = device.recipes
+  .flatMap((recipe) => recipe.params)
+  .filter(isEnum)
+  .filter((param) => param.name.startsWith('DELAY · TIME'))
 const faderParams = percentParams.filter((param) => param.name in FADERS)
 /** The other 26. Not *the rotary controls*: several are the MIXER and WAVE MIX sliders. */
 const knobParams = percentParams.filter((param) => !(param.name in FADERS))
@@ -112,14 +138,14 @@ const panParams = observedParams.filter((param) => param.name === 'VCA · PAN')
  */
 const citedPoints = numerics.filter((param) => param.verified !== false)
 
-const distinct = (params: readonly AuthoredNumericParam[]) =>
+const distinct = (params: readonly { name: string }[]) =>
   [...new Set(params.map((param) => param.name))].sort()
 
 describe('the Muse is authored on the scales its screen shows (#349)', () => {
   it('splits the 41 CC-numbered controls 34 / 2 / 1 / 2 / 2, which is what the reading found', () => {
     // Counted by distinct control rather than by instance. 34 percent, the two signed envelope
-    // amounts, the sided pan, the two cutoffs in Hz, and the two DELAY TIME knobs left on the CC
-    // scale for #346.
+    // amounts, the sided pan, the two cutoffs in Hz, and the two DELAY TIME knobs that #346 took
+    // off the number line entirely.
     expect(distinct(percentParams)).toHaveLength(34)
     expect(distinct(signedParams)).toEqual([
       'FILTER 1 · ENVELOPE AMOUNT',
@@ -127,10 +153,13 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
     ])
     expect(distinct(panParams)).toEqual(['VCA · PAN'])
     expect(distinct(hzCutoffs)).toEqual(['FILTER 1 · CUTOFF', 'FILTER 2 · CUTOFF'])
-    expect(distinct(appendixA)).toEqual(['DELAY · TIME - L', 'DELAY · TIME - R'])
-    // And they are disjoint and exhaustive over the controls that carry a CC number.
+    expect(distinct(divisionParams)).toEqual(['DELAY · TIME - L', 'DELAY · TIME - R'])
+    // And they are disjoint and exhaustive over the 41. `midiCc` reaches 39 of them: the two
+    // division knobs still answer to CC 93 and 94, and an `AuthoredEnumParam` has no field to
+    // declare it in, so their half of the count comes from the option set instead.
     const withCc = numerics.filter((param) => param.midiCc !== undefined)
-    expect(distinct(withCc)).toHaveLength(34 + 2 + 1 + 2 + 2)
+    expect(distinct(withCc)).toHaveLength(34 + 2 + 1 + 2)
+    expect(distinct(withCc).length + distinct(divisionParams).length).toBe(41)
   })
 
   it('cites the observation, with the firmware in the source string', () => {
@@ -384,14 +413,66 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
     expect(blend('muse-lead-hard', 'OSC 1 · PULSE WIDTH')).toBe(50)
   })
 
-  it('leaves the two DELAY TIME knobs on the CC scale, visibly rather than relabelled', () => {
-    for (const param of appendixA) {
-      expect(param.range.min).toBe(0)
-      expect(param.range.max).toBe(127)
-      expect(rangeSource(param)).toContain('Appendix A (MIDI CC), p.122')
-      // No unit, because nobody has read what these show. A `%` here would be the relabelling
-      // #349 refused: a number on the wrong scale wearing a right-looking one.
-      expect(param.unit).toBeUndefined()
+  /**
+   * #346, and the assertion this file used to make backwards. The recipe engages `CLOCK SYNC`
+   * three lines above these two, and then stated their value on the scale that switch replaces —
+   * `48 (0…127)` beside a screen reading `1/8`. The test that pinned it read as a decision not to
+   * relabel a number, which it was; what it could not say is that the number was answering a
+   * question nobody at the machine is asking.
+   *
+   * **The nine values are the reading's, and the endpoints are deliberately not among them.**
+   * See `DELAY_DIVISIONS` in the manifest: the run is contiguous, so a reader stepping between any
+   * two of these passes only through divisions somebody has seen.
+   */
+  it('authors both DELAY TIME knobs as divisions, cited to the reading that found them', () => {
+    // Two controls across 18 recipes, and nothing else on this device takes a division.
+    expect(divisionParams).toHaveLength(36)
+    expect(distinct(divisionParams)).toEqual(['DELAY · TIME - L', 'DELAY · TIME - R'])
+    for (const param of divisionParams) {
+      // The option set is the claim somebody checked, in the duration order `COMBO` sweeps.
+      expect(param.options.values, param.name).toEqual(DIVISIONS)
+      expect(param.options.verified, param.name).toEqual(OBSERVED)
+      // §3.2's other half: which division a delay under every part on this box wants is taste,
+      // and the reading says nothing about it.
+      expect(param.verified, param.name).toBe(false)
+      // One processor for the whole patch, so the setting hoists above the parts.
+      expect(param.scope, param.name).toBe('song')
+    }
+    // Neither end of the knob is offered. Both were read — `1/64 T` fully counter-clockwise and
+    // `1 D` fully clockwise — and what lies between them and this run was not, so an option set
+    // holding them would look complete while hiding two unread gaps.
+    expect(DIVISIONS).not.toContain('1/64 T')
+    expect(DIVISIONS).not.toContain('1 D')
+    // And nothing on this device cites Appendix A any more: no range is stated on the CC scale,
+    // which is what leaving those two on it was.
+    expect(numerics.filter((param) => rangeSource(param).includes('Appendix A'))).toEqual([])
+  })
+
+  /**
+   * The pair as a stereo setting rather than two independent choices, and the one place this file
+   * checks prose: an enum has no `midiCc` field, so the sentence `resolveParam` composes for every
+   * other control on this box is hand-written for these two. It is safe for the reason #324's
+   * field exists — it names a controller and asserts no value — and this pins that it stays so.
+   */
+  it('states one stereo pair for the whole guide, with the controller still named', () => {
+    const valuesOf = (name: string) =>
+      new Set(divisionParams.filter((param) => param.name === name).map((param) => param.value))
+    // Identical in all 18, or `hoistedParams` drops them back into the per-part lists and the
+    // conflict `sharedDelay` exists to prevent comes back through the pool.
+    expect(valuesOf('DELAY · TIME - L')).toEqual(new Set(['1/8']))
+    expect(valuesOf('DELAY · TIME - R')).toEqual(new Set(['1/8 D']))
+    for (const param of divisionParams) {
+      expect(DIVISIONS, param.name).toContain(param.value)
+      const cc = param.name.endsWith('- L') ? 93 : 94
+      expect(param.note, param.name).toBe(
+        param.name.endsWith('- L')
+          ? 'Straight, against the dotted right · MIDI CC 93'
+          : 'Dotted, so its repeat falls between the left one’s · MIDI CC 94',
+      )
+      expect(param.note, param.name).toContain(`MIDI CC ${String(cc)}`)
+      // The half #324 removed and nothing may bring back: a value in the sentence.
+      expect(param.note, param.name).not.toContain('=')
+      expect(param.note, param.name).not.toContain('Send MIDI CC')
     }
   })
 })
@@ -536,7 +617,7 @@ describe('mood on the Muse after the re-scaling (§6/#349)', () => {
 describe('the Muse’s MIDI instruction names the controller (#324/#349)', () => {
   const RIG = ['roland-tr-1000', 'synthstrom-deluge', 'moog-muse', 'moog-subsequent-37']
 
-  function museParams(mood: Parameters<typeof resolve>[0]['mood']): ResolvedParam[] {
+  function allMuseParams(mood: Parameters<typeof resolve>[0]['mood']): ResolvedParam[] {
     const result = resolve({
       devices: DEVICES.filter((d) => RIG.includes(d.id)),
       template: industrialTechno,
@@ -546,7 +627,10 @@ describe('the Muse’s MIDI instruction names the controller (#324/#349)', () =>
     return result.assignments
       .filter((a) => a.deviceId === 'moog-muse')
       .flatMap((a) => a.params)
-      .filter((param) => param.midiCc !== undefined)
+  }
+
+  function museParams(mood: Parameters<typeof resolve>[0]['mood']): ResolvedParam[] {
+    return allMuseParams(mood).filter((param) => param.midiCc !== undefined)
   }
 
   /** What the instruction must say, for any parameter, at any mood. */
@@ -621,6 +705,31 @@ describe('the Muse’s MIDI instruction names the controller (#324/#349)', () =>
         : { state: 'provisional' }
       expect(param.provenance, `${param.name}=${param.value}`).toEqual(expected)
     }
+  })
+
+  /**
+   * #346, from the reader's end. The two lines the CLOCK SYNC above them makes divisions arrive as
+   * divisions — no bounds, because an enum's legality gate is its option set and the resolver does
+   * not carry it, and no `midiCc`, because the field is numeric-only and the sentence is authored.
+   */
+  it('hands the reader a division on both DELAY TIME lines, not a number', () => {
+    const times = allMuseParams(moodState()).filter((p) => p.name.startsWith('DELAY · TIME'))
+    expect(times.length).toBeGreaterThan(0)
+    for (const param of times) {
+      expect(typeof param.value, param.name).toBe('string')
+      expect(DIVISIONS, param.name).toContain(param.value as string)
+      expect(param.range, param.name).toBeUndefined()
+      expect(param.unit, param.name).toBeUndefined()
+      // Taste, so provisional — and nothing moved it, because an enum takes no mood.
+      expect(param.provenance, param.name).toEqual({ state: 'provisional' })
+      expect(param.midiCc, param.name).toBeUndefined()
+      expect(param.note ?? '', param.name).toMatch(/ · MIDI CC 9[34]$/)
+      // One processor for the whole patch, which is what lets the renderer hoist these.
+      expect(param.scope, param.name).toBe('song')
+    }
+    expect(new Set(times.map((p) => `${p.name} ${String(p.value)}`))).toEqual(
+      new Set(['DELAY · TIME - L 1/8', 'DELAY · TIME - R 1/8 D']),
+    )
   })
 
   /**

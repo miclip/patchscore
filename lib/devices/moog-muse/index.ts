@@ -110,7 +110,8 @@ import { MUSE_PANEL } from './panel'
  * signed      2   both FILTER · ENVELOPE AMOUNT knobs, -100…100 with 0 at noon
  * side        1   VCA · PAN, which reads 100L through 0 to 100R
  * Hz          2   FILTER 1 · CUTOFF, FILTER 2 · CUTOFF
- * divisions   2   DELAY · TIME - L / R, under the CLOCK SYNC every recipe engages — #346
+ * divisions   2   DELAY · TIME - L / R, under the CLOCK SYNC every recipe engages — #346,
+ *                 and the one family here that is an enum rather than a number
  * ```
  *
  * There is no shorter rule than that list. The reading's own working assumption — that a control
@@ -118,10 +119,18 @@ import { MUSE_PANEL } from './panel'
  * frequency and reads in percent. See `OBSERVED` for what the finding covers and the one control
  * in it that is inferred.
  *
- * The first four families are authored here on the scale the screen shows, cited `observed` —
+ * **All five families are authored here on the scale the screen shows**, cited `observed` —
  * *"somebody who turned the knob and read the limits, with the firmware version in the source
- * string"*. **The last is not**, and stays on the Appendix A scale it was already wrong on:
- * naming the division a knob lands on is #346's job and needs a reading nobody has taken.
+ * string"*. The last of them took a second visit to the box. #349 left the two `DELAY · TIME`
+ * knobs on Appendix A's `0-127` because naming the division a knob lands on needed a reading
+ * nobody had taken; #346 took it, and those two are now an **enum of divisions** rather than a
+ * number of any kind — see `DELAY_DIVISIONS`.
+ *
+ * **So no range on this device cites Appendix A any more**, and the helpers that built that
+ * citation went with the last caller. The appendix was never wrong about anything — CC 93 does
+ * accept `0-127` — it was answering a question nobody at the machine is asking. What survives of
+ * it is `midiCc` on the 39 controls that are still numbers, which is what a CC row is for: it
+ * says which controller addresses a knob and asserts nothing about the scale beside it.
  *
  * ## The three bipolar controls
  *
@@ -147,11 +156,16 @@ import { MUSE_PANEL } from './panel'
  * was taste (`verified: false` on every one of them). So each point below was *re-made* as a taste
  * judgment on the scale the reader can see, not carried across from the scale it was made on.
  *
- * **The CC numbers stay.** `midiCc` is retained wherever it was, because the Appendix A row is
- * still true — CC 67 still addresses FILTER 1 · CUTOFF — and it is what identifies a control to
- * anything automating it. What is gone is the *value* half of the instruction: `Send MIDI CC 67 =
- * 74` told a reader to send a number that is no longer the number on the line, and sending it now
- * lands somewhere unknown. `resolveParam` names the controller and asserts no value.
+ * **The CC numbers stay.** `midiCc` is retained on every control that has one, because the
+ * Appendix A row is still true — CC 67 still addresses FILTER 1 · CUTOFF — and it is what
+ * identifies a control to anything automating it. What is gone is the *value* half of the
+ * instruction: `Send MIDI CC 67 = 74` told a reader to send a number that is no longer the number
+ * on the line, and sending it now lands somewhere unknown. `resolveParam` names the controller and
+ * asserts no value.
+ *
+ * The two `DELAY · TIME` knobs are the exception and only in where the number is written: an
+ * `AuthoredEnumParam` has no `midiCc` field, so `division` puts CC 93 and 94 in the note itself.
+ * See that helper for why authored prose is safe there and was not at #324.
  *
  * `RECIEVE CC` stays in `midiSetup()` for the same reason. p.111 gives it as `(ON/OFF. DEFAULT:
  * OFF)`, so a box out of the case ignores CC until it is switched on — which still matters to
@@ -292,53 +306,7 @@ function cite(page: number): Cite {
 }
 
 /**
- * A citation into Appendix A, which is a **second document within one manual** and is named as
- * one on purpose.
- *
- * `citedDocument` takes everything before the trailing `, p.N`, so this resolves to
- * `Muse User's Manual v1.4.0 Appendix A (MIDI CC)` — one document across its three pages, sitting
- * beside the plain `Muse User's Manual v1.4.0` that the module pages cite. The guide's citation
- * sentence therefore names both, and that is the useful outcome rather than an accident of
- * string-building: a reader who sees a range attributed to the CC appendix knows the number is
- * the parameter's MIDI value space and not a scale printed beside the knob. Folding the two into
- * one name would hide exactly the distinction the module note spends four paragraphs on.
- *
- * **The CC number is deliberately not in the string.** It would make every row a different
- * document to `citedDocument`, which reads the whole prefix — sixty citation "documents" in the
- * sentence, one per control. The row is found by the control's own name in the table's
- * `MUSE CONTROL` column, and the page narrows it to one of three.
- */
-function ccCite(ccNumber: number): Cite {
-  return { kind: 'manual', source: `${MANUAL} Appendix A (MIDI CC), p.${ccPage(ccNumber)}` }
-}
-
-/**
- * Which of Appendix A's three pages a CC row is printed on. The table is one flat list in
- * ascending CC order with no section breaks, so the page follows from the number — checked
- * against the numbers actually printed on each page rather than assumed from an even split:
- * p.120 ends at 37, p.121 runs 39 to 75, and p.122 runs 76 to 116.
- *
- * Derived rather than passed so that a citation cannot name the wrong page. Sixty-odd call sites
- * each repeating a page number is sixty chances to typo one, and a typo here is the failure mode
- * `CLAUDE.md` cares about most: a value that looks cited and is not.
- */
-function ccPage(ccNumber: number): number {
-  if (ccNumber <= 37) return 120
-  if (ccNumber <= 75) return 121
-  return 122
-}
-
-/**
- * `0-127`, the Appendix A value space — **now used by two controls only**, `DELAY · TIME - L` and
- * `TIME - R`. Every other control that was authored on it moved to the scale its screen shows at
- * #349; those two show clock divisions under the `CLOCK SYNC` every recipe engages, and naming a
- * division is #346's job rather than this one's. They stay on the wrong scale, visibly, rather
- * than being quietly relabelled onto a right-looking one.
- */
-const CC: Omit<NumericRange, 'verified'> = { min: 0, max: 127 }
-
-/**
- * #349, and the first use of `observed` on any device in the library (#329).
+ * #349 and #346, and the first use of `observed` on any device in the library (#329).
  *
  * The kind exists for *"somebody who turned the knob and read the limits, with the firmware
  * version in the source string"*, and that is what this is. **The reading covered the panel and
@@ -352,6 +320,15 @@ const CC: Omit<NumericRange, 'verified'> = { min: 0, max: 127 }
  * Hz          2   FILTER 1 · CUTOFF, FILTER 2 · CUTOFF
  * divisions   2   DELAY · TIME - L / R, under the CLOCK SYNC every recipe engages
  * ```
+ *
+ * **The last row came second, and it is #346 rather than #349.** That pass read the other 39 and
+ * left the delay's two TIME knobs alone: they show a division rather than a number, so there are
+ * no limits to note — the reading is the list of what the knob steps through, which means
+ * stepping it. #346 stepped it. See `DELAY_DIVISIONS` for what that covers and where it stops.
+ *
+ * **The two readings share this citation rather than splitting into two.** Same instrument, same
+ * firmware, same screen; what a `Cite` names is the evidence, and splitting it would produce two
+ * sources differing only in which evening somebody stood at the box.
  *
  * **It is a finding rather than a sample, and it was taken as one.** It ran until it had an answer
  * for every control, which is why it is quotable as the scale in force: the working assumption
@@ -622,20 +599,39 @@ function cutoff(name: string, hz: number, ccNumber: number, extra: NumExtra = {}
 }
 
 /**
- * A control still on the Appendix A scale, which since #349 is the two `DELAY · TIME` knobs and
- * nothing else. The **range** is cited to the Appendix A row; the **point** is not, because no
- * page says where to set anything — and under `CLOCK SYNC` the knob steps through divisions the
- * manual never enumerates, which is #346 and is not fixed here.
+ * A `DELAY · TIME` knob, in the divisions its screen shows under `CLOCK SYNC` (#346). The two
+ * controls on this panel whose value is **not a number at all**.
+ *
+ * **An enum rather than a numeric, because a division is not a point on a scale.** `1/8 D` is
+ * three quarters of a beat and sits between `1/8` and `1/4`, but it is not three quarters of
+ * anything the knob prints and there is no interval it lies inside. What the sweep is, is an
+ * ordered list of names, which is what `options` holds. §3.2's split survives the change of kind
+ * intact: the option set is the claim somebody checked, and which division a general-purpose
+ * stereo delay wants is taste, exactly as `DECAY 38` is taste.
+ *
+ * **The CC number is in the note rather than in `midiCc`, and that is a loss stated rather than
+ * papered over.** `AuthoredEnumParam` has no `midiCc` field — nothing in the library has needed
+ * one — so the resolver cannot compose the instruction for these two lines and this helper writes
+ * it, in `midiInstruction`'s own wording so the reader sees one sentence shape down the page.
+ *
+ * What made authored MIDI prose dangerous at #324 was the **value** interpolated into it:
+ * `Send MIDI CC 87 = 54` went stale the moment mood moved the number. There is no value here to
+ * go stale. The sentence names a controller and stops, an enum takes no mood, and CC 93 could not
+ * carry a division if it wanted to — which is the whole of what #346 found.
  */
-function ccScale(name: string, value: number, ccNumber: number, extra: NumExtra = {}): AuthoredParam {
+function division(name: string, value: string, ccNumber: number, note: string): AuthoredParam {
   return {
-    kind: 'numeric',
+    kind: 'enum',
     name,
     value,
-    range: { ...CC, verified: ccCite(ccNumber) },
+    options: { values: [...DELAY_DIVISIONS], verified: OBSERVED },
+    // Taste. The reading says which divisions the knob reaches, and nothing about which one a
+    // delay under every part on this box should sit on.
     verified: false,
-    ...extra,
-    midiCc: ccNumber,
+    // One processor for the whole patch — see `sharedDelay`. Baked in rather than passed, because
+    // there is no second kind of caller: these are the only two controls that take divisions.
+    scope: 'song',
+    note: `${note} · MIDI CC ${ccNumber}`,
   }
 }
 
@@ -711,6 +707,47 @@ const MIDI_CHANNELS = [
 
 /** p.47, which divisions the delay's TIME knobs may reach when CLOCK SYNC is on. */
 const DELAY_SYNC_TYPE = ['COMBO', 'STRGHT', 'TRIP', 'DOT'] as const
+
+/**
+ * The divisions a `DELAY · TIME` knob steps through at `SYNC TYPE COMBO` — `observed` (#346), and
+ * the only option set in this file that no page prints.
+ *
+ * p.47 gives `SYNC TYPE` as `COMBO, STRGHT, TRIP, DOT`, which is which *families* the knob may
+ * reach. **The divisions themselves are never enumerated**, here or anywhere in the manual; p.46
+ * says only that the knobs *"will only be able to jump between tempo divisions of the global
+ * TEMPO"*. So this was read off the instrument at firmware 1.4.0, with `CLOCK SYNC` on and
+ * `SYNC TYPE` at the `COMBO` every recipe here sets.
+ *
+ * **p.46 rather than p.45, checked on the rendered page.** #346 quotes the sentence as printed
+ * p.45 and it is not: the folio sits at the foot of the page and reads 46 under the CLOCK SYNC
+ * entry, which is also the page `sharedDelay` has always cited for that switch. p.45 is where the
+ * module opens, and TIME-L is on it.
+ *
+ * **In duration order, because that is the order the knob sweeps them**, and `COMBO` interleaves
+ * the three families rather than grouping them:
+ *
+ * ```
+ * 1/16   1/8 T   1/16 D  1/8   1/4 T   1/8 D  1/4   1/2 T   1/4 D
+ * 0.25    0.333   0.375  0.5    0.667   0.75  1.0    1.333  1.5     beats
+ * ```
+ *
+ * Straight, dotted and triplet sort into one continuous sweep by time. That is a fact about the
+ * instrument no page states, and it is what lets a reader turn toward a target without knowing
+ * which family the target belongs to.
+ *
+ * **Nine, and neither end of the knob is among them.** The full sweep runs `1/64 T` fully
+ * counter-clockwise to `1 D` fully clockwise and both ends were read — but what lies between them
+ * and this run was not. The nine are the run that is **contiguous**: stepping from any one of them
+ * to any other passes only through divisions somebody has seen. Adding the two endpoints would
+ * make the list look like what the control accepts while hiding two unread gaps inside itself,
+ * which is invariant 5 in the one direction an option set can break it.
+ *
+ * Nine is also the whole musically useful middle for a delay, `1/16` to `1/4 D`, so no recipe here
+ * is short of a division it can honestly reach for.
+ */
+const DELAY_DIVISIONS = [
+  '1/16', '1/8 T', '1/16 D', '1/8', '1/4 T', '1/8 D', '1/4', '1/2 T', '1/4 D',
+] as const
 /** p.68, the ARPEGGIATOR's three operational modes. */
 const ARP_DIRECTION = ['ORD', 'PTN', 'RND'] as const
 /** p.71, which divisions the ARPEGGIATOR's CLOCK DIV knob is allowed to reach. */
@@ -1104,9 +1141,16 @@ function delayRouting(through: string): AuthoredParam[] {
  *
  * `CLOCK SYNC` is on, so both `TIME` knobs jump between divisions of the global tempo rather than
  * running free, which is what makes one shared setting musical across parts at different rates.
- * Neither scale is printed in either mode, and the screen reads these two as divisions rather than
- * as the percentage every other macro here shows — so they are the two controls #349 left on the
- * CC scale for #346 to answer.
+ * **Both times are authored as those divisions** (#346), which is what the knobs read under that
+ * switch — `1/8` on the left against `1/8 D` on the right. That is a stereo delay rather than two
+ * copies of one: the right repeat falls between the left ones, so the pair widens without either
+ * side being long enough to smear a part.
+ *
+ * **One pair for the whole guide, which is why the choice is a conservative one.** These are
+ * `song` scoped and identical in every recipe by construction, so a division picked to flatter a
+ * lead is imposed on the sub sitting beside it. `1/8` against `1/8 D` is the setting that stays
+ * out of the way of any part this box is given — the same judgment `FEEDBACK` and `MIX` are made
+ * on, two lines below, and the reason none of these three is authored per recipe.
  *
  * `LINK DELAYS` is off, for the reason `LINK FILTERS` is: engaged, `TIME-L` stops being the left
  * delay time and becomes an offset between the channels (p.46).
@@ -1126,11 +1170,11 @@ function sharedDelay(): AuthoredParam[] {
       scope: 'song',
       note: 'Off, so TIME-L is the left delay time rather than an offset against the right',
     }),
-    // #346/#349. The only two controls left on the Appendix A scale, and deliberately so: under
-    // the CLOCK SYNC above they step through divisions, which is neither the CC value written here
-    // nor a percentage. Relabelling them would hide that; #346 is where it gets answered.
-    ccScale('DELAY · TIME - L', 48, 93, { scope: 'song' }),
-    ccScale('DELAY · TIME - R', 72, 94, { scope: 'song' }),
+    // #346. The two controls #349 left on the Appendix A scale, now on the one the CLOCK SYNC
+    // above puts in force. A reader turns the knob until the screen reads the division, which is
+    // §8's premise and is why no CC-to-division mapping is needed to state either of these.
+    division('DELAY · TIME - L', '1/8', 93, 'Straight, against the dotted right'),
+    division('DELAY · TIME - R', '1/8 D', 94, 'Dotted, so its repeat falls between the left one’s'),
     cc('DELAY · FEEDBACK', 40, 103, { scope: 'song', note: 'Single repeat through to infinite' }),
     // `50`, and it has to be exactly that: the note names noon, and on a 0-100 readout noon is
     // 50. On the old CC scale it was 64 for the same reason, which is the one place in this file
@@ -1229,7 +1273,7 @@ function lfo1(waveform: string, rate: number, amplitude: number, perVoice = 'GLO
  *
  * `AMOUNT` is the one modulation depth on this box with a stated musical size: p.59's tip says
  * turning it to maximum gives *"+/- 2 semitone movement"*. The knob itself is still unnumbered, so
- * the CC scale carries the value and the semitone figure is the note beside it.
+ * the percentage its screen shows carries the value and the semitone figure is the note beside it.
  */
 function pitchLfo(rate: number, shape: number, amount: number, targets: { osc1: string; osc2: string }): AuthoredParam[] {
   return [
