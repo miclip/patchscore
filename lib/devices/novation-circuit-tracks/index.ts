@@ -102,6 +102,41 @@ import { CIRCUIT_TRACKS_PANEL } from './panel'
  *  - **The Master Filter.** One knob across the whole mix (p.94), always active, one setting for
  *    the box. It is not a per-part parameter and would be the same line under every part.
  *  - **Scales and root note** (pp.30-32). Harmony is the template's, never the device's.
+ *
+ * ## No trigger note on either pool, for two different reasons (§2.1/#334)
+ *
+ * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
+ * box has 180, and it is the first in that sweep with **two pools that decline for unrelated
+ * reasons** — which is the whole value of reading it separately rather than by family.
+ *
+ * **`drum-track`: the four drums are not addressed alike, so one pool-wide note would be false
+ * for three of them.** The Programmer's Reference p.11 prints a Drum Notes Table of four rows —
+ * `60 → Drum 1`, `62 → Drum 2`, `64 → Drum 3`, `65 → Drum 4`, on MIDI Channel 10. Not one note,
+ * not even an even spacing: a tone, a tone, then a semitone. `triggerNote` sits on the pool and
+ * reaches every member alike (§2.2), so any single value would name the wrong drum three times
+ * out of four.
+ *
+ * And the box does not ask for a note anyway. p.60: *"Each of the 16 pads of the lower two rows
+ * triggers a different percussion sample"*, with the sample chosen by pad or in Preset View
+ * (p.62, *"any one of 64 pre-loaded samples"*). p.61 programs a step by toggling it: *"tap the
+ * Pattern step pads that correspond to where you want drum hits to be triggered... The step pads
+ * are toggles."* The active sample is a selection, the step is a toggle, and neither is a note.
+ *
+ * **`synth-track`: the note is musical pitch, which §4.1 gives to the direction.** p.26's synth
+ * keyboard is pads 17-32, *"two octaves, with the 'paler' pads representing the root notes"*, and
+ * *"The root note of the default octave is 'middle C' on a standard piano keyboard"* — with the
+ * scale and the root both chosen by the player (p.30). A pitch here is the song's, reaching the
+ * page through `RoleRequest.pitch` and its hooks, not a fixed address this folder could cite.
+ *
+ * **And where this box does say "as recorded", it says it with a knob.** The drum `PITCH` control
+ * is a bipolar CC — the Programmer's Reference p.11 gives `drum 1 pitch, CC 14, 0 - 127 (-64 -
+ * 63), default 64 (0)` — and the recipes below already carry the reading: *"64 is the sample at
+ * its own pitch; below it is down."* That is the field's own idea, original pitch, expressed as a
+ * centre value on a tuning control rather than as a note. Nine recipes set it, none of them
+ * naming a note, and none of them should.
+ *
+ * Neither pool holds a loaded recording whose original pitch is a *note*, which is what
+ * `TriggerNote` means, so neither takes one.
  */
 
 // ---------------------------------------------------------------------------
@@ -1180,7 +1215,19 @@ export const device: Device = {
    * a polyphonic voice ahead of a sampled chord, and there is a real polyphonic voice here.
    */
   voices: [
+    /**
+     * **No `triggerNote`** (§2.1/#334): a note here is musical pitch, and p.26's keyboard is
+     * *"two octaves, with the 'paler' pads representing the root notes"*, rooted on middle C by
+     * default and re-rooted by the player (pp.30-32). §4.1 leaves that to the direction.
+     */
     { kind: 'pool', id: 'synth-track', label: 'Synth', count: 2, roles: SYNTH_ROLES, polyphony: 6 },
+    /**
+     * **No `triggerNote`** (§2.1/#334), and here for a different reason: the Programmer's
+     * Reference p.11 addresses the four drums with four *different* notes — `60`, `62`, `64`,
+     * `65` — where this field reaches every member of a pool alike. A step is a toggle on a pad
+     * whose sample is already chosen (pp.60-62), and the box's own "as recorded" is `PITCH` at
+     * its centre, not a note. See the head note; tests in `test/novation-circuit-tracks.test.ts`.
+     */
     { kind: 'pool', id: 'drum-track', label: 'Drum', count: 4, roles: DRUM_ROLES, polyphony: 1 },
   ],
 
