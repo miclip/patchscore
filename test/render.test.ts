@@ -1647,11 +1647,18 @@ describe('the guide cites the document the values came from (#89)', () => {
       // Strike out every cited document and only the scaffolding may remain. A declared title
       // leaking back in would survive this; a wording change would not break it.
       //
-      // **Longest first**, because one cited title can contain another. The Muse cites its manual
-      // and `<same title> Appendix A (MIDI CC)`, which is a second document inside one book by
-      // design; striking the shorter one first eats the prefix of the longer and leaves
-      // `Appendix A (MIDI CC)` looking like a title nothing cites. Order here is the test's own
-      // arithmetic and says nothing about the sentence, which names both documents correctly.
+      // **Longest first**, because one cited title can contain another: a manifest may name a
+      // section of a book as its own document — `<book title> <section>` — beside the book, which
+      // is how an appendix on a different scale from the module pages gets attributed separately.
+      // Striking the shorter one first eats the prefix of the longer and leaves the section name
+      // looking like a title nothing cites. Order here is the test's own arithmetic and says
+      // nothing about the sentence, which names both documents correctly.
+      //
+      // **No shipped device is in that shape today**, so this ordering is a guard rather than a
+      // covered case. The Muse was the one, citing its manual and `<same title> Appendix A
+      // (MIDI CC)`, until #346 moved its last two Appendix A ranges onto divisions read off the
+      // instrument. Written for the shape rather than for that device, since the shape is what a
+      // future manifest can reach and the sort is what stops it failing here for the wrong reason.
       let bare = sentence
       const cited = [...rangeDocuments(device)].sort((a, b) => b.length - a.length)
       for (const document of cited) bare = bare.split(document).join('')
