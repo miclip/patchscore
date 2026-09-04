@@ -125,6 +125,78 @@ function cite(page: number): Cite {
   return { kind: 'manual', source: `Polyend Tracker Manual 1.9.2a, p.${page}` }
 }
 
+/**
+ * §2.1. **The citation the `track` pool's trigger note rests on, and why it names four pages.**
+ *
+ * This manual never prints the Tracker Mini's one-line version of the fact — *"plays a sample at
+ * its original pitch"* appears nowhere in its 308 pages — so the note-name claim is assembled
+ * from the three pages that each hold a piece of it:
+ *
+ *  - **p.74** says what the field is: *"Note. This sets the pitch of the step and is important
+ *    for creating melodies or beats based on sample mapped drum hits."* So a drum hit on this box
+ *    is addressed by a note, and there is a note it wants.
+ *  - **p.86** names it. Step 11 of the percussion fill walkthrough reads *"Set to C5, the root
+ *    note for the sample"*, and the pattern printed below it comes out `C5` on all eight steps of
+ *    the percussion track.
+ *  - **p.122** says what happens if you write anything else: *"Note value affects pitch... A
+ *    higher note value will play the sample faster. A lower note value will play the sample
+ *    slower."* That is what makes `C5` addressing rather than taste — every other note is the
+ *    same sample transposed.
+ *
+ * The **MIDI** number is a separate claim and needs its own pages, which is `CLAUDE.md`'s hazard
+ * about a cited range being the wrong range, wearing note names instead of knob values. `C5` is a
+ * number only once you know this box's octave numbering, and the box has a setting for it:
+ * `Config > MIDI > Middle C`, *"Sets Tracker's middle C as C-3, C-4, C-5, C-6"* (p.251). **p.253**
+ * shows the ordinary configuration with `Middle C  C-5`, and **p.254** confirms it from the other
+ * side — an Ableton Live example whose caption is *"Tracker Middle C adjusted from C-5 to C-3 to
+ * match Ableton Live"*, Live being a host that calls middle C `C3`. So out of the box the `C5` on
+ * p.86 **is** middle C: MIDI 60. Scientific pitch notation would have said 72, and `DESIGN.md
+ * §4.1` is the standing note that SPN is a convention rather than a fact about instruments.
+ *
+ * ## Two other notes in this manual that are not this one
+ *
+ *  - **p.77's `C0` is a keyboard shortcut, not a pitch claim.** *"Hold & release [Note] will set
+ *    an empty step to default note i.e. C0"* describes what the button does to a blank step. It
+ *    is the value you get for not choosing one, where `C5` is the value that plays the sample as
+ *    it was recorded, and anyone grepping this manual for "default note" lands on `C0` first.
+ *  - **"Root note" means something else three pages over.** `Config > Project Settings > Pads
+ *    Root Note` sets *"the root note between C2 - C4 of the bottom left pad in the 4 x 12 grid"*,
+ *    default `C3` (pp.49, 96). That is the pad grid's origin, a property of the controller
+ *    layout; p.86's *"root note for the sample"* is a property of the audio. Same two words, and
+ *    borrowing `C3` from the nearer one would be the TR-8S `SNAPPY` mistake in note names.
+ *
+ * ## Beat Slice, and why this manual leaves it open where the Mini's closes it
+ *
+ * §4.1's third category — a note that *addresses a piece of audio* rather than sounding a pitch —
+ * is not modelled anywhere, and the Tracker's reason for leaving it alone is weaker than the
+ * Mini's, which is exactly why it is written down.
+ *
+ * The Mini's manual settles it in a sentence: *"The first slice of a beat slice sample will be
+ * triggered using note C2"* (Mini p.90). **This manual says no such thing.** What it establishes
+ * is narrower: under Beat Slice the slice is selected by a step FX, p.164's `S`, which *"plays a
+ * selected slice on the triggered step"*, and every example step there carries a note (`F5`) in
+ * the Note column *beside* the `S` value. **What that accompanying note means is unstated.** The
+ * nearest page, p.126, describes the pads rather than the sequencer — under Slice they *"play
+ * the selected slice melodically in the current pitch scale"*, under Beat Slice they *"select and
+ * play each slice individually"* — and neither sentence says what a written step note does.
+ *
+ * So no slice address is authored, on either recipe: the manual does not supply one, and
+ * inventing the mapping is invariant 5's line. That leaves `tr-vox-chop-dirty` with the pool's
+ * `C5` and nothing of its own, and what keeps that from reaching a reader is a separate fact
+ * rather than an argument about the note — the one direction that reaches the recipe hooks the
+ * role, and #100 gives a hooked part's notes to its hook, so no shipped guide prints a note
+ * there. The test beside this holds that shut. If it ever fails, a direction has begun asking for
+ * the beat-sliced patch unhooked, and the answer is to settle what a step note does under Beat
+ * Slice — from the box, since p.164 does not say — rather than to widen the test.
+ */
+const TRIGGER_NOTE_CITE: Cite = {
+  kind: 'manual',
+  source:
+    'Polyend Tracker Manual 1.9.2a, p.74 (Note sets the step pitch, for sample-mapped drum hits); ' +
+    'p.86 (C5, the root note for the sample); p.122 (note value affects sample pitch); ' +
+    'p.253, p.254 (Middle C setting, shown as C-5, so that C5 is MIDI 60)',
+}
+
 function num(
   name: string,
   value: number,
@@ -1198,6 +1270,17 @@ export const device: Device = {
       count: 8,
       roles: TRACK_ROLES,
       polyphony: 1,
+      /**
+       * §2.1. **The note that plays a loaded sample as it was recorded.** On this box that is
+       * a fact about the hardware rather than a musical choice — p.122's *"Note value affects
+       * pitch"* means any other note is the same sample transposed, so a reader told to hit a
+       * step and not told what to write on it is one step away from a kick a fifth too high.
+       *
+       * On the one pool, because there is only one and every track on it plays a sample: this box
+       * has no synth engine (p.98, and the header above), so unlike the Mini there is no second
+       * kind of track whose note would be the reader's own.
+       */
+      triggerNote: { note: 'C5', midi: 60, verified: TRIGGER_NOTE_CITE },
     },
   ],
 

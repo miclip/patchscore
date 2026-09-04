@@ -3,10 +3,14 @@ import {
   DeviceSchema,
   NEUTRAL_MOOD,
   expand,
+  isSustainedPart,
+  noteInstruction,
   realisationOf,
+  renderGuide,
   resolve,
   type AuthoredParam,
   type Recipe,
+  type Role,
 } from '../lib/core/index'
 import { device } from '../lib/devices/polyend-tracker/index'
 import { TEMPLATES } from '../lib/templates/index'
@@ -691,5 +695,245 @@ describe('Tracker manifest', () => {
       const used = new Set(result.assignments.flatMap((a) => a.assignables.map((v) => v.voiceId)))
       expect(used.size, template.id).toBeLessThanOrEqual(8)
     }
+  })
+})
+
+/**
+ * §2.1. **Which note plays a loaded sample as it is**, on a box where every one of the eight
+ * tracks is a sample track.
+ *
+ * The claim is assembled from three pages rather than lifted from one, because this manual never
+ * prints the Mini's *"plays a sample at its original pitch"*. That makes the citation the thing
+ * most likely to rot, so it is asserted page by page below.
+ */
+describe('trigger notes (§2.1)', () => {
+  const pool = device.voices.find((v) => v.id === 'track')
+  const note = pool?.triggerNote
+
+  it('gives the one track pool the note the manual sets a percussion fill to', () => {
+    // p.86, step 11 of the percussion walkthrough: "Set to C5, the root note for the sample",
+    // and the pattern printed below it comes out C5 on all eight steps.
+    expect(note?.note).toBe('C5')
+    // On the pool and not on a recipe: every track here plays a sample, because there is no
+    // synth engine on this box at all (p.98).
+    expect(device.voices.map((v) => v.id)).toEqual(['track'])
+  })
+
+  it("numbers that note by this box's own octave mapping, not by scientific pitch notation", () => {
+    // Config > MIDI > Middle C is a setting (p.251, options C-3/C-4/C-5/C-6). p.253 shows the
+    // ordinary configuration reading C-5, and p.254 adjusts it "from C-5 to C-3 to match Ableton
+    // Live" — Live being a host whose middle C is C3. So C5 here is middle C: 60, not SPN's 72.
+    expect(note?.midi).toBe(60)
+  })
+
+  it('cites the octave mapping as well as the pages the note name comes from', () => {
+    // CLAUDE.md's hazard about a cited range being the wrong range, wearing note names: p.86
+    // prints `C5` and no number at all, so a citation naming p.86 alone would not support the
+    // `midi` beside it.
+    const source = note?.verified.source as string
+    expect(source.startsWith(MANUAL)).toBe(true)
+    for (const page of ['p.74', 'p.86', 'p.122', 'p.253', 'p.254']) {
+      expect(source, page).toContain(page)
+    }
+    expect(source).toContain('Middle C')
+    // p.77's "default note i.e. C0" is what the [Note] button writes into an empty step, and
+    // p.49's Pads Root Note (default C3) is where the pad grid starts. Neither is this fact, and
+    // a citation reaching for either would be pointing at the wrong page.
+    expect(source).not.toContain('C0')
+    expect(source).not.toContain('C3,')
+  })
+
+  it('authors no recipe-level note, so a slice address cannot wear a trigger note\'s name', () => {
+    // §4.1's third category, unmodelled on purpose (see the device's TRIGGER_NOTE_CITE comment).
+    // The moment a recipe here claims one, somebody has either designed the missing vocabulary or
+    // reintroduced the confusion between "play it as recorded" and "play piece number four".
+    const claiming = device.recipes.filter(
+      (r) => (r as Recipe & { triggerNote?: unknown }).triggerNote !== undefined,
+    )
+    expect(claiming.map((r) => r.id)).toEqual([])
+  })
+
+  /**
+   * §4.1's third category, held closed.
+   *
+   * Under Beat Slice this manual gives slice selection to the `S` step FX — p.164, *"plays a
+   * selected slice on the triggered step"* — and prints an ordinary note beside it without
+   * saying what that note does. That meaning is unstated, so no slice address is authored on
+   * either slice recipe, and what keeps the silence from reaching a reader is a separate fact:
+   * the one direction reaching `tr-vox-chop-dirty` hooks the role, and #100 gives a hooked part's
+   * notes to its hook.
+   *
+   * **If this fails, nobody has broken it by accident.** A direction now asks for the beat-sliced
+   * patch without a hook, and the answer is to settle what a step note does under Beat Slice —
+   * from the box, since p.164 does not say — rather than to widen this test.
+   */
+  it('never prints its beat-sliced patch a note, across every direction and seed', () => {
+    let seen = 0
+    for (const template of TEMPLATES) {
+      for (let seed = 0; seed < 16; seed++) {
+        const result = resolve({ devices: [device], template, mood: NEUTRAL_MOOD, seed })
+        for (const a of result.assignments) {
+          if (a.recipe.id !== 'tr-vox-chop-dirty') continue
+          seen += 1
+          expect(noteInstruction(a).kind, `${template.id} seed ${String(seed)}`).toBe('none')
+        }
+      }
+    }
+    // The guard is only worth anything if the recipe is actually reached. It is, by
+    // `major-key-electro`, which hooks `vox-chop`.
+    expect(seen).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * §2.1. **The measurement this change is for**, taken rather than asserted from memory.
+ *
+ * Every direction against this box alone, seeds 1-6. A part that draws a grid is one the guide
+ * used to tell which steps to hit and never what to put on them; the question this pins is
+ * whether all of them now get a note and none of them gets a blank.
+ *
+ * **The counts are a measurement, not a target.** They move when a direction gains or loses a
+ * part, and a diff here is a prompt to re-read the numbers rather than a failure. What must not
+ * move is the *relationship*: `blank` stays 0.
+ */
+describe('every track grid part gets its note (§2.1)', () => {
+  const SEEDS = [1, 2, 3, 4, 5, 6]
+
+  /** Every part this box takes, split by what phase 5 actually draws for it. */
+  function sweep() {
+    const grid: { where: string; role: Role; kind: string; note?: string; midi?: number }[] = []
+    const hooked: string[] = []
+    const sustained: string[] = []
+    const noPattern: string[] = []
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: NEUTRAL_MOOD, seed })
+        for (const a of result.assignments) {
+          const where = `${template.id}/${a.role}`
+          if (a.hookAuthority !== undefined) hooked.push(where)
+          else if (isSustainedPart(a)) sustained.push(where)
+          else if (!a.patterns.some((p) => p.selection.outcome !== 'none')) noPattern.push(where)
+          else {
+            const n = noteInstruction(a)
+            grid.push({
+              where: `${where}/seed ${String(seed)}`,
+              role: a.role,
+              kind: n.kind,
+              ...(n.kind === 'none' ? {} : { note: n.note, midi: n.midi }),
+            })
+          }
+        }
+      }
+    }
+    return { grid, hooked, sustained, noPattern }
+  }
+
+  it('leaves no grid part without a note, and pins how many there are', () => {
+    const { grid } = sweep()
+
+    // The population, as measured on this library.
+    expect(grid.length).toBe(258)
+
+    // The claim. Zero blanks, and the blank arm named so a regression cannot hide as a count.
+    expect(grid.filter((g) => g.kind === 'none')).toEqual([])
+    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['pitch', 'trigger'])
+  })
+
+  it('prints the pool note wherever the direction has not asked for a pitch of its own', () => {
+    // §4.1's precedence, on the one box that exercises both arms. A `sub` is the case that
+    // settles it: the direction wants the tonic, the track answers to pitch (p.122), and saying
+    // `C5` there would tell a reader to play a sub at the sample's recorded pitch.
+    const grid = sweep().grid
+    const pitched = grid.filter((g) => g.kind === 'pitch')
+    expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
+    expect(pitched.length).toBe(24)
+
+    const triggered = grid.filter((g) => g.kind === 'trigger')
+    expect(triggered.length).toBe(234)
+    expect([...new Set(triggered.map((g) => `${g.note as string}/${String(g.midi)}`))]).toEqual([
+      'C5/60',
+    ])
+  })
+
+  /**
+   * §8. **The acceptance criterion is reader-facing**, so it is checked on the page rather than
+   * only on the resolver: a `ResolvedAssignment` carrying a note proves nothing to somebody
+   * standing at the box.
+   *
+   * Searched across the real directions rather than pinned to one, because which recipe a
+   * direction takes is the resolver's business (§7) and pinning it would make this fail on an
+   * unrelated objective change instead of on the thing it is about. The assertion is on the
+   * kick's *own* section of the markdown, not on the whole document, or a note printed under some
+   * other part would satisfy it.
+   */
+  it('prints the note under a percussion part, with its citation, on the rendered page', () => {
+    const guides = TEMPLATES.flatMap((template) =>
+      [1, 7].map((seed) => resolve({ devices: [device], template, mood: NEUTRAL_MOOD, seed })),
+    ).filter((result) =>
+      result.assignments.some(
+        (a) => a.role === 'kick' && a.hookAuthority === undefined && noteInstruction(a).kind !== 'none',
+      ),
+    )
+    expect(guides.length, 'no direction places a kick on this box alone').toBeGreaterThan(0)
+
+    for (const result of guides) {
+      // The kick's own section: from its heading to the next one.
+      const lines = renderGuide(result).split('\n')
+      const start = lines.findIndex((l) => l.startsWith('### `kick` — Tracker'))
+      expect(start, result.template.id).toBeGreaterThanOrEqual(0)
+      const rest = lines.slice(start + 1)
+      const end = rest.findIndex((l) => l.startsWith('### '))
+      const section = (end === -1 ? rest : rest.slice(0, end)).join('\n')
+
+      expect(section, result.template.id).toContain('**Trigger note** — `C5` · MIDI 60 · manual')
+      // Invariant 4: a claim about hardware carries its page onto the page.
+      expect(section, result.template.id).toContain(`↳ cite: manual — ${MANUAL}74`)
+      expect(section, result.template.id).toContain('p.86')
+      expect(section, result.template.id).toContain('p.254')
+    }
+  })
+
+  it('reaches the percussion the direction library actually asks this box for', () => {
+    // Pinned by role, not only by total: a count alone would survive one role's parts being
+    // swapped for another's, and what this change is for is the drum tracks.
+    const counts = new Map<Role, number>()
+    for (const g of sweep().grid) {
+      if (g.kind !== 'trigger') continue
+      counts.set(g.role, (counts.get(g.role) ?? 0) + 1)
+    }
+    expect(
+      [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
+    ).toEqual([
+      ['closed-hat', 42],
+      ['ghost-perc', 42],
+      ['kick', 42],
+      ['open-hat', 24],
+      ['clap', 18],
+      ['rim', 18],
+      ['snare', 18],
+      ['impact', 6],
+      ['noise', 6],
+      ['ride', 6],
+      ['tom', 6],
+      ['vox-chop', 6],
+    ])
+  })
+
+  it('accounts for every part that draws no grid, by which reason', () => {
+    // None of these is a hole in this change, and each says which rule answered it: #100 gives a
+    // hooked part's notes to its hook, and §6.3 leaves a part with no variant anywhere nothing to
+    // program. Asserted rather than assumed — this box produces no sustained part at all here.
+    const { hooked, sustained, noPattern } = sweep()
+    expect(hooked.length).toBe(78)
+    expect(sustained).toEqual([])
+    expect(noPattern.length).toBe(36)
+    expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/riser',
+      'ambient-dub/sweep',
+      'ambient-dub/texture',
+      'generative-drift/sweep',
+      'hip-hop/texture',
+      'industrial-techno/riser',
+    ])
   })
 })
