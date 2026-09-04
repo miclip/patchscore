@@ -2,16 +2,24 @@ import { describe, expect, it } from 'vitest'
 import {
   DeviceSchema,
   expand,
+  isSustainedPart,
+  moodState,
+  noteInstruction,
   realisationOf,
   receiveTransports,
+  renderGuide,
+  resolve,
   resolveRecipe,
   sendTransports,
   type AuthoredParam,
   type CapabilityEvidence,
   type Recipe,
+  type ResolvedAssignment,
+  type Role,
 } from '../lib/core/index'
 import { ARTICULABLE_PER_STEP, device } from '../lib/devices/elektron-digitone-ii/index'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { TEMPLATES } from '../lib/templates/index'
 import { auditDevice } from '../scripts/audit-verified'
 
 /**
@@ -420,5 +428,271 @@ describe('Digitone II manifest', () => {
       )
       for (const label of labels) expect(label.toLowerCase()).not.toContain('elektron')
     })
+  })
+})
+
+/**
+ * §2.1/#334. **This box authors no trigger note, for the plainest reason in the class:
+ * `TriggerNote` is a sampler's fact and there is no sampler here.**
+ *
+ * The field holds *the note that plays this part's sound as it is* — a loaded sample's original
+ * pitch. Every machine on this box is a synthesis engine, and a synth has no "as recorded" pitch
+ * to be at; its note is the pitch you want, which §4.1 leaves to the direction.
+ *
+ *  - p.42: *"NOTE TRIGS trigger preset notes or MIDI notes"*, against *"LOCK TRIGS trigger
+ *    parameter locks (but do not trigger notes)"*. The note is the content of the trig.
+ *  - p.44's NOTE EDIT shows **several notes on one step** — `E 5`, `G 5`, `C 5`, each with its
+ *    own time, length and velocity — and *"Press and turn DATA ENTRY knob A to select any note in
+ *    the Chromatic scale."* A single `TriggerNote` cannot be a chord.
+ *  - p.57: *"Trig Note sets the pitch of the note when trigged"*, and MIDI tracks *"have a
+ *    different set of parameters on the TRIG, SYN, FLTR, and AMP pages"*.
+ *
+ * The octave convention is recorded and not used: p.24, *"E2-C7 (C5, MIDI note 60, being middle
+ * C)"* with *"Note numbers 0-15 correspond to notes C0 through to D#1"*.
+ */
+describe('trigger notes: read for, and declined (§2.1/#334)', () => {
+  const SEEDS = [1, 2, 3, 4, 5, 6]
+
+  /** Every machine this box can load, all of them synthesis engines (APPENDIX A.2). */
+  const SYNTH_MACHINES = ['FM TONE', 'FM DRUM', 'WAVETONE', 'SWARMER']
+
+  it('authors none on the pool, and none on any recipe either', () => {
+    // Both halves, because the field exists in two places and only one of them is the pool.
+    expect(device.voices.filter((v) => v.triggerNote !== undefined)).toEqual([])
+    const claiming = device.recipes.filter(
+      (r) => (r as Recipe & { triggerNote?: unknown }).triggerNote !== undefined,
+    )
+    expect(claiming.map((r) => r.id)).toEqual([])
+  })
+
+  it('stays off the library roster of boxes that author one', () => {
+    // `test/tracker-mini.test.ts` pins that roster exactly; this is the same fact asked from the
+    // side of the box that declines, so a note added here fails in its own file as well as there.
+    const authoring = DEVICES.filter((d) => d.voices.some((v) => v.triggerNote !== undefined))
+    expect(authoring.map((d) => d.id)).not.toContain('elektron-digitone-ii')
+  })
+
+  it('expands to sixteen members on one pool, none of which carries a note', () => {
+    // One pool is part of the reason: there is no second pool to hold an exception in, which is
+    // the Digitakt II's structural point reached from the opposite direction.
+    expect(device.voices.length).toBe(1)
+    const members = expand(device)
+    expect(members.length).toBe(16)
+    expect(members.every((m) => m.poolId === 'track')).toBe(true)
+    expect(members.filter((m) => m.triggerNote !== undefined)).toEqual([])
+  })
+
+  /**
+   * **The reason, read off the recipes rather than restated.** Every recipe loads a synthesis
+   * engine; none loads a sampler machine, because this box has none. A sample machine appearing
+   * here would be the one change that makes the question worth asking again.
+   */
+  it('loads only synthesis engines, so no part has an original pitch to name', () => {
+    const machines = new Set<string>()
+    for (const recipe of device.recipes) {
+      const loaded = machine(recipe)
+      expect(loaded, recipe.id).toBeDefined()
+      expect(SYNTH_MACHINES, recipe.id).toContain(loaded)
+      machines.add(loaded as string)
+    }
+    // All four are actually in use, so this is a statement about the box rather than about which
+    // recipes happen to exist.
+    expect([...machines].sort()).toEqual(['FM DRUM', 'FM TONE', 'SWARMER', 'WAVETONE'])
+    expect(device.recipes.every((r) => r.voice === 'track')).toBe(true)
+  })
+
+  /**
+   * p.44's chord, from the model's side. A step here can hold several notes; `TriggerNote` holds
+   * one. `polyphony` is the field that says so, and it is asserted because a drop to 1 would make
+   * the chord argument silently untrue.
+   */
+  it('carries a polyphonic pool, which one trigger note could not describe', () => {
+    const pool = device.voices[0]
+    expect(pool?.kind).toBe('pool')
+    if (pool?.kind !== 'pool') throw new Error('expected a pool')
+    expect(pool.polyphony).toBeGreaterThan(1)
+  })
+
+  /**
+   * A part phase 5 draws a grid for: not owned by a hook (#100), not sustained (§4.2), and with at
+   * least one section whose variant resolved (§6.3).
+   *
+   * One definition, used by the sweep and by the page test. `noteInstruction` answers `none` for a
+   * hooked or sustained part as well as for a blank grid part, so a page test asking it whether a
+   * grid exists would count parts that draw none and then pass against a guide with nothing in it.
+   */
+  function drawsGrid(a: ResolvedAssignment): boolean {
+    return (
+      a.hookAuthority === undefined &&
+      !isSustainedPart(a) &&
+      a.patterns.some((p) => p.selection.outcome !== 'none')
+    )
+  }
+
+  /** Every part this box takes, split by what phase 5 actually draws for it. */
+  function sweep() {
+    const grid: { where: string; role: Role; kind: string }[] = []
+    const hooked: string[] = []
+    const sustained: string[] = []
+    const noPattern: string[] = []
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          const where = `${template.id}/${a.role}`
+          if (drawsGrid(a)) grid.push({ where, role: a.role, kind: noteInstruction(a).kind })
+          else if (a.hookAuthority !== undefined) hooked.push(where)
+          else if (isSustainedPart(a)) sustained.push(where)
+          else noPattern.push(where)
+        }
+      }
+    }
+    return { grid, hooked, sustained, noPattern }
+  }
+
+  /**
+   * **The measurement, taken rather than remembered.** Every direction against this box alone,
+   * seeds 1-6.
+   *
+   * 216 is #334's figure for this device and it is expected to stay put, because nothing here is
+   * a gap to close. The number moves when a direction gains or loses a part, and a diff is a
+   * prompt to re-read the head note rather than a failure. What must not move is the relationship
+   * — no part ever gets a `trigger`, because the pool has no note to give one.
+   */
+  it('leaves 216 grid parts blank, and pins how many there are', () => {
+    const { grid } = sweep()
+
+    expect(grid.length).toBe(240)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(216)
+
+    // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
+    // prints are the direction's own.
+    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch'])
+  })
+
+  it('prints a note only where the direction asked for a pitch of its own', () => {
+    // §4.1's precedence with one arm missing — and on this box that is the whole story rather
+    // than half of it, because a pitch is the only kind of note it has. The 24 are `sub` parts.
+    const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
+    expect(pitched.length).toBe(24)
+    expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
+  })
+
+  it('leaves the blanks on the roles the direction wrote no pitch for', () => {
+    // Pinned by role, not only by total: a count alone would survive one role's parts being
+    // swapped for another's.
+    const counts = new Map<Role, number>()
+    for (const g of sweep().grid) {
+      if (g.kind !== 'none') continue
+      counts.set(g.role, (counts.get(g.role) ?? 0) + 1)
+    }
+    expect(
+      [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
+    ).toEqual([
+      ['closed-hat', 48],
+      ['ghost-perc', 42],
+      ['kick', 42],
+      ['clap', 18],
+      ['open-hat', 18],
+      ['snare', 18],
+      ['metallic', 12],
+      ['arp', 6],
+      ['impact', 6],
+      ['tom', 6],
+    ])
+  })
+
+  it('accounts for every part that draws no grid, by which reason', () => {
+    // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
+    // part with no variant anywhere nothing to program.
+    const { grid, hooked, sustained, noPattern } = sweep()
+    expect(hooked.length).toBe(132)
+    expect(sustained).toEqual([])
+    expect(noPattern.length).toBe(30)
+    expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/sweep',
+      'ambient-dub/texture',
+      'generative-drift/sweep',
+      'hip-hop/texture',
+      'industrial-techno/riser',
+    ])
+
+    // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
+    // classify — which is what would make the 216 above an undercount rather than a measurement.
+    let assignments = 0
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        assignments += resolve({ devices: [device], template, mood: moodState(), seed })
+          .assignments.length
+      }
+    }
+    expect(grid.length + hooked.length + sustained.length + noPattern.length).toBe(assignments)
+  })
+
+  /**
+   * The resolved field itself, across every part rather than only the ones that draw a grid.
+   * `noteInstruction` folds the trigger arm in with the pitch arm, so this is the one assertion
+   * that a hooked or sustained part did not quietly acquire one either.
+   */
+  it('resolves no trigger note on any assignment, in any direction', () => {
+    let seen = 0
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          seen += 1
+          expect(a.triggerNote, `${template.id}/${a.role} seed ${String(seed)}`).toBeUndefined()
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(0)
+  })
+
+  /**
+   * §8. **The reader-facing half**, checked on the page rather than only on the resolver.
+   *
+   * The count of parts that actually draw a grid is asserted non-zero first, or an empty render
+   * would pass this forever.
+   */
+  it('never prints a trigger note on a rendered page, across every direction and seed', () => {
+    let drawn = 0
+    for (const template of TEMPLATES) {
+      for (const seed of [1, 7]) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        drawn += result.assignments.filter(drawsGrid).length
+        expect(renderGuide(result), `${template.id} seed ${String(seed)}`).not.toContain(
+          'Trigger note',
+        )
+      }
+    }
+    expect(drawn).toBeGreaterThan(0)
+  })
+
+  /**
+   * §2.1/#352. **The octave convention, recorded because the library holds two an octave apart
+   * and a rendered note name shows neither.**
+   *
+   * p.24 states it and confirms it from the floor: *"E2-C7 (C5, MIDI note 60, being middle C)"*
+   * and *"Note numbers 0-15 correspond to notes C0 through to D#1"*. p.38 agrees from a third
+   * place — keytracking is *"centered around middle C (C5)"* — and p.57's TRIG screen prints the
+   * pair as `C 5 (60)`.
+   *
+   * This asserts the arithmetic, not a value in the manifest, and that is the point: a pitch on
+   * this box belongs to the direction and is resolved against the song's key, which is a
+   * different field from the one being declined here.
+   */
+  it('records the octave convention without authoring a note from it', () => {
+    const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    // C5 = 60 means octave numbering starts at zero, so MIDI n is octave floor(n / 12).
+    const midiOf = (name: string, octave: number) => octave * 12 + NAMES.indexOf(name)
+
+    expect(midiOf('C', 5)).toBe(60) //   p.24, p.38, and p.57's `C 5 (60)`
+    expect(midiOf('C', 0)).toBe(0) //    p.24's "Note numbers 0-15 ... C0 through to D#1"
+    expect(midiOf('D#', 1)).toBe(15) //  the other end of that same sentence
+    expect(midiOf('E', 2)).toBe(28) //   p.24's chromatic span, 16-84 = E2-C7
+    expect(midiOf('C', 7)).toBe(84)
+
+    // Nothing above is authored anywhere, which is the state this test exists to keep.
+    expect(device.voices.some((v) => v.triggerNote !== undefined)).toBe(false)
   })
 })
