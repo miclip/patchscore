@@ -1,6 +1,12 @@
-import type { Device, Recipe } from '../../core/device'
-import type { AuthoredParam, Cite, MoodOffset, NumericRange, ParamScope } from '../../core/params'
-import { MUSE_PANEL } from './panel'
+import type { Device, Recipe } from "../../core/device";
+import type {
+  AuthoredParam,
+  Cite,
+  MoodOffset,
+  NumericRange,
+  ParamScope,
+} from "../../core/params";
+import { MUSE_PANEL } from "./panel";
 
 /**
  * Moog Muse (§2.3). Two analog oscillators and a third modulation oscillator per voice, a ring
@@ -299,10 +305,10 @@ import { MUSE_PANEL } from './panel'
 // Citations
 // ---------------------------------------------------------------------------
 
-const MANUAL = "Muse User's Manual v1.4.0"
+const MANUAL = "Muse User's Manual v1.4.0";
 
 function cite(page: number): Cite {
-  return { kind: 'manual', source: `${MANUAL}, p.${page}` }
+  return { kind: "manual", source: `${MANUAL}, p.${page}` };
 }
 
 /**
@@ -355,10 +361,10 @@ function cite(page: number): Cite {
  * software, and 1.4.0 is the version the reading was taken on — the same version the manual this
  * folder otherwise cites is written for, which is why the two agree about everything else.
  */
-const OBSERVED: Cite = { kind: 'observed', source: 'Muse, firmware 1.4.0' }
+const OBSERVED: Cite = { kind: "observed", source: "Muse, firmware 1.4.0" };
 
 /** `0-100 %`, what the screen shows for 34 of the 41 controls Appendix A numbers (#349). */
-const PERCENT: NumericRange = { min: 0, max: 100, verified: OBSERVED }
+const PERCENT: NumericRange = { min: 0, max: 100, verified: OBSERVED };
 
 /**
  * `20 Hz - 20 kHz`, the two filter cutoffs — the one family here that reads in a real unit rather
@@ -372,7 +378,7 @@ const PERCENT: NumericRange = { min: 0, max: 100, verified: OBSERVED }
  * than in the type — `-Math.round(cutoff / 2)`, an octave, which is a fixed interval at every
  * frequency where a fixed number of Hz is not. See the module note.
  */
-const CUTOFF_HZ: NumericRange = { min: 20, max: 20000, verified: OBSERVED }
+const CUTOFF_HZ: NumericRange = { min: 20, max: 20000, verified: OBSERVED };
 
 /**
  * `-100…100`, both filter `ENVELOPE AMOUNT` knobs — the two controls on this panel whose screen
@@ -395,7 +401,11 @@ const CUTOFF_HZ: NumericRange = { min: 20, max: 20000, verified: OBSERVED }
  * happened and the distinction is the whole of `OBSERVED`'s discipline: `FILTER 2 · CUTOFF` is
  * inferred and says so, and it remains the only inference in this folder.
  */
-const BIPOLAR_AMOUNT: NumericRange = { min: -100, max: 100, verified: OBSERVED }
+const BIPOLAR_AMOUNT: NumericRange = {
+  min: -100,
+  max: 100,
+  verified: OBSERVED,
+};
 
 /**
  * `0…100`, `VCA · PAN` — a **magnitude**, because the screen's scale is not a signed number.
@@ -415,20 +425,20 @@ const BIPOLAR_AMOUNT: NumericRange = { min: -100, max: 100, verified: OBSERVED }
  * ever wanted is an open question with a rendered consequence, and it is left open there rather
  * than answered here by an unused branch.
  */
-const PAN_MAGNITUDE: NumericRange = { min: 0, max: 100, verified: OBSERVED }
+const PAN_MAGNITUDE: NumericRange = { min: 0, max: 100, verified: OBSERVED };
 
 // ---------------------------------------------------------------------------
 // Param helpers (§3.1: the range is cited, the point is taste)
 // ---------------------------------------------------------------------------
 
 type NumExtra = {
-  mood?: MoodOffset[]
-  unit?: string
-  step?: number
-  note?: string
-  hint?: string
-  scope?: ParamScope
-}
+  mood?: MoodOffset[];
+  unit?: string;
+  step?: number;
+  note?: string;
+  hint?: string;
+  scope?: ParamScope;
+};
 
 /**
  * A control the panel does not number and the screen reads as a percentage. The **range** is the
@@ -445,8 +455,13 @@ type NumExtra = {
  * is a percentage and no page maps one onto the other. `resolveParam` writes `MIDI CC 46` and
  * stops there.
  */
-function cc(name: string, value: number, ccNumber: number, extra: NumExtra = {}): AuthoredParam {
-  return percentParam(name, value, ccNumber, extra)
+function cc(
+  name: string,
+  value: number,
+  ccNumber: number,
+  extra: NumExtra = {},
+): AuthoredParam {
+  return percentParam(name, value, ccNumber, extra);
 }
 
 /**
@@ -479,8 +494,13 @@ function cc(name: string, value: number, ccNumber: number, extra: NumExtra = {})
  * `test/moog-muse.test.ts` pins the set at eight, so a control moved between the two helpers is a
  * failing test rather than a quiet change to what the box claims about its own panel.
  */
-function fader(name: string, value: number, ccNumber: number, extra: NumExtra = {}): AuthoredParam {
-  return percentParam(name, value, ccNumber, extra)
+function fader(
+  name: string,
+  value: number,
+  ccNumber: number,
+  extra: NumExtra = {},
+): AuthoredParam {
+  return percentParam(name, value, ccNumber, extra);
 }
 
 /** What both percent paths share: the observed range, the taste point, and the CC number. */
@@ -491,15 +511,15 @@ function percentParam(
   extra: NumExtra,
 ): AuthoredParam {
   return {
-    kind: 'numeric',
+    kind: "numeric",
     name,
     value,
     range: PERCENT,
     verified: false,
-    unit: '%',
+    unit: "%",
     ...extra,
     midiCc: ccNumber,
-  }
+  };
 }
 
 /**
@@ -522,9 +542,13 @@ function percentParam(
  * somebody check this number* — and for the resting position of a bipolar control somebody did.
  * The same reading does not tell anyone that a lead wants `80`.
  */
-function envAmount(filter: 1 | 2, value: number, extra: NumExtra = {}): AuthoredParam {
+function envAmount(
+  filter: 1 | 2,
+  value: number,
+  extra: NumExtra = {},
+): AuthoredParam {
   return {
-    kind: 'numeric',
+    kind: "numeric",
     name: `FILTER ${filter} · ENVELOPE AMOUNT`,
     value,
     range: BIPOLAR_AMOUNT,
@@ -532,7 +556,7 @@ function envAmount(filter: 1 | 2, value: number, extra: NumExtra = {}): Authored
     verified: value === 0 ? OBSERVED : false,
     ...extra,
     midiCc: filter === 1 ? 69 : 75,
-  }
+  };
 }
 
 /**
@@ -559,15 +583,15 @@ function envAmount(filter: 1 | 2, value: number, extra: NumExtra = {}): Authored
  */
 function panParam(): AuthoredParam {
   return {
-    kind: 'numeric',
-    name: 'VCA · PAN',
+    kind: "numeric",
+    name: "VCA · PAN",
     value: 0,
     range: PAN_MAGNITUDE,
     // Noon is where the reading lands, and it is the only point on this control it settles.
     verified: OBSERVED,
-    note: 'Bipolar, centred at noon — the screen reads 100L through 0 to 100R',
+    note: "Bipolar, centred at noon — the screen reads 100L through 0 to 100R",
     midiCc: 10,
-  }
+  };
 }
 
 /**
@@ -585,17 +609,22 @@ function panParam(): AuthoredParam {
  * and this helper does not choose the point. Passing it in is what makes the ratio visible at the
  * call site: an author reading `filters()` sees the cutoff and the octave it drops together.
  */
-function cutoff(name: string, hz: number, ccNumber: number, extra: NumExtra = {}): AuthoredParam {
+function cutoff(
+  name: string,
+  hz: number,
+  ccNumber: number,
+  extra: NumExtra = {},
+): AuthoredParam {
   return {
-    kind: 'numeric',
+    kind: "numeric",
     name,
     value: hz,
     range: CUTOFF_HZ,
     verified: false,
-    unit: 'Hz',
+    unit: "Hz",
     ...extra,
     midiCc: ccNumber,
-  }
+  };
 }
 
 /**
@@ -619,9 +648,14 @@ function cutoff(name: string, hz: number, ccNumber: number, extra: NumExtra = {}
  * go stale. The sentence names a controller and stops, an enum takes no mood, and CC 93 could not
  * carry a division if it wanted to — which is the whole of what #346 found.
  */
-function division(name: string, value: string, ccNumber: number, note: string): AuthoredParam {
+function division(
+  name: string,
+  value: string,
+  ccNumber: number,
+  note: string,
+): AuthoredParam {
   return {
-    kind: 'enum',
+    kind: "enum",
     name,
     value,
     options: { values: [...DELAY_DIVISIONS], verified: OBSERVED },
@@ -630,27 +664,27 @@ function division(name: string, value: string, ccNumber: number, note: string): 
     verified: false,
     // One processor for the whole patch — see `sharedDelay`. Baked in rather than passed, because
     // there is no second kind of caller: these are the only two controls that take divisions.
-    scope: 'song',
+    scope: "song",
     note: `${note} · MIDI CC ${ccNumber}`,
-  }
+  };
 }
 
 /** A control the module page *does* scale. Same split: range cited, point taste. */
 function num(
   name: string,
   value: number,
-  bounds: Omit<NumericRange, 'verified'>,
+  bounds: Omit<NumericRange, "verified">,
   page: number,
   extra: NumExtra = {},
 ): AuthoredParam {
   return {
-    kind: 'numeric',
+    kind: "numeric",
     name,
     value,
     range: { ...bounds, verified: cite(page) },
     verified: false,
     ...extra,
-  }
+  };
 }
 
 /** A switch: the option set is cited, the position chosen is taste (§3.2). */
@@ -662,13 +696,13 @@ function sw(
   extra: { note?: string; hint?: string; scope?: ParamScope } = {},
 ): AuthoredParam {
   return {
-    kind: 'enum',
+    kind: "enum",
     name,
     value,
     options: { values: [...values], verified: cite(page) },
     verified: false,
     ...extra,
-  }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -676,22 +710,22 @@ function sw(
 // ---------------------------------------------------------------------------
 
 /** The panel's two-state buttons. `0-63 off/ 64-127 on` throughout Appendix A. */
-const OFF_ON = ['OFF', 'ON'] as const
+const OFF_ON = ["OFF", "ON"] as const;
 /** p.28. "a standard based around classic pipe organ stop footage settings." */
-const OCTAVES = ["16'", "8'", "4'", "2'"] as const
+const OCTAVES = ["16'", "8'", "4'", "2'"] as const;
 /** p.31, the MODULATION OSCILLATOR's five-position selector. The specs page (p.116) calls RAMP
  *  "Reverse Sawtooth"; the panel and p.31 call it RAMP, and the panel name is the one used. */
-const MOD_WAVES = ['SINE', 'SAWTOOTH', 'RAMP', 'SQUARE', 'NOISE'] as const
+const MOD_WAVES = ["SINE", "SAWTOOTH", "RAMP", "SQUARE", "NOISE"] as const;
 /** p.53, LFO 1 and LFO 2. USER's contents are chosen in the MORE menu and are not a fifth name. */
-const LFO_WAVES = ['TRIANGLE', 'SAWTOOTH', 'SQUARE', 'RANDOM', 'USER'] as const
+const LFO_WAVES = ["TRIANGLE", "SAWTOOTH", "SQUARE", "RANDOM", "USER"] as const;
 /** p.36. The panel prints the ratios; Appendix A prints the same three as OFF/HALF/FULL. */
-const KB_TRACKING = ['OFF', '1:2', '1:1'] as const
+const KB_TRACKING = ["OFF", "1:2", "1:1"] as const;
 /** pp.36-37. The panel abbreviates; the body text spells them SERIAL, STEREO, PARALLEL. */
-const FILTER_ORDER = ['SER', 'STR', 'PAR'] as const
+const FILTER_ORDER = ["SER", "STR", "PAR"] as const;
 /** p.34, the MIXER's only MORE-menu entry. */
-const OVERLOAD_RANGE = ['LOW', 'HIGH'] as const
+const OVERLOAD_RANGE = ["LOW", "HIGH"] as const;
 /** p.44. `EVEN` is avoided throughout — see the module note on the p.43/p.44 contradiction. */
-const PAN_SPREAD_MODE = ['L/R', 'EVEN'] as const
+const PAN_SPREAD_MODE = ["L/R", "EVEN"] as const;
 /**
  * p.110, both MIDI channel settings: `(OMNI, 1-16. DEFAULT: 1)`.
  *
@@ -701,12 +735,27 @@ const PAN_SPREAD_MODE = ['L/R', 'EVEN'] as const
  * cited claim, in the direction where the list has a member no interval can hold.
  */
 const MIDI_CHANNELS = [
-  'OMNI', '1', '2', '3', '4', '5', '6', '7', '8',
-  '9', '10', '11', '12', '13', '14', '15', '16',
-] as const
+  "OMNI",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "11",
+  "12",
+  "13",
+  "14",
+  "15",
+  "16",
+] as const;
 
 /** p.47, which divisions the delay's TIME knobs may reach when CLOCK SYNC is on. */
-const DELAY_SYNC_TYPE = ['COMBO', 'STRGHT', 'TRIP', 'DOT'] as const
+const DELAY_SYNC_TYPE = ["COMBO", "STRGHT", "TRIP", "DOT"] as const;
 
 /**
  * The divisions a `DELAY · TIME` knob steps through at `SYNC TYPE COMBO` — `observed` (#346), and
@@ -746,12 +795,20 @@ const DELAY_SYNC_TYPE = ['COMBO', 'STRGHT', 'TRIP', 'DOT'] as const
  * is short of a division it can honestly reach for.
  */
 const DELAY_DIVISIONS = [
-  '1/16', '1/8 T', '1/16 D', '1/8', '1/4 T', '1/8 D', '1/4', '1/2 T', '1/4 D',
-] as const
+  "1/16",
+  "1/8 T",
+  "1/16 D",
+  "1/8",
+  "1/4 T",
+  "1/8 D",
+  "1/4",
+  "1/2 T",
+  "1/4 D",
+] as const;
 /** p.68, the ARPEGGIATOR's three operational modes. */
-const ARP_DIRECTION = ['ORD', 'PTN', 'RND'] as const
+const ARP_DIRECTION = ["ORD", "PTN", "RND"] as const;
 /** p.71, which divisions the ARPEGGIATOR's CLOCK DIV knob is allowed to reach. */
-const ARP_CLOCK_DIV = ['STRGHT', 'TRPLT', 'DOTTED', 'COMBO'] as const
+const ARP_CLOCK_DIV = ["STRGHT", "TRPLT", "DOTTED", "COMBO"] as const;
 
 // ---------------------------------------------------------------------------
 // Sections, in panel order. Every recipe is these blocks in this sequence.
@@ -771,50 +828,64 @@ const ARP_CLOCK_DIV = ['STRGHT', 'TRPLT', 'DOTTED', 'COMBO'] as const
  */
 function voice(unison: string, mono: string, detune: number): AuthoredParam[] {
   return [
-    sw('VOICE CONTROL · UNISON', unison, OFF_ON, 105, {
-      note: 'Stacks any currently unused voices onto the active ones — thickness varies with how many notes are held',
+    sw("VOICE CONTROL · UNISON", unison, OFF_ON, 105, {
+      note: "Stacks any currently unused voices onto the active ones — thickness varies with how many notes are held",
     }),
-    sw('VOICE CONTROL · MONO', mono, OFF_ON, 105),
-    cc('VOICE CONTROL · DETUNE', detune, 92, {
-      note: 'Between voices when poly, between stacked voices under UNISON, between the two oscillators under MONO',
+    sw("VOICE CONTROL · MONO", mono, OFF_ON, 105),
+    cc("VOICE CONTROL · DETUNE", detune, 92, {
+      note: "Between voices when poly, between stacked voices under UNISON, between the two oscillators under MONO",
     }),
     {
-      kind: 'numeric',
-      name: 'TIMBRE A VOICE COUNT',
+      kind: "numeric",
+      name: "TIMBRE A VOICE COUNT",
       value: 4,
-      // **Uncited on purpose.** p.106 states the rule — "The Voice Count settings for TIMBRE A and
-      // B will move with respect to each other and always sum to eight" — and prints an example
-      // reading 6 and 2, but it prints no minimum and no maximum for the field itself. `0` to `8`
-      // follows from the sum rule rather than from the page, and a range is a claim about what the
-      // control accepts. Citing p.106 for it would attribute an inference to a document.
-      range: { min: 0, max: 8 },
+      // p.106 states the rule — "The Voice Count settings for TIMBRE A and B will move with
+      // respect to each other and always sum to eight" — and prints an example reading 6 and 2,
+      // but it prints no minimum and no maximum for the field itself. `0` to `8` was an inference
+      // from the sum rule, uncited on purpose because attributing an inference to a document is
+      // the thing this file is most careful about.
+      //
+      // **It is now read rather than inferred (#329), and the inference was right** — including
+      // the part that looked least likely. A minimum of `0` means a timbre can be given no voices
+      // at all, which the sum rule implies and no page confirms.
+      range: { min: 0, max: 8, verified: OBSERVED },
       verified: false,
-      scope: 'song',
-      hint: 'voice-count',
-      note: 'Four each. The counts always sum to eight, so setting this sets the other',
+      scope: "song",
+      hint: "voice-count",
+      note: "Four each. The counts always sum to eight, so setting this sets the other",
     },
-    sw('DYNAMIC VOICE ALLOCATION', 'OFF', OFF_ON, 106, {
-      scope: 'song',
-      hint: 'voice-count',
-      note: 'Its printed default. On, a busy timbre steals from the other and the four-each split stops holding',
+    sw("DYNAMIC VOICE ALLOCATION", "OFF", OFF_ON, 106, {
+      scope: "song",
+      hint: "voice-count",
+      note: "Its printed default. On, a busy timbre steals from the other and the four-each split stops holding",
     }),
-  ]
+  ];
 }
 
 /** OSCILLATOR 1 (pp.27-28). `FREQUENCY` is the one knob on this panel with a real printed scale. */
-function osc1(octave: string, freq: number, triSaw: number, pulseWidth: number, waveMix: number): AuthoredParam[] {
+function osc1(
+  octave: string,
+  freq: number,
+  triSaw: number,
+  pulseWidth: number,
+  waveMix: number,
+): AuthoredParam[] {
   return [
-    sw('OSC 1 · OCTAVE', octave, OCTAVES, 28),
-    num('OSC 1 · FREQUENCY', freq, { min: -7, max: 7 }, 27, {
-      unit: 'st',
-      note: 'Bipolar, in tune at noon; a perfect fifth either way',
+    sw("OSC 1 · OCTAVE", octave, OCTAVES, 28),
+    num("OSC 1 · FREQUENCY", freq, { min: -7, max: 7 }, 27, {
+      unit: "st",
+      note: "Bipolar, in tune at noon; a perfect fifth either way",
     }),
-    cc('OSC 1 · TRI/SAW', triSaw, 46, { note: 'Triangle fully counter-clockwise, sawtooth fully clockwise' }),
-    cc('OSC 1 · PULSE WIDTH', pulseWidth, 47, { note: 'A square wave sits at noon' }),
-    cc('OSC 1 · WAVE MIX', waveMix, 48, {
-      note: 'The slider: triangle/sawtooth on the left against the pulse wave on the right',
+    cc("OSC 1 · TRI/SAW", triSaw, 46, {
+      note: "Triangle fully counter-clockwise, sawtooth fully clockwise",
     }),
-  ]
+    cc("OSC 1 · PULSE WIDTH", pulseWidth, 47, {
+      note: "A square wave sits at noon",
+    }),
+    cc("OSC 1 · WAVE MIX", waveMix, 48, {
+      note: "The slider: triangle/sawtooth on the left against the pulse wave on the right",
+    }),
+  ];
 }
 
 /** OSCILLATOR 2 (pp.27-28), plus the hard sync that only exists in this direction. */
@@ -827,13 +898,15 @@ function osc2(
   sync: string,
 ): AuthoredParam[] {
   return [
-    sw('OSC 2 · OCTAVE', octave, OCTAVES, 28),
-    num('OSC 2 · FREQUENCY', freq, { min: -7, max: 7 }, 27, { unit: 'st' }),
-    cc('OSC 2 · TRI/SAW', triSaw, 51),
-    cc('OSC 2 · PULSE WIDTH', pulseWidth, 52),
-    cc('OSC 2 · WAVE MIX', waveMix, 53),
-    sw('SYNC 2▸1', sync, OFF_ON, 28, { note: 'Locks oscillator 2 to the phase of oscillator 1' }),
-  ]
+    sw("OSC 2 · OCTAVE", octave, OCTAVES, 28),
+    num("OSC 2 · FREQUENCY", freq, { min: -7, max: 7 }, 27, { unit: "st" }),
+    cc("OSC 2 · TRI/SAW", triSaw, 51),
+    cc("OSC 2 · PULSE WIDTH", pulseWidth, 52),
+    cc("OSC 2 · WAVE MIX", waveMix, 53),
+    sw("SYNC 2▸1", sync, OFF_ON, 28, {
+      note: "Locks oscillator 2 to the phase of oscillator 1",
+    }),
+  ];
 }
 
 /**
@@ -847,26 +920,37 @@ function osc2(
  * This is the device's grit carrier: audio-rate cross-modulation is where its dirt comes from, and
  * unlike `OVERLOAD` it has a cited range for mood to move it along.
  */
-function fm(direction: '2>1' | '1>2', amount: number, minAmt = 0, maxAmt = 100): AuthoredParam[] {
-  const on = direction === '2>1' ? '2▸1' : '1▸2'
-  const off = direction === '2>1' ? '1▸2' : '2▸1'
+function fm(
+  direction: "2>1" | "1>2",
+  amount: number,
+  minAmt = 0,
+  maxAmt = 100,
+): AuthoredParam[] {
+  const on = direction === "2>1" ? "2▸1" : "1▸2";
+  const off = direction === "2>1" ? "1▸2" : "2▸1";
   return [
-    sw(`FM · ${on}`, 'ON', OFF_ON, direction === '2>1' ? 28 : 29, {
+    sw(`FM · ${on}`, "ON", OFF_ON, direction === "2>1" ? 28 : 29, {
       note:
-        direction === '2>1'
-          ? 'Oscillator 2 modulating the frequency of oscillator 1, at audio rate'
-          : 'Oscillator 1 modulating the frequency of oscillator 2, at audio rate',
+        direction === "2>1"
+          ? "Oscillator 2 modulating the frequency of oscillator 1, at audio rate"
+          : "Oscillator 1 modulating the frequency of oscillator 2, at audio rate",
     }),
-    sw(`FM · ${off}`, 'OFF', OFF_ON, direction === '2>1' ? 29 : 28),
-    cc('FM AMOUNT', amount, 57, {
+    sw(`FM · ${off}`, "OFF", OFF_ON, direction === "2>1" ? 29 : 28),
+    cc("FM AMOUNT", amount, 57, {
       // #349, re-derived as travel: a fifth of the knob is an audible arrival of cross-modulation
       // that still leaves the note recognisable as the one the patch started from.
-      mood: [{ axis: 'grit', amount: 20 }],
-      note: 'Sweeps between the two limits below rather than between zero and full',
+      mood: [{ axis: "grit", amount: 20 }],
+      note: "Sweeps between the two limits below rather than between zero and full",
     }),
-    num(`${direction} FM MIN AMT`, minAmt, { min: 0, max: 100 }, 29, { unit: '%', hint: 'edit-submenu' }),
-    num(`${direction} FM MAX AMT`, maxAmt, { min: 0, max: 100 }, 29, { unit: '%', hint: 'edit-submenu' }),
-  ]
+    num(`${direction} FM MIN AMT`, minAmt, { min: 0, max: 100 }, 29, {
+      unit: "%",
+      hint: "edit-submenu",
+    }),
+    num(`${direction} FM MAX AMT`, maxAmt, { min: 0, max: 100 }, 29, {
+      unit: "%",
+      hint: "edit-submenu",
+    }),
+  ];
 }
 
 /**
@@ -887,22 +971,23 @@ function modOsc(
   filterTargets: { f1: string; f2: string },
 ): AuthoredParam[] {
   return [
-    sw('MOD OSC · AUDIO', audio, OFF_ON, 30, {
-      note: audio === 'ON'
-        ? 'Audio rate: a third oscillator, roughly 20 Hz to 3 kHz across the knob'
-        : 'Sub-audio: eight per-voice LFOs, one for each voice',
+    sw("MOD OSC · AUDIO", audio, OFF_ON, 30, {
+      note:
+        audio === "ON"
+          ? "Audio rate: a third oscillator, roughly 20 Hz to 3 kHz across the knob"
+          : "Sub-audio: eight per-voice LFOs, one for each voice",
     }),
-    sw('MOD OSC · WAVEFORM', waveform, MOD_WAVES, 31),
-    cc('MOD OSC · FREQUENCY', freq, 25, {
-      note: 'The range of this knob differs with the AUDIO button above',
+    sw("MOD OSC · WAVEFORM", waveform, MOD_WAVES, 31),
+    cc("MOD OSC · FREQUENCY", freq, 25, {
+      note: "The range of this knob differs with the AUDIO button above",
     }),
-    cc('MOD OSC · PITCH AMOUNT', pitchAmount, 31),
-    sw('MOD OSC · PITCH ▸ OSC 1', pitchTargets.osc1, OFF_ON, 31),
-    sw('MOD OSC · PITCH ▸ OSC 2', pitchTargets.osc2, OFF_ON, 31),
-    cc('MOD OSC · FILTER AMOUNT', filterAmount, 39),
-    sw('MOD OSC · FILTER ▸ 1', filterTargets.f1, OFF_ON, 31),
-    sw('MOD OSC · FILTER ▸ 2', filterTargets.f2, OFF_ON, 31),
-  ]
+    cc("MOD OSC · PITCH AMOUNT", pitchAmount, 31),
+    sw("MOD OSC · PITCH ▸ OSC 1", pitchTargets.osc1, OFF_ON, 31),
+    sw("MOD OSC · PITCH ▸ OSC 2", pitchTargets.osc2, OFF_ON, 31),
+    cc("MOD OSC · FILTER AMOUNT", filterAmount, 39),
+    sw("MOD OSC · FILTER ▸ 1", filterTargets.f1, OFF_ON, 31),
+    sw("MOD OSC · FILTER ▸ 2", filterTargets.f2, OFF_ON, 31),
+  ];
 }
 
 /**
@@ -926,34 +1011,36 @@ function mixer(
   modOscLevel: number,
   noise: number,
   overload: number,
-  overloadRange: string = 'LOW',
+  overloadRange: string = "LOW",
 ): AuthoredParam[] {
   return [
-    cc('MIXER · OSC 1', osc1Level, 58),
-    cc('MIXER · RING MOD', ringMod, 60, {
+    cc("MIXER · OSC 1", osc1Level, 58),
+    cc("MIXER · RING MOD", ringMod, 60, {
       // #349, re-derived as travel: a quarter of the fader, which takes the ring modulator from a
       // tint under the oscillators to plainly one of the voices in the mix.
-      mood: [{ axis: 'grit', amount: 25 }],
-      note: 'Sum and difference tones of the two oscillators — inharmonic as they detune',
+      mood: [{ axis: "grit", amount: 25 }],
+      note: "Sum and difference tones of the two oscillators — inharmonic as they detune",
     }),
-    cc('MIXER · OSC 2', osc2Level, 59),
-    cc('MIXER · MOD OSC', modOscLevel, 61),
-    cc('MIXER · NOISE', noise, 62, { note: 'White noise' }),
+    cc("MIXER · OSC 2", osc2Level, 59),
+    cc("MIXER · MOD OSC", modOscLevel, 61),
+    cc("MIXER · NOISE", noise, 62, { note: "White noise" }),
     {
-      kind: 'numeric',
-      name: 'MIXER · OVERLOAD',
+      kind: "numeric",
+      name: "MIXER · OVERLOAD",
       value: overload,
-      // Uncited on purpose: p.34 quantifies neither the LOW nor the HIGH range, and no CC row
-      // names this fader. An uncited range is mood-inert (§3.1), which is the honest result.
-      range: { min: 0, max: 127 },
+      // No page prints a scale for this fader and no CC row names it, so p.34 still quantifies
+      // neither the LOW nor the HIGH range. The screen does: `0-100%`, read at the instrument
+      // (#329). That is what `observed` is for, and it is the reason this number stopped being
+      // relative within this guide and became a position a reader can find on the panel.
+      range: { min: 0, max: 100, verified: OBSERVED },
+      unit: "%",
       verified: false,
-      note: 'No page prints a scale for this fader and no CC row names it, so this number is relative within this guide rather than a position on the panel',
     },
-    sw('OVERLOAD RANGE', overloadRange, OVERLOAD_RANGE, 34, {
-      hint: 'edit-submenu',
-      note: 'LOW narrows the drive range for finer control',
+    sw("OVERLOAD RANGE", overloadRange, OVERLOAD_RANGE, 34, {
+      hint: "edit-submenu",
+      note: "LOW narrows the drive range for finer control",
     }),
-  ]
+  ];
 }
 
 /**
@@ -990,30 +1077,33 @@ function filters(
   kb2: string,
 ): AuthoredParam[] {
   return [
-    sw('FILTER · ORDER', order, FILTER_ORDER, 36, {
-      note: 'SERIAL, STEREO or PARALLEL — with HIGH PASS this decides bandpass, stereo lowpass or notch',
+    sw("FILTER · ORDER", order, FILTER_ORDER, 36, {
+      note: "SERIAL, STEREO or PARALLEL — with HIGH PASS this decides bandpass, stereo lowpass or notch",
     }),
-    sw('LINK FILTERS', 'OFF', OFF_ON, 36, {
-      note: 'Off, so FILTER 1 CUTOFF is an absolute cutoff rather than the spacing between the two',
+    sw("LINK FILTERS", "OFF", OFF_ON, 36, {
+      note: "Off, so FILTER 1 CUTOFF is an absolute cutoff rather than the spacing between the two",
     }),
-    sw('FILTER 1 · HIGH PASS', highPass, OFF_ON, 35, {
-      note: highPass === 'ON'
-        ? 'Highpass: the knob is fully open counter-clockwise, the opposite of lowpass'
-        : 'Lowpass',
+    sw("FILTER 1 · HIGH PASS", highPass, OFF_ON, 35, {
+      note:
+        highPass === "ON"
+          ? "Highpass: the knob is fully open counter-clockwise, the opposite of lowpass"
+          : "Lowpass",
     }),
-    cutoff('FILTER 1 · CUTOFF', cutoff1, 67, {
-      mood: [{ axis: 'darkness', amount: -Math.round(cutoff1 / 2) }],
+    cutoff("FILTER 1 · CUTOFF", cutoff1, 67, {
+      mood: [{ axis: "darkness", amount: -Math.round(cutoff1 / 2) }],
     }),
-    cc('FILTER 1 · RESONANCE', res1, 68, { note: 'Self-oscillates into a sine fully clockwise' }),
-    envAmount(1, env1, { note: 'Bipolar, no modulation at noon' }),
-    sw('FILTER 1 · KB TRACKING', kb1, KB_TRACKING, 36),
-    cutoff('FILTER 2 · CUTOFF', cutoff2, 72, {
-      mood: [{ axis: 'darkness', amount: -Math.round(cutoff2 / 2) }],
+    cc("FILTER 1 · RESONANCE", res1, 68, {
+      note: "Self-oscillates into a sine fully clockwise",
     }),
-    cc('FILTER 2 · RESONANCE', res2, 73),
-    envAmount(2, env2, { note: 'Bipolar, no modulation at noon' }),
-    sw('FILTER 2 · KB TRACKING', kb2, KB_TRACKING, 36),
-  ]
+    envAmount(1, env1, { note: "Bipolar, no modulation at noon" }),
+    sw("FILTER 1 · KB TRACKING", kb1, KB_TRACKING, 36),
+    cutoff("FILTER 2 · CUTOFF", cutoff2, 72, {
+      mood: [{ axis: "darkness", amount: -Math.round(cutoff2 / 2) }],
+    }),
+    cc("FILTER 2 · RESONANCE", res2, 73),
+    envAmount(2, env2, { note: "Bipolar, no modulation at noon" }),
+    sw("FILTER 2 · KB TRACKING", kb2, KB_TRACKING, 36),
+  ];
 }
 
 /**
@@ -1030,16 +1120,22 @@ function filters(
  * bottom, which is what the page says. That is the one corner of this manifest where the manual
  * and the instrument agree outright.
  */
-function filterEnv(attack: number, decay: number, sustain: number, release: number, loop = 'OFF'): AuthoredParam[] {
+function filterEnv(
+  attack: number,
+  decay: number,
+  sustain: number,
+  release: number,
+  loop = "OFF",
+): AuthoredParam[] {
   return [
-    fader('FILTER ENV · ATTACK', attack, 79),
-    fader('FILTER ENV · DECAY', decay, 80),
-    fader('FILTER ENV · SUSTAIN', sustain, 81),
-    fader('FILTER ENV · RELEASE', release, 82),
-    sw('FILTER ENV · LOOP', loop, OFF_ON, 39, {
-      note: 'Looping, the envelope runs like an LFO',
+    fader("FILTER ENV · ATTACK", attack, 79),
+    fader("FILTER ENV · DECAY", decay, 80),
+    fader("FILTER ENV · SUSTAIN", sustain, 81),
+    fader("FILTER ENV · RELEASE", release, 82),
+    sw("FILTER ENV · LOOP", loop, OFF_ON, 39, {
+      note: "Looping, the envelope runs like an LFO",
     }),
-  ]
+  ];
 }
 
 /**
@@ -1054,17 +1150,21 @@ function vcaEnv(
   velocity: string,
 ): AuthoredParam[] {
   return [
-    fader('VCA ENV · ATTACK', attack, 86),
+    fader("VCA ENV · ATTACK", attack, 86),
     // #349, re-derived as travel: a sixth of the fader down, enough to get notes out of each
     // other's way in a busy bar without turning the part staccato. Down four of the five printed
     // intervals would be that; this is well inside one of them.
-    fader('VCA ENV · DECAY', decay, 87, { mood: [{ axis: 'density', amount: -15 }] }),
-    fader('VCA ENV · SUSTAIN', sustain, 88),
+    fader("VCA ENV · DECAY", decay, 87, {
+      mood: [{ axis: "density", amount: -15 }],
+    }),
+    fader("VCA ENV · SUSTAIN", sustain, 88),
     // #349, re-derived as travel: a fifth of the fader up, which carries the tail into the delay
     // rather than ending the note in front of it.
-    fader('VCA ENV · RELEASE', release, 89, { mood: [{ axis: 'space', amount: 20 }] }),
-    sw('VCA ENV · VELOCITY', velocity, OFF_ON, 39),
-  ]
+    fader("VCA ENV · RELEASE", release, 89, {
+      mood: [{ axis: "space", amount: 20 }],
+    }),
+    sw("VCA ENV · VELOCITY", velocity, OFF_ON, 39),
+  ];
 }
 
 /**
@@ -1080,13 +1180,15 @@ function vcaEnv(
  */
 function vca(level: number, panSpread: number): AuthoredParam[] {
   return [
-    cc('VCA · LEVEL', level, 7, { hint: 'timbre-select' }),
+    cc("VCA · LEVEL", level, 7, { hint: "timbre-select" }),
     panParam(),
-    cc('VCA · PAN SPREAD', panSpread, 9, {
-      note: 'All voices sit at the PAN position fully counter-clockwise',
+    cc("VCA · PAN SPREAD", panSpread, 9, {
+      note: "All voices sit at the PAN position fully counter-clockwise",
     }),
-    sw('VCA · PAN SPRD MODE', 'L/R', PAN_SPREAD_MODE, 44, { hint: 'edit-submenu' }),
-  ]
+    sw("VCA · PAN SPRD MODE", "L/R", PAN_SPREAD_MODE, 44, {
+      hint: "edit-submenu",
+    }),
+  ];
 }
 
 /**
@@ -1123,10 +1225,10 @@ function vca(level: number, panSpread: number): AuthoredParam[] {
  */
 function delayRouting(through: string): AuthoredParam[] {
   return [
-    sw('DELAY · TIMBRE A / TIMBRE B', through, OFF_ON, 47, {
-      note: 'Two separate buttons, one per timbre — engage the one for the timbre this part is on. Disengaged, this part bypasses the delay on a fully analog path',
+    sw("DELAY · TIMBRE A / TIMBRE B", through, OFF_ON, 47, {
+      note: "Two separate buttons, one per timbre — engage the one for the timbre this part is on. Disengaged, this part bypasses the delay on a fully analog path",
     }),
-  ]
+  ];
 }
 
 /**
@@ -1157,36 +1259,52 @@ function delayRouting(through: string): AuthoredParam[] {
  */
 function sharedDelay(): AuthoredParam[] {
   return [
-    sw('DELAY · CLOCK SYNC', 'ON', OFF_ON, 46, {
-      scope: 'song',
-      note: 'Both TIME knobs jump between divisions of the global TEMPO',
+    sw("DELAY · CLOCK SYNC", "ON", OFF_ON, 46, {
+      scope: "song",
+      note: "Both TIME knobs jump between divisions of the global TEMPO",
     }),
-    sw('DELAY · SYNC TYPE', 'COMBO', DELAY_SYNC_TYPE, 47, {
-      scope: 'song',
-      hint: 'edit-submenu',
-      note: 'Its printed default — every division rather than only straight, triplet or dotted ones',
+    sw("DELAY · SYNC TYPE", "COMBO", DELAY_SYNC_TYPE, 47, {
+      scope: "song",
+      hint: "edit-submenu",
+      note: "Its printed default — every division rather than only straight, triplet or dotted ones",
     }),
-    sw('DELAY · LINK DELAYS', 'OFF', OFF_ON, 46, {
-      scope: 'song',
-      note: 'Off, so TIME-L is the left delay time rather than an offset against the right',
+    sw("DELAY · LINK DELAYS", "OFF", OFF_ON, 46, {
+      scope: "song",
+      note: "Off, so TIME-L is the left delay time rather than an offset against the right",
     }),
     // #346. The two controls #349 left on the Appendix A scale, now on the one the CLOCK SYNC
     // above puts in force. A reader turns the knob until the screen reads the division, which is
     // §8's premise and is why no CC-to-division mapping is needed to state either of these.
-    division('DELAY · TIME - L', '1/8', 93, 'Straight, against the dotted right'),
-    division('DELAY · TIME - R', '1/8 D', 94, 'Dotted, so its repeat falls between the left one’s'),
-    cc('DELAY · FEEDBACK', 40, 103, { scope: 'song', note: 'Single repeat through to infinite' }),
+    division(
+      "DELAY · TIME - L",
+      "1/8",
+      93,
+      "Straight, against the dotted right",
+    ),
+    division(
+      "DELAY · TIME - R",
+      "1/8 D",
+      94,
+      "Dotted, so its repeat falls between the left one’s",
+    ),
+    cc("DELAY · FEEDBACK", 40, 103, {
+      scope: "song",
+      note: "Single repeat through to infinite",
+    }),
     // `50`, and it has to be exactly that: the note names noon, and on a 0-100 readout noon is
     // 50. On the old CC scale it was 64 for the same reason, which is the one place in this file
     // where re-authoring and converting would have agreed.
-    cc('DELAY · CHARACTER', 50, 104, {
-      scope: 'song',
-      note: 'Noon, where the default DJ-style filter on the repeats is doing nothing',
+    cc("DELAY · CHARACTER", 50, 104, {
+      scope: "song",
+      note: "Noon, where the default DJ-style filter on the repeats is doing nothing",
     }),
     // #349, re-derived as travel: a quarter of the knob, from a wash you notice only when it
     // stops to a delay that is part of the arrangement.
-    cc('DELAY · MIX', 30, 105, { scope: 'song', mood: [{ axis: 'space', amount: 25 }] }),
-  ]
+    cc("DELAY · MIX", 30, 105, {
+      scope: "song",
+      mood: [{ axis: "space", amount: 25 }],
+    }),
+  ];
 }
 
 /**
@@ -1213,30 +1331,30 @@ function sharedDelay(): AuthoredParam[] {
  */
 function midiSetup(): AuthoredParam[] {
   return [
-    sw('MULTI MODE', 'ON', OFF_ON, 110, {
-      scope: 'song',
-      hint: 'midi-settings',
-      note: 'Its printed default, and what makes the two timbres separately playable',
+    sw("MULTI MODE", "ON", OFF_ON, 110, {
+      scope: "song",
+      hint: "midi-settings",
+      note: "Its printed default, and what makes the two timbres separately playable",
     }),
-    sw('MIDI IN CHANNEL', '1', MIDI_CHANNELS, 110, {
-      scope: 'song',
-      hint: 'midi-settings',
-      note: 'TIMBRE A listens here',
+    sw("MIDI IN CHANNEL", "1", MIDI_CHANNELS, 110, {
+      scope: "song",
+      hint: "midi-settings",
+      note: "TIMBRE A listens here",
     }),
-    sw('MULTI IN B CHANNEL', '2', MIDI_CHANNELS, 110, {
-      scope: 'song',
-      hint: 'midi-settings',
-      note: 'TIMBRE B listens here. Both default to 1, so this must be changed or the two timbres double on one channel',
+    sw("MULTI IN B CHANNEL", "2", MIDI_CHANNELS, 110, {
+      scope: "song",
+      hint: "midi-settings",
+      note: "TIMBRE B listens here. Both default to 1, so this must be changed or the two timbres double on one channel",
     }),
     // Without this every `Send MIDI CC …` note above is inert, which makes it the same shape as
     // `MIDI CLOCK OUT` defaulting to off (§7.4/#104): one unstated setting that stalls everything
     // depending on it.
-    sw('RECIEVE CC', 'ON', OFF_ON, 111, {
-      scope: 'song',
-      hint: 'midi-settings',
+    sw("RECIEVE CC", "ON", OFF_ON, 111, {
+      scope: "song",
+      hint: "midi-settings",
       note: "Defaults to OFF, so the box ignores CC until this is set. The manual's spelling",
     }),
-  ]
+  ];
 }
 
 /**
@@ -1247,24 +1365,31 @@ function midiSetup(): AuthoredParam[] {
  * says the knob *"defaults to 0.01 Hz–40.00 Hz but has a maximum range of 0.00 Hz – 1.00 kHz
  * (configurable in MORE menu)"*, and those two settings are saved per patch.
  */
-function lfo1(waveform: string, rate: number, amplitude: number, perVoice = 'GLOBAL'): AuthoredParam[] {
+function lfo1(
+  waveform: string,
+  rate: number,
+  amplitude: number,
+  perVoice = "GLOBAL",
+): AuthoredParam[] {
   return [
-    sw('LFO 1 · WAVEFORM', waveform, LFO_WAVES, 53),
-    num('LFO 1 · RATE', rate, { min: 0.01, max: 40 }, 52, {
-      unit: 'Hz',
+    sw("LFO 1 · WAVEFORM", waveform, LFO_WAVES, 53),
+    num("LFO 1 · RATE", rate, { min: 0.01, max: 40 }, 52, {
+      unit: "Hz",
       step: 0.01,
-      note: 'The default range; RATE MIN and RATE MAX in the MORE menu can widen it to 1 kHz',
+      note: "The default range; RATE MIN and RATE MAX in the MORE menu can widen it to 1 kHz",
     }),
-    cc('LFO 1 · AMPLITUDE', amplitude, 13, { note: 'An attenuator ahead of every destination' }),
-    sw('LFO 1 · SYNC', 'OFF', OFF_ON, 57, {
-      hint: 'edit-submenu',
-      note: 'Off, so RATE is the free-running Hz scale rather than tempo divisions',
+    cc("LFO 1 · AMPLITUDE", amplitude, 13, {
+      note: "An attenuator ahead of every destination",
     }),
-    sw('LFO 1 · LFO TYPE', perVoice, ['GLOBAL', 'PER-VOICE'], 57, {
-      hint: 'edit-submenu',
-      note: 'PER-VOICE gives eight separate LFOs, one per voice',
+    sw("LFO 1 · SYNC", "OFF", OFF_ON, 57, {
+      hint: "edit-submenu",
+      note: "Off, so RATE is the free-running Hz scale rather than tempo divisions",
     }),
-  ]
+    sw("LFO 1 · LFO TYPE", perVoice, ["GLOBAL", "PER-VOICE"], 57, {
+      hint: "edit-submenu",
+      note: "PER-VOICE gives eight separate LFOs, one per voice",
+    }),
+  ];
 }
 
 /**
@@ -1275,19 +1400,27 @@ function lfo1(waveform: string, rate: number, amplitude: number, perVoice = 'GLO
  * turning it to maximum gives *"+/- 2 semitone movement"*. The knob itself is still unnumbered, so
  * the percentage its screen shows carries the value and the semitone figure is the note beside it.
  */
-function pitchLfo(rate: number, shape: number, amount: number, targets: { osc1: string; osc2: string }): AuthoredParam[] {
+function pitchLfo(
+  rate: number,
+  shape: number,
+  amount: number,
+  targets: { osc1: string; osc2: string },
+): AuthoredParam[] {
   return [
-    num('PITCH LFO · RATE', rate, { min: 0.01, max: 40 }, 58, { unit: 'Hz', step: 0.01 }),
-    cc('PITCH LFO · SHAPE', shape, 19, {
-      note: 'Sawtooth fully counter-clockwise, a symmetrical triangle at noon, ramp fully clockwise',
+    num("PITCH LFO · RATE", rate, { min: 0.01, max: 40 }, 58, {
+      unit: "Hz",
+      step: 0.01,
     }),
-    cc('PITCH LFO · AMOUNT', amount, 20, {
-      note: 'Bipolar, no modulation at noon; ±2 semitones at maximum',
+    cc("PITCH LFO · SHAPE", shape, 19, {
+      note: "Sawtooth fully counter-clockwise, a symmetrical triangle at noon, ramp fully clockwise",
     }),
-    sw('PITCH LFO · ▸ OSC 1', targets.osc1, OFF_ON, 59),
-    sw('PITCH LFO · ▸ OSC 2', targets.osc2, OFF_ON, 59),
-    sw('PITCH LFO · SYNC', 'OFF', OFF_ON, 60, { hint: 'edit-submenu' }),
-  ]
+    cc("PITCH LFO · AMOUNT", amount, 20, {
+      note: "Bipolar, no modulation at noon; ±2 semitones at maximum",
+    }),
+    sw("PITCH LFO · ▸ OSC 1", targets.osc1, OFF_ON, 59),
+    sw("PITCH LFO · ▸ OSC 2", targets.osc2, OFF_ON, 59),
+    sw("PITCH LFO · SYNC", "OFF", OFF_ON, 60, { hint: "edit-submenu" }),
+  ];
 }
 
 /**
@@ -1305,30 +1438,35 @@ function pitchLfo(rate: number, shape: number, amount: number, targets: { osc1: 
  * enumerated division list in the document, `INT CLOCK DIV` on p.67, belongs to the rear CLOCK OUT
  * jack — a different parameter, and borrowing it would be a value read off the wrong scale.
  */
-function arp(direction: string, octaveRange: number, gateLength: number, clockDiv: string): AuthoredParam[] {
+function arp(
+  direction: string,
+  octaveRange: number,
+  gateLength: number,
+  clockDiv: string,
+): AuthoredParam[] {
   return [
-    sw('ARP · ON', 'ON', OFF_ON, 68),
-    sw('ARP · DIRECTION', direction, ARP_DIRECTION, 68, {
-      note: 'ORD plays the notes in the order they were pressed; PTN follows the MORE menu pattern; RND is random',
+    sw("ARP · ON", "ON", OFF_ON, 68),
+    sw("ARP · DIRECTION", direction, ARP_DIRECTION, 68, {
+      note: "ORD plays the notes in the order they were pressed; PTN follows the MORE menu pattern; RND is random",
     }),
-    num('ARP · OCTAVE RANGE', octaveRange, { min: 1, max: 4 }, 68, {
-      note: 'How many octaves the pattern spans',
+    num("ARP · OCTAVE RANGE", octaveRange, { min: 1, max: 4 }, 68, {
+      note: "How many octaves the pattern spans",
     }),
-    num('ARP · GATE LENGTH', gateLength, { min: 1, max: 99 }, 70, {
-      unit: '%',
-      note: 'One length for every step, as a proportion of the step',
+    num("ARP · GATE LENGTH", gateLength, { min: 1, max: 99 }, 70, {
+      unit: "%",
+      note: "One length for every step, as a proportion of the step",
     }),
-    num('ARP · SWING', 50, { min: 25, max: 75 }, 71, {
-      unit: '%',
-      mood: [{ axis: 'swing', amount: 18 }],
-      hint: 'edit-submenu',
-      note: '50% is straight',
+    num("ARP · SWING", 50, { min: 25, max: 75 }, 71, {
+      unit: "%",
+      mood: [{ axis: "swing", amount: 18 }],
+      hint: "edit-submenu",
+      note: "50% is straight",
     }),
-    sw('ARP · CLOCK DIV', clockDiv, ARP_CLOCK_DIV, 71, {
-      hint: 'edit-submenu',
-      note: 'Which divisions the CLOCK DIV knob is allowed to reach',
+    sw("ARP · CLOCK DIV", clockDiv, ARP_CLOCK_DIV, 71, {
+      hint: "edit-submenu",
+      note: "Which divisions the CLOCK DIV knob is allowed to reach",
     }),
-  ]
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -1365,372 +1503,421 @@ function arp(direction: string, octaveRange: number, gateLength: number, clockDi
 const recipes: Recipe[] = [
   // ---- pad: the reason an eight-voice box is in the library ---------------
   {
-    id: 'muse-pad-soft',
-    role: 'pad',
-    character: 'soft',
-    voice: 'timbre',
+    id: "muse-pad-soft",
+    role: "pad",
+    character: "soft",
+    voice: "timbre",
     verified: false,
-    title: 'Two triangles a fifth apart, filters in stereo, nothing arriving at once',
+    title:
+      "Two triangles a fifth apart, filters in stereo, nothing arriving at once",
     params: [
-      ...voice('OFF', 'OFF', 15),
+      ...voice("OFF", "OFF", 15),
       ...midiSetup(),
       // Triangles, so the blend is at its triangle end and no pulse is mixed in at all. PULSE
       // WIDTH is at the square position it rests at, inaudible behind a WAVE MIX of 0.
       ...osc1("8'", 0, 0, 50, 0),
-      ...osc2("8'", 3, 0, 50, 0, 'OFF'),
-      ...modOsc('OFF', 'SINE', 10, 10, { osc1: 'ON', osc2: 'ON' }, 0, { f1: 'OFF', f2: 'OFF' }),
+      ...osc2("8'", 3, 0, 50, 0, "OFF"),
+      ...modOsc("OFF", "SINE", 10, 10, { osc1: "ON", osc2: "ON" }, 0, {
+        f1: "OFF",
+        f2: "OFF",
+      }),
       // Two triangles into a clean ladder with no drive wanted: high enough to be present, short
       // of the unity gain p.19 puts at the top of the fader.
       ...mixer(65, 0, 65, 0, 0, 0),
-      ...filters('STR', 'OFF', 1200, 15, 20, '1:2', 1400, 10, 10, '1:2'),
+      ...filters("STR", "OFF", 1200, 15, 20, "1:2", 1400, 10, 10, "1:2"),
       ...filterEnv(65, 50, 60, 75),
       // "Nothing arriving at once" is the whole patch, and this is where it lives.
-      ...vcaEnv(70, 50, 90, 80, 'ON'),
+      ...vcaEnv(70, 50, 90, 80, "ON"),
       ...vca(65, 65),
       ...sharedDelay(),
-      ...delayRouting('ON'),
-      ...lfo1('TRIANGLE', 0.24, 20, 'PER-VOICE'),
+      ...delayRouting("ON"),
+      ...lfo1("TRIANGLE", 0.24, 20, "PER-VOICE"),
     ],
   },
   {
-    id: 'muse-pad-dark',
-    role: 'pad',
-    character: 'dark',
-    voice: 'timbre',
+    id: "muse-pad-dark",
+    role: "pad",
+    character: "dark",
+    voice: "timbre",
     verified: false,
-    title: 'Both filters low and serial, sixteen-foot underneath, no top at all',
+    title:
+      "Both filters low and serial, sixteen-foot underneath, no top at all",
     params: [
-      ...voice('OFF', 'OFF', 15),
+      ...voice("OFF", "OFF", 15),
       ...midiSetup(),
       ...osc1("16'", 0, 20, 50, 0),
-      ...osc2("8'", -2, 20, 50, 0, 'OFF'),
-      ...modOsc('OFF', 'SINE', 10, 5, { osc1: 'ON', osc2: 'OFF' }, 10, { f1: 'ON', f2: 'OFF' }),
+      ...osc2("8'", -2, 20, 50, 0, "OFF"),
+      ...modOsc("OFF", "SINE", 10, 5, { osc1: "ON", osc2: "OFF" }, 10, {
+        f1: "ON",
+        f2: "OFF",
+      }),
       // "Sixteen-foot underneath": the 16' is the body and the 8' sits below it. No noise, which
       // is top, and no ring modulator, which is more of it.
       ...mixer(70, 0, 60, 0, 0, 0),
       // Resonance is a peak, and a peak is something above the fundamental. Both low.
-      ...filters('SER', 'OFF', 500, 10, 10, '1:2', 420, 10, 10, '1:2'),
+      ...filters("SER", "OFF", 500, 10, 10, "1:2", 420, 10, 10, "1:2"),
       ...filterEnv(70, 60, 50, 80),
-      ...vcaEnv(75, 55, 90, 85, 'ON'),
+      ...vcaEnv(75, 55, 90, 85, "ON"),
       ...vca(65, 50),
       ...sharedDelay(),
-      ...delayRouting('ON'),
-      ...lfo1('TRIANGLE', 0.14, 15, 'PER-VOICE'),
+      ...delayRouting("ON"),
+      ...lfo1("TRIANGLE", 0.14, 15, "PER-VOICE"),
     ],
   },
   {
-    id: 'muse-pad-bright',
-    role: 'pad',
-    character: 'bright',
-    voice: 'timbre',
+    id: "muse-pad-bright",
+    role: "pad",
+    character: "bright",
+    voice: "timbre",
     verified: false,
-    title: 'Sawtooth pair, highpass in parallel with the lowpass, resonance up in the air',
+    title:
+      "Sawtooth pair, highpass in parallel with the lowpass, resonance up in the air",
     params: [
-      ...voice('OFF', 'OFF', 25),
+      ...voice("OFF", "OFF", 25),
       ...midiSetup(),
       // A sawtooth pair: the blend at its sawtooth end, and still no pulse in the mix.
       ...osc1("8'", 0, 100, 50, 0),
-      ...osc2("4'", 4, 100, 50, 0, 'OFF'),
-      ...modOsc('OFF', 'SINE', 15, 10, { osc1: 'ON', osc2: 'ON' }, 15, { f1: 'OFF', f2: 'ON' }),
+      ...osc2("4'", 4, 100, 50, 0, "OFF"),
+      ...modOsc("OFF", "SINE", 15, 10, { osc1: "ON", osc2: "ON" }, 15, {
+        f1: "OFF",
+        f2: "ON",
+      }),
       // Saws are loud and the resonance needs headroom to sit above them.
       ...mixer(60, 0, 55, 0, 10, 0),
       // FILTER 1 is the highpass: a corner low enough to thin the bottom, and no envelope on it,
       // because sweeping a highpass corner reads as a filter sweep rather than as air. The
       // resonance the title is about is FILTER 2's, at the top.
-      ...filters('PAR', 'ON', 180, 35, 0, '1:1', 6000, 45, 20, '1:1'),
+      ...filters("PAR", "ON", 180, 35, 0, "1:1", 6000, 45, 20, "1:1"),
       ...filterEnv(55, 60, 65, 70),
-      ...vcaEnv(55, 55, 90, 75, 'ON'),
+      ...vcaEnv(55, 55, 90, 75, "ON"),
       ...vca(65, 70),
       ...sharedDelay(),
-      ...delayRouting('ON'),
-      ...lfo1('TRIANGLE', 0.42, 20, 'PER-VOICE'),
+      ...delayRouting("ON"),
+      ...lfo1("TRIANGLE", 0.42, 20, "PER-VOICE"),
     ],
   },
 
   // ---- stab: short, chordal, and where UNISON earns its place ------------
   {
-    id: 'muse-stab-hard',
-    role: 'stab',
-    character: 'hard',
-    voice: 'timbre',
+    id: "muse-stab-hard",
+    role: "stab",
+    character: "hard",
+    voice: "timbre",
     verified: false,
-    title: 'Unison stack on a fast envelope, serial filters clamped shut behind it',
+    title:
+      "Unison stack on a fast envelope, serial filters clamped shut behind it",
     params: [
       // UNISON without MONO: the spare voices pile onto whatever is held, so a one-note stab is
       // huge and a triad is still a triad. No polyphony claim — see the module note. DETUNE is
       // what the stack is made of, so it is the one control here that is up.
-      ...voice('ON', 'OFF', 30),
+      ...voice("ON", "OFF", 30),
       ...midiSetup(),
       ...osc1("8'", 0, 100, 50, 0),
-      ...osc2("8'", -3, 100, 50, 0, 'ON'),
-      ...modOsc('OFF', 'SQUARE', 25, 0, { osc1: 'OFF', osc2: 'OFF' }, 0, { f1: 'OFF', f2: 'OFF' }),
-      ...mixer(90, 15, 90, 0, 0, 40),
+      ...osc2("8'", -3, 100, 50, 0, "ON"),
+      ...modOsc("OFF", "SQUARE", 25, 0, { osc1: "OFF", osc2: "OFF" }, 0, {
+        f1: "OFF",
+        f2: "OFF",
+      }),
+      ...mixer(90, 15, 90, 0, 0, 30),
       // Clamped shut and opened by the envelope rather than by the knob: the corner sits under
       // the note and ENVELOPE AMOUNT well above noon is what throws it up on each attack. `70` on
       // the signed scale is over a third of the way up from centre.
-      ...filters('SER', 'OFF', 300, 55, 70, '1:1', 450, 35, 40, '1:2'),
+      ...filters("SER", "OFF", 300, 55, 70, "1:1", 450, 35, 40, "1:2"),
       // Nothing sustains: both envelopes are over before the key is.
       ...filterEnv(0, 20, 0, 15),
-      ...vcaEnv(0, 25, 0, 20, 'ON'),
+      ...vcaEnv(0, 25, 0, 20, "ON"),
       ...vca(80, 25),
       ...sharedDelay(),
-      ...delayRouting('OFF'),
-      ...lfo1('SQUARE', 4.8, 0),
+      ...delayRouting("OFF"),
+      ...lfo1("SQUARE", 4.8, 0),
     ],
   },
   {
-    id: 'muse-stab-bright',
-    role: 'stab',
-    character: 'bright',
-    voice: 'timbre',
+    id: "muse-stab-bright",
+    role: "stab",
+    character: "bright",
+    voice: "timbre",
     verified: false,
-    title: 'Pulse-width pair four feet up, highpass parallel, a hard clip on the tail',
+    title:
+      "Pulse-width pair four feet up, highpass parallel, a hard clip on the tail",
     params: [
-      ...voice('OFF', 'OFF', 20),
+      ...voice("OFF", "OFF", 20),
       ...midiSetup(),
       // A pulse-width pair: WAVE MIX all the way to the pulse side, and the width narrow either
       // side of the square at noon, which is where a pulse gets reedy rather than hollow.
       ...osc1("4'", 0, 0, 30, 100),
-      ...osc2("4'", 2, 0, 35, 100, 'OFF'),
-      ...modOsc('OFF', 'SINE', 30, 0, { osc1: 'OFF', osc2: 'OFF' }, 20, { f1: 'OFF', f2: 'ON' }),
+      ...osc2("4'", 2, 0, 35, 100, "OFF"),
+      ...modOsc("OFF", "SINE", 30, 0, { osc1: "OFF", osc2: "OFF" }, 20, {
+        f1: "OFF",
+        f2: "ON",
+      }),
       ...mixer(85, 0, 85, 10, 0, 0),
-      ...filters('PAR', 'ON', 150, 25, 0, '1:1', 8000, 30, 50, '1:1'),
+      ...filters("PAR", "ON", 150, 25, 0, "1:1", 8000, 30, 50, "1:1"),
       ...filterEnv(0, 30, 0, 20),
-      ...vcaEnv(0, 30, 0, 20, 'ON'),
+      ...vcaEnv(0, 30, 0, 20, "ON"),
       ...vca(80, 45),
       ...sharedDelay(),
-      ...delayRouting('ON'),
-      ...lfo1('TRIANGLE', 3.2, 0),
+      ...delayRouting("ON"),
+      ...lfo1("TRIANGLE", 3.2, 0),
     ],
   },
   {
-    id: 'muse-stab-dirty',
-    role: 'stab',
-    character: 'dirty',
-    voice: 'timbre',
+    id: "muse-stab-dirty",
+    role: "stab",
+    character: "dirty",
+    voice: "timbre",
     verified: false,
-    title: 'Ring modulator over the top of the mix, oscillator two syncing hard',
+    title:
+      "Ring modulator over the top of the mix, oscillator two syncing hard",
     params: [
-      ...voice('ON', 'OFF', 45),
+      ...voice("ON", "OFF", 45),
       ...midiSetup(),
       ...osc1("8'", 0, 100, 50, 0),
-      ...osc2("4'", 5, 100, 50, 0, 'ON'),
-      ...fm('1>2', 55),
-      ...modOsc('ON', 'SQUARE', 55, 20, { osc1: 'OFF', osc2: 'ON' }, 0, { f1: 'OFF', f2: 'OFF' }),
+      ...osc2("4'", 5, 100, 50, 0, "ON"),
+      ...fm("1>2", 55),
+      ...modOsc("ON", "SQUARE", 55, 20, { osc1: "OFF", osc2: "ON" }, 0, {
+        f1: "OFF",
+        f2: "OFF",
+      }),
       // "Over the top of the mix" is a level instruction: the ring modulator is the loudest thing
       // in the fader bank, above both oscillators rather than beside them.
-      ...mixer(70, 85, 70, 25, 15, 96, 'HIGH'),
-      ...filters('SER', 'OFF', 700, 55, 40, '1:2', 800, 40, 20, '1:2'),
+      ...mixer(70, 85, 70, 25, 15, 75, "HIGH"),
+      ...filters("SER", "OFF", 700, 55, 40, "1:2", 800, 40, 20, "1:2"),
       ...filterEnv(0, 25, 10, 20),
-      ...vcaEnv(0, 30, 10, 25, 'ON'),
+      ...vcaEnv(0, 30, 10, 25, "ON"),
       ...vca(75, 35),
       ...sharedDelay(),
-      ...delayRouting('OFF'),
-      ...lfo1('RANDOM', 7.5, 20),
+      ...delayRouting("OFF"),
+      ...lfo1("RANDOM", 7.5, 20),
     ],
   },
 
   // ---- lead: two mono, one that keeps its voices --------------------------
   {
-    id: 'muse-lead-bright',
-    role: 'lead',
-    character: 'bright',
-    voice: 'timbre',
+    id: "muse-lead-bright",
+    role: "lead",
+    character: "bright",
+    voice: "timbre",
     verified: false,
-    title: 'Mono sawtooth with the filter tracking the keyboard one to one',
+    title: "Mono sawtooth with the filter tracking the keyboard one to one",
     patchPolyphony: 1,
     params: [
       // Under MONO, DETUNE differentiates the two oscillators' tracking rather than spreading
       // voices (p.105), so a moderate setting is a thickness rather than a chorus.
-      ...voice('OFF', 'ON', 20),
+      ...voice("OFF", "ON", 20),
       ...midiSetup(),
       ...osc1("8'", 0, 100, 50, 0),
-      ...osc2("8'", 1, 100, 50, 0, 'OFF'),
-      ...modOsc('OFF', 'SINE', 20, 0, { osc1: 'OFF', osc2: 'OFF' }, 0, { f1: 'OFF', f2: 'OFF' }),
-      ...mixer(75, 0, 70, 0, 0, 18),
+      ...osc2("8'", 1, 100, 50, 0, "OFF"),
+      ...modOsc("OFF", "SINE", 20, 0, { osc1: "OFF", osc2: "OFF" }, 0, {
+        f1: "OFF",
+        f2: "OFF",
+      }),
+      ...mixer(75, 0, 70, 0, 0, 15),
       // Both corners above the line and KB TRACKING at 1:1, so the filter rises with the melody
       // instead of dulling its top octave.
-      ...filters('SER', 'OFF', 2000, 30, 20, '1:1', 3200, 20, 10, '1:1'),
+      ...filters("SER", "OFF", 2000, 30, 20, "1:1", 3200, 20, 10, "1:1"),
       ...filterEnv(5, 40, 55, 30),
-      ...vcaEnv(5, 40, 90, 30, 'ON'),
+      ...vcaEnv(5, 40, 90, 30, "ON"),
       ...vca(80, 0),
       ...sharedDelay(),
-      ...delayRouting('ON'),
-      ...pitchLfo(5.2, 50, 60, { osc1: 'ON', osc2: 'ON' }),
+      ...delayRouting("ON"),
+      ...pitchLfo(5.2, 50, 60, { osc1: "ON", osc2: "ON" }),
     ],
   },
   {
-    id: 'muse-lead-hard',
-    role: 'lead',
-    character: 'hard',
-    voice: 'timbre',
+    id: "muse-lead-hard",
+    role: "lead",
+    character: "hard",
+    voice: "timbre",
     verified: false,
-    title: 'Mono square, resonance at the edge, envelope thrown at the cutoff',
+    title: "Mono square, resonance at the edge, envelope thrown at the cutoff",
     patchPolyphony: 1,
     params: [
-      ...voice('OFF', 'ON', 15),
+      ...voice("OFF", "ON", 15),
       ...midiSetup(),
       // A square, which is the pulse at noon (p.19) with WAVE MIX fully across to it.
       ...osc1("8'", 0, 0, 50, 100),
-      ...osc2("8'", -2, 0, 50, 100, 'ON'),
-      ...modOsc('OFF', 'SINE', 20, 0, { osc1: 'OFF', osc2: 'OFF' }, 0, { f1: 'OFF', f2: 'OFF' }),
-      ...mixer(85, 10, 85, 0, 0, 52),
+      ...osc2("8'", -2, 0, 50, 100, "ON"),
+      ...modOsc("OFF", "SINE", 20, 0, { osc1: "OFF", osc2: "OFF" }, 0, {
+        f1: "OFF",
+        f2: "OFF",
+      }),
+      ...mixer(85, 10, 85, 0, 0, 40),
       // "At the edge" is just short of the self-oscillation p.36 puts at fully clockwise, and the
       // envelope amount is the other half of the title.
-      ...filters('SER', 'OFF', 550, 85, 80, '1:1', 900, 35, 20, '1:2'),
+      ...filters("SER", "OFF", 550, 85, 80, "1:1", 900, 35, 20, "1:2"),
       ...filterEnv(0, 30, 25, 25),
-      ...vcaEnv(0, 35, 90, 25, 'ON'),
+      ...vcaEnv(0, 35, 90, 25, "ON"),
       ...vca(85, 0),
       ...sharedDelay(),
-      ...delayRouting('OFF'),
-      ...pitchLfo(6.4, 50, 55, { osc1: 'ON', osc2: 'ON' }),
+      ...delayRouting("OFF"),
+      ...pitchLfo(6.4, 50, 55, { osc1: "ON", osc2: "ON" }),
     ],
   },
   {
-    id: 'muse-lead-dirty',
-    role: 'lead',
-    character: 'dirty',
-    voice: 'timbre',
+    id: "muse-lead-dirty",
+    role: "lead",
+    character: "dirty",
+    voice: "timbre",
     verified: false,
-    title: 'Cross-modulated pair driven into the mixer, still one note at a time',
+    title:
+      "Cross-modulated pair driven into the mixer, still one note at a time",
     patchPolyphony: 1,
     params: [
-      ...voice('OFF', 'ON', 40),
+      ...voice("OFF", "ON", 40),
       ...midiSetup(),
       // Cross-modulation blurs the waveform anyway, so the blend is saw with a little pulse in it
       // rather than either extreme.
       ...osc1("8'", 0, 85, 50, 15),
-      ...osc2("8'", 4, 85, 50, 15, 'OFF'),
-      ...fm('2>1', 70, 10, 100),
-      ...modOsc('ON', 'RAMP', 65, 25, { osc1: 'ON', osc2: 'OFF' }, 25, { f1: 'ON', f2: 'OFF' }),
+      ...osc2("8'", 4, 85, 50, 15, "OFF"),
+      ...fm("2>1", 70, 10, 100),
+      ...modOsc("ON", "RAMP", 65, 25, { osc1: "ON", osc2: "OFF" }, 25, {
+        f1: "ON",
+        f2: "OFF",
+      }),
       // "Driven into the mixer" is the instruction: both oscillators at the unity-gain end of
       // their faders, which is where p.19 says the drive is.
-      ...mixer(95, 50, 95, 35, 15, 108, 'HIGH'),
-      ...filters('SER', 'OFF', 800, 60, 30, '1:1', 750, 45, 10, '1:2'),
+      ...mixer(95, 50, 95, 35, 15, 85, "HIGH"),
+      ...filters("SER", "OFF", 800, 60, 30, "1:1", 750, 45, 10, "1:2"),
       ...filterEnv(5, 35, 35, 30),
-      ...vcaEnv(0, 40, 85, 35, 'ON'),
+      ...vcaEnv(0, 40, 85, 35, "ON"),
       ...vca(75, 0),
       ...sharedDelay(),
-      ...delayRouting('ON'),
-      ...pitchLfo(7.8, 70, 65, { osc1: 'ON', osc2: 'ON' }),
+      ...delayRouting("ON"),
+      ...pitchLfo(7.8, 70, 65, { osc1: "ON", osc2: "ON" }),
     ],
   },
 
   // ---- bass-mid and sub: MONO, and the manual says so outright -----------
   {
-    id: 'muse-bass-mid-hard',
-    role: 'bass-mid',
-    character: 'hard',
-    voice: 'timbre',
+    id: "muse-bass-mid-hard",
+    role: "bass-mid",
+    character: "hard",
+    voice: "timbre",
     verified: false,
-    title: 'Mono sawtooth at eight foot, filter envelope snapping the top off each note',
+    title:
+      "Mono sawtooth at eight foot, filter envelope snapping the top off each note",
     patchPolyphony: 1,
     params: [
       // A bass wants the two oscillators tight against each other, so DETUNE is low.
-      ...voice('OFF', 'ON', 10),
+      ...voice("OFF", "ON", 10),
       ...midiSetup(),
       ...osc1("8'", 0, 100, 50, 0),
-      ...osc2("16'", 0, 100, 50, 0, 'OFF'),
-      ...modOsc('OFF', 'SINE', 15, 0, { osc1: 'OFF', osc2: 'OFF' }, 0, { f1: 'OFF', f2: 'OFF' }),
-      ...mixer(85, 0, 80, 0, 0, 34),
+      ...osc2("16'", 0, 100, 50, 0, "OFF"),
+      ...modOsc("OFF", "SINE", 15, 0, { osc1: "OFF", osc2: "OFF" }, 0, {
+        f1: "OFF",
+        f2: "OFF",
+      }),
+      ...mixer(85, 0, 80, 0, 0, 25),
       // "Snapping the top off each note" is a large positive envelope amount on a corner that is
       // otherwise under the note, with a decay short enough to be a snap.
-      ...filters('SER', 'OFF', 380, 40, 70, '1:2', 550, 20, 20, '1:2'),
+      ...filters("SER", "OFF", 380, 40, 70, "1:2", 550, 20, 20, "1:2"),
       ...filterEnv(0, 25, 0, 20),
-      ...vcaEnv(0, 35, 80, 20, 'ON'),
+      ...vcaEnv(0, 35, 80, 20, "ON"),
       ...vca(90, 0),
       ...sharedDelay(),
-      ...delayRouting('OFF'),
-      ...lfo1('TRIANGLE', 0.8, 0),
+      ...delayRouting("OFF"),
+      ...lfo1("TRIANGLE", 0.8, 0),
     ],
   },
   {
-    id: 'muse-bass-mid-dark',
-    role: 'bass-mid',
-    character: 'dark',
-    voice: 'timbre',
+    id: "muse-bass-mid-dark",
+    role: "bass-mid",
+    character: "dark",
+    voice: "timbre",
     verified: false,
-    title: 'Mono triangle pair, both ladders low, nothing above the fundamental',
+    title:
+      "Mono triangle pair, both ladders low, nothing above the fundamental",
     patchPolyphony: 1,
     params: [
-      ...voice('OFF', 'ON', 5),
+      ...voice("OFF", "ON", 5),
       ...midiSetup(),
       ...osc1("16'", 0, 0, 50, 0),
-      ...osc2("8'", -1, 0, 50, 0, 'OFF'),
-      ...modOsc('OFF', 'SINE', 10, 0, { osc1: 'OFF', osc2: 'OFF' }, 0, { f1: 'OFF', f2: 'OFF' }),
-      ...mixer(85, 0, 65, 0, 0, 20),
+      ...osc2("8'", -1, 0, 50, 0, "OFF"),
+      ...modOsc("OFF", "SINE", 10, 0, { osc1: "OFF", osc2: "OFF" }, 0, {
+        f1: "OFF",
+        f2: "OFF",
+      }),
+      ...mixer(85, 0, 65, 0, 0, 15),
       // "Nothing above the fundamental" rules out both a resonant peak and a filter that opens,
       // so the envelope amounts are at the noon their note calls no modulation.
-      ...filters('SER', 'OFF', 220, 10, 0, '1:2', 180, 5, 0, '1:2'),
+      ...filters("SER", "OFF", 220, 10, 0, "1:2", 180, 5, 0, "1:2"),
       ...filterEnv(0, 40, 30, 30),
-      ...vcaEnv(0, 45, 85, 30, 'ON'),
+      ...vcaEnv(0, 45, 85, 30, "ON"),
       ...vca(90, 0),
       ...sharedDelay(),
-      ...delayRouting('OFF'),
-      ...lfo1('TRIANGLE', 0.5, 0),
+      ...delayRouting("OFF"),
+      ...lfo1("TRIANGLE", 0.5, 0),
     ],
   },
   {
-    id: 'muse-bass-mid-dirty',
-    role: 'bass-mid',
-    character: 'dirty',
-    voice: 'timbre',
+    id: "muse-bass-mid-dirty",
+    role: "bass-mid",
+    character: "dirty",
+    voice: "timbre",
     verified: false,
-    title: 'Mono, overload up and the ring modulator sitting under the note',
+    title: "Mono, overload up and the ring modulator sitting under the note",
     patchPolyphony: 1,
     params: [
-      ...voice('OFF', 'ON', 35),
+      ...voice("OFF", "ON", 35),
       ...midiSetup(),
       ...osc1("8'", 0, 90, 50, 10),
-      ...osc2("16'", 3, 90, 50, 10, 'OFF'),
-      ...fm('2>1', 45),
-      ...modOsc('ON', 'SQUARE', 45, 0, { osc1: 'OFF', osc2: 'OFF' }, 20, { f1: 'ON', f2: 'OFF' }),
+      ...osc2("16'", 3, 90, 50, 10, "OFF"),
+      ...fm("2>1", 45),
+      ...modOsc("ON", "SQUARE", 45, 0, { osc1: "OFF", osc2: "OFF" }, 20, {
+        f1: "ON",
+        f2: "OFF",
+      }),
       // "Sitting under the note" puts the ring modulator well below the oscillators, which is the
       // opposite instruction to `muse-stab-dirty`'s and the same control.
-      ...mixer(90, 40, 90, 20, 10, 114, 'HIGH'),
-      ...filters('SER', 'OFF', 450, 50, 40, '1:2', 500, 35, 10, '1:2'),
+      ...mixer(90, 40, 90, 20, 10, 90, "HIGH"),
+      ...filters("SER", "OFF", 450, 50, 40, "1:2", 500, 35, 10, "1:2"),
       ...filterEnv(0, 30, 15, 25),
-      ...vcaEnv(0, 40, 80, 25, 'ON'),
+      ...vcaEnv(0, 40, 80, 25, "ON"),
       ...vca(85, 0),
       ...sharedDelay(),
-      ...delayRouting('OFF'),
-      ...lfo1('RANDOM', 5.5, 15),
+      ...delayRouting("OFF"),
+      ...lfo1("RANDOM", 5.5, 15),
     ],
   },
   {
-    id: 'muse-sub-dark',
-    role: 'sub',
-    character: 'dark',
-    voice: 'timbre',
+    id: "muse-sub-dark",
+    role: "sub",
+    character: "dark",
+    voice: "timbre",
     verified: false,
-    title: 'Mono sixteen-foot triangle, one ladder, nothing else in the mixer',
+    title: "Mono sixteen-foot triangle, one ladder, nothing else in the mixer",
     patchPolyphony: 1,
     params: [
-      ...voice('OFF', 'ON', 0),
+      ...voice("OFF", "ON", 0),
       ...midiSetup(),
       ...osc1("16'", 0, 0, 50, 0),
-      ...osc2("16'", 0, 0, 50, 0, 'OFF'),
-      ...modOsc('OFF', 'SINE', 10, 0, { osc1: 'OFF', osc2: 'OFF' }, 0, { f1: 'OFF', f2: 'OFF' }),
+      ...osc2("16'", 0, 0, 50, 0, "OFF"),
+      ...modOsc("OFF", "SINE", 10, 0, { osc1: "OFF", osc2: "OFF" }, 0, {
+        f1: "OFF",
+        f2: "OFF",
+      }),
       // "Nothing else in the mixer", said in the only place it can be said.
       ...mixer(95, 0, 0, 0, 0, 0),
       // A sub is a fundamental and nothing else: no resonant peak, and no envelope on either
       // corner, which is noon on a bipolar amount rather than zero.
-      ...filters('SER', 'OFF', 160, 0, 0, '1:2', 130, 0, 0, 'OFF'),
+      ...filters("SER", "OFF", 160, 0, 0, "1:2", 130, 0, 0, "OFF"),
       ...filterEnv(0, 40, 50, 30),
-      ...vcaEnv(0, 50, 95, 30, 'OFF'),
+      ...vcaEnv(0, 50, 95, 30, "OFF"),
       ...vca(95, 0),
       ...sharedDelay(),
-      ...delayRouting('OFF'),
-      ...lfo1('TRIANGLE', 0.1, 0),
+      ...delayRouting("OFF"),
+      ...lfo1("TRIANGLE", 0.1, 0),
     ],
   },
   {
-    id: 'muse-sub-clean',
-    role: 'sub',
-    character: 'clean',
-    voice: 'timbre',
+    id: "muse-sub-clean",
+    role: "sub",
+    character: "clean",
+    voice: "timbre",
     verified: false,
-    title: 'Mono sine from a self-oscillating ladder tracking the keys, mixer shut',
+    title:
+      "Mono sine from a self-oscillating ladder tracking the keys, mixer shut",
     patchPolyphony: 1,
     params: [
       // p.36's tip: "setting RESONANCE fully clockwise allows you to use either filter as a sine
@@ -1738,124 +1925,137 @@ const recipes: Recipe[] = [
       // clockwise is what the page says, and both ENVELOPE AMOUNTs are `0` — noon on the signed
       // scale — because an envelope on this filter would bend the pitch of the sine rather than
       // shape a tone.
-      ...voice('OFF', 'ON', 0),
+      ...voice("OFF", "ON", 0),
       ...midiSetup(),
       ...osc1("16'", 0, 0, 50, 0),
-      ...osc2("16'", 0, 0, 50, 0, 'OFF'),
-      ...modOsc('OFF', 'SINE', 10, 0, { osc1: 'OFF', osc2: 'OFF' }, 0, { f1: 'OFF', f2: 'OFF' }),
+      ...osc2("16'", 0, 0, 50, 0, "OFF"),
+      ...modOsc("OFF", "SINE", 10, 0, { osc1: "OFF", osc2: "OFF" }, 0, {
+        f1: "OFF",
+        f2: "OFF",
+      }),
       ...mixer(0, 0, 0, 0, 0, 0),
-      ...filters('SER', 'OFF', 200, 100, 0, '1:1', 140, 0, 0, 'OFF'),
+      ...filters("SER", "OFF", 200, 100, 0, "1:1", 140, 0, 0, "OFF"),
       ...filterEnv(0, 40, 50, 30),
-      ...vcaEnv(5, 45, 95, 35, 'OFF'),
+      ...vcaEnv(5, 45, 95, 35, "OFF"),
       ...vca(90, 0),
       ...sharedDelay(),
-      ...delayRouting('OFF'),
-      ...lfo1('TRIANGLE', 0.1, 0),
+      ...delayRouting("OFF"),
+      ...lfo1("TRIANGLE", 0.1, 0),
     ],
   },
 
   // ---- texture: eight voices held, non-melodic ---------------------------
   {
-    id: 'muse-texture-soft',
-    role: 'texture',
-    character: 'soft',
-    voice: 'timbre',
+    id: "muse-texture-soft",
+    role: "texture",
+    character: "soft",
+    voice: "timbre",
     verified: false,
-    title: 'Per-voice modulation oscillators drifting the pitches apart under a stereo pair',
+    title:
+      "Per-voice modulation oscillators drifting the pitches apart under a stereo pair",
     params: [
-      ...voice('OFF', 'OFF', 30),
+      ...voice("OFF", "OFF", 30),
       ...midiSetup(),
       ...osc1("8'", 0, 10, 50, 0),
-      ...osc2("8'", 6, 10, 50, 0, 'OFF'),
+      ...osc2("8'", 6, 10, 50, 0, "OFF"),
       // AUDIO off: eight independent per-voice LFOs, which is the whole point of this patch, so
       // the rate is at the bottom of the knob and the pitch amount is the audible one.
-      ...modOsc('OFF', 'SINE', 5, 30, { osc1: 'ON', osc2: 'ON' }, 20, { f1: 'ON', f2: 'ON' }),
+      ...modOsc("OFF", "SINE", 5, 30, { osc1: "ON", osc2: "ON" }, 20, {
+        f1: "ON",
+        f2: "ON",
+      }),
       ...mixer(60, 0, 60, 0, 15, 0),
-      ...filters('STR', 'OFF', 600, 20, 10, '1:2', 700, 15, 10, '1:2'),
+      ...filters("STR", "OFF", 600, 20, 10, "1:2", 700, 15, 10, "1:2"),
       ...filterEnv(85, 65, 60, 90),
-      ...vcaEnv(90, 60, 90, 95, 'OFF'),
+      ...vcaEnv(90, 60, 90, 95, "OFF"),
       // A texture sits under everything else, and the pair is wide.
       ...vca(55, 85),
       ...sharedDelay(),
-      ...delayRouting('ON'),
-      ...lfo1('TRIANGLE', 0.08, 35, 'PER-VOICE'),
+      ...delayRouting("ON"),
+      ...lfo1("TRIANGLE", 0.08, 35, "PER-VOICE"),
     ],
   },
   {
-    id: 'muse-texture-dirty',
-    role: 'texture',
-    character: 'dirty',
-    voice: 'timbre',
+    id: "muse-texture-dirty",
+    role: "texture",
+    character: "dirty",
+    voice: "timbre",
     verified: false,
-    title: 'Noise and ring modulator held under a random LFO, overload wide open',
+    title:
+      "Noise and ring modulator held under a random LFO, overload wide open",
     params: [
-      ...voice('OFF', 'OFF', 60),
+      ...voice("OFF", "OFF", 60),
       ...midiSetup(),
       ...osc1("8'", 0, 70, 50, 25),
-      ...osc2("2'", -5, 70, 50, 25, 'ON'),
-      ...modOsc('ON', 'NOISE', 70, 30, { osc1: 'ON', osc2: 'ON' }, 35, { f1: 'ON', f2: 'ON' }),
+      ...osc2("2'", -5, 70, 50, 25, "ON"),
+      ...modOsc("ON", "NOISE", 70, 30, { osc1: "ON", osc2: "ON" }, 35, {
+        f1: "ON",
+        f2: "ON",
+      }),
       // The title names the two loud things, so the oscillators are the support and the noise and
       // ring modulator are above them.
-      ...mixer(40, 75, 40, 45, 85, 120, 'HIGH'),
-      ...filters('PAR', 'ON', 160, 45, 0, 'OFF', 2200, 40, 20, 'OFF'),
+      ...mixer(40, 75, 40, 45, 85, 95, "HIGH"),
+      ...filters("PAR", "ON", 160, 45, 0, "OFF", 2200, 40, 20, "OFF"),
       ...filterEnv(75, 60, 50, 85),
-      ...vcaEnv(80, 60, 85, 90, 'OFF'),
+      ...vcaEnv(80, 60, 85, 90, "OFF"),
       ...vca(55, 80),
       ...sharedDelay(),
-      ...delayRouting('ON'),
-      ...lfo1('RANDOM', 1.6, 50, 'PER-VOICE'),
+      ...delayRouting("ON"),
+      ...lfo1("RANDOM", 1.6, 50, "PER-VOICE"),
     ],
   },
 
   // ---- arp: the one role that reaches the ARPEGGIATOR --------------------
   {
-    id: 'muse-arp-clean',
-    role: 'arp',
-    character: 'clean',
-    voice: 'timbre',
+    id: "muse-arp-clean",
+    role: "arp",
+    character: "clean",
+    voice: "timbre",
     verified: false,
-    title: 'Triangle pluck through two octaves, gates short, nothing on the tail',
+    title:
+      "Triangle pluck through two octaves, gates short, nothing on the tail",
     params: [
-      ...voice('OFF', 'OFF', 5),
+      ...voice("OFF", "OFF", 5),
       ...midiSetup(),
       ...osc1("8'", 0, 0, 50, 0),
-      ...osc2("4'", 0, 0, 50, 0, 'OFF'),
+      ...osc2("4'", 0, 0, 50, 0, "OFF"),
       ...mixer(70, 0, 60, 0, 0, 0),
       // A pluck is a filter envelope on an otherwise still corner.
-      ...filters('SER', 'OFF', 1500, 15, 30, '1:1', 2000, 10, 10, '1:2'),
+      ...filters("SER", "OFF", 1500, 15, 30, "1:1", 2000, 10, 10, "1:2"),
       ...filterEnv(0, 30, 0, 15),
       // "Nothing on the tail": no sustain and the shortest release on the device.
-      ...vcaEnv(0, 30, 0, 10, 'ON'),
+      ...vcaEnv(0, 30, 0, 10, "ON"),
       ...vca(70, 40),
-      ...arp('ORD', 2, 34, 'STRGHT'),
+      ...arp("ORD", 2, 34, "STRGHT"),
       ...sharedDelay(),
-      ...delayRouting('ON'),
+      ...delayRouting("ON"),
     ],
   },
   {
-    id: 'muse-arp-bright',
-    role: 'arp',
-    character: 'bright',
-    voice: 'timbre',
+    id: "muse-arp-bright",
+    role: "arp",
+    character: "bright",
+    voice: "timbre",
     verified: false,
-    title: 'Sawtooth over four octaves in random order, filter tracking, long repeats',
+    title:
+      "Sawtooth over four octaves in random order, filter tracking, long repeats",
     params: [
-      ...voice('OFF', 'OFF', 20),
+      ...voice("OFF", "OFF", 20),
       ...midiSetup(),
       ...osc1("8'", 0, 100, 50, 0),
-      ...osc2("4'", 2, 100, 50, 0, 'OFF'),
+      ...osc2("4'", 2, 100, 50, 0, "OFF"),
       ...mixer(65, 0, 60, 0, 5, 0),
-      ...filters('PAR', 'ON', 140, 25, 0, '1:1', 7000, 30, 40, '1:1'),
+      ...filters("PAR", "ON", 140, 25, 0, "1:1", 7000, 30, 40, "1:1"),
       ...filterEnv(0, 35, 5, 20),
       // "Long repeats" is the delay, not the release: the note itself is still short.
-      ...vcaEnv(0, 35, 5, 25, 'ON'),
+      ...vcaEnv(0, 35, 5, 25, "ON"),
       ...vca(70, 55),
-      ...arp('RND', 4, 22, 'COMBO'),
+      ...arp("RND", 4, 22, "COMBO"),
       ...sharedDelay(),
-      ...delayRouting('ON'),
+      ...delayRouting("ON"),
     ],
   },
-]
+];
 
 // ---------------------------------------------------------------------------
 // §2.3 Manifest
@@ -1877,13 +2077,21 @@ const recipes: Recipe[] = [
  * because the roles it wants — a resonant lowpass with per-step slide and accent — need a
  * sequencer this manifest does not model.
  */
-const TIMBRE_ROLES = ['pad', 'stab', 'lead', 'bass-mid', 'sub', 'texture', 'arp'] as const
+const TIMBRE_ROLES = [
+  "pad",
+  "stab",
+  "lead",
+  "bass-mid",
+  "sub",
+  "texture",
+  "arp",
+] as const;
 
 export const device: Device = {
-  id: 'moog-muse',
-  name: 'Muse',
-  maker: 'Moog',
-  kind: 'synth',
+  id: "moog-muse",
+  name: "Muse",
+  maker: "Moog",
+  kind: "synth",
 
   /**
    * Both directions, three transports, and the two directions are not the same set — see the
@@ -1893,36 +2101,36 @@ export const device: Device = {
   clock: {
     canSendClock: true,
     canReceiveClock: true,
-    transport: ['midi-din', 'usb', 'analog-clock'],
-    sendTransport: ['midi-din', 'analog-clock'],
-    receiveTransport: ['midi-din', 'usb', 'analog-clock'],
+    transport: ["midi-din", "usb", "analog-clock"],
+    sendTransport: ["midi-din", "analog-clock"],
+    receiveTransport: ["midi-din", "usb", "analog-clock"],
     sourceSetup: [
       {
-        transport: 'midi-din',
-        path: 'CLOCK MORE > MIDI CLOCK OUT',
-        value: 'ON',
-        note: 'Defaults to OFF, so nothing leaves the MIDI OUT until this is set',
+        transport: "midi-din",
+        path: "CLOCK MORE > MIDI CLOCK OUT",
+        value: "ON",
+        note: "Defaults to OFF, so nothing leaves the MIDI OUT until this is set",
       },
       {
-        transport: 'analog-clock',
-        path: 'CLOCK MORE > CLOCK OUT SOURCE',
-        value: 'INT CLOCK',
-        note: 'The default; STRT/STOP follows MIDI transport instead',
+        transport: "analog-clock",
+        path: "CLOCK MORE > CLOCK OUT SOURCE",
+        value: "INT CLOCK",
+        note: "The default; STRT/STOP follows MIDI transport instead",
       },
     ],
   },
 
   capabilityEvidence: {
-    'clock.canSendClock': {
-      kind: 'manual',
+    "clock.canSendClock": {
+      kind: "manual",
       source: `${MANUAL}, p.66`,
     },
-    'clock.canReceiveClock': {
-      kind: 'manual',
+    "clock.canReceiveClock": {
+      kind: "manual",
       source: `${MANUAL}, p.66`,
     },
-    'clock.transport': {
-      kind: 'manual',
+    "clock.transport": {
+      kind: "manual",
       source: `${MANUAL}, pp.26, 66`,
     },
     /**
@@ -1931,41 +2139,41 @@ export const device: Device = {
      * pp.66-67 give a rich set of outputs a rig could follow. Capability on both sides, and no
      * sentence anywhere saying whether driving a rig is what this box is for.
      */
-    'clock.preferredSource': {
-      kind: 'unknown',
+    "clock.preferredSource": {
+      kind: "unknown",
       reason:
         'p.66 gives both halves as capabilities — `MIDI CLOCK OUT (OFF, SEQ, ON. DEFAULT: OFF)` and `CLOCK SOURCE (AUTO, INTERNAL, ANALOG, MIDI IN, USB. DEFAULT: AUTO)` — and p.65 describes the CLOCK section as establishing the tempo "for Muse"; nothing states a role in a rig, and the send half defaulting to off argues mildly against one',
     },
-    'clock.sourceSetup[midi-din]': {
-      kind: 'manual',
+    "clock.sourceSetup[midi-din]": {
+      kind: "manual",
       source: `${MANUAL}, p.66`,
     },
-    'clock.sourceSetup[analog-clock]': {
-      kind: 'manual',
+    "clock.sourceSetup[analog-clock]": {
+      kind: "manual",
       source: `${MANUAL}, pp.66-67`,
     },
-    'io.main': { kind: 'manual', source: `${MANUAL}, p.117` },
-    'io.individualOuts': { kind: 'manual', source: `${MANUAL}, p.117` },
+    "io.main": { kind: "manual", source: `${MANUAL}, p.117` },
+    "io.individualOuts": { kind: "manual", source: `${MANUAL}, p.117` },
     /**
      * `cited-against`, and this is the state that carries a page because the document answers no.
      * p.117's REAR PANEL block lists audio outputs, headphones, pedal inputs, CV inputs, CV
      * outputs; p.118 adds clock in, clock out, MIDI and the two USB ports. There is no audio input
      * of any kind. p.26's connector walkthrough lists the same fourteen and no other.
      */
-    'io.audioIn': {
-      kind: 'cited-against',
-      cite: { kind: 'manual', source: `${MANUAL}, pp.26, 117-118` },
+    "io.audioIn": {
+      kind: "cited-against",
+      cite: { kind: "manual", source: `${MANUAL}, pp.26, 117-118` },
       reason:
         "p.26 walks every rear connector and pp.117-118's REAR PANEL block lists them again — audio outputs, headphones, two pedal inputs, two CV inputs, two CV outputs, clock in, clock out, MIDI in/out/thru, two USB ports and the IEC. Fourteen jacks and not one of them takes audio; the pedal inputs are TRS control, not a signal path",
     },
-    'io.usbAudio': {
-      kind: 'cited-against',
-      cite: { kind: 'manual', source: `${MANUAL}, p.118` },
+    "io.usbAudio": {
+      kind: "cited-against",
+      cite: { kind: "manual", source: `${MANUAL}, p.118` },
       reason:
-        'p.118 gives both ports as MIDI and only MIDI — `USB B: USB-B connector for interfacing with a computer or other host MIDI device` and `USB A (HOST): USB-A connector for connecting to other instruments with Muse as the MIDI host` — and the MIDI line beside them reads `5 Pin DIN MIDI IN, OUT, THRU; MIDI over USB`, with no audio class mentioned anywhere',
+        "p.118 gives both ports as MIDI and only MIDI — `USB B: USB-B connector for interfacing with a computer or other host MIDI device` and `USB A (HOST): USB-A connector for connecting to other instruments with Muse as the MIDI host` — and the MIDI line beside them reads `5 Pin DIN MIDI IN, OUT, THRU; MIDI over USB`, with no audio class mentioned anywhere",
     },
-    voices: { kind: 'manual', source: `${MANUAL}, pp.8, 106, 116` },
-    'features.lfo': { kind: 'manual', source: `${MANUAL}, pp.52, 57-58, 63` },
+    voices: { kind: "manual", source: `${MANUAL}, pp.8, 106, 116` },
+    "features.lfo": { kind: "manual", source: `${MANUAL}, pp.52, 57-58, 63` },
     /**
      * §2.6/#111. **`cited-against`, and the reason is that this field asks a question about audio
      * that this box does not answer yes to.**
@@ -1988,12 +2196,12 @@ export const device: Device = {
      * (`init-patch`, `save-patch`) rather than through a field about sample libraries.
      */
     content: {
-      kind: 'cited-against',
-      cite: { kind: 'manual', source: `${MANUAL}, pp.12, 116-118` },
+      kind: "cited-against",
+      cite: { kind: "manual", source: `${MANUAL}, pp.12, 116-118` },
       reason:
-        'p.116 gives `SOUND ENGINE  Analog` and lists every module — oscillators, ring modulator, noise, mixer, filters, envelopes, VCA, delay — with no sample player among them, and pp.117-118 show no audio input of any kind; the 224 factory patches p.12 counts are stored panel settings rather than audio a recipe could load, so no recipe here carries `sourceAudio`',
+        "p.116 gives `SOUND ENGINE  Analog` and lists every module — oscillators, ring modulator, noise, mixer, filters, envelopes, VCA, delay — with no sample player among them, and pp.117-118 show no audio input of any kind; the 224 factory patches p.12 counts are stored panel settings rather than audio a recipe could load, so no recipe here carries `sourceAudio`",
     },
-    noteDuration: { kind: 'manual', source: `${MANUAL}, p.84` },
+    noteDuration: { kind: "manual", source: `${MANUAL}, p.84` },
   },
 
   /**
@@ -2048,14 +2256,14 @@ export const device: Device = {
    * gate length globally for every STEP"* (p.70), one setting for the whole pattern, which is why
    * the `arp` recipes carry it as an ordinary param and this field cites the sequencer instead.
    */
-  noteDuration: { kind: 'per-note-value', control: 'GATE' },
+  noteDuration: { kind: "per-note-value", control: "GATE" },
 
   /**
    * `MAIN OUT LEFT (MONO)` and `MAIN OUT RIGHT`, 1/4" TRS (p.117), and nothing else — the
    * headphone jack on the front edge of the Left-Hand Controller carries the same signal. No audio
    * input and no USB audio; both are `cited-against` above rather than merely unclaimed.
    */
-  io: { main: 'stereo', individualOuts: 0, audioIn: false, usbAudio: false },
+  io: { main: "stereo", individualOuts: 0, audioIn: false, usbAudio: false },
 
   /**
    * 990 mm across, from the `DIMENSIONS  (W x D x H): 99 x 42 x 11 (cm)` line on p.118. See
@@ -2076,8 +2284,8 @@ export const device: Device = {
    * page.
    */
   quickTune: {
-    note: 'Touches up tuning for the current temperature; takes a few seconds',
-    path: 'PROGRAMMER > TUNING > START QUICK TUNE',
+    note: "Touches up tuning for the current temperature; takes a few seconds",
+    path: "PROGRAMMER > TUNING > START QUICK TUNE",
     verified: cite(112),
   },
 
@@ -2089,15 +2297,16 @@ export const device: Device = {
    * one field would have blurred exactly the distinction that makes either safe to print.
    */
   calibration: {
-    summary: 'Full TUNING and AUTOCAL, beside the quick tune on the same settings page',
+    summary:
+      "Full TUNING and AUTOCAL, beside the quick tune on the same settings page",
     caution:
-      'Moog say the instrument is calibrated and tuned at the factory, and not to run full TUNING or AUTOCAL unless there is a significant problem that cannot be solved by other means',
+      "Moog say the instrument is calibrated and tuned at the factory, and not to run full TUNING or AUTOCAL unless there is a significant problem that cannot be solved by other means",
     verified: cite(112),
   },
 
-  manual: { title: "Moog Muse User's Manual", edition: 'Version 1.4.0' },
+  manual: { title: "Moog Muse User's Manual", edition: "Version 1.4.0" },
 
-  productPage: 'https://www.moogmusic.com/synthesizers/muse/',
+  productPage: "https://www.moogmusic.com/synthesizers/muse/",
 
   /**
    * **Two timbres, four notes each.** The module note is the long form; the short form is that the
@@ -2114,9 +2323,9 @@ export const device: Device = {
        * and at noon *"if a C is pressed, a C will sound"*. Musical pitch, which §4.1 leaves to the
        * direction. See the head note; the tests are in `test/moog-muse.test.ts`.
        */
-      kind: 'pool',
-      id: 'timbre',
-      label: 'Timbre',
+      kind: "pool",
+      id: "timbre",
+      label: "Timbre",
       count: 2,
       roles: [...TIMBRE_ROLES],
       polyphony: 4,
@@ -2134,14 +2343,21 @@ export const device: Device = {
     lfo: {
       count: 5,
       syncable: true,
-      destinations: ['pitch', 'filter-cutoff', 'pulse-width', 'vca-level', 'pan', 'delay-time'],
+      destinations: [
+        "pitch",
+        "filter-cutoff",
+        "pulse-width",
+        "vca-level",
+        "pan",
+        "delay-time",
+      ],
     },
   },
 
   /** Gestures off the panel. Jogs, not documentation (invariant 7). */
   hints: {
-    'edit-submenu': 'Press MORE in that section',
-    'timbre-select': 'Light TIMBRE A or B first',
+    "edit-submenu": "Press MORE in that section",
+    "timbre-select": "Light TIMBRE A or B first",
     /*
      * §8.1/#348. **VOICE CONTROL is a panel module with its own MORE button**, not somewhere
      * inside the PROGRAMMER. PDF p.106 is headed "VOICE CONTROL MORE MENU" and carries
@@ -2157,12 +2373,12 @@ export const device: Device = {
      * the menu belongs to a panel module or to the PROGRAMMER itself, so each of these is
      * checked against its own page rather than corrected by a rule.
      */
-    'voice-count': 'VOICE CONTROL, then MORE',
-    'midi-settings': 'PROGRAMMER, MENU, MIDI',
-    'init-patch': 'Press INIT for a blank patch',
-    'save-patch': 'SAVE, name it, CONFIRM',
-    'arp-steps': 'Press ARP, then buttons 1-16',
+    "voice-count": "VOICE CONTROL, then MORE",
+    "midi-settings": "PROGRAMMER, MENU, MIDI",
+    "init-patch": "Press INIT for a blank patch",
+    "save-patch": "SAVE, name it, CONFIRM",
+    "arp-steps": "Press ARP, then buttons 1-16",
   },
 
   recipes,
-}
+};
