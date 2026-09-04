@@ -1,9 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import { device } from '../lib/devices/moog-muse/index'
-import { moodState, resolve } from '../lib/core/index'
-import type { AuthoredNumericParam, AuthoredParam, ResolvedParam } from '../lib/core/index'
+import {
+  expand,
+  isSustainedPart,
+  moodState,
+  noteInstruction,
+  renderGuide,
+  resolve,
+} from '../lib/core/index'
+import type {
+  AuthoredNumericParam,
+  AuthoredParam,
+  Recipe,
+  ResolvedAssignment,
+  ResolvedParam,
+  Role,
+} from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { industrialTechno } from '../lib/templates/index'
+import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 
 /**
  * #325, then #324, then #349. One control's scale, argued three times, and each round left
@@ -626,5 +640,175 @@ describe('the Muse’s MIDI instruction names the controller (#324/#349)', () =>
         'Bipolar, centred at noon — the screen reads 100L through 0 to 100R · MIDI CC 10',
       )
     }
+  })
+})
+
+/**
+ * §2.1/#334. **This box authors no trigger note, and it has no blanks to fix either.**
+ *
+ * Every grid part it takes is a `sub` and every one of those carries the direction's own pitch, so
+ * the sweep's blank count here is zero. This block is the record of *why the field is declined*
+ * on a box the sweep barely touches — written before somebody adds a recipe and asks.
+ *
+ * `TriggerNote` is a loaded sample's original pitch and there is no sample here:
+ * `capabilityEvidence.content` already carries p.116's `SOUND ENGINE  Analog` with a module list
+ * that has no sample player in it, and pp.117-118 with no audio input to record one through.
+ *
+ * p.27 says what a note does instead, on the control that would carry one: `FREQUENCY` *"detunes
+ * each oscillator from the pitch associated with a keyboard note"*, and at noon *"if a C is
+ * pressed, a C will sound based on the OCTAVE setting"*. A pressed C sounds a C — musical pitch,
+ * which §4.1 leaves to the direction.
+ */
+describe('trigger notes: read for, and declined (§2.1/#334)', () => {
+  const SEEDS = [1, 2, 3, 4, 5, 6]
+
+  it('authors none on the pool, and none on any recipe either', () => {
+    // Both halves, because the field exists in two places and only one of them is the pool.
+    expect(device.voices.filter((v) => v.triggerNote !== undefined)).toEqual([])
+    const claiming = device.recipes.filter(
+      (r) => (r as Recipe & { triggerNote?: unknown }).triggerNote !== undefined,
+    )
+    expect(claiming.map((r) => r.id)).toEqual([])
+  })
+
+  it('stays off the library roster of boxes that author one', () => {
+    // `test/tracker-mini.test.ts` pins that roster exactly; this is the same fact asked from the
+    // side of the box that declines, so a note added here fails in its own file as well as there.
+    const authoring = DEVICES.filter((d) => d.voices.some((v) => v.triggerNote !== undefined))
+    expect(authoring.map((d) => d.id)).not.toContain('moog-muse')
+  })
+
+  it('expands to two timbres, neither of which carries a note', () => {
+    expect(device.voices.length).toBe(1)
+    const members = expand(device)
+    expect(members.length).toBe(2)
+    expect(members.every((m) => m.poolId === 'timbre')).toBe(true)
+    expect(members.filter((m) => m.triggerNote !== undefined)).toEqual([])
+  })
+
+  /**
+   * **The reason, read off the manifest rather than restated.** `content` is `cited-against` on
+   * pp.12 and 116-118 — the pages that answer that there is no audio here for a recipe to load —
+   * and no recipe carries `sourceAudio`. A sampler arriving on this box is the one change that
+   * would make the question worth asking again, and it would fail here.
+   */
+  it('loads no audio at all, so no part has an original pitch to name', () => {
+    const content = device.capabilityEvidence?.['content']
+    expect(content === undefined || content === false ? undefined : content.kind).toBe(
+      'cited-against',
+    )
+    const loading = device.recipes.filter(
+      (r) => (r as Recipe & { sourceAudio?: unknown }).sourceAudio !== undefined,
+    )
+    expect(loading.map((r) => r.id)).toEqual([])
+  })
+
+  /**
+   * A part phase 5 draws a grid for: not owned by a hook (#100), not sustained (§4.2), and with
+   * at least one section whose variant resolved (§6.3).
+   */
+  function drawsGrid(a: ResolvedAssignment): boolean {
+    return (
+      a.hookAuthority === undefined &&
+      !isSustainedPart(a) &&
+      a.patterns.some((p) => p.selection.outcome !== 'none')
+    )
+  }
+
+  /** Every part this box takes, split by what phase 5 actually draws for it. */
+  function sweep() {
+    const grid: { where: string; role: Role; kind: string }[] = []
+    const hooked: string[] = []
+    const sustained: string[] = []
+    const noPattern: string[] = []
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          const where = `${template.id}/${a.role}`
+          if (drawsGrid(a)) grid.push({ where, role: a.role, kind: noteInstruction(a).kind })
+          else if (a.hookAuthority !== undefined) hooked.push(where)
+          else if (isSustainedPart(a)) sustained.push(where)
+          else noPattern.push(where)
+        }
+      }
+    }
+    return { grid, hooked, sustained, noPattern }
+  }
+
+  /**
+   * **The measurement, and this box's answer is unlike every other in the sweep: no blanks at
+   * all.** Two assignables take few parts, and the ones they take are tonal, so the direction has
+   * already written a pitch for every grid this box draws.
+   *
+   * That makes the assertion stronger than the usual one rather than weaker: it says the field is
+   * declined *and* that nothing is missing because of it.
+   */
+  it('leaves no grid part blank, because every one of them is pitched', () => {
+    const { grid } = sweep()
+
+    expect(grid.length).toBe(24)
+    expect(grid.filter((g) => g.kind === 'none')).toEqual([])
+    expect([...new Set(grid.map((g) => g.kind))]).toEqual(['pitch'])
+    expect([...new Set(grid.map((g) => g.role))]).toEqual(['sub'])
+  })
+
+  it('accounts for every part that draws no grid, by which reason', () => {
+    // #100 gives a hooked part's notes to its hook, and on this box that is the whole of the
+    // remainder — nothing is sustained and nothing fails to resolve a variant.
+    const { grid, hooked, sustained, noPattern } = sweep()
+    expect(hooked.length).toBe(90)
+    expect(sustained).toEqual([])
+    expect(noPattern).toEqual([])
+
+    // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
+    // classify — which is what would make the zero above an artefact rather than a measurement.
+    let assignments = 0
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        assignments += resolve({ devices: [device], template, mood: moodState(), seed })
+          .assignments.length
+      }
+    }
+    expect(grid.length + hooked.length + sustained.length + noPattern.length).toBe(assignments)
+  })
+
+  /**
+   * The resolved field itself, across every part rather than only the ones that draw a grid.
+   * `noteInstruction` folds the trigger arm in with the pitch arm, so this is the one assertion
+   * that a hooked part did not quietly acquire one either.
+   */
+  it('resolves no trigger note on any assignment, in any direction', () => {
+    let seen = 0
+    for (const template of TEMPLATES) {
+      for (const seed of SEEDS) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        for (const a of result.assignments) {
+          seen += 1
+          expect(a.triggerNote, `${template.id}/${a.role} seed ${String(seed)}`).toBeUndefined()
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(0)
+  })
+
+  /**
+   * §8. **The reader-facing half**, checked on the page rather than only on the resolver.
+   *
+   * The count of parts that actually draw a grid is asserted non-zero first, or an empty render
+   * would pass this forever.
+   */
+  it('never prints a trigger note on a rendered page, across every direction and seed', () => {
+    let drawn = 0
+    for (const template of TEMPLATES) {
+      for (const seed of [1, 7]) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        drawn += result.assignments.filter(drawsGrid).length
+        expect(renderGuide(result), `${template.id} seed ${String(seed)}`).not.toContain(
+          'Trigger note',
+        )
+      }
+    }
+    expect(drawn).toBeGreaterThan(0)
   })
 })
