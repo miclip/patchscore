@@ -290,33 +290,24 @@ export function TokenList({
  * The anchor is still derived rather than written as `#phase-6` — §8 forbids reordering, but a
  * hard-coded anchor breaks silently — and `nav.ts` does that deriving now, because under the
  * sequencer layout the answer is not a phase anchor at all. Sound design is an `h5` beside the
- * steps there, in the same box's tab, and `#phase-6` names a section that layout never renders.
+ * steps there, in the same box's section, and `#phase-6` names a section that layout never
+ * renders.
  *
- * Three states, and the third is the one invariant 5 asks for:
+ * An ordinary anchor, and that is the whole of it: every section is on the page, so the browser's
+ * own handling does the landing and copy-link, middle-click and a keyboard activation all work
+ * without a handler. It carried one while the sequencer layout had tabs, to open a panel and wait
+ * a frame before scrolling — `scrollIntoView` on an element that is `display: none` does nothing
+ * and reads as a dead link. Nothing is hidden now, so nothing has to be opened first.
  *
- *  - **hidden behind a tab** — `go` opens the section first, then lands. Without it the browser
- *    scrolls to an element that is `display: none` and nothing appears to happen, which reads as
- *    a dead link.
- *  - **on the page already** — no `go`, and the browser's own anchor handling is the whole job.
- *  - **not rendered anywhere** — no link. A pointer to a section with nothing in it is the false
- *    trail `SustainedRef` exists to avoid, not an improvement on one.
+ * Two states, and the second is the one invariant 5 asks for: a target that is rendered gets a
+ * link, and a target nothing renders gets none. A pointer to a section with nothing in it is the
+ * false trail `SustainedRef` exists to avoid, not an improvement on one.
  */
 function PhaseLink({ to, children }: { to: 'hook' | 'sound'; children: ReactNode }) {
   const nav = useContext(GuideNavContext)
-  const target = nav[to]
-  if (target === undefined) return <>{children}</>
-  const go = nav.go
-  return (
-    <a
-      href={`#${target.id}`}
-      // Not `preventDefault`: the href stays a real link, so copy-link, middle-click and a
-      // keyboard activation all keep working. What `go` adds is opening the tab, which the
-      // browser cannot do — and the scroll it does afterwards, once the panel is on the page.
-      onClick={go === undefined ? undefined : () => go(target)}
-    >
-      {children}
-    </a>
-  )
+  const id = nav[to]
+  if (id === undefined) return <>{children}</>
+  return <a href={`#${id}`}>{children}</a>
 }
 
 /**

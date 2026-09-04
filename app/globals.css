@@ -2296,102 +2296,25 @@ button:active {
 
 /* -------------------------------------------------- #341 getting about the guide */
 /*
- * The guide is one long scroll and §8 says it is read standing at a rack, so both layouts get a
- * way through that is not the scrollbar — and they get **different** ones, because the two
- * layouts are not the same shape.
+ * The guide is one long scroll and §8 says it is read standing at a rack, so it gets a way
+ * through that is not the scrollbar. **One** way, shared by both layouts.
  *
- * Boxes are independent: a tab strip is exactly right for them, and everything it hides belongs
- * to a machine you are not touching. The seven phases are sequential and §8 forbids reordering
- * them, so they get a jump-nav that keeps every section on the page instead.
+ * It briefly had two. The sequencer layout got a tab strip, on the argument that boxes are
+ * independent and what a closed tab hides belongs to a machine you are not touching; the phases
+ * are sequential and §8 forbids reordering them, so they got this bar instead. `nav.ts` carries
+ * why that lost, and the shape of the loss is visible from here: the strip needed a print rule to
+ * put its closed panels back, a `display: none` it could be undone from, and an `sr-only` on the
+ * heading it was repeating. This needed none of them, because it hides nothing.
  *
- * Both scroll **inside themselves** (#21). Seven items do not fit 390px and the page body never
- * scrolls sideways. Neither container carries `touch-action`; the buttons and links do, which is
- * the rule the knob settled — put it on a strip and the page stops scrolling past it, and on a
- * phone that strip is stuck to the top of the guide.
+ * It scrolls **inside itself** (#21). Neither seven phases nor a rack of boxes fits 390px and the
+ * page body never scrolls sideways. The container carries no `touch-action`; the links do, which
+ * is the rule the knob settled — put it on a strip and the page stops scrolling past the control,
+ * and on a phone that strip is stuck to the top of the guide.
  */
 
-.guide-tabs {
-  display: flex;
-  gap: 4px;
-  /* It sits between Rig integration and the boxes, so it takes a section's own top margin. */
-  margin-top: 28px;
-  max-width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  border-bottom: 1px solid var(--edge);
-}
-
-.guide-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
-  /* #21: 44px, and the strip is as tall as its targets rather than the other way round. */
-  min-height: 44px;
-  padding: 4px 12px;
-  border: 1px solid transparent;
-  border-bottom: 0;
-  border-radius: var(--radius) var(--radius) 0 0;
-  background: transparent;
-  color: var(--ink-dim);
-  font: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.guide-tab:hover {
-  color: var(--silkscreen);
-}
-
 /*
- * The open tab is a lit one: the accent sits on the top edge where a signal indicator would, and
- * the panel colour continues down into the section below it. Colour is not the only cue —
- * `aria-selected` is what a screen reader reads, and the ink changes as well as the ground.
- */
-.guide-tab[aria-selected='true'] {
-  color: var(--silkscreen);
-  background: var(--panel-2);
-  border-color: var(--edge);
-  box-shadow: inset 0 2px 0 var(--accent);
-}
-
-.guide-tab:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
-.tab-number {
-  color: var(--accent);
-  font-size: 12px;
-  letter-spacing: 0;
-}
-
-/*
- * A closed tab is hidden, never unmounted — the print stylesheet puts every one of them back, and
- * an anchor arriving from outside has to find its target before the tab holding it is opened.
- */
-.phase[data-active='false'] {
-  display: none;
-}
-
-/* The open panel belongs to the strip above it, so it sits closer than a stacked section does. */
-.phase[role='tabpanel'] {
-  margin-top: 16px;
-}
-
-.phase[role='tabpanel']:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
-
-/*
- * The jump-nav. Sticky, because its whole job is to still be there two metres down; it names
- * where you are in a sequence rather than offering seven independent things to open.
+ * Sticky, because its whole job is to still be there two metres down; it names where you are in a
+ * sequence rather than offering a row of independent things to open.
  */
 .guide-jump {
   position: sticky;
@@ -3416,13 +3339,16 @@ h4 > .token-sep,
 }
 
 /*
- * #341. Under the phase layout the jump-nav is stuck to the top of the viewport, so 16px puts
- * the heading you jumped to underneath it. Scoped to that layout: the tab strip does not stick,
- * and giving the sequencer layout the same offset would leave a gap above every section.
+ * #341. The jump-nav is stuck to the top of the viewport, so 16px would put the heading you
+ * jumped to underneath it. Both layouts, because both have the bar — it was scoped to the phase
+ * layout while the sequencer layout had a tab strip, which did not stick.
+ *
+ * `guide.tsx` reads this value off the element rather than repeating it, so the phase the bar
+ * marks is the one whose heading came to rest under it.
  */
-.guide[data-layout='phase'] .phase > h3,
-.guide[data-layout='phase'] .phase > h4[id],
-.guide[data-layout='phase'] .phase h5[id] {
+.guide .phase > h3,
+.guide .phase > h4[id],
+.guide .phase h5[id] {
   scroll-margin-top: 60px;
 }
 
@@ -3629,15 +3555,13 @@ html {
   .panel:not(.guide-panel):not(.rack-section),
   .guide-actions,
   /*
-   * #341. **Navigation is chrome; every section it hides is content.**
+   * #341. **Navigation is chrome; every section is content.**
    *
-   * A tab strip printed onto paper is seven words nobody can press, and a sticky jump-nav is a
-   * row of dead links stamped at the top of the first sheet. The rule the hints toggle already
-   * follows: a printout is taken to a machine precisely because the reader does not have the app
-   * in front of them, so what prints is the guide, whole. See `.phase[data-active]` below, which
-   * is the other half of this and the half that would be missed.
+   * A sticky jump-nav printed onto paper is a row of dead links stamped at the top of the first
+   * sheet. The rule the hints toggle already follows: a printout is taken to a machine precisely
+   * because the reader does not have the app in front of them, so what prints is the guide,
+   * whole — and it does, because nothing on screen was hiding any of it.
    */
-  .guide-tabs,
   .guide-jump,
   /*
    * §7.5/#340 phase 2. The placement control is chrome by the same test as the hints toggle: a
@@ -3833,18 +3757,6 @@ html {
   .phase {
     break-before: auto;
     break-inside: auto;
-  }
-
-  /*
-    #341. **Every tab prints, including the six that were closed.**
-
-    On screen a closed tab is `display: none`; on paper there are no tabs, and a guide missing
-    three of its four boxes because of what somebody happened to be looking at when they pressed
-    print is the worst kind of silent failure — it looks complete. The sections are all in the
-    markup for exactly this reason; unmounting them would put this beyond a stylesheet's reach.
-  */
-  .phase[data-active='false'] {
-    display: block !important;
   }
 
   /* Tables have to survive without the screen's borders-by-background trick. */
