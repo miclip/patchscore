@@ -1488,8 +1488,21 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * on did not move at all — `weave` asks for no clap.
    *
    * Twenty-five consecutive zeroes, across twenty-one devices and fifteen content changes.
+   *
+   * **Three recipes take it up 133 nodes and the gap stays at zero — a twenty-sixth time.**
+   * 502,722 -> 502,855 unrepaired and the same repaired. The TR-8S's `bass-mid` on LT and its
+   * `noise` on both slots that declare it (#345), which is the TR-1000's entry three above
+   * arriving on the sibling box.
+   *
+   * The same 133 as the Digitone's single clap, for three recipes rather than one, and the
+   * difference is fixed voices against a pool: two `noise` recipes add two named slots the search
+   * can try, where one recipe on a pool of four adds four. `bass-mid` is asked by this direction
+   * outright and still costs little, because LT is contended for by a `tom` the direction ranks
+   * higher and the candidate arrives where the search has already committed.
+   *
+   * Twenty-six consecutive zeroes, across twenty-two devices and sixteen content changes.
    */
-  it('walks the recorded 502,722 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 502,855 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1497,7 +1510,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(502_722)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(502_855)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
