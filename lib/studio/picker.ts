@@ -338,7 +338,7 @@ export type ScrollRow = {
 }
 
 /**
- * Where to scroll a picker list so the chosen row sits in the middle of it (#387).
+ * Where to scroll a picker list so the chosen row sits in the middle of it (#391).
  *
  * `.picker-list` is a 21rem scroll box and the direction list is longer than that, so a choice
  * arriving from a permalink was often below the fold — the panel opened on the top of the list

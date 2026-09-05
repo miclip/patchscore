@@ -35,7 +35,7 @@ export function GenrePicker({ selected, onSelect }: GenrePickerProps) {
   const list = useRef<HTMLFieldSetElement>(null)
 
   /**
-   * Bring the chosen direction into the middle of the list on load (#387).
+   * Bring the chosen direction into the middle of the list on load (#391).
    *
    * **On mount only, and deliberately not on every change of `selected`.** Scrolling when the
    * reader picks a row would move the list under the hand that just clicked it, and the row they

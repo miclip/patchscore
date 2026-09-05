@@ -923,13 +923,13 @@ describe('the gap filter is disabled rather than removed (§7.3)', () => {
 })
 
 /**
- * §8/#387. The direction list is a 21rem scroll box and the library is longer than that, so a
+ * §8/#391. The direction list is a 21rem scroll box and the library is longer than that, so a
  * direction arriving from a permalink was often below the fold. These fix the arithmetic; the DOM
  * wiring in `genre-picker.tsx` is three lines and is reviewed rather than tested, because this
  * suite runs on `node` and standing up a DOM for a `scrollTop` assignment would cost more than it
  * proves.
  */
-describe('centring the chosen row in a picker list (#387)', () => {
+describe('centring the chosen row in a picker list (#391)', () => {
   const box = { scrollHeight: 900, clientHeight: 300, scrollTop: 0 }
 
   it('leaves a list that does not scroll alone', () => {
