@@ -2137,12 +2137,29 @@ function paramLines(param: ResolvedParam, device: Device | undefined, options: H
   const out: Line[] = []
   const unit = param.unit === undefined ? '' : ` ${param.unit}`
   const range = param.range === undefined ? '' : ` (${rangeText(param.range, param.unit)})`
+  /*
+   * §3.1/#414. **The controller, on the value line and not on a line of its own.**
+   *
+   * `midiCc` had no rendering of its own: the resolver appended `MIDI CC 51` to `note`, which on
+   * a control with nothing else to say made a controller number the whole of a NOTE row. It is
+   * addressing information — *which* control this is to anything driving the box — so it belongs
+   * beside the value the reader is dialling, not under it competing with prose. A suffix costs no
+   * row, which is what §8's reader standing at a machine is short of.
+   *
+   * **Outside the backticks, deliberately.** §10 keeps one face for values and another for prose,
+   * and this is neither a value to dial nor a scale to read: it is a label. Its web sibling is
+   * `.value-cc` in `app/globals.css`, muted and not `mono`, and the test file pins the pair.
+   *
+   * Last, after unit and range, because those two say what the number on the line *means* and
+   * this says how to reach the control instead.
+   */
+  const cc = param.midiCc === undefined ? '' : ` · MIDI CC ${param.midiCc}`
   // Name, value, unit, range. No `hoisted` argument any more: it existed only to stop a range
   // citation repeating under every line a shared sentence already covered, and with no citation
   // to repeat there is nothing to hoist.
   // #385: the module's own prefix is trimmed when its box already carries it. `paramLabel` is
   // shared with the web view so one control cannot read two ways; the stored name is untouched.
-  out.push(`- **${paramLabel(param)}** \`${valueText(param)}\`${unit}${range}`)
+  out.push(`- **${paramLabel(param)}** \`${valueText(param)}\`${unit}${range}${cc}`)
   if (param.note !== undefined) subordinate(out, '  ', 'note', param.note)
   if (options.hints && param.hint !== undefined) {
     subordinate(out, '  ', 'hint', hintText(device, param.hint))

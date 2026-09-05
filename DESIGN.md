@@ -1334,31 +1334,50 @@ on `ResolvedParam`s, because a parameter's note is what the sentence was appende
 what the fix is about; and keyed on `midiCc` rather than on the shape of the sentence, for the same
 reason the notice is — a reworded instruction must not quietly stop being counted.
 
-### `midiCc`, and why the resolver writes the sentence
+### `midiCc`, and why the resolver writes no sentence at all
 
-**What the parameter line kept is the instruction, and the instruction cannot be authored** (#324).
-A device declares the number:
+**A CC number is a number, and the model carries it as one** (#324, #349, #414). A device declares
+it, on a knob or on a switch:
 
 ```ts
-type AuthoredNumericParam = { …; midiCc?: number }        // 0-127, optional, cited by the range
-type ResolvedParam        = { …; midiCc?: number }        // carried through, sentence in `note`
+type AuthoredNumericParam = { …; midiCc?: number }        // 0-127, optional
+type AuthoredEnumParam    = { …; midiCc?: number }        // a switch is as addressable as a knob
+type AuthoredTextParam    = { …  }                        // no CC: an instruction is not a control
+type ResolvedParam        = { …; midiCc?: number }        // carried through, unchanged
 ```
 
-and `resolveParam` composes `Send MIDI CC 87 = 36` **after mood**, joining any authored note in
-front of it with the library's ` · `.
+and `resolveParam` carries it through untouched, beside a `note` that is authored prose and only
+authored prose. **Nothing composes a sentence anywhere.** Where the number reaches a reader is a
+rendering decision, made where the guide is drawn — §8's phase 6 has it, and §8.1 has why it earns
+no subordinate line of its own.
 
-The order is the whole point. Mood moves a numeric value after it is authored (§6.1), so a sentence
-written in a device folder carries the value the author typed and not the one the reader is looking
-at. The Muse shipped exactly that: `VCA ENV · DECAY` under a density knob rendered `54 → 36` on the
-line, with *"send 54"* underneath — the number struck through above it. Two of the eight envelope
-faders and both filter cutoffs declare mood, so the guide was wrong on the controls a reader watches
-most. Composing after the arithmetic and after the clamp makes the two numbers the same by
-construction, and **`provenance.from` must never appear in the instruction**: it is what the reader
-is moving away from.
+The field arrived because the sentence could not be authored, and it outlived three versions of
+that sentence. The Muse first wrote `Send MIDI CC 87 = 54` in the device folder, at authoring time;
+mood then moved the value to `36`, so the guide printed `54 → 36` on the line and *"send 54"*
+underneath — the number struck through above it. **#324** moved the composition into the resolver,
+after mood and after the clamp, which is the only place the number in a sentence can be the number
+on the line. **#349** removed the value from the sentence: the Muse is authored on the scales its
+screen shows, percent and Hz, and no page maps either onto a CC value, so `Send MIDI CC 67 = 74`
+beside `74 %` named a number that lands somewhere nobody has measured. **#414** removed the
+sentence. What #349 left was `MIDI CC 87`, and on a control with no authored prose that string was
+the *whole* of `note` — a NOTE row whose entire content was a controller number, on 372 parameters
+of one box. The lesson the three share is that a value interpolated into prose goes stale and prose
+composed around a bare fact was never prose; a typed number does neither.
 
-`ResolvedParam.provenance` is untouched by this and stays required (invariant 4). `midiCc` is not a
-fifth shared vocabulary (invariant 3) — no template names a CC and nothing joins on one; it travels
-device → resolver → renderer exactly as `unit` and `note` do.
+**A CC and a note are two kinds of claim.** A CC identifies an *automation address* — which
+controller reaches this control — which is true of the box, useful to anything driving it, and
+silent about the sound. A note adds *control-specific meaning the instruction cannot*: `Bipolar, no
+modulation at noon` says what the number beside it means on this control's own scale. §8 keeps them
+on different lines for that reason.
+
+`midiCc` reaches an enum as well as a numeric, and deliberately not a text param: a switch is a
+control on the panel and as reachable over MIDI as a knob, where a text param is a written
+instruction with no control for a controller number to address. `AuthoredTextParamSchema` is a
+`strictObject`, so that last one is enforced rather than merely intended.
+
+`ResolvedParam.provenance` is untouched by any of this and stays required (invariant 4). `midiCc`
+is not a fifth shared vocabulary (invariant 3) — no template names a CC and nothing joins on one;
+it travels device → resolver → renderer exactly as `unit` and `note` do.
 
 ### 3.2 Provenance is three-state, because a legal value is not a verified value
 
@@ -3653,6 +3672,51 @@ Do not reorder.
    renderer sees it — the guide printing none of it is a decision about this surface, never a
    case that fell through
 
+   **A control's MIDI CC is a suffix on the value line, always, and never a line of its own**
+   (§3.1/#414). Where `midiCc` is declared, the line ends `· MIDI CC 51`, after the value, the
+   unit and the range: `CUTOFF 74 % (0…100 %) · MIDI CC 51`. It is set in the prose face rather
+   than the value face — it is a label, not a number to dial and not a scale to read the value
+   against — and it is **independent of whether the control has authored prose**. A control with a
+   note gets both, in two places: the suffix on the value line and the note on its own line
+   beneath, with no separator and no part of either in the other.
+
+   **A bare CC is not a note, and that is the whole of what #414 decided.** The resolver used to
+   compose the suffix into `note`, so on a control with nothing else to say a controller number
+   became the entire content of a NOTE row — a row styled for prose, carrying a number, beside a
+   sibling whose note said something real. The two carry different kinds of claim. A CC
+   **identifies an automation address**: which controller reaches this control, true of the box
+   and useful to anything driving it, and it says nothing whatever about the sound. A note **adds
+   control-specific meaning the instruction cannot** — *"Bipolar, no modulation at noon"* tells a
+   reader what the number beside it means on this control's own scale. Collapsing the second into
+   the first cost the reader a distinction the model already carried: `note` and `midiCc` are two
+   fields on `ResolvedParam` and now stay two things on the page
+
+   **`RESOLVER_VERSION` stays at 7, and it is worth being exact about what that claims.** It is
+   *not* the claim that the result is unchanged. `note` is a field on `ResolvedParam`, so the same
+   Muse inputs now produce a `ResolveResult` with different bytes in it: on the `muse` rig, 77 of
+   155 resolved parameters have a different `note` — 42 that had a bare `MIDI CC n` as their whole
+   note now have none at all, and 35 keep their prose with the appended tail gone. That change is
+   deliberate and is the point of #414.
+
+   The stamp stays at 7 because of what this project uses it to version: **decisions the musical
+   engine makes** — which device carries which part, what value a control lands on, which band a
+   section plays, the harmony, and what is reported as a gap. Every one of those is untouched
+   here. A permalink written before this change re-resolves to the same assignments, the same
+   numbers and the same gaps; what moved is which of two fields a string sits in, and how it is
+   drawn. Bumping the stamp for that would say to a reader "the guide under your link is not the
+   guide its author saw" in the sense §8.2 means — a different resolution — when what they will
+   see is the same resolution presented correctly.
+
+   **The change is covered by the guide goldens, and could not have been covered by the resolver
+   one.** `resolve.golden.json` is built on §7's synthetic fixture rig, which declares no `midiCc`
+   anywhere, so it does not move and never could have caught this. The `muse` guide golden exists
+   precisely to hold these bytes (`test/golden/guides.ts`), and it is where a regression in either
+   direction becomes visible.
+
+   Widening `midiCc` to `AuthoredEnumParam` does not move the stamp either, for the reason §7.5's
+   placements did not: it is a field a device may now declare, and a device that declares none
+   resolves exactly as it did
+
    **A parameter with a `scope` is stated once per device, above the parts** (§3.1/#107). A
    recipe is authored per voice, so everything in it reads as a per-voice setting; the Tracker
    Mini's `SWING` and the TR-1000's Pattern Shuffle are not, and the landing rig printed nine of
@@ -3876,6 +3940,29 @@ an authored note as `↳ note:`, each its own nested item so that toggling hints
 `visibility` and nothing reflows. There was a third, `↳ cite:`, and it is gone — which is what
 makes `hints: false` exactly "the same document, minus the hint lines". A note is not
 suppressible: it is part of the instruction rather than a jog you outgrow.
+
+**And a MIDI CC does not earn a third kind** (§3.1/#414), which is the question that had to be
+asked when it stopped being smuggled into `note`. It renders as a suffix on the value line
+instead (§8's phase 6), for three reasons, and each of them is a property this surface holds a
+subordinate kind to:
+
+- **It is terse addressing metadata.** A subordinate line exists to carry something that will not
+  fit beside the value — a jog, a sentence about what the control does. `· MIDI CC 51` is four
+  tokens that fit, and a kind whose every instance is four tokens is a row heading with nothing
+  under it.
+- **It costs no semantic row.** §8's reader is standing at a machine in poor light with both
+  hands busy, and a row is the scarce thing on that page. A third kind would spend one on every
+  CC-bearing control — 41 of them in the `muse` golden's 141 parameter lines carry a bare CC, so
+  the cost is not hypothetical — to say what fits on a line already there.
+- **It has no suppression lifecycle.** The two kinds that exist are defined by what a reader does
+  with them: a hint is a jog you outgrow and can turn off, a note is part of the instruction and
+  cannot. A CC is neither. It does not become less true as you learn your boxes, and there is no
+  state in which a reader wants it hidden but wants the value — so it would be a suppressible kind
+  nothing suppresses, or an unsuppressible kind indistinguishable from `↳ note:` in everything but
+  content. Both readings argue it is not a kind.
+
+The rule this leaves is one sentence: **a subordinate line carries prose, and the value line
+carries the value and how to address it.**
 
 **A module box changes nothing about the reserved column (#385).** The box wraps the instruction
 rows and touches none of their rules, so a hint inside a box keeps its reserved cell, at every

@@ -801,37 +801,6 @@ function moodContribution(
 }
 
 /**
- * §3.1/#324, narrowed at #349. **The controller is named and no value is asserted.**
- *
- * This used to read `Send MIDI CC 87 = 72`, composed here rather than in the device folder so the
- * number in the sentence was the number on the line after mood had moved it. That was right for as
- * long as the value on the line *was* a CC value. It is not: the one box that declares `midiCc`
- * authors its controls on the scale its screen shows — percent, and Hz for the filter cutoffs —
- * and no page maps either onto a CC value. `Send MIDI CC 67 = 74` beside `74 %` would be telling a
- * reader to send a number that lands somewhere nobody has measured.
- *
- * So what survives is the half that is still true and still worth printing: **which controller
- * addresses this control**, which is what identifies it to anything automating the box. The
- * composition stays here rather than moving back into device prose because a note written at
- * authoring time is what #324 removed, and nothing about #349 makes that safe again.
- *
- * **An authored note keeps its place in front.** It says something about the control that this
- * cannot — *"Bipolar, no modulation at noon"* — and the joint is ` · `, which is the separator the
- * library's notes already use.
- */
-function midiInstruction(ccNumber: number): string {
-  return `MIDI CC ${ccNumber}`
-}
-
-function noteWithInstruction(
-  note: string | undefined,
-  instruction: string | undefined,
-): string | undefined {
-  if (instruction === undefined) return note
-  return note === undefined ? instruction : `${note} · ${instruction}`
-}
-
-/**
  * §7 step 9, and the only place an `AuthoredParam` becomes a `ResolvedParam`.
  *
  * §3.2's two gates are orthogonal, which is why §3.1 gives the range its own `verified`:
@@ -876,6 +845,10 @@ export function resolveParam(
         : {}),
       ...(param.hint === undefined ? {} : { hint: param.hint }),
       ...(param.note === undefined ? {} : { note: param.note }),
+      // #414. Carried on this branch too, and narrowed on the discriminant rather than read off
+      // the union: only an enum declares one. A switch is as reachable over MIDI as a knob, and
+      // a text param is a written instruction with no control for a controller number to address.
+      ...(param.kind === 'enum' && param.midiCc !== undefined ? { midiCc: param.midiCc } : {}),
       // Carried, never computed, for the same reason `scope` is: which panel block a control
       // sits on is a fact about the box. Absent stays absent — there is no module to derive.
       ...(param.module === undefined ? {} : { module: param.module }),
@@ -934,13 +907,6 @@ export function resolveParam(
     provenance = { state: 'authored', cite: point }
   }
 
-  // §3.1/#324, narrowed at #349: the instruction names the controller and asserts no value, so
-  // there is nothing here that mood can leave stale. See `midiInstruction`.
-  const note = noteWithInstruction(
-    param.note,
-    param.midiCc === undefined ? undefined : midiInstruction(param.midiCc),
-  )
-
   return {
     name: param.name,
     value,
@@ -950,8 +916,20 @@ export function resolveParam(
     range: { min: param.range.min, max: param.range.max, verified: rangeCite },
     provenance,
     ...(param.hint === undefined ? {} : { hint: param.hint }),
+    // §3.1/#324, narrowed at #349, settled at #414. **The number travels; no sentence is
+    // written.** The resolver used to compose `Send MIDI CC 87 = 72` here — after mood, so the
+    // number in the sentence was the number on the line. #349 took the value out of it, and what
+    // was left, `MIDI CC 87`, became the *whole* of `note` on any control with nothing else to
+    // say: a NOTE row whose entire content is a controller number, beside a sibling whose note
+    // says something about the control. No device folder writes a note like that, because that is
+    // not what a note is.
+    //
+    // So the two stay separate fields. `midiCc` is the typed fact, and whether a reader sees it —
+    // and where — is a rendering decision made where the guide is drawn. Nothing leaves the model.
     ...(param.midiCc === undefined ? {} : { midiCc: param.midiCc }),
-    ...(note === undefined ? {} : { note }),
+    // Authored prose, exactly as authored. The resolver has nothing to add to it and no longer
+    // appends anything behind it.
+    ...(param.note === undefined ? {} : { note: param.note }),
     ...(param.module === undefined ? {} : { module: param.module }),
     ...(param.scope === undefined ? {} : { scope: param.scope }),
   }

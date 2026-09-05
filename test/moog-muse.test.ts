@@ -158,6 +158,8 @@ const percentParams = observedParams.filter((param) => param.unit === '%')
 const hzCutoffs = observedParams.filter((param) => param.unit === 'Hz')
 /** #381. The six envelope times, selected on the unit the screen shows rather than by name. */
 const secondParams = observedParams.filter((param) => param.unit === 's')
+/** Every authored param on the box, all kinds, across all 18 recipes. */
+const allAuthored = device.recipes.flatMap((recipe) => recipe.params)
 /** #346. The two controls that take a division, across all 18 recipes. */
 const divisionParams = device.recipes
   .flatMap((recipe) => recipe.params)
@@ -651,12 +653,16 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
   })
 
   /**
-   * The pair as a stereo setting rather than two independent choices, and the one place this file
-   * checks prose: an enum has no `midiCc` field, so the sentence `resolveParam` composes for every
-   * other control on this box is hand-written for these two. It is safe for the reason #324's
-   * field exists — it names a controller and asserts no value — and this pins that it stays so.
+   * The pair as a stereo setting rather than two independent choices, and the two controls that
+   * carried #414's last piece of MIDI prose.
+   *
+   * `AuthoredEnumParam` had no `midiCc` field, so these two had the number hand-written into the
+   * note. #414 took composed CC prose off every numeric on this box, which would have left these
+   * as the only notes in the library naming a controller — one box reading two ways. The field
+   * widened instead, so the note here is now what a note is everywhere else: what the number
+   * cannot say, which for a stereo pair is how the two sides differ.
    */
-  it('states one stereo pair for the whole guide, with the controller still named', () => {
+  it('states one stereo pair for the whole guide, each with its CC typed (#414)', () => {
     const valuesOf = (name: string) =>
       new Set(divisionParams.filter((param) => param.name === name).map((param) => param.value))
     // Identical in all 18, or `hoistedParams` drops them back into the per-part lists and the
@@ -665,17 +671,30 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
     expect(valuesOf('DELAY · TIME - R')).toEqual(new Set(['1/8 D']))
     for (const param of divisionParams) {
       expect(DIVISIONS, param.name).toContain(param.value)
-      const cc = param.name.endsWith('- L') ? 93 : 94
+      const left = param.name.endsWith('- L')
       expect(param.note, param.name).toBe(
-        param.name.endsWith('- L')
-          ? 'Straight, against the dotted right · MIDI CC 93'
-          : 'Dotted, so its repeat falls between the left one’s · MIDI CC 94',
+        left
+          ? 'Straight, against the dotted right'
+          : 'Dotted, so its repeat falls between the left one’s',
       )
-      expect(param.note, param.name).toContain(`MIDI CC ${String(cc)}`)
-      // The half #324 removed and nothing may bring back: a value in the sentence.
+      // The number, on the field the rest of the box uses. Appendix A: 93 left, 94 right.
+      expect(param.midiCc, param.name).toBe(left ? 93 : 94)
+      // And no MIDI prose at all, which is the whole of the change here.
+      expect(param.note, param.name).not.toContain('MIDI')
+      expect(param.note, param.name).not.toContain('·')
       expect(param.note, param.name).not.toContain('=')
-      expect(param.note, param.name).not.toContain('Send MIDI CC')
     }
+  })
+
+  /**
+   * The authored side of #414, over the whole device rather than these two: **no `AuthoredParam`
+   * anywhere on this box writes a CC number into prose.** Keyed on the string rather than on a
+   * helper, because the failure this guards is a device author reaching for the note field again.
+   */
+  it('writes no CC number into any authored note, on any recipe', () => {
+    const noted = allAuthored.filter((param) => param.note !== undefined)
+    expect(noted.length).toBeGreaterThan(0)
+    expect(noted.filter((param) => /MIDI\s*CC/i.test(param.note as string))).toEqual([])
   })
 })
 
@@ -897,7 +916,7 @@ describe('mood on the Muse after the re-scaling (§6/#349)', () => {
  * `test/resolver.test.ts` pins the composition rule; this pins that the Muse actually goes through
  * it — and that what comes out the far side names a controller and never a value.
  */
-describe('the Muse’s MIDI instruction names the controller (#324/#349)', () => {
+describe('the Muse’s CC numbers are numbers, not notes (#324/#349/#414)', () => {
   const RIG = ['roland-tr-1000', 'synthstrom-deluge', 'moog-muse', 'moog-subsequent-37']
 
   function allMuseParams(mood: Parameters<typeof resolve>[0]['mood']): ResolvedParam[] {
@@ -916,12 +935,17 @@ describe('the Muse’s MIDI instruction names the controller (#324/#349)', () =>
     return allMuseParams(mood).filter((param) => param.midiCc !== undefined)
   }
 
-  /** What the instruction must say, for any parameter, at any mood. */
-  function stale(params: readonly ResolvedParam[]): ResolvedParam[] {
-    return params.filter((param) => !param.note?.endsWith(`MIDI CC ${param.midiCc}`))
+  /**
+   * #414's defect, stated as a predicate over the box that has every CC in the library. A note
+   * that ends in the parameter's own controller number is one the resolver composed, whether or
+   * not there is prose in front of it — no device folder writes one, so any hit here is the
+   * appended tail come back.
+   */
+  function composed(params: readonly ResolvedParam[]): ResolvedParam[] {
+    return params.filter((param) => param.note?.endsWith(`MIDI CC ${param.midiCc}`))
   }
 
-  it('names the controller on every CC parameter, at every mood setting', () => {
+  it('leaves no composed tail on any CC parameter, at every mood setting', () => {
     for (const mood of [
       moodState(),
       moodState({ density: 0 }),
@@ -930,17 +954,36 @@ describe('the Muse’s MIDI instruction names the controller (#324/#349)', () =>
     ]) {
       const params = museParams(mood)
       expect(params.length).toBeGreaterThan(0)
-      expect(stale(params)).toEqual([])
-      // The half that went at #349: no instruction on this box promises what sending a number
-      // would do, because no page says where a CC value lands on the scale beside it.
+      expect(composed(params)).toEqual([])
+      // The number itself is still on every one of them — #414 moved it off `note`, it did not
+      // take it away. Where a reader sees it is the renderer's to decide.
+      expect(params.filter((param) => param.midiCc === undefined)).toEqual([])
+      // And the two sentences the field has shed over its life, neither of which may return.
       expect(params.filter((param) => param.note?.includes('Send MIDI CC'))).toEqual([])
       expect(params.filter((param) => param.note?.includes('='))).toEqual([])
+      // Every parameter line the box renders, not only the ones a CC reaches: since #414 the two
+      // `DELAY · TIME` enums carry the number typed too, so nothing anywhere says it in prose.
+      const every = allMuseParams(mood)
+      expect(every.filter((param) => /MIDI\s*CC/i.test(param.note ?? ''))).toEqual([])
     }
+  })
+
+  /**
+   * The 372-line half of #414's measurement: a control with a CC and nothing authored to say gets
+   * **no note at all**, where before it got a NOTE row whose whole content was a number.
+   */
+  it('gives a bare-CC control no note, and there are many of them', () => {
+    const bare = museParams(moodState()).filter((param) => param.note === undefined)
+    expect(bare.length).toBeGreaterThan(0)
+    // Nothing is left in the rig whose note is only a CC — the shape the issue counted.
+    expect(
+      allMuseParams(moodState()).filter((p) => /^MIDI CC \d+$/.test(p.note ?? 'x')),
+    ).toEqual([])
   })
 
   it('drops both cutoffs an octave at full darkness, and says so in Hz', () => {
     // The proportional offset seen from the reader's end: the value on the line is half what the
-    // recipe authored, struck through from it, and the instruction beside it did not move.
+    // recipe authored and struck through from it. These two author no prose, so no note.
     const dark = museParams(moodState({ darkness: 100 })).filter((p) => p.name.endsWith('· CUTOFF'))
     expect(dark.length).toBeGreaterThan(0)
     for (const param of dark) {
@@ -949,7 +992,8 @@ describe('the Muse’s MIDI instruction names the controller (#324/#349)', () =>
       expect(from, param.name).toBeDefined()
       expect(param.value, param.name).toBe((from as number) / 2)
       expect(param.unit).toBe('Hz')
-      expect(param.note).toBe(`MIDI CC ${param.midiCc}`)
+      expect(param.note, param.name).toBeUndefined()
+      expect(param.midiCc, param.name).toBeDefined()
     }
   })
 
@@ -963,19 +1007,21 @@ describe('the Muse’s MIDI instruction names the controller (#324/#349)', () =>
       const from = param.provenance.state === 'provisional' ? param.provenance.from : undefined
       expect(from).toBeDefined()
       expect(from).not.toBe(param.value)
-      // The value moved and the instruction did not, which is the whole of #349's change here.
-      expect(param.note).toBe('MIDI CC 87')
+      // The value moved; the note is absent rather than restating the CC, which is #414 here.
+      expect(param.note).toBeUndefined()
+      expect(param.midiCc).toBe(87)
     }
   })
 
-  it('leaves an unmoved control naming its authored value, with its own note in front', () => {
+  it('leaves a control that has prose carrying exactly its prose', () => {
     const neutral = museParams(moodState())
     const bipolar = neutral.filter((p) => p.name.endsWith('ENVELOPE AMOUNT'))
     expect(bipolar.length).toBeGreaterThan(0)
     for (const param of bipolar) {
-      // The authored prose keeps its place; the instruction is appended behind it, naming the
-      // control's own Appendix A row — 69 on FILTER 1, 75 on FILTER 2.
-      expect(param.note, param.name).toBe(`Bipolar, no modulation at noon · MIDI CC ${param.midiCc}`)
+      // Authored in the device folder, and now the whole of the note: nothing appended, and no
+      // separator acquired. The CC is beside it on its own field — 69 on FILTER 1, 75 on FILTER 2.
+      expect(param.note, param.name).toBe('Bipolar, no modulation at noon')
+      expect(param.midiCc, param.name).toBe(param.name.startsWith('FILTER 1') ? 69 : 75)
       // No unit reaches the reader, because the screen shows a bare signed number.
       expect(param.unit).toBeUndefined()
       expect(param.range?.min).toBe(-100)
@@ -993,7 +1039,11 @@ describe('the Muse’s MIDI instruction names the controller (#324/#349)', () =>
   /**
    * #346, from the reader's end. The two lines the CLOCK SYNC above them makes divisions arrive as
    * divisions — no bounds, because an enum's legality gate is its option set and the resolver does
-   * not carry it, and no `midiCc`, because the field is numeric-only and the sentence is authored.
+   * not carry it, and no `midiCc`, because the field is numeric-only.
+   *
+   * **And since #414 they carry a typed `midiCc` like every other control on the box.** The field
+   * was numeric-only until then, which is why these two once had the number written into their
+   * note by hand; widening it is what stops one box reading two ways.
    */
   it('hands the reader a division on both DELAY TIME lines, not a number', () => {
     const times = allMuseParams(moodState()).filter((p) => p.name.startsWith('DELAY · TIME'))
@@ -1005,8 +1055,10 @@ describe('the Muse’s MIDI instruction names the controller (#324/#349)', () =>
       expect(param.unit, param.name).toBeUndefined()
       // Taste, so provisional — and nothing moved it, because an enum takes no mood.
       expect(param.provenance, param.name).toEqual({ state: 'provisional' })
-      expect(param.midiCc, param.name).toBeUndefined()
-      expect(param.note ?? '', param.name).toMatch(/ · MIDI CC 9[34]$/)
+      // #414. The number is typed and carried through the resolver's non-numeric branch, exactly
+      // as it is for a knob; the note beside it is prose and only prose.
+      expect(param.midiCc, param.name).toBe(param.name.endsWith('- L') ? 93 : 94)
+      expect(param.note ?? '', param.name).not.toContain('MIDI')
       // One processor for the whole patch, which is what lets the renderer hoist these.
       expect(param.scope, param.name).toBe('song')
     }
@@ -1017,7 +1069,7 @@ describe('the Muse’s MIDI instruction names the controller (#324/#349)', () =>
 
   /**
    * The pan line as the reader gets it: a cited point, a magnitude range, and the shape of the
-   * screen stated in the prose because the range cannot state it.
+   * screen stated in the prose because the range cannot state it — and that prose alone.
    */
   it('renders PAN centred, cited, and with the L/R shape in its own note', () => {
     const pans = museParams(moodState()).filter((p) => p.name === 'VCA · PAN')
@@ -1029,8 +1081,9 @@ describe('the Muse’s MIDI instruction names the controller (#324/#349)', () =>
       expect(param.range?.max).toBe(100)
       expect(param.provenance).toEqual({ state: 'authored', cite: OBSERVED })
       expect(param.note).toBe(
-        'Bipolar, centred at noon — the screen reads 100L through 0 to 100R · MIDI CC 10',
+        'Bipolar, centred at noon — the screen reads 100L through 0 to 100R',
       )
+      expect(param.midiCc).toBe(10)
     }
   })
 })
