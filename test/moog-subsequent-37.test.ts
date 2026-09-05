@@ -7,7 +7,10 @@ import {
   NEUTRAL_MOOD,
   assignableKey,
   expand,
+  groupedParams,
+  paramLabel,
   realisationOf,
+  renderGuide,
   requiredVoicePolyphony,
   resolve,
   type Assignable,
@@ -16,6 +19,7 @@ import {
   type RoleRequest,
 } from '../lib/core/index'
 import { device } from '../lib/devices/moog-subsequent-37/index'
+import { SUBSEQUENT_37_PANEL } from '../lib/devices/moog-subsequent-37/panel'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, ambientDub, industrialTechno } from '../lib/templates/index'
 import { template } from './fixtures'
@@ -1009,5 +1013,194 @@ describe('the glide section collapses when it is off (#319)', () => {
       const gated = GATED.some((name) => paramNamed(recipe, name) !== undefined)
       if (gated) expect(paramNamed(recipe, 'GLIDE · ON'), recipe.id).toBeDefined()
     }
+  })
+})
+
+/**
+ * §3.1/#385. **Six boxes, and the panel is what decides them.**
+ *
+ * This is the second device in the library to author `module`, and it is here rather than
+ * somewhere else because its panel and its parameter names disagree. Eleven name prefixes sit
+ * under six silkscreened sections: `OSC`, `OSC 1` and `OSC 2` are all one **OSCILLATORS**
+ * section; `ENV`, `FILTER EG` and `AMP EG` are all one **ENVELOPE GENERATORS**; and `CUTOFF`,
+ * `RESONANCE` and `MULTIDRIVE` carry no prefix at all while sitting inside **FILTER**.
+ *
+ * So a module derived from a name would have drawn eleven boxes, three of them empty of the
+ * three controls a filter box most needs. What is asserted below is the mapping itself, pinned
+ * by name, because it is a reading of the instrument and a later edit that moves one has to say
+ * so.
+ */
+describe('every control is boxed by the panel section it sits on (#385)', () => {
+  /** The reading. Left is the name (or its ` · ` prefix); right is the silkscreen above it. */
+  const SECTIONS: Record<string, string> = {
+    'GLIDE': 'GLIDE',
+    'MOD 1': 'MOD 1',
+    'OSC': 'OSCILLATORS',
+    'OSC 1': 'OSCILLATORS',
+    'OSC 2': 'OSCILLATORS',
+    'MIXER': 'MIXER',
+    'FILTER': 'FILTER',
+    'CUTOFF': 'FILTER',
+    'RESONANCE': 'FILTER',
+    'MULTIDRIVE': 'FILTER',
+    'ENV': 'ENVELOPE GENERATORS',
+    'FILTER EG': 'ENVELOPE GENERATORS',
+    'AMP EG': 'ENVELOPE GENERATORS',
+  }
+
+  /** Every authored parameter of every recipe, once per distinct name. */
+  const byName = new Map<string, Set<string>>()
+  for (const recipe of device.recipes) {
+    for (const param of recipe.params) {
+      const module = (param as { module?: string }).module ?? '(none)'
+      const found = byName.get(param.name)
+      if (found === undefined) byName.set(param.name, new Set([module]))
+      else found.add(module)
+    }
+  }
+
+  it('leaves no parameter of any recipe unboxed, except the one that is not on the panel', () => {
+    // Whole-device rather than spot-checked: a block helper added later with no `inModule` around
+    // it is exactly the miss this catches, and it would otherwise surface as one unboxed run in
+    // one guide that nobody happens to render.
+    const unboxed = [...byName].filter(([, mods]) => mods.has('(none)')).map(([name]) => name)
+    expect(unboxed).toEqual(['SWING'])
+  })
+
+  it('leaves SWING unboxed because it is a menu setting, not a panel section', () => {
+    // p.40 puts it in `PRESET EDIT > ARPEGGIATOR`, behind the display. §3.1 says an unmoduled
+    // param is not a gap; a box named after a silkscreen section it is not printed in would be
+    // a fact about the instrument invented to fill a field.
+    expect([...(byName.get('SWING') ?? [])]).toEqual(['(none)'])
+  })
+
+  it('draws exactly the six sections the panel names, and no eleventh prefix box', () => {
+    const modules = new Set<string>()
+    for (const mods of byName.values()) for (const m of mods) if (m !== '(none)') modules.add(m)
+    expect([...modules].sort()).toEqual([
+      'ENVELOPE GENERATORS',
+      'FILTER',
+      'GLIDE',
+      'MIXER',
+      'MOD 1',
+      'OSCILLATORS',
+    ])
+    // The four the panel draws as labelled groups are drawn from the same reading `panel.ts` is.
+    const labels = SUBSEQUENT_37_PANEL.features.flatMap((f) =>
+      f.kind === 'group' && f.label !== undefined ? [f.label] : [],
+    )
+    for (const named of ['MOD 1', 'OSCILLATORS', 'MIXER', 'FILTER', 'ENVELOPE GENERATORS']) {
+      expect(labels, named).toContain(named)
+    }
+  })
+
+  it('puts every name under the section the reading gives it', () => {
+    for (const [name, mods] of byName) {
+      if (name === 'SWING') continue
+      const prefix = name.includes(' \u00b7 ') ? name.slice(0, name.indexOf(' \u00b7 ')) : name
+      const expected = SECTIONS[prefix]
+      expect(expected, `${name} is under no section in the table`).toBeDefined()
+      expect([...mods], name).toEqual([expected])
+    }
+  })
+
+  it('boxes the three bare filter controls, which a name parse would have left loose', () => {
+    for (const name of ['CUTOFF', 'RESONANCE', 'MULTIDRIVE']) {
+      expect([...(byName.get(name) ?? [])], name).toEqual(['FILTER'])
+    }
+  })
+
+  it('keeps every parameter name exactly as it was authored', () => {
+    // `name` is #107's hoist key, `sameRenderedParam`'s comparison and the string every fixture
+    // and test above names, so nothing keyed on one moves. The prefix stays on the stored name
+    // and `paramLabel` decides the ink.
+    expect(byName.has('MIXER \u00b7 SUB 1')).toBe(true)
+    expect(byName.has('OSC 1 \u00b7 OCTAVE')).toBe(true)
+    expect(byName.has('OSC 2 \u00b7 OCTAVE')).toBe(true)
+    expect(byName.has('FILTER EG \u00b7 ATTACK')).toBe(true)
+    expect(byName.has('AMP EG \u00b7 ATTACK')).toBe(true)
+    expect(byName.has('CUTOFF')).toBe(true)
+  })
+
+  it('trims a label only where the box already says it', () => {
+    // Inside MIXER the prefix is dead ink. Inside OSCILLATORS it is the only thing telling two
+    // oscillators apart, and `paramLabel` leaves it exactly because it is not the module.
+    const label = (name: string, module: string) =>
+      paramLabel({
+        name,
+        value: 1,
+        provenance: { state: 'authored', cite: { kind: 'manual', source: 'x' } },
+        module,
+      })
+    expect(label('MIXER \u00b7 SUB 1', 'MIXER')).toBe('SUB 1')
+    expect(label('OSC 1 \u00b7 OCTAVE', 'OSCILLATORS')).toBe('OSC 1 \u00b7 OCTAVE')
+    expect(label('OSC 2 \u00b7 OCTAVE', 'OSCILLATORS')).toBe('OSC 2 \u00b7 OCTAVE')
+    expect(label('FILTER EG \u00b7 ATTACK', 'ENVELOPE GENERATORS')).toBe('FILTER EG \u00b7 ATTACK')
+    expect(label('CUTOFF', 'FILTER')).toBe('CUTOFF')
+  })
+})
+
+/**
+ * §8/#385. **The boxes a reader actually gets**, which is a claim about authored *order* and not
+ * only about the stamps.
+ *
+ * `groupedParams` cuts on adjacent runs, so a section interrupted and resumed comes out as two
+ * boxes carrying the same label — and that is an authoring-order defect the device folder owns.
+ * Every recipe here runs `program`, `glide`, the three oscillator blocks, `mix`, `filt`, the two
+ * envelopes and the modulation bus, in that sequence, so each part renders seven runs and each
+ * section appears once.
+ */
+describe('a real Subsequent 37 guide renders one box per section (#385)', () => {
+  const result = resolve({
+    devices: DEVICES.filter((d) => d.id === 'moog-subsequent-37'),
+    template: industrialTechno,
+    mood: NEUTRAL_MOOD,
+    seed: 1,
+  })
+
+  it('resolves a part on it at all, so the assertions below are not vacuous', () => {
+    expect(result.assignments.length).toBeGreaterThan(0)
+    expect(result.assignments.every((a) => a.deviceId === 'moog-subsequent-37')).toBe(true)
+  })
+
+  it('cuts each part into the unmoduled swing line and the six sections, in panel order', () => {
+    for (const assignment of result.assignments) {
+      const groups = groupedParams(assignment.params)
+      expect(groups.map((g) => g.module), assignment.role).toEqual([
+        undefined,
+        'GLIDE',
+        'OSCILLATORS',
+        'MIXER',
+        'FILTER',
+        'ENVELOPE GENERATORS',
+        'MOD 1',
+      ])
+      // Runs, not buckets: concatenating them reproduces the order the guide renders.
+      expect(groups.flatMap((g) => [...g.params])).toEqual([...assignment.params])
+    }
+  })
+
+  it('draws the boxes in the guide, one lamp each', () => {
+    const md = renderGuide(result)
+    for (const module of ['GLIDE', 'OSCILLATORS', 'MIXER', 'FILTER', 'ENVELOPE GENERATORS', 'MOD 1']) {
+      expect(md, module).toContain(`- **\u25cf ${module}**`)
+    }
+  })
+
+  it('prints no parameter line still carrying its own box label', () => {
+    // The ink #385 exists to remove: nine `MIXER \u00b7 \u2026` rows under a heading reading MIXER.
+    const bullets = renderGuide(result)
+      .split('\n')
+      .filter((line) => /^\s*- \*\*(?!\u25cf)/.test(line))
+    expect(bullets.length).toBeGreaterThan(20)
+    for (const module of ['GLIDE', 'MIXER', 'FILTER', 'MOD 1']) {
+      expect(
+        bullets.filter((line) => line.includes(`**${module} \u00b7 `)),
+        module,
+      ).toEqual([])
+    }
+    // And the two oscillators keep theirs, because OSCILLATORS is not the prefix.
+    expect(bullets.some((line) => line.includes('**OSC 1 \u00b7 OCTAVE**'))).toBe(true)
+    expect(bullets.some((line) => line.includes('**OSC 2 \u00b7 OCTAVE**'))).toBe(true)
   })
 })

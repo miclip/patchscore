@@ -310,6 +310,47 @@ const CLOCK_DIVISIONS = [
 // ---------------------------------------------------------------------------
 
 /**
+ * §3.1/#385. **Stamp the panel section every parameter in a block belongs to**, the way the Muse
+ * does it — the block helper is the authority, because the block *is* the section.
+ *
+ * The Muse was #385's one box; this is the second, and the reason it is the second is that its
+ * panel is a harder case in exactly the way that matters. The silkscreen carries **six** named
+ * sections over the controls a recipe touches, and the parameter names carry **eleven** different
+ * prefixes. Those are not the same list and the difference is not sloppiness:
+ *
+ *     panel section          name prefixes it holds
+ *     GLIDE                  GLIDE
+ *     MOD 1                  MOD 1
+ *     OSCILLATORS            OSC, OSC 1, OSC 2
+ *     MIXER                  MIXER
+ *     FILTER                 FILTER, and CUTOFF / RESONANCE / MULTIDRIVE bare
+ *     ENVELOPE GENERATORS    ENV, FILTER EG, AMP EG
+ *
+ * `panel.ts` draws five of those six as labelled `group` features off the Quickstart legend, and
+ * the sixth off the same reading — the GLIDE section is the unlabelled group at x=96.6, with
+ * ARPEGGIATOR and MOD 1 either side of it. So the module is a fact about the metal, and a name
+ * prefix is a fact about how somebody wrote the name.
+ *
+ * **Which is why nothing here derives a module from a name**, and this box is the demonstration
+ * rather than the Muse: reading the prefix would have given `OSC 1` and `OSC 2` two boxes the
+ * panel draws as one, put `CUTOFF`, `RESONANCE` and `MULTIDRIVE` in no box at all, and split the
+ * envelope pair three ways. Six sections is what a reader standing at the instrument sees.
+ *
+ * **Names are left exactly as authored**, as on the Muse. `paramLabel` trims a prefix only when
+ * it matches the module exactly, so `MIXER · SUB 1` reads `SUB 1` inside the MIXER box while
+ * `OSC 2 · FREQUENCY` keeps its whole name inside OSCILLATORS — which is the correct outcome
+ * twice over, because `OSC 1 · OCTAVE` and `OSC 2 · OCTAVE` are two controls that share a box.
+ *
+ * **`SWING` is deliberately unmoduled** and is the only parameter here that is. It is not on the
+ * panel: it lives in `PRESET EDIT > ARPEGGIATOR` (p.40), reached through the display. §3.1 says
+ * an unmoduled param is not a gap, and putting a menu setting in a box named after a silkscreen
+ * section would be inventing a fact about the instrument to avoid an empty field.
+ */
+function inModule(module: string, params: AuthoredParam[]): AuthoredParam[] {
+  return params.map((param) => ({ ...param, module }))
+}
+
+/**
  * The one program-wide setting a recipe states. Swing lives in `PRESET EDIT > ARPEGGIATOR`
  * (p.40), ranges `0%` to `100%` and is straight at 50 — *"When SWING is set to a value below
  * 50%, it will move the off-beats earlier in time."*
@@ -319,6 +360,9 @@ const CLOCK_DIVISIONS = [
  * optional: this swings the box's **own** arpeggiator and step sequencer, so a part sequenced
  * anywhere else will not hear it, and a knob that silently does nothing is worse than an axis
  * honestly declined.
+ *
+ * **The one block that carries no `module`**, because it is the one control that is not on the
+ * panel — see `inModule` above.
  */
 function program(swing: number): AuthoredParam[] {
   return [
@@ -364,9 +408,11 @@ function glide(spec: GlideSpec): AuthoredParam[] {
    * from the last patch needs telling to turn it off, and that is all they need.
    */
   if (spec.on === 'OFF') {
-    return [sw('GLIDE · ON', spec.on, OFF_ON, 21, { note: 'Must be lit for any glide at all' })]
+    return inModule('GLIDE', [
+      sw('GLIDE · ON', spec.on, OFF_ON, 21, { note: 'Must be lit for any glide at all' }),
+    ])
   }
-  return [
+  return inModule('GLIDE', [
     sw('GLIDE · ON', spec.on, OFF_ON, 21, { note: 'Must be lit for any glide at all' }),
     sw('GLIDE · TYPE', spec.type, GLIDE_TYPES, 21, {
       note: 'LCR is constant rate, LCT constant time, EXP fast then slowing',
@@ -380,17 +426,17 @@ function glide(spec: GlideSpec): AuthoredParam[] {
     sw('GLIDE · LEGATO', spec.legato, OFF_ON, 21, {
       note: 'On, glide happens only between overlapping notes',
     }),
-  ]
+  ])
 }
 
 /** Oscillator 1 (p.25). Octave, waveshape, and nothing else — OSC 1 is the reference. */
 function osc1(octave: (typeof OCTAVES)[number], wave: (typeof WAVES)[number]): AuthoredParam[] {
-  return [
+  return inModule('OSCILLATORS', [
     sw('OSC 1 · OCTAVE', octave, OCTAVES, 25),
     sw('OSC 1 · WAVE', wave, WAVES, 25, {
       note: 'The knob is continuous; these are its four named points',
     }),
-  ]
+  ])
 }
 
 /**
@@ -407,7 +453,7 @@ function osc2(
   hardSync: 'OFF' | 'ON',
   kbReset: 'OFF' | 'ON',
 ): AuthoredParam[] {
-  return [
+  return inModule('OSCILLATORS', [
     sw('OSC 2 · OCTAVE', octave, OCTAVES, 25),
     sw('OSC 2 · WAVE', wave, WAVES, 25, {
       note: 'The knob is continuous; these are its four named points',
@@ -418,7 +464,7 @@ function osc2(
     sw('OSC · KB RESET', kbReset, OFF_ON, 26, {
       note: 'A defined leading edge, at the cost of a click on hard attacks',
     }),
-  ]
+  ])
 }
 
 /**
@@ -438,7 +484,7 @@ function osc2(
  * printed beside a KB CTRL position nobody set.
  */
 function mono(frequency: number, beat: number): AuthoredParam[] {
-  return [
+  return inModule('OSCILLATORS', [
     sw('OSC · DUO MODE', 'OFF', OFF_ON, 26, {
       note: 'Off: one note at a time, both oscillators on the same key',
     }),
@@ -453,12 +499,12 @@ function mono(frequency: number, beat: number): AuthoredParam[] {
       step: 0.5,
       note: 'A constant beat rate at every pitch, unlike FREQUENCY',
     }),
-  ]
+  ])
 }
 
 /** DUO MODE with the keyboard split across both oscillators (p.26). **Two notes.** */
 function duo(kbCtrl: 'HI' | 'LO', frequency: number, beat: number): AuthoredParam[] {
-  return [
+  return inModule('OSCILLATORS', [
     sw('OSC · DUO MODE', 'ON', OFF_ON, 26, {
       note: 'On: the two oscillators take independent pitches, so this patch plays two notes',
     }),
@@ -471,7 +517,7 @@ function duo(kbCtrl: 'HI' | 'LO', frequency: number, beat: number): AuthoredPara
       note: 'Leave near centre: this is a detune on top of a note OSC 2 is already playing',
     }),
     num('OSC 2 · BEAT FREQ', beat, { min: -3.5, max: 3.5 }, 26, { unit: 'Hz', step: 0.5 }),
-  ]
+  ])
 }
 
 /**
@@ -495,7 +541,7 @@ function duo(kbCtrl: 'HI' | 'LO', frequency: number, beat: number): AuthoredPara
  * be repaired rather than widened.
  */
 function drone(frequencySemitones: number, beat: number): AuthoredParam[] {
-  return [
+  return inModule('OSCILLATORS', [
     sw('OSC · DUO MODE', 'ON', OFF_ON, 26, {
       note: 'On, but with KB CTRL off the part is still one note plus a drone',
     }),
@@ -508,7 +554,7 @@ function drone(frequencySemitones: number, beat: number): AuthoredParam[] {
       note: 'The extended scale — p.26 prints it as +/- 3 octaves — in force only while KB CTRL is off',
     }),
     num('OSC 2 · BEAT FREQ', beat, { min: -3.5, max: 3.5 }, 26, { unit: 'Hz', step: 0.5 }),
-  ]
+  ])
 }
 
 /**
@@ -520,7 +566,7 @@ function drone(frequencySemitones: number, beat: number): AuthoredParam[] {
  * recipe keeps every channel at or under 5 and a `dirty` one does not.
  */
 function mix(osc1Level: number, sub: number, osc2Level: number, noise: number, feedback: number): AuthoredParam[] {
-  return [
+  return inModule('MIXER', [
     num('MIXER · OSC 1', osc1Level, TEN, 27, { step: 0.5 }),
     num('MIXER · SUB 1', sub, TEN, 27, { step: 0.5, note: 'Always a square, always an octave below OSC 1' }),
     num('MIXER · OSC 2', osc2Level, TEN, 27, { step: 0.5 }),
@@ -530,7 +576,7 @@ function mix(osc1Level: number, sub: number, osc2Level: number, noise: number, f
       mood: [{ axis: 'grit', amount: 2 }],
       note: 'With nothing in EXT IN this feeds the mixer output back into itself',
     }),
-  ]
+  ])
 }
 
 /**
@@ -554,7 +600,7 @@ function filt(
   egAmount: number,
   kbTrack: number,
 ): AuthoredParam[] {
-  return [
+  return inModule('FILTER', [
     num('CUTOFF', cutoff, { min: 20, max: 20000 }, 28, {
       unit: 'Hz',
       step: 10,
@@ -580,7 +626,7 @@ function filt(
       step: 0.5,
       note: '1.0 is 1:1 tracking centred on C3; 2.0 is 2:1',
     }),
-  ]
+  ])
 }
 
 /**
@@ -599,7 +645,7 @@ function filterEg(
   release: number,
   loop: 'OFF' | 'ON' = 'OFF',
 ): AuthoredParam[] {
-  return [
+  return inModule('ENVELOPE GENERATORS', [
     sw('ENV · KNOB SHIFT', 'OFF', OFF_ON, 30, {
       note: 'Unlit, or the eight knobs below are DELAY, HOLD, VEL AMT and KB TRACK instead',
     }),
@@ -610,7 +656,7 @@ function filterEg(
     sw('FILTER EG · LOOP', loop, OFF_ON, 31, {
       note: 'On, the envelope repeats for as long as a note is held — a multistage LFO',
     }),
-  ]
+  ])
 }
 
 /**
@@ -630,7 +676,7 @@ function ampEg(
   multiTrig: 'OFF' | 'ON',
   loop: 'OFF' | 'ON' = 'OFF',
 ): AuthoredParam[] {
-  return [
+  return inModule('ENVELOPE GENERATORS', [
     num('AMP EG · ATTACK', attack, EG_MS, 32, { unit: 'ms' }),
     num('AMP EG · DECAY', decay, EG_MS, 32, {
       unit: 'ms',
@@ -647,7 +693,7 @@ function ampEg(
     sw('AMP EG · LOOP', loop, OFF_ON, 33, {
       note: 'Off on everything but a bed: looping the amplitude re-articulates a held note',
     }),
-  ]
+  ])
 }
 
 type ModCommon = {
@@ -661,14 +707,14 @@ type ModCommon = {
 }
 
 function modTail(spec: ModCommon): AuthoredParam[] {
-  return [
+  return inModule('MOD 1', [
     sw('MOD 1 · KB RESET', spec.kbReset, OFF_ON, 23, { note: 'On, the LFO restarts at zero on every note' }),
     num('MOD 1 · PITCH AMT', spec.pitchAmt, BIPOLAR, 22, { step: 0.5 }),
     sw('MOD 1 · OSC', spec.osc, OSC_TARGETS, 23, { note: 'Which oscillator PITCH AMT reaches' }),
     num('MOD 1 · FILTER AMT', spec.filterAmt, BIPOLAR, 22, { step: 0.5 }),
     sw('MOD 1 · DEST', spec.dest, MOD_DESTS, 23),
     num('MOD 1 · MOD AMT', spec.modAmt, BIPOLAR, 22, { step: 0.5 }),
-  ]
+  ])
 }
 
 /**
@@ -685,10 +731,14 @@ function lfoFree(
 ): AuthoredParam[] {
   const bounds = hiRange === 'ON' ? { min: 1, max: 1000 } : { min: 0.1, max: 100 }
   return [
-    sw('MOD 1 · SOURCE', spec.source, MOD_SOURCES, 61),
-    sw('MOD 1 · HI RANGE', hiRange, OFF_ON, 23, { note: 'On, the LFO runs ten times faster' }),
-    sw('MOD 1 · SYNC', 'OFF', OFF_ON, 23, { note: 'Off, so RATE is in hertz rather than clock divisions' }),
-    num('MOD 1 · LFO RATE', rate, bounds, hiRange === 'ON' ? 23 : 22, { unit: 'Hz', step: 0.1 }),
+    ...inModule('MOD 1', [
+      sw('MOD 1 · SOURCE', spec.source, MOD_SOURCES, 61),
+      sw('MOD 1 · HI RANGE', hiRange, OFF_ON, 23, { note: 'On, the LFO runs ten times faster' }),
+      sw('MOD 1 · SYNC', 'OFF', OFF_ON, 23, {
+        note: 'Off, so RATE is in hertz rather than clock divisions',
+      }),
+      num('MOD 1 · LFO RATE', rate, bounds, hiRange === 'ON' ? 23 : 22, { unit: 'Hz', step: 0.1 }),
+    ]),
     ...modTail(spec),
   ]
 }
@@ -707,12 +757,14 @@ function lfoSynced(
   spec: ModCommon,
 ): AuthoredParam[] {
   return [
-    sw('MOD 1 · SOURCE', spec.source, MOD_SOURCES, 61),
-    sw('MOD 1 · HI RANGE', 'OFF', OFF_ON, 23),
-    sw('MOD 1 · SYNC', 'ON', OFF_ON, 23, {
-      note: 'On, so the RATE knob picks a division and no longer reads in hertz',
-    }),
-    sw('MOD 1 · LFO RATE (division)', division, CLOCK_DIVISIONS, 52, { hint: 'lfo-divisions' }),
+    ...inModule('MOD 1', [
+      sw('MOD 1 · SOURCE', spec.source, MOD_SOURCES, 61),
+      sw('MOD 1 · HI RANGE', 'OFF', OFF_ON, 23),
+      sw('MOD 1 · SYNC', 'ON', OFF_ON, 23, {
+        note: 'On, so the RATE knob picks a division and no longer reads in hertz',
+      }),
+      sw('MOD 1 · LFO RATE (division)', division, CLOCK_DIVISIONS, 52, { hint: 'lfo-divisions' }),
+    ]),
     ...modTail(spec),
   ]
 }
