@@ -741,6 +741,72 @@ const recipes: Recipe[] = [
     routing:
       'Group D. Keep it out of any mute group — a mute group cuts everything else in it, which is the opposite of what a section marker wants',
   },
+  {
+    id: 'ep133-ride-bright',
+    role: 'ride',
+    character: 'bright',
+    voice: 'pad',
+    title: 'Ride let ring, played rather than triggered',
+    sourceAudio: sampled(
+      'A ride cymbal with the bow ring left on it, two seconds or longer — a gated ride has no ' +
+      'tail for `key` mode to hold',
+    ),
+    /**
+     * `key` rather than `oneshot`, and the difference is what a ride needs. Guide 8.2.1 gives
+     * `oneshot` as the mode that plays a sample through on a press; `key` is the one that follows
+     * the pad, so a ride can be choked by letting go and left ringing by holding on. That is the
+     * one gesture a cymbal part actually has on this box, since nothing here is a decay control.
+     *
+     * The same choice as `ep133-metallic-bright` one role along, and for the same reason: both are
+     * struck metal whose length is the player's rather than the patch's.
+     */
+    params: [
+      pick('PLAY MODE', 'key', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' }),
+      pick('SAMPLE SOURCE', 'mic', SAMPLE_SOURCES, cite(SAMPLE_FN), { hint: 'sample' }),
+    ],
+    routing:
+      'Group C, beside the hats. Hold the pad to let it ring and release to choke it — `key` mode ' +
+      'follows the pad, so the length of the hit is the length of the press',
+  },
+  {
+    id: 'ep133-sweep-soft',
+    role: 'sweep',
+    character: 'soft',
+    voice: 'pad',
+    title: 'A recorded sweep fitted to the bars it crosses',
+    sourceAudio: sampled(
+      'A recording of a filter sweep, four bars or longer, that arrives where it is going right ' +
+      'at the end — `BAR` fits it to the gap, so where it ends is where the change is',
+    ),
+    /**
+     * §4.2, and **the mechanism is the riser's rather than a modulator**, because this box has no
+     * modulator to reach for. There is no LFO, no envelope beyond attack and release, and the FX
+     * selector is one slot for the whole box (see the head note) — so nothing here can move a
+     * filter under one part without moving it under all of them.
+     *
+     * What the box does have is time stretch. Guide 8.2.4's `BAR` mode fits a sample to a bar
+     * count the reader sets, which is what makes a recorded sweep land on the change at whatever
+     * tempo the direction picks. `ep133-riser-bright` uses the same mode one role along; the
+     * difference is what is loaded and how long it runs.
+     *
+     * **No articulation, and on this box that is not a choice**: `features` declares no per-step
+     * lane at all, so no recipe here articulates anything. It happens to agree with the two
+     * directions asking for `sweep`, neither of which authors a step variant for it (#108).
+     */
+    params: [
+      pick('PLAY MODE', 'oneshot', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' }),
+      pick('SAMPLE SOURCE', 'line in stereo (in)', SAMPLE_SOURCES, cite(SAMPLE_FN), {
+        hint: 'sample',
+      }),
+      pick('TIME STRETCH MODE', 'BAR', TIME_MODES, cite(TIME_PAGE), {
+        hint: 'time-mode',
+        note: '[Y] sets the bar count — set it to the gap the sweep has to cross',
+      }),
+    ],
+    routing:
+      'Group D, with the other transitional parts. One press starts it; `BAR` is what keeps it ' +
+      'landing on the change when the tempo moves',
+  },
 ]
 
 export const device: Device = {
