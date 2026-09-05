@@ -625,8 +625,9 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   it('leaves every pad part blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(276)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(252)
+    // 276 until #345 authored `ride` and `sweep`, the pool's last two unserved roles.
+    expect(grid.length).toBe(282)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(258)
 
     // The claim, named rather than left to the count: the `trigger` arm is empty and the only
     // notes this box ever prints are the direction's own.
@@ -664,6 +665,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['arp', 6],
       ['impact', 6],
       ['noise', 6],
+      ['ride', 6],
       ['tom', 6],
       ['vox-chop', 6],
     ])
@@ -676,9 +678,12 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     const { hooked, sustained, noPattern } = sweep()
     expect(hooked.length).toBe(132)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(18)
+    // 18 until #345: `sweep` gains two entries, and no direction authors a step variant for it.
+    expect(noPattern.length).toBe(30)
     expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/sweep',
       'ambient-dub/texture',
+      'generative-drift/sweep',
       'hip-hop/texture',
       'industrial-techno/riser',
     ])
