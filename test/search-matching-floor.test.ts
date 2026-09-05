@@ -1445,8 +1445,22 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * `search-bound.test.ts` records the direction's peak moving 582,821 -> 582,919, 98 nodes.
    *
    * Twenty-two consecutive zeroes, across seventeen devices and twelve content changes.
+   *
+   * **Eight recipes across two boxes take it up two nodes and the gap stays at zero — a
+   * twenty-third time.** 502,586 -> 502,588 unrepaired and the same repaired. The MC-101's four
+   * unserved roles and the MC-707's, which are the same four: that manifest imports this one, so
+   * one authoring pass closed both boxes and the walk sees eight recipes rather than four.
+   *
+   * Two nodes for eight recipes is the cheapest entry in this list per recipe, and the reason is
+   * the pools. `industrial-techno` asks these boxes for `noise`, at priority 5 and optional, and
+   * for nothing else among the four — and the two boxes divide their roles across a drum pool and
+   * a tone pool, so even that one lands on a pool the direction is not fighting over.
+   *
+   * `search-bound.test.ts` records the direction's peak moving 582,919 -> 583,115.
+   *
+   * Twenty-three consecutive zeroes, across nineteen devices and thirteen content changes.
    */
-  it('walks the recorded 502,586 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 502,588 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1454,7 +1468,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(502_586)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(502_588)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
