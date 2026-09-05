@@ -1994,9 +1994,14 @@ const recipes: Recipe[] = [
       ...midiSetup(),
       ...osc1("8'", 0, 100, 50, 0),
       ...osc2("8'", 1, 100, 50, 0, 'OFF'),
-      ...modOsc('OFF', 'SINE', 20, 0, { osc1: 'OFF', osc2: 'OFF' }, 0, {
+      // Sub-audio, out of the mixer, and pointed at the **second** ladder. The title is about
+      // filter 1 tracking the keyboard 1:1, so filter 1 is the one control here that has to be
+      // left where the title puts it; the ladder above it in the SER chain is free to move, and
+      // a slow sine on it is a top that opens and closes over a held line rather than a wobble.
+      // `15` is a sixth of the depth knob — audible on a sustained note, gone inside a fast run.
+      ...modOsc('OFF', 'SINE', 20, 0, { osc1: 'OFF', osc2: 'OFF' }, 15, {
         f1: 'OFF',
-        f2: 'OFF',
+        f2: 'ON',
       }),
       ...mixer(75, 0, 70, 0, 0, 15),
       // Both corners above the line and KB TRACKING at 1:1, so the filter rises with the melody
@@ -2024,8 +2029,13 @@ const recipes: Recipe[] = [
       // A square, which is the pulse at noon (p.19) with WAVE MIX fully across to it.
       ...osc1("8'", 0, 0, 50, 100),
       ...osc2("8'", -2, 0, 50, 100, 'ON'),
-      ...modOsc('OFF', 'SINE', 20, 0, { osc1: 'OFF', osc2: 'OFF' }, 0, {
-        f1: 'OFF',
+      // On to filter 1, which is the corner the title is entirely about, and shallow because the
+      // envelope already owns that corner at `80`. With RESONANCE at `85` the peak is nearly
+      // whistling, so `10` of depth moves an audible pitch rather than a tone colour — the edge
+      // the title names breathes instead of sitting still. Anything deeper turns a lead into a
+      // siren, which is why this is the smallest of the four.
+      ...modOsc('OFF', 'SINE', 20, 0, { osc1: 'OFF', osc2: 'OFF' }, 10, {
+        f1: 'ON',
         f2: 'OFF',
       }),
       ...mixer(85, 10, 85, 0, 0, 40),
@@ -2088,9 +2098,16 @@ const recipes: Recipe[] = [
       ...midiSetup(),
       ...osc1("8'", 0, 100, 50, 0),
       ...osc2("16'", 0, 100, 50, 0, 'OFF'),
-      ...modOsc('OFF', 'SINE', 15, 0, { osc1: 'OFF', osc2: 'OFF' }, 0, {
+      // On to filter 2, and deliberately not filter 1: the title's snap is filter 1's envelope
+      // amount at `70`, and a modulator sharing that corner would make every note land somewhere
+      // different, which is the opposite of a snap. Filter 2 sits above it in the SER chain at
+      // `550`, so `10` there is a slow lift and fall on what is left after the snap — a tenth of
+      // the knob, and on the five-step grid every dialable value on this box sits on. Pitch is out
+      // on this one — OSC 2 is the 16' under the note, and a beating sub octave is felt rather
+      // than heard.
+      ...modOsc('OFF', 'SINE', 15, 0, { osc1: 'OFF', osc2: 'OFF' }, 10, {
         f1: 'OFF',
-        f2: 'OFF',
+        f2: 'ON',
       }),
       ...mixer(85, 0, 80, 0, 0, 25),
       // "Snapping the top off each note" is a large positive envelope amount on a corner that is
@@ -2117,7 +2134,17 @@ const recipes: Recipe[] = [
       ...midiSetup(),
       ...osc1("16'", 0, 0, 50, 0),
       ...osc2("8'", -1, 0, 50, 0, 'OFF'),
-      ...modOsc('OFF', 'SINE', 10, 0, { osc1: 'OFF', osc2: 'OFF' }, 0, {
+      // The only one of the four that modulates pitch, because it is the only one whose filters
+      // are stated as still: "both ladders low" and both ENVELOPE AMOUNTs at noon say nothing
+      // moves either corner, so a modulator on one would contradict the title rather than serve
+      // it. Pitch adds no harmonics, so "nothing above the fundamental" survives it.
+      //
+      // It points at OSC 2 — the 8' partner — and never at OSC 1, which carries the 16'
+      // fundamental this part is tuned to; modulating that is how a bass goes out of tune with
+      // the track (#417). `5` of depth against a `-1` offset is the pair beating slowly rather
+      // than a detune, and FREQUENCY drops from `10` to `5` so the beat is a drift under a held
+      // note and not a warble on top of it.
+      ...modOsc('OFF', 'SINE', 5, 5, { osc1: 'OFF', osc2: 'ON' }, 0, {
         f1: 'OFF',
         f2: 'OFF',
       }),
