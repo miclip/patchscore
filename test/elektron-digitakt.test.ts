@@ -7,6 +7,7 @@ import {
   isSustainedPart,
   moodState,
   noteInstruction,
+  reachableSlots,
   renderGuide,
   resolve,
   type AuthoredParam,
@@ -560,6 +561,123 @@ describe('Digitakt manifest', () => {
  * The one slice recipe fixes a slice *number* rather than `NOTE` — recorded below rather than
  * relied on, because that is a fact about the recipes and the field lives on the pool.
  */
+/**
+ * §3.5/#345. **The seven roles the pool declared and nothing served**, and the three judgements
+ * that produced seven recipes rather than eight or none.
+ *
+ * The pool declares all 23 roles because a track is whatever is loaded into it, so narrowing it
+ * was never the honest answer for any of these — a rimshot, a ride, a noise bed, a lead, an
+ * arpeggio, an acid line and a sweep are all a file somebody loads. What the tests below hold is
+ * the shape of the result rather than the count: every declared role reaches a recipe, `arp`
+ * reaches two requests through one, and the two gestures this box cannot make are stated rather
+ * than approximated.
+ */
+describe('the roles the pool declares, and the recipes that answer them (#345)', () => {
+  it('leaves no declared role without a recipe', () => {
+    const declared = new Set(device.voices.flatMap((v) => v.roles))
+    const authored = new Set(device.recipes.map((r) => r.role))
+    expect([...declared].filter((r) => !authored.has(r)).sort()).toEqual([])
+    // And the pool really does declare the whole vocabulary, so the assertion above is the strong
+    // one it looks like rather than a check against a short list.
+    expect(declared.size).toBe(ROLES.length)
+  })
+
+  it('answers both arp requests with one recipe, at a distance the guide names', () => {
+    // §3.4 puts `clean` and `bright` at sqrt(2), inside §3.5's radius, so the second variant this
+    // box could have carried would have been a duplicate. The claim is that the substitution
+    // actually happens and is reported, not that the two characters are adjacent on paper.
+    const arps = device.recipes.filter((r) => r.role === 'arp')
+    expect(arps.map((r) => r.character)).toEqual(['clean'])
+
+    const asking = TEMPLATES.filter((t) => t.roles.some((r) => r.role === 'arp'))
+    expect(asking.map((t) => t.id).sort()).toEqual(['generative-drift', 'major-key-electro'])
+    for (const template of asking) {
+      const result = resolve({ devices: [device], template, mood: moodState(), seed: 1 })
+      const carried = result.assignments.find((a) => a.role === 'arp')
+      expect(carried?.recipe.id, template.id).toBe('dt-arp-clean')
+    }
+    // The one asking for `bright` is told, in the guide, that it got the `clean` variant.
+    const drift = TEMPLATES.find((t) => t.id === 'generative-drift')
+    expect(drift).toBeDefined()
+    const doc = renderGuide(
+      resolve({ devices: [device], template: drift!, mood: moodState(), seed: 1 }),
+    )
+    expect(doc).toContain('substituted — asked `bright`, authored `clean`')
+  })
+
+  /**
+   * The successor has `PORT` on its TRIG PAGE 2 and builds its `acid` on it. This box's TRIG page
+   * ends at `LFO.T` (pp.43-44) and no page names a portamento, so the recipe states the absence
+   * instead of reaching for a lane that means something else. #283's table holds the disposition;
+   * what this holds is that the manifest never grew the parameter.
+   */
+  it('never authors a slide it does not have, on the acid recipe or anywhere', () => {
+    const acid = device.recipes.find((r) => r.id === 'dt-acid-hard')
+    expect(acid).toBeDefined()
+    expect(acid?.routing ?? '').toContain('**Slide:**')
+
+    const SLIDE = ['portamento', 'portamento-time', 'glide', 'tie', 'gate']
+    for (const recipe of device.recipes) {
+      for (const p of recipe.params as AuthoredParam[]) {
+        expect(p.name.toUpperCase(), recipe.id).not.toContain('PORT')
+      }
+      for (const entry of recipe.articulation ?? []) {
+        for (const key of Object.keys(entry.set)) expect(SLIDE, recipe.id).not.toContain(key)
+      }
+    }
+    // And the capability list agrees, which is where a stray claim would have hidden.
+    for (const lane of SLIDE) expect(device.features?.perStep ?? [], lane).not.toContain(lane)
+
+    // The sibling is the contrast, and asserting it here is what makes the absence a reading of
+    // two manuals rather than an omission in one.
+    const dt2 = digitaktII.recipes.find((r) => r.id === 'dt2-acid-hard')
+    expect(dt2?.articulation?.some((a) => 'portamento' in a.set)).toBe(true)
+  })
+
+  /**
+   * §4.2/#108. Neither direction asking for `sweep` authors a step variant for it, both saying in
+   * their own `PATTERNS` note that a gesture across a section boundary is not four bands of
+   * sixteenths. So there is no slot for an articulation to address, and the recipe carrying none
+   * is a measurement rather than an oversight.
+   */
+  it('articulates the sweep with nothing, because no direction gives it a slot', () => {
+    const sweepRecipe = device.recipes.find((r) => r.id === 'dt-sweep-soft')
+    expect(sweepRecipe).toBeDefined()
+    expect(sweepRecipe?.articulation).toBeUndefined()
+
+    const reach = reachableSlots(sweepRecipe!, TEMPLATES)
+    expect(reach.requested, 'nothing asks for sweep, so the absence proves nothing').toBe(true)
+    expect(reach.slots).toEqual([])
+
+    // Every other recipe on this box is the other case: a slot exists, so one is used. That pairing
+    // is what stops this test passing on a manifest that simply stopped articulating.
+    for (const recipe of device.recipes) {
+      if (recipe.id === sweepRecipe!.id) continue
+      const slots = reachableSlots(recipe, TEMPLATES)
+      if (!slots.requested || slots.slots.length === 0) continue
+      expect(recipe.articulation ?? [], `${recipe.id} has slots and uses none`).not.toHaveLength(0)
+    }
+  })
+
+  /**
+   * p.44's `REL` is the parameter #345 added a helper for, and the rule it was added under is that
+   * a release needs a sustain above the floor to travel from. One recipe qualifies today.
+   */
+  it('authors a filter release only where the filter envelope sustains', () => {
+    for (const recipe of device.recipes) {
+      const rel = named(recipe, 'REL')
+      const sus = named(recipe, 'SUS')
+      if (rel === undefined) continue
+      expect(sus, `${recipe.id} authors REL with no SUS`).toBeDefined()
+      expect(sus?.kind).toBe('numeric')
+      expect(sus?.kind === 'numeric' ? sus.value : 0, `${recipe.id} REL against a floored SUS`)
+        .toBeGreaterThan(0)
+    }
+    expect(device.recipes.filter((r) => named(r, 'REL') !== undefined).map((r) => r.id))
+      .toEqual(['dt-lead-bright'])
+  })
+})
+
 describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   const SEEDS = [1, 2, 3, 4, 5, 6]
 
@@ -669,16 +787,16 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 216 is #334's figure for this device and it is expected to stay put, because nothing here is
-   * a gap to close. The number moves when a direction gains or loses a part, and a diff is a
+   * 228 is #334's figure for this device. It was 216 until #345 authored the seven roles the pool
+   * declared and no recipe served, which placed 24 parts that were being dropped — a diff is a
    * prompt to re-read the head note rather than a failure. What must not move is the relationship
    * — no part ever gets a `trigger`, because the pool has no note to give one.
    */
-  it('leaves 216 grid parts blank, and pins how many there are', () => {
+  it('leaves 228 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(240)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(216)
+    expect(grid.length).toBe(252)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(228)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -706,12 +824,15 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     ).toEqual([
       ['closed-hat', 48],
       ['kick', 48],
-      ['ghost-perc', 36],
+      ['ghost-perc', 30],
       ['clap', 18],
-      ['metallic', 18],
+      ['rim', 18],
       ['snare', 18],
-      ['open-hat', 12],
+      ['metallic', 12],
+      ['arp', 6],
       ['impact', 6],
+      ['open-hat', 6],
+      ['ride', 6],
       ['tom', 6],
       ['vox-chop', 6],
     ])
@@ -721,11 +842,12 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
     // part with no variant anywhere nothing to program.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(108)
+    expect(hooked.length).toBe(132)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(24)
+    expect(noPattern.length).toBe(30)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/riser',
+      'ambient-dub/sweep',
       'ambient-dub/texture',
       'hip-hop/texture',
       'industrial-techno/riser',

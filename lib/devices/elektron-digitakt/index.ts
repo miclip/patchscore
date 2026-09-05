@@ -38,6 +38,14 @@ import { DIGITAKT_PANEL } from './panel'
  * is a different case from the three above rather than the extreme of them, and it is why `DEL`
  * is the one parameter on the five pages that no recipe below authors.
  *
+ * That last sentence was a near miss until #345 and is now exact. FLTR page 1's `REL` (p.44) has
+ * a printed range and had no helper, so it sat unauthored for the opposite reason to `DEL` — not
+ * a silence, just nothing that needed it. The lead recipe below is the first with a filter
+ * envelope that sustains above the floor, which is the only state a release has anywhere to
+ * travel from, so `REL` is authored there and `DEL` is alone again. `PAN` on the AMP page is the
+ * remaining omission and carries its own reason above: where a mono part sits in the field is a
+ * mix decision this guide has no business making.
+ *
  * That is the same relationship the Digitone pair has and it is worth naming as a pattern rather
  * than as a surprise: **Elektron's older manuals state the scale and the newer ones leave it to
  * the screen.** Where a value here is uncited it is because *this* document is silent about that
@@ -105,10 +113,44 @@ import { DIGITAKT_PANEL } from './panel'
  * the BPM does is a specific effect rather than a default, and it is not one any direction here
  * asks for. The machine is in the option set because the box has it.
  *
+ * ## The seven roles the pool declared and no recipe served (#345)
+ *
+ * The pool carries all 23 roles because a track is whatever is loaded into it, and seven of them
+ * had no recipe: `acid`, `arp`, `lead`, `noise`, `ride`, `rim` and `sweep`. A declared role with
+ * no recipe is a `no-recipe` shortfall, so the part was not placed at all — over the eleven
+ * directions at seeds 1-6 this box was dropping **102 parts and now drops 60**.
+ *
+ * **Narrowing `roles` would have closed the same seven and been false.** A rimshot, a ride, a
+ * noise bed, a lead, an arpeggio figure, an acid line and a sweep are all a file somebody loads
+ * onto a track, and p.82's *"You can assign any machine to any audio track"* is the same argument
+ * the `voices` note already makes. Nothing was left with a folder-local reason.
+ *
+ * **Seven recipes for seven roles, and that count is a coincidence rather than a rule.** Each was
+ * decided on its own, and the decision that would have made it eight went the other way: two
+ * directions ask for `arp`, one `clean` and one `bright`, which §3.4 puts apart at sqrt(2), so one
+ * recipe answers both and the guide tells the reader when it substitutes. A second variant would
+ * have bought a word on the page and a duplicate to keep in step.
+ *
+ * ### Three things the manual settled
+ *
+ * - **There is no glide here, where the successor has one.** The Digitakt II's `acid` is built on
+ *   `PORT`; this box's TRIG page is `NOTE`, `VEL`, `LEN`, `PROB`, `LEV`, `FLT.T` and `LFO.T` and
+ *   stops (pp.43-44), and no page names a portamento, a glide or a slide. So the line steps, the
+ *   resonant filter envelope and the accent carry the role, and the recipe says so out loud
+ *   rather than leaving a reader hunting a menu for it.
+ * - **There is no arpeggiator either**, and here the two boxes agree. The word occurs nowhere in
+ *   the 96 pages and the index has no entry for one, so `arp` is a figure written onto the grid
+ *   with a `NOTE` lock per trig (p.43).
+ * - **`sweep` can be the filter here, and on the successor it could not.** That manifest declines
+ *   the LFO because its appendix prints the filter destination as `FILTER: (machine dependent
+ *   parameters)`, leaving the on-screen spelling nowhere in the document. APPENDIX C on p.92
+ *   enumerates them, `FILTER: Frequency` among them, so the reader is not sent to find a
+ *   recording of a sweep to load.
+ *
  * ## No trigger note, and the collision here is on one note name (§2.1/#334)
  *
  * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
- * box has 216, all on the one `track` pool. Like the successor it prints both halves of a
+ * box has 228, all on the one `track` pool. Like the successor it prints both halves of a
  * `TriggerNote` — p.23: *"MIDI note numbers 12-84, that corresponds to notes C1-C7 (C5, MIDI note
  * 60, being middle C)"* — and like the successor it cannot put one on the pool. **The reason is
  * narrower here, and two of the successor's three arguments do not apply.**
@@ -508,6 +550,17 @@ const fltrType = (t: (typeof FLTR_TYPES)[number]) => pick('TYPE', t, FLTR_TYPES,
 const fltrAtk = (v: number) => num('FLTR ATK', v, { min: 0, max: 127 }, 44)
 const fltrDec = (v: number) => num('FLTR DEC', v, { min: 0, max: 127 }, 44)
 const fltrSus = (v: number) => num('SUS', v, { min: 0, max: 127 }, 44)
+
+/**
+ * `REL` (Release Time), p.44: *"(0-126, INF)"*. `INF` sits past 126 as its own position, the way
+ * `HOLD`'s `NOTE` and `AMP DEC`'s `INF` do, so the numeric range stops at 126.
+ *
+ * Authored only where the filter envelope has somewhere to travel after the note ends, which on
+ * this box means a recipe whose `SUS` is above zero. A release on an envelope that has already
+ * reached the floor is a value with nothing to do.
+ */
+const fltrRel = (v: number) =>
+  num('REL', v, { min: 0, max: 126 }, 44, { note: 'An INF setting sits past 126 and holds' })
 
 /** `FREQ`, p.44. Cutoff for a filter `TYPE`, centre frequency for an EQ one. */
 const freq = (v: number) =>
@@ -916,6 +969,41 @@ const recipes: Recipe[] = [
     articulation: [art('backbeat', { velocity: 110 }, 'trig-params')],
   },
   {
+    id: 'dt-rim-clean',
+    role: 'rim',
+    character: 'clean',
+    voice: 'track',
+    title: 'Rim click, EQ narrowed onto the wood',
+    verified: false,
+    /**
+     * `EQ 5` is the narrowest of the five: p.45 gives the setting as the bandwidth the EQ affects,
+     * *"The higher the Q value, the narrower the bandwidth"*. A rim is one click at one frequency,
+     * so the narrow band is the one that finds it without dragging the rest of the kit up with it.
+     *
+     * `clean` is authored as an absence rather than a value. `BR`, `SRR` and `OVER` are the three
+     * controls this box makes grit with, and none of them is here.
+     */
+    sourceAudio: {
+      need: 'A rimshot or cross-stick one-shot under 80 ms, close and dry, with no room on it',
+    },
+    params: [
+      machine('ONESHOT'),
+      play('ONESHOT', 'FORWARD'),
+      fltrType('EQ 5'),
+      freq(88),
+      gain(20),
+      ampAtk(0),
+      hold(2),
+      ampDec(14),
+      revSend(16),
+      vol(100),
+    ],
+    articulation: [
+      art('accent', { velocity: 118 }, 'trig-params'),
+      art('ghost', { velocity: 46, probability: 70 }, 'trig-params'),
+    ],
+  },
+  {
     id: 'dt-closed-hat-clean',
     role: 'closed-hat',
     character: 'clean',
@@ -979,6 +1067,45 @@ const recipes: Recipe[] = [
       vol(104),
     ],
     articulation: [art('offbeat', { velocity: 108, 'note-length': 16 }, 'trig-params')],
+  },
+  {
+    id: 'dt-ride-bright',
+    role: 'ride',
+    character: 'bright',
+    voice: 'track',
+    title: 'Ride let ring on the offbeat, the wash lifted off the low end',
+    verified: false,
+    /**
+     * The highpass rather than an EQ, and the difference matters on this part. An EQ boost adds
+     * to what is there; the ride's problem is what is underneath it, since a cymbal recorded in a
+     * room carries the room with it and the direction asking for this one already has a pad and a
+     * texture holding that ground. `FREQ 46` on a 2-pole highpass takes the ground away instead.
+     *
+     * `HOLD 84` against `AMP DEC 104` is where the ring lives: p.46's hold phase is a fixed
+     * plateau before the decay starts, so a ride that is gated at the sample stays gated however
+     * long the decay is. The `sourceAudio` asks for the tail for that reason.
+     */
+    sourceAudio: {
+      need:
+        'A ride cymbal one-shot with the bow ring left on it, two seconds or longer; a gated ride ' +
+        'has nothing for HOLD to hold',
+    },
+    params: [
+      machine('ONESHOT'),
+      play('ONESHOT', 'FORWARD'),
+      fltrType('2-pole Highpass'),
+      freq(46),
+      reso(14),
+      ampAtk(0),
+      hold(84),
+      ampDec(104),
+      revSend(30),
+      vol(100),
+    ],
+    articulation: [
+      art('offbeat', { velocity: 92, 'note-length': 24 }, 'trig-params'),
+      art('accent', { velocity: 114 }, 'trig-params'),
+    ],
   },
   {
     id: 'dt-ghost-perc-soft',
@@ -1078,6 +1205,50 @@ const recipes: Recipe[] = [
     articulation: [art('fill', { velocity: 116 }, 'trig-params')],
   },
   {
+    id: 'dt-noise-dirty',
+    role: 'noise',
+    character: 'dirty',
+    voice: 'track',
+    title: 'Noise struck rather than held, crushed on the way into the filter',
+    verified: false,
+    /**
+     * **The whole grit chain, in the order p.46 puts it in.** `BR` reduces the bit depth on the
+     * SRC page (p.83), `SRR` reduces the sample rate on FLTR page 2, and `ROUT` decides whether
+     * that reduction reaches the filter or comes after it. `PRE` here, so the highpass is working
+     * on already-broken material and the aliasing `SRR` produces gets filtered with the source
+     * rather than sprayed over the top of it. `OVER` then clips what survives (p.46).
+     *
+     * **Struck, not held, and that was read off the direction rather than assumed.** The one
+     * direction asking for `noise` patterns it on `accent`, `downbeat` and `offbeat`, so it is a
+     * rhythmic part. A bed would be `FORWARD LOOP` and a long `HOLD`, which is a different recipe
+     * for a request nobody makes.
+     */
+    sourceAudio: {
+      need:
+        'A noise recording with movement in it — tape hiss, a vinyl run-out, a cymbal wash; flat ' +
+        'white noise gives the filter nothing to reveal',
+    },
+    params: [
+      machine('ONESHOT'),
+      play('ONESHOT', 'FORWARD'),
+      br(88),
+      srr(72),
+      srrRout('PRE'),
+      fltrType('2-pole Highpass'),
+      freq(52),
+      reso(40),
+      ampAtk(0),
+      hold(10),
+      ampDec(26),
+      over(70),
+      vol(96),
+    ],
+    articulation: [
+      art('offbeat', { velocity: 96 }, 'trig-params'),
+      art('accent', { velocity: 124 }, 'trig-params'),
+    ],
+  },
+  {
     id: 'dt-vox-chop-bright',
     role: 'vox-chop',
     character: 'bright',
@@ -1148,6 +1319,159 @@ const recipes: Recipe[] = [
       revSend(48),
     ],
     articulation: [art('downbeat', { 'note-length': 64 }, 'trig-params')],
+  },
+  {
+    id: 'dt-lead-bright',
+    role: 'lead',
+    character: 'bright',
+    voice: 'track',
+    title: 'One sample played as a line, a note lock on every trig',
+    verified: false,
+    /**
+     * A lead here is one track and one voice (p.15), so it is monophonic by construction and
+     * nothing in the params has to say so. The pitch comes from the same place the stab's does:
+     * `NOTE` on the TRIG page, *"(-48-+24)"* (p.43), locked per step by holding a [TRIG] key.
+     *
+     * **The filter envelope is the reason `REL` exists in this manifest.** `SUS 30` leaves the
+     * cutoff parked above the floor while a note is held, so there is somewhere for the release
+     * to travel from when it is let go. Every other recipe here ends its filter envelope at the
+     * bottom, where a release would be a number with nothing to do.
+     */
+    sourceAudio: {
+      need:
+        'A single sustained tone of one known pitch, with a clean start and no vibrato recorded ' +
+        'into it; every trig repitches this one file, so anything in it transposes with it',
+    },
+    routing:
+      '**The line:** hold a [TRIG] key and turn the `NOTE` knob on the TRIG page to set that ' +
+      "step's pitch (p.43); the range is -48 to +24 semitones from the sample's own. `TUNE` on " +
+      'the SRC page moves the whole part instead (p.82), which is how to fit the sample to the ' +
+      "direction's key before the line is written",
+    params: [
+      machine('ONESHOT'),
+      play('ONESHOT', 'FORWARD'),
+      fltrType('2-pole Lowpass'),
+      fltrAtk(0),
+      fltrDec(40),
+      fltrSus(30),
+      fltrRel(30),
+      freq(96),
+      reso(30),
+      env(24),
+      ampAtk(2),
+      hold(16),
+      ampDec(48),
+      delSend(22),
+      vol(106),
+    ],
+    articulation: [
+      art('downbeat', { velocity: 108, 'note-length': 12 }, 'trig-params'),
+      art('accent', { velocity: 124, 'note-length': 20 }, 'trig-params'),
+    ],
+  },
+  {
+    id: 'dt-arp-clean',
+    role: 'arp',
+    character: 'clean',
+    voice: 'track',
+    title: 'Arpeggio written onto the grid, one note to a trig',
+    verified: false,
+    /**
+     * **This box has no arpeggiator.** The word occurs nowhere in the 96 pages and the index has
+     * no entry between `AUDIO ROUTING` and `Assigning a sample`. So an `arp` here is a figure
+     * placed on the sequencer with a `NOTE` lock on each trig (p.43), and that is what the guide
+     * should say rather than pointing at a control the reader will go looking for and not find.
+     *
+     * Written out rather than warped from a recorded arpeggio, which `WERP` would also do: a
+     * recording moves as a block under a `NOTE` lock, so it keeps whatever chord it was played
+     * over and stops following the direction's harmony after the first change.
+     *
+     * **One recipe, not two.** Two directions ask for this role, one `clean` and one `bright`,
+     * and §3.4 puts those two apart at sqrt(2) — an acceptable substitution the guide names to
+     * the reader when it makes it. Authoring the second variant would buy a word on the page and
+     * a duplicate to keep in step with this one.
+     */
+    sourceAudio: {
+      need: 'A short plucked or struck tone of one known pitch, decaying inside a single step',
+    },
+    routing:
+      '**The figure:** one note to a trig, set by holding the [TRIG] key and turning `NOTE` on ' +
+      'the TRIG page (p.43). The Hook phase gives the notes; there is no arpeggiator on this box ' +
+      'to generate them from a held chord',
+    params: [
+      machine('ONESHOT'),
+      play('ONESHOT', 'FORWARD'),
+      fltrType('2-pole Lowpass'),
+      freq(84),
+      reso(20),
+      ampAtk(0),
+      hold(6),
+      ampDec(20),
+      delSend(26),
+      vol(96),
+    ],
+    articulation: [
+      art('offbeat', { velocity: 94, 'note-length': 4 }, 'trig-params'),
+      art('ghost', { velocity: 58, probability: 80 }, 'trig-params'),
+    ],
+  },
+  {
+    id: 'dt-acid-hard',
+    role: 'acid',
+    character: 'hard',
+    voice: 'track',
+    title: 'Acid line stepped rather than slid, the resonant filter re-struck on every note',
+    verified: false,
+    /**
+     * **There is no glide on this box, and that is a fact about the Digitakt rather than about
+     * this recipe.** The successor has one — `PORT` on its TRIG PAGE 2, configured in a
+     * PORTAMENTO block, and its `acid` recipe is built on it. Here the TRIG page is `NOTE`, `VEL`,
+     * `LEN`, `PROB`, `LEV`, `FLT.T` and `LFO.T` and stops (pp.43-44), and no page in the document
+     * names a portamento, a glide or a slide. So the line steps between its pitches.
+     *
+     * What is left is the other half of the sound this role is named after, and this box has all
+     * of it. `RESO 108` against a cutoff parked low at `FREQ 38` puts the peak below where the
+     * note sits, so the note is heard through the filter's own resonance rather than past it;
+     * `ENV 52` on p.44's bipolar depth then throws that peak up the spectrum, and `FLTR DEC 44`
+     * against `SUS 8` brings it straight back down. `FLT.T` defaults to trigging the envelope, so
+     * that shape happens again on every note without a lock.
+     *
+     * The accent does the work the slide would have shared: p.43's `VEL` is a per-step lock like
+     * everything else on that page, so the accented trigs hit the filter harder while the rest
+     * step flat.
+     */
+    sourceAudio: {
+      need:
+        'A short saw or square bass tone of one known pitch, with no filter movement recorded ' +
+        'into it; the filter is the part this recipe is for',
+    },
+    routing:
+      '**Slide:** there is none on this box. The TRIG page is `NOTE`, `VEL`, `LEN`, `PROB`, `LEV`, ' +
+      '`FLT.T` and `LFO.T` and stops (pp.43-44), and no page in the manual names a portamento or a ' +
+      'glide, so the line steps between its pitches rather than sliding into them. **The line:** a ' +
+      '`NOTE` lock per trig, held [TRIG] and the TRIG page (p.43); `VEL` locks the same way, and ' +
+      'the accented trigs below are what mark the notes the slide would otherwise have marked',
+    params: [
+      machine('ONESHOT'),
+      play('ONESHOT', 'FORWARD'),
+      tune(-12),
+      fltrType('2-pole Lowpass'),
+      fltrAtk(0),
+      fltrDec(44),
+      fltrSus(8),
+      freq(38),
+      reso(108),
+      env(52),
+      ampAtk(0),
+      hold(6),
+      ampDec(30),
+      over(46),
+      vol(108),
+    ],
+    articulation: [
+      art('accent', { velocity: 127 }, 'trig-params'),
+      art('offbeat', { velocity: 88 }, 'trig-params'),
+    ],
   },
   {
     id: 'dt-riser-bright',
@@ -1349,6 +1673,91 @@ const recipes: Recipe[] = [
       revSend(72),
     ],
     articulation: [art('downbeat', { 'note-length': 96 }, 'trig-params')],
+  },
+  {
+    id: 'dt-sweep-soft',
+    role: 'sweep',
+    character: 'soft',
+    voice: 'track',
+    title: 'Held source under the section, the LFO opening the filter once across it',
+    verified: false,
+    /**
+     * §4.2's transitional roles. A sweep is one gesture across a section boundary rather than a
+     * part that owns a voice, and the two directions asking for it say so in the same words: one
+     * lifting into the crest and one falling away from it.
+     *
+     * ## The LFO is authorable here, and on the successor it was not
+     *
+     * `lib/devices/elektron-digitakt-ii/index.ts` declines this route and gives the reason: its
+     * APPENDIX prints the filter's modulation target as `FILTER: (machine dependent parameters)`,
+     * so the on-screen spelling of the cutoff destination appears nowhere in that document, and
+     * naming an LFO without naming what it moves is #332's unfinishable instruction. Its `sweep`
+     * is therefore a recording stretched to a bar count.
+     *
+     * **This manual enumerates them.** APPENDIX C, p.92, prints `FILTER: Frequency` in the
+     * `AUDIO TRACKS` column, which is the same destination the texture and the bright riser above
+     * already write. So the sweep can be the filter here rather than a file, and the reader is
+     * not asked to go and find a recording of one.
+     *
+     * ## One pass, not a cycle, and the section lengths are why
+     *
+     * `SPD 1` against `MULT BPM 4` reads 32 in p.49's table, whose unit is whole notes per cycle
+     * with 1 meaning sixteen sequencer steps — so one pass is 32 bars. `LFO MODE ONE` *"starts
+     * when a note is trigged, then runs to the end of the waveform and then stops"* (p.48), and
+     * `RMP` is one of the two unipolar waves on that page, so the pass travels one way and stays
+     * where it arrives. `PHAS 0` is the end it starts from.
+     *
+     * **`FRE` was the obvious alternative and the sections rule it out.** A free-running LFO
+     * repeats at a fixed rate, and the four sections this role is scoped to are 11, 17, 20 and 36
+     * bars long across the two directions. No one rate gives a single gesture in all four, and a
+     * rate that cycles twice inside a section is a texture breathing rather than a sweep.
+     *
+     * **`DEP` is bipolar** (p.48: *"Both negative (inverted) and positive modulation depth is
+     * possible"*), which is what lets one recipe answer both halves of the request. Positive is
+     * the lift; the same patch with the depth negative is the fall, and both directions ask for
+     * one of each.
+     *
+     * ## No articulation, checked rather than assumed
+     *
+     * Neither direction authors a step variant for `sweep`, and both say why in their own
+     * `PATTERNS` note: a sweep is one gesture across a boundary, so four bands of invented
+     * sixteenths would be the guide lying about what the part does. `selectPattern` therefore
+     * returns nothing in every section and there is no slot for a gesture to address.
+     */
+    sourceAudio: {
+      need:
+        'A sustained source that holds without changing — a drone, a pad chord, a noise bed. The ' +
+        'filter supplies all the movement, so anything already moving fights it',
+    },
+    routing:
+      '**One trig, where the gesture starts.** There is no step pattern for this part; place a ' +
+      'single trig at the top of the section and `LFO MODE ONE` runs the pass from it and stops ' +
+      '(p.48). **The rate is deliberately off the beat grid:** `SPD 1` against `MULT BPM 4` reads ' +
+      "32 in p.49's table, one pass every 32 bars, which is why it is not one of the 8, 16 or 32 " +
+      'settings p.47 suggests for movement you want to hear against the beat. **To fall instead ' +
+      'of lift**, set `DEP` negative — same patch, inverted (p.48)',
+    params: [
+      machine('ONESHOT'),
+      play('ONESHOT', 'FORWARD LOOP'),
+      strt(0),
+      srcLen(120),
+      loop(24),
+      fltrType('2-pole Lowpass'),
+      freq(34),
+      reso(26),
+      lfoWave('RMP'),
+      lfoMode('ONE'),
+      dest('FILTER: Frequency'),
+      spd(1),
+      mult('BPM 4'),
+      phas(0),
+      dep(44),
+      ampAtk(24),
+      hold(126),
+      ampDec(110),
+      revSend(52),
+      vol(92),
+    ],
   },
 ]
 
