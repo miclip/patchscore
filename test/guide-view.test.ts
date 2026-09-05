@@ -28,6 +28,7 @@ import { templateHref } from '../lib/studio/catalogue'
 import { inspirationsFor } from '../lib/studio/session'
 import { Guide } from '../components/guide/guide'
 import { fxText } from '../components/guide/format'
+import { FIXTURE_CITE } from './fixtures'
 import { mergeBlocks } from '../components/guide/phase-steps'
 import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
 
@@ -1267,11 +1268,18 @@ describe('the song overrides read the same in both guides (#161)', () => {
  * these renderers only choose the ink. So what is checked here is that they choose it for the
  * same parts and print the same note and the same number — the #33 claim, on the one field where
  * the two candidates come from opposite ends of the architecture.
+ *
+ * **The trigger arm has no shipped user any more**, since the two Polyend boxes that authored one
+ * declined it: on a track whose note means whatever instrument is loaded on it, a pool-wide "plays
+ * it as recorded" was false for the sliced, granular and transposed recipes those same folders
+ * ship. The arm itself is unchanged and still reachable, so it is exercised below on a result with
+ * the field put back by hand — the parity claim is about the two renderers, and it should not
+ * lapse because no device currently reaches it.
  */
 describe('the note above the grid reads the same in both guides (§4.1/§2.1)', () => {
   const trackerMini = DEVICES.filter((d) => d.id === 'polyend-tracker-mini')
 
-  it('prints the whole-sample note on Tracker Mini percussion in both', () => {
+  it('prints no trigger note on Tracker Mini percussion, in either', () => {
     const result = resolve({
       devices: trackerMini,
       template: industrialTechno,
@@ -1280,13 +1288,46 @@ describe('the note above the grid reads the same in both guides (§4.1/§2.1)', 
     })
     const kick = result.assignments.find((a) => a.role === 'kick')
     expect(kick?.assignables[0]?.poolId).toBe('track-sample')
+    // Not suppressed downstream: there is nothing on the voice to suppress.
+    expect(kick?.triggerNote).toBeUndefined()
 
     for (const guide of [renderGuide(result), text(html(result))]) {
+      expect(guide).not.toContain('Trigger note')
+    }
+  })
+
+  /**
+   * The arm itself, on a result carrying the field rather than on a device that authors it.
+   *
+   * Hand-set for exactly the reason the sweep in the Polyend files is not: this is a claim about
+   * two renderers agreeing, and pinning it to a device folder is what let it lapse when the
+   * folders changed. `verified` is required by the type, so the citation here is a fixture and
+   * appears nowhere on the page — §3.2 renders no per-value citation.
+   */
+  it('prints a trigger note the same way in both, wherever one reaches a part', () => {
+    const result = resolve({
+      devices: trackerMini,
+      template: industrialTechno,
+      mood: moodState(),
+      seed: 1,
+    })
+    const kick = result.assignments.find((a) => a.role === 'kick')
+    expect(kick, 'no kick to hang the note on').toBeDefined()
+    const withNote: ResolveResult = {
+      ...result,
+      assignments: result.assignments.map((a) =>
+        a === kick
+          ? { ...a, triggerNote: { note: 'C5', midi: 60, verified: FIXTURE_CITE } }
+          : a,
+      ),
+    }
+
+    for (const guide of [renderGuide(withNote), text(html(withNote))]) {
       expect(guide).toContain('Trigger note')
       expect(guide).toContain('C5')
       expect(guide).toContain('MIDI 60')
-      // The note is the instruction; the page it was read off is in the manifest only.
-      expect(guide).not.toContain('Polyend Tracker Mini Manual 2.2.1b, p.90')
+      // The note is the instruction; the page it was read off belongs in the manifest only.
+      expect(guide).not.toContain('Fixture p.1')
     }
   })
 
@@ -1317,10 +1358,10 @@ describe('the note above the grid reads the same in both guides (§4.1/§2.1)', 
    * Slice patch, and the direction hooks that role — so the hook is the authority (#100) and
    * phase 5 prints no note of its own in either guide.
    *
-   * That suppression is the honest answer rather than a gap being hidden. On a sliced instrument
-   * a note is a *slice address*, so the track's `C5` would be false there and the hook's `G4` is
-   * the wrong kind of value; nothing in the vocabulary can yet say which. Printing neither is the
-   * only thing available that is not a lie.
+   * **This used to be the interesting case and now it is the ordinary one.** The suppression was
+   * what stood between a sliced instrument and a `C5` that would have been false on it; the device
+   * no longer authors that `C5`, so the hook is doing one job here rather than two. Kept because
+   * the hook's authority is the claim, and it is independent of what the voice carries.
    */
   it('says nothing above the grid where a hook owns the part, in both', () => {
     const result = resolve({
@@ -1332,8 +1373,6 @@ describe('the note above the grid reads the same in both guides (§4.1/§2.1)', 
     const chop = result.assignments.find((a) => a.role === 'vox-chop')
     expect(chop?.recipe.id).toBe('tm-vox-chop-dirty')
     expect(chop?.hookAuthority).toBeDefined()
-    // The voice still carries one — this is the decision suppressing it, not an absence upstream.
-    expect(chop?.triggerNote?.note).toBe('C5')
 
     const md = renderGuide(result).split('### `vox-chop`')[1]?.split('###')[0] as string
     const web = text(html(result)).split('vox-chop')[1] as string

@@ -195,8 +195,6 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 
 **Tight one-shot kick, tuned down, no tail** — settings in Sound design
 
-**Trigger note** — `C5` · MIDI 60
-
 **Intro, Outro** — 16 steps, band 0
 
 ```
@@ -399,8 +397,6 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 
 **Half-open hat, gated short** — settings in Sound design
 
-**Trigger note** — `C5` · MIDI 60
-
 **Intro, Outro** — 16 steps, band 0
 
 ```
@@ -470,8 +466,6 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 ### `riser` — Tracker Mini · Track 6
 
 **Sample played backwards, the envelope swelling it into the change** — settings in Sound design
-
-**Trigger note** — `C5` · MIDI 60
 
 **Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 1)
 
