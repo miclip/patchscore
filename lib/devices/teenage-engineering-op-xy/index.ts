@@ -567,6 +567,128 @@ const recipes: Recipe[] = [
     ],
     routing: 'Melodic group (p.73)',
   },
+  // ---------------------------------------------------------------------------
+  // #345. Five roles the pool declared and no recipe served. Three are one-shots
+  // the drum sampler answers; two are gestures the synth side makes.
+  // ---------------------------------------------------------------------------
+  {
+    id: 'opxy-ride-bright',
+    role: 'ride',
+    character: 'bright',
+    voice: 'track',
+    title: 'Drum sampler ride, let ring',
+    /**
+     * The drum sampler rather than an engine, and the reason is the same one that puts every
+     * other cymbal here: a ride is a recording, and no engine on this box synthesises one better
+     * than a microphone does. p.79 gives the sampler 24 one-shots across the keyboard, so this
+     * costs a keyboard position rather than a track.
+     */
+    sourceAudio: drumAudio(
+      'A ride cymbal one-shot with the bow ring left on it — the 20-second sampler limit is not ' +
+      'the constraint here, but a gated ride has no ring to let out',
+    ),
+    params: drumPart('audio input'),
+    articulation: [velocity('accent', 112), velocity('offbeat', 100)],
+    routing: 'Percussion group (p.73)',
+  },
+  {
+    id: 'opxy-impact-hard',
+    role: 'impact',
+    character: 'hard',
+    voice: 'track',
+    title: 'Drum sampler impact on the change',
+    /**
+     * §4.2's transitional roles, and the one a sampler is unambiguously right for: an impact is
+     * one recorded event at a boundary. The other two transitional roles below are gestures and
+     * go to the synth side, which is the split worth naming rather than sending all three to the
+     * same place.
+     */
+    sourceAudio: drumAudio('A one-shot with a big front — a crash, a gated slam, a reversed hit'),
+    params: drumPart('audio input'),
+    articulation: [velocity('accent', 127)],
+    routing: 'Percussion group (p.73)',
+  },
+  {
+    id: 'opxy-noise-dirty',
+    role: 'noise',
+    character: 'dirty',
+    voice: 'track',
+    title: 'Drum sampler noise burst, struck on the grid',
+    /**
+     * **Struck rather than held, read off the direction rather than assumed.** Industrial Techno
+     * is the only request and patterns `noise` on `accent`, `downbeat` and `offbeat`, so it is a
+     * rhythmic part. A bed would want a sustaining engine, which is `opxy-texture-soft` and a
+     * different part.
+     *
+     * `lofi` in the send rather than a drive on the part: this box has no per-part distortion
+     * this manual names, and §21's effect list is where the grit is.
+     */
+    sourceAudio: drumAudio(
+      'A noise recording with movement in it — tape hiss, a vinyl run-out, a cymbal wash; flat ' +
+      'white noise has nothing for the send to find',
+    ),
+    params: [...drumPart('audio input'), pick('FX I', 'lofi', SEND_FX, SEND_FX_SET, { hint: 'fx' })],
+    articulation: [velocity('accent', 127), velocity('offbeat', 100)],
+    routing: 'Percussion group (p.73)',
+  },
+  {
+    id: 'opxy-riser-bright',
+    role: 'riser',
+    character: 'bright',
+    voice: 'track',
+    title: 'hardsync riser, the sync point climbing into the change',
+    /**
+     * **A gesture rather than a recording, which is why this is an engine and the impact above is
+     * not.** p.96 describes hardsync as a second oscillator restarted by the first, so moving the
+     * sync point is a timbral climb that goes somewhere — the sound a riser is. A sampled riser
+     * would be a recording of one, and this box can make it instead.
+     *
+     * The other request for this role is Ambient Dub's `dark`, which §3.4 puts at distance 2 from
+     * `bright` — the one distance §3.5 refuses. It stays a shortfall rather than buying a second
+     * engine patch for one optional, inessential request, which is where the rest of the library
+     * sits on that pair.
+     */
+    params: [
+      pick('ENGINE', 'hardsync', ENGINES, ENGINE_SET, { hint: 'engine' }),
+      pick('PLAY MODE', 'mono', PLAY_MODES, cite(43), { hint: 'play-mode' }),
+      pick('FX II', 'reverb', SEND_FX, SEND_FX_SET, { hint: 'fx' }),
+    ],
+    routing:
+      'Melodic group (p.73). The climb is the sync encoder moved across the bars into the change ' +
+      '— p.96 gives hardsync its second oscillator restarted by the first, so the sync point is ' +
+      'what travels',
+  },
+  {
+    id: 'opxy-sweep-soft',
+    role: 'sweep',
+    character: 'soft',
+    voice: 'track',
+    title: 'dissolve pad with the filter walked across the section',
+    /**
+     * §4.2. The same reasoning as the riser one role above — a sweep is a gesture, so it is made
+     * rather than loaded — with a different engine because a sweep sustains where a riser climbs.
+     * p.94 gives dissolve's swarm encoder as the one that *"modulates the oscillators with
+     * noise"*, which is a bed that holds still enough for a filter to be the thing that moves.
+     *
+     * **The travel itself is not a parameter this manifest can carry**, and that is the honest
+     * limit rather than an omission: this manual prints one numeric range in 135 pages (see the
+     * head note), so the cutoff has no scale to author a start and an end on. What the recipe can
+     * do is choose the engine that leaves the filter somewhere to go and say, in `routing`, which
+     * knob the reader turns.
+     *
+     * **No articulation, checked** (#108): neither direction asking for `sweep` authors a step
+     * variant for it, so there is no slot for a gesture to address.
+     */
+    params: [
+      pick('ENGINE', 'dissolve', ENGINES, ENGINE_SET, { hint: 'engine' }),
+      pick('PLAY MODE', 'poly', PLAY_MODES, cite(43), { hint: 'play-mode' }),
+      pick('FX II', 'reverb', SEND_FX, SEND_FX_SET, { hint: 'fx' }),
+    ],
+    routing:
+      'Melodic group (p.73). Hold one note across the section and turn the dark gray cutoff knob ' +
+      'through it (p.44). This manual bounds no knob, so where it starts and ends is yours by ' +
+      'ear — the engine choice is what leaves the filter room to travel',
+  },
 ]
 
 export const device: Device = {
