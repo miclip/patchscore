@@ -1381,3 +1381,172 @@ describe('UNISON spends every voice on one note (§12.4/#383)', () => {
     }
   })
 })
+
+/**
+ * #384. **A parameter authored where something else makes it inert**, which is one failure
+ * wearing two costumes on the three `stab` recipes.
+ *
+ * Reported from the box while building a stab: *"the stab makes you set the osc mod settings but
+ * then sets the osc mod mixer to 0, plus it lists the LFO 1 settings but don't seem assign a
+ * modulation"*. Both halves were real and they are not the same defect.
+ *
+ * **The MOD OSC one is local to `muse-stab-hard` among the stabs, and nowhere near local on the
+ * device.** Nine lines — waveform, frequency, both depths, four routing switches — with every
+ * route `OFF`, both amounts `0`, and `MIXER · MOD OSC` at `0`. The other two stabs have active
+ * blocks, so within this role it was one recipe; **six other recipes across `lead`, `bass-mid`
+ * and `sub` carry the identical inert shape** and are pinned below as debt against #388 rather
+ * than fixed here. The repair on the stab is to stop printing it rather than to invent a
+ * destination for it.
+ *
+ * **The LFO one is structural.** LFO 1 has no destination anywhere in this manifest's parameter
+ * model, and cannot be given one: the instrument's only mechanism for pointing it somewhere is
+ * the MOD MAP, and the `ASSIGN` quick-assign page writes a MOD MAP slot rather than setting a
+ * control. This file's *"What is left out, and why"* already rules both out — a 16-slot matrix
+ * with 34 sources and 69 destinations is a patch language, not a parameter — so authoring five
+ * LFO 1 parameters was the manifest contradicting its own decision.
+ *
+ * **What is asserted here is the absence and the two effective cases**, because an absence is
+ * the one thing a reader of the recipe cannot see. `PITCH LFO` is the control: it carries its own
+ * routing switches on the panel, so the `lead` recipes reach a destination without the MOD MAP,
+ * and that is why LFO 1 is a gap rather than a rule about modulators.
+ */
+describe('the stabs print no modulator that reaches nothing (#384)', () => {
+  const stab = (id: string) => device.recipes.find((recipe) => recipe.id === id)!
+  const named = (id: string, prefix: string) =>
+    stab(id).params.filter((param) => param.name.startsWith(prefix))
+  const valueOf = (id: string, name: string) =>
+    stab(id).params.find((param) => param.name === name)?.value
+
+  it('authors no LFO 1 on any stab, because none of them can say where it goes', () => {
+    for (const id of ['muse-stab-hard', 'muse-stab-bright', 'muse-stab-dirty']) {
+      expect(named(id, 'LFO 1'), id).toEqual([])
+    }
+  })
+
+  it('drops the disconnected MOD OSC from hard and keeps both routed ones', () => {
+    // Gone entirely on `hard`: every route was off and both depths were zero.
+    expect(named('muse-stab-hard', 'MOD OSC')).toEqual([])
+    // **And the mixer fader stays**, which is the half that is not a deletion. It comes from
+    // `mixer` rather than from the dropped block, and it is what tells a reader the oscillator
+    // is deliberately out of the mix rather than forgotten.
+    expect(valueOf('muse-stab-hard', 'MIXER · MOD OSC')).toBe(0)
+
+    // The two active blocks are untouched, so within the stabs this is one recipe rather than a
+    // sweep. Asserted with the destination and the level, since "still has nine params" would
+    // pass on a block as inert as the one just removed. What is checked is that each block is
+    // *active*, not that its destination is the right one — no page and no title settles that.
+    expect(named('muse-stab-bright', 'MOD OSC')).toHaveLength(9)
+    expect(valueOf('muse-stab-bright', 'MOD OSC · FILTER ▸ 2')).toBe('ON')
+    expect(valueOf('muse-stab-bright', 'MOD OSC · FILTER AMOUNT')).toBe(20)
+    expect(valueOf('muse-stab-bright', 'MIXER · MOD OSC')).toBe(10)
+
+    expect(named('muse-stab-dirty', 'MOD OSC')).toHaveLength(9)
+    expect(valueOf('muse-stab-dirty', 'MOD OSC · PITCH ▸ OSC 2')).toBe('ON')
+    expect(valueOf('muse-stab-dirty', 'MOD OSC · PITCH AMOUNT')).toBe(20)
+    expect(valueOf('muse-stab-dirty', 'MIXER · MOD OSC')).toBe(25)
+  })
+
+  /**
+   * The general form of what was removed, stated as a rule over the stabs so that re-adding the
+   * block in its old shape fails here rather than passing because the names changed.
+   *
+   * **The condition is all three at once**, and that is not pedantry. A `MIXER · MOD OSC` of `0`
+   * is perfectly correct on its own: the fader is the oscillator's *audio* level, and a MOD OSC
+   * used purely as a modulator is routed, has depth, and is deliberately not in the mix — which
+   * is what all three `pad` recipes and `muse-texture-soft` do. What made `muse-stab-hard`'s
+   * block inert was no route on **and** no depth **and** no level.
+   */
+  const inert = (id: string) => {
+    const block = named(id, 'MOD OSC')
+    if (block.length === 0) return false
+    const routed = block.filter((param) => param.name.includes('▸')).some((p) => p.value === 'ON')
+    const deep = block
+      .filter((param) => param.name.endsWith('AMOUNT'))
+      .some((param) => param.value !== 0)
+    const audible = Number(valueOf(id, 'MIXER · MOD OSC')) > 0
+    return !routed && !deep && !audible
+  }
+
+  it('leaves no stab carrying a MOD OSC that is routed nowhere, at no depth, at no level', () => {
+    for (const id of ['muse-stab-hard', 'muse-stab-bright', 'muse-stab-dirty']) {
+      expect(inert(id), id).toBe(false)
+    }
+    // Not vacuous: the predicate really does fire on the shape that was removed. A block with
+    // every route off, both amounts zero and the fader down is what `muse-stab-hard` carried.
+    expect(named('muse-stab-bright', 'MOD OSC').length).toBeGreaterThan(0)
+  })
+
+  /**
+   * **Documented debt against #388, not desired behaviour.** The same inert shape sits on six
+   * recipes this change does not touch. #384 says the disconnected MOD OSC is *"one recipe, not
+   * a device-wide habit"*; it is seven, and the stab is simply the one somebody was building
+   * when they noticed.
+   *
+   * This list is pinned so the number is a fact somebody meets rather than one they rediscover,
+   * and so that **fixing one of them fails this test** — which is the right way round, because
+   * each fix is a musical judgment per recipe (route it, or drop it) and should be a decision
+   * somebody took rather than a diff nobody read. #388 is the check that would generate this
+   * list instead of it being hand-collected here.
+   */
+  it('records, as debt against #388, the other recipes whose MOD OSC reaches nothing', () => {
+    const still = device.recipes.filter((recipe) => inert(recipe.id)).map((recipe) => recipe.id)
+    expect(still).toEqual([
+      'muse-lead-bright',
+      'muse-lead-hard',
+      'muse-bass-mid-hard',
+      'muse-bass-mid-dark',
+      'muse-sub-dark',
+      'muse-sub-clean',
+    ])
+    // And no stab among them, which is what this change did.
+    expect(still.filter((id) => id.includes('stab'))).toEqual([])
+  })
+
+  /**
+   * **Why `PITCH LFO` is not swept up with LFO 1**, asserted rather than argued: it states its own
+   * destination on the panel. If this ever stops being true, removing LFO 1 stops being a
+   * statement about destinations and becomes a statement about LFOs, which is not the finding.
+   */
+  it('keeps PITCH LFO, which carries the routing LFO 1 has nowhere to put', () => {
+    const leads = device.recipes.filter((recipe) => recipe.role === 'lead')
+    expect(leads.map((recipe) => recipe.id)).toHaveLength(3)
+    for (const lead of leads) {
+      const routes = lead.params.filter((param) => param.name.startsWith('PITCH LFO · ▸'))
+      expect(routes.map((param) => param.name).sort(), lead.id).toEqual([
+        'PITCH LFO · ▸ OSC 1',
+        'PITCH LFO · ▸ OSC 2',
+      ])
+      expect(routes.every((param) => param.value === 'ON'), lead.id).toBe(true)
+      expect(lead.params.filter((param) => param.name.startsWith('LFO 1')), lead.id).toEqual([])
+    }
+  })
+
+  /**
+   * **Documented debt against #388, not desired behaviour.** #384 is scoped to the stabs and this
+   * change is too, but the same five parameters sit on ten other recipes with the same absent
+   * destination — and unlike the MOD OSC list above, none of these can be repaired by routing,
+   * because the destination would have to go through the MOD MAP this manifest declares out of
+   * scope. So the honest fix for each is removal, one musical judgment at a time.
+   *
+   * Pinned so the next reader meets the number as a fact rather than rediscovering it.
+   */
+  it('records, as debt against #388, how many recipes still author an LFO 1 that reaches nothing', () => {
+    const carrying = device.recipes.filter((recipe) =>
+      recipe.params.some((param) => param.name.startsWith('LFO 1')),
+    )
+    expect(carrying.map((recipe) => recipe.role).sort()).toEqual([
+      'bass-mid',
+      'bass-mid',
+      'bass-mid',
+      'pad',
+      'pad',
+      'pad',
+      'sub',
+      'sub',
+      'texture',
+      'texture',
+    ])
+    // No stab among them, which is what this change did.
+    expect(carrying.filter((recipe) => recipe.role === 'stab')).toEqual([])
+  })
+})
