@@ -8,6 +8,7 @@ import {
   isSustainedPart,
   moodState,
   noteInstruction,
+  reachableSlots,
   realisationOf,
   renderGuide,
   resolve,
@@ -47,7 +48,7 @@ function recipesOn(voice: string): Recipe[] {
  * fail because a direction gained a part.
  */
 function synthTemplate(
-  roles: { id: string; role: Role; character: Character }[],
+  roles: { id: string; role: Role; character: Character; polyphony?: number }[],
 ): Template {
   return {
     id: 'tm-slot-probe',
@@ -539,6 +540,28 @@ describe('Tracker Mini manifest', () => {
      */
     const SAMPLE_PREFIX = 'ENVELOPE \u00b7 '
     /**
+     * **p.126 carries more than one envelope, and #345 is where that started to matter.**
+     *
+     * The envelope on that page is the Instrument Automation one and it exists *per destination*
+     * — p.121: *"Each destination has the option of an LFO, envelope or no automation"*, over the
+     * six rows p.121 lists. Every recipe here until now authored only the default one, so a bare
+     * `ENVELOPE \u00b7 ATTACK` located it well enough. `tm-sweep-soft` authors a second, on the
+     * Cutoff row, and two envelopes on one page with the same four stage names is #154's hazard
+     * again one destination along.
+     *
+     * So a destination-scoped envelope must say which row it is on, and the prefix is the
+     * destination's own name from p.121. A bare stage name still means the default envelope, and
+     * anything else still fails — the rule got narrower here, not wider.
+     */
+    const AUTOMATION_DESTINATIONS = [
+      'VOLUME',
+      'PANNING',
+      'CUTOFF',
+      'WAVETABLE POSITION',
+      'GRANULAR POSITION',
+      'FINETUNE',
+    ]
+    /**
      * The engine tables' amplifier row, which sits beside another envelope on its own page — and
      * **the section is named differently by different engines, so the prefix is keyed by page.**
      * FAT (p.156) and VAP (p.159) head that column `Amplifier Env`; ACD (p.154) heads it
@@ -597,10 +620,24 @@ describe('Tracker Mini manifest', () => {
       } else {
         // p.126's envelope. An engine page here would mean a value read off the wrong one of two
         // printed scales — the hazard `CLAUDE.md` names, on its third device.
-        expect(param.name, `${recipe}: ${param.name}`).toMatch(
+        const destination = AUTOMATION_DESTINATIONS.find((d) =>
+          param.name.startsWith(`${d} ${SAMPLE_PREFIX}`),
+        )
+        const body = destination === undefined ? param.name : param.name.slice(destination.length + 1)
+        expect(body, `${recipe}: ${param.name}`).toMatch(
           new RegExp(`^${SAMPLE_PREFIX}(${ENV_STAGES.join('|')})$`),
         )
         expect(page, `${recipe}: ${param.name} is p.126's control, not an engine's`).toBe('126')
+        // A destination-scoped envelope must have said so on the automation row too, or the
+        // prefix is a word this recipe made up rather than a control it selected.
+        if (destination !== undefined) {
+          const authored = device.recipes.find((r) => r.id === recipe)
+          const type = (authored?.params as AuthoredParam[]).find(
+            (x) => x.name === `${destination} AUTOMATION TYPE`,
+          )
+          expect(type, `${recipe}: ${param.name} names no ${destination} automation row`).toBeDefined()
+          expect(type?.kind === 'enum' ? type.value : undefined, recipe).toBe('Envelope')
+        }
         sample.push(`${recipe}/${param.name}`)
       }
     }
@@ -608,6 +645,9 @@ describe('Tracker Mini manifest', () => {
     // Both halves are populated, or the loop above proves nothing about telling them apart.
     expect(sample.length).toBeGreaterThan(0)
     expect(engine.length).toBeGreaterThan(0)
+    // And both kinds of p.126 envelope are present, or the destination branch above is dead code.
+    expect(sample.some((n) => n.includes('CUTOFF ENVELOPE'))).toBe(true)
+    expect(sample.some((n) => /\/ENVELOPE/.test(n))).toBe(true)
 
     // p.126's ranges, verbatim: three times `0-10 Seconds` and a `0-100%`.
     for (const { recipe, param } of envelopeParams) {
@@ -646,27 +686,31 @@ describe('Tracker Mini manifest', () => {
   // Content and citation discipline (§3.1, §3.2)
   // -------------------------------------------------------------------------
 
-  it('carries 15-23 recipes on distinct (role, character, voice, realisation) keys (§3)', () => {
-    // The upper bound moved from 20 to 21 with `tm-stab-hard-note` (#40), from 21 to 23 with
-    // `tm-acid-dirty` on both pools (§2.3/#25), and from 23 to 30 with #345's seven. It is a
-    // guideline about authoring effort — "roughly 15-20 recipes covers a device well" — not a
-    // fact about the box, and this box pays for two of its own: every synth recipe is written
-    // twice because a recipe names one voice, and the chord stab is a pair the ranking needs
-    // both halves of. Eight of the thirty are twins, so the count of distinct authored patches
-    // is twenty-six.
+  it('carries every recipe on a distinct key, and none that no direction can reach (§3, §3.5)', () => {
+    // **This used to be a count, and a count was the wrong shape.** It read 15-23 and had been
+    // raised twice — 20 to 21 for `tm-stab-hard-note` (#40), 21 to 23 for `tm-acid-dirty` on
+    // both pools (§2.3/#25) — before #345 wanted it at 30. A number that moves whenever authoring
+    // lands is not guarding anything; it is re-recording the last commit and calling it a bound.
     //
-    // **#345 is why a guideline about effort had to move**, and the reason is worth keeping: it
-    // counts the roles a box *declares* and cannot serve, and this pool declares all 23. A
-    // device whose pool is a sampler cannot both claim every role and stop at twenty recipes.
-    // The Digitakt and the Circuit Tracks moved for the same reason in the same batch.
+    // What it was standing in for is sprawl: recipes nobody can reach, authored because a role
+    // existed rather than because a direction asks. That is checkable directly and does not move
+    // when honest authoring lands, so it is what this asserts now. Note the two halves are
+    // independent — the key test catches a duplicate, and the reach test catches a stray.
     //
-    // **The bound that is a fact about the box is no longer here.** It was the three-synth-slot
-    // authoring cap; the slots are declared now and the resolver enforces them, which is what
-    // `only three synth patches load at once` below actually tests. That test is also why #345
-    // added no synth patch here: `sub` and `metallic` were authored as twins and backed out on
-    // the measurement, which the manifest records.
-    expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(30)
+    // The bound that was a fact about the box left earlier and is not missed: the three-synth-slot
+    // authoring cap became a declared resource, which `spends one slot per patch however many
+    // tracks it is stacked across` below tests on the resolver rather than on the manifest.
+    const reachable = device.recipes.filter((recipe) => {
+      const { requested, slots: _slots } = reachableSlots(recipe, TEMPLATES)
+      return requested
+    })
+    expect(
+      device.recipes.filter((r) => !reachable.includes(r)).map((r) => r.id),
+      'authored for a (role, character) no direction in the library can select',
+    ).toEqual([])
+    // Non-vacuous: the box really does carry recipes, and `reachableSlots` really does return
+    // false for something — the roster is not simply answering true to everything.
+    expect(device.recipes.length).toBeGreaterThan(20)
 
     const keys = device.recipes.map(
       (r) => `${r.role}\u0000${r.character}\u0000${r.voice}\u0000${realisationOf(r)}`,
@@ -844,6 +888,142 @@ describe('Tracker Mini manifest', () => {
       ),
     )
     expect([...chosen].sort()).toEqual(['ACD', 'FAT', 'VAP'])
+  })
+
+  /**
+   * §2.3/#25. **A stacked patch spends one slot, not one per track**, proved by arithmetic that
+   * only works one way rather than by reading a field back.
+   *
+   * `polyphony.test.ts` used to carry this and stopped being able to. Its proof was a three-track
+   * pad and a three-track stab coexisting — six tracks, two slots, impossible on three slots if a
+   * stack cost one each. #345 crowded the sample pool, the stab fell back to its `sampled-chord`
+   * twin, and what remained was a pad with three assignables, which distinguishes nothing: one
+   * patch on three tracks and one patch on one track both sit inside a three-slot budget.
+   *
+   * Ambient Dub is where the difference is decisive. Two patches load across **five** tracks, and
+   * five is more than the three slots the box has — so the slots cannot be counting tracks. On
+   * one-slot-per-track the four-track pad would have spent the budget and over-run it by one
+   * before the bass was reached at all.
+   */
+  /**
+   * §4.3/#345. **An arpeggiated step has both its FX slots spent, so it can carry no
+   * articulation**, and this is asserted because the recipe was authored with two before review
+   * caught it.
+   *
+   * p.190: the arpeggiator *"needs a note value and works in conjunction with the MIDI chord
+   * which must also be assigned to the other FX slot"*. A step has two slots; the arp takes FX1
+   * and the MIDI Chord takes FX2. Every lane in `features.perStep` on this box is a step effect
+   * needing a slot of its own — `volume`, `gate-length`, `chance` and the rest are chapter 7
+   * entries — so there is nothing left for one to sit in.
+   *
+   * The rule is stated over the manifest rather than over one recipe id, so a second arpeggiated
+   * recipe cannot arrive with the same mistake.
+   */
+  /**
+   * §4.3/#345. **A 1-Shot cannot be shortened from a step, so a `gate-length` on one is an
+   * instruction with nothing to do**, and two of #345's recipes carried one until #396 review.
+   *
+   * p.128, rendered: *"The most basic play mode is 1-shot which simply plays a sample through
+   * once, start to end"*, and *"Triggering the instrument step will trigger the 1-shot sample
+   * which will play for its duration or until another trigger is initiated"*. The figure says it
+   * a third time. Length under this play mode is the sample's own end point and the next trig,
+   * neither of which a step effect reaches.
+   *
+   * **Scoped to the recipes #345 added**, deliberately. `tm-open-hat-dark` pairs the same two and
+   * predates this work; widening the rule to it would be fixing a different recipe inside a
+   * review of these, and it is reported rather than swept up. A later change can take the whole
+   * manifest by dropping the filter here — which is the only edit it needs.
+   */
+  it('never locks a gate on a 1-Shot, in the recipes #345 added', () => {
+    const ADDED = [
+      'tm-sub-dark',
+      'tm-metallic-dirty',
+      'tm-impact-hard',
+      'tm-noise-dirty',
+      'tm-riser-bright',
+      'tm-sweep-soft',
+      'tm-arp-clean',
+    ]
+    // The roster is asserted, so a renamed or deleted recipe fails here rather than silently
+    // shrinking what this covers.
+    for (const id of ADDED) expect(device.recipes.map((r) => r.id), id).toContain(id)
+
+    let oneShots = 0
+    for (const recipe of device.recipes.filter((r) => ADDED.includes(r.id))) {
+      const play = (recipe.params as AuthoredParam[]).find((p) => p.name === 'PLAY MODE')
+      if (play === undefined || play.kind !== 'enum' || play.value !== '1-Shot') continue
+      oneShots += 1
+      for (const entry of recipe.articulation ?? []) {
+        expect(
+          Object.keys(entry.set),
+          `${recipe.id} locks a gate on a 1-Shot, which p.128 says plays to its own end`,
+        ).not.toContain('gate-length')
+      }
+    }
+    // Non-vacuous on both sides: several of these really are 1-Shot, and the one that is not
+    // keeps its gate, because a loop does end where the gate says.
+    expect(oneShots).toBeGreaterThanOrEqual(4)
+    const looped = device.recipes.find((r) => r.id === 'tm-sub-dark')
+    expect(
+      (looped?.params as AuthoredParam[]).find((p) => p.name === 'PLAY MODE'),
+    ).toMatchObject({ value: 'Forward loop' })
+    expect(looped?.articulation?.some((a) => 'gate-length' in a.set)).toBe(true)
+
+    // And the two that were wrong now say where the length actually lives, so a reader who wanted
+    // a shorter hit is sent to the End point rather than left with a control that does nothing.
+    for (const id of ['tm-impact-hard', 'tm-noise-dirty']) {
+      const recipe = device.recipes.find((r) => r.id === id)
+      expect(recipe?.routing ?? '', id).toContain('End point')
+    }
+  })
+
+  it('articulates nothing on a recipe whose routing spends both step FX slots', () => {
+    const arpeggiated = device.recipes.filter((r) => (r.routing ?? '').includes('(Arp)'))
+    expect(arpeggiated.map((r) => r.id)).toEqual(['tm-arp-clean'])
+
+    for (const recipe of arpeggiated) {
+      expect(recipe.articulation, `${recipe.id} articulates a step FX it has no slot for`)
+        .toBeUndefined()
+      // And the routing says why, so a reader meets the constraint rather than inferring it.
+      expect(recipe.routing ?? '').toContain('both slots')
+    }
+
+    // Non-vacuous on the other side: every lane this box declares really is a step effect, which
+    // is what makes "both slots spent" mean "no articulation" rather than "no FX-based one".
+    expect(device.features?.perStep ?? []).toContain('gate-length')
+    expect(device.features?.perStep ?? []).toContain('chance')
+    // And ordinary recipes do articulate, or the assertion above passes on an empty manifest.
+    expect(device.recipes.filter((r) => (r.articulation ?? []).length > 0).length)
+      .toBeGreaterThan(5)
+  })
+
+  it('spends one slot per patch however many tracks it is stacked across', () => {
+    const result = assign({
+      devices: [device],
+      template: TEMPLATES.find((t) => t.id === 'ambient-dub') as Template,
+      mood: moodState(),
+      seed: 1,
+    })
+
+    const spending = result.assignments.filter((a) => (a.recipe.consumes ?? []).length > 0)
+    const patches = new Set(spending.flatMap((a) => (a.recipe.consumes ?? []).map((c) => c.sharedAs)))
+    const tracks = spending.reduce((n, a) => n + a.assignables.length, 0)
+
+    // The stack is real, and it is one patch: four tracks under a single `sharedAs`.
+    const pad = result.assignments.find((a) => a.role === 'pad')
+    expect(pad?.assignables.length).toBe(4)
+    expect(new Set((pad?.recipe.consumes ?? []).map((c) => c.sharedAs)).size).toBe(1)
+    // Four *different* tracks, so the count is a stack rather than one track named four times.
+    expect(new Set(pad?.assignables.map((v) => v.voiceId)).size).toBe(4)
+
+    // And the arithmetic that makes it a proof rather than a description.
+    expect(patches.size).toBe(2)
+    expect(tracks).toBe(5)
+    expect(tracks).toBeGreaterThan(SYNTH_SLOTS)
+
+    // Nothing was refused for the resource, which is the other half: the budget was not merely
+    // unspent, it was enough.
+    expect(result.shortfalls.filter((g) => g.reason === 'no-room')).toEqual([])
   })
 
   it('loads three of four synth patches and says which slot ran out, on free tracks', () => {

@@ -1229,11 +1229,12 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'sub',
     character: 'dark',
     voice: 'track-sample',
-    title: 'Low tone an octave down, everything above it filtered off',
+    title: 'Low tone at the direction\u2019s own pitch, everything above it filtered off',
     sourceAudio: {
       need:
         'A clean sustained low tone with a stable, known pitch — a sine or a filtered triangle. ' +
-        'The instrument transposes it, so the tuning has to be true before it moves',
+        'Load it at the octave you want to hear: the recipe does not transpose it, so a source ' +
+        'recorded high stays high',
     },
     /**
      * **The most-wanted role on this box**: seven of the eleven directions request it, all of
@@ -1242,10 +1243,13 @@ const SAMPLE_RECIPES: Recipe[] = [
      * `Forward loop` rather than `1-Shot` because a sub is continuous in six of the seven and
      * has to hold under whatever gate the step carries; a one-shot would end where the file does.
      *
-     * `TUNE -12` rather than a deeper drop: p.116's range reaches -24, and two octaves off a
-     * source recorded at a usable pitch puts the fundamental under most systems. One octave is
-     * the interval that keeps the part audible on the box's own output, and the reader with a
-     * lower source can simply not use it.
+     * **`TUNE 0`, and it carried `-12` until #345 review caught what that did.** This pool
+     * authors a `triggerNote`, so an unpitched part plays at `C5` — but `sub` is pitched, and
+     * §4.1 gives the direction's own pitch precedence, which the guide then prints beside the
+     * part. A `TUNE` of `-12` transposes the instrument *underneath* that printed note, so the
+     * guide would have said `C1` while the box sounded `C0`. Every other pitched sample recipe
+     * here is at 0 or leaves the parameter alone; this one now matches them, and the octave stays
+     * the direction's to choose.
      *
      * The low-pass is doing the role's actual work. A sub is defined by what is *not* in it, so
      * `CUTOFF 22` is low enough to remove the harmonics a transposed sample keeps, and it carries
@@ -1253,7 +1257,10 @@ const SAMPLE_RECIPES: Recipe[] = [
      */
     params: [
       pick('PLAY MODE', 'Forward loop', PLAY_MODES, 127),
-      num('TUNE', -12, SEMITONES_24, 116, { unit: 'st' }),
+      num('TUNE', 0, SEMITONES_24, 116, {
+        unit: 'st',
+        note: 'Zero: the direction supplies the pitch, and this would transpose underneath it',
+      }),
       num('FINETUNE', 0, FINE_CENTS, 116, { unit: 'c' }),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
       num('CUTOFF', 22, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -14 }] }),
@@ -1344,9 +1351,18 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('DELAY SEND', 22, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 26 }] }),
       swing(),
     ],
+    routing:
+      '**Under 1-Shot the length is the sample\u2019s.** p.128: the sample *"will play for its ' +
+      'duration or until another trigger is initiated"*, so a step cannot shorten it. To make the ' +
+      'hit tighter, move the End point on the Sample Playback page rather than reaching for ' +
+      '`G` Gate Length \u2014 it has nothing to act on here',
     articulation: [
       { slot: 'first-hit', set: { volume: 100 }, hint: 'pick-fx' },
-      { slot: 'accent', set: { 'gate-length': 95 } },
+      // The accent carried a `gate-length` until #396 review, and p.128 is why it is gone: a
+      // 1-Shot plays to its own end, so a gate lock on one is an instruction with nothing to do.
+      // Volume is what separates the section-opening hit from the ones inside it, and it is a
+      // step effect that works on any play mode (p.180).
+      { slot: 'accent', set: { volume: 92 }, hint: 'pick-fx' },
     ],
     verified: false,
   },
@@ -1385,9 +1401,19 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('REVERB SEND', 18, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 30 }] }),
       swing(),
     ],
+    routing:
+      '**Under 1-Shot the length is the sample\u2019s.** p.128: the sample *"will play for its ' +
+      'duration or until another trigger is initiated"*, so a step cannot clip it short. If the ' +
+      'bursts run into each other, trim the End point on the Sample Playback page or load a ' +
+      'shorter recording \u2014 `G` Gate Length has nothing to act on here',
     articulation: [
       { slot: 'accent', set: { volume: 100 }, hint: 'pick-fx' },
-      { slot: 'offbeat', set: { 'gate-length': 30 } },
+      // This offbeat carried `gate-length: 30`, reaching for shorter bursts, and p.128 says a
+      // 1-Shot cannot be shortened from a step. Nothing on this box does what that asked for, so
+      // the `routing` above says where the length actually lives and the slot does something the
+      // box can: `C` Chance thins the offbeats, which is the variety the part wanted (p.188,
+      // `0 - 100%`).
+      { slot: 'offbeat', set: { chance: 75 }, hint: 'pick-fx' },
     ],
     verified: false,
   },
@@ -1452,39 +1478,53 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'sweep',
     character: 'soft',
     voice: 'track-sample',
-    title: 'Held source with the cutoff LFO travelling once across the section',
+    title: 'Held source with the cutoff climbing once, over the longest envelope the box has',
     sourceAudio: {
       need:
         'A sustained source that holds without changing — a drone, a held chord, a noise bed. ' +
         'The filter supplies the movement, so anything already moving fights it',
     },
     /**
-     * §4.2, and **the one recipe in this batch the manual chose the values for.** p.201's Filter
-     * Cutoff LFO Rate step effect says it outright: *"Higher rates 128-32 good for sweeps and mid
-     * range 4-1/3 good for dubstep style wobble."* So the slow end of p.123's speed table is
-     * where a sweep lives, and this recipe sits at `128`, the slowest the box has.
+     * §4.2. **An envelope rather than the LFO, and the arithmetic is why.**
      *
-     * **The instrument LFO and the step effect are the same LFO seen twice**, which p.201 states
-     * and is worth carrying into the guide rather than leaving a reader to find: *"The LFO is
-     * triggered by each step either using the rate for the filter step LFO or the default
-     * instrument parameter speed if no LFO FX is set."* The instrument page is where the shape
-     * and depth live; the `j` step effect overrides only the rate, per step. So the patch is
-     * authored on the instrument and `routing` says where to reach for a different rate in one
-     * section without editing the instrument.
+     * The LFO was the obvious reach and it cannot do this. p.201 recommends it — *"Higher rates
+     * 128-32 good for sweeps"* — and `128` is the slowest of p.123's speeds, which are counted in
+     * pattern steps: 128 steps is eight bars. It is also *"reset each trigger"* (p.201) and it
+     * cycles. The sections this role is scoped to run 11, 17, 20 and 36 bars across the two
+     * directions asking, so a 128-step LFO travels once across none of them — it arrives and
+     * starts again, two and a half times over the 20-bar one. A recipe titled "travelling once
+     * across the section" on top of that would have described something the box does not do.
      *
-     * `Rev Saw` rather than `Triangle`: p.201's own diagram draws the LFO cycle reset by each
-     * trigger, so a triangle would rise and come back inside one gesture. A reverse saw travels
-     * one way and starts over, which is a sweep opening across a section.
+     * **The envelope is a single travel and the automation page offers it on the same row.**
+     * p.121 gives every destination `Off / Envelope / LFO`, and p.125 says what the difference
+     * is: *"While an LFO will cycle, an envelope is considered more of a one-shot function and
+     * typically operates across a note length."* One pass, no repeat.
+     *
+     * **Its ceiling is ten seconds and the recipe says so rather than implying more.** p.126
+     * ranges the attack `0.00-10 Sec`, which at the tempi these directions sit at is around five
+     * bars. So this is a gesture *at* a section boundary rather than a wash across a whole
+     * section — which is what both directions asking actually describe. Ambient Dub scopes it to
+     * the two sections that are moving and says so: *"one sweep lifting into the crest, one
+     * falling away from it"*. `routing` gives the reader the ceiling and the LFO alternative, so
+     * the choice is theirs and neither option is oversold.
+     *
+     * **The switch buys a cited range as well.** `Amount` under `Type: LFO` is printed with no
+     * scale at all and had to be an `unscaled` text param; under `Type: Envelope` p.126 prints
+     * *"The amount will set how much of the envelope is applied 0-100%"*, which is exactly the
+     * distinction the `unscaled` helper's own note draws two hundred lines above. So the depth is
+     * a numeric on a cited range now instead of a string.
      *
      * **No articulation, checked** (#108): neither direction asking for `sweep` authors a step
      * variant for it, the same standing state this role is in across the library.
      */
     routing:
-      '**One tied note where the gesture starts** — the LFO cycle resets on each trigger (p.201), ' +
-      'so a part re-struck every bar sweeps every bar instead of once. **To change the rate for ' +
-      'one section only**, put the `j` step effect on that step rather than editing the ' +
-      'instrument: p.201 gives 128-32 as the sweep range and the instrument speed applies wherever ' +
-      'no `j` is set',
+      '**One note where the gesture starts, held.** The envelope runs once from each note on ' +
+      '(p.125), so a part re-struck every bar sweeps every bar instead of once. **How long the ' +
+      'climb can be:** the attack tops out at 10 Sec (p.126), which is about five bars at these ' +
+      'tempi — long enough to open across a section boundary, not long enough to cross a whole ' +
+      'section. **If you want it repeating instead**, set the Cutoff row to `LFO` and reach for ' +
+      'the `j` step effect: p.201 gives 128-32 as its sweep range, and 128 steps is eight bars a ' +
+      'cycle, restarting on every trig',
     params: [
       pick('PLAY MODE', 'Forward loop', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
@@ -1494,16 +1534,22 @@ const SAMPLE_RECIPES: Recipe[] = [
         note: 'Where the sweep starts from — a filter already open has nowhere to travel',
       }),
       num('RESONANCE', 30, PCT, 117, { unit: '%' }),
-      pick('CUTOFF AUTOMATION TYPE', 'LFO', AUTOMATION_TYPES, 121, {
+      pick('CUTOFF AUTOMATION TYPE', 'Envelope', AUTOMATION_TYPES, 121, {
         hint: 'inst-params',
-        note: 'On the Cutoff row of Instrument Automation',
+        note: 'On the Cutoff row of Instrument Automation — an envelope runs once, an LFO cycles',
       }),
-      pick('CUTOFF LFO SHAPE', 'Rev Saw', LFO_SHAPES, 121),
-      pick('CUTOFF LFO SPEED', '128', LFO_SPEEDS, 123, {
-        note: 'In pattern steps. p.201 gives 128-32 as the range that reads as a sweep',
+      secs('CUTOFF ENVELOPE \u00b7 ATTACK', 9.5, SECONDS_10, 126, {
+        note: 'The climb. 10 Sec is the ceiling, which is about five bars at these tempi',
       }),
-      unscaled('CUTOFF LFO AMOUNT', '70%', {
-        note: 'How far the cutoff travels; the automation page prints no scale for it',
+      secs('CUTOFF ENVELOPE \u00b7 DECAY', 0.5, SECONDS_10, 126),
+      num('CUTOFF ENVELOPE \u00b7 SUSTAIN', 100, PCT, 126, {
+        unit: '%',
+        note: 'Full, so the filter stays where the climb left it rather than falling back',
+      }),
+      secs('CUTOFF ENVELOPE \u00b7 RELEASE', 2, SECONDS_10, 126),
+      num('CUTOFF ENVELOPE \u00b7 AMOUNT', 70, PCT, 126, {
+        unit: '%',
+        note: 'How much of the envelope reaches the cutoff',
       }),
       secs('ENVELOPE · ATTACK', 1.2, SECONDS_10, 126),
       num('ENVELOPE · SUSTAIN', 96, PCT, 126, { unit: '%' }),
@@ -1573,10 +1619,12 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('DELAY SEND', 28, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 34 }] }),
       swing(),
     ],
-    articulation: [
-      { slot: 'offbeat', set: { 'gate-length': 35 } },
-      { slot: 'ghost', set: { chance: 70 }, hint: 'pick-fx' },
-    ],
+    // **No articulation, and the arpeggiator is the reason** — this recipe carried a
+    // `gate-length` and a `chance` until #345 review caught that neither can exist. p.190 spends
+    // *both* FX slots on an arpeggiated step, FX1 on the arp and FX2 on the MIDI Chord, and every
+    // lane in `features.perStep` on this box is a step effect needing a slot of its own. So an
+    // arpeggiated step can carry no articulation at all, and one authored here would have printed
+    // an instruction a reader cannot follow. `tracker-mini.test.ts` pins the constraint.
     verified: false,
   },
 ]
