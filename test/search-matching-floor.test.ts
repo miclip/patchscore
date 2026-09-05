@@ -1472,8 +1472,24 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * the search gives up before it arrives.
    *
    * Twenty-four consecutive zeroes, across twenty devices and fourteen content changes.
+   *
+   * **One recipe takes it up 133 nodes and the gap stays at zero — a twenty-fifth time.**
+   * 502,589 -> 502,722 unrepaired and the same repaired. The Digitone's `clap`, the last role its
+   * pool declared and no recipe served (#345).
+   *
+   * **The most expensive single recipe in this list, and the shape says why.** `industrial-techno`
+   * asks for a `clap` outright rather than optionally, so unlike the four entries above it the
+   * candidate lands somewhere the search actually walks. And this is a *pool* of four fungible
+   * tracks rather than a fixed voice: one recipe makes the role available on every member, where
+   * the TR-1000's two `noise` recipes above added two named voices the direction had already
+   * spent on higher-ranked parts. A pool multiplies a recipe by its count; a fixed voice does not.
+   *
+   * Still 133 nodes on a walk of half a million, and the legal-rig figure `measure:search` gates
+   * on did not move at all — `weave` asks for no clap.
+   *
+   * Twenty-five consecutive zeroes, across twenty-one devices and fifteen content changes.
    */
-  it('walks the recorded 502,589 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 502,722 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1481,7 +1497,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(502_589)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(502_722)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
