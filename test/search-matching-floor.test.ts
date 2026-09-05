@@ -1269,8 +1269,44 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * Fifteen consecutive zeroes, across ten devices and five content changes that between them
    * took the walk down, up, up, up, down by half, up, up, up, up, up, up, up, up, up, and down
    * by a quarter.
+   *
+   * **Eight recipes and two narrowings take it up 2.0% and the gap stays at zero — a sixteenth
+   * time.** 468,909 -> 478,142 unrepaired and the same repaired. The Circuit Tracks' six
+   * unauthored drum roles and two synth ones (#345), with `riser` and `sweep` taken *off* the
+   * drum pool in the same change.
+   *
+   * **Read this entry against the one directly above it rather than against the run of one-node
+   * moves.** They are the same rule in opposite directions, and they are the two largest content
+   * moves in this list for the same reason. #383 took two recipes *out* of contention on `stab`,
+   * a role every direction in the library asks three or four notes of, and the walk fell 154,216
+   * nodes. This puts recipes *into* contention on `impact`, `noise` and `riser`, which
+   * `industrial-techno` asks this box for, and the walk rises 9,233.
+   *
+   * The four entries before those two moved this seed by a single node each, and the difference
+   * is not the recipe count — nine recipes cost one node at #380 and eight cost 9,233 here. It is
+   * whether the role is contended. This box has six assignables, so a candidate added to a role
+   * the direction wants lands on a pool the search was already fighting over; the Digitakt II's
+   * nine landed on a sixteen-track pool in roles nothing here asks for.
+   *
+   * The two narrowings pull the other way and are not separable from the total. `riser` and
+   * `sweep` came off `DRUM_ROLES`, which takes four candidate assignables out of two requests
+   * `industrial-techno` and `ambient-dub` make — so +9,233 is already net of that, and the
+   * additions alone cost more.
+   *
+   * `search-bound.test.ts` records the direction's peak moving 543,140 -> 554,182, which is 2.0%.
+   * This seed moved 2.0% as well, so like the entry above it the two figures agree closely enough
+   * for the comparison to say something: the cost is spread across the row rather than landing on
+   * the seeds that were already worst.
+   *
+   * The peak stayed on seed 18 for the sixth entry running, and this seed is still one node off
+   * the row's floor — 478,142 against 478,141 on seed 13, the same pairing five entries running
+   * have recorded, through a fall of a quarter and a rise of a fiftieth.
+   *
+   * Sixteen consecutive zeroes, across eleven devices and six content changes that between them
+   * took the walk down, up, up, up, down by half, up, up, up, up, up, up, up, up, up, down by a
+   * quarter, and up.
    */
-  it('walks the recorded 468,909 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 478,142 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1278,7 +1314,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(468_909)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(478_142)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement

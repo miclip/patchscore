@@ -103,6 +103,39 @@ import { CIRCUIT_TRACKS_PANEL } from './panel'
  *    the box. It is not a per-part parameter and would be the same line under every part.
  *  - **Scales and root note** (pp.30-32). Harmony is the template's, never the device's.
  *
+ * ## The seven roles the pools declared and no recipe served (#345)
+ *
+ * Seven roles came back with nothing, and **the answer was not the same for all of them**, which
+ * is the whole reason this box was read separately rather than as another sampler:
+ *
+ * | role | where it was | what happened |
+ * |---|---|---|
+ * | `ghost-perc` | drum | authored, one recipe answering seven requests |
+ * | `ride` | drum | authored |
+ * | `impact` | drum | authored — the one transitional role a fired trigger is right for |
+ * | `vox-chop` | drum | authored **twice**, because two directions ask for opposite characters |
+ * | `noise` | drum + synth | authored on the drums; the synth declaration keeps a written reason |
+ * | `riser` | drum + synth | **narrowed off the drums**, authored on the synth |
+ * | `sweep` | drum + synth | **narrowed off the drums**, authored on the synth |
+ *
+ * The two narrowings are the finding. `DRUM_ROLES` was running a structural argument against
+ * `texture` and a content argument for `riser` and `sweep` in the same comment, and the two
+ * contradict: a drum track has one time-shaping control and no note length, so a gesture across
+ * bars is beyond it whatever sample is loaded. That comment now carries the reading and the three
+ * pages behind it.
+ *
+ * **`SYNTH_ROLES` was assessed on its own rather than swept along with it**, and came out the
+ * other way for the same two roles: p.9's Mod Matrix Table prints `LFO 1 +` as a source and
+ * `filter frequency` as a destination, and p.4 gives the LFO a one-shot switch and a fade mode.
+ * A synth track builds the gesture. So the roles stayed and the recipes are there.
+ *
+ * **What #345 changes for a reader is the placement control**, and that is measurable rather than
+ * argued: before this, opening it on a Circuit Tracks answered *"no soft ghost-perc for your
+ * Circuit Tracks"* for all seven — #345's own opening sentence, on this box. All seven now offer.
+ * The default allocation still cannot take most of them on a six-assignable rig, and that is a
+ * different sentence and a true one: the box ran out of tracks, rather than nobody having written
+ * the part.
+ *
  * ## No trigger note on either pool, for two different reasons (§2.1/#334)
  *
  * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
@@ -230,9 +263,11 @@ const POLYPHONY_MODES = ['Mono', 'Mono AG', 'Poly']
  * complete rather than narrowed to what is authored, because an option set is a claim about the
  * *box* and a shortened one would say the Circuit Tracks has six oscillator shapes.
  *
- * The six `digital vocal` wavetables are why this box carries a `vox-chop` recipe without being
- * a sampler: they are formant tables in the oscillator, so the part is played rather than
- * chopped, and `ct-vox-chop-bright` says so in its `routing`.
+ * **The six `digital vocal` wavetables are not why this box carries `vox-chop`, and this comment
+ * said they were.** It named a synth recipe, `ct-vox-chop-bright`, that no longer exists — the
+ * role came off `SYNTH_ROLES` with it, on the reading that a formant table is a timbre and a
+ * vox-chop is a recording cut into pieces. The two `vox-chop` recipes on this box are on the drum
+ * pool, where per-step Sample Flip really is chopping (User Guide p.65). See `SYNTH_ROLES`.
  */
 const OSC_WAVES = [
   'sine',
@@ -316,6 +351,59 @@ const OSC_ROUTINGS = [
   'Osc 1 bypasses the filter',
   'Osc 1 + Osc 2 bypasses the filter',
 ]
+
+/**
+ * p.9, the Mod Matrix Table's two blocks — **and this is the pair of lists that makes an LFO on
+ * this box a routed one rather than a rate with nothing on the end of it.**
+ *
+ * The `Source` block prints its values with four gaps (1, 2 and 3 have no row), so the list here
+ * is what the page names and not a range: `direct`, then `velocity` at 4 through `env 3` at 12.
+ * A source list with invented members would be a claim about the box.
+ *
+ * `filter frequency` at destination 12 is the entry two recipes below hang on. #332's rule is
+ * that naming an LFO without naming what it moves is an instruction nobody can carry out, and on
+ * this box the destination is printed, so the instruction finishes.
+ */
+const MOD_SOURCES = [
+  'direct',
+  'velocity',
+  'keyboard',
+  'LFO 1 +',
+  'LFO 1 +/-',
+  'LFO 2 +',
+  'LFO 2 +/-',
+  'env amp',
+  'env filter',
+  'env 3',
+]
+
+/** p.9, the Mod Matrix Table's `Destination` block, values 0-17, complete. */
+const MOD_DESTINATIONS = [
+  'osc 1 & 2 pitch',
+  'osc 1 pitch',
+  'osc 2 pitch',
+  'osc 1 v-sync',
+  'osc 2 v-sync',
+  'osc 1 pulse width / index',
+  'osc 2 pulse width / index',
+  'osc 1 level',
+  'osc 2 level',
+  'noise level',
+  'ring modulation 1*2 level',
+  'filter drive amount',
+  'filter frequency',
+  'filter resonance',
+  'LFO 1 rate',
+  'LFO 2 rate',
+  'amp envelope decay',
+  'filter envelope decay',
+]
+
+/** p.4, `lfo 1 fade mode`: `0=Fade In, 1=Fade Out, 2=Gate In, 3=Gate Out`. */
+const LFO_FADE_MODES = ['Fade In', 'Fade Out', 'Gate In', 'Gate Out']
+
+/** p.4, `lfo 1 one shot`: `16=OFF, 17=ON`. Printed as a switch, authored as one. */
+const ON_OFF = ['OFF', 'ON']
 
 /** p.10, the LFO Waveform Table, values 0-37. */
 const LFO_WAVES = [
@@ -464,22 +552,70 @@ function delaySend(value: number, extra: Partial<AuthoredNumericParam> = {}): Au
 // ---------------------------------------------------------------------------
 
 /**
- * What a drum track can carry: **whatever a one-shot sample can be.** A track holds one active
- * sample, plays it from a step, and offers pitch, decay, distortion, EQ, level and pan over it
- * (Programmer's Reference p.11). Nothing about that is percussion-specific, so the list is not
- * the percussion roles plus a couple of extras — it is every role a fired sample can serve.
+ * What a drum track can carry: **whatever a fired sample can be, which is not the same as
+ * whatever a sample can be.**
  *
- * `riser`, `sweep` and `impact` are here because the reader chooses the sample: a riser is a
- * riser sample fired at a section boundary, which is what `Sample Flip` (p.62) makes native —
- * the sample can be swapped *per step*, so a one-off at a boundary costs no track. `noise` is
- * here for the same reason and `vox-chop` too, since chopping is literally what per-step sample
- * flip does.
+ * ## The list used to run two incompatible arguments, and #345 is where that showed
  *
- * **`texture` is the one that is not here, and its absence is the real limit**: nothing on a
- * drum track loops or sustains, so a bed is beyond it however the sample was recorded.
+ * This comment held both of these, two paragraphs apart:
  *
- * The tonal roles are out for a different reason: pitch is a per-track offset, not a per-step
- * note, so a drum track cannot follow a progression.
+ *  - *"`texture` is the one that is not here, and its absence is the real limit: nothing on a
+ *    drum track loops or sustains, so a bed is beyond it however the sample was recorded."*
+ *    A **structural** argument, about the engine.
+ *  - *"`riser`, `sweep` and `impact` are here because the reader chooses the sample: a riser is a
+ *    riser sample fired at a section boundary."* A **content** argument, about the library.
+ *
+ * They cannot both be the rule. Applied consistently the content argument readmits `texture` —
+ * load a sustained pad and fire it — and the structural argument takes `riser` and `sweep` out
+ * for exactly the reason `texture` was already out. **`riser` and `sweep` are now out**, and the
+ * structural argument is the one kept, because three pages say a drum track fires rather than
+ * gestures:
+ *
+ *  - **The whole per-track surface is seven parameters** (Programmer's Reference p.11, rendered):
+ *    patch select, level, pitch, decay, distortion, EQ, pan. One of those shapes time, `decay`,
+ *    and it only shortens. There is no LFO, no filter envelope and no second stage on a drum
+ *    track — the Mod Matrix and the two LFOs are synth-engine CCs (pp.4, 9).
+ *  - **A drum hit has no length.** User Guide p.66, rendered: *"To adjust the micro step values,
+ *    press Gate View for the relevant drum track."* Gate View on a drum track is micro-step
+ *    placement, so a hit is as long as `DECAY` leaves it and no longer. `features` already
+ *    records this from the other side; nothing had carried it back to here.
+ *  - **The box addresses these four as percussion triggers.** Programmer's Reference p.11's Drum
+ *    Notes Table gives `60 → Drum 1`, `62 → Drum 2`, `64 → Drum 3`, `65 → Drum 4` on MIDI
+ *    Channel 10, and User Guide p.60 has each pad triggering *"a different percussion sample"*.
+ *
+ * A `riser` builds across four bars and a `sweep` is one gesture across a section boundary. A
+ * fired trigger with a decay does neither, whatever is loaded into it — and both roles are
+ * declared on `SYNTH_ROLES`, where an LFO routed to `filter frequency` makes them properly. So
+ * this is a narrowing that costs the box nothing and stops the resolver putting a gesture on a
+ * voice that cannot make one.
+ *
+ * **`impact` stays, and the same test is why.** A one-shot at a section boundary is a fired
+ * trigger and nothing else — no build, no travel, one hit. It is the transitional role a drum
+ * track is actually right for, and it is the one the content argument was reaching for when it
+ * swept up the other two with it.
+ *
+ * **That asymmetry is load-bearing, and it is the thing to re-run rather than the narrowing.**
+ * `riser` and `sweep` need duration and `impact` does not, so a reading that took all three
+ * transitional roles off this pool would be a purge rather than a reading, and would be wrong
+ * about the one the box is good at. `test/novation-circuit-tracks.test.ts` asserts `impact` as
+ * the control on both sides of it — the role list and the articulation — for exactly that
+ * reason: without it, a manifest that had simply dropped every transitional role would pass.
+ *
+ * ## What the four notes do and do not settle (#371)
+ *
+ * #371 read the Drum Notes Table as four different addresses and declined a pool-wide
+ * `triggerNote` on it. **That is an addressing fact, not an identity one, and these stay a
+ * `pool`.** p.11 gives all four the identical seven-parameter set, `drum N patch select` reaches
+ * all 64 samples on every one of them, and no page in either document says Drum 1 is the kick.
+ * Modelling them `fixed` would mean inventing four named voices carrying the same role list, and
+ * §2.2's recipe lookup keys on `poolId ?? voiceId` — so it would buy four copies of every drum
+ * recipe and no new truth. The contradiction #371 exposed is in this list, not in the voice kind.
+ *
+ * ## Still out, and for their original reasons
+ *
+ * **`texture`**: nothing here loops or sustains, so a bed is beyond it however it was recorded.
+ * The tonal roles are out differently: pitch is a per-track offset, not a per-step note, so a
+ * drum track cannot follow a progression.
  */
 const DRUM_ROLES: Role[] = [
   'kick',
@@ -495,8 +631,6 @@ const DRUM_ROLES: Role[] = [
   'noise',
   'vox-chop',
   'impact',
-  'riser',
-  'sweep',
 ]
 
 /**
@@ -505,19 +639,45 @@ const DRUM_ROLES: Role[] = [
  * subtractive voice, six notes deep (User Guide p.35: *"Circuit Tracks' synth engines are
  * 'six-note polyphonic'"*).
  *
- * `noise` is here because the voice has a noise oscillator with its own level (`noise level`,
- * CC 56, p.3) — a synth track can be a noise part outright, not only a filtered oscillator with
- * some noise under it. `riser` and `sweep` are here because an LFO-swept filter over a held note
- * is what those parts are on a subtractive voice.
+ * ## `riser` and `sweep`, assessed here rather than inherited from the drum pool
  *
- * **`vox-chop` is deliberately absent, and it was here for a commit.** The oscillator carries six
- * `digital vocal` wavetables (p.9), and a formant timbre is not a chopped phrase: a vox-chop part
- * is a recording cut into pieces and re-triggered, and this voice has no sampler to cut anything.
- * Declaring the role off a wavetable name would promise a reader a part the box cannot make. The
- * drum pool carries `vox-chop` instead, where per-step sample flip really is chopping.
+ * They were declared on both pools and authored on neither. On the drums that turned out to be
+ * false — see `DRUM_ROLES` — and it would have been easy to take them off both together. **They
+ * are true here, and for a reason that has nothing to do with loading a sample.**
  *
- * `texture`, `riser` and `sweep` are declared without recipes, which is §2.1's honest shape — the
- * voice can carry them and nobody here has authored one.
+ * p.9's Mod Matrix Table prints `LFO 1 +` and `LFO 1 +/-` among its sources and `filter
+ * frequency` at destination 12, and p.4 gives the LFO a `one shot` switch and a `fade mode` whose
+ * first setting is `Fade In`. So a synth track *builds* the gesture: a single slow pass of the
+ * LFO over the cutoff, started by the note and stopping at the end of the waveform. That is a
+ * riser and a sweep made rather than played back, and the destination is printed, so #332's rule
+ * is satisfied — the instruction names what the LFO moves. Both are authored below.
+ *
+ * ## `noise` is true, useful to declare, and deliberately left without a recipe
+ *
+ * The voice has a noise oscillator with its own level (`noise level`, CC 56, p.3) and its own
+ * entry in p.9's destination list, so the declaration is a fact and narrowing it would be false.
+ * Authoring it is the part that does not earn its place today, on two readings that point the
+ * same way:
+ *
+ *  - **The one shape any direction asks for is struck.** Industrial Techno is the only request,
+ *    and it patterns `noise` on `accent`, `downbeat` and `offbeat`. A struck noise burst on this
+ *    box is a drum track — `ct-noise-dirty` is on the drum pool for that reason.
+ *  - **The shape a synth track uniquely offers is already here under another name.**
+ *    `ct-texture-dark` is titled *"Noise bed under a slow filter"* and opens with `NOISE LEVEL
+ *    96`. A synth `noise` recipe would be a second noise bed on a box with two tonal voices, one
+ *    of which it would occupy.
+ *
+ * So this is §2.1's honest shape with the reason written down rather than left to be
+ * reconstructed: the voice can carry it, and what it would carry is either better placed on a
+ * drum track or already authored as `texture`.
+ *
+ * ## `vox-chop` is deliberately absent, and it was here for a commit
+ *
+ * The oscillator carries six `digital vocal` wavetables (p.9), and a formant timbre is not a
+ * chopped phrase: a vox-chop part is a recording cut into pieces and re-triggered, and this voice
+ * has no sampler to cut anything. Declaring the role off a wavetable name would promise a reader
+ * a part the box cannot make. The drum pool carries `vox-chop`, where per-step Sample Flip really
+ * is chopping (p.65).
  */
 const SYNTH_ROLES: Role[] = [
   'sub',
@@ -752,6 +912,254 @@ const DRUM_RECIPES: Recipe[] = [
     articulation: [
       { slot: 'accent', set: { velocity: 112, 'micro-step': 2 }, hint: 'drum-micro-step' },
       { slot: 'offbeat', set: { probability: 37.5 }, hint: 'edit-probability' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'ct-ghost-perc-soft',
+    role: 'ghost-perc',
+    character: 'soft',
+    voice: 'drum-track',
+    title: 'Quiet percussion filling the gaps, half of it not playing',
+    sourceAudio: {
+      need: 'A shaker, tick, brush or rim tap under 100 ms, dry and close',
+      hint: 'pick-sample',
+    },
+    /**
+     * **One recipe answers seven requests, which is why there is only one.** Six directions ask
+     * for this role and between them want `soft` three times, `dark` twice and `clean` once.
+     * §3.4 puts `soft` at sqrt(2) from both of the others and nothing asks for `hard`, so a
+     * single `soft` recipe is inside §3.5's radius for every request in the library and the guide
+     * names the substitution where it makes one.
+     *
+     * `DECAY 22` is the value doing the work: a ghost is short enough to sit between the parts
+     * that matter, and on this box short is the only shape available (p.63's Macro 4 is the one
+     * time control a drum track has).
+     */
+    params: [
+      num('LEVEL', 62, DRUM_FULL),
+      signed('PITCH', 70, DRUM_FULL, {
+        hint: 'drum-macro-2',
+        note: '64 is the sample at its own pitch; above it is up',
+      }),
+      num('DECAY', 22, DRUM_FULL, { hint: 'drum-macro-4', mood: [{ axis: 'density', amount: -16 }] }),
+      num('DISTORTION', 6, DRUM_FULL, { hint: 'drum-macro-6', mood: [{ axis: 'grit', amount: 30 }] }),
+      signed('EQ', 76, DRUM_FULL, { hint: 'drum-macro-8', mood: [{ axis: 'darkness', amount: -20 }] }),
+      reverbSend(20, { mood: [{ axis: 'space', amount: 36 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'ghost', set: { velocity: 40, probability: 50 }, hint: 'edit-probability' },
+      { slot: 'offbeat', set: { velocity: 72 }, hint: 'edit-velocity' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'ct-ride-bright',
+    role: 'ride',
+    character: 'bright',
+    voice: 'drum-track',
+    title: 'Ride riding the offbeat, EQ lifted and the decay left long',
+    sourceAudio: {
+      need:
+        'A ride cymbal one-shot with the bow ring left on it, two seconds or longer; a gated ride ' +
+        'has nothing for DECAY to leave alone',
+      hint: 'pick-sample',
+    },
+    /**
+     * `DECAY 104` rather than the maximum, and the distinction matters on a control that only
+     * takes away: p.63's Macro 4 is a decay envelope over the sample, so a high value leaves the
+     * recorded tail nearly intact and a low one cuts it. What the reader hears is the sample's
+     * own ring, which is why the source note asks for one that has a ring.
+     *
+     * `EQ 84` on the signed scale lifts rather than cuts, and it carries the `darkness` axis
+     * because on a drum track the one tone control is where a mood has to land — there is no
+     * filter here (p.11).
+     */
+    params: [
+      num('LEVEL', 96, DRUM_FULL),
+      signed('PITCH', 66, DRUM_FULL, { hint: 'drum-macro-2' }),
+      num('DECAY', 104, DRUM_FULL, { hint: 'drum-macro-4', mood: [{ axis: 'density', amount: -24 }] }),
+      num('DISTORTION', 4, DRUM_FULL, { hint: 'drum-macro-6', mood: [{ axis: 'grit', amount: 26 }] }),
+      signed('EQ', 84, DRUM_FULL, { hint: 'drum-macro-8', mood: [{ axis: 'darkness', amount: -30 }] }),
+      reverbSend(32, { mood: [{ axis: 'space', amount: 42 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'offbeat', set: { velocity: 88 }, hint: 'edit-velocity' },
+      { slot: 'accent', set: { velocity: 112 }, hint: 'edit-velocity' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'ct-noise-dirty',
+    role: 'noise',
+    character: 'dirty',
+    voice: 'drum-track',
+    title: 'Noise burst driven into the distortion, struck rather than held',
+    sourceAudio: {
+      need:
+        'A noise recording with movement in it — tape hiss, a vinyl run-out, a cymbal wash; flat ' +
+        'white noise has nothing for the EQ to find',
+      hint: 'pick-sample',
+    },
+    /**
+     * **Struck, not held, and that was read off the direction rather than assumed.** Industrial
+     * Techno is the only request and it patterns `noise` on `accent`, `downbeat` and `offbeat`,
+     * so it is a rhythmic part. A bed would want to sustain, which is the one thing a drum track
+     * cannot do (p.66) — that shape belongs to a synth track, and `SYNTH_ROLES` says why nothing
+     * is authored there for it.
+     *
+     * `DISTORTION 96` is the highest value in this folder and the role is why: distortion on a
+     * noise source adds no harmonics it did not have, it only rebalances the ones there. On a
+     * kick that would be destructive; here it is the point.
+     */
+    params: [
+      num('LEVEL', 88, DRUM_FULL),
+      signed('PITCH', 60, DRUM_FULL, { hint: 'drum-macro-2' }),
+      num('DECAY', 30, DRUM_FULL, { hint: 'drum-macro-4', mood: [{ axis: 'density', amount: -18 }] }),
+      num('DISTORTION', 96, DRUM_FULL, { hint: 'drum-macro-6', mood: [{ axis: 'grit', amount: 30 }] }),
+      signed('EQ', 80, DRUM_FULL, { hint: 'drum-macro-8', mood: [{ axis: 'darkness', amount: -26 }] }),
+      reverbSend(16, { mood: [{ axis: 'space', amount: 32 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'offbeat', set: { velocity: 96 }, hint: 'edit-velocity' },
+      { slot: 'accent', set: { velocity: 120 }, hint: 'edit-velocity' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'ct-impact-hard',
+    role: 'impact',
+    character: 'hard',
+    voice: 'drum-track',
+    title: 'One-shot impact on the change, everything else left alone',
+    sourceAudio: {
+      need: 'A one-shot with a big front — a crash, a gated slam, a reversed hit',
+      hint: 'pick-sample',
+    },
+    /**
+     * §4.2's transitional roles, and **the one of the three a drum track is genuinely right for.**
+     * A `riser` builds and a `sweep` travels; an impact is one hit at a boundary, which is what a
+     * percussion trigger is (p.60, and the Drum Notes Table on Programmer's Reference p.11). That
+     * asymmetry is why `riser` and `sweep` came off `DRUM_ROLES` and this did not.
+     *
+     * The FX sends are open because a section change is where reverb belongs and the part is gone
+     * before it can crowd anything — the opposite of `ct-kick-hard`'s note, and the same reasoning.
+     */
+    params: [
+      num('LEVEL', 124, DRUM_FULL),
+      signed('PITCH', 58, DRUM_FULL, {
+        hint: 'drum-macro-2',
+        note: '64 is the sample at its own pitch; below it is down, which makes a crash bigger',
+      }),
+      num('DECAY', 118, DRUM_FULL, { hint: 'drum-macro-4', mood: [{ axis: 'density', amount: -20 }] }),
+      num('DISTORTION', 22, DRUM_FULL, { hint: 'drum-macro-6', mood: [{ axis: 'grit', amount: 40 }] }),
+      signed('EQ', 70, DRUM_FULL, { hint: 'drum-macro-8', mood: [{ axis: 'darkness', amount: -24 }] }),
+      reverbSend(56, { mood: [{ axis: 'space', amount: 48 }] }),
+      delaySend(24, { mood: [{ axis: 'space', amount: 30 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'first-hit', set: { velocity: 127 }, hint: 'edit-velocity' },
+      { slot: 'accent', set: { velocity: 120 }, hint: 'edit-velocity' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'ct-vox-chop-clean',
+    role: 'vox-chop',
+    character: 'clean',
+    voice: 'drum-track',
+    title: 'Vocal syllables placed step by step, nothing added to them',
+    sourceAudio: {
+      need:
+        'Several short vocal one-shots — single syllables or words, one per sample slot, so a step ' +
+        'can choose between them',
+      hint: 'pick-sample',
+    },
+    /**
+     * **This is the recipe Sample Flip exists for**, and it is the reason `vox-chop` sits on the
+     * drum pool rather than on the synth one, where six `digital vocal` wavetables look like an
+     * answer and are a timbre.
+     *
+     * p.62: Sample Flip *"overcomes the one-sample-per-track restriction and lets you use the
+     * full palette of drum samples throughout the Pattern"*. p.65 gives the gesture — long-press
+     * a step, press a sample pad, the step turns pink and plays that sample. So a phrase is
+     * assembled from one track by choosing a different syllable per step.
+     *
+     * **Which syllable goes on which step cannot be authored here** and is not attempted:
+     * `sample-flip` is declared in `features.perStep` and reached by no `articulation`, because
+     * the value would be a sample name nobody can know (invariant 5). The `routing` gives the
+     * gesture and the Hook phase gives the phrase; this recipe gives the sound the chosen samples
+     * come out with.
+     */
+    routing:
+      '**The chop is Sample Flip, one syllable per step.** Long-press the step, then press the ' +
+      'pad of the sample you want there — the step turns pink to show it is not the default ' +
+      'sample (p.65). Steps you leave alone play the track default. Sample Flip works stopped or ' +
+      'running, so the phrase can be built by ear (p.62)',
+    params: [
+      num('LEVEL', 100, DRUM_FULL),
+      signed('PITCH', 64, DRUM_FULL, {
+        hint: 'drum-macro-2',
+        note: '64 is the recorded pitch, and leaving it there is what keeps this a voice',
+      }),
+      num('DECAY', 88, DRUM_FULL, { hint: 'drum-macro-4', mood: [{ axis: 'density', amount: -22 }] }),
+      num('DISTORTION', 0, DRUM_FULL, { hint: 'drum-macro-6', mood: [{ axis: 'grit', amount: 34 }] }),
+      signed('EQ', 68, DRUM_FULL, { hint: 'drum-macro-8', mood: [{ axis: 'darkness', amount: -22 }] }),
+      delaySend(30, { mood: [{ axis: 'space', amount: 40 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'accent', set: { velocity: 120 }, hint: 'edit-velocity' },
+      { slot: 'ghost', set: { velocity: 56, probability: 75 }, hint: 'edit-probability' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'ct-vox-chop-dirty',
+    role: 'vox-chop',
+    character: 'dirty',
+    voice: 'drum-track',
+    title: 'Vocal chop pushed through the distortion until it stops being a voice',
+    sourceAudio: {
+      need:
+        'Several short vocal one-shots with body to lose — a thin sample distorts into a thinner ' +
+        'one; one per sample slot so a step can choose between them',
+      hint: 'pick-sample',
+    },
+    /**
+     * The second `vox-chop`, and §3.5 is why there are two rather than one. Two directions ask
+     * for this role and they ask for opposite characters — one `clean`, one `dirty` — which §3.4
+     * puts at distance 2, the one distance §3.5 refuses to substitute across. Neither request is
+     * optional, so one recipe would have left the other direction with a shortfall on a part the
+     * box can plainly make.
+     *
+     * The two differ on one axis and it is the one the characters name: `DISTORTION` at 0 against
+     * 84, and `PITCH` pulled down so the grit has something low to bite on. Everything else is
+     * held, which is what makes them a pair rather than two guesses.
+     */
+    routing:
+      '**The chop is Sample Flip, one syllable per step** — long-press the step, press the ' +
+      'sample pad (p.65). Set `DISTORTION` last: past about half it stops sounding like a voice ' +
+      'and starts sounding like a texture, and where that line falls depends on the sample',
+    params: [
+      num('LEVEL', 94, DRUM_FULL),
+      signed('PITCH', 54, DRUM_FULL, {
+        hint: 'drum-macro-2',
+        note: '64 is the recorded pitch; below it is down, which gives the distortion more to work on',
+      }),
+      num('DECAY', 66, DRUM_FULL, { hint: 'drum-macro-4', mood: [{ axis: 'density', amount: -22 }] }),
+      num('DISTORTION', 84, DRUM_FULL, { hint: 'drum-macro-6', mood: [{ axis: 'grit', amount: 34 }] }),
+      signed('EQ', 72, DRUM_FULL, { hint: 'drum-macro-8', mood: [{ axis: 'darkness', amount: -22 }] }),
+      delaySend(26, { mood: [{ axis: 'space', amount: 38 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'accent', set: { velocity: 120 }, hint: 'edit-velocity' },
+      { slot: 'offbeat', set: { velocity: 88 }, hint: 'edit-velocity' },
     ],
     verified: false,
   },
@@ -1074,6 +1482,147 @@ const SYNTH_RECIPES: Recipe[] = [
       swing(),
     ],
     articulation: [{ slot: 'downbeat', set: { gate: 16, velocity: 64 }, hint: 'edit-gate' }],
+    verified: false,
+  },
+  {
+    id: 'ct-riser-bright',
+    role: 'riser',
+    character: 'bright',
+    voice: 'synth-track',
+    title: 'Held note with one slow LFO pass opening the filter into the change',
+    // Mono, so §12.4 is told rather than left to infer it from the polyphony mode: a build is one
+    // note held, and a six-voice track handed a triad here would sound one of them anyway.
+    patchPolyphony: 1,
+    /**
+     * §4.2, and **the gesture is built here rather than loaded**, which is the whole reason this
+     * role moved off the drum pool at #345. p.9's Mod Matrix Table prints `LFO 1 +` as a source
+     * and `filter frequency` as destination 12, so the routing below names what the LFO moves —
+     * #332's rule, and the thing the Digitakt II's manual could not supply for its own sweep.
+     *
+     * **Three settings make one pass rather than a wobble**, all from p.4:
+     *
+     *  - `LFO 1 ONE SHOT` on, so the waveform runs once from the note and stops. The switch is
+     *    printed as `16=OFF, 17=ON`, a switch rather than a scale, and it is authored as one.
+     *  - `LFO 1 WAVEFORM sawtooth`, which travels one way across that single pass. A triangle
+     *    would arrive and come back, which is a swell rather than a build.
+     *  - `LFO 1 RATE SYNC 6`, an index into p.4's sync-rate list rather than a rate. The free
+     *    `LFO 1 RATE` is left off deliberately: a build has to land on the change, and only the
+     *    synced half of that pair follows the tempo the direction picked.
+     *
+     * `MOD MATRIX 1 DEPTH 104` against a cutoff parked at 34 is what makes the climb audible —
+     * a filter already open has nowhere to travel. The note is held under it by `gate: 16`,
+     * which p.45 gives as a tie across the whole sixteen-step pattern.
+     *
+     * `LFO 1 FADE MODE Fade In` shapes the start of the pass so the build begins from nothing
+     * rather than from a step.
+     */
+    params: [
+      pick('POLYPHONY MODE', 'Mono', POLYPHONY_MODES, prg(3)),
+      pick('OSC 1 WAVE', 'sawtooth', OSC_WAVES, prg(9)),
+      pick('OSC 2 WAVE', 'saw 5:5 PW', OSC_WAVES, prg(9)),
+      num('OSC 1 LEVEL', 110, CC_FULL),
+      num('OSC 2 LEVEL', 88, CC_FULL),
+      signed('OSC 2 CENTS', 71, CC_FULL, { note: '64 is in tune; this is a few cents sharp' }),
+      pick('FILTER TYPE', 'low pass 24dB', FILTER_TYPES, prg(9)),
+      num('FILTER FREQUENCY', 34, CC_FULL, {
+        hint: 'synth-macro-5',
+        mood: [{ axis: 'darkness', amount: -30 }],
+      }),
+      num('FILTER RESONANCE', 62, CC_FULL, { hint: 'synth-macro-6' }),
+      num('AMP ATTACK', 34, ENV_FULL),
+      num('AMP DECAY', 100, ENV_FULL),
+      num('AMP SUSTAIN', 118, ENV_FULL),
+      num('AMP RELEASE', 74, ENV_FULL),
+      pick('LFO 1 WAVEFORM', 'sawtooth', LFO_WAVES, prg(10)),
+      pick('LFO 1 ONE SHOT', 'ON', ON_OFF, prg(4)),
+      pick('LFO 1 FADE MODE', 'Fade In', LFO_FADE_MODES, prg(4)),
+      num('LFO 1 RATE SYNC', 6, SYNC_INDEX, { note: 'An index into the sync-rate list, not a rate' }),
+      pick('MOD MATRIX 1 SOURCE 1', 'LFO 1 +', MOD_SOURCES, prg(9)),
+      pick('MOD MATRIX 1 DESTINATION', 'filter frequency', MOD_DESTINATIONS, prg(9)),
+      signed('MOD MATRIX 1 DEPTH', 104, ENV_FULL, {
+        hint: 'patch-editor',
+        note: '64 is no modulation; above it opens the filter, below it closes it',
+      }),
+      num('FILTER DRIVE', 30, CC_FULL, { hint: 'patch-editor', mood: [{ axis: 'grit', amount: 38 }] }),
+      pick('DRIVE TYPE', 'valve', FILTER_DRIVE_TYPES, prg(9)),
+      reverbSend(58, { mood: [{ axis: 'space', amount: 46 }] }),
+      swing(),
+    ],
+    routing:
+      '**The build is one LFO pass, so it starts where the note starts.** Put a single note at ' +
+      'the top of the section and tie it with `gate` 16 (p.45); `LFO 1 ONE SHOT` runs the ' +
+      'sawtooth once from that note and stops (p.4). **To make it longer or shorter**, move ' +
+      '`LFO 1 RATE SYNC` rather than the free rate — only the synced one follows the tempo',
+    // No articulation, and checked rather than assumed (#108). Neither direction asking for
+    // `riser` authors a step variant for it, so `selectPattern` returns nothing in every section
+    // and there is no slot a gesture could address — the same standing state as `sweep` below.
+    // The tie this recipe depends on is therefore in `routing`, where a reader will actually meet
+    // it, rather than in an `articulation` that reaches no page.
+    verified: false,
+  },
+  {
+    id: 'ct-sweep-soft',
+    role: 'sweep',
+    character: 'soft',
+    voice: 'synth-track',
+    title: 'Held pad with the filter travelling once across the section',
+    /**
+     * The other half of the pair that came off the drum pool, and the difference from the riser
+     * above is what the gesture is for rather than how it is built.
+     *
+     * A riser is an event *at* a change and both directions asking for one scope it to the bars
+     * before one. A sweep is one gesture *across* a section, and both directions asking for one
+     * say so in their own `PATTERNS` note: a sweep is not four bands of sixteenths, so **neither
+     * authors a step variant for it**. That is checked rather than assumed (#108), and it is why
+     * this recipe articulates nothing while the riser articulates a tie.
+     *
+     * **`LFO 1 +/-` rather than `LFO 1 +`**, which is the one routing difference and the reason
+     * this is a sweep. p.9 prints both as separate sources: the unipolar one travels from where
+     * the filter sits, and the bipolar one travels either side of it, so one pass goes up and
+     * comes back down across the section. `MOD MATRIX 1 DEPTH 88` is gentler than the riser's
+     * 104 for the same reason — a sweep is meant to be noticed rather than announced.
+     *
+     * `LFO 1 RATE SYNC 2` is a slower index than the riser's 6 (p.4): the sections this role is
+     * scoped to run eleven to thirty-six bars across the two directions, so a pass has to be long
+     * enough that it does not finish inside the first quarter of one.
+     */
+    params: [
+      pick('POLYPHONY MODE', 'Poly', POLYPHONY_MODES, prg(3)),
+      pick('OSC 1 WAVE', 'triangle-saw blend', OSC_WAVES, prg(9)),
+      pick('OSC 2 WAVE', 'sine table', OSC_WAVES, prg(9)),
+      num('OSC 1 LEVEL', 92, CC_FULL),
+      num('OSC 2 LEVEL', 78, CC_FULL),
+      pick('FILTER TYPE', 'low pass 12dB', FILTER_TYPES, prg(9)),
+      num('FILTER FREQUENCY', 48, CC_FULL, {
+        hint: 'synth-macro-5',
+        mood: [{ axis: 'darkness', amount: -30 }],
+      }),
+      num('FILTER RESONANCE', 34, CC_FULL, { hint: 'synth-macro-6' }),
+      num('AMP ATTACK', 76, ENV_FULL, { mood: [{ axis: 'density', amount: -24 }] }),
+      num('AMP DECAY', 104, ENV_FULL),
+      num('AMP SUSTAIN', 110, ENV_FULL),
+      num('AMP RELEASE', 98, ENV_FULL),
+      pick('LFO 1 WAVEFORM', 'triangle', LFO_WAVES, prg(10)),
+      pick('LFO 1 ONE SHOT', 'ON', ON_OFF, prg(4)),
+      pick('LFO 1 FADE MODE', 'Fade In', LFO_FADE_MODES, prg(4)),
+      num('LFO 1 RATE SYNC', 2, SYNC_INDEX, { note: 'An index into the sync-rate list, not a rate' }),
+      num('LFO 1 SLEW RATE', 52, ENV_FULL),
+      pick('MOD MATRIX 1 SOURCE 1', 'LFO 1 +/-', MOD_SOURCES, prg(9)),
+      pick('MOD MATRIX 1 DESTINATION', 'filter frequency', MOD_DESTINATIONS, prg(9)),
+      signed('MOD MATRIX 1 DEPTH', 88, ENV_FULL, {
+        hint: 'patch-editor',
+        note: '64 is no modulation; the bipolar source travels either side of where FILTER FREQUENCY sits',
+      }),
+      pick('CHORUS TYPE', 'Chorus', CHORUS_TYPES, prg(4)),
+      num('CHORUS LEVEL', 56, ENV_FULL, { hint: 'synth-macro-8' }),
+      reverbSend(76, { mood: [{ axis: 'space', amount: 48 }] }),
+      swing(),
+    ],
+    routing:
+      '**No step pattern for this part**, so place one tied note where the gesture starts and ' +
+      'let it hold (`gate` 16, p.45). The pass runs once from that note and stops (`LFO 1 ONE ' +
+      'SHOT`, p.4). **To sweep down instead of up**, take `MOD MATRIX 1 DEPTH` below 64 — the ' +
+      'source is bipolar, so the sign is the direction (p.9)',
     verified: false,
   },
 ]
