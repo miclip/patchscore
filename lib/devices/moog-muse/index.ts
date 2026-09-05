@@ -1826,10 +1826,22 @@ const recipes: Recipe[] = [
       ...midiSetup(),
       ...osc1("8'", 0, 100, 50, 0),
       ...osc2("8'", -3, 100, 50, 0, "ON"),
-      ...modOsc("OFF", "SQUARE", 25, 0, { osc1: "OFF", osc2: "OFF" }, 0, {
-        f1: "OFF",
-        f2: "OFF",
-      }),
+      // #384. **No `modOsc` block, and that is the whole of the change here.** This recipe used
+      // to configure the modulation oscillator across nine lines with every route `OFF`, both
+      // depths `0`, and its mixer fader at `0` — an oscillator that modulates nothing and is
+      // inaudible, printed in the same ink as a value that matters.
+      //
+      // Routing it was the alternative and it is a **musical** change rather than a repair:
+      // nothing in the manual or in this recipe's title says where a square at 25 should go, so
+      // picking a destination would be inventing a layer and calling it a fix. `bright` and
+      // `dirty` keep theirs because those blocks are demonstrably **active** — a route on, a
+      // depth above zero, a level above zero — which is a fact about the parameters and not a
+      // claim that either title justifies the destination it picked. Whether those two
+      // destinations are the right ones is a separate question nobody has asked.
+      //
+      // `MIXER · MOD OSC 0` below stays, and stays deliberately. It comes from `mixer` rather
+      // than from this block, and with the block gone it is the line that *says* the oscillator
+      // is out of the mix — a reader who wonders where it went has an answer on the panel.
       ...mixer(90, 15, 90, 0, 0, 30),
       // Clamped shut and opened by the envelope rather than by the knob: the corner sits under
       // the note and ENVELOPE AMOUNT well above noon is what throws it up on each attack. `70` on
@@ -1841,7 +1853,32 @@ const recipes: Recipe[] = [
       ...vca(80, 25),
       ...sharedDelay(),
       ...delayRouting("OFF"),
-      ...lfo1("SQUARE", 4.8, 0),
+      // #384. **No `lfo1` block either, on any of the three stabs.** LFO 1 has no destination in
+      // this manifest's parameter model and cannot be given one here: the only mechanism the
+      // instrument offers for pointing it anywhere is the MOD MAP, and the `ASSIGN` quick-assign
+      // page writes a MOD MAP slot rather than setting a control (p.39, p.63). This file already
+      // declares both out of scope — see *"What is left out, and why"* — so five parameters
+      // configuring a source that reaches nothing was the manifest disagreeing with itself.
+      //
+      // `AMPLITUDE 0` on this recipe and on `bright` made it plainer: p.53 calls that knob an
+      // attenuator ahead of every destination, so it was zero depth into no destination at all.
+      //
+      // Authoring a MOD MAP slot is **possible** — pp.98-102 enumerate the sources and the
+      // destinations, and `LFO 1 (UNI)` and `LFO 1 (BI)` are both in the source list. It is not
+      // done here for two reasons that are worth keeping apart. A slot is a source, a
+      // destination, an amount, a function and a controller travelling together, which is a
+      // patch language rather than a parameter and is the architecture decision this manifest
+      // already took. And choosing where LFO 1 should point on a stab is a musical judgment
+      // nobody has made, so authoring one would be adding a layer under cover of removing one.
+      //
+      // `PITCH LFO` is untouched and is why this is a gap rather than a rule: it carries its own
+      // `▸ OSC 1` and `▸ OSC 2` routing switches on the panel, so the three `lead` recipes state
+      // where it goes and reach a destination without the MOD MAP.
+      //
+      // **Ten other recipes still author LFO 1 and #384 does not touch them** — three `pad`,
+      // three `bass-mid`, two `sub`, two `texture`. The defect is identical and the issue is
+      // scoped to the stabs; `test/moog-muse.test.ts` pins the list so the number is met rather
+      // than rediscovered, and #388 is the check that would generate it.
     ],
   },
   {
@@ -1870,7 +1907,8 @@ const recipes: Recipe[] = [
       ...vca(80, 45),
       ...sharedDelay(),
       ...delayRouting("ON"),
-      ...lfo1("TRIANGLE", 3.2, 0),
+      // #384, and the same reason as `muse-stab-hard`: no destination this manifest can state.
+      // Its MOD OSC stays, because it is active — filter 2 on, depth `20`, in the mix at `10`.
     ],
   },
   {
@@ -1902,7 +1940,9 @@ const recipes: Recipe[] = [
       ...vca(75, 35),
       ...sharedDelay(),
       ...delayRouting("OFF"),
-      ...lfo1("RANDOM", 7.5, 20),
+      // #384, as above. Its MOD OSC stays because it is active: osc 2 pitch on, depth `20`, in
+      // the mix at `25`. That is a reading of the parameters — the title's "syncing hard" is
+      // `OSC 2 · SYNC`, a different control, and says nothing about where this block points.
     ],
   },
 
