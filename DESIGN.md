@@ -201,6 +201,8 @@ type Assignable = {
   polyphony: number
   triggerNote?: TriggerNote   // §2.1, carried through unchanged; a pool's members share the pool's
                               // own, and nothing downstream overrides it
+  modes?: readonly TrackMode[]  // the pool's whole mode *table*, where its members are not
+                                // addressed alike. A table, never a selection — see below
 }
 
 function expand(device: Device): Assignable[]
@@ -216,6 +218,53 @@ track and a Deluge track pool two encodings of the same fact.
 **Load-bearing detail:** recipe lookup keys on `poolId ?? voiceId`. You author one Tracker
 Mini recipe for `track` and it applies to whichever ordinal wins. Without this, pools just
 move the 8x duplication from the voice list to the recipe list.
+
+#### Track modes: a pool whose members are not addressed alike (#86)
+
+A pool's `triggerNote` reaches every member, which is right where the ordinals are
+interchangeable *and* addressed the same way. Some boxes let one track be several different kinds
+of thing. The Digitakt II is the case that forced this: p.17 makes any of its sixteen tracks an
+audio track or a MIDI track, and its `SRC MACHINE` set splits the audio ones again into
+whole-sample machines and sliced ones. `C5` is printed, cited on two pages and true of the first
+group only, so before modes existed the box could state nothing at all — the one device in the
+library whose manual supplied the whole fact and whose model had no shape to hold it.
+
+A pool may therefore declare `modes`, and a recipe on that pool names the one it puts the track
+in. **Choosing a recipe chooses the mode**, so this needs no rig state, no new permalink field and
+no question asked of the reader: it is a consequence of an allocation the resolver already makes.
+
+```ts
+type TrackMode = {
+  id: string                  // device-local: 'whole-sample' | 'sliced' | 'midi'
+  label: string               // 'ONESHOT / WERP / STRETCH / REPITCH'
+  triggerNote?: TriggerNote   // §2.1, where this mode has one
+  selectedBy?: { param: string; values: string[] }   // the param that puts it in force
+}
+```
+
+**A table, never a selection, and that distinction is the whole design.** `Assignable.modes`
+carries the pool's entire table — identical on every member, identical for every guide ever
+resolved — so `expand` stays a pure function of device data and sixteen tracks stay sixteen
+assignables. Putting the *chosen* mode on the assignable instead would make expansion depend on
+the recipe, multiply sixteen members by three modes, and hand §7.1 a different tree for nothing.
+Which mode is in force is decided where the recipe and the assignable meet (`triggerNoteFor`) and
+lands on the resolved part. Nothing in the search reads either field.
+
+**`selectedBy` exists because the mode is not new information.** The recipe already names its
+machine as an ordinary cited-option param, so `mode` beside `SRC MACHINE` is one fact with two
+spellings, and the drift is silent: switch a recipe to `SLICE`, forget the mode, and the guide
+prints `C5` for a slice address. `DeviceSchema` refuses the disagreement, which is the same repair
+`CLAUDE.md` records for the TR-8S's tone-dependent ranges and the minilogue xd's `SHAPE` — the
+recipe carries the switch, so the pairing cannot come apart. A schema also refuses a pool
+declaring both a `triggerNote` and `modes`, and a recipe naming no mode on a moded voice: the
+second matters because the omission would resolve to silence, which is indistinguishable from the
+honest gap it is not.
+
+**A mode is not one of invariant 3's shared vocabularies.** Mode ids are device-local strings
+validated inside the folder, the same class as `poolId` and a recipe id. No template names one and
+none can.
+
+**This is deliberately not all of #86.** See §12.4.
 
 ### 2.3 Device manifest
 
@@ -4251,6 +4300,46 @@ each (see the stacking note below). `polyphony` on an assignable is still simult
 one voice; the note count on a request is still a count of notes and not of voices. Multitimbrality
 is modelled by pools, not by polyphony. `comfortableVoices` counts *occupied assignables* — one per
 assignable occupied in at least one section, and every voice of a stack is one of them.
+
+*What a pool member can **be**, as opposed to how many notes it sounds (#86).* Polyphony settles
+the second question. The first is `modes` (§2.2), and the two are independent: a mode says which
+kind of thing a track has been made into, and every mode of a pool is available to every member,
+so nothing about modes reaches the search. That boundary is deliberate and is where the first
+slice stops.
+
+**What #86 asks for, and which of it is built.** #86 is *"a device declaring alternative
+configurations, with the resolver either choosing one or being told which"*, and it estimated that
+such a change reaches the search, the permalink and the rack. Modes are the part of that which
+reaches none of the three, and they were built first for exactly that reason:
+
+- **Built.** A configuration that a *recipe* selects, whose only consequence is how the track is
+  addressed. Every member can take every mode, so no candidate is added and none excluded; `Score`
+  is untouched; the worst legal rig measures identically before and after. The Digitakt II is the
+  first user and the only one so far.
+- **Deferred: a configuration the reader chooses.** The MC-101's four tracks, where making a
+  second one a drum track is the user's decision and leaves a different tonal allocation behind;
+  the Octatrack MkII's `TRACK 8`, which is a master track or a normal one. Neither is a
+  consequence of a recipe, so both are rig state: `RigSettingsV1` would gain fields
+  (`STUDIO_DOC_VERSION` 2), `guideInputsFrom` could no longer flatten a rig to bare device ids, a
+  permalink would need a repeated per-device field, and `FORMAT_VERSION` would move to 5. All
+  three boxes still absorb this in `comfortableVoices` and a footnote, which is what #86 recorded
+  three separate authors independently concluding was enough.
+- **Deferred: a configuration that changes which members exist.** A mode restricted to some
+  ordinals — `TRACK 8` again — is a feasibility constraint rather than an addressing fact, and
+  that is §2.3/#25's shape: it reaches the search, needs a `RESOLVER_VERSION` bump for excluding
+  allocations, and must keep the suffix bound admissible. `Assignable.modes` must therefore stay a
+  table that no search code reads.
+- **Deferred: a use of a track that costs the pool a member.** A Digitakt II track spent on MIDI
+  is a track that has left the pool, and `comfortableVoices: 12` still carries that. Modes made
+  the MIDI case *sayable*; they did not make it *countable*.
+
+*And one correction the first slice carries (#421).* This section used to be able to point at the
+Tracker Mini as the box where the split was already made. It is not one: p.22 gives its first
+eight tracks sample instruments, synths **and** MIDI, so the sample/synth split was made across
+its two pools and not inside pool A, whose `triggerNote` is a fact about one of its three uses.
+Both Polyend boxes print a trigger note that is false for some instrument on the track, and #421
+is that repair. It is content — split the pool, narrow the roles, or decline the note and say why
+— and it deliberately does not wait for any of the deferred work above.
 
 *Worked example, and the case that proves the demand belongs to the recipe:* the Tracker Mini
 sounds one note per track — "Each track in Tracker Mini can handle one voice which can play

@@ -30,6 +30,7 @@ import {
   resolvePatch,
   resolveSourceAudio,
   selectPatterns,
+  triggerNoteFor,
   type BoundArticulation,
   type PatternSelection,
   type ResolvedPatchEntry,
@@ -1305,11 +1306,27 @@ export type ResolvedAssignment = {
  * to write down before, so the stamp that moves is `FORMAT_VERSION`. Asserted rather than
  * assumed, in `test/template-mood.test.ts`.
  *
+ * **8** — §2.2/#86. A pool may declare **track modes**, and a recipe names the one it puts the
+ * track in, so a part's trigger note is now the *mode's* rather than the pool's. The Digitakt II
+ * is the first, and the effect on a guide is the reason this moved: every whole-sample part on
+ * that box gains a `Trigger note — C5 · MIDI 60` line it did not have, cited to pp.25 and 53,
+ * while its one sliced recipe and any MIDI use of a track still state nothing. A permalink shared
+ * before this renders a guide that is silent about what to write on the step, on a box whose
+ * manual prints the answer.
+ *
+ * **Nothing the search does moved, and stating that is the point of the entry.** `Score` is
+ * untouched, no candidate is added and none excluded, `Assignable` gains a mode *table* rather
+ * than a selection so expansion is unchanged at sixteen members, and §7.1 reads neither field.
+ * The worst legal rig measures identically before and after — 47,284 nodes on `weave` seed 15,
+ * taken on `be96741` with and without this change — which is the assertion rather than a headroom
+ * check. So this is entry 2's reading and not entry 6's: no value moved and no assignment moved,
+ * and it bumps because the guide's content can see it.
+ *
  * It lives beside `ResolveInput` because that is the contract it versions. `permalink.ts`
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
  */
-export const RESOLVER_VERSION = 7
+export const RESOLVER_VERSION = 8
 
 /**
  * #161. The two decisions the user may take back off the direction: tempo and key. Both
@@ -1700,9 +1717,11 @@ export function resolve(input: ResolveInput): ResolveResult {
       sections: a.sections,
       pitch: resolveRequestPitch(request, key),
       // The head of the stack answers for all of it: a stack is members of one pool on one
-      // device (§12.4), and a pool's members carry the pool's own note. Not the bug
-      // `Assignment.assignables` warns about — there is one value here, not one per voice.
-      triggerNote: a.assignables[0]?.triggerNote,
+      // device (§12.4), and a pool's members carry the pool's own note — or, where the members
+      // are not addressed alike, the pool's own mode table, from which this recipe's mode picks
+      // one (§2.2/#86). Either way there is one value here, not one per voice, so this is not the
+      // bug `Assignment.assignables` warns about.
+      triggerNote: triggerNoteFor(a.recipe, a.assignables[0]),
       hookAuthority: hookAuthorityByRole.get(a.role),
       reArticulatesHook: request.reArticulatesHook === true,
       patterns: a.sections.map((section) => {

@@ -5,17 +5,21 @@ import {
   DeviceSchema,
   JackSignalKindSchema,
   RecipeSchema,
+  TrackModeSchema,
   TriggerNoteSchema,
   VoiceSpecSchema,
   clockSourceSetupFact,
   evidenceFor,
   expand,
   jackFact,
+  triggerNoteFor,
   type Assignable,
+  type Recipe,
+  type TrackMode,
   type TriggerNote,
   type Verified,
 } from '../lib/core/index'
-import { device, poolDevice, recipe } from './fixtures'
+import { device, enumParam, numericParam, poolDevice, recipe } from './fixtures'
 
 describe('VoiceSpec (§2.1)', () => {
   it('accepts both authored shapes', () => {
@@ -194,6 +198,259 @@ describe('expand carries the trigger note (§2.1, §2.2)', () => {
       voices: [{ kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1, triggerNote: NOTE }],
     })
     expect(expand(box)[0]?.triggerNote).toEqual(NOTE)
+  })
+})
+
+/**
+ * §2.2/#86. **Track modes: a pool whose members are not addressed alike.**
+ *
+ * The contract has four parts and they fail in different places on purpose. The *shape* of a mode
+ * is `TrackModeSchema`'s; a pool declaring one note and a table of them at once is
+ * `VoiceSpecSchema`'s; whether a recipe names a mode its voice has, and whether the machine it
+ * carries agrees with that mode, are `DeviceSchema`'s, because both are cross-references between
+ * two halves of one manifest; and which note a part ends up with is `triggerNoteFor`'s.
+ *
+ * Tested here against fixtures rather than only through the Digitakt II, so that the rules stand
+ * on their own and the next device to declare modes meets them stated rather than inferred.
+ */
+describe('TrackMode (§2.2/#86)', () => {
+  const CITE = { kind: 'manual', source: 'Fixture Manual, p.90' } as const
+  const NOTE: TriggerNote = { note: 'C5', midi: 60, verified: CITE }
+
+  const WHOLE: TrackMode = {
+    id: 'whole-sample',
+    label: 'ONESHOT',
+    triggerNote: NOTE,
+    selectedBy: { param: 'MACHINE', values: ['ONESHOT', 'REPITCH'] },
+  }
+  const SLICED: TrackMode = {
+    id: 'sliced',
+    label: 'SLICE',
+    selectedBy: { param: 'MACHINE', values: ['SLICE'] },
+  }
+
+  const machine = (value: string) =>
+    enumParam({ name: 'MACHINE', value, options: { values: ['ONESHOT', 'REPITCH', 'SLICE'] } })
+
+  /** A pool declaring both modes, and one recipe on it in whichever mode is asked for. */
+  function moded(over: { modes?: TrackMode[]; recipes?: Partial<Recipe>[] } = {}) {
+    return poolDevice({
+      voices: [
+        {
+          kind: 'pool',
+          id: 'track',
+          label: 'Track',
+          count: 3,
+          roles: ['kick', 'sub', 'pad', 'lead'],
+          polyphony: 4,
+          modes: over.modes ?? [WHOLE, SLICED],
+        },
+      ],
+      recipes: (over.recipes ?? [{ mode: 'whole-sample' }]).map((r, i) =>
+        recipe({
+          id: `fx-track-${String(i)}`,
+          voice: 'track',
+          articulation: undefined,
+          params: [machine('ONESHOT')],
+          ...r,
+        }),
+      ),
+    })
+  }
+
+  describe('the shape of one mode', () => {
+    it('accepts a mode with a note and a mode without one', () => {
+      expect(TrackModeSchema.safeParse(WHOLE).success).toBe(true)
+      expect(TrackModeSchema.safeParse(SLICED).success).toBe(true)
+      // The whole point of the table: a mode may decline a note, and declining is not an error.
+      expect(TrackModeSchema.safeParse({ id: 'midi', label: 'MIDI' }).success).toBe(true)
+    })
+
+    it('holds a mode to the same citation rule a voice-level note has (invariant 5)', () => {
+      // `TriggerNoteSchema` is reused rather than restated, so an uncited note is unauthorable
+      // wherever it is written. Asserted here because "reused" is a claim about a file somebody
+      // could change without meaning to.
+      expect(
+        TrackModeSchema.safeParse({ ...WHOLE, triggerNote: { note: 'C5', midi: 60 } }).success,
+      ).toBe(false)
+      expect(
+        TrackModeSchema.safeParse({ ...WHOLE, triggerNote: { ...NOTE, verified: false } }).success,
+      ).toBe(false)
+    })
+
+    it('needs an id, a label and, where present, a selector with something in it', () => {
+      expect(TrackModeSchema.safeParse({ ...WHOLE, id: '' }).success).toBe(false)
+      expect(TrackModeSchema.safeParse({ ...WHOLE, label: '' }).success).toBe(false)
+      expect(
+        TrackModeSchema.safeParse({ ...WHOLE, selectedBy: { param: 'MACHINE', values: [] } })
+          .success,
+      ).toBe(false)
+      expect(
+        TrackModeSchema.safeParse({ ...WHOLE, selectedBy: { param: '', values: ['ONESHOT'] } })
+          .success,
+      ).toBe(false)
+      // Strict: a field nobody defined is a typo, not an extension.
+      expect(TrackModeSchema.safeParse({ ...WHOLE, note: 'C5' }).success).toBe(false)
+    })
+  })
+
+  describe('what a voice may declare', () => {
+    const pool = {
+      kind: 'pool',
+      id: 'track',
+      label: 'Track',
+      count: 3,
+      roles: ['pad'],
+      polyphony: 1,
+    }
+
+    it('takes two or more modes on a pool, and none on a fixed voice', () => {
+      expect(VoiceSpecSchema.safeParse({ ...pool, modes: [WHOLE, SLICED] }).success).toBe(true)
+      // One mode is a pool addressed alike, which `triggerNote` already says with less machinery.
+      expect(VoiceSpecSchema.safeParse({ ...pool, modes: [WHOLE] }).success).toBe(false)
+      const fixed = { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 }
+      expect(VoiceSpecSchema.safeParse({ ...fixed, modes: [WHOLE, SLICED] }).success).toBe(false)
+    })
+
+    it('refuses a pool that declares a note and a table of notes at once', () => {
+      // Two answers to one question, and nothing downstream could pick between them. A pool whose
+      // members are not addressed alike says so by declaring modes; one whose members are says so
+      // by carrying the note itself.
+      expect(
+        VoiceSpecSchema.safeParse({ ...pool, modes: [WHOLE, SLICED], triggerNote: NOTE }).success,
+      ).toBe(false)
+    })
+
+    it('refuses two modes with one id, because a recipe names a mode by its id', () => {
+      expect(
+        VoiceSpecSchema.safeParse({ ...pool, modes: [WHOLE, { ...SLICED, id: 'whole-sample' }] })
+          .success,
+      ).toBe(false)
+    })
+  })
+
+  describe('what a recipe may name (DeviceSchema, because it crosses the manifest)', () => {
+    it('accepts a recipe naming a mode its voice declares', () => {
+      expect(DeviceSchema.safeParse(moded()).success).toBe(true)
+    })
+
+    it('refuses a recipe on a moded voice that names no mode', () => {
+      // The load-bearing one. Omission would resolve to *no note*, which is byte for byte what an
+      // honest decline looks like — so a forgotten `mode` would read as "this box states nothing"
+      // for as long as nobody checked the manual again.
+      expect(DeviceSchema.safeParse(moded({ recipes: [{}] })).success).toBe(false)
+    })
+
+    it('refuses a mode the voice does not declare', () => {
+      expect(DeviceSchema.safeParse(moded({ recipes: [{ mode: 'granular' }] })).success).toBe(false)
+    })
+
+    it('refuses a mode on a voice that has none', () => {
+      // `poolDevice`'s own pool declares no modes, so this is the typo case: a field the author
+      // meant to be load-bearing, silently doing nothing.
+      const plain = poolDevice({
+        recipes: [recipe({ id: 'fx-track-kick-hard', voice: 'track', articulation: undefined, mode: 'whole-sample' })],
+      })
+      expect(DeviceSchema.safeParse(plain).success).toBe(false)
+    })
+  })
+
+  describe('selectedBy: the mode and the switch cannot come apart', () => {
+    it('refuses a recipe whose machine contradicts the mode it names', () => {
+      // The failure this exists to prevent: switch the machine to SLICE, forget the mode, and the
+      // guide prints an original-pitch note for a slice address. CLAUDE.md's TR-8S and minilogue
+      // xd rule, reaching a second kind of value.
+      const wrong = moded({ recipes: [{ mode: 'whole-sample', params: [machine('SLICE')] }] })
+      expect(DeviceSchema.safeParse(wrong).success).toBe(false)
+    })
+
+    it('refuses a recipe that carries no selector param at all', () => {
+      // Not the same as disagreeing, and worse: there is nothing on the page telling the reader
+      // which mode the track is in, so the note would rest on a switch the guide never names.
+      const silent = moded({ recipes: [{ mode: 'whole-sample', params: [numericParam()] }] })
+      expect(DeviceSchema.safeParse(silent).success).toBe(false)
+    })
+
+    it('accepts any of the selector values, not only the first', () => {
+      const second = moded({ recipes: [{ mode: 'whole-sample', params: [machine('REPITCH')] }] })
+      expect(DeviceSchema.safeParse(second).success).toBe(true)
+    })
+
+    it('leaves a mode with no selector unchecked, for a box with no one param that says so', () => {
+      const unselected = moded({
+        modes: [{ id: 'whole-sample', label: 'Sample' }, SLICED],
+        recipes: [{ mode: 'whole-sample', params: [numericParam()] }],
+      })
+      expect(DeviceSchema.safeParse(unselected).success).toBe(true)
+    })
+  })
+
+  describe('expansion carries the table, not a selection', () => {
+    it('gives every member the same table and no note of its own', () => {
+      const members = expand(moded())
+      expect(members).toHaveLength(3)
+      for (const member of members) {
+        expect(member.modes?.map((m) => m.id)).toEqual(['whole-sample', 'sliced'])
+        // Absent: the note is the mode's, and a member carrying one too would be a second
+        // authority over the same fact.
+        expect(Object.keys(member)).not.toContain('triggerNote')
+      }
+    })
+
+    it('does not multiply members by modes, which is the property that keeps expand cheap', () => {
+      // Three tracks and two modes are three assignables. Six would mean the selection had been
+      // pushed into the `Assignable`, which is what §2.2 refuses.
+      expect(expand(moded())).toHaveLength(3)
+    })
+
+    it('shares one frozen array across the pool rather than copying it per member', () => {
+      const members = expand(moded())
+      const first = members[0]?.modes
+      expect(first).toBeDefined()
+      expect(Object.isFrozen(first)).toBe(true)
+      for (const member of members) expect(member.modes).toBe(first)
+    })
+
+    it('leaves a pool with no modes exactly as it was', () => {
+      const members = expand(poolDevice())
+      expect(members).toHaveLength(8)
+      for (const member of members) expect(Object.keys(member)).not.toContain('modes')
+    })
+  })
+
+  describe('triggerNoteFor: which note the part actually gets', () => {
+    const moded3 = expand(moded())[0] as Assignable
+    const plain = expand(
+      poolDevice({
+        voices: [
+          { kind: 'pool', id: 'track', label: 'Track', count: 2, roles: ['pad'], polyphony: 1, triggerNote: NOTE },
+        ],
+      }),
+    )[0] as Assignable
+
+    it('falls back to the voice\'s own note where there are no modes', () => {
+      // Every device in the library but one goes down this branch, so it is the behaviour that
+      // must not have moved.
+      expect(triggerNoteFor(recipe({ voice: 'track' }), plain)).toEqual(NOTE)
+    })
+
+    it('returns the named mode\'s note where there are', () => {
+      expect(triggerNoteFor(recipe({ voice: 'track', mode: 'whole-sample' }), moded3)).toEqual(NOTE)
+    })
+
+    it('returns nothing for a mode that declines a note', () => {
+      // The half that had to keep working: giving this box a note was never the point, giving it
+      // the note true of the track in front of the reader was.
+      expect(triggerNoteFor(recipe({ voice: 'track', mode: 'sliced' }), moded3)).toBeUndefined()
+    })
+
+    it('is total where a device would not have built', () => {
+      // `DeviceSchema` refuses both of these, so neither is reachable through the registry. A
+      // total function is cheaper than a cast, and asserting that is cheaper than trusting it.
+      expect(triggerNoteFor(recipe({ voice: 'track' }), moded3)).toBeUndefined()
+      expect(triggerNoteFor(recipe({ voice: 'track', mode: 'granular' }), moded3)).toBeUndefined()
+      expect(triggerNoteFor(recipe({ voice: 'track', mode: 'whole-sample' }), undefined)).toBeUndefined()
+    })
   })
 })
 

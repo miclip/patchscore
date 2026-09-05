@@ -21,6 +21,8 @@ import type {
   Device,
   PatchEntry,
   Recipe,
+  TrackMode,
+  TriggerNote,
 } from './device'
 import type {
   DensityBand,
@@ -101,6 +103,34 @@ export function recipeVoiceKey(assignable: Assignable): string {
 }
 
 /**
+ * §2.1/§2.2. **How this part's voice is addressed**, once the recipe is known.
+ *
+ * Two sources, and a voice has exactly one of them. Most voices carry a `triggerNote` outright,
+ * because every member is addressed alike; a voice whose members are *not* — the Digitakt II's
+ * one pool of sixteen tracks, each of which can be a whole-sample track, a sliced one or a MIDI
+ * one — carries a mode table instead, and the recipe says which entry is in force.
+ *
+ * Here rather than in `expand` because `expand` has no recipe, and on purpose rather than by
+ * necessity: keeping the selection out of the `Assignable` is what keeps expansion a pure
+ * function of device data and sixteen tracks worth sixteen assignables (§4.2).
+ *
+ * A mode with no note resolves to nothing, which is the honest answer and not a gap: a sliced
+ * track's note is a slice address (#369) and a MIDI track's is a note being sent out, so there is
+ * no note that plays the voice's sound as it is. `DeviceSchema` refuses a recipe that names no
+ * mode on a moded voice, so the `undefined` branch below is unreachable for any device that
+ * builds — it is here because a total function is cheaper than a cast.
+ */
+export function triggerNoteFor(
+  recipe: Recipe,
+  assignable: Assignable | undefined,
+): TriggerNote | undefined {
+  if (assignable === undefined) return undefined
+  if (assignable.modes === undefined) return assignable.triggerNote
+  if (recipe.mode === undefined) return undefined
+  return assignable.modes.find((mode) => mode.id === recipe.mode)?.triggerNote
+}
+
+/**
  * Expansion is memoised on the device *object*, which is sound only because the result is
  * frozen: two callers holding the same array cannot diverge, and nothing can hang per-guide
  * state on an `Assignable` (§4.2 — the reason occupancy lives in `Occupancy` instead).
@@ -138,6 +168,20 @@ export function expand(device: Device): readonly Assignable[] {
       )
       continue
     }
+    // §2.2/#86. Frozen once and shared by every member, which is the literal form of the claim
+    // that a mode table is device data: one array per pool, not one per track, and no caller can
+    // add or drop an entry.
+    //
+    // **Shallow, exactly like `roles` above and `triggerNote` beside it.** The entries themselves
+    // are the manifest's own objects, handed on by reference and not frozen — deep-freezing them
+    // would freeze data `lib/devices/` owns and this function does not, and it would make `modes`
+    // the one field here with a stronger guarantee than its neighbours for no reason anyone
+    // could state. What the freeze buys is the property `expand`'s own comment needs: two callers
+    // holding the shared expansion cannot make each other's copy disagree.
+    const modes =
+      voice.modes === undefined
+        ? undefined
+        : (Object.freeze([...voice.modes]) as readonly TrackMode[])
     // 'track' x 8 becomes 'track-1'..'track-8' / 'Track 1'..'Track 8'. The ordinal is folded
     // into `voiceId` here so that everything downstream — occupancy keys included — sees one
     // flat namespace, while `poolId` survives for recipe lookup.
@@ -157,6 +201,11 @@ export function expand(device: Device): readonly Assignable[] {
           polyphony: voice.polyphony,
           // §2.1. Every member of a pool is addressed alike, so each carries the pool's own.
           ...(voice.triggerNote === undefined ? {} : { triggerNote: voice.triggerNote }),
+          // §2.2/#86. The mode *table*, where the members are not addressed alike after all.
+          // Hoisted above, so every member carries the same frozen array: it is device data, this
+          // stays a pure function of the manifest, and the count of assignables does not move.
+          // Which mode is in force needs a recipe, and is decided in `triggerNoteFor`.
+          ...(modes === undefined ? {} : { modes }),
         }),
       )
     }

@@ -384,28 +384,27 @@ describe('Digitakt II says what audio to load (§3/#101)', () => {
 })
 
 /**
- * §2.1/#334. **This box authors no trigger note, and it is the first decline in this class where
- * the manual supplies everything a trigger note needs.**
+ * §2.1/§2.2/#86. **This box authors a trigger note per track mode, and it is the first to do so.**
  *
- * p.25: *"MIDI note numbers 16-84, that corresponds to notes E2-C7 (C5, MIDI note 60, being
- * middle C)"*. p.53's TRIG page screen shows the box's own display pairing them — `NOTE` reading
- * `C 5 (60)` on an audio track. So `{ note: 'C5', midi: 60 }` is writable here with a real
- * citation, which no earlier box in this class could offer.
- *
- * **It still cannot go on the pool**, because a pool's note reaches every member alike and this
- * one pool holds three kinds of track:
+ * It used to author none, and the reason was structural rather than evidential: p.25 gives the
+ * convention (*"MIDI note numbers 16-84, that corresponds to notes E2-C7 (C5, MIDI note 60, being
+ * middle C)"*) and p.53's TRIG screen shows the box pairing them, `NOTE` reading `C 5 (60)` on an
+ * audio track — so `{ note: 'C5', midi: 60 }` was writable with a real citation and had nowhere
+ * to go. A pool's note reaches every member alike, and this one pool holds three kinds of track:
  *
  *  - **whole-sample machines** (`ONESHOT`, `WERP`, `STRETCH`, `REPITCH`), where `C5` does mean
  *    *play it as recorded* — the one case `TriggerNote` models;
  *  - **sliced ones**, and `dt2-vox-chop-bright` is one. p.26: *"Slices play from C1 and upwards,
  *    wrapping around after the last slice, when using the Grid and Slice machines and set SLICE
- *    to NOTE."* A slice address is not an original pitch, and `TriggerNote` refuses it;
+ *    to NOTE."* A slice address is not an original pitch, and `TriggerNote` refuses it (#369);
  *  - **MIDI tracks**, whose TRIG page p.53 says is *"a different set of parameters"* entirely.
  *
- * The Tracker Mini is why this is a rule rather than a preference, and the last test here is the
- * one that says so out loud.
+ * `TrackMode` is the shape that holds all three. The note moved from the pool to the mode, the
+ * recipe names the mode, and `selectedBy` ties the mode to the `SRC MACHINE` the recipe already
+ * carried so the two cannot drift apart. The tests below assert both halves: the whole-sample
+ * parts now print a note, and the sliced ones still print none.
  */
-describe('trigger notes: read for, and declined (§2.1/#334)', () => {
+describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
   const SEEDS = [1, 2, 3, 4, 5, 6]
 
   /** The machines whose note means "play it as recorded" — the only case `TriggerNote` models. */
@@ -416,30 +415,80 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     return param?.kind === 'enum' ? param.value : undefined
   }
 
-  it('authors none on the pool, and none on any recipe either', () => {
-    // Both halves, because the field exists in two places and only one of them is the pool.
+  const pool = device.voices[0]
+  const modes = pool !== undefined && pool.kind === 'pool' ? (pool.modes ?? []) : []
+
+  it('puts the note on the mode and not on the pool, and leaves two modes without one', () => {
+    // The pool itself states nothing, which is the schema's rule as well as this box's fact: a
+    // voice declares one note or a table of modes, never both.
     expect(device.voices.filter((v) => v.triggerNote !== undefined)).toEqual([])
+    expect(modes.map((m) => m.id)).toEqual(['whole-sample', 'sliced', 'midi'])
+
+    const whole = modes.find((m) => m.id === 'whole-sample')
+    expect(whole?.triggerNote?.note).toBe('C5')
+    expect(whole?.triggerNote?.midi).toBe(60)
+    // p.25 and p.53 both, because neither page carries the whole fact on its own.
+    const source = whole?.triggerNote?.verified.source ?? ''
+    expect(source).toContain('p.25')
+    expect(source).toContain('p.53')
+
+    // The two that decline, and they decline for different reasons — see the head note.
+    expect(modes.find((m) => m.id === 'sliced')?.triggerNote).toBeUndefined()
+    expect(modes.find((m) => m.id === 'midi')?.triggerNote).toBeUndefined()
+
+    // Still nothing on a recipe: `RecipeSchema` refuses the field outright (§2.1).
     const claiming = device.recipes.filter(
       (r) => (r as Recipe & { triggerNote?: unknown }).triggerNote !== undefined,
     )
     expect(claiming.map((r) => r.id)).toEqual([])
   })
 
-  it('stays off the library roster of boxes that author one', () => {
-    // `test/tracker-mini.test.ts` pins that roster exactly; this is the same fact asked from the
-    // side of the box that declines, so a note added here fails in its own file as well as there.
-    const authoring = DEVICES.filter((d) => d.voices.some((v) => v.triggerNote !== undefined))
-    expect(authoring.map((d) => d.id)).not.toContain('elektron-digitakt-ii')
+  /**
+   * **The pairing that cannot come apart.** `mode` and `SRC MACHINE` are one fact with two
+   * spellings, and the failure of letting them drift is silent: switch a recipe to `SLICE` and
+   * forget the mode, and the guide prints `C5` for a slice address. `selectedBy` is what makes
+   * that a build failure, and this asserts it end to end rather than trusting the schema.
+   */
+  it('gives every recipe a mode its own machine agrees with', () => {
+    for (const recipe of device.recipes) {
+      const mode = modes.find((m) => m.id === recipe.mode)
+      expect(mode, recipe.id).toBeDefined()
+      expect(mode?.selectedBy?.values, recipe.id).toContain(srcMachine(recipe))
+    }
+
+    // And the refusal itself, on a device that differs from this one in exactly one value.
+    const broken = {
+      ...device,
+      recipes: device.recipes.map((r) =>
+        r.id === 'dt2-kick-hard' ? { ...r, mode: 'sliced' } : r,
+      ),
+    }
+    expect(DeviceSchema.safeParse(broken).success).toBe(false)
   })
 
-  it('expands to sixteen members on one pool, none of which carries a note', () => {
-    // One pool is the whole difficulty: there is nowhere to put a note that reaches only the
-    // whole-sample tracks. Asserted here so a second pool appearing makes somebody re-read this.
+  it('expands to sixteen members, each carrying the whole mode table and no note of its own', () => {
+    // One pool is still the shape of the box; what changed is that the pool can now say its
+    // members are not addressed alike. The table is device data, identical on every member, so
+    // sixteen tracks are still sixteen assignables (§2.2).
     expect(device.voices.length).toBe(1)
     const members = expand(device)
     expect(members.length).toBe(16)
     expect(members.every((m) => m.poolId === 'track')).toBe(true)
     expect(members.filter((m) => m.triggerNote !== undefined)).toEqual([])
+    expect(members.every((m) => m.modes?.length === 3)).toBe(true)
+  })
+
+  it('joins the library roster of boxes that author one', () => {
+    // `test/tracker-mini.test.ts` pins that roster exactly, and it had to learn to look at modes
+    // as well as at voices when this box arrived. Same fact asked from this side.
+    const authoring = DEVICES.filter((d) =>
+      d.voices.some(
+        (v) =>
+          v.triggerNote !== undefined ||
+          (v.kind === 'pool' && (v.modes ?? []).some((m) => m.triggerNote !== undefined)),
+      ),
+    )
+    expect(authoring.map((d) => d.id)).toContain('elektron-digitakt-ii')
   })
 
   /**
@@ -455,14 +504,16 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     })
     expect(sliced.map((r) => r.id)).toEqual(['dt2-vox-chop-bright'])
     expect(sliced.every((r) => r.voice === 'track')).toBe(true)
+    expect(sliced.every((r) => r.mode === 'sliced')).toBe(true)
 
     // The whole-sample recipes it shares that pool with.
     const whole = device.recipes.filter((r) => WHOLE_SAMPLE.includes(srcMachine(r) ?? ''))
     expect(whole.length).toBe(device.recipes.length - sliced.length)
     expect(whole.every((r) => r.voice === 'track')).toBe(true)
+    expect(whole.every((r) => r.mode === 'whole-sample')).toBe(true)
 
     // And the option set every one of them declares, which is the pool's real reach. `MIDI` and
-    // `GRID` are legal here and unselected; a pool-wide note would have to be right for them too.
+    // `GRID` are legal here and unselected; the mode table is what keeps the note off them.
     for (const recipe of device.recipes) {
       const param = params(recipe).find((p) => p.name === 'SRC MACHINE')
       expect(param?.kind, recipe.id).toBe('enum')
@@ -474,11 +525,25 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   })
 
   /**
+   * **No recipe selects the MIDI mode, and the mode is declared anyway.**
+   *
+   * A MIDI track drives another box rather than playing a part, so there is no role for it in
+   * §2.2 and no recipe to write. It is in the table because p.17 says it is the third thing a
+   * track can be, and a two-entry table would claim the pool holds two kinds of member. Pinned so
+   * that the day a recipe selects it, somebody re-reads p.53 first.
+   */
+  it('declares the MIDI mode and selects it nowhere', () => {
+    expect(modes.some((m) => m.id === 'midi')).toBe(true)
+    expect(device.recipes.filter((r) => r.mode === 'midi').map((r) => r.id)).toEqual([])
+  })
+
+  /**
    * **The sliced recipe cannot acquire a note, and this is the assertion that would catch it.**
    *
-   * Checked at every layer it could arrive through — the pool, the recipe, the expanded member
-   * carrying it, and the resolved assignment — because there is no per-recipe override by design
-   * (see `TriggerNote`), so a note added to the pool later would reach this recipe silently.
+   * Checked at every layer it could arrive through — the mode, the recipe, the expanded member,
+   * and the resolved assignment. It is the half of this change that had to keep working: the
+   * point was never to give this box a note, it was to give it the note that is true of the track
+   * in front of the reader.
    */
   it('never lets the sliced recipe resolve with a trigger note', () => {
     const sliced = device.recipes.find((r) => r.id === 'dt2-vox-chop-bright')
@@ -544,38 +609,47 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 270 is #334's figure for this device. It was 222 until the eight unauthored roles were
-   * filled: a role the pool declares and no recipe serves is a `no-recipe` shortfall rather than
-   * a part, so those parts were not drawing a blank grid, they were not being placed at all. The
-   * number moves when a direction gains or loses a part, or when this box gains a recipe, and a
-   * diff is a prompt to re-read the head note rather than a failure. What must not move is the
-   * relationship — no part ever gets a `trigger`, because the pool has no note to give one.
+   * 270 of these 294 were blank before modes existed, and 6 are blank now. That is the whole
+   * change stated as a number, and the 6 are the ones that should be: every one of them is a
+   * `vox-chop` part on the sliced recipe, where the note the manual prints is a slice address and
+   * the model is right to say nothing. The total moves when a direction gains or loses a part or
+   * this box gains a recipe; what must not move is that the blanks and the sliced recipe are the
+   * same set.
    */
-  it('leaves 270 grid parts blank, and pins how many there are', () => {
+  it('leaves only the sliced parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
     expect(grid.length).toBe(294)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(270)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(6)
+    expect(grid.filter((g) => g.kind === 'trigger').length).toBe(264)
 
-    // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
-    // prints are the direction's own.
-    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch'])
+    // Named rather than left to the count: all three arms are now in play on this box.
+    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch', 'trigger'])
+
+    // The blanks are the sliced role and nothing else.
+    expect([...new Set(grid.filter((g) => g.kind === 'none').map((g) => g.role))]).toEqual([
+      'vox-chop',
+    ])
   })
 
-  it('prints a note only where the direction asked for a pitch of its own', () => {
-    // §4.1's precedence with one arm missing. The 24 that carry a note are `sub` parts, where the
-    // pitch is the direction's musical decision (#340) and owes this box nothing.
-    const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
+  it('prints the direction pitch where there is one, and the box note where there is not', () => {
+    // §4.1's precedence, now with both arms occupied. The 24 that carry a pitch are `sub` parts,
+    // where the pitch is the direction's musical decision (#340) and owes this box nothing —
+    // and where printing `C5` instead would tell a reader to play a sub at the sample's own
+    // pitch, which is the one thing the direction did not ask for.
+    const grid = sweep().grid
+    const pitched = grid.filter((g) => g.kind === 'pitch')
     expect(pitched.length).toBe(24)
     expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
+    expect(grid.filter((g) => g.role === 'sub' && g.kind === 'trigger')).toEqual([])
   })
 
-  it('leaves the blanks on the roles a loaded sample answers', () => {
+  it('lands the box note on the roles a loaded sample answers', () => {
     // Pinned by role, not only by total: a count alone would survive one role's parts being
     // swapped for another's.
     const counts = new Map<Role, number>()
     for (const g of sweep().grid) {
-      if (g.kind !== 'none') continue
+      if (g.kind !== 'trigger') continue
       counts.set(g.role, (counts.get(g.role) ?? 0) + 1)
     }
     expect(
@@ -594,7 +668,6 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['impact', 6],
       ['noise', 6],
       ['ride', 6],
-      ['vox-chop', 6],
     ])
   })
 
@@ -617,7 +690,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     ])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
-    // classify — which is what would make the 222 above an undercount rather than a measurement.
+    // classify — which is what would make the counts above an undercount rather than a
+    // measurement.
     let assignments = 0
     for (const template of TEMPLATES) {
       for (const seed of SEEDS) {
@@ -630,55 +704,78 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
 
   /**
    * The resolved field itself, across every part rather than only the ones that draw a grid.
-   * `noteInstruction` folds the trigger arm in with the pitch arm, so this is the one assertion
-   * that a hooked or sustained part did not quietly acquire one either.
+   * `noteInstruction` folds the trigger arm in with the pitch arm and suppresses both for a
+   * hooked or sustained part, so this is the one assertion about what the *resolver* decided
+   * rather than about what a page shows.
    */
-  it('resolves no trigger note on any assignment, in any direction', () => {
+  it('resolves the mode note on every part but the sliced ones', () => {
+    // From the *authored* recipe, because `ResolvedAssignment.recipe` is the renderer's summary
+    // and deliberately does not carry `mode`: the reader already sees `SRC MACHINE` on the page,
+    // and a second spelling of it there would be a value with nothing listening (#388).
+    const modeOf = new Map(device.recipes.map((r) => [r.id, r.mode]))
     let seen = 0
+    let carrying = 0
     for (const template of TEMPLATES) {
       for (const seed of SEEDS) {
         const result = resolve({ devices: [device], template, mood: moodState(), seed })
         for (const a of result.assignments) {
           seen += 1
-          expect(a.triggerNote, `${template.id}/${a.role} seed ${String(seed)}`).toBeUndefined()
+          const expected = modeOf.get(a.recipe.id) === 'whole-sample'
+          expect(
+            a.triggerNote !== undefined,
+            `${template.id}/${a.role} seed ${String(seed)} on ${a.recipe.id}`,
+          ).toBe(expected)
+          if (a.triggerNote !== undefined) {
+            carrying += 1
+            expect(a.triggerNote.midi).toBe(60)
+          }
         }
       }
     }
-    expect(seen).toBeGreaterThan(0)
+    expect(seen).toBe(462)
+    expect(carrying).toBe(450)
   })
 
   /**
    * §8. **The reader-facing half**, checked on the page rather than only on the resolver.
    *
    * The count of parts that actually draw a grid is asserted non-zero first, or an empty render
-   * would pass this forever.
+   * would pass this either way.
    */
-  it('never prints a trigger note on a rendered page, across every direction and seed', () => {
+  it('prints the trigger note on a rendered page, in every direction', () => {
     let drawn = 0
+    let pages = 0
     for (const template of TEMPLATES) {
       for (const seed of [1, 7]) {
         const result = resolve({ devices: [device], template, mood: moodState(), seed })
-        drawn += result.assignments.filter(drawsGrid).length
-        expect(renderGuide(result), `${template.id} seed ${String(seed)}`).not.toContain(
-          'Trigger note',
-        )
+        const drawing = result.assignments.filter(drawsGrid)
+        drawn += drawing.length
+        const guide = renderGuide(result)
+        if (drawing.some((a) => noteInstruction(a).kind === 'trigger')) {
+          pages += 1
+          expect(guide, `${template.id} seed ${String(seed)}`).toContain(
+            '**Trigger note** — `C5` · MIDI 60',
+          )
+        }
       }
     }
     expect(drawn).toBeGreaterThan(0)
+    expect(pages).toBeGreaterThan(0)
   })
 
   /**
-   * §2.1/#352. **The two conventions this box prints, recorded and not authored.**
+   * §2.1/#352. **The two conventions this box prints, one authored and one deliberately not.**
    *
    * `C5` is 60 here (p.25), so `0` is `C0` — which p.25 confirms from the other side, *"Note
    * numbers 0-15 correspond to notes C0 through to D#1"*. That is the Tracker Mini's numbering
-   * and an octave below the SP-404MK2's, and neither is written anywhere in this manifest.
+   * and an octave below the SP-404MK2's.
    *
-   * p.26's slice base is the value that must never be written into `TriggerNote`, so the octave
-   * it would land on is asserted beside the one that would be right for a whole sample: they are
-   * four octaves apart, and nothing on a rendered page would distinguish them.
+   * p.26's slice base is the value that must never be written into a `TriggerNote`, so the octave
+   * it would land on is asserted beside the one that is right for a whole sample: they are four
+   * octaves apart, and nothing on a rendered page would distinguish them. That distance is what
+   * the `sliced` mode exists to keep off the page.
    */
-  it('records both note readings without authoring either', () => {
+  it('records both note readings and authors only the one that is a pitch', () => {
     const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
     // C5 = 60 means octave numbering starts at zero, so MIDI n is octave floor(n / 12).
     const midiOf = (name: string, octave: number) => octave * 12 + NAMES.indexOf(name)
@@ -690,11 +787,15 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(midiOf('C', 7)).toBe(84)
 
     // p.26's slice base, four octaves below the whole-sample note — the distance a reader would
-    // have been handed if the two kinds of address had shared this one field.
+    // have been handed if the two kinds of address had shared one field.
     expect(midiOf('C', 1)).toBe(12)
     expect(midiOf('C', 5) - midiOf('C', 1)).toBe(48)
 
-    // Nothing above is authored anywhere, which is the state this test exists to keep.
+    // Only the whole-sample reading is authored, and it is authored at the one place that is true
+    // of the track rather than of the pool.
+    expect(modes.filter((m) => m.triggerNote !== undefined).map((m) => m.id)).toEqual([
+      'whole-sample',
+    ])
     expect(device.voices.some((v) => v.triggerNote !== undefined)).toBe(false)
   })
 })
