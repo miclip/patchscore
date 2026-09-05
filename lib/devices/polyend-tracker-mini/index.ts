@@ -1351,9 +1351,18 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('DELAY SEND', 22, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 26 }] }),
       swing(),
     ],
+    routing:
+      '**Under 1-Shot the length is the sample\u2019s.** p.128: the sample *"will play for its ' +
+      'duration or until another trigger is initiated"*, so a step cannot shorten it. To make the ' +
+      'hit tighter, move the End point on the Sample Playback page rather than reaching for ' +
+      '`G` Gate Length \u2014 it has nothing to act on here',
     articulation: [
       { slot: 'first-hit', set: { volume: 100 }, hint: 'pick-fx' },
-      { slot: 'accent', set: { 'gate-length': 95 } },
+      // The accent carried a `gate-length` until #396 review, and p.128 is why it is gone: a
+      // 1-Shot plays to its own end, so a gate lock on one is an instruction with nothing to do.
+      // Volume is what separates the section-opening hit from the ones inside it, and it is a
+      // step effect that works on any play mode (p.180).
+      { slot: 'accent', set: { volume: 92 }, hint: 'pick-fx' },
     ],
     verified: false,
   },
@@ -1392,9 +1401,19 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('REVERB SEND', 18, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 30 }] }),
       swing(),
     ],
+    routing:
+      '**Under 1-Shot the length is the sample\u2019s.** p.128: the sample *"will play for its ' +
+      'duration or until another trigger is initiated"*, so a step cannot clip it short. If the ' +
+      'bursts run into each other, trim the End point on the Sample Playback page or load a ' +
+      'shorter recording \u2014 `G` Gate Length has nothing to act on here',
     articulation: [
       { slot: 'accent', set: { volume: 100 }, hint: 'pick-fx' },
-      { slot: 'offbeat', set: { 'gate-length': 30 } },
+      // This offbeat carried `gate-length: 30`, reaching for shorter bursts, and p.128 says a
+      // 1-Shot cannot be shortened from a step. Nothing on this box does what that asked for, so
+      // the `routing` above says where the length actually lives and the slot does something the
+      // box can: `C` Chance thins the offbeats, which is the variety the part wanted (p.188,
+      // `0 - 100%`).
+      { slot: 'offbeat', set: { chance: 75 }, hint: 'pick-fx' },
     ],
     verified: false,
   },

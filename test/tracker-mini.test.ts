@@ -919,6 +919,64 @@ describe('Tracker Mini manifest', () => {
    * The rule is stated over the manifest rather than over one recipe id, so a second arpeggiated
    * recipe cannot arrive with the same mistake.
    */
+  /**
+   * §4.3/#345. **A 1-Shot cannot be shortened from a step, so a `gate-length` on one is an
+   * instruction with nothing to do**, and two of #345's recipes carried one until #396 review.
+   *
+   * p.128, rendered: *"The most basic play mode is 1-shot which simply plays a sample through
+   * once, start to end"*, and *"Triggering the instrument step will trigger the 1-shot sample
+   * which will play for its duration or until another trigger is initiated"*. The figure says it
+   * a third time. Length under this play mode is the sample's own end point and the next trig,
+   * neither of which a step effect reaches.
+   *
+   * **Scoped to the recipes #345 added**, deliberately. `tm-open-hat-dark` pairs the same two and
+   * predates this work; widening the rule to it would be fixing a different recipe inside a
+   * review of these, and it is reported rather than swept up. A later change can take the whole
+   * manifest by dropping the filter here — which is the only edit it needs.
+   */
+  it('never locks a gate on a 1-Shot, in the recipes #345 added', () => {
+    const ADDED = [
+      'tm-sub-dark',
+      'tm-metallic-dirty',
+      'tm-impact-hard',
+      'tm-noise-dirty',
+      'tm-riser-bright',
+      'tm-sweep-soft',
+      'tm-arp-clean',
+    ]
+    // The roster is asserted, so a renamed or deleted recipe fails here rather than silently
+    // shrinking what this covers.
+    for (const id of ADDED) expect(device.recipes.map((r) => r.id), id).toContain(id)
+
+    let oneShots = 0
+    for (const recipe of device.recipes.filter((r) => ADDED.includes(r.id))) {
+      const play = (recipe.params as AuthoredParam[]).find((p) => p.name === 'PLAY MODE')
+      if (play === undefined || play.kind !== 'enum' || play.value !== '1-Shot') continue
+      oneShots += 1
+      for (const entry of recipe.articulation ?? []) {
+        expect(
+          Object.keys(entry.set),
+          `${recipe.id} locks a gate on a 1-Shot, which p.128 says plays to its own end`,
+        ).not.toContain('gate-length')
+      }
+    }
+    // Non-vacuous on both sides: several of these really are 1-Shot, and the one that is not
+    // keeps its gate, because a loop does end where the gate says.
+    expect(oneShots).toBeGreaterThanOrEqual(4)
+    const looped = device.recipes.find((r) => r.id === 'tm-sub-dark')
+    expect(
+      (looped?.params as AuthoredParam[]).find((p) => p.name === 'PLAY MODE'),
+    ).toMatchObject({ value: 'Forward loop' })
+    expect(looped?.articulation?.some((a) => 'gate-length' in a.set)).toBe(true)
+
+    // And the two that were wrong now say where the length actually lives, so a reader who wanted
+    // a shorter hit is sent to the End point rather than left with a control that does nothing.
+    for (const id of ['tm-impact-hard', 'tm-noise-dirty']) {
+      const recipe = device.recipes.find((r) => r.id === id)
+      expect(recipe?.routing ?? '', id).toContain('End point')
+    }
+  })
+
   it('articulates nothing on a recipe whose routing spends both step FX slots', () => {
     const arpeggiated = device.recipes.filter((r) => (r.routing ?? '').includes('(Arp)'))
     expect(arpeggiated.map((r) => r.id)).toEqual(['tm-arp-clean'])
