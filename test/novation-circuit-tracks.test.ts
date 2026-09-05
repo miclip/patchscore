@@ -7,6 +7,7 @@ import {
   isSustainedPart,
   moodState,
   noteInstruction,
+  reachableSlots,
   realisationOf,
   renderGuide,
   resolve,
@@ -564,6 +565,180 @@ describe('Circuit Tracks manifest', () => {
  * Where this box does say "as recorded" it says it with a knob: drum `PITCH` is a bipolar CC whose
  * centre is the sample at its own pitch, which the recipes already carry as a note on the value.
  */
+/**
+ * §2.1/§3.5/#345. **The seven roles that came back with nothing, and the mixed answer they got.**
+ *
+ * Two of the seven were narrowed away and five were authored, and the tests below hold the shape
+ * of that rather than the count: what the drum pool may declare, what the synth pool may, and the
+ * one thing #345 is actually about — that a reader opening #340's placement control on this box
+ * is offered it.
+ */
+describe('the roles the two pools declare, and the recipes that answer them (#345)', () => {
+  const drumRoles = new Set(device.voices.find((v) => v.id === 'drum-track')?.roles ?? [])
+  const synthRoles = new Set(device.voices.find((v) => v.id === 'synth-track')?.roles ?? [])
+
+  it('leaves no declared role on either pool without a recipe for that pool', () => {
+    for (const voice of device.voices) {
+      const authored = new Set(
+        device.recipes.filter((r) => r.voice === voice.id).map((r) => r.role),
+      )
+      const gaps = [...voice.roles].filter((r) => !authored.has(r)).sort()
+      // `noise` on the synth pool is the one deliberate hole and carries its reason in
+      // `SYNTH_ROLES`: the only request for it is struck, which is a drum track here, and the
+      // sustained shape a synth track uniquely offers is already `ct-texture-dark`.
+      const expected = voice.id === 'synth-track' ? ['noise'] : []
+      expect(gaps, voice.id).toEqual(expected)
+    }
+  })
+
+  /**
+   * The narrowing, asserted from the pages rather than restated. A drum track has one control
+   * that shapes time and no note length, so a gesture across bars is beyond it — which is the
+   * argument `texture` was already excluded on, applied to the two roles that had escaped it.
+   */
+  it('keeps gestures off the drum pool and one-shots on it', () => {
+    for (const role of ['riser', 'sweep', 'texture'] as const) {
+      expect(drumRoles.has(role), `drum pool declares ${role}`).toBe(false)
+    }
+    // `impact` is the control: it is transitional too, and it stays, because one hit at a
+    // boundary is what a fired trigger is. Without this the test above would pass on a pool that
+    // had simply dropped every transitional role.
+    expect(drumRoles.has('impact')).toBe(true)
+    expect(device.recipes.some((r) => r.voice === 'drum-track' && r.role === 'impact')).toBe(true)
+
+    // A drum track has no gate, so no drum recipe may articulate one — the lane exists on the
+    // box but only on the synth side (User Guide p.66). This is the same fact the narrowing
+    // rests on, checked where it would actually bite.
+    for (const recipe of device.recipes) {
+      if (recipe.voice !== 'drum-track') continue
+      for (const entry of recipe.articulation ?? []) {
+        expect(Object.keys(entry.set), `${recipe.id}`).not.toContain('gate')
+      }
+    }
+  })
+
+  /**
+   * The other half, and the reason the two pools were read separately: `riser` and `sweep` are
+   * false on the drums and true here, so a blanket answer would have been wrong whichever way it
+   * went.
+   */
+  it('routes the synth gestures to a destination the manual prints', () => {
+    for (const id of ['ct-riser-bright', 'ct-sweep-soft']) {
+      const recipe = device.recipes.find((r) => r.id === id)
+      expect(recipe, id).toBeDefined()
+      expect(synthRoles.has(recipe!.role), `${id} is on the synth pool`).toBe(true)
+
+      const params = recipe!.params as AuthoredParam[]
+      const dest = params.find((x) => x.name === 'MOD MATRIX 1 DESTINATION')
+      const src = params.find((x) => x.name === 'MOD MATRIX 1 SOURCE 1')
+      // #332: an LFO with no destination is an instruction nobody can carry out. Both halves,
+      // because a destination with no source is the same hole from the other side.
+      expect(dest, `${id} sets an LFO with no destination`).toBeDefined()
+      expect(src, `${id} sets a destination with no source`).toBeDefined()
+      expect(dest?.kind === 'enum' ? dest.value : undefined).toBe('filter frequency')
+      expect(src?.kind === 'enum' ? src.value : undefined).toMatch(/^LFO 1/)
+      // And the value is in the set the page prints, which is what makes it a reading.
+      if (dest?.kind === 'enum') expect(dest.options.values).toContain(dest.value)
+      if (src?.kind === 'enum') expect(src.options.values).toContain(src.value)
+
+      // One pass, not a cycle: both are `ONE SHOT`, which is what separates a gesture from a
+      // wobble on this engine (Programmer's Reference p.4).
+      const once = params.find((x) => x.name === 'LFO 1 ONE SHOT')
+      expect(once?.kind === 'enum' ? once.value : undefined, id).toBe('ON')
+    }
+  })
+
+  /**
+   * §4.2/#108, and the reason the sweep articulates nothing while the riser ties a note: neither
+   * direction asking for `sweep` authors a step variant for it, so there is no slot to address.
+   */
+  it('articulates the sweep with nothing, because no direction gives it a slot', () => {
+    const sweepRecipe = device.recipes.find((r) => r.id === 'ct-sweep-soft')
+    expect(sweepRecipe?.articulation).toBeUndefined()
+    const reach = reachableSlots(sweepRecipe!, TEMPLATES)
+    expect(reach.requested, 'nothing asks for sweep, so the absence proves nothing').toBe(true)
+    expect(reach.slots).toEqual([])
+
+    // The riser is the same case and gets the same answer, which is worth pinning because it is
+    // the one that looks like it should have a slot: it is an event *at* a change, and the
+    // obvious articulation is a tie on the note that starts the pass. No direction authors a
+    // variant for `riser` either, so that tie lives in `routing` instead.
+    const riser = device.recipes.find((r) => r.id === 'ct-riser-bright')
+    expect(reachableSlots(riser!, TEMPLATES).slots).toEqual([])
+    expect(riser?.articulation).toBeUndefined()
+    expect(riser?.routing ?? '').toContain('gate')
+
+    // `impact` is the control that stops this passing on a manifest that simply articulates
+    // nothing: it is transitional too, it does have reachable slots, and it uses them.
+    const impact = device.recipes.find((r) => r.id === 'ct-impact-hard')
+    expect(reachableSlots(impact!, TEMPLATES).slots.length).toBeGreaterThan(0)
+    expect(impact?.articulation ?? []).not.toHaveLength(0)
+  })
+
+  /**
+   * §3.5. Two directions ask for `vox-chop` and they ask for opposite characters, which is the
+   * one distance §3.5 refuses to substitute across — so this is the role on this box that needs
+   * two recipes, and `ghost-perc` is the one that needs one however many directions ask.
+   */
+  it('authors two vox-chops because the requests are opposites, and one ghost-perc because they are not', () => {
+    const chops = device.recipes.filter((r) => r.role === 'vox-chop')
+    expect(chops.map((r) => r.character).sort()).toEqual(['clean', 'dirty'])
+
+    const ghosts = device.recipes.filter((r) => r.role === 'ghost-perc')
+    expect(ghosts.map((r) => r.character)).toEqual(['soft'])
+    // Six directions ask, and the one recipe is inside §3.5's radius for every one of them.
+    const drum = expand(device).find((a) => a.poolId === 'drum-track')
+    expect(drum, 'no drum assignable').toBeDefined()
+    const asks = TEMPLATES.flatMap((t) => t.roles.filter((r) => r.role === 'ghost-perc'))
+    expect(asks.length).toBeGreaterThan(5)
+    for (const request of asks) {
+      const chosen = resolveRecipe(device, drum!, 'ghost-perc', request.character)
+      expect(chosen.outcome, `${request.id} ${request.character}`).not.toBe('unvoiced')
+      if (chosen.outcome === 'unvoiced') continue
+      expect(chosen.recipe.id, `${request.id} ${request.character}`).toBe('ct-ghost-perc-soft')
+    }
+    // And the two characters it stands in for are the ones §3.5 allows, not opposites — the
+    // vox-chop pair above is what an opposite looks like.
+    expect([...new Set(asks.map((r) => r.character))].sort()).toEqual(['clean', 'dark', 'soft'])
+  })
+
+  /**
+   * **The measurement #345 is actually about**, and the one the default allocation cannot show:
+   * a six-assignable box runs out of tracks long before the transitional parts, so a sweep over
+   * `assignments` would report almost nothing placed and prove nothing either way.
+   *
+   * `options` is computed against a ctx with no placement applied, so it answers the question the
+   * control asks — which boxes are worth offering — independently of what the resolver chose.
+   * Every one of the seven answered with #345's own opening sentence before this change.
+   */
+  it('offers this box for all seven, where it used to give a reason instead', () => {
+    const wanted: readonly [string, Role][] = [
+      ['industrial-techno', 'impact'],
+      ['industrial-techno', 'riser'],
+      ['industrial-techno', 'noise'],
+      ['ambient-dub', 'sweep'],
+      ['ambient-dub', 'ride'],
+      ['hip-hop', 'vox-chop'],
+      ['hip-hop', 'ghost-perc'],
+    ]
+    let checked = 0
+    for (const [templateId, role] of wanted) {
+      const template = TEMPLATES.find((t) => t.id === templateId)
+      expect(template, templateId).toBeDefined()
+      const request = template!.roles.find((r) => r.role === role)
+      expect(request, `${templateId} asks for ${role}`).toBeDefined()
+
+      const result = resolve({ devices: [device], template: template!, mood: moodState(), seed: 1 })
+      const row = result.options.find((o) => o.requestId === request!.id)
+      const offer = row?.options.find((o) => o.deviceId === device.id)
+      expect(offer, `${templateId}/${role} has no row for this box`).toBeDefined()
+      expect(offer?.canServe, `${templateId}/${role}: ${offer?.why ?? ''}`).toBe(true)
+      checked += 1
+    }
+    expect(checked).toBe(7)
+  })
+})
+
 describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   const SEEDS = [1, 2, 3, 4, 5, 6]
 
@@ -672,11 +847,13 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * re-read the head note rather than a failure. What must not move is the relationship — no part
    * ever gets a `trigger`, because neither pool has a note to give one.
    */
-  it('leaves 180 grid parts blank, and pins how many there are', () => {
+  it('leaves 204 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(204)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(180)
+    // 180 until #345 authored the six roles the drum pool declared and no recipe served, which
+    // placed 24 parts that were being dropped.
+    expect(grid.length).toBe(228)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(204)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -703,12 +880,15 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     ).toEqual([
       ['kick', 48],
       ['closed-hat', 42],
+      ['ghost-perc', 24],
       ['clap', 18],
-      ['rim', 18],
       ['snare', 18],
       ['metallic', 12],
-      ['open-hat', 12],
+      ['rim', 12],
       ['tom', 12],
+      ['open-hat', 6],
+      ['ride', 6],
+      ['vox-chop', 6],
     ])
   })
 
@@ -721,7 +901,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(noPattern).toEqual([])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
-    // classify — which is what would make the 180 above an undercount rather than a measurement.
+    // classify — which is what would make the 204 above an undercount rather than a measurement.
     let assignments = 0
     for (const template of TEMPLATES) {
       for (const seed of SEEDS) {
