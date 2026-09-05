@@ -47,8 +47,21 @@ import { TEMPLATES, industrialTechno } from '../lib/templates/index'
  *
  * **And the scale is not one scale.** The three bipolar controls were the last read, and none is
  * a percentage: both `FILTER · ENVELOPE AMOUNT` knobs are signed `-100…100`, and `VCA · PAN` is a
- * side and a distance, `100L` through `0` to `100R`, authored as a magnitude from centre. So the
- * split is 34 percent, 2 signed, 1 sided, 2 Hz, and 2 that are no kind of number at all.
+ * side and a distance, `100L` through `0` to `100R`, authored as a magnitude from centre.
+ *
+ * **#381 split the one group this file had spent three rounds calling homogeneous.** The eight
+ * ENVELOPE faders are not eight of anything: `ATTACK`, `DECAY` and `RELEASE` read `0-10 s` on both
+ * envelopes and `SUSTAIN` reads a percentage on both, so six are times and two are levels. What
+ * #349 read as corroboration — p.19's *"around 25% (or the second line from the bottom)"* against
+ * a panel drawing with five printed lines — is a sentence about **fader travel**, and the screen
+ * shows the value that position produces. Agreement was the trap: `25` is a legitimate percentage
+ * of travel and a nonsense count of seconds, and nothing on the page tells them apart.
+ *
+ * So the split is 28 percent, 6 seconds, 2 signed, 1 sided, 2 Hz, and 2 that are no kind of number
+ * at all. **Nothing was converted** — `DECAY 25` was a quarter of a fader's travel and turning it
+ * into seconds needs a taper no page prints — so all six time arguments in all eighteen recipes
+ * were re-authored from what the part is doing, and the tests below assert the *shape* of that
+ * (unit, range, granularity, which control is in which group) rather than blessing a number.
  *
  * **The two envelope amounts were read separately**, at the same session at the box, and share a
  * helper because they share a scale rather than because either was carried across from the other.
@@ -72,17 +85,39 @@ import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 /** The claim that was false on a fader and now lives on the device. It must appear on neither. */
 const NO_PRINTED_POSITION = 'no page maps its position to a CC value'
 
-/** The eight faders and the CC each is addressed on — FILTER ENV 79-82, VCA ENV 86-89 (p.122). */
-const FADERS: Readonly<Record<string, number>> = {
+/**
+ * #381. The six envelope **time** stages and the CC each is addressed on (p.122). These read
+ * `0-10 s` on the instrument, on both envelopes.
+ */
+const TIME_FADERS: Readonly<Record<string, number>> = {
   'FILTER ENV · ATTACK': 79,
   'FILTER ENV · DECAY': 80,
-  'FILTER ENV · SUSTAIN': 81,
   'FILTER ENV · RELEASE': 82,
   'VCA ENV · ATTACK': 86,
   'VCA ENV · DECAY': 87,
-  'VCA ENV · SUSTAIN': 88,
   'VCA ENV · RELEASE': 89,
 }
+
+/**
+ * #381. The two envelope **level** stages, which stayed on percent because a sustain is a level.
+ * Kept as a separate map rather than as "the rest of the bank", so that moving a control between
+ * the two groups has to be written down twice.
+ */
+const LEVEL_FADERS: Readonly<Record<string, number>> = {
+  'FILTER ENV · SUSTAIN': 81,
+  'VCA ENV · SUSTAIN': 88,
+}
+
+/** All eight, which is still a group the panel draws even though it is no longer one scale. */
+const FADERS: Readonly<Record<string, number>> = { ...TIME_FADERS, ...LEVEL_FADERS }
+
+/**
+ * The tenth of a second these recipes are authored on. **An authoring granularity, not an
+ * observed display precision** — the reading settled the span and nobody recorded how many
+ * decimals the readout carries. Asserted so the choice is deliberate and uniform, not so it is
+ * cited: no `Cite` anywhere on this device covers it.
+ */
+const SECOND_STEP = 0.1
 
 /**
  * #349 and #346. The observation this manifest rests on, and the first `observed` cite in the
@@ -120,13 +155,20 @@ const numerics = device.recipes.flatMap((recipe) => recipe.params).filter(isNume
 const observedParams = numerics.filter((param) => rangeSource(param) === OBSERVED.source)
 const percentParams = observedParams.filter((param) => param.unit === '%')
 const hzCutoffs = observedParams.filter((param) => param.unit === 'Hz')
+/** #381. The six envelope times, selected on the unit the screen shows rather than by name. */
+const secondParams = observedParams.filter((param) => param.unit === 's')
 /** #346. The two controls that take a division, across all 18 recipes. */
 const divisionParams = device.recipes
   .flatMap((recipe) => recipe.params)
   .filter(isEnum)
   .filter((param) => param.name.startsWith('DELAY · TIME'))
+/** The two SUSTAIN faders, which are the whole of what is left on percent inside the bank. */
 const faderParams = percentParams.filter((param) => param.name in FADERS)
-/** The other 26. Not *the rotary controls*: several are the MIXER and WAVE MIX sliders. */
+/**
+ * The other 27: 26 CC-numbered controls plus `MIXER · OVERLOAD`, which #329 read onto the same
+ * scale and which no CC row names. Not *the rotary controls*: several are the MIXER and WAVE MIX
+ * sliders.
+ */
 const knobParams = percentParams.filter((param) => !(param.name in FADERS))
 /** Both signed controls: `-100…100`, `0` at noon, no unit at all. */
 const signedParams = observedParams.filter((param) => param.name.endsWith('ENVELOPE AMOUNT'))
@@ -142,20 +184,25 @@ const distinct = (params: readonly { name: string }[]) =>
   [...new Set(params.map((param) => param.name))].sort()
 
 describe('the Muse is authored on the scales its screen shows (#349)', () => {
-  it('splits the 41 CC-numbered controls 34 / 2 / 1 / 2 / 2, which is what the reading found', () => {
-    // Counted by distinct control rather than by instance. 34 percent, the two signed envelope
-    // amounts, the sided pan, the two cutoffs in Hz, and the two DELAY TIME knobs that #346 took
-    // off the number line entirely.
+  it('splits the 41 CC-numbered controls 28 / 6 / 2 / 1 / 2 / 2, which is what the readings found', () => {
+    // Counted by distinct control rather than by instance. 28 percent, the six envelope times
+    // #381 took off percent, the two signed envelope amounts, the sided pan, the two cutoffs in
+    // Hz, and the two DELAY TIME knobs that #346 took off the number line entirely.
     //
-    // **35 controls are observed and only 34 of them are CC-numbered.** `MIXER · OVERLOAD` was
-    // read at #329 and no CC row names it, so it is on the same scale by the same citation and
-    // outside this count. `observedParams` selects on the citation, which is why it appears here
-    // at all — and keeping the two numbers apart is the point of the test rather than a nuisance.
-    expect(distinct(percentParams)).toHaveLength(35)
-    expect(distinct(percentParams.filter((param) => param.midiCc !== undefined))).toHaveLength(34)
+    // **29 controls are observed on percent and only 28 of them are CC-numbered.**
+    // `MIXER · OVERLOAD` was read at #329 and no CC row names it, so it is on the same scale by
+    // the same citation and outside this count. `observedParams` selects on the citation, which
+    // is why it appears here at all — and keeping the two numbers apart is the point of the test
+    // rather than a nuisance.
+    //
+    // The pair was 35 / 34 until #381 moved `ATTACK`, `DECAY` and `RELEASE` on both envelopes to
+    // seconds; both numbers dropped by exactly those six and nothing else changed hands.
+    expect(distinct(percentParams)).toHaveLength(29)
+    expect(distinct(percentParams.filter((param) => param.midiCc !== undefined))).toHaveLength(28)
     expect(
       distinct(percentParams.filter((param) => param.midiCc === undefined)),
     ).toEqual(['MIXER · OVERLOAD'])
+    expect(distinct(secondParams)).toEqual(Object.keys(TIME_FADERS).sort())
     expect(distinct(signedParams)).toEqual([
       'FILTER 1 · ENVELOPE AMOUNT',
       'FILTER 2 · ENVELOPE AMOUNT',
@@ -167,18 +214,24 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
     // division knobs still answer to CC 93 and 94, and an `AuthoredEnumParam` has no field to
     // declare it in, so their half of the count comes from the option set instead.
     const withCc = numerics.filter((param) => param.midiCc !== undefined)
-    expect(distinct(withCc)).toHaveLength(34 + 2 + 1 + 2)
+    expect(distinct(withCc)).toHaveLength(28 + 6 + 2 + 1 + 2)
     expect(distinct(withCc).length + distinct(divisionParams).length).toBe(41)
   })
 
   it('cites the observation, with the firmware in the source string', () => {
-    for (const param of [...percentParams, ...hzCutoffs, ...signedParams, ...panParams]) {
+    for (const param of [
+      ...percentParams,
+      ...secondParams,
+      ...hzCutoffs,
+      ...signedParams,
+      ...panParams,
+    ]) {
       expect(param.range.verified, param.name).toEqual(OBSERVED)
     }
     // §3.1's split, and it now cuts both ways on one device. The range is always a claim somebody
     // checked. The point is taste everywhere except at a bipolar control's rest position, which
     // is the one place the same reading also says what the number is.
-    for (const param of [...percentParams, ...hzCutoffs]) {
+    for (const param of [...percentParams, ...secondParams, ...hzCutoffs]) {
       expect(param.verified, param.name).toBe(false)
     }
   })
@@ -253,11 +306,13 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
     // No `L`/`R` reached a unit anywhere on this device, which is the shape the deleted branch
     // would have produced.
     expect(numerics.filter((param) => param.unit === 'L' || param.unit === 'R')).toEqual([])
-    // And the whole unit vocabulary of this device is three real units and the absence of one.
-    // `L` would have been a fourth entry that is not a unit at all, which is the objection.
+    // And the whole unit vocabulary of this device is four real units and the absence of one —
+    // `s` joined it at #381. `L` would have been a fifth entry that is not a unit at all, which
+    // is the objection.
     expect([...new Set(numerics.map((param) => param.unit))].sort()).toEqual([
       '%',
       'Hz',
+      's',
       'st',
       undefined,
     ])
@@ -337,6 +392,128 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
     }
   })
 
+  /**
+   * #381. The group that used to be eight of one thing, asserted as six of another — and the two
+   * claims kept apart, because only one of them is somebody's reading.
+   *
+   * **`0-10 s` is observed.** Somebody turned each of the six faders on firmware 1.4.0 and read
+   * the limits off the screen, on both envelopes, which is what closed the issue's open question.
+   *
+   * **A tenth of a second is not.** Nobody recorded how many decimals the readout carries or how
+   * finely the fader resolves; the step is the coarsest grid that still separates a 0.2 s stab
+   * tail from a 0.3 s one, and it is a decision about the numbers this folder writes. The test
+   * says the values are uniform and on the grid — it does not say the instrument's display is.
+   */
+  it('gives the six envelope times seconds, the observed span, and a tenth-second grid', () => {
+    // Six controls across all 18 recipes.
+    expect(secondParams).toHaveLength(6 * 18)
+    for (const param of secondParams) {
+      expect(param.range.min, param.name).toBe(0)
+      expect(param.range.max, param.name).toBe(10)
+      expect(param.unit, param.name).toBe('s')
+      expect(param.midiCc, param.name).toBe(TIME_FADERS[param.name])
+      // The authoring granularity, declared so mood lands a moved value back on it. Without a
+      // `step` the resolver's grid defaults to 1 and a 0.3 s tail rounds to nothing.
+      expect(param.step, param.name).toBe(SECOND_STEP)
+      expect(param.value, param.name).toBeGreaterThanOrEqual(0)
+      expect(param.value, param.name).toBeLessThanOrEqual(10)
+      // On the grid, checked in tenths rather than with a float remainder.
+      expect(Math.round(param.value * 10) / 10, param.name).toBe(param.value)
+    }
+    // Not vacuous: the span is actually used, from an instant attack to a swell measured in
+    // seconds. A conversion of the old percentages would have produced a much narrower band.
+    const values = secondParams.map((param) => param.value)
+    expect(Math.min(...values)).toBe(0)
+    expect(Math.max(...values)).toBeGreaterThanOrEqual(5)
+    expect(new Set(values).size).toBeGreaterThan(10)
+  })
+
+  /**
+   * The re-authoring, seen from the parts rather than from the parameter. Every assertion here is
+   * a musical claim about the recipe's own title — which is where these numbers came from — and
+   * none of them holds under any monotone map of the old percentages, because the old values had
+   * a stab decay at a quarter of a fader and no unit at all.
+   */
+  it('gives each part a time its own title asks for', () => {
+    const time = (id: string, name: string) =>
+      device.recipes
+        .find((recipe) => recipe.id === id)
+        ?.params.filter(isNumeric)
+        .find((param) => param.name === name)?.value
+
+    // "Unison stack on a fast envelope" and "both envelopes are over before the key is": every
+    // stage under a third of a second, and no attack at all.
+    expect(time('muse-stab-hard', 'VCA ENV · ATTACK')).toBe(0)
+    expect(time('muse-stab-hard', 'VCA ENV · DECAY')).toBeLessThanOrEqual(0.3)
+    expect(time('muse-stab-hard', 'VCA ENV · RELEASE')).toBeLessThanOrEqual(0.3)
+
+    // "Nothing arriving at once" is a swell, so the attack is seconds rather than an instant —
+    // and long enough that a reader would notice if it were not.
+    expect(time('muse-pad-soft', 'VCA ENV · ATTACK')).toBeGreaterThanOrEqual(2)
+
+    // "Nothing on the tail": the shortest release on the box, and nothing else ties it.
+    const releases = secondParams.filter((param) => param.name.endsWith('· RELEASE'))
+    const shortest = Math.min(...releases.map((param) => param.value))
+    expect(time('muse-arp-clean', 'VCA ENV · RELEASE')).toBe(shortest)
+    expect(releases.filter((param) => param.value === shortest)).toHaveLength(1)
+
+    // "Snapping the top off each note" is a filter decay short enough to be a snap, on a part
+    // whose neighbours in the same role are not snaps.
+    expect(time('muse-bass-mid-hard', 'FILTER ENV · DECAY')).toBeLessThanOrEqual(0.3)
+    expect(time('muse-bass-mid-dark', 'FILTER ENV · DECAY')).toBeGreaterThan(0.5)
+
+    // The other end of the box: a texture is still arriving when a stab is finished.
+    expect(time('muse-texture-soft', 'VCA ENV · ATTACK')).toBeGreaterThanOrEqual(5)
+    expect(time('muse-texture-soft', 'VCA ENV · RELEASE')).toBeGreaterThanOrEqual(5)
+  })
+
+  /**
+   * #381's other half, and the one that keeps the change from being a sweep. `SUSTAIN` is a
+   * **level**, so it did not move, and none of its eighteen values changed either.
+   */
+  it('leaves both SUSTAIN faders on percent, with every authored level untouched', () => {
+    const sustains = percentParams.filter((param) => param.name.endsWith('· SUSTAIN'))
+    expect(distinct(sustains)).toEqual(Object.keys(LEVEL_FADERS).sort())
+    expect(sustains).toHaveLength(2 * 18)
+    for (const param of sustains) {
+      expect(param.unit, param.name).toBe('%')
+      expect(param.range.max, param.name).toBe(100)
+      expect(param.midiCc, param.name).toBe(LEVEL_FADERS[param.name])
+      // No time was ever written into a level: a sustain stays on the five-step grid the rest of
+      // the percent controls keep.
+      expect(param.value % 5, param.name).toBe(0)
+    }
+    // The values themselves, recipe by recipe, in file order — pinned because "unchanged" is the
+    // claim, and a claim about what did *not* move is only worth making as a list.
+    const byRecipe = device.recipes.map((recipe) => {
+      const values = recipe.params
+        .filter(isNumeric)
+        .filter((param) => param.name.endsWith('· SUSTAIN'))
+        .map((param) => param.value)
+      return `${recipe.id} ${values.join('/')}`
+    })
+    expect(byRecipe).toEqual([
+      'muse-pad-soft 60/90',
+      'muse-pad-dark 50/90',
+      'muse-pad-bright 65/90',
+      'muse-stab-hard 0/0',
+      'muse-stab-bright 0/0',
+      'muse-stab-dirty 10/10',
+      'muse-lead-bright 55/90',
+      'muse-lead-hard 25/90',
+      'muse-lead-dirty 35/85',
+      'muse-bass-mid-hard 0/80',
+      'muse-bass-mid-dark 30/85',
+      'muse-bass-mid-dirty 15/80',
+      'muse-sub-dark 50/95',
+      'muse-sub-clean 50/95',
+      'muse-texture-soft 60/90',
+      'muse-texture-dirty 50/85',
+      'muse-arp-clean 0/0',
+      'muse-arp-bright 5/5',
+    ])
+  })
+
   it('gives both cutoffs the full audio range in Hz, and a value inside it', () => {
     for (const param of hzCutoffs) {
       expect(param.range.min, param.name).toBe(20)
@@ -377,7 +554,7 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
   /**
    * **A legibility rule, and only that.** §8's reader is at the machine with their hands on a knob
    * and their eyes on the screen: *set it to 75* survives that, and `74` is a number they chase
-   * past and settle near. So every percent point is a multiple of five.
+   * past and settle near. So every point on a **hundred-wide** scale is a multiple of five.
    *
    * **It is not evidence about where the values came from**, and an earlier version of this test
    * claimed it was — that a conversion could not land on the grid. A conversion rounded onto the
@@ -386,6 +563,14 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
    * recipe's title and the control's note; that is a property of the authoring and no assertion
    * can stand in for it. The tests that come closest are the anchors above, where a musical reading
    * and an arithmetic one give different answers and the manual says which is right.
+   *
+   * **#381 scoped the rule rather than deleting it.** Five was never a number, it was *a
+   * twentieth of the control*, and that argument does not survive being carried onto a scale
+   * ten units wide: five seconds is most of an envelope, and rounding a 0.3 s stab tail onto a
+   * multiple of five deletes it. The six envelope times answer the same legibility question with
+   * a tenth of a second, asserted in their own test above. So the grid still covers every control
+   * it was ever an argument about, and the two Hz cutoffs stay outside it for the reason they
+   * always did.
    */
   it('puts every observed point on a five-step grid, so a reader can land on it', () => {
     // Not only the percent ones: the rescaling took both signed controls off percent and
@@ -396,6 +581,13 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
     expect(offGrid.map((param) => `${param.name}=${param.value}`)).toEqual([])
     // Not vacuous: the grid is used across its width rather than being three round numbers.
     expect(new Set(percentParams.map((param) => param.value)).size).toBeGreaterThan(12)
+    // And the exemption is enumerated rather than filtered, so a control that quietly acquires
+    // seconds does not inherit it. `TIMBRE A VOICE COUNT` is the one that was always outside the
+    // grid: it is a count of voices on an eight-wide range, where five is not a twentieth of
+    // anything — see `voice` in the manifest.
+    expect(distinct(observedParams.filter((param) => param.value % 5 !== 0))).toEqual(
+      [...Object.keys(TIME_FADERS), 'TIMBRE A VOICE COUNT'].sort(),
+    )
   })
 
   /**
@@ -487,14 +679,19 @@ describe('the Muse is authored on the scales its screen shows (#349)', () => {
 })
 
 describe('Muse envelope faders carry no false negative claim (#325)', () => {
-  it('covers all eight faders and the other 27 controls, so neither side is vacuous', () => {
-    expect(distinct(faderParams)).toEqual(Object.keys(FADERS).sort())
-    // 27 since #329 put `MIXER · OVERLOAD` on the observed percent scale with the rest.
+  it('covers the whole bank and the other 27 controls, so neither side is vacuous', () => {
+    // The bank is eight faders and is now two groups. Both are named, so a control that moved
+    // between them fails here as well as in the split test above.
+    expect(distinct([...secondParams, ...faderParams])).toEqual(Object.keys(FADERS).sort())
+    expect(distinct(secondParams)).toEqual(Object.keys(TIME_FADERS).sort())
+    expect(distinct(faderParams)).toEqual(Object.keys(LEVEL_FADERS).sort())
+    // 27 since #329 put `MIXER · OVERLOAD` on the observed percent scale with the rest. The
+    // number did not move at #381: what left percent came out of the fader bank, not out of here.
     expect(distinct(knobParams)).toHaveLength(27)
   })
 
   it('authors the fader’s CC number and no prose at all', () => {
-    for (const param of faderParams) {
+    for (const param of [...secondParams, ...faderParams]) {
       expect(param.note).toBeUndefined()
       // #324. The number is authored; `resolveParam` writes the sentence. Since #349 that
       // sentence names the controller and no value, but the field is what identifies the row.
@@ -505,21 +702,37 @@ describe('Muse envelope faders carry no false negative claim (#325)', () => {
   it('is still the eight ENVELOPE faders and nothing else, with the notice gone (#349)', () => {
     // This used to check that the device-level notice named these eight as its exception. The
     // notice went at #349 — see `test/control-positions.test.ts` — so what is left to hold is the
-    // group itself: `fader` and `cc` build the same parameter, and only this file says which
-    // controls are in which. p.19's reading now lives in `fader`'s doc comment.
+    // group itself, which #381 split in two without adding to it or taking anything away.
     expect(device.controlPositions).toBeUndefined()
-    expect(distinct(faderParams).every((name) => name.includes('ENV'))).toBe(true)
-    expect(distinct(faderParams)).toHaveLength(8)
+    const bank = distinct([...secondParams, ...faderParams])
+    expect(bank.every((name) => name.includes('ENV'))).toBe(true)
+    expect(bank).toHaveLength(8)
+    expect(distinct(secondParams)).toHaveLength(6)
+    expect(distinct(faderParams)).toHaveLength(2)
   })
 
-  it('puts the faders in p.19’s own unit, which is what #349 finally agreed with', () => {
-    // The reason this group existed was that p.19 prints a percentage for these eight and the
-    // manifest was authored on 0-127, so the two could not be stated together. Both are percent
-    // now, and *nothing converts between them* — there is nothing left to convert.
+  /**
+   * #381. **The claim this test used to make, corrected.** It said the eight faders were in
+   * *p.19's own unit* and that there was therefore nothing left to convert. The first half was
+   * wrong for six of them and the second half is the reason the repair is not arithmetic: p.19
+   * is about fader travel, so there was never a conversion available, only a re-authoring.
+   *
+   * What is left to pin is that no page's prose about a **position** ever reaches a value line.
+   * That is true of all eight, whichever unit they are on.
+   */
+  it('keeps p.19’s travel percentages off every value line in the bank', () => {
+    for (const param of [...secondParams, ...faderParams]) {
+      expect(param.note ?? '', param.name).not.toMatch(/line from the bottom/)
+      expect(param.note ?? '', param.name).not.toMatch(/travel/)
+    }
+    // And the two groups differ in exactly the way the reading found: a unit and a span.
+    for (const param of secondParams) {
+      expect(param.unit, param.name).toBe('s')
+      expect(param.range.max, param.name).toBe(10)
+    }
     for (const param of faderParams) {
-      expect(param.unit).toBe('%')
-      expect(param.range.max).toBe(100)
-      expect(param.note ?? '').not.toMatch(/line from the bottom/)
+      expect(param.unit, param.name).toBe('%')
+      expect(param.range.max, param.name).toBe(100)
     }
   })
 
@@ -538,14 +751,50 @@ describe('Muse envelope faders carry no false negative claim (#325)', () => {
     }
   })
 
-  it('keeps the two mood-carrying faders moving, re-derived as a share of the travel (#349)', () => {
-    const moods = faderParams
-      .filter((param) => param.mood !== undefined)
-      .map((param) => `${param.name}:${param.mood?.map((m) => `${m.axis}${m.amount}`).join()}`)
-    expect([...new Set(moods)].sort()).toEqual([
-      'VCA ENV · DECAY:density-15',
-      'VCA ENV · RELEASE:space20',
-    ])
+  /**
+   * #381. The two mood-carrying faders are both times now, and their offsets are shares of the
+   * point rather than constants — the argument the Hz cutoffs already make, in the one other
+   * place on this box where a fixed distance stops being a musical statement. See
+   * `envelopeShare` in the manifest.
+   */
+  it('keeps the two mood-carrying faders moving, re-derived as a share of the time (#381)', () => {
+    // No level fader declares a mood, so the whole of the bank's mood is on the time side.
+    expect(faderParams.filter((param) => param.mood !== undefined)).toEqual([])
+    const carrying = secondParams.filter((param) => param.mood !== undefined)
+    expect(distinct(carrying)).toEqual(['VCA ENV · DECAY', 'VCA ENV · RELEASE'])
+    expect(carrying).toHaveLength(2 * 18)
+    for (const param of carrying) {
+      const offsets = param.mood ?? []
+      expect(offsets, param.name).toHaveLength(1)
+      const offset = offsets[0]
+      expect(offset?.axis, param.name).toBe(
+        param.name.endsWith('DECAY') ? 'density' : 'space',
+      )
+      // A share, not a constant: about a third of the time it moves, and always at least the
+      // one tenth that is the smallest move this control has.
+      const magnitude = Math.abs(offset?.amount ?? 0)
+      expect(magnitude, `${param.name}=${param.value}`).toBe(
+        Math.max(1, Math.round(param.value * 3)) / 10,
+      )
+      expect(magnitude, param.name).toBeGreaterThanOrEqual(SECOND_STEP)
+      // Density shortens the decay and space lengthens the release, which is the direction each
+      // axis had before the unit changed.
+      expect(Math.sign(offset?.amount ?? 0), param.name).toBe(
+        param.name.endsWith('DECAY') ? -1 : 1,
+      )
+      // §6.1 flips the sign below centre, so both ends have to stay inside the range.
+      expect(param.value + (offset?.amount ?? 0), param.name).toBeLessThanOrEqual(param.range.max)
+      expect(param.value - (offset?.amount ?? 0), param.name).toBeLessThanOrEqual(param.range.max)
+      expect(param.value + (offset?.amount ?? 0), param.name).toBeGreaterThanOrEqual(
+        param.range.min,
+      )
+      expect(param.value - (offset?.amount ?? 0), param.name).toBeGreaterThanOrEqual(
+        param.range.min,
+      )
+    }
+    // Not one number repeated: the whole point of a share is that it differs per part.
+    const amounts = new Set(carrying.map((param) => (param.mood ?? [])[0]?.amount))
+    expect(amounts.size).toBeGreaterThan(5)
   })
 })
 
@@ -564,17 +813,35 @@ describe('mood on the Muse after the re-scaling (§6/#349)', () => {
     (param.mood ?? []).map((offset) => `${param.name}:${offset.axis}${offset.amount}`),
   )
 
-  it('declares exactly the five percent offsets and the arpeggiator’s swing', () => {
+  it('declares exactly the three percent offsets and the arpeggiator’s swing', () => {
     const percentDeclared = [...percentParams, ...numerics.filter((p) => p.name === 'ARP · SWING')]
       .flatMap((param) => (param.mood ?? []).map((o) => `${param.name}:${o.axis}${o.amount}`))
+    // Two entries left this list at #381 — `VCA ENV · DECAY` and `VCA ENV · RELEASE` are seconds
+    // now, and their offsets are shares of the point rather than constants, so they are asserted
+    // where the shape can be checked rather than as a string. Nothing else moved.
     expect([...new Set(percentDeclared)].sort()).toEqual([
       'ARP · SWING:swing18',
       'DELAY · MIX:space25',
       'FM AMOUNT:grit20',
       'MIXER · RING MOD:grit25',
-      'VCA ENV · DECAY:density-15',
-      'VCA ENV · RELEASE:space20',
     ])
+  })
+
+  /**
+   * #381. **Every axis this device declares, and where.** Stated once and in one place, so that a
+   * mood moving between scales cannot leave both lists still passing.
+   */
+  it('declares each axis on the controls that carry it and nowhere else', () => {
+    const by = (axis: string) =>
+      distinct(numerics.filter((param) => (param.mood ?? []).some((o) => o.axis === axis)))
+    expect(by('density')).toEqual(['VCA ENV · DECAY'])
+    expect(by('space')).toEqual(['DELAY · MIX', 'VCA ENV · RELEASE'])
+    expect(by('grit')).toEqual(['FM AMOUNT', 'MIXER · RING MOD'])
+    expect(by('swing')).toEqual(['ARP · SWING'])
+    expect(by('darkness')).toEqual(['FILTER 1 · CUTOFF', 'FILTER 2 · CUTOFF'])
+    // And the whole of it, so an axis added anywhere shows up here.
+    expect([...new Set(declared.map((entry) => entry.split(':')[1]?.replace(/-?[\d.]+$/, '')))].sort())
+      .toEqual(['darkness', 'density', 'grit', 'space', 'swing'])
   })
 
   it('moves both cutoffs one octave down at full darkness, at every cutoff', () => {

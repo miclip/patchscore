@@ -111,8 +111,9 @@ import { MUSE_PANEL } from "./panel";
  * one scale:
  *
  * ```
- * percent    34   every oscillator, resonance, envelope stage, level, detune, mixer and
+ * percent    28   every oscillator, resonance, envelope SUSTAIN, level, detune, mixer and
  *                 delay macro control
+ * seconds     6   ATTACK / DECAY / RELEASE on both envelopes, 0…10 s — #381
  * signed      2   both FILTER · ENVELOPE AMOUNT knobs, -100…100 with 0 at noon
  * side        1   VCA · PAN, which reads 100L through 0 to 100R
  * Hz          2   FILTER 1 · CUTOFF, FILTER 2 · CUTOFF
@@ -124,6 +125,11 @@ import { MUSE_PANEL } from "./panel";
  * with a real quantity behind it shows a unit — died on `MOD OSC · FREQUENCY`, which is a
  * frequency and reads in percent. See `OBSERVED` for what the finding covers and the one control
  * in it that is inferred.
+ *
+ * **The seconds row came third and it split a group this file had called homogeneous** (#381).
+ * Six of the eight ENVELOPE faders read in seconds and the two `SUSTAIN` faders read in percent,
+ * because a sustain is a level and the other three stages are times. See `ENVELOPE_SECONDS` for
+ * why the two agreeing scales #349 was so pleased with were never agreeing about the same thing.
  *
  * **All five families are authored here on the scale the screen shows**, cited `observed` —
  * *"somebody who turned the knob and read the limits, with the firmware version in the source
@@ -319,21 +325,29 @@ function cite(page: number): Cite {
  * settled every one of the 41 controls Appendix A numbers**, at firmware 1.4.0:
  *
  * ```
- * percent    34   every oscillator, resonance, envelope stage, level, detune, mixer and
+ * percent    28   every oscillator, resonance, envelope SUSTAIN, level, detune, mixer and
  *                 delay macro control
+ * seconds     6   ATTACK / DECAY / RELEASE on both envelopes, 0…10 s
  * signed      2   both FILTER · ENVELOPE AMOUNT knobs, -100…100 with 0 at noon
  * side        1   VCA · PAN, which reads 100L through 0 to 100R
  * Hz          2   FILTER 1 · CUTOFF, FILTER 2 · CUTOFF
  * divisions   2   DELAY · TIME - L / R, under the CLOCK SYNC every recipe engages
  * ```
  *
- * **The last row came second, and it is #346 rather than #349.** That pass read the other 39 and
+ * **The delay row came second, and it is #346 rather than #349.** That pass read the other 39 and
  * left the delay's two TIME knobs alone: they show a division rather than a number, so there are
  * no limits to note — the reading is the list of what the knob steps through, which means
  * stepping it. #346 stepped it. See `DELAY_DIVISIONS` for what that covers and where it stops.
  *
- * **The two readings share this citation rather than splitting into two.** Same instrument, same
- * firmware, same screen; what a `Cite` names is the evidence, and splitting it would produce two
+ * **The seconds row came third and is #381**, and unlike the other two it *corrects* the pass
+ * before it rather than extending it. #349 read these six as percent and had two pages agreeing
+ * with it; both readings of those pages were right and the inference from them was not. The
+ * envelope faders were re-read at the box, one screen at a time, and `ATTACK`, `DECAY` and
+ * `RELEASE` show `0-10 s` on both envelopes while `SUSTAIN` shows a percentage on both. See
+ * `ENVELOPE_SECONDS`.
+ *
+ * **The three readings share this citation rather than splitting into three.** Same instrument,
+ * same firmware, same screen; what a `Cite` names is the evidence, and splitting it would produce
  * sources differing only in which evening somebody stood at the box.
  *
  * **It is a finding rather than a sample, and it was taken as one.** It ran until it had an answer
@@ -363,8 +377,65 @@ function cite(page: number): Cite {
  */
 const OBSERVED: Cite = { kind: "observed", source: "Muse, firmware 1.4.0" };
 
-/** `0-100 %`, what the screen shows for 34 of the 41 controls Appendix A numbers (#349). */
+/** `0-100 %`, what the screen shows for 28 of the 41 controls Appendix A numbers (#349, #381). */
 const PERCENT: NumericRange = { min: 0, max: 100, verified: OBSERVED };
+
+/**
+ * `0-10 s`, the six envelope **time** stages — `ATTACK`, `DECAY` and `RELEASE` on both the
+ * FILTER ENVELOPE and the VCA ENVELOPE (#381). `SUSTAIN` is not among them: it is a level, it
+ * stays on `PERCENT`, and on both envelopes the screen agrees.
+ *
+ * ## Why #349 authored all eight as percent, which is the part worth keeping
+ *
+ * This file used to call the eight ENVELOPE faders *"the one group on this panel with two
+ * agreeing scales"*, and it argued that from two pages, both checked against the rendered PDF
+ * rather than a text dump:
+ *
+ *  - **The panel prints a scale.** PDF p.38, the ENVELOPES module drawing: each bank of four
+ *    vertical faders is crossed by five horizontal lines — bottom, three between, top, so four
+ *    equal intervals to count along. The rotary controls drawn in the same figure (CUTOFF, VCA
+ *    LEVEL, PAN, FEEDBACK, MIX) carry at most an unnumbered tick arc, and on PAN an `L 0 R`
+ *    centre mark; none of that names a value.
+ *  - **And a page maps a position to a value.** Printed p.19: *"the ATTACK, DECAY, SUSTAIN, and
+ *    RELEASE sliders of the FILTER ENVELOPE all set to around 25% (or the second line from the
+ *    bottom)"*. Five lines, four intervals, so the second from the bottom is 25%.
+ *
+ * **Both readings are correct and the inference from them is not.** p.19's percentages describe
+ * **fader travel, not parameter value**. *"25% (or the second line from the bottom)"* is a
+ * sentence about where to put your finger, and the parenthesis is what gives it away: it glosses
+ * a position, not a quantity. The screen shows the value that position produces, and for three of
+ * these four stages that value is a time.
+ *
+ * So this is `CLAUDE.md`'s standing trap wearing a new coat. The rule is that a cited range can
+ * still be the wrong range where a manual prints more than one scale for a control. Here the
+ * manual prints a scale for the **control** and the instrument prints a scale for the
+ * **parameter**, and #349 read the first as evidence about the second *because they agreed on a
+ * number*. Agreement was the trap: `25` is a legitimate percentage of travel and a nonsense count
+ * of seconds, and nothing on the page distinguishes them. p.19 still says what it always said,
+ * and it is still true — it is a fader-position instruction, and the pages `fader` used to quote
+ * are quoted above so that nobody re-derives the same conclusion from them a third time.
+ *
+ * **Nothing was converted, because nothing could be.** `DECAY 25` meant a quarter of the fader's
+ * travel; turning that into seconds needs the taper, envelope times are rarely linear, and no page
+ * gives one. So all six time arguments in all eighteen recipes were re-authored from what the part
+ * is doing — a snappy closed pluck is a number somebody picks, not one anybody computes — and the
+ * old percentages were used for nothing but keeping the *ordering* within each role sensible.
+ *
+ * ## The granularity is an authoring assumption and says nothing about the display
+ *
+ * `step` is `0.1` here. **That is a choice about the numbers this folder writes, not a claim about
+ * what the instrument's screen shows.** The reading settled the *span* — `0-10 s` on all six — and
+ * nobody recorded how many decimal places the readout carries or how finely the fader resolves.
+ * A tenth of a second is the coarsest unit that still separates a 0.2 s stab tail from a 0.3 s
+ * one, so it is what these recipes are authored on and what mood rounds a moved value back onto.
+ * If somebody reads the display precision off the box and it is finer or coarser than this, the
+ * step changes and no citation moves, because none was ever made.
+ *
+ * Both envelopes were read (#381's comment closes the issue's open question): `FILTER ENVELOPE`
+ * and `VCA ENVELOPE` are the same shape, so the split is six time faders to two level faders and
+ * every time fader on the panel is in here.
+ */
+const ENVELOPE_SECONDS: NumericRange = { min: 0, max: 10, verified: OBSERVED };
 
 /**
  * `20 Hz - 20 kHz`, the two filter cutoffs — the one family here that reads in a real unit rather
@@ -465,36 +536,76 @@ function cc(
 }
 
 /**
- * The eight ENVELOPE faders: FILTER ENVELOPE and VCA ENVELOPE, ATTACK/DECAY/SUSTAIN/RELEASE,
- * CC 79-82 and 86-89. **The one group on this panel with two agreeing scales**, which is why the
- * name survives a change that made it build exactly what `cc` builds.
+ * An envelope **time** stage: `ATTACK`, `DECAY` or `RELEASE`, on either envelope — CC 79, 80, 82
+ * and 86, 87, 89. Six of the eight ENVELOPE faders, on the `0-10 s` their screens show (#381).
  *
- * Two pages, both checked against the rendered PDF rather than a text dump:
+ * **The point is taste and the value is a duration**, so what a number here says is *how long this
+ * stage of this part lasts* — 0.2 s on a stab tail, 6 s on a texture's swell. It is not a position
+ * on the fader and it is not derived from one; see `ENVELOPE_SECONDS` for why no such derivation
+ * exists and what p.19 is actually about.
  *
- *  - **The panel prints a scale.** PDF p.38, the ENVELOPES module drawing: each bank of four
- *    vertical faders is crossed by five horizontal lines — bottom, three between, top, so four
- *    equal intervals to count along. The rotary controls drawn in the same figure (CUTOFF, VCA
- *    LEVEL, PAN, FEEDBACK, MIX) carry at most an unnumbered tick arc, and on PAN an `L 0 R`
- *    centre mark; none of that names a value.
- *  - **And a page maps a position to a value.** Printed p.19: *"the ATTACK, DECAY, SUSTAIN, and
- *    RELEASE sliders of the FILTER ENVELOPE all set to around 25% (or the second line from the
- *    bottom)"*. Five lines, four intervals, so the second from the bottom is 25% — the manual
- *    states the mapping and demonstrates it in one sentence.
- *
- * **p.19 is in percent, and since #349 so is the value.** That is the one place in this manifest
- * where the manual and the instrument turn out to have been saying the same thing all along, and
- * it is a check on the re-scaling rather than a coincidence: a fader authored at `25` here is the
- * second printed line from the bottom, in the manual's own words, on the panel in front of the
- * reader. Nothing in this file converts between the two, because there is nothing to convert.
- *
- * **The device-level notice these eight were the exception to is gone** (#349, see the note at
- * `controlPositions` below), and with it the one place the guide printed p.19's mapping. This
- * helper is now where that reading lives: *the second printed line from the bottom is 25%*, from
- * printed p.19 and PDF p.38, true of these eight faders and of nothing else on the panel.
- * `test/moog-muse.test.ts` pins the set at eight, so a control moved between the two helpers is a
- * failing test rather than a quiet change to what the box claims about its own panel.
+ * `step` is `0.1`, which is an authoring granularity rather than an observed display precision.
+ * The same note, with the reasoning, is at `ENVELOPE_SECONDS`.
  */
-function fader(
+function timeFader(
+  name: string,
+  value: number,
+  ccNumber: number,
+  extra: NumExtra = {},
+): AuthoredParam {
+  return {
+    kind: "numeric",
+    name,
+    value,
+    range: ENVELOPE_SECONDS,
+    verified: false,
+    unit: "s",
+    step: 0.1,
+    ...extra,
+    midiCc: ccNumber,
+  };
+}
+
+/**
+ * §6.1. **A mood offset on an envelope time, authored as a share of the time it moves.**
+ *
+ * This is the argument the two filter cutoffs already make, in the one other place on this box
+ * where it applies. An offset is a fixed distance in the parameter's own units, and a fixed
+ * distance is only a musical statement on a scale where equal distances sound equal. On percent
+ * they did — `-15` was *a sixth of the fader*, which reads the same wherever the fader is. On
+ * these six the authored times run from `0` to `6 s`, a span across which a constant is either
+ * the whole envelope or nothing: `-0.3 s` erases a 0.3 s stab tail and is inaudible on a 6 s
+ * texture swell.
+ *
+ * What is fixed on a scale like that is a **ratio**, so the amount is computed from the point:
+ * roughly a third of it, which is a clear move at every length and a fatal one at none.
+ *
+ * **The floor is one tenth**, because a tenth is the granularity these recipes are authored on
+ * (see `ENVELOPE_SECONDS`) and an amount that rounded to `0` would declare an axis that cannot
+ * move the value — a knob listed as a cause of nothing. The shortest release on the box is
+ * `0.1 s` and it is the only value the floor is load-bearing for.
+ *
+ * The rounding happens in tenths and only then divides, so the amount always lands on the same
+ * grid the point is authored on, and IEEE arithmetic gives the same answer on every platform
+ * (invariant 6). `roundToStep` puts the moved value back on that grid at render.
+ */
+function envelopeShare(seconds: number): number {
+  return Math.max(1, Math.round(seconds * 3)) / 10;
+}
+
+/**
+ * An envelope **level** stage: `SUSTAIN`, on either envelope — CC 81 and 88. The two ENVELOPE
+ * faders #381 left alone, and the reason they were left alone is the whole shape of that issue:
+ * a sustain is a level, not a time, and a level is the one stage of an ADSR that a percentage is
+ * the right unit for. Both screens show a percentage and both are authored on it.
+ *
+ * **This is what remains of the group `fader` used to build.** Until #381 all eight went through
+ * one helper because the manifest believed all eight were percent; six of them are seconds, so
+ * the helper split and only the two level faders kept the percent path.
+ * `test/moog-muse.test.ts` pins the split at six and two, so a stage moved between the two
+ * helpers is a failing test rather than a quiet change to what unit the box is claimed to show.
+ */
+function levelFader(
   name: string,
   value: number,
   ccNumber: number,
@@ -1109,16 +1220,17 @@ function filters(
 /**
  * FILTER ENVELOPE (pp.38-41), normalised to FILTER CUTOFF.
  *
- * The manual prints no time unit for any stage — not milliseconds and not seconds. Its only
- * envelope figures are percentages of fader travel: p.19's initialized VCA envelope, *"ATTACK set
- * to 0%, DECAY 25%, SUSTAIN 90%, and RELEASE set around 35%"*, and the FILTER ENVELOPE's four
- * sliders *"all set to around 25% (or the second line from the bottom)"* on the same page.
+ * **The manual prints no time unit for any stage — not milliseconds and not seconds**, and that
+ * sentence is unchanged from before #381 because it was never the problem. What the manual prints
+ * is percentages of *fader travel*: p.19's initialized VCA envelope, *"ATTACK set to 0%, DECAY
+ * 25%, SUSTAIN 90%, and RELEASE set around 35%"*, and the FILTER ENVELOPE's four sliders *"all set
+ * to around 25% (or the second line from the bottom)"* on the same page.
  *
- * That second quotation is a printed position, so these eight controls go through `fader` rather
- * than `cc`. Since #349 both helpers build the same percent parameter, and p.19's quotation is now
- * in the *same unit as the value beside it* — a fader authored at `25` is the second line from the
- * bottom, which is what the page says. That is the one corner of this manifest where the manual
- * and the instrument agree outright.
+ * The instrument prints the unit the manual does not, and it is not one unit for the four:
+ * `ATTACK`, `DECAY` and `RELEASE` read `0-10 s`, `SUSTAIN` reads a percentage. So `attack`,
+ * `decay` and `release` here are **durations in seconds** and `sustain` is a level in percent —
+ * see `ENVELOPE_SECONDS` for how #349 came to author all four the same way and why p.19 is not
+ * evidence against this.
  */
 function filterEnv(
   attack: number,
@@ -1128,10 +1240,10 @@ function filterEnv(
   loop = "OFF",
 ): AuthoredParam[] {
   return [
-    fader("FILTER ENV · ATTACK", attack, 79),
-    fader("FILTER ENV · DECAY", decay, 80),
-    fader("FILTER ENV · SUSTAIN", sustain, 81),
-    fader("FILTER ENV · RELEASE", release, 82),
+    timeFader("FILTER ENV · ATTACK", attack, 79),
+    timeFader("FILTER ENV · DECAY", decay, 80),
+    levelFader("FILTER ENV · SUSTAIN", sustain, 81),
+    timeFader("FILTER ENV · RELEASE", release, 82),
     sw("FILTER ENV · LOOP", loop, OFF_ON, 39, {
       note: "Looping, the envelope runs like an LFO",
     }),
@@ -1150,18 +1262,18 @@ function vcaEnv(
   velocity: string,
 ): AuthoredParam[] {
   return [
-    fader("VCA ENV · ATTACK", attack, 86),
-    // #349, re-derived as travel: a sixth of the fader down, enough to get notes out of each
-    // other's way in a busy bar without turning the part staccato. Down four of the five printed
-    // intervals would be that; this is well inside one of them.
-    fader("VCA ENV · DECAY", decay, 87, {
-      mood: [{ axis: "density", amount: -15 }],
+    timeFader("VCA ENV · ATTACK", attack, 86),
+    // #381, re-derived as a duration: about a third off the decay, enough to get notes out of
+    // each other's way in a busy bar without turning the part staccato. A *share* rather than a
+    // constant, for the reason the cutoffs take one — see `envelopeShare`.
+    timeFader("VCA ENV · DECAY", decay, 87, {
+      mood: [{ axis: "density", amount: -envelopeShare(decay) }],
     }),
-    fader("VCA ENV · SUSTAIN", sustain, 88),
-    // #349, re-derived as travel: a fifth of the fader up, which carries the tail into the delay
-    // rather than ending the note in front of it.
-    fader("VCA ENV · RELEASE", release, 89, {
-      mood: [{ axis: "space", amount: 20 }],
+    levelFader("VCA ENV · SUSTAIN", sustain, 88),
+    // #381, re-derived as a duration: about a third more tail, which carries the note into the
+    // delay rather than ending it in front of it.
+    timeFader("VCA ENV · RELEASE", release, 89, {
+      mood: [{ axis: "space", amount: envelopeShare(release) }],
     }),
     sw("VCA ENV · VELOCITY", velocity, OFF_ON, 39),
   ];
@@ -1494,6 +1606,19 @@ function arp(
  * a converted value rounded onto the grid would sit on it just as neatly. What rules conversion
  * out is that these were chosen from the patch; the grid only makes them dialable.
  *
+ * **The grid is a rule about percentages and it stops at the six envelope times** (#381). Five
+ * percent of a fader's travel is a step a reader can see; five *seconds* is most of the envelope,
+ * and rounding a 0.3 s stab tail onto a multiple of five would delete it. Those six are authored
+ * in tenths of a second instead, which is the same legibility argument answered in the unit the
+ * screen is actually showing — see `ENVELOPE_SECONDS`, which is also where the granularity is
+ * stated as an authoring choice rather than as something anybody read off the display.
+ *
+ * **And they carry no ordering claim over from the percentages they replace.** The old numbers
+ * were positions on a fader; the new ones are durations, chosen from what each part is doing —
+ * a stab is over before the next one, a texture is still arriving. Where the two happen to agree
+ * about which part is longer, that is because the musical reading was the same both times, not
+ * because anything was converted.
+ *
  * Where the manual anchors a position, the anchor is exact: a square wave is `50` on `PULSE WIDTH`
  * (p.19), a self-oscillating ladder is `100` on `RESONANCE` (p.36), and a bipolar control at rest
  * is `0` — both `ENVELOPE AMOUNT` knobs and `VCA · PAN`. Those resting positions are the points
@@ -1525,9 +1650,9 @@ const recipes: Recipe[] = [
       // of the unity gain p.19 puts at the top of the fader.
       ...mixer(65, 0, 65, 0, 0, 0),
       ...filters("STR", "OFF", 1200, 15, 20, "1:2", 1400, 10, 10, "1:2"),
-      ...filterEnv(65, 50, 60, 75),
+      ...filterEnv(1.5, 2, 60, 2.5),
       // "Nothing arriving at once" is the whole patch, and this is where it lives.
-      ...vcaEnv(70, 50, 90, 80, "ON"),
+      ...vcaEnv(2, 2, 90, 3, "ON"),
       ...vca(65, 65),
       ...sharedDelay(),
       ...delayRouting("ON"),
@@ -1556,8 +1681,8 @@ const recipes: Recipe[] = [
       ...mixer(70, 0, 60, 0, 0, 0),
       // Resonance is a peak, and a peak is something above the fundamental. Both low.
       ...filters("SER", "OFF", 500, 10, 10, "1:2", 420, 10, 10, "1:2"),
-      ...filterEnv(70, 60, 50, 80),
-      ...vcaEnv(75, 55, 90, 85, "ON"),
+      ...filterEnv(2, 2.5, 50, 3),
+      ...vcaEnv(2.5, 2.5, 90, 3.5, "ON"),
       ...vca(65, 50),
       ...sharedDelay(),
       ...delayRouting("ON"),
@@ -1588,8 +1713,8 @@ const recipes: Recipe[] = [
       // because sweeping a highpass corner reads as a filter sweep rather than as air. The
       // resonance the title is about is FILTER 2's, at the top.
       ...filters("PAR", "ON", 180, 35, 0, "1:1", 6000, 45, 20, "1:1"),
-      ...filterEnv(55, 60, 65, 70),
-      ...vcaEnv(55, 55, 90, 75, "ON"),
+      ...filterEnv(1.2, 2.5, 65, 2.2),
+      ...vcaEnv(1.5, 2.5, 90, 2.5, "ON"),
       ...vca(65, 70),
       ...sharedDelay(),
       ...delayRouting("ON"),
@@ -1624,8 +1749,8 @@ const recipes: Recipe[] = [
       // the signed scale is over a third of the way up from centre.
       ...filters("SER", "OFF", 300, 55, 70, "1:1", 450, 35, 40, "1:2"),
       // Nothing sustains: both envelopes are over before the key is.
-      ...filterEnv(0, 20, 0, 15),
-      ...vcaEnv(0, 25, 0, 20, "ON"),
+      ...filterEnv(0, 0.2, 0, 0.2),
+      ...vcaEnv(0, 0.3, 0, 0.2, "ON"),
       ...vca(80, 25),
       ...sharedDelay(),
       ...delayRouting("OFF"),
@@ -1653,8 +1778,8 @@ const recipes: Recipe[] = [
       }),
       ...mixer(85, 0, 85, 10, 0, 0),
       ...filters("PAR", "ON", 150, 25, 0, "1:1", 8000, 30, 50, "1:1"),
-      ...filterEnv(0, 30, 0, 20),
-      ...vcaEnv(0, 30, 0, 20, "ON"),
+      ...filterEnv(0, 0.4, 0, 0.3),
+      ...vcaEnv(0, 0.4, 0, 0.2, "ON"),
       ...vca(80, 45),
       ...sharedDelay(),
       ...delayRouting("ON"),
@@ -1683,8 +1808,8 @@ const recipes: Recipe[] = [
       // in the fader bank, above both oscillators rather than beside them.
       ...mixer(70, 85, 70, 25, 15, 75, "HIGH"),
       ...filters("SER", "OFF", 700, 55, 40, "1:2", 800, 40, 20, "1:2"),
-      ...filterEnv(0, 25, 10, 20),
-      ...vcaEnv(0, 30, 10, 25, "ON"),
+      ...filterEnv(0, 0.3, 10, 0.3),
+      ...vcaEnv(0, 0.4, 10, 0.3, "ON"),
       ...vca(75, 35),
       ...sharedDelay(),
       ...delayRouting("OFF"),
@@ -1716,8 +1841,8 @@ const recipes: Recipe[] = [
       // Both corners above the line and KB TRACKING at 1:1, so the filter rises with the melody
       // instead of dulling its top octave.
       ...filters("SER", "OFF", 2000, 30, 20, "1:1", 3200, 20, 10, "1:1"),
-      ...filterEnv(5, 40, 55, 30),
-      ...vcaEnv(5, 40, 90, 30, "ON"),
+      ...filterEnv(0.1, 0.8, 55, 0.6),
+      ...vcaEnv(0.1, 0.9, 90, 0.6, "ON"),
       ...vca(80, 0),
       ...sharedDelay(),
       ...delayRouting("ON"),
@@ -1746,8 +1871,8 @@ const recipes: Recipe[] = [
       // "At the edge" is just short of the self-oscillation p.36 puts at fully clockwise, and the
       // envelope amount is the other half of the title.
       ...filters("SER", "OFF", 550, 85, 80, "1:1", 900, 35, 20, "1:2"),
-      ...filterEnv(0, 30, 25, 25),
-      ...vcaEnv(0, 35, 90, 25, "ON"),
+      ...filterEnv(0, 0.5, 25, 0.4),
+      ...vcaEnv(0, 0.6, 90, 0.5, "ON"),
       ...vca(85, 0),
       ...sharedDelay(),
       ...delayRouting("OFF"),
@@ -1779,8 +1904,8 @@ const recipes: Recipe[] = [
       // their faders, which is where p.19 says the drive is.
       ...mixer(95, 50, 95, 35, 15, 85, "HIGH"),
       ...filters("SER", "OFF", 800, 60, 30, "1:1", 750, 45, 10, "1:2"),
-      ...filterEnv(5, 35, 35, 30),
-      ...vcaEnv(0, 40, 85, 35, "ON"),
+      ...filterEnv(0.1, 0.6, 35, 0.6),
+      ...vcaEnv(0, 0.9, 85, 0.7, "ON"),
       ...vca(75, 0),
       ...sharedDelay(),
       ...delayRouting("ON"),
@@ -1812,8 +1937,8 @@ const recipes: Recipe[] = [
       // "Snapping the top off each note" is a large positive envelope amount on a corner that is
       // otherwise under the note, with a decay short enough to be a snap.
       ...filters("SER", "OFF", 380, 40, 70, "1:2", 550, 20, 20, "1:2"),
-      ...filterEnv(0, 25, 0, 20),
-      ...vcaEnv(0, 35, 80, 20, "ON"),
+      ...filterEnv(0, 0.3, 0, 0.2),
+      ...vcaEnv(0, 0.4, 80, 0.2, "ON"),
       ...vca(90, 0),
       ...sharedDelay(),
       ...delayRouting("OFF"),
@@ -1842,8 +1967,8 @@ const recipes: Recipe[] = [
       // "Nothing above the fundamental" rules out both a resonant peak and a filter that opens,
       // so the envelope amounts are at the noon their note calls no modulation.
       ...filters("SER", "OFF", 220, 10, 0, "1:2", 180, 5, 0, "1:2"),
-      ...filterEnv(0, 40, 30, 30),
-      ...vcaEnv(0, 45, 85, 30, "ON"),
+      ...filterEnv(0, 0.8, 30, 0.6),
+      ...vcaEnv(0, 1, 85, 0.6, "ON"),
       ...vca(90, 0),
       ...sharedDelay(),
       ...delayRouting("OFF"),
@@ -1872,8 +1997,8 @@ const recipes: Recipe[] = [
       // opposite instruction to `muse-stab-dirty`'s and the same control.
       ...mixer(90, 40, 90, 20, 10, 90, "HIGH"),
       ...filters("SER", "OFF", 450, 50, 40, "1:2", 500, 35, 10, "1:2"),
-      ...filterEnv(0, 30, 15, 25),
-      ...vcaEnv(0, 40, 80, 25, "ON"),
+      ...filterEnv(0, 0.5, 15, 0.4),
+      ...vcaEnv(0, 0.7, 80, 0.5, "ON"),
       ...vca(85, 0),
       ...sharedDelay(),
       ...delayRouting("OFF"),
@@ -1902,8 +2027,8 @@ const recipes: Recipe[] = [
       // A sub is a fundamental and nothing else: no resonant peak, and no envelope on either
       // corner, which is noon on a bipolar amount rather than zero.
       ...filters("SER", "OFF", 160, 0, 0, "1:2", 130, 0, 0, "OFF"),
-      ...filterEnv(0, 40, 50, 30),
-      ...vcaEnv(0, 50, 95, 30, "OFF"),
+      ...filterEnv(0, 0.8, 50, 0.6),
+      ...vcaEnv(0, 1.2, 95, 0.6, "OFF"),
       ...vca(95, 0),
       ...sharedDelay(),
       ...delayRouting("OFF"),
@@ -1935,8 +2060,8 @@ const recipes: Recipe[] = [
       }),
       ...mixer(0, 0, 0, 0, 0, 0),
       ...filters("SER", "OFF", 200, 100, 0, "1:1", 140, 0, 0, "OFF"),
-      ...filterEnv(0, 40, 50, 30),
-      ...vcaEnv(5, 45, 95, 35, "OFF"),
+      ...filterEnv(0, 0.8, 50, 0.6),
+      ...vcaEnv(0.1, 1, 95, 0.7, "OFF"),
       ...vca(90, 0),
       ...sharedDelay(),
       ...delayRouting("OFF"),
@@ -1966,8 +2091,8 @@ const recipes: Recipe[] = [
       }),
       ...mixer(60, 0, 60, 0, 15, 0),
       ...filters("STR", "OFF", 600, 20, 10, "1:2", 700, 15, 10, "1:2"),
-      ...filterEnv(85, 65, 60, 90),
-      ...vcaEnv(90, 60, 90, 95, "OFF"),
+      ...filterEnv(5, 4, 60, 5),
+      ...vcaEnv(6, 4.5, 90, 6, "OFF"),
       // A texture sits under everything else, and the pair is wide.
       ...vca(55, 85),
       ...sharedDelay(),
@@ -1996,8 +2121,8 @@ const recipes: Recipe[] = [
       // ring modulator are above them.
       ...mixer(40, 75, 40, 45, 85, 95, "HIGH"),
       ...filters("PAR", "ON", 160, 45, 0, "OFF", 2200, 40, 20, "OFF"),
-      ...filterEnv(75, 60, 50, 85),
-      ...vcaEnv(80, 60, 85, 90, "OFF"),
+      ...filterEnv(4, 3, 50, 4),
+      ...vcaEnv(4.5, 4, 85, 5, "OFF"),
       ...vca(55, 80),
       ...sharedDelay(),
       ...delayRouting("ON"),
@@ -2022,9 +2147,9 @@ const recipes: Recipe[] = [
       ...mixer(70, 0, 60, 0, 0, 0),
       // A pluck is a filter envelope on an otherwise still corner.
       ...filters("SER", "OFF", 1500, 15, 30, "1:1", 2000, 10, 10, "1:2"),
-      ...filterEnv(0, 30, 0, 15),
+      ...filterEnv(0, 0.5, 0, 0.2),
       // "Nothing on the tail": no sustain and the shortest release on the device.
-      ...vcaEnv(0, 30, 0, 10, "ON"),
+      ...vcaEnv(0, 0.4, 0, 0.1, "ON"),
       ...vca(70, 40),
       ...arp("ORD", 2, 34, "STRGHT"),
       ...sharedDelay(),
@@ -2046,9 +2171,9 @@ const recipes: Recipe[] = [
       ...osc2("4'", 2, 100, 50, 0, "OFF"),
       ...mixer(65, 0, 60, 0, 5, 0),
       ...filters("PAR", "ON", 140, 25, 0, "1:1", 7000, 30, 40, "1:1"),
-      ...filterEnv(0, 35, 5, 20),
+      ...filterEnv(0, 0.6, 5, 0.3),
       // "Long repeats" is the delay, not the release: the note itself is still short.
-      ...vcaEnv(0, 35, 5, 25, "ON"),
+      ...vcaEnv(0, 0.5, 5, 0.3, "ON"),
       ...vca(70, 55),
       ...arp("RND", 4, 22, "COMBO"),
       ...sharedDelay(),
