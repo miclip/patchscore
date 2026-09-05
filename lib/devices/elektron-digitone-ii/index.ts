@@ -859,6 +859,119 @@ const recipes: Recipe[] = [
     ],
     articulation: [art('last-hit', { velocity: 96, 'note-length': '1/2' }, 'trig-params')],
   },
+  // ---------------------------------------------------------------------------
+  // #345. Three of the pool's four unserved roles. The fourth, `vox-chop`, came
+  // off the pool instead — see the `voices` note for why.
+  // ---------------------------------------------------------------------------
+  {
+    id: 'dn2-rim-clean',
+    role: 'rim',
+    character: 'clean',
+    voice: 'track',
+    title: 'FM DRUM rim, all transient and no body',
+    verified: false,
+    /**
+     * Three directions ask for this role and all three ask for `clean`, so one recipe is exact
+     * everywhere rather than substituting anywhere.
+     *
+     * FM DRUM rather than WAVETONE: a rim is almost entirely transient, and FM DRUM is the
+     * machine built around one. `AHD` with a short `HOLD` is what leaves the click and nothing
+     * after it — a rim with a tail is a tom.
+     *
+     * `clean` is authored as an absence as much as a choice: `BR` is where this box's grit lives,
+     * and p.62's scale is bit *depth* rather than an amount — 16 is untouched audio and 1 is the
+     * far end — so a clean part sits at the top of it, not the bottom.
+     */
+    params: [
+      syn('FM DRUM'),
+      playMode('MONO'),
+      fltr('EQUALIZER'),
+      ampMode('AHD'),
+      hold(6),
+      bitReduction(16),
+    ],
+    articulation: [
+      art('accent', { velocity: 118 }, 'trig-params'),
+      art('ghost', { velocity: 46 }, 'trig-params'),
+    ],
+  },
+  {
+    id: 'dn2-ride-bright',
+    role: 'ride',
+    character: 'bright',
+    voice: 'track',
+    title: 'WAVETONE ride, S&H noise rung through the comb',
+    verified: false,
+    /**
+     * **A ride is inharmonic and sustained, and that pair is what picks the machine.** WAVETONE's
+     * noise section is the only place on this box that makes an unpitched wash — p.98 gives
+     * `TYPE` as `GRAIN`, `TUNED` or `S&H`, and `S&H` is the one whose steps do not settle onto a
+     * pitch. `COMB+` then gives it the ringing the noise on its own does not have, which is the
+     * same pairing `dn2-metallic-bright` uses one role along and for the same reason.
+     *
+     * `noiseHold(110)` against the AMP page's `hold(96)` is the ring: p.97's noise envelope is
+     * its own, so the wash outlasts the strike rather than being cut with it.
+     */
+    params: [
+      syn('WAVETONE'),
+      playMode('MONO'),
+      table('TBL1', 'HARM'),
+      oscMod('OFF'),
+      oscPhase('RAND'),
+      noiseType('S&H'),
+      noiseHold(110),
+      fltr('COMB+'),
+      ampMode('AHD'),
+      hold(96),
+      bitReduction(12),
+    ],
+    articulation: [
+      art('offbeat', { velocity: 94 }, 'trig-params'),
+      art('accent', { velocity: 116 }, 'trig-params'),
+    ],
+  },
+  {
+    id: 'dn2-noise-dirty',
+    role: 'noise',
+    character: 'dirty',
+    voice: 'track',
+    title: 'WAVETONE noise struck on the grid, bit-reduced hard',
+    verified: false,
+    /**
+     * **The one role on this box whose name matches a section of the machine**, which is worth
+     * saying because it makes the choice unarguable rather than tasteful: WAVETONE carries a noise
+     * generator with its own type and its own envelope (pp.97-98), so a noise part here is that
+     * section turned up and the oscillators turned down.
+     *
+     * `GRAIN` rather than the ride's `S&H`: p.98's grain noise is the broadband one, and the
+     * direction asking patterns this on `accent`, `downbeat` and `offbeat` — a struck part wants
+     * a full spectrum to strike, where a ride wants the stepping character.
+     *
+     * **Struck rather than held, read off the direction rather than assumed.** A bed would be
+     * `ADSR` with a long sustain, which is `dn2-texture-soft` and a different part.
+     *
+     * `BR 3` is near the far end of p.62's scale, which counts bit depth downwards — 16 is
+     * untouched audio and 1 is the most reduced. A `dirty` part belongs at the bottom of that
+     * range and a value above 16 is not a heavier setting, it is off the scale.
+     */
+    params: [
+      syn('WAVETONE'),
+      playMode('MONO'),
+      table('TBL1', 'PRIM'),
+      oscMod('OFF'),
+      oscPhase('RAND'),
+      noiseType('GRAIN'),
+      noiseHold(30),
+      fltr('MULTI-MODE'),
+      ampMode('AHD'),
+      hold(18),
+      bitReduction(3),
+    ],
+    articulation: [
+      art('offbeat', { velocity: 96 }, 'trig-params'),
+      art('accent', { velocity: 122 }, 'trig-params'),
+    ],
+  },
 ]
 
 export const device: Device = {
@@ -1057,6 +1170,19 @@ export const device: Device = {
        * which §4.1 leaves to the direction. See the head note; the tests are in
        * `test/elektron-digitone-ii.test.ts`.
        */
+      /**
+       * **`vox-chop` came off this list at #345, and four sentences in this file had already
+       * made the argument.** The head note opens by calling this box *"the sibling of
+       * `elektron-digitakt-ii` with the sampler taken out"*; the trigger-note section says *"there
+       * is no sampler here"*; `capabilityEvidence` records that p.15's audio-voice architecture
+       * *"runs SYN MACHINE into the filters and the amp with no sample player in it"*; and p.89's
+       * machine list is four synthesis engines plus MIDI.
+       *
+       * A `vox-chop` is a recording cut into pieces and re-triggered. This box cannot hold a
+       * recording, so the role was a promise none of its machines can keep — and #340's placement
+       * control was offering it to readers on the strength of that promise. The other twenty-two
+       * stay: every one of them is a sound four synthesis engines make.
+       */
       kind: 'pool',
       id: 'track',
       label: 'Track',
@@ -1064,7 +1190,7 @@ export const device: Device = {
       roles: [
         'kick', 'sub', 'bass-mid', 'snare', 'clap', 'rim', 'ghost-perc', 'closed-hat', 'open-hat',
         'ride', 'metallic', 'tom', 'noise', 'texture', 'pad', 'lead', 'stab', 'arp', 'acid',
-        'vox-chop', 'riser', 'impact', 'sweep',
+        'riser', 'impact', 'sweep',
       ],
       polyphony: 4,
     },
