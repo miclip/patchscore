@@ -109,9 +109,9 @@ through a hand-edited URL. There is no "select all" and there must not be one.
 
 ```
 rig limit      10 devices  (MAX_RIG_DEVICES)
-worst rig      46,609 nodes   (weave seed 15)
+worst rig      47,284 nodes   (weave seed 15)
 cap         2,000,000
-headroom             43x  —  2.33% of the cap
+headroom             42x  —  2.36% of the cap
 ```
 
 It got *cheaper* at #25, from 83,874 nodes, and the direction of that is worth keeping: a
