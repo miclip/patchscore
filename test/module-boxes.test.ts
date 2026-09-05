@@ -536,12 +536,14 @@ describe('a real Muse guide renders panel boxes, in both renderers (#385)', () =
 })
 
 describe('no other device is affected (#385)', () => {
-  it('is the only device in the library authoring a module', () => {
-    // #385's cheaper first move: one folder, and every other guide renders exactly as it did.
+  it('lists every device in the library authoring a module', () => {
+    // #385's cheaper first move was one folder; the Subsequent 37 is the second, and this list
+    // is the standing count of how far it has gone. Every device not named here renders exactly
+    // as it did, which is what the goldens then prove byte for byte.
     const authoring = DEVICES.filter((d) =>
       d.recipes.some((r) => r.params.some((p) => (p as { module?: string }).module !== undefined)),
     ).map((d) => d.id)
-    expect(authoring).toEqual(['moog-muse'])
+    expect(authoring).toEqual(['moog-muse', 'moog-subsequent-37'])
   })
 
   it('renders no box on a rig that authors none', () => {

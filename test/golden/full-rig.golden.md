@@ -1009,78 +1009,84 @@ Routing — One VCO only — VCO 2 is down, so there is nothing to beat against 
 - **SWING** `50` % (0…100 %)
   - ↳ note: 50 is straight; it swings the onboard arpeggiator and sequencer, nothing played from elsewhere
   - ↳ hint: PRESET EDIT, ARPEGGIATOR, SWING
-- **GLIDE · ON** `OFF`
-  - ↳ note: Must be lit for any glide at all
-- **OSC 1 · OCTAVE** `16'`
-- **OSC 1 · WAVE** `SAWTOOTH`
-  - ↳ note: The knob is continuous; these are its four named points
-- **OSC 2 · OCTAVE** `16'`
-- **OSC 2 · WAVE** `NARROW PULSE`
-  - ↳ note: The knob is continuous; these are its four named points
-- **OSC · HARD SYNC** `OFF`
-  - ↳ note: Keep OSC 2 at or above OSC 1 or it barely sounds
-- **OSC · KB RESET** `OFF`
-  - ↳ note: A defined leading edge, at the cost of a click on hard attacks
-- **OSC · DUO MODE** `OFF`
-  - ↳ note: Off: one note at a time, both oscillators on the same key
-- **OSC · KB CTRL** `HI`
-  - ↳ note: Inert while DUO MODE is off; set so FREQUENCY keeps its semitone scale
-- **OSC 2 · FREQUENCY** `-0.5` st (-7…7 st)
-  - ↳ note: Centre is unison with OSC 1; fully clockwise is a fifth
-- **OSC 2 · BEAT FREQ** `1` Hz (-3.5…3.5 Hz)
-  - ↳ note: A constant beat rate at every pitch, unlike FREQUENCY
-- **MIXER · OSC 1** `8.5` (0…10)
-- **MIXER · SUB 1** `7.5` (0…10)
-  - ↳ note: Always a square, always an octave below OSC 1
-- **MIXER · OSC 2** `8` (0…10)
-- **MIXER · NOISE** `1.5` (0…10)
-  - ↳ note: Pink, not white
-- **MIXER · FDBK / EXT IN** `3` (0…10)
-  - ↳ note: With nothing in EXT IN this feeds the mixer output back into itself
-- **CUTOFF** `260` Hz (20…20000 Hz)
-  - ↳ note: Fully down closes the filter completely
-- **RESONANCE** `6.5` (0…10)
-  - ↳ hint: Above 7 the filter sings by itself
-- **MULTIDRIVE** `7.5` (0…10)
-  - ↳ note: Tube-like warmth at the bottom, hard clipping at the top
-- **FILTER · SLOPE** `24`
-  - ↳ note: dB per octave: one, two, three or four poles
-- **FILTER · EG AMT** `2.5` (-5…5)
-  - ↳ note: Bipolar: below centre the envelope pulls the cutoff down
-- **FILTER · KB TRACK** `0.5` (0…2)
-  - ↳ note: 1.0 is 1:1 tracking centred on C3; 2.0 is 2:1
-- **ENV · KNOB SHIFT** `OFF`
-  - ↳ note: Unlit, or the eight knobs below are DELAY, HOLD, VEL AMT and KB TRACK instead
-- **FILTER EG · ATTACK** `2` ms (0.1…10000 ms)
-- **FILTER EG · DECAY** `260` ms (0.1…10000 ms)
-- **FILTER EG · SUSTAIN** `2` (0…10)
-  - ↳ note: 0 to 100%, calibrated 1 to 10
-- **FILTER EG · RELEASE** `200` ms (0.1…10000 ms)
-- **FILTER EG · LOOP** `OFF`
-  - ↳ note: On, the envelope repeats for as long as a note is held — a multistage LFO
-- **AMP EG · ATTACK** `2` ms (0.1…10000 ms)
-- **AMP EG · DECAY** `500` ms (0.1…10000 ms)
-- **AMP EG · SUSTAIN** `6.5` (0…10)
-  - ↳ note: 0 to 100%, calibrated 1 to 10
-- **AMP EG · RELEASE** `180` ms (0.1…10000 ms)
-- **AMP EG · MULTI TRIG** `ON`
-  - ↳ note: On, every note re-attacks even when you play legato
-- **AMP EG · LOOP** `OFF`
-  - ↳ note: Off on everything but a bed: looping the amplitude re-articulates a held note
-- **MOD 1 · SOURCE** `Saw`
-- **MOD 1 · HI RANGE** `OFF`
-  - ↳ note: On, the LFO runs ten times faster
-- **MOD 1 · SYNC** `OFF`
-  - ↳ note: Off, so RATE is in hertz rather than clock divisions
-- **MOD 1 · LFO RATE** `5.5` Hz (0.1…100 Hz)
-- **MOD 1 · KB RESET** `OFF`
-  - ↳ note: On, the LFO restarts at zero on every note
-- **MOD 1 · PITCH AMT** `0` (-5…5)
-- **MOD 1 · OSC** `BOTH`
-  - ↳ note: Which oscillator PITCH AMT reaches
-- **MOD 1 · FILTER AMT** `0` (-5…5)
-- **MOD 1 · DEST** `OSC 2 WAVE`
-- **MOD 1 · MOD AMT** `1` (-5…5)
+- **● GLIDE**
+  - **ON** `OFF`
+    - ↳ note: Must be lit for any glide at all
+- **● OSCILLATORS**
+  - **OSC 1 · OCTAVE** `16'`
+  - **OSC 1 · WAVE** `SAWTOOTH`
+    - ↳ note: The knob is continuous; these are its four named points
+  - **OSC 2 · OCTAVE** `16'`
+  - **OSC 2 · WAVE** `NARROW PULSE`
+    - ↳ note: The knob is continuous; these are its four named points
+  - **OSC · HARD SYNC** `OFF`
+    - ↳ note: Keep OSC 2 at or above OSC 1 or it barely sounds
+  - **OSC · KB RESET** `OFF`
+    - ↳ note: A defined leading edge, at the cost of a click on hard attacks
+  - **OSC · DUO MODE** `OFF`
+    - ↳ note: Off: one note at a time, both oscillators on the same key
+  - **OSC · KB CTRL** `HI`
+    - ↳ note: Inert while DUO MODE is off; set so FREQUENCY keeps its semitone scale
+  - **OSC 2 · FREQUENCY** `-0.5` st (-7…7 st)
+    - ↳ note: Centre is unison with OSC 1; fully clockwise is a fifth
+  - **OSC 2 · BEAT FREQ** `1` Hz (-3.5…3.5 Hz)
+    - ↳ note: A constant beat rate at every pitch, unlike FREQUENCY
+- **● MIXER**
+  - **OSC 1** `8.5` (0…10)
+  - **SUB 1** `7.5` (0…10)
+    - ↳ note: Always a square, always an octave below OSC 1
+  - **OSC 2** `8` (0…10)
+  - **NOISE** `1.5` (0…10)
+    - ↳ note: Pink, not white
+  - **FDBK / EXT IN** `3` (0…10)
+    - ↳ note: With nothing in EXT IN this feeds the mixer output back into itself
+- **● FILTER**
+  - **CUTOFF** `260` Hz (20…20000 Hz)
+    - ↳ note: Fully down closes the filter completely
+  - **RESONANCE** `6.5` (0…10)
+    - ↳ hint: Above 7 the filter sings by itself
+  - **MULTIDRIVE** `7.5` (0…10)
+    - ↳ note: Tube-like warmth at the bottom, hard clipping at the top
+  - **SLOPE** `24`
+    - ↳ note: dB per octave: one, two, three or four poles
+  - **EG AMT** `2.5` (-5…5)
+    - ↳ note: Bipolar: below centre the envelope pulls the cutoff down
+  - **KB TRACK** `0.5` (0…2)
+    - ↳ note: 1.0 is 1:1 tracking centred on C3; 2.0 is 2:1
+- **● ENVELOPE GENERATORS**
+  - **ENV · KNOB SHIFT** `OFF`
+    - ↳ note: Unlit, or the eight knobs below are DELAY, HOLD, VEL AMT and KB TRACK instead
+  - **FILTER EG · ATTACK** `2` ms (0.1…10000 ms)
+  - **FILTER EG · DECAY** `260` ms (0.1…10000 ms)
+  - **FILTER EG · SUSTAIN** `2` (0…10)
+    - ↳ note: 0 to 100%, calibrated 1 to 10
+  - **FILTER EG · RELEASE** `200` ms (0.1…10000 ms)
+  - **FILTER EG · LOOP** `OFF`
+    - ↳ note: On, the envelope repeats for as long as a note is held — a multistage LFO
+  - **AMP EG · ATTACK** `2` ms (0.1…10000 ms)
+  - **AMP EG · DECAY** `500` ms (0.1…10000 ms)
+  - **AMP EG · SUSTAIN** `6.5` (0…10)
+    - ↳ note: 0 to 100%, calibrated 1 to 10
+  - **AMP EG · RELEASE** `180` ms (0.1…10000 ms)
+  - **AMP EG · MULTI TRIG** `ON`
+    - ↳ note: On, every note re-attacks even when you play legato
+  - **AMP EG · LOOP** `OFF`
+    - ↳ note: Off on everything but a bed: looping the amplitude re-articulates a held note
+- **● MOD 1**
+  - **SOURCE** `Saw`
+  - **HI RANGE** `OFF`
+    - ↳ note: On, the LFO runs ten times faster
+  - **SYNC** `OFF`
+    - ↳ note: Off, so RATE is in hertz rather than clock divisions
+  - **LFO RATE** `5.5` Hz (0.1…100 Hz)
+  - **KB RESET** `OFF`
+    - ↳ note: On, the LFO restarts at zero on every note
+  - **PITCH AMT** `0` (-5…5)
+  - **OSC** `BOTH`
+    - ↳ note: Which oscillator PITCH AMT reaches
+  - **FILTER AMT** `0` (-5…5)
+  - **DEST** `OSC 2 WAVE`
+  - **MOD AMT** `1` (-5…5)
 
 ### TR-1000
 
