@@ -89,6 +89,77 @@ export const TriggerNoteSchema = z.strictObject({
 })
 
 /**
+ * §2.2/#86. **A configuration one member of a pool can be in**, declared by the device and
+ * selected by a recipe.
+ *
+ * The problem it solves is one pool holding members that are not addressed alike. `triggerNote`
+ * sits on the voice, so a pool's note reaches every member — which is right where the ordinals
+ * are interchangeable *and* addressed the same way, and wrong where the box lets a track be
+ * three different kinds of thing. The Digitakt II is the case: p.17 makes any of its sixteen
+ * tracks an audio track or a MIDI track, and its `SRC MACHINE` set (p.93) splits the audio ones
+ * again into whole-sample machines and sliced ones. `C5` is printed, cited and true of the first
+ * group only, so before this the box could state nothing at all — a fact its manual supplies in
+ * full, that the model had no shape to hold.
+ *
+ * **A mode is a table entry, never a selection.** `Assignable.modes` carries the whole table,
+ * identical for every guide ever resolved, so `expand` stays a pure function of device data and
+ * sixteen tracks stay sixteen assignables. Putting the *chosen* mode on the assignable instead
+ * would make expansion depend on the recipe, multiply sixteen members by three modes, and hand
+ * the search a different tree for no gain. Which mode is in force is decided where the recipe and
+ * the assignable meet, in `triggerNoteFor`, and lands on the resolved part.
+ *
+ * **This is deliberately not all of #86.** That issue also covers *whole-device* configurations a
+ * reader chooses before any part is placed — the MC-101's drum/tone split, the Octatrack's
+ * `TRACK 8` — which reach the search, the permalink and the rack. Nothing here does: a mode is a
+ * consequence of a recipe the resolver already picks, so a rig is still a list of device ids and
+ * the wire format is untouched. See §2.2 and §12.4 of `DESIGN.md` for the stages that were
+ * deferred, and which of them cost what.
+ *
+ * **Not a fifth shared vocabulary (invariant 3).** Mode ids are device-local strings validated
+ * inside the folder, the same class as `PoolId` and `RecipeId`. No template names one and none
+ * can; the four shared vocabularies are untouched.
+ */
+export type TrackMode = {
+  /** Device-local: 'whole-sample', 'sliced', 'midi'. Unique within the voice that declares it. */
+  id: string
+  /** What the panel calls it: 'ONESHOT / WERP / STRETCH / REPITCH'. */
+  label: string
+  /**
+   * §2.1. The note that addresses a member **in this mode**, where the box has one. Omitted where
+   * the mode has no such note, which is the honest answer for a sliced track (the note is a slice
+   * address, #369) and for a MIDI track (the note is being sent out, not sounding a sample).
+   */
+  triggerNote?: TriggerNote
+  /**
+   * §3.2. **The param that puts this mode in force, and the values that select it.**
+   *
+   * Optional, and where it is present it is enforced: a recipe naming this mode must carry that
+   * param at one of those values, or the device fails to build. That is not belt-and-braces. A
+   * recipe already names its machine as an ordinary cited-option param, so `mode` beside
+   * `SRC MACHINE` is two spellings of one fact, and the drift is silent and dangerous — switch a
+   * recipe to `SLICE` and forget the mode, and the guide prints `C5` for a slice address. It is
+   * the same failure `CLAUDE.md` records for the TR-8S's tone table and the minilogue xd's
+   * `SHAPE`, and the same repair: the recipe carries the switch as a param, so the pairing cannot
+   * come apart.
+   *
+   * Omitted where the box has no single printed param that says which mode a member is in.
+   */
+  selectedBy?: { param: string; values: string[] }
+}
+
+export const TrackModeSchema = z.strictObject({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  triggerNote: TriggerNoteSchema.optional(),
+  selectedBy: z
+    .strictObject({
+      param: z.string().min(1),
+      values: z.array(z.string().min(1)).min(1),
+    })
+    .optional(),
+})
+
+/**
  * Some devices have fixed, named voices (TR-1000: BD, SD, LT...). Others have fungible
  * capacity (Tracker Mini: 16 tracks, as *two* pools — 1-8 take samples, synths or MIDI, 9-16
  * take synths or MIDI only). Modelling only the first does not survive contact with the second,
@@ -121,8 +192,19 @@ export type VoiceSpec =
        * §2.1. The note that addresses every member of this pool, where the box has one. On the
        * pool rather than the member: the ordinals are interchangeable and they are addressed
        * alike, which is the same reason recipe lookup keys on `poolId`.
+       *
+       * Mutually exclusive with `modes`: a pool whose members are *not* addressed alike says so
+       * by declaring modes, and one note plus a table of notes is two answers to one question.
        */
       triggerNote?: TriggerNote
+      /**
+       * §2.2/#86. **The configurations a member of this pool can be in**, where the box lets one
+       * track be more than one kind of thing. See `TrackMode`.
+       *
+       * At least two, because a pool with one mode is a pool addressed alike, and that is what
+       * `triggerNote` above already says with less machinery.
+       */
+      modes?: TrackMode[]
     }
 
 const voiceCommon = {
@@ -155,7 +237,27 @@ export const VoiceSpecSchema = z.discriminatedUnion('kind', [
      * is worse than counting all of them.
      */
     memberLabels: z.array(z.string().min(1)).optional(),
+    /** §2.2/#86. See `TrackMode`. Two or more, or the field says nothing `triggerNote` does not. */
+    modes: z.array(TrackModeSchema).min(2).optional(),
     ...voiceCommon,
+  }).superRefine((voice, ctx) => {
+    if (voice.modes === undefined) return
+    if (voice.triggerNote !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'a pool declares either one trigger note or a table of modes, never both — see TrackMode (§2.2)',
+        path: ['triggerNote'],
+      })
+    }
+    const ids = voice.modes.map((m) => m.id)
+    if (new Set(ids).size !== ids.length) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'mode ids must be unique within a voice',
+        path: ['modes'],
+      })
+    }
   }),
 ])
 
@@ -186,8 +288,21 @@ export type Assignable = {
    * §2.1. The voice's own trigger note, carried through expansion unchanged — a pool's members
    * share the pool's, because they are addressed alike. Nothing between here and the page
    * changes it: there is no per-recipe override, deliberately (see `TriggerNote`).
+   *
+   * Absent on a voice that declares `modes`, where the note is the mode's rather than the pool's.
    */
   triggerNote?: TriggerNote
+  /**
+   * §2.2/#86. The voice's whole mode **table**, carried through expansion unchanged.
+   *
+   * A table and not a selection, which is the property that keeps `expand` a pure function of
+   * device data: every member of the pool carries the same one, it is identical for every guide
+   * ever resolved, and sixteen tracks stay sixteen assignables. `triggerNoteFor` reads it where
+   * the recipe is known. Nothing in §7.1's search reads it, and nothing may — a mode that
+   * narrowed which *members* can serve a request would be a feasibility constraint, which is
+   * §2.3/#25's shape and a different change. See `TrackMode`.
+   */
+  modes?: readonly TrackMode[]
 }
 
 /**
@@ -1779,6 +1894,15 @@ export type Recipe = {
   character: Character
   /** Matches `poolId ?? voiceId` (§2.2). */
   voice: string
+  /**
+   * §2.2/#86. **Which configuration this recipe puts the track in**, naming a mode the voice
+   * declares. Required on a voice that declares modes and refused on one that does not.
+   *
+   * Choosing a recipe therefore chooses the mode, which is why this needs no rig state and no
+   * new permalink field: it is a consequence of an allocation the resolver already makes. What it
+   * decides is how the track is *addressed* — see `TrackMode` and `triggerNoteFor`.
+   */
+  mode?: string
   title: string
   /** §12.4. How the notes are made. Omitted means `polyphonic-voice`. */
   realisation?: Realisation
@@ -1812,6 +1936,7 @@ export const RecipeSchema = z
     role: RoleSchema,
     character: CharacterSchema,
     voice: z.string().min(1),
+    mode: z.string().min(1).optional(),
     title: z.string().min(1),
     realisation: RealisationSchema.optional(),
     sourceAudio: SourceAudioSchema.optional(),
@@ -3262,6 +3387,12 @@ export const DeviceSchema = z
     const perStep = new Set(device.features?.perStep ?? [])
     const hintKeys = new Set(Object.keys(device.hints ?? {}))
 
+    const modesByVoice = new Map<string, readonly TrackMode[]>(
+      device.voices.flatMap((v) =>
+        v.kind === 'pool' && v.modes !== undefined ? [[v.id, v.modes] as const] : [],
+      ),
+    )
+
     device.recipes.forEach((recipe, i) => {
       // A recipe must address a voice this device actually has (§2.2: `poolId ?? voiceId`).
       if (!voiceIds.includes(recipe.voice)) {
@@ -3270,6 +3401,53 @@ export const DeviceSchema = z
           message: `recipe addresses voice '${recipe.voice}', which this device does not declare`,
           path: ['recipes', i, 'voice'],
         })
+      }
+
+      /**
+       * §2.2/#86. **A recipe on a moded voice names one of its modes, and only there.**
+       *
+       * Both halves fail the build rather than resolving to silence. A recipe that names no mode
+       * on a voice that has them would resolve with no trigger note — the same output as a box
+       * that states nothing, so the omission would look exactly like the honest gap it is not.
+       * A recipe naming a mode on a voice with none is a typo the author meant to be load-bearing.
+       */
+      const modes = modesByVoice.get(recipe.voice)
+      if (modes === undefined) {
+        if (recipe.mode !== undefined) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `recipe names mode '${recipe.mode}', but voice '${recipe.voice}' declares no modes (§2.2)`,
+            path: ['recipes', i, 'mode'],
+          })
+        }
+      } else if (recipe.mode === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `voice '${recipe.voice}' declares modes, so this recipe must name the one it puts the track in (§2.2)`,
+          path: ['recipes', i, 'mode'],
+        })
+      } else {
+        const mode = modes.find((m) => m.id === recipe.mode)
+        if (mode === undefined) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `recipe names mode '${recipe.mode}', which voice '${recipe.voice}' does not declare`,
+            path: ['recipes', i, 'mode'],
+          })
+        } else if (mode.selectedBy !== undefined) {
+          // The mode and the param that selects it are one fact with two spellings, and this is
+          // what stops them drifting: switch a recipe's machine and forget the mode, and the
+          // device stops building instead of printing a note for the wrong kind of track.
+          const param = recipe.params.find((p) => p.name === mode.selectedBy?.param)
+          const value = param === undefined || param.kind === 'numeric' ? undefined : param.value
+          if (value === undefined || !mode.selectedBy.values.includes(value)) {
+            ctx.addIssue({
+              code: 'custom',
+              message: `mode '${mode.id}' is in force when ${mode.selectedBy.param} is one of ${mode.selectedBy.values.join(', ')}; this recipe carries ${value === undefined ? 'no such param' : `'${value}'`} (§2.2)`,
+              path: ['recipes', i, 'mode'],
+            })
+          }
+        }
       }
 
       // §3.3: a cable names two jacks the device declares, and runs from an output to an

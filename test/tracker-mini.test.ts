@@ -1435,19 +1435,42 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
   /**
    * **The roster is now empty, and that is a fact worth an assertion rather than a silence.**
    *
-   * This list is whole-library and has lived here since the Mini was the only box carrying a
-   * trigger note; the Tracker joined it, and both have now declined it for the same reason — the
-   * field is pinned to a voice and the note belongs to the instrument loaded into it. §2.1 and the
-   * `NoteInstruction` arm that renders it both remain, exercised by the synthetic devices in
-   * `pipeline.test.ts`, so nothing is dead; it simply has no shipped user.
+  /**
+   * **The list is deliberately whole-library and lives here rather than in one device's file.**
+   * It was written when the Mini was the only box carrying one, the Tracker joined it, and both
+   * have since declined it (#422) — the field is pinned to a voice and the note belongs to the
+   * instrument loaded into it.
    *
-   * **An entry appearing here is the event this is for.** It means somebody has decided a box's
-   * note is a fact about hardware rather than about what is loaded — which can be true, on a box
-   * whose voices are fixed rather than fungible — and that is a claim wanting a citation read and
-   * the two Polyend arguments answered, not a test widened.
+   * **The Digitakt II is the only entry, and it arrived by a route this test could not see**
+   * (#86). It declares no `triggerNote` on its pool and never will: its sixteen tracks are not
+   * addressed alike, so the note sits on a `TrackMode` and the recipe's machine says which mode
+   * is in force. Looking only at `voice.triggerNote` would have left this roster reading empty on
+   * a library that has one — which is the failure a whole-library pin exists to prevent. So the
+   * query looks in both places.
+   *
+   * **The roster moving is the event this is for.** A new entry means somebody has decided a
+   * box's note is a fact about hardware rather than about what is loaded — which can be true, on
+   * a box whose voices are fixed rather than fungible — and that is a claim wanting a citation
+   * read and the two Polyend arguments answered, not a test widened.
    */
-  it('finds no device in the library authoring one, so no shipped guide prints one', () => {
-    const authoring = DEVICES.filter((d) => d.voices.some((v) => v.triggerNote !== undefined))
-    expect(authoring.map((d) => d.id)).toEqual([])
+  it('names every device in the library that authors one, so no other guide moves', () => {
+    const modesOf = (v: (typeof DEVICES)[number]['voices'][number]) =>
+      v.kind === 'pool' ? (v.modes ?? []) : []
+    const authors = (v: (typeof DEVICES)[number]['voices'][number]) =>
+      v.triggerNote !== undefined || modesOf(v).some((m) => m.triggerNote !== undefined)
+
+    const authoring = DEVICES.filter((d) => d.voices.some(authors))
+    expect(authoring.map((d) => d.id)).toEqual(['elektron-digitakt-ii'])
+
+    const voices = authoring.flatMap((d) => d.voices.filter(authors).map((v) => v.id))
+    expect(voices).toEqual(['track'])
+
+    // Where it puts it: not on the voice, but on one of the pool's modes. A pool whose members
+    // were addressed alike would carry the note itself, and none in this library now does.
+    expect(
+      authoring.map(
+        (d) => d.voices.flatMap(modesOf).filter((m) => m.triggerNote !== undefined).length,
+      ),
+    ).toEqual([1])
   })
 })

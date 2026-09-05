@@ -30,21 +30,21 @@ import { DIGITAKT_II_PANEL } from './panel'
  * is not reachable by any patch here, and the way out is §12.4's `sampled-chord` — a sample that
  * *already contains* the chord, which is one note as far as the track is concerned.
  *
- * ## No trigger note, and this is the box where the manual supplies both halves (§2.1/#334)
+ * ## A trigger note per track mode, and this is the box that needed the shape (§2.1/§2.2/#86)
  *
  * #334 counts the parts whose grid says which steps to hit and never what to write on them. This
- * box has 222, all on the one `track` pool, and it is the **first decline in this class where the
- * evidence for authoring one is complete** — which is why the reason has to be about where the
- * field lives rather than about a missing citation.
+ * box had 270 of them, all on the one `track` pool, and it was the **only decline in that class
+ * where the evidence for authoring a note was complete** — which is why the reason was never
+ * about a missing citation but about where the field could live.
  *
  * **Both halves are printed.** p.25 states the convention outright: *"MIDI note numbers 16-84,
  * that corresponds to notes E2-C7 (C5, MIDI note 60, being middle C)"*. And p.53's TRIG page
  * screenshot shows the box's own display pairing them — `NOTE` reading `C 5 (60)` on an audio
- * track. So `{ note: 'C5', midi: 60 }` could be written here with a real citation, which is more
- * than the OP-XY, the SP-404MK2 or either Roland groovebox could offer.
+ * track. So `{ note: 'C5', midi: 60 }` is writable here with a real citation, which is more than
+ * the OP-XY, the SP-404MK2 or either Roland groovebox could offer.
  *
- * **It still cannot go on this pool, because a pool's note reaches every member alike and this
- * pool holds three different kinds of track.**
+ * **It could not go on the pool, because a pool's note reaches every member alike and this pool
+ * holds three different kinds of track.**
  *
  *  - **Whole-sample tracks** — `ONESHOT`, `WERP`, `STRETCH`, `REPITCH` — where `C5` does mean
  *    *play it as recorded*. This is the one case `TriggerNote` models.
@@ -53,25 +53,32 @@ import { DIGITAKT_II_PANEL } from './panel'
  *    last slice, when using the Grid and Slice machines and set SLICE to NOTE"* — so the note
  *    there is a **slice address**, base `C1`, next semitone the next slice. `TriggerNote` refuses
  *    this explicitly: a slice base in that field would give two kinds of value one name, which is
- *    #334's third category and undesigned. **p.26's `C1` is therefore read and deliberately not
+ *    #369's category and undesigned. **p.26's `C1` is therefore read and deliberately not
  *    authored.**
  *  - **MIDI tracks.** p.53's own warning: *"Please note that MIDI tracks has a different set of
  *    parameters on the TRIG, SRC, FLTR, and AMP page."* A `NOTE` there is a note being sent out,
  *    not a loaded sample's original pitch. `MIDI` is a cited member of the `SRC MACHINE` set
  *    (p.93) and p.17 makes any of the sixteen tracks one, so the pool holds it whether or not a
- *    recipe has yet selected it.
+ *    recipe has selected one.
  *
- * **The Tracker Mini is why this is a rule and not a preference.** That box splits samples and
- * synths into *two* pools, so `track-sample` can carry `C5`/60 and `track-synth` carry none — and
- * its manifest says of its own Beat Slice recipe that it "carries no trigger note". It does not:
- * `triggerNote` is on the pool, there is no per-recipe override by design, and `tm-vox-chop-dirty`
- * resolves with `C5`/60 on it. Nothing reaches a page today only because that part is hook-owned
- * in every direction and seed measured. **A comment cannot exempt a member from its pool's note**,
- * and this box has no second pool to move the exemption into.
+ * **`TrackMode` (§2.2) is the shape that holds all three, and this box is the first to use it.**
+ * The pool declares three modes; the note sits on `whole-sample` and nowhere else; and each
+ * recipe names the mode it puts the track in. Nothing is asked of the reader and nothing new is
+ * carried in a permalink — the mode is a consequence of the recipe the resolver already chooses.
+ * `selectedBy` ties each mode to the `SRC MACHINE` values that put it in force, so the mode and
+ * the machine cannot drift apart: switch a recipe to `SLICE` and forget the mode and the device
+ * stops building, rather than printing `C5` for a slice address.
  *
- * So the 222 blanks are correct output. What would change that is not another page of the manual
- * but a vocabulary that can say *which kind of address a voice uses* — until then, a pool holding
- * a sliced voice authors nothing here.
+ * **What it moved: 270 blank grid parts became 6.** The six that remain are every `vox-chop` part
+ * on the sliced recipe, and they are correct output — the model is right to say nothing where the
+ * note the manual prints is a slice number. `test/elektron-digitakt-ii.test.ts` pins the counts
+ * and the fact that the blanks and the sliced recipe are the same set.
+ *
+ * **This is not all of #86.** That issue is about whole-device configurations a reader chooses
+ * before any part is placed — the MC-101's drum/tone split, the Octatrack's `TRACK 8` — which
+ * reach the search, the permalink and the rack. None of that is here, and the `comfortableVoices`
+ * note below still carries what this box cannot say: that a track spent on MIDI is a track that
+ * has left the pool.
  *
  * ## One recipe per declared role, and why narrowing the pool was not an option
  *
@@ -149,6 +156,22 @@ const MANUAL = 'Digitakt II User Manual OS 1.15A'
 
 function cite(page: number): Cite {
   return { kind: 'manual', source: `${MANUAL}, p.${page}` }
+}
+
+/**
+ * §2.1. Both halves of the addressing fact, from the two pages that print them.
+ *
+ * p.25 states the convention: *"MIDI note numbers 16-84, that corresponds to notes E2-C7 (C5,
+ * MIDI note 60, being middle C)"*. p.53's TRIG page screenshot shows the box pairing them on an
+ * audio track, `NOTE` reading `C 5 (60)`. Neither page alone is enough — the first gives the
+ * octave mapping and the second gives the note the parameter actually rests at — and §2.1 refuses
+ * a MIDI number derived from a note name by habit.
+ */
+const TRIGGER_NOTE_CITE: Cite = {
+  kind: 'manual',
+  source:
+    `${MANUAL}, p.25 (MIDI note numbers 16-84 are E2-C7, "C5, MIDI note 60, being middle C"); ` +
+    'p.53 (TRIG page NOTE reading "C 5 (60)" on an audio track)',
 }
 
 // ---------------------------------------------------------------------------
@@ -321,6 +344,7 @@ const recipes: Recipe[] = [
     role: 'kick',
     character: 'hard',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'One-shot kick, played forward and left alone',
     verified: false,
     sourceAudio: {
@@ -334,6 +358,7 @@ const recipes: Recipe[] = [
     role: 'kick',
     character: 'dirty',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Kick through the comb filter, tail chopped short',
     verified: false,
     sourceAudio: {
@@ -349,6 +374,7 @@ const recipes: Recipe[] = [
     role: 'sub',
     character: 'dark',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Sub sample repitched down, everything above it filtered off',
     verified: false,
     sourceAudio: {
@@ -364,6 +390,7 @@ const recipes: Recipe[] = [
     role: 'bass-mid',
     character: 'dirty',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Repitched bass with the multi-mode filter opened by the envelope',
     verified: false,
     sourceAudio: {
@@ -379,6 +406,7 @@ const recipes: Recipe[] = [
     role: 'snare',
     character: 'hard',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Snare one-shot, flat and forward',
     verified: false,
     sourceAudio: {
@@ -392,6 +420,7 @@ const recipes: Recipe[] = [
     role: 'snare',
     character: 'dirty',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Snare warped, with a retrig on the fill',
     verified: false,
     sourceAudio: {
@@ -408,6 +437,7 @@ const recipes: Recipe[] = [
     role: 'clap',
     character: 'bright',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Clap sitting over the snare, top end left in',
     verified: false,
     sourceAudio: {
@@ -421,6 +451,7 @@ const recipes: Recipe[] = [
     role: 'rim',
     character: 'clean',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Rim click, EQ narrowed to the wood',
     verified: false,
     sourceAudio: {
@@ -437,6 +468,7 @@ const recipes: Recipe[] = [
     role: 'closed-hat',
     character: 'clean',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Closed hat, offbeats pulled back off the grid',
     verified: false,
     sourceAudio: {
@@ -450,6 +482,7 @@ const recipes: Recipe[] = [
     role: 'closed-hat',
     character: 'dirty',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Hat with ghosts thinned out by probability',
     verified: false,
     sourceAudio: {
@@ -468,6 +501,7 @@ const recipes: Recipe[] = [
     role: 'open-hat',
     character: 'bright',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Open hat let ring, filter out of the way',
     verified: false,
     sourceAudio: {
@@ -481,6 +515,7 @@ const recipes: Recipe[] = [
     role: 'ride',
     character: 'bright',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Ride let ring on the offbeat',
     verified: false,
     sourceAudio: {
@@ -496,6 +531,7 @@ const recipes: Recipe[] = [
     role: 'ghost-perc',
     character: 'soft',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Quiet percussion, half of it not playing',
     verified: false,
     sourceAudio: {
@@ -509,6 +545,7 @@ const recipes: Recipe[] = [
     role: 'metallic',
     character: 'dirty',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Metallic hit through the resonant comb',
     verified: false,
     sourceAudio: {
@@ -522,6 +559,7 @@ const recipes: Recipe[] = [
     role: 'tom',
     character: 'dark',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Low tom under the 4-pole, retrigged across the fill',
     verified: false,
     /**
@@ -544,6 +582,7 @@ const recipes: Recipe[] = [
     role: 'tom',
     character: 'bright',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Mid tom with the stick left in',
     verified: false,
     /**
@@ -566,6 +605,7 @@ const recipes: Recipe[] = [
     role: 'noise',
     character: 'dirty',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Noise burst through the legacy filter, struck rather than held',
     verified: false,
     /**
@@ -592,6 +632,7 @@ const recipes: Recipe[] = [
     role: 'vox-chop',
     character: 'bright',
     voice: 'track',
+    mode: 'sliced',
     title: 'Sliced vocal, a different slice under each hit',
     verified: false,
     sourceAudio: {
@@ -610,6 +651,7 @@ const recipes: Recipe[] = [
     role: 'texture',
     character: 'soft',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Looped texture stretched under the track, LFO free-running',
     verified: false,
     sourceAudio: {
@@ -625,6 +667,7 @@ const recipes: Recipe[] = [
     role: 'lead',
     character: 'bright',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'One sample played as a line, a note lock on every trig',
     verified: false,
     /**
@@ -650,6 +693,7 @@ const recipes: Recipe[] = [
     role: 'arp',
     character: 'clean',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Arpeggio written onto the grid, one note to a trig',
     verified: false,
     /**
@@ -678,6 +722,7 @@ const recipes: Recipe[] = [
     role: 'acid',
     character: 'hard',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Sampled acid line, the glide completing in a fixed time',
     verified: false,
     /**
@@ -732,6 +777,7 @@ const recipes: Recipe[] = [
     role: 'riser',
     character: 'bright',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Sample played backwards into the change',
     verified: false,
     sourceAudio: {
@@ -747,6 +793,7 @@ const recipes: Recipe[] = [
     role: 'impact',
     character: 'hard',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'One-shot impact on the change, nothing else touched',
     verified: false,
     sourceAudio: {
@@ -760,6 +807,7 @@ const recipes: Recipe[] = [
     role: 'stab',
     character: 'hard',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Short chord stab from a sample that already contains the chord',
     verified: false,
     realisation: 'sampled-chord',
@@ -801,6 +849,7 @@ const recipes: Recipe[] = [
     role: 'pad',
     character: 'soft',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'Rendered chord sample, looped and swelled',
     verified: false,
     realisation: 'sampled-chord',
@@ -823,6 +872,7 @@ const recipes: Recipe[] = [
     role: 'sweep',
     character: 'soft',
     voice: 'track',
+    mode: 'whole-sample',
     title: 'A recorded sweep stretched to land on the change',
     verified: false,
     /**
@@ -965,21 +1015,70 @@ export const device: Device = {
   voices: [
     {
       /**
-       * **No `triggerNote`** (§2.1/#334), and not for want of a citation — this box prints both
-       * halves. p.25 gives the convention (*"C5, MIDI note 60, being middle C"*) and p.53's TRIG
-       * screen shows `NOTE  C 5 (60)` on an audio track.
+       * **No `triggerNote`, and three `modes` instead** (§2.1/§2.2/#86).
        *
-       * A pool's note reaches every member alike, and this one pool holds three kinds of track:
-       * whole-sample machines, where `C5` means *play it as recorded*; sliced ones, where p.26
-       * makes the note a slice address from `C1` up and `TriggerNote` declines to model it
-       * (`dt2-vox-chop-bright` is one); and MIDI tracks, whose TRIG page p.53 says is a different
-       * set of parameters entirely. There is no second pool to put the exemption in — see the
-       * head note, and `test/elektron-digitakt-ii.test.ts` for what holds it.
+       * A pool's note reaches every member alike, and this pool does not hold members that are
+       * addressed alike. It holds one set of sixteen tracks that the reader can make three
+       * different kinds of thing, and `C5` is true of one of the three. Until modes existed the
+       * only honest answer was to state nothing, on the one box in the library whose manual
+       * supplies both halves of the fact with a citation for each.
+       *
+       * The mode a track is in is not a rig setting and is not asked of the reader: it is what
+       * the recipe's own `SRC MACHINE` already selects, which is why `selectedBy` names that
+       * parameter and the schema refuses a recipe whose machine and mode disagree.
        */
       kind: 'pool',
       id: 'track',
       label: 'Track',
       count: 16,
+      modes: [
+        {
+          /**
+           * The four machines that play a loaded sample as a sample. p.93's `SRC MACHINE` set
+           * gives all four, and p.94 gives `ONESHOT` its own play modes — on any of them the note
+           * on the step is the sample's pitch, so `C5` is *play it as recorded* exactly as it is
+           * on a tracker row.
+           */
+          id: 'whole-sample',
+          label: 'ONESHOT / WERP / STRETCH / REPITCH',
+          triggerNote: { note: 'C5', midi: 60, verified: TRIGGER_NOTE_CITE },
+          selectedBy: {
+            param: 'SRC MACHINE',
+            values: ['ONESHOT', 'WERP', 'STRETCH', 'REPITCH'],
+          },
+        },
+        {
+          /**
+           * **No note, and this is the refusal working rather than a gap.** p.26: *"Slices play
+           * from C1 and upwards, wrapping around after the last slice, when using the Grid and
+           * Slice machines and set SLICE to NOTE"*. So the note there is a slice address — an
+           * ordinal wearing a note's shape — and `TriggerNote` says in as many words that putting
+           * one in that field would give two kinds of value one name. p.26's `C1` is read and
+           * deliberately not authored; #369 is where it belongs when something can say it.
+           */
+          id: 'sliced',
+          label: 'SLICE / GRID',
+          selectedBy: { param: 'SRC MACHINE', values: ['SLICE', 'GRID'] },
+        },
+        {
+          /**
+           * **No note, for a different reason.** p.17 makes any of the sixteen tracks a MIDI
+           * track, and p.53 warns that *"MIDI tracks has a different set of parameters on the
+           * TRIG, SRC, FLTR, and AMP page"* — a `NOTE` there is a note being sent out, not a
+           * loaded sample's original pitch.
+           *
+           * No recipe names this mode and none is expected to: a MIDI track drives another box
+           * rather than playing a part, and §2.2 has no role for that. It is declared because it
+           * is the third thing a track can be, and leaving it out would make the table claim the
+           * pool holds two kinds of member when the manual says three.
+           * `test/elektron-digitakt-ii.test.ts` pins that no recipe selects it, so the day one
+           * does, somebody re-reads p.53 first.
+           */
+          id: 'midi',
+          label: 'MIDI',
+          selectedBy: { param: 'SRC MACHINE', values: ['MIDI'] },
+        },
+      ],
       roles: [
         'kick', 'sub', 'bass-mid', 'snare', 'clap', 'rim', 'ghost-perc', 'closed-hat', 'open-hat',
         'ride', 'metallic', 'tom', 'noise', 'texture', 'pad', 'lead', 'stab', 'arp', 'acid',
