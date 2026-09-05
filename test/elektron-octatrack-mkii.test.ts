@@ -8,6 +8,7 @@ import {
   isSustainedPart,
   moodState,
   noteInstruction,
+  reachableSlots,
   realisationOf,
   renderGuide,
   resolve,
@@ -158,8 +159,20 @@ describe('Octatrack MKII manifest', () => {
   // -------------------------------------------------------------------------
 
   it('carries recipes on distinct (role, character) keys, with unique ids', () => {
+    // **This carried an upper bound of 20 and #345 replaced it rather than raising it**, on the
+    // Tracker Mini's lesson from the same batch: that bound had to move whenever authoring
+    // landed, so it was re-recording the last commit rather than guarding anything.
+    //
+    // What it stood in for is sprawl — recipes authored because a role exists rather than because
+    // a direction asks — and that is checkable directly and does not move when honest authoring
+    // lands. The floor stays, because a manifest that lost most of its recipes should still fail.
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(20)
+    const unreachable = device.recipes.filter((r) => !reachableSlots(r, TEMPLATES).requested)
+    expect(
+      unreachable.map((r) => r.id),
+      'authored for a (role, character) no direction in the library can select',
+    ).toEqual([])
+
     const pairs = device.recipes.map((r) => `${r.role} ${r.character}`)
     expect(new Set(pairs).size).toBe(pairs.length)
     const ids = device.recipes.map((r) => r.id)
@@ -871,11 +884,12 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * re-read the head note rather than a failure. What must not move is the relationship — no part
    * ever gets a `trigger`, because the pool has no note to give one.
    */
-  it('leaves 186 grid parts blank, and pins how many there are', () => {
+  it('leaves 222 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(210)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(186)
+    // 186 until #345 authored the six roles the pool declared and no recipe served.
+    expect(grid.length).toBe(246)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(222)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -905,10 +919,14 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['closed-hat', 42],
       ['ghost-perc', 24],
       ['clap', 18],
-      ['metallic', 18],
+      ['rim', 18],
       ['snare', 18],
+      ['metallic', 12],
+      ['tom', 12],
+      ['arp', 6],
       ['impact', 6],
       ['open-hat', 6],
+      ['ride', 6],
       ['vox-chop', 6],
     ])
   })
@@ -917,7 +935,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
     // part with no variant anywhere nothing to program.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(126)
+    expect(hooked.length).toBe(132)
     expect(sustained).toEqual([])
     expect(noPattern.length).toBe(24)
     expect([...new Set(noPattern)].sort()).toEqual([
