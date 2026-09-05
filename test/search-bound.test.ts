@@ -728,14 +728,21 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
       436, 221, 657, 223, 769, 221, 657, 221, 582, 302, 739, 221, 575, 305, 276, 302, 221, 276, 302,
       575, 223, 575, 302, 582
     ],
+    // #383. Both rows fell: `muse-stab-hard` and `muse-stab-dirty` are capped at one note and
+    // every `stab` request asks for a chord, so two recipes stopped being candidates for three
+    // requests and the tree they were explored in is gone. `hip-hop` roughly halves; the
+    // `industrial-techno` worst case goes 730,100 -> 543,140. See the note above the describe.
+    //
+    // The `industrial-techno` figures are 1-3 nodes above what #383 measured alone, because
+    // #345's seven Digitakt recipes landed first and cost this direction one node per seed. Two
+    // changes, and the second dwarfs the first by five orders of magnitude.
     'hip-hop': [
-      1350, 225, 2810, 261, 1383, 229, 3623, 229, 1081, 1990, 1114, 2497, 3126, 1958, 1352, 2529, 228,
-      1352, 229, 1081, 228, 1385, 225, 1081
+      844, 224, 1674, 260, 876, 228, 2109, 228, 701, 1233, 733, 1488, 1876, 1201, 846, 1520, 227,
+      846, 228, 701, 227, 878, 224, 701
     ],
     'industrial-techno': [
-      624781, 632354, 627172, 630714, 634471, 624789, 631191, 626429, 630405, 623125, 677278,
-      626429, 628663, 623124, 632354, 626343, 623125, 688870, 730100, 630985, 623125, 630262,
-      624789, 627172
+      470035, 475190, 471708, 474084, 476693, 470039, 474481, 471145, 473889, 468909, 506886, 471145,
+      472715, 468908, 475193, 471087, 468909, 514816, 543140, 474343, 468909, 473794, 470039, 471708
     ],
     'lydian-house': [
       230, 1222, 1105, 1121, 1122, 395, 1106, 394, 1122, 1331, 229, 394, 1106, 702, 308, 1331, 1331,
