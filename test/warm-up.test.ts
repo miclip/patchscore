@@ -111,8 +111,12 @@ describe('the rig is what makes it worth saying (§8)', () => {
     expect(md.indexOf('Power on first')).toBeLessThan(md.indexOf('Clock source'))
   })
 
-  it('carries the page, like any other authored claim', () => {
-    expect(guide(['moog-matriarch', 'roland-tr-1000'])).toContain('Moog Matriarch Manual (012023), p.8')
+  it('carries the instruction and not the page it was read off', () => {
+    // Ten minutes of warm-up is the thing to act on. The page is on the device page — warm-up is
+    // one of the four device-level citations it still renders (DESIGN.md §3.2).
+    const md = guide(['moog-matriarch', 'roland-tr-1000'])
+    expect(md).toContain('Power on first')
+    expect(md).not.toContain('Moog Matriarch Manual (012023), p.8')
   })
 
   it('says it in both renderers (#33)', () => {

@@ -19,11 +19,10 @@ import {
   reStrikesHeldNote,
   tightestReStrike,
 } from '@/lib/core'
-import { citeLines, citeText, count, hintText, num, voicesLabel } from './format'
+import { count, hintText, num, voicesLabel } from './format'
 import {
   HookRef,
   Instruction,
-  ProvenanceMark,
   ReArticulationRef,
   SoundRef,
   EnteredElsewhereRef,
@@ -98,10 +97,7 @@ function Articulation({
         const hint = entry.hint === undefined ? undefined : hintText(device, entry.hint)
         return (
           <li key={`${entry.slot}-${entry.steps.join('.')}`}>
-            <Instruction
-              cites={citeLines(entry.provenance, undefined)}
-              {...(hint === undefined ? {} : { hint })}
-            >
+            <Instruction {...(hint === undefined ? {} : { hint })}>
               <span className="mono slot">{entry.slot}</span>
               <span className="arrow" aria-hidden="true">
                 →
@@ -118,7 +114,6 @@ function Articulation({
                 on step{entry.steps.length === 1 ? '' : 's'}{' '}
                 <span className="mono">{entry.steps.map(num).join(', ')}</span>
               </span>
-              <ProvenanceMark provenance={entry.provenance} />
             </Instruction>
           </li>
         )
@@ -398,19 +393,11 @@ function NoteLine({ a }: { a: ResolvedAssignment }) {
         <strong>Trigger note</strong> — <span className="mono">{note.note}</span>
         {/*
           Bare. `C5` is where the sample plays as recorded, not the only note the voice answers
-          to — every other note plays it transposed — so a gloss would claim more than the
-          citation supports.
+          to — every other note plays it transposed — so a gloss would claim more than what was
+          read off the box supports.
         */}
-        <span className="quiet"> · MIDI {num(note.midi)}</span>{' '}
-        {/*
-          One arm only: §2.1 admits no uncited trigger note, so there is always a kind to draw
-          and always a page beneath it.
-        */}
-        <span className="prov prov-cited" title={note.verified.source}>
-          {note.verified.kind}
-        </span>
+        <span className="quiet"> · MIDI {num(note.midi)}</span>
       </p>
-      <p className="subordinate cite">{citeText(note.verified)}</p>
     </>
   )
 }

@@ -39,9 +39,25 @@ throughout the code point into it.
 
 ## Values and provenance
 
-Every rendered value is either cited to a source or marked provisional, and the interface says
-which. A citation is a manual page, or an observation from the hardware with the firmware it was
-made on. Nothing is presented as verified unless it is.
+Every resolved value is either cited to a source or recorded as provisional. A citation is a
+manual page, or an observation from the hardware with the firmware it was made on. Nothing is
+presented as verified unless it is.
+
+**Where you can see that is a device page**, which tells you how much of a box is checked: how many
+of its values and ranges are cited, which documents they are cited to, and what it has not
+established about its own clock, audio or voices.
+
+**A guide gives you one line of it per box.** It is read standing at a machine with both hands
+busy, where a page number beside a value is a line you step over on the way to the number — so
+every instruction is the value, its unit and its range, and the documents behind them are named
+once, above the box they belong to:
+
+> *This block draws on the TR-6S Parameter Guide eng02, pp.7-10 and the TR-6S Owner's Manual
+> eng02, p.17; its values are starting points.*
+
+The honest limit: no page on this site prints the manual page behind one individual value. The
+sentence tells you which book and roughly where; which page backs one number lives in the device's
+source file, and the counts on the device page are what keep it from drifting.
 
 The manuals themselves are gitignored. They are large, and redistributing vendor PDFs is not
 ours to do. [`manuals/README.md`](manuals/README.md) is the tracked index: what each

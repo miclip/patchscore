@@ -1,9 +1,8 @@
 # Industrial Techno
 
-Values are starting points — dial them to taste. Where a number came straight off the manual
-or off a unit it says which, and where a mood knob moved it you see the move (`52 → 45`) and
-the knob that did it. Every value carries its range — `38 (0…100)` — so you can tell at a
-glance whether the screen in front of you is the one the line is about.
+Values are starting points — dial them to taste. Where a mood knob moved one you see the move
+(`52 → 45`). Every value carries its range — `38 (0…100)` — so you can tell at a glance whether
+the screen in front of you is the one the line is about.
 
 ## 1. Song
 
@@ -73,31 +72,21 @@ None.
 
 **Power on first** — 7 boxes here need time before they hold pitch. Switch them on now and patch while they settle.
 - **MODEL D** — 15 minutes or more from cold
-  - ↳ cite: manual — MODEL D User Manual, p.12
 - **DFAM** — a few minutes from cold before it holds pitch
-  - ↳ cite: manual — Moog DFAM Owner’s Manual, p.6
 - **Grandmother** — 10 to 15 minutes from cold before it holds pitch
-  - ↳ cite: manual — Moog Grandmother User’s Manual (Version 2), p.6
 - **Matriarch** — 10 to 15 minutes from cold before it holds pitch
-  - ↳ cite: manual — Moog Matriarch Manual (012023), p.8
 - **Minitaur** — about 15 minutes from cold before it holds concert pitch
-  - ↳ cite: manual — Moog Minitaur Manual, p.4
 - **Mother-32** — a few minutes from cold before it holds pitch
-  - ↳ cite: manual — Moog Mother-32 User Manual (Version 2), p.9
 - **Subharmonicon** — a few minutes from cold before it holds pitch
-  - ↳ cite: manual — Moog Subharmonicon Manual, p.7
 
 **Once warm** — run Muse's quick tune: `PROGRAMMER > TUNING > START QUICK TUNE`. Touches up tuning for the current temperature; takes a few seconds.
-  - ↳ cite: manual — Muse User's Manual v1.4.0, p.112
 
 **Clock source** — Seq over `midi-din`, carrying 0 parts. Sync everything else to it, except MODEL D and Zoom LiveTrak L-8, which cannot receive clock and run free, and Model 2400, which cannot receive clock — a DAW drives its transport over HUI/MCU, and without one it runs free, and Metropolix and DFAM, which have no `midi-din` input and run free.
 
-- Why this box — 8 boxes here claim that job, so transport, then name, settled it · manual
-  - ↳ cite: claim manual — Polyend Seq Manual 2.2.6, p.10
+- Why this box — 8 boxes here claim that job, so transport, then name, settled it
 
-- On the Seq, set `Tempo knob + track button > MIDI Out` to `Out1+Clk` · manual
+- On the Seq, set `Tempo knob + track button > MIDI Out` to `Out1+Clk`
   - ↳ note: Out2+Clk sends it out MIDI Out 2 instead; set it on the track whose cable is in the port. The plain Out1 and Out2 options send notes with no clock.
-  - ↳ cite: value manual — Polyend Seq Manual 2.2.6, p.5
 
 **Voice control** — Metropolix sends the notes, 2 cables in all. Patch each pair before you play anything:
 
@@ -120,10 +109,8 @@ None.
   - mixer: no parts assigned; nothing to patch
 - **MicroFreak** — synth · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
-  - MIDI · In: 1/8" TRS, not 5-pin — p.20 and p.7 both direct the reader to "the included MIDI adapters (1/8" TRS jack to 5-pin DIN, gray)" · manual
-    - ↳ cite: value manual — MicroFreak User Manual 4.0.3 p.20
-  - MIDI · Out: 1/8" TRS with the same included adapter. There is no MIDI Thru socket; Utility > MIDI > Thru echoes In to Out in software instead (p.89) · manual
-    - ↳ cite: value manual — MicroFreak User Manual 4.0.3 p.20
+  - MIDI · In: 1/8" TRS, not 5-pin — p.20 and p.7 both direct the reader to "the included MIDI adapters (1/8" TRS jack to 5-pin DIN, gray)"
+  - MIDI · Out: 1/8" TRS with the same included adapter. There is no MIDI Thru socket; Utility > MIDI > Thru echoes In to Out in software instead (p.89)
   - audio: mono main out · audio in
   - mixer: 1 part, no individual outs: one mono channel for all
 - **CRAVE** — semi-modular · 0 parts
@@ -136,8 +123,7 @@ None.
   - mixer: 1 part, no individual outs: one mono channel for all
 - **NEUTRON** — semi-modular · 0 parts
   - clock: receives clock only · midi-din/usb
-  - MIDI IN: On the top panel beside VOLUME, not the rear · manual
-    - ↳ cite: value manual — Neutron User Manual, p.8
+  - MIDI IN: On the top panel beside VOLUME, not the rear
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
 - **RD-8** — drum-machine · 1 part
@@ -150,14 +136,12 @@ None.
   - mixer: 1 part, 10 individual outs: one channel each
 - **Analog Rytm MKII** — drum-machine · 1 part
   - clock: sends clock · out: midi-din/usb/din-sync · in: midi-din/usb
-  - MIDI OUT/SYNC A: OUT PORT FUNC picks MIDI, DIN 24 or DIN 48; a DIN setting carries no MIDI data (p.62) · manual
-    - ↳ cite: value manual — Analog Rytm MKII User Manual OS 1.71, p.12
+  - MIDI OUT/SYNC A: OUT PORT FUNC picks MIDI, DIN 24 or DIN 48; a DIN setting carries no MIDI data (p.62)
   - audio: stereo main out · 8 individual outs · USB audio · audio in
   - mixer: 1 part, 8 individual outs: one channel each
 - **Digitakt** — sampler · 0 parts
   - clock: sends clock · out: midi-din/usb/din-sync · in: midi-din/usb
-  - MIDI OUT/SYNC A: OUT PORT FUNCTIONALITY picks MIDI, DIN 24 or DIN 48; a DIN setting carries no MIDI data (p.69) · manual
-    - ↳ cite: value manual — Digitakt User Manual OS 1.51, p.14, p.69
+  - MIDI OUT/SYNC A: OUT PORT FUNCTIONALITY picks MIDI, DIN 24 or DIN 48; a DIN setting carries no MIDI data (p.69)
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
 - **Digitakt II** — sampler · 0 parts
@@ -198,18 +182,14 @@ None.
   - mixer: no parts assigned; nothing to patch
 - **Grandmother** — semi-modular · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
-  - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per the Global Settings (p.37) · manual
-    - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
-  - MIDI OUT: Everything originating on this box, MIDI Clock included when the Global Setting sends it (p.37) · manual
-    - ↳ cite: value manual — Moog Grandmother User’s Manual (Version 2), p.36
+  - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per the Global Settings (p.37)
+  - MIDI OUT: Everything originating on this box, MIDI Clock included when the Global Setting sends it (p.37)
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
 - **Matriarch** — semi-modular · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
-  - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per Global Setting 1.5 (p.64) · manual
-    - ↳ cite: value manual — Moog Matriarch Manual (012023), p.59
-  - MIDI OUT: Everything originating here, MIDI Clock included — on by default per Global Setting 1.6 (p.64) · manual
-    - ↳ cite: value manual — Moog Matriarch Manual (012023), p.59
+  - MIDI IN: MIDI Clock and Start/Stop are followed or ignored per Global Setting 1.5 (p.64)
+  - MIDI OUT: Everything originating here, MIDI Clock included — on by default per Global Setting 1.6 (p.64)
   - audio: stereo main out · audio in
   - mixer: no parts assigned; nothing to patch
 - **Minitaur** — synth · 1 part
@@ -218,8 +198,7 @@ None.
   - mixer: 1 part, no individual outs: one mono channel for all
 - **Mother-32** — semi-modular · 0 parts
   - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
-  - MIDI IN: The only MIDI connector on the box: input only, 5-pin DIN, on the front panel · manual
-    - ↳ cite: value manual — Moog Mother-32 User Manual (Version 2), p.54
+  - MIDI IN: The only MIDI connector on the box: input only, 5-pin DIN, on the front panel
   - audio: mono main out · audio in
   - mixer: no parts assigned; nothing to patch
 - **Muse** — synth · 0 parts
@@ -228,8 +207,7 @@ None.
   - mixer: no parts assigned; nothing to patch
 - **Subharmonicon** — semi-modular · 0 parts
   - clock: sends clock · out: analog-clock · in: midi-din/analog-clock
-  - IN · MIDI IN: A 3.5 mm socket fed by the supplied five-pin DIN adapter (MIDI Type A). Takes clock, note data and CCs. MIDI clock overrides the internal clock *and* anything at IN · CLOCK · manual
-    - ↳ cite: value manual — Moog Subharmonicon Manual, p.37
+  - IN · MIDI IN: A 3.5 mm socket fed by the supplied five-pin DIN adapter (MIDI Type A). Takes clock, note data and CCs. MIDI clock overrides the internal clock *and* anything at IN · CLOCK
   - audio: mono main out
   - mixer: no parts assigned; nothing to patch
 - **Subsequent 37** — synth · 1 part
@@ -242,28 +220,23 @@ None.
   - mixer: no parts assigned; nothing to patch
 - **Play+** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb
-  - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.15, p.202) · manual
-    - ↳ cite: value manual — Polyend Play+ Manual Rev 2, p.15
+  - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.15, p.202)
   - audio: stereo main out · USB audio
   - mixer: no parts assigned; nothing to patch
 - **Seq** — sequencer · 0 parts
   - clock: sends clock · midi-din/usb
-  - MIDI Out 1: Clock leaves here only for a track whose MIDI Out is set to Out1+Clk; MIDI Out 2 is the other 5-pin DIN output and takes Out2+Clk. · manual
-    - ↳ cite: value manual — Polyend Seq Manual 2.2.6, p.2, p.3
-  - MIDI In: Takes the external clock the Tempo knob’s Clock setting follows, and records notes and velocity from a controller onto the tracks that are turned on. · manual
-    - ↳ cite: value manual — Polyend Seq Manual 2.2.6, p.2, p.3
+  - MIDI Out 1: Clock leaves here only for a track whose MIDI Out is set to Out1+Clk; MIDI Out 2 is the other 5-pin DIN output and takes Out2+Clk.
+  - MIDI In: Takes the external clock the Tempo knob’s Clock setting follows, and records notes and velocity from a controller onto the tracks that are turned on.
   - audio: no audio I/O
   - mixer: no parts assigned; nothing to patch
 - **Tracker** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb
-  - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.250) · manual
-    - ↳ cite: value manual — Polyend Tracker Manual 1.9.2a, p.13
+  - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.250)
   - audio: stereo main out · audio in
   - mixer: no parts assigned; nothing to patch
 - **Tracker Mini** — groovebox · 0 parts
   - clock: sends clock · midi-din/usb
-  - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284) · manual
-    - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.13
+  - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284)
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
 - **MC-101** — groovebox · 0 parts
@@ -276,8 +249,7 @@ None.
   - mixer: no parts assigned; nothing to patch
 - **SP-404MK2** — sampler · 0 parts
   - clock: sends clock · out: midi-din · in: midi-din/usb
-  - MIDI OUT, MIDI IN: 3.5mm stereo-mini, not 5-pin — Roland’s TRS/MIDI cable is the BMIDI-5-35 (p.14) · manual
-    - ↳ cite: value manual — SP-404MK2 Reference Manual v4.00, p.14
+  - MIDI OUT, MIDI IN: 3.5mm stereo-mini, not 5-pin — Roland’s TRS/MIDI cable is the BMIDI-5-35 (p.14)
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
 - **TR-1000** — drum-machine · 1 part
@@ -294,10 +266,8 @@ None.
   - mixer: 2 parts, 6 individual outs: one channel each
 - **Hapax** — sequencer · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock
-  - midi in A: CLOCK SOURCE = MIDI IN A makes this the sync input; MIDI IN B is the other choice (p.130). · manual
-    - ↳ cite: value manual — Hapax Manual (22 June 2026), p.27
-  - midi out A: Sync output must be set to CLOCK+TRANSPORT for the port the cable is in; B, C and D send the same clock (p.132). · manual
-    - ↳ cite: value manual — Hapax Manual (22 June 2026), p.28
+  - midi in A: CLOCK SOURCE = MIDI IN A makes this the sync input; MIDI IN B is the other choice (p.130).
+  - midi out A: Sync output must be set to CLOCK+TRANSPORT for the port the cable is in; B, C and D send the same clock (p.132).
   - audio: no audio I/O
   - mixer: no parts assigned; nothing to patch
 - **Deluge** — groovebox · 0 parts
@@ -310,32 +280,25 @@ None.
   - mixer: no parts assigned; nothing to patch
 - **EP–133 K.O. II** — sampler · 0 parts
   - clock: sends clock · midi-din/usb/sync
-  - midi out: 3.5 mm TRS type A, MMA compliant pinout, 3.3 V. Clock leaves here only while mid > clk is set to out, which is also what stops it arriving · manual
-    - ↳ cite: value manual — EP–133 K.O. II guide, /ep-133/tech-specs 16, mirrored 2026-08-28
-  - midi in: 3.5 mm TRS type A, MMA compliant pinout, opto-coupled. Clock arrives here only while mid > clk is set to in — it ships off · manual
-    - ↳ cite: value manual — EP–133 K.O. II guide, /ep-133/tech-specs 16, mirrored 2026-08-28
+  - midi out: 3.5 mm TRS type A, MMA compliant pinout, 3.3 V. Clock leaves here only while mid > clk is set to out, which is also what stops it arriving
+  - midi in: 3.5 mm TRS type A, MMA compliant pinout, opto-coupled. Clock arrives here only while mid > clk is set to in — it ships off
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
 - **EP–40 riddim** — sampler · 0 parts
   - clock: sends clock · midi-din/usb/sync
-  - midi out: 3.5 mm TRS type A, MMA compliant pinout, 3.3 V. Clock leaves here only while mid > clk is set to out, which is also what stops it arriving · manual
-    - ↳ cite: value manual — EP–40 riddim guide, /ep-40/tech-specs 16, mirrored 2026-08-28
-  - midi in: 3.5 mm TRS type A, MMA compliant pinout, opto-coupled. Clock arrives here only while mid > clk is set to in — it ships off · manual
-    - ↳ cite: value manual — EP–40 riddim guide, /ep-40/tech-specs 16, mirrored 2026-08-28
+  - midi out: 3.5 mm TRS type A, MMA compliant pinout, 3.3 V. Clock leaves here only while mid > clk is set to out, which is also what stops it arriving
+  - midi in: 3.5 mm TRS type A, MMA compliant pinout, opto-coupled. Clock arrives here only while mid > clk is set to in — it ships off
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
 - **OP-XY** — groovebox · 0 parts
   - clock: sends clock · out: midi-din/usb/sync · in: midi-din/usb
-  - midi in: 3.5 mm TRS. The manual does not state which TRS type this input is — it names type A only for the multi-out (p.111). Clock arrives here per p.88, which says midi clock is sent and received without saying the transport follows it. · manual
-    - ↳ cite: value manual — OP-XY full guide v1.1.15, p.3
+  - midi in: 3.5 mm TRS. The manual does not state which TRS type this input is — it names type A only for the multi-out (p.111). Clock arrives here per p.88, which says midi clock is sent and received without saying the transport follows it.
   - audio: stereo main out · USB audio · audio in
   - mixer: no parts assigned; nothing to patch
 - **T-1** — sequencer · 0 parts
   - clock: sends clock · midi-din/usb/analog-clock/ableton-link
-  - midi · in: 3.5 mm TRS Type A — Type B adapters are incompatible. Enable Clock under T1 Config > MIDI I/O > TRS > In to follow it. · manual
-    - ↳ cite: value manual — Torso T-1 docs, /t1/midi-and-analog-sync/midi-connectivity/, fetched 2026-08-28
-  - midi · out: 3.5 mm TRS Type A. Clock and Start / Stop are enabled per message type under T1 Config > MIDI I/O > TRS > Out. · manual
-    - ↳ cite: value manual — Torso T-1 docs, /t1/midi-and-analog-sync/midi-connectivity/, fetched 2026-08-28
+  - midi · in: 3.5 mm TRS Type A — Type B adapters are incompatible. Enable Clock under T1 Config > MIDI I/O > TRS > In to follow it.
+  - midi · out: 3.5 mm TRS Type A. Clock and Start / Stop are enabled per message type under T1 Config > MIDI I/O > TRS > Out.
   - audio: no audio I/O
   - mixer: no parts assigned; nothing to patch
 - **Zoom LiveTrak L-8** — mixer-recorder · 0 parts
@@ -360,8 +323,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 2 bars in F minor.
 
-A step is one note long and nothing here sets a length: `TIE` joins a note to the next step, and stacking those is how anything longer is entered. · manual
-- ↳ cite: claim manual — Subsequent 37 User's Manual, p.17
+A step is one note long and nothing here sets a length: `TIE` joins a note to the next step, and stacking those is how anything longer is entered.
 
 - bar 1 · step 1 · sounds for 3 steps · `F2` · root · MIDI 41
 - bar 1 · step 7 · sounds for 2 steps · `F2` · root · MIDI 41
@@ -377,8 +339,7 @@ A step is one note long and nothing here sets a length: `TIE` joins a note to th
 
 8 bars in F minor.
 
-How this box sets a note’s length is not established here, so the durations below are the part rather than a field to fill in. · unread
-- ↳ cite: unread — the minilogue xd manual is not in `manuals/`; no document here was opened for it
+How this box sets a note’s length is not established here, so the durations below are the part rather than a field to fill in.
 
 - bar 1 · step 1 · held for 64 steps (4 bars) · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
 - bar 5 · step 65 · held for 32 steps (2 bars) · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
@@ -390,8 +351,7 @@ How this box sets a note’s length is not established here, so the durations be
 
 4 bars in F minor.
 
-A step is one note long and nothing here sets a length: `Tie/Rest` joins a note to the next step, and stacking those is how anything longer is entered. · manual
-- ↳ cite: claim manual — MicroFreak User Manual 4.0.3 p.77
+A step is one note long and nothing here sets a length: `Tie/Rest` joins a note to the next step, and stacking those is how anything longer is entered.
 
 - bar 1 · step 1 · sounds for 2 steps · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
 - bar 1 · step 11 · sounds for 1 step · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
@@ -680,13 +640,11 @@ A step is one note long and nothing here sets a length: `Tie/Rest` joins a note 
 
 ### MicroFreak
 
-*Values below cite MicroFreak User Manual 4.0.3 p.113, MicroFreak User Manual 4.0.3 p.56, MicroFreak User Manual 4.0.3 p.63, MicroFreak User Manual 4.0.3 p.53, MicroFreak User Manual 4.0.3 p.28, and MicroFreak User Manual 4.0.3 p.88.*
+*This block draws on the MicroFreak User Manual 4.0.3, pp.10-113; its values are starting points.*
 
 #### Voice — `stab`: Three-note BasicWaves stab, envelope straight onto the cutoff
 
 Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
-
-*Ranges cite manual — MicroFreak User Manual 4.0.3 p.113.*
 
 - **Paraphonic** `On`
   - ↳ note: p.10: lit, the four voices trigger independently and share the one analog filter
@@ -704,38 +662,28 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ note: Silkscreened `Type` inside ANALOG FILTER (p.13); qualified here because the oscillator’s knob carries the same word
   - ↳ hint: Type button cycles LPF, BPF, HPF
 - **Cutoff** `38` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: No printed scale. p.50 gives the extremes as "approximately 30Hz" fully counter-clockwise and "exceeds 15kHz" fully clockwise — hedged at both ends, so not a range
 - **Resonance** `58` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: No printed scale. p.49 says the clockwise extreme self-oscillates and "will block all sound from the Digital Oscillator" in BPF
 - **Attack** `0` ms (0…10000 ms)
-  - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.56
   - ↳ note: p.56: "Attack sets the time, from 0 ms to 10 seconds, the envelope takes to reach its initial level"
 - **Decay / Rel** `320` ms (0…13000 ms)
-  - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.56
   - ↳ note: p.56: "Decay/Release adjusts the time, again from 0ms to 13 seconds"
 - **Sustain** `12` % (0…100 %)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: p.55’s worked example is the only figure the manual prints for this knob — "sustain to 90%" — which fixes the unit and not the bounds, so mood may not move it
 - **Filter Amt** `74` (-100…100)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: p.56: "Filter amount is a bipolar control", and p.55’s example sets it to 70. Neither states a limit, so the bounds are unverified and mood-inert
 - **Amp Mod** `On`
   - ↳ note: p.57: lit, the envelope shapes loudness as well as cutoff; unlit, the gate drives the VCA directly and the envelope still reaches the filter
 - **Cyc Mode** `Env`
   - ↳ note: p.58: Env cycles once; Run free-runs and resets on MIDI start; Loop retriggers from the keyboard, sequencer or arpeggiator
 - **Rise** `0` ms (0…10000 ms)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: The manual prints no bounds for this knob; p.58 and p.103 give worked settings in ms and seconds, which fix the unit only
 - **Fall** `180` ms (0…10000 ms)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: The manual prints no bounds for this knob; p.58 and p.103 give worked settings in ms and seconds, which fix the unit only
 - **Hold** `0` ms (0…10000 ms)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: The manual prints no bounds for this knob; p.58 and p.103 give worked settings in ms and seconds, which fix the unit only
 - **Amount** `30` % (0…100 %)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: p.59 calls it an attenuator; p.58’s worked example is "amount to 50%", the only figure printed for it
 - **LFO Shape** `Square`
   - ↳ note: p.52: "sine, triangle, rising sawtooth, rectangle (square), random (sample & hold) and random gliding"
@@ -743,24 +691,20 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ note: Press the Rate encoder to toggle. Off, Rate reads in Hz; on, it reads in clock divisions — the same knob, two scales
   - ↳ hint: Press the LFO Rate encoder
 - **LFO Rate** `6` Hz (0.06…100 Hz)
-  - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.53
   - ↳ note: p.53 twice: "0.06Hz up to 100Hz" and "the LFO ranges from 0.06Hz to 100Hz". p.17 says 0.05Hz for the same knob; the LFO chapter is followed here
 - **Glide mode** `Time`
   - ↳ note: Utility > Preset > Glide mode. The Glide knob reads seconds in Time, clock divisions in Sync and a rate in Rate — three scales on one knob (p.63)
   - ↳ hint: Utility > Preset > Glide mode
 - **Glide** `0` ms (0…10000 ms)
-  - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.63
   - ↳ note: p.63: "The glide time is variable from \"off\" to about 10 seconds" — the manual hedges the upper end and prints no other figure
 
 ### MODEL D
 
-*Values below cite MODEL D User Manual.*
+*This block draws on the MODEL D User Manual, p.34; its values are starting points.*
 
 #### Voice — `kick`: Kick with the filter contour patched onto the pitch
 
 Routing — FILT CONT into OSC 1V/OCT is the whole trick: the filter envelope becomes a pitch envelope, and the filter decay time is the only thing shaping it
-
-*Ranges cite manual — MODEL D User Manual, p.34.*
 
 - **TUNE** `0` st (-2…2 st)
   - ↳ note: Moves OSC 1, 2 and 3 together (p.8). p.12 calls the marks semitones "as a general guide"
@@ -828,14 +772,13 @@ Routing — FILT CONT into OSC 1V/OCT is the whole trick: the filter envelope be
 
 ### RD-8
 
-*Values below cite RHYTHM DESIGNER RD-8 User Manual.*
+*This block draws on the RHYTHM DESIGNER RD-8 User Manual, pp.16-26; its values are starting points.*
 
 **Pattern-wide**
 
 One setting for the whole pattern — set it once, not once per part below.
 
 - **CUTOFF** `2600` Hz (10…15000 Hz)
-  - ↳ cite: range manual — RHYTHM DESIGNER RD-8 User Manual, p.26
   - ↳ note: One filter for the whole box — every voice on the FX bus shares it (p.13)
   - ↳ hint: Press SEND, SELECT the voice, SEND again
 - **FILTER** `On`
@@ -843,14 +786,12 @@ One setting for the whole pattern — set it once, not once per part below.
 - **FILTER MODE** `LPF`
   - ↳ note: The HPF button toggles it; LPF is the default (p.5)
 - **PROB** `90` % (0…100 %)
-  - ↳ cite: range manual — RHYTHM DESIGNER RD-8 User Manual, p.21
   - ↳ note: Only steps switched on in the PROB menu are affected (p.16)
   - ↳ hint: SETTINGS > PROB, pick a voice, then steps
 - **PROB PREFERENCE** `Pattern`
   - ↳ note: p.16 adds that the steps are stored per pattern while the amount is one number
   - ↳ hint: SETTINGS > CLOCK, TAP/HOLD to page
 - **RESONANCE** `4` (0…10)
-  - ↳ cite: range manual — RHYTHM DESIGNER RD-8 User Manual, p.26
   - ↳ note: A peak at the cutoff point (p.13)
 - **STEP SIZE** `1/16`
   - ↳ note: One step is 1/16 of a bar, so sixteen steps make one bar (p.16)
@@ -858,17 +799,14 @@ One setting for the whole pattern — set it once, not once per part below.
 - **STEP SIZE PREFERENCE** `Pattern`
   - ↳ hint: SETTINGS > CLOCK, TAP/HOLD to page
 - **SWING** `50` % (50…75 %)
-  - ↳ cite: range manual — RHYTHM DESIGNER RD-8 User Manual, p.21
   - ↳ note: 50 is straight and 75 is full swing (p.17)
   - ↳ hint: Press DATA MODE, then turn DATA
 - **SWING PREFERENCE** `Pattern`
   - ↳ note: Chooses which stored Swing the sequencer uses — Global, Song or Pattern
   - ↳ hint: SETTINGS > CLOCK, TAP/HOLD to page
 - **WAVE DESIGNER ATTACK** `-3` dB (-15…15 dB)
-  - ↳ cite: range manual — RHYTHM DESIGNER RD-8 User Manual, p.26
   - ↳ note: 0 dB is 12 o’clock and is bypass (p.12)
 - **WAVE DESIGNER SUSTAIN** `12` dB (-24…24 dB)
-  - ↳ cite: range manual — RHYTHM DESIGNER RD-8 User Manual, p.26
   - ↳ note: Acts like a compressor upward, and shortens the tail downward (p.12)
 
 #### CYMBAL — `metallic`: Cymbal darkened and filtered into a metallic bed
@@ -876,25 +814,21 @@ One setting for the whole pattern — set it once, not once per part below.
 Routing — Send the cymbal to the FX bus: press SEND, use SELECT to light CYMBAL, press SEND again (p.12)
 
 - **TONE** `30` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: CCW removes high frequency information (p.9)
 - **DECAY** `84` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: How long the cymbal rings (p.9)
 - **LEVEL** `40` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: Level against the other voices (p.9)
 
 ### RD-9
 
-*Values below cite RD-9 User Manual V 1.0.*
+*This block draws on the RD-9 User Manual V 1.0, pp.17-33; its values are starting points.*
 
 **Pattern-wide**
 
 One setting for the whole pattern — set it once, not once per part below.
 
 - **CUTOFF** `3600` Hz (10…15000 Hz)
-  - ↳ cite: range manual — RD-9 User Manual V 1.0, p.33
   - ↳ note: One filter for the whole box — every voice on the FX bus shares it (p.15)
   - ↳ hint: Press SEND, SELECT the voice, SEND again
 - **FILTER** `On`
@@ -902,14 +836,12 @@ One setting for the whole pattern — set it once, not once per part below.
 - **FILTER MODE** `HPF`
   - ↳ note: The HPF button toggles it; LPF is the default (p.6)
 - **PROB** `90` % (0…100 %)
-  - ↳ cite: range manual — RD-9 User Manual V 1.0, p.28
   - ↳ note: Only steps switched on in the PROB menu are affected (p.18)
   - ↳ hint: SETTINGS > PROB, pick a voice, then steps
 - **PROB PREFERENCE** `Pattern`
   - ↳ note: p.18 adds that the steps are stored per pattern while the amount is one number
   - ↳ hint: SETTINGS > CLOCK, TAP/HOLD to page
 - **RESONANCE** `7` (0…10)
-  - ↳ cite: range manual — RD-9 User Manual V 1.0, p.33
   - ↳ note: A peak at the cutoff point (p.15)
 - **STEP SIZE** `1/16`
   - ↳ note: One step is 1/16 of a bar, so sixteen steps make one bar (p.19)
@@ -917,17 +849,14 @@ One setting for the whole pattern — set it once, not once per part below.
 - **STEP SIZE PREFERENCE** `Pattern`
   - ↳ hint: SETTINGS > CLOCK, TAP/HOLD to page
 - **SWING** `50` % (25…75 %)
-  - ↳ cite: range manual — RD-9 User Manual V 1.0, p.28
   - ↳ note: 50 is straight; below it swings negative, above it shuffles (p.20)
   - ↳ hint: Press DATA MODE, then turn DATA
 - **SWING PREFERENCE** `Pattern`
   - ↳ note: Chooses which stored Swing is used — and with it which printed range applies
   - ↳ hint: SETTINGS > CLOCK, TAP/HOLD to page
 - **WAVE DESIGNER ATTACK** `4` dB (-15…15 dB)
-  - ↳ cite: range manual — RD-9 User Manual V 1.0, p.33
   - ↳ note: 0 dB is 12 o’clock and is bypass (p.15)
 - **WAVE DESIGNER SUSTAIN** `14` dB (-24…24 dB)
-  - ↳ cite: range manual — RD-9 User Manual V 1.0, p.33
   - ↳ note: Acts like a compressor upward, and shortens the tail downward (p.15)
 
 #### OPEN — `noise`: Open hat held long and high-passed into a noise wash
@@ -938,21 +867,16 @@ Routing — Send the hi-hats to the FX bus: press SEND, use SELECT to light OPEN
   - ↳ note: Off, PITCH, PITCH DEPTH and the hi-hat TUNE do nothing (p.10)
   - ↳ hint: SETTINGS > PREFS, TAP/HOLD to Enhanced Mode
 - **TUNE** `84` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
 - **OH DECAY** `94` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: The longest tail the voice has (p.11)
 - **LEVEL** `46` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: Level against the other voices (p.10)
 
 ### Analog Rytm MKII
 
-*Values below cite Analog Rytm MKII User Manual OS 1.71.*
+*This block draws on the Analog Rytm MKII User Manual OS 1.71, pp.79-104; its values are starting points.*
 
 #### CP — `clap`: CP CLASSIC through the 1-pole highpass, backbeat at velocity 112 with an accent trig
-
-*Ranges cite manual — Analog Rytm MKII User Manual OS 1.71, p.79.*
 
 - **MACHINE** `CP CLASSIC`
   - ↳ note: Press [SRC] twice to change it
@@ -963,60 +887,44 @@ Routing — Send the hi-hats to the FX bus: press SEND, use SELECT to light OPEN
 
 ### minilogue xd
 
-*Values below cite minilogue xd Owner's Manual E 9.*
+*This block draws on the minilogue xd Owner's Manual E 9, pp.17-41; its values are starting points.*
 
 #### Voice — `pad`: Low pad with the filter shut down over the top of it
 
 Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 
-*Ranges cite manual — minilogue xd Owner's Manual E 9, p.24.*
-
 - **PORTAMENTO** `20` (0…127)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.17
 - **SWING** `0` % (-75…75 %)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.41
   - ↳ note: 0 is straight; the arpeggiator uses the same value
   - ↳ hint: EDIT MODE, PROGRAM EDIT, button 7
 - **VOICE MODE TYPE** `POLY`
 - **VOICE MODE DEPTH** `0` (0…1023)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.17
   - ↳ note: Left at 0 — turning right crosses into DUO, which spends two voices on every key
 - **VCO 1 · WAVE** `SAW`
 - **VCO 1 · OCTAVE** `16'`
 - **VCO 1 · PITCH** `0` c (-1200…1200 c)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
 - **VCO 1 · SHAPE** `380` (0…1023)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
   - ↳ note: Shape, complexity, or duty cycle of the selected wave
 - **VCO 2 · WAVE** `TRI`
 - **VCO 2 · OCTAVE** `8'`
 - **VCO 2 · PITCH** `-9` c (-1200…1200 c)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
 - **VCO 2 · SHAPE** `200` (0…1023)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
 - **VCO 2 · SYNC** `OFF`
   - ↳ note: Locks oscillator 2 to the phase of oscillator 1
 - **VCO 2 · RING** `OFF`
   - ↳ note: Oscillator 1 ring-modulates oscillator 2
 - **CROSS MOD DEPTH** `0` (0…1023)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.19
   - ↳ note: Oscillator 1 modulating the pitch of oscillator 2
 - **MULTI ENGINE · NOISE/VPM/USR** `NOISE`
 - **MULTI ENGINE · TYPE** `Low`
 - **MULTI ENGINE · SHAPE** `400` Hz (10…21000 Hz)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.20
   - ↳ note: CUTOFF — the low-pass filter on the noise
 - **MIXER · VCO 1** `700` (0…1023)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
 - **MIXER · VCO 2** `540` (0…1023)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
 - **MIXER · MULTI** `120` (0…1023)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
 - **CUTOFF** `300` (0…1023)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.23
   - ↳ note: Set too low and the patch may be barely audible
 - **RESONANCE** `180` (0…1023)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.23
 - **DRIVE** `50%`
   - ↳ note: The filter drive circuit, in three stages
 - **KEYTRACK** `50%`
@@ -1033,9 +941,7 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **LFO · WAVE** `TRI`
 - **LFO · MODE** `NORMAL`
 - **LFO · RATE** `110` (0…1023)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.25
 - **LFO · INT** `70` (0…511)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.25
   - ↳ hint: Hold SHIFT, turn INT to invert
 - **LFO · TARGET** `CUTOFF`
 - **EFFECTS · DEL/REV/MOD** `REV`
@@ -1043,17 +949,14 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **EFFECTS · OFF/ON/SELECT** `ON`
   - ↳ hint: Hold SHIFT, flip to SELECT
 - **EFFECTS · DEPTH** `62` % (0…100 %)
-  - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
 
 ### Minitaur
 
-*Values below cite Moog Minitaur Manual.*
+*This block draws on the Moog Minitaur Manual, pp.9-29 and the Moog Minitaur Firmware v2.1 Addendum, p.17; its values are starting points.*
 
 #### Voice — `sub`: One oscillator under the filter, nothing above it
 
 Routing — One VCO only — VCO 2 is down, so there is nothing to beat against and the pitch is dead still.
-
-*Ranges cite manual — Moog Minitaur Manual, p.29.*
 
 - **FINE TUNE** `0` st (-1…1 st)
   - ↳ note: Centred is in tune. Adjusts both oscillators together, and neither sends nor receives MIDI (p.10)
@@ -1069,7 +972,6 @@ Routing — One VCO only — VCO 2 is down, so there is nothing to beat against 
 - **CUTOFF** `80` Hz (20…20000 Hz)
   - ↳ note: The one knob on this panel with a printed scale: 20Hz, 80Hz, 320Hz, 1.2KHz, 5KHz, 20KHz
 - **RES** `5` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: p.29 gives this range as "0 to Self-Oscillation" — a named endpoint, not a number, so this is percent of travel
 - **EG AMOUNT** `0` % (-100…100 %)
   - ↳ note: How much the filter envelope adds to or subtracts from CUTOFF; centre is none
@@ -1096,19 +998,15 @@ Routing — One VCO only — VCO 2 is down, so there is nothing to beat against 
 - **GLIDE RATE** `0` % (0…100 %)
   - ↳ note: Instantaneous fully anticlockwise to extremely long fully clockwise (p.11)
 - **VOLUME** `70` % travel (0…100 % travel)
-  - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: Panelled `VOLUME` beside a headphone pictogram — one knob sets the output and the headphones together (p.17)
 
 ### Subsequent 37
 
-*Values below cite Subsequent 37 User's Manual.*
+*This block draws on the Subsequent 37 User's Manual, pp.21-61; its values are starting points.*
 
 #### Voice — `bass-mid`: Mixer pushed past unity with feedback under it and MultiDrive on top
 
-*Ranges cite manual — Subsequent 37 User's Manual, p.27.*
-
 - **SWING** `50` % (0…100 %)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.40
   - ↳ note: 50 is straight; it swings the onboard arpeggiator and sequencer, nothing played from elsewhere
   - ↳ hint: PRESET EDIT, ARPEGGIATOR, SWING
 - **GLIDE · ON** `OFF`
@@ -1128,10 +1026,8 @@ Routing — One VCO only — VCO 2 is down, so there is nothing to beat against 
 - **OSC · KB CTRL** `HI`
   - ↳ note: Inert while DUO MODE is off; set so FREQUENCY keeps its semitone scale
 - **OSC 2 · FREQUENCY** `-0.5` st (-7…7 st)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.26
   - ↳ note: Centre is unison with OSC 1; fully clockwise is a fifth
 - **OSC 2 · BEAT FREQ** `1` Hz (-3.5…3.5 Hz)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.26
   - ↳ note: A constant beat rate at every pitch, unlike FREQUENCY
 - **MIXER · OSC 1** `8.5` (0…10)
 - **MIXER · SUB 1** `7.5` (0…10)
@@ -1142,44 +1038,31 @@ Routing — One VCO only — VCO 2 is down, so there is nothing to beat against 
 - **MIXER · FDBK / EXT IN** `3` (0…10)
   - ↳ note: With nothing in EXT IN this feeds the mixer output back into itself
 - **CUTOFF** `260` Hz (20…20000 Hz)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.28
   - ↳ note: Fully down closes the filter completely
 - **RESONANCE** `6.5` (0…10)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.28
   - ↳ hint: Above 7 the filter sings by itself
 - **MULTIDRIVE** `7.5` (0…10)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.28
   - ↳ note: Tube-like warmth at the bottom, hard clipping at the top
 - **FILTER · SLOPE** `24`
   - ↳ note: dB per octave: one, two, three or four poles
 - **FILTER · EG AMT** `2.5` (-5…5)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.28
   - ↳ note: Bipolar: below centre the envelope pulls the cutoff down
 - **FILTER · KB TRACK** `0.5` (0…2)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.29
   - ↳ note: 1.0 is 1:1 tracking centred on C3; 2.0 is 2:1
 - **ENV · KNOB SHIFT** `OFF`
   - ↳ note: Unlit, or the eight knobs below are DELAY, HOLD, VEL AMT and KB TRACK instead
 - **FILTER EG · ATTACK** `2` ms (0.1…10000 ms)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.30
 - **FILTER EG · DECAY** `260` ms (0.1…10000 ms)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.30
 - **FILTER EG · SUSTAIN** `2` (0…10)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.31
   - ↳ note: 0 to 100%, calibrated 1 to 10
 - **FILTER EG · RELEASE** `200` ms (0.1…10000 ms)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.31
 - **FILTER EG · LOOP** `OFF`
   - ↳ note: On, the envelope repeats for as long as a note is held — a multistage LFO
 - **AMP EG · ATTACK** `2` ms (0.1…10000 ms)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.32
 - **AMP EG · DECAY** `500` ms (0.1…10000 ms)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.32
 - **AMP EG · SUSTAIN** `6.5` (0…10)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.32
   - ↳ note: 0 to 100%, calibrated 1 to 10
 - **AMP EG · RELEASE** `180` ms (0.1…10000 ms)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.32
 - **AMP EG · MULTI TRIG** `ON`
   - ↳ note: On, every note re-attacks even when you play legato
 - **AMP EG · LOOP** `OFF`
@@ -1190,29 +1073,24 @@ Routing — One VCO only — VCO 2 is down, so there is nothing to beat against 
 - **MOD 1 · SYNC** `OFF`
   - ↳ note: Off, so RATE is in hertz rather than clock divisions
 - **MOD 1 · LFO RATE** `5.5` Hz (0.1…100 Hz)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.22
 - **MOD 1 · KB RESET** `OFF`
   - ↳ note: On, the LFO restarts at zero on every note
 - **MOD 1 · PITCH AMT** `0` (-5…5)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.22
 - **MOD 1 · OSC** `BOTH`
   - ↳ note: Which oscillator PITCH AMT reaches
 - **MOD 1 · FILTER AMT** `0` (-5…5)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.22
 - **MOD 1 · DEST** `OSC 2 WAVE`
 - **MOD 1 · MOD AMT** `1` (-5…5)
-  - ↳ cite: range manual — Subsequent 37 User's Manual, p.22
 
 ### TR-1000
 
-*Values below cite TR-1000 Reference Manual (eng02) v1.13+.*
+*This block draws on the TR-1000 Reference Manual (eng02) v1.13+, pp.26-71 and the TR-1000 Preset GEN/INST List (eng02) v1.20, p.1; its values are starting points.*
 
 **Pattern-wide**
 
 One setting for the whole pattern — set it once, not once per part below.
 
 - **SHUFFLE** `0` (-100…100)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.26
   - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
   - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
@@ -1221,32 +1099,25 @@ One setting for the whole pattern — set it once, not once per part below.
 - **GEN** `9X Crash Cymbal`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
 - **TUNE** `0` % (-100…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 - **DECAY** `84` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 - **RVB SEND** `42` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
 - **DLY SEND** `18` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
 ### TR-6S
 
-*Values below cite TR-6S Parameter Guide eng02 and TR-6S Owner's Manual eng02.*
+*This block draws on the TR-6S Parameter Guide eng02, pp.7-10 and the TR-6S Owner's Manual eng02, p.17; its values are starting points.*
 
 **Pattern-wide**
 
 One setting for the whole pattern — set it once, not once per part below.
 
 - **SHUFFLE** `0` (-128…127)
-  - ↳ cite: range manual — TR-6S Owner's Manual eng02, p.17
   - ↳ note: Pattern-wide: one setting for the whole pattern, not per instrument
   - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 #### CH — `closed-hat`: Closed hat bit-crushed into a tick
-
-*Ranges cite manual — TR-6S Parameter Guide eng02, p.7.*
 
 - **TONE** `CH/OH category`
 - **TUNE** `44` (-128…127)
@@ -1254,9 +1125,7 @@ One setting for the whole pattern — set it once, not once per part below.
 - **INST FX TYPE** `CRUSHER`
   - ↳ hint: Hold [SHIFT], press [INST]
 - **CRUSHER BALANCE** `220` (1…255)
-  - ↳ cite: range manual — TR-6S Parameter Guide eng02, p.10
 - **SAMPLERATE** `128` (0…255)
-  - ↳ cite: range manual — TR-6S Parameter Guide eng02, p.10
 - **REVERB SEND** `12` (0…255)
   - ↳ hint: INST Edit > ReverbSend
 - **DELAY SEND** `40` (0…255)
@@ -1264,19 +1133,17 @@ One setting for the whole pattern — set it once, not once per part below.
 
 ### TR-8S
 
-*Values below cite TR-8S Reference Manual eng01.*
+*This block draws on the TR-8S Reference Manual eng01, pp.17-31; its values are starting points.*
 
 **Content**
 
-- Ships preset samples supplied in the box — look in the SAMPLE screen, where preset entries are marked P and user imports U. p.38 legends the icon and shows one example name, and no page prints the list, so the Source line below says what the part needs rather than naming a file. · manual
-  - ↳ cite: claim manual — TR-8S Reference Manual eng01, p.38
+- Ships preset samples supplied in the box — look in the SAMPLE screen, where preset entries are marked P and user imports U. p.38 legends the icon and shows one example name, and no page prints the list, so the Source line below says what the part needs rather than naming a file.
 
 **Pattern-wide**
 
 One setting for the whole pattern — set it once, not once per part below.
 
 - **SHUFFLE** `0` (-128…127)
-  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.17
   - ↳ note: Pattern-wide: one setting for the whole pattern, not per instrument
   - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
@@ -1284,15 +1151,12 @@ One setting for the whole pattern — set it once, not once per part below.
 
 Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
 
-*Ranges cite manual — TR-8S Reference Manual eng01, p.30.*
-
 - **TONE** `OH category`
 - **TUNE** `-24` (-128…127)
 - **DECAY** `176` (0…255)
 - **INST FX TYPE** `LPF`
   - ↳ hint: Hold [SHIFT], press [INST]
 - **LPF CUTOFF** `132` (0…255)
-  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.31
 - **REVERB SEND** `56` (0…255)
   - ↳ hint: INST Edit > ReverbSend
 - **DELAY SEND** `48` (0…255)
@@ -1302,12 +1166,9 @@ Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
 
 Source — A sample with a long decaying tail loaded into the Sample tone; a negative RATE plays it backwards, so the tail becomes the rise
 
-*Ranges cite manual — TR-8S Reference Manual eng01, p.31.*
-
 - **TONE** `Sample`
   - ↳ note: Everything below the TUNE line is in the "Sample tone only" block (p.31) and does not exist on an ACB tone
 - **TUNE** `0` (-128…127)
-  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
 - **COARSE TUNE** `-5` st (-24…24 st)
   - ↳ note: Pitch in semitone steps
 - **RATE** `-0.7` (-1…1)
@@ -1318,10 +1179,8 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
 - **INST FX TYPE** `THRU`
   - ↳ hint: Hold [SHIFT], press [INST]
 - **REVERB SEND** `150` (0…255)
-  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
   - ↳ hint: INST Edit > ReverbSend
 - **DELAY SEND** `90` (0…255)
-  - ↳ cite: range manual — TR-8S Reference Manual eng01, p.30
   - ↳ hint: INST Edit > DelaySend
 
 ## 7. Finishing

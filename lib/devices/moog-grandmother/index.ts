@@ -468,7 +468,7 @@ function num(
 /**
  * A knob position on a control with **no printed scale**, as percent of travel.
  *
- * Both claims are unverified and both render as such: the point is uncited so the guide marks it
+ * Both claims are unverified and both are recorded as such: the point is uncited so it resolves
  * provisional (§3.2), and `range.verified` is explicitly `false` so mood is not allowed to move
  * it. `% travel` is a fact about a knob anyone can see; it is emphatically not a claim that the
  * box displays 0-100.

@@ -1089,11 +1089,52 @@ describe('non-numeric params (§3.1, §6.1)', () => {
     expect(resolveParam(param, MANUAL, loud)).toEqual({
       name: 'MODE',
       value: 'analog',
+      // §3.2. The legality gate, inherited from the recipe exactly as a range's is. `options`
+      // carries no citation of its own here, so the recipe's stands — the same rule, and the same
+      // `inheritVerified`, that decides `range.verified` on the numeric above.
+      optionsVerified: MANUAL,
       provenance: { state: 'authored', cite: MANUAL },
     })
     expect(resolveParam({ ...param, verified: false }, MANUAL, loud).provenance).toEqual({
       state: 'provisional',
     })
+  })
+
+  /**
+   * §3.2's two gates are orthogonal on an enum exactly as they are on a numeric: a cited option
+   * set says what the box offers and says nothing about which option suits the sound. Both
+   * directions occur and both have to survive the resolver.
+   */
+  it('keeps an enum’s option citation apart from its point citation', () => {
+    const param: AuthoredEnumParam = {
+      kind: 'enum',
+      name: 'MODE',
+      value: 'analog',
+      options: { values: ['analog', 'digital'], verified: OBSERVED },
+      verified: false,
+    }
+    const resolved = resolveParam(param, MANUAL, moodState())
+    // Read off the unit, chosen by ear: cited legality, provisional authority.
+    expect(resolved.optionsVerified).toEqual(OBSERVED)
+    expect(resolved.provenance).toEqual({ state: 'provisional' })
+    // And the reverse: a point somebody checked inside an option set nobody did.
+    const other = resolveParam(
+      { ...param, options: { values: ['analog', 'digital'], verified: false }, verified: MANUAL },
+      MANUAL,
+      moodState(),
+    )
+    expect(other.optionsVerified).toBe(false)
+    expect(other.provenance).toEqual({ state: 'authored', cite: MANUAL })
+  })
+
+  /** Text has no option set and must not grow an empty one. */
+  it('gives a text param no legality gate at all', () => {
+    const resolved = resolveParam(
+      { kind: 'text', name: 'ROUTING', value: 'out 3/4' },
+      MANUAL,
+      moodState(),
+    )
+    expect('optionsVerified' in resolved).toBe(false)
   })
 
   it('copies text through on the same terms', () => {

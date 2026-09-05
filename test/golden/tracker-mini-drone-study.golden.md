@@ -1,9 +1,8 @@
 # Drone Study
 
-Values are starting points — dial them to taste. Where a number came straight off the manual
-or off a unit it says which, and where a mood knob moved it you see the move (`52 → 45`) and
-the knob that did it. Every value carries its range — `38 (0…100)` — so you can tell at a
-glance whether the screen in front of you is the one the line is about.
+Values are starting points — dial them to taste. Where a mood knob moved one you see the move
+(`52 → 45`). Every value carries its range — `38 (0…100)` — so you can tell at a glance whether
+the screen in front of you is the one the line is about.
 
 ## 1. Song
 
@@ -42,17 +41,14 @@ None.
 
 **Clock source** — Tracker Mini over `midi-din`, carrying 1 part. Nothing else is here to sync to it.
 
-- Why this box — its manual says leading a rig is its job · manual
-  - ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.283
+- Why this box — its manual says leading a rig is its job
 
-- On the Tracker Mini, set `Config > MIDI > Clock Out` to `MIDI Out jack` · manual
+- On the Tracker Mini, set `Config > MIDI > Clock Out` to `MIDI Out jack`
   - ↳ note: Off, USB, MIDI Out jack, USB + MIDI Out jack — clock leaves only by the routing set here
-  - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.54
 
 - **Tracker Mini** — groovebox · 1 part
   - clock: sends clock · midi-din/usb
-  - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284) · manual
-    - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.13
+  - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284)
   - audio: stereo main out · USB audio · audio in
   - mixer: 1 part, no individual outs: one stereo channel for all
 
@@ -73,8 +69,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 16 bars in A phrygian.
 
-No note-length field on this box — a note runs until the next note on the same voice, and `OFF` is how you stop one sooner. The rows below are what you enter, in the order you enter them. · manual
-- ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.105
+No note-length field on this box — a note runs until the next note on the same voice, and `OFF` is how you stop one sooner. The rows below are what you enter, in the order you enter them.
 
 - bar 1 · step 1 · `E3` · 5th · MIDI 52
 - bar 9 · step 129 · `D3` · 4th · MIDI 50
@@ -150,19 +145,17 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 
 ### Tracker Mini
 
-*Values below cite Polyend Tracker Mini Manual 2.2.1b.*
+*This block draws on the Polyend Tracker Mini Manual 2.2.1b, pp.117-185; its values are starting points.*
 
 **Content**
 
-- Ships 50 factory genre-based sample packs — look in /Samples/FactoryPacks on the microSD card. p.34 names the folder and the count, and no page lists what is in a pack, so the Source line below says what the part needs rather than naming a file. · manual
-  - ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.34
+- Ships 50 factory genre-based sample packs — look in /Samples/FactoryPacks on the microSD card. p.34 names the folder and the count, and no page lists what is in a pack, so the Source line below says what the part needs rather than naming a file.
 
 **Pattern-wide**
 
 One setting for the whole pattern — set it once, not once per part below.
 
 - **SWING** `50` % (25…75 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.185
   - ↳ note: 50% is no swing; set once, it applies across the whole pattern
   - ↳ hint: Hold [FX1], press (Up)/(Down)
 
@@ -170,21 +163,16 @@ One setting for the whole pattern — set it once, not once per part below.
 
 Source — A sustained tonal source, two seconds or longer — a held synth note, a field recording, a feedback loop. Pitch matters; transients do not, because Granular re-reads the file rather than playing it through
 
-*Ranges cite manual — Polyend Tracker Mini Manual 2.2.1b, p.126.*
-
 - **PLAY MODE** `Granular`
 - **POSITION** `A third into the sample`
   - ↳ note: Set by proportion — the scale is the length of your sample, not a fixed time
   - ↳ hint: Hold [Preview] while turning Position
 - **LENGTH** `640` ms (1…1000 ms)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.142
 - **SHAPE** `Triangle`
 - **LOOP** `Forward`
 - **FILTER TYPE** `Low-pass`
 - **CUTOFF** `48` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
 - **REVERB SEND** `42` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
 - **POSITION AUTOMATION TYPE** `LFO`
   - ↳ note: On the Granular Position row of Instrument Automation 2/2
   - ↳ hint: Screen button 4 cycles instrument pages

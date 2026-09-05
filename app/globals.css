@@ -2568,7 +2568,6 @@ button:active {
   min-width: 0;
 }
 
-.subordinate.cite::before,
 .subordinate.note::before {
   display: inline-block;
   margin-right: 6px;
@@ -2576,91 +2575,7 @@ button:active {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--edge-strong);
-}
-
-.subordinate.cite::before {
-  content: 'cite';
-}
-
-.subordinate.note::before {
   content: 'note';
-}
-
-/* ------------------------------------------------------ §3.2 provenance */
-
-.prov {
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  border-radius: 2px;
-  padding: 1px 6px;
-}
-
-/*
- * This number came off the manual, or off a unit. The notable fact, so it is the loud one —
- * and the only thing an unmarked value means is that it is a starting point, which is what the
- * guide is. There is no mark for that, not even a quiet one.
- */
-.prov-cited {
-  color: var(--panel-0);
-  background: var(--silkscreen);
-  cursor: help;
-}
-
-/*
- * §2.6/#22. The two quiet states a *capability fact* can be in, and they are not the same state.
- *
- * Outlined rather than inverted, because neither is the notable claim `.prov-cited` is: they
- * qualify a line the reader is acting on rather than vouching for it. Drawn apart from each
- * other because they cost different things — `unchecked` is work nobody has done, and
- * `undocumented` is work somebody finished and the manual is silent, which is a finding.
- */
-.prov-unchecked {
-  color: var(--ink-dim);
-  background: transparent;
-  border: 1px solid var(--edge-strong);
-}
-
-.prov-undocumented {
-  color: var(--ink-dim);
-  background: transparent;
-  border: 1px dashed var(--edge-strong);
-  cursor: help;
-}
-
-/*
- * §2.6/#120/#121. The two states #120 added and left undrawn, because drawing them was this
- * issue's job and a state wearing another's ink is the failure #121 is about.
- *
- * `unread` is the *dimmest* of the five and deliberately so: it is the only one where nobody has
- * read anything, and it is blocked on a missing file rather than on an author's afternoon.
- * `cited-against` is the opposite end — the document answers, and answers no — so it is drawn
- * solid like `.prov-cited`, which is the family it belongs to, and tinted away from it so a
- * reader cannot mistake evidence *against* a claim for evidence for one.
- */
-.prov-unread {
-  color: var(--ink-dim);
-  background: transparent;
-  border: 1px dotted var(--edge);
-  cursor: help;
-}
-
-.prov-cited-against {
-  color: var(--ink-dim);
-  background: transparent;
-  border: 1px solid var(--edge-strong);
-  text-decoration: line-through;
-  text-decoration-thickness: 1px;
-  cursor: help;
-}
-
-/* A mood knob moved it. A fact about the value, not a claim about its authority. */
-.prov-moved {
-  color: var(--accent);
-  background: #241a16;
-  border: 1px solid var(--accent-dim);
 }
 
 /* ----------------------------------------------------------- §10 values */
@@ -3524,8 +3439,7 @@ html {
     color: #000;
   }
 
-  /* The two hardcoded dark grounds the tokens cannot reach. */
-  .prov-moved,
+  /* The hardcoded dark ground the tokens cannot reach. */
   .callout {
     background: transparent;
     color: #000;
@@ -3777,12 +3691,7 @@ html {
     display: table-header-group;
   }
 
-  /*
-    Provenance is colour on screen. On paper it has to survive in grey — but `.prov-cited` is an
-    inverted chip (white on black) and must keep its own colours, so this is deliberately not a
-    blanket `.prov` rule.
-  */
-  .cite,
+  /* Everything subordinate to an instruction survives on paper in grey. */
   .quiet,
   .subordinate,
   .hint {

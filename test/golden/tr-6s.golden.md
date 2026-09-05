@@ -1,9 +1,8 @@
 # Industrial Techno
 
-Values are starting points — dial them to taste. Where a number came straight off the manual
-or off a unit it says which, and where a mood knob moved it you see the move (`52 → 45`) and
-the knob that did it. Every value carries its range — `38 (0…100)` — so you can tell at a
-glance whether the screen in front of you is the one the line is about.
+Values are starting points — dial them to taste. Where a mood knob moved one you see the move
+(`52 → 45`). Every value carries its range — `38 (0…100)` — so you can tell at a glance whether
+the screen in front of you is the one the line is about.
 
 ## 1. Song
 
@@ -72,12 +71,10 @@ Industrial Techno is finished without these.
 
 **Clock source** — TR-6S over `midi-din`, carrying 5 parts. Nothing else is here to sync to it.
 
-- Why this box — it is the only box here that can send clock · undocumented
-  - ↳ cite: undocumented — Owner's p.36 opens receive-first and pairs one arrangement where this box clocks an MC-101 with one where a DAW clocks it over USB; there is no self-description anywhere else in the book to weigh against that, since p.1 is a version-check page and pp.8-9 are a data-structure diagram
+- Why this box — it is the only box here that can send clock
 
-- On the TR-6S, set `UTILITY > SYNC/TEMPO > Sync Out` to `ON` · manual
+- On the TR-6S, set `UTILITY > SYNC/TEMPO > Sync Out` to `ON`
   - ↳ note: Sends clock, start and stop together — there is no setting that sends one without the others
-  - ↳ cite: value manual — TR-6S Parameter Guide eng02, p.12
 
 - **TR-6S** — drum-machine · 5 parts
   - clock: sends clock · midi-din/usb
@@ -101,8 +98,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 2 bars in F minor.
 
-A step is a trigger, not a note with a length: the instrument's own envelope ends it, and `DECAY` is what sets that. · manual
-- ↳ cite: claim manual — TR-6S Parameter Guide eng02, p.7
+A step is a trigger, not a note with a length: the instrument's own envelope ends it, and `DECAY` is what sets that.
 
 - bar 1 · step 1 · `F2` · root · MIDI 41
 - bar 1 · step 7 · `F2` · root · MIDI 41
@@ -307,20 +303,17 @@ A step is a trigger, not a note with a length: the instrument's own envelope end
 
 ### TR-6S
 
-*Values below cite TR-6S Parameter Guide eng02 and TR-6S Owner's Manual eng02.*
+*This block draws on the TR-6S Parameter Guide eng02, pp.7-10 and the TR-6S Owner's Manual eng02, p.17; its values are starting points.*
 
 **Pattern-wide**
 
 One setting for the whole pattern — set it once, not once per part below.
 
 - **SHUFFLE** `0` (-128…127)
-  - ↳ cite: range manual — TR-6S Owner's Manual eng02, p.17
   - ↳ note: Pattern-wide: one setting for the whole pattern, not per instrument
   - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 #### BD — `kick`: Short, front-loaded kick
-
-*Ranges cite manual — TR-6S Parameter Guide eng02, p.7.*
 
 - **TONE** `BD category, ACB`
   - ↳ note: ATTACK below exists only for ACB tones of the BD category (p.7)
@@ -332,15 +325,12 @@ One setting for the whole pattern — set it once, not once per part below.
 - **INST FX TYPE** `TRANSIENT`
   - ↳ hint: Hold [SHIFT], press [INST]
 - **TRANSIENT ATTACK** `48` (-128…127)
-  - ↳ cite: range manual — TR-6S Parameter Guide eng02, p.8
 - **REVERB SEND** `0` (0…255)
   - ↳ hint: INST Edit > ReverbSend
 - **DELAY SEND** `0` (0…255)
   - ↳ hint: INST Edit > DelaySend
 
 #### LT — `bass-mid`: FM bass note held on the tom slot
-
-*Ranges cite manual — TR-6S Parameter Guide eng02, p.7.*
 
 - **TONE** `FM tone, BASS category`
   - ↳ note: MORPH needs an FM tone; FM COARSE additionally needs one of the FX/HIT–OTHERS categories (p.7)
@@ -354,15 +344,12 @@ One setting for the whole pattern — set it once, not once per part below.
 - **INST FX TYPE** `LPF`
   - ↳ hint: Hold [SHIFT], press [INST]
 - **LPF DEPTH** `120` (0…255)
-  - ↳ cite: range manual — TR-6S Parameter Guide eng02, p.8
 - **REVERB SEND** `8` (0…255)
   - ↳ hint: INST Edit > ReverbSend
 - **DELAY SEND** `16` (0…255)
   - ↳ hint: INST Edit > DelaySend
 
 #### HC — `clap`: Hand clap with a short room
-
-*Ranges cite manual — TR-6S Parameter Guide eng02, p.7.*
 
 - **TONE** `HC category`
 - **TUNE** `24` (-128…127)
@@ -371,7 +358,6 @@ One setting for the whole pattern — set it once, not once per part below.
 - **INST FX TYPE** `H BOOST`
   - ↳ hint: Hold [SHIFT], press [INST]
 - **H BOOST** `96` (0…255)
-  - ↳ cite: range manual — TR-6S Parameter Guide eng02, p.8
 - **REVERB SEND** `96` (0…255)
   - ↳ hint: INST Edit > ReverbSend
 - **DELAY SEND** `36` (0…255)
@@ -379,25 +365,19 @@ One setting for the whole pattern — set it once, not once per part below.
 
 #### CH — `closed-hat`: Closed hat bit-crushed into a tick
 
-*Ranges cite manual — TR-6S Parameter Guide eng02, p.7.*
-
 - **TONE** `CH/OH category`
 - **TUNE** `44` (-128…127)
 - **DECAY** `36` (0…255)
 - **INST FX TYPE** `CRUSHER`
   - ↳ hint: Hold [SHIFT], press [INST]
 - **CRUSHER BALANCE** `220` (1…255)
-  - ↳ cite: range manual — TR-6S Parameter Guide eng02, p.10
 - **SAMPLERATE** `128` (0…255)
-  - ↳ cite: range manual — TR-6S Parameter Guide eng02, p.10
 - **REVERB SEND** `12` (0…255)
   - ↳ hint: INST Edit > ReverbSend
 - **DELAY SEND** `40` (0…255)
   - ↳ hint: INST Edit > DelaySend
 
 #### OH — `noise`: Open hat opened out into a wash
-
-*Ranges cite manual — TR-6S Parameter Guide eng02, p.7.*
 
 - **TONE** `CH/OH category`
 - **TUNE** `-40` (-128…127)
@@ -406,7 +386,6 @@ One setting for the whole pattern — set it once, not once per part below.
 - **INST FX TYPE** `LPF`
   - ↳ hint: Hold [SHIFT], press [INST]
 - **LPF DEPTH** `130` (0…255)
-  - ↳ cite: range manual — TR-6S Parameter Guide eng02, p.8
 - **REVERB SEND** `140` (0…255)
   - ↳ hint: INST Edit > ReverbSend
 - **DELAY SEND** `88` (0…255)

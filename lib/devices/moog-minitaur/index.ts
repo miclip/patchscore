@@ -302,8 +302,8 @@ function num(
  *
  * Two of them on this box, and each for its own reason: `RES`, whose printed range ends at
  * "Self-Oscillation" rather than at a number (p.29), and `VOLUME`, which Appendix E lists as
- * `MASTER VOLUME` with no range beside it. Both claims are unverified and both render that way —
- * the point is uncited so the guide marks it provisional (§3.2), and `range.verified` is `false`
+ * `MASTER VOLUME` with no range beside it. Both claims are unverified and both are recorded as such —
+ * the point is uncited so it resolves provisional (§3.2), and `range.verified` is `false`
  * so mood may not move a figure nobody checked. `% travel` is a fact about a knob anyone can
  * see; it is not a claim that the box displays 0-100.
  */

@@ -5,14 +5,12 @@ import { moodState, type Character, type MoodState, type Role } from './vocabula
 import {
   canFollow,
   compatibleJackSignals,
-  evidenceFor,
   patternEntryNotice,
   realisationOf,
   sendTransports,
 } from './device'
 import type {
   Assignable,
-  CapabilityEvidence,
   Device,
   WarmUp,
   JackSignalKind,
@@ -145,6 +143,14 @@ export type ClockSource = {
  *
  * Derived here rather than stored as a fourth field, so there is exactly one place the three
  * words are decided and no way for `claims` and a `basis` string to disagree.
+ *
+ * **This is the whole of what the guide says about the choice.** A companion `clockBasisEvidence`
+ * used to sit here deciding *which* of the chosen box's `clock.preferredSource` readings to print
+ * beneath the basis, and #200 was the rule it enforced — a box the reader picked is not argued
+ * with. §8 stopped rendering capability evidence entirely (`DESIGN.md` §3.2), so there was
+ * nothing left for it to gate and it is gone. The #200 rule survives as the `chosen` branch
+ * below: what it suppressed was the evidence, and the basis sentence has always been suppressed
+ * by `chosen` on its own.
  */
 export type ClockSourceBasis = 'chosen' | 'claimed' | 'contested' | 'tie-break'
 
@@ -156,29 +162,6 @@ export function clockSourceBasis(source: ClockSource): ClockSourceBasis {
   return source.claims === 1 ? 'claimed' : 'contested'
 }
 
-/**
- * §7.4/#200/#33. **The evidence to print beside the basis, or nothing when the reader decided.**
- *
- * `clockSourceBasis` already says that a chosen box needs no justification, and both renderers
- * already say "you chose it" and stop. What neither stopped doing was printing the box's
- * `clock.preferredSource` evidence underneath it, which produced this:
- *
- *     Why this box — you chose it · undocumented
- *       ↳ cite: undocumented — the guidebook never states what this box is for; p.253 hedges
- *         to "can be a controller for external MIDI devices" ...
- *
- * The reader put that box in charge, and the guide answered by explaining at length that its
- * manual never says the box is for that. It reads as the guide arguing with a decision it was
- * told to take, and the paragraph is doing it in the most authoritative voice the document has.
- *
- * The evidence is not wrong and it is not useless — it is the honest answer to *"why did the
- * guide pick this box"*, and every other basis still prints it. It is only the wrong answer to a
- * question nobody asked. So the decision lives here, once, and each renderer keeps its own words
- * (#33): ask for the evidence and render whatever comes back.
- *
- * A device page is where somebody who wants to know what this box's manual says about leading a
- * rig should find it, and it says so there whether or not any guide chose the box.
- */
 /**
  * §10/#263. **Which boxes in *this* rig need warming up, in registry order.**
  *
@@ -215,17 +198,6 @@ export function quickTuneNotices(
     if (device.quickTune !== undefined) out.push({ device, quickTune: device.quickTune })
   }
   return out
-}
-
-export function clockBasisEvidence(
-  source: ClockSource | undefined,
-  device: Device | undefined,
-): CapabilityEvidence | undefined {
-  // Both are optional because both renderers reach this with a rig that may have no clock source
-  // at all, and neither should have to spell that case out twice.
-  if (source === undefined || device === undefined) return undefined
-  if (clockSourceBasis(source) === 'chosen') return undefined
-  return evidenceFor(device, 'clock.preferredSource')
 }
 
 /**

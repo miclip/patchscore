@@ -51,10 +51,19 @@ These are load-bearing. If one stops being true, stop and fix the architecture.
 3. Templates never reference device IDs. Devices never reference genres. The shared vocabulary is
    a closed set of controlled unions — `Role`, `Character`, `MoodAxis`, `PatternSlot` — and
    nothing else. Neither side ever names the other.
-4. Every rendered parameter value carries explicit provenance: `authored` (manual-verified point),
-   `derived` (a verified point moved inside a manual-verified range, §3.2), or `provisional`
-   (the point is unverified, whether or not mood moved it). Nothing is presented as
-   manual-verified unless it is, and the type system makes provenance non-optional (§3.1).
+4. Every **resolved** parameter value carries explicit provenance: `authored` (manual-verified
+   point), `derived` (a verified point moved inside a manual-verified range, §3.2), or
+   `provisional` (the point is unverified, whether or not mood moved it). **This is a guarantee
+   about the model, held by the compiler and the audit — not about ink.**
+   `ResolvedParam.provenance` is non-optional, so a value whose provenance nobody decided cannot
+   be constructed (§3.1), and `npm run audit` (§9) counts provisional points, unverified ranges
+   and mood-inert params on their own lines, so the debt stays measurable whether or not anything
+   renders it. **The guides render none of it** — no provenance mark, no citation. **And no other
+   surface renders a per-value one either**: a device page carries the counts, the documents that
+   box's ranges cite and four device-level citations, never the page behind one number (§3.2).
+   Nothing is presented as manual-verified unless it is; what makes that airtight now is that
+   nothing rendered is presented as manual-verified at all, and what keeps it honest is the
+   compiler and the audit rather than ink.
 5. Gaps are shown honestly. Never invent an assignment to fill a hole.
 6. Same inputs + same seed + same resolver version → byte-identical guide **on any platform**.
    `Math.random()` appears nowhere in the resolver, and neither does any locale-dependent
@@ -611,20 +620,37 @@ literally `-`. `features.*` paths are accepted whether or not the feature is dec
 point rather than a hole in the checking — evidence *about an absence* is what invariant 5 asks
 for.
 
-No state borrows another's words. In the guide each is marked — `manual`, `unchecked`,
-`undocumented`, `unread`, `cited-against` — which is §8's mark-the-exception rule applied rather
-than overridden: a parameter goes unmarked when provisional because nine values in ten are, while a
-rig prints a handful of capability facts and nearly all of them are cited, so the quiet states *are*
-the exceptions. `npm run audit` splits the same total across two lines, `caps` for the three states
-with a document behind them and `gaps` for the three without (§9), and `undocumented` stays out of
-`unchecked` because reporting finished research as a backlog invites somebody to do it twice.
+No state borrows another's words, and the place they are still told apart in words is the
+**device page** — `capabilitySentence` counts each state and `capabilityGaps` names the field
+paths in the unsettled ones. Neither prints the page a cited fact rests on, and neither prints a
+`reason`.
+`npm run audit` splits the same total across two lines, `caps` for the three states with a document
+behind them and `gaps` for the three without (§9), and `undocumented` stays out of `unchecked`
+because reporting finished research as a backlog invites somebody to do it twice.
 
-**What a reader is shown is a separate question and #120 did not answer it.** The states above are a
-model, a schema and an audit; the guide marks them because a mark that named the wrong state would
-be worse than the model not existing, and that floor is all it is. The device page still speaks
-about the three states it spoke about before, and neither surface has a considered *place* for
-capability evidence yet. That is #121, and building it here would have been rendering a distinction
-before the distinction was settled.
+**The guide names no state.** For three commits it did — every capability fact ended in `manual`,
+`unchecked`, `undocumented`, `unread` or `cited-against`, which was §8's mark-the-exception rule
+applied one level up: a parameter goes unmarked when provisional because nine values in ten are,
+while a rig prints a handful of capability facts and nearly all of them are cited, so the quiet
+states looked like the exceptions worth a word. §8 dropped every mark and every citation, and this
+went with them.
+
+**What that costs is not symmetric across the states, and where it bites, the prose carries the
+finding instead.** Four notices already say their state outright and so lose nothing but a page:
+`contentText` and `unsettledText` split four ways and open *Not established — the manual was read
+and does not say* (or the `unread` or `cited-against` wording); `controlPositionText` reports the
+reading it made rather than a result about the document; `noteDurationText` says when how a box
+ends a note is not established here. Two lines are not like that — a clock jack note and a
+clock-source setup path (§7.4) were bare device assertions whose only qualifier was the mark — and
+those now read the same whether a manual was read, was not read, or was read and is silent. That
+is a real loss of the honesty invariant 5 asks for, it is recorded here rather than argued away,
+and the repair when it comes belongs in the **prose of those two lines**, not in a restored badge.
+
+**Where the `reason` reaches a reader is now nowhere rendered.** It is required on all three
+unsettled states, it is in the manifest, and `npm run audit` counts the states it hangs off — but
+the guide printed it and no longer does, and the device page prints paths grouped by state without
+it (see #121 below). Nor does any surface print the *page* a `cited-against` fact rests on. The
+device page is where both should land, because that is where a reader is sitting down to ask.
 
 #### What was rejected
 
@@ -683,14 +709,20 @@ showing it, and the gap between the two was wide enough to be worth a rule.
   is the clock topology they are about to rely on. The paths are printed verbatim
   (`clock.preferredSource`), grouped by state, in the manifest's own vocabulary: a friendlier
   rewrite would be the page inventing a second name for a field that already has one. The
-  *reasons* stay off this page — each is a paragraph, and four stacked is #35's failure moved to
-  a new surface — and reach a reader in the guide, once, where the fact is being acted on.
-- **The states are drawn apart.** #120 added `unread` and `cited-against` and deliberately left
-  them wearing `undocumented`'s ink, because inventing an identity for them there would have been
-  a rendering decision made by a type error. They have their own now: `cited-against` is drawn
-  solid and struck through, in `.prov-cited`'s family because it is the only non-claim with a
-  page, and `unread` is the dimmest of the five because it is the only one where nobody has read
-  anything and the block is a missing *file*.
+  *reasons* were kept off this page — each is a paragraph, and four stacked is #35's failure moved
+  to a new surface — because the guide printed them once, where the fact was being acted on. **The
+  guide no longer prints them**, so that argument has lost its other half and the reason currently
+  reaches no rendered surface at all. This page is where it should land, and #35's objection is a
+  reason to make it progressive disclosure rather than a reason to leave it unsaid. The same is
+  true of `cited-against`'s page, which this page groups by state and does not print.
+- **The states are drawn apart, on the device page.** #120 added `unread` and `cited-against` and
+  deliberately left them wearing `undocumented`'s ink, because inventing an identity for them
+  there would have been a rendering decision made by a type error. They have their own now, and
+  they have it in the one place a state is still spoken: the guide's five `.prov-*` badges went
+  with §8's marks, and `capabilitySentence` on the device page is what keeps the five apart —
+  `cited-against` named as the document answering no, `unread` as the missing *file* nobody here
+  can open. It says how many are in each state and, with `capabilityGaps` beneath it, which fields
+  — not what any of them says.
 - **The counted states are all spoken.** The page's capability sentence counted five states and
   named three, so a box with three `unread` facts reported "0 of 5 cited" and accounted for two of
   the five. A report whose numbers do not add up is worse than no report.
@@ -758,8 +790,9 @@ confident *bring your own* on no evidence that the field was added to end. So `D
 demands an entry at `content` from any device with a `sourceAudio` recipe, and refuses `false`
 there: `false` is a real state everywhere else, where the field beside it is a claim somebody made,
 but an entry here exists only to say something about a declaration that is absent, and one with no
-reason is §2.6's shrug wearing a field name. Every unknown that reaches a reader therefore carries
-a reason somebody wrote. Silence stays available, and is the ordinary case, for a box whose voices
+reason is §2.6's shrug wearing a field name. Every unknown in the library therefore carries a
+reason somebody wrote — a requirement on the **manifest**, which is where it is now enforced and
+counted; §2.6 records that no rendered surface currently prints it. Silence stays available, and is the ordinary case, for a box whose voices
 generate their own sound: it was never asked, so it owes nothing.
 
 The schema asks of the device's **authored** recipes, because a schema cannot see a guide; the
@@ -1333,39 +1366,140 @@ Invariant 4 originally read "no parameter value that isn't manual-verified or ex
 provisional", and §6 then generates values by offsetting authored ones. Verifying the *bounds*
 does not repair that. A verified range proves `45` is a **legal** value for the parameter; it does
 not prove anyone checked that `45` is the right value for this sound. Legality and verification
-are different claims, and collapsing them lets the guide present engine arithmetic with the same
-authority as a manual page.
+are different claims, and collapsing them would let engine arithmetic be recorded with the same
+authority as a manual page — and be counted, audited and shown on a device page as though it were
+one.
 
-So provenance is three-state, and always rendered:
+So provenance is three-state, and every resolved value carries one:
 
-| provenance | means | rendered |
+| provenance | means | what a guide shows |
 |---|---|---|
-| `authored` | the point value was read off the manual or the hardware, and `cite.kind` says which | `TUNE 52 · manual` |
-| `derived` | mood moved a verified point inside its verified range | `TUNE 52 → 45 · manual · moved by darkness` |
-| `provisional` | the point is unverified (`verified: false`, inherited or explicit) | `TUNE 52`, unmarked |
+| `authored` | the point value was read off the manual or the hardware, and `cite.kind` says which | `TUNE 52` |
+| `derived` | mood moved a verified point inside its verified range | `TUNE 52 → 45` |
+| `provisional` | the point is unverified (`verified: false`, inherited or explicit) | `TUNE 52`, or `TUNE 52 → 45` where mood moved it |
 
-**The rendering marks the positive claim.** An unmarked value is a starting point — that is what
-a patch sheet has always been and what this guide is, so it needs no annotation. What earns a
-mark is *this number came off the manual*, because that is the fact that changes what a reader
-does with it. A mood move names its knob whether or not the point underneath was cited, since
-the move is a fact about the value rather than a claim about its authority.
+**The third column is the same in all three rows, and that is deliberate.** A guide renders the
+value, its unit and its range, and says nothing about who checked it. The arrow is not a mark and
+does not survive as one: `52 → 45` says what the number *was*, which is a fact about the dial in
+front of the reader rather than a claim about its authority — which is also why it appears on a
+moved `provisional` point, where there is no authority to claim.
 
-This replaced an earlier scheme that marked the common case instead: a warning glyph on nine
-values in ten, under a legend that opened by telling the reader nobody had checked any of it. A
-mark that appears on almost everything carries no information, and leading with an apology tells
-a reader the tool does not know what it is talking about before they have seen a single value.
+**Three schemes preceded this and each was a smaller version of the same correction.** The first
+marked the common case: a warning glyph on nine values in ten, under a legend that opened by
+telling the reader nobody had checked any of it. A mark that appears on almost everything carries
+no information, and leading with an apology tells a reader the tool does not know what it is
+talking about before they have seen a single value. The second inverted it and marked the positive
+claim — `· manual` on the cited minority, with the page on a `↳ cite:` line beneath. That was
+better and still wrong for the surface it was on: §8 is read standing at a machine with both hands
+busy, where a page number is a line you step over on the way to the number and a `title` attribute
+has no hover on a phone and no existence at all on paper. So the mark carried a cost on every
+line and paid a reader back only at a desk. The third removed all of it and printed nothing, and
+overshot: it answered *which value did somebody check* by refusing to answer *which book is this
+box's page in*, which is a different question, asked once per box rather than once per value.
 
-What the inversion costs is real and is accepted: skimming to a single line, a reader can no
-longer tell *unmarked because it is a starting point* from *unmarked because nobody got to it
-yet*. That is tolerable only because the convention is stated once at the top of every guide and
-because the audit script (§9) still counts provisional points, unverified ranges and mood-inert
-params separately — the debt stays visible to the project even where it is no longer ink on the
-page. Invariant 4 is untouched by any of this: `ResolvedParam.provenance` is non-optional, which
-is a type guarantee and not a rendering convention.
+**So one hoisted sentence per device block, and nothing else.** It opens a box's section in both
+renderers and both layouts, it names the documents the values under it actually rest on, and it
+collapses their pages into a single span:
+
+> *This block draws on the TR-6S Parameter Guide eng02, pp.7-10 and the TR-6S Owner's Manual
+> eng02, p.17; its values are starting points.*
+
+Five properties carry the whole design, and each one is a thing an earlier draft got wrong:
+
+- **It is derived from what is rendered**, not from the folder and not from the assignments. A
+  guide naming a document is telling somebody which book to open, and the honest answer is drawn
+  from the settings on the page in front of them rather than from the twenty recipes they were not
+  given. `Device.manual` is not the source either — it is a separate assertion nothing keeps in
+  agreement with the citations, and it has drifted: a TR-1000 declares its Owner's Manual and every
+  range cites the Reference Manual, a different book and the only one that prints a range at all.
+
+  *Rendered* means after #107 hoists. A control one setting of which serves every part sits in
+  every part's params and is printed once, above them; counting it per part inflated the Muse from
+  141 rendered lines to 155, and the fourteen it double-counted were the MIDI and delay block
+  rather than a spread of the panel. `renderedParams` is the reduction, and both renderers call it
+  so neither can count its own way.
+- **Both legality gates count, not just the numeric one.** The table above pairs `range` with
+  `options`, and `ResolvedParam` carried only the range until this sentence needed the other half
+  and found it dropped at resolve time. It was not a rounding error: on the Muse the enums alone
+  reach pp.53, 57 and 105-111, and they are the only citation of the Minitaur's *Firmware v2.1
+  Addendum* and of the TR-1000's *Preset GEN/INST List* — two documents a reader needs and nothing
+  named. `ResolvedParam.optionsVerified` carries it, on the same inheritance rules as a range.
+- **The verb comes from the counts**, because the obvious wording is usually false. Nearly every
+  box here cites its legality gates and leaves its points to taste, so *values come from the
+  manual* would claim the manual picked the numbers. It gave the bounds. Four wordings, and the
+  counts pick between them: every point cited says *Values … come from*; a strict majority says
+  *Most values …*, strict because at exactly half the word is wrong rather than approximate and a
+  half-authored folder is a real state; a cited gate says *This block draws on …*; and a cited
+  minority of points with no cited gate narrows to *Checked values … draw on …*.
+
+  **The gate is not named, and it used to be.** The draft before this read *Ranges and option
+  lists on this box come from …; the settings inside them are starting points* — accurate, and our
+  bookkeeping read aloud. `range` and `options` are the words a *type* uses to hold two claims
+  apart, and a reader standing at a rack has to parse that distinction before the sentence resolves
+  into anything they can act on. *Draws on* claims exactly what the citations support without
+  asking for any of it. What the reader actually needs from §3.1's split is the second clause, and
+  it says it in five words. `citedShare` still counts the two gates apart, because deciding which
+  branch to take needs the distinction even where saying it out loud does not.
+- **Pages collapse to a span and never to a list.** `pp.27-111` covers pages nothing cited, and
+  that overstatement is the point: the sentence exists so a reader knows which book to have open
+  and roughly where. The accurate answer for that box is eighteen page numbers, which nobody reads
+  at a rack. A wide span is a fact about the box — the Muse's block really does run from an
+  oscillator range on p.27 to the MIDI chapter on p.111 — rather than a defect in the summary.
+- **A box citing nothing gets no sentence**, rather than a sentence saying so. The absence is not
+  a claim, and the count that would reveal a rot lives where a project can act on it.
+
+**A locator is not a title, and the library writes five shapes of one.** #173 was five files under
+one tagged corpus reading as five documents; the same defect returned through the OP-XY's
+`§18 pp.77-83, one sampler per section`, which no anchored page pattern matches, so a guide printed
+a section sign and a clause of prose where a book's name goes. The rule is that the document is the
+first comma-separated segment and everything after it locates something inside it, which is what
+the five shapes are all instances of rather than a sixth rule beside them. Pages are read from the
+whole string, so a section reference carrying pages still contributes them, and an observation is
+exempt because its firmware sits past its comma. `test/citation-sentence.test.ts` asserts the
+property over the whole catalogue rather than over fixtures, because the next shape will be
+authored in a device folder and no fixture would see it.
+
+**Be exact about where the rest of the evidence went, because it did not all land somewhere.**
+`ResolvedParam.provenance` is still non-optional and `npm run audit` still counts every state —
+invariant 4 in full — and a device page reports, for one box, how many of its points and ranges
+are cited and to which *documents* (`rangeDocuments`, names without page numbers), which
+capability facts are unsettled and in what state, and four citations of its own with pages: panel
+span, warm-up, quick tune, calibration.
+
+**No rendered surface carries a per-*value* citation.** *Where did `DECAY 38` come from* was
+answerable on the guide's `↳ cite:` line, and the block sentence does not answer it: it says which
+documents that box's numbers rest on and across which pages, not which of them backs one line. For
+a single number the manifest is where that page lives, and the audit is what stops the uncited
+share drifting. That is the real cost of this decision. It is smaller than it was when the guide
+said nothing — a reader with the document and a span has somewhere to go, which is most of what
+the `↳ cite:` line was for — and it is accepted because §8's reader is not asking the per-value
+question and because the count that would reveal a rot — *3 of 41 values cited* — is on the device
+page and in the audit. Making a per-value citation reachable again belongs on the device page, and
+is not a reason to put a mark back on a guide's lines.
+
+**That repair is #410**, filed rather than argued away, and it is scoped to the device page for the
+reason above. Note what it is not blocked on: `ResolvedParam.provenance`, `range.verified` and
+`optionsVerified` already carry every citation it needs and the audit already counts them, so this
+is a rendering gap and nothing has to be re-authored. Two facts §2.6 records as the same gap belong
+in the same surface — a capability fact's `reason`, and the page behind a `cited-against` fact.
+
+Skimming a single line a reader still cannot tell *unmarked because it is a starting point* from
+*unmarked because nobody got to it yet*; that was already true under the second scheme for the
+provisional majority, and it is now true uniformly. The block sentence is what makes that a
+convention rather than a silence: it is stated once per box, in the reader's path, and it is
+wholly true of every line beneath it.
+
+**The one thing this must never do is let the absence of a mark become a claim.** A fact that was
+honest only because it wore `· unchecked` has to say its state in its own prose or not be printed
+— see §2.6, where every unsettled content and control-position state opens by saying it is not
+established, and §8's `noteDurationText`, which says outright when how a box ends a note is not
+established here.
 
 `cite.kind` is orthogonal to the three states. It does not add a fourth: an observed point is
 `authored`, exactly like a manual one, and carries the same authority in the resolver. What it
-changes is what §8 can say about the value, and what the audit can count.
+changes is what a **device page** and the audit can count — the two split manual from observed on
+points and on ranges precisely so that "how much of this box rests on one person's unit" stays
+answerable.
 
 `verified` therefore attaches to two things independently, which is why §3.1 gives the range its
 own `verified` rather than one flag per param:
@@ -1399,12 +1533,12 @@ The two gates are orthogonal, so all four combinations occur and the state funct
 | verified | verified | yes, and moved | `derived` |
 | verified | verified | no, or mood at 50 | `authored` |
 | verified | unverified | — (mood inhibited) | `authored` |
-| unverified | verified | yes, and moved | `provisional`, still rendered `52 → 45` |
+| unverified | verified | yes, and moved | `provisional`, still shown as `52 → 45` |
 | unverified | either | no | `provisional` |
 
 **`provisional` dominates `derived`.** Moving an unverified point inside a verified range is
 legal — the result is in-bounds — but it inherits no authority the starting point never had, so
-it gains no citation mark and `Provenance.from` still records the move. The alternative, refusing to apply
+the state stays `provisional` while `Provenance.from` still records the move. The alternative, refusing to apply
 mood to provisional params, would make a device with an unverified recipe silently ignore the
 knobs, which reads as a bug and hides the debt instead of showing it.
 
@@ -3091,17 +3225,30 @@ nothing (§8):
 Three rules on the ink, all of them #35's lesson:
 
 - **One line per rig, never one per candidate.** The eight boxes that were asked and declined are
-  the device pages' business. Hoisted the way #107 hoisted pattern-global params — the repetition
+  not this phase's subject. Hoisted the way #107 hoisted pattern-global params — the repetition
   goes, the outlier never does.
-- **The evidence shown is the chosen box's own**, at `clock.preferredSource`, and only that one.
-  It carries its state's mark and one `↳ cite:` line beneath, labelled `claim` rather than
-  `value`, because nobody dials this field. Where a manifest recorded nothing there, the guide
-  prints no mark and no citation: nobody wrote down a reading, so the guide claims none.
-- **The reason is printed here and nowhere else.** This is the one place a capability fact's
-  reason reaches a reader in the guide, and it earns the space because it is the finding — "no
-  page states that leading a rig is its job" is information, and rendering nothing in its place
-  implies a confidence the guide does not have. §8.1's eight-word rule governs *hints*; a `↳ cite:`
-  has always carried pages.
+- **The basis is the whole of it.** The guide prints which of the four rules picked this box and
+  stops. What the chosen box's manifest recorded about itself at `clock.preferredSource` is
+  capability evidence and stays in the manifest, where §2.6's states and the audit account for it;
+  §8 renders none of that.
+
+  **`clockBasisEvidence` is gone with it.** It sat in `pipeline.ts` deciding *which* of a chosen
+  box's readings to print beneath the basis, and its whole content was #200's rule — a box the
+  reader picked is not argued with. With nothing rendering evidence there was nothing left for it
+  to gate, and a helper kept alive by one test is a claim that a decision is still being made.
+  #200 survives where it always did the work: `clockSourceBasis`'s `chosen` branch, which is what
+  suppresses the basis sentence itself. Where the reading *should* reach a reader is the device
+  page, which today lists `clock.preferredSource` among its unsettled paths and does not say what
+  the manual was found to state.
+- **The reason used to be printed here and nowhere else, and now it is printed nowhere.** This
+  was the one place a capability fact's reason reached a reader in the guide, and the argument for
+  the space it took was that it is the finding — "no page states that leading a rig is its job" is
+  information, and rendering nothing in its place implies a confidence the guide does not have.
+  That argument was not wrong; it lost to the surface. §8 is read standing at a rack, where the
+  reader cannot act on a page number, and a rule that keeps one line of evidence while dropping
+  every other is a rule with one exception and no principle. §2.6 records where the reason should
+  land instead, which is the device page — it does not carry it yet, so *"no page states that
+  leading a rig is its job"* currently reaches nobody.
 
 Both renderers say all of this, in their own words (§8's standing rule about ink): the page is
 what somebody is holding at the rack (#21), so a fact that reaches only the Markdown reaches
@@ -3374,8 +3521,10 @@ Do not reorder.
    the stacked one and the plain list — because it is the same question in all three, and
    answering it three times is how the first two came to disagree about a box. The device fact
    decides whether a duration prints at all, what sentence sits above the notes, and where the
-   note-offs go. It is stated once per part, above the rows it governs, with the page it was read
-   from. A part nothing carries gets no such sentence: every one of them says *this box*, and
+   note-offs go. It is stated once per part, above the rows it governs. **The sentence carries the
+   finding and not the page** — `unknown` opens by saying how this box sets a length is not
+   established here, so dropping the citation beneath it (§3.2) costs a reader the page and never
+   the state. A part nothing carries gets no such sentence: every one of them says *this box*, and
    there is no box.
 5. **Step programming** — the selected template pattern per part (§4.3), rendered per device with
    that device's slot articulation bound to it (§7 step 8).
@@ -3480,14 +3629,16 @@ Do not reorder.
    `Routing —` below it, since the two are the same kind of line — an instruction about the part
    rather than a value to dial.
 
-   **The need carries no provenance mark and the procedure below it does.** That asymmetry is the
-   model's rather than the renderer's: invariant 4 governs rendered *values* — something the
-   resolver could have moved, with a range behind it and a page that could confirm it — and "a
-   held synth note or a field recording" is none of those. It is an instruction about content to
-   obtain, exactly as `routing` is an instruction about signal flow. A provisional badge means
-   *nobody checked*; putting one on a choice that is the reader's would read as an unchecked
-   guess where there is nothing to check. The `prep` procedure is a different claim, is the
-   manual's when it has a page, and carries the mark and the citation accordingly
+   **The need and the procedure are two claims and stay two lines**, the need in prose and the
+   procedure as a bullet of its own beneath it. That split is the model's rather than the
+   renderer's: invariant 4 governs resolved *values* — something the resolver could have moved,
+   with a range behind it and a page that could confirm it — and "a held synth note or a field
+   recording" is none of those. It is an instruction about content to obtain, exactly as `routing`
+   is an instruction about signal flow, and `resolveSourceAudio` keeps `prep`'s provenance apart
+   from the need's in the model for that reason. Neither line is marked and neither carries a
+   page: the asymmetry that used to be visible — a bare need above a `· manual` procedure — was
+   ink, and the ink is gone (§3.2). What survives is the pair of instructions, which is the part a
+   reader standing at the box acts on
 
    Then where the multi-note realisation becomes an *instruction* rather than a
    fact. "Load the chord sample(s) onto this one voice" is a step a reader will otherwise not
@@ -3496,21 +3647,30 @@ Do not reorder.
    needed. Then the recipe's own `routing` line, which is where anything device-specific about
    the trade lives — that a chord sample costs the Tracker Mini no synth slot is the device's
    claim, not the renderer's, which knows about no box. Then parameter values, device by device,
-   each rendered per §3.2's table
-   (`52`, `52 · manual`, `52 → 45 · manual · moved by darkness`). `ResolvedParam.provenance`
-   is non-optional, so every value's provenance is decided before the renderer sees it — an
-   unmarked value is a decision, never a case that fell through
+   each rendered per §3.2's table: the name, the value, its unit and its range
+   (`DECAY 38 (0…100)`), and a mood move shown as the move it was (`52 → 45`).
+   `ResolvedParam.provenance` is non-optional, so every value's provenance is decided before the
+   renderer sees it — the guide printing none of it is a decision about this surface, never a
+   case that fell through
 
    **A parameter with a `scope` is stated once per device, above the parts** (§3.1/#107). A
    recipe is authored per voice, so everything in it reads as a per-voice setting; the Tracker
    Mini's `SWING` and the TR-1000's Pattern Shuffle are not, and the landing rig printed nine of
    them — four tracks and five voices — each carrying a note explaining that the other eight were
-   the same number. The hoisted line keeps its value, citation, note and hint: hoisting removes a
-   repetition, never evidence. Above the parts rather than below, because that is the order it is
-   done at the box. **A scope declaration alone is not enough to hoist:** every occurrence must
-   render identically first, and when two recipes disagree the parameter stays in every part.
-   One line under a heading claiming it covers a value it does not is an invented agreement, and
-   invariant 5 forbids that more clearly than it forbids a repetition
+   the same number. The hoisted line keeps its value, note and hint: hoisting removes a
+   repetition, never something the reader acts on. Above the parts rather than below, because that
+   is the order it is done at the box. **A scope declaration alone is not enough to hoist:** every
+   occurrence must render identically first, and when two recipes disagree the parameter stays in
+   every part. One line under a heading claiming it covers a value it does not is an invented
+   agreement, and invariant 5 forbids that more clearly than it forbids a repetition
+
+   **A second kind of hoisting has gone entirely, and it is not this one.** A recipe whose ranges
+   all cited one page printed that page under every line, so `dominantRangeCite` stated it once
+   above them — *Ranges cite …* — and `citationSentence` did the same for a device's documents —
+   *Values below cite …*. Both existed only to deduplicate a **citation**, so with no citation
+   printed there is nothing to repeat and nothing to hoist, and both are gone from the model as
+   well as from the page. #107's hoisting above is untouched, because it is about *where a setting
+   is stated* — a fact about the box, not about evidence
 7. **Finishing** — sidechain, master FX, and the arrangement as a **band trajectory** (§6.3):
    which sections program identically part for part, and which parts do not follow the band.
    Deliberately not a second copy of phases 1–3 — it printed the device list, a bars-and-energy
@@ -3633,9 +3793,25 @@ structurally whether or not a hint exists:
 On mobile the hint becomes a reserved second grid row with a fixed min-height. Toggling only
 ever changes `visibility`.
 
-Rules: a hint is a jog, under ~8 words, no full sentences. Where a hint is not enough, link
-the manual page rather than expanding it. A missing hint is fine and common — render the
-instruction alone, never invent one.
+Rules: a hint is a jog, under ~8 words, no full sentences. Where a hint is not enough, the answer
+is the manual — named, with the pages this box's values came off, in the one sentence that opens
+its block (§3.2) — rather than a longer hint. A jog that has grown into a paragraph is
+documentation on the wrong surface. A missing hint is fine and common — render the instruction
+alone, never invent one.
+
+**Two kinds of subordinate line, not three.** A hint hangs under its instruction as `↳ hint:` and
+an authored note as `↳ note:`, each its own nested item so that toggling hints changes
+`visibility` and nothing reflows. There was a third, `↳ cite:`, and it is gone — which is what
+makes `hints: false` exactly "the same document, minus the hint lines". A note is not
+suppressible: it is part of the instruction rather than a jog you outgrow.
+
+**The block's citation sentence is not a third kind of subordinate line and must not become one.**
+It sits at the top of a device's section, once, above everything that box has to say; it hangs
+under no instruction, it is not suppressible, and it survives `hints: false` unchanged. §3.2 has
+the argument for it and the four properties it is held to — the one that matters here is that
+there is exactly one of them per box. A mark on a value, a `↳ cite:` line, a `· manual` label or a
+second sentence would each rebuild the surface it replaced, one piece at a time, and
+`test/citation-sentence.test.ts` asserts against all four in both renderers and both layouts.
 
 ### 8.2 Persistence
 
@@ -3711,7 +3887,11 @@ Three guards:
   **build**, not a request
 - a `verified` audit script reporting provisional points, unverified ranges and mood-inert
   params separately (§3.2), so none of the three quietly accumulates, and splitting the cited
-  remainder into manual and observed so neither is read as the other — and, since #22, the
+  remainder into manual and observed so neither is read as the other. **This is where the debt is
+  visible to the project.** A guide renders no provenance at all (§3.2) and a device page reports
+  counts for one box, so the audit is the only surface that answers "how much of the library rests
+  on somebody's ears" — which is what makes invariant 4 a guarantee held by the compiler and this
+  script rather than by ink — and, since #22, the
   capability facts a manifest has spoken about (§2.6), split six ways over two lines — `caps` for
   the states with a document behind them and `gaps` for the states without, because `undocumented`
   is finished work, `unchecked` is work nobody has started, and `unread` is work nobody here can

@@ -30,7 +30,7 @@ import {
   stackPosition,
   voicesLabel,
 } from './format'
-import { EvidenceMark, SoundRef, evidenceLines } from './instruction'
+import { SoundRef } from './instruction'
 
 /**
  * §2.6/#142. **How the box in front of the reader ends a note**, above the notes it governs.
@@ -72,25 +72,15 @@ function noteDurationText(notice: NoteDurationNotice): string {
   }
 }
 
+/**
+ * The sentence and nothing under it. Every state of `noteDurationText` says its own finding in
+ * prose — `unknown` says outright that it is not established — so dropping the mark and the page
+ * costs the reader the page and not the state.
+ */
 function NoteDurationBlock({ notice }: { notice: NoteDurationNotice }) {
   return (
     <div className="callout">
-      <p>
-        {noteDurationText(notice)}{' '}
-        {notice.evidence === undefined ? null : <EvidenceMark evidence={notice.evidence} />}
-      </p>
-      {/*
-        Visible, not only in the mark's title: a reader on a phone at the rack has no hover, and a
-        printed guide has no attributes at all. `claim`, not `value` — how a box ends a note is a
-        fact about the box and nobody dials it.
-      */}
-      {notice.evidence === undefined
-        ? null
-        : evidenceLines(notice.evidence, 'claim').map((cite) => (
-            <p className="subordinate cite" key={cite}>
-              {cite}
-            </p>
-          ))}
+      <p>{noteDurationText(notice)}</p>
     </div>
   )
 }

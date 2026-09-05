@@ -7,7 +7,6 @@ import type {
   VoiceControlSource,
 } from '@/lib/core'
 import {
-  clockBasisEvidence,
   clockJackNotes,
   clockSourceBasis,
   clockSourceSetup,
@@ -15,8 +14,6 @@ import {
   warmUpNotices,
 } from '@/lib/core'
 import { clockParts, count, ioText, list, mixerText, syncText } from './format'
-import { citeText } from './format'
-import { EvidenceMark, evidenceLines } from './instruction'
 
 /**
  * §7.4/#121. **Why this box** — the basis of the clock-source answer, in this renderer's own
@@ -27,7 +24,11 @@ import { EvidenceMark, evidenceLines } from './instruction'
  * holding at the rack, so it is the renderer that matters most for it.
  *
  * One line for the rig, never one per candidate (#35, #107). The boxes that were asked and
- * declined are the device pages' business.
+ * declined are not this phase's subject.
+ *
+ * The basis and nothing under it. What the chosen box's manifest recorded about whether leading
+ * a rig is its job is capability evidence, it stays in the manifest, and §8 renders none of that
+ * (§3.2) — §2.6 records that the device page is where it should reach a reader.
  */
 function basisText(source: ClockSource): string {
   switch (clockSourceBasis(source)) {
@@ -207,16 +208,6 @@ export function PhaseRig({
       : clockSourceSetup(sourceDevice, source.transport)
 
   /**
-   * §7.4/#121. What the chosen box's manifest recorded when it decided whether leading a rig is
-   * its job — **its own entry only**, at `clock.preferredSource`. A manifest that recorded
-   * nothing there gets no mark and no citation: nobody wrote down a reading, so the page claims
-   * none, which is invariant 5 rather than a hole.
-   */
-  const preference =
-    // #200/#33. Nothing when the reader chose the box — see `clockBasisEvidence`.
-    clockBasisEvidence(source, sourceDevice)
-
-  /**
    * §10/#263. **Power these on first** — the same decision as the Markdown guide's, in this
    * renderer's own words (#33). First in the phase because warm-up runs while you patch, and a
    * reader who meets it last has already spent the time.
@@ -242,9 +233,6 @@ export function PhaseRig({
             {warming.map(({ device, warmUp }) => (
               <li key={device.id}>
                 <strong>{device.name}</strong> — {warmUp.note}
-                {warmUp.verified === false ? null : (
-                  <span className="note"> {citeText(warmUp.verified)}</span>
-                )}
               </li>
             ))}
           </ul>
@@ -260,9 +248,6 @@ export function PhaseRig({
             <p key={device.id}>
               <strong>Once warm</strong> — run {device.name}&rsquo;s quick tune:{' '}
               <span className="mono">{quickTune.path}</span>. {quickTune.note}.
-              {quickTune.verified === false ? null : (
-                <span className="note"> {citeText(quickTune.verified)}</span>
-              )}
             </p>
           ))}
         </div>
@@ -284,21 +269,12 @@ export function PhaseRig({
 
       {source === undefined ? null : (
         <div className="callout">
-          <p>
-            Why this box — {basisText(source)}{' '}
-            {preference === undefined ? null : <EvidenceMark evidence={preference} />}
-          </p>
           {/*
-            The citation is *visible*, not only in the mark's title attribute — a reader on a
-            phone at the rack has no hover, and a printed guide has no attributes at all.
+            The basis alone. What the manifest read when it decided is a citation, and citations
+            are not rendered anywhere (§3.2) — `basisText` states which of §7.4's rules picked
+            this box, which is the half a reader at the rack can act on.
           */}
-          {preference === undefined
-            ? null
-            : evidenceLines(preference, 'claim').map((cite) => (
-                <p className="subordinate cite" key={cite}>
-                  {cite}
-                </p>
-              ))}
+          <p>Why this box — {basisText(source)}</p>
         </div>
       )}
 
@@ -306,21 +282,14 @@ export function PhaseRig({
         <div className="callout">
           <p>
             On the {source.deviceName}, set <span className="mono">{setup.path}</span> to{' '}
-            <span className="mono">{setup.value}</span>{' '}
-            <EvidenceMark evidence={setup.evidence} />
+            <span className="mono">{setup.value}</span>
           </p>
           {/*
-            §8.1's subordinate lines, the same two the sound-design phase uses. The citation is
-            *visible*, not only in the mark's title attribute: a citation is the guide's evidence,
-            and `manual` alone cannot tell a reader which book or which page — the fact that
-            changes what they do with the value.
+            The note stays: it is the device's own words about the setting, and a reader acts on
+            it. Its evidence does not, and no page prints it: the citation at
+            `clock.sourceSetup[<transport>]` is in the manifest only (§3.2).
           */}
           {setup.note === undefined ? null : <p className="subordinate note">{setup.note}</p>}
-          {evidenceLines(setup.evidence).map((cite) => (
-            <p className="subordinate cite" key={cite}>
-              {cite}
-            </p>
-          ))}
         </div>
       )}
 
@@ -388,14 +357,7 @@ export function PhaseRig({
                   : clockJackNotes(device, source.transport).map((jackNote) => (
                       <div key={jackNote.jacks.join(',')}>
                         <dt className="mono">{jackNote.jacks.join(', ')}</dt>
-                        <dd>
-                          {jackNote.note} <EvidenceMark evidence={jackNote.evidence} />
-                          {evidenceLines(jackNote.evidence).map((cite) => (
-                            <p className="subordinate cite" key={cite}>
-                              {cite}
-                            </p>
-                          ))}
-                        </dd>
+                        <dd>{jackNote.note}</dd>
                       </div>
                     ))}
                 <div>

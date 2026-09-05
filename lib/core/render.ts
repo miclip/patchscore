@@ -12,17 +12,15 @@ import {
   clockWires,
   contentNotice,
   controlPositionNotice,
-  evidenceFor,
   noteDurationNotice,
   patternEntryNotice,
   noteOffSteps,
   printsNoteDuration,
-  rangeDocuments,
 } from './device'
 import type { DeviceId, SectionName } from './ids'
 import type { Role } from './vocabulary'
-import type { Cite, ParamScope, Provenance, ResolvedParam, ResolvedRange } from './params'
-import { dominantRangeCite, hoistedParams, sameCite } from './params'
+import type { CitedSource, ParamScope, ResolvedParam, ResolvedRange } from './params'
+import { citedShare, citedSources, hoistedParams, renderedParams } from './params'
 import type { Pattern, PatternHit } from './template'
 import { STEPS_PER_BAR } from './template'
 import { reStrikesHeldNote, tightestReStrike } from './timing'
@@ -43,7 +41,6 @@ import {
 } from './harmony'
 import {
   clockFollowing,
-  clockBasisEvidence,
   clockSourceBasis,
   quickTuneNotices,
   warmUpNotices,
@@ -89,9 +86,14 @@ import {
  *    hook section vanishes is indistinguishable from a genre with no hook, so an empty phase
  *    says what is missing instead of disappearing (invariant 5). `GUIDE_PHASES` is the order and
  *    the test asserts against it.
- *  - **Every rendered value carries its provenance** (invariant 4). `ResolvedParam.provenance`
- *    is non-optional, so there is no unmarked case to fall through to, and the three states are
- *    rendered *visibly differently* rather than by a marker only a machine could tell apart.
+ *  - **The guide prints no citations and no provenance marks.** Invariant 4 is untouched by
+ *    that: `ResolvedParam.provenance` is still non-optional, every value still carries its
+ *    state, and the audit script still counts what is provisional. What changed is the
+ *    audience. This page is read standing at a machine with both hands busy; a page number is
+ *    something you follow at a desk. Be precise about where it went: a device page reports a
+ *    box's provenance *counts* and the documents its ranges cite, and **no surface prints the
+ *    page behind one value** any more — that lives in the device folder. See `DESIGN.md` §3.2,
+ *    which records that as this decision's real cost rather than as a relocation.
  *  - **Hints are tagged subordinate lines** (§8.1). One tag, one line each, never inline after
  *    the value — see `SUBORDINATE`.
  *  - **No locale-dependent formatting** (§7.2): no `toLocaleString`, no `Intl`. Numbers go
@@ -103,8 +105,8 @@ import {
 // ---------------------------------------------------------------------------
 
 /**
- * §8.1. Hints, citations and authored notes are *subordinate* to the instruction they hang
- * under: each is its own nested list item, opened by a fixed tag.
+ * §8.1. Hints and authored notes are *subordinate* to the instruction they hang under: each is
+ * its own nested list item, opened by a fixed tag.
  *
  * A line rather than an inline suffix, because §8.1's requirement is that toggling hints must
  * not reflow the page — and an inline hint reflows the instruction the moment the line wraps.
@@ -112,13 +114,12 @@ import {
  * phone) by changing `visibility` alone. That is also why the tag is a *literal constant* here
  * and not a formatting flourish: it is the seam a later UI keys on.
  *
- * Three kinds and not one, because they are suppressible independently. `Show hints` is a
- * documented toggle for jogs you have outgrown; a citation is the guide's evidence and is not
- * something a reader turns off to go faster.
+ * Two kinds and not one, because they are suppressible independently. `Show hints` is a
+ * documented toggle for jogs you have outgrown; an authored note is part of the instruction and
+ * is not something a reader turns off to go faster.
  */
 export const SUBORDINATE = {
   hint: '↳ hint:',
-  cite: '↳ cite:',
   note: '↳ note:',
 } as const
 
@@ -146,9 +147,8 @@ export type RenderOptions = {
 }
 
 // ---------------------------------------------------------------------------
-// Values, provenance and citations
+// Values
 // ---------------------------------------------------------------------------
-
 
 
 /** Names in prose: "the L-8", "the L-8 and the 2400", "a, b, and c". */
@@ -156,11 +156,6 @@ function list(items: string[]): string {
   if (items.length <= 1) return items[0] ?? ''
   if (items.length === 2) return `${items[0]} and ${items[1]}`
   return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`
-}
-
-/** 'manual — TR-1000 Reference Manual p.61'. `cite.kind` is rendered, never dropped (§3.2). */
-function citeText(cite: Cite): string {
-  return `${cite.kind} — ${cite.source}`
 }
 
 /**
@@ -177,8 +172,10 @@ function rangeText(range: ResolvedRange, unit: string | undefined): string {
 }
 
 /**
- * §3.2's rendered column: `52`, `52 → 45`, or `52` plus a badge — the arrow appears exactly
- * when mood moved the value, which for a `provisional` point is still true and still shown.
+ * §3.2's rendered column: `52`, or `52 → 45` — the arrow appears exactly when mood moved the
+ * value, which for a `provisional` point is still true and still shown. It is not a mark and does
+ * not survive as one: it says what the number *was*, which is a fact about the dial rather than
+ * about who checked it.
  */
 function valueText(param: ResolvedParam): string {
   const now = typeof param.value === 'number' ? num(param.value) : param.value
@@ -190,120 +187,30 @@ function valueText(param: ResolvedParam): string {
 }
 
 /**
- * The mark on a value, and it marks the **positive** claim.
+ * **Nothing is marked, and that is the whole of the convention.**
  *
- * An unmarked value is a starting point. That is what a patch sheet has always been, it is what
- * this guide is, and it needs no annotation. What is worth a reader's attention is the opposite
- * fact — *this number came off the manual* — because that is the one that changes what they do
- * with it.
+ * The guide used to end a value with the word its provenance earned — ` · manual`, ` · observed`,
+ * ` · moved by darkness` — and hang the page it came from underneath. Both are gone from this
+ * document. §8 says the guide is read at the machine, and at the machine a citation is a line you
+ * step over on the way to the number: you cannot go and open the book, and the mark tells you
+ * nothing you can act on with your hands on a knob. The legend says once, at the top, what every
+ * value on the page is — a starting point — and that is the only reading convention left to learn.
  *
- * The earlier scheme marked the common case instead: a `⚠` on nine values in ten, plus a legend
- * opening "nobody has verified this, trust your ears over this page". That told a reader the
- * tool did not know what it was talking about before they had seen a single value, and the mark
- * carried no information precisely because it was everywhere.
+ * **The evidence is still carried; it is no longer rendered anywhere per value.** Provenance is
+ * on every `ResolvedParam` (invariant 4 is a type guarantee and is untouched) and the audit script
+ * still counts provisional points and unverified ranges. A device page adds, for one box, those
+ * counts, the documents its ranges cite by name, the field paths of anything unsettled, and four
+ * citations of its own — panel span, warm-up, quick tune, calibration.
  *
- * So: `cite.kind` is the mark — `manual` or `observed`, which is the distinction §3.2 calls
- * orthogonal and worth keeping — and a mood move names its knob whether or not the point
- * underneath was cited. A provisional point that nothing moved renders bare.
+ * **A reader who wants to know where `DECAY 38` came from has nowhere on the site to look.** That
+ * is the honest statement and it is worse than "it moved to the device page"; the page behind one
+ * value now lives only in `lib/devices/`. `DESIGN.md` §3.2 records it as an accepted cost and puts
+ * the repair on the device page — not here.
  *
- * **Nothing about provenance itself is weakened by this.** `ResolvedParam.provenance` is still
- * non-optional (invariant 4 is a type guarantee, not a rendering convention), and the audit
- * script still counts provisional points, unverified ranges and mood-inert params separately.
- * What changed is which of the three states is the one the page bothers to name.
+ * **What this file must never do is let the absence of a mark become a claim.** A fact that was
+ * only honest because it wore ` · unchecked` has to say so in its own prose or not be printed —
+ * see `unsettledText` and `controlPositionText`, which carry their state in the sentence.
  */
-function provenanceText(provenance: Provenance): string {
-  const moved = (axes: readonly string[]) => `moved by ${axes.join(', ')}`
-  if (provenance.state === 'authored') return provenance.cite.kind
-  if (provenance.state === 'derived') {
-    return `${provenance.cite.kind} · ${moved(provenance.axes)}`
-  }
-  // §3.2: a provisional point still shows the move, and still inherits no authority from it.
-  return provenance.axes !== undefined && provenance.axes.length > 0 ? moved(provenance.axes) : ''
-}
-
-/** ` · manual`, or nothing at all. An unmarked value must not trail a separator. */
-function mark(provenance: Provenance): string {
-  const text = provenanceText(provenance)
-  return text === '' ? '' : ` · ${text}`
-}
-
-/**
- * §2.6/#22. The same idea for a **capability fact** — a socket, a menu path — which carries a
- * `CapabilityEvidence` rather than a resolved provenance, and has a third state.
- *
- * **All three states are marked here, and that is the mark-the-exception rule applied rather than
- * overridden.** A parameter renders bare when it is provisional because nine values in ten are,
- * and a mark on all of them says nothing. Capability facts are the other way round: a rig prints
- * a handful, every one of them is cited today, so `unchecked` and `undocumented` *are* the
- * exceptions and a reader deserves to see them. "Patch MIDI IN" from a box whose rear panel
- * nobody has read is worth a word.
- *
- * `undocumented` is not a softer `unchecked`. It is the more expensive fact — somebody went to
- * the manual and it is silent — so it carries its reason on a line of its own, the way a citation
- * carries its page.
- */
-function evidenceMark(evidence: CapabilityEvidence): string {
-  if (evidence === false) return ' · unchecked'
-  return evidence.kind === 'unknown' ? ' · undocumented' : ` · ${evidence.kind}`
-}
-
-/**
- * §2.6/#120/#121. Each state says its own word and its own sentence, and `cited-against` says its
- * page too, because having one is what makes it that state. A state that reached a reader wearing
- * another's word would be the failure #121 is about.
- *
- * `label` is what the *citation* is a citation of, and it exists because "value" is a lie on some
- * of them: `clock.preferredSource` is a claim about the box's job, not a value anybody dials.
- * Defaulted, so every existing caller keeps the word it had.
- */
-function evidenceLines(evidence: CapabilityEvidence, label = 'value'): string[] {
-  if (evidence === false) return []
-  switch (evidence.kind) {
-    case 'unknown':
-      return [`undocumented — ${evidence.reason}`]
-    case 'unread':
-      return [`unread — ${evidence.reason}`]
-    case 'cited-against':
-      return [`cited-against ${citeText(evidence.cite)} — ${evidence.reason}`]
-    /**
-     * §2.6/#236. Both halves, in that order. The page comes first because it is the part a reader
-     * can go and check, and what is open comes second because it is what they would otherwise
-     * assume the page covered.
-     */
-    case 'partly':
-      return [
-        `partly ${citeText(evidence.cite)} — ${evidence.proven}`,
-        `still open — ${evidence.open}`,
-      ]
-    default:
-      return [`${label} ${citeText(evidence)}`]
-  }
-}
-
-/**
- * The citation lines for one provenance, which is where `cite.kind` and the *range's separate
- * claim* (§3.1) become visible. A `provisional` point has no citation to give and gets none —
- * that absence is the honest rendering, not a hole to fill.
- */
-function citeLines(
-  provenance: Provenance,
-  range: ResolvedRange | undefined,
-  hoisted?: Cite,
-): string[] {
-  const parts: string[] = []
-  // Labelled halves, because they are two independent claims (§3.1) and an unlabelled pair of
-  // citations reads as one claim stated twice.
-  if (provenance.state !== 'provisional') parts.push(`value ${citeText(provenance.cite)}`)
-  if (range !== undefined) {
-    if (range.verified === false) {
-      parts.push('range unverified — mood leaves this value alone')
-    } else if (!sameCite(range.verified, hoisted)) {
-      // The exception. Hoisting only ever removes the repetition, never the outlier.
-      parts.push(`range ${citeText(range.verified)}`)
-    }
-  }
-  return parts
-}
 
 // ---------------------------------------------------------------------------
 // Lines
@@ -853,9 +760,14 @@ function syncText(following: ClockFollowing, transport: string): string {
  * is invariant 5's failure — a confidence the guide does not have.
  *
  * **Hoisted, never per fact** (#35, #107). One line for the rig, not one per candidate: the eight
- * boxes that were asked and declined are the device pages' business, and repeating a citation
- * beside every box is the 14%-of-the-guide mistake #35 records. §8.1's eight-word rule is about
- * *hints*; this is the instruction line and its `↳ cite:`, which carry pages by design.
+ * boxes that were asked and declined are not this phase's subject, and a line per box is the
+ * 14%-of-the-guide mistake #35 records.
+ *
+ * The line used to carry the chosen box's evidence — its state's mark and a `↳ cite:` beneath —
+ * and it carries neither now. What survives is the basis itself, which is the half a reader at
+ * the rack acts on. What the manifest recorded at `clock.preferredSource` stays in the manifest:
+ * it is capability evidence, §8 renders none, and `clockBasisEvidence` went with the last thing
+ * that asked for it.
  */
 function clockBasisText(source: ClockSource): string {
   switch (clockSourceBasis(source)) {
@@ -1060,7 +972,6 @@ function phaseRig(
     )
     for (const { device, warmUp } of warming) {
       out.push(`- **${device.name}** — ${lowerFirst(warmUp.note)}`)
-      if (warmUp.verified !== false) subordinate(out, '  ', 'cite', citeText(warmUp.verified))
     }
     out.push('')
   }
@@ -1079,7 +990,6 @@ function phaseRig(
         `**Once warm** — run ${device.name}'s quick tune: \`${quickTune.path}\`. ` +
           `${quickTune.note}.`,
       )
-      if (quickTune.verified !== false) subordinate(out, '  ', 'cite', citeText(quickTune.verified))
     }
     out.push('')
   }
@@ -1102,22 +1012,13 @@ function phaseRig(
     /**
      * §7.4/#121. The basis, and — where the manifest recorded one — what it read when it decided.
      *
-     * The evidence shown is the **chosen box's own**, at `clock.preferredSource`, and only that
-     * one. A manifest that recorded nothing there prints no mark and no citation, which is the
-     * honest rendering rather than a hole: nobody wrote down a reading, so the guide claims none.
-     * `claim`, not `value` — this citation is for what the box is *for*, and no reader dials it.
+     * The basis alone now. `clockBasisText` states which of §7.4's rules picked this box, which
+     * is the half a reader standing at the rack can act on; what the manifest recorded about
+     * whether leading a rig is this box's job stays in the manifest, and §2.6 records that the
+     * device page is where it should reach a reader.
      */
     out.push('')
-    // #200/#33. `undefined` when the reader chose the box: there is nothing to justify, and the
-    // evidence underneath used to argue with the choice. The decision is `clockBasisEvidence`'s.
-    const preference = clockBasisEvidence(source, sourceDevice)
-    out.push(
-      `- ${clockBasisText(source)}` +
-        `${preference === undefined ? '' : evidenceMark(preference)}`,
-    )
-    if (preference !== undefined) {
-      for (const cite of evidenceLines(preference, 'claim')) subordinate(out, '  ', 'cite', cite)
-    }
+    out.push(`- ${clockBasisText(source)}`)
 
     /**
      * #104. The setting that makes the instruction above possible.
@@ -1132,17 +1033,11 @@ function phaseRig(
       sourceDevice === undefined ? undefined : clockSourceSetup(sourceDevice, source.transport)
     if (setup !== undefined) {
       out.push('')
-      out.push(
-        `- On the ${source.deviceName}, set \`${setup.path}\` to \`${setup.value}\`` +
-          `${evidenceMark(setup.evidence)}`,
-      )
-      // §8.1's subordinate lines, the same three tags every other cited instruction in this
-      // document uses. `· manual` says *how* it was checked and never says *where*: a reader
-      // holding the wrong book, or the same book at a different revision, cannot act on a bare
-      // `manual`. The page belongs on the page, not only in a title attribute the printed guide
-      // does not have.
+      out.push(`- On the ${source.deviceName}, set \`${setup.path}\` to \`${setup.value}\``)
+      // The note stays: it is the device's own words about the setting, and a reader acts on it.
+      // Its evidence does not, and no page prints it — `clock.sourceSetup[<transport>]`'s citation
+      // is in the manifest only (§3.2).
       if (setup.note !== undefined) subordinate(out, '  ', 'note', setup.note)
-      for (const cite of evidenceLines(setup.evidence)) subordinate(out, '  ', 'cite', cite)
     }
   }
   out.push('')
@@ -1208,11 +1103,7 @@ function deviceRigBlocks(
     // true of both the In and the Out is printed once.
     if (source !== undefined) {
       for (const jackNote of clockJackNotes(device, source.transport)) {
-        out.push(`  - ${jackNote.jacks.join(', ')}: ${jackNote.note}${evidenceMark(jackNote.evidence)}`)
-        // The jack's own page. p.284 stays in the note text above rather than being folded in
-        // here: `verified` is the page that documents *this jack* (§3.3), and the adapter's
-        // second page documents the adapter — one citation, one claim.
-        for (const cite of evidenceLines(jackNote.evidence)) subordinate(out, '    ', 'cite', cite)
+        out.push(`  - ${jackNote.jacks.join(', ')}: ${jackNote.note}`)
       }
     }
     out.push(`  - audio: ${ioText(device)}`)
@@ -1413,15 +1304,10 @@ function noteDurationText(notice: NoteDurationNotice): string {
 }
 
 function noteDurationLines(notice: NoteDurationNotice): Line[] {
-  const out: Line[] = []
-  const evidence = notice.evidence
-  out.push(`${noteDurationText(notice)}${evidence === undefined ? '' : evidenceMark(evidence)}`)
-  if (evidence !== undefined) {
-    // `claim`, not `value`: how a box ends a note is a fact about the box, and nobody dials it.
-    for (const cite of evidenceLines(evidence, 'claim')) subordinate(out, '', 'cite', cite)
-  }
-  out.push('')
-  return out
+  // The sentence and nothing under it. Every state of `noteDurationText` says its own finding in
+  // prose — `unknown` opens by saying it is not established — so dropping the mark and the page
+  // costs the reader the page and not the state.
+  return [noteDurationText(notice), '']
 }
 
 /**
@@ -1875,9 +1761,8 @@ function articulationLines(
       .join(', ')
     out.push(
       `- \`${entry.slot}\` → ${sets} on step${entry.steps.length === 1 ? '' : 's'} ` +
-        `${entry.steps.map(num).join(', ')}${mark(entry.provenance)}`,
+        `${entry.steps.map(num).join(', ')}`,
     )
-    for (const cite of citeLines(entry.provenance, undefined)) subordinate(out, '  ', 'cite', cite)
     if (options.hints && entry.hint !== undefined) {
       subordinate(out, '  ', 'hint', hintText(device, entry.hint))
     }
@@ -1935,22 +1820,6 @@ function stepBlock(
   // No pattern id: template-internal, and the two facts that carry meaning here are how long
   // the variant is and which band it came from.
   return { headline: `${num(pattern.length)} steps, ${band}`, body }
-}
-
-/**
- * What the values under a device heading actually cite, as a sentence, or nothing when they cite
- * nothing.
- *
- * Derived from the citations rather than from `Device.manual`, which is a separate assertion
- * nothing keeps in agreement with them. A TR-1000 declares its Owner's Manual while every range
- * cites the Reference Manual — a different book, and the only one that prints a range at all — so
- * the guide was telling a reader to look something up where it cannot be found. Two devices cite
- * two documents each, which one declared title cannot express however it is worded.
- */
-export function citationSentence(device: Device): string | undefined {
-  const documents = rangeDocuments(device)
-  if (documents.length === 0) return undefined
-  return `Values below cite ${list([...documents])}.`
 }
 
 /**
@@ -2214,10 +2083,10 @@ function phaseSteps(
      * renderer's — the web sibling asks the same function and gets the same answer, per #33. All
      * that is written twice is the ink.
      *
-     * **The two arms print differently because they are different claims.** A pitch is the
-     * direction's musical decision and carries no citation; a trigger note is a cited fact about
-     * the box, so it carries its provenance the way every other hardware value on the page does
-     * (invariant 4).
+     * **Both arms print the same way**, because at the machine they are the same instruction:
+     * put this note on the step. A pitch is the direction's musical decision and a trigger note is
+     * a fact read off the box; that difference is real, it is in the model, and no rendered
+     * surface shows it any more (§3.2).
      */
     const note = noteInstruction(a)
     if (note.kind === 'pitch') {
@@ -2226,13 +2095,9 @@ function phaseSteps(
     } else if (note.kind === 'trigger') {
       out.push('')
       // Bare, and that is the accurate form. `C5` is where the sample plays as recorded, not the
-      // only note it answers to — every other note plays it transposed (p.128) — so a gloss
-      // saying "the note this voice answers to" claims more than the citation supports.
-      //
-      // No unmarked arm, because §2.1 admits no uncited trigger note: `verified` is a `Cite`, so
-      // there is always a kind to print and always a page to print under it.
-      out.push(`**Trigger note** — \`${note.note}\` · MIDI ${num(note.midi)} · ${note.verified.kind}`)
-      subordinate(out, '', 'cite', citeText(note.verified))
+      // only note it answers to — every other note plays it transposed — so a gloss saying "the
+      // note this voice answers to" claims more than what was read off the box supports.
+      out.push(`**Trigger note** — \`${note.note}\` · MIDI ${num(note.midi)}`)
     }
 
     if (!replacesGrid) {
@@ -2261,19 +2126,14 @@ function phaseSteps(
 // Phase 6 — Sound design
 // ---------------------------------------------------------------------------
 
-function paramLines(
-  param: ResolvedParam,
-  device: Device | undefined,
-  options: HintSetting,
-  hoisted?: Cite,
-): Line[] {
+function paramLines(param: ResolvedParam, device: Device | undefined, options: HintSetting): Line[] {
   const out: Line[] = []
   const unit = param.unit === undefined ? '' : ` ${param.unit}`
   const range = param.range === undefined ? '' : ` (${rangeText(param.range, param.unit)})`
-  out.push(`- **${param.name}** \`${valueText(param)}\`${unit}${range}${mark(param.provenance)}`)
-  for (const cite of citeLines(param.provenance, param.range, hoisted)) {
-    subordinate(out, '  ', 'cite', cite)
-  }
+  // Name, value, unit, range. No `hoisted` argument any more: it existed only to stop a range
+  // citation repeating under every line a shared sentence already covered, and with no citation
+  // to repeat there is nothing to hoist.
+  out.push(`- **${param.name}** \`${valueText(param)}\`${unit}${range}`)
   if (param.note !== undefined) subordinate(out, '  ', 'note', param.note)
   if (options.hints && param.hint !== undefined) {
     subordinate(out, '  ', 'hint', hintText(device, param.hint))
@@ -2289,15 +2149,9 @@ function paramLines(
  * subject. The `Source —` prefix mirrors the `Routing —` line that follows it, since the two are
  * the same kind of line — an instruction about the part rather than a value to dial.
  *
- * **The need line carries no provenance mark and the procedure line does.** That asymmetry is
- * the model's (`resolveSourceAudio`), not the renderer's: the choice of recording is nobody's
- * documented claim, and the procedure for rendering one is the manual's. A mark on the first
- * would be an unchecked-guess badge on honest guidance.
- *
- * The procedure is a bullet with its citation beneath, which is `paramLines`' shape exactly —
- * a claim, its mark, and its evidence indented under it. It is not folded into the need line
- * because they are two claims (§3), and a citation attached to the pair would be a citation
- * attached to the half of it nobody checked.
+ * The procedure is a bullet of its own beneath the need, which is `paramLines`' shape exactly.
+ * It is not folded into the need line because they are two claims (§3) and two things to do —
+ * what the part needs, and what the box asks you to do to get it there.
  */
 function sourceLines(
   source: ResolvedSourceAudio,
@@ -2314,10 +2168,7 @@ function sourceLines(
     return out
   }
   out.push('')
-  out.push(`- ${source.prep.text}${mark(source.prep.provenance)}`)
-  for (const cite of citeLines(source.prep.provenance, undefined)) {
-    subordinate(out, '  ', 'cite', cite)
-  }
+  out.push(`- ${source.prep.text}`)
   if (options.hints && source.hint !== undefined) {
     subordinate(out, '  ', 'hint', hintText(device, source.hint))
   }
@@ -2334,10 +2185,10 @@ function sourceLines(
  * **The unsettled state says four different things, because #120's states are four different
  * findings and one sentence over them would be false of most.** "Nobody here has checked" is true
  * of `false` and of a fixture that reached here uncited, and a lie about every box somebody read
- * and could not finish reading — which is all five real devices. `evidenceMark` and the cite line
- * below already say which state it is; this says what a reader should do about it, and a reading
- * that ran out, a document nobody can open and a document answering no do not lead to the same
- * next move.
+ * and could not finish reading — which is all five real devices. Nothing beside the line says
+ * which state it is any more, so the sentence is the only place it is said; a reading that ran
+ * out, a document nobody can open and a document answering no do not lead to the same next
+ * move, and each says so in its own words.
  *
  * All of them do the work #111 was filed for, and they do it *here* rather than on the part:
  * `Source — <need>` is a true and useful line — it says what the part needs — and what was never
@@ -2418,14 +2269,9 @@ function unsettledText(evidence: CapabilityEvidence | undefined): string {
 }
 
 function contentLines(notice: ContentNotice): Line[] {
-  const evidence = notice.evidence
-  const out: Line[] = ['', '**Content**', '']
-  out.push(`- ${contentText(notice)}${evidence === undefined ? '' : evidenceMark(evidence)}`)
-  if (evidence !== undefined) {
-    // `claim`, not `value`: what this box ships is a fact about the box, and no reader dials it.
-    for (const cite of evidenceLines(evidence, 'claim')) subordinate(out, '  ', 'cite', cite)
-  }
-  return out
+  // `unsettledText` still splits four ways, which is what keeps this honest with no mark on it:
+  // every unsettled state opens *Not established* and names its own finding in the sentence.
+  return ['', '**Content**', '', `- ${contentText(notice)}`]
 }
 
 /**
@@ -2442,16 +2288,17 @@ function contentLines(notice: ContentNotice): Line[] {
  * document.** *The manual was read and no page mapping a mark to a value was found* is what an
  * `unknown` finding actually holds. *The manual maps no mark to a value* is a positive claim about
  * a whole document that nobody has established — and an earlier draft made exactly that claim while
- * opening with *Not established*, which is a contradiction inside one sentence. The state still has
- * to be in the prose rather than only in the `· undocumented` mark: a mark is a word at the end of
- * a line that a reader can miss, and #21's reader is holding a phone in bad light. What the panel
- * *does* print is stated first, because it is the part they can see in front of them.
+ * opening with *Not established*, which is a contradiction inside one sentence. The state is in the
+ * prose and nowhere else, which is what lets the line lose its `· undocumented` mark and stay true:
+ * the mark was a word at the end of a line that a reader can miss anyway, and #21's reader is
+ * holding a phone in bad light. What the panel *does* print is stated first, because it is the part
+ * they can see in front of them.
  *
  * `mapped` is printed whenever the declaration carries it, and its whole job is to stop this
  * reading as a claim about every control on the box. On the Muse it is the eight ENVELOPE faders,
  * which do carry a printed scale — a notice that swept them in would be the false negative claim
- * #325 removed from the parameter lines, back again one level up. It is the one **positive** claim
- * in the notice, so it carries its own page below, beside the reading that found nothing.
+ * #325 removed from the parameter lines, back again one level up. It stays in the sentence; the
+ * page it was read off is printed nowhere and lives in the manifest (§3.2).
  */
 function controlPositionText(notice: ControlPositionNotice): string {
   const exception =
@@ -2464,16 +2311,7 @@ function controlPositionText(notice: ControlPositionNotice): string {
 }
 
 function controlPositionLines(notice: ControlPositionNotice): Line[] {
-  const out: Line[] = ['', '**Setting by hand**', '']
-  out.push(`- ${controlPositionText(notice)}${evidenceMark(notice.evidence)}`)
-  // `claim`, not `value`: what a panel prints is a fact about the box, and nobody dials it.
-  for (const cite of evidenceLines(notice.evidence, 'claim')) subordinate(out, '  ', 'cite', cite)
-  // The exception's page, under the reading that found nothing — two different kinds of evidence
-  // for two different claims, and printing one under the other's word would merge them.
-  if (notice.mapped !== undefined) {
-    subordinate(out, '  ', 'cite', `mapped ${citeText(notice.mapped.cite)}`)
-  }
-  return out
+  return ['', '**Setting by hand**', '', `- ${controlPositionText(notice)}`]
 }
 
 /**
@@ -2508,20 +2346,128 @@ function scopeSentence(scope: ParamScope): string {
 function patchLines(entries: readonly ResolvedPatchEntry[]): Line[] {
   const out: Line[] = []
   for (const entry of entries) {
-    out.push(`- \`${entry.from}\` → \`${entry.to}\`${mark(entry.provenance)}`)
-    for (const cite of citeLines(entry.provenance, undefined)) subordinate(out, '  ', 'cite', cite)
+    out.push(`- \`${entry.from}\` → \`${entry.to}\``)
     if (entry.note !== undefined) subordinate(out, '  ', 'note', entry.note)
   }
   return out
 }
 
 /**
+ * The pages a block read inside one document, as a **span** rather than a list.
+ *
+ * `pp.27-53` covers the pages between the two ends whether or not anything cited the ones in the
+ * middle, and that overstatement is deliberate: the sentence exists so a reader knows which book
+ * to have open and roughly where, and a comma-separated list of nine page numbers is a thing
+ * nobody reads standing at a rack. The Muse cites p.27, p.29 and p.52 across one block; `pp.27-52`
+ * is the useful answer and `pp.27, 29, 52` is the accurate one nobody wants.
+ *
+ * A single page stays `p.27`, and a source with no pages at all — an observation, a tagged
+ * documentation corpus (#173) — gets nothing rather than an invented locator.
+ */
+function pageSpan(pages: readonly number[]): string | undefined {
+  const first = pages[0]
+  const last = pages[pages.length - 1]
+  if (first === undefined || last === undefined) return undefined
+  return first === last ? `p.${num(first)}` : `pp.${num(first)}-${num(last)}`
+}
+
+/**
+ * One cited source, named the way a reader would go and find it.
+ *
+ * An observation is not a document and must not be worded as one. `Muse, firmware 1.4.0` is a
+ * source string built for the audit, where it identifies a reading; on the page it becomes *the
+ * instrument at firmware 1.4.0*, which tells the reader the thing they cannot look up — that this
+ * came off the box rather than out of a book, and off which version of it. Where the string
+ * carries no firmware the phrase stops at *the instrument*, because inventing a version is exactly
+ * the kind of precision invariant 5 forbids.
+ */
+function citedSourceText(source: CitedSource): string {
+  if (source.kind === 'observed') {
+    const firmware = /\bfirmware\s+([^\s,]+)/.exec(source.name)?.[1]
+    return firmware === undefined ? 'the instrument' : `the instrument at firmware ${firmware}`
+  }
+  const span = pageSpan(source.pages)
+  return span === undefined ? `the ${source.name}` : `the ${source.name}, ${span}`
+}
+
+/**
+ * §3.2/§8.1. **One sentence per device block, and the only citation a guide prints.**
+ *
+ * What it replaced was a mark on every line with a `↳ cite:` under it, and the argument against
+ * that stands: §8 is read standing at a machine with both hands busy, a page number beside a value
+ * is a line you step over on the way to the number, and a `title` attribute has no hover on a
+ * phone and no existence on paper. None of that is an argument against telling a reader *once*
+ * which book this box's numbers came out of. A per-value citation costs a line of attention per
+ * value and answers a question asked at a desk; one hoisted sentence costs a line per box and
+ * answers the question a reader at the rack does ask, which is whether to trust the page and where
+ * to go when a number looks wrong.
+ *
+ * So the sentence is held to what that buys, and everything that made the old scheme expensive
+ * stays gone: no per-value mark, no `↳ cite:` line, no `· manual` or `· observed` label, no page
+ * list, and never more than one sentence.
+ *
+ * **The verb is chosen from the counts, because the obvious wording is usually false.** Almost
+ * every box in this library cites its legality gates and leaves its points to taste — the Muse
+ * renders 75 settings with 1 cited point among them — so *"values come from the manual"* would
+ * claim the manual picked the numbers. It gave the bounds. §3.1's two claims are separate and the
+ * sentence has to be true about which one it is summarising:
+ *
+ *  - every point cited — *Values on this box come from …*
+ *  - a strict majority cited — *Most values on this box come from …; the others are starting
+ *    points.*
+ *  - the legality gates carry it, which is nearly every box — *This block draws on …; its values
+ *    are starting points.*
+ *  - a cited minority of points and no cited gate — *Checked values on this box draw on …; the
+ *    others are starting points.*
+ *
+ * **The third does not name the gate, and that is the point of its wording.** It said *"Ranges and
+ * option lists on this box come from …; the settings inside them are starting points"*, which is
+ * accurate and is our bookkeeping read aloud: `range` and `options` are the words §3.1 uses to
+ * keep two claims apart in a type, and a reader at a rack has no use for either. *Draws on* claims
+ * exactly as much as the citations support — these documents are what this block rests on —
+ * without asking anybody to hold the distinction between a bound and a value in their head to
+ * parse it. What the reader needs from the distinction is the second clause, and that says it in
+ * five words.
+ *
+ * *"on this box"* rather than *"below"* because §8's two layouts put this in two places: the phase
+ * layout prints it directly under the device heading with the settings beneath it, and #230's
+ * track-major layout prints it under *shared settings*, with the parts further down and other
+ * boxes in between. One wording has to be true in both, and *"this block"* is the same rule.
+ *
+ * **A box that cites nothing gets no sentence**, rather than a sentence saying so. That absence is
+ * not a claim — the counts that would reveal a rot live on the device page and in `npm run audit`
+ * (§3.2), which is where a project asks that question, not a reader at a rack.
+ *
+ * Exported because §8's two renderers are **siblings** and this is one sentence, not two that have
+ * to be kept in agreement. `test/citation-sentence.test.ts` asserts the Markdown and React bytes
+ * against each other for exactly that reason.
+ */
+export function citationSentence(params: readonly ResolvedParam[]): string | undefined {
+  const sources = citedSources(params)
+  if (sources.length === 0) return undefined
+  const named = list(sources.map(citedSourceText))
+  const { total, points, ranges, options } = citedShare(params)
+
+  if (points === total) return `Values on this box come from ${named}.`
+  // **Strictly more than half.** At exactly half, *most* is false — and a fifty-fifty box is not
+  // a hypothetical shape, it is what a folder looks like part-way through being authored.
+  if (points * 2 > total) {
+    return `Most values on this box come from ${named}; the others are starting points.`
+  }
+  if (ranges > 0 || options > 0) {
+    return `This block draws on ${named}; its values are starting points.`
+  }
+  return `Checked values on this box draw on ${named}; the others are starting points.`
+}
+
+/**
  * §8/#230/#107. **What a box's parts share, rather than what any one of them sets.**
  *
  * Lifted out of `phaseSound` when the sequencer layout became track-major. These lines belong to
- * the *device* — its citation sentence, whether anything is loaded on it, and the settings #107
- * hoists because one control serves every part — and rendering them per part repeats them once per
- * track. One of them reads *"set it once, not once per part"*, which printed five times under a
+ * the *device* — what its numbers rest on (§3.2), whether anything is loaded on it, how its
+ * unmarked controls are set by hand, and the settings #107 hoists because one control serves every
+ * part — and rendering them per part
+ * repeats them once per track. One of them reads *"set it once, not once per part"*, which printed five times under a
  * six-track Deluge is the guide contradicting itself in its own words.
  *
  * So the track-major layout prints this once at the top of a box's section and the per-track
@@ -2534,7 +2480,13 @@ function soundShared(
   options: HintSetting,
 ): Line[] {
   const out: Line[] = []
-  const cites = citationSentence(device)
+  // §3.2. The one citation a guide prints, above everything else this box has to say, because
+  // it is about all of it. Built from the settings actually rendered below — #107's hoisted
+  // groups counted once, not once per part — so it names the documents this reader would need
+  // and no others, and the share its verb comes from is a share of what is on the page.
+  const cites = citationSentence(
+    renderedParams(hoistedParams(mine.map((a) => a.params)), mine.map((a) => a.params)),
+  )
   if (cites !== undefined) {
     out.push('')
     out.push(`*${cites}*`)
@@ -2561,8 +2513,6 @@ function soundShared(
     out.push('')
     out.push(scopeSentence(group.scope))
     out.push('')
-    // No `hoisted` cite: a device-level block has no shared-citation sentence over it, so
-    // every line prints its own evidence in full (§3.2).
     for (const param of group.params) out.push(...paramLines(param, device, options))
   }
   return out
@@ -2572,8 +2522,8 @@ function soundShared(
  * §8/#230. **One part's own settings**, split from what its box shares (`soundShared`).
  *
  * The track-major layout renders these per track and the shared block once above them; the phase
- * layout calls both in the order it always inlined them, so its bytes do not move. `hoisted` is
- * the set #107 lifted to the device, filtered out here so a control that serves every part is not
+ * layout calls both in the order it always inlined them, so its bytes do not move. `hoist` is the
+ * set #107 lifted to the device, filtered out here so a control that serves every part is not
  * printed again under each one.
  */
 function soundForPart(
@@ -2613,14 +2563,7 @@ function soundForPart(
       // a heading with no body under it.
       out.push('Nothing to set for this part alone; every setting it has is above.')
     } else {
-      // Computed on what is actually printed. A hoisted parameter still in the tally could
-      // tip a citation into looking dominant when the lines it dominated have left the list.
-      const hoisted = dominantRangeCite(own)
-      if (hoisted !== undefined) {
-        out.push(`*Ranges cite ${citeText(hoisted)}.*`)
-        out.push('')
-      }
-      for (const param of own) out.push(...paramLines(param, device, options, hoisted))
+      for (const param of own) out.push(...paramLines(param, device, options))
     }
     if (a.patch.length > 0) {
       out.push('')
@@ -2905,16 +2848,20 @@ function occupiedCounts(result: ResolveResult): Map<DeviceId, number> {
  * thing that makes an unmarked value legible: the convention has to be stated somewhere, and
  * once at the top is cheaper than on every line.
  *
+ * **Shorter than it was, because the page it describes is.** It used to teach the mark — what
+ * `manual` meant at the end of a line, and that a moved value named the knob that moved it — and
+ * none of that is printed any more. A legend explaining a mark the document does not carry is
+ * worse than no legend: it sends a reader looking for something that is not there.
+ *
  * Deliberately says nothing about hints: a legend
  * describing a line the reader has switched off is a small lie, and keeping it out is what lets
  * `hints: false` be exactly "the same document, minus the hint lines" — a property worth having
  * because §8.1's toggle must not move anything else on the page.
  */
 const LEGEND = [
-  'Values are starting points — dial them to taste. Where a number came straight off the manual',
-  'or off a unit it says which, and where a mood knob moved it you see the move (`52 → 45`) and',
-  'the knob that did it. Every value carries its range — `38 (0…100)` — so you can tell at a',
-  'glance whether the screen in front of you is the one the line is about.',
+  'Values are starting points — dial them to taste. Where a mood knob moved one you see the move',
+  '(`52 → 45`). Every value carries its range — `38 (0…100)` — so you can tell at a glance whether',
+  'the screen in front of you is the one the line is about.',
 ]
 
 /**

@@ -878,7 +878,7 @@ describe('every track grid part gets its note (§2.1)', () => {
    * kick's *own* section of the markdown, not on the whole document, or a note printed under some
    * other part would satisfy it.
    */
-  it('prints the note under a percussion part, with its citation, on the rendered page', () => {
+  it('prints the note under a percussion part, bare, on the rendered page', () => {
     const guides = TEMPLATES.flatMap((template) =>
       [1, 7].map((seed) => resolve({ devices: [device], template, mood: NEUTRAL_MOOD, seed })),
     ).filter((result) =>
@@ -897,11 +897,10 @@ describe('every track grid part gets its note (§2.1)', () => {
       const end = rest.findIndex((l) => l.startsWith('### '))
       const section = (end === -1 ? rest : rest.slice(0, end)).join('\n')
 
-      expect(section, result.template.id).toContain('**Trigger note** — `C5` · MIDI 60 · manual')
-      // Invariant 4: a claim about hardware carries its page onto the page.
-      expect(section, result.template.id).toContain(`↳ cite: manual — ${MANUAL}74`)
-      expect(section, result.template.id).toContain('p.86')
-      expect(section, result.template.id).toContain('p.254')
+      expect(section, result.template.id).toContain('**Trigger note** — `C5` · MIDI 60')
+      // The pages behind it are in the manifest. Nothing hangs under the note here.
+      expect(section, result.template.id).not.toContain('↳ cite:')
+      expect(section, result.template.id).not.toContain(`${MANUAL}74`)
     }
   })
 

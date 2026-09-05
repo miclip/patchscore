@@ -380,12 +380,13 @@ describe('the Drone Study on a Tracker Mini (#142)', () => {
     }
   })
 
-  it('says why, and cites the page that says it', () => {
+  it('says why, in the sentence rather than in a citation under it', () => {
     for (const doc of both(result)) {
       expect(doc).toContain('No note-length field on this box')
       expect(doc).toContain('a note runs until the next note on the same voice')
     }
-    expect(renderGuide(result)).toContain('Polyend Tracker Mini Manual 2.2.1b, p.105')
+    // The finding is the sentence. The page it was read off is in the manifest only.
+    expect(renderGuide(result)).not.toContain('Polyend Tracker Mini Manual 2.2.1b, p.105')
   })
 })
 

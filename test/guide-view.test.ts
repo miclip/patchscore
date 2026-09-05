@@ -5,7 +5,6 @@ import {
   GUIDE_PHASES,
   NEUTRAL_MOOD,
   bandTrajectory,
-  dominantRangeCite,
   hoistedParams,
   fxSources,
   moodState,
@@ -217,36 +216,38 @@ describe('§8.1 the hint toggle cannot reflow the page', () => {
   })
 })
 
-describe('§3.2 provenance reaches the page', () => {
-  it('marks the positive claim and leaves a starting point unmarked', () => {
+describe('§3.2 provenance does not reach the page', () => {
+  it('leaves every value unmarked, whatever its provenance', () => {
     const out = html(golden)
     const states = new Set(
       golden.assignments.flatMap((a) => a.params.map((p) => p.provenance.state)),
     )
+    // The fixture carries more than one state, so this is not passing on uniform data.
     expect(states.size).toBeGreaterThan(1)
-
-    // A cited point says which kind of citation it has; a move names its knob.
     expect(states.has('authored') || states.has('derived')).toBe(true)
-    expect(out).toContain('prov-cited')
-    expect(out).toContain('prov-moved')
 
-    // Nothing on the page looks like a warning, and there is no quieter badge standing in for
-    // one either: an unmarked value is the norm and the legend explains the convention once.
+    // No mark class survives, not even the quiet ones — `.prov` is what every one of them wore.
+    expect(out).not.toContain('class="prov')
+
+    // Nothing on the page looks like a warning either: an unmarked value is the norm and the
+    // legend explains the convention once.
     expect(out).not.toContain('⚠')
-    expect(out).not.toContain('prov-provisional')
     expect(out.toLowerCase()).not.toContain('trust your ears')
     expect(out).toContain('Values are starting points')
   })
 
-  it('marks every cited value, and no uncited one', () => {
+  it('hangs no citation under any line', () => {
     const out = html(golden)
     const cited = golden.assignments.flatMap((a) =>
       a.params.filter((p) => p.provenance.state !== 'provisional'),
     )
+    // There is evidence in the model to have printed, and none of it is printed.
     expect(cited.length).toBeGreaterThan(0)
-    // One mark per cited value, plus the one standing in the legend.
-    const marks = out.split('class="prov prov-cited"').length - 1
-    expect(marks).toBeGreaterThanOrEqual(cited.length)
+    expect(out).not.toContain('subordinate cite')
+    for (const param of cited) {
+      if (param.provenance.state === 'provisional') continue
+      expect(text(out)).not.toContain(param.provenance.cite.source)
+    }
   })
 
   it('renders every parameter value, in monospace (§10)', () => {
@@ -512,69 +513,32 @@ describe('hooks read as chords', () => {
   })
 })
 
-describe('range citations hoist in the web view too', () => {
-  it('states a repeated citation once per recipe and keeps only the exceptions inline', () => {
+/**
+ * §3.2's hoisting is gone with the citations it deduplicated — see the sibling suite in
+ * `render.test.ts`. What is left is the claim that matters: the real rig's evidence, all of it,
+ * is absent from the rendered page.
+ */
+describe('no range or value citation reaches the web view', () => {
+  it('prints no citation for any parameter on a real rig', () => {
     const out = text(html(real))
-    let hoistedRecipes = 0
+    const params = real.assignments.flatMap((a) => a.params)
+    expect(params.length).toBeGreaterThan(0)
 
-    // #107's device-level group, computed the way both renderers compute it: over every part one
-    // device carries. A name in here is printed once above the recipes and dropped from each.
-    const hoistedNames = new Map<string, ReadonlySet<string>>()
-    for (const a of real.assignments) {
-      if (hoistedNames.has(a.deviceId)) continue
-      const mine = real.assignments.filter((other) => other.deviceId === a.deviceId)
-      hoistedNames.set(a.deviceId, hoistedParams(mine.map((other) => other.params)).names)
-    }
-
-    for (const a of real.assignments) {
-      // **On the parameters the recipe block actually prints**, which is what `render.ts` does
-      // and says why: "a hoisted parameter still in the tally could tip a citation into looking
-      // dominant when the lines it dominated have left the list." This read `a.params` until the
-      // RD-8 landed, and the two agreed only for as long as no device's *pattern-scoped* group
-      // carried its dominant citation. The RD-8 made that false — its FX bus cites p.26 four
-      // times and hoists whole — and the RD-9 with it, because a second box on the bus took its
-      // `metallic` recipe away and left the one that could hoist.
-      const lifted = hoistedNames.get(a.deviceId) ?? new Set<string>()
-      const own = a.params.filter((p) => !lifted.has(p.name))
-      const hoisted = dominantRangeCite(own)
-      if (hoisted === undefined) {
-        // No unambiguous repetition: every citation stays where it was.
-        for (const param of own) {
-          if (param.range === undefined || param.range.verified === false) continue
-          expect(out).toContain(`range ${param.range.verified.kind} — ${param.range.verified.source}`)
-        }
-        continue
+    let cited = 0
+    for (const param of params) {
+      if (param.range !== undefined && param.range.verified !== false) {
+        cited += 1
+        expect(out).not.toContain(`range ${param.range.verified.kind} — ${param.range.verified.source}`)
       }
-
-      hoistedRecipes += 1
-      expect(out).toContain(`Ranges cite ${hoisted.kind} — ${hoisted.source}.`)
-
-      // Every exception is still on the page; the shared one is not repeated under each line.
-      const exceptions = own.filter(
-        (p) =>
-          p.range !== undefined &&
-          p.range.verified !== false &&
-          !(p.range.verified.kind === hoisted.kind && p.range.verified.source === hoisted.source),
-      )
-      for (const param of exceptions) {
-        const cite = param.range?.verified
-        if (cite === undefined || cite === false) continue
-        expect(out).toContain(`range ${cite.kind} — ${cite.source}`)
+      if (param.provenance.state !== 'provisional') {
+        cited += 1
+        expect(out).not.toContain(`value ${param.provenance.cite.kind} — ${param.provenance.cite.source}`)
       }
     }
-
-    expect(hoistedRecipes).toBeGreaterThan(0)
-  })
-
-  it('hoists no value citation — that is a claim about one number', () => {
-    const out = text(html(golden))
-    const valueCites = golden.assignments.flatMap((a) =>
-      a.params.flatMap((p) => (p.provenance.state === 'provisional' ? [] : [p.provenance.cite])),
-    )
-    expect(valueCites.length).toBeGreaterThan(0)
-    for (const cite of valueCites) {
-      expect(out).toContain(`value ${cite.kind} — ${cite.source}`)
-    }
+    // The rig has evidence to have printed, so the assertions above are not vacuous.
+    expect(cited).toBeGreaterThan(0)
+    expect(out).not.toContain('Ranges cite')
+    expect(out).not.toContain('Values below cite')
   })
 })
 
@@ -766,17 +730,17 @@ describe('pattern-global settings are set once per device, not once per part (#1
     }
   })
 
-  it('keeps the value, the citation, the note and the hint on the hoisted line', () => {
-    // Hoisting must not cost evidence. The range citation, the manual's neutral, and the gesture
-    // that reaches the control are the whole reason the line is worth printing at all.
+  it('keeps the value, the note and the hint on the hoisted line', () => {
+    // Hoisting must not cost the reader anything they act on: the manual's neutral and the
+    // gesture that reaches the control are why the line is worth printing at all.
     for (const doc of [text(html(landing)), renderGuide(landing)]) {
       expect(doc).toContain('Pattern-wide')
       expect(doc).toContain('One setting for the whole pattern')
       expect(doc).toContain('50% is no swing; set once, it applies across the whole pattern')
       expect(doc).toContain('Pattern-wide: one setting for every track, saved with the pattern')
-      // The Tracker Mini's SWING page, and the TR-1000's PTN SETTING page.
-      expect(doc).toContain('Polyend Tracker Mini Manual 2.2.1b, p.185')
       expect(doc).toContain('Hold [FX1], press (Up)/(Down)')
+      // The Tracker Mini's SWING page. Evidence, and §8 renders none of that.
+      expect(doc).not.toContain('Polyend Tracker Mini Manual 2.2.1b, p.185')
     }
   })
 
@@ -866,12 +830,13 @@ describe('source audio reaches both renderers, and says the same thing (§3/#101
     seed: 7,
   })
 
-  it('puts the citation on the procedure and not on the need, in both', () => {
+  it('prints the procedure and not the page it was read off, in both', () => {
     const stab = chords.assignments.find((a) => a.role === 'stab')
+    // The model still carries the evidence; neither renderer prints it.
     expect(stab?.recipe.sourceAudio?.prep?.provenance.state).toBe('authored')
     for (const doc of [text(html(chords)), renderGuide(chords)]) {
       expect(doc).toContain('Rendering Tracks To Audio Chords')
-      expect(doc).toContain('Polyend Tracker Mini Manual 2.2.1b, p.104')
+      expect(doc).not.toContain('Polyend Tracker Mini Manual 2.2.1b, p.104')
     }
   })
 
@@ -918,7 +883,7 @@ describe('the clock source is told how to emit (§7.4/#104)', () => {
     seed: GOLDEN_SEED,
   })
 
-  it('renders the menu path, the value and the citation', () => {
+  it('renders the menu path, the value and the note, and no citation', () => {
     expect(midiRig.clockSource?.deviceId).toBe('polyend-tracker-mini')
     expect(midiRig.clockSource?.transport).toBe('midi-din')
 
@@ -927,16 +892,12 @@ describe('the clock source is told how to emit (§7.4/#104)', () => {
     // The page and the Markdown carry the same claim in their own words, which is the rule in
     // `components/guide` — what is written twice is the formatting, never the fact.
     expect(page).toContain('clock leaves only by the routing set here')
-    // Invariant 4, on the page. The mark puts the kind in ink and the source in a title
-    // attribute...
-    expect(html(midiRig)).toContain(
+    // No mark and no page, in ink or in a title attribute.
+    expect(html(midiRig)).not.toContain(
       `title="${escaped('Polyend Tracker Mini Manual 2.2.1b, p.54')}"`,
     )
-    // ...and the document and page are *visible*, in the same subordinate cite line every other
-    // cited instruction in this guide carries. A citation is the guide's evidence, and a title
-    // attribute is not evidence to a reader on a phone or reading this on paper.
-    expect(page).toContain('value manual — Polyend Tracker Mini Manual 2.2.1b, p.54')
-    expect(html(midiRig)).toContain('class="subordinate cite"')
+    expect(page).not.toContain('Polyend Tracker Mini Manual 2.2.1b, p.54')
+    expect(html(midiRig)).not.toContain('class="subordinate cite"')
   })
 
   /**
@@ -951,11 +912,12 @@ describe('the clock source is told how to emit (§7.4/#104)', () => {
     expect(page).toContain('p.13, p.284')
     // Deduped: one claim, though the manifest rightly states it on both jacks.
     expect(occurrences(page, 'Type B adapter')).toBe(1)
-    // Invariant 4 on the page: cited, and the page visible rather than only in a title.
-    expect(html(midiRig)).toContain(
+    // `p.13, p.284` above is inside the device's own note text, which is where it always was.
+    // The citation beside it is gone, in ink and in the title alike.
+    expect(html(midiRig)).not.toContain(
       `title="${escaped('Polyend Tracker Mini Manual 2.2.1b, p.13')}"`,
     )
-    expect(page).toContain('value manual — Polyend Tracker Mini Manual 2.2.1b, p.13')
+    expect(page).not.toContain('value manual — Polyend Tracker Mini Manual 2.2.1b, p.13')
   })
 
   it('says nothing about a MIDI adapter on a USB rig (#103)', () => {
@@ -1323,8 +1285,8 @@ describe('the note above the grid reads the same in both guides (§4.1/§2.1)', 
       expect(guide).toContain('Trigger note')
       expect(guide).toContain('C5')
       expect(guide).toContain('MIDI 60')
-      // Invariant 4: a cited fact about hardware carries its page, visibly, in both.
-      expect(guide).toContain('Polyend Tracker Mini Manual 2.2.1b, p.90')
+      // The note is the instruction; the page it was read off is in the manifest only.
+      expect(guide).not.toContain('Polyend Tracker Mini Manual 2.2.1b, p.90')
     }
   })
 

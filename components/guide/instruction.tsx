@@ -1,9 +1,9 @@
 import { Fragment, useContext } from 'react'
 import type { PatternDriver } from '@/lib/core'
 import type { ReactNode } from 'react'
-import type { CapabilityEvidence, Cite, Provenance, ResolvedParam } from '@/lib/core'
+import type { ResolvedParam } from '@/lib/core'
 import { GuideNavContext } from './nav'
-import { citeLines, citeText, count, num, rangeText, valueParts } from './format'
+import { count, num, rangeText, valueParts } from './format'
 
 /**
  * §8.1's layout primitive, and the reason this view is not converted Markdown.
@@ -16,30 +16,29 @@ import { citeLines, citeText, count, num, rangeText, valueParts } from './format
  * Below the narrow breakpoint the cell becomes a second grid row with a fixed height, so the
  * same promise holds on a phone — see `.instruction` in `app/globals.css`.
  *
- * Citations and notes are *not* in that cell. A citation is the guide's evidence and is not
- * something a reader turns off to go faster (§8.1's three kinds are suppressible independently);
- * it sits under the instruction, in the main column, always visible and visually subordinate.
+ * Notes are *not* in that cell. An authored note is part of the instruction rather than a jog
+ * you outgrow, so it is not something a reader turns off to go faster; it sits under the
+ * instruction, in the main column, always visible and visually subordinate.
+ *
+ * There is no `cites` any more. The guide prints no citations at all — see `render.ts`'s note on
+ * the convention, and the block below on what does and does not render one instead.
  */
 export type InstructionProps = {
   children: ReactNode
   /** Already resolved through the device's `hints` table by the caller. */
   hint?: string
-  cites?: readonly string[]
   note?: string
 }
 
-export function Instruction({ children, hint, cites, note }: InstructionProps) {
+export function Instruction({ children, hint, note }: InstructionProps) {
   return (
     <div className="instruction">
       {/*
-        The grid is this row, not the whole block, and the subordinate lines sit *outside* it.
-        The hint column is sized to its own instruction, so anything sharing that column widens
-        it — and a citation is far the longest string here ("range manual — TR-1000 Reference
-        Manual (eng02) v1.13+, p.71"). Inside the grid it pushed the hint hundreds of pixels
-        clear of the value it annotates, on exactly the rows carrying the most evidence.
-
-        Spanning both columns is not enough: a spanning item still contributes to the tracks it
-        spans. Only leaving the grid stops it counting.
+        The grid is this row, not the whole block, and the note sits *outside* it. The hint column
+        is sized to its own instruction, so anything sharing that column widens it — a long note
+        inside the grid would push the hint clear of the value it annotates. Spanning both columns
+        is not enough: a spanning item still contributes to the tracks it spans. Only leaving the
+        grid stops it counting.
       */}
       <div className="instruction-row">
         <div className="instruction-line">{children}</div>
@@ -47,153 +46,31 @@ export function Instruction({ children, hint, cites, note }: InstructionProps) {
         <p className="hint">{hint}</p>
       </div>
       {note === undefined ? null : <p className="subordinate note">{note}</p>}
-      {(cites ?? []).map((cite) => (
-        <p className="subordinate cite" key={cite}>
-          {cite}
-        </p>
-      ))}
     </div>
   )
 }
 
 /**
- * The mark, and it marks the **positive** claim — the same rule as the Markdown sibling's
- * `provenanceText`, in ink instead of words.
+ * **Nothing here is marked.** `ProvenanceMark` and `EvidenceMark` used to end a line with the
+ * word its evidence earned — `manual`, `unchecked`, `undocumented`, `moved by darkness` — with
+ * the page in a `title`. Both are gone, along with the `cite` lines under them.
  *
- * An unmarked value is a starting point. That is what this guide is, and a patch sheet has
- * always been starting points, so it needs no annotation and gets none: no glyph, no quieter
- * badge, nothing. What earns a mark is the notable fact — *this number came off the manual* —
- * because that is the one that changes what a reader does with it. `cite.kind` is therefore the
- * mark itself, since §3.2 keeps `manual` and `observed` as a real distinction.
+ * §8's reader is standing at a machine in bad light with both hands busy. They cannot open the
+ * book, and a `title` attribute has no hover on the phone #21 designs for and no existence at all
+ * on the printed page. The mark was costing a line of every reader's attention to answer a
+ * question only a reader at a desk asks.
  *
- * A mood move names its knob whether or not the point underneath was cited: the move is a fact
- * about the value, not a claim about its authority, and §3.2 still refuses to let a provisional
- * point inherit any from having been moved.
+ * **Provenance is still carried, and nothing renders a per-value citation now.** It is
+ * non-optional on every `ResolvedParam` (invariant 4 is a type guarantee) and `npm run audit`
+ * counts it; `app/devices/[id]/page.tsx` reports a box's counts, the documents its ranges cite
+ * and four citations of its own — panel span, warm-up, quick tune, calibration — but not the page
+ * behind one value. Do not read "it moved to the device page" as licence to put a mark back here:
+ * see `DESIGN.md` §3.2 for why the repair belongs on that page instead.
  *
- * Nothing about provenance is weakened here. `ResolvedParam.provenance` is non-optional
- * (invariant 4 is a type guarantee) and the audit script still counts provisional points; this
- * is which of the three states the page bothers to name, and nothing else.
+ * What must not happen here is a fact staying on the page after the mark that made it honest has
+ * gone: an unsettled capability fact has to carry its state in its own sentence, which is what
+ * `contentText` and `controlPositionText` do.
  */
-export function ProvenanceMark({ provenance }: { provenance: Provenance }) {
-  const axes =
-    provenance.state === 'derived'
-      ? provenance.axes
-      : provenance.state === 'provisional'
-        ? (provenance.axes ?? [])
-        : []
-
-  return (
-    <>
-      {provenance.state === 'provisional' ? null : (
-        <span className="prov prov-cited" title={provenance.cite.source}>
-          {provenance.cite.kind}
-        </span>
-      )}
-      {axes.length === 0 ? null : (
-        <span className="prov prov-moved">moved by {axes.join(', ')}</span>
-      )}
-    </>
-  )
-}
-
-/**
- * §2.6/#22. The mark for a **capability fact** — a socket, a menu path — which carries a
- * `CapabilityEvidence` rather than a resolved provenance and has a third state.
- *
- * **Every state is marked here, unlike `ProvenanceMark` above, and that is the same rule applied
- * rather than an exception to it.** A parameter goes unmarked when it is provisional because
- * nine values in ten are, so a mark on all of them carries nothing. A rig prints a handful of
- * capability facts and every one of them is cited today, which makes `unchecked` and
- * `undocumented` the notable states — the ones that change what a reader does. "Patch MIDI IN"
- * from a box whose rear panel nobody has read is worth a word.
- *
- * The two quiet states are not interchangeable and are not drawn alike. `unchecked` is work
- * nobody has done. `undocumented` is work somebody finished: they went to the manual and it is
- * silent, which is the more expensive thing to know and the reason it carries a reason.
- *
- * Written here rather than shared with the Markdown renderer, like every other rendering decision
- * under `components/guide/` — one right answer to *which evidence*, two hand-written vocabularies
- * around it.
- */
-export function EvidenceMark({ evidence }: { evidence: CapabilityEvidence }) {
-  if (evidence === false) return <span className="prov prov-unchecked">unchecked</span>
-  if (evidence.kind === 'unknown') {
-    return (
-      <span className="prov prov-undocumented" title={evidence.reason}>
-        undocumented
-      </span>
-    )
-  }
-  // §2.6/#120/#121. Their own ink, which #120 deliberately left to this issue. They are not two
-  // spellings of `undocumented`: `unread` is work blocked on a *file* nobody here can unblock by
-  // reading harder, and `cited-against` is the one non-claim with a page — the document answers,
-  // and answers no. Drawing all three the same made the strongest of them look like the weakest.
-  if (evidence.kind === 'unread') {
-    return (
-      <span className="prov prov-unread" title={evidence.reason}>
-        unread
-      </span>
-    )
-  }
-  if (evidence.kind === 'cited-against') {
-    return (
-      <span className="prov prov-cited-against" title={`${evidence.cite.source} — ${evidence.reason}`}>
-        cited against
-      </span>
-    )
-  }
-  /*
-   * §2.6/#236. Its own mark rather than borrowing the cited one: a reader who sees `manual` will
-   * take the whole fact as documented, which is the overclaim this state exists to avoid. The
-   * title carries the page, what it proves and what it leaves open — the three things that make
-   * this different from a citation.
-   */
-  if (evidence.kind === 'partly') {
-    return (
-      <span
-        className="prov prov-partly"
-        title={`${evidence.cite.source} — ${evidence.proven}; still open: ${evidence.open}`}
-      >
-        partly cited
-      </span>
-    )
-  }
-  return (
-    <span className="prov prov-cited" title={evidence.source}>
-      {evidence.kind}
-    </span>
-  )
-}
-
-/**
- * The subordinate lines one piece of capability evidence earns. A citation names its page; an
- * `undocumented` fact states what the manual does not say, because a bare "undocumented" is the
- * shrug §2.6 refuses; an unchecked fact has nothing to add that the mark did not already say.
- *
- * `label` is what the citation is a citation *of* (#121). "value" is a lie on some of them:
- * `clock.preferredSource` is a claim about the box's job and nobody dials it. Defaulted, so every
- * caller that was naming a value keeps the word it had.
- */
-export function evidenceLines(evidence: CapabilityEvidence, label = 'value'): string[] {
-  if (evidence === false) return []
-  switch (evidence.kind) {
-    case 'unknown':
-      return [`undocumented — ${evidence.reason}`]
-    case 'unread':
-      return [`unread — ${evidence.reason}`]
-    case 'cited-against':
-      return [`cited-against ${citeText(evidence.cite)} — ${evidence.reason}`]
-    // §2.6/#236. Page first — the part a reader can check — then what it leaves open, which is
-    // what they would otherwise assume the page covered.
-    case 'partly':
-      return [
-        `partly ${citeText(evidence.cite)} — ${evidence.proven}`,
-        `still open — ${evidence.open}`,
-      ]
-    default:
-      return [`${label} ${citeText(evidence)}`]
-  }
-}
 
 /**
  * The value itself. Monospace, always (§10: values must be visually distinct from prose
@@ -224,30 +101,20 @@ export function Value({ param }: { param: ResolvedParam }) {
 }
 
 /**
- * One parameter, as a whole instruction: name, value, provenance, evidence, hint.
+ * One parameter, as a whole instruction: name, value, range, note, hint.
  *
- * `ResolvedParam.provenance` is non-optional, so there is no unmarked case for this to fall
- * through to (invariant 4) — every value on the page carries where it came from.
+ * No `hoisted` argument any more. It existed only to stop a range citation repeating under every
+ * line a shared sentence above already covered, and with no citation to repeat there is nothing
+ * to hoist.
  */
-export function ParamLine({
-  param,
-  hint,
-  hoisted,
-}: {
-  param: ResolvedParam
-  hint?: string
-  /** The recipe's shared range citation, already printed under its heading. */
-  hoisted?: Cite
-}) {
+export function ParamLine({ param, hint }: { param: ResolvedParam; hint?: string }) {
   return (
     <Instruction
-      cites={citeLines(param.provenance, param.range, hoisted)}
       {...(param.note === undefined ? {} : { note: param.note })}
       {...(hint === undefined ? {} : { hint })}
     >
       <span className="param-name">{param.name}</span>
       <Value param={param} />
-      <ProvenanceMark provenance={param.provenance} />
     </Instruction>
   )
 }

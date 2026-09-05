@@ -484,8 +484,11 @@ describe('the state reaches a reader once per device, above the parts (§2.6/#11
       expect(doc).toContain('Source — A short, dark kick sample with no tail')
       expect(doc).toContain('Not established')
       expect(doc).toContain('not that you have to supply it')
-      // And never an unreasoned one: whoever did not settle it says why, in both.
-      expect(doc).toContain(UNKNOWN.reason)
+      // **Which** finding it is, said in the sentence: `unsettledText` splits four ways so the
+      // state survives with no mark and no citation beside it. The manifest's own `reason` is
+      // rendered nowhere at all now — DESIGN.md §2.6 records that as owed to the device page.
+      expect(doc).toContain('the manual was read and does not say')
+      expect(doc).not.toContain(UNKNOWN.reason)
     }
   })
 
@@ -560,7 +563,8 @@ describe('the state reaches a reader once per device, above the parts (§2.6/#11
     for (const doc of both(supplied)) {
       expect(doc).toContain('You supply it')
       expect(doc).not.toContain('Not established')
-      expect(doc).toContain(OBSERVED.source)
+      // The state is the sentence; the page it rests on is in the manifest and printed nowhere.
+      expect(doc).not.toContain(OBSERVED.source)
     }
 
     const ships = guide(loader({ content: SHIPS, capabilityEvidence: { [CONTENT_FACT]: CITE } }))
@@ -573,7 +577,7 @@ describe('the state reaches a reader once per device, above the parts (§2.6/#11
       expect(doc).toContain(`look in ${SHIPS.location}`)
       expect(doc).toContain(SHIPS.reason)
       expect(doc).not.toContain('Not established')
-      expect(doc).toContain(CITE.source)
+      expect(doc).not.toContain(CITE.source)
     }
   })
 
@@ -603,11 +607,14 @@ describe('the state reaches a reader once per device, above the parts (§2.6/#11
     }
   })
 
-  it('prints the reason a finished reading came back empty, in both', () => {
+  it('says a finished reading came back empty, in both', () => {
     const result = guide(loader({ capabilityEvidence: { [CONTENT_FACT]: AGAINST } }))
     for (const doc of both(result)) {
-      expect(doc).toContain(AGAINST.reason)
-      expect(doc).toContain(AGAINST.cite.source)
+      // `cited-against` gets its own sentence, which is what tells it apart from the other three
+      // now that the mark and the reason under it reach no rendered surface.
+      expect(doc).toContain('a document here answers against it')
+      expect(doc).not.toContain(AGAINST.reason)
+      expect(doc).not.toContain(AGAINST.cite.source)
     }
   })
 

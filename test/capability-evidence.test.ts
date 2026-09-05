@@ -22,7 +22,7 @@ import { countsBlock, findingLine } from '../scripts/audit-verified'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { renderGuide, resolve } from '../lib/core/index'
-import { EvidenceMark, evidenceLines } from '../components/guide/instruction'
+import { Guide } from '../components/guide/guide'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './golden/scenario'
 import { device, recipe } from './fixtures'
@@ -706,67 +706,70 @@ describe('the guide marks the states it renders apart (§8/§2.6)', () => {
     return lines.slice(at + 1).filter((l, i, all) => l.includes('↳') && all.slice(0, i).every((p) => p.includes('↳')))
   }
 
-  it('names the kind for a cited socket and prints its page', () => {
-    const body = rigWith(CITE)
-    expect(body).toMatch(/Type B[^\n]* · manual/)
-    expect(body).toContain('cite: value manual — fixture manual p.7')
-  })
+  /**
+   * **The three states render identically in the guide, and that is the change, not a bug.**
+   *
+   * `evidenceMark` used to end this line with `manual`, `unchecked` or `undocumented`, and hang
+   * the page or the reason underneath. The **states** are still told apart on the device page —
+   * `capabilitySentence` gives each one its own words and the suite above asserts that — while the
+   * page and the reason are rendered nowhere at all (DESIGN.md §2.6).
+   *
+   * What is asserted here is the pair that makes the guide honest without a mark: the jack note
+   * itself still reaches the reader in every state, and no state is dressed in another's word.
+   */
+  const STATES: [string, CapabilityEvidence][] = [
+    ['cited', CITE],
+    ['unchecked', false],
+    ['undocumented', UNKNOWN],
+  ]
 
-  it('says `unchecked` where nobody has read the rear panel', () => {
-    // Not silence. A rig prints a handful of capability facts, so an uncited one is the
-    // exception here — the opposite of a provisional parameter, which is the rule and goes
-    // unmarked for exactly that reason.
-    const body = rigWith(false)
-    expect(body).toMatch(/Type B[^\n]* · unchecked/)
-    expect(body).not.toMatch(/Type B[^\n]* · manual/)
-    // Nothing to cite, so no citation line is invented.
-    expect(linesUnderTypeB(body)).toEqual([])
-  })
+  for (const [name, evidence] of STATES) {
+    it(`prints the jack note bare when the evidence is ${name}`, () => {
+      const body = rigWith(evidence)
+      // The fact a reader acts on is on the page, whatever backs it.
+      expect(body).toContain('Type B')
+      // And nothing after it, and nothing under it.
+      expect(body).not.toMatch(/Type B[^\n]* · /)
+      expect(linesUnderTypeB(body)).toEqual([])
+    })
+  }
 
-  it('says `undocumented` where somebody looked and the manual is silent, and why', () => {
-    const body = rigWith(UNKNOWN)
-    expect(body).toMatch(/Type B[^\n]* · undocumented/)
-    expect(linesUnderTypeB(body)).toEqual([
-      '    - ↳ cite: undocumented — the manual prints no figure for this',
-    ])
-    // The expensive state is not spelled as the cheap one. Reporting finished research as a
-    // backlog invites somebody to do it twice.
-    expect(body).not.toMatch(/Type B[^\n]* · unchecked/)
+  it('lets no state wear another state’s word', () => {
+    for (const [, evidence] of STATES) {
+      const body = rigWith(evidence)
+      expect(body).not.toContain('↳ cite:')
+      expect(body).not.toContain('· unchecked')
+      expect(body).not.toContain('· undocumented')
+    }
   })
-
 })
 
 /**
  * #33's rule holds here as everywhere: the two renderers are siblings and share no prose. What
- * they must agree on is which *states* exist and that a reader can tell them apart — the words
- * and the ink are written twice on purpose.
+ * they must agree on is which *states* exist — and, since neither guide renders any of them, that
+ * neither one leaks a mark the other has dropped.
+ *
+ * `EvidenceMark` and the React `evidenceLines` are gone with the Markdown sibling's, so there is
+ * nothing left to render in isolation here. The device page is where the three *states* are still
+ * told apart — not their pages or their reasons — and `capabilitySentence` above asserts it.
  */
-describe('the web guide marks the same states (§8/§2.6/#33)', () => {
-  const html = (evidence: CapabilityEvidence) =>
-    renderToStaticMarkup(createElement(EvidenceMark, { evidence }))
-
-  it('gives each state its own class and its own word', () => {
-    expect(html(CITE)).toContain('class="prov prov-cited"')
-    expect(html(CITE)).toContain('>manual<')
-    expect(html(CITE)).toContain('title="fixture manual p.7"')
-
-    expect(html({ kind: 'observed', source: 'the unit' })).toContain('>observed<')
-
-    expect(html(false)).toContain('class="prov prov-unchecked"')
-    expect(html(false)).toContain('>unchecked<')
-
-    expect(html(UNKNOWN)).toContain('class="prov prov-undocumented"')
-    expect(html(UNKNOWN)).toContain('>undocumented<')
-    // The reason is reachable, not merely counted: a bare `undocumented` is the shrug §2.6
-    // refuses, and the mark is the only place a hover can find it.
-    expect(html(UNKNOWN)).toContain('title="the manual prints no figure for this"')
-  })
-
-  it('hangs the same subordinate lines as the Markdown sibling', () => {
-    expect(evidenceLines(CITE)).toEqual(['value manual — fixture manual p.7'])
-    expect(evidenceLines(false)).toEqual([])
-    expect(evidenceLines(UNKNOWN)).toEqual([
-      'undocumented — the manual prints no figure for this',
-    ])
+describe('the web guide marks the same states as the Markdown one — none of them (§8/§2.6/#33)', () => {
+  it('renders no provenance mark and no citation line anywhere in the guide', () => {
+    const markup = renderToStaticMarkup(
+      createElement(Guide, {
+        seed: GOLDEN_SEED,
+        result: resolve({
+          devices: DEVICES.filter(
+            (d) => d.id === 'polyend-tracker-mini' || d.id === 'roland-tr-8s',
+          ),
+          template: GOLDEN_TEMPLATE,
+          mood: GOLDEN_MOOD,
+          seed: GOLDEN_SEED,
+        }),
+      }),
+    )
+    expect(markup).toContain('Values are starting points')
+    expect(markup).not.toContain('class="prov')
+    expect(markup).not.toContain('subordinate cite')
   })
 })
