@@ -1322,7 +1322,8 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    *  - the Tracker Mini's seven land in `sub`, `metallic`, `impact`, `noise` and `riser` on an
    *    eight-track sample pool, and cost **10,767**.
    *
-   * `sub` is the one to look at. It is the most crowded role in the library at 49 recipes, and
+   * `sub` is the one to look at. It is the most crowded of the roles this change touches, at 50
+   * recipes — `kick` at 63 and `bass-mid` at 52 are busier still, and neither is affected here — and
    * `industrial-techno` asks for it at priority 1 — so a fiftieth candidate lands in the most
    * contended place there is. Four figures is what that is worth, and four figures is 2% of this
    * walk. **That is the measurement #301 asks for and it says the same thing every time**: the
