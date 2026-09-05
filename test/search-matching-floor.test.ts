@@ -1432,8 +1432,21 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * off the row's floor — 502,585 against 502,584 on seed 13.
    *
    * Twenty-one consecutive zeroes, across sixteen devices and eleven content changes.
+   *
+   * **Three recipes and one narrowing take it up one node and the gap stays at zero — a
+   * twenty-second time.** 502,585 -> 502,586 unrepaired and the same repaired. The Digitone II's
+   * `rim`, `ride` and `noise` (#345), with `vox-chop` taken *off* the pool in the same change.
+   *
+   * **The first entry in this list where a narrowing and an authoring are netted against each
+   * other**, and the net is one node. `industrial-techno` asks this box for `noise` at priority 5
+   * and optional, and asks it for no `vox-chop` at all, so neither half of the change lands
+   * anywhere the search walks. That is the rule from both directions at once.
+   *
+   * `search-bound.test.ts` records the direction's peak moving 582,821 -> 582,919, 98 nodes.
+   *
+   * Twenty-two consecutive zeroes, across seventeen devices and twelve content changes.
    */
-  it('walks the recorded 502,585 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 502,586 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1441,7 +1454,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(502_585)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(502_586)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement

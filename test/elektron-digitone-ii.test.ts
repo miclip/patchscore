@@ -562,8 +562,9 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   it('leaves 216 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(240)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(216)
+    // 240 until #345 authored `rim`, `ride` and `noise`.
+    expect(grid.length).toBe(270)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(246)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -594,10 +595,13 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['kick', 42],
       ['clap', 18],
       ['open-hat', 18],
+      ['rim', 18],
       ['snare', 18],
       ['metallic', 12],
       ['arp', 6],
       ['impact', 6],
+      ['noise', 6],
+      ['ride', 6],
       ['tom', 6],
     ])
   })
