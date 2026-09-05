@@ -1530,12 +1530,28 @@ function sharedDelay(): AuthoredParam[] {
  * is the range, the defaults, and the requirement that the two differ.
  */
 function midiSetup(): AuthoredParam[] {
-  return inModule('PROGRAMMER', [
-    sw('MULTI MODE', 'ON', OFF_ON, 110, {
-      scope: 'song',
-      hint: 'midi-settings',
-      note: 'Its printed default, and what makes the two timbres separately playable',
-    }),
+  return [
+    /*
+     * **`MULTI MODE` is grouped by what it governs, not by the menu it is reached through.**
+     *
+     * The one control in this file where those two answers differ. Its hint is `PROGRAMMER, MENU,
+     * MIDI` — the gesture — while what it decides is whether the box is two independently played
+     * timbres at all, which is the same subject as `TIMBRE A VOICE COUNT` and `DYNAMIC VOICE
+     * ALLOCATION` beside it in `voice()`. A reader working the VOICE CONTROL section wants all
+     * three together; nobody sets this while thinking about MIDI channels.
+     *
+     * The hint still says how to get there, so nothing is lost by boxing it here: the module says
+     * what a control belongs to and the hint says where the box hides it, and on a menu-driven
+     * setting those are allowed to disagree.
+     */
+    ...inModule('VOICE CONTROL', [
+      sw('MULTI MODE', 'ON', OFF_ON, 110, {
+        scope: 'song',
+        hint: 'midi-settings',
+        note: 'Its printed default, and what makes the two timbres separately playable',
+      }),
+    ]),
+    ...inModule('PROGRAMMER', [
     sw('MIDI IN CHANNEL', '1', MIDI_CHANNELS, 110, {
       scope: 'song',
       hint: 'midi-settings',
@@ -1554,7 +1570,8 @@ function midiSetup(): AuthoredParam[] {
       hint: 'midi-settings',
       note: "Defaults to OFF, so the box ignores CC until this is set. The manual's spelling",
     }),
-  ])
+    ]),
+  ]
 }
 
 /**

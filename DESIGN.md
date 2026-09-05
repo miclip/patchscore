@@ -3816,18 +3816,25 @@ to the rest.
 
 **Three semantic states are designed; one is implemented.**
 
-- **`live` — the module is in the patch.** The only state that exists today, and it needs no data:
-  the guide prints a parameter only where a recipe authors one, so every box that appears is one
-  the patch touches.
-- **`at init` — the module sits at its initialised values, and could be omitted.** Not
-  implemented, and not implementable from what the model holds. It needs **per-parameter init
-  values, observed on the instrument or read off its manual** — another checked fact per
-  parameter, in the same class as a range — and no device carries any. Inferring it is forbidden:
-  guessing that a value in the middle of its range means untouched would tell a reader to skip a
-  control they have to set, which is invariant 5's "never invent an assignment" in a different
-  hat. **"Same as init" and "not authored" must never render alike**: one is noise removal, the
-  other is a gap a reader is entitled to see, and the rendered result of confusing them looks
-  identical.
+- **`live` — the module is in the patch.** The only state implemented, and it is a **default
+  rather than a finding**: with no init data, nothing can say whether a module differs from its
+  initialised values, so every module renders as live. That a recipe authors a parameter is *not*
+  evidence the module differs from init — an authored value may equal the init value, and often
+  will. Live is what a box reads as while the question is unanswered.
+- **`at init` — the module sits at its initialised values.** Not implemented. It requires
+  **per-parameter init values read off the instrument** — `observed` provenance specifically
+  (§3.1), not `manual`: the Muse's manual documents *that* there is an initialised patch and a
+  button for it, which is a different claim from what each of ninety-four controls reads once it
+  is loaded. No device carries any. Inferring it is forbidden: guessing that a value in the middle
+  of its range means untouched would tell a reader to skip a control they have to set, which is
+  invariant 5's "never invent an assignment" in a different hat.
+
+  **An `at init` module is still rendered, dimmed and collapsed — never omitted.** It is not
+  noise to be deleted: a reader scanning for what to touch is served by a module that recedes,
+  and a reader checking their patch against the guide still needs to find it. Omission also
+  destroys the distinction that must not blur — **"same as init" and "not authored" must never
+  render alike**, one being a module left alone and the other a gap a reader is entitled to see
+  (invariant 5), and both simply vanishing looks identical on the page.
 - **`inert` — the module was configured and reaches nothing**, because a route is off or a depth
   is zero. Deferred to #388, and its *treatment* is unsettled rather than merely unbuilt: a panel
   has no idiom for the difference between a module left alone and one configured to no effect.

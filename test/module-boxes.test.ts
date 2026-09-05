@@ -380,10 +380,13 @@ describe('the module box on a phone and on paper (#21)', () => {
   })
 
   it('has one lamp state, because nothing knows a devices init values', () => {
-    // #385 designs the lamp lit or dark, the dark half needs authored init values, and until
-    // those exist a second token or a second class would be a claim nothing in the model can
-    // make (invariant 5). The single state is also the reason the lamp is on trial rather than
-    // settled: one state carries no information, and §10 — unamended — says to resist it.
+    // #385 designs the lamp lit or dark. The dark half needs per-parameter init values read off
+    // the instrument — `observed`, not `manual`: a manual documenting that an init patch exists
+    // is a different claim from what each control reads once it is loaded. Until those exist, a
+    // second token or a second class would be a claim nothing in the model can make (invariant
+    // 5), and every module defaults to live because the question is unanswered rather than
+    // because anything found it live. The single state is also why the lamp is on trial rather
+    // than settled: one state carries no information, and §10 — unamended — says to resist it.
     expect(css).not.toContain('--lamp-dark')
     expect(css).not.toContain('.module-led-off')
     expect(occurrences(css, '--lamp:')).toBe(2)
@@ -435,15 +438,20 @@ describe('the Muse authors a module on every parameter (#385)', () => {
      * thirty-nine, and fourteen of this box's own bare — including the voice-control settings a
      * `VOICE CONTROL` box most wants to hold.
      *
-     * Pinned by name so a later edit that moves one has to say so. The device's own authored
-     * hints corroborate the two least obvious groups independently of this table: the voice
-     * settings hint `VOICE CONTROL, then MORE`, and all four MIDI settings hint `PROGRAMMER,
-     * MENU, MIDI`. `panel.ts` draws `PROGRAMMER` and `VOICE CONTROL` as real panel groups.
+     * Pinned by name so a later edit that moves one has to say so. `panel.ts` draws `PROGRAMMER`
+     * and `VOICE CONTROL` as real panel groups, and the device's own authored hints corroborate
+     * most of the table: the voice settings hint `VOICE CONTROL, then MORE` and the MIDI channel
+     * settings hint `PROGRAMMER, MENU, MIDI`.
+     *
+     * **`MULTI MODE` is the one place the hint and the module disagree, deliberately.** It is
+     * reached through `PROGRAMMER, MENU, MIDI` and it decides whether the box is two independently
+     * played timbres at all — the same subject as the two voice settings beside it. A control is
+     * grouped by what it governs; the hint still says where the box hides it.
      */
     const expected: Record<string, string> = {
       'TIMBRE A VOICE COUNT': 'VOICE CONTROL',
       'DYNAMIC VOICE ALLOCATION': 'VOICE CONTROL',
-      'MULTI MODE': 'PROGRAMMER',
+      'MULTI MODE': 'VOICE CONTROL',
       'MIDI IN CHANNEL': 'PROGRAMMER',
       'MULTI IN B CHANNEL': 'PROGRAMMER',
       'RECIEVE CC': 'PROGRAMMER',

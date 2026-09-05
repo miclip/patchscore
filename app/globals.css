@@ -39,9 +39,11 @@
    * thing and make every later accent change move a lamp with it.
    *
    * One value, because the lamp has one state. #385's dark lamp — a module left at its init
-   * values — needs a second token and the init data that would decide which to draw, and neither
-   * exists. That missing half is why the lamp is on trial against §10 rather than settled; see
-   * the note at the top of this file.
+   * values, dimmed and collapsed rather than dropped — needs a second token and the per-parameter
+   * init data that would decide which to draw, read off the instrument (`observed`) rather than
+   * inferred. Neither exists, so every module defaults to lit because nothing can answer the
+   * question, not because anything found it live. That missing half is why the lamp is on trial
+   * against §10 rather than settled; see the note at the top of this file.
    */
   --lamp: #e03127;
   --accent-dim: #7d3520;
