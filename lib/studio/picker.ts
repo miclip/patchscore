@@ -323,3 +323,43 @@ export function templateView(
     terms.length > 0,
   )
 }
+
+/** The parts of a scroll container `centreOffset` reads. A subset of `HTMLElement`. */
+export type ScrollBox = {
+  readonly scrollHeight: number
+  readonly clientHeight: number
+  readonly scrollTop: number
+}
+
+/** The parts of a row `centreOffset` reads. A subset of `HTMLElement`. */
+export type ScrollRow = {
+  readonly offsetTop: number
+  readonly offsetHeight: number
+}
+
+/**
+ * Where to scroll a picker list so the chosen row sits in the middle of it (#391).
+ *
+ * `.picker-list` is a 21rem scroll box and the direction list is longer than that, so a choice
+ * arriving from a permalink was often below the fold — the panel opened on the top of the list
+ * with nothing saying the reader's own direction was further down.
+ *
+ * Returns `undefined` where there is nothing to do, so the caller leaves `scrollTop` alone rather
+ * than writing a `0` that looks the same and is a decision:
+ *
+ *  - **the list is not scrollable** — every row is already visible;
+ *  - **the row is already inside the middle band** — re-centring a row the reader can see is
+ *    motion nobody asked for. The band is the middle half, wide enough that an ordinary choice
+ *    near the centre is left where it is.
+ *
+ * Clamped to the scrollable range, so a row near either end settles against that end. Centring
+ * the first row is impossible and asking for it is not an error.
+ */
+export function centreOffset(box: ScrollBox, row: ScrollRow): number | undefined {
+  if (box.scrollHeight <= box.clientHeight) return undefined
+  const band = box.clientHeight / 4
+  const top = row.offsetTop - box.scrollTop
+  if (top >= band && top + row.offsetHeight <= box.clientHeight - band) return undefined
+  const wanted = row.offsetTop - box.clientHeight / 2 + row.offsetHeight / 2
+  return Math.max(0, Math.min(wanted, box.scrollHeight - box.clientHeight))
+}
