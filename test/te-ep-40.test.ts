@@ -278,15 +278,29 @@ describe('EP–40 riddim manifest', () => {
       'kick-hard', 'snare-hard', 'clap-bright', 'ghost-perc-soft', 'closed-hat-bright',
       'open-hat-dark', 'noise-dirty', 'sub-dark', 'bass-mid-dirty', 'pad-soft', 'texture-soft',
       'stab-hard', 'riser-bright',
+      // #345. Five roles the pool declared and no recipe served, four of them already written on
+      // the sibling and the fifth authored there first so this one could borrow it too.
+      'rim-clean', 'tom-dark', 'metallic-bright', 'arp-clean', 'ride-bright',
     ]
 
-    it('is nineteen parts, thirteen of them the sibling’s', () => {
-      // Fifteen to twenty is what the authoring skill calls covering a device, and the sheet is
-      // deliberately short of the twenty-three roles the pool declares: eighteen are covered and
-      // five are not, because filling them would be padding rather than saying anything.
-      expect(device.recipes).toHaveLength(19)
-      expect(device.recipes.filter((r) => BORROWED.includes(r.id.slice('ep40-'.length)))).toHaveLength(13)
-      expect(new Set(device.recipes.map((r) => r.role)).size).toBe(18)
+    it('serves every role the pool declares, and takes eighteen of them from the sibling', () => {
+      // **This asserted nineteen parts and five deliberate gaps until #345.** The manifest's own
+      // note argued that filling them would be padding, and that objection was about *authoring*
+      // — four of the five were already written next door, so each is one line through
+      // `borrowed()` and none of them is new prose. The fifth, `ride`, was authored on the
+      // sibling first for the same reason: so this box borrows it rather than diverging.
+      //
+      // The count is not asserted any more. It has moved twice and would move again; what it
+      // stood in for is that this file derives rather than rewrites, and that is the ratio below.
+      expect(
+        device.recipes.filter((r) => BORROWED.includes(r.id.slice('ep40-'.length))),
+      ).toHaveLength(18)
+      const authored = new Set(device.recipes.map((r) => r.role))
+      const pool = device.voices[0]!
+      if (pool.kind !== 'pool') throw new Error('the first voice should be the pad pool')
+      expect(pool.roles.filter((r) => !authored.has(r)).sort()).toEqual([])
+      // Most of this sheet is the sibling's, which is what makes the import worth its guards.
+      expect(BORROWED.length).toBeGreaterThan(device.recipes.length / 2)
     })
 
     it('keeps the sibling’s prose, which is what makes it a derivation rather than a rewrite', () => {
@@ -722,8 +736,9 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   it('leaves 204 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(228)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(204)
+    // 228 until #345 borrowed the pool's last five unserved roles.
+    expect(grid.length).toBe(276)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(252)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -753,9 +768,14 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['kick', 42],
       ['clap', 18],
       ['open-hat', 18],
+      ['rim', 18],
       ['snare', 18],
+      ['metallic', 12],
+      ['arp', 6],
       ['impact', 6],
       ['noise', 6],
+      ['ride', 6],
+      ['tom', 6],
       ['vox-chop', 6],
     ])
   })
@@ -764,7 +784,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
     // part with no variant anywhere nothing to program.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(126)
+    expect(hooked.length).toBe(132)
     expect(sustained).toEqual([])
     expect(noPattern.length).toBe(30)
     expect([...new Set(noPattern)].sort()).toEqual([

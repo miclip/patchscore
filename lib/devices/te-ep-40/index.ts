@@ -654,12 +654,30 @@ function borrowed(suffix: string): Recipe {
 }
 
 /**
- * Nineteen parts: thirteen borrowed from the sibling and rebuilt against this guide, six authored
- * here because the two boxes differ in substance. Well inside the fifteen-to-twenty the authoring
- * skill calls covering a device, and deliberately **not** one per role — eighteen of the
- * twenty-three roles this pool declares are covered and **five are not**: `rim`, `tom`, `ride`,
- * `metallic` and `arp`. Filling them would be padding the sheet rather than saying anything a
- * reader needs, and the pool still declares all twenty-three because a pad takes any sound.
+ * Twenty-four parts: eighteen borrowed from the sibling and rebuilt against this guide, six
+ * authored here because the two boxes differ in substance.
+ *
+ * ## Five of those borrows are #345, and this note used to argue against them
+ *
+ * It read: *"deliberately **not** one per role — eighteen of the twenty-three roles this pool
+ * declares are covered and **five are not**: `rim`, `tom`, `ride`, `metallic` and `arp`. Filling
+ * them would be padding the sheet rather than saying anything a reader needs."*
+ *
+ * **The objection was about authoring and four of the five needed none.** `rim`, `tom`,
+ * `metallic` and `arp` were already written on the sibling, so each is one line through
+ * `borrowed()` — the same mechanism this file already used thirteen times to avoid describing
+ * the same hardware twice. Padding a sheet means writing prose nobody needs; a borrow writes
+ * none. `ride` was the one gap the two boxes shared, and it was authored on the sibling first so
+ * that this one could borrow it too rather than diverge (see that manifest).
+ *
+ * **And the cost of leaving them was not what the note assumed.** #345 counts roles a box
+ * *declares* and cannot serve, because #340's placement control shows a reader every box that
+ * could take a part: a declared role with no recipe answered *"no clean rim for your EP–40"* and
+ * the part was dropped entirely. That is not a fuller sheet versus a shorter one, it is the box
+ * taking the part versus not.
+ *
+ * The pool still declares all twenty-three because a pad takes any sound, and now every one of
+ * them is served.
  */
 const recipes: Recipe[] = [
   // -------------------------------------------------------------------------
@@ -679,6 +697,13 @@ const recipes: Recipe[] = [
   borrowed('texture-soft'),
   borrowed('stab-hard'),
   borrowed('riser-bright'),
+  // #345. Five roles this pool declared and no recipe served, and four of them were already
+  // written on the sibling — see the note above `recipes` for why that changes the answer.
+  borrowed('rim-clean'),
+  borrowed('tom-dark'),
+  borrowed('metallic-bright'),
+  borrowed('arp-clean'),
+  borrowed('ride-bright'),
 
   // -------------------------------------------------------------------------
   // Authored here. Three supertone parts, the loop pad, the chopped vocal and
