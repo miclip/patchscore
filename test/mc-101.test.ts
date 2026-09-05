@@ -7,6 +7,7 @@ import {
   isSustainedPart,
   moodState,
   noteInstruction,
+  reachableSlots,
   realisationOf,
   renderGuide,
   resolve,
@@ -184,9 +185,13 @@ describe('MC-101 manifest', () => {
   // Section 3 — the recipe library
   // -------------------------------------------------------------------------
 
-  it('carries 15-20 recipes on distinct (role, character, voice, realisation) keys', () => {
+  it('carries every recipe on a distinct key, and none no direction can select', () => {
+    // **This capped the count at 20 and #345 replaced it rather than raising it to 24.** The
+    // bound had to move whenever authoring landed, so it re-recorded the last commit; what it
+    // stood in for is sprawl, and that is checkable directly.
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(20)
+    const unreachable = device.recipes.filter((r) => !reachableSlots(r, TEMPLATES).requested)
+    expect(unreachable.map((r) => r.id), 'no direction can select these').toEqual([])
     const keys = device.recipes.map((r) => `${r.role} ${r.character} ${r.voice} ${realisationOf(r)}`)
     expect(new Set(keys).size).toBe(keys.length)
     for (const recipe of device.recipes) {
@@ -474,8 +479,11 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * two pools even disagree: eleven percussion recipes on the kit, nine tonal ones on the tracks.
    */
   it('spreads its recipes across both pools, on disjoint role sheets', () => {
-    expect(recipesOn('drum-pad').length).toBe(11)
-    expect(recipesOn('tone-track').length).toBe(9)
+    // 11 and 9 until #345 gave each pool two more: `ride` and `noise` are struck, so they are
+    // pads; `texture` and `sweep` sustain, so they are tone tracks. The split the pools draw is
+    // the split the four new roles fell on.
+    expect(recipesOn('drum-pad').length).toBe(13)
+    expect(recipesOn('tone-track').length).toBe(11)
 
     const drum = pool('drum-pad').roles
     const tone = pool('tone-track').roles
@@ -540,8 +548,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   it('leaves 240 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(264)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(240)
+    expect(grid.length).toBe(270)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(246)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -563,7 +571,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       byPool.set(g.poolId, entry)
     }
     expect([...byPool].sort()).toEqual([
-      ['drum-pad', { grid: 234, blank: 234 }],
+      ['drum-pad', { grid: 240, blank: 240 }],
       ['tone-track', { grid: 30, blank: 6 }],
     ])
   })
@@ -599,6 +607,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['snare', 18],
       ['arp', 6],
       ['impact', 6],
+      ['ride', 6],
       ['tom', 6],
     ])
   })
@@ -615,9 +624,9 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    */
   it('accounts for every part that draws no grid, by which reason', () => {
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(114)
+    expect(hooked.length).toBe(120)
     expect(sustained).toEqual([])
-    expect(noPattern).toEqual([])
+    expect(noPattern).toEqual(Array(6).fill('hip-hop/texture'))
 
     let assignments = 0
     let shortfalls = 0
@@ -631,11 +640,12 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
     // classify — which is what would make the 240 above an undercount rather than a measurement.
     expect(grid.length + hooked.length + sustained.length + noPattern.length).toBe(assignments)
-    expect(assignments).toBe(378)
+    expect(assignments).toBe(396)
 
     // The parts this four-track box cannot take are §7.3 gaps, not blank grids: they never reach
     // phase 5, so none of them is among the 240. The MC-707 takes 18 more parts over this sweep.
-    expect(shortfalls).toBe(96)
+    // 96 until #345 closed both pools' four unserved roles, which turned 18 shortfalls into parts.
+    expect(shortfalls).toBe(78)
   })
 
   /**

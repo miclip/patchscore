@@ -907,6 +907,144 @@ const TONE_RECIPES: Recipe[] = [
     routing: 'Ver.1.80 or later for the LFO page; draw the sweep with MOTION DESIGNER if you prefer',
     verified: false,
   },
+  // ---------------------------------------------------------------------------
+  // #345. Four roles the two pools declared and no recipe served: two percussive
+  // and two tonal, which is the split the pools already draw.
+  // ---------------------------------------------------------------------------
+  {
+    id: 'mc101-ride-bright',
+    role: 'ride',
+    character: 'bright',
+    voice: 'drum-pad',
+    title: 'Ride let ring, cutoff opened off the kit',
+    /**
+     * A pad rather than a tone track: a ride is one sample struck, which is what `PAD CTRL` is
+     * for (p.47). Each pad carries its own tuning, filter offsets, sends and EQ, so lifting this
+     * one's cutoff opens the cymbal without touching the kick two pads along — the reason the
+     * kit is a pool of eight rather than one part.
+     */
+    params: [
+      num('LEVEL', 96, PAD_LEVEL),
+      num('KEY OFFSET', 0, KEY_OFFSET, { unit: 'st' }),
+      num('CUTOFF OFST', 62, PAD_OFFSET, { mood: [{ axis: 'darkness', amount: -30 }] }),
+      num('RESO OFST', 12, PAD_OFFSET),
+      pick('EQ SWITCH', 'ON', ['OFF', 'ON'], ref(47)),
+      num('HIGH GAIN', 5, PAD_EQ_GAIN, { unit: 'dB', hint: 'open-sound' }),
+      pick('OUT ASSIGN', 'MFX', PAD_OUT_ASSIGN, ref(47)),
+      shuffle(),
+    ],
+    articulation: [{ slot: 'offbeat', set: { velocity: 94 }, hint: 'edit-step' }],
+    verified: false,
+  },
+  {
+    id: 'mc101-noise-dirty',
+    role: 'noise',
+    character: 'dirty',
+    voice: 'drum-pad',
+    title: 'Noise pad struck on the grid, resonance up and top end open',
+    /**
+     * **Struck rather than held, read off the direction rather than assumed.** Industrial Techno
+     * is the only request and patterns `noise` on `accent`, `downbeat` and `offbeat`. A sustained
+     * noise bed would be a TONE track with the `Noise` oscillator — which is what
+     * `mc101-texture-soft` below is — and a different part on a different pool.
+     *
+     * That pair is worth having on one box: the same sound belongs to either pool depending on
+     * whether it is struck or held, and the pools are what let the manifest say which.
+     */
+    params: [
+      num('LEVEL', 88, PAD_LEVEL),
+      num('KEY OFFSET', 0, KEY_OFFSET, { unit: 'st' }),
+      num('CUTOFF OFST', 48, PAD_OFFSET, { mood: [{ axis: 'darkness', amount: -28 }] }),
+      num('RESO OFST', 64, PAD_OFFSET, { mood: [{ axis: 'grit', amount: 30 }] }),
+      pick('EQ SWITCH', 'ON', ['OFF', 'ON'], ref(47)),
+      num('MID GAIN', 4, PAD_EQ_GAIN, { unit: 'dB', hint: 'open-sound' }),
+      pick('OUT ASSIGN', 'MFX', PAD_OUT_ASSIGN, ref(47)),
+      shuffle(),
+    ],
+    articulation: [{ slot: 'accent', set: { velocity: 120 }, hint: 'edit-step' }],
+    verified: false,
+  },
+  {
+    id: 'mc101-texture-soft',
+    role: 'texture',
+    character: 'soft',
+    voice: 'tone-track',
+    title: 'Noise oscillator held under everything, filtered well down',
+    /**
+     * **The Circuit Tracks argued a fired trigger cannot serve `texture`, and that argument does
+     * not reach this box** — which is worth saying rather than assuming either way, because the
+     * two look alike from a distance and are not.
+     *
+     * There, `texture` was declared on a pool of drum tracks, and the manifest's own words were
+     * *"nothing on a drum track loops or sustains, so a bed is beyond it however the sample was
+     * recorded"*. A fired trigger has one time control and it only shortens.
+     *
+     * `texture` here is declared on `tone-track`, not on `drum-pad`, and a TONE track is a synth:
+     * `polyphony: 4`, a real filter, two LFOs and four envelopes (Update p.3, Ver.1.80). It holds
+     * a note for as long as the step does. The role sits on the pool that can sustain and not on
+     * the pool that cannot, which is the distinction the two-pool model exists to draw — so
+     * nothing needs narrowing here.
+     *
+     * `Noise` as the oscillator and the filter well down is the bed itself; `LFO1` on the cutoff
+     * at a slow synced rate is what stops it sitting still. This is `mc101-riser-bright`'s
+     * machinery at a fraction of the depth, which is the difference between a bed and a gesture.
+     */
+    params: [
+      pick('OSC', 'Noise', OSC_TYPES, upd(1, '1.80')),
+      pick('LFO1 WAV', 'SIN', LFO_WAVES, upd(3, '1.80')),
+      pick('LFO1 SYN', 'ON', ['OFF', 'ON'], upd(3, '1.80')),
+      num('LFO1 RAT', 180, LFO_RATE, { note: 'RATE NOTE takes over once SYN is ON' }),
+      num('LFO1 FLT', 22, LFO_DEPTH, { mood: [{ axis: 'darkness', amount: -20 }] }),
+      num('LFO1 PAN', 18, LFO_PAN_DEPTH, { mood: [{ axis: 'space', amount: 26 }] }),
+      pick('MFX TYPE', '05 Super Filter', MFX_TYPES, ref(52)),
+      pick('FILTER TYPE', 'LPF', SUPER_FILTER_TYPES, ref(54)),
+      num('FILTER CUTOFF', 34, SUPER_FILTER_CUTOFF, { mood: [{ axis: 'darkness', amount: -26 }] }),
+      num('FILTER RESONANCE', 18, SUPER_FILTER_RESO),
+      num('LEVEL', 74, MFX_LEVEL_54),
+      shuffle(),
+    ],
+    routing: 'Ver.1.80 or later for the LFO page. TONE Track — a bed holds a track for the whole piece',
+    verified: false,
+  },
+  {
+    id: 'mc101-sweep-soft',
+    role: 'sweep',
+    character: 'soft',
+    voice: 'tone-track',
+    title: 'Filter drawn across the section with MOTION DESIGNER',
+    /**
+     * §4.2, and **the mechanism is drawn rather than cycled**, which is the difference from the
+     * texture above sharing the same pool.
+     *
+     * An LFO on the cutoff repeats at whatever rate it is set to; a sweep is one gesture scoped
+     * to particular sections. MOTION DESIGNER is this box's answer to that — the head note
+     * records it as *a motion curve, step by step*, and `mc101-riser-bright` already articulates
+     * `motion-filter` for the same reason one role along. So the LFO depth here is low and the
+     * travel is the drawn curve.
+     *
+     * **No articulation, checked** (#108): neither direction asking for `sweep` authors a step
+     * variant for it, so unlike the riser there is no slot for the motion values to sit in and
+     * `routing` carries the instruction instead.
+     */
+    params: [
+      pick('OSC', 'Noise', OSC_TYPES, upd(1, '1.80')),
+      pick('LFO1 WAV', 'SIN', LFO_WAVES, upd(3, '1.80')),
+      pick('LFO1 SYN', 'ON', ['OFF', 'ON'], upd(3, '1.80')),
+      num('LFO1 RAT', 96, LFO_RATE, { note: 'RATE NOTE takes over once SYN is ON' }),
+      num('LFO1 FLT', 12, LFO_DEPTH, { mood: [{ axis: 'darkness', amount: -18 }] }),
+      pick('MFX TYPE', '05 Super Filter', MFX_TYPES, ref(52)),
+      pick('FILTER TYPE', 'LPF', SUPER_FILTER_TYPES, ref(54)),
+      num('FILTER CUTOFF', 30, SUPER_FILTER_CUTOFF, { mood: [{ axis: 'darkness', amount: -26 }] }),
+      num('FILTER RESONANCE', 34, SUPER_FILTER_RESO, { mood: [{ axis: 'grit', amount: 20 }] }),
+      num('LEVEL', 80, MFX_LEVEL_54),
+      shuffle(),
+    ],
+    routing:
+      '**Draw the sweep rather than cycling it.** MOTION DESIGNER records a curve step by step, ' +
+      'so put the rise where the section wants it instead of leaving an LFO running. Ver.1.80 or ' +
+      'later for the LFO page; hold one note across the section and let the curve move the cutoff',
+    verified: false,
+  },
 ]
 
 // ---------------------------------------------------------------------------

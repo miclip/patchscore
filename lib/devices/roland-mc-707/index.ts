@@ -391,6 +391,9 @@ const NAMES_BY_RECIPE: Record<string, string> = {
   'mc101-acid-dirty:TYP': 'VCF TYPE',
   'mc101-lead-bright:TYP': 'TVF TYPE',
   'mc101-open-hat-dark:HIGH GAIN': 'EQ HIGH GAIN',
+  // #345. The ride is a pad like the open hat, so its HIGH GAIN is the pad EQ's, not the
+  // Overdrive's — which is the ambiguity this table exists to settle rather than guess.
+  'mc101-ride-bright:HIGH GAIN': 'EQ HIGH GAIN',
   'mc101-bass-mid-dirty:HIGH GAIN': 'HIGH GAIN',
 }
 
@@ -439,6 +442,13 @@ const LANES: Record<string, string | null> = {
  *    calls the control `MUTE`.
  */
 const PROSE: Record<string, string> = {
+  // #345. Three of the four new recipes carry prose, and all three name the firmware page rather
+  // than a control — so the retarget is the version, not the wording. This box shipped the LFO
+  // page in Ver.1.60 where the MC-101 got it in 1.80.
+  'Ver.1.80 or later for the LFO page. TONE Track — a bed holds a track for the whole piece':
+    'Ver.1.60 or later for the LFO page. TONE Track — a bed holds a track for the whole piece',
+  '**Draw the sweep rather than cycling it.** MOTION DESIGNER records a curve step by step, so put the rise where the section wants it instead of leaving an LFO running. Ver.1.80 or later for the LFO page; hold one note across the section and let the curve move the cutoff':
+    '**Draw the sweep rather than cycling it.** MOTION DESIGNER records a curve step by step, so put the rise where the section wants it instead of leaving an LFO running. Ver.1.60 or later for the LFO page; hold one note across the section and let the curve move the cutoff',
   'OUT ASSIGN DRY keeps the kick clear of whatever the kit MFX is doing':
     'OUTPUT ASSIGN DRY keeps the kick clear of whatever the kit MFX is doing',
   'OUT ASSIGN MFX puts this pad through the kit effect; the kick stays DRY':

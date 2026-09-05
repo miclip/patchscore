@@ -79,9 +79,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    */
   it('spreads its recipes across both pools', () => {
     const onPool = (id: string) => device.recipes.filter((r) => r.voice === id).map((r) => r.role)
-    expect(onPool('drum-pad').length).toBe(11)
-    expect(onPool('tone-track').length).toBe(9)
-    expect(device.recipes.length).toBe(20)
+    // 11 and 9 until #345 gave each pool two more, through the MC-101 import: `ride` and `noise`
+    // are struck, so they are pads; `texture` and `sweep` sustain, so they are tone tracks.
+    expect(onPool('drum-pad').length).toBe(13)
+    expect(onPool('tone-track').length).toBe(11)
 
     // The role sheets are disjoint in the way the two readings require: a kit role never lands on
     // a track and a pitched role never lands on the kit.
@@ -148,8 +149,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   it('leaves 240 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(264)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(240)
+    expect(grid.length).toBe(276)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(252)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -176,7 +177,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       byPool.set(g.pool, entry)
     }
     expect([...byPool].sort()).toEqual([
-      ['drum-pad', { grid: 234, blank: 234 }],
+      ['drum-pad', { grid: 246, blank: 246 }],
       ['tone-track', { grid: 30, blank: 6 }],
     ])
   })
@@ -212,6 +213,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['snare', 18],
       ['arp', 6],
       ['impact', 6],
+      ['noise', 6],
+      ['ride', 6],
       ['tom', 6],
     ])
   })
@@ -221,10 +224,16 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
     // produces no sustained part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(126)
+    expect(hooked.length).toBe(138)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(6)
-    expect([...new Set(noPattern)].sort()).toEqual(['industrial-techno/riser'])
+    expect(noPattern.length).toBe(30)
+    expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/sweep',
+      'ambient-dub/texture',
+      'generative-drift/sweep',
+      'hip-hop/texture',
+      'industrial-techno/riser',
+    ])
   })
 
   /**
