@@ -5,6 +5,7 @@ import {
   expand,
   isSustainedPart,
   noteInstruction,
+  reachableSlots,
   realisationOf,
   renderGuide,
   resolve,
@@ -300,17 +301,24 @@ describe('Tracker manifest', () => {
       expect(assignables.every((a) => a.poolId === 'track')).toBe(true)
     })
 
-    it('authors twenty-one recipes over eighteen roles, and leaves five as honest gaps', () => {
-      // #300. Twenty-one: a `dark` ghost-perc and a `dark` riser joined the `soft` and `bright`
-      // ones, which are the first two roles on this box carried at more than one character.
-      expect(device.recipes).toHaveLength(21)
+    it('serves every role the pool declares, and carries no recipe nobody can select', () => {
+      // **This used to assert five honest gaps and #345 closed them**, which is the change rather
+      // than a count moving: `acid`, `arp`, `bass-mid`, `metallic` and `stab` were legal on the
+      // box and written by nobody, and each is now one recipe.
+      //
+      // The count itself is deliberately not asserted any more. It read 21 and had moved before
+      // (#300 took it from 19), so it was re-recording the last commit rather than guarding
+      // anything. What it stood in for is sprawl, and that is checkable directly.
       const authored = new Set(device.recipes.map((r) => r.role))
-      expect(authored.size).toBe(18)
       const pool = device.voices[0]!
-      if (pool.kind !== 'pool') return
-      const unauthored = pool.roles.filter((r) => !authored.has(r)).sort()
-      // Legal on the box and written by nobody. A guess here would be invariant 5's failure.
-      expect(unauthored).toEqual(['acid', 'arp', 'bass-mid', 'metallic', 'stab'])
+      if (pool.kind !== 'pool') throw new Error('the first voice should be the track pool')
+      expect(pool.roles.filter((r) => !authored.has(r)).sort()).toEqual([])
+
+      const unreachable = device.recipes.filter((r) => !reachableSlots(r, TEMPLATES).requested)
+      expect(
+        unreachable.map((r) => r.id),
+        'authored for a (role, character) no direction in the library can select',
+      ).toEqual([])
     })
 
     it('routes every recipe to the one pool, so no ordinal needs its own sheet (§2.2)', () => {
@@ -320,8 +328,10 @@ describe('Tracker manifest', () => {
     it('reaches a chord only by rendering one, because a track is monophonic', () => {
       // p.98 makes a triad cost three tracks, so the only way one assignable holds a chord is a
       // rendered sample. That is the single `sampled-chord` here, and it carries the procedure.
+      // Two since #345: the `stab` is the other role every direction asks three or four notes of,
+      // and a track holds one. Both carry the same render procedure, which is the claim here.
       const chords = device.recipes.filter((r) => realisationOf(r) === 'sampled-chord')
-      expect(chords.map((r) => r.id)).toEqual(['tr-pad-soft'])
+      expect(chords.map((r) => r.id).sort()).toEqual(['tr-pad-soft', 'tr-stab-hard'])
       for (const recipe of chords) {
         expect(recipe.sourceAudio?.prep?.verified, recipe.id).toEqual({
           kind: 'manual',
@@ -831,8 +841,10 @@ describe('every track grid part gets its note (§2.1)', () => {
   it('leaves no grid part without a note, and pins how many there are', () => {
     const { grid } = sweep()
 
-    // The population, as measured on this library.
-    expect(grid.length).toBe(258)
+    // The population, as measured on this library. 258 until #345 authored the five roles the
+    // pool declared and no recipe served — the count *fell*, because four of the five are pitched
+    // and a pitched part is hooked (#100) rather than drawn as a grid.
+    expect(grid.length).toBe(246)
 
     // The claim. Zero blanks, and the blank arm named so a regression cannot hide as a count.
     expect(grid.filter((g) => g.kind === 'none')).toEqual([])
@@ -849,7 +861,7 @@ describe('every track grid part gets its note (§2.1)', () => {
     expect(pitched.length).toBe(24)
 
     const triggered = grid.filter((g) => g.kind === 'trigger')
-    expect(triggered.length).toBe(234)
+    expect(triggered.length).toBe(222)
     expect([...new Set(triggered.map((g) => `${g.note as string}/${String(g.midi)}`))]).toEqual([
       'C5/60',
     ])
@@ -905,14 +917,15 @@ describe('every track grid part gets its note (§2.1)', () => {
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
       ['closed-hat', 42],
-      ['ghost-perc', 42],
       ['kick', 42],
-      ['open-hat', 24],
+      ['ghost-perc', 30],
       ['clap', 18],
       ['rim', 18],
       ['snare', 18],
+      ['metallic', 12],
+      ['open-hat', 12],
+      ['arp', 6],
       ['impact', 6],
-      ['noise', 6],
       ['ride', 6],
       ['tom', 6],
       ['vox-chop', 6],
@@ -924,14 +937,14 @@ describe('every track grid part gets its note (§2.1)', () => {
     // hooked part's notes to its hook, and §6.3 leaves a part with no variant anywhere nothing to
     // program. Asserted rather than assumed — this box produces no sustained part at all here.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(78)
+    // 78 until #345: four of its five roles are pitched, so they hook rather than draw a grid.
+    expect(hooked.length).toBe(132)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(36)
+    expect(noPattern.length).toBe(30)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/riser',
       'ambient-dub/sweep',
       'ambient-dub/texture',
-      'generative-drift/sweep',
       'hip-hop/texture',
       'industrial-techno/riser',
     ])

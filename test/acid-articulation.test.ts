@@ -358,6 +358,11 @@ const AUDIT: readonly (readonly [
     // trade in the routing; the accent is bound, because TR-REC carries velocity per step.
     ['roland-sp-404mk2', 'sp-acid-hard', 'bound', 'stated', 'neutral'],
 
+    // **The Polyend Tracker, where both gestures are step effects and both bind.** `glide` is one
+    // (ch.7) and `volume` is another, so the slide sits on the steps that slide and the accent on
+    // the steps that bite — no track-level switch and no approximation on either.
+    ['polyend-tracker', 'tr-acid-hard', 'bound', 'bound', 'neutral'],
+
     // Samplers whose per-step editing is real and whose manuals print no scale for it.
     ['te-ep-133', 'ep133-acid-dirty', 'stated', 'stated', 'neutral'],
     ['te-ep-40', 'ep40-acid-dirty', 'stated', 'stated', 'neutral'],
@@ -449,7 +454,7 @@ describe('every acid recipe accounts for the accent and the slide (#283)', () =>
       d.recipes.filter((r) => r.role === 'acid').map((r) => r.id),
     )
     expect([...AUDIT.map((row) => row[1])].sort()).toEqual([...shipped].sort())
-    expect(shipped).toHaveLength(34)
+    expect(shipped).toHaveLength(35)
   })
 
   it.each(AUDIT)('%s / %s accounts for both gestures in the manifest', (deviceId, recipeId, accent, slide) => {
@@ -495,7 +500,7 @@ describe('every acid recipe accounts for the accent and the slide (#283)', () =>
     }
   })
 
-  it('renders all 34, from three knob positions', () => {
+  it('renders all 35, from three knob positions', () => {
     // The whole library reachable from one direction, which it was not while `r-acid` asked for
     // `dirty`: force is the one character axis no mood knob moves, so the two `hard` recipes could
     // not be selected at any setting and the audit had two rows it could only check on paper.

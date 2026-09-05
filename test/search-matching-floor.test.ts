@@ -1383,8 +1383,35 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * Nineteen consecutive zeroes, across fourteen devices and nine content changes that between
    * them took the walk down, up, up, up, down by half, up, up, up, up, up, up, up, up, up, down
    * by a quarter, up, up, up, and up.
+   *
+   * **Five recipes take it up 0.9% and the gap stays at zero — a twentieth time.** 488,911 ->
+   * 493,352 unrepaired and the same repaired. The Polyend Tracker's five unauthored roles (#345).
+   *
+   * **4,441 nodes, and the rule that has held for five entries says why it is not one.** The two
+   * cheap entries above it each gave `industrial-techno` a single optional role; this one gives
+   * it three it actually contends for — `bass-mid` and `stab` at priority 2 and 3, both required,
+   * plus `metallic`. Six points on the line now:
+   *
+   *   9 recipes -> 1 node        (Digitakt II, uncontended)
+   *   8 recipes -> 9,233         (Circuit Tracks, three contended on six assignables)
+   *   7 recipes -> 10,767        (Tracker Mini, `sub` at priority 1)
+   *   7 recipes -> 1 node        (Octatrack MKII, one optional)
+   *   6 recipes -> 1 node        (SP-404MK2, one optional)
+   *   5 recipes -> 4,441         (Polyend Tracker, three contended)
+   *
+   * The counts run 9, 8, 7, 7, 6, 5 and the costs run 1, 9,233, 10,767, 1, 1, 4,441. **Six
+   * measurements and the correlation with recipe count is still nothing at all.**
+   *
+   * `search-bound.test.ts` records the direction's peak moving 567,006 -> 571,779, 0.8% against
+   * this seed's 0.9% — the two agreeing, which is what the contended entries do and the cheap
+   * ones do not.
+   *
+   * The peak stayed on seed 18 for the tenth entry running, and this seed is still one node off
+   * the row's floor — 493,352 against 493,351 on seed 13.
+   *
+   * Twenty consecutive zeroes, across fifteen devices and ten content changes.
    */
-  it('walks the recorded 488,911 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 493,352 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1392,7 +1419,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(488_911)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(493_352)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
