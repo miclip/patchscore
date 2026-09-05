@@ -7,6 +7,7 @@ import {
   isSustainedPart,
   moodState,
   noteInstruction,
+  reachableSlots,
   renderGuide,
   resolve,
   resolveRecipe,
@@ -450,15 +451,21 @@ describe('Deluge manifest', () => {
   // Content and citation discipline (§3.2)
   // -------------------------------------------------------------------------
 
-  it('carries 15-23 recipes on distinct (role, character, voice) triples (§3)', () => {
-    // The ceiling moved by one at #173, when the kick became three recipes rather than one, and
-    // by two again for the `vox-chop` pair. That is the guideline stretching rather than
-    // breaking: CLAUDE.md's "roughly 15-20 recipes covers a device well" is about coverage, and
-    // three devices in the library already sit above it — the TR-8S at 22, the DFAM and the
-    // Tracker Mini at 21. Both new ones are asked for: a direction requests `vox-chop` `clean`
-    // and another requests it `dirty`, so neither lands in the audit's REACH block.
+  it('carries every recipe on distinct (role, character, voice) triples, and none unreachable (§3)', () => {
+    /*
+     * The ceiling moved by one at #173, when the kick became three recipes rather than one, and by
+     * two again for the `vox-chop` pair, and by three at #345 for `tom`, `metallic` and `ride`.
+     *
+     * **It is not asserted any more.** Three moves is enough to say what it was: a proxy for
+     * "nobody has dumped the parameter space into this file", re-recorded each time content
+     * arrived. What it stood in for is checkable directly — a recipe no direction can select is
+     * the thing that would actually be wrong — so that is what is checked, on the TR-1000's
+     * argument at #345 and the TR-8S's after it. CLAUDE.md's "roughly 15-20 recipes covers a
+     * device well" is about coverage, and several devices in the library now sit above it.
+     */
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(23)
+    const unreachable = device.recipes.filter((r) => !reachableSlots(r, TEMPLATES).requested)
+    expect(unreachable.map((r) => r.id), 'no direction can select these').toEqual([])
 
     const triples = device.recipes.map((r) => `${r.role}\u0000${r.character}\u0000${r.voice}`)
     expect(new Set(triples).size).toBe(triples.length)
@@ -1091,11 +1098,15 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * the head note rather than a failure. What must not move is the relationship — no part ever
    * gets a `trigger`, because the pool has no note to give one.
    */
-  it('leaves 228 grid parts blank, and pins how many there are', () => {
+  it('leaves 252 grid parts blank, and pins how many there are', () => {
+    // 228 until #345 authored `tom`, `metallic` and `ride` — twenty-four new parts, all of them
+    // blank, because a synthesised kit row is addressed by row exactly as a sampled one is. The
+    // number moves when a direction gains a part or this box gains a recipe; what must not move
+    // is the relationship, which is that no part ever gets a `trigger`.
     const { grid } = sweep()
 
-    expect(grid.length).toBe(252)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(228)
+    expect(grid.length).toBe(276)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(252)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -1128,9 +1139,12 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['open-hat', 18],
       ['rim', 18],
       ['snare', 18],
+      ['metallic', 12],
       ['arp', 6],
       ['impact', 6],
       ['noise', 6],
+      ['ride', 6],
+      ['tom', 6],
       ['vox-chop', 6],
     ])
   })
@@ -1200,5 +1214,164 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       }
     }
     expect(drawn).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * §345. **The three roles this pool declared and no recipe served, and the reason they are the
+ * interesting three.**
+ *
+ * The manifest's head note records the shape the source split left behind: with no envelope stages
+ * authored, *"no recipe here could describe a sound whose shape over time is the point — which is
+ * every drum"*, so every percussive role reached for a sample. #173 opened the envelopes,
+ * `deluge-kick-hard` became the first drum built out of the engine rather than loaded into it, and
+ * `metallic`, `ride` and `tom` were what remained.
+ *
+ * All three are synthesised, and the tests below are about the narrowness they are shaped by
+ * rather than about the sounds. This box's authored engine has **no filter cutoff, no resonance,
+ * no LFO rate, no wavetable position, no second oscillator, no ring modulator and no FM pair** —
+ * the first four because no source prints a range, the rest because this manifest models none. So
+ * the two usual routes to an inharmonic spectrum are shut, and p.217's aliasing is the third.
+ */
+describe('the three roles served by synthesis rather than by a sample (§345)', () => {
+  const byId = (id: string) => device.recipes.find((r) => r.id === id) as Recipe
+  const NEW = ['deluge-tom-dark', 'deluge-metallic-bright', 'deluge-ride-bright']
+  const names = (r: Recipe) => (r.params as { name: string }[]).map((param) => param.name)
+  const valueOf = (r: Recipe, name: string) =>
+    (r.params as { name: string; value?: unknown }[]).find((param) => param.name === name)?.value
+
+  it('serves every role the pool declares, with nothing offered and left empty', () => {
+    const served = new Set(device.recipes.map((r) => r.role as string))
+    const pool = device.voices[0]
+    expect((pool?.roles ?? []).filter((role) => !served.has(role)).sort()).toEqual([])
+    // Against the declaration's own size, so a box serving everything because it declares little
+    // would not pass this by accident.
+    expect(pool?.roles.length).toBe(ROLES.length)
+    expect(served.size).toBe(ROLES.length)
+  })
+
+  it('loads no sample for any of the three, which is the whole point of authoring them', () => {
+    /*
+     * The claim the advisor's steer is about, and the one a later edit is most likely to undo by
+     * reaching for `sourceAudio` because it is quicker. `OSC 1 TYPE` `Sample` and a `sourceAudio`
+     * block are the same fact twice on this box — the head note says all nine sample recipes set
+     * both — so both are asserted absent.
+     */
+    for (const id of NEW) {
+      const recipe = byId(id)
+      expect(recipe, id).toBeDefined()
+      expect(recipe.sourceAudio, `${id} asks the reader to find a recording`).toBeUndefined()
+      expect(valueOf(recipe, 'OSC 1 TYPE'), `${id} oscillator`).not.toBe('Sample')
+      // And each carries an amplitude envelope, which is what "synthesised" means here: a shape
+      // over time the recipe states rather than one baked into a file.
+      for (const stage of ['ATTACK', 'DECAY', 'SUSTAIN', 'RELEASE']) {
+        expect(names(recipe), `${id} ENV 1 ${stage}`).toContain(`ENV 1 ${stage}`)
+      }
+    }
+
+    /*
+     * The invariant behind it, across the whole file — and it runs one way rather than both, which
+     * the head note used to get wrong. **Every `Sample` oscillator carries source audio.** The
+     * converse fails on exactly one recipe: `deluge-pad-soft` is a `Wavetable`, which #101
+     * established also has no sound until a file is chosen. Pinned by name, so a second exception
+     * is a failure rather than a shrug.
+     */
+    for (const recipe of device.recipes) {
+      if (valueOf(recipe, 'OSC 1 TYPE') !== 'Sample') continue
+      expect(recipe.sourceAudio, `${recipe.id} loads a sample and does not say which`).toBeDefined()
+    }
+    const declaringWithoutSample = device.recipes
+      .filter((r) => r.sourceAudio !== undefined && valueOf(r, 'OSC 1 TYPE') !== 'Sample')
+      .map((r) => r.id)
+    expect(declaringWithoutSample).toEqual(['deluge-pad-soft'])
+    expect(valueOf(byId('deluge-pad-soft'), 'OSC 1 TYPE')).toBe('Wavetable')
+  })
+
+  it('reaches for aliasing, because the two usual routes to an inharmonic spectrum are absent', () => {
+    /*
+     * p.217 states the mechanism rather than leaving it to be inferred: decimation reduces the
+     * sample rate "crudely without filtering", so "heavily aliased frequencies are introduced".
+     * Folded partials are not multiples of the fundamental, which is what makes the metallic
+     * recipe a bell instead of a bright square.
+     *
+     * Asserted as an absence as well as a presence: if a second oscillator, a ring modulator or an
+     * FM pair is ever authored on this box, this test should be revisited rather than silently
+     * kept passing by a recipe that no longer needs the aliasing.
+     */
+    const everyName = new Set(device.recipes.flatMap(names))
+    for (const absent of ['OSC 2 TYPE', 'RING MOD', 'FM AMOUNT', 'LPF FREQUENCY', 'LPF RESONANCE']) {
+      expect(everyName, `${absent} is authored somewhere now`).not.toContain(absent)
+    }
+
+    const metallic = byId('deluge-metallic-bright')
+    const ride = byId('deluge-ride-bright')
+    const kick = byId('deluge-kick-hard')
+    const amountOf = (r: Recipe, name: string) =>
+      (r.params as { name: string; value?: number }[]).find((param) => param.name === name)
+        ?.value as number
+
+    // Both inharmonic recipes drive the control well past the kick, which uses the same one for
+    // edge rather than for spectrum. That ordering is the claim.
+    expect(amountOf(metallic, 'DECIMATION')).toBeGreaterThan(amountOf(kick, 'DECIMATION'))
+    expect(amountOf(ride, 'DECIMATION')).toBeGreaterThan(amountOf(kick, 'DECIMATION'))
+    // And the metallic drives it hardest, because the ride spends its budget on length instead.
+    expect(amountOf(metallic, 'DECIMATION')).toBeGreaterThan(amountOf(ride, 'DECIMATION'))
+    expect(amountOf(ride, 'ENV 1 DECAY')).toBeGreaterThan(amountOf(metallic, 'ENV 1 DECAY'))
+    expect(amountOf(ride, 'ENV 1 RELEASE')).toBeGreaterThan(amountOf(metallic, 'ENV 1 RELEASE'))
+  })
+
+  it('uses no saturation, because p.217 says a kit row does not have it', () => {
+    // "Saturation is not available at kit level", against decimation and bitcrush which are
+    // "available at sound, kit and song level". All three of these are kit rows, so the whole
+    // distortion vocabulary open to them is the two.
+    for (const id of NEW) {
+      expect(valueOf(byId(id), 'CLIP TYPE'), id).toBe('Kit')
+      expect(names(byId(id)), id).not.toContain('SATURATION')
+    }
+    const everyName = new Set(device.recipes.flatMap(names))
+    expect(everyName).not.toContain('SATURATION')
+  })
+
+  it('separates the tom from the kick by the two numbers that make it one', () => {
+    /*
+     * Both are a pitch envelope on a simple waveform, so what makes one a tom is where the pitch
+     * starts and how long it takes to get down. Asserted as an ordering rather than as values, so
+     * a later retune of either fails only if it makes them the same instrument.
+     */
+    const tom = byId('deluge-tom-dark')
+    const kick = byId('deluge-kick-hard')
+    const amountOf = (r: Recipe, name: string) =>
+      (r.params as { name: string; value?: number }[]).find((param) => param.name === name)
+        ?.value as number
+
+    expect(amountOf(tom, 'ENV 2 → PITCH DEPTH')).toBeLessThan(
+      amountOf(kick, 'ENV 2 → PITCH DEPTH'),
+    )
+    expect(amountOf(tom, 'ENV 2 DECAY')).toBeGreaterThan(amountOf(kick, 'ENV 2 DECAY'))
+    expect(amountOf(tom, 'ENV 1 DECAY')).toBeGreaterThan(amountOf(kick, 'ENV 1 DECAY'))
+
+    // p.125's reading, which both rely on and neither may drift from: 25 is the note itself.
+    expect(amountOf(tom, 'ENV 2 SUSTAIN')).toBe(25)
+    expect(amountOf(kick, 'ENV 2 SUSTAIN')).toBe(25)
+  })
+
+  it('prints all three on a rendered page, with the controls that make them', () => {
+    // A parameter in a manifest is only an instruction if the guide prints it.
+    for (const [templateId, expected] of [
+      ['weave', 'DECIMATION'],
+      ['ambient-dub', 'MOD FX TYPE'],
+    ] as const) {
+      const template = TEMPLATES.find((t) => t.id === templateId)
+      expect(template, templateId).toBeDefined()
+      const doc = renderGuide(
+        resolve({
+          devices: [device],
+          template: template as (typeof TEMPLATES)[number],
+          mood: moodState(),
+          seed: 1,
+        }),
+      )
+      expect(doc, `${templateId} prints ${expected}`).toContain(expected)
+    }
   })
 })

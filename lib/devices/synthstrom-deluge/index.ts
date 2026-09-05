@@ -368,8 +368,18 @@ const FILTER_ROUTES = ['HPF TO LPF', 'LPF TO HPF', 'PARALLEL']
  * source, which is the line the guidebook itself draws: §5.2 (p.108) says *"If synth clips mainly
  * support melodic elements with the ability for sample use, kits would more often be used with
  * samples as the primary elements"*. So a recipe that loads a one-shot is a **kit row** and a
- * recipe that sounds the internal engine is a **synth clip**, which lands exactly on this
- * manifest's `sourceAudio` recipes — all nine of them, and only them, set `OSC 1 TYPE` to Sample.
+ * recipe that sounds the internal engine is a **synth clip**.
+ *
+ * **The line is about the sound source, not about the clip type, and the two do not coincide.**
+ * `deluge-kick-hard` is a kit row that sounds the engine, and #345's `tom`, `metallic` and `ride`
+ * are three more — a kit row is a *row*, and what it holds is a separate question. The invariant
+ * that does hold is between the oscillator and the source audio: **every recipe whose `OSC 1
+ * TYPE` is `Sample` carries a `sourceAudio` block**, and one recipe carries the block without
+ * being a sample — `deluge-pad-soft`, whose `Wavetable` oscillator has no sound until a file is
+ * chosen (#101). `test/deluge.test.ts` asserts both halves, the exception by name.
+ *
+ * (This paragraph used to say all nine `sourceAudio` recipes set `OSC 1 TYPE` to Sample. There are
+ * twelve, one of them is the wavetable above, and #345 is what went and counted.)
  *
  * Neither Audio, MIDI nor CV is selected anywhere, and that is the same fact twice: an audio clip
  * has no oscillator at all, so `OSC 1 TYPE`, `REPEAT MODE` and the rest of what these recipes set
@@ -901,6 +911,176 @@ const RECIPES: Recipe[] = [
     ],
     routing:
       'Needs the DX7 ENGINE community setting on; create with CUSTOM 1 + SYNTH. Documented as experimental.',
+    verified: false,
+  },
+  /**
+   * §345. **The three roles this pool declared and no recipe served, and all three are
+   * synthesised.** The head note above records why that is the interesting part: with no envelope
+   * stages authored, *"no recipe here could describe a sound whose shape over time is the point —
+   * which is every drum"*, so every percussive role reached for a sample and the split was a fact
+   * about the manifest rather than about the Deluge. #173 fixed the source problem;
+   * `deluge-kick-hard` was the first drum to be built out of the engine instead of loaded into it,
+   * and these three are the rest of the case.
+   *
+   * **The engine this box actually offers for percussion is narrower than a synth-drum manifest
+   * usually gets, and the three recipes are shaped by the narrowness rather than around it.**
+   * There is no filter cutoff, no resonance, no LFO rate and no wavetable position — all four are
+   * on the not-authored list above, each because no source prints a range. There is no second
+   * oscillator, no ring modulator and no FM operator pair in this manifest at all. So the two
+   * classic routes to an inharmonic metal sound are both shut.
+   *
+   * What is open is **aliasing**, and p.217 states it as a mechanism rather than leaving it to be
+   * inferred: Decimation *"reduces the audio's sample rate crudely without filtering... High
+   * frequency content is lost, and heavily aliased frequencies are introduced"*, and Bitcrush
+   * *"introduc[es] sharp corners to the waveform. High frequency content is introduced"*. Aliased
+   * partials are inharmonic by construction — they are the ones that folded back — so a square
+   * wave driven hard into both is a genuinely metallic spectrum arrived at from a cited sentence.
+   *
+   * That page also settles what these three may not use: *"Saturation is not available at kit
+   * level"*, and all three are kit rows. Decimation and Bitcrush are *"available at sound, kit and
+   * song level"*, which is why the pair is the whole distortion vocabulary here.
+   */
+  {
+    id: 'deluge-tom-dark',
+    role: 'tom',
+    character: 'dark',
+    voice: 'track',
+    title: 'Synth tom on a kit row — triangle with the pitch falling into the body',
+    /**
+     * **The same mechanism as `deluge-kick-hard`, at the settings that make it a tom.** Both are a
+     * pitch envelope on a simple waveform; what separates them is how far the pitch falls and how
+     * long the body lasts. The kick drops from 22 over an `ENV 2 DECAY` of 6 and is gone by 17;
+     * this falls half as far, twice as slowly, and rings on. `SUSTAIN` 25 is the reading p.125
+     * gives — *"on a pitch destination 25 is the note itself"* — so the tom settles at the note it
+     * was played at rather than under it, which is the difference between a tom and a kick.
+     *
+     * Triangle rather than the kick's sine, because a tom has a skin as well as a body and the
+     * triangle's odd partials are the nearest this engine gets to one without reaching for the
+     * aliasing the other two recipes use.
+     */
+    params: [
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Triangle', OSC_TYPES, cite(81), { hint: 'kit-synth-row' }),
+      env(1, 'ATTACK', 1, { note: 'the menus recommend at least 1; 0 is likely to click' }),
+      env(1, 'DECAY', 28, { mood: [{ axis: 'density', amount: -8 }] }),
+      env(1, 'SUSTAIN', 0, { note: '0 decays away to nothing, which is what a drum does' }),
+      env(1, 'RELEASE', 9),
+      env(2, 'ATTACK', 1),
+      env(2, 'DECAY', 13, { note: 'twice the kick\u2019s, so the pitch falls into the body rather than through it' }),
+      env(2, 'SUSTAIN', 25, {
+        note: 'p.125: on a pitch destination 25 is the note itself, so the tom settles where it was played',
+      }),
+      num('ENV 2 \u2192 PITCH DEPTH', 11, PITCH_DEPTH, PITCH_DEPTH_CITE, {
+        hint: 'env2-pitch',
+        note: 'Half the kick\u2019s lift; a tom falls a tone or two, not an octave',
+      }),
+      num('EQ BASS AMOUNT', 31, Z50, cite(219), {
+        note: '25 is neutral; above boosts',
+        mood: [{ axis: 'darkness', amount: 6 }],
+      }),
+      num('EQ TREBLE AMOUNT', 20, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -7 }] }),
+      num('REVERB AMOUNT', 8, Z50, cite(225), { mood: [{ axis: 'space', amount: 14 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'fill', set: { velocity: 112 }, hint: 'note-velocity' },
+      { slot: 'accent', set: { velocity: 124 }, hint: 'note-velocity' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'deluge-metallic-bright',
+    role: 'metallic',
+    character: 'bright',
+    voice: 'track',
+    title: 'Square driven into the aliasing, which is where the inharmonic partials come from',
+    /**
+     * **The recipe the head note above is really about.** A metallic sound is inharmonic partials,
+     * and the two engines that usually make them — a ring modulator and an FM operator pair — are
+     * both absent here. p.217's decimation is the third route and the guidebook describes it in
+     * the terms that matter: sample rate reduced *"crudely without filtering"*, so *"heavily
+     * aliased frequencies are introduced"*. Folded partials are not multiples of the fundamental,
+     * which is what makes this a bell rather than a bright square.
+     *
+     * So `DECIMATION` is high and it is the point rather than an effect on top of one — well above
+     * `deluge-kick-hard`'s 12, which uses the same control for edge. `BITCRUSH` sits under it for
+     * the reason p.217 gives it separately: it adds *"sharp corners"* and lifts quiet content,
+     * which keeps the tail audible as the envelope falls away.
+     *
+     * `bright` because the mechanism and the character agree: aliasing puts energy at the top.
+     * `generative-drift` asks this box for a `bright` metallic and `industrial-techno` for a
+     * `dark` one; §3.5's fallback answers the second approximately, and authoring a dark twin
+     * would mean turning the treble down on the thing that makes the sound.
+     */
+    params: [
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Square', OSC_TYPES, cite(81), { hint: 'kit-synth-row' }),
+      env(1, 'ATTACK', 1),
+      env(1, 'DECAY', 21, { mood: [{ axis: 'density', amount: -7 }] }),
+      env(1, 'SUSTAIN', 0),
+      env(1, 'RELEASE', 12),
+      num('DECIMATION', 34, Z50, cite(217), {
+        mood: [{ axis: 'grit', amount: 10 }],
+        note: 'p.217: high frequency content is lost and heavily aliased frequencies are introduced',
+      }),
+      num('BITCRUSH', 19, Z50, cite(217), {
+        mood: [{ axis: 'grit', amount: 8 }],
+        note: 'p.217: sharp corners on the waveform, and quiet sounds become louder',
+      }),
+      num('EQ BASS AMOUNT', 17, Z50, cite(219), { note: '25 is neutral; below cuts' }),
+      num('EQ TREBLE AMOUNT', 33, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -10 }] }),
+      num('REVERB AMOUNT', 12, Z50, cite(225), { mood: [{ axis: 'space', amount: 16 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'offbeat', set: { velocity: 100 }, hint: 'note-velocity' },
+      { slot: 'accent', set: { velocity: 122 }, hint: 'note-velocity' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'deluge-ride-bright',
+    role: 'ride',
+    character: 'bright',
+    voice: 'track',
+    title: 'Analog square let ring, flanged so the partials beat against each other',
+    /**
+     * **The same aliasing, spent on length rather than on density.** A ride is a bell that keeps
+     * ringing, so the envelope is the difference: `DECAY` and `RELEASE` are roughly twice
+     * `deluge-metallic-bright`'s and the decimation is lower, because a wash held for two beats at
+     * that setting is a noise part rather than a cymbal.
+     *
+     * **`Analog Square` rather than `Square`, and the flanger, are what stop this being the
+     * metallic recipe with a longer tail.** p.81 lists the two as separate waveforms under
+     * separate headings — `Digital` and `Analog Modelled` — so they alias differently and the
+     * folded partials land in different places. `MOD FX` `FLANGER` (p.216) then puts a moving comb
+     * across them, which is the beating a ride has and a struck bell does not.
+     *
+     * `MOD FX RATE` is low and `FEEDBACK` moderate: the movement should be slower than the part,
+     * or the flanger becomes the rhythm.
+     */
+    params: [
+      clipType('Kit'),
+      pick('OSC 1 TYPE', 'Analog Square', OSC_TYPES, cite(81), { hint: 'kit-synth-row' }),
+      env(1, 'ATTACK', 1),
+      env(1, 'DECAY', 38, { mood: [{ axis: 'density', amount: -10 }] }),
+      env(1, 'SUSTAIN', 0),
+      env(1, 'RELEASE', 24),
+      num('DECIMATION', 21, Z50, cite(217), { mood: [{ axis: 'grit', amount: 9 }] }),
+      num('BITCRUSH', 11, Z50, cite(217), { mood: [{ axis: 'grit', amount: 6 }] }),
+      pick('MOD FX TYPE', 'FLANGER', MOD_FX_TYPES, cite(216)),
+      num('MOD FX RATE', 9, Z50, cite(216), {
+        note: 'Slower than the part, or the flanger becomes the rhythm',
+      }),
+      num('MOD FX FEEDBACK', 22, Z50, cite(216)),
+      num('EQ TREBLE AMOUNT', 30, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -9 }] }),
+      num('REVERB AMOUNT', 16, Z50, cite(225), { mood: [{ axis: 'space', amount: 18 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'offbeat', set: { velocity: 92 }, hint: 'note-velocity' },
+      { slot: 'accent', set: { velocity: 116 }, hint: 'note-velocity' },
+    ],
     verified: false,
   },
   {
