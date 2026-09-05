@@ -144,22 +144,22 @@ describe('a modulator with nowhere to point (#388)', () => {
 })
 
 /**
- * The library as it stands. #384 fixed `muse-stab-hard` as content; this check exists so the rest
- * is generated rather than hand-collected, and #388 predicted exactly this list.
+ * The library as it stands. #384 fixed `muse-stab-hard` as content and #388 predicted the six
+ * that were left; four have since been routed and two remain. This check exists so that list is
+ * generated rather than hand-collected — which is the point it keeps proving, since the number
+ * moves whenever somebody takes one of the judgments.
  */
 describe('what the check raises in the library today (#388)', () => {
   const found = inertFindings(DEVICES)
 
-  it('raises the six MOD OSC recipes left after #384', () => {
+  it('raises the two sub MOD OSC recipes left after #384 and the routing pass', () => {
+    // Six after #384. Four of them — both `lead` recipes and both `bass-mid` — were routed to a
+    // destination their own title supports, which is why they are gone from here rather than
+    // suppressed. The two `sub` recipes are the ones where routing is the wrong repair: a sub
+    // that moves is not a sub, and `muse-sub-clean`'s only audible destination is the filter
+    // that *is* its oscillator. See `test/moog-muse.test.ts` for both judgments.
     const disconnected = found.filter((f) => f.kind === 'disconnected')
-    expect(disconnected.map((f) => f.recipeId)).toEqual([
-      'muse-bass-mid-dark',
-      'muse-bass-mid-hard',
-      'muse-lead-bright',
-      'muse-lead-hard',
-      'muse-sub-clean',
-      'muse-sub-dark',
-    ])
+    expect(disconnected.map((f) => f.recipeId)).toEqual(['muse-sub-clean', 'muse-sub-dark'])
     expect(disconnected.every((f) => f.block === 'MOD OSC')).toBe(true)
     // #388's own figure: nine parameters on the block. The tenth a reader checks, the MIXER
     // fader, is the evidence rather than part of the block.

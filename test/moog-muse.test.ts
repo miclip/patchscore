@@ -1447,9 +1447,9 @@ describe('UNISON spends every voice on one note (§12.4/#383)', () => {
  * device.** Nine lines — waveform, frequency, both depths, four routing switches — with every
  * route `OFF`, both amounts `0`, and `MIXER · MOD OSC` at `0`. The other two stabs have active
  * blocks, so within this role it was one recipe; **six other recipes across `lead`, `bass-mid`
- * and `sub` carry the identical inert shape** and are pinned below as debt against #388 rather
- * than fixed here. The repair on the stab is to stop printing it rather than to invent a
- * destination for it.
+ * and `sub` carried the identical inert shape**, of which **four have since been routed** — see
+ * the block below — leaving the two `sub` recipes pinned as debt. The repair on the stab is to
+ * stop printing it rather than to invent a destination for it.
  *
  * **The LFO one is structural.** LFO 1 has no destination anywhere in this manifest's parameter
  * model, and cannot be given one: the instrument's only mechanism for pointing it somewhere is
@@ -1530,28 +1530,27 @@ describe('the stabs print no modulator that reaches nothing (#384)', () => {
   })
 
   /**
-   * **Documented debt against #388, not desired behaviour.** The same inert shape sits on six
-   * recipes this change does not touch. #384 says the disconnected MOD OSC is *"one recipe, not
-   * a device-wide habit"*; it is seven, and the stab is simply the one somebody was building
-   * when they noticed.
+   * **Documented debt against #388, and two recipes rather than six.** #384 says the
+   * disconnected MOD OSC is *"one recipe, not a device-wide habit"*; it was seven. The stab was
+   * repaired by removal, four more by routing (below), and **the two `sub` recipes are what is
+   * left** — because on a sub, routing is the wrong repair rather than the unmade one:
    *
-   * This list is pinned so the number is a fact somebody meets rather than one they rediscover,
-   * and so that **fixing one of them fails this test** — which is the right way round, because
-   * each fix is a musical judgment per recipe (route it, or drop it) and should be a decision
-   * somebody took rather than a diff nobody read. #388 is the check that would generate this
-   * list instead of it being hand-collected here.
+   * - `muse-sub-dark` is *"nothing else in the mixer"* with both ENVELOPE AMOUNTs at noon and a
+   *   corner at `160`. Its whole statement is a fundamental that does not move.
+   * - `muse-sub-clean` has **no oscillator in the mixer at all** — the sine is filter 1
+   *   self-oscillating. Modulating that corner modulates the pitch of the note, and pitch is the
+   *   one thing a sub cannot be allowed to do. Its only audible destination is the one that
+   *   breaks it.
+   *
+   * So both want the `muse-stab-hard` repair — drop the block, keep `MIXER · MOD OSC 0` as the
+   * line that says so — and that is a separate judgment from this one. Pinned so the number is a
+   * fact somebody meets rather than one they rediscover, and so that **fixing one of them fails
+   * this test**: each repair should be a decision somebody took rather than a diff nobody read.
    */
-  it('records, as debt against #388, the other recipes whose MOD OSC reaches nothing', () => {
+  it('records, as debt against #388, the two subs whose MOD OSC still reaches nothing', () => {
     const still = device.recipes.filter((recipe) => inert(recipe.id)).map((recipe) => recipe.id)
-    expect(still).toEqual([
-      'muse-lead-bright',
-      'muse-lead-hard',
-      'muse-bass-mid-hard',
-      'muse-bass-mid-dark',
-      'muse-sub-dark',
-      'muse-sub-clean',
-    ])
-    // And no stab among them, which is what this change did.
+    expect(still).toEqual(['muse-sub-dark', 'muse-sub-clean'])
+    // And no stab among them, which is what #384 did.
     expect(still.filter((id) => id.includes('stab'))).toEqual([])
   })
 
@@ -1601,5 +1600,107 @@ describe('the stabs print no modulator that reaches nothing (#384)', () => {
     ])
     // No stab among them, which is what this change did.
     expect(carrying.filter((recipe) => recipe.role === 'stab')).toEqual([])
+  })
+})
+
+/**
+ * The four MOD OSC blocks that #384 left inert and this change routes, one musical judgment each.
+ *
+ * **What is asserted is the judgment, not that a modulator exists.** "The block has nine
+ * parameters and one switch is on" would pass on any of the four with any destination, and the
+ * destination is the whole of the decision — the same nine lines pointed somewhere else is a
+ * different patch, not a rounding error. So each recipe is checked against the sentence its own
+ * title makes:
+ *
+ * - **`muse-lead-bright`** — *"the filter tracking the keyboard one to one"*. Filter 1 is the
+ *   control the title names, so the modulator goes to filter 2, the ladder above it in the SER
+ *   chain. The tracked corner is left exactly where the title puts it.
+ * - **`muse-lead-hard`** — *"resonance at the edge, envelope thrown at the cutoff"*. Filter 1 is
+ *   what the title is about, so that is where it points, and shallowest of the four because the
+ *   envelope already moves that corner by `80` and RESONANCE `85` is nearly self-oscillating.
+ * - **`muse-bass-mid-hard`** — *"filter envelope snapping the top off each note"*. Filter 1 owns
+ *   the snap; a second hand on it would make every note land differently, which is the opposite
+ *   of a snap. Filter 2 gets it instead.
+ * - **`muse-bass-mid-dark`** — *"both ladders low, nothing above the fundamental"*. The only one
+ *   whose filters are stated as still, so the only one where a filter route would contradict the
+ *   title. It modulates pitch, which adds no harmonics.
+ *
+ * **`AUDIO` stays `OFF` and `MIXER · MOD OSC` stays `0` on all four**, so none of this is a third
+ * oscillator arriving in the mix — sub-audio, out of the mixer, a modulator and nothing else.
+ * That combination is exactly what `inert` above allows and is why it is asserted here rather
+ * than assumed: routing a block by turning its fader up would be a different change.
+ */
+describe('the four inert MOD OSC blocks are routed, one judgment per recipe', () => {
+  const recipe = (id: string) => device.recipes.find((r) => r.id === id)!
+  const valueOf = (id: string, name: string) =>
+    recipe(id).params.find((param) => param.name === name)?.value
+
+  const routed = [
+    { id: 'muse-lead-bright', on: 'MOD OSC · FILTER ▸ 2', depth: 'MOD OSC · FILTER AMOUNT', at: 15 },
+    { id: 'muse-lead-hard', on: 'MOD OSC · FILTER ▸ 1', depth: 'MOD OSC · FILTER AMOUNT', at: 10 },
+    { id: 'muse-bass-mid-hard', on: 'MOD OSC · FILTER ▸ 2', depth: 'MOD OSC · FILTER AMOUNT', at: 10 },
+    { id: 'muse-bass-mid-dark', on: 'MOD OSC · PITCH ▸ OSC 2', depth: 'MOD OSC · PITCH AMOUNT', at: 5 },
+  ] as const
+
+  it.each(routed)('routes $id to $on at $at', ({ id, on, depth, at }) => {
+    expect(valueOf(id, on), id).toBe('ON')
+    expect(valueOf(id, depth), id).toBe(at)
+    // The block is still nine lines: this routes what was there rather than adding controls.
+    expect(recipe(id).params.filter((param) => param.name.startsWith('MOD OSC'))).toHaveLength(9)
+  })
+
+  it.each(routed)('keeps $id sub-audio and out of the mixer', ({ id }) => {
+    expect(valueOf(id, 'MOD OSC · AUDIO'), id).toBe('OFF')
+    expect(valueOf(id, 'MIXER · MOD OSC'), id).toBe(0)
+  })
+
+  /**
+   * **`PITCH ▸ OSC 1` is off on all four, and that is a rule rather than four coincidences.**
+   * On each of these recipes OSC 1 carries the pitch the part is tuned to — the 8' saw on both
+   * leads and on `bass-mid-hard`, the 16' fundamental on `bass-mid-dark`. Modulating it detunes
+   * the part against everything else in the guide, which is the defect #417 found on a stab and
+   * cost a hearing at the instrument to notice.
+   *
+   * `bass-mid-dark` shows the distinction rather than avoiding it: it *does* modulate pitch, on
+   * OSC 2, the 8' partner a whole octave above the fundamental. The pair beats; the note does
+   * not move.
+   */
+  it('modulates no oscillator that carries the note, on any of the four', () => {
+    for (const { id } of routed) {
+      expect(valueOf(id, 'MOD OSC · PITCH ▸ OSC 1'), id).toBe('OFF')
+    }
+  })
+
+  /**
+   * Conservative, said as a number: every depth here is at or under the shallowest depth the
+   * recipes that were already routed use (`muse-pad-dark`'s `10` on pitch, `muse-pad-bright`'s
+   * `15` on the filter), so nothing added here is louder than what the device already does.
+   */
+  it('adds no depth deeper than the routed recipes already carry', () => {
+    for (const { id, depth, at } of routed) {
+      expect(at, id).toBeLessThanOrEqual(15)
+      expect(valueOf(id, depth), id).toBeLessThanOrEqual(15)
+    }
+  })
+
+  /**
+   * The other half of the change is what it did **not** touch. LFO 1 on the two `bass-mid`
+   * recipes is a separate defect with a separate repair — it is destinationless rather than
+   * unrouted, and no route exists to give it (see the debt test above) — so a routing change
+   * that quietly removed or altered it would be two decisions in one diff.
+   */
+  it('leaves LFO 1 on the two bass-mid recipes exactly as it was', () => {
+    for (const id of ['muse-bass-mid-hard', 'muse-bass-mid-dark']) {
+      const lfo = recipe(id).params.filter((param) => param.name.startsWith('LFO 1'))
+      expect(lfo, id).toHaveLength(5)
+      expect(valueOf(id, 'LFO 1 · WAVEFORM'), id).toBe('TRIANGLE')
+      expect(valueOf(id, 'LFO 1 · AMPLITUDE'), id).toBe(0)
+    }
+    expect(valueOf('muse-bass-mid-hard', 'LFO 1 · RATE')).toBe(0.8)
+    expect(valueOf('muse-bass-mid-dark', 'LFO 1 · RATE')).toBe(0.5)
+    // And the two leads still carry PITCH LFO rather than LFO 1, which the routing did not move.
+    for (const id of ['muse-lead-bright', 'muse-lead-hard']) {
+      expect(recipe(id).params.filter((param) => param.name.startsWith('LFO 1')), id).toEqual([])
+    }
   })
 })
