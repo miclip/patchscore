@@ -1,11 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { TemplateId } from '@/lib/core'
 import { TEMPLATES } from '@/lib/templates'
 import { templateHref } from '@/lib/studio/catalogue'
-import { templateView } from '@/lib/studio/picker'
+import { centreOffset, templateView } from '@/lib/studio/picker'
 
 /**
  * Single-select: one template per guide (§4). The list is small on purpose — the authored
@@ -32,6 +32,26 @@ export function GenrePicker({ selected, onSelect }: GenrePickerProps) {
   const ids = useId()
   const searchId = `${ids}-search`
   const shown = useMemo(() => templateView(TEMPLATES, selected, query), [selected, query])
+  const list = useRef<HTMLFieldSetElement>(null)
+
+  /**
+   * Bring the chosen direction into the middle of the list on load (#387).
+   *
+   * **On mount only, and deliberately not on every change of `selected`.** Scrolling when the
+   * reader picks a row would move the list under the hand that just clicked it, and the row they
+   * chose is by definition already in view.
+   *
+   * `scrollTop` rather than `scrollIntoView`, which walks up the ancestors and would scroll the
+   * page as well as the box — on load that moves the whole studio for a change inside one panel.
+   * Instant, so there is no animation for `prefers-reduced-motion` to gate.
+   */
+  useEffect(() => {
+    const box = list.current
+    const row = box?.querySelector<HTMLElement>('[data-chosen="yes"]')
+    if (!box || !row) return
+    const top = centreOffset(box, row)
+    if (top !== undefined) box.scrollTop = top
+  }, [])
 
   return (
     <section className="panel">
@@ -76,11 +96,16 @@ export function GenrePicker({ selected, onSelect }: GenrePickerProps) {
         here is that a radio group is one tab stop, so the links are what the keyboard walks
         through between the search box and the chosen radio.
       */}
-      <fieldset className="picker-list">
+      <fieldset className="picker-list" ref={list}>
         {shown.rows.map(({ item: template, selected: isSelected, retained }) => {
           const subId = `${ids}-${template.id}-sub`
           return (
-            <div className="pick" key={template.id} data-retained={retained ? 'yes' : 'no'}>
+            <div
+              className="pick"
+              key={template.id}
+              data-retained={retained ? 'yes' : 'no'}
+              data-chosen={isSelected ? 'yes' : 'no'}
+            >
               <label className="pick-choose">
                 <input
                   type="radio"

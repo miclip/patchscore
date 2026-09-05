@@ -7,7 +7,7 @@ import type { Role } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { deviceHref, deviceLabel, templateHref } from '../lib/studio/catalogue'
 import { TEMPLATES } from '../lib/templates/index'
-import {
+import { centreOffset,
   ANY_KIND,
   NO_DEVICE_FILTER,
   deviceFields,
@@ -919,5 +919,52 @@ describe('the gap filter is disabled rather than removed (§7.3)', () => {
     const markup = picker(new Set(['metallic' as Role]))
     // The other checkbox is never disabled, so a `disabled` here would be this one.
     expect(markup).not.toContain('disabled')
+  })
+})
+
+/**
+ * §8/#387. The direction list is a 21rem scroll box and the library is longer than that, so a
+ * direction arriving from a permalink was often below the fold. These fix the arithmetic; the DOM
+ * wiring in `genre-picker.tsx` is three lines and is reviewed rather than tested, because this
+ * suite runs on `node` and standing up a DOM for a `scrollTop` assignment would cost more than it
+ * proves.
+ */
+describe('centring the chosen row in a picker list (#387)', () => {
+  const box = { scrollHeight: 900, clientHeight: 300, scrollTop: 0 }
+
+  it('leaves a list that does not scroll alone', () => {
+    // Every row is visible. Centring one would move the box for no reason, and returning 0 here
+    // would be indistinguishable from a deliberate scroll to the top.
+    expect(centreOffset({ scrollHeight: 300, clientHeight: 300, scrollTop: 0 },
+      { offsetTop: 120, offsetHeight: 40 })).toBeUndefined()
+  })
+
+  it('centres a row below the fold', () => {
+    // 600 - 150 + 20 = 470.
+    expect(centreOffset(box, { offsetTop: 600, offsetHeight: 40 })).toBe(470)
+  })
+
+  it('leaves a row already in the middle band alone', () => {
+    // The band is the middle half — 75 to 225 of a 300 box. A row at 120 is inside it, and
+    // re-centring a row the reader can already see is motion nobody asked for.
+    expect(centreOffset(box, { offsetTop: 120, offsetHeight: 40 })).toBeUndefined()
+  })
+
+  it('clamps rather than asking for a negative offset', () => {
+    // The first row cannot be centred. Settling against the top is the answer, not an error.
+    expect(centreOffset(box, { offsetTop: 0, offsetHeight: 40 })).toBe(0)
+  })
+
+  it('clamps at the bottom too', () => {
+    // 880 - 150 + 20 = 750, past the 600 of scrollable range.
+    expect(centreOffset(box, { offsetTop: 880, offsetHeight: 40 })).toBe(600)
+  })
+
+  it('reads the band against the current scroll, not the top of the list', () => {
+    // Scrolled down, a row at 600 sits 100px into the box — inside the band — so it stays put.
+    // The same row from the top of the list would move. `scrollTop` is what makes it a question
+    // about what the reader can see rather than about where the row lives.
+    expect(centreOffset({ ...box, scrollTop: 500 }, { offsetTop: 600, offsetHeight: 40 }))
+      .toBeUndefined()
   })
 })
