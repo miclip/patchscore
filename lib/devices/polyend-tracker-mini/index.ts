@@ -79,11 +79,17 @@ import { TRACKER_MINI_PANEL } from './panel'
  *    bought back with it is `acid + dirty` on ACD below, which was wanted and dropped to fit.
  *    A fourth patch is now a fourth patch: the resolver loads three of them and reports the rest
  *    as `no-room`, naming the slots (§7.3), on a box whose tracks are still free.
- *  - **WTFM is attributable but unauthored.** Its parameter table is headed by the model's
- *    *logo*, a graphic, so text extraction loses it — but the rendered page carries it plainly
- *    (p.162), and all five engines are documented. It goes unused for want of a recipe somebody
- *    wanted to write, which is an ordinary authoring gap rather than a limit of the box. ACD was
- *    in the same position until the slot cap lifted and `acid + dirty` was authored off p.154.
+ *  - **WTFM is attributable and stays unauthored, and #345 changed why.** Its parameter table is
+ *    headed by the model's *logo*, a graphic, so text extraction loses it — but the rendered page
+ *    carries it plainly (p.162), and all five engines are documented. This used to read that it
+ *    went unused *"for want of a recipe somebody wanted to write"*. Somebody did: `metallic` was
+ *    authored on it, off p.162's `Ratio 1` and `Ratio 2` running *"0.25 - 12"* continuously and
+ *    its `Add 5 / Add 7 / Add 11` characters, which is a real way to make an inharmonic partial.
+ *    It was backed out because a recording of struck metal is inharmonic without any of that, and
+ *    a synth patch here spends one of only three project slots. So the engine is unauthored
+ *    because the role that wanted it is better served without it — a smaller gap than a missing
+ *    recipe, and a different one. ACD was in the third position again, unwritable under the old
+ *    slot cap, until the cap lifted and `acid + dirty` was authored off p.154.
  *  - **Pool ordinals always start at 1** (§2.2), so `track-synth` expands to "Synth Track 1..8"
  *    while the panel calls those tracks 9-16. Each pool-B recipe carries the mapping in its
  *    `routing` line, which is the only place the guide can say it today.
@@ -355,7 +361,16 @@ const ACD_GLIDE_MODES = ['Always', 'Overlap', 'Legato', 'Legato Overlap']
 /** p.156, the three FAT filter emulations. */
 const FAT_FILTERS = ['Low Pass MG 24dB', 'Low Pass OB 24dB', 'Low Pass OB 12dB']
 
-/** p.158, VAP's fifteen. Listed in full: narrowing to what is authored hides the box. */
+/**
+ * VAP's fifteen, p.158. Listed in full: narrowing to what is authored hides the box.
+ *
+ * **WTFM's `Filter Type` is the same fifteen in the same order**, printed again on p.162 rather
+ * than cross-referenced, so one constant serves both and each call site cites the page it read.
+ * That is the opposite of the Circuit Tracks' Drive Type / Distortion pair, where two tables
+ * print seven shapes that differ by one word and one constant for both put a spelling on the
+ * page the manual does not use. Checked here rather than assumed: both renders were compared
+ * entry by entry.
+ */
 const VAP_FILTERS = [
   'Low Pass MG 24dB',
   'Low Pass OB 24dB',
@@ -1171,6 +1186,396 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('ENVELOPE · SUSTAIN', 84, PCT, 126, { unit: '%' }),
       secs('ENVELOPE · RELEASE', 2.2, SECONDS_10, 126),
       swing(),
+    ],
+    verified: false,
+  },
+  /**
+   * ---- The seven #345 roles, and why all seven stay on the sampler ------------------------
+   *
+   * **This is not the blanket sampler argument, and the two that nearly went the other way are
+   * the evidence.** `sub` was authored as a VAP twin and `metallic` as a WTFM one before either
+   * was backed out, each on a measurement rather than on a rule.
+   *
+   * **`sub` cost the box its polyphonic pad.** Seven directions ask for it, four at priority 1,
+   * so a synth patch for it wins one of p.32's three project slots almost everywhere — and
+   * measured on Industrial Techno at seed 18, that is the slot `tm-pad-soft-synth` was using.
+   * The pad fell back to `tm-pad-soft-chord`, trading a chord played across three voices for a
+   * chord baked into a sample, which is the trade #40 recorded as what a *crowded* box does. A
+   * sub is also the easiest part on this list to record: it is one low tone and the sampler
+   * pitch-tracks it. So the scarcest resource on the box went to the part that needed it least
+   * and was taken from the part that needed it most.
+   *
+   * **`metallic` was WTFM's inharmonic FM, and a recording is more inharmonic than FM is.**
+   * p.162's `Ratio 1` and `Ratio 2` run *"0.25 - 12"* continuously and its `Character` row offers
+   * `Add 5`, `Add 7`, `Add 11`, so the engine really does make partials that land between the
+   * harmonics. But a struck bell or spring simply *is* that, no ratio required, and all three
+   * directions asking for `metallic` pattern it as struck hits. Spending a slot to synthesise
+   * what the sampler already holds would be filling in the head note's *"WTFM is attributable
+   * but unauthored"* for its own sake, which is the completeness reasoning this issue is not.
+   *
+   * **The line the seven fall on turns out to be a real one**, and it explains the four twins
+   * above as well as these: `bass-mid`, `pad`, `lead` and `acid` are roles where the *engine is
+   * the instrument* — a reese, a held chord, a squelching line — and those are twins. These seven
+   * are recordings, or gestures made over a recording: `impact`, `noise`, `metallic` and `sub`
+   * are files; `riser` is one reversed; `sweep` is a filter moved across one; and `arp` is a step
+   * effect that works the same over any instrument, so a synth patch would buy nothing.
+   *
+   * WTFM stays unauthored, and the head note's reason for that has changed: it is no longer
+   * *"for want of a recipe somebody wanted to write"* but because the role that wanted it is
+   * better served without it. That is a smaller gap than it was.
+   */
+  {
+    id: 'tm-sub-dark',
+    role: 'sub',
+    character: 'dark',
+    voice: 'track-sample',
+    title: 'Low tone an octave down, everything above it filtered off',
+    sourceAudio: {
+      need:
+        'A clean sustained low tone with a stable, known pitch — a sine or a filtered triangle. ' +
+        'The instrument transposes it, so the tuning has to be true before it moves',
+    },
+    /**
+     * **The most-wanted role on this box**: seven of the eleven directions request it, all of
+     * them `dark`, four at priority 1, none of them optional. One recipe answers every one.
+     *
+     * `Forward loop` rather than `1-Shot` because a sub is continuous in six of the seven and
+     * has to hold under whatever gate the step carries; a one-shot would end where the file does.
+     *
+     * `TUNE -12` rather than a deeper drop: p.116's range reaches -24, and two octaves off a
+     * source recorded at a usable pitch puts the fundamental under most systems. One octave is
+     * the interval that keeps the part audible on the box's own output, and the reader with a
+     * lower source can simply not use it.
+     *
+     * The low-pass is doing the role's actual work. A sub is defined by what is *not* in it, so
+     * `CUTOFF 22` is low enough to remove the harmonics a transposed sample keeps, and it carries
+     * the `darkness` axis because that is the one control here a mood should reach.
+     */
+    params: [
+      pick('PLAY MODE', 'Forward loop', PLAY_MODES, 127),
+      num('TUNE', -12, SEMITONES_24, 116, { unit: 'st' }),
+      num('FINETUNE', 0, FINE_CENTS, 116, { unit: 'c' }),
+      pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
+      num('CUTOFF', 22, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -14 }] }),
+      num('RESONANCE', 8, PCT, 117, { unit: '%' }),
+      secs('ENVELOPE · ATTACK', 0.01, SECONDS_10, 126),
+      num('ENVELOPE · SUSTAIN', 100, PCT, 126, { unit: '%' }),
+      secs('ENVELOPE · RELEASE', 0.3, SECONDS_10, 126, {
+        note: 'Short, so one note clears before the next — a sub that overlaps itself is mud',
+      }),
+      num('REVERB SEND', 0, PCT, 120, {
+        unit: '%',
+        note: 'Zero deliberately, and not a mood target — reverb on a sub is what a mix cannot undo',
+      }),
+      swing(),
+    ],
+    articulation: [{ slot: 'downbeat', set: { 'gate-length': 90 } }],
+    verified: false,
+  },
+  {
+    id: 'tm-metallic-dirty',
+    role: 'metallic',
+    character: 'dirty',
+    voice: 'track-sample',
+    title: 'Struck metal hit, band-passed and driven into the resonance',
+    sourceAudio: {
+      need:
+        'A struck metal one-shot — bell, spring, pipe, anvil, brake drum. Inharmonic is the ' +
+        'point, so anything with a clear single pitch is the wrong recording',
+    },
+    /**
+     * **One recipe answers all three requests, and the character was chosen by the geometry.**
+     * Three directions ask for `metallic`, wanting `bright`, `dark` and `dirty`. §3.4 puts
+     * `bright` and `dark` at 2 — the one distance §3.5 refuses to cross — while `dirty` sits at
+     * sqrt(2) from each of them. So `dirty` is the only single character that reaches all three,
+     * and the guide names the substitution where it makes one. That is the reverse of how a
+     * character is usually picked here, and it is worth saying so rather than letting it read as
+     * a preference for grit.
+     *
+     * `Band-pass` with the resonance well up is the part: a metallic hit lives in a band, and on
+     * a struck recording the resonance is what finds the ring rather than what adds one. p.117
+     * gives the four filter types; there is no dedicated drive on the sample instrument, so
+     * `RESONANCE` is where the `grit` axis lands.
+     */
+    params: [
+      pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
+      num('TUNE', -3, SEMITONES_24, 116, {
+        unit: 'st',
+        note: 'A little down, which lengthens the ring as well as lowering it',
+      }),
+      pick('FILTER TYPE', 'Band-pass', FILTER_TYPES, 117),
+      num('CUTOFF', 72, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -30 }] }),
+      num('RESONANCE', 62, PCT, 117, { unit: '%', mood: [{ axis: 'grit', amount: 26 }] }),
+      secs('ENVELOPE · ATTACK', 0.01, SECONDS_10, 126),
+      secs('ENVELOPE · DECAY', 0.9, SECONDS_10, 126),
+      num('ENVELOPE · SUSTAIN', 0, PCT, 126, { unit: '%' }),
+      num('REVERB SEND', 34, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 38 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'accent', set: { volume: 100 }, hint: 'pick-fx' },
+      { slot: 'ghost', set: { chance: 60 }, hint: 'pick-fx' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'tm-impact-hard',
+    role: 'impact',
+    character: 'hard',
+    voice: 'track-sample',
+    title: 'One-shot impact on the change, filter out of the way',
+    sourceAudio: {
+      need: 'A one-shot with a big front — a crash, a gated slam, a reversed hit',
+    },
+    /**
+     * §4.2's transitional roles. **A sampler is the whole answer here and no engine improves on
+     * it**: an impact is one recorded event with a front nobody synthesises better, and it costs
+     * none of p.32's three synth slots on a box where those are the scarce thing.
+     *
+     * `FILTER TYPE Disabled` rather than a lowpass wide open (p.117): the part is one hit at a
+     * boundary and there is nothing for a cutoff to shape. A disabled filter is also what leaves
+     * the `darkness` axis with nothing to move here, which is correct — a mood should not quietly
+     * take the top off a crash.
+     */
+    params: [
+      pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
+      pick('FILTER TYPE', 'Disabled', FILTER_TYPES, 117),
+      num('REVERB SEND', 46, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 40 }] }),
+      num('DELAY SEND', 22, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 26 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'first-hit', set: { volume: 100 }, hint: 'pick-fx' },
+      { slot: 'accent', set: { 'gate-length': 95 } },
+    ],
+    verified: false,
+  },
+  {
+    id: 'tm-noise-dirty',
+    role: 'noise',
+    character: 'dirty',
+    voice: 'track-sample',
+    title: 'Noise recording struck on the grid, band-passed to sit above the drums',
+    sourceAudio: {
+      need:
+        'A noise recording with movement in it — tape hiss, a vinyl run-out, a cymbal wash. Flat ' +
+        'white noise gives the band-pass nothing to find',
+    },
+    /**
+     * **The engines have a noise control and it is not a noise part**, which is the reading that
+     * keeps this on the sampler. FAT prints `Noise 0-100%` as *"Amount of noise applied"* (p.156)
+     * and VAP prints `Noise 0-100%` as *"Noise amount"* (p.158) — both are a blend into an
+     * oscillator that is still there, and neither page says the oscillator can be removed. A
+     * recipe claiming a synth noise part off those rows would be reading a mix control as a
+     * source. The sampler has no such doubt: the file is the noise.
+     *
+     * **Struck rather than held**, read off the one direction that asks: it patterns `noise` on
+     * `accent`, `downbeat` and `offbeat`, so it is rhythmic. A bed would be `Forward loop` and a
+     * long envelope, which is `tm-texture-soft` and a different part.
+     *
+     * `Band-pass` rather than the high-pass that would be the obvious choice: the drums on this
+     * box already own the top, and a band-pass leaves the part somewhere of its own rather than
+     * stacking it on the hats.
+     */
+    params: [
+      pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
+      pick('FILTER TYPE', 'Band-pass', FILTER_TYPES, 117),
+      num('CUTOFF', 66, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -26 }] }),
+      num('RESONANCE', 40, PCT, 117, { unit: '%', mood: [{ axis: 'grit', amount: 22 }] }),
+      num('REVERB SEND', 18, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 30 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'accent', set: { volume: 100 }, hint: 'pick-fx' },
+      { slot: 'offbeat', set: { 'gate-length': 30 } },
+    ],
+    verified: false,
+  },
+  {
+    id: 'tm-riser-bright',
+    role: 'riser',
+    character: 'bright',
+    voice: 'track-sample',
+    title: 'Sample played backwards, the envelope swelling it into the change',
+    sourceAudio: {
+      need:
+        'A sample with a long decaying tail — reversed, that tail is the rise, so the tail is the ' +
+        'part that matters. p.196 warns a very long tail can reverse into silence, so check the ' +
+        'end point after you turn it round',
+    },
+    /**
+     * §4.2. **Two mechanisms, both this box's own, and the manual supplies the caveat for one of
+     * them.** `r` is the Reverse Sample step FX, printed `<<<` or `>>>` (p.196), and reversing a
+     * decaying tail is the oldest riser there is. The envelope does the rest: p.126's `Attack`
+     * runs `0.00-10 Sec`, so the level climbs across the bars rather than arriving with the trig.
+     *
+     * **The volume LFO is deliberately not the mechanism**, and this is the footnote that decides
+     * it. p.123's speed table carries *"128 to 32 Step speed options are not available with
+     * volume as the destination"* — the four slowest settings, which are exactly the ones a build
+     * across four bars would want. An envelope has no such restriction and p.125 says it is
+     * *"more of a one-shot function"* that *"typically operates across a note length"*, which is
+     * what a riser is. Reaching for the LFO here would have been a value the box refuses.
+     *
+     * **No articulation, checked rather than assumed** (#108). Neither direction asking for
+     * `riser` authors a step variant for it, so there is no slot for a gesture to address and
+     * the reverse goes in `routing`, where a reader will meet it.
+     *
+     * One recipe, not two. The other request is `ambient-dub`'s `dark`, which §3.4 puts at 2 from
+     * `bright` — the one distance §3.5 will not cross. It stays a shortfall rather than buying a
+     * second patch for one optional, inessential request, which is where every other box in the
+     * library sits on that pair.
+     */
+    routing:
+      '**Set `r` to `<<<` on the step that starts the rise** — the Reverse Sample step FX, ' +
+      'p.196. The envelope below does the swell; the reverse is what makes a decay into a build. ' +
+      'p.196 also warns that a long tail can reverse into silence, so shorten the sample end if ' +
+      'nothing sounds',
+    params: [
+      pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
+      pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
+      num('CUTOFF', 78, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -30 }] }),
+      num('RESONANCE', 26, PCT, 117, { unit: '%' }),
+      secs('ENVELOPE · ATTACK', 3.4, SECONDS_10, 126, {
+        note: 'The climb. Longer than the section start-to-change if you want it still rising',
+      }),
+      num('ENVELOPE · SUSTAIN', 100, PCT, 126, { unit: '%' }),
+      secs('ENVELOPE · RELEASE', 0.4, SECONDS_10, 126, {
+        note: 'Short, so the rise stops at the change rather than hanging over it',
+      }),
+      num('REVERB SEND', 54, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 44 }] }),
+      swing(),
+    ],
+    verified: false,
+  },
+  {
+    id: 'tm-sweep-soft',
+    role: 'sweep',
+    character: 'soft',
+    voice: 'track-sample',
+    title: 'Held source with the cutoff LFO travelling once across the section',
+    sourceAudio: {
+      need:
+        'A sustained source that holds without changing — a drone, a held chord, a noise bed. ' +
+        'The filter supplies the movement, so anything already moving fights it',
+    },
+    /**
+     * §4.2, and **the one recipe in this batch the manual chose the values for.** p.201's Filter
+     * Cutoff LFO Rate step effect says it outright: *"Higher rates 128-32 good for sweeps and mid
+     * range 4-1/3 good for dubstep style wobble."* So the slow end of p.123's speed table is
+     * where a sweep lives, and this recipe sits at `128`, the slowest the box has.
+     *
+     * **The instrument LFO and the step effect are the same LFO seen twice**, which p.201 states
+     * and is worth carrying into the guide rather than leaving a reader to find: *"The LFO is
+     * triggered by each step either using the rate for the filter step LFO or the default
+     * instrument parameter speed if no LFO FX is set."* The instrument page is where the shape
+     * and depth live; the `j` step effect overrides only the rate, per step. So the patch is
+     * authored on the instrument and `routing` says where to reach for a different rate in one
+     * section without editing the instrument.
+     *
+     * `Rev Saw` rather than `Triangle`: p.201's own diagram draws the LFO cycle reset by each
+     * trigger, so a triangle would rise and come back inside one gesture. A reverse saw travels
+     * one way and starts over, which is a sweep opening across a section.
+     *
+     * **No articulation, checked** (#108): neither direction asking for `sweep` authors a step
+     * variant for it, the same standing state this role is in across the library.
+     */
+    routing:
+      '**One tied note where the gesture starts** — the LFO cycle resets on each trigger (p.201), ' +
+      'so a part re-struck every bar sweeps every bar instead of once. **To change the rate for ' +
+      'one section only**, put the `j` step effect on that step rather than editing the ' +
+      'instrument: p.201 gives 128-32 as the sweep range and the instrument speed applies wherever ' +
+      'no `j` is set',
+    params: [
+      pick('PLAY MODE', 'Forward loop', PLAY_MODES, 127),
+      pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
+      num('CUTOFF', 32, PCT, 117, {
+        unit: '%',
+        mood: [{ axis: 'darkness', amount: -24 }],
+        note: 'Where the sweep starts from — a filter already open has nowhere to travel',
+      }),
+      num('RESONANCE', 30, PCT, 117, { unit: '%' }),
+      pick('CUTOFF AUTOMATION TYPE', 'LFO', AUTOMATION_TYPES, 121, {
+        hint: 'inst-params',
+        note: 'On the Cutoff row of Instrument Automation',
+      }),
+      pick('CUTOFF LFO SHAPE', 'Rev Saw', LFO_SHAPES, 121),
+      pick('CUTOFF LFO SPEED', '128', LFO_SPEEDS, 123, {
+        note: 'In pattern steps. p.201 gives 128-32 as the range that reads as a sweep',
+      }),
+      unscaled('CUTOFF LFO AMOUNT', '70%', {
+        note: 'How far the cutoff travels; the automation page prints no scale for it',
+      }),
+      secs('ENVELOPE · ATTACK', 1.2, SECONDS_10, 126),
+      num('ENVELOPE · SUSTAIN', 96, PCT, 126, { unit: '%' }),
+      secs('ENVELOPE · RELEASE', 1.6, SECONDS_10, 126),
+      num('REVERB SEND', 62, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 46 }] }),
+      swing(),
+    ],
+    verified: false,
+  },
+  {
+    id: 'tm-arp-clean',
+    role: 'arp',
+    character: 'clean',
+    voice: 'track-sample',
+    title: 'One tuned tone through the box\u2019s own arpeggiator',
+    sourceAudio: {
+      need:
+        'A short plucked or struck tone of one known pitch, decaying inside a step. Every step ' +
+        'repitches this one file, so anything recorded into it transposes with it',
+    },
+    /**
+     * **This box has an arpeggiator, and that is the finding.** The three Elektron samplers in
+     * this library have none, so their `arp` recipes write the figure onto the grid a note at a
+     * time. Here p.190 gives `A` as a step effect — *"Arpeggiator. This needs a note value and
+     * works in conjunction with the MIDI chord which must also be assigned to the other FX slot"*
+     * — with `A/` rising, `A\u005C` falling and `AR` random, and a rate that is *"based on the tempo
+     * divider as a number e.g. 6 or multiplier e.g. .6 (dot 6)"*.
+     *
+     * **It stays on the sampler, and the arpeggiator is why rather than in spite of it.** `A` is
+     * a step effect, so it works the same over a sample instrument and over any of the five
+     * engines — it is not an instrument feature. A synth patch here would buy nothing the step
+     * effect does not already give and would spend one of p.32's three project slots to do it.
+     * That is a per-role reading and not the sampler by default: `sub` and `metallic` went the
+     * other way in this same change, because there the engine is the part.
+     *
+     * **Both FX slots on the step are spent**, which is a real constraint and is in `routing`:
+     * FX1 carries the arp, FX2 carries the MIDI Chord, so an arpeggiated step can hold no third
+     * effect. That is also why `articulation` here reaches only `gate-length` and `chance`, which
+     * are step effects too — a slot-wide `volume` would be a third.
+     *
+     * **The chord code is the direction's, not this folder's** (§4.1, invariant 3). p.190's own
+     * table maps a hex code to a scale — `0 47` is Maj, `037A` is Min7, `047B` is Maj7 — and
+     * which one a bar wants is harmony. So `routing` points at the Hook phase for the quality and
+     * at p.190 for the code, and no code is authored here.
+     *
+     * `clean` covers `generative-drift`'s `bright` request at §3.5's substitution distance, so
+     * one recipe answers both directions that ask.
+     */
+    routing:
+      '**FX1 = `A` (Arp), FX2 = `0` (MIDI Chord)** — the arpeggiator needs both slots on the ' +
+      'step, so an arpeggiated step can carry no other effect (p.190). Set the arp value to `A/` ' +
+      'for rising, `A\u005C` for falling or `AR` for random, followed by the tempo divider. The MIDI ' +
+      'Chord value is a hex code for the chord quality and p.190 prints the table: `0 47` Maj, ' +
+      '`0 37` Min, `037A` Min7, `047B` Maj7. Take the quality from the Hook phase; the step\u2019s ' +
+      'own note is the root the arpeggio is built on',
+    params: [
+      pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
+      pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
+      num('CUTOFF', 82, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -28 }] }),
+      num('RESONANCE', 18, PCT, 117, { unit: '%' }),
+      secs('ENVELOPE · ATTACK', 0.01, SECONDS_10, 126),
+      secs('ENVELOPE · DECAY', 0.18, SECONDS_10, 126),
+      num('ENVELOPE · SUSTAIN', 0, PCT, 126, {
+        unit: '%',
+        note: 'Zero, so each arpeggiated note clears before the next — the figure stays legible',
+      }),
+      num('DELAY SEND', 28, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 34 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'offbeat', set: { 'gate-length': 35 } },
+      { slot: 'ghost', set: { chance: 70 }, hint: 'pick-fx' },
     ],
     verified: false,
   },

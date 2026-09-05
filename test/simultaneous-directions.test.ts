@@ -410,17 +410,25 @@ describe('both directions finish on one box with several voices', () => {
     // apart from `covered` (§4.4). These rigs miss the `optional` metallic and nothing else — so
     // the direction is finished, and #81's complaint is exactly that a table reporting 7/8 here
     // reads as a hole when the reader has made the whole piece.
-    for (const ids of [
-      ['roland-tr-8s', 'behringer-crave'],
-      ['roland-tr-8s', 'korg-minilogue-xd'],
-      ['polyend-tracker-mini', 'behringer-crave'],
-    ] as const) {
+    // **The third rig stopped missing it at #345**, which is why this is a table rather than one
+    // expectation repeated three times. `metallic` was among the roles the Tracker Mini declared
+    // and could not serve, so on that rig Weave finished at 7 of 8 with the optional part
+    // contended out; it now finishes at 8. The two TR-8S rigs are unchanged. Both outcomes make
+    // the same point and the loop below still asserts it for each: whatever is missed is
+    // `inessential`, so the direction is finished either way.
+    const EXPECTED = [
+      { ids: ['roland-tr-8s', 'behringer-crave'], filled: 7, contended: true },
+      { ids: ['roland-tr-8s', 'korg-minilogue-xd'], filled: 7, contended: true },
+      { ids: ['polyend-tracker-mini', 'behringer-crave'], filled: 8, contended: false },
+    ] as const
+    for (const row of EXPECTED) {
+      const ids = row.ids
       const { filled, gaps, capped } = report(weave, ids.map(box))
       expect({ ids: ids.join('+'), gaps, capped, filled: filled.length }).toEqual({
         ids: ids.join('+'),
-        gaps: { 'r-metallic': 'no-room/contended' },
+        gaps: row.contended ? { 'r-metallic': 'no-room/contended' } : {},
         capped: false,
-        filled: 7,
+        filled: row.filled,
       })
       const missed = weave.roles.filter((r) => !filled.includes(r.id))
       for (const request of missed) expect(request.inessential, request.id).toBeDefined()
@@ -428,6 +436,10 @@ describe('both directions finish on one box with several voices', () => {
       // one absence is reported as a distinct *reader action* carrying the direction's own words,
       // not as a hole to go shopping for.
       const result = resolve({ devices: ids.map(box), template: weave, mood: NEUTRAL, seed: 7 })
+      if (!row.contended) {
+        expect(result.shortfalls).toEqual([])
+        continue
+      }
       expect(result.shortfalls.map((g) => g.kind)).toEqual(['not-needed'])
       const [only] = result.shortfalls
       if (only === undefined || only.kind !== 'not-needed') throw new Error('expected one not-needed')

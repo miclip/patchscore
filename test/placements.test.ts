@@ -563,10 +563,14 @@ describe('a link carries placements all the way to the guide (§7.5/#340, §8.2)
     ])
     // A refusal is reported as a refusal and never as a hole in the rig (§7.3).
     expect(result.shortfalls.map((one) => one.requestId)).not.toContain('r-ghost')
-    // What the sub lost, it lost to the *accepted* placement rather than to its own refusal: the
-    // kick took the TR-8S voice it was using. That much a reader can see today, because a
-    // shortfall is rendered where the placement report is not (§7.5, phase 1).
-    expect(result.shortfalls.map((one) => one.requestId)).toContain('r-sub')
+    // **And the sub is not a hole either, which is the stronger version of the same point.** This
+    // used to assert `r-sub` *was* a shortfall — it lost the TR-8S voice to the accepted kick
+    // placement, and the comment here explained that as what a reader sees. #345 authored `sub`
+    // on the Tracker Mini, so the request now finds a home on this rig and the refusal costs the
+    // reader nothing at all. Either way the claim under test holds and is the one asserted: a
+    // refused placement returns its request to the ordinary search rather than removing it.
+    expect(result.shortfalls.map((one) => one.requestId)).not.toContain('r-sub')
+    expect(result.assignments.find((one) => one.requestId === 'r-sub')).toBeDefined()
   })
 })
 

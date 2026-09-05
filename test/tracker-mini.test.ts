@@ -647,17 +647,26 @@ describe('Tracker Mini manifest', () => {
   // -------------------------------------------------------------------------
 
   it('carries 15-23 recipes on distinct (role, character, voice, realisation) keys (§3)', () => {
-    // The upper bound moved from 20 to 21 with `tm-stab-hard-note` (#40), and from 21 to 23 with
-    // `tm-acid-dirty` on both pools (§2.3/#25). It is a guideline about authoring effort —
-    // "roughly 15-20 recipes covers a device well" — not a fact about the box, and this box pays
-    // for two of its own: every synth recipe is written twice because a recipe names one voice,
-    // and the chord stab is a pair the ranking needs both halves of.
+    // The upper bound moved from 20 to 21 with `tm-stab-hard-note` (#40), from 21 to 23 with
+    // `tm-acid-dirty` on both pools (§2.3/#25), and from 23 to 30 with #345's seven. It is a
+    // guideline about authoring effort — "roughly 15-20 recipes covers a device well" — not a
+    // fact about the box, and this box pays for two of its own: every synth recipe is written
+    // twice because a recipe names one voice, and the chord stab is a pair the ranking needs
+    // both halves of. Eight of the thirty are twins, so the count of distinct authored patches
+    // is twenty-six.
+    //
+    // **#345 is why a guideline about effort had to move**, and the reason is worth keeping: it
+    // counts the roles a box *declares* and cannot serve, and this pool declares all 23. A
+    // device whose pool is a sampler cannot both claim every role and stop at twenty recipes.
+    // The Digitakt and the Circuit Tracks moved for the same reason in the same batch.
     //
     // **The bound that is a fact about the box is no longer here.** It was the three-synth-slot
     // authoring cap; the slots are declared now and the resolver enforces them, which is what
-    // `only three synth patches load at once` below actually tests.
+    // `only three synth patches load at once` below actually tests. That test is also why #345
+    // added no synth patch here: `sub` and `metallic` were authored as twins and backed out on
+    // the measurement, which the manifest records.
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(23)
+    expect(device.recipes.length).toBeLessThanOrEqual(30)
 
     const keys = device.recipes.map(
       (r) => `${r.role}\u0000${r.character}\u0000${r.voice}\u0000${realisationOf(r)}`,
@@ -1166,15 +1175,31 @@ describe('every sample-track grid part gets its note (§2.1)', () => {
   it('leaves no grid part on a sample track without a note, and pins how many there are', () => {
     const { grid } = sweep()
 
-    // The population, as measured on this library.
-    expect(grid.length).toBe(216)
+    // The population, as measured on this library. 216 until #345 authored the seven roles the
+    // sample pool declared and no recipe served.
+    expect(grid.length).toBe(276)
 
     // The claim. Zero blanks, and the blank arm named so a regression cannot hide as a count.
     expect(grid.filter((g) => g.kind === 'none')).toEqual([])
-    expect([...new Set(grid.map((g) => g.kind))]).toEqual(['trigger'])
-    expect([...new Set(grid.map((g) => `${g.note as string}/${String(g.midi)}`))]).toEqual([
+
+    // **Two arms now, where there was one, and #345's `sub` is why.** §4.1 gives a direction's
+    // own pitch precedence over a device trigger note, so a pitched role that draws a grid
+    // renders the direction's note. Until this box had a `sub` recipe on the sample pool, every
+    // pitched role it carried was hooked (#100) and so never reached the grid at all — which is
+    // what made one arm look like the whole story.
+    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['pitch', 'trigger'])
+
+    // The trigger arm is still the pool's own C5 and nothing else.
+    const triggers = grid.filter((g) => g.kind === 'trigger')
+    expect([...new Set(triggers.map((g) => `${g.note as string}/${String(g.midi)}`))]).toEqual([
       'C5/60',
     ])
+
+    // And the pitch arm is `sub` alone, in the octave the directions ask a sub for.
+    const pitched = grid.filter((g) => g.kind === 'pitch')
+    expect(pitched).toHaveLength(24)
+    expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
+    expect(Math.max(...pitched.map((g) => g.midi as number))).toBeLessThan(36)
   })
 
   it('reaches the percussion the direction library actually asks this box for', () => {
@@ -1188,10 +1213,15 @@ describe('every sample-track grid part gets its note (§2.1)', () => {
       ['kick', 48],
       ['closed-hat', 42],
       ['ghost-perc', 42],
+      ['sub', 24],
       ['clap', 18],
+      ['metallic', 18],
       ['open-hat', 18],
       ['rim', 18],
       ['snare', 18],
+      ['arp', 6],
+      ['impact', 6],
+      ['noise', 6],
       ['ride', 6],
       ['tom', 6],
     ])
@@ -1203,10 +1233,19 @@ describe('every sample-track grid part gets its note (§2.1)', () => {
     // program. Asserted rather than assumed — "hook or sustained" was the guess, and this box
     // produces no sustained sample-track part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(65)
+    expect(hooked.length).toBe(80)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(12)
-    expect([...new Set(noPattern)].sort()).toEqual(['ambient-dub/texture', 'hip-hop/texture'])
+    // 12 until #345. The three new entries are `riser` and `sweep`, which no direction authors a
+    // step variant for — both say so in their own `PATTERNS` note, and it is why neither recipe
+    // articulates anything.
+    expect(noPattern.length).toBe(30)
+    expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/sweep',
+      'ambient-dub/texture',
+      'generative-drift/sweep',
+      'hip-hop/texture',
+      'industrial-techno/riser',
+    ])
   })
 
   /**

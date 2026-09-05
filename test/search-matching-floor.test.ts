@@ -1305,8 +1305,42 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * Sixteen consecutive zeroes, across eleven devices and six content changes that between them
    * took the walk down, up, up, up, down by half, up, up, up, up, up, up, up, up, up, down by a
    * quarter, and up.
+   *
+   * **Seven recipes take it up 2.25% and the gap stays at zero — a seventeenth time.** 478,142 ->
+   * 488,909 unrepaired and the same repaired. The Tracker Mini's seven unauthored roles (#345),
+   * all of them on the sample pool.
+   *
+   * **The third #345 device in a row, and the three of them together are the finding this list
+   * can now make.** They cost one node, 9,233 and 10,767, and the recipe counts were nine, eight
+   * and seven — so the cost falls as the count falls only by coincidence. What separates them is
+   * whether `industrial-techno` contends for the roles:
+   *
+   *  - the Digitakt II's nine landed on a sixteen-track pool, in roles this direction does not
+   *    ask that box for, and cost **one node**;
+   *  - the Circuit Tracks' eight landed on a six-assignable box in `impact`, `noise` and `riser`,
+   *    which it does ask for, and cost **9,233**;
+   *  - the Tracker Mini's seven land in `sub`, `metallic`, `impact`, `noise` and `riser` on an
+   *    eight-track sample pool, and cost **10,767**.
+   *
+   * `sub` is the one to look at. It is the most crowded role in the library at 49 recipes, and
+   * `industrial-techno` asks for it at priority 1 — so a fiftieth candidate lands in the most
+   * contended place there is. Four figures is what that is worth, and four figures is 2% of this
+   * walk. **That is the measurement #301 asks for and it says the same thing every time**: the
+   * legal-rig line did not move at all, 46,609 nodes on weave seed 15, because no rig anybody can
+   * build holds this box and the forty-five others.
+   *
+   * `search-bound.test.ts` records the direction's peak moving 554,182 -> 566,810, which is
+   * 2.28% against this seed's 2.25% — the two agreeing again, as they have since #383.
+   *
+   * The peak stayed on seed 18 for the seventh entry running, and this seed is still one node off
+   * the row's floor — 488,909 against 488,908 on seed 13, the same pairing six entries running
+   * have recorded.
+   *
+   * Seventeen consecutive zeroes, across twelve devices and seven content changes that between
+   * them took the walk down, up, up, up, down by half, up, up, up, up, up, up, up, up, up, down
+   * by a quarter, up, and up.
    */
-  it('walks the recorded 478,142 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 488,909 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1314,7 +1348,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(478_142)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(488_909)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement

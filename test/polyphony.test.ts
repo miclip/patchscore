@@ -529,8 +529,21 @@ describe('the Tracker Mini chord recipes (§12.4, production)', () => {
     const pad = result.assignments.find((a) => a.role === 'pad')
     const stab = result.assignments.find((a) => a.role === 'stab')
     expect(pad?.assignables).toHaveLength(3)
-    expect(stab?.assignables).toHaveLength(3)
-    // And the stab's route spends none at all, because a sample instrument is not a synth.
+    // One instrument, three tracks, one slot: the pad is the half of this that carries the claim,
+    // and it is enough on its own — were a stack one slot per track, three tracks of VAP would
+    // spend all three and this assignment could not exist.
+    expect(pad?.recipe.realisation).toBe('polyphonic-voice')
+
+    // **The stab used to stack too, and #345 is why it no longer does on this rig.** Seven new
+    // parts landed on the eight sample tracks, so the third track of a stab stack now costs more
+    // than the chord sample's fixed shape and the box loads the chord instead. That is not a new
+    // behaviour: it is exactly the trade the `crowded` variant above documents, and the manual's
+    // own reason for the render procedure — p.104 ends "Remove the other track samples to free
+    // them up". What the sweep changed is which rig reaches it.
+    expect(stab?.assignables).toHaveLength(1)
+    expect(stab?.recipe.realisation).toBe('sampled-chord')
+    // And the stab's route spends no synth slot either way, because a sample instrument is not a
+    // synth — which is the sentence this test was really about.
     expect(stab?.recipe.routing).toContain('costs no synth slot')
   })
 
@@ -835,7 +848,16 @@ describe('the guide says which realisation the reader got', () => {
       expect(text).toContain('one note each')
       expect(text).toContain('takes the bottom of every chord')
       // And it must not tell them to load a chord, which is the other realisation entirely.
-      expect(text).not.toContain('you trigger a sample')
+      //
+      // **Tied to the model rather than to a string search since #345.** This read the whole
+      // document for the sampled-chord sentence and expected none, which was true only while the
+      // pad was the guide's only chord. It is not any more: the sample pool got crowded, the
+      // stab's stack stopped fitting and it loads its chord instead — see `costs one synth slot
+      // for the stack` above. So the assertion now says what it always meant, that the sentence
+      // appears exactly as often as there are parts it is true of, and never for this pad.
+      const sampled = stacked.assignments.filter((a) => a.recipe.realisation === 'sampled-chord')
+      expect(sampled.map((a) => a.role)).toEqual(['stab'])
+      expect(text.split('you trigger a sample')).toHaveLength(sampled.length + 1)
     }
     // The voices named, in reading order, in the phase that says where the part lives.
     expect(md).toContain('Tracker Mini · Synth Track 2, Synth Track 3 and Synth Track 4')
@@ -908,12 +930,15 @@ describe('no-capable-voice tells apart a missing role from a missing note (§7.3
     // taxonomy point survives it.
     const { result, gap } = gapFor(rig('polyend-tracker-mini'), 'pad')
     expect(gap).toBeUndefined()
-    // #40: and it is carried by *playing* the chord across three tracks now, which is a second
-    // route to the same conclusion. The taxonomy point is about the box, not about which route.
+    // #40: and it is carried by *playing* the chord across three tracks, which is a second route
+    // to the same conclusion. The taxonomy point is about the box, not about which route — which
+    // is what lets the stab below take the other route without touching the claim.
     expect(result.assignments.find((a) => a.role === 'pad')?.recipe.id).toBe('tm-pad-soft-synth')
     const stab = gapFor(rig('polyend-tracker-mini'), 'stab')
     expect(stab.gap).toBeUndefined()
-    expect(stab.result.assignments.find((a) => a.role === 'stab')?.recipe.id).toBe('tm-stab-hard-note')
+    // Loaded rather than played since #345 crowded the sample pool. Both routes are authored and
+    // neither is a gap, which is the whole point being made here.
+    expect(stab.result.assignments.find((a) => a.role === 'stab')?.recipe.id).toBe('tm-stab-hard-chord')
   })
 
   it('says the two things differently, in Markdown and in the app', () => {
