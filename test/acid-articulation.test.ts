@@ -300,8 +300,16 @@ const MOOD_AT = {
 
 type MoodName = keyof typeof MOOD_AT
 
-/** Lane names that carry a slide. Every one is declared in some device's `features.perStep`. */
-const SLIDE_LANES = ['portamento', 'portamento-time', 'glide', 'tie', 'gate'] as const
+/**
+ * Lane names that carry a slide. Every one is declared in some device's `features.perStep`.
+ *
+ * `slide-trig` joined at #345 with the Octatrack MKII, and it is the first entry here that is a
+ * *trig type* rather than a parameter: p.74's SLIDE places a step whose values travel to the next
+ * trig's, so the slide is a property of the step and not of the voice. Without it in this list a
+ * `bound` claim on that box would have found no entry and failed — which is what it did, and is
+ * why the list is a list rather than a guess at the word.
+ */
+const SLIDE_LANES = ['portamento', 'portamento-time', 'glide', 'tie', 'gate', 'slide-trig'] as const
 
 const AUDIT: readonly (readonly [
   device: string,
@@ -352,6 +360,15 @@ const AUDIT: readonly (readonly [
     // a step. So `PORT` is marked on the accented trigs the way a 303 marks them, and the glide
     // the lock switches on is shaped in a settings menu rather than on the step.
     ['elektron-digitakt-ii', 'dt2-acid-hard', 'bound', 'bound', 'neutral'],
+
+    // **And the Octatrack, which is the pair's opposite on both columns at once.** The slide is
+    // `bound` and is not a parameter at all: p.74's SLIDE is a *trig type*, and "a slide trig
+    // offers the possibility to make the parameter values of a trig to gradually slide to the
+    // parameter values of the subsequent trig". The accent is `stated` because an audio track
+    // here has no velocity — no `VEL` on any audio-track parameter page, and level per hit only
+    // as a `VOL` lock whose range p.58 does not print. So this is the one row in the table where
+    // a *sampler* states its accent, and the reason is the sequencer rather than the sound.
+    ['elektron-octatrack-mkii', 'ot-acid-hard', 'stated', 'bound', 'neutral'],
 
     // And its predecessor, which is the same box a generation earlier and cannot do the same
     // thing. There is no `PORT` on the Digitakt's TRIG page and no portamento anywhere in its
@@ -425,7 +442,7 @@ describe('every acid recipe accounts for the accent and the slide (#283)', () =>
       d.recipes.filter((r) => r.role === 'acid').map((r) => r.id),
     )
     expect([...AUDIT.map((row) => row[1])].sort()).toEqual([...shipped].sort())
-    expect(shipped).toHaveLength(32)
+    expect(shipped).toHaveLength(33)
   })
 
   it.each(AUDIT)('%s / %s accounts for both gestures in the manifest', (deviceId, recipeId, accent, slide) => {
@@ -471,7 +488,7 @@ describe('every acid recipe accounts for the accent and the slide (#283)', () =>
     }
   })
 
-  it('renders all 32, from three knob positions', () => {
+  it('renders all 33, from three knob positions', () => {
     // The whole library reachable from one direction, which it was not while `r-acid` asked for
     // `dirty`: force is the one character axis no mood knob moves, so the two `hard` recipes could
     // not be selected at any setting and the audit had two rows it could only check on paper.

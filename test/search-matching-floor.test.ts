@@ -1339,8 +1339,35 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * Seventeen consecutive zeroes, across twelve devices and seven content changes that between
    * them took the walk down, up, up, up, down by half, up, up, up, up, up, up, up, up, up, down
    * by a quarter, up, and up.
+   *
+   * **Seven recipes take it up one node and the gap stays at zero — an eighteenth time.** 488,909
+   * -> 488,910 unrepaired and the same repaired. The Octatrack MKII's six unauthored roles
+   * (#345), authored as seven recipes because `tom` needed both ends of a character pair.
+   *
+   * **This is the rule stated three entries ago, tested and confirmed.** Those entries said the
+   * cost is not the recipe count but whether `industrial-techno` contends for the roles, and this
+   * is the prediction they make: of the six roles authored here — `acid`, `arp`, `noise`, `ride`,
+   * `rim`, `tom` — this direction asks for exactly one, `noise`, at priority 5 and optional. So
+   * the tree got wider almost entirely where nobody walks, and one node is what that costs.
+   *
+   * Set beside its neighbours the arithmetic is now four points on one line: nine recipes cost
+   * one node, eight cost 9,233, seven cost 10,767, and seven cost one. The counts are 9, 8, 7, 7
+   * and the costs span four orders of magnitude. **Contention explains all four and recipe count
+   * explains none of them.**
+   *
+   * `search-bound.test.ts` records the direction's peak moving 566,810 -> 566,908, which is 98
+   * nodes against this seed's one — the row's maximum moving a hundred times more than its floor,
+   * the pattern the two cheap entries above also show and the two expensive ones invert.
+   *
+   * The peak stayed on seed 18 for the eighth entry running, and this seed is still one node off
+   * the row's floor — 488,910 against 488,909 on seed 13, the same pairing seven entries running
+   * have recorded.
+   *
+   * Eighteen consecutive zeroes, across thirteen devices and eight content changes that between
+   * them took the walk down, up, up, up, down by half, up, up, up, up, up, up, up, up, up, down
+   * by a quarter, up, up, and up.
    */
-  it('walks the recorded 488,909 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 488,910 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1348,7 +1375,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(488_909)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(488_910)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement

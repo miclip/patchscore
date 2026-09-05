@@ -1056,6 +1056,333 @@ const recipes: Recipe[] = [
     ],
     articulation: [art('accent', { 'slide-trig': true }, 'trig-edit')],
   },
+  /**
+   * ---- The six roles the pool declared and no recipe served (#345) -----------------------
+   *
+   * Six roles came back with nothing: `acid`, `arp`, `noise`, `ride`, `rim` and `tom`. All six
+   * are authored, none is narrowed, and **the reasons are this box's rather than the family's**.
+   * Two of them come out differently from the Digitakt's, which is the near neighbour a reader
+   * would expect them to follow:
+   *
+   *  - **`acid` has a slide here.** The Digitakt has none — its TRIG page ends at `LFO.T` and no
+   *    page names a portamento — so its acid line steps. This box slides, and not through a
+   *    portamento parameter: p.74's §12.10.2 SLIDE puts a *trig type* on the step, and *"a slide
+   *    trig offers the possibility to make the parameter values of a trig to gradually slide to
+   *    the parameter values of the subsequent trig"*. `ot-lead-clean` already binds one.
+   *  - **`arp` has an arpeggiator that this manifest cannot reach**, which is a third answer
+   *    again. The Digitakt has none at all; here §15.4.3 is ARPEGGIATOR MAIN and the screen
+   *    graphic on the rendered p.92 is headed `MIDI ARPEGGIATOR`, under a running head reading
+   *    `15. THE MIDI SEQUENCER`. It belongs to the eight MIDI tracks, which are not `voices` here
+   *    because they make no sound. So an `arp` on an audio track is a figure written onto the
+   *    grid, for a sharper reason than the Digitakt's: the box has the feature and the part
+   *    cannot have it.
+   *
+   * The other four are recordings a track loads, and the pool argument covers them — but it is
+   * worth saying that it was tested rather than assumed. A `ride`, a `rim`, a `tom` and a `noise`
+   * are each one sample fired from a step, which is what §12.4.1's sample trig does.
+   */
+  {
+    id: 'ot-rim-clean',
+    role: 'rim',
+    character: 'clean',
+    voice: 'track',
+    title: 'Rim click through the two-band EQ, nothing else on it',
+    verified: false,
+    /**
+     * Three directions ask for this role and all three ask for `clean`, so one recipe is exact
+     * everywhere rather than substituting anywhere.
+     *
+     * `EQUALIZER` rather than `FILTER`: a rim is one click at one frequency, and p.62's two-band
+     * parametric lifts a band without taking the rest of the kit with it. `clean` is authored as
+     * an absence as much as a choice — `LO-FI` and the distortions are the grit this box has, and
+     * none of them is here.
+     */
+    sourceAudio: {
+      need: 'A rimshot or cross-stick one-shot under 80 ms, close and dry, with no room on it',
+      hint: 'quick-assign',
+    },
+    params: [
+      machine('FLEX'),
+      ptch(0),
+      slic('OFF'),
+      lenUnsliced('OFF'),
+      loopMode('OFF'),
+      timestretch('OFF'),
+      ampMode('RTRG'),
+      attack('LIN'),
+      fx1('EQUALIZER'),
+      fx2('COMPRESSOR'),
+    ],
+    articulation: [art('ghost', { 'trig-count': 2 }, 'trig-count')],
+  },
+  {
+    id: 'ot-ride-bright',
+    role: 'ride',
+    character: 'bright',
+    voice: 'track',
+    title: 'Ride let ring, the low end filtered out from under it',
+    verified: false,
+    /**
+     * `LEN TIME` with `LOOP OFF` is what lets the recorded tail run: p.118 gives `TIME` as the
+     * setting where the sample plays for its own length rather than being gated. A ride that is
+     * cut short is a stick hit, which is why the source note asks for one with a ring on it.
+     *
+     * The highpass rather than an EQ lift, and the direction asking is why: Ambient Dub already
+     * has a pad and a texture holding the low ground, so the useful move on a cymbal recorded in
+     * a room is to take the room out from under it rather than to add more on top.
+     */
+    sourceAudio: {
+      need:
+        'A ride cymbal one-shot with the bow ring left on it, two seconds or longer; a gated ride ' +
+        'has no tail for LEN to leave alone',
+      hint: 'quick-assign',
+    },
+    params: [
+      machine('FLEX'),
+      ptch(0),
+      slic('OFF'),
+      lenUnsliced('TIME'),
+      loopMode('OFF'),
+      timestretch('OFF'),
+      ampMode('RTRG'),
+      attack('LIN'),
+      fx1('FILTER'),
+      filterSlope('HP', '12'),
+      fx2('SPRING REV'),
+    ],
+    articulation: [art('offbeat', { 'micro-timing': -4 }, 'micro-timing')],
+  },
+  {
+    id: 'ot-tom-bright',
+    role: 'tom',
+    character: 'bright',
+    voice: 'track',
+    title: 'Tom tuned up a fourth, skin rather than shell',
+    verified: false,
+    /**
+     * **Two toms, and §3.5 is why rather than a preference for two.** Both directions asking for
+     * this role require it at priority 2, and they ask for `bright` and `dark` — which §3.4 puts
+     * at distance 2, the one distance §3.5 refuses to substitute across. One recipe would have
+     * left a required part on one of them unserved on a box that can plainly play it.
+     *
+     * The pair differs on `PTCH` and on which end of the spectrum the FX slot works, which is
+     * what the two characters name. `+5` is a fourth up on p.118's semitone scale.
+     */
+    sourceAudio: {
+      need: 'A single tom hit with a pitched body rather than a slap',
+      hint: 'quick-assign',
+    },
+    params: [
+      machine('FLEX'),
+      ptch(5),
+      slic('OFF'),
+      lenUnsliced('TIME'),
+      loopMode('OFF'),
+      timestretch('OFF'),
+      ampMode('RTRG'),
+      attack('LIN'),
+      fx1('EQUALIZER'),
+      fx2('PLATE REV'),
+    ],
+    articulation: [art('fill', { 'trig-count': 3 }, 'trig-count')],
+  },
+  {
+    id: 'ot-tom-dark',
+    role: 'tom',
+    character: 'dark',
+    voice: 'track',
+    title: 'Tom pitched down a fifth, top end taken off it',
+    verified: false,
+    /**
+     * The other half of the pair above. `-7` is a fifth down on p.118's scale, and the lowpass
+     * does what the bright tom's EQ does in reverse: a tom dropped that far keeps a lot of skin
+     * noise that a 24 dB slope removes and a 12 dB one leaves audible.
+     */
+    sourceAudio: {
+      need:
+        'A single tom hit with a long enough body to survive a fifth of downward transposition — ' +
+        'a floor tom rather than a rack tom',
+      hint: 'quick-assign',
+    },
+    params: [
+      machine('FLEX'),
+      ptch(-7),
+      slic('OFF'),
+      lenUnsliced('TIME'),
+      loopMode('OFF'),
+      timestretch('OFF'),
+      ampMode('RTRG'),
+      attack('LOG'),
+      fx1('FILTER'),
+      filterSlope('LP', '24'),
+      fx2('DARK REV'),
+    ],
+    articulation: [art('fill', { 'trig-count': 3 }, 'trig-count')],
+  },
+  {
+    id: 'ot-noise-dirty',
+    role: 'noise',
+    character: 'dirty',
+    voice: 'track',
+    title: 'Noise burst struck on the grid, run through the lo-fi collection',
+    verified: false,
+    /**
+     * **Struck rather than held, read off the direction rather than assumed.** Industrial Techno
+     * is the only request and it patterns `noise` on `accent`, `downbeat` and `offbeat`, so it is
+     * a rhythmic part. A bed would want `LOOP ON` and a long `LEN`, which is `ot-texture-soft`
+     * and a different part.
+     *
+     * `LO-FI` in FX1 rather than in FX2, which is the one ordering decision here: p.62 offers it
+     * in both slots, and putting it first means the filter in FX2 is working on already-broken
+     * material rather than the reverse. On a noise source that is the difference between grit
+     * that is part of the sound and grit sprayed over the top of it.
+     */
+    sourceAudio: {
+      need:
+        'A noise recording with movement in it — tape hiss, a vinyl run-out, a cymbal wash; flat ' +
+        'white noise gives the filter nothing to find',
+      hint: 'quick-assign',
+    },
+    params: [
+      machine('FLEX'),
+      ptch(0),
+      slic('OFF'),
+      lenUnsliced('OFF'),
+      loopMode('OFF'),
+      timestretch('OFF'),
+      ampMode('RTRG'),
+      attack('LIN'),
+      fx1('LO-FI'),
+      fx2('FILTER'),
+      filterSlope('HP', '12'),
+    ],
+    articulation: [art('offbeat', { 'micro-timing': 6 }, 'micro-timing')],
+  },
+  {
+    id: 'ot-arp-clean',
+    role: 'arp',
+    character: 'clean',
+    voice: 'track',
+    title: 'Arpeggio written onto the grid, a PTCH lock on every trig',
+    verified: false,
+    /**
+     * **This box has an arpeggiator and this part cannot use it**, which is a different sentence
+     * from the one three other samplers in this library get, and the rendered page is what makes
+     * it different. §15.4.3 is ARPEGGIATOR MAIN, its screen graphic is headed `MIDI ARPEGGIATOR`
+     * beside `MIDI Ch:01`, and the running head over it reads `15. THE MIDI SEQUENCER` (p.92).
+     * Its `NOT2-NOT4` neighbours on the same page make the point again — *"makes it possible for
+     * a MIDI track to send out chords"*.
+     *
+     * The MIDI tracks are not `voices` here because they make no sound (see the head note), so
+     * nothing an audio track plays reaches that arpeggiator. What the reader gets instead is the
+     * same mechanism `ot-lead-clean` uses: `PTCH` is a SRC MAIN parameter, SRC MAIN parameters
+     * lock per trig (p.57, p.67), and the figure is written a step at a time.
+     *
+     * **The two-octave limit is the one this shares with the lead**, and it bites harder on an
+     * arp: `PTCH` runs -12 to +12 (p.118), and p.138 confirms the same span from the keyboard —
+     * *"The 2-octave range is only valid for audio tracks."* An arpeggio that wants three octaves
+     * wants a MIDI track and an instrument on the other end of the cable.
+     *
+     * `clean` covers Generative Drift's `bright` request at §3.5's substitution distance, so one
+     * recipe answers both directions that ask.
+     */
+    sourceAudio: {
+      need:
+        'A short plucked or struck tone of one known pitch, decaying inside a step. Every trig ' +
+        'transposes this one file, so its tuning is the tuning of the whole figure',
+      hint: 'quick-assign',
+    },
+    routing:
+      '**The figure is locked in, not generated.** Hold a [TRIG] key and turn the `PTCH` knob on ' +
+      'SRC MAIN to set that step\u2019s transposition (p.57, p.67); the Hook phase gives the notes. ' +
+      'The arpeggiator on this box is a MIDI track device (p.92) and an audio track cannot reach ' +
+      'it. **Keep the figure inside two octaves** \u2014 `PTCH` spans -12 to +12 and p.138 says the ' +
+      'same of playing a track from a keyboard',
+    params: [
+      machine('FLEX'),
+      ptch(0, false),
+      slic('OFF'),
+      lenUnsliced('TIME'),
+      loopMode('OFF'),
+      timestretch('OFF'),
+      ampMode('RTRG'),
+      attack('LIN'),
+      fx1('FILTER'),
+      filterSlope('LP', '12'),
+      fx2('DELAY'),
+      delayTime(12),
+    ],
+    articulation: [art('ghost', { 'trig-count': 2 }, 'trig-count')],
+  },
+  {
+    id: 'ot-acid-hard',
+    role: 'acid',
+    character: 'hard',
+    voice: 'track',
+    title: 'Acid line with the pitch sliding trig to trig',
+    verified: false,
+    /**
+     * **The slide is real here, and it is a trig type rather than a parameter.** The Digitakt is
+     * the near neighbour and has none — its TRIG page ends at `LFO.T` and no page in that manual
+     * names a portamento — so its acid line steps between pitches. This box has p.74's §12.10.2
+     * SLIDE: *"A slide trig offers the possibility to make the parameter values of a trig to
+     * gradually slide to the parameter values of the subsequent trig."*
+     *
+     * **It carries a condition, and the recipe would be wrong without it.** The same page: *"For
+     * a parameter value to slide between two trigs, it needs to be locked on one of the trigs. A
+     * locked parameter value will slide to the unlocked value and vice versa."* So a slide trig
+     * on its own does nothing — the reader has to lock `PTCH` on one of the pair, which is the
+     * same lock the line is written with anyway. `routing` says so; a recipe that bound the slide
+     * and stopped there would print a step that makes no sound different.
+     *
+     * **What this box gives that a 303 does not** is on the same page: *"Several parameter values
+     * can slide at the same time."* Lock the filter's cutoff on the same trig and the timbre
+     * travels with the pitch.
+     *
+     * **The accent is stated rather than bound, and that is a fact about the box** (#283). An
+     * audio track has no velocity: there is no `VEL` on any audio-track parameter page, and level
+     * per hit exists only as a `VOL` parameter lock whose range p.58 does not print. Binding an
+     * accent to some other lane would be the approximation #283 exists to refuse — the
+     * Subharmonicon's octave and the Matriarch's ratchet are the two it names — so the guide says
+     * where the emphasis comes from and leaves the value to the reader's ear.
+     */
+    sourceAudio: {
+      need:
+        'A short saw or square bass tone of one known pitch, with no filter movement recorded ' +
+        'into it \u2014 the filter is the part this recipe is for',
+      hint: 'quick-assign',
+    },
+    routing:
+      '**Slide:** put a slide trig on the step you want to slide *from* (TRIG EDIT > SLIDE, p.74). ' +
+      'It only bites if a value is locked on one of the two trigs, so lock `PTCH` on the step you ' +
+      'are sliding from \u2014 the same lock the line is written with. Several parameters can slide ' +
+      'at once, so locking the filter\u2019s cutoff there too carries the timbre with the pitch. ' +
+      '**Accent:** this box has no velocity on an audio track and no printed range for a per-trig ' +
+      '`VOL` lock, so the accents are yours to place by ear on the AMP page rather than a number ' +
+      'this guide can give you',
+    params: [
+      machine('FLEX'),
+      ptch(0, false),
+      slic('OFF'),
+      lenUnsliced('TIME'),
+      loopMode('ON'),
+      timestretch('OFF'),
+      ampMode('RTRG'),
+      attack('LIN'),
+      fx1('FILTER'),
+      filterSlope('LP', '24'),
+      fx2('LO-FI'),
+    ],
+    // **The slide sits on `offbeat`, not on `accent`, and #283 is why.** The accent on this box
+    // is `stated` — there is no velocity lane to bind it to — so an `accent` entry here would
+    // read as a bound accent whichever lane it carried, which is the approximation #283 refuses.
+    // It is also where the gesture belongs: an offbeat that slides into the next downbeat is the
+    // 303 figure, and the accents stay the reader's to place by ear.
+    articulation: [
+      art('offbeat', { 'slide-trig': true }, 'trig-edit'),
+      art('ghost', { 'micro-timing': 3 }, 'micro-timing'),
+    ],
+  },
 ]
 
 export const device: Device = {
