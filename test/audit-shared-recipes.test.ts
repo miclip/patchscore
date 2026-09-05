@@ -10,13 +10,17 @@ import { auditDevice, libraryCounts, totalCounts } from '../lib/studio/provenanc
  * library reported 283 points and 169 ranges nobody had authored. Those totals are quoted in
  * every device commit as evidence that provenance did not regress, so an inflating measure
  * undermines the check it exists for.
+ *
+ * The numbers below move whenever the Live III gains a recipe, because the whole point is that
+ * the XL gains it too — #345's four took them from 283/169 to 363/227. A diff here is the
+ * reference working, not a regression.
  */
 describe('the library total counts a shared recipe once (#193)', () => {
   it('drops exactly the entries the MPC XL derives, and nothing else', () => {
     const summed = totalCounts(DEVICES.map((d) => auditDevice(d)))
     const deduped = libraryCounts(DEVICES)
-    expect(summed.params - deduped.params).toBe(283)
-    expect(summed.numerics - deduped.numerics).toBe(169)
+    expect(summed.params - deduped.params).toBe(363)
+    expect(summed.numerics - deduped.numerics).toBe(227)
     // Nothing that is not a recipe moves.
     expect(deduped.capabilityFacts).toBe(summed.capabilityFacts)
     expect(deduped.unverifiedRanges).toBe(summed.unverifiedRanges)

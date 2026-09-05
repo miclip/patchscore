@@ -313,15 +313,21 @@ describe('MPC Live III manifest', () => {
   })
 
   it('authors both regimes rather than only the one with numbers in it', () => {
-    // The point of the split: thirteen recipes where the manual tabulates values — eight on
-    // monophonic instruments, five on the polyphonic one — and seven where it prints only
+    // The point of the split: seventeen recipes where the manual tabulates values — eleven on
+    // monophonic instruments, six on the polyphonic one — and seven where it prints only
     // enumerations. A manifest that took only the first would have thrown away the pads, which
     // is what an MPC is.
-    expect(trackRecipes).toHaveLength(13)
-    expect(device.recipes.filter((r) => r.voice === 'mono-track')).toHaveLength(8)
-    expect(device.recipes.filter((r) => r.voice === 'poly-track')).toHaveLength(5)
+    //
+    // #345's four all landed on the left of that split, and that is the pools' own division
+    // rather than a preference: `acid` and both toms are struck and want Bassline's and
+    // DrumSynth's printed ranges, and `sweep` moves a filter across a held note, which a pad can
+    // be made to do but not with any range the manual prints for the movement (p.227's Drum FX
+    // knobs are unbounded).
+    expect(trackRecipes).toHaveLength(17)
+    expect(device.recipes.filter((r) => r.voice === 'mono-track')).toHaveLength(11)
+    expect(device.recipes.filter((r) => r.voice === 'poly-track')).toHaveLength(6)
     expect(padRecipes).toHaveLength(7)
-    expect(device.recipes).toHaveLength(20)
+    expect(device.recipes).toHaveLength(24)
   })
 
   it('authors no recipe in a character no direction asks that role for, bar two named ones', () => {
@@ -348,11 +354,65 @@ describe('MPC Live III manifest', () => {
       .sort()
     expect(unasked).toEqual([...KEPT_APPROXIMATIONS].sort())
 
-    // The roles this box now leaves unvoiced are left unvoiced honestly (invariant 5), never
-    // filled with a recipe nothing would pick.
-    const covered = new Set(device.recipes.map((r) => r.role))
-    expect(covered.size).toBeLessThan(ROLES.length)
-    expect(covered.has('acid')).toBe(false)
+    // Re-running the rule is also what named #345's four, and `acid` is why it has to be re-run
+    // rather than read off the manifest's record. That record still says acid "was requested by
+    // no direction at all", which was true when it was written and stopped being true when
+    // `acid-lineage` landed (#287). Nothing failed in between, because an unserved role is silent
+    // by design (invariant 5).
+    const asks = (role: string, character: string) => asked.has(`${role}/${character}`)
+    expect(asks('acid', 'hard')).toBe(true)
+    expect(asks('sweep', 'soft')).toBe(true)
+    expect(asks('tom', 'bright')).toBe(true)
+    expect(asks('tom', 'dark')).toBe(true)
+  })
+
+  /**
+   * §345. **A role a pool declares and no recipe serves, which is a different thing from a role
+   * this box cannot play** — and the reader now sees the difference, because #340's placement
+   * control lists every box that could take a part and says of the ones that come back empty
+   * "no bright tom for your MPC Live III".
+   *
+   * This device declared `acid`, `sweep` and `tom` on the plugin pools and served none of them.
+   * It reads as a judgement about the hardware and it never was one: the manifest's cut list
+   * removed `mpc-acid-dirty`, `mpc-sweep-dark` and `mpc-tom-soft` for having a character nothing
+   * asks, correctly, and nobody then authored the character something does ask.
+   *
+   * **Asserted as zero rather than as a list, and the failure is the point.** Adding a role to a
+   * pool's `roles` without a recipe fails here, which forces the choice #345 exists to make:
+   * author it, or leave it off the declaration. Neither is wrong; leaving the reader to discover
+   * it is.
+   */
+  it('serves every role its pools declare (§345)', () => {
+    const served = new Set(device.recipes.map((r) => r.role))
+    const gaps: string[] = []
+    for (const voice of device.voices) {
+      for (const role of voice.roles) if (!served.has(role)) gaps.push(`${voice.id}/${role}`)
+    }
+    expect([...new Set(gaps)].sort()).toEqual([])
+
+    // The declaration is what makes that meaningful: a box serving every role it declares because
+    // it declares almost none would pass the line above and say nothing.
+    expect(served.size).toBe(ROLES.length)
+  })
+
+  /**
+   * Invariant 2/#196. **Recipes are the one thing both siblings take, and they take it two
+   * different ways** — `akai-mpc-xl` by reference off the same array, `akai-mpc-one-g2` through
+   * `retargetRecipe`. So authoring here is authoring on three boxes, and #345's gap closed on all
+   * three in one commit because there was no way to close it on one.
+   *
+   * This asserts the reach, not the citations: what each sibling should print is its own file's
+   * question, and the One G2's is answered against a different manual.
+   */
+  it('serves the same roles on both siblings, because both take these recipes', () => {
+    const roles = (id: string) =>
+      [...new Set(DEVICES.find((d) => d.id === id)?.recipes.map((r) => r.role) ?? [])].sort()
+    const here = [...new Set(device.recipes.map((r) => r.role))].sort()
+    expect(here).toContain('acid')
+    expect(here).toContain('sweep')
+    expect(here).toContain('tom')
+    expect(roles('akai-mpc-xl')).toEqual(here)
+    expect(roles('akai-mpc-one-g2')).toEqual(here)
   })
 })
 
@@ -469,18 +529,19 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 246 is #334's figure for this device and it is expected to stay put, because nothing here is
-   * a gap to close: a pad part is addressed by pad, and a plugin part has no note this manual
-   * states. The number moves when a direction gains or loses a part, and a diff is a prompt to
-   * re-read the head note rather than a failure. What must not move is the relationship — no part
-   * ever gets a `trigger`, because no pool has a note to give one.
+   * 258 is #334's figure for this device and none of it is a gap to close: a pad part is
+   * addressed by pad, and a plugin part has no note this manual states. The number moves when a
+   * direction gains or loses a part **or when this box gains a recipe** — it was 246 until #345
+   * authored `tom`, whose twelve parts had been going nowhere. A diff is a prompt to re-read the
+   * head note rather than a failure. What must not move is the relationship: no part ever gets a
+   * `trigger`, because no pool has a note to give one.
    */
-  it('leaves 246 grid parts blank, and pins where they are', () => {
+  it('leaves 258 grid parts blank, and pins where they are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(270)
+    expect(grid.length).toBe(282)
     const blank = grid.filter((g) => g.kind === 'none')
-    expect(blank.length).toBe(246)
+    expect(blank.length).toBe(258)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -491,7 +552,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     const byPool = new Map<string, number>()
     for (const g of blank) byPool.set(g.pool, (byPool.get(g.pool) ?? 0) + 1)
     expect([...byPool].sort()).toEqual([
-      ['mono-track', 144],
+      ['mono-track', 156],
       ['pad', 96],
       ['poly-track', 6],
     ])
@@ -525,6 +586,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['open-hat', 18],
       ['rim', 18],
       ['snare', 18],
+      ['tom', 12],
       ['arp', 6],
       ['impact', 6],
       ['noise', 6],
@@ -538,11 +600,13 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
     // produces no sustained part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(132)
+    expect(hooked.length).toBe(138)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(18)
+    expect(noPattern.length).toBe(30)
     expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/sweep',
       'ambient-dub/texture',
+      'generative-drift/sweep',
       'hip-hop/texture',
       'industrial-techno/riser',
     ])

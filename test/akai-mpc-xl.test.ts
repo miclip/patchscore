@@ -19,7 +19,7 @@ import { TEMPLATES } from '../lib/templates/index'
  * than assumed from the manifest it shares objects with.**
  *
  * #334 counts the parts whose grid says which steps to hit and never what to write on them. The
- * XL has 246, and `MPC Live III / MPC XL User Guide v3.7` answers them in two halves. The pages
+ * XL has 258, and `MPC Live III / MPC XL User Guide v3.7` answers them in two halves. The pages
  * are the sibling's pages — one document covers both boxes — and p.195 is why that is a fact
  * about the manual rather than an inheritance: it heads `Hardware Step Sequencing` with *"MPC
  * Live III and MPC XL feature expanding step sequencing control using the hardware Step
@@ -108,6 +108,43 @@ describe('trigger notes: read on the shared manual, and declined (§2.1/#334)', 
     expect(device.recipes).toBe(liveIII.recipes)
   })
 
+  /**
+   * Invariant 2/#196. **Why this side of the borrow needs no retargeting, stated rather than
+   * assumed.** The One G2 rewrites every citation because it is documented by a different book.
+   * This box is not: `MPC Live III / MPC XL User Guide v3.7` is one document covering both, and
+   * the reference is sound only for as long as that stays true.
+   *
+   * So the check is the manual title, and it is the whole argument in one line. A Live III
+   * citation naming any other document would reach an XL reader unretargeted and unremarked —
+   * `shared()` guards facts that stop being carried, not facts that change underneath it.
+   *
+   * #345 is the first change to lean on this: four recipes authored on the sibling appear here
+   * with no code written in this folder at all, which is what invariant 2 buys and what this test
+   * keeps honest.
+   */
+  it('shares one document with the sibling, which is what lets the citations come across unchanged', () => {
+    expect(device.manual?.title).toBe(liveIII.manual?.title)
+    expect(device.manual?.title).toContain('MPC XL')
+    for (const recipe of device.recipes) {
+      for (const param of recipe.params) {
+        const verified =
+          param.kind === 'numeric'
+            ? param.range.verified
+            : param.kind === 'enum'
+              ? param.options.verified
+              : undefined
+        if (verified === undefined || verified === false) continue
+        expect(verified.source, `${recipe.id} / ${param.name}`).toContain(
+          device.manual?.title ?? '(no manual)',
+        )
+      }
+    }
+    // #345's four, named so that losing them here is a failure rather than a smaller number.
+    expect(device.recipes.map((r) => r.id)).toEqual(
+      expect.arrayContaining(['mpc-acid-hard', 'mpc-sweep-soft', 'mpc-tom-bright', 'mpc-tom-dark']),
+    )
+  })
+
   it('stays off the library roster of boxes that author one', () => {
     const authoring = DEVICES.filter((d) => d.voices.some((v) => v.triggerNote !== undefined))
     expect(authoring.map((d) => d.id)).not.toContain('akai-mpc-xl')
@@ -117,18 +154,19 @@ describe('trigger notes: read on the shared manual, and declined (§2.1/#334)', 
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 246 is #334's figure for this device and it is expected to stay put, because nothing here is
-   * a gap to close: a pad part is addressed by pad, and a plugin part has no note this manual
-   * states. The number moves when a direction gains or loses a part, and a diff is a prompt to
-   * re-read the head note rather than a failure. What must not move is the relationship — no part
-   * ever gets a `trigger`, because no pool has a note to give one.
+   * 258 is #334's figure for this device and none of it is a gap to close: a pad part is
+   * addressed by pad, and a plugin part has no note this manual states. The number moves when a
+   * direction gains or loses a part **or when this box gains a recipe** — it was 246 until #345
+   * authored `tom`, whose twelve parts had been going nowhere. A diff is a prompt to re-read the
+   * head note rather than a failure. What must not move is the relationship: no part ever gets a
+   * `trigger`, because no pool has a note to give one.
    */
-  it('leaves 246 grid parts blank, and pins where they are', () => {
+  it('leaves 258 grid parts blank, and pins where they are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(270)
+    expect(grid.length).toBe(282)
     const blank = grid.filter((g) => g.kind === 'none')
-    expect(blank.length).toBe(246)
+    expect(blank.length).toBe(258)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -139,7 +177,7 @@ describe('trigger notes: read on the shared manual, and declined (§2.1/#334)', 
     const byPool = new Map<string, number>()
     for (const g of blank) byPool.set(g.pool, (byPool.get(g.pool) ?? 0) + 1)
     expect([...byPool].sort()).toEqual([
-      ['mono-track', 144],
+      ['mono-track', 156],
       ['pad', 96],
       ['poly-track', 6],
     ])
@@ -173,6 +211,7 @@ describe('trigger notes: read on the shared manual, and declined (§2.1/#334)', 
       ['open-hat', 18],
       ['rim', 18],
       ['snare', 18],
+      ['tom', 12],
       ['arp', 6],
       ['impact', 6],
       ['noise', 6],
@@ -186,11 +225,13 @@ describe('trigger notes: read on the shared manual, and declined (§2.1/#334)', 
     // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
     // produces no sustained part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(132)
+    expect(hooked.length).toBe(138)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(18)
+    expect(noPattern.length).toBe(30)
     expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/sweep',
       'ambient-dub/texture',
+      'generative-drift/sweep',
       'hip-hop/texture',
       'industrial-techno/riser',
     ])

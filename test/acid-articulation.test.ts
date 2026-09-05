@@ -395,6 +395,28 @@ const AUDIT: readonly (readonly [
     // one patch (§2.3/#25) and `guideFor` knows it.
     ['polyend-tracker-mini', 'tm-acid-dirty-sample', 'bound', 'bound', 'grit'],
     ['polyend-tracker-mini', 'tm-acid-dirty-synth', 'bound', 'bound', 'grit'],
+
+    /*
+     * **One recipe, three boxes, and three rows — the opposite case to the Tracker Mini's pair.**
+     * Those two are one patch written twice on one device; these are one record read by three
+     * devices (invariant 2/#196). `akai-mpc-xl` takes the Live III's recipe array by reference and
+     * `akai-mpc-one-g2` maps it through `retargetRecipe`, so the audit has to render three guides
+     * to check three accounts, and `patchOf` keys on the device as well as the recipe.
+     *
+     * The One G2's row is the one that can fail alone, and its `**Slide:**` sentence is why:
+     * `routing` is prose the reader is shown, it names a page, and until #345 nothing retargeted
+     * it. On that box this sentence has to arrive citing v3.9 p.186 rather than the sibling's
+     * v3.7 p.205 — and the guide is where that is visible, which is what this table renders.
+     *
+     * `bound, stated`, and the split is the box's own. The accent is a lane the manual documents
+     * per step; a slide is not — `PER_STEP` on this device is velocity, note length, probability
+     * and automation — so the slide is Bassline's `Glide Time` with `Env Retrigger` `Off`, said in
+     * prose beside the settings that make it. The Digitone II's row two families up is the same
+     * shape for the same reason: a legato setting plus notes long enough to run into the next.
+     */
+    ['akai-mpc-live-iii', 'mpc-acid-hard', 'bound', 'stated', 'neutral'],
+    ['akai-mpc-xl', 'mpc-acid-hard', 'bound', 'stated', 'neutral'],
+    ['akai-mpc-one-g2', 'mpc-acid-hard', 'bound', 'stated', 'neutral'],
   ]
 
 /**
@@ -454,7 +476,7 @@ describe('every acid recipe accounts for the accent and the slide (#283)', () =>
       d.recipes.filter((r) => r.role === 'acid').map((r) => r.id),
     )
     expect([...AUDIT.map((row) => row[1])].sort()).toEqual([...shipped].sort())
-    expect(shipped).toHaveLength(35)
+    expect(shipped).toHaveLength(38)
   })
 
   it.each(AUDIT)('%s / %s accounts for both gestures in the manifest', (deviceId, recipeId, accent, slide) => {
@@ -500,7 +522,7 @@ describe('every acid recipe accounts for the accent and the slide (#283)', () =>
     }
   })
 
-  it('renders all 35, from three knob positions', () => {
+  it('renders all 38, from three knob positions', () => {
     // The whole library reachable from one direction, which it was not while `r-acid` asked for
     // `dirty`: force is the one character axis no mood knob moves, so the two `hard` recipes could
     // not be selected at any setting and the audit had two rows it could only check on paper.

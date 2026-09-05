@@ -387,6 +387,16 @@ const TS_SHAPE_1 = ['Triangle', 'Saw', 'Square', 'Pulse'] as const
 const TS_SHAPE_2 = ['Noise', 'Saw', 'Square', 'Pulse'] as const
 /** p.518. The manual's own spelling, full stop after `Square` included. */
 const TS_LFO_SHAPE = ['Sine', 'Square', 'Saw Up', 'Saw Down', 'Pump', 'S&H', 'Drift'] as const
+/**
+ * p.517, `Envelope 3`'s own destination list. It is **not** the LFO's and not the modulation
+ * matrix's: the filter is reachable from those two (`LPF`) and is absent from this one, which is
+ * why a sweep on this box moves the cutoff with the Filter Envelope and uses Envelope 3 for
+ * whatever moves beside it. Transcribed as printed, `Osc1` without its space included.
+ */
+const TS_ENV3_DEST = [
+  'Off', 'Pitch', 'Osc 2 Pitch', 'LFO 1/2 Rate', 'Osc1 Quad Det.', 'Osc 1/2 Shape',
+  'Osc 1/2 Level', 'Ring Level',
+] as const
 /** p.518, LFO 1 only. LFO 2 has a different and longer destination list on the same page. */
 const TS_LFO1_DEST = ['Off', 'Pitch', 'Filter', 'Level', 'Pan'] as const
 /** p.396, AIR Reverb early-reflection type. */
@@ -483,6 +493,8 @@ const dsTransAttack = (v: number, mood?: MoodOffset[]) =>
   num('Transient Attack', v, { min: -100, max: 100 }, 432, { unit: '%', ...(mood ? { mood } : {}) })
 const dsTransSustain = (v: number, mood?: MoodOffset[]) =>
   num('Transient Sustain', v, { min: -100, max: 100 }, 432, { unit: '%', ...(mood ? { mood } : {}) })
+const dsTransShape = (v: number, mood?: MoodOffset[]) =>
+  num('Transient Shape', v, { min: 0, max: 100 }, 432, { unit: '%', ...(mood ? { mood } : {}) })
 const dsDistDrive = (v: number, mood?: MoodOffset[]) =>
   num('Distortion Drive', v, { min: 0, max: 60 }, 432, { unit: 'dB', ...(mood ? { mood } : {}) })
 const dsDistMix = (v: number) => num('Distortion Mix', v, { min: 0, max: 100 }, 432, { unit: '%' })
@@ -547,6 +559,13 @@ const blFilterControl = (v: number) =>
     unit: '%',
     note: 'How far velocity opens the filter',
   })
+/**
+ * p.429: *"Sets whether the envelope will retrigger when a note is played while another note is
+ * being held."* `Off` is what makes a slide a slide rather than two notes, and the sentence
+ * states its own precondition — the notes have to overlap — so a recipe setting it owes the
+ * reader an articulation that supplies the overlap.
+ */
+const blEnvRetrigger = (v: (typeof OFF_ON)[number]) => pick('Env Retrigger', v, OFF_ON, 429)
 
 /**
  * TubeSynth's Oscillator tab (p.515). **`Fine` is never authored without `Octave` beside it**:
@@ -597,6 +616,24 @@ const tsEnv = (
   })
 const tsSustain = (which: 'Amp Sustain' | 'Filter Sustain', v: number, mood?: MoodOffset[]) =>
   num(which, v, { min: 0, max: 100 }, 517, { unit: '%', ...(mood ? { mood } : {}) })
+/**
+ * TubeSynth's third envelope (p.517), which is a modulation envelope rather than a second amp or
+ * filter one: it has a `Destination` of its own and two slopes, `Slope Hold` for *"when a note is
+ * held"* and `Slope Rel` for when it is released. That first one is a gesture that lasts as long
+ * as the note does, which is the shape a drawn sweep has and the shape an LFO does not — see
+ * `mpc-sweep-soft`.
+ */
+const tsEnv3Dest = (v: (typeof TS_ENV3_DEST)[number]) =>
+  pick('Envelope 3 Destination', v, TS_ENV3_DEST, 517)
+const tsEnv3StartLevel = (v: number) =>
+  num('Envelope 3 Start Level', v, { min: 0, max: 100 }, 517, { unit: '%' })
+const tsEnv3StartTime = (v: number) =>
+  num('Envelope 3 Start Time', v, { min: 0, max: 5000 }, 517, { unit: 'ms' })
+const tsEnv3SlopeHold = (v: number, mood?: MoodOffset[]) =>
+  num('Envelope 3 Slope Hold', v, { min: -100, max: 100 }, 517, {
+    unit: '%',
+    ...(mood ? { mood } : {}),
+  })
 /** TubeSynth's LFO tab (p.518). `Rate` carries `Sync`, which is what chooses its scale. */
 const tsLfoShape = (v: (typeof TS_LFO_SHAPE)[number]) => pick('LFO 1 Shape', v, TS_LFO_SHAPE, 518)
 const tsLfoDest = (v: (typeof TS_LFO1_DEST)[number]) => pick('LFO 1 Destination', v, TS_LFO1_DEST, 518)
@@ -709,8 +746,8 @@ function art(
 // ---------------------------------------------------------------------------
 
 /**
- * Twenty. Thirteen are plugin tracks with cited numbers; seven are drum-track pads, where the
- * manual prints enumerations and no ranges, so they read as a chain of mode choices in the
+ * Twenty-four. Seventeen are plugin tracks with cited numbers; seven are drum-track pads, where
+ * the manual prints enumerations and no ranges, so they read as a chain of mode choices in the
  * Digitakt II's manner. A `pad` recipe and a `track` recipe for the same part are two genuinely
  * different pieces of sound design on this box rather than one written twice, which is why both
  * regimes are authored at all.
@@ -719,7 +756,7 @@ function art(
  * requested for its role by any shipped direction.** Role coverage is explicitly not a target
  * (§3), and these four could not be selected as authored:
  *
- *     mpc-acid-dirty    `acid` is requested by no direction at all
+ *     mpc-acid-dirty    `acid` was requested by no direction at all
  *     mpc-sweep-dark    `sweep` is only ever asked `soft`
  *     mpc-tom-soft      `tom` is only ever asked `bright` or `dark`
  *     mpc-stab-dirty    `stab` is only ever asked `hard` or `clean`
@@ -736,6 +773,38 @@ function art(
  * that plainly makes one; `mpc-vox-chop-bright` is asked `dirty`, and it stays because it carries
  * the only cited preparation procedure in the manifest (Chop Mode, p.304). §3.5's fallback means
  * an approximate character is still a usable answer; a role nothing asks for is not.
+ *
+ * ## The four #345 filled, and the cut list is why they were missing
+ *
+ * #345 counts roles a box's `voices` declare and no recipe serves. This one declared `acid`,
+ * `sweep` and `tom` on the plugin pools and served none of the three — and the paragraph above
+ * is the whole explanation. **The cut list removed the wrong character of each, and nobody then
+ * authored the right one.** So the gap was never a judgement that an MPC cannot play a tom; it
+ * was a rule applied once, correctly, and left half-finished.
+ *
+ * Re-running the same rule against the library as it stands now names the four:
+ *
+ *     mpc-acid-hard      `acid-lineage` asks acid/hard
+ *     mpc-sweep-soft     `ambient-dub` and `generative-drift` ask sweep/soft
+ *     mpc-tom-bright     `major-key-electro` asks tom/bright
+ *     mpc-tom-dark       `weave` asks tom/dark
+ *
+ * **`acid` moved, and that is the reason to re-run a rule rather than trust its record.** The
+ * line above said acid *"is requested by no direction at all"*, and it was true when written:
+ * `acid-lineage` landed afterwards (#287). Nothing failed in between — an unserved role is
+ * silent by design (invariant 5) — which is exactly why #345 had to go and count.
+ *
+ * All four land on the plugin pools rather than on `pad`, and the split is the pools' own: three
+ * are struck and want DrumSynth's and Bassline's printed ranges, and `sweep` sustains, which a
+ * pad can be made to do (`mpc-texture-soft`) but not with any *movement* a page prints a range
+ * for — a pad's filter opening is a `Low Pass` Drum FX whose knobs the manual leaves unbounded
+ * (p.227). A sweep authored there would have had nothing citable in the only part that matters.
+ *
+ * **Two other boxes get these four with no further authoring** (invariant 2/#196). `akai-mpc-xl`
+ * reads this array directly, and it is the same manual; `akai-mpc-one-g2` maps every one through
+ * `retargetRecipe`, so each page below has to be in that manifest's `PAGES` table or its build
+ * fails. Every page these four cite was already there — and every one was opened in v3.9 as well
+ * as here, because the table guards page *numbers* and not what is printed on them.
  */
 const recipes: Recipe[] = [
   // --- DrumSynth on plugin tracks: percussion with real printed ranges ---------------------
@@ -841,6 +910,50 @@ const recipes: Recipe[] = [
     ],
     articulation: [art('offbeat', { velocity: 96 }, 'step-velocity')],
   },
+  {
+    id: 'mpc-tom-bright',
+    role: 'tom',
+    character: 'bright',
+    voice: 'mono-track',
+    title: 'DrumSynth Tom, skin forward and the high band left open',
+    verified: false,
+    params: [
+      trackType('Plugin'), plugin('DrumSynth'), drumType('Tom'),
+      dsVelocity(50), dsGain(-6),
+      dsTransAttack(35, [{ axis: 'density', amount: -20 }]),
+      dsTransShape(62),
+      dsLowFreq(180), dsLowGain(2, [{ axis: 'darkness', amount: 3 }]),
+      dsHighFreq(7000), dsHighGain(3, [{ axis: 'darkness', amount: -8 }]),
+      dsDistHighCut(16000, [{ axis: 'darkness', amount: -7000 }]),
+      dsRatio(3), dsCompAttack(12), dsCompThreshold(-16),
+    ],
+    articulation: [
+      art('fill', { velocity: 118 }, 'step-velocity'),
+      art('accent', { velocity: 122 }, 'step-velocity'),
+    ],
+  },
+  {
+    id: 'mpc-tom-dark',
+    role: 'tom',
+    character: 'dark',
+    voice: 'mono-track',
+    title: 'DrumSynth Tom tuned low, transient pulled back and the shell let ring',
+    verified: false,
+    params: [
+      trackType('Plugin'), plugin('DrumSynth'), drumType('Tom'),
+      dsVelocity(40), dsGain(-4),
+      dsTransAttack(-15), dsTransSustain(20, [{ axis: 'density', amount: -25 }]),
+      dsTransShape(30),
+      dsLowFreq(95), dsLowGain(5, [{ axis: 'darkness', amount: 4 }]),
+      dsHighFreq(5000), dsHighGain(-4, [{ axis: 'darkness', amount: -6 }]),
+      dsDistDrive(3, [{ axis: 'grit', amount: 16 }]), dsDistMix(18),
+      dsDistHighCut(6000, [{ axis: 'darkness', amount: -2500 }]),
+    ],
+    articulation: [
+      art('fill', { velocity: 108 }, 'step-velocity'),
+      art('downbeat', { velocity: 112 }, 'step-velocity'),
+    ],
+  },
   // --- Bassline on plugin tracks: the low end -----------------------------------------------
   {
     id: 'mpc-sub-dark',
@@ -876,6 +989,57 @@ const recipes: Recipe[] = [
       blFilterControl(35),
     ],
     articulation: [art('downbeat', { velocity: 112, 'note-length': 88 }, 'step-note-length')],
+  },
+  {
+    id: 'mpc-acid-hard',
+    role: 'acid',
+    character: 'hard',
+    voice: 'mono-track',
+    title: 'Bassline square, resonance up, and the envelope kept open across a slide',
+    verified: false,
+    /**
+     * **The slide is three settings, and two of them are useless without the third.** `Glide
+     * Time` moves the pitch from one note to the next (p.428) and `Env Retrigger` `Off` stops the
+     * filter and amp envelopes restarting underneath it — but p.429 states its own precondition,
+     * *"when a note is played while another note is being held"*, so neither does anything unless
+     * the notes overlap. The `downbeat` articulation is what supplies the overlap, and it is the
+     * one value here a reader is most likely to move: `Length` is *"the length of the note event
+     * in ticks"* (p.205) and no page in this manual gives the ticks in a step, so the number
+     * below is a starting point (§3.2) to be lengthened until the next note begins under this
+     * one — which is the moment the slide appears.
+     *
+     * Beside `mpc-bass-mid-dirty`, which is the same plugin doing the opposite job: that one is
+     * an `Overdrive` with the resonance low and the filter envelope moderate, this one is `Clip`
+     * with the resonance near the top and the filter almost entirely envelope-driven.
+     */
+    params: [
+      trackType('Plugin'), plugin('Bassline'),
+      blWave('Square'), blSub(12), blFifth(0),
+      blCutoff(300, [{ axis: 'darkness', amount: -130 }]),
+      blHpCutoff(45),
+      blReso(76, [{ axis: 'grit', amount: 12 }]),
+      blFilterEnv(84),
+      blAmpDecay(28, [{ axis: 'density', amount: -10 }]), blFilterDecay(24),
+      blGlide(85), blEnvRetrigger('Off'),
+      blDriveType('Clip'), blDriveAmount(32, [{ axis: 'grit', amount: 34 }]),
+      blFilterControl(72),
+    ],
+    articulation: [
+      art('downbeat', { 'note-length': 30 }, 'step-note-length'),
+      art('accent', { velocity: 124 }, 'step-velocity'),
+      art('ghost', { velocity: 58, probability: 70 }, 'event-probability'),
+    ],
+    /**
+     * §3.3/#283. The accent is a lane and the slide is not, so only one of the two can be bound.
+     * A per-step portamento does not exist on this box — `PER_STEP` above is the whole list the
+     * manual documents — so the slide is said in prose, beside the settings that make it, which
+     * is what #283 asks of a box that cannot mark a slid step.
+     */
+    routing:
+      '**Slide:** `Glide Time 85 ms` and `Env Retrigger Off` above, plus the `note-length` on ' +
+      'the downbeat below. There is no portamento lane on a step here — p.205 gives a note event ' +
+      'a Length, a Prob and a Velocity — so the slide is the plugin holding its envelopes open ' +
+      'across two notes that overlap, and the note length is what makes them overlap',
   },
   // --- TubeSynth on plugin tracks: everything tonal -----------------------------------------
   {
@@ -988,6 +1152,54 @@ const recipes: Recipe[] = [
       tsLfoDepth(18, [{ axis: 'grit', amount: 14 }]),
     ],
     articulation: [art('last-hit', { velocity: 127, 'note-length': 384 }, 'step-note-length')],
+  },
+  {
+    id: 'mpc-sweep-soft',
+    role: 'sweep',
+    character: 'soft',
+    voice: 'poly-track',
+    title: 'TubeSynth sweep: filter opening across a held note, the detune widening with it',
+    verified: false,
+    /**
+     * **A sweep is one gesture, so it is an envelope here and not an LFO.** An LFO on the cutoff
+     * repeats at whatever rate it is set to; a sweep happens once and lasts as long as the part
+     * does. The Filter Envelope is the control that says that on this box — `Attack` runs to
+     * 100 s (p.517) and `Filter Sustain` at 100% holds the filter open once it arrives — and
+     * `Envelope 3`'s `Slope Hold` is the same shape on a second destination, its page's own
+     * words being *"added to the Destination when a note is held"*.
+     *
+     * That is also what separates it from `mpc-riser-bright`, which is the other long gesture in
+     * this manifest: the riser is **pitch**, free-running LFO 1 on `Saw Up`, and it ends the
+     * section it is in (`last-hit`). This one never touches pitch and never ends anything.
+     *
+     * **`Quad` `On` is not decoration here, it is what makes the destination exist.** Envelope 3
+     * is pointed at `Osc1 Quad Det.`, and p.515 describes `Detune` as *"tuning of the additional
+     * Quad voices"* — with `Quad` `Off` there are no additional voices and the envelope moves
+     * nothing. The pairing travels in the recipe for the same reason a switch travels with the
+     * scale it selects.
+     *
+     * **No articulation, and the reason is in the directions rather than in the box.** Neither
+     * direction that asks for a `sweep` draws a step pattern for one, and both say why in their
+     * own prose: *"a sweep is one long gesture"* (`ambient-dub`), *"a sweep is one gesture across
+     * a boundary"* (`generative-drift`). So the part resolves with no variant in any section, and
+     * a slot articulation here would be a value the reader is given that no hit ever carries.
+     */
+    params: [
+      trackType('Plugin'), plugin('TubeSynth'),
+      tsOctave1("8'"), tsFine1(0), tsShape1('Triangle'), tsQuad('On'), tsDetune(34),
+      tsOctave2("16'"), tsShape2('Saw'), tsMicroDetune(14), tsSubShape('Triangle'),
+      tsLevel('Osc 1', 62), tsLevel('Osc 2', 48), tsLevel('Sub Osc', 26),
+      tsCutoff(16, [{ axis: 'darkness', amount: -8 }]), tsReso(20), tsSlope(24),
+      tsFilterEnv(100), tsKeytrack(10),
+      tsEnv('Filter Attack', 9000, [{ axis: 'density', amount: -3000 }]),
+      tsEnv('Filter Decay', 6000), tsSustain('Filter Sustain', 100),
+      tsEnv('Amp Attack', 2000), tsEnv('Amp Decay', 5000),
+      tsSustain('Amp Sustain', 94), tsEnv('Amp Release', 3600),
+      tsEnv3Dest('Osc1 Quad Det.'), tsEnv3StartLevel(0), tsEnv3StartTime(0),
+      tsEnv3SlopeHold(55, [{ axis: 'space', amount: 20 }]),
+      delayReverbFx('AIR Reverb'), reverbType('Large Chamber'), reverbPreDelay(45),
+      reverbMix(38, [{ axis: 'space', amount: 26 }]),
+    ],
   },
   // --- Drum-track pads: samples, and the enums the manual actually prints for them ----------
   {

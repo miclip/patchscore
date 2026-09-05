@@ -9,17 +9,139 @@ import {
   type ResolvedAssignment,
   type Role,
 } from '../lib/core/index'
-import { device } from '../lib/devices/akai-mpc-one-g2/index'
+import { CONFIRMED, MOVED, PAGES, device } from '../lib/devices/akai-mpc-one-g2/index'
 import { device as liveIII } from '../lib/devices/akai-mpc-live-iii/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
+
+/**
+ * Invariant 2/#196. **The borrow, and the two things that can go wrong with it.**
+ *
+ * This manifest does not author its recipes. It takes the MPC Live III's and moves every citation
+ * onto its own document, which is a *different* document — `MPC Standalone OS User Guide v3.9`,
+ * not the v3.7 guide that covers the Live III and the XL. Two failures follow from that and only
+ * one of them was guarded before #345:
+ *
+ *  - **A page nobody matched.** `pageInV39` throws, and has since the folder landed.
+ *  - **A page that *is* matched, read for a control v3.9 prints differently or not at all.** The
+ *    citation retargets cleanly and the reader is given a number from the wrong document. Six of
+ *    the borrowed pages recompose between the two printings; v3.7 p.396 is an `AIR Reverb`
+ *    section that shares v3.9 p.390 with an `AIR Non-Lin Reverb` whose `Pre-Delay`, `Mix` and
+ *    `Time` sit right beside it under different values. `CONFIRMED` is that second guard.
+ *
+ * Both tests below run in both directions on purpose. Coverage alone would pass a table that had
+ * been widened ahead of the reading it stands for.
+ */
+describe('the borrow is guarded on content as well as on page number (invariant 2/#196)', () => {
+  /** Every `(v3.7 page, parameter name)` the sibling's recipes actually cite. */
+  function citedPairs(): { page: number; name: string }[] {
+    const out = new Map<string, { page: number; name: string }>()
+    for (const recipe of liveIII.recipes) {
+      for (const param of recipe.params) {
+        const verified =
+          param.kind === 'numeric'
+            ? param.range.verified
+            : param.kind === 'enum'
+              ? param.options.verified
+              : undefined
+        if (verified === undefined || verified === false || verified.kind !== 'manual') continue
+        const page = Number(/, p\.(\d+)$/.exec(verified.source)?.[1])
+        // A span (`pp.428-521`) goes through `SPANS` rather than through a page, so it is not
+        // this table's business and must not be counted against it.
+        if (Number.isNaN(page)) continue
+        out.set(`${String(page)}:${param.name}`, { page, name: param.name })
+      }
+    }
+    return [...out.values()]
+  }
+
+  it('confirms every control the sibling reads off a borrowed page', () => {
+    const unconfirmed = citedPairs()
+      .filter(({ page, name }) => !(CONFIRMED[page] ?? []).includes(name))
+      .map(({ page, name }) => `p.${String(page)} ${name}`)
+      .sort()
+    // This can only fail if the manifest imported successfully and then disagreed with itself:
+    // `pageForParam` throws on the same condition. Asserted anyway, because a change that makes
+    // the throw unreachable should fail here rather than pass silently.
+    expect(unconfirmed).toEqual([])
+  })
+
+  it('confirms nothing the sibling does not read, so the table cannot be widened ahead of a reading', () => {
+    const cited = new Set(citedPairs().map(({ page, name }) => `${String(page)}:${name}`))
+    const dead: string[] = []
+    for (const [page, names] of Object.entries(CONFIRMED)) {
+      for (const name of names) if (!cited.has(`${page}:${name}`)) dead.push(`p.${page} ${name}`)
+    }
+    expect(dead.sort()).toEqual([])
+  })
+
+  /**
+   * **A page number in prose is not tied to its own parameter's page**, so the obvious check is
+   * the wrong one. `insertFx`'s note says *"p.87: each pad, keygroup, track, submix or output
+   * takes four"* on a control cited to p.392 — a true sentence about a different page, and
+   * `retargetNote` moves it correctly to p.88. What every prose page *must* be is a page this
+   * mapping produces.
+   *
+   * **One number cannot be caught this way and it is cheaper to name it than to pretend.** The
+   * two documents' page spaces overlap at exactly one point in this table: v3.7 p.211 is a drum
+   * pad's Global tab, and v3.9 p.211 is where v3.7 p.227's articulations landed. A note stuck at
+   * `p.211` would pass here. Everything else in both spaces is caught, and the `CONFIRMED` table
+   * above is the guard that does not depend on numbers at all.
+   */
+  it('leaves every page number in prose inside this document', () => {
+    const v37 = 'MPC Live III / MPC XL User Guide v3.7'
+    const ours = new Set([...Object.values(PAGES), ...Object.values(MOVED)])
+    for (const recipe of device.recipes) {
+      // The whole recipe, not only the params. `routing` is the field that made this necessary:
+      // it is prose a reader sees, it names pages, and `retargetRecipe` did not touch it until
+      // #345 put a `**Slide:**` sentence in one.
+      const text = JSON.stringify(recipe)
+      expect(text, recipe.id).not.toContain(v37)
+      for (const [, digits] of text.matchAll(/p\.(\d+)/g)) {
+        expect(
+          ours.has(Number(digits)),
+          `${recipe.id} names p.${digits}, which is no page this mapping produces`,
+        ).toBe(true)
+      }
+    }
+  })
+
+  it('cites this box\'s own document on every value it prints', () => {
+    for (const recipe of device.recipes) {
+      for (const param of recipe.params) {
+        const verified =
+          param.kind === 'numeric'
+            ? param.range.verified
+            : param.kind === 'enum'
+              ? param.options.verified
+              : undefined
+        if (verified === undefined || verified === false) continue
+        expect(verified.source, `${recipe.id} / ${param.name}`).toMatch(
+          /^MPC Standalone OS User Guide v3\.9, /,
+        )
+      }
+      const prep = recipe.sourceAudio?.prep
+      if (prep !== undefined && prep.verified !== false) {
+        expect(prep.verified.source, recipe.id).toMatch(/^MPC Standalone OS User Guide v3\.9, /)
+      }
+    }
+  })
+
+  it('takes every one of the sibling\'s recipes, dropping none and inventing none', () => {
+    expect(device.recipes.map((r) => r.id)).toEqual(liveIII.recipes.map((r) => r.id))
+    // #345's four included, which is the whole reason all three MPCs closed in one change.
+    expect(device.recipes.map((r) => r.id)).toEqual(
+      expect.arrayContaining(['mpc-acid-hard', 'mpc-sweep-soft', 'mpc-tom-bright', 'mpc-tom-dark']),
+    )
+  })
+})
 
 /**
  * §2.1/#334. **This box authors no trigger note, and the reading is this document's rather than
  * the sibling's.**
  *
  * #334 counts the parts whose grid says which steps to hit and never what to write on them. The
- * One G2 has 246, and `MPC Standalone OS User Guide v3.9` answers them in two halves:
+ * One G2 has 258, and `MPC Standalone OS User Guide v3.9` answers them in two halves:
  *
  *  - **`pad`** — p.181 selects the pad *before* its steps (*"select the pad whose steps you want
  *    to enter or delete"*), p.186's List Edit shows a drum event as a pad number, and p.167's
@@ -126,12 +248,12 @@ describe('trigger notes: read on v3.9, and declined (§2.1/#334)', () => {
    * re-read the head note rather than a failure. What must not move is the relationship — no part
    * ever gets a `trigger`, because no pool has a note to give one.
    */
-  it('leaves 246 grid parts blank, and pins where they are', () => {
+  it('leaves 258 grid parts blank, and pins where they are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(270)
+    expect(grid.length).toBe(282)
     const blank = grid.filter((g) => g.kind === 'none')
-    expect(blank.length).toBe(246)
+    expect(blank.length).toBe(258)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -142,7 +264,7 @@ describe('trigger notes: read on v3.9, and declined (§2.1/#334)', () => {
     const byPool = new Map<string, number>()
     for (const g of blank) byPool.set(g.pool, (byPool.get(g.pool) ?? 0) + 1)
     expect([...byPool].sort()).toEqual([
-      ['mono-track', 144],
+      ['mono-track', 156],
       ['pad', 96],
       ['poly-track', 6],
     ])
@@ -176,6 +298,7 @@ describe('trigger notes: read on v3.9, and declined (§2.1/#334)', () => {
       ['open-hat', 18],
       ['rim', 18],
       ['snare', 18],
+      ['tom', 12],
       ['arp', 6],
       ['impact', 6],
       ['noise', 6],
@@ -189,11 +312,13 @@ describe('trigger notes: read on v3.9, and declined (§2.1/#334)', () => {
     // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
     // produces no sustained part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(132)
+    expect(hooked.length).toBe(138)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(18)
+    expect(noPattern.length).toBe(30)
     expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/sweep',
       'ambient-dub/texture',
+      'generative-drift/sweep',
       'hip-hop/texture',
       'industrial-techno/riser',
     ])

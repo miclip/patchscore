@@ -168,7 +168,7 @@ function cites(pages: string): Cite {
  * operation chapters run about one page later in v3.9 and the plugin appendix about eighty
  * earlier, and within the plugin appendix the order of the instruments changed.
  */
-const PAGES: Record<number, number> = {
+export const PAGES: Record<number, number> = {
   44: 45, //   Track types — the six, and "up to 128 tracks"
   75: 76, //   Timing Correct: "the amount of swing from 50% to 75%"
   87: 88, //   Insert effects: four slots per pad, keygroup, track, submix or output
@@ -196,11 +196,82 @@ const PAGES: Record<number, number> = {
 }
 
 /**
+ * **What is printed on each of those pages, which `PAGES` does not check.** Keyed by the v3.7
+ * page, one entry per parameter the sibling's recipes cite to it.
+ *
+ * `pageInV39` guards page *numbers*: it throws when the sibling cites a page nobody has matched.
+ * It cannot throw when the sibling cites a page that *is* matched and reads a control off it that
+ * v3.9 prints differently — or does not print at all.
+ *
+ * **That gap is not hypothetical on this document.** Twelve of the twenty-five borrowed pages
+ * recompose between the two printings, and the sharpest is v3.7 p.396: an `AIR Reverb` section
+ * that shares v3.9 p.390 with an `AIR Non-Lin Reverb` the earlier page did not carry, whose own
+ * `Pre-Delay`, `Time` and `Mix` sit directly above it under different values. A control read off
+ * the wrong one of those two tables retargets cleanly and is wrong, and nothing here would say so.
+ *
+ * So this table is the second half of the guard, and it fails **closed**: a parameter absent from
+ * it stops the build with the page to open. Adding an entry is therefore an instruction as much
+ * as a permission — open v3.9's page, find the control, and check the range or the option list
+ * that is printed beside it there rather than the one the sibling read.
+ *
+ * **Every one of the twenty-five pairs was compared when #345 authored four recipes against
+ * them**, by extracting both pages and diffing them: thirteen are identical, and of the twelve
+ * that differ the two the new recipes touch were opened and read. p.515 differs only in line
+ * wrapping and two words of prose (*"Finetuning"* for *"Fine tuning"*, *"Adjust"* for
+ * *"Adjusts"*), with no value, range or option list moved; p.396 is the reverb above, whose
+ * sixteen `Type` entries and three cited ranges are printed identically on v3.9 p.390.
+ *
+ * Exported so the test can assert this table against what the sibling actually cites — in both
+ * directions. An entry nothing reads is a page nobody checked sitting here looking checked.
+ */
+export const CONFIRMED: Record<number, readonly string[]> = {
+  44: ['Track Type'],
+  75: ['TC Swing'],
+  211: ['Global Fine', 'Global Semi'],
+  212: ['Layer Play', 'Mute Group', 'Pad Polyphony', 'Sample Play'],
+  217: ['Semi'],
+  219: ['Vel End', 'Vel Start'],
+  227: [
+    'Articulation Dynamics', 'Articulation Speed', 'Articulation Stereo', 'Drum FX 1', 'Drum FX 2',
+  ],
+  392: ['Insert 1', 'Insert 1 · Feedback', 'Insert 1 · Mix', 'Insert 1 · Sync'],
+  396: ['Insert 1 · Mix', 'Insert 1 · Pre-Delay', 'Insert 1 · Type'],
+  412: ['Insert 1'],
+  413: ['Insert 1 · Drive', 'Insert 1 · Mix', 'Insert 1 · Mode'],
+  414: ['Insert 1 · Bit Depth', 'Insert 1 · Sample Rate'],
+  428: [
+    'Amp Decay', 'Fifth', 'Filter Decay', 'Filter Env', 'Glide Time', 'HP Cutoff', 'LP Cutoff',
+    'Reso', 'Sub-Octave', 'Waveform',
+  ],
+  429: ['Drive Amount', 'Drive Type', 'Env Retrigger', 'Filter Control'],
+  431: ['Drum Type', 'Gain', 'Velocity'],
+  432: [
+    'Comp Attack', 'Comp Ratio', 'Comp Threshold', 'Distortion Drive', 'Distortion High Cut',
+    'Distortion Mix', 'EQ High Freq', 'EQ High Gain', 'EQ Low Freq', 'EQ Low Gain',
+    'Transient Attack', 'Transient Shape', 'Transient Sustain',
+  ],
+  515: [
+    'Detune', 'Micro Detune', 'Osc 1 Fine', 'Osc 1 Octave', 'Osc 1 Shape', 'Osc 2 Octave',
+    'Osc 2 Shape', 'Quad', 'Sub Osc Shape',
+  ],
+  516: [
+    'LP Cutoff', 'LP Env', 'LP Keytrack', 'LP Reso', 'LP Slope', 'Mixer Drive', 'Osc 1 Level',
+    'Osc 2 Level', 'Ring Mod Level', 'Sub Osc Level',
+  ],
+  517: [
+    'Amp Attack', 'Amp Decay', 'Amp Release', 'Amp Sustain', 'Envelope 3 Destination',
+    'Envelope 3 Slope Hold', 'Envelope 3 Start Level', 'Envelope 3 Start Time', 'Filter Attack',
+    'Filter Decay', 'Filter Sustain',
+  ],
+  518: ['LFO 1 Depth', 'LFO 1 Destination', 'LFO 1 Rate', 'LFO 1 Shape', 'LFO 1 Sync'],
+}
+
+/**
  * The parameters whose fact landed on a *different* v3.9 page from the rest of its v3.7 page,
  * keyed `<v3.7 page>:<parameter name>`. v3.9 breaks v3.7 p.212 in the middle of the drum pad's
  * Global tab: `Layer Play` finishes p.193 and these three open p.194.
  */
-const MOVED: Record<string, number> = {
+export const MOVED: Record<string, number> = {
   '212:Sample Play': 194,
   '212:Pad Polyphony': 194,
   '212:Mute Group': 194,
@@ -243,6 +314,24 @@ function pageInV39(page: number): number {
   return to
 }
 
+/**
+ * The v3.9 page for one *parameter's* citation, which is `pageInV39` plus the content check the
+ * page table cannot make. `MOVED` is consulted first because a parameter that changed page took
+ * its printing with it — `CONFIRMED` is keyed by the v3.7 page either way, which is the page the
+ * sibling actually names.
+ */
+function pageForParam(from: number, name: string): number {
+  const confirmed = CONFIRMED[from]
+  if (confirmed === undefined || !confirmed.includes(name)) {
+    throw new Error(
+      `the MPC Live III manifest reads '${name}' off ${SIBLING_MANUAL} p.${from}, and nobody has ` +
+        `checked what ${MANUAL} p.${String(MOVED[`${from}:${name}`] ?? PAGES[from] ?? from)} ` +
+        `prints for it — open that page, then add '${name}' to CONFIRMED[${String(from)}]`,
+    )
+  }
+  return MOVED[`${from}:${name}`] ?? pageInV39(from)
+}
+
 /** The page or span a sibling citation names, or `undefined` if there is no citation at all. */
 function refOf(v: Verified | undefined): string | undefined {
   if (v === undefined || v === false) return undefined
@@ -279,7 +368,7 @@ function retargetParam(param: AuthoredParam): AuthoredParam {
     if (from !== undefined && Number.isNaN(from)) {
       throw new Error(`a numeric range cited to a span cannot be retargeted: ${param.name}, ${ref}`)
     }
-    const to = from === undefined ? undefined : (MOVED[`${from}:${param.name}`] ?? pageInV39(from))
+    const to = from === undefined ? undefined : pageForParam(from, param.name)
     return {
       ...param,
       range: { ...param.range, ...(to === undefined ? {} : { verified: cite(to) }) },
@@ -305,7 +394,7 @@ function retargetParam(param: AuthoredParam): AuthoredParam {
     }
     const from = Number(/^p\.(\d+)$/.exec(ref)?.[1])
     if (Number.isNaN(from)) throw new Error(`unrecognised citation on ${param.name}: ${ref}`)
-    const to = MOVED[`${from}:${param.name}`] ?? pageInV39(from)
+    const to = pageForParam(from, param.name)
     const dropped = DROPPED_OPTIONS[from] ?? []
     return {
       ...param,
@@ -320,22 +409,44 @@ function retargetParam(param: AuthoredParam): AuthoredParam {
   return { ...param, ...(param.note === undefined ? {} : { note: retargetNote(param.note) }) }
 }
 
-/** One recipe, params and preparation citation and all. Nothing else in a recipe carries a page. */
+/**
+ * One recipe, moved onto this document — **every string in it, not only the citations.**
+ *
+ * The narrower version of this function was wrong and #345 is what showed it. `routing` is prose
+ * a reader sees on the page, it names pages the way a `note` does, and nothing retargeted it: a
+ * `**Slide:**` sentence citing v3.7 p.205 would have printed a page of the wrong book under a
+ * heading on this box's own guide. `title`, `sourceAudio.need` and an articulation `hint` are the
+ * same class of field and are moved for the same reason, whether or not one carries a page today.
+ *
+ * `retargetNote` with no parameter is the right call for all of them: free prose is not tied to
+ * one control's page, so every `p.N` in it goes through `pageInV39` and an unmapped one throws.
+ */
 function retargetRecipe(recipe: Recipe): Recipe {
   const prep = recipe.sourceAudio?.prep
   return {
     ...recipe,
+    title: retargetNote(recipe.title),
+    ...(recipe.routing === undefined ? {} : { routing: retargetNote(recipe.routing) }),
+    ...(recipe.articulation === undefined
+      ? {}
+      : {
+          articulation: recipe.articulation.map((entry) =>
+            entry.hint === undefined ? entry : { ...entry, hint: retargetNote(entry.hint) },
+          ),
+        }),
     params: recipe.params.map(retargetParam),
     ...(recipe.sourceAudio === undefined
       ? {}
       : {
           sourceAudio: {
             ...recipe.sourceAudio,
+            need: retargetNote(recipe.sourceAudio.need),
             ...(prep === undefined
               ? {}
               : {
                   prep: {
                     ...prep,
+                    text: retargetNote(prep.text),
                     verified: (() => {
                       const ref = refOf(prep.verified)
                       if (ref === undefined) return prep.verified
