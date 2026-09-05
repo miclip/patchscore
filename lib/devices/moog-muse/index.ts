@@ -220,8 +220,9 @@ import { MUSE_PANEL } from './panel'
  * **So no range on this device cites Appendix A any more**, and the helpers that built that
  * citation went with the last caller. The appendix was never wrong about anything — CC 93 does
  * accept `0-127` — it was answering a question nobody at the machine is asking. What survives of
- * it is `midiCc` on the 39 controls that are still numbers, which is what a CC row is for: it
- * says which controller addresses a knob and asserts nothing about the scale beside it.
+ * it is `midiCc` on the 41 controls a CC row names, which is what such a row is for: it says which
+ * controller addresses a control and asserts nothing about the scale beside it. Since #414 that
+ * includes the two divisions, whose *kind* was never the reason they went without it.
  *
  * ## The three bipolar controls
  *
@@ -251,12 +252,14 @@ import { MUSE_PANEL } from './panel'
  * Appendix A row is still true — CC 67 still addresses FILTER 1 · CUTOFF — and it is what
  * identifies a control to anything automating it. What is gone is the *value* half of the
  * instruction: `Send MIDI CC 67 = 74` told a reader to send a number that is no longer the number
- * on the line, and sending it now lands somewhere unknown. `resolveParam` names the controller and
- * asserts no value.
+ * on the line, and sending it now lands somewhere unknown.
  *
- * The two `DELAY · TIME` knobs are the exception and only in where the number is written: an
- * `AuthoredEnumParam` has no `midiCc` field, so `division` puts CC 93 and 94 in the note itself.
- * See that helper for why authored prose is safe there and was not at #324.
+ * **And since #414 the number is only ever the typed field.** `resolveParam` used to append what
+ * was left of the instruction — `MIDI CC 67` — to `note`, which on a control with nothing else to
+ * say made a controller number the whole of its note. It composes nothing now, and how the number
+ * reaches a reader is decided where the guide is drawn. The two `DELAY · TIME` knobs came back
+ * into line at the same time: `AuthoredEnumParam` gained the field, so `division` authors prose
+ * and hands over CC 93 and 94 typed, exactly as every knob on the panel does.
  *
  * `RECIEVE CC` stays in `midiSetup()` for the same reason. p.111 gives it as `(ON/OFF. DEFAULT:
  * OFF)`, so a box out of the case ignores CC until it is switched on — which still matters to
@@ -602,8 +605,8 @@ type NumExtra = {
  * **`midiCc` is still declared and no longer carries a value.** The Appendix A row is unchanged
  * and CC 46 still addresses this control, so the number is worth keeping for anything automating
  * the box; what it cannot do any more is tell a reader what to send, because the number beside it
- * is a percentage and no page maps one onto the other. `resolveParam` writes `MIDI CC 46` and
- * stops there.
+ * is a percentage and no page maps one onto the other. Since #414 it stays a number on its own
+ * field — `resolveParam` writes no sentence, here or anywhere.
  */
 function cc(name: string, value: number, ccNumber: number, extra: NumExtra = {}): AuthoredParam {
   return percentParam(name, value, ccNumber, extra)
@@ -814,15 +817,15 @@ function cutoff(name: string, hz: number, ccNumber: number, extra: NumExtra = {}
  * intact: the option set is the claim somebody checked, and which division a general-purpose
  * stereo delay wants is taste, exactly as `DECAY 38` is taste.
  *
- * **The CC number is in the note rather than in `midiCc`, and that is a loss stated rather than
- * papered over.** `AuthoredEnumParam` has no `midiCc` field — nothing in the library has needed
- * one — so the resolver cannot compose the instruction for these two lines and this helper writes
- * it, in `midiInstruction`'s own wording so the reader sees one sentence shape down the page.
+ * **The CC number is typed, like every other control on this box.** It used to be written into
+ * the note by hand, because `AuthoredEnumParam` had no `midiCc` field and nothing in the library
+ * had needed one; #414 widened the field rather than leaving these two as the only notes in the
+ * library naming a controller. The note is now what a note is everywhere else here — something
+ * about the control the number cannot say, which for a stereo pair is how the two sides differ.
  *
- * What made authored MIDI prose dangerous at #324 was the **value** interpolated into it:
- * `Send MIDI CC 87 = 54` went stale the moment mood moved the number. There is no value here to
- * go stale. The sentence names a controller and stops, an enum takes no mood, and CC 93 could not
- * carry a division if it wanted to — which is the whole of what #346 found.
+ * CC 93 could not carry a division if it wanted to, which is the whole of what #346 found. That
+ * is a fact about the scale and not a reason to hide the controller: it is why nothing anywhere
+ * asserts what sending a value would do.
  */
 function division(name: string, value: string, ccNumber: number, note: string): AuthoredParam {
   return {
@@ -836,7 +839,8 @@ function division(name: string, value: string, ccNumber: number, note: string): 
     // One processor for the whole patch — see `sharedDelay`. Baked in rather than passed, because
     // there is no second kind of caller: these are the only two controls that take divisions.
     scope: 'song',
-    note: `${note} · MIDI CC ${ccNumber}`,
+    midiCc: ccNumber,
+    note,
   }
 }
 

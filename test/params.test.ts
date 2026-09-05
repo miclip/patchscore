@@ -147,6 +147,29 @@ describe('AuthoredParam union (§3.1)', () => {
     expect(AuthoredParamSchema.safeParse(numericParam({ step: 0 })).success).toBe(false)
   })
 
+  /**
+   * §3.1/#414. **A CC reaches an enum but not a text param**, and the asymmetry is the point.
+   *
+   * The field was numeric-only until the Muse's two `DELAY · TIME` controls were authored as
+   * divisions and had nowhere typed to put CC 93/94. A switch is a control on the panel and is
+   * as reachable over MIDI as a knob; a text param is a written instruction, so there is nothing
+   * for a controller number to address. `strictObject` is what enforces the second half.
+   */
+  it('lets an enum declare a CC and refuses one on a text param (#414)', () => {
+    expect(AuthoredParamSchema.safeParse(enumParam({ midiCc: 93 })).success).toBe(true)
+    expect(AuthoredParamSchema.safeParse(numericParam({ midiCc: 93 })).success).toBe(true)
+    expect(AuthoredParamSchema.safeParse(textParam({ midiCc: 93 })).success).toBe(false)
+  })
+
+  it('holds an enum’s CC to the MIDI range, exactly as a numeric’s', () => {
+    // Same schema on both branches, so the bounds cannot drift apart.
+    expect(AuthoredParamSchema.safeParse(enumParam({ midiCc: 0 })).success).toBe(true)
+    expect(AuthoredParamSchema.safeParse(enumParam({ midiCc: 127 })).success).toBe(true)
+    expect(AuthoredParamSchema.safeParse(enumParam({ midiCc: 128 })).success).toBe(false)
+    expect(AuthoredParamSchema.safeParse(enumParam({ midiCc: -1 })).success).toBe(false)
+    expect(AuthoredParamSchema.safeParse(enumParam({ midiCc: 12.5 })).success).toBe(false)
+  })
+
   it('lets any of the three kinds name the panel module it sits on', () => {
     // Shared across the union rather than numeric-only: a mode switch and a written instruction
     // sit on a panel block exactly as a knob does.

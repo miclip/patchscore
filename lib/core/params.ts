@@ -160,15 +160,18 @@ export type AuthoredNumericParam = {
   step?: number
   unit?: string
   /**
-   * §3.1/#324. **The MIDI CC this control answers to**, where a reader can set it exactly over
-   * MIDI. The *number* is authored; the instruction a reader follows is composed by the resolver,
-   * after mood, so it can never name a value the guide is not printing beside it.
+   * §3.1/#324, settled at #414. **The MIDI CC this control answers to** — the controller number
+   * that addresses it, where a reader driving the box from a sequencer needs one.
    *
-   * That composition is the whole reason this is a field rather than prose. The Muse's helper
-   * interpolated the **authored** value into a note — `Send MIDI CC 87 = 54` — which mood then
-   * moved to `36`, leaving a guide that printed `54 → 36` on the line and told the reader to send
-   * `54` underneath it. A typed number cannot go stale, because nothing has written the sentence
-   * down yet.
+   * A field rather than prose, and that has survived two narrowings of what the prose said. The
+   * Muse's helper first interpolated the **authored** value into a note — `Send MIDI CC 87 = 54` —
+   * which mood then moved to `36`, leaving a guide that printed `54 → 36` on the line and told the
+   * reader to send `54` underneath it. #324 moved the composition into the resolver, after mood.
+   * #349 took the value out of the sentence, because no page maps a CC value onto the scale the
+   * Muse's screen shows. #414 stopped composing a sentence at all: what was left was a bare
+   * `MIDI CC 87` occupying `note` on controls that had nothing else to say, and a note is for what
+   * the instruction cannot tell you. A typed number cannot go stale, and now nothing writes it
+   * down for it either — where it reaches a reader is a rendering decision.
    *
    * Not a fifth shared vocabulary (invariant 3): nothing in a template names a CC and nothing
    * joins on one. It travels device → resolver → renderer exactly as `unit` and `note` do.
@@ -203,6 +206,20 @@ export type AuthoredEnumParam = {
   value: string
   /** The legality gate. Cited independently of the point, exactly as `range` is. */
   options: EnumOptions
+  /**
+   * §3.1/#414. **The MIDI CC this switch answers to**, exactly as on `AuthoredNumericParam`.
+   *
+   * A switch is as reachable over MIDI as a knob is, and the field was numeric-only for no better
+   * reason than that no enum had needed it yet. When one did — the Muse's two `DELAY · TIME`
+   * controls, authored as divisions at #346 — the number had nowhere typed to go and was written
+   * into `note` by hand instead. #414 took composed CC prose off every numeric on that box, which
+   * would have left those two as the only notes in the library naming a controller. Widening the
+   * field is what stops one box reading two ways.
+   *
+   * `AuthoredTextParam` does **not** get this. A text param is a written instruction rather than a
+   * control on the panel, so there is nothing for a controller number to address.
+   */
+  midiCc?: number
   /** The *selected option*. Omitted → inherit the recipe's `verified`. */
   verified?: Verified
   hint?: string
@@ -270,6 +287,9 @@ export const AuthoredEnumParamSchema = z
     kind: z.literal('enum'),
     value: z.string().min(1),
     options: EnumOptionsSchema,
+    // #414. Beside the numeric's, not in `paramCommon`: a text param is an instruction rather
+    // than a control, and `strictObject` is what keeps a CC off it.
+    midiCc: MidiCcSchema.optional(),
     ...paramCommon,
   })
   .refine((p) => p.options.values.includes(p.value), {
@@ -389,10 +409,13 @@ export type ResolvedParam = {
   provenance: Provenance
   hint?: string
   /**
-   * §3.1/#324. The authored CC number, carried so a consumer can ask *is this control reachable
-   * over MIDI* without reading the sentence the resolver wrote into `note`. The instruction
-   * itself is already in `note`, composed against `value` above rather than against the authored
-   * point, so the two can never disagree.
+   * §3.1/#324, settled at #414. The authored CC number, carried through unchanged — the resolver
+   * has nothing to add to a controller number and nothing to check it against.
+   *
+   * **It is not in `note`, and no longer ever was.** The resolver used to append a composed
+   * `MIDI CC 87` there, which on a control with no authored prose made the number the entire
+   * note. This is the typed fact; `note` is prose about the control; a renderer decides whether
+   * and where the number is shown.
    */
   midiCc?: number
   note?: string

@@ -295,11 +295,17 @@ describe('and the parameter lines carry none of it (#324)', () => {
    *
    * **It was 72 after #346**, and the four that left there were not a regression. That issue
    * authored the Muse's two `DELAY · TIME` knobs as `enum` params over clock divisions, and
-   * `AuthoredEnumParam` has no `midiCc` field — two controls on two assignments, so four lines
-   * leave a set keyed on that field. They are still parameter lines in this guide, so the
+   * `AuthoredEnumParam` had no `midiCc` field — two controls on two assignments, so four lines
+   * left a set keyed on that field. They are still parameter lines in this guide, so the
    * assertion below widens to the whole rig rather than shrinking with the count.
    *
-   * **It is 36 since #383, and that halving is a repair rather than a loss.** The Muse used to
+   * **And it is 38 since #414 put those two back**, which is the same repair from the other end.
+   * That issue took the composed CC tail off `note` for good; the two divisions had carried the
+   * number as hand-written prose precisely because the field would not hold it, so the field
+   * widened to the enum branch and they rejoined the set. `midiCc` now reaches every parameter
+   * line on this box that a controller addresses, which is what it always claimed to key on.
+   *
+   * **It was 36 after #383, and that halving is a repair rather than a loss.** The Muse used to
    * take two parts in this rig — `stab` and `pad`, one per timbre — and the stab was
    * `muse-stab-hard`, a `UNISON` patch that sounds one note, serving a request that asks for
    * three (`industrial-techno`, `polyphony: 3`). #383 caps that recipe at `patchPolyphony: 1`,
@@ -321,10 +327,11 @@ describe('and the parameter lines carry none of it (#324)', () => {
     const built = museResult.assignments
       .flatMap((a) => a.params)
       .filter((p) => p.midiCc !== undefined)
-    expect(built).toHaveLength(36)
+    expect(built).toHaveLength(38)
     expect(built.filter((p) => p.note?.includes(TAIL))).toEqual([])
-    // Every parameter line, not only the ones a CC number reaches: the four #346 moved off
-    // `midiCc` are still lines a reader gets, and the tail must be absent from those too.
+    // Every parameter line, not only the ones a CC number reaches. Since #414 those are the same
+    // set on this box, and the assertion stays wide anyway: it is the reader's view that matters,
+    // and a line that stops declaring a CC must not start carrying one in prose instead.
     expect(
       museResult.assignments.flatMap((a) => a.params).filter((p) => p.note?.includes(TAIL)),
     ).toEqual([])

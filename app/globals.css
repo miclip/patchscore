@@ -2686,6 +2686,21 @@ button:active {
   align-items: baseline;
   gap: 5px;
   min-width: 0;
+  /*
+   * #21/#414. **Wrap on this row, so a value breaks between its parts and never inside one.**
+   *
+   * Nothing overflows without this — `.instruction-line` already wraps, so a long value drops
+   * below its parameter name and the page body never scrolls (measured at 390px and at 320px).
+   * What it fixes is *where* the break lands. The CC suffix made the widest line in the library
+   * — `2400 → 1200 Hz (20…20000 Hz) · MIDI CC 67` — too long for 320px, and with this row
+   * unwrappable the browser broke it inside its own tokens: the range split across two lines as
+   * `(20…20000` / `Hz)`, and the controller number was orphaned from the words naming it.
+   *
+   * Wrapping the row makes each part an unbreakable unit, and since the suffix is last it is the
+   * first to drop. The value the reader is dialling keeps the top line, which is the order of
+   * importance. At 390px, #21's stated width, no line is long enough for any of this to apply.
+   */
+  flex-wrap: wrap;
 }
 
 .value-now {
@@ -2716,6 +2731,23 @@ button:active {
 .value-range {
   color: var(--ink-dim);
   font-size: 11.5px;
+}
+
+/*
+ * #414. The MIDI CC that addresses this control, as a quiet suffix on the value line.
+ *
+ * **No `.mono`, and no `font-family` here either** — §10 keeps one face for values and another
+ * for prose, and this is a label rather than a number to dial. It inherits the prose face from
+ * the page, which is what makes it read as an aside beside the boxed value rather than a second
+ * value competing with the first.
+ *
+ * Dimmer and smaller than the range beside it: the range qualifies the number the reader is
+ * about to set, and this does not. Its Markdown sibling is the ` · MIDI CC n` suffix in
+ * `paramLines`, and `test/param-cc-line.test.ts` pins the pair.
+ */
+.value-cc {
+  color: var(--ink-dim);
+  font-size: 11px;
 }
 
 .param-name {

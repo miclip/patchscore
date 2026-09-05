@@ -17,7 +17,7 @@ import { droneStudy, industrialTechno } from '../../lib/templates/index'
  * identically, a device whose every point is provisional. A hand-built rig small enough to read
  * is a rig too small to show any of that.
  *
- * Six fixtures, chosen to differ in the thing §8 is worst at. Four are Industrial Techno on four
+ * Seven fixtures, chosen to differ in the thing §8 is worst at. Five are Industrial Techno on five
  * rigs; the last two change template, for the reasons given under them:
  *
  *  - **full-rig** — every registry device, the rig that fills most parts and exercises pool
@@ -34,6 +34,11 @@ import { droneStudy, industrialTechno } from '../../lib/templates/index'
  *    added, being a source whose manual prints neither a clock-output menu nor a note on its MIDI
  *    jacks — which was the state these fixtures exist to prevent, since a renderer change that
  *    drops either moves not one byte of the other file.
+ *  - **muse** — the Muse alone, added at #414 as the only fixture in which a MIDI CC reaches a
+ *    reader. It is the one box in the library that declares `midiCc`, and it renders no parameter
+ *    at all in `full-rig`, so before this file the CC suffix was pinned by no committed bytes
+ *    anywhere. It carries both shapes that must stay apart — a bare CC with no note, and prose
+ *    plus a CC on two different lines. The full argument is beside `MUSE` below.
  *  - **deluge-drone-study** — the Deluge alone, against Drone Study rather than Industrial
  *    Techno, for three things and no others:
  *
@@ -87,7 +92,7 @@ import { droneStudy, industrialTechno } from '../../lib/templates/index'
  *
  * Seed 18 because it resolves `F minor` — the key whose third is `Eb`, so #32's enharmonic
  * reading (`Eb2` beside `D#2`) is exercised by the committed bytes and not by a unit test alone.
- * One seed across all six, so no fixture has a seed of its own to explain; what it resolves to
+ * One seed across all of them, so no fixture has a seed of its own to explain; what it resolves to
  * under a second template is a consequence of that and not a thing this directory pins — the two
  * Drone Study files land on `A phrygian` and neither claims anything by doing so.
  */
@@ -139,6 +144,50 @@ const DELUGE = DEVICES.filter((d) => d.id === 'synthstrom-deluge')
 const TRACKER_MINI = DEVICES.filter((d) => d.id === 'polyend-tracker-mini')
 
 /**
+ * §3.1/#414. **The one fixture that renders a MIDI CC**, which is the whole of why it is here.
+ *
+ * The Muse is the only box in the library that declares `midiCc`, and until this file it took no
+ * part in any committed guide — `full-rig` resolves it to `synth · 0 parts`, so every fixture here
+ * rendered zero CC-bearing parameter lines and `grep "MIDI CC" test/golden/` returned nothing.
+ * That left #414's whole rendering decision pinned by unit tests alone: a change that dropped the
+ * suffix, moved it onto a subordinate line, or put it back inside `note` would move not one byte
+ * of any file in this directory.
+ *
+ * **It has to be the Muse alone.** In the full rig the Muse loses every request it can serve to
+ * boxes that cost the objective less, which is the correct allocation and is exactly why that
+ * fixture cannot pin this. On its own it takes `sub` and `bass-mid`.
+ *
+ * **The counts below are rendered lines, which is the only thing a golden file pins.** They are
+ * deliberately not resolved-parameter counts: those are higher, because §8 hoists a song-scoped
+ * control to one line rather than repeating it per assignment, and a count of what the resolver
+ * produced would not fail when the renderer stopped printing some of it.
+ *
+ * **141 parameter lines, 72 of them carrying a controller number**, all in phase 6. Both shapes
+ * that must stay apart are in those 72, which is the pairing this fixture exists for — one file
+ * where either half regressing is visible:
+ *
+ *  1. **A bare CC** — 41 lines. A control with nothing authored to say: the value line ends
+ *     `· MIDI CC 51` and there is no `↳ note:` under it at all. This is the shape #414 was
+ *     reported for: the resolver used to make that string the *whole* of `note`, so a reader got
+ *     a NOTE row whose entire content was a controller number.
+ *  2. **Prose and a CC together** — 31 lines, each followed by its note. The two land in
+ *     different places: the suffix on the value line, the authored sentence alone on the `↳ note:`
+ *     line beneath, with no separator and no part of either in the other.
+ *
+ * The remaining 69 parameter lines carry no CC at all, which is what stops the file agreeing with
+ * itself: a renderer appending the suffix unconditionally would move them.
+ *
+ * Two of those CCs are on `enum` params (`DELAY · TIME - L` and `- R`, song-scoped and so hoisted
+ * to one line each), the branch that had no `midiCc` field before #414 and wrote the number into
+ * its note by hand. A regression narrowing the field back to numerics takes both lines off.
+ *
+ * Nothing else about this fixture is load-bearing, and it is deliberately not interesting in any
+ * other way: it is Industrial Techno at the shared seed and the shared neutral mood, so a diff
+ * here is a *rendering* diff exactly as it is in every other file.
+ */
+const MUSE = DEVICES.filter((d) => d.id === 'moog-muse')
+
+/**
  * §7.3/#81. **The one fixture that renders `### Waiting on us`**, which is the whole of why it
  * is here.
  *
@@ -168,6 +217,7 @@ export const GUIDE_NAMES = [
   'tr-1000',
   'tr-6s',
   'midi-clock',
+  'muse',
   'deluge-drone-study',
   'tracker-mini-drone-study',
 ] as const
@@ -182,7 +232,7 @@ export type GuideName = (typeof GUIDE_NAMES)[number]
  * which is the one thing a fixture test must not do. A fixture on a fourth template leaves this
  * list alone and the techno assertions keep meaning what they meant.
  */
-export const TECHNO_GUIDE_NAMES = ['full-rig', 'tr-1000', 'tr-6s', 'midi-clock'] as const
+export const TECHNO_GUIDE_NAMES = ['full-rig', 'tr-1000', 'tr-6s', 'midi-clock', 'muse'] as const
 
 /** The rendered guide for one fixture name. Pure — the same bytes on every call. */
 const RIGS: Record<GuideName, Fixture> = {
@@ -190,6 +240,7 @@ const RIGS: Record<GuideName, Fixture> = {
   'tr-1000': { devices: TR_1000, template: industrialTechno },
   'tr-6s': { devices: TR_6S, template: industrialTechno },
   'midi-clock': { devices: MIDI_CLOCK, template: industrialTechno },
+  'muse': { devices: MUSE, template: industrialTechno },
   'deluge-drone-study': { devices: DELUGE, template: droneStudy },
   'tracker-mini-drone-study': { devices: TRACKER_MINI, template: droneStudy },
 }
@@ -207,8 +258,8 @@ export function guidePath(name: GuideName): string {
 
 /**
  * `npm run gen:guides` writes every file in `GUIDE_NAMES`, and is the only way any of them is
- * ever regenerated. It rewrites all six on each run, so a fixture whose bytes did not move comes
- * back byte-identical and the diff is the review.
+ * ever regenerated. It rewrites all of them on each run, so a fixture whose bytes did not move
+ * comes back byte-identical and the diff is the review.
  *
  * Named alone (`tsx test/golden/guides.ts full-rig`) it prints one guide to stdout and writes
  * nothing, which is how the cross-locale test captures another locale's answer without touching

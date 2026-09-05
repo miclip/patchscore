@@ -829,25 +829,28 @@ describe('resolveParam provenance (§3.2, obligations 5 and 5a)', () => {
 })
 
 /**
- * §3.1/#324, narrowed at #349. **The MIDI instruction names the controller and no value at all.**
+ * §3.1/#324, narrowed at #349, settled at #414. **The CC number travels as a number, and the
+ * resolver writes no sentence anywhere.**
  *
- * The history is worth keeping, because the field survives the sentence that justified it. The
- * Muse authored the instruction as prose in the device folder — `Send MIDI CC 87 = ${value}`
- * written at authoring time — so a value mood then moved left the guide printing `54 → 36` on the
- * line and *"send 54"* underneath it. #324 moved the composition here, after mood, which is the
- * only place the number in the sentence can be the number on the line.
+ * The history is worth keeping, because the field outlived three different sentences. The Muse
+ * authored the instruction as prose in the device folder — `Send MIDI CC 87 = ${value}` written at
+ * authoring time — so a value mood then moved left the guide printing `54 → 36` on the line and
+ * *"send 54"* underneath it. #324 moved the composition here, after mood, which is the only place
+ * the number in the sentence can be the number on the line. #349 removed the number from the
+ * sentence, because no page maps a CC value onto the scale the Muse's screen shows.
  *
- * **#349 removed the number instead.** The one device that declares `midiCc` re-authored its
- * controls on the scale its screen shows — percent, and Hz for the two filter cutoffs — and no
- * page maps either onto a CC value, so `Send MIDI CC 67 = 74` beside `74 %` names a number that
- * lands somewhere nobody has measured. What is left is which controller addresses the control,
- * which is true, useful to anything automating the box, and cannot go stale.
+ * **#414 removed the sentence.** What #349 left was `MIDI CC 87`, and on a control with no
+ * authored prose that string was the *whole* of `note` — a NOTE row whose entire content is a
+ * controller number, beside a sibling whose note says something about the control. Nothing in any
+ * device folder writes a note like that. So `note` is authored prose and only authored prose, and
+ * `midiCc` is the typed number; whether a reader sees the number, and where, is decided by a
+ * renderer and not smuggled into prose here.
  *
- * So these pin the property the field is now worth having for: **the instruction is the same in
- * every branch** — moved, unmoved, clamped and inhibited — because it depends on nothing the mood
- * knobs can change. A regression to an instruction carrying a value fails four of these at once.
+ * So these pin two properties. **A bare CC produces no note at all** — in every branch, because
+ * there is no branch in which the resolver may invent one. And **a control with prose keeps
+ * exactly its prose**, with nothing appended and no separator acquired.
  */
-describe('the MIDI instruction names the controller and asserts no value (§3.1/#324, #349)', () => {
+describe('a CC number is not a note (§3.1/#324, #349, #414)', () => {
   /** CC 87 on 0..127, moved +18 when density is at the floor — the Muse's VCA ENV DECAY. */
   function decay(over: Record<string, unknown> = {}) {
     return numericParam({
@@ -860,60 +863,73 @@ describe('the MIDI instruction names the controller and asserts no value (§3.1/
     })
   }
 
-  it('names neither the moved value nor the value it moved from', () => {
+  it('leaves a bare-CC control with no note, and the number on its own field', () => {
     const resolved = resolveParam(decay(), MANUAL, moodState({ density: 0 }))
     expect(resolved.value).toBe(72)
-    expect(resolved.note).toBe('MIDI CC 87')
-    // Both numbers are on the line above — `72` as the value and `54` struck through — and
-    // neither belongs in an instruction that no longer promises what sending one would do.
+    expect(resolved.note).toBeUndefined()
+    expect(resolved.midiCc).toBe(87)
+    // Both numbers are on the line above — `72` as the value and `54` struck through — and the
+    // resolver has composed no prose in which either could go stale.
     expect(resolved.provenance).toMatchObject({ state: 'derived', from: 54 })
-    expect(resolved.note).not.toContain('72')
-    expect(resolved.note).not.toContain('54')
   })
 
-  it('says the same thing when the knobs are centred', () => {
+  it('says the same when the knobs are centred', () => {
     const resolved = resolveParam(decay(), MANUAL, moodState())
     expect(resolved.value).toBe(54)
-    expect(resolved.note).toBe('MIDI CC 87')
+    expect(resolved.note).toBeUndefined()
+    expect(resolved.midiCc).toBe(87)
     expect(resolved.provenance).toEqual({ state: 'authored', cite: MANUAL })
   })
 
-  it('says the same thing where the value was clamped', () => {
+  it('says the same where the value was clamped', () => {
     // §6.1 clamps to the range before this runs. The clamp is visible in `value`, which is what
-    // the reader dials; the instruction beside it has nothing to be wrong about.
+    // the reader dials; there is no sentence beside it to be wrong about.
     const resolved = resolveParam(
       decay({ value: 120, mood: [{ axis: 'density', amount: -18 }] }),
       MANUAL,
       moodState({ density: 0 }),
     )
     expect(resolved.value).toBe(127)
-    expect(resolved.note).toBe('MIDI CC 87')
+    expect(resolved.note).toBeUndefined()
+    expect(resolved.midiCc).toBe(87)
   })
 
-  it('says the same thing when an unverified range inhibits mood (§3.2)', () => {
+  it('says the same when an unverified range inhibits mood (§3.2)', () => {
     const resolved = resolveParam(
       decay({ range: { min: 0, max: 127, verified: false } }),
       MANUAL,
       moodState({ density: 0 }),
     )
     expect(resolved.value).toBe(54)
-    expect(resolved.note).toBe('MIDI CC 87')
+    expect(resolved.note).toBeUndefined()
+    expect(resolved.midiCc).toBe(87)
   })
 
-  it('keeps an authored note in front of the instruction, joined the way notes are joined', () => {
+  it('hands back an authored note exactly as authored, with nothing appended', () => {
     const resolved = resolveParam(
       decay({ note: 'Bipolar, centred at noon' }),
       MANUAL,
       moodState({ density: 0 }),
     )
-    expect(resolved.note).toBe('Bipolar, centred at noon · MIDI CC 87')
+    expect(resolved.note).toBe('Bipolar, centred at noon')
+    // Not merely "starts with": a trailing separator is the exact regression this replaces.
+    expect(resolved.note).not.toContain('·')
+    expect(resolved.note).not.toContain('MIDI')
+    expect(resolved.note).not.toContain('87')
+    expect(resolved.midiCc).toBe(87)
+  })
+
+  it('keeps prose intact at every mood, since nothing about mood touches the note', () => {
+    for (const state of [moodState(), moodState({ density: 0 }), moodState({ density: 100 })]) {
+      const resolved = resolveParam(decay({ note: 'Bipolar, centred at noon' }), MANUAL, state)
+      expect(resolved.note).toBe('Bipolar, centred at noon')
+    }
   })
 
   it('says nothing at all about MIDI on a control that declares no CC', () => {
     const resolved = resolveParam(decay({ midiCc: undefined }), MANUAL, moodState({ density: 0 }))
     expect(resolved.note).toBeUndefined()
     expect(resolved.midiCc).toBeUndefined()
-    // And an authored note is left exactly as authored, rather than acquiring a separator.
     const withNote = resolveParam(
       decay({ midiCc: undefined, note: 'Bipolar, centred at noon' }),
       MANUAL,
@@ -922,8 +938,32 @@ describe('the MIDI instruction names the controller and asserts no value (§3.1/
     expect(withNote.note).toBe('Bipolar, centred at noon')
   })
 
-  it('carries the number itself, so a consumer need not read the sentence', () => {
+  it('carries the number itself, which is the only place it lives', () => {
     expect(resolveParam(decay(), MANUAL, moodState()).midiCc).toBe(87)
+  })
+
+  /**
+   * #414. **The non-numeric branch carries it too.** The field was numeric-only, which is why the
+   * Muse's two division switches once had their CC written into prose by hand. An enum now
+   * declares one and the resolver passes it through unchanged — there is no mood on this branch,
+   * so there is nothing for it to be composed against and nothing to go stale.
+   */
+  it('carries an enum’s CC through, with the note left as authored prose', () => {
+    const resolved = resolveParam(
+      enumParam({ midiCc: 93, note: 'Straight, against the dotted right' }),
+      MANUAL,
+      moodState(),
+    )
+    expect(resolved.midiCc).toBe(93)
+    expect(resolved.note).toBe('Straight, against the dotted right')
+    expect(resolved.note).not.toContain('MIDI')
+  })
+
+  it('leaves an enum that declares no CC without one, and a text param never has one', () => {
+    expect(resolveParam(enumParam(), MANUAL, moodState()).midiCc).toBeUndefined()
+    expect(resolveParam(textParam(), MANUAL, moodState()).midiCc).toBeUndefined()
+    // A bare CC on a switch produces no note, exactly as it does on a knob.
+    expect(resolveParam(enumParam({ midiCc: 94 }), MANUAL, moodState()).note).toBeUndefined()
   })
 })
 

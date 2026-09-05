@@ -97,6 +97,24 @@ export function Value({ param }: { param: ResolvedParam }) {
       {param.range === undefined ? null : (
         <span className="value-range mono">({rangeText(param.range, param.unit)})</span>
       )}
+      {/*
+        §3.1/#414. **The controller, on the value line and not on a line of its own.**
+
+        `midiCc` had no rendering of its own: the resolver appended `MIDI CC 51` to `note`, so on a
+        control with nothing else to say a controller number became the whole of a NOTE row — a
+        subordinate line, styled for prose, carrying a number. It is addressing information, so it
+        belongs beside the value the reader is dialling rather than under it. A suffix costs no
+        row, and §8's reader is standing at a machine with no rows to spare.
+
+        **Not `mono`, and that is the point of the class.** §10 gives values one face and prose
+        another; this is neither a value to dial nor a scale to read, so it takes the prose face,
+        muted. Restated rather than imported from `lib/core/render.ts` — this file's standing rule
+        (#33) — and one string rather than JSX text around an expression, so the rendered markup
+        is a single text node the Markdown sibling can be compared against character for character.
+      */}
+      {param.midiCc === undefined ? null : (
+        <span className="value-cc">{`· MIDI CC ${String(param.midiCc)}`}</span>
+      )}
     </span>
   )
 }
