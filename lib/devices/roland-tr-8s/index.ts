@@ -749,6 +749,174 @@ const recipes: Recipe[] = [
     verified: false,
   },
   {
+    id: 'tr8s-bass-mid-dark',
+    role: 'bass-mid',
+    character: 'dark',
+    voice: 'lt',
+    title: 'A bass note on the low tom, moved in semitones from the [CTRL] knob',
+    /**
+     * §345. LT declares `tom`, `sub` and `bass-mid` and served only the tom, so this is the case
+     * the issue opens with — a slot advertising a duty nothing had been written for.
+     *
+     * **A musical line on this box needs a Sample tone, and that is a reading rather than a
+     * preference.** The common block gives every tone a `Tune` of `-128–0–+127` (p.30), which
+     * *"adjusts the tuning (pitch)"* on a scale with no note calibration printed anywhere — so a
+     * value on it is a tuning offset and not a note, and a pattern written in it would not be a
+     * melody. The control that moves pitch in musical steps is `Coarse Tune`, *"specifies the
+     * pitch in semitone steps"*, and p.31 puts it squarely inside the `Sample tone only` block.
+     * An ACB TOM tone reaches neither it nor a filter; it reaches `Color`, which is four different
+     * things depending on family (p.31) and none of them a bass line.
+     *
+     * So this is a third sample-borne part, and the device note's cost is worth restating rather
+     * than hiding: a rig wanting several sampled parts on one TR-8S will run out of slots that
+     * advertise them, and the resolver reports that as an ordinary occupancy gap.
+     *
+     * `dark` and not `dirty`, on the rule the MPC's cut list uses: three directions ask this role
+     * `dark` and two ask `dirty`, so the more-asked character is the one authored, and §3.5's
+     * fallback still answers the other two approximately. §3 sets no expectation of filling a grid.
+     */
+    sourceAudio: {
+      need:
+        'One sustained bass or mid-range note, a second or two, recorded clean and even — ' +
+        'Coarse Tune moves that single note in semitones, so one file covers the whole line',
+    },
+    params: [
+      tone(
+        'Sample',
+        'Coarse Tune, Hold Mode and Hold Time are all in the "Sample tone only" block (p.31) and do not exist on an ACB tone',
+      ),
+      ...ctrlCoarse(),
+      num('COARSE TUNE', 0, COARSE, 31, {
+        unit: 'st',
+        note: 'The resting note; the pattern writes the offsets from it per step',
+      }),
+      num('TUNE', -10, BIPOLAR, 30, { mood: [{ axis: 'darkness', amount: -40 }] }),
+      {
+        kind: 'enum',
+        name: 'HOLD MODE',
+        value: 'Time',
+        options: { values: ['Whole', 'Time', 'Step'], verified: cite(31) },
+        verified: false,
+        note: 'Time: decay begins after a specified length of time (p.31), so the note has a length',
+      },
+      num('HOLD TIME', 84, UNIT, 31, { mood: [{ axis: 'density', amount: -40 }] }),
+      num('DECAY', 120, UNIT, 30),
+      instFx('LPF'),
+      num('LPF CUTOFF', 96, UNIT, 31, { mood: [{ axis: 'darkness', amount: 80 }] }),
+      num('LEVEL', 172, UNIT, 30),
+      // No `space` offset, the same call `sends` documents for the kick and the sub: a low part
+      // pushed into the kit reverb is the one place that axis reliably makes a rig worse.
+      ...sends(20, 36),
+      shuffle(),
+    ],
+    articulation: [
+      { slot: 'downbeat', set: { accent: true }, hint: 'accent-step' },
+      { slot: 'accent', set: { accent: true }, hint: 'accent-step' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'tr8s-noise-dirty-oh',
+    role: 'noise',
+    character: 'dirty',
+    voice: 'oh',
+    title: 'The hat slot let ring and crushed, wherever its tone came from',
+    /**
+     * §345. **Two voices declare `noise` and recipe lookup keys on the voice, so one recipe would
+     * have left the other silently unserved.** This is the pair's first half; `tr8s-noise-dirty-cc`
+     * is the second, and the two are not the same patch on two slots — see that recipe.
+     *
+     * **The TR-1000's answer does not port, and the missing document is why.** That box names a
+     * `VA Noise` generator from a Preset GEN/INST list it ships; **no preset tone list ships with
+     * the TR-8S documentation at all**, which the device note records as a real gap. So nothing
+     * here can say "load the noise tone".
+     *
+     * What it can say instead turns the box's own gating into the recipe. Every parameter below is
+     * in p.30's `Common to all tones` block, so **this works on whatever the slot is already
+     * holding** — the OpenHH it shipped with, a sample, a loop. A recipe that reached one row
+     * further down would be asserting a category the reader may not have loaded, which is the
+     * failure the `TONE` param exists to prevent, and here there is nothing to assert.
+     *
+     * A direction wanting both an open hat and a noise part will not get both from this box: one
+     * slot, one part. That is an ordinary occupancy cost the resolver reports, not something a
+     * recipe should pretend away.
+     */
+    params: [
+      tone(
+        'any',
+        'Every parameter here is in p.30\'s "Common to all tones" block, so no tone category is required',
+      ),
+      num('TUNE', 88, BIPOLAR, 30, { mood: [{ axis: 'darkness', amount: -70 }] }),
+      num('DECAY', 206, UNIT, 30, { mood: [{ axis: 'density', amount: -80 }] }),
+      instFx('CRUSHER'),
+      num('LEVEL', 118, UNIT, 30),
+      ...sends(76, 52, 110),
+      shuffle(),
+    ],
+    routing: 'KIT Edit > MUTE, OH = CH so the closed hat still chokes it (p.27)',
+    articulation: [{ slot: 'offbeat', set: { accent: true }, hint: 'accent-step' }],
+    verified: false,
+  },
+  {
+    id: 'tr8s-noise-dirty-cc',
+    role: 'noise',
+    character: 'dirty',
+    voice: 'cc',
+    title: 'A noise recording held open on the crash slot, high-passed and slowed',
+    /**
+     * §345. The second of the two voices that declare `noise`, and **deliberately not the OH
+     * recipe moved across.** The pair divides the way the box's own parameter table does: that one
+     * stays inside `Common to all tones` and works on any tone, this one takes a Sample tone and
+     * spends the whole `Sample tone only` block (p.31) — `Hold Mode`, `Rate`, `Bit Reduce` and the
+     * INST FX filter. One is a struck slot let ring; this is a wash that does not decay.
+     *
+     * `Rate` below 1.00 *"play at a lower speed"* (p.31), which drags a recording's noise floor
+     * downward and is the closest this box comes to the TR-1000's `COLOR` running toward pink.
+     * `Hold Mode` `Whole` is p.31's *"the sound is heard to the end without decaying"*, which is
+     * what makes it a bed rather than a hit.
+     *
+     * CC also carries `riser` and `impact`, both wanted by the same directions, so this recipe
+     * competes with them for one slot. That is the point of authoring it on both declaring voices
+     * rather than one: `industrial-techno` asks for `noise` optionally, and a rig where CC is busy
+     * can still answer from OH.
+     */
+    sourceAudio: {
+      need:
+        'A noise or hiss recording a second or longer with no transient at the front — tape, ' +
+        'room tone, vinyl run-out; Hold Mode Whole plays it to the end',
+    },
+    params: [
+      tone(
+        'Sample',
+        'Everything below TUNE is in the "Sample tone only" block (p.31) and does not exist on an ACB tone',
+      ),
+      num('TUNE', -18, BIPOLAR, 30, { mood: [{ axis: 'darkness', amount: -50 }] }),
+      {
+        kind: 'enum',
+        name: 'HOLD MODE',
+        value: 'Whole',
+        options: { values: ['Whole', 'Time', 'Step'], verified: cite(31) },
+        verified: false,
+        note: 'Whole: the sound is heard to the end without decaying (p.31)',
+      },
+      num('RATE', 0.35, { min: -1, max: 1 }, 31, {
+        step: 0.01,
+        note: 'Between +0.01 and +0.99 plays at a lower speed (p.31), dragging the noise floor down',
+      }),
+      num('BIT REDUCE', 7, { min: 0, max: 12 }, 31, { mood: [{ axis: 'grit', amount: 4 }] }),
+      instFx('HPF'),
+      // p.31 prints the direction for this one: "Increasing the Cutoff value raises the cutoff
+      // frequency, deepening the HPF effect". So more darkness means less of it, and the offset is
+      // negative where the LPF recipes on this box carry a positive one.
+      num('HPF CUTOFF', 72, UNIT, 31, { mood: [{ axis: 'darkness', amount: -50 }] }),
+      num('LEVEL', 106, UNIT, 30),
+      ...sends(132, 88, 120),
+      shuffle(),
+    ],
+    articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
+    verified: false,
+  },
+  {
     id: 'tr8s-texture-soft',
     role: 'texture',
     character: 'soft',

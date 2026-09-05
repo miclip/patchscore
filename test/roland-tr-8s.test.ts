@@ -6,6 +6,7 @@ import {
   PATTERN_SLOTS,
   ROLES,
   expand,
+  reachableSlots,
   renderGuide,
   resolve,
   resolveParam,
@@ -15,7 +16,7 @@ import {
 } from '../lib/core/index'
 import { device } from '../lib/devices/roland-tr-8s/index'
 import { device as tr1000 } from '../lib/devices/roland-tr-1000/index'
-import { industrialTechno } from '../lib/templates/index'
+import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 import { auditDevice } from '../scripts/audit-verified'
 
 /**
@@ -144,18 +145,43 @@ describe('TR-8S manifest', () => {
   // §3 — recipes
   // -------------------------------------------------------------------------
 
-  it('carries recipes on distinct (role, character) keys, with unique ids', () => {
-    // Twenty-six rather than the 15-20 the guidance suggests, and eleven slots is the reason: the
-    // TR-1000 covers ten with nineteen. It is still one or two per slot, not a parameter dump.
-    //
-    // #300 added the last two: a `dark` ghost-perc on HT and a `dark` riser on CC, the first
-    // second characters either role carries anywhere in the library. Both sit on slots that
-    // already declared the role, so the count grew and the shape did not.
+  /**
+   * §3's key is `(role, character, voice)`. This device used to satisfy the stricter per-device
+   * form too, and that was a fact about its content rather than the rule — #345 is where the fact
+   * changed, on the same box and for the same reason the TR-1000's did. `noise` is declared on
+   * **two** fixed voices, OH and CC, and recipe lookup keys on `poolId ?? voiceId`, so one
+   * authored for CC never reaches OH. Serving both means two recipes sharing a `(role, character)`
+   * and differing in voice, which is exactly what §3's key is for.
+   */
+  it('carries every recipe on §3\u2019s key, and none no direction can select', () => {
+    // Twenty-six until #345 authored `bass-mid` on LT and `noise` on both slots that declare it.
+    // The upper bound is not asserted any more, on the TR-1000's argument: it has moved twice
+    // already (#300, then this), and what it stood in for — recipes nobody can select — is
+    // checkable directly rather than by proxy.
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(26)
+    const unreachable = device.recipes.filter((r) => !reachableSlots(r, TEMPLATES).requested)
+    expect(unreachable.map((r) => r.id), 'no direction can select these').toEqual([])
 
+    const keys = device.recipes.map((r) => `${r.role}\u0000${r.character}\u0000${r.voice}`)
+    expect(new Set(keys).size).toBe(keys.length)
+
+    // And the pairs that share `(role, character)` are pinned, so a third cannot appear without a
+    // reason. One entry, and it is the one this box needs twice: two fixed voices declare `noise`,
+    // so a single recipe would leave whichever slot it did not name silently unserved.
     const pairs = device.recipes.map((r) => `${r.role} ${r.character}`)
-    expect(new Set(pairs).size).toBe(pairs.length)
+    const shared = [...new Set(pairs.filter((pair, i) => pairs.indexOf(pair) !== i))].sort()
+    expect(shared).toEqual(['noise dirty'])
+
+    // Every voice that declares `noise` has one, which is the assertion the pair exists to make.
+    const declaring = device.voices.filter((v) => (v.roles as string[]).includes('noise'))
+    expect(declaring.map((v) => v.id).sort()).toEqual(['cc', 'oh'])
+    for (const voice of declaring) {
+      expect(
+        device.recipes.some((r) => r.role === 'noise' && r.voice === voice.id),
+        `${voice.id} declares noise and no recipe serves it`,
+      ).toBe(true)
+    }
+
     const ids = device.recipes.map((r) => r.id)
     expect(new Set(ids).size).toBe(ids.length)
 
@@ -354,6 +380,9 @@ describe('TR-8S manifest', () => {
       const FAMILIES: Record<string, string[]> = {
         THRU: [],
         LPF: ['LPF CUTOFF'],
+        // p.31 prints the same five controls under HPF as under LPF — Cutoff, Resonance, Type,
+        // Gain, Clipper — and the only one a recipe reaches is the cutoff, as with LPF above.
+        HPF: ['HPF CUTOFF'],
         'H BOOST': ['H BOOST', 'H BOOST FREQ'],
         TRANSIENT: ['TRANSIENT ATTACK'],
         DRIVE: ['DRIVE BALANCE', 'DRIVE', 'DRIVE LEVEL'],
@@ -545,5 +574,159 @@ describe('TR-8S manifest', () => {
     expect(doc).toContain('**TONE**')
     // The requirement travels with the value, which is the whole point of the TONE param.
     expect(doc).toMatch(/\*\*TONE\*\* `[^`]*BD category/)
+  })
+})
+
+/**
+ * §345. **Three recipes for two roles, and the arithmetic is the whole point.**
+ *
+ * The device-level gap report named `bass-mid` and `noise` — the two roles this box declared and
+ * served nowhere. But recipe lookup keys on `poolId ?? voiceId`, and on a fixed-voice box that
+ * means a role is served **per slot**, not per device. `noise` is declared on OH and on CC, so one
+ * recipe closes the report and leaves the other slot as silent as before: the resolver would place
+ * a `noise` part there and find nothing.
+ *
+ * So `noise` is authored twice, once on each declaring voice, and the two are not one patch copied
+ * across. They divide the way p.30 and p.31 divide the box's own parameter table:
+ *
+ *  - **OH stays inside `Common to all tones`**, so it works on whatever tone the slot holds.
+ *  - **CC takes a Sample tone** and spends the `Sample tone only` block.
+ *
+ * `bass-mid` is one voice and one recipe, and it needs a Sample tone for a reason the manual
+ * states rather than a preference: `Coarse Tune` is the only pitch control printed in semitones
+ * and p.31 puts it inside the sample block, where an ACB TOM tone cannot reach it.
+ */
+describe('the two roles this box declared and served nowhere (§345)', () => {
+  const byId = (id: string) => device.recipes.find((r) => r.id === id) as Recipe
+
+  it('serves every role every voice declares, or names the slot that is still short', () => {
+    /*
+     * The per-voice form of #345's count, which is the one that matters on a fixed-voice box. It
+     * is deliberately *not* asserted empty: this box has eleven slots whose declarations overlap
+     * heavily, and most of those overlaps are served on some other slot. What is asserted is the
+     * exact set, so a role added to a slot without a recipe changes it and fails here.
+     */
+    const perVoice: string[] = []
+    for (const voice of device.voices) {
+      const served = new Set(
+        device.recipes.filter((r) => r.voice === voice.id).map((r) => r.role as string),
+      )
+      for (const role of voice.roles as string[]) {
+        if (!served.has(role)) perVoice.push(`${voice.id}/${role}`)
+      }
+    }
+    expect(perVoice.sort()).toEqual([
+      'cc/metallic',
+      'ch/ghost-perc',
+      'hc/ghost-perc',
+      'hc/snare',
+      'ht/metallic',
+      'lt/sub',
+      'mt/tom',
+      'rc/closed-hat',
+      'rc/metallic',
+      'rs/ghost-perc',
+      'sd/clap',
+      'sd/ghost-perc',
+    ])
+
+    // Every one of those roles is served somewhere else on the box, which is what makes them
+    // slot-level overlaps rather than #345 gaps. Asserted, because that is the claim.
+    const anywhere = new Set(device.recipes.map((r) => r.role as string))
+    for (const entry of perVoice) {
+      const role = entry.split('/')[1] as string
+      expect(anywhere.has(role), `${entry} is served nowhere on this box`).toBe(true)
+    }
+  })
+
+  it('leaves no role declared anywhere and served nowhere', () => {
+    // The device-level count #345 and the placement control both use. Zero, now.
+    const served = new Set(device.recipes.map((r) => r.role as string))
+    const gaps = new Set<string>()
+    for (const voice of device.voices) {
+      for (const role of voice.roles as string[]) if (!served.has(role)) gaps.add(role)
+    }
+    expect([...gaps].sort()).toEqual([])
+  })
+
+  it('authors noise on both declaring voices, and not as one patch twice', () => {
+    const oh = byId('tr8s-noise-dirty-oh')
+    const cc = byId('tr8s-noise-dirty-cc')
+    expect(oh.voice).toBe('oh')
+    expect(cc.voice).toBe('cc')
+    expect(oh.character).toBe(cc.character)
+
+    // The division, made checkable. OH reaches nothing outside the common block; CC reaches into
+    // the sample block. If a later edit collapsed them into one patch, this is what fails.
+    const names = (r: Recipe) => (r.params as { name: string }[]).map((param) => param.name)
+    const SAMPLE_ONLY = ['COARSE TUNE', 'RATE', 'SPREAD', 'BIT REDUCE', 'HOLD MODE', 'HOLD TIME']
+    expect(names(oh).filter((n) => SAMPLE_ONLY.includes(n))).toEqual([])
+    expect(names(cc).filter((n) => SAMPLE_ONLY.includes(n)).length).toBeGreaterThan(0)
+
+    // And OH says so in its TONE param rather than leaving the reader to infer it.
+    const ohTone = (oh.params as { name: string; value?: unknown }[]).find((q) => q.name === 'TONE')
+    expect(String(ohTone?.value)).toBe('any')
+  })
+
+  it('needs a sample tone for the bass line, because only that block prints semitones', () => {
+    /*
+     * The reading, asserted where it can be. p.30's `Tune` is common to every tone and is a
+     * tuning offset over `-128–0–+127` with no note calibration printed; p.31's `Coarse Tune` is
+     * "the pitch in semitone steps" and sits under `Sample tone only`. A line needs the second.
+     */
+    const bass = byId('tr8s-bass-mid-dark')
+    expect(bass.voice).toBe('lt')
+
+    const params = bass.params as { name: string; value?: unknown; range?: { verified: { source: string } } }[]
+    const tone = params.find((q) => q.name === 'TONE')
+    expect(String(tone?.value)).toBe('Sample')
+
+    const coarse = params.find((q) => q.name === 'COARSE TUNE')
+    expect(coarse, 'the bass line moves in semitones').toBeDefined()
+    expect(coarse?.range?.verified.source).toContain('p.31')
+
+    // And the [CTRL] pairing travels with it: `Coarse` is only on a knob under KIT: CTRL Sel =
+    // User (p.28), so a recipe that transposes has to state the switch as well as the destination.
+    expect(params.some((q) => q.name === 'KIT: CTRL Sel')).toBe(true)
+    expect(params.some((q) => q.name === 'KIT: CTRL (per instrument)')).toBe(true)
+  })
+
+  it('keeps the low part out of the kit reverb, the same call the kick and sub make', () => {
+    // `sends` documents the rule and three recipes now follow it. A `space` offset on a bass part
+    // is the one place that axis reliably makes a rig worse, so the absence is asserted rather
+    // than left to whoever reads the helper next.
+    const lows = ['tr8s-kick-hard', 'tr8s-sub-dark', 'tr8s-bass-mid-dark'].map(byId)
+    for (const recipe of lows) {
+      for (const param of recipe.params as { name: string; mood?: { axis: string }[] }[]) {
+        const axes = (param.mood ?? []).map((m) => m.axis)
+        expect(axes, `${recipe.id} / ${param.name}`).not.toContain('space')
+      }
+    }
+    // And a part that should carry it does, so the test is not passing on an empty rig.
+    const noise = byId('tr8s-noise-dirty-cc')
+    const noiseAxes = (noise.params as { mood?: { axis: string }[] }[]).flatMap((q) =>
+      (q.mood ?? []).map((m) => m.axis),
+    )
+    expect(noiseAxes).toContain('space')
+  })
+
+  it('reads the HPF cutoff in the direction p.31 prints for it', () => {
+    // p.31: "Increasing the Cutoff value raises the cutoff frequency, deepening the HPF effect",
+    // against the LPF's "Increasing the Cutoff value lowers the cutoff frequency". So the darkness
+    // offset runs the opposite way on the two, and the sign is the reading rather than a habit.
+    const hpf = (byId('tr8s-noise-dirty-cc').params as { name: string; mood?: { axis: string; amount: number }[] }[])
+      .find((q) => q.name === 'HPF CUTOFF')
+    expect(hpf, 'the CC noise carries an HPF cutoff').toBeDefined()
+    const darkness = (hpf?.mood ?? []).find((m) => m.axis === 'darkness')
+    expect(darkness?.amount).toBeLessThan(0)
+
+    for (const recipe of device.recipes) {
+      const lpf = (recipe.params as { name: string; mood?: { axis: string; amount: number }[] }[])
+        .find((q) => q.name === 'LPF CUTOFF')
+      if (lpf === undefined) continue
+      const axis = (lpf.mood ?? []).find((m) => m.axis === 'darkness')
+      if (axis === undefined) continue
+      expect(axis.amount, `${recipe.id} LPF cutoff`).toBeGreaterThan(0)
+    }
   })
 })
