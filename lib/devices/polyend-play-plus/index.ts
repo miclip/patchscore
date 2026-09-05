@@ -64,11 +64,33 @@ import { PLAY_PLUS_PANEL } from './panel'
  *
  * ## What is deliberately not authored
  *
- *  - **No `pad`, `lead` or `stab`.** Not a capability claim — the synth pool declares all three and
- *    they resolve as honest gaps (invariant 5). They are the three most crowded tonal roles in the
- *    library, and with only two non-PERC slots to spend, spending them on a 48th pad rather than on
- *    the engines this box is actually distinctive for (a 303-lineage acid voice, a 2-op FM metallic)
- *    would cost the search a great deal to say nothing new.
+ *  - **No `pad` and no `stab`**, and the reason is two reasons because the two pools declare them
+ *    for two different sets of tracks. Neither is a capability claim; both resolve as honest gaps
+ *    (invariant 5).
+ *
+ *    On **`track-synth`** it is the slot budget above. `pad` and `stab` are among the most heavily
+ *    served roles in the library — 48 and 45 recipes across thirty-odd boxes — and with only two
+ *    non-PERC patches to spend, spending one on a 49th pad rather than on the engines this box is
+ *    distinctive for (a 303-lineage acid voice, a 2-op FM metallic) buys the search work and says
+ *    nothing new.
+ *
+ *    On **`track-sample`** the budget does not apply at all — there are eight tracks and twelve
+ *    recipes already on them — so the reason has to be something else, and it is `polyphony: 1`
+ *    (p.141). **Every shipped request for either role asks for three or four notes**: `pad` at 3
+ *    or 4 in all five directions that want one, `stab` at 3 or 4 in all three. A monophonic pool
+ *    is filtered out on capability before any recipe is consulted, so a sampled pad or stab here
+ *    could not be selected by anything the library ships — it would be an authored recipe no
+ *    reader can reach, which is what `audit`'s `REACH` block exists to name. A `sampled-chord`
+ *    would dodge the filter and lose anyway: §7.1 ranks `polyphonic-voice` above it, and the
+ *    polyphonic pool is on this same box.
+ *
+ *    **This paragraph used to cover all three roles with the slot argument alone**, which was a
+ *    synth-pool reason standing in for a sample-pool question it never asked. #345 is what went
+ *    and asked it, and `lead` came back with a different answer — see below.
+ *  - **`lead` was in that list and is not any more.** Both directions that ask for one ask at
+ *    **polyphony 1**, which is exactly what a sample track sounds, so neither half of the
+ *    paragraph above reaches it: no synth slot is spent and no capability filter applies.
+ *    `pp-lead-bright` is on `track-sample` for that reason and states it there.
  *  - **PERC's own FX and EQ section** (p.114: Waveshaper Type, EQ Low 80Hz / Mid 2.5kHz /
  *    High 12kHz, each -18dB to +18dB). It is one section for the whole PERC patch, so a value set
  *    by the kick recipe would silently be the snare's and the hat's too. A per-recipe parameter
@@ -992,6 +1014,73 @@ const SAMPLE_RECIPES: Recipe[] = [
     articulation: [
       { slot: 'downbeat', set: { volume: 0 } },
       { slot: 'accent', set: { 'repeat-grid': '8 Hits|4 Steps' }, hint: 'pick-repeat' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'pp-lead-bright',
+    role: 'lead',
+    character: 'bright',
+    voice: 'track-sample',
+    title: 'One pitched sample carrying the line, filter open and a synced delay behind it',
+    /**
+     * §345. **The one of the three unauthored tonal roles that the polyphony argument does not
+     * exclude**, and it is a sample track rather than a synth slot, so the three-patch budget the
+     * module note spends on PERC, ACD and WTFM is not what decides it. See that note for `pad` and
+     * `stab`, which are excluded and stay so.
+     *
+     * `major-key-electro` and `relay` both ask `lead` at **polyphony 1**, which is what this pool
+     * sounds (p.141). A lead is one note at a time by definition, so the sample pool is not a
+     * compromise here the way it would be for a chord — it is the right pool.
+     *
+     * **What it is not: `pp-arp-bright` with a different id.** That recipe is a pitched sample too,
+     * and everything it does is the step repeat — p.72's `Arp Up`, *"the arp will repeat by
+     * changing notes"*. This one sets no repeat at all. Its notes come from the direction's hook
+     * (#100), which both of the two that ask for a lead carry, so the line is written rather than
+     * generated and the box's job is to make one sample sing across it.
+     *
+     * **No glide, and it is the pool rather than an omission.** `pp-acid-dirty` slides with
+     * `VOICE · GLIDE MODE` (p.98) — a synth voice setting, on a synth patch. p.60's five step
+     * lanes carry no portamento and no sample-track page prints one, so a sampled line on this box
+     * changes pitch in steps. Saying so is invariant 5; authoring a glide from the synth page
+     * would be reading a value off the wrong instrument.
+     */
+    sourceAudio: {
+      need: 'A single sustained tone with a definite pitch — a bowed note, a held saw, a struck ' +
+        'bell that rings — long enough to hold the longest note in the line',
+      prep: {
+        text: 'Tune the sample to C4 before loading; the Note parameter reckons from C4.',
+        verified: cite(86),
+      },
+      hint: 'pick-sample',
+    },
+    params: [
+      audioMode(),
+      pick('FILTER', 'Low-Pass', FILTER_MODES, 66),
+      /*
+       * p.66 makes this one DJ-style knob rather than a cutoff: *"Range is 100-0 anticlockwise -
+       * low pass filtering. Turning clockwise 0-100 high pass filtering. Centre position applies
+       * 'No Filter'."* So the number only means anything with `FILTER` beside it, which is why
+       * the pair travels together on every recipe here.
+       */
+      num('FILTER CUTOFF', 84, DJ_FILTER, 188, { mood: [{ axis: 'darkness', amount: -26 }] }),
+      num('RESONANCE', 26, PCT, 66, { unit: '%', mood: [{ axis: 'grit', amount: 12 }] }),
+      num('MICROTUNE', 6, CENTS, 64, {
+        unit: 'c',
+        note: 'A few cents sharp, so the line sits above a pad rather than beating with it',
+      }),
+      num('SAMPLE ATTACK', 3, PCT, 69, { unit: '%', step: 0.1 }),
+      num('SAMPLE DECAY', 58, PCT, 69, { unit: '%', step: 0.1, mood: [{ axis: 'density', amount: -14 }] }),
+      num('OVERDRIVE', 22, PCT, 71, { unit: '%', mood: [{ axis: 'grit', amount: 26 }] }),
+      num('PANNING', 0, PAN, 65),
+      num('DELAY SEND', 30, PCT, 70, { unit: '%', mood: [{ axis: 'space', amount: 24 }] }),
+      delayPreset('Cleanio'),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'downbeat', set: { volume: 0 } },
+      { slot: 'accent', set: { volume: 3 } },
+      { slot: 'offbeat', set: { volume: -6 } },
     ],
     verified: false,
   },

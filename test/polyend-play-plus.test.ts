@@ -562,6 +562,156 @@ describe('Play+ manifest', () => {
 })
 
 /**
+ * §345. **What this box declares and does not serve, and why each answer is the answer.**
+ *
+ * The gap here was three tonal roles on two pools, and the module note covered all three with one
+ * argument: three synth patches, PERC takes one, so the other two go to the engines this box is
+ * distinctive for. That reasoning is sound and it is about `track-synth`. **It was never about
+ * `track-sample`**, which declares the same three roles, has eight tracks rather than three
+ * patches, and already carries twelve recipes.
+ *
+ * Asking the question the note had not asked splits the three:
+ *
+ *  - **`pad` and `stab` stay unauthored**, and on the sample pool the reason is `polyphony: 1`
+ *    rather than any budget. Every shipped request for either wants three or four notes, so that
+ *    pool is filtered out on capability before a recipe is looked at — an authored one there
+ *    could not be selected by anything the library ships.
+ *  - **`lead` is authored**, because both directions that ask for one ask at polyphony 1.
+ *
+ * Everything below is that reasoning made checkable, in the direction that matters: each test
+ * fails if the fact it rests on stops being true, rather than restating the prose.
+ */
+describe('the three tonal roles, and why two stay unauthored (§345)', () => {
+  const POOLS = ['track-sample', 'track-synth'] as const
+
+  function requestsFor(role: string) {
+    return TEMPLATES.flatMap((t) => t.roles.filter((r) => r.role === role))
+  }
+
+  it('declares all three on both pools, so neither gap is a capability claim', () => {
+    for (const id of POOLS) {
+      const pool = device.voices.find((v) => v.id === id)
+      expect(pool, id).toBeDefined()
+      for (const role of ['pad', 'lead', 'stab']) {
+        expect(pool?.roles as string[], `${id} declares ${role}`).toContain(role)
+      }
+    }
+  })
+
+  it('leaves pad and stab unauthored, and every request for them asks for more notes than the sample pool has', () => {
+    /*
+     * The load-bearing fact, asserted rather than asserted-about. If a direction ever asks for a
+     * monophonic `pad` or `stab`, this fails — and it should, because the reason recorded in the
+     * module note would have stopped being true.
+     */
+    const served = new Set(device.recipes.map((r) => r.role))
+    expect(served.has('pad')).toBe(false)
+    expect(served.has('stab')).toBe(false)
+
+    const samplePool = device.voices.find((v) => v.id === 'track-sample')
+    expect(samplePool?.polyphony).toBe(1)
+
+    for (const role of ['pad', 'stab']) {
+      const requests = requestsFor(role)
+      expect(requests.length, `${role} is asked for at all`).toBeGreaterThan(0)
+      for (const request of requests) {
+        expect(
+          request.polyphony ?? 1,
+          `${role} asked at ${String(request.polyphony ?? 1)} notes`,
+        ).toBeGreaterThan(samplePool?.polyphony ?? 1)
+      }
+    }
+
+    // And the synth pool genuinely could, which is what makes these honest gaps rather than
+    // things the box cannot do. Its polyphony clears every one of those requests.
+    const synthPool = device.voices.find((v) => v.id === 'track-synth')
+    const widest = Math.max(...['pad', 'stab'].flatMap((r) => requestsFor(r).map((q) => q.polyphony ?? 1)))
+    expect(synthPool?.polyphony ?? 0).toBeGreaterThanOrEqual(widest)
+  })
+
+  it('authors lead where the same test passes it, on the pool whose polyphony matches', () => {
+    const lead = device.recipes.find((r) => r.id === 'pp-lead-bright')
+    expect(lead, 'pp-lead-bright exists').toBeDefined()
+    expect(lead?.role).toBe('lead')
+    expect(lead?.voice).toBe('track-sample')
+
+    // The asymmetry with `pad` and `stab`, stated as the one number it turns on.
+    const requests = requestsFor('lead')
+    expect(requests.length).toBeGreaterThan(0)
+    for (const request of requests) expect(request.polyphony ?? 1).toBe(1)
+
+    // Character too: a recipe nothing asks for in that character is a REACH-dead entry, which is
+    // the trap the MPC's cut list was built against.
+    const asked = new Set(requests.map((r) => `${r.role}/${r.character}`))
+    expect(asked.has(`${String(lead?.role)}/${String(lead?.character)}`)).toBe(true)
+  })
+
+  it('keeps the sample pool as the whole reason, so no synth patch is spent on it', () => {
+    /*
+     * The budget argument the module note makes is a count: "Play+ has 3 synthesizers which
+     * operate with patches" (p.94), one of which is PERC. If a fourth distinct synth patch ever
+     * appeared, that argument would be describing a box this manifest no longer models — so the
+     * count is pinned here rather than left in prose.
+     */
+    const synthRecipes = device.recipes.filter((r) => r.voice === 'track-synth')
+    const models = new Set(
+      synthRecipes.map((r) => {
+        const model = (r.params as { name: string; value?: unknown }[]).find(
+          (param) => param.name === 'SYNTH MODEL',
+        )
+        return String(model?.value)
+      }),
+    )
+    expect([...models].sort()).toEqual(['ACD', 'PERC', 'WTFM'])
+
+    // And the lead is not one of them: it costs a sample track, which is what makes it free of
+    // the argument that excludes the other two roles.
+    expect(synthRecipes.some((r) => r.role === 'lead')).toBe(false)
+  })
+
+  it('is not the arp with a different id, which is the nearest thing already on the pool', () => {
+    // Both are one pitched sample on a mono track. `pp-arp-bright` is the step repeat and nothing
+    // else — p.72's `Arp Up`, "the arp will repeat by changing notes". A lead that carried a
+    // repeat would be that recipe wearing another role's name.
+    const lead = device.recipes.find((r) => r.id === 'pp-lead-bright') as (typeof device.recipes)[number]
+    const arp = device.recipes.find((r) => r.id === 'pp-arp-bright') as (typeof device.recipes)[number]
+    const names = (r: typeof lead) => (r.params as { name: string }[]).map((p) => p.name)
+    expect(names(arp)).toContain('REPEAT TYPE')
+    expect(names(lead)).not.toContain('REPEAT TYPE')
+    expect(names(lead)).not.toContain('REPEAT GRID')
+
+    // What it carries instead, and the pairing that cannot come apart: p.66 makes FILTER CUTOFF a
+    // DJ-style knob whose meaning depends on which side of centre the FILTER enum names, so the
+    // number is not a value without it.
+    expect(names(lead)).toContain('FILTER')
+    expect(names(lead)).toContain('FILTER CUTOFF')
+  })
+
+  it('carries no glide, because the one this box has belongs to a synth voice', () => {
+    // `pp-acid-dirty` slides with `VOICE · GLIDE MODE` (p.98). That is a synth patch parameter and
+    // a sample track has no counterpart, so a sampled line changes pitch in steps. Asserted so
+    // that a later reader reaching for the acid recipe's slide has to read the page first.
+    const lead = device.recipes.find((r) => r.id === 'pp-lead-bright') as (typeof device.recipes)[number]
+    const acid = device.recipes.find((r) => r.id === 'pp-acid-dirty') as (typeof device.recipes)[number]
+    const names = (r: typeof lead) => (r.params as { name: string }[]).map((p) => p.name)
+    expect(names(acid).some((n) => n.includes('GLIDE'))).toBe(true)
+    expect(names(lead).some((n) => n.includes('GLIDE'))).toBe(false)
+    expect(acid.voice).toBe('track-synth')
+  })
+
+  it('closes the last gap this box had, and leaves the two that are argued for', () => {
+    const served = new Set(device.recipes.map((r) => r.role))
+    const gaps = new Set<string>()
+    for (const pool of device.voices) {
+      for (const role of pool.roles) if (!served.has(role)) gaps.add(role)
+    }
+    // Exactly the two the module note argues for, and nothing else — so a role quietly added to a
+    // pool without a recipe fails here rather than becoming a fourth silent gap.
+    expect([...gaps].sort()).toEqual(['pad', 'stab'])
+  })
+})
+
+/**
  * §2.1/#334. **This box authors no trigger note on either pool, and the two pools decline for
  * different reasons** — which is why one assertion could not have covered both.
  *
@@ -793,8 +943,13 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   it('accounts for every part that draws no grid, by which reason', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
     // part with no variant anywhere nothing to program.
+    //
+    // 78 until #345 authored `pp-lead-bright`, and the twelve it added all land here rather than
+    // in the grid: `major-key-electro` and `relay` are the two directions that ask for a lead and
+    // both carry a hook for it, so the line is written in the hook and the part draws no steps of
+    // its own. Nothing else in this sweep moved, which is the shape of a hooked role arriving.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(78)
+    expect(hooked.length).toBe(90)
     expect(sustained).toEqual([])
     expect(noPattern.length).toBe(30)
     expect([...new Set(noPattern)].sort()).toEqual([
