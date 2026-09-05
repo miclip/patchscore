@@ -351,6 +351,13 @@ const AUDIT: readonly (readonly [
     ['synthstrom-deluge', 'deluge-acid-dirty', 'bound', 'stated', 'neutral'],
     ['teenage-engineering-op-xy', 'opxy-acid-dirty', 'bound', 'stated', 'neutral'],
 
+    // **The SP-404MK2, which has portamento and cannot spend it.** p.38's CHROMATIC play methods
+    // include LEGATO — "When you play legato (by pressing a pad while holding down another pad),
+    // portamento is applied" — so the glide is printed. But CHROMATIC turns all sixteen pads into
+    // one sample's keyboard, so a line that glides is the only part in the bank. Stated, with the
+    // trade in the routing; the accent is bound, because TR-REC carries velocity per step.
+    ['roland-sp-404mk2', 'sp-acid-hard', 'bound', 'stated', 'neutral'],
+
     // Samplers whose per-step editing is real and whose manuals print no scale for it.
     ['te-ep-133', 'ep133-acid-dirty', 'stated', 'stated', 'neutral'],
     ['te-ep-40', 'ep40-acid-dirty', 'stated', 'stated', 'neutral'],
@@ -442,7 +449,7 @@ describe('every acid recipe accounts for the accent and the slide (#283)', () =>
       d.recipes.filter((r) => r.role === 'acid').map((r) => r.id),
     )
     expect([...AUDIT.map((row) => row[1])].sort()).toEqual([...shipped].sort())
-    expect(shipped).toHaveLength(33)
+    expect(shipped).toHaveLength(34)
   })
 
   it.each(AUDIT)('%s / %s accounts for both gestures in the manifest', (deviceId, recipeId, accent, slide) => {
@@ -488,7 +495,7 @@ describe('every acid recipe accounts for the accent and the slide (#283)', () =>
     }
   })
 
-  it('renders all 33, from three knob positions', () => {
+  it('renders all 34, from three knob positions', () => {
     // The whole library reachable from one direction, which it was not while `r-acid` asked for
     // `dirty`: force is the one character axis no mood knob moves, so the two `hard` recipes could
     // not be selected at any setting and the audit had two rows it could only check on paper.

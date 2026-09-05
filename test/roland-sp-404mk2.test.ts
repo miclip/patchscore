@@ -563,11 +563,12 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * prompt to re-read the head note rather than a failure. What must not move is the relationship
    * — no part ever gets a `trigger`, because the pool has no note to give one.
    */
-  it('leaves 246 grid parts blank, and pins how many there are', () => {
+  it('leaves 264 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(270)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(246)
+    // 246 until #345 authored the six roles the pool declared and no recipe served.
+    expect(grid.length).toBe(288)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(264)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -601,7 +602,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['open-hat', 18],
       ['rim', 18],
       ['snare', 18],
+      ['arp', 6],
       ['impact', 6],
+      ['noise', 6],
+      ['ride', 6],
       ['tom', 6],
       ['vox-chop', 6],
     ])
@@ -612,11 +616,14 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
     // produces no sustained part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(114)
+    expect(hooked.length).toBe(138)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(18)
+    // 18 until #345: `sweep` gains two entries, and no direction authors a step variant for it.
+    expect(noPattern.length).toBe(30)
     expect([...new Set(noPattern)].sort()).toEqual([
+      'ambient-dub/sweep',
       'ambient-dub/texture',
+      'generative-drift/sweep',
       'hip-hop/texture',
       'industrial-techno/riser',
     ])

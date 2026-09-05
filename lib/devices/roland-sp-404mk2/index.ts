@@ -1135,6 +1135,285 @@ const recipes: Recipe[] = [
     ],
     articulation: [art('first-hit', { velocity: 127 }, 'tr-rec')],
   },
+  {
+    id: 'sp-ride-bright',
+    role: 'ride',
+    character: 'bright',
+    voice: 'pad',
+    title: 'Ride let ring on the offbeat, into the room',
+    verified: false,
+    /**
+     * `HOLD 118` against `RELEASE 40` is where the ring lives: p.77's envelope is what shapes a
+     * one-shot on this box, and a ride cut short is a stick hit. The source note asks for a
+     * recording with a tail for the same reason.
+     *
+     * BUS 2 rather than BUS 1, and it is a routing decision rather than a taste one — see the
+     * module note on the two shared slots. A cymbal wants the room the reverb gives it and does
+     * not want the filter every BUS 1 part is sharing, which on this direction is holding a low
+     * cutoff for the parts underneath.
+     */
+    sourceAudio: {
+      need:
+        'A ride cymbal one-shot with the bow ring left on it, two seconds or longer; a gated ride ' +
+        'has no tail for HOLD to hold',
+    },
+    params: [
+      gateMode('ONE-SHOT'),
+      loop('OFF'),
+      bus('BUS 2'),
+      ...busTwo(),
+      attack(0),
+      hold(100),
+      release(40),
+      volume(102),
+      shuffle(),
+    ],
+    articulation: [
+      art('offbeat', { velocity: 94 }, 'tr-rec'),
+      art('accent', { velocity: 116 }, 'tr-rec'),
+    ],
+  },
+  {
+    id: 'sp-noise-dirty',
+    role: 'noise',
+    character: 'dirty',
+    voice: 'pad',
+    title: 'Noise burst struck on the grid, driven through the filter bus',
+    verified: false,
+    /**
+     * **Struck rather than held, read off the direction rather than assumed.** Industrial Techno
+     * is the only request and it patterns `noise` on `accent`, `downbeat` and `offbeat`, so it is
+     * rhythmic. A bed would be `GATE` with `LOOP ON` and a long hold, which is `sp-texture-soft`
+     * and a different part.
+     *
+     * BUS 1 is where the grit is: `DRIVE` is a BUS 1 parameter (p.205) and there is no per-pad
+     * distortion on this box. That is also the constraint worth knowing — the drive this part
+     * gets is the drive every other BUS 1 part gets, which is why the module note calls the two
+     * slots shared rather than per-pad.
+     */
+    sourceAudio: {
+      need:
+        'A noise recording with movement in it — tape hiss, a vinyl run-out, a cymbal wash; flat ' +
+        'white noise gives the filter nothing to find',
+    },
+    params: [
+      gateMode('ONE-SHOT'),
+      loop('OFF'),
+      bus('BUS 1'),
+      ...busOne(),
+      attack(0),
+      hold(30),
+      release(18),
+      volume(96),
+      shuffle(),
+    ],
+    articulation: [
+      art('offbeat', { velocity: 96 }, 'tr-rec'),
+      art('accent', { velocity: 120 }, 'tr-rec'),
+    ],
+  },
+  {
+    id: 'sp-lead-bright',
+    role: 'lead',
+    character: 'bright',
+    voice: 'pad',
+    title: 'One sample played as a line, a PITCH value on every step',
+    verified: false,
+    /**
+     * A pad plays one sample (p.16), so a lead here is that sample transposed step by step:
+     * TR-REC carries `PITCH -12-+12` on every step and `PITCH MODE CHROMATIC` is what lets each
+     * step differ (p.98). Microscope edits the same field note by note (p.102).
+     *
+     * **Two octaves is the whole range**, which is a printed limit rather than a caution: p.80
+     * gives `PITCH` as -12 to +12. A line that needs more wants CHROMATIC mode, and CHROMATIC
+     * costs the entire bank (p.38) — see the acid recipe below, where that trade is the subject.
+     */
+    sourceAudio: {
+      need:
+        'One sustained single note recorded at a known pitch — every other note in the line is ' +
+        'this one transposed, so its tuning is the tuning of the whole part',
+    },
+    routing:
+      '**The line:** set `PITCH MODE` to `CHROMATIC` in TR-REC and give each step its own `PITCH` ' +
+      'value (p.98); the Hook phase gives the notes. Keep it inside two octaves — `PITCH` runs ' +
+      '-12 to +12 (p.80)',
+    params: [
+      gateMode('ONE-SHOT'),
+      loop('OFF'),
+      bus('BUS 2'),
+      ...busTwo(),
+      vinyl('No'),
+      pitch(0),
+      attack(2),
+      hold(70),
+      release(26),
+      volume(106),
+      shuffle(),
+    ],
+    articulation: [
+      art('downbeat', { velocity: 110, 'pitch-mode': 'CHROMATIC', pitch: 0 }, 'tr-rec'),
+      art('accent', { velocity: 124 }, 'tr-rec'),
+    ],
+  },
+  {
+    id: 'sp-arp-clean',
+    role: 'arp',
+    character: 'clean',
+    voice: 'pad',
+    title: 'Arpeggio written into TR-REC, one PITCH value per step',
+    verified: false,
+    /**
+     * **This box has no arpeggiator.** The word occurs nowhere in the 274 pages. So an `arp` here
+     * is a figure entered a step at a time, and the mechanism is the lead's: `PITCH` per step with
+     * `PITCH MODE CHROMATIC` (p.98).
+     *
+     * **The two-octave limit bites harder here than on the lead**, and that is worth saying rather
+     * than repeating the sentence. A lead moves by step and can be written inside `PITCH`'s -12 to
+     * +12 without much thought; an arpeggio climbs, and a four-note figure over two octaves is
+     * most of the range gone. The way past it is CHROMATIC mode, which costs the bank (p.38).
+     *
+     * `clean` covers Generative Drift's `bright` request at §3.5's substitution distance, so one
+     * recipe answers both directions that ask.
+     */
+    sourceAudio: {
+      need: 'A short plucked or struck tone of one known pitch, decaying inside a step',
+    },
+    routing:
+      '**The figure:** `PITCH MODE` `CHROMATIC` in TR-REC, then a `PITCH` value on each step ' +
+      '(p.98). There is no arpeggiator on this box to generate one from a held chord. **Watch the ' +
+      'range** — `PITCH` spans -12 to +12 (p.80), which a climbing figure uses up quickly',
+    params: [
+      gateMode('ONE-SHOT'),
+      loop('OFF'),
+      bus('BUS 2'),
+      ...busTwo(),
+      vinyl('No'),
+      pitch(0),
+      attack(0),
+      hold(26),
+      release(14),
+      volume(98),
+      shuffle(),
+    ],
+    articulation: [
+      art('offbeat', { velocity: 94 }, 'tr-rec'),
+      art('ghost', { velocity: 58 }, 'tr-rec'),
+    ],
+  },
+  {
+    id: 'sp-acid-hard',
+    role: 'acid',
+    character: 'hard',
+    voice: 'pad',
+    title: 'Acid line stepped in TR-REC, the shared filter doing the squelch',
+    verified: false,
+    /**
+     * **This box has portamento and taking it costs the other fifteen pads**, which is the
+     * sharpest version of the slide question in this library so far.
+     *
+     * p.38, rendered: in CHROMATIC mode the [REMAIN] button cycles three play methods, and
+     * `LEGATO` is *"When you play legato (by pressing a pad while holding down another pad),
+     * portamento is applied."* So the glide is real and printed. But CHROMATIC is entered by
+     * selecting *one* sample and turning pads [1]-[16] into its keyboard (p.38, steps 1-3), which
+     * the module note already records as the reason `Assignable` cannot model it: for as long as
+     * it is on, no other pad is a sample slot. A part that takes the slide takes the bank.
+     *
+     * So the recipe is the stepped line and the slide is `stated` (#283): `PITCH` per step in
+     * TR-REC with `PITCH MODE CHROMATIC` (p.98), `velocity` per step for the accents, and
+     * `routing` telling the reader what the glide would cost if they want it.
+     *
+     * **The filter is the other half and it is shared.** An acid line's squelch is a resonant
+     * filter moving, and on this box there is no per-pad filter — `CUTOFF`, `RESONANCE` and
+     * `DRIVE` are BUS 1 parameters (p.205), one set for every pad routed there. This recipe sets
+     * `BUS 1` and `routing` says the consequence out loud, because a reader who sweeps that
+     * filter is sweeping every other BUS 1 part with it. `RESONANCE 30` in the shared block is
+     * the setting the rest of the library's BUS 1 parts are already sharing; raising it for this
+     * part alone is not something the box offers.
+     */
+    sourceAudio: {
+      need:
+        'A short saw or square bass tone of one known pitch, with no filter movement recorded ' +
+        'into it — the filter is the part this recipe is for',
+    },
+    routing:
+      '**The line:** `PITCH MODE` `CHROMATIC` in TR-REC and a `PITCH` value per step (p.98). ' +
+      '**Accent:** `velocity` per step, below. **Slide:** this box has portamento, and it is in ' +
+      'CHROMATIC mode with the play method set to `LEGATO` (p.38) — but CHROMATIC turns all ' +
+      'sixteen pads into one sample\u2019s keyboard, so a line that glides is the only part in the ' +
+      'bank. **The squelch is BUS 1 and BUS 1 is shared** (p.205): moving the cutoff moves every ' +
+      'other part routed there, so put the parts that must hold still on BUS 2 or DRY first',
+    params: [
+      gateMode('ONE-SHOT'),
+      loop('OFF'),
+      bus('BUS 1'),
+      ...busOne(),
+      vinyl('No'),
+      pitch(0),
+      attack(0),
+      hold(34),
+      release(12),
+      volume(110),
+      shuffle(),
+    ],
+    articulation: [
+      art('accent', { velocity: 127 }, 'tr-rec'),
+      art('offbeat', { velocity: 88 }, 'tr-rec'),
+    ],
+  },
+  {
+    id: 'sp-sweep-soft',
+    role: 'sweep',
+    character: 'soft',
+    voice: 'pad',
+    title: 'Held source with the bus filter swept into the pattern',
+    verified: false,
+    /**
+     * §4.2, and **the mechanism is a recording rather than a modulator.** There is no LFO on this
+     * box — the word occurs nowhere in the 274 pages — and no per-pad filter to move. What there
+     * is instead is EFX MOTION: p.111, *"Here's how to record your effect on/off and effect
+     * parameter ([CTRL 1]-[CTRL 3] knob) operations to a pattern in real time"*, with the
+     * recorded moves played back with the pattern (EFX MOTION PLAY).
+     *
+     * So the sweep is the reader turning the BUS 1 cutoff while the pattern records, and it plays
+     * back every time round. That is a better fit for this role than an LFO would be: §4.2 scopes
+     * a sweep to particular sections, and a recorded move is placed where it is played rather
+     * than cycling forever.
+     *
+     * **The cost is that BUS 1 is shared, and here it is the whole point rather than a footnote.**
+     * A recorded cutoff move sweeps every pad routed to BUS 1, not just this one. On the two
+     * directions asking for `sweep` that is usually what a reader wants — a filter opening across
+     * the whole track is the gesture — but it has to be said, because the alternative is a reader
+     * wondering why their kick moved. `routing` says it and says how to opt a part out.
+     *
+     * **No articulation, checked** (#108): neither direction asking for `sweep` authors a step
+     * variant for it, so there is no slot for a gesture to address.
+     */
+    sourceAudio: {
+      need:
+        'A sustained source that holds without changing — a drone, a held chord, a noise bed. The ' +
+        'filter supplies the movement, so anything already moving fights it',
+    },
+    routing:
+      '**Record the sweep into the pattern.** Press [REC], then [MARK] to start EFX MOTION REC, ' +
+      'and turn the BUS 1 cutoff across the bars you want it to travel (p.111). It plays back ' +
+      'with the pattern from then on. **It moves every pad on BUS 1**, which is usually the point ' +
+      'here — route anything that must hold still to BUS 2 or DRY before you record (p.49)',
+    params: [
+      // `GATE OFF` with `LOOP ON` is the sustained shape on this box, the same pair
+      // `sp-texture-soft` uses: the pad starts on a press and stops on the next one (p.32),
+      // which is what holds a source still under a sweep that lasts a section.
+      gateMode('OFF'),
+      loop('ON', 'Button lit — pressing the pad starts it, pressing again stops it (p.32)'),
+      loopDir('Forwards'),
+      bus('BUS 1'),
+      ...busOne(),
+      attack(30),
+      hold(100),
+      release(60),
+      volume(92),
+      shuffle(),
+    ],
+  },
 ]
 
 export const device: Device = {

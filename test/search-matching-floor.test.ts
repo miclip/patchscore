@@ -1366,8 +1366,25 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * Eighteen consecutive zeroes, across thirteen devices and eight content changes that between
    * them took the walk down, up, up, up, down by half, up, up, up, up, up, up, up, up, up, down
    * by a quarter, up, up, and up.
+   *
+   * **Six recipes take it up one node and the gap stays at zero — a nineteenth time.** 488,910 ->
+   * 488,911 unrepaired and the same repaired. The SP-404MK2's six unauthored roles (#345).
+   *
+   * The rule holds a second time running, and for the same reason: `industrial-techno` asks this
+   * box for one of the six, `noise`, at priority 5 and optional. Five points on the line now, and
+   * the recipe counts (9, 8, 7, 7, 6) still explain none of the costs (1, 9,233, 10,767, 1, 1).
+   *
+   * `search-bound.test.ts` records the direction's peak moving 566,908 -> 567,006, 98 nodes again
+   * against this seed's one.
+   *
+   * The peak stayed on seed 18 for the ninth entry running, and this seed is still one node off
+   * the row's floor — 488,911 against 488,910 on seed 13.
+   *
+   * Nineteen consecutive zeroes, across fourteen devices and nine content changes that between
+   * them took the walk down, up, up, up, down by half, up, up, up, up, up, up, up, up, up, down
+   * by a quarter, up, up, up, and up.
    */
-  it('walks the recorded 488,910 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 488,911 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1375,7 +1392,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(488_910)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(488_911)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
