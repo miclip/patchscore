@@ -34,6 +34,8 @@ open-hat    ██████ ██████ ██████████
 stab        ██████ ██████ ██████████████ █████████ ██████████████ ██████
 impact      ······ ······ ██████████████ ········· ██████████████ ······
 pad         ██████ ██████ ██████████████ █████████ ██████████████ ██████
+riser       ······ ██████ ·············· █████████ ·············· ······
+noise       ██████ ██████ ██████████████ █████████ ██████████████ ██████
 ```
 
 ## 2. Voice assignment
@@ -56,23 +58,20 @@ pad         ██████ ██████ ██████████
   - p3 · exact `hard` · 3 notes stacked one per voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
-- **`pad`** → Tracker Mini · Track 5, Track 6 and Track 7 — *Slow detuned pad, long swell*
+- **`pad`** → Tracker Mini · Synth Track 1, Synth Track 2 and Synth Track 3 — *Slow detuned pad, long swell*
   - p4 · substituted — asked `dark`, authored `soft` · 3 notes stacked one per voice · every section
+- **`riser`** → Tracker Mini · Track 5 — *Sample played backwards, the envelope swelling it into the change*
+  - p4 · exact `bright` · Build, Breakdown
+- **`noise`** → Tracker Mini · Track 6 — *Noise recording struck on the grid, band-passed to sit above the drums*
+  - p5, optional · exact `dirty` · every section
 
 ### Gaps
 
 None.
 
-### Not needed for this direction
-
-Industrial Techno is finished without these.
-
-- `riser` `bright` (p4) — a part already playing can lift the eight bars into a drop
-- `noise` `dirty` (p5) — grit is a bonus, and the drums already bring some
-
 ## 3. Rig integration
 
-**Clock source** — Tracker Mini over `midi-din`, carrying 7 parts. Sync everything else to it.
+**Clock source** — Tracker Mini over `midi-din`, carrying 9 parts. Sync everything else to it.
 
 - Why this box — its manual says leading a rig is its job · manual
   - ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.283
@@ -81,12 +80,12 @@ Industrial Techno is finished without these.
   - ↳ note: Off, USB, MIDI Out jack, USB + MIDI Out jack — clock leaves only by the routing set here
   - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.54
 
-- **Tracker Mini** — groovebox · 7 parts
+- **Tracker Mini** — groovebox · 9 parts
   - clock: sends clock · midi-din/usb
   - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284) · manual
     - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.13
   - audio: stereo main out · USB audio · audio in
-  - mixer: 7 parts, no individual outs: one stereo channel for all
+  - mixer: 9 parts, no individual outs: one stereo channel for all
 - **TR-1000** — drum-machine · 7 parts
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
@@ -120,7 +119,7 @@ A step is a trigger, not a note with a length: the instrument's own envelope end
 - bar 2 · step 23 · `Db3` (`C#3`) · 6th · MIDI 49
 - bar 2 · step 27 · `C3` · 5th · MIDI 48
 
-### `pad` — Tracker Mini · Track 5, Track 6 and Track 7
+### `pad` — Tracker Mini · Synth Track 1, Synth Track 2 and Synth Track 3
 
 **Slow detuned pad, long swell** — settings in Sound design
 
@@ -131,21 +130,21 @@ No note-length field on this box — a note runs until the next note on the same
 
 Stacked chord — 3 voices, one note each. There is no chord to play on any one of them.
 
-Lowest note to the lowest voice: **Track 5** takes the bottom of every chord and **Track 7** the top. Hold that order and the voicing keeps its shape as the progression moves; cross the voices over and the chord changes character between bars with nothing here saying so.
+Lowest note to the lowest voice: **Synth Track 1** takes the bottom of every chord and **Synth Track 3** the top. Hold that order and the voicing keeps its shape as the progression moves; cross the voices over and the chord changes character between bars with nothing here saying so.
 
-**Track 5** — lowest note
+**Synth Track 1** — lowest note
 
 - bar 1 · step 1 · `F3` · root · MIDI 53
 - bar 5 · step 65 · `Db4` (`C#4`) · 6th · MIDI 61
 - bar 7 · step 97 · `Eb4` (`D#4`) · 7th · MIDI 63
 
-**Track 6** — note 2 from the bottom
+**Synth Track 2** — note 2 from the bottom
 
 - bar 1 · step 1 · `Ab3` (`G#3`) · 3rd · MIDI 56
 - bar 5 · step 65 · `F4` · root · MIDI 65
 - bar 7 · step 97 · `G4` · 2nd · MIDI 67
 
-**Track 7** — highest note
+**Synth Track 3** — highest note
 
 - bar 1 · step 1 · `C4` · 5th · MIDI 60
 - bar 5 · step 65 · `Ab4` (`G#4`) · 3rd · MIDI 68
@@ -472,10 +471,58 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 - `first-hit` → `accent` true on step 1
   - ↳ hint: ACCENT [STEP], then step keys
 
-### `pad` — Tracker Mini · Track 5, Track 6 and Track 7
+### `pad` — Tracker Mini · Synth Track 1, Synth Track 2 and Synth Track 3
 
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
+
+### `riser` — Tracker Mini · Track 5
+
+**Sample played backwards, the envelope swelling it into the change** — settings in Sound design
+
+**Trigger note** — `C5` · MIDI 60 · manual
+- ↳ cite: manual — Polyend Tracker Mini Manual 2.2.1b, p.90 (C5 plays a sample at its original pitch); p.54, p.298, p.288 (Middle C setting, shipped as C-5, so that C5 is MIDI 60)
+
+**Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 1)
+
+### `noise` — Tracker Mini · Track 6
+
+**Noise recording struck on the grid, band-passed to sit above the drums** — settings in Sound design
+
+**Trigger note** — `C5` · MIDI 60 · manual
+- ↳ cite: manual — Polyend Tracker Mini Manual 2.2.1b, p.90 (C5 plays a sample at its original pitch); p.54, p.298, p.288 (Middle C setting, shipped as C-5, so that C5 is MIDI 60)
+
+**Intro, Outro** — 32 steps, band 0
+
+```
+ 1 x··· ···· ···· ····
+17 ···· ···· ···· ····
+```
+- `downbeat` — 1
+
+**Build, Breakdown** — 32 steps, band 1
+
+```
+ 1 x··· ···· ···· ····
+17 x··· ···· ···· ····
+```
+- `downbeat` — 1, 17
+
+**Drop, Peak** — 32 steps, band 3
+
+```
+ 1 x··· ··x· ···· ··x·
+17 x··· ··x· ···· ··x·
+```
+- `downbeat` — 1, 17
+- `offbeat` — 7, 15, 23
+- `accent` — 31 (vel 104)
+
+**On this box** — Tracker Mini
+
+- `accent` → `volume` 100 on step 31
+  - ↳ hint: Hold [FX1], press (Up)/(Down)
+- `offbeat` → `gate-length` 30 on steps 7, 15, 23
 
 ## 6. Sound design
 
@@ -540,11 +587,11 @@ Routing — Tracks 1-8 — costs no synth slot, and one loaded sample serves eve
 - **OVERDRIVE** `16` % (0…100 %)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
 
-#### Track 5, Track 6 and Track 7 — `pad`: Slow detuned pad, long swell
+#### Synth Track 1, Synth Track 2 and Synth Track 3 — `pad`: Slow detuned pad, long swell
 
 Polyphony — 3 notes, one on each of 3 voices. **Every voice takes these same settings**: it is one sound played 3 times over, not 3 sounds, and a difference between them is a difference you will hear inside the chord. Which voice takes which note is in Hook.
 
-Routing — Tracks 1-8 — costs one of the three project synth slots
+Routing — Synth Track n is panel track n+8 — costs one of the three project synth slots
 
 *Ranges cite manual — Polyend Tracker Mini Manual 2.2.1b, p.158.*
 
@@ -561,6 +608,41 @@ Routing — Tracks 1-8 — costs one of the three project synth slots
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.159
 - **VOICE VOLUME** `86` % (0…200 %)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.161
+
+#### Track 5 — `riser`: Sample played backwards, the envelope swelling it into the change
+
+Source — A sample with a long decaying tail — reversed, that tail is the rise, so the tail is the part that matters. p.196 warns a very long tail can reverse into silence, so check the end point after you turn it round
+
+Routing — **Set `r` to `<<<` on the step that starts the rise** — the Reverse Sample step FX, p.196. The envelope below does the swell; the reverse is what makes a decay into a build. p.196 also warns that a long tail can reverse into silence, so shorten the sample end if nothing sounds
+
+*Ranges cite manual — Polyend Tracker Mini Manual 2.2.1b, p.126.*
+
+- **PLAY MODE** `1-Shot`
+- **FILTER TYPE** `Low-pass`
+- **CUTOFF** `78` % (0…100 %)
+  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
+- **RESONANCE** `26` % (0…100 %)
+  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
+- **ENVELOPE · ATTACK** `3.4` Sec (0…10 Sec)
+  - ↳ note: The climb. Longer than the section start-to-change if you want it still rising
+- **ENVELOPE · SUSTAIN** `100` % (0…100 %)
+- **ENVELOPE · RELEASE** `0.4` Sec (0…10 Sec)
+  - ↳ note: Short, so the rise stops at the change rather than hanging over it
+- **REVERB SEND** `54` % (0…100 %)
+  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
+
+#### Track 6 — `noise`: Noise recording struck on the grid, band-passed to sit above the drums
+
+Source — A noise recording with movement in it — tape hiss, a vinyl run-out, a cymbal wash. Flat white noise gives the band-pass nothing to find
+
+*Ranges cite manual — Polyend Tracker Mini Manual 2.2.1b, p.117.*
+
+- **PLAY MODE** `1-Shot`
+- **FILTER TYPE** `Band-pass`
+- **CUTOFF** `66` % (0…100 %)
+- **RESONANCE** `40` % (0…100 %)
+- **REVERB SEND** `18` % (0…100 %)
+  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
 
 ### TR-1000
 
@@ -737,15 +819,17 @@ Nothing here ducks to another box, so a rig-wide pump is built box by box.
 
 What processes audio in this rig:
 
-- Tracker Mini — carries effects, though no part in this guide reaches them
+- Tracker Mini — carries REVERB SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 
 **Arrangement variations**
 
 Sections that program identically, part for part — build one and copy it:
 
-- **band 0** — Intro, Outro · 8 parts, 13 strikes
-- **band 1** — Build, Breakdown · 8 parts, 25 strikes
-- **band 3** — Drop, Peak · 9 parts, 67 strikes
+- **band 0** — Intro, Outro · 9 parts, 14 strikes
+- **band 1** — Build, Breakdown · 9 parts, 27 strikes
+- **band 3** — Drop, Peak · 10 parts, 73 strikes
+
+`riser` has no pattern authored at any band, so nothing here varies for it.
 
 `pad` is held rather than struck, so there is no grid here to vary.
