@@ -876,6 +876,9 @@ export function resolveParam(
         : {}),
       ...(param.hint === undefined ? {} : { hint: param.hint }),
       ...(param.note === undefined ? {} : { note: param.note }),
+      // Carried, never computed, for the same reason `scope` is: which panel block a control
+      // sits on is a fact about the box. Absent stays absent — there is no module to derive.
+      ...(param.module === undefined ? {} : { module: param.module }),
       // #107. Carried, never computed: what one setting covers is a fact about the box, and
       // the resolver has nothing to add to it.
       ...(param.scope === undefined ? {} : { scope: param.scope }),
@@ -949,6 +952,7 @@ export function resolveParam(
     ...(param.hint === undefined ? {} : { hint: param.hint }),
     ...(param.midiCc === undefined ? {} : { midiCc: param.midiCc }),
     ...(note === undefined ? {} : { note }),
+    ...(param.module === undefined ? {} : { module: param.module }),
     ...(param.scope === undefined ? {} : { scope: param.scope }),
   }
 }

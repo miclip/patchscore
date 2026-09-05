@@ -2,6 +2,7 @@ import { Fragment, useContext } from 'react'
 import type { PatternDriver } from '@/lib/core'
 import type { ReactNode } from 'react'
 import type { ResolvedParam } from '@/lib/core'
+import { paramLabel } from '@/lib/core'
 import { GuideNavContext } from './nav'
 import { count, num, rangeText, valueParts } from './format'
 
@@ -113,7 +114,13 @@ export function ParamLine({ param, hint }: { param: ResolvedParam; hint?: string
       {...(param.note === undefined ? {} : { note: param.note })}
       {...(hint === undefined ? {} : { hint })}
     >
-      <span className="param-name">{param.name}</span>
+      {/*
+        #385. The label, not the stored name: inside a box already headed `MIXER`, a row reading
+        `MIXER · OSC 1` repeats it. `paramLabel` is shared with the Markdown renderer so one
+        control cannot read two ways (#33), and `param.name` stays the identity — the React key
+        above it, #107's hoist key, and every fixture that names a control.
+      */}
+      <span className="param-name">{paramLabel(param)}</span>
       <Value param={param} />
     </Instruction>
   )

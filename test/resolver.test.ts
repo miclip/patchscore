@@ -39,7 +39,7 @@ import {
   type SectionName,
   type Template,
 } from '../lib/core/index'
-import { device, numericParam, poolDevice, recipe, template } from './fixtures'
+import { device, enumParam, numericParam, poolDevice, recipe, template, textParam } from './fixtures'
 
 const MANUAL: Cite = { kind: 'manual', source: 'fixture manual p.42' }
 const OBSERVED: Cite = { kind: 'observed', source: 'fixture unit, firmware 1.11' }
@@ -924,6 +924,71 @@ describe('the MIDI instruction names the controller and asserts no value (§3.1/
 
   it('carries the number itself, so a consumer need not read the sentence', () => {
     expect(resolveParam(decay(), MANUAL, moodState()).midiCc).toBe(87)
+  })
+})
+
+/**
+ * §3.1. **A control's panel module is carried, never computed.**
+ *
+ * It is authoring metadata in the same family as `unit`, `note` and `scope`: the device says
+ * which block of its front panel a control sits on, and the resolver has nothing to add to that
+ * and nothing to check it against. So the only two things worth pinning are the two the resolver
+ * could get wrong — dropping a module an author wrote, and inventing one they did not.
+ *
+ * The second matters more than it looks. Every optional on a `ResolvedParam` is spread
+ * conditionally so an absent field is *absent* rather than present-and-undefined, and invariant 6
+ * is a claim about bytes: `{ module: undefined }` and no key at all serialise differently in the
+ * golden file. `'module' in resolved` is the assertion that catches that; a `toBeUndefined()`
+ * would pass either way.
+ */
+describe('the panel module travels through the resolver unchanged (§3.1)', () => {
+  const PANEL = 'OSC 1'
+
+  it('preserves it on a numeric, including one mood moved', () => {
+    const param = numericParam({
+      value: 54,
+      range: { min: 0, max: 127, verified: MANUAL },
+      mood: [{ axis: 'density', amount: -18 }],
+      module: PANEL,
+    })
+    const moved = resolveParam(param, MANUAL, moodState({ density: 0 }))
+    expect(moved.value).toBe(72)
+    expect(moved.provenance).toMatchObject({ state: 'derived', from: 54 })
+    // The value moved; where the knob lives did not.
+    expect(moved.module).toBe(PANEL)
+    expect(resolveParam(param, MANUAL, moodState()).module).toBe(PANEL)
+  })
+
+  it('preserves it on an enum and on a text param', () => {
+    // The non-numeric branch is a separate return in `resolveParam`, so both kinds are pinned:
+    // a module is a fact about a switch and about a written instruction as much as about a knob.
+    expect(resolveParam(enumParam({ module: PANEL }), MANUAL, moodState()).module).toBe(PANEL)
+    expect(resolveParam(textParam({ module: 'PATCHBAY' }), MANUAL, moodState()).module).toBe(
+      'PATCHBAY',
+    )
+  })
+
+  it('leaves the key off entirely when the author declared no module', () => {
+    for (const param of [numericParam(), enumParam(), textParam()]) {
+      const resolved = resolveParam(param, MANUAL, moodState())
+      expect(resolved.module).toBeUndefined()
+      // Absent, not present-and-undefined — see the block comment.
+      expect('module' in resolved).toBe(false)
+    }
+  })
+
+  it('carries it per parameter across a whole recipe, in authored order', () => {
+    const resolved = resolveParams(
+      recipe({
+        params: [
+          numericParam({ name: 'CUTOFF', module: 'FILTER' }),
+          numericParam({ name: 'TUNE' }),
+          enumParam({ name: 'MODE', module: PANEL }),
+        ],
+      }),
+      moodState(),
+    )
+    expect(resolved.map((p) => p.module)).toEqual(['FILTER', undefined, PANEL])
   })
 })
 

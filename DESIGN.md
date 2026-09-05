@@ -3770,6 +3770,78 @@ ink and the reason the two cannot drift on *which* boxes a sentence covers.
 source* and *sync to it*. Never master/slave. "Master FX" and "master bus" stay — that is the
 master-copy sense, universal in music production, and not half of a pair.
 
+**Parameter lists are grouped by panel module, where a device says what its modules are (#385).**
+
+Reported from the machine: `muse-stab-hard` prints 75 parameters, and seventy-five rows is not a
+thing anybody reads standing up. They were already grouped — by *scope*, per-part against
+song-wide, which is a fact about our model rather than about the instrument in front of somebody.
+By module they are the panel's own sections, and a reader crosses the instrument in that order.
+
+- **`module` is an optional authored string on a parameter** (§3.1), in the device's own words,
+  carried through the resolver unchanged and never derived. Nothing in the model can work it out:
+  a parameter knows its name, value, range, unit, scope, hint and note, and nothing about where it
+  sits on a panel. Absent is the ordinary case and means only that nobody has said — a box whose
+  panel is one undivided surface has nothing to put there, and an unmoduled parameter is not a gap
+  (invariant 5).
+- **Not derived from the ` · ` name prefix.** #385 counted it: 3,419 parameters carry one against
+  10,884 that do not, and one device in thirty-nine is consistent. It is a habit two authors had,
+  not a structure to lift, and reading it would work by luck on one folder while teaching the next
+  to rely on it.
+- **Authored order is preserved.** Groups are maximal runs of *adjacent* parameters that agree, so
+  concatenating them reproduces the list exactly. A module interrupted and resumed therefore opens
+  two boxes with the same label; that is an authoring order which does not match the panel, it is
+  visible immediately, and the fix belongs in the device folder. Collecting every occurrence into
+  one box would read better and would silently reorder the instructions, which is the more
+  expensive of the two. #107's hoisted block follows the same rule with one exception: with no
+  module anywhere it keeps §7.2's name sort exactly, and with modules present it orders by first
+  encounter, because an alphabetical sort splits modules into extra runs.
+- **A module renders as a labelled box, and the label is trimmed off the lines inside it.** Where
+  a parameter's name opens with the exact prefix `<module> · `, the box already carries it and the
+  line prints only the remainder; any other name prints whole. **This is display only — the stored
+  name is unchanged**, because it is the identity #107 hoists on and the string every fixture
+  names, and sixteen of the Muse's seventy-seven suffixes appear under two modules. The two
+  renderers share the decision (#33 governs the ink, not this), so one control cannot read two
+  ways. The consequence is that the box becomes load-bearing: `CUTOFF` under `FILTER 1` and
+  `CUTOFF` under `FILTER 2` are told apart by the box and by nothing else on the line.
+- **Prose that names a control outside a box is not trimmed.** Finishing's Master FX sentence
+  lists parameters as evidence, with no box around them, where the prefix is the only thing
+  identifying which control is meant.
+
+**Scope: one device, deliberately.** The Muse authors `module` on all 1,328 of its parameter
+instances across 17 modules; no other device authors one and every other guide renders exactly as
+before. This is #385's own "cheaper first move" — module membership for ten thousand parameters
+across thirty-eight devices is device-authoring work at library scale, and the point of piloting
+on one box is to find out whether panel-shaped boxes are better to read before committing anyone
+to the rest.
+
+**Three semantic states are designed; one is implemented.**
+
+- **`live` — the module is in the patch.** The only state implemented, and it is a **default
+  rather than a finding**: with no init data, nothing can say whether a module differs from its
+  initialised values, so every module renders as live. That a recipe authors a parameter is *not*
+  evidence the module differs from init — an authored value may equal the init value, and often
+  will. Live is what a box reads as while the question is unanswered.
+- **`at init` — the module sits at its initialised values.** Not implemented. It requires
+  **per-parameter init values read off the instrument** — `observed` provenance specifically
+  (§3.1), not `manual`: the Muse's manual documents *that* there is an initialised patch and a
+  button for it, which is a different claim from what each of ninety-four controls reads once it
+  is loaded. No device carries any. Inferring it is forbidden: guessing that a value in the middle
+  of its range means untouched would tell a reader to skip a control they have to set, which is
+  invariant 5's "never invent an assignment" in a different hat.
+
+  **An `at init` module is still rendered, dimmed and collapsed — never omitted.** It is not
+  noise to be deleted: a reader scanning for what to touch is served by a module that recedes,
+  and a reader checking their patch against the guide still needs to find it. Omission also
+  destroys the distinction that must not blur — **"same as init" and "not authored" must never
+  render alike**, one being a module left alone and the other a gap a reader is entitled to see
+  (invariant 5), and both simply vanishing looks identical on the page.
+- **`inert` — the module was configured and reaches nothing**, because a route is off or a depth
+  is zero. Deferred to #388, and its *treatment* is unsettled rather than merely unbuilt: a panel
+  has no idiom for the difference between a module left alone and one configured to no effect.
+
+Until the second state exists, a module box distinguishes nothing between one module and another,
+and that is the honest description of what shipped.
+
 Export as Markdown, plus a print stylesheet for PDF. A real PDF pipeline is disproportionate
 work for v1.
 
@@ -3804,6 +3876,13 @@ an authored note as `↳ note:`, each its own nested item so that toggling hints
 `visibility` and nothing reflows. There was a third, `↳ cite:`, and it is gone — which is what
 makes `hints: false` exactly "the same document, minus the hint lines". A note is not
 suppressible: it is part of the instruction rather than a jog you outgrow.
+
+**A module box changes nothing about the reserved column (#385).** The box wraps the instruction
+rows and touches none of their rules, so a hint inside a box keeps its reserved cell, at every
+width, and toggling still changes `visibility` alone — the same promise a line outside a box has.
+Verified at 390px, and the verification has a real limitation worth stating: macOS Chrome will not
+open a window narrower than 500px, so the check is a 390px *column* inside a 500px window — guide
+`scrollWidth` 390, widest box 372, no element crossing the right edge — and not a phone viewport.
 
 **The block's citation sentence is not a third kind of subordinate line and must not become one.**
 It sits at the top of a device's section, once, above everything that box has to say; it hangs

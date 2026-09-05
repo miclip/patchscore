@@ -11,6 +11,7 @@ import {
   citationSentence,
   contentNotice,
   controlPositionNotice,
+  groupedParams,
   hoistedParams,
   renderedParams,
 } from '@/lib/core'
@@ -18,6 +19,7 @@ import type {
   CapabilityEvidence,
   ContentNotice,
   ControlPositionNotice,
+  ParamGroup,
   ParamScope,
   ScopedParams,
 } from '@/lib/core'
@@ -107,9 +109,60 @@ function Patch({ entries }: { entries: readonly ResolvedPatchEntry[] }) {
   )
 }
 
+/** The lines of one group, with each hint already resolved through the owner's `hints` table. */
+function ParamLines({
+  params,
+  owner,
+}: {
+  params: readonly ResolvedParam[]
+  owner: Device | undefined
+}) {
+  return (
+    <>
+      {params.map((param) => {
+        const hint = param.hint === undefined ? undefined : hintText(owner, param.hint)
+        return <ParamLine key={param.name} param={param} {...(hint === undefined ? {} : { hint })} />
+      })}
+    </>
+  )
+}
+
+/**
+ * §8/#385. **One panel module, drawn as the box it is on the front of the machine.**
+ *
+ * `groupedParams` cuts the list and the Markdown renderer reads the same cut, so both guides box
+ * the same controls together (§3.1); the markup is this renderer's own, per #33.
+ *
+ * The lamp is `aria-hidden` because it says nothing a reader needs read out: it is steady and
+ * solid on every module, and there is no second state — a lamp that could be off would be a
+ * claim about whether the box sits at its init values, which nothing in the model knows and
+ * nothing here guesses (invariant 5). The label beside it is the text, and it is the whole of
+ * what the box announces. That the lamp is there at all contradicts §10, knowingly and on trial;
+ * the note at the top of `app/globals.css` carries it.
+ *
+ * A group that declared no module renders as bare lines with nothing around them, so a guide
+ * whose devices name no modules produces exactly the markup it produced before this existed.
+ */
+function ModuleBox({ group, owner }: { group: ParamGroup; owner: Device | undefined }) {
+  if (group.module === undefined) return <ParamLines params={group.params} owner={owner} />
+  return (
+    <div className="module-box">
+      <p className="module-label">
+        <span className="module-led" aria-hidden="true" />
+        <span>{group.module}</span>
+      </p>
+      <ParamLines params={group.params} owner={owner} />
+    </div>
+  )
+}
+
 /**
  * One recipe's parameters. The shared-range-citation sentence that used to open this block is
  * gone with the citations it summarised — see `instruction.tsx` on the convention.
+ *
+ * The one place a parameter list is drawn in this view, which is why #107's hoisted block calls
+ * it too: a device-level control sits on a panel module exactly as a per-part one does, and a
+ * second copy of this loop would be a second chance to box them differently.
  */
 function Params({
   params,
@@ -120,10 +173,11 @@ function Params({
 }) {
   return (
     <div className="params">
-      {params.map((param) => {
-        const hint = param.hint === undefined ? undefined : hintText(owner, param.hint)
-        return <ParamLine key={param.name} param={param} {...(hint === undefined ? {} : { hint })} />
-      })}
+      {groupedParams(params).map((group, i) => (
+        // Indexed, because runs mean the same module can legitimately open two boxes — see
+        // `groupedParams` on why that is left visible rather than merged away.
+        <ModuleBox key={`${i}-${group.module ?? ''}`} group={group} owner={owner} />
+      ))}
     </div>
   )
 }
@@ -284,14 +338,9 @@ function ScopedBlock({ group, owner }: { group: ScopedParams; owner: Device | un
     <div className="scoped">
       <h5>{scopeHeading(group.scope)}</h5>
       <p className="quiet">{scopeSentence(group.scope)}</p>
-      <div className="params">
-        {group.params.map((param) => {
-          const hint = param.hint === undefined ? undefined : hintText(owner, param.hint)
-          return (
-            <ParamLine key={param.name} param={param} {...(hint === undefined ? {} : { hint })} />
-          )
-        })}
-      </div>
+      {/* The same `Params` a part uses: a hoisted control sits on a panel module too, and
+          boxing it here by a second route is how the two would come to disagree. */}
+      <Params params={group.params} owner={owner} />
     </div>
   )
 }

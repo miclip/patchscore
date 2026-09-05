@@ -20,7 +20,14 @@ import {
 import type { DeviceId, SectionName } from './ids'
 import type { Role } from './vocabulary'
 import type { CitedSource, ParamScope, ResolvedParam, ResolvedRange } from './params'
-import { citedShare, citedSources, hoistedParams, renderedParams } from './params'
+import {
+  citedShare,
+  citedSources,
+  groupedParams,
+  hoistedParams,
+  paramLabel,
+  renderedParams,
+} from './params'
 import type { Pattern, PatternHit } from './template'
 import { STEPS_PER_BAR } from './template'
 import { reStrikesHeldNote, tightestReStrike } from './timing'
@@ -2133,10 +2140,69 @@ function paramLines(param: ResolvedParam, device: Device | undefined, options: H
   // Name, value, unit, range. No `hoisted` argument any more: it existed only to stop a range
   // citation repeating under every line a shared sentence already covered, and with no citation
   // to repeat there is nothing to hoist.
-  out.push(`- **${param.name}** \`${valueText(param)}\`${unit}${range}`)
+  // #385: the module's own prefix is trimmed when its box already carries it. `paramLabel` is
+  // shared with the web view so one control cannot read two ways; the stored name is untouched.
+  out.push(`- **${paramLabel(param)}** \`${valueText(param)}\`${unit}${range}`)
   if (param.note !== undefined) subordinate(out, '  ', 'note', param.note)
   if (options.hints && param.hint !== undefined) {
     subordinate(out, '  ', 'hint', hintText(device, param.hint))
+  }
+  return out
+}
+
+/**
+ * §8/#385. **The lamp beside a module label**, in the one form Markdown has for one.
+ *
+ * Steady and solid, always — it says *this is a module*, not *this module is doing something*.
+ * There is no second state and nothing infers one: a hollow ring would be a claim about whether
+ * the box is at its init values, which nothing in the model knows and nothing here guesses
+ * (invariant 5). Its web sibling is `.module-led` in `app/globals.css`, a flat dot with no glow
+ * and no bevel, and `test/module-boxes.test.ts` pins the pair.
+ *
+ * **§10 says to resist LEDs outside the rack, and it is unchanged.** The lamp contradicts it and
+ * ships to be looked at on a real guide, not because the rule was reconsidered — the note at the
+ * top of `app/globals.css` carries the whole of that, and nothing in the design sanctions this.
+ */
+const MODULE_LED = '\u25cf'
+
+/**
+ * §8. **A parameter list drawn as the panel modules its controls sit on.**
+ *
+ * `groupedParams` decides the cut (§3.1) and both renderers read it, so the web guide and this
+ * one box the same controls together; the ink below is this renderer's own, per #33.
+ *
+ * **A box is nesting, because Markdown has no other way to close one.** The first draft put the
+ * module on a standalone `**bold**` line, the way `**Pattern-wide**` and `**Patch**` sit above
+ * their blocks — and it was wrong in the one case the box exists to get right. Those headings run
+ * to the end of their section; a module ends where the next control leaves it, and an unmoduled
+ * line following a boxed run rendered flush under the module's own name, reading as a control on
+ * a panel it is not on. Found by rendering it, not by reading it.
+ *
+ * So the module is a list item and its controls are its children: the box has a visible extent,
+ * and a line that leaves it returns to the margin as the module's sibling. One tight list, no
+ * blank lines inside it, so a boxed run and a bare one can sit next to each other.
+ *
+ * A run that declared no module prints exactly the bullets it always printed, at the same
+ * indent — no header, no lamp, nothing around it — so a guide whose devices name no modules is
+ * byte-for-byte the guide it was before modules existed. The goldens are the check on that.
+ */
+function paramBlockLines(
+  params: readonly ResolvedParam[],
+  device: Device | undefined,
+  options: HintSetting,
+): Line[] {
+  const out: Line[] = []
+  for (const group of groupedParams(params)) {
+    if (group.module === undefined) {
+      for (const param of group.params) out.push(...paramLines(param, device, options))
+      continue
+    }
+    out.push(`- **${MODULE_LED} ${group.module}**`)
+    for (const param of group.params) {
+      // Two spaces, the same step `paramLines` already uses to hang a note under its value — so
+      // a boxed note lands one level deeper than its own bullet rather than beside it.
+      out.push(...paramLines(param, device, options).map((line) => `  ${line}`))
+    }
   }
   return out
 }
@@ -2513,7 +2579,7 @@ function soundShared(
     out.push('')
     out.push(scopeSentence(group.scope))
     out.push('')
-    for (const param of group.params) out.push(...paramLines(param, device, options))
+    out.push(...paramBlockLines(group.params, device, options))
   }
   return out
 }
@@ -2563,7 +2629,7 @@ function soundForPart(
       // a heading with no body under it.
       out.push('Nothing to set for this part alone; every setting it has is above.')
     } else {
-      for (const param of own) out.push(...paramLines(param, device, options))
+      out.push(...paramBlockLines(own, device, options))
     }
     if (a.patch.length > 0) {
       out.push('')
