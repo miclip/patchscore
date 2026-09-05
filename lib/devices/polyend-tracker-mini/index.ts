@@ -125,40 +125,6 @@ function cite(page: number): Cite {
   return { kind: 'manual', source: `Polyend Tracker Mini Manual 2.2.1b, p.${page}` }
 }
 
-/**
- * §2.1. **The citation `track-sample`'s trigger note rests on, and it names four pages.**
- *
- * p.90 states the note plainly: *"The default note value is C5 which plays a sample at its
- * original pitch value."* That is the whole of the note-name claim.
- *
- * It is not the whole of the *MIDI* claim, and this is the `CLAUDE.md` hazard about a cited range
- * being the wrong range, wearing note names instead of knob values. `C5` is a number only once you
- * know which octave numbering this box uses, and the box has a setting for it: `[Menu] > Config >
- * MIDI > Middle C`, whose options are C-3, C-4, C-5 and C-6 (p.54, repeated p.285). p.298's
- * set-up table gives the value it ships with as `C-5`, and p.288 confirms it from the other side
- * — an Ableton Live example whose instruction is to adjust *"Middle C ... from C-5 to C-3"*, Live
- * being a host that calls middle C `C3`.
- *
- * So on this box, out of the box, the `C5` printed on p.90 **is** middle C: MIDI 60. Scientific
- * pitch notation would have said 72, and `DESIGN.md §4.1` is the standing note that SPN is a
- * convention rather than a fact about instruments. Citing p.90 alone beside a MIDI number would
- * be citing a page that does not contain one.
- *
- * **The sentence after that one on p.90 is not authored anywhere, and that is deliberate.** It
- * reads *"The first slice of a beat slice sample will be triggered using note C2"* — and a slice
- * address is not the same kind of value as this field holds. `C5` says *play it as recorded*;
- * `C2` says *play the first of the pieces*, with the next semitone the next piece. Nothing in the
- * vocabulary can say which of the two a voice is doing, so `tm-vox-chop-dirty` carries no trigger
- * note: putting `C2` in this field would give two different kinds of value one name. #334 named
- * this as its third category and nobody has designed it yet.
- */
-const TRIGGER_NOTE_CITE: Cite = {
-  kind: 'manual',
-  source:
-    'Polyend Tracker Mini Manual 2.2.1b, p.90 (C5 plays a sample at its original pitch); ' +
-    'p.54, p.298, p.288 (Middle C setting, shipped as C-5, so that C5 is MIDI 60)',
-}
-
 function num(
   name: string,
   value: number,
@@ -1243,13 +1209,16 @@ const SAMPLE_RECIPES: Recipe[] = [
      * `Forward loop` rather than `1-Shot` because a sub is continuous in six of the seven and
      * has to hold under whatever gate the step carries; a one-shot would end where the file does.
      *
-     * **`TUNE 0`, and it carried `-12` until #345 review caught what that did.** This pool
-     * authors a `triggerNote`, so an unpitched part plays at `C5` — but `sub` is pitched, and
-     * §4.1 gives the direction's own pitch precedence, which the guide then prints beside the
-     * part. A `TUNE` of `-12` transposes the instrument *underneath* that printed note, so the
-     * guide would have said `C1` while the box sounded `C0`. Every other pitched sample recipe
+     * **`TUNE 0`, and it carried `-12` until #345 review caught what that did.** `sub` is
+     * pitched, so §4.1 gives the direction's own pitch to the part and the guide prints it beside
+     * the steps. A `TUNE` of `-12` transposes the instrument *underneath* that printed note, so
+     * the guide would have said `C1` while the box sounded `C0`. Every other pitched sample recipe
      * here is at 0 or leaves the parameter alone; this one now matches them, and the octave stays
      * the direction's to choose.
+     *
+     * That is the same disagreement between a printed note and a transposing instrument that
+     * took the pool's `triggerNote` out (see the note above `track-sample`) — here it was caught
+     * on one recipe, there it was the shape of the field.
      *
      * The low-pass is doing the role's actual work. A sub is defined by what is *not* in it, so
      * `CUTOFF 22` is low enough to remove the harmonics a transposed sample keeps, and it carries
@@ -1865,12 +1834,81 @@ export const device: Device = {
   panel: TRACKER_MINI_PANEL,
 
   /**
-   * p.22, the whole reason this device is here. One track sounds one voice: "Each track in
-   * Tracker Mini can handle one voice which can play multiple notes, but not simultaneously"
+   * p.22, the whole reason this device is here. One track sounds one voice: *"Each track in
+   * Tracker Mini can handle one voice which can play multiple notes, but not simultaneously"*
    * (p.104), so polyphony is 1 on both pools (§12.4 counts notes, never roles). The synth
    * slots' own 8-voice budget (p.148) is a different quantity and is not this one.
+   *
+   * ## Sixteen tracks, and the one page that says eight
+   *
+   * **p.270 is stale, and it is worth writing down because it is the page anyone counting voices
+   * lands on first.** It opens the master-effects chapter with *"Tracker Mini has 8 voices. Each
+   * voice is represented by each of the 8 tracks when playing"*, and three pages read against it
+   * say otherwise:
+   *
+   *  - **p.22** — *"Tracker Mini has 16 tracks. The first 8 can operate with sample instruments,
+   *    synths and MIDI and tracks 9-16 are used for MIDI and synths."* Sixteen, split by what a
+   *    track *can* hold rather than by what it does.
+   *  - **p.147** — *"Synths can be applied on steps for any of the 16 tracks."* The count again,
+   *    from the instrument chapter, and from the side that decides where a synth may go.
+   *  - **p.271** — the mixer, which is where p.270's eight comes from. Master page 2/3 is the
+   *    *Sample* Track Mixer and shows Track 1-8; page 3/3 is the global mixer and shows the three
+   *    synths as three channels beside the sends. So the eight faders are the eight sample
+   *    tracks, not the machine's whole voice count.
+   *
+   * **The synths' budget is separate and is stated outright**, so nothing here has to be inferred
+   * from p.270: p.148 gives *"Up to 8 voices of polyphony are available in total ... across all
+   * synths. The 8 voices are divided and allocated per synth, for example Synth 1 = 3, Synth 2 =
+   * 3, Synth 3 = 2"*, over the three slots p.147 describes.
+   *
+   * **What is not claimed here: that sixteen parts cannot play.** Two eights that are separately
+   * documented are not evidence of a shortfall between them, and the manual never puts a ceiling
+   * on simultaneous tracks in one sentence. The two pools below hold eight each because that is
+   * what p.22 and p.148 each state on their own, not because anything was subtracted.
    */
   voices: [
+    /**
+     * §2.1. **No `triggerNote` on this pool, and the field was authored here before it was
+     * declined.** It said `C5`, off p.90 — *"The default note value is C5 which plays a sample at
+     * its original pitch value"* — with the octave worked out as well, since `C5` is a number only
+     * once you know this box's numbering: `[Menu] > Config > MIDI > Middle C` is a setting whose
+     * options are C-3 to C-6 (p.54, repeated p.285), p.298's set-up table ships it at `C-5`, and
+     * p.288 adjusts it *"from C-5 to C-3"* to match Ableton Live. So `C5` here is middle C, MIDI
+     * 60 rather than SPN's 72. **None of that reading was wrong, and none of it is why the field
+     * is gone.**
+     *
+     * **It is gone because the note is a property of the loaded instrument and this field is
+     * pinned to the track.** `triggerNote` reaches every member of a pool alike, so authoring it
+     * here says `C5` for all eight tracks under every recipe, and this folder already contains
+     * four kinds of counter-example:
+     *
+     *  - **Beat Slice.** The sentence directly after the one quoted above, same page: *"The first
+     *    slice of a beat slice sample will be triggered using note C2"* (p.90, repeated p.106,
+     *    and p.132 — *"Slice 1 starts on note C2"*, successive notes taking successive slices).
+     *    Under that mode a note is a slice address, so `C5` sits two octaves into the file rather
+     *    than at the recording. `tm-vox-chop-dirty` is `PLAY MODE Beat Slice`.
+     *  - **Granular, and Wavetable beside it in the same option list.** `tm-texture-soft` runs
+     *    Granular, which re-reads the file by position (pp.121-122's Granular Position) instead of
+     *    playing it through; a wavetable is frames rather than a recording. *"Plays it at its
+     *    original pitch"* is not a sentence either mode can carry.
+     *  - **Transposed samples, which is the common case rather than the exotic one.** Seven
+     *    recipes here set instrument `TUNE` away from zero — `tm-kick-hard` at -3, `tm-kick-dark`
+     *    at -7, `tm-rim-clean` at +4, `tm-metallic-dirty` at -3 — and `TUNE` transposes underneath
+     *    whatever note the step carries. So the guide printed *plays it as recorded* directly
+     *    above the setting that guarantees it will not, on the box's most-requested parts. Two
+     *    authored values disagreeing on one page, with the manual cited correctly on both. #345
+     *    caught this on one recipe (`tm-sub-dark`, below) and #421 swept the class.
+     *  - **The tracks are fungible.** p.22 and p.147 above split the sixteen by what a track *can*
+     *    hold. `track-sample` is a modelling name for the eight that can take a sample, not a bank
+     *    of sample-only hardware, so a fact about samples fastened to it is fastened to the wrong
+     *    object.
+     *
+     * **What would let `C5` be said is a recipe-level field, and there isn't one.** `Recipe`
+     * carries no note (the test beside this holds that shut), and adding one is a core change
+     * rather than a device folder's business. Until then silence is the honest state: invariant 5
+     * applied to a value rather than to an assignment, and the reader loses a default they can
+     * read off p.90 rather than gaining a wrong one they cannot.
+     */
     {
       kind: 'pool',
       id: 'track-sample',
@@ -1878,15 +1916,6 @@ export const device: Device = {
       count: 8,
       roles: SAMPLE_POOL_ROLES,
       polyphony: 1,
-      /**
-       * §2.1. **The note that plays a loaded sample as it was recorded**, which on a sample track
-       * is a fact about the box rather than a musical choice — write anything else on the step and
-       * the same sample comes out transposed (p.128: *"Note value affects pitch"*).
-       *
-       * On this pool and not the other: `track-synth` has no sample to be at its original pitch,
-       * so its note is the reader's, and a device-wide field could not have said both.
-       */
-      triggerNote: { note: 'C5', midi: 60, verified: TRIGGER_NOTE_CITE },
     },
     /**
      * §12.4: **no `sampled-chord` recipe addresses this pool, and it is not an oversight.** The

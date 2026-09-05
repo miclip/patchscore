@@ -1203,49 +1203,27 @@ describe('time parameters (§6.1)', () => {
 })
 
 /**
- * §2.1. **Which note plays a loaded sample as it is**, on the one box in the library whose sample
- * tracks answer that for themselves.
+ * §2.1. **No trigger note on this box, and the reason is not that the page was hard to read.**
+ *
+ * p.90 says it in one sentence — *"The default note value is C5 which plays a sample at its
+ * original pitch value"* — and the octave behind the number is settled too (p.54, p.285, p.298,
+ * p.288). What the field could not do is hold that for a *pool*: `triggerNote` reaches all eight
+ * tracks under all twenty-two sample recipes, and a track's note means whatever the loaded
+ * instrument makes it mean. The full argument is in the folder, above `track-sample`.
+ *
+ * These tests are the decline, not the citation. They exist so that re-authoring the field is a
+ * decision somebody has to make deliberately rather than a plausible-looking one-line addition.
  */
-describe('trigger notes (§2.1)', () => {
-  const sampleNote = pool('track-sample').triggerNote
-
-  it('gives the sample pool the note that plays a sample as recorded, and the synth pool none', () => {
-    // p.90: "The default note value is C5 which plays a sample at its original pitch value."
-    expect(sampleNote?.note).toBe('C5')
-    // p.128's "Note value affects pitch" is why this is addressing rather than taste: any other
-    // note is the same sample transposed.
+describe('no trigger note, on either pool (§2.1)', () => {
+  it('authors none on the sample pool, none on the synth pool', () => {
+    expect(pool('track-sample').triggerNote).toBeUndefined()
     expect(pool('track-synth').triggerNote).toBeUndefined()
   })
 
-  it('numbers that note by this box\'s own octave mapping, not by scientific pitch notation', () => {
-    // The box ships with `Middle C = C-5` (p.298, and p.288 adjusts *from* C-5 to match Ableton
-    // Live), so the C5 its screen prints is middle C. SPN would have said 72, and 72 is a note
-    // this box never sends for a whole sample.
-    expect(sampleNote?.midi).toBe(60)
-  })
-
-  it('cites the octave mapping and not only the page the note name appears on', () => {
-    // The hazard `CLAUDE.md` records for ranges, wearing note names: p.90 prints `C5` and no
-    // number at all, so a citation naming p.90 alone would not support the `midi` beside it.
-    const source = sampleNote?.verified.source as string
-    expect(source).toContain(`${CITE_PREFIX}90`)
-    expect(source).toContain('p.298')
-    expect(source).toContain('Middle C')
-  })
-
-  /**
-   * §4.1's third category, left unmodelled on purpose.
-   *
-   * p.90's next sentence reads "The first slice of a beat slice sample will be triggered using
-   * note C2" — and that `C2` is a *slice address*, not a pitch and not an original-pitch marker.
-   * The field holds one kind of value; putting a slice base in it would give two kinds one name,
-   * which reads as correct until the first sliced instrument somebody uses for something pitched.
-   *
-   * So `tm-vox-chop-dirty` carries nothing of its own, and the assertion is on the whole folder
-   * rather than on that recipe: the moment any recipe here claims a trigger note, somebody has
-   * either designed the missing vocabulary or reintroduced the confusion this avoids.
-   */
-  it('authors no recipe-level note, so a slice base cannot wear a trigger note\'s name', () => {
+  it('authors no recipe-level note either, since the field to hold one does not exist', () => {
+    // `Recipe` carries no note. Saying `C5` on the recipes where it is true needs that field
+    // designed first — a core change — so a recipe claiming one here means somebody has smuggled
+    // an untyped property in rather than made that change.
     const claiming = device.recipes.filter(
       (r) => (r as Recipe & { triggerNote?: unknown }).triggerNote !== undefined,
     )
@@ -1253,50 +1231,75 @@ describe('trigger notes (§2.1)', () => {
   })
 
   /**
-   * §4.1's third category, held closed.
+   * The regression, on the resolver rather than on the folder: nothing reaches a part.
    *
-   * The pool's `C5` says *play the sample as recorded*, which is true of an ordinary sample
-   * instrument and false of a sliced one — under Beat Slice the note names a piece of audio, and
-   * `C5` selects whichever piece sits thirty-six semitones up. Nothing here can distinguish the
-   * two, so the guarantee this rests on is that no shipped guide asks: the one direction reaching
-   * `tm-vox-chop-dirty` hooks that role, and #100 gives a hooked part's notes to its hook.
-   *
-   * **If this fails, nobody has broken it by accident.** It means a direction now asks for a
-   * sliced patch without a hook, and the answer is to design the missing vocabulary rather than
-   * to widen this test — the trigger note printed there would be wrong.
+   * `triggerNote` is copied onto every assignable a pool expands into, so a field re-authored on
+   * either pool shows up here as well as in the two assertions above — and it shows up on the
+   * thing the renderer actually asks about.
    */
-  it('never prints its sliced patch a note, across every direction and seed', () => {
+  it('leaves every resolved part without one, across every direction and seed', () => {
+    let parts = 0
     for (const template of TEMPLATES) {
       for (let seed = 0; seed < 16; seed++) {
         const result = resolve({ devices: [device], template, mood: moodState(), seed })
         for (const a of result.assignments) {
-          if (a.recipe.id !== 'tm-vox-chop-dirty') continue
-          expect(noteInstruction(a).kind, `${template.id} seed ${String(seed)}`).toBe('none')
+          parts += 1
+          expect(a.triggerNote, `${template.id}/${a.role} seed ${String(seed)}`).toBeUndefined()
+          expect(noteInstruction(a).kind, `${template.id}/${a.role} seed ${String(seed)}`).not.toBe(
+            'trigger',
+          )
+          for (const assignable of a.assignables) {
+            expect(assignable.triggerNote, `${template.id} seed ${String(seed)}`).toBeUndefined()
+          }
         }
+      }
+    }
+    // The sweep is only worth anything if it resolved something.
+    expect(parts).toBeGreaterThan(0)
+  })
+
+  /** §8. The reader-facing half: a `ResolvedAssignment` proves nothing to somebody at the box. */
+  it('prints no trigger note in a rendered guide, in either renderer', () => {
+    for (const template of TEMPLATES) {
+      for (const seed of [1, 7]) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        expect(renderGuide(result), `${template.id} seed ${String(seed)}`).not.toContain(
+          'Trigger note',
+        )
       }
     }
   })
 
-  it('reaches a resolved assignment, from the voice and unchanged', () => {
-    const result = resolve({
-      devices: [device],
-      template: synthTemplate([
-        { id: 'r-kick', role: 'kick', character: 'hard' },
-        { id: 'r-lead', role: 'lead', character: 'bright' },
-      ]),
-      mood: moodState(),
-      seed: 1,
-    })
+  /**
+   * **The counter-examples, held in place.** A pool-wide `C5` was not merely unproven; it was
+   * false for parts this folder ships, and these are the ones that make it false. If they all
+   * disappear the argument above weakens, and somebody re-reading it should find out here rather
+   * than by rediscovering p.90 and assuming nobody had.
+   */
+  it('still carries the recipes a pool-wide C5 would have been wrong for', () => {
+    const mode = (id: string) =>
+      device.recipes
+        .find((r) => r.id === id)
+        ?.params.find((p) => p.name === 'PLAY MODE')?.value
 
-    // Whatever recipe won, a part on a sample track carries the track's note and a part on a
-    // synth track carries none — pinning which recipe wins would make this fail on an unrelated
-    // objective change instead of on the thing it is about.
-    expect(result.assignments.length).toBeGreaterThan(0)
-    for (const a of result.assignments) {
-      const expected = a.assignables[0]?.poolId === 'track-sample' ? 'C5' : undefined
-      expect(a.triggerNote?.note, a.recipe.id).toBe(expected)
-      expect(a.triggerNote?.midi, a.recipe.id).toBe(expected === undefined ? undefined : 60)
-    }
+    // A slice address, not an original-pitch marker: p.90's next sentence puts slice 1 at C2.
+    expect(mode('tm-vox-chop-dirty')).toBe('Beat Slice')
+    // Re-read by position rather than played through, so "as recorded" is not what happens.
+    expect(mode('tm-texture-soft')).toBe('Granular')
+
+    // And the ordinary case: the instrument transposed underneath whatever note the step carries.
+    const tuned = device.recipes.filter((r) =>
+      r.params.some((p) => p.name === 'TUNE' && p.kind === 'numeric' && p.value !== 0),
+    )
+    expect(tuned.map((r) => r.id).sort()).toEqual([
+      'tm-kick-dark',
+      'tm-kick-hard',
+      'tm-metallic-dirty',
+      'tm-pad-soft-chord',
+      'tm-rim-clean',
+      'tm-snare-bright',
+      'tm-tom-dark',
+    ])
   })
 })
 
@@ -1317,9 +1320,16 @@ describe('trigger notes (§2.1)', () => {
  *
  * **The counts are a measurement, not a target.** They move when a direction gains or loses a
  * part, and a diff here is a prompt to re-read the numbers rather than a failure. What must not
- * move is the *relationship*: `blank` stays 0, and every instruction is the pool's own `C5`.
+ * move is the *relationship*: a sample-track grid part carries the direction's own pitch or it
+ * carries nothing, and nothing here is a trigger note.
+ *
+ * **The blank arm is the cost of the decline and is pinned rather than glossed.** Before it, every
+ * one of these parts printed `C5`, and a large share printed it beside their own `TUNE` or a play
+ * mode that contradicted it (#421 holds that sweep; the counts here are this file's own sample and
+ * are not it). What is left is honest and thinner, and a count is the only way to notice if a
+ * later change quietly widens it.
  */
-describe('every sample-track grid part gets its note (§2.1)', () => {
+describe('every sample-track grid part, and what note it now gets (§2.1)', () => {
   const SEEDS = [1, 2, 3, 4, 5, 6]
 
   /** Parts on `track-sample`, split by what phase 5 actually draws for them. */
@@ -1352,34 +1362,28 @@ describe('every sample-track grid part gets its note (§2.1)', () => {
     return { grid, hooked, sustained, noPattern }
   }
 
-  it('leaves no grid part on a sample track without a note, and pins how many there are', () => {
+  it('gives a grid part the direction’s pitch or nothing, and pins how many of each', () => {
     const { grid } = sweep()
 
     // The population, as measured on this library. 216 until #345 authored the seven roles the
-    // sample pool declared and no recipe served.
+    // sample pool declared and no recipe served. The decline does not move it: what changes is
+    // which arm each part lands in, not whether it is counted.
     expect(grid.length).toBe(276)
 
-    // The claim. Zero blanks, and the blank arm named so a regression cannot hide as a count.
-    expect(grid.filter((g) => g.kind === 'none')).toEqual([])
+    // **Two arms, and `trigger` is not one of them.** §4.1 gives a direction's own pitch to a
+    // pitched role that draws a grid; everything else gets nothing, because the note it would
+    // have got was a fact about a loaded instrument that no field here can hold.
+    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch'])
 
-    // **Two arms now, where there was one, and #345's `sub` is why.** §4.1 gives a direction's
-    // own pitch precedence over a device trigger note, so a pitched role that draws a grid
-    // renders the direction's note. Until this box had a `sub` recipe on the sample pool, every
-    // pitched role it carried was hooked (#100) and so never reached the grid at all — which is
-    // what made one arm look like the whole story.
-    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['pitch', 'trigger'])
-
-    // The trigger arm is still the pool's own C5 and nothing else.
-    const triggers = grid.filter((g) => g.kind === 'trigger')
-    expect([...new Set(triggers.map((g) => `${g.note as string}/${String(g.midi)}`))]).toEqual([
-      'C5/60',
-    ])
-
-    // And the pitch arm is `sub` alone, in the octave the directions ask a sub for.
+    // The pitch arm is `sub` alone, in the octave the directions ask a sub for — unchanged, and
+    // that is the point of naming it: the decline took the device's arm, not the direction's.
     const pitched = grid.filter((g) => g.kind === 'pitch')
     expect(pitched).toHaveLength(24)
     expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
     expect(Math.max(...pitched.map((g) => g.midi as number))).toBeLessThan(36)
+
+    // The blank arm, counted rather than glossed. Every one of these printed `C5` before.
+    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(252)
   })
 
   it('reaches the percussion the direction library actually asks this box for', () => {
@@ -1429,23 +1433,21 @@ describe('every sample-track grid part gets its note (§2.1)', () => {
   })
 
   /**
-   * What makes the sweep above the whole story. Trigger notes are authored on two pools across
-   * the whole library, so every other box renders exactly what it rendered before — not because a
-   * test checked each of them, but because there is nothing on them to render.
+   * **The roster is now empty, and that is a fact worth an assertion rather than a silence.**
    *
-   * **The list is deliberately whole-library and lives here rather than in one device's file.**
-   * It was written when the Mini was the only box carrying one; the Tracker joined it, and the
-   * roster moving is the event this is for. A third entry means somebody has decided a new box's
-   * note is a fact about hardware rather than the reader's choice, which is a claim that wants a
-   * citation read rather than a test widened.
+   * This list is whole-library and has lived here since the Mini was the only box carrying a
+   * trigger note; the Tracker joined it, and both have now declined it for the same reason — the
+   * field is pinned to a voice and the note belongs to the instrument loaded into it. §2.1 and the
+   * `NoteInstruction` arm that renders it both remain, exercised by the synthetic devices in
+   * `pipeline.test.ts`, so nothing is dead; it simply has no shipped user.
+   *
+   * **An entry appearing here is the event this is for.** It means somebody has decided a box's
+   * note is a fact about hardware rather than about what is loaded — which can be true, on a box
+   * whose voices are fixed rather than fungible — and that is a claim wanting a citation read and
+   * the two Polyend arguments answered, not a test widened.
    */
-  it('names every device in the library that authors one, so no other guide moves', () => {
+  it('finds no device in the library authoring one, so no shipped guide prints one', () => {
     const authoring = DEVICES.filter((d) => d.voices.some((v) => v.triggerNote !== undefined))
-    expect(authoring.map((d) => d.id)).toEqual(['polyend-tracker', 'polyend-tracker-mini'])
-
-    const voices = authoring.flatMap((d) =>
-      d.voices.filter((v) => v.triggerNote !== undefined).map((v) => v.id),
-    )
-    expect(voices).toEqual(['track', 'track-sample'])
+    expect(authoring.map((d) => d.id)).toEqual([])
   })
 })
