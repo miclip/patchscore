@@ -1241,8 +1241,36 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    *
    * Fourteen consecutive zeroes, across ten devices and four content changes that between them
    * took the walk down, up, up, up, down by half, up, up, up, up, up, up, up, up, and up.
+   *
+   * **#383 takes it down by a quarter and the gap stays at zero — a fifteenth time.** 623,125 ->
+   * 468,909 unrepaired and the same repaired. This is the largest fall in the list after the
+   * halving above, and it is the first entry where the cause is a *feasibility* change rather
+   * than a manifest or a recipe count: `muse-stab-hard` and `muse-stab-dirty` are capped at one
+   * note, every `stab` request in the library asks for three or four, so two recipes stopped
+   * being candidates and the subtrees under them are gone.
+   *
+   * **That is the direction to want, and it is #25's shape.** A constraint that prunes the tree
+   * rather than complicating it: an infeasible partial assignment is cut where an expensive one
+   * still has to be explored. It is a real prune rather than a measurement artefact — the
+   * unrepaired and repaired walks fell together and by the same amount, which is what a branch
+   * disappearing looks like and not what a cheaper bound looks like.
+   *
+   * **And it is the first entry that ends a run of one-node moves rather than adding to it.**
+   * The four entries above each moved this seed by a single node, because each added recipes to
+   * roles this direction does not contend for. Two recipes leaving the *contended* `stab` role
+   * is worth 154,216 nodes, which is the same lesson from the other side: a recipe is priced by
+   * the role it lands in.
+   *
+   * `search-bound.test.ts` records the direction's peak moving 730,100 -> 543,140 over the same
+   * change, a fall of 26% against this seed's 25%, so for once the two figures agree closely
+   * enough for the comparison to say something: the saving is spread across the row rather than
+   * concentrated in the seeds that were worst.
+   *
+   * Fifteen consecutive zeroes, across ten devices and five content changes that between them
+   * took the walk down, up, up, up, down by half, up, up, up, up, up, up, up, up, up, and down
+   * by a quarter.
    */
-  it('walks the recorded 623,125 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 468,909 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1250,7 +1278,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(623_125)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(468_909)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement

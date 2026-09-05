@@ -95,6 +95,25 @@ describe('the v1 wire format', () => {
     expect(encoded.startsWith(`format=${FORMAT_VERSION}&resolver=${RESOLVER_VERSION}&`)).toBe(true)
   })
 
+  /**
+   * §12.4/#383. **The one place the numbers themselves are written down**, so that moving either
+   * is a decision somebody took rather than a diff nobody read.
+   *
+   * Every other assertion in this file builds the stamp from the constants, which is right — a
+   * bump should not have to rewrite a dozen literals. The cost of that is a bump nothing notices,
+   * and `RESOLVER_VERSION` is exactly the constant where silence is expensive: it exists to
+   * announce that a link's own inputs now resolve to different bytes, so a change to it that no
+   * test reads is the failure mode the constant was created to prevent.
+   *
+   * `RESOLVER_VERSION` went to 7 at #383, where two Muse recipes stopped being candidates for
+   * every `stab` request the library ships. See its history block in `lib/core/pipeline.ts` for
+   * what each number means.
+   */
+  it('pins the two stamps at the numbers they currently stand at', () => {
+    expect(FORMAT_VERSION).toBe(4)
+    expect(RESOLVER_VERSION).toBe(7)
+  })
+
   it('writes a list as one parameter per element, so nothing needs a separator', () => {
     const encoded = encodeGuideInputs(goldenInputs(), GOLDEN)
     expect(encoded.match(/(^|&)device=/g)?.length).toBe(GOLDEN.devices.length)

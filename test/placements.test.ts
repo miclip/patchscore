@@ -455,12 +455,19 @@ describe('a guide that places nothing resolves exactly as it did (invariant 6)',
     seed: GOLDEN_SEED,
   }
 
-  it('leaves `RESOLVER_VERSION` where it was', () => {
+  it('leaves `RESOLVER_VERSION` where #340 found it', () => {
     // §7's rule is that the stamp tracks the engine: a bump says a link's *own* inputs now
     // resolve to different bytes. #340 widens the input set instead, exactly as #161 did — a link
     // carrying no placement could not have been written by a build that had no field to write it
     // in. `FORMAT_VERSION` is the stamp that moves when the encoding lands.
-    expect(RESOLVER_VERSION).toBe(6)
+    //
+    // **The number is not this test's claim and it has moved once since.** #383 took it 6 -> 7
+    // when two Muse recipes stopped being candidates for every `stab` request in the library,
+    // which is a change to what the resolver *decides* and is exactly the kind #340 was not.
+    // The literal is kept rather than imported so that a bump has to be read here too — this is
+    // one of the three places that reasoned about the constant, and a silent move past a file
+    // that argued it should not move is the thing worth catching.
+    expect(RESOLVER_VERSION).toBe(7)
   })
 
   it('renders byte for byte the same with no placements, and none asked for', () => {

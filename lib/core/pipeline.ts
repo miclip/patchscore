@@ -1306,6 +1306,26 @@ export type ResolvedAssignment = {
  * before this replays an allocation the box cannot hold, under a stamp that would have claimed it
  * was current, which is exactly the drift this constant announces.
  *
+ * **7** — §12.4/#383. `patchPolyphony` arrived on two recipes that had not carried it, and the
+ * resolver now **refuses** an allocation it used to make. The Muse's `muse-stab-hard` and
+ * `muse-stab-dirty` engage `UNISON`, which spends every voice on the first note held; every
+ * `stab` request the library ships asks for a chord — `polyphony` 4 on `hip-hop`, 3 on
+ * `industrial-techno`, 3 on `lydian-house` — so `patchVoiceCeiling` caps those two patches at one
+ * note and they stop being candidates for all three requests.
+ *
+ * **A permalink shared before this replays an allocation the patch cannot sound.** In the
+ * `industrial-techno` rig the Muse was taking the three-note stab on `muse-stab-hard`; it now
+ * takes `pad` alone and the stab goes to the Deluge. That is not a tie-break landing elsewhere:
+ * it is a guide that was **wrong** becoming right, which is a stronger reason to announce drift
+ * than any entry above, because a reader replaying the old link is being told to build a patch
+ * that cannot play the part in front of it.
+ *
+ * The shape is #25's rather than #40's. `Score` is untouched — no key added, none re-ordered —
+ * because this excludes allocations rather than ranking them, and the suffix bound stays
+ * admissible for the same reason. What follows from excluding them is a smaller tree, so some
+ * rigs reach a different optimum at equal score; `test/golden/full-rig.golden.md` moves for
+ * exactly that reason and the Muse contributes no part to it.
+ *
  * **#310 did not move it, and the reading is #161's.** A direction may now open at a mood, and
  * `ResolveInput.mood` became optional to let it. A link carrying a mood — which is every link
  * any build before #310 ever wrote — resolves byte for byte as it did, because an explicit mood
@@ -1317,7 +1337,7 @@ export type ResolvedAssignment = {
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
  */
-export const RESOLVER_VERSION = 6
+export const RESOLVER_VERSION = 7
 
 /**
  * #161. The two decisions the user may take back off the direction: tempo and key. Both

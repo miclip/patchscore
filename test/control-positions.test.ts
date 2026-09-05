@@ -292,11 +292,22 @@ describe('and the parameter lines carry none of it (#324)', () => {
    * whose notes carried the tail before, and zero after** — counted on `ResolvedParam`s, which is
    * what an author appended the sentence to and therefore what the fix is about.
    *
-   * **It is 72 since #346**, and the four that left are not a regression. That issue authored the
-   * Muse's two `DELAY · TIME` knobs as `enum` params over clock divisions, and `AuthoredEnumParam`
-   * has no `midiCc` field — two controls on two assignments, so four lines leave a set keyed on
-   * that field. They are still parameter lines in this guide, so the assertion below widens to the
-   * whole rig rather than shrinking with the count.
+   * **It was 72 after #346**, and the four that left there were not a regression. That issue
+   * authored the Muse's two `DELAY · TIME` knobs as `enum` params over clock divisions, and
+   * `AuthoredEnumParam` has no `midiCc` field — two controls on two assignments, so four lines
+   * leave a set keyed on that field. They are still parameter lines in this guide, so the
+   * assertion below widens to the whole rig rather than shrinking with the count.
+   *
+   * **It is 36 since #383, and that halving is a repair rather than a loss.** The Muse used to
+   * take two parts in this rig — `stab` and `pad`, one per timbre — and the stab was
+   * `muse-stab-hard`, a `UNISON` patch that sounds one note, serving a request that asks for
+   * three (`industrial-techno`, `polyphony: 3`). #383 caps that recipe at `patchPolyphony: 1`,
+   * so it is no longer a candidate, the stab goes to the Deluge, and the Muse keeps `pad` alone.
+   * One assignment instead of two is exactly half the parameter lines.
+   *
+   * The count is incidental to what this file is *for* — it measures #324's tail, not the
+   * allocation — but it is the honest number and it moves when the rig does. What must not move
+   * is the zero beneath it.
    *
    * The test is the *before* and the *after* in one place. `built` is the set that would carry the
    * tail if anything re-appended it, and the filter under it is what does — so this fails loudly
@@ -309,7 +320,7 @@ describe('and the parameter lines carry none of it (#324)', () => {
     const built = museResult.assignments
       .flatMap((a) => a.params)
       .filter((p) => p.midiCc !== undefined)
-    expect(built).toHaveLength(72)
+    expect(built).toHaveLength(36)
     expect(built.filter((p) => p.note?.includes(TAIL))).toEqual([])
     // Every parameter line, not only the ones a CC number reaches: the four #346 moved off
     // `midiCc` are still lines a reader gets, and the tail must be absent from those too.

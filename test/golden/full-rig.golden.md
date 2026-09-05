@@ -54,11 +54,11 @@ noise       ██████ ██████ ██████████
   - p3 · exact `dark` · every section
 - **`open-hat`** → TR-8S · OH — *Open hat with the top rolled off*
   - p3 · exact `dark` · every section
-- **`stab`** → minilogue xd · Voice — *Four-voice stab with the filter snapping shut behind the chord*
+- **`stab`** → MicroFreak · Voice — *Three-note BasicWaves stab, envelope straight onto the cutoff*
   - p3 · exact `hard` · 3 notes at once on one polyphonic voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
-- **`pad`** → MicroFreak · Voice — *Modal resonator pad, long damping, filter kept low*
+- **`pad`** → minilogue xd · Voice — *Low pad with the filter shut down over the top of it*
   - p4 · exact `dark` · 3 notes at once on one polyphonic voice · every section
 - **`riser`** → TR-8S · CC — *A sample played backwards into the change*
   - p4 · exact `bright` · Build, Breakdown
@@ -371,27 +371,27 @@ A step is one note long and nothing here sets a length: `TIE` joins a note to th
 - bar 2 · step 23 · sounds for 2 steps · `Db3` (`C#3`) · 6th · MIDI 49
 - bar 2 · step 27 · sounds for 4 steps · `C3` · 5th · MIDI 48
 
-### `pad` — MicroFreak · Voice
+### `pad` — minilogue xd · Voice
 
-**Modal resonator pad, long damping, filter kept low** — settings in Sound design
+**Low pad with the filter shut down over the top of it** — settings in Sound design
 
 8 bars in F minor.
 
-A step is one note long and nothing here sets a length: `Tie/Rest` joins a note to the next step, and stacking those is how anything longer is entered. · manual
-- ↳ cite: claim manual — MicroFreak User Manual 4.0.3 p.77
+How this box sets a note’s length is not established here, so the durations below are the part rather than a field to fill in. · unread
+- ↳ cite: unread — the minilogue xd manual is not in `manuals/`; no document here was opened for it
 
 - bar 1 · step 1 · held for 64 steps (4 bars) · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
 - bar 5 · step 65 · held for 32 steps (2 bars) · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68
 - bar 7 · step 97 · held for 32 steps (2 bars) · `Eb4` (`D#4`) `G4` `Bb4` (`A#4`) · 7th 2nd 4th · MIDI 63 67 70
 
-### `stab` — minilogue xd · Voice
+### `stab` — MicroFreak · Voice
 
-**Four-voice stab with the filter snapping shut behind the chord** — settings in Sound design
+**Three-note BasicWaves stab, envelope straight onto the cutoff** — settings in Sound design
 
 4 bars in F minor.
 
-How this box sets a note’s length is not established here, so the durations below are the part rather than a field to fill in. · unread
-- ↳ cite: unread — the minilogue xd manual is not in `manuals/`; no document here was opened for it
+A step is one note long and nothing here sets a length: `Tie/Rest` joins a note to the next step, and stacking those is how anything longer is entered. · manual
+- ↳ cite: claim manual — MicroFreak User Manual 4.0.3 p.77
 
 - bar 1 · step 1 · sounds for 2 steps · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
 - bar 1 · step 11 · sounds for 1 step · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
@@ -609,7 +609,7 @@ How this box sets a note’s length is not established here, so the durations be
 - `downbeat` — 13
 - `accent` — 15 (vel 106)
 
-### `stab` — minilogue xd · Voice
+### `stab` — MicroFreak · Voice
 
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
@@ -635,7 +635,7 @@ How this box sets a note’s length is not established here, so the durations be
 - `first-hit` → `accent` true on step 1
   - ↳ hint: ACCENT [STEP], then step keys
 
-### `pad` — MicroFreak · Voice
+### `pad` — minilogue xd · Voice
 
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
@@ -682,7 +682,7 @@ How this box sets a note’s length is not established here, so the durations be
 
 *Values below cite MicroFreak User Manual 4.0.3 p.113, MicroFreak User Manual 4.0.3 p.56, MicroFreak User Manual 4.0.3 p.63, MicroFreak User Manual 4.0.3 p.53, MicroFreak User Manual 4.0.3 p.28, and MicroFreak User Manual 4.0.3 p.88.*
 
-#### Voice — `pad`: Modal resonator pad, long damping, filter kept low
+#### Voice — `stab`: Three-note BasicWaves stab, envelope straight onto the cutoff
 
 Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 
@@ -691,64 +691,60 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 - **Paraphonic** `On`
   - ↳ note: p.10: lit, the four voices trigger independently and share the one analog filter
   - ↳ hint: Press Paraphonic; it blinks slowly
-- **Osc Type** `Modal`
+- **Osc Type** `BasicWaves`
   - ↳ note: The eighteen models are printed on pp.36–47; p.1 states the count. Wave, Timbre and Shape mean something different under each, so this is set first
   - ↳ hint: Type knob, watch the display
-- **Wave** `44` (0…100)
-  - ↳ note: Displays as "Inharm" under Modal (knob from p.35’s Wave/Timbre/Shape print order; p.44 names only the display). Range is the knob’s own 0,0–100,0, printed against CC 0–127 on p.113
-- **Timbre** `30` (0…100)
-  - ↳ note: Displays as "Timbre" under Modal (knob from p.35’s Wave/Timbre/Shape print order; p.44 names only the display). Range is the knob’s own 0,0–100,0, printed against CC 0–127 on p.113
-- **Shape** `76` (0…100)
-  - ↳ note: Displays as "Decay" under Modal (knob from p.35’s Wave/Timbre/Shape print order; p.44 names only the display). Range is the knob’s own 0,0–100,0, printed against CC 0–127 on p.113
+- **Wave** `62` (0…100)
+  - ↳ note: Displays as "Morph" under BasicWaves (knob from p.35’s Wave/Timbre/Shape print order; p.37 names only the display). Range is the knob’s own 0,0–100,0, printed against CC 0–127 on p.113
+- **Timbre** `40` (0…100)
+  - ↳ note: Displays as "Sym" under BasicWaves (knob from p.35’s Wave/Timbre/Shape print order; p.37 names only the display). Range is the knob’s own 0,0–100,0, printed against CC 0–127 on p.113
+- **Shape** `0` (0…100)
+  - ↳ note: Displays as "Sub" under BasicWaves (knob from p.35’s Wave/Timbre/Shape print order; p.37 names only the display). Range is the knob’s own 0,0–100,0, printed against CC 0–127 on p.113
 - **Filter Type** `LPF`
   - ↳ note: Silkscreened `Type` inside ANALOG FILTER (p.13); qualified here because the oscillator’s knob carries the same word
   - ↳ hint: Type button cycles LPF, BPF, HPF
-- **Cutoff** `30` % travel (0…100 % travel)
+- **Cutoff** `38` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: No printed scale. p.50 gives the extremes as "approximately 30Hz" fully counter-clockwise and "exceeds 15kHz" fully clockwise — hedged at both ends, so not a range
-- **Resonance** `30` % travel (0…100 % travel)
+- **Resonance** `58` % travel (0…100 % travel)
   - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: No printed scale. p.49 says the clockwise extreme self-oscillates and "will block all sound from the Digital Oscillator" in BPF
-- **Attack** `2200` ms (0…10000 ms)
+- **Attack** `0` ms (0…10000 ms)
   - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.56
   - ↳ note: p.56: "Attack sets the time, from 0 ms to 10 seconds, the envelope takes to reach its initial level"
-- **Decay / Rel** `6500` ms (0…13000 ms)
+- **Decay / Rel** `320` ms (0…13000 ms)
   - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.56
   - ↳ note: p.56: "Decay/Release adjusts the time, again from 0ms to 13 seconds"
-- **Sustain** `66` % (0…100 %)
+- **Sustain** `12` % (0…100 %)
   - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: p.55’s worked example is the only figure the manual prints for this knob — "sustain to 90%" — which fixes the unit and not the bounds, so mood may not move it
-- **Filter Amt** `22` (-100…100)
+- **Filter Amt** `74` (-100…100)
   - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: p.56: "Filter amount is a bipolar control", and p.55’s example sets it to 70. Neither states a limit, so the bounds are unverified and mood-inert
 - **Amp Mod** `On`
   - ↳ note: p.57: lit, the envelope shapes loudness as well as cutoff; unlit, the gate drives the VCA directly and the envelope still reaches the filter
-- **Cyc Mode** `Run`
+- **Cyc Mode** `Env`
   - ↳ note: p.58: Env cycles once; Run free-runs and resets on MIDI start; Loop retriggers from the keyboard, sequencer or arpeggiator
-- **Rise** `3200` ms (0…10000 ms)
+- **Rise** `0` ms (0…10000 ms)
   - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: The manual prints no bounds for this knob; p.58 and p.103 give worked settings in ms and seconds, which fix the unit only
-- **Fall** `2600` ms (0…10000 ms)
+- **Fall** `180` ms (0…10000 ms)
   - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: The manual prints no bounds for this knob; p.58 and p.103 give worked settings in ms and seconds, which fix the unit only
-- **Hold** `600` ms (0…10000 ms)
+- **Hold** `0` ms (0…10000 ms)
   - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: The manual prints no bounds for this knob; p.58 and p.103 give worked settings in ms and seconds, which fix the unit only
-- **Amount** `32` % (0…100 %)
+- **Amount** `30` % (0…100 %)
   - ↳ cite: range unverified — mood leaves this value alone
   - ↳ note: p.59 calls it an attenuator; p.58’s worked example is "amount to 50%", the only figure printed for it
-- **LFO Shape** `Triangle`
+- **LFO Shape** `Square`
   - ↳ note: p.52: "sine, triangle, rising sawtooth, rectangle (square), random (sample & hold) and random gliding"
 - **LFO Sync** `Off`
   - ↳ note: Press the Rate encoder to toggle. Off, Rate reads in Hz; on, it reads in clock divisions — the same knob, two scales
   - ↳ hint: Press the LFO Rate encoder
-- **LFO Rate** `0.22` Hz (0.06…100 Hz)
+- **LFO Rate** `6` Hz (0.06…100 Hz)
   - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.53
   - ↳ note: p.53 twice: "0.06Hz up to 100Hz" and "the LFO ranges from 0.06Hz to 100Hz". p.17 says 0.05Hz for the same knob; the LFO chapter is followed here
-- **Matrix  LFO > Timbre** `16` % (-100…100 %)
-  - ↳ cite: range manual — MicroFreak User Manual 4.0.3 p.28
-  - ↳ note: p.30: five sources, seven destinations, 35 points. Pitch, Wave, Timbre and Cutoff are hardwired; Assign 1–3 are whatever knob you assign them to (p.31)
-  - ↳ hint: Turn to the point, press, then set
 - **Glide mode** `Time`
   - ↳ note: Utility > Preset > Glide mode. The Glide knob reads seconds in Time, clock divisions in Sync and a rate in Rate — three scales on one knob (p.63)
   - ↳ hint: Utility > Preset > Glide mode
@@ -969,13 +965,13 @@ Routing — Send the hi-hats to the FX bus: press SEND, use SELECT to light OPEN
 
 *Values below cite minilogue xd Owner's Manual E 9.*
 
-#### Voice — `stab`: Four-voice stab with the filter snapping shut behind the chord
+#### Voice — `pad`: Low pad with the filter shut down over the top of it
 
 Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 
 *Ranges cite manual — minilogue xd Owner's Manual E 9, p.24.*
 
-- **PORTAMENTO** `0` (0…127)
+- **PORTAMENTO** `20` (0…127)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.17
 - **SWING** `0` % (-75…75 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.41
@@ -986,17 +982,17 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.17
   - ↳ note: Left at 0 — turning right crosses into DUO, which spends two voices on every key
 - **VCO 1 · WAVE** `SAW`
-- **VCO 1 · OCTAVE** `8'`
+- **VCO 1 · OCTAVE** `16'`
 - **VCO 1 · PITCH** `0` c (-1200…1200 c)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
-- **VCO 1 · SHAPE** `480` (0…1023)
+- **VCO 1 · SHAPE** `380` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
   - ↳ note: Shape, complexity, or duty cycle of the selected wave
-- **VCO 2 · WAVE** `SAW`
+- **VCO 2 · WAVE** `TRI`
 - **VCO 2 · OCTAVE** `8'`
-- **VCO 2 · PITCH** `9` c (-1200…1200 c)
+- **VCO 2 · PITCH** `-9` c (-1200…1200 c)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
-- **VCO 2 · SHAPE** `460` (0…1023)
+- **VCO 2 · SHAPE** `200` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.18
 - **VCO 2 · SYNC** `OFF`
   - ↳ note: Locks oscillator 2 to the phase of oscillator 1
@@ -1006,47 +1002,47 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.19
   - ↳ note: Oscillator 1 modulating the pitch of oscillator 2
 - **MULTI ENGINE · NOISE/VPM/USR** `NOISE`
-- **MULTI ENGINE · TYPE** `Peak`
-- **MULTI ENGINE · SHAPE** `500` Hz (110…880 Hz)
+- **MULTI ENGINE · TYPE** `Low`
+- **MULTI ENGINE · SHAPE** `400` Hz (10…21000 Hz)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.20
-  - ↳ note: BANDWIDTH — the peak filter width
-- **MIXER · VCO 1** `780` (0…1023)
+  - ↳ note: CUTOFF — the low-pass filter on the noise
+- **MIXER · VCO 1** `700` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
-- **MIXER · VCO 2** `620` (0…1023)
+- **MIXER · VCO 2** `540` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
-- **MIXER · MULTI** `180` (0…1023)
+- **MIXER · MULTI** `120` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.22
-- **CUTOFF** `560` (0…1023)
+- **CUTOFF** `300` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.23
   - ↳ note: Set too low and the patch may be barely audible
-- **RESONANCE** `520` (0…1023)
+- **RESONANCE** `180` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.23
 - **DRIVE** `50%`
   - ↳ note: The filter drive circuit, in three stages
 - **KEYTRACK** `50%`
   - ↳ note: 100% moves the cutoff with the key, centred on C4
-- **AMP EG · ATTACK** `0` (0…1023)
-- **AMP EG · DECAY** `300` (0…1023)
-- **AMP EG · SUSTAIN** `0` (0…1023)
-- **AMP EG · RELEASE** `240` (0…1023)
-- **EG · ATTACK** `0` (0…1023)
-- **EG · DECAY** `260` (0…1023)
-- **EG · INT** `62` % (-100…100 %)
+- **AMP EG · ATTACK** `620` (0…1023)
+- **AMP EG · DECAY** `760` (0…1023)
+- **AMP EG · SUSTAIN** `800` (0…1023)
+- **AMP EG · RELEASE** `780` (0…1023)
+- **EG · ATTACK** `500` (0…1023)
+- **EG · DECAY** `700` (0…1023)
+- **EG · INT** `-18` % (-100…100 %)
   - ↳ note: Negative applies the envelope downwards
 - **EG · TARGET** `CUTOFF`
 - **LFO · WAVE** `TRI`
 - **LFO · MODE** `NORMAL`
-- **LFO · RATE** `200` (0…1023)
+- **LFO · RATE** `110` (0…1023)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.25
-- **LFO · INT** `0` (0…511)
+- **LFO · INT** `70` (0…511)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.25
   - ↳ hint: Hold SHIFT, turn INT to invert
 - **LFO · TARGET** `CUTOFF`
-- **EFFECTS · DEL/REV/MOD** `DEL`
+- **EFFECTS · DEL/REV/MOD** `REV`
   - ↳ note: Selects which effect the two knobs below are setting; the other two keep their stored values
 - **EFFECTS · OFF/ON/SELECT** `ON`
   - ↳ hint: Hold SHIFT, flip to SELECT
-- **EFFECTS · DEPTH** `28` % (0…100 %)
+- **EFFECTS · DEPTH** `62` % (0…100 %)
   - ↳ cite: range manual — minilogue xd Owner's Manual E 9, p.26
 
 ### Minitaur
