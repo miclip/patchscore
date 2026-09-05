@@ -1913,8 +1913,22 @@ const recipes: Recipe[] = [
       ...midiSetup(),
       // A pulse-width pair: WAVE MIX all the way to the pulse side, and the width narrow either
       // side of the square at noon, which is where a pulse gets reedy rather than hollow.
+      //
+      // **Both oscillators in tune, and #417 is why that is stated rather than assumed.** This
+      // read `2` — a whole tone — and with `SYNC 2>1` off that is a major second sounding under
+      // every note, which on a three-note stab is six pitches. It was heard at the instrument
+      // before anything found it: every value was in range and the guide rendered it confidently.
+      //
+      // The sibling recipes carry a non-zero frequency here and are correct to: `hard` at -3 and
+      // `dirty` at +5 both engage `SYNC 2>1`, which makes this field a timbre control setting
+      // where the sync sweep lands rather than a pitch. This is the one stab with sync off, so it
+      // is the one where the same number is an interval. The shape was carried across without the
+      // switch that made it harmless.
+      //
+      // The pair differs in *width* — 30 against 35 — which is what the sentence above describes
+      // and what the title means by "pair".
       ...osc1("4'", 0, 0, 30, 100),
-      ...osc2("4'", 2, 0, 35, 100, 'OFF'),
+      ...osc2("4'", 0, 0, 35, 100, 'OFF'),
       ...modOsc('OFF', 'SINE', 30, 0, { osc1: 'OFF', osc2: 'OFF' }, 20, {
         f1: 'OFF',
         f2: 'ON',
