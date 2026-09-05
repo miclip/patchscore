@@ -60,22 +60,107 @@ import { MUSE_PANEL } from "./panel";
  * four is the count that is true no matter what lands on the other one. Every recipe carries
  * `TIMBRE A VOICE COUNT 4` as a param so the reader sets the box to the split the guide assumed.
  *
- * ## `patchPolyphony`: MONO is cited, UNISON is not, and they are not treated alike
+ * ## `patchPolyphony`: MONO is cited, UNISON is observed, and they arrive at the same number
  *
  * §12.4/#85. `Assignable.polyphony` is a fact about the box; what a patch spends is a fact about
- * the patch. Two VOICE CONTROL buttons bear on it and **the manual is precise about one and silent
- * about the other**:
+ * the patch. Two VOICE CONTROL buttons bear on it, and **each is settled by a different kind of
+ * evidence** — which is the distinction this section exists to draw, and it survives #383 intact
+ * even though the conclusion it was attached to did not.
  *
  *  - **`MONO`** (p.105), in full: *"Enables mono mode on the currently selected timbre, which will
  *    restrict the timbre to operating in a monophonic mode. Only one voice will be used at a time
  *    and polyphonic playing will be disabled."* That is `patchPolyphony: 1`, stated outright, and
  *    every `sub` and `bass-mid` recipe here carries it.
  *  - **`UNISON`** (p.105), in full: *"Enables unison mode on the currently selected timbre, which
- *    will stack any currently unused voices on top of the active ones."* **That is not a mono
- *    mode and must not be modelled as one.** It stacks whatever is spare, so one note gets the
- *    lot and four notes get one each — the thickness is dynamic and the polyphony is unchanged.
- *    No recipe here claims `patchPolyphony` on the strength of UNISON, and the two that use it
- *    (`stab`) leave the count alone, which is what the sentence says.
+ *    will stack any currently unused voices on top of the active ones."* The page stops there. It
+ *    is `patchPolyphony: 1` as well, and **the evidence is the instrument rather than the
+ *    sentence** — see below.
+ *
+ * ### What was observed, and what this file used to argue instead
+ *
+ * #383, at the box, firmware 1.4.0, one variable at a time and `STACK` off throughout:
+ *
+ * ```
+ * UNISON off, DVA on     one note   ->  one voice
+ * UNISON off, DVA off    one note   ->  one voice
+ * UNISON on              one note   ->  four voices
+ * UNISON on              chord      ->  indistinguishable from a single note
+ * ```
+ *
+ * **The last row is the finding: with UNISON engaged a chord does not sound as a chord.**
+ * `DYNAMIC VOICE ALLOCATION` is ruled out in both of its states, and `STACK` is not involved —
+ * it was off, and every recipe here sets `MULTI MODE ON`, under which p.105 says it is ignored
+ * anyway.
+ *
+ * ### How much weight each row carries, which is not the same for all four
+ *
+ * **Rows one to three are measured.** The voice meter says one voice per note with UNISON off in
+ * both `DVA` states, and four voices on one note with it on. Those are readings.
+ *
+ * **Row four is a listening test.** *"Indistinguishable from a single note"* is what a player
+ * heard, and **the meter cannot corroborate it**: the timbre is capped at four voices, so it
+ * reads `4` whether UNISON is holding all four on the first note or spreading them one each
+ * across three. The instrument offers no display that separates those two states.
+ *
+ * So what is established is that UNISON puts every voice on one note, and that a chord under it
+ * did not sound like a chord to somebody playing one. **The mechanism joining them is a reading
+ * of p.104, not a measurement** — the page says *currently unused* voices are stacked and says
+ * nothing about handing them back, so the second note finding none follows from the sentence
+ * rather than from an instrument that reported it. That reading, the listening test and the
+ * manual agree, and none of the three is a meter.
+ *
+ * **This is recorded here so a later reading knows what it is contradicting.** If somebody
+ * establishes that a chord does sound and the earlier one was mistaken, what fails is the
+ * inference and the listening test together — not a measurement, because none was taken of the
+ * thing in question.
+ *
+ * **This file used to conclude the opposite, and the tell is worth keeping.** It said UNISON
+ * *"stacks whatever is spare, so one note gets the lot and four notes get one each — the thickness
+ * is dynamic and the polyphony is unchanged"*, and closed with **"which is what the sentence
+ * says"**. That clause is the error. p.104's sentence says voices that are *currently unused* get
+ * stacked; when the first note arrives every voice is unused, so it takes all of them and the
+ * second finds none. **Nothing on the page says voices are handed back as more notes arrive** —
+ * that half was supplied by the reader and then attributed to Moog.
+ *
+ * So the manual is accurate and the inference from it was wrong, which is #381's shape two hours
+ * later on the same device: a careful argument resting on a clause that claims the page states
+ * something it does not. The distinction the old section drew — a cited fact is not an inferred
+ * one — was the right distinction applied to the wrong side of itself.
+ *
+ * **The two UNISON recipes now declare `patchPolyphony: 1`**: `muse-stab-hard` and
+ * `muse-stab-dirty`. `muse-stab-bright` sets `UNISON OFF` and is untouched. They stay UNISON
+ * stabs — fat and monophonic is what the box does, and turning the switch off to make them
+ * chordal would be a different change with a musical argument behind it.
+ *
+ * ### What that costs, and it is not nothing: both recipes stop being offered
+ *
+ * **Every `stab` request this library ships asks for a chord.** `hip-hop` wants `polyphony: 4`,
+ * `industrial-techno` and `lydian-house` want `3`. `patchVoiceCeiling` takes the lower of the
+ * assignable's four and the patch's one, so these two recipes are now **genuinely infeasible for
+ * all three** — not deprioritised, excluded.
+ *
+ * **They were being offered before, and that was the defect.** In the `industrial-techno` rig the
+ * Muse was taking a three-note stab on `muse-stab-hard`, a patch that sounds one note. The guide
+ * read as correct and described something the box in front of the reader could not play, which is
+ * the failure `patchPolyphony` exists to prevent and the one somebody hit at the machine. The
+ * stab now goes elsewhere and the Muse keeps `pad`.
+ *
+ * So the recipes losing work is the repair rather than a side effect. What they are still right
+ * for is a single-note stab, which is what a fat mono stab is, and no direction currently asks
+ * for one.
+ *
+ * ### The conclusion is limited to the four-voice split, deliberately
+ *
+ * **Only the four-voice split was tested**, which is the split `TIMBRE A VOICE COUNT 4` gives and
+ * the only one any recipe here authors. Whether UNISON collapses to one note at *every* voice
+ * count is unknown: a timbre allocated six or eight voices was not tried.
+ *
+ * `patchPolyphony: 1` is therefore right for every recipe in this file and is **not** modelled as
+ * a function of the count. Making it one would mean authoring a rule across a range nobody has
+ * played, which is the thing this manifest is most careful not to do — and the guide sets the
+ * count itself, so the untested region is not one a reader following it can reach. If somebody
+ * plays a chord under UNISON at a different allocation and it sounds, this becomes conditional
+ * and the recipes are where it changes.
  *
  * The MIDI implementation agrees and is worth naming because it is the check: `108 Voice Unison`
  * and `109 Voice Mono` are both `0-63 off/ 64-127 on` (p.122). There is **no unison-count
@@ -940,7 +1025,7 @@ const ARP_CLOCK_DIV = ["STRGHT", "TRPLT", "DOTTED", "COMBO"] as const;
 function voice(unison: string, mono: string, detune: number): AuthoredParam[] {
   return [
     sw("VOICE CONTROL · UNISON", unison, OFF_ON, 105, {
-      note: "Stacks any currently unused voices onto the active ones — thickness varies with how many notes are held",
+      note: "Stacks every unused voice onto the first note held, so the timbre plays one note at a time",
     }),
     sw("VOICE CONTROL · MONO", mono, OFF_ON, 105),
     cc("VOICE CONTROL · DETUNE", detune, 92, {
@@ -1722,7 +1807,7 @@ const recipes: Recipe[] = [
     ],
   },
 
-  // ---- stab: short, chordal, and where UNISON earns its place ------------
+  // ---- stab: short, and where UNISON earns its place — two of them mono ---
   {
     id: "muse-stab-hard",
     role: "stab",
@@ -1731,10 +1816,12 @@ const recipes: Recipe[] = [
     verified: false,
     title:
       "Unison stack on a fast envelope, serial filters clamped shut behind it",
+    // #383. UNISON without MONO, and it is monophonic anyway: the first note takes every unused
+    // voice and the second finds none, which is what the box does rather than what p.104 says.
+    // See the module note for the observation and for the argument this replaces. DETUNE is what
+    // the stack is made of, so it is the one control here that is up.
+    patchPolyphony: 1,
     params: [
-      // UNISON without MONO: the spare voices pile onto whatever is held, so a one-note stab is
-      // huge and a triad is still a triad. No polyphony claim — see the module note. DETUNE is
-      // what the stack is made of, so it is the one control here that is up.
       ...voice("ON", "OFF", 30),
       ...midiSetup(),
       ...osc1("8'", 0, 100, 50, 0),
@@ -1794,6 +1881,8 @@ const recipes: Recipe[] = [
     verified: false,
     title:
       "Ring modulator over the top of the mix, oscillator two syncing hard",
+    // #383, the same as `muse-stab-hard`: UNISON spends every voice on the first note.
+    patchPolyphony: 1,
     params: [
       ...voice("ON", "OFF", 45),
       ...midiSetup(),
@@ -2189,9 +2278,11 @@ const recipes: Recipe[] = [
 /**
  * The seven roles one timbre of this synthesizer can honestly claim.
  *
- * `pad`, `stab` and `texture` are polyphonic uses of four voices; `lead`, `bass-mid` and `sub` are
- * the monophonic ones, and each says so with `MONO` and `patchPolyphony: 1` rather than by
- * implication. `arp` is here — and is *not* here for the minilogue xd — because this box's
+ * `pad` and `texture` are polyphonic uses of four voices; `lead`, `bass-mid` and `sub` are the
+ * monophonic ones, and each says so with `MONO` and `patchPolyphony: 1` rather than by
+ * implication. **`stab` is both**, which is the one place the split is not by role: its two
+ * UNISON recipes spend every voice on the first note and carry the same `patchPolyphony: 1`
+ * without carrying `MONO` (#383), and `muse-stab-bright` leaves UNISON off and stays chordal. `arp` is here — and is *not* here for the minilogue xd — because this box's
  * arpeggiator is a sequenced part rather than a keyboard effect: it has its own `CLOCK DIV` off
  * the global tempo (p.68), sixteen step buttons that program rests, a `LENGTH` reaching 64 steps,
  * a per-step `GATE LENGTH` and `GATE PROB`, and a `HOLD` key so it runs without hands (pp.68-71).

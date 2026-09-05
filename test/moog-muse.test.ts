@@ -17,6 +17,7 @@ import type {
   ResolvedParam,
   Role,
 } from '../lib/core/index'
+import { resolveRecipe } from '../lib/core/resolver'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 
@@ -1145,12 +1146,23 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   })
 
   it('accounts for every part that draws no grid, by which reason', () => {
-    // #100 gives a hooked part's notes to its hook, and on this box that is the whole of the
-    // remainder — nothing is sustained and nothing fails to resolve a variant.
+    // #100 gives a hooked part's notes to its hook, and that is most of the remainder.
+    //
+    // **These counts moved at #383 and the move is the point rather than noise.** UNISON caps
+    // `muse-stab-hard` and `muse-stab-dirty` at one note, and `hip-hop`'s stab request asks for
+    // four (`polyphony: 4`, character `dark`). Only `muse-stab-bright` is uncapped and `dark`
+    // does not substitute to `bright`, so the Muse can no longer serve that request at all — six
+    // hook-owned stab assignments left the sweep, and the resolver filled the freed capacity with
+    // `hip-hop`'s texture, which that direction writes no pattern variant for.
+    //
+    // So the fourth arm is exercised for the first time on this device: a part that resolves, is
+    // not hooked, is not sustained, and draws no grid because no section selected a variant. It
+    // is named rather than counted, because *which* part it is is the whole information.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(90)
+    expect(hooked.length).toBe(84)
     expect(sustained).toEqual([])
-    expect(noPattern).toEqual([])
+    expect([...new Set(noPattern)]).toEqual(['hip-hop/texture'])
+    expect(noPattern.length).toBe(6)
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
     // classify — which is what would make the zero above an artefact rather than a measurement.
@@ -1201,5 +1213,171 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       }
     }
     expect(drawn).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * §12.4/#85, corrected at #383. **UNISON is a mono mode on this box, and the manifest used to
+ * argue that it was not.**
+ *
+ * Observed at the instrument (firmware 1.4.0), one variable at a time, `STACK` off throughout:
+ * UNISON off gives one voice to one note in both `DYNAMIC VOICE ALLOCATION` states; UNISON on
+ * gives four voices to one note; and **a chord under UNISON is indistinguishable from a single
+ * note**.
+ *
+ * **The first three rows are meter readings and the fourth is a listening test**, which is worth
+ * separating because the meter cannot settle it: the timbre is capped at four voices, so it reads
+ * `4` whether UNISON holds all four on one note or spreads them across three. What is measured is
+ * that UNISON puts every voice on one note; that a chord under it does not sound is what a player
+ * heard.
+ *
+ * p.104 is accurate and the reading of it was not. *"Stack any currently unused voices on top of
+ * the active ones"* — when the first note arrives every voice is unused, so it takes all of them
+ * and the second finds none. Nothing on the page says they are handed back, and the manifest's
+ * old conclusion closed with *"which is what the sentence says"*, which is the clause that was
+ * false rather than the sentence it pointed at. **The mechanism is that reading rather than a
+ * measurement**, and it agrees with the listening test; neither is a meter.
+ *
+ * **What this costs is the point rather than a side effect.** Every `stab` request the library
+ * ships asks for a chord — `polyphony` 4 on `hip-hop`, 3 on `industrial-techno`, 3 on
+ * `lydian-house` — so both capped recipes are now infeasible for all three, where before they
+ * were being handed chords they could not sound. `test/patch-polyphony.test.ts` holds the
+ * general rule; the pairing lives here, where the recipes are.
+ *
+ * **The scope of the claim is the four-voice split and only that**, which is the split every
+ * recipe here authors and the one the reading covered. Whether UNISON collapses to one note at
+ * six or eight voices was not tried, so the field is a flat `1` rather than a function of the
+ * count — the precondition is asserted below so that a recipe changing the allocation fails here
+ * rather than silently widening a claim nobody tested.
+ *
+ * **These stay UNISON stabs.** Turning the switch off to make them chordal is a different change
+ * with a musical argument behind it, and #383 did not ask for it. What changed is that they say
+ * what they do.
+ */
+describe('UNISON spends every voice on one note (§12.4/#383)', () => {
+  const stabs = device.recipes.filter((recipe) => recipe.role === 'stab')
+
+  const unisonOf = (recipe: Recipe) =>
+    recipe.params.find((param) => param.name === 'VOICE CONTROL · UNISON')?.value
+  const monoOf = (recipe: Recipe) =>
+    recipe.params.find((param) => param.name === 'VOICE CONTROL · MONO')?.value
+
+  it('pairs each stab’s UNISON setting with its polyphony claim, both ways', () => {
+    expect(stabs.map((recipe) => recipe.id)).toEqual([
+      'muse-stab-hard',
+      'muse-stab-bright',
+      'muse-stab-dirty',
+    ])
+    const pairing = stabs.map(
+      (recipe) =>
+        `${recipe.id} UNISON=${String(unisonOf(recipe))} MONO=${String(monoOf(recipe))} poly=${String(recipe.patchPolyphony ?? 'none')}`,
+    )
+    // Stated as a list rather than as a rule, because both directions matter: a UNISON recipe
+    // that loses the cap and a non-UNISON one that gains it are each a defect, and only one of
+    // them is the defect #383 fixed.
+    expect(pairing).toEqual([
+      'muse-stab-hard UNISON=ON MONO=OFF poly=1',
+      'muse-stab-bright UNISON=OFF MONO=OFF poly=none',
+      'muse-stab-dirty UNISON=ON MONO=OFF poly=1',
+    ])
+  })
+
+  it('caps every UNISON recipe on the device, and nothing else uncited', () => {
+    // The rule behind the list above, over all 18 rather than over the three stabs — so a UNISON
+    // recipe added under another role cannot skip the cap.
+    for (const recipe of device.recipes) {
+      const unison = unisonOf(recipe) === 'ON'
+      const mono = monoOf(recipe) === 'ON'
+      if (unison || mono) expect(recipe.patchPolyphony, recipe.id).toBe(1)
+      else expect(recipe.patchPolyphony, recipe.id).toBeUndefined()
+    }
+    // Not vacuous in either arm: the device really does have recipes on both sides, and UNISON
+    // reaches the cap without `MONO` — which is the whole of #383, since `MONO` was already cited.
+    const unisonOnly = device.recipes.filter(
+      (recipe) => unisonOf(recipe) === 'ON' && monoOf(recipe) !== 'ON',
+    )
+    expect(unisonOnly.map((recipe) => recipe.id)).toEqual(['muse-stab-hard', 'muse-stab-dirty'])
+    expect(device.recipes.filter((recipe) => recipe.patchPolyphony === undefined).length)
+      .toBeGreaterThan(0)
+  })
+
+  /**
+   * §12.4. **The consequence, asserted rather than described.** A cap is only worth declaring if
+   * it actually refuses something, and what it refuses here is every stab this library ships.
+   */
+  it('refuses both capped recipes the chord every shipped stab asks for', () => {
+    const timbre = expand(device)[0]!
+    expect(timbre.polyphony).toBe(4)
+    // The three requests, read off the directions rather than restated as numbers, so a template
+    // that changes its mind fails here instead of leaving this test agreeing with itself.
+    const stabRequests = TEMPLATES.flatMap((template) =>
+      template.roles
+        .filter((request) => request.role === 'stab')
+        .map((request) => `${template.id} ${String(request.character)} ${String(request.polyphony)}`),
+    )
+    expect(stabRequests.sort()).toEqual([
+      'hip-hop dark 4',
+      'industrial-techno hard 3',
+      'lydian-house clean 3',
+    ])
+    // One note is still fine — a fat mono stab is what these two are — and it is the second note
+    // that is refused. Both arms, so the cap is neither vacuous nor total.
+    const chosen = (character: string, notes: number) => {
+      const outcome = resolveRecipe(device, timbre, 'stab' as Role, character as never, notes)
+      return outcome.outcome === 'unvoiced' ? 'unvoiced' : outcome.recipe.id
+    }
+    expect(chosen('hard', 1)).toBe('muse-stab-hard')
+    for (const notes of [2, 3, 4]) {
+      // Not `muse-stab-hard` any more: the only stab left that can sound a chord is the one
+      // whose UNISON is off.
+      expect(chosen('hard', notes), `hard notes=${String(notes)}`).toBe('muse-stab-bright')
+      // And `dark` has no substitution path reaching `bright`, so `hip-hop` loses the Muse
+      // entirely rather than being served by a patch that cannot play its chord.
+      expect(chosen('dark', notes), `dark notes=${String(notes)}`).toBe('unvoiced')
+    }
+  })
+
+  /**
+   * The precondition the observation was taken under. It is asserted rather than assumed because
+   * the conclusion is scoped to it: `patchPolyphony: 1` is flat, and it is flat only because
+   * every recipe puts the timbre on the four-voice split that was actually played.
+   */
+  it('authors the four-voice split the reading covered, in every recipe', () => {
+    for (const recipe of device.recipes) {
+      const count = recipe.params
+        .filter(isNumeric)
+        .find((param) => param.name === 'TIMBRE A VOICE COUNT')
+      expect(count?.value, recipe.id).toBe(4)
+      // p.106's sum-to-eight rule makes the other timbre four as well, so the box is on the
+      // even split whichever timbre a part lands on.
+      expect(expand(device).every((member) => member.polyphony === 4)).toBe(true)
+    }
+    // And `STACK` is not what produced the reading: no recipe engages it, and under the
+    // `MULTI MODE ON` every recipe sets, p.105 says it is ignored anyway.
+    const stacking = device.recipes.filter((recipe) =>
+      recipe.params.some((param) => param.name.includes('STACK') && param.value === 'ON'),
+    )
+    expect(stacking.map((recipe) => recipe.id)).toEqual([])
+  })
+
+  /**
+   * The reader-facing half. The note on this control said the thickness *"varies with how many
+   * notes are held"*, which is the old inference written where a reader would act on it — and
+   * §8's reader is at the machine, so a note that describes behaviour the box does not have is
+   * worse than no note.
+   */
+  it('tells the reader what the switch actually does', () => {
+    const notes = new Set(
+      device.recipes
+        .flatMap((recipe) => recipe.params)
+        .filter((param) => param.name === 'VOICE CONTROL · UNISON')
+        .map((param) => param.note ?? ''),
+    )
+    expect([...notes]).toEqual([
+      'Stacks every unused voice onto the first note held, so the timbre plays one note at a time',
+    ])
+    for (const note of notes) {
+      expect(note).not.toContain('varies with how many notes are held')
+    }
   })
 })

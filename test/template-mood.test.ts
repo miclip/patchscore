@@ -209,12 +209,16 @@ describe('the format carries an absent mood, and older links keep theirs (#310)'
      */
     expect(FORMAT_VERSION).toBe(4)
     /**
-     * The engine went 5 to 6 for §2.3/#25's device-global resources, which is a change to what
-     * the resolver *decides* and carries its own entry in `RESOLVER_VERSION`'s history. What this
-     * test is about is that widening the input set is not that kind of change — the reading
-     * beside `SongOverrides`, applied to #161's two fields, then #200's, then #340's.
+     * The engine went 5 to 6 for §2.3/#25's device-global resources, and 6 to 7 for §12.4/#383,
+     * where `patchPolyphony` on two Muse recipes made them infeasible for every `stab` request
+     * the library ships. Both are changes to what the resolver *decides* and both carry their own
+     * entry in `RESOLVER_VERSION`'s history.
+     *
+     * What this test is about is that widening the input set is **not** that kind of change — the
+     * reading beside `SongOverrides`, applied to #161's two fields, then #200's, then #340's. The
+     * number below belongs to whoever last bumped it; the claim here is that #310 was not them.
      */
-    expect(RESOLVER_VERSION).toBe(6)
+    expect(RESOLVER_VERSION).toBe(7)
   })
 
   it('writes no axis at all when the reader has set no mood', () => {

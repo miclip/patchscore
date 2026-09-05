@@ -60,14 +60,22 @@ describe('the cap changes nothing for a box that declares none', () => {
     // over the library rather than argued, and pinned so that a third device declaring it is a
     // decision somebody made rather than a diff nobody read.
     //
-    // The Muse is the second, and it declares the field for a narrower reason than the minilogue
-    // does. That box has three rungs — POLY, DUO and UNISON — and two of them spend voices. This
-    // one has a single cited rung: `MONO`, which p.105 says *"will restrict the timbre to
-    // operating in a monophonic mode. Only one voice will be used at a time and polyphonic
-    // playing will be disabled."* Its `UNISON` deliberately does **not** cap anything — it
-    // *"will stack any currently unused voices on top of the active ones"*, which is dynamic
-    // thickness rather than a mono mode, and modelling it as `patchPolyphony: 1` would be the
-    // manifest inventing a limit the manual does not state.
+    // The Muse is the second, and since #383 it declares the field for **two** reasons rather
+    // than the one it used to. The cited rung is `MONO`, which p.105 says *"will restrict the
+    // timbre to operating in a monophonic mode. Only one voice will be used at a time and
+    // polyphonic playing will be disabled."*
+    //
+    // **`UNISON` is the second rung and it is observed rather than cited.** This comment used to
+    // say the opposite — that UNISON *"deliberately does not cap anything"*, being *"dynamic
+    // thickness rather than a mono mode"*, and that modelling it as `patchPolyphony: 1` would be
+    // inventing a limit. At the box (firmware 1.4.0, `STACK` off, `DVA` ruled out in both states)
+    // a chord under UNISON is indistinguishable from a single note. p.104 is accurate and the
+    // inference was not: it stacks the voices that are *currently unused*, so the first note takes
+    // all four and the second finds none, and nothing on the page says they are handed back.
+    // So the limit was not invented — it was there, and this file argued it away.
+    //
+    // `moog-muse` was already in the list on `MONO` alone, which is why #383 moves no entry here.
+    // The pairing it does change is asserted in `test/moog-muse.test.ts`, where the recipes are.
     //
     // **The MicroFreak is the third, and it is the first to declare the field for a reason that
     // is not a voice-mode rung at all.** Its four-note paraphony lives in `VoiceSpec.polyphony`,
