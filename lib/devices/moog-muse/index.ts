@@ -997,8 +997,41 @@ const ARP_CLOCK_DIV = ['STRGHT', 'TRPLT', 'DOTTED', 'COMBO'] as const
  * `TIMBRE A VOICE COUNT` is carried because this manifest's `polyphony: 4` assumes it. p.106's
  * sum-to-eight rule means setting it also sets the other one.
  */
+/**
+ * §3.1/#385. **Stamp the panel module every parameter in a block belongs to.**
+ *
+ * #385 was opened standing at this instrument: `muse-stab-hard` prints 75 parameters, and 75 rows
+ * is not a thing anybody reads on their feet. The guide can box them by module — but only if the
+ * device says which module each control is on, because nothing in the model can work it out. A
+ * parameter knows its name, value, range, unit, scope, hint and note, and nothing about where it
+ * sits on a panel.
+ *
+ * **Not derived from the ` · ` name prefix, and that is deliberate.** #385 counted the prefix
+ * across the library — 3,419 params carry one and 10,884 do not, one device in thirty-nine is
+ * consistent, and fourteen of this box's own are bare. It is a habit two authors had, not a
+ * structure to lift. Reading it here would work by luck on this folder and teach the next one to
+ * rely on it.
+ *
+ * So the block helpers below are the authority, one per panel section, which is the arrangement
+ * the file already had: `filterEnv` returns the FILTER ENVELOPE's four sliders because that is
+ * what the FILTER ENVELOPE is. Stamping at the block is stamping at the place the knowledge
+ * already lives, and the only block whose contents span two sections is `filters`, which says so
+ * by calling this three times.
+ *
+ * The section names are the panel's own, and `panel.ts` already draws them off the same reading:
+ * `MIXER`, `FILTERS`, `PROGRAMMER` and `VOICE CONTROL` are `group` labels there, with pages.
+ *
+ * **Names are left exactly as authored.** `MIXER · OSC 1` keeps its prefix, so nothing keyed on a
+ * parameter name moves — not #107's hoisting, not a fixture, not a test. Shortening them so a box
+ * does not repeat its own label is a separate change with its own blast radius; see the note in
+ * this change's report.
+ */
+function inModule(module: string, params: AuthoredParam[]): AuthoredParam[] {
+  return params.map((param) => ({ ...param, module }))
+}
+
 function voice(unison: string, mono: string, detune: number): AuthoredParam[] {
-  return [
+  return inModule('VOICE CONTROL', [
     sw('VOICE CONTROL · UNISON', unison, OFF_ON, 105, {
       note: 'Stacks every unused voice onto the first note held, so the timbre plays one note at a time',
     }),
@@ -1030,7 +1063,7 @@ function voice(unison: string, mono: string, detune: number): AuthoredParam[] {
       hint: 'voice-count',
       note: 'Its printed default. On, a busy timbre steals from the other and the four-each split stops holding',
     }),
-  ]
+  ])
 }
 
 /** OSCILLATOR 1 (pp.27-28). `FREQUENCY` is the one knob on this panel with a real printed scale. */
@@ -1041,7 +1074,7 @@ function osc1(
   pulseWidth: number,
   waveMix: number,
 ): AuthoredParam[] {
-  return [
+  return inModule('OSC 1', [
     sw('OSC 1 · OCTAVE', octave, OCTAVES, 28),
     num('OSC 1 · FREQUENCY', freq, { min: -7, max: 7 }, 27, {
       unit: 'st',
@@ -1056,7 +1089,7 @@ function osc1(
     cc('OSC 1 · WAVE MIX', waveMix, 48, {
       note: 'The slider: triangle/sawtooth on the left against the pulse wave on the right',
     }),
-  ]
+  ])
 }
 
 /** OSCILLATOR 2 (pp.27-28), plus the hard sync that only exists in this direction. */
@@ -1068,7 +1101,7 @@ function osc2(
   waveMix: number,
   sync: string,
 ): AuthoredParam[] {
-  return [
+  return inModule('OSC 2', [
     sw('OSC 2 · OCTAVE', octave, OCTAVES, 28),
     num('OSC 2 · FREQUENCY', freq, { min: -7, max: 7 }, 27, { unit: 'st' }),
     cc('OSC 2 · TRI/SAW', triSaw, 51),
@@ -1077,7 +1110,7 @@ function osc2(
     sw('SYNC 2▸1', sync, OFF_ON, 28, {
       note: 'Locks oscillator 2 to the phase of oscillator 1',
     }),
-  ]
+  ])
 }
 
 /**
@@ -1094,7 +1127,7 @@ function osc2(
 function fm(direction: '2>1' | '1>2', amount: number, minAmt = 0, maxAmt = 100): AuthoredParam[] {
   const on = direction === '2>1' ? '2▸1' : '1▸2'
   const off = direction === '2>1' ? '1▸2' : '2▸1'
-  return [
+  return inModule('FM', [
     sw(`FM · ${on}`, 'ON', OFF_ON, direction === '2>1' ? 28 : 29, {
       note:
         direction === '2>1'
@@ -1116,7 +1149,7 @@ function fm(direction: '2>1' | '1>2', amount: number, minAmt = 0, maxAmt = 100):
       unit: '%',
       hint: 'edit-submenu',
     }),
-  ]
+  ])
 }
 
 /**
@@ -1136,7 +1169,7 @@ function modOsc(
   filterAmount: number,
   filterTargets: { f1: string; f2: string },
 ): AuthoredParam[] {
-  return [
+  return inModule('MOD OSC', [
     sw('MOD OSC · AUDIO', audio, OFF_ON, 30, {
       note:
         audio === 'ON'
@@ -1153,7 +1186,7 @@ function modOsc(
     cc('MOD OSC · FILTER AMOUNT', filterAmount, 39),
     sw('MOD OSC · FILTER ▸ 1', filterTargets.f1, OFF_ON, 31),
     sw('MOD OSC · FILTER ▸ 2', filterTargets.f2, OFF_ON, 31),
-  ]
+  ])
 }
 
 /**
@@ -1179,7 +1212,7 @@ function mixer(
   overload: number,
   overloadRange: string = 'LOW',
 ): AuthoredParam[] {
-  return [
+  return inModule('MIXER', [
     cc('MIXER · OSC 1', osc1Level, 58),
     cc('MIXER · RING MOD', ringMod, 60, {
       // #349, re-derived as travel: a quarter of the fader, which takes the ring modulator from a
@@ -1206,7 +1239,7 @@ function mixer(
       hint: 'edit-submenu',
       note: 'LOW narrows the drive range for finer control',
     }),
-  ]
+  ])
 }
 
 /**
@@ -1242,13 +1275,20 @@ function filters(
   env2: number,
   kb2: string,
 ): AuthoredParam[] {
+  // The one block whose controls span more than one section of the panel, so it stamps three
+  // times rather than once. `FILTER · ORDER` and `LINK FILTERS` govern the *pair* — how the two
+  // filters are wired to each other — and belong to neither of them; `panel.ts` draws that as the
+  // `FILTERS` group (p.35) with FILTER 1 and FILTER 2 inside it.
   return [
-    sw('FILTER · ORDER', order, FILTER_ORDER, 36, {
-      note: 'SERIAL, STEREO or PARALLEL — with HIGH PASS this decides bandpass, stereo lowpass or notch',
-    }),
-    sw('LINK FILTERS', 'OFF', OFF_ON, 36, {
-      note: 'Off, so FILTER 1 CUTOFF is an absolute cutoff rather than the spacing between the two',
-    }),
+    ...inModule('FILTER', [
+      sw('FILTER · ORDER', order, FILTER_ORDER, 36, {
+        note: 'SERIAL, STEREO or PARALLEL — with HIGH PASS this decides bandpass, stereo lowpass or notch',
+      }),
+      sw('LINK FILTERS', 'OFF', OFF_ON, 36, {
+        note: 'Off, so FILTER 1 CUTOFF is an absolute cutoff rather than the spacing between the two',
+      }),
+    ]),
+    ...inModule('FILTER 1', [
     sw('FILTER 1 · HIGH PASS', highPass, OFF_ON, 35, {
       note:
         highPass === 'ON'
@@ -1263,12 +1303,15 @@ function filters(
     }),
     envAmount(1, env1, { note: 'Bipolar, no modulation at noon' }),
     sw('FILTER 1 · KB TRACKING', kb1, KB_TRACKING, 36),
+    ]),
+    ...inModule('FILTER 2', [
     cutoff('FILTER 2 · CUTOFF', cutoff2, 72, {
       mood: [{ axis: 'darkness', amount: -Math.round(cutoff2 / 2) }],
     }),
     cc('FILTER 2 · RESONANCE', res2, 73),
     envAmount(2, env2, { note: 'Bipolar, no modulation at noon' }),
     sw('FILTER 2 · KB TRACKING', kb2, KB_TRACKING, 36),
+    ]),
   ]
 }
 
@@ -1294,7 +1337,7 @@ function filterEnv(
   release: number,
   loop = 'OFF',
 ): AuthoredParam[] {
-  return [
+  return inModule('FILTER ENV', [
     timeFader('FILTER ENV · ATTACK', attack, 79),
     timeFader('FILTER ENV · DECAY', decay, 80),
     levelFader('FILTER ENV · SUSTAIN', sustain, 81),
@@ -1302,7 +1345,7 @@ function filterEnv(
     sw('FILTER ENV · LOOP', loop, OFF_ON, 39, {
       note: 'Looping, the envelope runs like an LFO',
     }),
-  ]
+  ])
 }
 
 /**
@@ -1316,7 +1359,7 @@ function vcaEnv(
   release: number,
   velocity: string,
 ): AuthoredParam[] {
-  return [
+  return inModule('VCA ENV', [
     timeFader('VCA ENV · ATTACK', attack, 86),
     // #381, re-derived as a duration: about a third off the decay, enough to get notes out of
     // each other's way in a busy bar without turning the part staccato. A *share* rather than a
@@ -1331,7 +1374,7 @@ function vcaEnv(
       mood: [{ axis: 'space', amount: envelopeShare(release) }],
     }),
     sw('VCA ENV · VELOCITY', velocity, OFF_ON, 39),
-  ]
+  ])
 }
 
 /**
@@ -1346,7 +1389,7 @@ function vcaEnv(
  * different knobs for the spread width on facing pages, and that is not resolved here.
  */
 function vca(level: number, panSpread: number): AuthoredParam[] {
-  return [
+  return inModule('VCA', [
     cc('VCA · LEVEL', level, 7, { hint: 'timbre-select' }),
     panParam(),
     cc('VCA · PAN SPREAD', panSpread, 9, {
@@ -1355,7 +1398,7 @@ function vca(level: number, panSpread: number): AuthoredParam[] {
     sw('VCA · PAN SPRD MODE', 'L/R', PAN_SPREAD_MODE, 44, {
       hint: 'edit-submenu',
     }),
-  ]
+  ])
 }
 
 /**
@@ -1391,11 +1434,11 @@ function vca(level: number, panSpread: number): AuthoredParam[] {
  * a timbre before pressing one would send them to the wrong part of the panel.
  */
 function delayRouting(through: string): AuthoredParam[] {
-  return [
+  return inModule('DELAY', [
     sw('DELAY · TIMBRE A / TIMBRE B', through, OFF_ON, 47, {
       note: 'Two separate buttons, one per timbre — engage the one for the timbre this part is on. Disengaged, this part bypasses the delay on a fully analog path',
     }),
-  ]
+  ])
 }
 
 /**
@@ -1425,7 +1468,7 @@ function delayRouting(through: string): AuthoredParam[] {
  * delay time and becomes an offset between the channels (p.46).
  */
 function sharedDelay(): AuthoredParam[] {
-  return [
+  return inModule('DELAY', [
     sw('DELAY · CLOCK SYNC', 'ON', OFF_ON, 46, {
       scope: 'song',
       note: 'Both TIME knobs jump between divisions of the global TEMPO',
@@ -1461,7 +1504,7 @@ function sharedDelay(): AuthoredParam[] {
       scope: 'song',
       mood: [{ axis: 'space', amount: 25 }],
     }),
-  ]
+  ])
 }
 
 /**
@@ -1487,7 +1530,7 @@ function sharedDelay(): AuthoredParam[] {
  * is the range, the defaults, and the requirement that the two differ.
  */
 function midiSetup(): AuthoredParam[] {
-  return [
+  return inModule('PROGRAMMER', [
     sw('MULTI MODE', 'ON', OFF_ON, 110, {
       scope: 'song',
       hint: 'midi-settings',
@@ -1511,7 +1554,7 @@ function midiSetup(): AuthoredParam[] {
       hint: 'midi-settings',
       note: "Defaults to OFF, so the box ignores CC until this is set. The manual's spelling",
     }),
-  ]
+  ])
 }
 
 /**
@@ -1528,7 +1571,7 @@ function lfo1(
   amplitude: number,
   perVoice = 'GLOBAL',
 ): AuthoredParam[] {
-  return [
+  return inModule('LFO 1', [
     sw('LFO 1 · WAVEFORM', waveform, LFO_WAVES, 53),
     num('LFO 1 · RATE', rate, { min: 0.01, max: 40 }, 52, {
       unit: 'Hz',
@@ -1546,7 +1589,7 @@ function lfo1(
       hint: 'edit-submenu',
       note: 'PER-VOICE gives eight separate LFOs, one per voice',
     }),
-  ]
+  ])
 }
 
 /**
@@ -1563,7 +1606,7 @@ function pitchLfo(
   amount: number,
   targets: { osc1: string; osc2: string },
 ): AuthoredParam[] {
-  return [
+  return inModule('PITCH LFO', [
     num('PITCH LFO · RATE', rate, { min: 0.01, max: 40 }, 58, {
       unit: 'Hz',
       step: 0.01,
@@ -1577,7 +1620,7 @@ function pitchLfo(
     sw('PITCH LFO · ▸ OSC 1', targets.osc1, OFF_ON, 59),
     sw('PITCH LFO · ▸ OSC 2', targets.osc2, OFF_ON, 59),
     sw('PITCH LFO · SYNC', 'OFF', OFF_ON, 60, { hint: 'edit-submenu' }),
-  ]
+  ])
 }
 
 /**
@@ -1601,7 +1644,7 @@ function arp(
   gateLength: number,
   clockDiv: string,
 ): AuthoredParam[] {
-  return [
+  return inModule('ARP', [
     sw('ARP · ON', 'ON', OFF_ON, 68),
     sw('ARP · DIRECTION', direction, ARP_DIRECTION, 68, {
       note: 'ORD plays the notes in the order they were pressed; PTN follows the MORE menu pattern; RND is random',
@@ -1623,7 +1666,7 @@ function arp(
       hint: 'edit-submenu',
       note: 'Which divisions the CLOCK DIV knob is allowed to reach',
     }),
-  ]
+  ])
 }
 
 // ---------------------------------------------------------------------------

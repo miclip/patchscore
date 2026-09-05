@@ -147,6 +147,23 @@ describe('AuthoredParam union (§3.1)', () => {
     expect(AuthoredParamSchema.safeParse(numericParam({ step: 0 })).success).toBe(false)
   })
 
+  it('lets any of the three kinds name the panel module it sits on', () => {
+    // Shared across the union rather than numeric-only: a mode switch and a written instruction
+    // sit on a panel block exactly as a knob does.
+    expect(AuthoredParamSchema.safeParse(numericParam({ module: 'OSC 1' })).success).toBe(true)
+    expect(AuthoredParamSchema.safeParse(enumParam({ module: 'OSC 1' })).success).toBe(true)
+    expect(AuthoredParamSchema.safeParse(textParam({ module: 'PATCHBAY' })).success).toBe(true)
+  })
+
+  it('refuses an empty module, the way it refuses an empty hint or note', () => {
+    // Omission already means "nobody has said which block this is on". An empty string is an
+    // author saying nothing while the field claims they said something, and it would reach a
+    // renderer as a module heading with no name in it.
+    expect(AuthoredParamSchema.safeParse(numericParam({ module: '' })).success).toBe(false)
+    expect(AuthoredParamSchema.safeParse(enumParam({ module: '' })).success).toBe(false)
+    expect(AuthoredParamSchema.safeParse(textParam({ module: '' })).success).toBe(false)
+  })
+
   it('narrows to the numeric branch on the discriminant', () => {
     const param: AuthoredParam = numericParam()
     if (param.kind === 'numeric') {
@@ -254,6 +271,24 @@ describe('ResolvedParam (§3.1, invariant 4)', () => {
     expect(
       ResolvedParamSchema.safeParse({ name: 'TUNE', value: 45, provenance: undefined }).success,
     ).toBe(false)
+  })
+
+  it('carries the panel module through, and still refuses an empty one', () => {
+    const withModule: ResolvedParam = {
+      name: 'CUTOFF',
+      value: 45,
+      range: { min: 0, max: 100, verified: MANUAL },
+      provenance: { state: 'authored', cite: MANUAL },
+      module: 'FILTER',
+    }
+    expect(ResolvedParamSchema.safeParse(withModule).success).toBe(true)
+    // The same non-empty rule as the authored side: the resolver copies the string, so a blank
+    // one could only have come from an author, and the schema says so at both ends.
+    expect(ResolvedParamSchema.safeParse({ ...withModule, module: '' }).success).toBe(false)
+    // Absent is the ordinary case and stays legal — a device whose panel is one undivided
+    // surface has nothing to put here, and that is not a gap.
+    const { module: _module, ...withoutModule } = withModule
+    expect(ResolvedParamSchema.safeParse(withoutModule).success).toBe(true)
   })
 
   it('accepts a rendered numeric or string value with provenance', () => {

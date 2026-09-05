@@ -3,6 +3,19 @@
  * design: its rules live in one block at the end of this file and nothing outside that block
  * has a bevel, a screw or an LED.
  *
+ * **`.module-led` breaks that last word, knowingly and on trial (#385).** §10 says *"Resist
+ * screws, LEDs and wood cheeks on every other surface"*, and a lamp on a guide module box is
+ * that thing. **The design document is unchanged and was not amended to allow this**: the lamp
+ * is shipped to be looked at on a real guide, not because the rule was reconsidered, so if it
+ * goes there is nothing to unwrite. The burden sits on the lamp to earn its place, which is why
+ * it is here as a note and not there as an exception.
+ *
+ * It is drawn as narrowly as it can be — a flat red dot, no glow, gradient, bevel or ring, with
+ * `test/module-boxes.test.ts` forbidding all four. #385 designs it lit-or-dark, nothing in the
+ * model knows a device's init values, and a lamp with one state carries no information; if init
+ * values never land, the lamp goes and the box keeps its label. Nothing here is licence for a
+ * second lamp anywhere.
+ *
  * Two faces, kept visually distinct on purpose: a sans for prose and labels, a monospace for
  * every numeric value. §10 forbids using one face for both.
  */
@@ -19,6 +32,18 @@
   --ink-dim: #878e97;
   /* One saturated accent for live signal. Not acid green. */
   --accent: #ff6a3d;
+  /*
+   * #385. **The module lamp, and the only red in the design.** Its own token rather than
+   * `--accent`, which §10 fixes as the orange of live signal: a panel LED is red because on real
+   * gear red means powered rather than faulty, and borrowing the accent would both say the wrong
+   * thing and make every later accent change move a lamp with it.
+   *
+   * One value, because the lamp has one state. #385's dark lamp — a module left at its init
+   * values — needs a second token and the init data that would decide which to draw, and neither
+   * exists. That missing half is why the lamp is on trial against §10 rather than settled; see
+   * the note at the top of this file.
+   */
+  --lamp: #e03127;
   --accent-dim: #7d3520;
   /*
    * §3.3's voice-control runs. Cool against the accent's orange, so sync and notes separate at a
@@ -2472,6 +2497,80 @@ button:active {
   margin-top: 10px;
 }
 
+/*
+ * §8/§10. **A panel module, drawn as the box it is on the front of the machine.**
+ *
+ * `groupedParams` decides which controls share a box; this decides what one looks like. It sits
+ * inside `.params`, so it appears under a part and inside #107's `.scoped` block alike, and the
+ * `.instruction` grid inside it is untouched — §8.1's reserved hint column, the narrow-screen
+ * row swap and the hints toggle all behave exactly as they do on an unboxed line.
+ *
+ * **The border carries it, not the fill.** `.scoped` is already `--panel-2` and print flattens
+ * `--panel-1` to plain white, so a box relying on a background would vanish inside the hoisted
+ * block on screen and off the page entirely on paper. A 1px `--edge` outline reads as a box in
+ * all four combinations, and the fill is left to do nothing but separate it a shade.
+ *
+ * #21: `min-width: 0` and nothing wider than the column it sits in. A module label is a device's
+ * own words and can be long, so it wraps — the page body never scrolls sideways.
+ */
+.module-box {
+  margin: 8px 0;
+  padding: 4px 10px 6px;
+  background: var(--panel-1);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+
+/*
+ * The silkscreen label, in the idiom `.guide h6` already established for a panel label — this is
+ * a `p` rather than a heading because it names a box, not a section: it introduces no content a
+ * jump-nav or a screen reader's heading list should offer to skip to.
+ */
+.module-label {
+  display: flex;
+  /*
+   * Top, not centre. A module label is the device's own words and wraps to two lines at 390px,
+   * and a centred lamp then floats between them, level with neither — it belongs on the first
+   * line whether there is a second or not. `line-height` is stated rather than inherited so the
+   * lamp's offset below is derived from a height this rule actually knows.
+   */
+  align-items: flex-start;
+  gap: 7px;
+  margin: 4px 0 6px;
+  font-size: 10px;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--silkscreen);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/*
+ * The lamp. **Steady and solid on every module, with no second state** — it says *this is a
+ * module*, and an unlit one would be a claim about whether the box sits at its init values,
+ * which nothing in the model knows (invariant 5).
+ *
+ * §10 asks the guide to resist the rack's skeuomorphism and names LEDs among the things to
+ * resist, so this is drawn as close to nothing as a lamp can be: a flat dot, no glow, no
+ * gradient, no bevel, no ring. The conflict is real and unresolved — see the top of this file.
+ * It is `aria-hidden` in the markup, because a mark that is identical everywhere carries nothing
+ * to read out.
+ *
+ * `flex: none` so it keeps its size when a long label wraps beside it.
+ */
+.module-led {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  /* Centred on the label's first line: (14px line box - 6px lamp) / 2. */
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--lamp);
+}
+
 /* ------------------------------------------------- §8.1 the reserved column */
 /*
  * "Toggling must not reflow the page." The hint column exists whether or not a hint does, and
@@ -3428,6 +3527,8 @@ html {
     --ink-dim: #444;
     --accent: #000;
     --accent-dim: #777;
+    /* The lamp is a filled dot; on paper it is a filled black dot. */
+    --lamp: #000;
     /* Paper has no hues to spare: two greys, still two weights apart. */
     --voice-cable: #555;
     --voice-cable-gate: #888;
@@ -3502,6 +3603,16 @@ html {
    * auto`, so it fits the page by scaling and cannot squash or overflow, which is exactly what
    * #21 asked for and the reason this is not the hard part.
    */
+  /*
+   * A module is one box on one machine, and half of it at the foot of a sheet is a reader
+   * turning the page mid-panel. The colours need no rule: `.module-box` draws from the tokens
+   * repointed above, so on paper it is a thin grey outline on white — which is why the box is
+   * an outline rather than a fill (see `.module-box`).
+   */
+  .module-box {
+    break-inside: avoid;
+  }
+
   .rack-section {
     break-inside: avoid;
   }

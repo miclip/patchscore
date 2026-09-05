@@ -175,6 +175,20 @@ export type AuthoredNumericParam = {
    */
   midiCc?: number
   mood?: MoodOffset[]
+  /**
+   * §3.1. **Which named block of the panel this control sits on** — the module a reader walks
+   * to before they turn anything. Free prose in the device's own words, because the boxes that
+   * need it label their panels differently and a closed list would have to be invented rather
+   * than read off a manual.
+   *
+   * Omitted is the ordinary case, and means only that nobody has said: a device whose panel is
+   * one undivided surface has nothing to put here, and an unmoduled param is not a gap.
+   *
+   * Not a fifth shared vocabulary (invariant 3): nothing in a template names a module and
+   * nothing joins on one. It travels device → resolver → renderer exactly as `unit`, `note`
+   * and `scope` do.
+   */
+  module?: string
   /** The *point value*. Omitted → inherit the recipe's `verified`. */
   verified?: Verified
   hint?: string
@@ -193,6 +207,8 @@ export type AuthoredEnumParam = {
   verified?: Verified
   hint?: string
   note?: string
+  /** The panel block this control sits on, as on `AuthoredNumericParam`. */
+  module?: string
   scope?: ParamScope
 }
 
@@ -203,6 +219,8 @@ export type AuthoredTextParam = {
   verified?: Verified
   hint?: string
   note?: string
+  /** The panel block this control sits on, as on `AuthoredNumericParam`. */
+  module?: string
   scope?: ParamScope
 }
 
@@ -213,6 +231,11 @@ const paramCommon = {
   verified: VerifiedSchema.optional(),
   hint: z.string().min(1).optional(),
   note: z.string().min(1).optional(),
+  // Shared by all three authored kinds: a module is a fact about where a control lives, and
+  // that is as true of an enum switch and a text instruction as it is of a knob. `.min(1)` for
+  // the same reason `hint` and `note` carry it — an empty string is an author saying nothing
+  // while the field claims they said something, and omission already means "nobody has said".
+  module: z.string().min(1).optional(),
   scope: ParamScopeSchema.optional(),
 }
 
@@ -373,6 +396,11 @@ export type ResolvedParam = {
    */
   midiCc?: number
   note?: string
+  /**
+   * Carried through unchanged: which panel block a control sits on is a fact about the box,
+   * and the resolver has nothing to add to it. Absent when the author said nothing.
+   */
+  module?: string
   /** #107. Carried through unchanged: what one setting of this covers is authored, not derived. */
   scope?: ParamScope
 }
@@ -387,6 +415,7 @@ export const ResolvedParamSchema = z.strictObject({
   hint: z.string().min(1).optional(),
   midiCc: MidiCcSchema.optional(),
   note: z.string().min(1).optional(),
+  module: z.string().min(1).optional(),
   scope: ParamScopeSchema.optional(),
 })
 
@@ -754,6 +783,10 @@ function sameRenderedParam(a: ResolvedParam, b: ResolvedParam): boolean {
   if (a.unit !== b.unit || a.hint !== b.hint || a.note !== b.note || a.scope !== b.scope) {
     return false
   }
+  // Named for the reason the doc comment above gives. Two controls on different panel modules
+  // are two settings however alike their lines read, and hoisting them under one heading would
+  // tell a reader to set one knob when the box has two.
+  if (a.module !== b.module) return false
   // #324. Named like every other field here, for the reason the doc comment above gives: two
   // controls on different CCs are two settings however alike their lines read.
   if (a.midiCc !== b.midiCc) return false
@@ -825,10 +858,137 @@ export function hoistedParams(
 
   const groups: ScopedParams[] = []
   for (const scope of PARAM_SCOPES) {
-    const params = agreed.filter((p) => p.scope === scope).sort((a, b) => byCodeUnit(a.name, b.name))
-    if (params.length > 0) groups.push({ scope, params })
+    const mine = agreed.filter((p) => p.scope === scope)
+    if (mine.length > 0) groups.push({ scope, params: hoistOrder(mine) })
   }
   return { groups, names }
+}
+
+/**
+ * §7.2/#385. **The order a hoisted block is read in**, which is two different orders because it
+ * answers two different questions.
+ *
+ * **With no module anywhere, the legacy sort, exactly.** Name, in code unit order (§7.2) — the
+ * order every guide in the library renders today, and the reason the sort is reproduced here
+ * character for character rather than folded into the general case. Thirty-eight devices author
+ * no module; their bytes must not move because one device now does.
+ *
+ * **With modules, first encounter, grouped.** Sorting by name across a moduled block is actively
+ * wrong once §8 draws boxes: `groupedParams` cuts on *adjacent* runs, so an alphabetical order
+ * that reads `DELAY`, `DYNAMIC VOICE ALLOCATION`, `MIDI IN CHANNEL`, `MULTI MODE` splits two
+ * modules into four boxes — the Muse's song-wide block came out as five boxes for three modules.
+ * A reader crossing the instrument does not want its panel alphabetised.
+ *
+ * Encounter order is the recipes' own order, which is authored order (`resolveParams`), which is
+ * the order somebody decided these controls should be set in. Grouping is *stable*: a module
+ * takes the position of its first parameter and its parameters keep their own order inside it, so
+ * a module met twice is pulled together rather than reordered. An unmoduled parameter in a mixed
+ * block is its own run at the position it was met, exactly as it is anywhere else.
+ *
+ * Deliberately not `localeCompare` anywhere near this, and no `Math.random` — the encounter order
+ * is fixed by the recipes and the grouping is stable, so the bytes are the same on any platform
+ * (invariant 6, §7.2).
+ */
+function hoistOrder(params: readonly ResolvedParam[]): ResolvedParam[] {
+  if (params.every((p) => p.module === undefined)) {
+    return [...params].sort((a, b) => byCodeUnit(a.name, b.name))
+  }
+  const runs = new Map<string | undefined, ResolvedParam[]>()
+  for (const param of params) {
+    const found = runs.get(param.module)
+    if (found === undefined) runs.set(param.module, [param])
+    else found.push(param)
+  }
+  return [...runs.values()].flat()
+}
+
+/**
+ * §3.1/§8. **One panel module's worth of parameters**, or the run that declared none.
+ *
+ * `module` is absent on the group that carries the unmoduled run, exactly as it is absent on the
+ * parameter: nothing has been said, and there is no box to draw.
+ */
+export type ParamGroup = {
+  module?: string
+  params: readonly ResolvedParam[]
+}
+
+/**
+ * §8/#385. **The name to print on a parameter's line**, once its box already carries the module.
+ *
+ * Eighty of the Muse's ninety-four names open with their own module and a middle dot —
+ * `MIXER · OSC 1`, `FILTER 1 · CUTOFF` — a habit from before anything could box them. Inside a
+ * box labelled `MIXER` that prefix is dead ink on every row, repeating what the label above
+ * already said; nine rows of `MIXER · …` under a heading reading `MIXER` is what a real guide
+ * looked like, and it is worth looking at before deciding this is cosmetic.
+ *
+ * **This is a display decision and nothing else. The stored name never changes.** `name` is the
+ * identity #107 hoists on, the key `sameRenderedParam` compares, the key a React list uses, and
+ * the string every fixture and device test names. Rewriting it in the device folder would collide
+ * — sixteen of the Muse's seventy-seven suffixes appear under two modules, `CUTOFF` on both
+ * filters and `DECAY` on both envelopes — and that is a different change, needing hoist identity
+ * to move to module-and-name first. Trimming at the point of ink needs none of it: the two
+ * `CUTOFF` lines still have distinct names, they simply both *read* `CUTOFF`, each inside the box
+ * that says which one it is.
+ *
+ * Shared for the reason `groupedParams` is shared: which characters a reader sees is ink and
+ * belongs to each renderer, but *whether the prefix is redundant here* is one decision about one
+ * parameter, and two answers to it would put different names on the same control in the two
+ * guides (#33).
+ *
+ * **Exact prefix, or nothing.** `${module} · ` and no other spelling — no case folding, no
+ * partial match, no trimming a module the name merely starts with. `LINK FILTERS` in module
+ * `FILTER` keeps its whole name because it does not carry the prefix, and `FILTER 1 · CUTOFF`
+ * is untouched by module `FILTER` for the same reason. A name that is *only* the prefix would
+ * trim to nothing, so it keeps its full name rather than rendering as an empty line.
+ */
+export function paramLabel(param: ResolvedParam): string {
+  if (param.module === undefined) return param.name
+  const prefix = `${param.module} \u00b7 `
+  if (!param.name.startsWith(prefix)) return param.name
+  const suffix = param.name.slice(prefix.length)
+  return suffix === '' ? param.name : suffix
+}
+
+/**
+ * §3.1/§8. **A parameter list cut into the panel modules its controls sit on**, for both
+ * renderers to draw the same way.
+ *
+ * Shared for the reason `hoistedParams` is shared and `scopeHeading` is not: #33 makes the two
+ * renderers siblings that write their own ink, and forbids one reading the other's — but the
+ * *decision* about which lines belong together is structure, and two implementations of it are
+ * two chances for the web guide and the printed one to box a reader's controls differently.
+ * The words and the markup stay each renderer's own.
+ *
+ * **Runs, not buckets, and this is the load-bearing choice.** Groups are maximal runs of
+ * adjacent parameters that agree, so concatenating every group's `params` reproduces the input
+ * exactly — authored order is the order the guide renders (`resolveParams`), and it is the order
+ * a reader works in at the machine. Collecting every `OSC 1` parameter into one box wherever it
+ * appeared would read better and would silently reorder the instructions, which is the more
+ * expensive of the two.
+ *
+ * So a module interrupted and resumed becomes **two boxes with the same label**. That is not a
+ * defect to paper over here: it is an authoring order that does not match the panel, it is
+ * visible the moment somebody looks at the guide, and the fix belongs in the device folder where
+ * the order was written.
+ *
+ * An all-unmoduled list yields exactly one group carrying no `module`, so a renderer that draws
+ * a box only for a named group emits precisely what it emitted before any of this existed. An
+ * empty list yields no groups at all.
+ */
+export function groupedParams(params: readonly ResolvedParam[]): readonly ParamGroup[] {
+  const out: ParamGroup[] = []
+  let run: ResolvedParam[] | undefined
+  let current: string | undefined
+  for (const param of params) {
+    if (run === undefined || param.module !== current) {
+      run = []
+      current = param.module
+      out.push(current === undefined ? { params: run } : { module: current, params: run })
+    }
+    run.push(param)
+  }
+  return out
 }
 
 /**
