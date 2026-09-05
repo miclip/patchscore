@@ -52,17 +52,17 @@ noise       ██████ ██████ ██████████
   - p2 · exact `dirty` · every section
 - **`metallic`** → TR-1000 · RC — *CR-78 metal ringing across the bar line*
   - p3 · substituted — asked `dark`, authored `dirty` · every section
-- **`open-hat`** → TR-1000 · OH — *Dull open hat, more air than sizzle*
+- **`open-hat`** → Tracker Mini · Track 2 — *Half-open hat, gated short*
   - p3 · exact `dark` · every section
-- **`stab`** → Tracker Mini · Track 2, Track 3 and Track 4 — *Single-note sample struck short, one note per track*
+- **`stab`** → Tracker Mini · Track 3, Track 4 and Track 5 — *Single-note sample struck short, one note per track*
   - p3 · exact `hard` · 3 notes stacked one per voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
 - **`pad`** → Tracker Mini · Synth Track 1, Synth Track 2 and Synth Track 3 — *Slow detuned pad, long swell*
   - p4 · substituted — asked `dark`, authored `soft` · 3 notes stacked one per voice · every section
-- **`riser`** → Tracker Mini · Track 5 — *Sample played backwards, the envelope swelling it into the change*
+- **`riser`** → Tracker Mini · Track 6 — *Sample played backwards, the envelope swelling it into the change*
   - p4 · exact `bright` · Build, Breakdown
-- **`noise`** → Tracker Mini · Track 6 — *Noise recording struck on the grid, band-passed to sit above the drums*
+- **`noise`** → TR-1000 · OH — *White noise burst on the open-hat track, up where the hats sit*
   - p5, optional · exact `dirty` · every section
 
 ### Gaps
@@ -150,7 +150,7 @@ Lowest note to the lowest voice: **Synth Track 1** takes the bottom of every cho
 - bar 5 · step 65 · `Ab4` (`G#4`) · 3rd · MIDI 68
 - bar 7 · step 97 · `Bb4` (`A#4`) · 4th · MIDI 70
 
-### `stab` — Tracker Mini · Track 2, Track 3 and Track 4
+### `stab` — Tracker Mini · Track 3, Track 4 and Track 5
 
 **Single-note sample struck short, one note per track** — settings in Sound design
 
@@ -161,9 +161,9 @@ No note-length field on this box — a note runs until the next note on the same
 
 Stacked chord — 3 voices, one note each. There is no chord to play on any one of them.
 
-Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and **Track 4** the top. Hold that order and the voicing keeps its shape as the progression moves; cross the voices over and the chord changes character between bars with nothing here saying so.
+Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and **Track 5** the top. Hold that order and the voicing keeps its shape as the progression moves; cross the voices over and the chord changes character between bars with nothing here saying so.
 
-**Track 2** — lowest note
+**Track 3** — lowest note
 
 - bar 1 · step 1 · `F3` · root · MIDI 53
 - bar 1 · step 3 · `OFF`
@@ -174,7 +174,7 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 - bar 4 · step 49 · `C4` · 5th · MIDI 60
 - bar 4 · step 52 · `OFF`
 
-**Track 3** — note 2 from the bottom
+**Track 4** — note 2 from the bottom
 
 - bar 1 · step 1 · `Ab3` (`G#3`) · 3rd · MIDI 56
 - bar 1 · step 3 · `OFF`
@@ -185,7 +185,7 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 - bar 4 · step 49 · `Eb4` (`D#4`) · 7th · MIDI 63
 - bar 4 · step 52 · `OFF`
 
-**Track 4** — highest note
+**Track 5** — highest note
 
 - bar 1 · step 1 · `C4` · 5th · MIDI 60
 - bar 1 · step 3 · `OFF`
@@ -403,9 +403,12 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 - `offbeat` → `weak` true on steps 7, 11, 23, 27
   - ↳ hint: Hold [SHIFT], press step keys
 
-### `open-hat` — TR-1000 · OH
+### `open-hat` — Tracker Mini · Track 2
 
-**Dull open hat, more air than sizzle** — settings in Sound design
+**Half-open hat, gated short** — settings in Sound design
+
+**Trigger note** — `C5` · MIDI 60 · manual
+- ↳ cite: manual — Polyend Tracker Mini Manual 2.2.1b, p.90 (C5 plays a sample at its original pitch); p.54, p.298, p.288 (Middle C setting, shipped as C-5, so that C5 is MIDI 60)
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -414,10 +417,9 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 ```
 - `offbeat` — 7
 
-**On this box** — TR-1000
+**On this box** — Tracker Mini
 
-- `offbeat` → `weak` true on step 7
-  - ↳ hint: Hold [SHIFT], press step keys
+- `offbeat` → `gate-length` 45 on step 7
 
 **Build, Breakdown** — 16 steps, band 1
 
@@ -426,10 +428,9 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 ```
 - `offbeat` — 3, 11
 
-**On this box** — TR-1000
+**On this box** — Tracker Mini
 
-- `offbeat` → `weak` true on steps 3, 11
-  - ↳ hint: Hold [SHIFT], press step keys
+- `offbeat` → `gate-length` 45 on steps 3, 11
 
 **Drop, Peak** — 16 steps, band 3
 
@@ -440,12 +441,11 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 - `downbeat` — 13
 - `accent` — 15 (vel 106)
 
-**On this box** — TR-1000
+**On this box** — Tracker Mini
 
-- `offbeat` → `weak` true on steps 3, 7, 11
-  - ↳ hint: Hold [SHIFT], press step keys
+- `offbeat` → `gate-length` 45 on steps 3, 7, 11
 
-### `stab` — Tracker Mini · Track 2, Track 3 and Track 4
+### `stab` — Tracker Mini · Track 3, Track 4 and Track 5
 
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
@@ -476,7 +476,7 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
 
-### `riser` — Tracker Mini · Track 5
+### `riser` — Tracker Mini · Track 6
 
 **Sample played backwards, the envelope swelling it into the change** — settings in Sound design
 
@@ -485,12 +485,9 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 
 **Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 1)
 
-### `noise` — Tracker Mini · Track 6
+### `noise` — TR-1000 · OH
 
-**Noise recording struck on the grid, band-passed to sit above the drums** — settings in Sound design
-
-**Trigger note** — `C5` · MIDI 60 · manual
-- ↳ cite: manual — Polyend Tracker Mini Manual 2.2.1b, p.90 (C5 plays a sample at its original pitch); p.54, p.298, p.288 (Middle C setting, shipped as C-5, so that C5 is MIDI 60)
+**White noise burst on the open-hat track, up where the hats sit** — settings in Sound design
 
 **Intro, Outro** — 32 steps, band 0
 
@@ -518,11 +515,10 @@ Lowest note to the lowest voice: **Track 2** takes the bottom of every chord and
 - `offbeat` — 7, 15, 23
 - `accent` — 31 (vel 104)
 
-**On this box** — Tracker Mini
+**On this box** — TR-1000
 
-- `accent` → `volume` 100 on step 31
-  - ↳ hint: Hold [FX1], press (Up)/(Down)
-- `offbeat` → `gate-length` 30 on steps 7, 15, 23
+- `offbeat` → `accent` true on steps 7, 15, 23
+  - ↳ hint: ACCENT [STEP], then step keys
 
 ## 6. Sound design
 
@@ -559,7 +555,20 @@ Source — A dry kick one-shot under 400 ms, attack intact and no room printed o
 - **ENVELOPE · DECAY** `0.28` Sec (0…10 Sec)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.126
 
-#### Track 2, Track 3 and Track 4 — `stab`: Single-note sample struck short, one note per track
+#### Track 2 — `open-hat`: Half-open hat, gated short
+
+Source — An open hat one-shot with a real tail — the release gates it short, so the tail has to exist
+
+- **PLAY MODE** `1-Shot`
+- **FILTER TYPE** `Low-pass`
+- **CUTOFF** `58` % (0…100 %)
+  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
+- **ENVELOPE · RELEASE** `0.24` Sec (0…10 Sec)
+  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.126
+- **BIT DEPTH** `12` Bits (4…16 Bits)
+  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
+
+#### Track 3, Track 4 and Track 5 — `stab`: Single-note sample struck short, one note per track
 
 Polyphony — 3 notes, one on each of 3 voices. **Every voice takes these same settings**: it is one sound played 3 times over, not 3 sounds, and a difference between them is a difference you will hear inside the chord. Which voice takes which note is in Hook.
 
@@ -609,7 +618,7 @@ Routing — Synth Track n is panel track n+8 — costs one of the three project 
 - **VOICE VOLUME** `86` % (0…200 %)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.161
 
-#### Track 5 — `riser`: Sample played backwards, the envelope swelling it into the change
+#### Track 6 — `riser`: Sample played backwards, the envelope swelling it into the change
 
 Source — A sample with a long decaying tail — reversed, that tail is the rise, so the tail is the part that matters. p.196 warns a very long tail can reverse into silence, so check the end point after you turn it round
 
@@ -629,19 +638,6 @@ Routing — **Set `r` to `<<<` on the step that starts the rise** — the Revers
 - **ENVELOPE · RELEASE** `0.4` Sec (0…10 Sec)
   - ↳ note: Short, so the rise stops at the change rather than hanging over it
 - **REVERB SEND** `54` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
-
-#### Track 6 — `noise`: Noise recording struck on the grid, band-passed to sit above the drums
-
-Source — A noise recording with movement in it — tape hiss, a vinyl run-out, a cymbal wash. Flat white noise gives the band-pass nothing to find
-
-*Ranges cite manual — Polyend Tracker Mini Manual 2.2.1b, p.117.*
-
-- **PLAY MODE** `1-Shot`
-- **FILTER TYPE** `Band-pass`
-- **CUTOFF** `66` % (0…100 %)
-- **RESONANCE** `40` % (0…100 %)
-- **REVERB SEND** `18` % (0…100 %)
   - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
 
 ### TR-1000
@@ -775,23 +771,6 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
-#### OH — `open-hat`: Dull open hat, more air than sizzle
-
-*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
-
-- **GEN** `606 Open HiHat`
-  - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
-- **TUNE** `-18` % (-100…100 %)
-- **DECAY** `64` % (0…100 %)
-- **TONE** `-35` % (-100…100 %)
-  - ↳ hint: Brightness of the cymbal
-- **RVB SEND** `14` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
-  - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
-- **DLY SEND** `12` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
-  - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
-
 #### CC — `impact`: Crash marking the top of a section
 
 - **GEN** `9X Crash Cymbal`
@@ -804,6 +783,25 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
 - **DLY SEND** `18` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
+
+#### OH — `noise`: White noise burst on the open-hat track, up where the hats sit
+
+- **GEN** `VA Noise`
+  - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
+- **TONE** `40` % (-100…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.63
+  - ↳ hint: Noise frequency
+- **COLOR** `18` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.63
+  - ↳ hint: White at one end, pink at the other
+- **DECAY** `30` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
+- **RVB SEND** `20` % (0…100 %)
+  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
+  - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
+- **DLY SEND** `0` % (0…100 %)
   - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 

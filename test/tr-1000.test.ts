@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  reachableSlots,
   CHARACTERS,
   DeviceSchema,
   NEUTRAL_MOOD,
@@ -9,6 +10,7 @@ import {
   type AuthoredParam,
 } from '../lib/core/index'
 import { device } from '../lib/devices/roland-tr-1000/index'
+import { TEMPLATES } from '../lib/templates/index'
 import { industrialTechno } from '../lib/templates/index'
 import { auditDevice } from '../scripts/audit-verified'
 
@@ -66,14 +68,28 @@ describe('TR-1000 manifest', () => {
     expect(device.voices.every((v) => v.polyphony === 1)).toBe(true)
   })
 
-  // §3's key is (role, character, voice); this device happens to satisfy the stricter
-  // per-device form, which is a fact about its content, not the rule.
-  it('carries 15-22 recipes, no two of them sharing a (role, character)', () => {
+  // §3's key is (role, character, voice). This device used to satisfy the stricter per-device
+  // form as well, and the comment here already called that "a fact about its content, not the
+  // rule" — #345 is where the fact changed. `noise` is declared on two fixed voices, OH and CC,
+  // and recipe lookup keys on `poolId ?? voiceId`, so one authored for CC never reaches OH.
+  // Serving both means two recipes sharing a (role, character) and differing in voice, which is
+  // exactly what §3's key is for.
+  it('carries every recipe on §3\u2019s key, and none no direction can select', () => {
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(22)
+    // 22 until #345 authored `noise` on both tracks that declare it. The upper bound is not
+    // asserted any more: it has moved before and would move again, and what it stood in for —
+    // recipes nobody can select — is checkable directly.
+    const unreachable = device.recipes.filter((r) => !reachableSlots(r, TEMPLATES).requested)
+    expect(unreachable.map((r) => r.id), 'no direction can select these').toEqual([])
 
+    const keys = device.recipes.map((r) => `${r.role}\u0000${r.character}\u0000${r.voice}`)
+    expect(new Set(keys).size).toBe(keys.length)
+
+    // And the one pair that shares (role, character) is the one this box needs twice: two fixed
+    // voices declare `noise`, so a single recipe would leave one of them unserved.
     const pairs = device.recipes.map((r) => `${r.role} ${r.character}`)
-    expect(new Set(pairs).size).toBe(pairs.length)
+    const shared = [...new Set(pairs.filter((p, i) => pairs.indexOf(p) !== i))]
+    expect(shared).toEqual(['noise dirty'])
 
     for (const recipe of device.recipes) {
       expect(ROLES).toContain(recipe.role)
@@ -178,6 +194,10 @@ describe('TR-1000 manifest', () => {
     // SHUFFLE is the same kind of exception — a PTN SETTING parameter off p.26, checked in the
     // swing group below — and so is the MOD block, which is p.71's own table.
     const PAGES: Record<string, number[]> = {
+      // #345. Both noise recipes read p.63's `VA Noise` block for TONE and COLOR, and p.62 for
+      // the DECAY they share with the cymbal tracks they sit on.
+      'tr1000-noise-dirty': [62, 63],
+      'tr1000-noise-dirty-oh': [62, 63],
       'tr1000-kick-hard': [59],
       'tr1000-kick-dark': [59],
       'tr1000-kick-dirty': [60],
@@ -203,7 +223,7 @@ describe('TR-1000 manifest', () => {
       'tr1000-ride-clean': [62],
       'tr1000-metallic-dirty': [62],
     }
-    expect(Object.keys(PAGES)).toHaveLength(22)
+    expect(Object.keys(PAGES)).toHaveLength(24)
     for (const recipe of device.recipes) {
       const allowed = PAGES[recipe.id]
       expect(allowed, recipe.id).toBeDefined()
@@ -239,7 +259,7 @@ describe('TR-1000 manifest', () => {
       expect(p, `${r.id} has no GEN`).toBeDefined()
       return { id: r.id, param: p as AuthoredParam }
     })
-    expect(gens).toHaveLength(22)
+    expect(gens).toHaveLength(24)
 
     for (const { id, param } of gens) {
       expect(param.kind, id).toBe('enum')
@@ -278,7 +298,11 @@ describe('TR-1000 manifest', () => {
 
     // Every recipe reaches for a different generator; 22 recipes sharing three names would
     // mean the option sets are decoration.
-    expect(new Set(gens.map((g) => (g.param as { value: string }).value)).size).toBe(22)
+    // 22 distinct generators over 24 recipes since #345: the two `noise` recipes both load
+    // `VA Noise`, on the two different fixed voices that declare the role. That is the one place
+    // on this box where the same generator is reached twice, and it is a fact about the voices
+    // rather than about the generators.
+    expect(new Set(gens.map((g) => (g.param as { value: string }).value)).size).toBe(23)
   })
 
   it('offers a closed-hat recipe no open hats, and the reverse (§3.1)', () => {
