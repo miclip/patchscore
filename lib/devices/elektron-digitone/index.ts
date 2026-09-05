@@ -108,9 +108,14 @@ import { DIGITONE_PANEL } from './panel'
  *    §11.7's cross-reference. Two pages against one, and the deciding one is the section that
  *    specifies it. **This manifest uses §11.8's spelling**, in `dn-snare-hard`'s title and in
  *    `dn-clap-bright`, which is the recipe that turns the choice into something a reader acts on:
- *    it is the only one that sets `BASE` and `WIDTH` together, and §11.8 is where the pair is
- *    defined as one frequency range. (This note used to say the manifest named the filter
- *    nowhere. `dn-snare-hard` already did, and #345 is what went and looked.)
+ *    it sets the **narrowest span on the box**, 34 across a `BASE` of 58, which is the one part
+ *    here using the pair to select a range rather than to take an edge or to stay out of the way.
+ *    §11.8 is where that pair is defined as one frequency range, so it is the section the recipe
+ *    is reading. (Two things this note has been wrong about, both found by writing the clap's
+ *    tests: it used to say the manifest named the filter nowhere, and `dn-snare-hard` already
+ *    did; and it then said the clap was the only recipe setting `BASE` and `WIDTH` together,
+ *    where `dn-texture-soft` sets them at 12 and 104. Span is the fact that actually separates
+ *    them, and `test/elektron-digitone.test.ts` asserts the three spans rather than a count.)
  *  - **The LFO trig modes are spelled twice.** §11.11.7 on p.54 defines them as `FRE`, `TRG`,
  *    `HLD`, `ONE`, `HLF`; the diagram table on p.55 heads its five columns `FREE`, `TRIG`,
  *    `HOLD`, `ONE`, `HALF`. The three-letter forms are what §11.11.7 presents as the parameter's
