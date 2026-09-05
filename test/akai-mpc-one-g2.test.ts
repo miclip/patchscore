@@ -24,10 +24,11 @@ import { TEMPLATES } from '../lib/templates/index'
  *
  *  - **A page nobody matched.** `pageInV39` throws, and has since the folder landed.
  *  - **A page that *is* matched, read for a control v3.9 prints differently or not at all.** The
- *    citation retargets cleanly and the reader is given a number from the wrong document. Six of
- *    the borrowed pages recompose between the two printings; v3.7 p.396 is an `AIR Reverb`
- *    section that shares v3.9 p.390 with an `AIR Non-Lin Reverb` whose `Pre-Delay`, `Mix` and
- *    `Time` sit right beside it under different values. `CONFIRMED` is that second guard.
+ *    citation retargets cleanly and the reader is given a number from the wrong document. Twelve
+ *    of the twenty-five borrowed pages recompose between the two printings; v3.7 p.396 is an
+ *    `AIR Reverb` section that shares v3.9 p.390 with an `AIR Non-Lin Reverb` whose `Pre-Delay`,
+ *    `Mix` and `Time` sit right beside it under different values. `CONFIRMED` is that second
+ *    guard.
  *
  * Both tests below run in both directions on purpose. Coverage alone would pass a table that had
  * been widened ahead of the reading it stands for.
