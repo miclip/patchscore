@@ -353,6 +353,13 @@ const AUDIT: readonly (readonly [
     // the lock switches on is shaped in a settings menu rather than on the step.
     ['elektron-digitakt-ii', 'dt2-acid-hard', 'bound', 'bound', 'neutral'],
 
+    // And its predecessor, which is the same box a generation earlier and cannot do the same
+    // thing. There is no `PORT` on the Digitakt's TRIG page and no portamento anywhere in its
+    // manual, so the slide is `stated` where the successor's is `bound` — the one pair in this
+    // table where two near-identical manifests land on opposite dispositions for the same gesture,
+    // and the reason is a parameter the older box does not have rather than a reading that differs.
+    ['elektron-digitakt', 'dt-acid-hard', 'bound', 'stated', 'neutral'],
+
     // One patch, written twice: a recipe names one voice and the Tracker Mini hosts synths on
     // both its pools, so the manifest carries a twin per pool (§2.2). Both are audited, because
     // the table is a table of records — and both render the same guide, because the box loads
@@ -418,7 +425,7 @@ describe('every acid recipe accounts for the accent and the slide (#283)', () =>
       d.recipes.filter((r) => r.role === 'acid').map((r) => r.id),
     )
     expect([...AUDIT.map((row) => row[1])].sort()).toEqual([...shipped].sort())
-    expect(shipped).toHaveLength(31)
+    expect(shipped).toHaveLength(32)
   })
 
   it.each(AUDIT)('%s / %s accounts for both gestures in the manifest', (deviceId, recipeId, accent, slide) => {
@@ -464,7 +471,7 @@ describe('every acid recipe accounts for the accent and the slide (#283)', () =>
     }
   })
 
-  it('renders all 31, from three knob positions', () => {
+  it('renders all 32, from three knob positions', () => {
     // The whole library reachable from one direction, which it was not while `r-acid` asked for
     // `dirty`: force is the one character axis no mood knob moves, so the two `hard` recipes could
     // not be selected at any setting and the audit had two rows it could only check on paper.

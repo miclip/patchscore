@@ -1219,8 +1219,30 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    *
    * Thirteen consecutive zeroes, across ten devices and three content changes that between them
    * took the walk down, up, up, up, down by half, up, up, up, up, up, up, up, and up.
+   *
+   * **Seven recipes take it up 0.0002% and the gap stays at zero — a fourteenth time.** 623,124 ->
+   * 623,125 unrepaired and the same repaired: one node again, which is the same smallest move the
+   * entry above records. Content again, and the same shape of it one generation back — the
+   * Digitakt's seven unauthored roles (#345), on a box whose pool of eight also declares all 23.
+   *
+   * **The same one node for a different reason, and the difference is worth the sentence.** The
+   * entry above explains its node by the pool being sixteen wide and the direction contending for
+   * one of the nine new roles. This pool is *half* that, and the figure came out identical. So the
+   * price is not the pool's width: it is that `industrial-techno` asks this box for exactly one of
+   * the seven (`noise`, and optionally), and the other six land in roles nothing here contends
+   * for. A recipe is priced by the role it lands in, twice over now, measured on two pool sizes.
+   *
+   * `search-bound.test.ts` records the direction's peak moving 729,954 -> 730,100, which is 0.02%,
+   * so this seed again moved a hundredth of what the row's maximum did.
+   *
+   * The peak stayed on seed 18 for the fourth entry running, and this seed is still one node off
+   * the row's floor — 623,125 against 623,124 on seed 13, the same pairing three entries running
+   * have recorded, each one node higher than the last.
+   *
+   * Fourteen consecutive zeroes, across ten devices and four content changes that between them
+   * took the walk down, up, up, up, down by half, up, up, up, up, up, up, up, up, and up.
    */
-  it('walks the recorded 623,124 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 623,125 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1228,7 +1250,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(623_124)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(623_125)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
