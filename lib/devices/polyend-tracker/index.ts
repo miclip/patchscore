@@ -1006,6 +1006,199 @@ const RECIPES: Recipe[] = [
     articulation: [{ slot: 'first-hit', set: { volume: 100, 'reverb-send': 80 }, hint: 'pick-fx' }],
     verified: false,
   },
+
+  // ---- The five #345 roles, and what each of them turns on -------------------
+  {
+    id: 'tr-stab-hard',
+    role: 'stab',
+    character: 'hard',
+    voice: 'track',
+    title: 'A rendered chord struck short, one track holding all of it',
+    realisation: 'sampled-chord',
+    /**
+     * **One recipe answers all three requests, which the geometry rather than the sound decided.**
+     * Three directions ask for `stab` and want `hard`, `dark` and `clean` — and §3.4 puts each of
+     * those three at sqrt(2) from the other two, so any one of them reaches all three inside
+     * §3.5's radius. `hard` is the exact match for the one that asks at the highest priority.
+     *
+     * `sampled-chord` for the reason `tr-pad-soft` gives above: a track sounds one note, and all
+     * three requests ask for three or four at once. The render procedure is the same (p.187) and
+     * so is the trade — a changed voicing is a second sample (§4.1), and the Hook phase says
+     * which.
+     *
+     * Where this differs from the pad is the envelope and the play mode. A stab is struck and
+     * gone, so `1-Shot` rather than `Forward loop` and no loop points: the sample's own end is
+     * the end of the note.
+     */
+    sourceAudio: {
+      need: 'A single sample of the whole chord, short and struck rather than sustaining',
+      prep: {
+        text: 'Play the chord across three tracks, then Render: it "bounces or exports an audio file based on the selected pattern / tracks which can then be made immediately available as a sample"',
+        verified: { kind: 'manual', source: 'Polyend Tracker Manual 1.9.2a, p.187' },
+      },
+      hint: 'load-sample',
+    },
+    params: [
+      pick('PLAY MODE', '1-Shot', PLAY_MODES, 121, { hint: 'play-mode' }),
+      ...filter('Low-pass', 74, 22, -26),
+      ...ampEnv(0.01, 0.34, 0, 0.2),
+      delaySend(24),
+      swing(),
+    ],
+    // No `gate-length`: `1-Shot` plays the sample to its own end, so a gate lock on one has
+    // nothing to act on. The Tracker Mini's manual states it outright and this box's play mode
+    // is the same one; the envelope above is what shortens the strike.
+    articulation: [{ slot: 'accent', set: { volume: 100 }, hint: 'pick-fx' }],
+    verified: false,
+  },
+  {
+    id: 'tr-bass-mid-dark',
+    role: 'bass-mid',
+    character: 'dark',
+    voice: 'track',
+    title: 'Bass an octave down with the filter envelope opening each note',
+    /**
+     * Five directions ask for this role, three `dark` and two `dirty`, which §3.4 puts at sqrt(2)
+     * — so one recipe reaches all five and `dark` is the exact match for the majority.
+     *
+     * The filter envelope is the part: `AUTOMATION DESTINATION Cutoff` with an envelope is what
+     * gives a bass note its shape on this box, and it is the same mechanism the lead uses one
+     * destination along.
+     */
+    sourceAudio: {
+      need:
+        'A short bass note with harmonics above the fundamental — a filtered sine transposes into ' +
+        'nothing to bite on',
+      hint: 'load-sample',
+    },
+    params: [
+      pick('PLAY MODE', '1-Shot', PLAY_MODES, 121, { hint: 'play-mode' }),
+      num('TUNE', -12, SEMITONES_24, 110, { unit: 'st' }),
+      num('FINETUNE', 0, CENTS_100, 110, { unit: 'c' }),
+      ...filter('Low-pass', 44, 34, -18),
+      ...ampEnv(0.01, 0.42, 24, 0.18),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'accent', set: { volume: 100 }, hint: 'pick-fx' },
+      { slot: 'ghost', set: { volume: 42 }, hint: 'pick-fx' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'tr-metallic-dirty',
+    role: 'metallic',
+    character: 'dirty',
+    voice: 'track',
+    title: 'Struck metal bit-crushed and band-passed onto its ring',
+    /**
+     * Three directions ask, wanting `bright`, `dark` and `dirty`. §3.4 puts `bright` and `dark` at
+     * distance 2 — the one §3.5 refuses — while `dirty` sits at sqrt(2) from each, so it is the
+     * only single character that reaches all three. The same arithmetic decided the Tracker
+     * Mini's `metallic`, and it is worth naming as arithmetic rather than as a taste for grit.
+     *
+     * `bit-depth` and `overdrive` are per-step effects on this box rather than instrument
+     * parameters, which is why the grit here is in the articulation and the routing rather than
+     * in the params.
+     */
+    sourceAudio: {
+      need:
+        'A struck metal one-shot — bell, spring, pipe, anvil, brake drum. Inharmonic is the point, ' +
+        'so a recording with one clear pitch is the wrong one',
+      hint: 'load-sample',
+    },
+    params: [
+      pick('PLAY MODE', '1-Shot', PLAY_MODES, 121, { hint: 'play-mode' }),
+      num('TUNE', -3, SEMITONES_24, 110, { unit: 'st' }),
+      ...filter('Band-pass', 70, 58, -28),
+      ...ampEnv(0.01, 1.1, 0, 0.4),
+      reverbSend(30),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'accent', set: { volume: 100, overdrive: 60 }, hint: 'pick-fx' },
+      { slot: 'offbeat', set: { volume: 78 }, hint: 'pick-fx' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'tr-acid-hard',
+    role: 'acid',
+    character: 'hard',
+    voice: 'track',
+    title: 'Acid line with the glide carried on the steps that slide',
+    /**
+     * **Both halves of this role are per-step effects here, which is the whole reason it works.**
+     * `glide` is one (7.8, and this manifest declares it), so the slide is placed on the steps
+     * that should slide rather than switched on for the track; `volume` is another, so the accent
+     * is the same kind of thing. #283 asks a box to bind or state each; this one binds both.
+     *
+     * The filter envelope is the squelch. `AUTOMATION DESTINATION Cutoff` with a fast decay is
+     * what a resonant sweep per note is on this box, and the resonance is high enough that the
+     * peak is the sound rather than a colour on it.
+     *
+     * **The line's pitch is per step and is not authored here.** A tracker row carries its own
+     * note, so the Hook phase supplies the figure and this recipe supplies the voice.
+     */
+    sourceAudio: {
+      need:
+        'A short saw or square bass tone of one known pitch, with no filter movement recorded ' +
+        'into it — the filter is the part this recipe is for',
+      hint: 'load-sample',
+    },
+    params: [
+      pick('PLAY MODE', '1-Shot', PLAY_MODES, 121, { hint: 'play-mode' }),
+      num('TUNE', -12, SEMITONES_24, 110, { unit: 'st' }),
+      ...filter('Low-pass', 32, 76, -16),
+      ...ampEnv(0.01, 0.26, 0, 0.12),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'accent', set: { volume: 100 }, hint: 'pick-fx' },
+      { slot: 'offbeat', set: { glide: 40 }, hint: 'pick-fx' },
+    ],
+    verified: false,
+  },
+  {
+    id: 'tr-arp-clean',
+    role: 'arp',
+    character: 'clean',
+    voice: 'track',
+    title: 'Arpeggio from the box\u2019s own step effect, one chord code per step',
+    /**
+     * **This box has an arpeggiator and it is a step effect, so it costs both FX slots.** p.156:
+     * *"Arpeggiator. This needs a note value and works in conjunction with the MIDI Chord which
+     * must also be assigned to the other FX slot."* FX1 carries the arp type and rate, FX2 carries
+     * the chord code, and a step has two slots — so **an arpeggiated step can carry no
+     * articulation at all**, because every lane in `features.perStep` here is a step effect
+     * needing a slot of its own. That is the constraint the Tracker Mini's manifest learned the
+     * hard way and it is the same one, on the same effect, in the bigger box's manual.
+     *
+     * **The chord code is the direction's, not this folder's** (§4.1, invariant 3). p.156 maps a
+     * hex code to a chord quality, and which one a bar wants is harmony. So `routing` points at
+     * the Hook phase for the quality and at the page for the codes, and none is authored here.
+     *
+     * `clean` covers Generative Drift's `bright` request at §3.5's substitution distance.
+     */
+    sourceAudio: {
+      need: 'A short plucked or struck tone of one known pitch, decaying inside a step',
+      hint: 'load-sample',
+    },
+    routing:
+      '**FX1 = the arp, FX2 = MIDI Chord** \u2014 the arpeggiator needs both slots on the step, so an ' +
+      'arpeggiated step can carry no other effect (p.156). Set the arp value to the direction you ' +
+      'want followed by the tempo divider; the MIDI Chord value is a hex code for the chord ' +
+      'quality, which p.156 tabulates. Take the quality from the Hook phase \u2014 the step\u2019s own ' +
+      'note is the root the arpeggio is built on',
+    params: [
+      pick('PLAY MODE', '1-Shot', PLAY_MODES, 121, { hint: 'play-mode' }),
+      ...filter('Low-pass', 82, 18, -28),
+      ...ampEnv(0.01, 0.2, 0, 0.1),
+      delaySend(28),
+      swing(),
+    ],
+    verified: false,
+  },
 ]
 
 export const device: Device = {
