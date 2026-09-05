@@ -16,9 +16,10 @@ import {
   type Role,
 } from '../lib/core/index'
 import { ARTICULABLE_PER_STEP, device } from '../lib/devices/elektron-digitone/index'
+import { device as digitoneII } from '../lib/devices/elektron-digitone-ii/index'
 import { DIGITONE_PANEL_SPAN_MM } from '../lib/devices/elektron-digitone/panel'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { TEMPLATES } from '../lib/templates/index'
+import { TEMPLATES, acidLineage } from '../lib/templates/index'
 import { auditDevice } from '../scripts/audit-verified'
 
 /**
@@ -570,6 +571,212 @@ describe('Digitone manifest', () => {
 })
 
 /**
+ * §345. **A role the pool declares and no recipe serves**, which is a different thing from a role
+ * this box cannot play — and #340's placement control is what made the difference visible, by
+ * listing every box that could take a part and printing "no bright clap for your Digitone" of the
+ * ones that come back empty.
+ *
+ * `clap` was the last one here. Twenty-one of the pool's twenty-two roles had a recipe and this
+ * one did not, on a box three directions ask a clap of.
+ *
+ * **The successor's answer does not port, and that is the reason this file tests the recipe
+ * rather than trusting the family.** `dn2-clap-bright` is a WAVETONE machine with its noise
+ * section set to `GRAIN`. This box has no noise oscillator and no machines at all — p.89, *"At its
+ * core, the Digitone is a four operator Frequency Modulation (FM) synth"* — so the noise is made
+ * with the operators and shaped on a filter chain the successor does not have. Every assertion
+ * below is about that chain.
+ */
+describe('the clap, which is this box making noise rather than loading it (§345)', () => {
+  const clap = device.recipes.find((r) => r.id === 'dn-clap-bright') as Recipe
+
+  it('serves every role the pool declares, so nothing is offered and left empty', () => {
+    const served = new Set(device.recipes.map((r) => r.role))
+    const pool = device.voices[0]
+    const gaps = (pool?.roles ?? []).filter((role) => !served.has(role)).sort()
+    expect(gaps).toEqual([])
+
+    // Asserted against the declaration rather than as a bare zero: a box that served everything
+    // because it declared almost nothing would pass the line above and mean nothing by it.
+    expect(pool?.roles.length).toBe(22)
+    expect(served.size).toBe(22)
+  })
+
+  it('shares a role with the successor and not one parameter, because the engines differ', () => {
+    const sibling = digitoneII.recipes.find((r) => r.id === 'dn2-clap-bright') as Recipe
+    expect(sibling.role).toBe(clap.role)
+    expect(sibling.character).toBe(clap.character)
+
+    /*
+     * The claim, pinned as a set rather than asserted empty — because it is not empty, and what
+     * survives is worth more than a zero would have been.
+     *
+     * `PLAY MODE` is genuinely the same control on both boxes: how many notes a track sounds.
+     * **`TYPE` is not.** On the successor it is the WAVETONE noise oscillator's waveform and its
+     * value there is `GRAIN`, which is the control that recipe is built on; here it is the
+     * multimode filter. One name, two controls, on two boxes in the same family — which is
+     * `CLAUDE.md`'s wrong-scale hazard arriving as a name collision rather than a range, and the
+     * exact shape a port of the sibling's patch would take.
+     *
+     * Pinned exactly, so a third entry appearing is a failure rather than a shrug.
+     */
+    const here = new Set(params(clap).map((param) => param.name))
+    const there = params(sibling).map((param) => param.name)
+    expect(there.filter((name) => here.has(name)).sort()).toEqual(['PLAY MODE', 'TYPE'])
+
+    const ourType = named(clap, 'TYPE') as { value: string; options: { values: string[] } }
+    const theirType = named(sibling, 'TYPE') as { value: string }
+    expect(theirType.value).toBe('GRAIN')
+    expect(ourType.value).toBe('2-pole (12 dB) Lowpass')
+    // The line that actually stops the port: this box's `TYPE` cannot be set to the successor's
+    // value, because the two option lists are of two different controls.
+    expect(ourType.options.values).not.toContain('GRAIN')
+  })
+
+  it('states BASE and WIDTH together, clear of the three settings p.52 says are not a band', () => {
+    /*
+     * The recipe's whole argument, and the one thing a later edit is most likely to undo.
+     *
+     * p.52 defines the two jointly — they *"define the base-width filters frequency range"* — and
+     * then names the three settings at which the pair stops being a range: `BASE` 0 makes it a
+     * lowpass, `WIDTH` 127 makes it a highpass, and both at once make it nothing. A clap is a
+     * band, so all three have to be avoided, and avoiding them needs both knobs stated.
+     */
+    const base = named(clap, 'BASE')
+    const width = named(clap, 'WIDTH')
+    expect(base?.kind).toBe('numeric')
+    expect(width?.kind).toBe('numeric')
+    const baseValue = (base as { value: number }).value
+    const widthValue = (width as { value: number }).value
+    expect(baseValue).toBeGreaterThan(0)
+    expect(widthValue).toBeLessThan(127)
+
+    // Both cited to the page that defines the pair, not to a page that merely uses one of them.
+    for (const param of [base, width]) {
+      expect((param as { range: { verified: { source: string } } }).range.verified.source).toBe(
+        `${MANUAL}, p.52`,
+      )
+    }
+
+    /*
+     * **The narrowest band on the box, which is the claim that actually distinguishes it.**
+     *
+     * "The only recipe that sets both" was the first thing asserted here and it is false:
+     * `dn-texture-soft` sets both as well, at 12 and 104. That is a span of 104 out of 127 — a
+     * bed asking the filter to stay out of the way — where `dn-snare-hard` and `dn-noise-dirty`
+     * each set one knob and take one of p.52's one-sided cases on purpose. So what is particular
+     * to the clap is not that it uses the pair but that it uses it to *select* a range.
+     */
+    const spans = device.recipes
+      .filter((r) => named(r, 'WIDTH') !== undefined)
+      .map((r) => [r.id, (named(r, 'WIDTH') as { value: number }).value] as const)
+      .sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : 1))
+    expect(spans).toEqual([
+      ['dn-clap-bright', 34],
+      ['dn-noise-dirty', 96],
+      ['dn-texture-soft', 104],
+    ])
+  })
+
+  it('keeps the multimode filter in the chain, so the darkness knob still reaches it', () => {
+    /*
+     * The tempting simplification is `TYPE` `OFF` — the band is on the base-width filter, so why
+     * carry a second one. p.51 answers the sound half (*"placed in series with the Base-Width
+     * filter before the Multimode filter"*, so a lid after a shallow band is the chain the manual
+     * describes) and this test answers the other half: `FREQ` is the only control in this
+     * manifest that carries the darkness axis, so switching the filter off would make the clap
+     * the one part on the box that a mood knob cannot move.
+     */
+    const type = named(clap, 'TYPE') as { value: string }
+    expect(type.value).not.toBe('OFF')
+    expect(named(clap, 'FREQ')).toBeDefined()
+
+    const axes = new Set(
+      params(clap).flatMap((param) =>
+        param.kind === 'numeric' ? (param.mood ?? []).map((offset) => offset.axis) : [],
+      ),
+    )
+    // Every axis this manifest's own helpers can offer. `swing` is absent by design: p.41 makes
+    // it one setting for the whole pattern, so a per-part clap has no business declaring one.
+    expect([...axes].sort()).toEqual(['darkness', 'density', 'grit', 'space'])
+  })
+
+  it('carries a level for every slot the directions that ask for it emit', () => {
+    // A slot a direction emits and the recipe has no entry for is a step printed in the grid with
+    // no level beside it. Three directions ask this box for a clap and they emit four slots
+    // between them, so the recipe carries four.
+    const asked = new Set<string>()
+    for (const template of TEMPLATES) {
+      if (!template.roles.some((request) => request.role === 'clap')) continue
+      for (const pattern of template.patterns) {
+        if (pattern.forRole !== 'clap') continue
+        for (const hit of pattern.hits) asked.add(hit.slot)
+      }
+    }
+    expect([...asked].sort()).toEqual(['accent', 'backbeat', 'fill', 'ghost'])
+
+    const carried = (clap.articulation ?? []).map((entry) => String(entry.slot)).sort()
+    expect(carried).toEqual([...asked].sort())
+
+    // Every value on a lane `ARTICULABLE_PER_STEP` allows, and nothing on a lane it does not —
+    // this box has no retrig, and an entry reaching for one would be an instruction with no
+    // control behind it.
+    for (const entry of clap.articulation ?? []) {
+      for (const key of Object.keys(entry.set)) {
+        expect(ARTICULABLE_PER_STEP as readonly string[], `${String(entry.slot)} / ${key}`).toContain(key)
+      }
+    }
+  })
+
+  it('answers the whole of that direction as soon as a second box is present', () => {
+    /*
+     * The honest half of what this recipe costs. Four synth tracks against `acid-lineage`'s five
+     * parts means one request goes unserved on this box alone, and the clap now wins the track
+     * that `sub` used to hold. That is the objective choosing between two shortfalls, not a
+     * regression — and it is confined to a rig nobody assembles, which is what this pins.
+     */
+    const alone = resolve({
+      devices: [device],
+      template: acidLineage,
+      mood: moodState(),
+      seed: 1,
+    })
+    const servedAlone = new Set(alone.assignments.map((a) => a.role))
+    expect(servedAlone.has('clap')).toBe(true)
+    expect(servedAlone.has('sub')).toBe(false)
+
+    // Any second box that can take one of the five, and nothing is lost. Three, so the claim does
+    // not rest on one partner happening to fit.
+    for (const partnerId of ['moog-minitaur', 'elektron-digitakt-ii', 'roland-tr-8s']) {
+      const partner = DEVICES.find((d) => d.id === partnerId)
+      expect(partner, partnerId).toBeDefined()
+      const pair = resolve({
+        devices: [device, partner as (typeof DEVICES)[number]],
+        template: acidLineage,
+        mood: moodState(),
+        seed: 1,
+      })
+      const unserved = acidLineage.roles.filter(
+        (request) => !pair.assignments.some((a) => a.requestId === request.id),
+      )
+      expect(unserved.map((r) => r.role), `digitone + ${partnerId}`).toEqual([])
+    }
+  })
+
+  it('prints the clap on a rendered page, with its band and its levels', () => {
+    // The half that can fail interestingly: a parameter in a manifest is only an instruction if
+    // the guide prints it, and an articulation is only a level if phase 5 reaches it.
+    const doc = renderGuide(
+      resolve({ devices: [device], template: acidLineage, mood: moodState(), seed: 1 }),
+    )
+    expect(doc).toContain('`clap`')
+    expect(doc).toContain('BASE')
+    expect(doc).toContain('WIDTH')
+    expect(doc).toContain('- `backbeat` → ')
+    expect(doc).toContain('- `accent` → ')
+  })
+})
+
+/**
  * §2.1/#334. **This box authors no trigger note: `TriggerNote` is a sampler's fact and there is
  * no sampler here.** Read off OS 1.41 rather than inherited from the successor's manifest.
  *
@@ -701,15 +908,18 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6. Four tracks rather than the successor's sixteen, so the totals are its own.
    *
-   * The number moves when a direction gains or loses a part, and a diff is a prompt to re-read
-   * the head note rather than a failure. What must not move is the relationship — no part ever
-   * gets a `trigger`, because the pool has no note to give one.
+   * The number moves when a direction gains or loses a part **or when this box gains a recipe**,
+   * and a diff is a prompt to re-read the head note rather than a failure. It was 126 until #345
+   * authored the clap, and on a four-track box that did not simply add eighteen parts — see
+   * `prints a note only where the direction asked for a pitch of its own` below, where six went
+   * the other way. What must not move is the relationship: no part ever gets a `trigger`, because
+   * the pool has no note to give one.
    */
-  it('leaves 126 grid parts blank, and pins how many there are', () => {
+  it('leaves 132 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
     expect(grid.length).toBe(150)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(126)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(132)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -717,10 +927,20 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   })
 
   it('prints a note only where the direction asked for a pitch of its own', () => {
-    // §4.1's precedence with one arm missing — and on this box that is the whole story rather
-    // than half of it, because a pitch is the only kind of note it has. The 24 are `sub` parts.
+    /*
+     * §4.1's precedence with one arm missing — and on this box that is the whole story rather
+     * than half of it, because a pitch is the only kind of note it has. All of them are `sub`.
+     *
+     * **Eighteen rather than twenty-four, and the six that went are what a four-track box costs.**
+     * `acid-lineage` asks this box for acid, clap, closed-hat, kick and sub, which is five parts
+     * for four tracks. Before #345 the clap had no recipe and could not compete, so `sub` took a
+     * track; now it can, and the objective placed it. Neither outcome serves all five — what
+     * changed is which request goes unserved, and that is the trade a recipe makes on a box with
+     * fewer tracks than the direction has parts. It is not a trade any real rig has to make:
+     * `answers the whole of that direction as soon as a second box is present` below pins that.
+     */
     const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
-    expect(pitched.length).toBe(24)
+    expect(pitched.length).toBe(18)
     expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
   })
 
@@ -736,10 +956,11 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
       ['kick', 42],
-      ['closed-hat', 30],
+      ['closed-hat', 24],
+      ['clap', 18],
       ['snare', 18],
-      ['ghost-perc', 12],
       ['rim', 12],
+      ['ghost-perc', 6],
       ['ride', 6],
       ['tom', 6],
     ])

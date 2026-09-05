@@ -106,8 +106,11 @@ import { DIGITONE_PANEL } from './panel'
  *    §5.3.3 calls the same thing *"the bandpass and multimode filters"*, and §11.8 — the section
  *    that defines the parameter and draws its response — says Base-Width throughout, as does
  *    §11.7's cross-reference. Two pages against one, and the deciding one is the section that
- *    specifies it. This manifest never names the filter, so nothing here depends on it; it is
- *    recorded because the next reader will hit the same three pages.
+ *    specifies it. **This manifest uses §11.8's spelling**, in `dn-snare-hard`'s title and in
+ *    `dn-clap-bright`, which is the recipe that turns the choice into something a reader acts on:
+ *    it is the only one that sets `BASE` and `WIDTH` together, and §11.8 is where the pair is
+ *    defined as one frequency range. (This note used to say the manifest named the filter
+ *    nowhere. `dn-snare-hard` already did, and #345 is what went and looked.)
  *  - **The LFO trig modes are spelled twice.** §11.11.7 on p.54 defines them as `FRE`, `TRG`,
  *    `HLD`, `ONE`, `HLF`; the diagram table on p.55 heads its five columns `FREE`, `TRIG`,
  *    `HOLD`, `ONE`, `HALF`. The three-letter forms are what §11.11.7 presents as the parameter's
@@ -663,6 +666,101 @@ const recipes: Recipe[] = [
       swing(52),
     ],
     articulation: [art('backbeat', { velocity: 124 }, 'trig-params')],
+  },
+  {
+    id: 'dn-clap-bright',
+    role: 'clap',
+    character: 'bright',
+    voice: 'track',
+    title: 'Band of FM noise, set on the base-width filter with the multimode one as a lid',
+    verified: false,
+    /**
+     * **The successor's clap does not port, and the reason is the engine rather than the era.**
+     * `dn2-clap-bright` builds one out of the WAVETONE machine's noise section — its `TYPE` set
+     * to `GRAIN`, with a hold length under it. This box has no noise oscillator and no machines:
+     * p.89, *"At its core, the Digitone is a four operator Frequency Modulation (FM) synth"*, and
+     * one engine is all there is. So the noise has to be made, and then it has to be shaped.
+     *
+     * **`TYPE` is also the name of a control here, and it is a different control**, which is the
+     * shape a port of that patch would actually take. There it is the noise oscillator's
+     * waveform; here it is the multimode filter (p.51), whose option list has no `GRAIN` in it.
+     * One name, two controls, two boxes in one family.
+     *
+     * **Made** the way `dn-noise-dirty` makes it, and deliberately with that recipe's `ALGO`
+     * rather than a different numeral. The head note records that no page prints a numbered
+     * diagram of the eight routings, so nothing here can say what algorithm 7 *does* — which
+     * makes picking a different one for variety a value chosen for no reason. What the two
+     * recipes share is the intent (both operator groups modulating at once) and what they do not
+     * share is everything after it: `dn-noise-dirty` sustains at 72 and drives at 88, this one
+     * collapses to nothing in about the length of a hand.
+     *
+     * `DTUN` at 84 is the sentence on p.47 being used rather than guessed at: *"Up until a
+     * parameter value of around 64, the offset is very slight... Above 64 the operators start to
+     * detune more heavily."* Below that number a detuned pair still beats; above it, it sprays.
+     *
+     * **Shaped on the filter this box has and the successor has not.** §11.7 and §11.8 print the
+     * same sentence twice — *"The Multimode filter and the Base-Width filter are placed in series
+     * with the Base-Width filter before the Multimode filter"* — and §11.8 makes the first one
+     * `1-pole (6 dB)`. A clap is a broad band of noise rather than a resonant blip, so a shallow
+     * band first and a gentle lid after it is the chain the manual describes, in that order.
+     *
+     * **`BASE` and `WIDTH` are stated together, and one without the other names no band.** p.52
+     * defines them jointly — they *"define the base-width filters frequency range"* — and then
+     * prints three settings at which the pair stops being a range at all: `BASE` 0 makes it a
+     * lowpass, `WIDTH` 127 makes it a highpass, and both together make it nothing. 58 and 34 are
+     * clear of all three.
+     *
+     * Three other recipes reach this filter and none of them is asking it for a band.
+     * `dn-snare-hard` sets `BASE` alone and `dn-noise-dirty` sets `WIDTH` alone, each leaving the
+     * other knob wherever the loaded Sound has it — a one-sided use of a pair p.52 defines
+     * jointly, and it is the reason neither of them can say where its band sits. (No page in this
+     * manual gives either knob a default, so nothing here says what those two land on; it is a
+     * loose end recorded rather than a claim.) `dn-texture-soft` does set both, at 12 and 104 —
+     * a span that leaves very nearly everything through, which is a bed asking the filter to stay
+     * out of the way. **34 is the narrowest span on the box**, and narrow is the whole point: a
+     * clap is a band, and every other part here wants an edge or wants nothing.
+     *
+     * **The multimode filter is a lid, not the band**, which is why `FREQ` is high and no `ENV`
+     * depth is set. That also settles the two per-step lanes this box has and the successor has
+     * not: `FLT.T` switches a filter envelope that nothing here uses, so articulating it would put
+     * an instruction on the page that changes no sound. `LFO.T` is the same, one page along.
+     */
+    params: [
+      algo('7'),
+      playMode('MONO'),
+      ratioC(9),
+      ratioA(14.25),
+      harm(23),
+      dtun(84),
+      fdbk(112),
+      mix(4),
+      levA(120),
+      decA(5),
+      endA(0),
+      levB(96),
+      decB(9),
+      phrt('ALL'),
+      fltrType('2-pole (12 dB) Lowpass'),
+      freq(96),
+      base(58),
+      width(34),
+      ampAtk(0),
+      ampDec(22),
+      ampSus(0),
+      ampRel(14),
+      drv(54),
+      revSend(22),
+    ],
+    articulation: [
+      art('backbeat', { velocity: 116 }, 'trig-params'),
+      // The lean, as a second entry rather than a bigger number on the first: `backbeat` says how
+      // the ordinary hits sit and `accent` says which one is louder than them. Four entries
+      // rather than two because the three directions that ask for this part emit four slots
+      // between them, and a slot with no entry is a step the reader is given no level for.
+      art('accent', { velocity: 127 }, 'trig-params'),
+      art('fill', { velocity: 120 }, 'trig-params'),
+      art('ghost', { velocity: 52, probability: 55 }, 'trig-params'),
+    ],
   },
   {
     id: 'dn-rim-bright',
