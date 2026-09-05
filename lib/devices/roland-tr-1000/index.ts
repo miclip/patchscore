@@ -515,6 +515,23 @@ const RIDE_GENS = ['9X Ride Cymbal', '707 Ride Cymbal', 'CR78 Metallic']
 const OSC_GENS = ['VA Sine', 'VA Tri', 'VA Sqr', 'VA Saw', 'VA Super Saw']
 
 /**
+ * **`VA Noise` on its own, and the paragraph above is why it is not in `OSC_GENS`.**
+ *
+ * p.63's `VA Common` footnote scopes `MODEL` to *"Sine, Tri, Sqr, Saw, and Super Saw"* by name,
+ * and `VA Noise` replaces the waveform controls with `TONE` and `COLOR` — noise frequency, and
+ * white against pink. Offering all six in one list would let a reader switch a bass recipe onto
+ * it and be left holding a `PW` value the box no longer has a knob for, which is exactly the trap
+ * `METALLIC_GENS` documents one block along.
+ *
+ * So this list is p.1's `OSC` category **in full, all six**, and `OSC_GENS` is the five the
+ * `MODEL` footnote actually scopes. A noise recipe carries the whole category because that is
+ * what the page prints and what a reader scrolling the GEN list sees; a bass recipe carries the
+ * five, because switching one of those onto `VA Noise` is the trap. The difference between the
+ * two lists is which way a reader would be moving through them.
+ */
+const NOISE_GENS = ['VA Sine', 'VA Tri', 'VA Sqr', 'VA Saw', 'VA Super Saw', 'VA Noise']
+
+/**
  * The two generators p.62 gives a `METALLIC` parameter to, and the reason this list is not
  * `CLOSED_HAT_GENS`. p.62's block header is literally `CR78 HiHat, CR78 Cymbal`, and the row
  * under it is `METALLIC  0.0%-100.0%  "Adjusts the level of the metal-like overtones."` **No
@@ -1461,6 +1478,66 @@ export const device: Device = {
         shuffle(),
       ],
       articulation: [{ slot: 'first-hit', set: { accent: true }, hint: 'accent-step' }],
+      verified: false,
+    },
+    /**
+     * ---- #345. `noise`, on the two tracks that declared it ---------------------------------
+     *
+     * **This looked like the narrowing case and the folder had already done the reading.** A
+     * fixed-voice drum machine is where an over-generous role declaration is likeliest, and
+     * `noise` on OH and CC is the shape that invites it. But the `OSC_GENS` note above already
+     * records what `VA Noise` is — p.1's `OSC` category, with its own p.63 block giving `TONE`
+     * for noise frequency and `COLOR` for white against pink — and ends by saying outright that
+     * *"it belongs to `noise`, a role the OH and CC tracks already declare."* The generator is
+     * documented, the parameters are cited, and the declaration was right.
+     *
+     * **Two recipes, because these are fixed voices.** Recipe lookup keys on `poolId ?? voiceId`
+     * (§2.2), so one authored for `cc` never reaches `oh`. The GEN list is a single catalogue any
+     * track draws from — `tr1000-bass-mid-dark` already loads `VA Tri` onto the LT track — so
+     * both declarations are true and both need serving. The pair differs in `TUNE` and `COLOR`,
+     * which is what the two tracks are for.
+     */
+    {
+      id: 'tr1000-noise-dirty',
+      role: 'noise',
+      character: 'dirty',
+      voice: 'cc',
+      title: 'Pink noise burst on the crash track, tuned low and wide',
+      params: [
+        gen('VA Noise', NOISE_GENS),
+        num('TONE', -30, BIPOLAR, '%', 63, { hint: 'Noise frequency' }),
+        num('COLOR', 62, PCT, '%', 63, { hint: 'White at one end, pink at the other' }),
+        num('DECAY', 46, PCT, '%', 62, { mood: [{ axis: 'density', amount: -18 }] }),
+        send('RVB', 24, 22),
+        send('DLY', 16, 14),
+        shuffle(),
+      ],
+      articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
+      verified: false,
+    },
+    {
+      id: 'tr1000-noise-dirty-oh',
+      role: 'noise',
+      character: 'dirty',
+      voice: 'oh',
+      title: 'White noise burst on the open-hat track, up where the hats sit',
+      /**
+       * The same generator on the other track that declares the role, and the values are what the
+       * track is for: `TONE` up and `COLOR` toward white puts the burst in the hats' register
+       * rather than under them. A direction wanting both an open hat and a noise part will not get
+       * both from this box — one track, one part — which is an ordinary occupancy cost the
+       * resolver reports rather than something this recipe should pretend away.
+       */
+      params: [
+        gen('VA Noise', NOISE_GENS),
+        num('TONE', 40, BIPOLAR, '%', 63, { hint: 'Noise frequency' }),
+        num('COLOR', 18, PCT, '%', 63, { hint: 'White at one end, pink at the other' }),
+        num('DECAY', 30, PCT, '%', 62, { mood: [{ axis: 'density', amount: -18 }] }),
+        send('RVB', 20, 14),
+        send('DLY', 0),
+        shuffle(),
+      ],
+      articulation: [{ slot: 'offbeat', set: { accent: true }, hint: 'accent-step' }],
       verified: false,
     },
     {

@@ -599,7 +599,9 @@ describe('industrial-techno resolves (§7)', () => {
         // left this list by that route: `r-metallic`, when the RC track took a CR-78 ring, and
         // `r-bass-mid`, when the LT took the `VA`/FM bass pair. Both are the authoring answer
         // the line above describes rather than a purchase.
-        'r-noise': 'no-recipe',
+        // #345 authored `noise` on this box, so the reason changed from "nobody wrote one" to "the
+      // box ran out of tracks" — which is the improvement stated in the resolver's own words.
+      'r-noise': 'no-room/contended',
         // Nothing in a drum machine declares a tonal role. Fixed by buying a device.
         'r-stab': 'no-capable-voice',
         'r-pad': 'no-capable-voice',

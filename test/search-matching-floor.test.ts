@@ -1459,8 +1459,20 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * `search-bound.test.ts` records the direction's peak moving 582,919 -> 583,115.
    *
    * Twenty-three consecutive zeroes, across nineteen devices and thirteen content changes.
+   *
+   * **Two recipes take it up one node and the gap stays at zero — a twenty-fourth time.**
+   * 502,588 -> 502,589 unrepaired and the same repaired. The TR-1000's `noise`, authored twice
+   * because two fixed voices declare it and recipe lookup keys on the voice (#345).
+   *
+   * One node for a role `industrial-techno` does ask this box for, which looks like it should
+   * cost more until the shape is read: `noise` is priority 5 and optional, and this is a
+   * fixed-voice box where the two candidate voices are the open hat and the crash — both of them
+   * already contended for by parts this direction ranks higher. The candidates were added where
+   * the search gives up before it arrives.
+   *
+   * Twenty-four consecutive zeroes, across twenty devices and fourteen content changes.
    */
-  it('walks the recorded 502,588 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 502,589 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1468,7 +1480,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(502_588)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(502_589)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
