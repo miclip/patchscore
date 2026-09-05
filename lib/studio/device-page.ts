@@ -133,8 +133,13 @@ export type DevicePage = {
  *
  * The *reasons* stay on the facts and are not printed here. Each one is a paragraph (the
  * Deluge's runs to four clauses across three page references), and four of them stacked is #35's
- * failure moved to a new page. The reason reaches a reader in the guide, once, where the fact is
- * being acted on.
+ * failure moved to a new page.
+ *
+ * **That argument has lost its other half.** It held while the guide printed the reason once,
+ * where the fact was being acted on; §8 now prints no capability evidence at all (§3.2), so the
+ * reason reaches no rendered surface. This page is where it should land, and #35 is a reason to
+ * disclose it progressively rather than a reason to keep leaving it unsaid — §2.6 carries the
+ * record.
  */
 export type CapabilityGap = {
   kind: 'cited-against' | 'partly' | 'undocumented' | 'unread' | 'unchecked'

@@ -1,7 +1,7 @@
 import type { Device } from '@/lib/core'
 import type { DeviceId } from '@/lib/core'
-import type { Cite, Provenance, ResolvedParam, ResolvedRange } from '@/lib/core'
-import { STEPS_PER_BAR, clockFollowing, clockWires, sameCite } from '@/lib/core'
+import type { Cite, ResolvedParam, ResolvedRange } from '@/lib/core'
+import { STEPS_PER_BAR, clockFollowing, clockWires } from '@/lib/core'
 import type { Gap, ResolvedHook, ResolvedNote } from '@/lib/core'
 import type { PlacementRefusal, RefusedPlacement } from '@/lib/core'
 import type { FxSource, SidechainReading } from '@/lib/core'
@@ -81,36 +81,6 @@ export function valueParts(param: ResolvedParam): ValueParts {
   if (provenance.state === 'authored') return { now }
   return provenance.from === undefined ? { now } : { from: num(provenance.from), now }
 }
-
-/**
- * The citation lines for one provenance — identical to the Markdown sibling's, deliberately.
- *
- * Labelled halves, because they are two independent claims (§3.1): the point decides authority,
- * the range decides legality. An unlabelled pair reads as one claim stated twice.
- *
- * These are the evidence behind the mark, so they are not thinned out to save ink. "Where a
- * number came off the manual it is marked" has to be *true*, and what makes it checkable is the
- * citation sitting under it. A provisional point has no citation to give and gets none — that
- * absence is the honest rendering, not a hole to fill.
- */
-export function citeLines(
-  provenance: Provenance,
-  range: ResolvedRange | undefined,
-  hoisted?: Cite,
-): string[] {
-  const parts: string[] = []
-  if (provenance.state !== 'provisional') parts.push(`value ${citeText(provenance.cite)}`)
-  if (range !== undefined) {
-    if (range.verified === false) {
-      parts.push('range unverified — mood leaves this value alone')
-    } else if (!sameCite(range.verified, hoisted)) {
-      // The exception keeps its line. Hoisting removes repetition, never the outlier.
-      parts.push(`range ${citeText(range.verified)}`)
-    }
-  }
-  return parts
-}
-
 
 /**
  * A device's `hints` table is keyed lookup for articulation and free text for parameters. One

@@ -1131,6 +1131,10 @@
           "value": "poly",
           "provenance": {
             "state": "provisional"
+          },
+          "optionsVerified": {
+            "kind": "manual",
+            "source": "Golden Manual p.12"
           }
         }
       ],
@@ -1354,6 +1358,10 @@
           "value": "poly",
           "provenance": {
             "state": "provisional"
+          },
+          "optionsVerified": {
+            "kind": "manual",
+            "source": "Golden Manual p.12"
           }
         }
       ],

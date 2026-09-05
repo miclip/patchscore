@@ -243,13 +243,14 @@ describe('the notice reaches a reader once per device, both renderers, both layo
       expect(md).toContain('The knobs carry unnumbered ticks')
       expect(md).toContain('by hand these are set by ear')
       expect(md).toContain('The exception is the ENVELOPE faders')
-      // The state a reader is left in, said in words and marked at the end of the line.
       // The reading, reported as a reading: what was looked for and not found, never a claim
-      // that the document contains no such page.
+      // that the document contains no such page. **In the sentence and nowhere else** — the
+      // `· undocumented` mark and the page under it are printed on no surface now, so the prose
+      // is the only thing carrying the state, which is why it has to say it outright.
       expect(md).toContain('The manual was read and no page mapping a mark')
       expect(md).not.toContain('Not established')
-      expect(md).toContain('· undocumented')
-      expect(md).toContain('mapped manual — A Manual, p.1')
+      expect(md).not.toContain('· undocumented')
+      expect(md).not.toContain('mapped manual — A Manual, p.1')
     })
 
     it(`prints it once in the web guide (${layout} layout)`, () => {
@@ -262,8 +263,8 @@ describe('the notice reaches a reader once per device, both renderers, both layo
       expect(html).toContain('The exception is the ENVELOPE faders')
       expect(html).toContain('The manual was read and no page mapping a mark')
       expect(html).not.toContain('Not established')
-      expect(html).toContain('undocumented')
-      expect(html).toContain('mapped manual — A Manual, p.1')
+      expect(html).not.toContain('prov-undocumented')
+      expect(html).not.toContain('mapped manual — A Manual, p.1')
     })
   }
 

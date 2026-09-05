@@ -124,6 +124,7 @@ function PerformedHere({
           </h4>
           <SoundShared
             device={device}
+            perPart={mine.map((a) => a.params)}
             content={contentNotice(
               device,
               mine.map((a) => a.recipe),
@@ -653,15 +654,18 @@ export function Guide({
         the convention has to live somewhere, and once at the top is cheaper than a badge on
         every line. Said in the voice of something that knows what it is talking about — no
         apology, no warning, and nothing telling the reader to distrust the page.
+
+        Shorter than it was, because the page it describes is. It used to teach the mark — what
+        `manual` meant at the end of a line, and that a moved value named the knob that moved it
+        — and it drew both with the live `.prov` classes. None of that is on the page any more,
+        and a legend explaining a mark the document does not carry sends a reader looking for
+        something that is not there.
       */}
       <p className="legend">
-        Values are starting points — dial them to taste. Where a number came straight off the
-        manual or off a unit it says which (
-        <span className="prov prov-cited">manual</span>), and where a mood knob moved it you see
-        the move — <span className="mono">52 → 45</span> — and{' '}
-        <span className="prov prov-moved">the knob that did it</span>. Every value carries its
-        range, <span className="mono">38 (0…100)</span>, so you can tell at a glance whether the
-        screen in front of you is the one the line is about.
+        Values are starting points — dial them to taste. Where a mood knob moved one you see the
+        move — <span className="mono">52 → 45</span>. Every value carries its range,{' '}
+        <span className="mono">38 (0…100)</span>, so you can tell at a glance whether the screen
+        in front of you is the one the line is about.
       </p>
 
       {/*

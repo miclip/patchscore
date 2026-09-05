@@ -128,8 +128,9 @@ describe('§7.4/#121 the guide says what the clock source rests on', () => {
     for (const doc of [guide(SOLE), text(SOLE)]) {
       expect(doc).toContain('Why this box — it is the only box here that can send clock')
       expect(doc).not.toContain('settled it')
-      // And the evidence still lands: the basis changed, not the box's own reading of itself.
-      expect(doc).toContain('no page states that leading a rig is its job')
+      // The basis and nothing under it: the box's own reading of itself is evidence, and §8
+      // renders none. Nothing else renders this one either — see DESIGN.md §2.6.
+      expect(doc).not.toContain('no page states that leading a rig is its job')
     }
   })
 
@@ -162,21 +163,21 @@ describe('§7.4/#121 the guide says what the clock source rests on', () => {
   })
 
   /**
-   * Invariant 4 reaching a reader. The claimed rig carries the page it was read off; the
-   * tie-break rig carries the reasoned non-claim, which is the finding #121 argued is the part a
-   * reader most needs — "no page states that leading a rig is its job" is information.
+   * **The basis reaches a reader; the evidence under it does not.**
+   *
+   * The chosen box's own reading of itself — the page behind a claim, the reasoned non-claim
+   * behind a tie-break — stays in the manifest at `clock.preferredSource`, which is capability
+   * evidence and reaches no rendered surface (DESIGN.md §2.6). The guide keeps the half a reader
+   * standing at the rack can act on: which of §7.4's rules picked this box.
    */
-  it('carries the chosen box’s own evidence, in its own state’s words (Markdown)', () => {
-    expect(guide(CLAIMED)).toContain(
-      '↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.283',
-    )
-    // `claim`, not `value`: nobody dials `clock.preferredSource`.
-    expect(guide(CLAIMED)).not.toContain('cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.283')
+  it('carries the basis and none of the evidence under it (Markdown)', () => {
+    expect(guide(CLAIMED)).toContain('Why this box — its manual says leading a rig is its job')
+    expect(guide(CLAIMED)).not.toContain('Polyend Tracker Mini Manual 2.2.1b, p.283')
 
     const tieBreak = guide(TIE_BREAK)
     expect(tieBreak).toContain('Why this box — nothing here claims that job')
-    expect(tieBreak).toContain('· undocumented')
-    expect(tieBreak).toContain('no page states that leading a rig is its job')
+    expect(tieBreak).not.toContain('· undocumented')
+    expect(tieBreak).not.toContain('no page states that leading a rig is its job')
   })
 
   /**
@@ -201,14 +202,12 @@ describe('§7.4/#121 the guide says what the clock source rests on', () => {
   it('says the same three things on the page, in the page’s own words', () => {
     const claimed = text(CLAIMED)
     expect(claimed).toContain('Why this box — its manual says leading a rig is its job')
-    expect(claimed).toContain('claim manual — Polyend Tracker Mini Manual 2.2.1b, p.283')
+    expect(claimed).not.toContain('Polyend Tracker Mini Manual 2.2.1b, p.283')
 
     const tieBreak = text(TIE_BREAK)
     expect(tieBreak).toContain('Why this box — nothing here claims that job')
     expect(tieBreak).not.toContain('its manual says leading a rig is its job')
-    // The reasoned non-claim, visible rather than only in a title attribute: a reader on a phone
-    // at the rack has no hover.
-    expect(tieBreak).toContain('no page states that leading a rig is its job')
+    expect(tieBreak).not.toContain('no page states that leading a rig is its job')
 
     expect(text(CONTESTED)).toContain('Why this box — 2 boxes here claim that job')
   })

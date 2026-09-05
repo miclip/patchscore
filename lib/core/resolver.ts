@@ -865,6 +865,15 @@ export function resolveParam(
       name: param.name,
       value: param.value,
       provenance: citedProvenance(point),
+      // §3.2. **An enum's legality gate, carried for the same reason a range's is.** `options`
+      // is to an enum exactly what `range` is to a numeric — the claim that says what the box
+      // offers, cited independently of whether anyone checked which option suits the sound —
+      // and a `ResolvedParam` that carried only half of that table made every consumer blind to
+      // the other half. It reaches the guide's block sentence (§3.2) and nothing else: unlike a
+      // range, the option set itself is not printed beside the value.
+      ...(param.kind === 'enum'
+        ? { optionsVerified: inheritVerified(param.options.verified, recipeVerified) }
+        : {}),
       ...(param.hint === undefined ? {} : { hint: param.hint }),
       ...(param.note === undefined ? {} : { note: param.note }),
       // #107. Carried, never computed: what one setting covers is a fact about the box, and

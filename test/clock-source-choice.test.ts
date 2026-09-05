@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import {
-  clockBasisEvidence,
   clockSourceBasis,
   decodeGuideInputs,
   encodeGuideInputs,
@@ -279,8 +278,9 @@ describe('a cited setting makes a configurable socket usable (#213)', () => {
  *
  * Reported from a real guide. The Deluge's manifest records `clock.preferredSource` as `unknown`
  * with a long reason — its guidebook never states what the box is for, p.253 hedges, the
- * architecture diagram is internal, and the follower case gets equal space. That is a good entry
- * and the device page should keep showing it.
+ * architecture diagram is internal, and the follower case gets equal space. That is a good entry.
+ * The device page lists the *path* among its unsettled facts and has never shown the reason —
+ * DESIGN.md §2.6 records that it should.
  *
  * What the guide printed, after the reader had put the Deluge in charge themselves:
  *
@@ -316,22 +316,26 @@ describe('a chosen clock source is not justified against its own manifest (#200)
 
   it('still explains a box the reader did not choose', () => {
     // The other half of the claim: this suppresses an answer to a question nobody asked, and
-    // must not delete the answer when somebody did ask it.
+    // must not delete the answer when somebody did ask it. Asserted on the basis sentence rather
+    // than on the `· undocumented` mark that used to sit beside it — that evidence is rendered
+    // nowhere now, and the basis is the part this rule is actually about.
     const derived = resolve({ ...base, devices: DEVICES.filter((d) => d.id === CHOSEN) })
     expect(derived.clockSource?.chosen).toBe(false)
     const md = renderGuide(derived)
     expect(md).toContain('Why this box')
-    expect(md).toContain('undocumented')
+    expect(md).not.toContain('Why this box — you chose it')
   })
 
   it('decides it once, so both renderers agree (#33)', () => {
-    // The decision is `clockBasisEvidence`; the wording is each renderer's own.
+    // The decision is `clockSourceBasis`; the wording is each renderer's own. It used to be
+    // `clockBasisEvidence` beside it, deciding which of the box's readings to print under the
+    // basis — that helper is gone with the evidence §8 no longer renders, and `chosen` on its own
+    // is what suppresses the basis sentence.
     const chosen = resolve({ ...base, overrides: { clockSourceId: CHOSEN } })
-    const device = DEVICES.find((d) => d.id === CHOSEN)!
-    expect(clockBasisEvidence(chosen.clockSource, device)).toBeUndefined()
+    expect(clockSourceBasis(chosen.clockSource!)).toBe('chosen')
 
     const derived = resolve({ ...base, devices: DEVICES.filter((d) => d.id === CHOSEN) })
-    expect(clockBasisEvidence(derived.clockSource, device)).toMatchObject({ kind: 'unknown' })
+    expect(clockSourceBasis(derived.clockSource!)).not.toBe('chosen')
 
     const html = renderToStaticMarkup(createElement(Guide, { result: chosen, seed: 3 }))
     expect(html).toContain('you chose it')

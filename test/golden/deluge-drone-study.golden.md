@@ -1,9 +1,8 @@
 # Drone Study
 
-Values are starting points — dial them to taste. Where a number came straight off the manual
-or off a unit it says which, and where a mood knob moved it you see the move (`52 → 45`) and
-the knob that did it. Every value carries its range — `38 (0…100)` — so you can tell at a
-glance whether the screen in front of you is the one the line is about.
+Values are starting points — dial them to taste. Where a mood knob moved one you see the move
+(`52 → 45`). Every value carries its range — `38 (0…100)` — so you can tell at a glance whether
+the screen in front of you is the one the line is about.
 
 ## 1. Song
 
@@ -42,8 +41,7 @@ None.
 
 **Clock source** — Deluge over `midi-din`, carrying 1 part. Nothing else is here to sync to it.
 
-- Why this box — it is the only box here that can send clock · undocumented
-  - ↳ cite: undocumented — the guidebook never states what this box is for; p.253 hedges to “can be a controller for external MIDI devices”, §1.4’s architecture diagram (p.9) is entirely internal, and §§12.4-12.6 document the Deluge as the follower at equal length
+- Why this box — it is the only box here that can send clock
 
 - **Deluge** — groovebox · 1 part
   - clock: sends clock · midi-din/usb/analog-clock
@@ -67,8 +65,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 16 bars in A phrygian.
 
-Note length is set per note here — `the note’s extent on the grid — hold its start pad and press its end pad`, in grid steps at the current zoom. · manual
-- ↳ cite: claim manual — Deluge Official Guidebook OS 4.1 (OLED), p.48
+Note length is set per note here — `the note’s extent on the grid — hold its start pad and press its end pad`, in grid steps at the current zoom.
 
 - bar 1 · step 1 · held for 128 steps (8 bars) · `E3` · 5th · MIDI 52
 - bar 9 · step 129 · held for 64 steps (4 bars) · `D3` · 4th · MIDI 50
@@ -144,14 +141,13 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 
 ### Deluge
 
-*Values below cite Deluge Official Guidebook OS 4.1 (OLED) and Deluge community firmware release_1_2_1.*
+*This block draws on the Deluge Official Guidebook OS 4.1 (OLED), pp.18-225; its values are starting points.*
 
 **Song-wide**
 
 One setting for the whole song — set it once, not once per part below.
 
 - **SWING** `50` % (1…99 %)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.39
   - ↳ note: 50 is off, above is late, below is early — song-wide, not per clip
   - ↳ hint: Hold [SHIFT], turn (TEMPO)
 
@@ -163,11 +159,8 @@ Routing — Needs the DX7 ENGINE community setting on; create with CUSTOM 1 + SY
   - ↳ hint: From clip view: [SHIFT] + [KIT] or [SYNTH]
 - **OSC 1 TYPE** `DX7`
 - **REVERB AMOUNT** `30` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.225
 - **DELAY AMOUNT** `11` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.222
 - **EQ TREBLE AMOUNT** `22` (0…50)
-  - ↳ cite: range manual — Deluge Official Guidebook OS 4.1 (OLED), p.219
 
 ## 7. Finishing
 

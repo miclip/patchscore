@@ -188,9 +188,9 @@ describe('OP-XY — the first articulation on a melodic part here (§4.3)', () =
     // of a reader for steps that do not exist in five of the six sections.
     const block = acidBlock('teenage-engineering-op-xy')
     const ghosts = block.filter((l) => l.startsWith('- `ghost` → '))
-    expect(ghosts).toEqual(['- `ghost` → `velocity` 32 on steps 6, 14, 22 · manual'])
+    expect(ghosts).toEqual(['- `ghost` → `velocity` 32 on steps 6, 14, 22'])
     expect(bandBlock(block, '**Bite** — 32 steps, band 3')).toContain(
-      '- `ghost` → `velocity` 32 on steps 6, 14, 22 · manual',
+      '- `ghost` → `velocity` 32 on steps 6, 14, 22',
     )
     expect(block.filter((l) => l.startsWith('- `accent` → '))).toHaveLength(4)
     expect(block).toContain('  - ↳ hint: Hold [shift], velocity key, then a sharp')

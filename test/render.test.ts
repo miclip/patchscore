@@ -5,9 +5,7 @@ import {
   evidenceFor,
   NEUTRAL_MOOD,
   SUBORDINATE,
-  dominantRangeCite,
   moodState,
-  citationSentence,
   rangeDocuments,
   receiveTransports,
   renderGuide,
@@ -131,37 +129,37 @@ describe('phases (§8)', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Invariant 4 — every rendered value carries its provenance
+// The guide prints no provenance and no citations
 // ---------------------------------------------------------------------------
 
-describe('provenance (invariant 4, §3.2)', () => {
-  it('marks each parameter line with what is true of that parameter, and nothing else', () => {
+/**
+ * **Invariant 4 is not asserted here any more, because it is not a rendering claim.**
+ *
+ * `ResolvedParam.provenance` is still non-optional and `pipeline.test.ts` still asserts that
+ * every rendered value carries one; what the guide does with it is a separate decision, and the
+ * decision is now *nothing*. These tests hold the two halves of that: the mark and the citation
+ * are gone, and the value, its unit and its range are not.
+ *
+ * Every test here reads the provenance it expects to see no trace of, so none of them can pass
+ * by rendering an empty guide.
+ */
+describe('the guide prints no provenance (§8)', () => {
+  it('renders a parameter as its name, value and range, with nothing marked after it', () => {
     const result = golden()
     const valueLines = phaseBody(renderGuide(result), 6).filter((l) => l.startsWith('- **'))
     const params = soundDesignParams(result)
 
     expect(valueLines).toHaveLength(params.length)
+    // The fixture has to contain the thing being suppressed, or this suite proves nothing.
+    expect(params.some((p) => p.provenance.state === 'authored')).toBe(true)
+    expect(params.some((p) => p.provenance.state === 'derived')).toBe(true)
+
     params.forEach((param, i) => {
       const line = valueLines[i] as string
-      const { provenance } = param
       expect(line, line).toContain(`**${param.name}**`)
-
-      if (provenance.state === 'authored') {
-        expect(line, line).toContain(` · ${provenance.cite.kind}`)
-        expect(line, line).not.toContain('moved by')
-      } else if (provenance.state === 'derived') {
-        expect(line, line).toContain(
-          ` · ${provenance.cite.kind} · moved by ${provenance.axes.join(', ')}`,
-        )
-      } else if (provenance.axes !== undefined && provenance.axes.length > 0) {
-        // A move on an uncited point is still shown, and still borrows no authority from it.
-        expect(line, line).toContain(` · moved by ${provenance.axes.join(', ')}`)
-        expect(line, line).not.toContain(' · manual')
-        expect(line, line).not.toContain(' · observed')
-      } else {
-        // A starting point. No mark, and no trailing separator left behind by one.
-        expect(line, line).not.toContain(' · ')
-      }
+      // No mark, and no trailing separator left behind by one.
+      expect(line, line).not.toContain(' · ')
+      expect(line, line).not.toContain('moved by')
     })
   })
 
@@ -169,75 +167,59 @@ describe('provenance (invariant 4, §3.2)', () => {
     expect(renderGuide(golden())).not.toContain('⚠')
   })
 
-  it('marks cited patch and articulation lines and leaves the rest bare', () => {
+  it('leaves patch and articulation bullets bare', () => {
     const doc = renderGuide(golden())
-    // Slot lines list steps, not values, and carry no provenance; every other backticked
-    // bullet in these two phases is a rendered value.
+    // Slot lines list steps, not values; every other backticked bullet in these two phases is a
+    // rendered value, and every one of them used to end in its citation kind.
     const bullets = [...phaseBody(doc, 5), ...phaseBody(doc, 6)]
       .filter((l) => l.startsWith('- `'))
       .filter((l) => !/^- `[a-z-]+` — \d/.test(l))
 
     expect(bullets.length).toBeGreaterThan(0)
     for (const line of bullets) {
-      // `lastIndexOf`, not `indexOf`: the provenance separator and the separator inside a
-      // section-qualified jack id (§3.3) are the same three characters, so a patch bullet reads
-      // `` - `VCO · SUB` → `VCF · IN` · manual `` and the first ` · ` on the line is inside a
-      // socket name. Unambiguous to a reader, because the ids are backticked; not to a splitter
-      // scanning forwards. The mark is always last, so scan from the end.
+      // `lastIndexOf`, not `indexOf`: a section-qualified jack id (§3.3) contains the same three
+      // characters the mark used, so `` - `VCO · SUB` → `VCF · IN` `` has one legitimately. The
+      // mark was always last, so scan from the end and check nothing is trailing there.
       const at = line.lastIndexOf(' · ')
       if (at === -1) continue
-      // Mood never touches patch or articulation, so `derived` cannot arise there (§3.2): the
-      // only mark either can carry is the citation kind.
-      expect(line.slice(at + 3), line).toMatch(/^(manual|observed)$/)
+      expect(line.slice(at + 3), line).not.toMatch(/^(manual|observed)$/)
     }
-    expect(bullets.some((l) => / · (manual|observed)$/.test(l))).toBe(true)
   })
 
-  it('renders a derived value as the move that produced it, and names the knob', () => {
+  it('renders a moved value as the move, and does not name the knob that moved it', () => {
     const doc = renderGuide(golden())
-    // The golden kick: TUNE 52, darkness 80, mood offset -12 per §6.1.
+    // The golden kick: TUNE 52, darkness 80, mood offset -12 per §6.1. The arrow is a fact about
+    // the dial and stays; the axis that produced it was provenance and does not.
     const tune = phaseBody(doc, 6).find((l) => l.startsWith('- **TUNE**'))
     expect(tune).toBeDefined()
     expect(tune).toContain('52 → 45')
-    expect(tune).toContain('manual · moved by darkness')
+    expect(tune).not.toContain('moved by')
+    expect(tune).not.toContain('manual')
   })
 
-  it('leaves an unverified point unmarked, and gives it no citation to borrow authority from', () => {
+  it('hangs no citation under any line of the document', () => {
     const doc = renderGuide(golden())
-    const body = phaseBody(doc, 6)
-    const mode = body.findIndex((l) => l.startsWith('- **MODE**'))
-    expect(mode).toBeGreaterThan(-1)
-    // Unmarked is the norm and says nothing about the value beyond what it is: a starting point.
-    expect(body[mode]).not.toContain(' · ')
-    expect(body[mode]).not.toContain('nobody has checked')
-    // Still no value citation, which is the claim that would be false.
-    expect(body[mode + 1] ?? '').not.toContain(`${SUBORDINATE.cite} value`)
+    // Not `SUBORDINATE.cite`, which no longer exists: the tag itself is what must not appear.
+    expect(doc).not.toContain('↳ cite:')
+    // The two lines a reader still gets, so this is not passing on an empty document.
+    expect(doc).toContain('↳ hint:')
+    expect(doc).toContain('↳ note:')
   })
 
-  it('cites the point and the range as two separate claims (§3.1)', () => {
-    const body = phaseBody(renderGuide(golden()), 6)
-    const resonance = body.findIndex((l) => l.startsWith('- **RESONANCE**'))
-    expect(resonance).toBeGreaterThan(-1)
-
-    // Point observed on the unit, and said out loud under the value it is about: a value
-    // citation is a claim about one number and never hoists.
-    expect(body[resonance + 1]).toBe(
-      `  - ${SUBORDINATE.cite} value observed — golden unit, firmware 1.11`,
-    )
-
-    // Range read off the page, and still said out loud — once, at the head of the recipe that
-    // repeats it, rather than under every line of it.
-    const heading = body.slice(0, resonance).findLastIndex((l) => l.startsWith('#### '))
-    expect(heading).toBeGreaterThan(-1)
-    const recipe = body.slice(heading, resonance)
-    expect(recipe.join('\n')).toContain('*Ranges cite manual — Golden Manual p.12.*')
+  it('states no shared citation over a recipe or over a device', () => {
+    const doc = renderGuide(golden())
+    expect(doc).not.toContain('Ranges cite')
+    expect(doc).not.toContain('Values below cite')
   })
 
-  it('says an unverified range is why mood did nothing, rather than leaving it unexplained', () => {
+  it('keeps the value and the range on a parameter whose range nothing verified', () => {
     const body = phaseBody(renderGuide(golden()), 6)
     const attack = body.findIndex((l) => l.startsWith('- **ATTACK**'))
     expect(attack).toBeGreaterThan(-1)
-    expect(body.slice(attack, attack + 3).join('\n')).toContain('range unverified')
+    // The range still travels with the value (#29). What is gone is the sentence saying the
+    // range was never verified, which was a citation line and left with them.
+    expect(body[attack]).toMatch(/\(\d+…\d+\)/)
+    expect(body.slice(attack, attack + 3).join('\n')).not.toContain('range unverified')
   })
 })
 
@@ -1068,58 +1050,21 @@ const P59: Cite = { kind: 'manual', source: 'Fixture Manual p.59' }
 const P60: Cite = { kind: 'manual', source: 'Fixture Manual p.60' }
 const OBSERVED59: Cite = { kind: 'observed', source: 'Fixture Manual p.59' }
 
-describe('dominantRangeCite (§3.2, state it once)', () => {
-  const cases: { name: string; params: ResolvedParam[]; expected: Cite | undefined }[] = [
-    {
-      name: 'uniform — every range cites one page',
-      params: [ranged('A', P59), ranged('B', P59), ranged('C', P59)],
-      expected: P59,
-    },
-    {
-      name: 'exceptional — one param cites a different page',
-      params: [ranged('A', P59), ranged('B', P59), ranged('C', P60)],
-      expected: P59,
-    },
-    {
-      name: 'ambiguous — two citations twice each, so neither dominates',
-      params: [ranged('A', P59), ranged('B', P59), ranged('C', P60), ranged('D', P60)],
-      expected: undefined,
-    },
-    {
-      name: 'no repetition — one occurrence is not a pattern',
-      params: [ranged('A', P59), ranged('B', P60)],
-      expected: undefined,
-    },
-    {
-      name: 'unverified ranges carry no citation to hoist',
-      params: [ranged('A', false), ranged('B', false), ranged('C', false)],
-      expected: undefined,
-    },
-    {
-      name: 'an unverified range does not dilute a repeated one',
-      params: [ranged('A', P59), ranged('B', P59), ranged('C', false)],
-      expected: P59,
-    },
-    {
-      name: 'cite.kind is part of identity — a manual and an observation are not one citation',
-      params: [ranged('A', P59), ranged('B', OBSERVED59)],
-      expected: undefined,
-    },
-    {
-      name: 'nothing to hoist from a recipe with no ranges at all',
-      params: [{ name: 'MODE', value: 'On', provenance: { state: 'provisional' } }],
-      expected: undefined,
-    },
-  ]
-
-  for (const { name, params, expected } of cases) {
-    it(name, () => {
-      expect(dominantRangeCite(params)).toEqual(expected)
-    })
-  }
-})
-
-describe('hoisted range citations in Sound design (§8)', () => {
+/**
+ * §3.2. **A range's evidence reaches the reader once, for the box, and never on a line.**
+ *
+ * `dominantRangeCite` used to decide which of a recipe's range citations repeated often enough to
+ * be stated once above the lines instead of under each of them, with the exceptions keeping their
+ * own `↳ cite:`. That whole apparatus is gone: the sentence summarising a device block does not
+ * hoist a repeated citation, it names every document the block rests on and spans their pages, so
+ * there is no dominant one to find and no outlier to demote.
+ *
+ * These are the fixtures that suite was built on, kept because they are still the interesting
+ * shapes — uniform, exceptional, tied, point-and-range, and one unverified among verified — and
+ * turned around to assert what the sentence says about each and what stays off the lines
+ * underneath.
+ */
+describe('a range citation reaches the block sentence and nothing below it (§3.2/§8)', () => {
   /** One device, one recipe, whose params carry the citations under test. */
   function guideFor(params: AuthoredParam[]): string {
     const device = box('A-hoist', {
@@ -1142,50 +1087,83 @@ describe('hoisted range citations in Sound design (§8)', () => {
     return { kind: 'numeric', name, value: 10, range: { min: 0, max: 100, verified } }
   }
 
-  it('states a uniform citation once and drops every per-parameter copy', () => {
-    const body = phaseBody(guideFor([numeric('A', P59), numeric('B', P59), numeric('C', P59)]), 6)
-    expect(body.filter((l) => l.includes('*Ranges cite manual — Fixture Manual p.59.*'))).toHaveLength(1)
-    expect(body.filter((l) => l.includes('↳ cite: range'))).toHaveLength(0)
-  })
+  const TAIL = '; its values are starting points.'
+  /**
+   * Every opening the four branches can produce, so *exactly one sentence per block* is asserted
+   * against the shape rather than against whichever branch a case happens to take. Listed rather
+   * than derived: a test that asked the renderer what it had emitted would agree with it.
+   */
+  const SENTENCE_OPENERS =
+    /^\*(Values on this box come from|Most values on this box come from|This block draws on|Checked values on this box draw on) /
 
-  it('keeps the exception on its own line, which is the point of hoisting', () => {
-    const body = phaseBody(guideFor([numeric('A', P59), numeric('B', P59), numeric('C', P60)]), 6)
-    expect(body.filter((l) => l.includes('*Ranges cite manual — Fixture Manual p.59.*'))).toHaveLength(1)
-    const kept = body.filter((l) => l.includes('↳ cite: range'))
-    expect(kept).toHaveLength(1)
-    expect(kept[0]).toContain('p.60')
-  })
-
-  it('hoists nothing when two citations tie, and leaves every line in place', () => {
-    const body = phaseBody(
-      guideFor([numeric('A', P59), numeric('B', P59), numeric('C', P60), numeric('D', P60)]),
-      6,
-    )
-    expect(body.filter((l) => l.includes('Ranges cite'))).toHaveLength(0)
-    expect(body.filter((l) => l.includes('↳ cite: range'))).toHaveLength(4)
-  })
-
-  it('never hoists a value citation — that is a claim about one number', () => {
-    const body = phaseBody(
-      guideFor([
+  const cases: { name: string; params: AuthoredParam[]; sentence: string }[] = [
+    {
+      name: 'uniform — every range cites one page',
+      params: [numeric('A', P59), numeric('B', P59), numeric('C', P59)],
+      sentence: `This block draws on the Fixture Manual, p.59${TAIL}`,
+    },
+    {
+      // The second page is the outlier the old scheme demoted to a `↳ cite:` line. It is inside
+      // the span now, which is the difference between hoisting a citation and summarising a block.
+      name: 'exceptional — one param cites a different page',
+      params: [numeric('A', P59), numeric('B', P59), numeric('C', P60)],
+      sentence: `This block draws on the Fixture Manual, pp.59-60${TAIL}`,
+    },
+    {
+      // Two citations twice each: no citation dominated, so the old scheme printed neither and
+      // put a page under all four lines. One document, one span, and the tie is not a case.
+      name: 'ambiguous — two citations twice each, so neither ever dominated',
+      params: [numeric('A', P59), numeric('B', P59), numeric('C', P60), numeric('D', P60)],
+      sentence: `This block draws on the Fixture Manual, pp.59-60${TAIL}`,
+    },
+    {
+      // Every point cited as well as every range, which is the one shape that earns the plain
+      // verb. It is rare enough in the real library that no golden renders it.
+      name: 'a value citation beside a range citation',
+      params: [
         { kind: 'numeric', name: 'A', value: 10, range: { min: 0, max: 100, verified: P59 }, verified: P59 },
         { kind: 'numeric', name: 'B', value: 20, range: { min: 0, max: 100, verified: P59 }, verified: P59 },
-      ]),
-      6,
-    )
-    // The shared range hoists; both value citations stay exactly where they are.
-    expect(body.filter((l) => l.includes('Ranges cite'))).toHaveLength(1)
-    expect(body.filter((l) => l.includes('↳ cite: value'))).toHaveLength(2)
-  })
+      ],
+      sentence: 'Values on this box come from the Fixture Manual, p.59.',
+    },
+    {
+      // `range unverified — mood leaves this value alone` was a `↳ cite:` line under C. The
+      // sentence does not report it and must not: it is a fact about one parameter's legality
+      // gate, and §3.2 keeps that in the manifest and the audit.
+      name: 'an unverified range among verified ones',
+      params: [numeric('A', P59), numeric('B', P59), numeric('C', false)],
+      sentence: `This block draws on the Fixture Manual, p.59${TAIL}`,
+    },
+    {
+      // A reading off the unit beside a page in a book. Same source string, different `kind`, so
+      // this is also the check that the two never collapse into one entry — and that the book
+      // comes first even though the unit carries two of the three claims here.
+      name: 'an observation beside a manual page',
+      params: [numeric('A', P59), numeric('B', OBSERVED59), numeric('C', OBSERVED59)],
+      sentence: `This block draws on the Fixture Manual, p.59 and the instrument${TAIL}`,
+    },
+  ]
 
-  it('leaves an unverified range alone — it is a different claim, not a repetition', () => {
-    const body = phaseBody(
-      guideFor([numeric('A', P59), numeric('B', P59), numeric('C', false)]),
-      6,
-    )
-    expect(body.filter((l) => l.includes('Ranges cite'))).toHaveLength(1)
-    expect(body.filter((l) => l.includes('range unverified'))).toHaveLength(1)
-  })
+  for (const { name, params, sentence } of cases) {
+    it(name, () => {
+      const body = phaseBody(guideFor(params), 6)
+      const doc = body.join('\n')
+      // The values themselves are all still there — this is not passing on an empty phase.
+      for (const param of params) expect(doc, name).toContain(`**${param.name}**`)
+      // One sentence, italicised, and the only place the document is named in the whole phase.
+      expect(body.filter((line) => line === `*${sentence}*`), name).toHaveLength(1)
+      expect(body.filter((line) => SENTENCE_OPENERS.test(line)), name).toHaveLength(1)
+      expect(body.filter((l) => l.includes('↳ cite:')), name).toHaveLength(0)
+      expect(doc, name).not.toContain('Ranges cite')
+      expect(doc, name).not.toContain('Values below cite')
+      expect(doc, name).not.toContain('range unverified')
+      // Nothing on a value line names the document. `- **A** ...` is where a `↳ cite:` hung.
+      for (const line of body.filter((l) => l.trimStart().startsWith('-'))) {
+        expect(line, name).not.toContain('Fixture Manual')
+        expect(line, name).not.toContain('p.59')
+      }
+    })
+  }
 })
 
 /**
@@ -1288,12 +1266,19 @@ describe('pattern-global settings, hoisted to the device (§8/#107)', () => {
     expect(body.filter((l) => l.includes('**SWING**'))).toHaveLength(2)
   })
 
-  it('prints the hoisted line evidence in full, with no shared-citation sentence over it', () => {
-    // A device-level block has no "Ranges cite ..." heading to hoist under, so the line keeps its
-    // own citation. The per-part list computes its own sentence from what is left in it.
+  it('prints the hoisted line as a value and a range, with no evidence under it', () => {
+    // #107's block is about *where* a setting is stated, not about its evidence: the device-level
+    // line is the same rendering as a per-part one, and neither carries a citation. What the box
+    // rests on is said once above both of them (§3.2), which is the line the count below skips.
     const body = guideFor(twoParts([scoped('SWING'), scoped('CUTOFF', { scope: undefined })]))
     const at = body.findIndex((l) => l.includes('**SWING**'))
-    expect(body[at + 1]).toContain('↳ cite: range manual — Fixture Manual p.59')
+    expect(at).toBeGreaterThan(-1)
+    expect(body[at]).toContain('(0…100)')
+    expect(body[at + 1] ?? '').not.toContain('↳ cite:')
+    expect(body.filter((l) => l.includes('This block draws on'))).toHaveLength(1)
+    for (const line of body.filter((l) => l.trimStart().startsWith('-'))) {
+      expect(line).not.toContain('Fixture Manual')
+    }
   })
 })
 
@@ -1561,48 +1546,50 @@ describe('Master FX names what processes audio (§8 phase 7)', () => {
   })
 })
 
-describe('the guide cites the document the values came from (#89)', () => {
-  /**
-   * It used to print `Device.manual.title`, a separate assertion nothing keeps in agreement with
-   * the citations. A TR-1000 guide said "Values below cite TR-1000 Owner's Manual" while every
-   * range cited the Reference Manual — a different book, and the only one that prints a range at
-   * all, which is why it was tracked down in #18. The guide was sending a reader to look
-   * something up where it cannot be found, about the one thing this app claims to be careful
-   * with.
-   */
-  it('names the document the ranges cite, not the one the manifest declares', () => {
+/**
+ * #89, and what is left of it now the guide cites nothing.
+ *
+ * The guide used to open each device's settings with *Values below cite …*, built from the
+ * citations rather than from `Device.manual` — a separate assertion nothing keeps in agreement
+ * with them. A TR-1000 guide said "Values below cite TR-1000 Owner's Manual" while every range
+ * cited the Reference Manual, a different book and the only one that prints a range at all,
+ * which is why it was tracked down in #18.
+ *
+ * The sentence is gone with the rest of the evidence, and the device page's own summary is the
+ * caller `rangeDocuments` still has. The property it was protecting is a fact about the
+ * **manifests** rather than about ink, so it is asserted here against `rangeDocuments` directly —
+ * which is what both that sentence and the device page were reading.
+ */
+describe('what a device\u2019s ranges actually cite (#89)', () => {
+  it('reports the document the ranges cite, not the one the manifest declares', () => {
     const tr1000 = DEVICES.find((d) => d.id === 'roland-tr-1000') as Device
-    const sentence = citationSentence(tr1000)
-    expect(sentence).toContain('Reference Manual')
-    expect(sentence).not.toContain('Owner')
+    const documents = rangeDocuments(tr1000).join(' | ')
+    expect(documents).toContain('Reference Manual')
+    expect(documents).not.toContain('Owner')
   })
 
-  it('names every document when a device cites more than one', () => {
+  it('reports every document when a device cites more than one', () => {
     const mc101 = DEVICES.find((d) => d.id === 'roland-mc-101') as Device
-    const sentence = citationSentence(mc101) ?? ''
-    for (const document of rangeDocuments(mc101)) expect(sentence).toContain(document)
     expect(rangeDocuments(mc101).length).toBeGreaterThan(1)
   })
 
   /**
-   * #173. The summary sentence and the per-parameter citation answer different questions, and
-   * grouping the first must not coarsen the second.
+   * #173. The summary and the per-parameter citation answer different questions, and grouping the
+   * first must not coarsen the second.
    *
    * "Which documents will I need open" has one right answer per corpus. "Where does *this* value
    * come from" has one right answer per file. The Deluge is the device that has both, so it is
    * the one that proves they stayed separate.
    */
-  it('groups a tagged corpus in the summary while each value keeps its own file', () => {
+  it('groups a tagged corpus once while each value keeps its own file', () => {
     const deluge = DEVICES.find((d) => d.id === 'synthstrom-deluge') as Device
     const corpus = 'Deluge community firmware release_1_2_1'
-    const sentence = citationSentence(deluge) ?? ''
+    const documents = rangeDocuments(deluge)
 
-    expect(sentence).toContain('Deluge Official Guidebook OS 4.1 (OLED)')
-    expect(sentence).toContain(corpus)
-    // Named once, not once per file. This is the whole defect: the sentence used to repeat the
+    expect(documents).toContain('Deluge Official Guidebook OS 4.1 (OLED)')
+    // Named once, not once per file. This is the whole defect: the list used to repeat the
     // corpus five times and reorder itself whenever a citation count shifted.
-    expect(sentence.split(corpus).length - 1).toBe(1)
-    expect(sentence).not.toContain('.md')
+    expect(documents.filter((d) => d === corpus)).toHaveLength(1)
 
     // And the file is still on the value. Four envelope stages, four different files, each cited
     // to the one that prints its range.
@@ -1621,48 +1608,12 @@ describe('the guide cites the document the values came from (#89)', () => {
     expect(new Set(sources).size).toBe(4)
   })
 
-  /** No device's summary may point at a file: that is the per-value line's job, not this one's. */
-  it('never puts a repository path in a citation summary', () => {
+  /** No summary may point at a file: that is the per-value citation's job, not this one's. */
+  it('never reports a repository path as a document', () => {
     for (const device of DEVICES) {
-      expect(citationSentence(device) ?? '', device.id).not.toContain('.md')
-    }
-  })
-
-  it('says nothing for a device whose ranges cite nothing', () => {
-    for (const device of DEVICES) {
-      if (rangeDocuments(device).length > 0) continue
-      expect(citationSentence(device), device.id).toBeUndefined()
-    }
-  })
-
-  /**
-   * Every device, so a manifest that declares one book and cites another is caught when it is
-   * authored rather than when somebody reads the guide.
-   */
-  it('never names a document no range cites', () => {
-    for (const device of DEVICES) {
-      const sentence = citationSentence(device)
-      if (sentence === undefined) continue
-      for (const document of rangeDocuments(device)) expect(sentence).toContain(document)
-      // Strike out every cited document and only the scaffolding may remain. A declared title
-      // leaking back in would survive this; a wording change would not break it.
-      //
-      // **Longest first**, because one cited title can contain another: a manifest may name a
-      // section of a book as its own document — `<book title> <section>` — beside the book, which
-      // is how an appendix on a different scale from the module pages gets attributed separately.
-      // Striking the shorter one first eats the prefix of the longer and leaves the section name
-      // looking like a title nothing cites. Order here is the test's own arithmetic and says
-      // nothing about the sentence, which names both documents correctly.
-      //
-      // **No shipped device is in that shape today**, so this ordering is a guard rather than a
-      // covered case. The Muse was the one, citing its manual and `<same title> Appendix A
-      // (MIDI CC)`, until #346 moved its last two Appendix A ranges onto divisions read off the
-      // instrument. Written for the shape rather than for that device, since the shape is what a
-      // future manifest can reach and the sort is what stops it failing here for the wrong reason.
-      let bare = sentence
-      const cited = [...rangeDocuments(device)].sort((a, b) => b.length - a.length)
-      for (const document of cited) bare = bare.split(document).join('')
-      expect(bare.replace(/Values below cite|and|[.,\s]/g, ''), device.id).toBe('')
+      for (const document of rangeDocuments(device)) {
+        expect(document, device.id).not.toContain('.md')
+      }
     }
   })
 })
@@ -1722,16 +1673,16 @@ describe('source audio (§3/#101)', () => {
     expect(line).not.toContain('·')
   })
 
-  it('marks the procedure, because that one is the manual’s', () => {
+  it('prints the procedure and not the page it was read off', () => {
     const cite: Cite = { kind: 'manual', source: 'Sampler Manual, p.104' }
     const doc = renderGuide(
       samplerRig({ need: NEED, prep: { text: 'Render the tracks to audio', verified: cite } }),
     )
     const lines = doc.split('\n')
     const at = lines.findIndex((l) => l.includes('Render the tracks to audio'))
-    expect(lines[at]).toContain('· manual')
-    expect(lines[at + 1]).toContain(SUBORDINATE.cite)
-    expect(lines[at + 1]).toContain('Sampler Manual, p.104')
+    // The instruction is a bullet of its own, and now that is all it is.
+    expect(lines[at]).toBe('- Render the tracks to audio')
+    expect(lines[at + 1] ?? '').not.toContain('Sampler Manual, p.104')
   })
 
   it('says nobody checked a procedure somebody worked out by ear', () => {
@@ -1837,14 +1788,10 @@ describe('the clock source is told how to emit (§7.4/#104)', () => {
     expect(body).toContain('`Config > MIDI > Clock Out`')
     expect(body).toContain('`MIDI Out jack`')
     expect(body).toContain('- On the Tracker Mini, set')
-    // Invariant 4: a rendered value carries its provenance, and this one is cited.
-    expect(body).toMatch(/Clock Out`[^\n]*`MIDI Out jack`[^\n]* · manual/)
-    // And the citation names the document and the page, in §8.1's own subordinate form. `·
-    // manual` says how it was checked and never says where: a reader holding a different book,
-    // or the same book at another revision, cannot act on a bare `manual`.
-    expect(body).toContain(
-      '  - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.54',
-    )
+    // The instruction and nothing after it. The page it was read off is in the manifest only.
+    expect(body).not.toContain('p.54')
+    expect(body).not.toMatch(/Clock Out`[^\n]*`MIDI Out jack`[^\n]* · /)
+    // The note stays: it is the device's own words about the setting, and a reader acts on it.
     expect(body).toContain('  - ↳ note: Off, USB, MIDI Out jack')
   })
 
@@ -1883,14 +1830,11 @@ describe('the clock source is told how to emit (§7.4/#104)', () => {
     // two lines that read as two different warnings about two different problems.
     expect(occurrences(body, 'Type B adapter')).toBe(1)
     expect(body).toContain('MIDI Out, MIDI In:')
-    // Invariant 4: rendered, so cited — and the page named, not just the kind.
-    expect(body).toMatch(/Type B[^\n]* · manual/)
-    expect(body).toContain(
-      '    - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.13',
-    )
-    // p.284 stays in the note text rather than being folded into the citation: `verified` is
-    // the page documenting *this jack* (§3.3), and the adapter's page documents the adapter.
-    expect(body).not.toContain('p.13, p.284 (')
+    // The jack's own note, unmarked and with no page under it. `p.13, p.284` above is inside the
+    // device's own note text, which is where it always was — the citation line beside it is gone
+    // with every other one.
+    expect(body).not.toMatch(/Type B[^\n]* · manual/)
+    expect(body).not.toContain('↳ cite:')
   })
 
   it('says nothing about a MIDI adapter on a rig that resolved onto USB (#103)', () => {

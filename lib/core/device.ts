@@ -1021,7 +1021,7 @@ export function isCite(evidence: CapabilityEvidence): evidence is Cite {
  * nothing, when there is nothing to say.
  *
  * The decision lives here and the *words* live in each renderer, which is the same arrangement
- * `hoistedParams` and `dominantRangeCite` already sit in (#33): one right answer to which of the
+ * `hoistedParams` and `citedSources` already sit in (#33): one right answer to which of the
  * four states a box is in, two hand-written vocabularies around it. Both renderers must reach the same
  * verdict, and a second copy of this reasoning would let one of them be quietly wrong about the
  * box in front of somebody.

@@ -7,8 +7,13 @@ import type {
   ResolvedPatchEntry,
   ResolvedSourceAudio,
 } from '@/lib/core'
-import { citationSentence } from '@/lib/core'
-import { contentNotice, controlPositionNotice, dominantRangeCite, hoistedParams } from '@/lib/core'
+import {
+  citationSentence,
+  contentNotice,
+  controlPositionNotice,
+  hoistedParams,
+  renderedParams,
+} from '@/lib/core'
 import type {
   CapabilityEvidence,
   ContentNotice,
@@ -16,8 +21,8 @@ import type {
   ParamScope,
   ScopedParams,
 } from '@/lib/core'
-import { citeLines, citeText, count, hintText, isStacked, num, voicesLabel } from './format'
-import { EvidenceMark, Instruction, ParamLine, ProvenanceMark, evidenceLines } from './instruction'
+import { count, hintText, isStacked, num, voicesLabel } from './format'
+import { Instruction, ParamLine } from './instruction'
 
 /**
  * §12.4, and an instruction rather than a note: the two realisations are two different things to
@@ -75,12 +80,8 @@ function Source({ source, owner }: { source: ResolvedSourceAudio; owner: Device 
       ) : (
         <>
           <p className="quiet">Source — {source.need}</p>
-          <Instruction
-            cites={citeLines(source.prep.provenance, undefined)}
-            {...(hint === undefined ? {} : { hint })}
-          >
+          <Instruction {...(hint === undefined ? {} : { hint })}>
             <span>{source.prep.text}</span>
-            <ProvenanceMark provenance={source.prep.provenance} />
           </Instruction>
         </>
       )}
@@ -93,16 +94,12 @@ function Patch({ entries }: { entries: readonly ResolvedPatchEntry[] }) {
     <ul className="patch">
       {entries.map((entry) => (
         <li key={`${entry.from}->${entry.to}`}>
-          <Instruction
-            cites={citeLines(entry.provenance, undefined)}
-            {...(entry.note === undefined ? {} : { note: entry.note })}
-          >
+          <Instruction {...(entry.note === undefined ? {} : { note: entry.note })}>
             <span className="mono">{entry.from}</span>
             <span className="arrow" aria-hidden="true">
               →
             </span>
             <span className="mono">{entry.to}</span>
-            <ProvenanceMark provenance={entry.provenance} />
           </Instruction>
         </li>
       ))}
@@ -111,9 +108,8 @@ function Patch({ entries }: { entries: readonly ResolvedPatchEntry[] }) {
 }
 
 /**
- * A recipe whose parameters all come off one manual page printed that page under every line.
- * The shared citation is stated once under the heading; a parameter citing a different page —
- * or one whose range is unverified, which is a different claim entirely — keeps its own.
+ * One recipe's parameters. The shared-range-citation sentence that used to open this block is
+ * gone with the citations it summarised — see `instruction.tsx` on the convention.
  */
 function Params({
   params,
@@ -122,26 +118,13 @@ function Params({
   params: readonly ResolvedParam[]
   owner: Device | undefined
 }) {
-  const hoisted = dominantRangeCite(params)
   return (
-    <>
-      {hoisted === undefined ? null : (
-        <p className="quiet">Ranges cite {citeText(hoisted)}.</p>
-      )}
-      <div className="params">
-        {params.map((param) => {
-          const hint = param.hint === undefined ? undefined : hintText(owner, param.hint)
-          return (
-            <ParamLine
-              key={param.name}
-              param={param}
-              {...(hint === undefined ? {} : { hint })}
-              {...(hoisted === undefined ? {} : { hoisted })}
-            />
-          )
-        })}
-      </div>
-    </>
+    <div className="params">
+      {params.map((param) => {
+        const hint = param.hint === undefined ? undefined : hintText(owner, param.hint)
+        return <ParamLine key={param.name} param={param} {...(hint === undefined ? {} : { hint })} />
+      })}
+    </div>
   )
 }
 
@@ -210,25 +193,17 @@ function unsettledText(evidence: CapabilityEvidence | undefined): string {
   )
 }
 
+/**
+ * The sentence carries the finding on its own, which is what lets the mark and the page go.
+ * `unsettledText` above still splits four ways: every unsettled state opens *Not established* and
+ * says which reading it is, so nothing here depends on a word at the end of the line.
+ */
 function ContentBlock({ notice }: { notice: ContentNotice }) {
   return (
     <div className="callout">
       <p>
-        <strong>Content</strong> — {contentText(notice)}{' '}
-        {notice.evidence === undefined ? null : <EvidenceMark evidence={notice.evidence} />}
+        <strong>Content</strong> — {contentText(notice)}
       </p>
-      {/*
-        Visible, not only in the mark's title attribute: a reader on a phone at the rack has no
-        hover, and a printed guide has no attributes at all. `claim`, not `value` — what a box
-        ships is a fact about the box and nobody dials it.
-      */}
-      {notice.evidence === undefined
-        ? null
-        : evidenceLines(notice.evidence, 'claim').map((cite) => (
-            <p className="subordinate cite" key={cite}>
-              {cite}
-            </p>
-          ))}
     </div>
   )
 }
@@ -245,14 +220,15 @@ function ContentBlock({ notice }: { notice: ContentNotice }) {
  *
  * **The sentence reports the reading, not a result about the document.** An `unknown` finding
  * holds that the manual was read and the page was not found; it does not hold that no such page
- * exists, and an earlier draft claimed that while opening with *Not established*. The state still
- * has to be in the sentence rather than only in the `undocumented` mark beside it, because a mark
- * is a word at the end of a line that a reader on a phone will miss. What the panel does print is
- * said first, because that is the part they can see in front of them.
+ * exists, and an earlier draft claimed that while opening with *Not established*. The state lives
+ * in the sentence and nowhere else now, which is what lets the `undocumented` mark beside it go
+ * without the line becoming a claim — and the mark was a word at the end of a line that a reader
+ * on a phone will miss anyway. What the panel does print is said first, because that is the part
+ * they can see in front of them.
  *
  * `mapped` is what stops this reading as a claim about every control on the box. On the Muse it
- * names the eight ENVELOPE faders, which do carry a printed scale (#325) — the one positive claim
- * here, and the only one with a page under it.
+ * names the eight ENVELOPE faders, which do carry a printed scale (#325). It stays in the
+ * sentence; the page it was read off is printed nowhere and lives in the manifest (§3.2).
  *
  * `test/control-positions.test.ts` asserts the sentence in both renderers and both layouts,
  * because two copies of one sentence is exactly the thing that drifts.
@@ -271,21 +247,8 @@ function ControlPositionBlock({ notice }: { notice: ControlPositionNotice }) {
   return (
     <div className="callout">
       <p>
-        <strong>Setting by hand</strong> — {controlPositionText(notice)}{' '}
-        <EvidenceMark evidence={notice.evidence} />
+        <strong>Setting by hand</strong> — {controlPositionText(notice)}
       </p>
-      {/* Visible rather than only in the mark's title: no hover on a phone at the rack, and no
-          attributes at all on a printed guide. `claim`, not `value` — nobody dials this. */}
-      {evidenceLines(notice.evidence, 'claim').map((cite) => (
-        <p className="subordinate cite" key={cite}>
-          {cite}
-        </p>
-      ))}
-      {/* The exception's page, under the reading that found nothing. Two claims, two kinds of
-          evidence; printing the page under the reading's word would merge them. */}
-      {notice.mapped === undefined ? null : (
-        <p className="subordinate cite">mapped {citeText(notice.mapped.cite)}</p>
-      )}
     </div>
   )
 }
@@ -350,11 +313,18 @@ function ScopedBlock({ group, owner }: { group: ScopedParams; owner: Device | un
  */
 export function SoundShared({
   device,
+  perPart,
   content,
   hoist,
   deviceById,
 }: {
   device: Device
+  /**
+   * Every part's params, in assignment order. `SoundShared` reduces them to what is actually
+   * rendered (`renderedParams`, with `hoist`) before the citation sentence counts them — a
+   * hoisted control is one line above the parts, not one per part.
+   */
+  perPart: readonly (readonly ResolvedParam[])[]
   content: ReturnType<typeof contentNotice>
   hoist: ReturnType<typeof hoistedParams>
   deviceById: Map<DeviceId, Device>
@@ -362,12 +332,12 @@ export function SoundShared({
   // §3.1/#324. Computed here rather than passed in, because unlike `content` it asks nothing
   // about which parts were assigned — only what this box's panel prints.
   const positions = controlPositionNotice(device)
+  // §3.2. The markdown renderer's own sentence, so the two cannot say different things — and
+  // over the same set, which is the half that would drift silently if each counted its own way.
+  const cites = citationSentence(renderedParams(hoist, perPart))
   return (
     <>
-      {/* The markdown renderer's own sentence, so the two cannot say different things. */}
-      {citationSentence(device) === undefined ? null : (
-        <p className="quiet">{citationSentence(device)}</p>
-      )}
+      {cites === undefined ? null : <p className="quiet">{cites}</p>}
 
       {/* §2.6/#111, before the settings: whether there is anything to load is the box's
           question, and a cutoff on a box with nothing loaded is a setting with no subject. */}
@@ -477,7 +447,13 @@ export function PhaseSound({
       {carrying.map(({ device, mine, hoist, content }) => (
         <section className="device" key={device.id}>
           <h4>{device.name}</h4>
-          <SoundShared device={device} content={content} hoist={hoist} deviceById={deviceById} />
+          <SoundShared
+            device={device}
+            perPart={mine.map((a) => a.params)}
+            content={content}
+            hoist={hoist}
+            deviceById={deviceById}
+          />
 
           {mine.map((a) => (
             <SoundForPart key={a.requestId} a={a} hoist={hoist} deviceById={deviceById} />

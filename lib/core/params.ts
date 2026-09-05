@@ -272,12 +272,18 @@ export const AuthoredParamSchema = z.discriminatedUnion('kind', [
 // ---------------------------------------------------------------------------
 
 /**
- * §3.2. Three-state, and always rendered. `provisional` dominates `derived`.
+ * §3.2. Three-state, on every resolved value. `provisional` dominates `derived`.
+ *
+ * **Carried; summarised rather than printed.** Invariant 4 is a guarantee about this type — the
+ * compiler refuses a value whose provenance nobody decided, and `npm run audit` counts each state.
+ * No surface prints one param's `Cite`: §8's guides render a sentence per device block naming the
+ * documents a whole block rests on (`citedSources`), and a device page renders the *counts*
+ * (`DESIGN.md` §3.2).
  *
  * A cited state carries the whole `Cite`, not a bare source string, so the resolver cannot stamp
  * a source without saying how it was checked — the same compiler-enforced discipline as
- * `provenance` itself being non-optional. §8 renders a manual citation and an observation
- * differently, and cannot do that from a string.
+ * `provenance` itself being non-optional. The audit and a device page both split manual from
+ * observed, and neither could do that from a string.
  */
 export type Provenance =
   | { state: 'authored'; cite: Cite }
@@ -344,6 +350,19 @@ export type ResolvedParam = {
   unit?: string
   /** Numerics only, with the range's inherited citation already resolved. */
   range?: ResolvedRange
+  /**
+   * §3.2. Enums only: the `options` claim, inherited from the recipe the same way a range's is.
+   *
+   * The *other half* of the legality gate. §3.2's table pairs `range` with `options` — both say
+   * what the box permits, both are cited independently of the value inside them — and this type
+   * carried only the numeric half until the guide's block sentence needed to name the documents a
+   * whole block rests on and found an enum's evidence had been dropped at resolve time.
+   *
+   * The option *values* are deliberately not carried. A range is rendered beside its value
+   * (`DECAY 38 (0-100)`, #29) and an option set is not, so what a consumer needs from an enum is
+   * the claim, not the list.
+   */
+  optionsVerified?: Verified
   provenance: Provenance
   hint?: string
   /**
@@ -363,6 +382,7 @@ export const ResolvedParamSchema = z.strictObject({
   value: z.union([z.number().finite(), z.string()]),
   unit: z.string().min(1).optional(),
   range: ResolvedRangeSchema.optional(),
+  optionsVerified: VerifiedSchema.optional(),
   provenance: ProvenanceSchema,
   hint: z.string().min(1).optional(),
   midiCc: MidiCcSchema.optional(),
@@ -371,48 +391,55 @@ export const ResolvedParamSchema = z.strictObject({
 })
 
 // ---------------------------------------------------------------------------
-// §3.2 — which citation a whole recipe shares
+// §3.2 — what a block of rendered values rests on
 // ---------------------------------------------------------------------------
 
-/** Two citations are the same claim only if the kind matches as well as the source. */
+/**
+ * Two citations are the same claim only if the kind matches as well as the source.
+ *
+ * The *claim* grain, which is the grain the audit, the manifest and `dominantRangeCite` reason at.
+ * The sentence a guide prints reasons one step coarser — `p.27` and `p.52` of one manual are two
+ * claims and one document — so this is not the key that groups it. Both grains are real and
+ * neither is the other rounded off.
+ */
 export function sameCite(a: Cite, b: Cite | undefined): boolean {
   return b !== undefined && a.kind === b.kind && a.source === b.source
 }
 
 /**
- * The range citation a set of parameters repeats, if there is exactly one.
+ * §3.2. **The legality citation a set of parameters rests on**, where one of them repeats.
  *
- * A recipe whose parameters all come off one manual page prints that page under every line —
- * five consecutive params, five identical citations. A renderer that knows this can state it
- * once and annotate the exceptions, which is the same principle the provenance mark and the
- * note convention already follow.
+ * Both gates, not just the numeric one. It was written when `range` was the only legality claim a
+ * `ResolvedParam` carried, and §3.2's table has always paired `range` with `options`: both say
+ * what the box permits, both are cited independently of the value inside them. A function about
+ * *the citation the bounds repeat* that read only ranges was silently right about half a library
+ * and wrong about the other half — a box whose enums all cite one page and whose numerics cite
+ * nothing had no dominant citation at all. The name is kept because the numeric case is still the
+ * common one and renaming it would cost more than it explains.
  *
- * It lives here, beside `Cite` and `ResolvedParam`, rather than in a renderer: it is a fact
- * about a set of parameters, it returns a `Cite` rather than a formatted string, and §8's two
- * renderers are **siblings**. A shared decision housed inside one of them would make the other
- * a dependent of it, and the next shared decision would land in whichever file happened to
- * need it first.
+ * Four rules, and each of them exists to keep the answer *true*:
  *
- * Four rules, and each of them exists to keep a hoisted line *true*:
- *
- *  - Only **range** citations are considered. A value citation is a claim about one number and
+ *  - Only **legality** citations are considered. A value citation is a claim about one number and
  *    does not generalise to the parameter beside it.
- *  - Only a **verified** range has a citation at all; an unverified one is the legality gate's
- *    separate claim (§3.2) and is never a candidate.
+ *  - Only a **verified** gate has a citation at all; an unverified one is §3.2's separate claim
+ *    and is never a candidate.
  *  - The citation must actually **repeat**. One occurrence is not a pattern.
  *  - A **tie** yields nothing. Two citations appearing twice each have no dominant one, and
- *    picking either would silently demote the other from a fact to an exception.
+ *    picking either would silently promote it over an equal.
  *
  * No ordering is involved, deliberately: the answer is a unique maximum or nothing at all, so
  * there is no tie to break and therefore no comparator to get wrong across platforms (§7.2).
+ *
+ * `citedSources` uses it to decide which **document** leads the sentence, which is the one place
+ * a reader sees the answer. That is a coarser question than the one asked here — a document, not
+ * a page — and the two can disagree: a manual cited once per numeric range but forty times for
+ * point values leads on count and not on dominance. Dominance wins, because the sentence is
+ * telling a reader which book their *bounds* came out of.
  */
 export function dominantRangeCite(params: readonly ResolvedParam[]): Cite | undefined {
   const counts = new Map<string, { cite: Cite; n: number }>()
-  for (const param of params) {
-    const { range } = param
-    if (range === undefined || range.verified === false) continue
-    const cite = range.verified
-    const key = `${cite.kind}\u0000${cite.source}`
+  for (const cite of params.flatMap(legalityCites)) {
+    const key = `${cite.kind} ${cite.source}`
     const seen = counts.get(key)
     if (seen === undefined) counts.set(key, { cite, n: 1 })
     else seen.n += 1
@@ -435,6 +462,250 @@ export function dominantRangeCite(params: readonly ResolvedParam[]): Cite | unde
   return bestCount < 2 || tied ? undefined : best
 }
 
+/** A param's legality citations: its range's, its option set's, or neither. Never its point's. */
+function legalityCites(param: ResolvedParam): Cite[] {
+  const out: Cite[] = []
+  const range = param.range?.verified
+  if (range !== undefined && range !== false) out.push(range)
+  if (param.optionsVerified !== undefined && param.optionsVerified !== false) {
+    out.push(param.optionsVerified)
+  }
+  return out
+}
+
+/**
+ * §8/#107. **The settings a device block actually renders, each of them once.**
+ *
+ * Not `assignments.flatMap(a => a.params)`, which is the set before #107 hoists. A control one
+ * setting of which serves every part — the Muse's `MULTI MODE`, a Tracker Mini's `SWING` — sits
+ * in every part's params and is *rendered* once, above them; counting it per part inflates both
+ * the citation counts and the total they are a share of. On the Muse under Industrial Techno that
+ * is 155 params standing in for 141 rendered lines, and the fourteen it double-counts are the
+ * MIDI and delay settings, so the miscount is not spread evenly either.
+ *
+ * The order is the rendering order: the hoisted groups, then each part's own settings. Nothing
+ * downstream depends on it, and matching what a reader sees is what makes this checkable by
+ * reading the page.
+ */
+export function renderedParams(
+  hoist: HoistedParams,
+  perPart: readonly (readonly ResolvedParam[])[],
+): readonly ResolvedParam[] {
+  return [
+    ...hoist.groups.flatMap((group) => group.params),
+    ...perPart.flatMap((params) => params.filter((p) => !hoist.names.has(p.name))),
+  ]
+}
+
+/**
+ * One source a block of rendered values rests on: a document with the pages it was read from, or
+ * an observation of the instrument.
+ *
+ * `pages` is what the *block* touched, not what the document contains, and the renderer prints it
+ * as a span rather than as a list — see `citationSentence`.
+ */
+export type CitedSource = {
+  kind: CiteKind
+  /** The document, or the observation, without the locator that points inside it. */
+  name: string
+  /** The pages this block read, ascending and deduplicated. Empty for an unpaginated source. */
+  pages: readonly number[]
+  /** How many rendered claims — points and legality gates together — rest on it. */
+  count: number
+  /**
+   * How many of those are **legality** claims: a cited range or a cited option set (§3.2).
+   *
+   * The count the ordering keys on, and a different question from `count`. A document cited forty
+   * times for point values and never for a bound is not where this box's ranges came from, and a
+   * reader asking which book to open is asking about the bounds in front of them.
+   */
+  legality: number
+}
+
+/**
+ * A page reference anywhere in a citation: `p.34`, `pp.26, 117-118`, `pp.77-83`.
+ *
+ * Unanchored, because the library does not keep the pages at the end. The OP-XY writes
+ * `OP-XY full guide v1.1.15, §18 pp.77-83, one sampler per section` — section, then pages, then a
+ * note about how the section is laid out — and a pattern that only matched a trailing locator
+ * found no pages there at all.
+ *
+ * `\bpp?\.` cannot fire inside a version (`v1.20`) or a path (`/ep-133/functions 10.1`): both put
+ * a digit or a letter where this needs a `p` on a word boundary followed by a dot.
+ */
+const PAGE_REFERENCE = /\bpp?\.\s*(\d+(?:\s*-\s*\d+)?(?:\s*,\s*\d+(?:\s*-\s*\d+)?)*)/g
+
+/**
+ * The same reference where it ends a string, which is the shape a *title* has to be trimmed of.
+ *
+ * **Two separators, because the library writes both.** Most folders put a comma before the page
+ * and the MicroFreak does not (`MicroFreak User Manual 4.0.3 p.113`), which `citedDocument` —
+ * matching `", p."` alone — reads as part of the title. Grouping on that would give one MicroFreak
+ * document per page cited. The optional trailing parenthetical is the section name a Roland
+ * citation sometimes carries; it locates something inside one page, so it goes with the page.
+ */
+const TRAILING_PAGE =
+  /(?:,\s*|\s+)pp?\.\s*\d+(?:\s*-\s*\d+)?(?:\s*,\s*\d+(?:\s*-\s*\d+)?)*\s*(?:\([^()]*\))?$/
+
+/**
+ * A citation split into the document it names and the pages it points at.
+ *
+ * **The document is the first comma-separated segment, and everything after it is a locator.**
+ * That is a claim about this library and it is checked: `test/citation-sentence.test.ts` asserts
+ * that no document name the catalogue produces contains a comma, a `§` or a page marker, and no
+ * title in `lib/devices/` contains a comma to be cut in half by this.
+ *
+ * **It is the #173 defect again, found the same way.** #173 was five files under one tagged corpus
+ * reading as five documents because the repository-path locator was not recognised. There are five
+ * locator shapes in the library now — a page, a page with no comma before it, a page with a
+ * section name after it, a repository path, and the OP-XY's `§18 pp.77-83, one sampler per
+ * section` — and enumerating them one at a time is how the last one reached a rendered page
+ * carrying a `§` and a clause of prose. Taking the head is not a sixth rule; it is the rule the
+ * five are instances of.
+ *
+ * **Pages come from the whole string**, not from the discarded tail alone, so a section reference
+ * with the pages inside it still contributes them.
+ *
+ * `observed` is exempt from the comma rule. An observation's identifying detail is *after* its
+ * comma — `Muse, firmware 1.4.0` — so taking the head would leave `Muse`, and the sentence's whole
+ * job for a reading is to say which firmware it was taken on.
+ */
+function splitLocator(source: string, kind: CiteKind): { name: string; pages: number[] } {
+  const pages: number[] = []
+  for (const match of source.matchAll(PAGE_REFERENCE)) {
+    for (const digits of match[1]?.match(/\d+/g) ?? []) pages.push(Number(digits))
+  }
+
+  if (kind === 'observed') return { name: source, pages }
+
+  const comma = source.indexOf(',')
+  const head = comma === -1 ? source : source.slice(0, comma)
+  return { name: citedDocument(head.replace(TRAILING_PAGE, '')), pages }
+}
+
+/**
+ * Every document and observation the given values rest on, in the order a reader should be given
+ * them.
+ *
+ * **Pass `renderedParams`, not every param on every assignment.** This counts what it is given,
+ * and what it is given decides both the page spans and the share the verb is chosen from.
+ *
+ * **Every claim counts, because §3.1 makes them independent.** A point citation and a legality
+ * citation are different assertions about the same line, and either one is a reason the reader
+ * would open the document. What they are *not* is interchangeable, which is why `citedShare`
+ * counts them apart and the sentence picks its verb from that.
+ *
+ * Three ordering rules, and the first is the one that matters:
+ *
+ *  - **Documents before observations.** The sentence answers *which book do I open*, and an
+ *    observation is not a book: nobody can go and check somebody else's unit. Ordering by count
+ *    alone put *the instrument at firmware 1.4.0* ahead of the Muse's manual, which is the
+ *    arithmetic answer to a question nobody asked.
+ *  - **Among documents, the one `dominantRangeCite` names leads.** That is the *page* grain: one
+ *    exact citation repeated across a block, which is the Model D's sixteen ranges on p.34. Where
+ *    a box cites fifteen pages of one manual there is no such claim, and this rule stays silent.
+ *  - **Then by legality count, then by total count, then the name by code unit** (§7.2). Legality
+ *    first because that is the document grain of the same question: which book the *bounds* came
+ *    out of. A manual cited forty times for point values and never for a bound is not the answer,
+ *    and ordering on the total would make it one. The chain is total, so no tie is left for a
+ *    comparator to get wrong across platforms (invariant 6).
+ *
+ * It lives here, beside `Cite` and `ResolvedParam`, rather than in a renderer: it is a fact about
+ * a set of parameters, it returns data rather than a formatted string, and §8's two renderers are
+ * **siblings**. A shared decision housed inside one of them would make the other a dependent of
+ * it, and the next shared decision would land in whichever file happened to need it first.
+ */
+export function citedSources(params: readonly ResolvedParam[]): readonly CitedSource[] {
+  type Entry = {
+    kind: CiteKind
+    name: string
+    pages: Set<number>
+    count: number
+    legality: number
+  }
+  const found = new Map<string, Entry>()
+  const add = (cite: Cite, gate: boolean) => {
+    const { name, pages } = splitLocator(cite.source, cite.kind)
+    const key = `${cite.kind} ${name}`
+    let entry = found.get(key)
+    if (entry === undefined) {
+      entry = { kind: cite.kind, name, pages: new Set<number>(), count: 0, legality: 0 }
+      found.set(key, entry)
+    }
+    entry.count += 1
+    if (gate) entry.legality += 1
+    for (const page of pages) entry.pages.add(page)
+  }
+
+  for (const param of params) {
+    if (param.provenance.state !== 'provisional') add(param.provenance.cite, false)
+    for (const cite of legalityCites(param)) add(cite, true)
+  }
+
+  // The document the bounds keep pointing at, reduced to the document — the grain this list is in.
+  const dominant = dominantRangeCite(params)
+  const leads =
+    dominant === undefined || dominant.kind === 'observed'
+      ? undefined
+      : `${dominant.kind} ${splitLocator(dominant.source, dominant.kind).name}`
+
+  return [...found.values()]
+    .sort((a, b) => {
+      const aObserved = a.kind === 'observed' ? 1 : 0
+      const bObserved = b.kind === 'observed' ? 1 : 0
+      if (aObserved !== bObserved) return aObserved - bObserved
+      const aLeads = `${a.kind} ${a.name}` === leads ? 0 : 1
+      const bLeads = `${b.kind} ${b.name}` === leads ? 0 : 1
+      if (aLeads !== bLeads) return aLeads - bLeads
+      return (
+        b.legality - a.legality ||
+        b.count - a.count ||
+        (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
+      )
+    })
+    .map(({ kind, name, pages, count, legality }) => ({
+      kind,
+      name,
+      pages: [...pages].sort((x, y) => x - y),
+      count,
+      legality,
+    }))
+}
+
+/** How much of a block is cited, split by which of §3.2's claims carries the citation. */
+export type CitedShare = {
+  /** Every value rendered in the block. */
+  total: number
+  /** Those whose *point* is cited: `authored` or `derived`, never `provisional`. */
+  points: number
+  /** Numerics whose *range* is cited, which says the bounds were checked and not the number. */
+  ranges: number
+  /** Enums whose *option set* is cited, which is the same claim in the other half of the table. */
+  options: number
+}
+
+/**
+ * The counts a citation sentence has to have before it can pick a verb.
+ *
+ * A box whose legality gates are all cited and whose points are all taste is the common case in
+ * this library, and *"values come from the manual"* is false of it: the manual gave the bounds,
+ * and the number inside them is a starting point (§3.2). These counts are what stop the sentence
+ * saying otherwise, and `ranges` and `options` stay apart because the sentence has to name what it
+ * is talking about — a box whose only cited gate is an option set has no cited range to claim.
+ */
+export function citedShare(params: readonly ResolvedParam[]): CitedShare {
+  let points = 0
+  let ranges = 0
+  let options = 0
+  for (const param of params) {
+    if (param.provenance.state !== 'provisional') points += 1
+    const range = param.range?.verified
+    if (range !== undefined && range !== false) ranges += 1
+    if (param.optionsVerified !== undefined && param.optionsVerified !== false) options += 1
+  }
+  return { total: params.length, points, ranges, options }
+}
+
 // ---------------------------------------------------------------------------
 // §8/#107 — the settings that belong to the device, not to a part
 // ---------------------------------------------------------------------------
@@ -446,7 +717,7 @@ function byCodeUnit(a: string, b: string): number {
 
 function sameCiteOrFalse(a: Verified, b: Verified): boolean {
   if (a === false || b === false) return a === b
-  return a.kind === b.kind && a.source === b.source
+  return sameCite(a, b)
 }
 
 function sameProvenance(a: Provenance, b: Provenance): boolean {
@@ -583,18 +854,19 @@ export function effectiveVerified(
  * *corpus* name, not of the path. Both answer "where inside the document", and neither is a
  * different document, so both are stripped.
  *
- * **The path shape was missed and it showed (#173).** Only this function groups; the guide's
- * summary sentence and the catalogue's are built from what it returns. So five files under one
- * tagged corpus read as five documents, and the Deluge's summary became "Values below cite
- * <guidebook>, <corpus>, menus/envelope/attack.md, <corpus>, menus/envelope/decay.md, …" — a
- * comma-separated list whose items contain commas, repeating the corpus name five times, and
- * reordering itself whenever a citation count shifted. §8 is a page read at the machine; that is
- * not a page anyone can skim.
+ * **The path shape was missed and it showed (#173).** Only this function groups, and every
+ * summary sentence is built from what it returns — a guide's `citationSentence` and the device
+ * page's `provenanceSentence` alike. So five files under one tagged corpus read as five documents,
+ * and the Deluge's guide summary became "Values below cite <guidebook>, <corpus>,
+ * menus/envelope/attack.md, <corpus>, menus/envelope/decay.md, …" — a comma-separated list whose
+ * items contain commas, repeating the corpus name five times, and reordering itself whenever a
+ * citation count shifted. §8 is a page read at the machine; that is not a page anyone can skim.
  *
- * **Grouping here costs no provenance.** A parameter's own `↳ cite:` line renders `Cite.source`
- * whole and is untouched, so the exact file is still printed beside the value that rests on it.
- * This function answers a strictly coarser question — which documents am I going to need open —
- * and that question has one right answer per corpus.
+ * **Grouping here loses nothing, because the coarse answer is the only one anybody renders.**
+ * This function answers *which documents am I going to need open*, which has one right answer per
+ * corpus. The exact file stays on `Cite.source` in the manifest — see `DESIGN.md` §3.2, which
+ * records the missing per-value answer as an accepted cost with the repair owed to the device
+ * page.
  *
  * The path pattern is deliberately narrow: a trailing `", "` then one comma-free, space-free path
  * ending in `.md`. A document *title* ending in ".md" would contain spaces and is left alone, and

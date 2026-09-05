@@ -149,10 +149,11 @@ describe('mood is optional, and neutral when it is not asked for (§6)', () => {
 
   it('actually moves values, or the flag is doing nothing', () => {
     // A guard against the flag being parsed and then dropped: §6.1's offset has to reach §8, and
-    // `derived by`/`52 → 45` is the only way it shows up in the rendered page.
+    // `52 → 45` is the only way it shows up in the rendered page now that the axis that moved it
+    // is not named beside the value.
     const moved = runGuide([...neutral, '--mood', 'darkness=10,grit=90'])
     expect(moved.stdout).not.toBe(expected(18))
-    expect(moved.stdout).toContain('moved by')
+    expect(moved.stdout).toMatch(/`-?\d+ → -?\d+`/)
   })
 
   it('does not let mood move which guide it is (§7.2, lib/studio/session.ts)', () => {

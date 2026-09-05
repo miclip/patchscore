@@ -1,9 +1,8 @@
 # Industrial Techno
 
-Values are starting points — dial them to taste. Where a number came straight off the manual
-or off a unit it says which, and where a mood knob moved it you see the move (`52 → 45`) and
-the knob that did it. Every value carries its range — `38 (0…100)` — so you can tell at a
-glance whether the screen in front of you is the one the line is about.
+Values are starting points — dial them to taste. Where a mood knob moved one you see the move
+(`52 → 45`). Every value carries its range — `38 (0…100)` — so you can tell at a glance whether
+the screen in front of you is the one the line is about.
 
 ## 1. Song
 
@@ -73,17 +72,14 @@ None.
 
 **Clock source** — Tracker Mini over `midi-din`, carrying 9 parts. Sync everything else to it.
 
-- Why this box — its manual says leading a rig is its job · manual
-  - ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.283
+- Why this box — its manual says leading a rig is its job
 
-- On the Tracker Mini, set `Config > MIDI > Clock Out` to `MIDI Out jack` · manual
+- On the Tracker Mini, set `Config > MIDI > Clock Out` to `MIDI Out jack`
   - ↳ note: Off, USB, MIDI Out jack, USB + MIDI Out jack — clock leaves only by the routing set here
-  - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.54
 
 - **Tracker Mini** — groovebox · 9 parts
   - clock: sends clock · midi-din/usb
-  - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284) · manual
-    - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.13
+  - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284)
   - audio: stereo main out · USB audio · audio in
   - mixer: 9 parts, no individual outs: one stereo channel for all
 - **TR-1000** — drum-machine · 7 parts
@@ -108,8 +104,7 @@ Where a role has more than one hook authored, rerolling the seed picks a differe
 
 2 bars in F minor.
 
-A step is a trigger, not a note with a length: the instrument's own envelope ends it, and `DECAY` is what sets that. · manual
-- ↳ cite: claim manual — TR-1000 Reference Manual (eng02) v1.13+, p.59
+A step is a trigger, not a note with a length: the instrument's own envelope ends it, and `DECAY` is what sets that.
 
 - bar 1 · step 1 · `F2` · root · MIDI 41
 - bar 1 · step 7 · `F2` · root · MIDI 41
@@ -125,8 +120,7 @@ A step is a trigger, not a note with a length: the instrument's own envelope end
 
 8 bars in F minor.
 
-No note-length field on this box — a note runs until the next note on the same voice, and `OFF` is how you stop one sooner. The rows below are what you enter, in the order you enter them. · manual
-- ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.105
+No note-length field on this box — a note runs until the next note on the same voice, and `OFF` is how you stop one sooner. The rows below are what you enter, in the order you enter them.
 
 Stacked chord — 3 voices, one note each. There is no chord to play on any one of them.
 
@@ -156,8 +150,7 @@ Lowest note to the lowest voice: **Synth Track 1** takes the bottom of every cho
 
 4 bars in F minor.
 
-No note-length field on this box — a note runs until the next note on the same voice, and `OFF` is how you stop one sooner. The rows below are what you enter, in the order you enter them. · manual
-- ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.105
+No note-length field on this box — a note runs until the next note on the same voice, and `OFF` is how you stop one sooner. The rows below are what you enter, in the order you enter them.
 
 Stacked chord — 3 voices, one note each. There is no chord to play on any one of them.
 
@@ -202,8 +195,7 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 
 **Tight one-shot kick, tuned down, no tail** — settings in Sound design
 
-**Trigger note** — `C5` · MIDI 60 · manual
-- ↳ cite: manual — Polyend Tracker Mini Manual 2.2.1b, p.90 (C5 plays a sample at its original pitch); p.54, p.298, p.288 (Middle C setting, shipped as C-5, so that C5 is MIDI 60)
+**Trigger note** — `C5` · MIDI 60
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -407,8 +399,7 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 
 **Half-open hat, gated short** — settings in Sound design
 
-**Trigger note** — `C5` · MIDI 60 · manual
-- ↳ cite: manual — Polyend Tracker Mini Manual 2.2.1b, p.90 (C5 plays a sample at its original pitch); p.54, p.298, p.288 (Middle C setting, shipped as C-5, so that C5 is MIDI 60)
+**Trigger note** — `C5` · MIDI 60
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -480,8 +471,7 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 
 **Sample played backwards, the envelope swelling it into the change** — settings in Sound design
 
-**Trigger note** — `C5` · MIDI 60 · manual
-- ↳ cite: manual — Polyend Tracker Mini Manual 2.2.1b, p.90 (C5 plays a sample at its original pitch); p.54, p.298, p.288 (Middle C setting, shipped as C-5, so that C5 is MIDI 60)
+**Trigger note** — `C5` · MIDI 60
 
 **Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 1)
 
@@ -524,19 +514,17 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 
 ### Tracker Mini
 
-*Values below cite Polyend Tracker Mini Manual 2.2.1b.*
+*This block draws on the Polyend Tracker Mini Manual 2.2.1b, pp.116-185; its values are starting points.*
 
 **Content**
 
-- Ships 50 factory genre-based sample packs — look in /Samples/FactoryPacks on the microSD card. p.34 names the folder and the count, and no page lists what is in a pack, so the Source line below says what the part needs rather than naming a file. · manual
-  - ↳ cite: claim manual — Polyend Tracker Mini Manual 2.2.1b, p.34
+- Ships 50 factory genre-based sample packs — look in /Samples/FactoryPacks on the microSD card. p.34 names the folder and the count, and no page lists what is in a pack, so the Source line below says what the part needs rather than naming a file.
 
 **Pattern-wide**
 
 One setting for the whole pattern — set it once, not once per part below.
 
 - **SWING** `50` % (25…75 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.185
   - ↳ note: 50% is no swing; set once, it applies across the whole pattern
   - ↳ hint: Hold [FX1], press (Up)/(Down)
 
@@ -547,13 +535,9 @@ Source — A dry kick one-shot under 400 ms, attack intact and no room printed o
 - **PLAY MODE** `1-Shot`
 - **FILTER TYPE** `Low-pass`
 - **TUNE** `-3` st (-24…24 st)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.116
 - **CUTOFF** `74` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
 - **OVERDRIVE** `18` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
 - **ENVELOPE · DECAY** `0.28` Sec (0…10 Sec)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.126
 
 #### Track 2 — `open-hat`: Half-open hat, gated short
 
@@ -562,11 +546,8 @@ Source — An open hat one-shot with a real tail — the release gates it short,
 - **PLAY MODE** `1-Shot`
 - **FILTER TYPE** `Low-pass`
 - **CUTOFF** `58` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
 - **ENVELOPE · RELEASE** `0.24` Sec (0…10 Sec)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.126
 - **BIT DEPTH** `12` Bits (4…16 Bits)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
 
 #### Track 3, Track 4 and Track 5 — `stab`: Single-note sample struck short, one note per track
 
@@ -574,35 +555,26 @@ Polyphony — 3 notes, one on each of 3 voices. **Every voice takes these same s
 
 Source — A single-note tonal sample — one pitch, with a front edge. Yours, or one note rendered here; it does not need to be a chord and should not be one
 
-- One sample covers the whole chord: manual p.128, the step note sets the playback pitch, so the same instrument placed on three tracks at three notes sounds three notes. Load it on each track of the stack and put the notes the Hook phase lists against each one. Nothing has to be re-recorded when the chord changes quality, which is the difference between this and a rendered chord. · manual
-  - ↳ cite: value manual — Polyend Tracker Mini Manual 2.2.1b, p.128
+- One sample covers the whole chord: manual p.128, the step note sets the playback pitch, so the same instrument placed on three tracks at three notes sounds three notes. Load it on each track of the stack and put the notes the Hook phase lists against each one. Nothing has to be re-recorded when the chord changes quality, which is the difference between this and a rendered chord.
 
 Routing — Tracks 1-8 — costs no synth slot, and one loaded sample serves every track of the stack
-
-*Ranges cite manual — Polyend Tracker Mini Manual 2.2.1b, p.126.*
 
 - **PLAY MODE** `1-Shot`
 - **FILTER TYPE** `Low-pass`
 - **CUTOFF** `66` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
 - **RESONANCE** `30` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
 - **TUNE** `0` st (-24…24 st)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.116
 - **ENVELOPE · ATTACK** `0` Sec (0…10 Sec)
 - **ENVELOPE · DECAY** `0.3` Sec (0…10 Sec)
 - **ENVELOPE · SUSTAIN** `0` % (0…100 %)
 - **ENVELOPE · RELEASE** `0.2` Sec (0…10 Sec)
 - **OVERDRIVE** `16` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
 
 #### Synth Track 1, Synth Track 2 and Synth Track 3 — `pad`: Slow detuned pad, long swell
 
 Polyphony — 3 notes, one on each of 3 voices. **Every voice takes these same settings**: it is one sound played 3 times over, not 3 sounds, and a difference between them is a difference you will hear inside the chord. Which voice takes which note is in Hook.
 
 Routing — Synth Track n is panel track n+8 — costs one of the three project synth slots
-
-*Ranges cite manual — Polyend Tracker Mini Manual 2.2.1b, p.158.*
 
 - **MODEL** `VAP`
 - **FILTER TYPE** `Low Pass SVF 12dB`
@@ -612,11 +584,8 @@ Routing — Synth Track n is panel track n+8 — costs one of the three project 
 - **DETUNE** `14` c (0…100 c)
 - **FILTER CUTOFF** `2400` Hz (20…20000 Hz)
 - **AMP ENV ATTACK** `1.2` Sec (0…10 Sec)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.159
 - **AMP ENV RELEASE** `2.4` Sec (0…10 Sec)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.159
 - **VOICE VOLUME** `86` % (0…200 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.161
 
 #### Track 6 — `riser`: Sample played backwards, the envelope swelling it into the change
 
@@ -624,40 +593,32 @@ Source — A sample with a long decaying tail — reversed, that tail is the ris
 
 Routing — **Set `r` to `<<<` on the step that starts the rise** — the Reverse Sample step FX, p.196. The envelope below does the swell; the reverse is what makes a decay into a build. p.196 also warns that a long tail can reverse into silence, so shorten the sample end if nothing sounds
 
-*Ranges cite manual — Polyend Tracker Mini Manual 2.2.1b, p.126.*
-
 - **PLAY MODE** `1-Shot`
 - **FILTER TYPE** `Low-pass`
 - **CUTOFF** `78` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
 - **RESONANCE** `26` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.117
 - **ENVELOPE · ATTACK** `3.4` Sec (0…10 Sec)
   - ↳ note: The climb. Longer than the section start-to-change if you want it still rising
 - **ENVELOPE · SUSTAIN** `100` % (0…100 %)
 - **ENVELOPE · RELEASE** `0.4` Sec (0…10 Sec)
   - ↳ note: Short, so the rise stops at the change rather than hanging over it
 - **REVERB SEND** `54` % (0…100 %)
-  - ↳ cite: range manual — Polyend Tracker Mini Manual 2.2.1b, p.120
 
 ### TR-1000
 
-*Values below cite TR-1000 Reference Manual (eng02) v1.13+.*
+*This block draws on the TR-1000 Reference Manual (eng02) v1.13+, pp.26-71, the TR-1000 Preset GEN/INST List (eng02) v1.20, p.1, and the instrument at firmware 1.2.1; its values are starting points.*
 
 **Pattern-wide**
 
 One setting for the whole pattern — set it once, not once per part below.
 
 - **SHUFFLE** `0` (-100…100)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.26
   - ↳ note: Pattern-wide: one setting for every track, saved with the pattern
   - ↳ hint: Hold [SHIFT], press [PTN SELECT]
 
 #### BD — `sub`: Kick tuned down into a sustained sub
 
 Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
-
-*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.61.*
 
 - **GEN** `9X Bass Drum`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
@@ -669,15 +630,11 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
   - ↳ hint: Near-flat pitch envelope
 - **DRIVE** `18` % (0…100 %)
 - **RVB SEND** `0` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
 - **DLY SEND** `0` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
 #### LT — `bass-mid`: FM bass with the modulator up
-
-*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.63.*
 
 - **GEN** `FM Tom Model`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
@@ -698,15 +655,11 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **P. AMOUNT** `0` % (0…100 %)
   - ↳ hint: Flat: no pitch envelope on a bass note
 - **RVB SEND** `0` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
 - **DLY SEND** `0` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
 #### HC — `clap`: Wide clap sitting on top of the snare
-
-*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
 
 - **GEN** `9X Hand Clap`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
@@ -722,24 +675,16 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **MOD NOTE** `1/1`
   - ↳ note: Tempo-synced rate; if the screen offers a SYNC selector, point it at NOTE
 - **MOD DEST** `1` (1…3)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ note: Which of the three assignment slots this uses
-- **MOD CATEGORY** `FLT` · observed
-  - ↳ cite: value observed — TR-1000 unit, firmware 1.2.1, MOD TARGET screen
-- **MOD TARGET** `CUTOFF` · observed
-  - ↳ cite: value observed — TR-1000 unit, firmware 1.2.1, MOD TARGET screen
+- **MOD CATEGORY** `FLT`
+- **MOD TARGET** `CUTOFF`
 - **MOD AMOUNT** `22` % (-100…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
 - **RVB SEND** `30` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
 - **DLY SEND** `14` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
 #### CH — `closed-hat`: Grainy CR-78 hat with a metallic edge
-
-*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
 
 - **GEN** `CR78 HiHat`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
@@ -748,15 +693,11 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **METALLIC** `72` % (0…100 %)
   - ↳ hint: Metal-like overtone level
 - **RVB SEND** `10` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
 - **DLY SEND** `8` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
 #### RC — `metallic`: CR-78 metal ringing across the bar line
-
-*Ranges cite manual — TR-1000 Reference Manual (eng02) v1.13+, p.62.*
 
 - **GEN** `CR78 Cymbal`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
@@ -765,10 +706,8 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **METALLIC** `88` % (0…100 %)
   - ↳ hint: Metal-like overtone level
 - **RVB SEND** `20` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
 - **DLY SEND** `14` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
 #### CC — `impact`: Crash marking the top of a section
@@ -776,14 +715,10 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **GEN** `9X Crash Cymbal`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
 - **TUNE** `0` % (-100…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 - **DECAY** `84` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 - **RVB SEND** `42` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
 - **DLY SEND** `18` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
 #### OH — `noise`: White noise burst on the open-hat track, up where the hats sit
@@ -791,18 +726,13 @@ Routing — INDIVIDUAL OUT BD so the sub stays out of the bus effects
 - **GEN** `VA Noise`
   - ↳ hint: Hold [SHIFT]+[GEN], select with [C6]
 - **TONE** `40` % (-100…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.63
   - ↳ hint: Noise frequency
 - **COLOR** `18` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.63
   - ↳ hint: White at one end, pink at the other
 - **DECAY** `30` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.62
 - **RVB SEND** `20` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn REVERB [LEVEL]
 - **DLY SEND** `0` % (0…100 %)
-  - ↳ cite: range manual — TR-1000 Reference Manual (eng02) v1.13+, p.71
   - ↳ hint: Hold [BD]-[RC], turn DELAY [LEVEL]
 
 ## 7. Finishing

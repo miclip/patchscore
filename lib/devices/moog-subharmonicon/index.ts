@@ -413,7 +413,7 @@ function num(
 /**
  * A knob position on a control with **no printed scale**, as percent of travel.
  *
- * Both claims are unverified and both render as such: the point is uncited so the guide marks it
+ * Both claims are unverified and both are recorded as such: the point is uncited so it resolves
  * provisional (§3.2), and `range.verified` is explicitly `false` so mood is not allowed to move
  * it. Only three controls on this panel are in this state — the six mixer levels, `RESONANCE`
  * and `VOLUME` — which is unusually few, because this manual prints ranges for almost everything

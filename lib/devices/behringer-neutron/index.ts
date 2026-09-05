@@ -471,7 +471,7 @@ function num(
  * A knob position on a control whose printed range has a **word at one end**, as percent of
  * travel — the Minitaur's answer to `0 to Self-Oscillation`, and there are four of them here.
  *
- * Both claims are unverified and both render that way: the point is uncited so the guide marks it
+ * Both claims are unverified and both are recorded as such: the point is uncited so it resolves
  * provisional, and `range.verified` is `false` so mood may not move a figure nobody checked.
  * `% travel` is a fact about a knob anyone can see; it is not a claim that the box displays
  * 0-100.

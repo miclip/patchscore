@@ -46,8 +46,14 @@ update `DESIGN.md` in the same commit.
 3. **`Role`, `Character`, `MoodAxis` and `PatternSlot` are the entire shared vocabulary.**
    Templates never name a device; devices never name a genre. Adding a fifth shared vocabulary is
    an architecture change, not a convenience.
-4. Every rendered value carries provenance — `authored`, `derived`, or `provisional`. Enforced by
-   the type system: `ResolvedParam.provenance` is non-optional.
+4. Every *resolved* value carries provenance — `authored`, `derived`, or `provisional`. Enforced
+   by the type system: `ResolvedParam.provenance` is non-optional. **It is mostly a model
+   guarantee rather than ink**: no surface renders a per-value citation, and a guide renders no
+   provenance mark. What a guide does render is **one sentence per device block**, naming the
+   documents that box's *rendered* settings rest on and the span of pages they came off
+   (`citationSentence` over `renderedParams`, both legality gates) — once per box, never on a
+   line. A device page carries counts, the documents its ranges cite, and
+   four device-level citations. `npm run audit` is what keeps it honest. See `DESIGN.md` §3.2.
 5. Gaps are shown honestly. Never invent an assignment to fill a hole.
 6. Same inputs + same seed + same resolver version → byte-identical guide, **on any platform**.
 7. Hints are jogs (under ~8 words), not documentation.
