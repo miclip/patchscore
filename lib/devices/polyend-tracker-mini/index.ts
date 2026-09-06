@@ -151,9 +151,31 @@ const AUDIO_HZ = { min: 20, max: 20000 } //         20Hz - 20kHz
  */
 const SYNTH_VOICES = { min: 1, max: 8 } //          1-8, and 8 is the budget across all 3 slots
 
+const MANUAL = 'Polyend Tracker Mini Manual 2.2.1b'
+
 /** A range citation. The page is the one carrying that parameter's own printed bound. */
 function cite(page: number): Cite {
-  return { kind: 'manual', source: `Polyend Tracker Mini Manual 2.2.1b, p.${page}` }
+  return { kind: 'manual', source: `${MANUAL}, p.${page}` }
+}
+
+/**
+ * §2.1/§2.2. **The note that plays a sample at the pitch it was recorded at**, and both halves
+ * of it are printed.
+ *
+ * p.90: *"The default note value is C5 which plays a sample at its original pitch value"*. `C5`
+ * is a number only once this box's octave numbering is known, and the manual settles that from
+ * three directions: `[Menu] > Config > MIDI > Middle C` offers C-3 to C-6 (p.54, repeated
+ * p.285), p.298's set-up table ships it at `C-5`, and p.288 moves it *"from C-5 to C-3"* to line
+ * up with Ableton Live. So `C5` here is middle C — MIDI 60, not SPN's 72.
+ *
+ * It sits on a **mode** rather than on the pool, because the sentence is true of a track playing
+ * a whole sample untransposed and of nothing else this folder ships. See the `modes` table.
+ */
+const TRIGGER_NOTE_CITE: Cite = {
+  kind: 'manual',
+  source:
+    `${MANUAL}, p.90 ("The default note value is C5 which plays a sample at its original pitch ` +
+    'value"); p.54 and p.285 (Config > MIDI > Middle C, C-3 to C-6); p.298 (set-up table at C-5)',
 }
 
 function num(
@@ -278,16 +300,22 @@ function unscaled(
   return { kind: 'text', name, value, verified: false, ...extra }
 }
 
-/** p.127, the Play Mode table, as the on-screen selector prints them. */
+/**
+ * p.127, the Play Mode table, as the on-screen selector prints them — in three groups, because
+ * that is what decides whether a written note is a pitch, an address or neither (§2.2, and the
+ * `modes` table on `track-sample`).
+ *
+ * The three cover the eight between them and overlap nowhere, so the option set below is their
+ * concatenation rather than a fourth list to keep in step.
+ */
+const WHOLE_SAMPLE_PLAY_MODES = ['1-Shot', 'Forward loop', 'Backward loop', 'Pingpong loop']
+const SLICED_PLAY_MODES = ['Slice', 'Beat Slice']
+const RE_SYNTHESISED_PLAY_MODES = ['Wavetable', 'Granular']
+
 const PLAY_MODES = [
-  '1-Shot',
-  'Forward loop',
-  'Backward loop',
-  'Pingpong loop',
-  'Slice',
-  'Beat Slice',
-  'Wavetable',
-  'Granular',
+  ...WHOLE_SAMPLE_PLAY_MODES,
+  ...SLICED_PLAY_MODES,
+  ...RE_SYNTHESISED_PLAY_MODES,
 ]
 
 /** p.117: "Options; Disabled, low-pass, high-pass, band-pass." */
@@ -529,7 +557,7 @@ export const SYNTH_SLOTS = 3
  * loaded thing, and the guide would refuse a fourth part on a box holding two.
  */
 function onBothPools(
-  base: Omit<Recipe, 'id' | 'voice' | 'routing' | 'consumes'> & { id: string },
+  base: Omit<Recipe, 'id' | 'voice' | 'mode' | 'routing' | 'consumes'> & { id: string },
 ): [Recipe, Recipe] {
   const consumes = [{ resource: SYNTH_SLOT, sharedAs: base.id }]
   return [
@@ -537,6 +565,14 @@ function onBothPools(
       ...base,
       id: `${base.id}-sample`,
       voice: 'track-sample',
+      /**
+       * §2.2/#86. **The one field the twins cannot share**, and `mode` is off the base type
+       * rather than merely unset on it so that a future patch cannot set it once for both. The
+       * sample pool declares modes and this twin must name one; the synth pool declares none and
+       * naming one there fails the build. Same patch, two pools, two different answers to what
+       * kind of thing the track is.
+       */
+      mode: 'synth',
       consumes,
       routing: 'Tracks 1-8 — costs one of the three project synth slots',
     },
@@ -737,6 +773,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'kick',
     character: 'hard',
     voice: 'track-sample',
+    mode: 'transposed',
     title: 'Tight one-shot kick, tuned down, no tail',
     sourceAudio: {
       need: 'A dry kick one-shot under 400 ms, attack intact and no room printed on it',
@@ -758,6 +795,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'kick',
     character: 'dark',
     voice: 'track-sample',
+    mode: 'transposed',
     title: 'Long low kick, filter closed on the tail',
     sourceAudio: {
       need:
@@ -784,6 +822,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'snare',
     character: 'bright',
     voice: 'track-sample',
+    mode: 'transposed',
     title: 'Snappy snare, top end open',
     sourceAudio: {
       need: 'A snare one-shot with the crack still on it, dry, top end unrolled',
@@ -808,6 +847,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'clap',
     character: 'bright',
     voice: 'track-sample',
+    mode: 'whole-sample',
     title: 'Wide clap, pushed off centre',
     sourceAudio: {
       need: 'A stereo hand-clap one-shot — several hands, not one; its own width is what gets panned',
@@ -828,6 +868,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'closed-hat',
     character: 'clean',
     voice: 'track-sample',
+    mode: 'whole-sample',
     title: 'Short closed hat, nudged off the grid',
     sourceAudio: {
       need: 'A closed hat one-shot under 150 ms, dry, nothing to trim off the end',
@@ -851,6 +892,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'open-hat',
     character: 'dark',
     voice: 'track-sample',
+    mode: 'whole-sample',
     title: 'Half-open hat, gated short',
     sourceAudio: {
       need:
@@ -873,6 +915,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'rim',
     character: 'clean',
     voice: 'track-sample',
+    mode: 'transposed',
     title: 'Dry rim, dropped in and out',
     sourceAudio: {
       need: 'A rim or stick one-shot, dry and close to transient-only',
@@ -892,6 +935,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'ride',
     character: 'clean',
     voice: 'track-sample',
+    mode: 'whole-sample',
     title: 'Steady ride with per-hit level drift',
     sourceAudio: {
       need:
@@ -914,6 +958,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'tom',
     character: 'dark',
     voice: 'track-sample',
+    mode: 'transposed',
     title: 'Low tom, rolls into the fill',
     sourceAudio: {
       need:
@@ -936,6 +981,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'ghost-perc',
     character: 'soft',
     voice: 'track-sample',
+    mode: 'whole-sample',
     title: 'Quiet shaker filling the gaps',
     sourceAudio: {
       need:
@@ -957,6 +1003,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'vox-chop',
     character: 'dirty',
     voice: 'track-sample',
+    mode: 'sliced',
     title: 'Beat-sliced vocal, crushed and reversed in',
     sourceAudio: {
       need:
@@ -1027,6 +1074,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'pad',
     character: 'soft',
     voice: 'track-sample',
+    mode: 'transposed',
     title: 'Rendered chord sample, filtered back and swelled',
     realisation: 'sampled-chord',
     sourceAudio: {
@@ -1122,6 +1170,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'stab',
     character: 'hard',
     voice: 'track-sample',
+    mode: 'whole-sample',
     title: 'Single-note sample struck short, one note per track',
     sourceAudio: {
       need:
@@ -1160,6 +1209,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'stab',
     character: 'hard',
     voice: 'track-sample',
+    mode: 'whole-sample',
     title: 'Rendered chord sample, struck short and filtered hard',
     realisation: 'sampled-chord',
     sourceAudio: {
@@ -1199,6 +1249,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'texture',
     character: 'soft',
     voice: 'track-sample',
+    mode: 're-synthesised',
     title: 'Granular bed, slow grains, filtered back',
     sourceAudio: {
       need:
@@ -1333,6 +1384,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'sub',
     character: 'dark',
     voice: 'track-sample',
+    mode: 'whole-sample',
     title: 'Low tone at the direction\u2019s own pitch, everything above it filtered off',
     sourceAudio: {
       need:
@@ -1391,6 +1443,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'metallic',
     character: 'dirty',
     voice: 'track-sample',
+    mode: 'transposed',
     title: 'Struck metal hit, band-passed and driven into the resonance',
     sourceAudio: {
       need:
@@ -1437,6 +1490,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'impact',
     character: 'hard',
     voice: 'track-sample',
+    mode: 'whole-sample',
     title: 'One-shot impact on the change, filter out of the way',
     sourceAudio: {
       need: 'A one-shot with a big front — a crash, a gated slam, a reversed hit',
@@ -1478,6 +1532,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'noise',
     character: 'dirty',
     voice: 'track-sample',
+    mode: 'whole-sample',
     title: 'Noise recording struck on the grid, band-passed to sit above the drums',
     sourceAudio: {
       need:
@@ -1529,6 +1584,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'riser',
     character: 'bright',
     voice: 'track-sample',
+    mode: 'whole-sample',
     title: 'Sample played backwards, the envelope swelling it into the change',
     sourceAudio: {
       need:
@@ -1585,6 +1641,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'sweep',
     character: 'soft',
     voice: 'track-sample',
+    mode: 'whole-sample',
     title: 'Held source with the cutoff climbing once, over the longest envelope the box has',
     sourceAudio: {
       need:
@@ -1671,6 +1728,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'arp',
     character: 'clean',
     voice: 'track-sample',
+    mode: 'whole-sample',
     title: 'One tuned tone through the box\u2019s own arpeggiator',
     sourceAudio: {
       need:
@@ -2006,19 +2064,13 @@ export const device: Device = {
    */
   voices: [
     /**
-     * §2.1. **No `triggerNote` on this pool, and the field was authored here before it was
-     * declined.** It said `C5`, off p.90 — *"The default note value is C5 which plays a sample at
-     * its original pitch value"* — with the octave worked out as well, since `C5` is a number only
-     * once you know this box's numbering: `[Menu] > Config > MIDI > Middle C` is a setting whose
-     * options are C-3 to C-6 (p.54, repeated p.285), p.298's set-up table ships it at `C-5`, and
-     * p.288 adjusts it *"from C-5 to C-3"* to match Ableton Live. So `C5` here is middle C, MIDI
-     * 60 rather than SPN's 72. **None of that reading was wrong, and none of it is why the field
-     * is gone.**
+     * §2.1/§2.2/#86. **No `triggerNote` on this pool, and a table of `modes` instead.**
      *
-     * **It is gone because the note is a property of the loaded instrument and this field is
-     * pinned to the track.** `triggerNote` reaches every member of a pool alike, so authoring it
-     * here says `C5` for all eight tracks under every recipe, and this folder already contains
-     * four kinds of counter-example:
+     * The field was authored here, said `C5` off p.90 — *"The default note value is C5 which
+     * plays a sample at its original pitch value"* — and was declined at #422. **None of that
+     * reading was wrong, and none of it is why the field is gone.** It is gone because
+     * `triggerNote` reaches every member of a pool alike, so authoring it here said `C5` for all
+     * eight tracks under every recipe, and this folder ships four kinds of counter-example:
      *
      *  - **Beat Slice.** The sentence directly after the one quoted above, same page: *"The first
      *    slice of a beat slice sample will be triggered using note C2"* (p.90, repeated p.106,
@@ -2033,19 +2085,36 @@ export const device: Device = {
      *    recipes here set instrument `TUNE` away from zero — `tm-kick-hard` at -3, `tm-kick-dark`
      *    at -7, `tm-rim-clean` at +4, `tm-metallic-dirty` at -3 — and `TUNE` transposes underneath
      *    whatever note the step carries. So the guide printed *plays it as recorded* directly
-     *    above the setting that guarantees it will not, on the box's most-requested parts. Two
-     *    authored values disagreeing on one page, with the manual cited correctly on both. #345
+     *    above the setting that guarantees it will not, on the box's most-requested parts. #345
      *    caught this on one recipe (`tm-sub-dark`, below) and #421 swept the class.
-     *  - **The tracks are fungible.** p.22 and p.147 above split the sixteen by what a track *can*
-     *    hold. `track-sample` is a modelling name for the eight that can take a sample, not a bank
-     *    of sample-only hardware, so a fact about samples fastened to it is fastened to the wrong
-     *    object.
+     *  - **A synth, or a MIDI instrument.** p.22 gives tracks 1-8 all three kinds, and the four
+     *    `-sample` twins below are patches rather than recordings. There is no sample to be at
+     *    its original pitch.
      *
-     * **What would let `C5` be said is a recipe-level field, and there isn't one.** `Recipe`
-     * carries no note (the test beside this holds that shut), and adding one is a core change
-     * rather than a device folder's business. Until then silence is the honest state: invariant 5
-     * applied to a value rather than to an assignment, and the reader loses a default they can
-     * read off p.90 rather than gaining a wrong one they cannot.
+     * **What #422 lacked was a shape, and `TrackMode` (§2.2) is it.** The mode is a property of
+     * the recipe rather than of the track, and the recipe is what the resolver already chooses,
+     * so the note is decided where the recipe and the assignable meet (`triggerNoteFor`) and
+     * nothing is asked of the reader. `C5` is authored on the one mode the sentence on p.90 is
+     * true of, and the other five say nothing — which is the same silence #422 shipped, now
+     * confined to the parts that earned it rather than spread across the pool.
+     *
+     * **The split by `TUNE` is the one this box needs and the schema cannot enforce.** The other
+     * four boundaries are `PLAY MODE` and `MODEL` values, so `selectedBy` holds them: switch a
+     * recipe to `Beat Slice` and forget the mode and the device stops building. `TUNE` is a
+     * numeric param, and `selectedBy` compares option values, so `transposed` and `whole-sample`
+     * name the same four play modes and are told apart by a number the field cannot read. That
+     * half is carried by a total check in `test/tracker-mini.test.ts` — every recipe on this pool
+     * mapped to the mode its own params imply — rather than by a `selectedBy` claiming a
+     * discrimination it does not make. A guard that had to be written by hand is worth saying out
+     * loud, because it is the half that can rot: a recipe that gains a `TUNE` and keeps
+     * `whole-sample` is exactly #421 coming back.
+     *
+     * **Compensating instead was available and is refused.** A `TUNE` of -3 makes `D#5` the note
+     * that plays the recording, and that arithmetic is ours rather than the manual's — an
+     * invented value with a citation borrowed from a sentence about the untransposed case, which
+     * is what §3.1 exists to prevent. The recipe already prints its `TUNE`; the reader who wants
+     * the sample at its recorded pitch on those parts has the two numbers and did not get a third
+     * one made up for them.
      */
     {
       kind: 'pool',
@@ -2054,6 +2123,85 @@ export const device: Device = {
       count: 8,
       // §2.2/#86. Panel tracks 1-8. See `SAMPLE_TRACK_LABELS`.
       memberLabels: SAMPLE_TRACK_LABELS,
+      modes: [
+        {
+          /**
+           * p.90's sentence, and the only configuration it is true of: a whole sample played
+           * through at the tuning it was loaded at. `TUNE 0` or no `TUNE` row at all — the
+           * instrument page ships the control at zero (p.116), so a recipe that never touches it
+           * is untransposed.
+           */
+          id: 'whole-sample',
+          label: '1-Shot / Forward, Backward, Pingpong loop',
+          triggerNote: { note: 'C5', midi: 60, verified: TRIGGER_NOTE_CITE },
+          selectedBy: { param: 'PLAY MODE', values: WHOLE_SAMPLE_PLAY_MODES },
+        },
+        {
+          /**
+           * **The same four play modes, and no note.** `TUNE` (p.116, -24 to +24 semitones)
+           * transposes the instrument underneath whatever note the step carries, so `C5` no
+           * longer plays the recording — it plays it moved by however many semitones the recipe
+           * set. Seven recipes here are in this mode and they are the box's most-requested parts.
+           *
+           * `selectedBy` narrows rather than discriminates here, which is the one place in this
+           * table that is true: it keeps a sliced or granular recipe from naming this mode, and
+           * it cannot see the number that separates it from `whole-sample`. The test file carries
+           * that half. See the note above this pool.
+           */
+          id: 'transposed',
+          label: 'The same four, with instrument TUNE off zero',
+          selectedBy: { param: 'PLAY MODE', values: WHOLE_SAMPLE_PLAY_MODES },
+        },
+        {
+          /**
+           * **No note, and the refusal is the point.** p.90: *"The first slice of a beat slice
+           * sample will be triggered using note C2"*, p.132: *"Slice 1 starts on note C2"*, with
+           * successive notes taking successive slices. So the note here is a slice address — an
+           * ordinal wearing a note's shape — and `TriggerNote` says in as many words that putting
+           * one in that field would give two kinds of value one name (#369). `C2` is read and
+           * deliberately not authored.
+           */
+          id: 'sliced',
+          label: 'Slice / Beat Slice',
+          selectedBy: { param: 'PLAY MODE', values: SLICED_PLAY_MODES },
+        },
+        {
+          /**
+           * **No note, for a third reason: there is no playback of a recording to be at its
+           * original pitch.** Granular re-reads the file by position (pp.121-122, and see
+           * `tm-texture-soft`) rather than playing it through, and a wavetable is a set of frames
+           * rather than a recording. Neither is a sentence p.90 can carry.
+           */
+          id: 're-synthesised',
+          label: 'Wavetable / Granular',
+          selectedBy: { param: 'PLAY MODE', values: RE_SYNTHESISED_PLAY_MODES },
+        },
+        {
+          /**
+           * **A synth patch on one of tracks 1-8** (p.22, p.147). There is no sample, so p.90's
+           * default note value has no subject. The four `-sample` twins from `onBothPools` are
+           * the recipes in this mode; their `track-synth` counterparts name no mode at all,
+           * because that pool declares none — see below.
+           */
+          id: 'synth',
+          label: 'ACD / FAT / VAP / WTFM / PERC',
+          selectedBy: { param: 'MODEL', values: SYNTH_MODELS },
+        },
+        {
+          /**
+           * **The fourth thing p.22 says a track 1-8 can be**, and no recipe names it: a MIDI
+           * instrument drives another box rather than playing a part, and §2.2 has no role for
+           * that. It is declared because leaving it out would make the table claim a track is
+           * three kinds of thing when the manual says four, and `test/tracker-mini.test.ts` pins
+           * that nothing selects it — so the day something does, somebody re-reads p.22 first.
+           *
+           * No `selectedBy`: what puts a track here is the *kind* of instrument loaded on it,
+           * not a value of any parameter these recipes set.
+           */
+          id: 'midi',
+          label: 'MIDI',
+        },
+      ],
       roles: SAMPLE_POOL_ROLES,
       polyphony: 1,
     },
@@ -2064,6 +2212,13 @@ export const device: Device = {
      * MIDI and synths."* A rendered chord is an instrument you load, so it can only go on
      * `track-sample`. That is why the chord pad and the chord stab both name that pool and this
      * one carries neither.
+     *
+     * §2.2/#86: **and no `modes`, which is not an inconsistency with the pool above.** p.22 gives
+     * tracks 9-16 two kinds of instrument, synth and MIDI, so a table here could be written — and
+     * every row in it would carry no trigger note, because neither kind plays a loaded recording.
+     * A table whose every row says nothing says nothing an absent `triggerNote` does not already
+     * say, at the cost of a required `mode` on four recipes and a second thing to keep in step.
+     * The table above exists because one of its rows carries `C5`.
      */
     {
       kind: 'pool',

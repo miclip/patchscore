@@ -212,15 +212,17 @@ describe('the format carries an absent mood, and older links keep theirs (#310)'
      * The engine went 5 to 6 for §2.3/#25's device-global resources, 6 to 7 for §12.4/#383, where
      * `patchPolyphony` on two Muse recipes made them infeasible for every `stab` request the
      * library ships, 7 to 8 for §2.2/#86's track modes, which gave the Digitakt II's whole-sample
-     * parts a trigger note they had no shape to carry, and 8 to 9 for §12.4/#433, which gave a
-     * stacked part the voice count that makes it sound. All four change what a link's own inputs
-     * resolve to, and all four carry their own entry in `RESOLVER_VERSION`'s history.
+     * parts a trigger note they had no shape to carry, 8 to 9 for §12.4/#433, which gave a
+     * stacked part the voice count that makes it sound, 9 to 10 for #424's second allocation
+     * source, and 10 to 11 when the Tracker Mini's sample pool declared modes and its
+     * untransposed parts got p.90's `C5` back. All six change what a link's own inputs resolve
+     * to, and all six carry their own entry in `RESOLVER_VERSION`'s history.
      *
      * What this test is about is that widening the input set is **not** that kind of change — the
      * reading beside `SongOverrides`, applied to #161's two fields, then #200's, then #340's. The
      * number below belongs to whoever last bumped it; the claim here is that #310 was not them.
      */
-    expect(RESOLVER_VERSION).toBe(10)
+    expect(RESOLVER_VERSION).toBe(11)
   })
 
   it('writes no axis at all when the reader has set no mood', () => {

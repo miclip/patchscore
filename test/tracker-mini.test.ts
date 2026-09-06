@@ -68,9 +68,14 @@ function synthTemplate(
   }
 }
 
-/** Everything a twin must carry identically. `id`, `voice` and `routing` are what may differ. */
+/**
+ * What must be identical across the two pool twins. `mode` joins `id`, `voice` and `routing` as a
+ * field the twins are *required* to differ on (§2.2/#86): the sample pool declares modes and its
+ * twin names `synth`, the synth pool declares none and naming one there fails the build. The
+ * assertion that the pair still differs correctly is beside the equality below.
+ */
 function twinShape(r: Recipe) {
-  const { id: _id, voice: _voice, routing: _routing, ...rest } = r
+  const { id: _id, voice: _voice, mode: _mode, routing: _routing, ...rest } = r
   return rest
 }
 
@@ -321,10 +326,15 @@ describe('Tracker Mini manifest', () => {
           realisationOf(r) === realisationOf(synthRecipe),
       )
       expect(twin, `${synthRecipe.id} has no track-sample twin`).toBeDefined()
-      // Identical but for id, voice and routing — the twins cannot drift apart.
+      // Identical but for id, voice, mode and routing — the twins cannot drift apart.
       expect(twinShape(twin as Recipe)).toEqual(twinShape(synthRecipe))
       expect((twin as Recipe).id).not.toBe(synthRecipe.id)
       expect((twin as Recipe).routing).not.toBe(synthRecipe.routing)
+      // §2.2/#86. The one difference that is a fact about the pools rather than about the twins:
+      // a synth patch on tracks 1-8 is a track configured as a synth, and tracks 9-16 have no
+      // mode table to name.
+      expect((twin as Recipe).mode).toBe('synth')
+      expect(synthRecipe.mode).toBeUndefined()
     }
   })
 
@@ -1433,27 +1443,148 @@ describe('time parameters (§6.1)', () => {
 })
 
 /**
- * §2.1. **No trigger note on this box, and the reason is not that the page was hard to read.**
+ * §2.1/§2.2/#86. **The note this box prints, and the five configurations it does not print it
+ * in.**
  *
  * p.90 says it in one sentence — *"The default note value is C5 which plays a sample at its
  * original pitch value"* — and the octave behind the number is settled too (p.54, p.285, p.298,
  * p.288). What the field could not do is hold that for a *pool*: `triggerNote` reaches all eight
- * tracks under all twenty-two sample recipes, and a track's note means whatever the loaded
- * instrument makes it mean. The full argument is in the folder, above `track-sample`.
+ * tracks under every recipe, and a track's note means whatever the loaded instrument makes it
+ * mean. That is why #422 declined it, and the decline was right for the shape it had.
  *
- * These tests are the decline, not the citation. They exist so that re-authoring the field is a
- * decision somebody has to make deliberately rather than a plausible-looking one-line addition.
+ * `TrackMode` is a different shape. The note sits on the one configuration p.90's sentence is
+ * true of, the recipe names which configuration it puts the track in, and the five that are not
+ * that configuration still say nothing. The argument is in the folder, above `track-sample`;
+ * these tests are the half of it the schema cannot carry.
  */
-describe('no trigger note, on either pool (§2.1)', () => {
-  it('authors none on the sample pool, none on the synth pool', () => {
+describe('the trigger note, by track mode (§2.1/§2.2/#86)', () => {
+  const modes = pool('track-sample').modes ?? []
+
+  /**
+   * p.127's Play Mode options, grouped by what a written note *means* under each — restated here
+   * from the manual rather than imported from the folder. A guard that reads the table it is
+   * guarding proves nothing.
+   */
+  const SLICED = ['Slice', 'Beat Slice']
+  const RE_SYNTHESISED = ['Wavetable', 'Granular']
+
+  function value(recipe: Recipe, name: string): string | number | undefined {
+    return (recipe.params as AuthoredParam[]).find((p) => p.name === name)?.value
+  }
+
+  /**
+   * **The mode a recipe's own parameters say it is in**, as a total function: every recipe on the
+   * sample pool gets exactly one answer, and an unrecognised shape returns a string no mode has
+   * so the assertion fails loudly rather than skipping.
+   *
+   * This is the guard `selectedBy` cannot be. Four of the five boundaries are option values and
+   * the schema enforces those; the fifth is `TUNE`, a numeric, and `selectedBy` compares option
+   * values — so `whole-sample` and `transposed` name the same four play modes and are told apart
+   * only here. A recipe that gains a `TUNE` and keeps `whole-sample` is #421 coming back, and
+   * this is what catches it.
+   */
+  function impliedMode(recipe: Recipe): string {
+    if (value(recipe, 'MODEL') !== undefined) return 'synth'
+    const play = value(recipe, 'PLAY MODE')
+    if (typeof play !== 'string') return `no PLAY MODE and no MODEL on ${recipe.id}`
+    if (SLICED.includes(play)) return 'sliced'
+    if (RE_SYNTHESISED.includes(play)) return 're-synthesised'
+    const tune = value(recipe, 'TUNE')
+    // p.116 ships TUNE at zero, so a recipe that never sets it is untransposed.
+    return typeof tune === 'number' && tune !== 0 ? 'transposed' : 'whole-sample'
+  }
+
+  it('declares the table on the sample pool and nothing on the synth pool', () => {
+    // The pool states nothing itself: a pool's note reaches every member alike, and these members
+    // are not addressed alike. That is the fact `modes` replaced, not one it softened.
     expect(pool('track-sample').triggerNote).toBeUndefined()
+    expect(modes.map((m) => m.id)).toEqual([
+      'whole-sample',
+      'transposed',
+      'sliced',
+      're-synthesised',
+      'synth',
+      'midi',
+    ])
+
+    // Tracks 9-16 hold synths and MIDI (p.22) and neither plays a loaded recording, so every row
+    // of a table here would say nothing — which is what the absent field already says.
     expect(pool('track-synth').triggerNote).toBeUndefined()
+    expect(pool('track-synth').modes).toBeUndefined()
   })
 
-  it('authors no recipe-level note either, since the field to hold one does not exist', () => {
-    // `Recipe` carries no note. Saying `C5` on the recipes where it is true needs that field
-    // designed first — a core change — so a recipe claiming one here means somebody has smuggled
-    // an untyped property in rather than made that change.
+  it('authors C5 on the untransposed whole-sample mode alone, cited to p.90', () => {
+    const authored = modes.filter((m) => m.triggerNote !== undefined)
+    expect(authored.map((m) => m.id)).toEqual(['whole-sample'])
+
+    const note = authored[0]?.triggerNote
+    expect(note?.note).toBe('C5')
+    // Middle C on this box, not SPN's 72: `Config > MIDI > Middle C` ships at C-5 (p.54, p.298).
+    expect(note?.midi).toBe(60)
+    expect(note?.verified.kind).toBe('manual')
+    const source = (note?.verified as { source: string }).source
+    expect(source.startsWith(CITE_PREFIX.slice(0, -3))).toBe(true)
+    expect(source).toContain('p.90')
+    expect(source).toContain('p.54')
+    expect(source).toContain('p.298')
+  })
+
+  /**
+   * The four boundaries the schema does carry, pinned so the table cannot be widened into
+   * silence. `DeviceSchema` refuses a recipe whose named mode disagrees with these values, so a
+   * mode that quietly gained `Beat Slice` would take the note with it.
+   */
+  it('ties each mode to the printed options that put it in force', () => {
+    const selectedBy = new Map(modes.map((m) => [m.id, m.selectedBy]))
+    expect(selectedBy.get('whole-sample')).toEqual({
+      param: 'PLAY MODE',
+      values: ['1-Shot', 'Forward loop', 'Backward loop', 'Pingpong loop'],
+    })
+    // The same four, deliberately: what separates the two is a number `selectedBy` cannot read.
+    expect(selectedBy.get('transposed')).toEqual(selectedBy.get('whole-sample'))
+    expect(selectedBy.get('sliced')).toEqual({ param: 'PLAY MODE', values: SLICED })
+    expect(selectedBy.get('re-synthesised')).toEqual({
+      param: 'PLAY MODE',
+      values: RE_SYNTHESISED,
+    })
+    expect(selectedBy.get('synth')?.param).toBe('MODEL')
+    // Nothing a recipe sets says a track is a MIDI track — it is the kind of instrument loaded.
+    expect(selectedBy.get('midi')).toBeUndefined()
+  })
+
+  it('puts every recipe in the mode its own parameters imply', () => {
+    const sample = recipesOn('track-sample')
+    expect(sample.length).toBeGreaterThan(0)
+    for (const recipe of sample) {
+      expect(recipe.mode, recipe.id).toBe(impliedMode(recipe))
+    }
+
+    // The counts, so a class cannot empty out unnoticed. Seven transposed recipes are #421's
+    // sweep, unchanged: they are the reason a pool-wide C5 was false.
+    const count = (mode: string) => sample.filter((r) => r.mode === mode).length
+    expect(count('whole-sample')).toBe(13)
+    expect(count('transposed')).toBe(7)
+    expect(count('sliced')).toBe(1)
+    expect(count('re-synthesised')).toBe(1)
+    expect(count('synth')).toBe(4)
+
+    // Tracks 9-16 declare no modes, so their recipes must name none — the build fails otherwise.
+    for (const recipe of recipesOn('track-synth')) {
+      expect(recipe.mode, recipe.id).toBeUndefined()
+    }
+  })
+
+  /**
+   * The Digitakt II's rule on the box that borrowed the shape: a declared mode nothing selects is
+   * a fact about the hardware, and the day a recipe selects it somebody re-reads p.22 first.
+   */
+  it('names no recipe on the MIDI mode', () => {
+    expect(device.recipes.filter((r) => r.mode === 'midi')).toEqual([])
+  })
+
+  it('authors no recipe-level note, since the field to hold one does not exist', () => {
+    // `Recipe` carries no note — the mode carries it. A recipe claiming one here means somebody
+    // has smuggled an untyped property in rather than made a core change.
     const claiming = device.recipes.filter(
       (r) => (r as Recipe & { triggerNote?: unknown }).triggerNote !== undefined,
     )
@@ -1461,61 +1592,92 @@ describe('no trigger note, on either pool (§2.1)', () => {
   })
 
   /**
-   * The regression, on the resolver rather than on the folder: nothing reaches a part.
+   * The regression, on the resolver rather than on the folder: what actually reaches a part.
    *
-   * `triggerNote` is copied onto every assignable a pool expands into, so a field re-authored on
-   * either pool shows up here as well as in the two assertions above — and it shows up on the
-   * thing the renderer actually asks about.
+   * Both directions in one sweep. A part whose recipe is untransposed and whole-sample carries
+   * `C5`; every other part on this box carries nothing, whatever pool it landed on. The pool
+   * itself still states nothing, so a `triggerNote` re-authored there would show up here as a
+   * note on a transposed part rather than as a silent widening.
    */
-  it('leaves every resolved part without one, across every direction and seed', () => {
-    let parts = 0
+  it('reaches exactly the untransposed whole-sample parts, across every direction and seed', () => {
+    let withNote = 0
+    let without = 0
     for (const template of TEMPLATES) {
       for (let seed = 0; seed < 16; seed++) {
         const result = resolve({ devices: [device], template, mood: moodState(), seed })
         for (const a of result.assignments) {
-          parts += 1
-          expect(a.triggerNote, `${template.id}/${a.role} seed ${String(seed)}`).toBeUndefined()
-          expect(noteInstruction(a).kind, `${template.id}/${a.role} seed ${String(seed)}`).not.toBe(
-            'trigger',
-          )
+          const where = `${template.id}/${a.role} seed ${String(seed)}`
+          const recipe = device.recipes.find((r) => r.id === a.recipe.id) as Recipe
+          const whole = recipe.voice === 'track-sample' && impliedMode(recipe) === 'whole-sample'
+          if (whole) {
+            withNote += 1
+            expect(a.triggerNote, where).toEqual({
+              note: 'C5',
+              midi: 60,
+              verified: modes[0]?.triggerNote?.verified,
+            })
+          } else {
+            without += 1
+            expect(a.triggerNote, where).toBeUndefined()
+          }
+          // The pool states nothing; the mode table is carried whole onto every member.
           for (const assignable of a.assignables) {
-            expect(assignable.triggerNote, `${template.id} seed ${String(seed)}`).toBeUndefined()
+            expect(assignable.triggerNote, where).toBeUndefined()
+            if (assignable.poolId === 'track-sample') {
+              expect(assignable.modes?.length, where).toBe(6)
+            }
           }
         }
       }
     }
-    // The sweep is only worth anything if it resolved something.
-    expect(parts).toBeGreaterThan(0)
+    expect(withNote).toBeGreaterThan(0)
+    expect(without).toBeGreaterThan(0)
   })
 
-  /** §8. The reader-facing half: a `ResolvedAssignment` proves nothing to somebody at the box. */
-  it('prints no trigger note in a rendered guide, in either renderer', () => {
+  /**
+   * §8. The reader-facing half: a `ResolvedAssignment` proves nothing to somebody at the box.
+   *
+   * Counted rather than merely found, in both directions at once. A guide prints the line once
+   * for every part the arm fires on and never anywhere else, so a note leaking onto a transposed
+   * kick shows up as a count that does not match. The web renderer's half of this is in
+   * `test/guide-view.test.ts`, where both renderers are asked the same question.
+   */
+  it('prints C5 once per whole-sample part in a rendered guide, and nowhere else', () => {
+    let printed = 0
     for (const template of TEMPLATES) {
       for (const seed of [1, 7]) {
         const result = resolve({ devices: [device], template, mood: moodState(), seed })
-        expect(renderGuide(result), `${template.id} seed ${String(seed)}`).not.toContain(
-          'Trigger note',
-        )
+        const expected = result.assignments.filter(
+          (a) => noteInstruction(a).kind === 'trigger',
+        ).length
+        const guide = renderGuide(result)
+        const lines = guide.split('\n').filter((l) => l.startsWith('**Trigger note**'))
+        expect(lines.length, `${template.id} seed ${String(seed)}`).toBe(expected)
+        for (const line of lines) expect(line).toBe('**Trigger note** — `C5` · MIDI 60')
+        printed += lines.length
       }
     }
+    expect(printed).toBeGreaterThan(0)
   })
 
   /**
    * **The counter-examples, held in place.** A pool-wide `C5` was not merely unproven; it was
-   * false for parts this folder ships, and these are the ones that make it false. If they all
-   * disappear the argument above weakens, and somebody re-reading it should find out here rather
-   * than by rediscovering p.90 and assuming nobody had.
+   * false for parts this folder ships, and these are the ones that make it false. They are now in
+   * silent modes rather than absent, so the fact they carry is checkable: if they all disappear
+   * the table's shape stops being load-bearing, and somebody re-reading it should find out here
+   * rather than by rediscovering p.90 and assuming nobody had.
    */
   it('still carries the recipes a pool-wide C5 would have been wrong for', () => {
-    const mode = (id: string) =>
-      device.recipes
-        .find((r) => r.id === id)
-        ?.params.find((p) => p.name === 'PLAY MODE')?.value
+    const modeOf = (id: string) => device.recipes.find((r) => r.id === id)?.mode
+    const playMode = (id: string) =>
+      value(device.recipes.find((r) => r.id === id) as Recipe, 'PLAY MODE')
 
     // A slice address, not an original-pitch marker: p.90's next sentence puts slice 1 at C2.
-    expect(mode('tm-vox-chop-dirty')).toBe('Beat Slice')
+    expect(playMode('tm-vox-chop-dirty')).toBe('Beat Slice')
+    expect(modeOf('tm-vox-chop-dirty')).toBe('sliced')
     // Re-read by position rather than played through, so "as recorded" is not what happens.
-    expect(mode('tm-texture-soft')).toBe('Granular')
+    expect(playMode('tm-texture-soft')).toBe('Granular')
+    expect(modeOf('tm-texture-soft')).toBe('re-synthesised')
 
     // And the ordinary case: the instrument transposed underneath whatever note the step carries.
     const tuned = device.recipes.filter((r) =>
@@ -1530,6 +1692,7 @@ describe('no trigger note, on either pool (§2.1)', () => {
       'tm-snare-bright',
       'tm-tom-dark',
     ])
+    for (const recipe of tuned) expect(recipe.mode, recipe.id).toBe('transposed')
   })
 })
 
@@ -1537,27 +1700,26 @@ describe('no trigger note, on either pool (§2.1)', () => {
  * §2.1. **The measurement this change is for**, taken rather than asserted from memory.
  *
  * Every direction against this box alone, seeds 1-6 — 11 directions, 66 resolutions. A part on
- * `track-sample` that draws a grid is one the guide used to tell which steps to hit and never
- * what to put on them; the question this pins is whether all of them now get a note and none of
- * them gets a blank.
+ * `track-sample` that draws a grid is one the guide tells which steps to hit; the question this
+ * pins is what it now says to put on them, and for which parts it still says nothing.
  *
  * **A grid exists when some section selected a variant**, which is the renderer's own condition
  * and not a paraphrase of it. A part whose every section came back `none` prints "no pattern
  * authored" and no steps, so counting it among the grid parts inflates the population with parts
  * that have nothing to program — twelve of them, `ambient-dub/texture` and `hip-hop/texture` at
- * six seeds apiece. They still carry the note, because it is a fact about the track either way;
- * they are just not what this measures.
+ * six seeds apiece. They still carry whatever note their mode carries; they are just not what
+ * this measures.
  *
  * **The counts are a measurement, not a target.** They move when a direction gains or loses a
  * part, and a diff here is a prompt to re-read the numbers rather than a failure. What must not
- * move is the *relationship*: a sample-track grid part carries the direction's own pitch or it
- * carries nothing, and nothing here is a trigger note.
+ * move is the *relationship*: a sample-track grid part carries the direction's own pitch, or the
+ * mode's `C5`, or nothing — and which of the three it is follows from the recipe rather than from
+ * the pool.
  *
- * **The blank arm is the cost of the decline and is pinned rather than glossed.** Before it, every
- * one of these parts printed `C5`, and a large share printed it beside their own `TUNE` or a play
- * mode that contradicted it (#421 holds that sweep; the counts here are this file's own sample and
- * are not it). What is left is honest and thinner, and a count is the only way to notice if a
- * later change quietly widens it.
+ * **The blank arm is what is left of #422's decline and is pinned rather than glossed.** Every
+ * one of these parts printed `C5` before #421 swept the class, and 108 of them were transposed
+ * while printing it. Those 108 still print nothing. The 144 that print it again are the ones the
+ * sentence on p.90 is about.
  */
 describe('every sample-track grid part, and what note it now gets (§2.1)', () => {
   const SEEDS = [1, 2, 3, 4, 5, 6]
@@ -1592,51 +1754,63 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     return { grid, hooked, sustained, noPattern }
   }
 
-  it('gives a grid part the direction’s pitch or nothing, and pins how many of each', () => {
+  it('gives a grid part the direction’s pitch, the mode’s note or nothing, and pins how many', () => {
     const { grid } = sweep()
 
     // The population, as measured on this library. 216 until #345 authored the seven roles the
-    // sample pool declared and no recipe served. The decline does not move it: what changes is
-    // which arm each part lands in, not whether it is counted.
+    // sample pool declared and no recipe served. Neither #422's decline nor this moved it: what
+    // changes is which arm each part lands in, not whether it is counted.
     expect(grid.length).toBe(276)
+    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch', 'trigger'])
 
-    // **Two arms, and `trigger` is not one of them.** §4.1 gives a direction's own pitch to a
-    // pitched role that draws a grid; everything else gets nothing, because the note it would
-    // have got was a fact about a loaded instrument that no field here can hold.
-    expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch'])
-
-    // The pitch arm is `sub` alone, in the octave the directions ask a sub for — unchanged, and
-    // that is the point of naming it: the decline took the device's arm, not the direction's.
+    // The pitch arm is `sub` alone, in the octave the directions ask a sub for — unchanged
+    // through both changes, and that is the point of naming it: this moved the device's arm.
     const pitched = grid.filter((g) => g.kind === 'pitch')
     expect(pitched).toHaveLength(24)
     expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
     expect(Math.max(...pitched.map((g) => g.midi as number))).toBeLessThan(36)
 
-    // The blank arm, counted rather than glossed. Every one of these printed `C5` before.
-    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(252)
+    // The device's arm, back on the parts p.90's sentence is true of and on no others.
+    const triggered = grid.filter((g) => g.kind === 'trigger')
+    expect(triggered).toHaveLength(144)
+    expect([...new Set(triggered.map((g) => `${String(g.note)}/${String(g.midi)}`))]).toEqual([
+      'C5/60',
+    ])
+
+    // The blank arm, counted rather than glossed. Every one of these is a transposed recipe.
+    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(108)
   })
 
-  it('reaches the percussion the direction library actually asks this box for', () => {
-    // Pinned by role, not only by total: a count alone would survive one role's parts being
-    // swapped for another's, and what this change is for is the drum tracks.
-    const counts = new Map<Role, number>()
-    for (const g of sweep().grid) counts.set(g.role, (counts.get(g.role) ?? 0) + 1)
-    expect(
-      [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
-    ).toEqual([
-      ['kick', 48],
+  it('splits the percussion by whether its own recipe transposes the sample', () => {
+    // Pinned by role and by arm, not only by total: a count alone would survive the note moving
+    // from the hats to the kicks, which is the one failure this whole change is about.
+    const counts = (kind: string) => {
+      const out = new Map<Role, number>()
+      for (const g of sweep().grid.filter((h) => h.kind === kind)) {
+        out.set(g.role, (out.get(g.role) ?? 0) + 1)
+      }
+      return [...out].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+    }
+
+    // Untransposed one-shots and loops: the note is what plays them as recorded.
+    expect(counts('trigger')).toEqual([
       ['closed-hat', 42],
       ['ghost-perc', 42],
-      ['sub', 24],
       ['clap', 18],
-      ['metallic', 18],
       ['open-hat', 18],
-      ['rim', 18],
-      ['snare', 18],
       ['arp', 6],
       ['impact', 6],
       ['noise', 6],
       ['ride', 6],
+    ])
+
+    // And the parts whose recipe sets `TUNE` off zero, which still say nothing: `tm-kick-hard` at
+    // -3 and `tm-kick-dark` at -7 are the whole of the kick column.
+    expect(counts('none')).toEqual([
+      ['kick', 48],
+      ['metallic', 18],
+      ['rim', 18],
+      ['snare', 18],
       ['tom', 6],
     ])
   })
@@ -1663,25 +1837,22 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
   })
 
   /**
-   * **The roster is now empty, and that is a fact worth an assertion rather than a silence.**
-   *
-  /**
    * **The list is deliberately whole-library and lives here rather than in one device's file.**
-   * It was written when the Mini was the only box carrying one, the Tracker joined it, and both
-   * have since declined it (#422) — the field is pinned to a voice and the note belongs to the
-   * instrument loaded into it.
+   * It was written when the Mini was the only box carrying one, the Tracker joined it, both
+   * declined it at #422 — the field is pinned to a voice and the note belongs to the instrument
+   * loaded into it — and the Mini is back by the route the Digitakt II opened (#86), on a mode
+   * rather than on the voice.
    *
-   * **The Digitakt II is the only entry, and it arrived by a route this test could not see**
-   * (#86). It declares no `triggerNote` on its pool and never will: its sixteen tracks are not
-   * addressed alike, so the note sits on a `TrackMode` and the recipe's machine says which mode
-   * is in force. Looking only at `voice.triggerNote` would have left this roster reading empty on
-   * a library that has one — which is the failure a whole-library pin exists to prevent. So the
+   * **Both entries arrive that way, and looking only at `voice.triggerNote` would read empty on a
+   * library that has two.** That is the failure a whole-library pin exists to prevent, so the
    * query looks in both places.
    *
-   * **The roster moving is the event this is for.** A new entry means somebody has decided a
+   * **The roster moving is the event this is for.** A third entry means somebody has decided a
    * box's note is a fact about hardware rather than about what is loaded — which can be true, on
    * a box whose voices are fixed rather than fungible — and that is a claim wanting a citation
-   * read and the two Polyend arguments answered, not a test widened.
+   * read and the Polyend argument answered, not a test widened. The full-size Tracker is the
+   * nearest candidate and is deliberately not here: its manual does not say what a written step
+   * note does under either sliced mode, which cuts against the field rather than for it (#422).
    */
   it('names every device in the library that authors one, so no other guide moves', () => {
     const modesOf = (v: (typeof DEVICES)[number]['voices'][number]) =>
@@ -1690,17 +1861,21 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
       v.triggerNote !== undefined || modesOf(v).some((m) => m.triggerNote !== undefined)
 
     const authoring = DEVICES.filter((d) => d.voices.some(authors))
-    expect(authoring.map((d) => d.id)).toEqual(['elektron-digitakt-ii'])
+    expect(authoring.map((d) => d.id)).toEqual([
+      'elektron-digitakt-ii',
+      'polyend-tracker-mini',
+    ])
 
     const voices = authoring.flatMap((d) => d.voices.filter(authors).map((v) => v.id))
-    expect(voices).toEqual(['track'])
+    expect(voices).toEqual(['track', 'track-sample'])
 
-    // Where it puts it: not on the voice, but on one of the pool's modes. A pool whose members
-    // were addressed alike would carry the note itself, and none in this library now does.
+    // Where each puts it: not on the voice, but on exactly one of the pool's modes. A pool whose
+    // members were addressed alike would carry the note itself, and neither of these is one.
     expect(
       authoring.map(
         (d) => d.voices.flatMap(modesOf).filter((m) => m.triggerNote !== undefined).length,
       ),
-    ).toEqual([1])
+    ).toEqual([1, 1])
+    expect(authoring.every((d) => d.voices.every((v) => v.triggerNote === undefined))).toBe(true)
   })
 })

@@ -8,6 +8,7 @@ import {
   hoistedParams,
   fxSources,
   moodState,
+  noteInstruction,
   renderGuide,
   resolve,
 } from '../lib/core/index'
@@ -1269,30 +1270,45 @@ describe('the song overrides read the same in both guides (#161)', () => {
  * same parts and print the same note and the same number — the #33 claim, on the one field where
  * the two candidates come from opposite ends of the architecture.
  *
- * **The trigger arm has no shipped user any more**, since the two Polyend boxes that authored one
- * declined it: on a track whose note means whatever instrument is loaded on it, a pool-wide "plays
- * it as recorded" was false for the sliced, granular and transposed recipes those same folders
- * ship. The arm itself is unchanged and still reachable, so it is exercised below on a result with
- * the field put back by hand — the parity claim is about the two renderers, and it should not
- * lapse because no device currently reaches it.
+ * **The trigger arm has shipped users again** (§2.2/#86): the Tracker Mini's sample pool declares
+ * track modes, so a part playing a whole sample untransposed carries p.90's `C5` while a
+ * transposed, sliced, granular or synth part on the same pool carries nothing. That gives this
+ * file both arms on one guide from one box, which is the case worth having — the two renderers
+ * agreeing about a note is worth less than them agreeing about *which parts get one*.
+ *
+ * The hand-set case below stays anyway. Pinning the arm to a device folder is what let it lapse
+ * when those folders changed at #422, and it can change again.
  */
 describe('the note above the grid reads the same in both guides (§4.1/§2.1)', () => {
   const trackerMini = DEVICES.filter((d) => d.id === 'polyend-tracker-mini')
 
-  it('prints no trigger note on Tracker Mini percussion, in either', () => {
+  it('prints the mode’s note on Tracker Mini percussion, and none on a transposed part', () => {
     const result = resolve({
       devices: trackerMini,
       template: industrialTechno,
       mood: moodState(),
       seed: 1,
     })
+
+    // `tm-kick-hard` sets `TUNE -3`, so it is in the `transposed` mode and states nothing: p.90's
+    // sentence is about a sample played at the tuning it was loaded at, and this one is not.
     const kick = result.assignments.find((a) => a.role === 'kick')
     expect(kick?.assignables[0]?.poolId).toBe('track-sample')
-    // Not suppressed downstream: there is nothing on the voice to suppress.
     expect(kick?.triggerNote).toBeUndefined()
 
+    // `tm-clap-bright` is a 1-Shot that never touches `TUNE`, on the same pool and the same box.
+    const clap = result.assignments.find((a) => a.role === 'clap')
+    expect(clap?.triggerNote?.note).toBe('C5')
+    expect(clap?.triggerNote?.midi).toBe(60)
+
+    // What the two renderers must agree on is *which* parts carry it, so the count is the
+    // assertion rather than the presence of the string anywhere on the page.
+    const expected = result.assignments.filter((a) => noteInstruction(a).kind === 'trigger').length
+    expect(expected).toBeGreaterThan(1)
     for (const guide of [renderGuide(result), text(html(result))]) {
-      expect(guide).not.toContain('Trigger note')
+      expect(guide.split('Trigger note').length - 1).toBe(expected)
+      expect(guide).toContain('C5')
+      expect(guide).toContain('MIDI 60')
     }
   })
 
@@ -1322,12 +1338,19 @@ describe('the note above the grid reads the same in both guides (§4.1/§2.1)', 
       ),
     }
 
-    for (const guide of [renderGuide(withNote), text(html(withNote))]) {
-      expect(guide).toContain('Trigger note')
-      expect(guide).toContain('C5')
-      expect(guide).toContain('MIDI 60')
+    // One more than the guide already prints, in both: the arm fires on the part that gained the
+    // field and on nothing else. A bare `toContain` would pass on this box without the edit.
+    const pairs: [string, string][] = [
+      [renderGuide(result), renderGuide(withNote)],
+      [text(html(result)), text(html(withNote))],
+    ]
+    for (const [before, after] of pairs) {
+      const count = (guide: string) => guide.split('Trigger note').length - 1
+      expect(count(after)).toBe(count(before) + 1)
+      expect(after).toContain('C5')
+      expect(after).toContain('MIDI 60')
       // The note is the instruction; the page it was read off belongs in the manifest only.
-      expect(guide).not.toContain('Fixture p.1')
+      expect(after).not.toContain('Fixture p.1')
     }
   })
 

@@ -156,10 +156,19 @@ is not like that: the Tracker Mini's `track-sample` plays a loaded sample at its
 only at `C5`, and writing anything else there gets the same sample transposed.
 
 It sits on the voice because both alternatives fail on that same box. A device-wide field cannot
-say it — `track-sample` has a trigger note and `track-synth` has none, and one field per device
-would be wrong about one of them. Per recipe would repeat one fact about the track on every sample
-recipe the folder ever gains, which is the duplication `poolId ?? voiceId` lookup exists to
-prevent. Nothing overrides it: it flows from the voice, through `Assignable`, to the page.
+say it — `track-sample` addresses a sample that way and `track-synth` has nothing loaded to
+address, and one field per device would be wrong about one of them. Per recipe would repeat one
+fact about the track on every sample recipe the folder ever gains, which is the duplication
+`poolId ?? voiceId` lookup exists to prevent. Nothing overrides it: it flows from the voice,
+through `Assignable`, to the page.
+
+**Where a pool's members are not addressed alike, the note sits on a mode instead of on the
+voice, and both Polyend boxes are why (#421/#422/#86).** The Mini's `track-sample` holds sample
+instruments, synths and MIDI (p.22), and even among the samples a `TUNE` off zero, a Beat Slice
+and a granular instrument each make *"plays it as recorded"* false. So a pool-wide `C5` there was
+a true sentence fastened to the wrong object: it was authored, declined at #422, and is back on
+the one `TrackMode` p.90's sentence is true of. See §2.2. The full-size Tracker still authors
+none — its manual does not say what a written step note does under either sliced mode.
 
 **It models the whole-sample case only.** A *sliced* instrument is addressed by note as well, and
 that is not the same fact: under the Tracker Mini's Beat Slice mode `C2` selects the first slice
@@ -4404,7 +4413,9 @@ reaches none of the three, and they were built first for exactly that reason:
 - **Built.** A configuration that a *recipe* selects, whose only consequence is how the track is
   addressed. Every member can take every mode, so no candidate is added and none excluded; `Score`
   is untouched; the worst legal rig measures identically before and after. The Digitakt II is the
-  first user and the only one so far.
+  first user; the Tracker Mini's `track-sample` is the second, and the shape earned its keep
+  there — six modes, one of which carries `C5`, splitting a pool that had been forced to choose
+  between a note that was false for a third of its recipes and no note at all.
 - **Deferred: a configuration the reader chooses.** The MC-101's four tracks, where making a
   second one a drum track is the user's decision and leaves a different tonal allocation behind;
   the Octatrack MkII's `TRACK 8`, which is a master track or a normal one. Neither is a
@@ -4426,9 +4437,11 @@ reaches none of the three, and they were built first for exactly that reason:
 Tracker Mini as the box where the split was already made. It is not one: p.22 gives its first
 eight tracks sample instruments, synths **and** MIDI, so the sample/synth split was made across
 its two pools and not inside pool A, whose `triggerNote` is a fact about one of its three uses.
-Both Polyend boxes print a trigger note that is false for some instrument on the track, and #421
-is that repair. It is content — split the pool, narrow the roles, or decline the note and say why
-— and it deliberately does not wait for any of the deferred work above.
+Both Polyend boxes printed a trigger note that is false for some instrument on the track, and #421
+was that repair: #422 declined the field on both pools of both boxes. The Mini has since taken the
+third option this list offers rather than a fourth one — its sample pool declares modes, so the
+note is back on the recipes p.90's sentence is true of and absent from the rest. Content, in a
+device folder, not waiting on any of the deferred work above.
 
 *Worked example, and the case that proves the demand belongs to the recipe:* the Tracker Mini
 sounds one note per track — "Each track in Tracker Mini can handle one voice which can play
