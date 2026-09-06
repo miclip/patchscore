@@ -863,6 +863,38 @@ describe('the guide says which realisation the reader got', () => {
     expect(md).toContain('Tracker Mini · Synth Track 2, Synth Track 3 and Synth Track 4')
   })
 
+  /**
+   * #431. Reported from the machine: a three-track pad on a Tracker Mini read as three synths'
+   * worth of sound design, on a box whose manual gives it three synth slots altogether. Nothing
+   * was over-allocated — the three tracks run the same settings — and the guide never said so.
+   *
+   * The claim asserted here is the generic one, and deliberately so: it is true of every stack
+   * because an assignment carries one recipe and one set of values however many voices it lands
+   * on. It stops there. Nothing below mentions slots, tracks or a Tracker Mini budget, and
+   * nothing claims the settings are *entered* once — a box may well want them dialled in on
+   * every track, which this cannot see and must not deny.
+   */
+  it('says every voice of a stack takes the same settings, in Markdown and in the app', () => {
+    const pad = stacked.assignments.find((a) => a.role === 'pad')
+    expect(pad?.assignables).toHaveLength(3)
+
+    const md = renderGuide(stacked)
+    const view = html(stacked)
+    for (const text of [md, view]) {
+      // Phase 4, in the callout that already says a stack is not a chord on one voice.
+      expect(text).toContain('All 3 take the same settings')
+      expect(text).toContain('one sound repeated across the stack, not 3 different sounds')
+      // And no claim about the reader's labour, which is the box's fact and not this one's.
+      expect(text).not.toContain('configure separately')
+      expect(text).not.toContain('set up once')
+    }
+
+    // And not said about a part that lives on one voice — the polyphonic rig stacks nothing.
+    expect(voiced.assignments.every((a) => a.assignables.length === 1)).toBe(true)
+    expect(renderGuide(voiced)).not.toContain('take the same settings')
+    expect(html(voiced)).not.toContain('take the same settings')
+  })
+
   it('says nothing at all about realisation for a one-note part', () => {
     const md = renderGuide(voiced)
     const kick = md.split('\n').find((l) => l.includes('`kick`') && l.startsWith('- '))

@@ -6,6 +6,7 @@ import type {
   ResolvedAssignment,
   ResolvedHook,
   ResolvedNote,
+  StackedPart,
 } from '@/lib/core'
 import { Fragment } from 'react'
 import {
@@ -15,6 +16,7 @@ import {
   noteDurationNotice,
   noteOffSteps,
   printsNoteDuration,
+  stackedPart,
 } from '@/lib/core'
 import {
   barOf,
@@ -24,7 +26,6 @@ import {
   durationText,
   durationsText,
   gridFits,
-  isStacked,
   lowToHigh,
   num,
   stackPosition,
@@ -350,22 +351,34 @@ function StackedHook({
   framed,
   carriedBy,
   notice,
+  stack,
 }: {
   hook: ResolvedHook
   framed: boolean
   carriedBy: ResolvedAssignment
   notice: NoteDurationNotice
+  stack: StackedPart
 }) {
   const voices = carriedBy.assignables
-  const width = voices.length
+  const width = stack.width
   const chords = chordsOf(hook).map((chord) => ({ step: chord.step, notes: lowToHigh(chord.notes) }))
   const surplus = chords.filter((chord) => chord.notes.length > width)
 
   return (
     <>
+      {/*
+        #431. The second sentence is the one a reader was missing, and it is a claim about the
+        *part* rather than about the box: one recipe, one set of values, the same on every voice.
+        Somebody read a three-voice pad as three synths' worth of sound design and concluded the
+        guide had over-committed a box that holds three. It stops at what `stackedPart` can
+        support — whether those settings are shared from one place or entered on each track is
+        the box's fact and unknown here. Said in this phase as well as in Sound design because
+        this is where the voices are named one at a time, which is what made them look separate.
+      */}
       <p className="callout">
         Stacked chord — {count(width, 'voice')}, one note each. There is no chord to play on any
-        one of them.
+        one of them. All {num(width)} take the same settings — one sound repeated across the
+        stack, not {num(width)} different sounds.
       </p>
       <p className="quiet">
         Lowest note to the lowest voice:{' '}
@@ -487,6 +500,8 @@ function HookBlock({
   // plain list. Answering "how does this box end a note" three times is how the first two came to
   // disagree with each other about a box.
   const notice = noteDurationNotice(device)
+  // §12.4/#431. The other shared verdict this block reads, asked once for the same reason.
+  const stack = carriedBy === undefined ? undefined : stackedPart(carriedBy)
 
   return (
     <section className="hook">
@@ -544,12 +559,13 @@ function HookBlock({
               sounds one, and say nothing about which voice gets which — the half they cannot work
               out for themselves.
             */
-          carriedBy !== undefined && isStacked(carriedBy) ? (
+          carriedBy !== undefined && stack !== undefined ? (
             <StackedHook
               hook={choice.chosen.hook}
               framed={framed}
               carriedBy={carriedBy}
               notice={notice}
+              stack={stack}
             />
           ) : (
           <>
