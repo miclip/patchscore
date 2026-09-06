@@ -1,8 +1,8 @@
 # Drone Study
 
-Values are starting points — dial them to taste. Where a mood knob moved one you see the move
-(`52 → 45`). Every value carries its range — `38 (0…100)` — so you can tell at a glance whether
-the screen in front of you is the one the line is about.
+Values are starting points — dial them to taste. Where a mood knob or the key moved one you see
+the move (`52 → 45`). Every value carries its range — `38 (0…100)` — so you can tell at a glance
+whether the screen in front of you is the one the line is about.
 
 ## 1. Song
 

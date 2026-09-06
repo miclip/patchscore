@@ -1016,7 +1016,16 @@ export const device: Device = {
         gen('8X Bass Drum', BD_GENS),
         num('TUNE', -8, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -18 }] }),
         num('DECAY', 44, PCT, '%', 60),
-        num('COARSE', -2, SEMITONES, 'St', 60, { hint: 'A whole tone down' }),
+        // §4.1/#339. **`COARSE` and not `TUNE`**, and #338 is the whole reason there is a choice
+        // to make: `TUNE` is a percentage of a range this manual never prints, so adding a
+        // semitone to it would produce a number in no unit at all. `COARSE` is *"the pitch in
+        // semitones"* on the 8X table (p.60), which is the only control on this recipe a key
+        // displacement can legitimately move. The other kick recipes here sit on generators with
+        // no `COARSE` and therefore do not follow — an honest decline rather than a hole.
+        num('COARSE', -2, SEMITONES, 'St', 60, {
+          hint: 'A whole tone down',
+          fundamentalPitch: true,
+        }),
         num('ATTACK', 76, PCT, '%', 60, { hint: 'This is the click' }),
         num('EXCITE', 62, PCT, '%', 60, { mood: [{ axis: 'grit', amount: 30 }], hint: 'Odd-harmonic distortion' }),
         num('BODY DEP', 40, PCT, '%', 60),

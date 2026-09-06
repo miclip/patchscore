@@ -588,6 +588,13 @@ export const hipHop: Template = {
      */
     /* Out of `Bare`, `Pulled Back` and `Last Turn`: the beat arrives with the kick and leaves
      * with it, and the outro is the hats over the loop. */
+    /**
+     * §4.1/#339. **Tuned to the key**, and the sample-chop context is what makes it obvious. The
+     * vox chop at the top of this list is a sample carrying its own pitch, the sub is a hook on
+     * the root, and the kick is the third voice in a very narrow band of the spectrum. A kick
+     * that ignores the key here is not an anchor, it is the one thing in the arrangement nobody
+     * tuned — and this music has tuned its kick since it was made on an SP-1200.
+     */
     {
       id: 'r-kick',
       role: 'kick',
@@ -595,6 +602,7 @@ export const hipHop: Template = {
       character: 'dark',
       sustain: 'transient',
       sections: ['Drums Under', 'Whole', 'Back Harder', 'Thinned'],
+      followsKey: true,
     },
 
     /**

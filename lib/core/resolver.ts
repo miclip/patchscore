@@ -949,11 +949,31 @@ function sourcedValue(
  * depends on one — and a sourced parameter without one throws. A caller holding an unstacked part
  * says `{ stackWidth: 1 }` and means it.
  */
+/**
+ * §4.1/§7 step 9/#339. **The song's key, as an offset a parameter can be moved by.**
+ *
+ * Handed in only where the *request* follows the key (`RoleRequest.followsKey`) and the key
+ * parses, so its presence is already the decision: this resolver does not look at a role, a
+ * template or a device to decide whether a drum is tuned. It moves the parameters that say they
+ * are the voice's fundamental, by the number in here, and nothing else.
+ *
+ * An object rather than a bare number because a semitone count with no origin is the thing this
+ * codebase keeps refusing — `key` is what it was read off, and it is what a test names when the
+ * displacement is wrong.
+ */
+export type KeyFollow = {
+  /** `tonicDisplacement(key)`: -6 to +5, semitones from C to the tonic by the shorter way. */
+  readonly semitones: number
+  /** The key as the song carries it, for diagnosis. Never re-parsed here. */
+  readonly key: string
+}
+
 export function resolveParam(
   param: AuthoredParam,
   recipeVerified: Verified | undefined,
   state: MoodState,
   allocation?: ParamAllocation,
+  keyFollow?: KeyFollow,
 ): ResolvedParam {
   const point = inheritVerified(param.verified, recipeVerified)
 
@@ -1033,18 +1053,44 @@ export function resolveParam(
   // make the value provisional, it makes the parameter deaf to mood.
   const moodAllowed = declaresMood && rangeCite !== false
 
+  // §4.1/#339. **The key's displacement, under the same legality gate mood answers to**, and for
+  // the same reason: moving a value inside bounds nobody has checked is generating inside a range
+  // that may not exist on the instrument. A `fundamentalPitch` parameter with an unverified range
+  // therefore does not follow — deaf to the key exactly as it is deaf to the knobs, and the point
+  // stays wherever its author put it rather than being pushed somewhere unchecked.
+  //
+  // Three conditions and every one of them is somebody's decision rather than an inference: the
+  // direction asked (`keyFollow` is present at all), the device offered (`fundamentalPitch`), and
+  // the range is checked. A sourced value is excluded for the reason mood is — the allocation's
+  // number is the one that sounds the part.
+  const keySemitones =
+    sourced === undefined &&
+    keyFollow !== undefined &&
+    param.fundamentalPitch === true &&
+    rangeCite !== false
+      ? keyFollow.semitones
+      : 0
+
   let value = sourced ?? param.value
   let axes: MoodAxis[] = []
   // A sourced value is deaf to mood by construction as well as by schema: the count the
   // resolver chose is the count that sounds the part, and the two authorities cannot both hold.
-  if (sourced === undefined && moodAllowed) {
-    const contribution = moodContribution(param, state)
+  if (sourced === undefined) {
+    const contribution = moodAllowed
+      ? moodContribution(param, state)
+      : { offset: 0, axes: [] as MoodAxis[] }
     axes = contribution.axes
+    // **The key and mood are one offset, applied once.** They are two different kinds of decision
+    // — the direction's and the reader's — and adding them separately would round twice and
+    // clamp twice, so a tom that the key pushed to the end of its range would then have mood
+    // measured from the wall instead of from the authored point. One sum, one grid, one clamp.
+    //
     // **A zero net offset leaves the authored value exactly as authored.** `NEUTRAL_MOOD`
     // promises that centred knobs change nothing, and rounding is not exempt from that: with
     // no `step` declared the grid defaults to 1, so an authored `0.28 Sec` was being rounded
     // to `0` by a mood that had not moved it at all — the value the guide printed was one the
-    // author never wrote and no citation covered.
+    // author never wrote and no citation covered. A song in C makes the same promise from the
+    // other side: its displacement is zero, so a drum that follows the key is untouched in C.
     //
     // The grid exists to land a *moved* value where the instrument can actually sit. An
     // unmoved value is already where its author put it, and snapping a cited point onto a
@@ -1052,8 +1098,9 @@ export function resolveParam(
     //
     // Tested on the *offset*, not on `axes`: two authored entries that cancel exactly have
     // both axes contributing and a net move of zero, and zero move must mean zero change.
-    if (contribution.offset !== 0) {
-      const raw = clamp(param.value + contribution.offset, param.range.min, param.range.max)
+    const offset = contribution.offset + keySemitones
+    if (offset !== 0) {
+      const raw = clamp(param.value + offset, param.range.min, param.range.max)
       value = roundToStep(raw, param.step ?? 1, param.range.min, param.range.max)
     }
   }
@@ -1070,9 +1117,18 @@ export function resolveParam(
   // `verified`: cited, and the line is `authored`; not, and it is `provisional`.
   const moved = sourced === undefined && value !== param.value
 
+  // §4.1/#339. **Recorded only where it is part of a move the line shows.** A displacement the
+  // range swallowed whole leaves an `authored` value, and stamping the key on it would claim
+  // arithmetic that is not visible in the number — the same rule `moved` already applies to a
+  // mood push that rounding erased. Where the value did move, this says what the key asked for
+  // even if the control could only give some of it; `from` and the value are the dial's truth.
+  const keyMove = keySemitones === 0 ? {} : { keySemitones }
+
   let provenance: Provenance
   if (point === false) {
-    provenance = moved ? { state: 'provisional', from: param.value, axes } : { state: 'provisional' }
+    provenance = moved
+      ? { state: 'provisional', from: param.value, axes, ...keyMove }
+      : { state: 'provisional' }
   } else if (moved && rangeCite !== false) {
     provenance = {
       state: 'derived',
@@ -1080,6 +1136,7 @@ export function resolveParam(
       rangeCite: rangeCite as Cite,
       from: param.value,
       axes,
+      ...keyMove,
     }
   } else {
     provenance = { state: 'authored', cite: point }
@@ -1113,11 +1170,20 @@ export function resolveParam(
   }
 }
 
-/** §7 step 9 for a whole recipe. Authored order, which is the order the guide renders. */
+/**
+ * §7 step 9 for a whole recipe. Authored order, which is the order the guide renders.
+ *
+ * `keyFollow` reaches every parameter and lands on the ones marked `fundamentalPitch` — which is
+ * usually none of them (§4.1/#339). A recipe with no fundamental pitch is a box declining to
+ * tune its drum to the key, and it resolves exactly as it did before the flag existed.
+ */
 export function resolveParams(
   recipe: Recipe,
   state: MoodState,
   allocation?: ParamAllocation,
+  keyFollow?: KeyFollow,
 ): ResolvedParam[] {
-  return recipe.params.map((param) => resolveParam(param, recipe.verified, state, allocation))
+  return recipe.params.map((param) =>
+    resolveParam(param, recipe.verified, state, allocation, keyFollow),
+  )
 }

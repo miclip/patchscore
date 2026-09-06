@@ -485,7 +485,12 @@ function num(
   value: number,
   bounds: { min: number; max: number },
   page: number,
-  extra: { mood?: { axis: Axis; amount: number }[]; note?: string; unit?: string } = {},
+  extra: {
+    mood?: { axis: Axis; amount: number }[]
+    note?: string
+    unit?: string
+    fundamentalPitch?: true
+  } = {},
 ): AuthoredParam {
   return {
     kind: 'numeric',
@@ -514,11 +519,21 @@ const sliceGrid = (v: (typeof SLICE_GRIDS)[number]) => pick('GRID', v, SLICE_GRI
  * to semitones, which is what makes an authored value here readable as an interval.
  * **Absent on the Repitch machine** — see the module JSDoc.
  */
-const tune = (v: number) =>
+const tune = (v: number, fundamental = false) =>
   num('TUNE', v, { min: -60, max: 24 }, 82, {
     unit: 'st',
+    ...(fundamental ? { fundamentalPitch: true as const } : {}),
     note: 'Press and turn DATA ENTRY to snap to semitones; hold [FUNC] and turn for octaves',
   })
+
+/**
+ * §4.1/#339. **`TUNE` on a drum, where the sample under it is the drum.**
+ *
+ * Same control, same page; the flag says this recipe's `TUNE` transposes a voice rather than an
+ * already-pitched sample, which is what a direction needs before it can tune the part to the key.
+ * Per recipe and not per control, for the reason the Octatrack's `drumPtch` gives.
+ */
+const drumTune = (v: number) => tune(v, true)
 
 /** `BR` (Bit Reduction), p.83. On every machine, and the cheapest grit this box has. */
 const br = (v: number) =>
@@ -1194,7 +1209,7 @@ const recipes: Recipe[] = [
     params: [
       machine('ONESHOT'),
       play('ONESHOT', 'FORWARD'),
-      tune(-5),
+      drumTune(-5),
       fltrType('2-pole Lowpass'),
       freq(54),
       reso(20),

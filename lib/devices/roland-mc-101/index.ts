@@ -436,7 +436,16 @@ const DRUM_RECIPES: Recipe[] = [
     title: 'Tight kick, tuned down, no tail on it',
     params: [
       num('LEVEL', 118, PAD_LEVEL),
-      num('KEY OFFSET', -2, KEY_OFFSET, { unit: 'st', mood: [{ axis: 'darkness', amount: -3 }] }),
+      // §4.1/#339. **`KEY OFFSET` is what a key displacement is for.** The control transposes
+      // the whole tone in semitones — the drum's fundamental by definition, and the reason this
+      // box needs no separate mechanism to be tuned to a song. It carries `darkness` as well;
+      // the two offsets sum, so a dark mood in G lands five semitones below where a dark mood in
+      // C does and the recipe's own interval survives both.
+      num('KEY OFFSET', -2, KEY_OFFSET, {
+        unit: 'st',
+        fundamentalPitch: true,
+        mood: [{ axis: 'darkness', amount: -3 }],
+      }),
       num('CUTOFF OFST', 24, PAD_OFFSET, { mood: [{ axis: 'darkness', amount: -34 }] }),
       num('DECAY OFST', -34, PAD_OFFSET, { mood: [{ axis: 'density', amount: -22 }] }),
       num('RELEASE OFST', -46, PAD_OFFSET),
@@ -459,7 +468,11 @@ const DRUM_RECIPES: Recipe[] = [
     title: 'Long low kick that owns the bottom of the kit',
     params: [
       num('LEVEL', 122, PAD_LEVEL),
-      num('KEY OFFSET', -7, KEY_OFFSET, { unit: 'st', mood: [{ axis: 'darkness', amount: -4 }] }),
+      num('KEY OFFSET', -7, KEY_OFFSET, {
+        unit: 'st',
+        fundamentalPitch: true,
+        mood: [{ axis: 'darkness', amount: -4 }],
+      }),
       num('FINE OFST', -12, PAD_FINE, { unit: 'c' }),
       num('CUTOFF OFST', -18, PAD_OFFSET, { mood: [{ axis: 'darkness', amount: -30 }] }),
       num('DECAY OFST', 42, PAD_OFFSET, { mood: [{ axis: 'density', amount: -26 }] }),
@@ -582,7 +595,11 @@ const DRUM_RECIPES: Recipe[] = [
     title: 'Low tom, pitched down, long enough to bend',
     params: [
       num('LEVEL', 100, PAD_LEVEL),
-      num('KEY OFFSET', -9, KEY_OFFSET, { unit: 'st', mood: [{ axis: 'darkness', amount: -5 }] }),
+      num('KEY OFFSET', -9, KEY_OFFSET, {
+        unit: 'st',
+        fundamentalPitch: true,
+        mood: [{ axis: 'darkness', amount: -5 }],
+      }),
       num('CUTOFF OFST', -12, PAD_OFFSET, { mood: [{ axis: 'darkness', amount: -32 }] }),
       num('DECAY OFST', 36, PAD_OFFSET, { mood: [{ axis: 'density', amount: -28 }] }),
       num('REVERB SEND', 26, PAD_SEND, { mood: [{ axis: 'space', amount: 32 }] }),

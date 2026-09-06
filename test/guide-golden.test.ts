@@ -139,17 +139,31 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
     expect(drums).not.toContain('### Waiting on us')
   })
 
-  it('renders nothing as derived, because the fixtures hold every knob centred (§6.1)', () => {
+  it('moves no value with the knobs, because the fixtures hold every one centred (§6.1)', () => {
     // The guarantee `NEUTRAL_MOOD` makes: a centred knob changes nothing. This caught a real
     // bug — an authored `0.28 Sec` with no declared step was being rounded to `0` by a mood
     // that had moved it not at all, and the fixture is where it became visible.
     //
-    // Scoped to the sound-design phase because the legend above it *illustrates* the derived
+    // Scoped to the sound-design phase because the legend above it *illustrates* the moved
     // form (`52 → 45`) and must keep doing so; what must not appear is a rendered value in it.
+    //
+    // **§4.1/#339 made mood stop being the only thing that can move a value**, so the assertion
+    // is now stated as *which* fixture may show an arrow rather than as *none may*. Weakening it
+    // to "ignore arrows" would have thrown away the centred-knob guarantee on all eight files to
+    // accommodate one; naming the exception keeps every other fixture held to exactly what it was
+    // held to before, and pins the new one to a single moved value.
     for (const name of GUIDE_NAMES) {
       const body = soundDesign(guideText(name))
+      const moved = body.filter((l) => /`[^`]+ → [^`]+`/.test(l))
       expect(body.filter((l) => l.includes('derived by')), name).toEqual([])
-      expect(body.filter((l) => /`[^`]+ → [^`]+`/.test(l)), name).toEqual([])
+      if (name !== 'weave-tracker-mini') {
+        expect(moved, name).toEqual([])
+        continue
+      }
+      // The one drum in this directory that follows the song's key: Weave's tom, in E aeolian,
+      // four semitones up from where it is authored. Its kick is on the same box and does not
+      // move, which is #339's whole distinction and is asserted by the count being one.
+      expect(moved.map((l) => l.trim())).toEqual(['- **TUNE** `-5 → -1` st (-24…24 st)'])
     }
   })
 

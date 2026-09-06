@@ -361,6 +361,16 @@ export const industrialTechno: Template = {
    * test that guards invariant 3 by looking for device words has to special-case it.
    */
   roles: [
+    /*
+     * §4.1/#339. **No `followsKey`, and that is a decision this direction makes rather than one
+     * it has not got round to.**
+     *
+     * #339 leaves the kick to the direction precisely because of this case. A techno kick is not
+     * a pitched voice sitting inside the harmony, it is the fixed point the harmony moves against
+     * — the reason the sub below can hold the root through a key change and the track still sits
+     * where it sat. Tuning it to the key would take the anchor out and put a second bass note in
+     * its place, which is a different genre with the same tempo.
+     */
     { id: 'r-kick', role: 'kick', priority: 1, character: 'hard', sustain: 'continuous' },
     /*
      * §4.1/#334. The root, at the octave every authored `sub` hook in the library uses.

@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve as resolvePath } from 'node:path'
 import { moodState, renderGuide, resolve, type Device, type Template } from '../../lib/core/index'
 import { DEVICES } from '../../lib/devices/registry.generated'
-import { droneStudy, industrialTechno } from '../../lib/templates/index'
+import { droneStudy, industrialTechno, weave } from '../../lib/templates/index'
 
 /**
  * §8's output, pinned as bytes against the **real** device library and the real template.
@@ -17,8 +17,8 @@ import { droneStudy, industrialTechno } from '../../lib/templates/index'
  * identically, a device whose every point is provisional. A hand-built rig small enough to read
  * is a rig too small to show any of that.
  *
- * Seven fixtures, chosen to differ in the thing §8 is worst at. Five are Industrial Techno on five
- * rigs; the last two change template, for the reasons given under them:
+ * Eight fixtures, chosen to differ in the thing §8 is worst at. Five are Industrial Techno on five
+ * rigs; the last three change template, for the reasons given under them:
  *
  *  - **full-rig** — every registry device, the rig that fills most parts and exercises pool
  *    voices, merged section blocks, a resolved hook and — since #49 — a real patch list.
@@ -77,6 +77,14 @@ import { droneStudy, industrialTechno } from '../../lib/templates/index'
  *    say about the grid the third reason above describes. Its argument is beside `TRACKER_MINI`
  *    below, for the same reason the TR-6S's is beside its own rig: it is one claim about one
  *    device, and it reads where the rig is built.
+ *  - **weave-tracker-mini** — §4.1/#339, and the only committed bytes anywhere in which a drum is
+ *    tuned to the song's key. The Muse fixture's argument, on a different field: nothing in the
+ *    five techno guides can show this, because Industrial Techno's kick is the direction that
+ *    deliberately *does not* follow, and Drone Study has no drums at all. Weave on the Mini shows
+ *    both halves of the decision on one box and in one file — the tom's `TUNE` moved by the key
+ *    with the move printed (`-5 → -1`), the kick's left exactly where its author put it — which is
+ *    the distinction #339 is, and a change that started tuning both or neither would move these
+ *    bytes and no others in this directory.
  *
  * **`full-rig` used to be the third case and #80 changed that**, which is worth recording because
  * it looks like a fixture losing its purpose. It resolved onto `usb`, because the Metropolix was
@@ -220,6 +228,7 @@ export const GUIDE_NAMES = [
   'muse',
   'deluge-drone-study',
   'tracker-mini-drone-study',
+  'weave-tracker-mini',
 ] as const
 export type GuideName = (typeof GUIDE_NAMES)[number]
 
@@ -243,6 +252,7 @@ const RIGS: Record<GuideName, Fixture> = {
   'muse': { devices: MUSE, template: industrialTechno },
   'deluge-drone-study': { devices: DELUGE, template: droneStudy },
   'tracker-mini-drone-study': { devices: TRACKER_MINI, template: droneStudy },
+  'weave-tracker-mini': { devices: TRACKER_MINI, template: weave },
 }
 
 export function guideText(name: GuideName): string {

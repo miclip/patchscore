@@ -1500,6 +1500,37 @@ standing a few lines apart in one guide. A reader who had read the section had e
 believe the box's control was covered. The panel's word belongs to the panel, so the heading is now
 `Chord voicing` in both renderers (§8).
 
+### `fundamentalPitch`, the one value the song's key may move
+
+**A drum has a definite fundamental, and until #339 nothing could reach it.** `resolveParams` saw
+mood and the allocation and never the key, so a kick was tuned identically in C minor and in F#
+minor. Whether it *should* move is §4.1's question and a genre's answer; this is the field that
+makes the answer expressible.
+
+`fundamentalPitch: true` on an authored numeric says **this control is where the voice's
+fundamental pitch is set, in semitones**. Where a request carries `followsKey` (§4.1) and a recipe
+carries this, the resolver adds the tonic's displacement from C to the authored point and then
+does what it always does — sum it with mood, round to the step, clamp to the range.
+
+- **Absence is the device declining, and there is no capability field.** Exactly mood's shape
+  (§6.1): a box opts out of an axis by authoring no parameter that declares it, and out of
+  key-following by authoring no fundamental pitch. A `canFollowKey` flag would be a second answer
+  to a question the parameters already answer, and the two would drift.
+- **A semitone unit is required**, and the schema refuses the flag without one. The marker is a
+  claim about arithmetic: `TUNE -45%` is a percentage of a range no manual prints — #338's whole
+  complaint — and adding 5 to it produces a number in no unit at all.
+- **It goes on the fundamental, not on an interval and not on a played note.** A Matriarch's
+  `OSCILLATOR 2 FREQUENCY` is osc 2 against osc 1, so moving it detunes rather than transposes; an
+  oscillator whose pitch arrives with the note on the step is #334's trigger note and would be
+  transposed twice. A voice whose fundamental genuinely takes two controls marks both, and they
+  move together, so the interval between them survives.
+- **The same legality gate mood answers to.** An unverified range makes a parameter deaf to the key
+  exactly as it makes it deaf to the knobs: moving a value inside bounds nobody checked is
+  generating inside a range that may not exist on the instrument.
+- **Not a fifth shared vocabulary** (invariant 3). No template names a parameter and nothing joins
+  on one. A direction says the part is tuned to the key; which control that is, or that there is
+  none, is entirely the device's answer.
+
 ### 3.2 Provenance is three-state, because a legal value is not a verified value
 
 Invariant 4 originally read "no parameter value that isn't manual-verified or explicitly flagged
@@ -1515,8 +1546,19 @@ So provenance is three-state, and every resolved value carries one:
 | provenance | means | what a guide shows |
 |---|---|---|
 | `authored` | the point value was read off the manual or the hardware, and `cite.kind` says which | `TUNE 52` |
-| `derived` | mood moved a verified point inside its verified range | `TUNE 52 → 45` |
-| `provisional` | the point is unverified (`verified: false`, inherited or explicit) | `TUNE 52`, or `TUNE 52 → 45` where mood moved it |
+| `derived` | mood, or the song's key, moved a verified point inside its verified range | `TUNE 52 → 45` |
+| `provisional` | the point is unverified (`verified: false`, inherited or explicit) | `TUNE 52`, or `TUNE 52 → 45` where something moved it |
+
+**Two things can move a value, and `derived` carries which** (§4.1/#339). `axes` names the mood
+knobs that contributed; `keySemitones` records the displacement the song's key asked for, on a drum
+whose direction tunes it. A derived value must name at least one of the two — an empty `axes` with
+no `keySemitones` beside it is a value claiming it moved and unable to say why — and neither is
+recorded where it did nothing: an axis at exactly 50 is not listed, and a key displacement of zero,
+which is every song in C, leaves the value `authored` and says nothing.
+
+`keySemitones` is the displacement **asked for**, not the distance travelled. Where the control
+runs out of range the value clamps and the two differ; `from` and the rendered number are always
+the truth about the dial, and this is the truth about the request.
 
 **The third column is the same in all three rows, and that is deliberate.** A guide renders the
 value, its unit and its range, and says nothing about who checked it. The arrow is not a mark and
@@ -2058,6 +2100,64 @@ part's hook by shape, lists one sample per shape, and prints the transposition o
 Nothing here changes, and nothing about a hook is authored twice — which is the point. A
 template that had to know how each device makes a chord would be naming devices, and that is
 invariant 3.
+
+#### A drum follows the key or it does not, and which drum decides (#339)
+
+The guide tunes drums — `TUNE -45%`, `COARSE -2 St` — and until #339 it tuned them against
+nothing. The same kick was authored identically in C minor and in F# minor, which is not the
+library declining to have an opinion: it is the library holding the **fixed-drum** position
+without saying so, in every direction at once.
+
+Both positions are real practice. Plenty of producers tune the kick to the root; plenty of techno
+deliberately does not, and treats the kick as the fixed anchor the harmony moves around. So the
+answer is not global. It depends on the drum, and for one drum on the genre:
+
+| role | follows the key |
+|---|---|
+| `tom` | **yes** — the most pitched thing in a kit, and a fill in the wrong key is audibly off |
+| `kick` | **the direction decides** — Lydian House, Hip-Hop and Major-Key Electro follow; Industrial Techno, Acid Lineage, Breakbeat, Ambient Dub and Weave do not, and each is a position |
+| `snare`, `clap` | **no** — broadband by construction: moving one thins it or does nothing |
+| `closed-hat`, `open-hat`, `ride` | **no** — metal, inharmonic, no fundamental to move |
+| `rim` | **no** — a click, whose pitch is body resonance under a transient rather than a note |
+| `ghost-perc` | **no** — the texture between the hits, doing its job by not being heard as a pitch |
+| `noise`, `metallic` | **no** — the two `body` roles beside `tom`, both named for having no stable pitch |
+
+**The boundary is enforced, not reviewed.** `KEY_FOLLOWING_ROLES` in `lib/core/vocabulary.ts` is
+the closed list — `kick` and `tom` — and `RoleRequestSchema` refuses `followsKey` on anything else.
+It sits beside `NON_PATTERN_BEARING_ROLES` because it is the same kind of claim about the same
+list: a closed statement about `ROLES`, adding no name a template or a device could not already
+utter, so invariant 3 is untouched. Every tonal role is excluded for a second reason as well — a
+`sub` or a `lead` takes its notes from a hook or a `pitch`, and a displacement on top would
+transpose them twice.
+
+**Two halves, meeting in the middle, and neither names the other.** A `RoleRequest` carries
+`followsKey: true` — a musical statement about a part, naming no device (invariant 3). A recipe's
+pitch parameter carries `fundamentalPitch: true` (§3.1) — a fact about a control, naming no genre.
+Where both hold, the value moves; where either is absent, nothing happens and nothing is reported,
+because a fixed drum is a legitimate sound rather than a hole.
+
+**How far it moves.** `tonicDisplacement(key)` is the tonic's shortest signed displacement from C,
+-6 to +5. C is where a number authored against no key lands, so the displacement from C is what
+turns an authored value into the same drum in the song's key — and adding it preserves whatever
+the author did on top, so a tom at `-5` is five semitones below its own fundamental in every key.
+The mode is not read: a tonic is a pitch class, and a drum has no third to tell `F lydian` from
+`F minor`. An unreadable key produces no displacement rather than a guessed one (invariant 5).
+
+**Shortest, because the shorter move changes the drum least.** `G` is five semitones down rather
+than seven up. The tritone is the one distance with no shorter side and resolves downward: down
+lengthens a sample, up shortens it, so a coin-flip that has to land somewhere lands on the side
+that keeps the drum. No direction that follows offers an F#, so the rule has no caller today — it
+is written down because a reader may type one (§7's key override).
+
+**What this trades, said plainly.** Transposing a sample changes its length and its character as
+well as its pitch, and a sampler has no independent pitch-and-time to separate them. A kick moved
+five semitones up is a shorter, tighter kick whether or not that was wanted. The trade is *in the
+key, and the drum you chose moved a little* over *the drum you chose, against the bass line*. It
+is taken per direction and per drum precisely because it is a trade rather than an improvement.
+
+**It bumps `RESOLVER_VERSION`** (to 13), and it is the most visible drift any bump here has
+carried: the same permalink now renders a different number, and the number moves with the key.
+Nothing about the search changes — the flag is read in step 8, after every allocation is settled.
 
 #### Middle C is C4
 
@@ -2699,9 +2799,10 @@ Pipeline:
  7. Bind each recipe's `articulation` to the selected pattern's slots (§4.3). A slot the variant
     does not contain is dropped silently — not a gap, the device simply had nothing to say about a
     slot with no hits in it
- 8. Resolve inherited `verified` citations, apply mood offsets (§6.1), and emit
-    `ResolvedParam`s with provenance stamped (§3.1, §3.2). This is the only place an
-    `AuthoredParam` becomes a `ResolvedParam`
+ 8. Resolve inherited `verified` citations, apply mood offsets (§6.1) and — on a request that
+    follows the key, at a parameter that declares a fundamental pitch — the tonic's displacement
+    (§4.1), and emit `ResolvedParam`s with provenance stamped (§3.1, §3.2). This is the only place
+    an `AuthoredParam` becomes a `ResolvedParam`
  9. Resolve harmony and hooks against the key (§4.1)
 10. Render the guide
 

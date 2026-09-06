@@ -3,10 +3,12 @@ import type { HookId, PatternId, RequestId, SectionName, TemplateId } from './id
 import {
   CharacterSchema,
   DENSITY_DETENTS,
+  KEY_FOLLOWING_ROLES,
   MOOD_AXES,
   MoodStateSchema,
   PatternSlotSchema,
   RoleSchema,
+  mayFollowKey,
   type Character,
   type MoodState,
   type PatternSlot,
@@ -98,6 +100,51 @@ export type RoleRequest = {
    */
   pitch?: RequestPitch
   /**
+   * §4.1/#339. **This part's drum is tuned to the song's key.**
+   *
+   * The direction's half of a decision the library had been making silently by not making it.
+   * A kick has a definite fundamental, and a guide that prints the same `TUNE` in C minor and in
+   * F# minor is not declining to take a position — it is taking the *fixed-drum* position without
+   * saying so. This is where a direction says which one it holds.
+   *
+   * **Per request, because the answer is per drum and, for one drum, per genre.** #339 settles
+   * it in a table:
+   *
+   *  - **`tom` — always.** The most pitched thing in a kit, and a fill in the wrong key is
+   *    audibly off. Both directions that ask for toms carry this.
+   *  - **`kick` — the direction decides.** House, hip-hop and pop generally tune the kick to the
+   *    root; techno deliberately does not, because a kick that stays put across a key change is
+   *    the anchor the track turns on. Lydian House, Hip-Hop and Major-Key Electro follow;
+   *    Industrial Techno, Acid Lineage, Breakbeat, Ambient Dub and Weave do not, and each of
+   *    those is a position rather than an omission.
+   *  - **Every other drum — never**, and `RoleRequestSchema` refuses the flag on them rather
+   *    than trusting review. `snare` and `clap` are broadband; `closed-hat`, `open-hat` and
+   *    `ride` are metal and inharmonic; `rim` is a click whose pitch is body resonance under a
+   *    transient; `ghost-perc` is the texture between the hits and does its job by not being
+   *    heard as a pitch. `KEY_FOLLOWING_ROLES` is the list and says why for each.
+   *
+   * **What it costs, stated once because it is real.** Transposing a sample changes its length
+   * and its character as well as its pitch — a kick moved five semitones up gets shorter and
+   * tighter whether or not that was wanted, and a sampler has no independent pitch-and-time to
+   * separate the two. The trade this makes is *in the key, and the drum you chose moved a little*
+   * over *the drum you chose, against the bass*. `tonicDisplacement` takes the shorter way round
+   * so that the move is the smallest one that arrives.
+   *
+   * **Names no device and no parameter** (invariant 3): it says the part is tuned to the key, and
+   * which control that is — or that there is none — is the device's answer, given by marking a
+   * `fundamentalPitch` parameter or by not having one. A box with no such parameter simply does
+   * not move, and that is a gap nobody has to be told about, because a fixed drum is a legitimate
+   * sound rather than a hole.
+   *
+   * **Forbidden together with `pitch`**, below: a degree in the key already places the part, and
+   * a displacement on top of it would transpose the same note twice. Two authorities over one
+   * pitch is #100's rule arriving from a third direction.
+   *
+   * `true` only, for the reason `reArticulatesHook` is: `false` is a second spelling of the
+   * default, and two spellings of "no" is how a field comes to mean three things.
+   */
+  followsKey?: true
+  /**
    * §12.4. A *minimum note count*, matched against the assignable's `polyphony`. A number, not
    * a device name, so it does not breach invariant 3.
    */
@@ -171,6 +218,7 @@ export const RoleRequestSchema = z
       })
       .optional(),
     pitch: RequestPitchSchema.optional(),
+    followsKey: z.literal(true).optional(),
     polyphony: z.int().min(1).optional(),
     distinct: z.boolean().optional(),
     // `true` only. `false` would be a second way to write the default, and two spellings of
@@ -200,6 +248,34 @@ export const RoleRequestSchema = z
     // template asserting both halves of a contradiction, and the guide would report its absence
     // as a hole in a rig on the template's own authority that it is not one. One direction of
     // implication only: a request may be inessential and still worth the search's effort.
+    // §4.1/#339. **The role boundary, enforced rather than reviewed.** #339 settles which drums
+    // have a fundamental worth tuning, and the answer is two of them; a direction that reached
+    // for the flag on a `snare` or a `rim` would be authoring a move a listener cannot hear as a
+    // pitch, on a part that has none. `KEY_FOLLOWING_ROLES` carries the reasoning per role.
+    //
+    // A rule about `Role`, so it lives beside the vocabulary rather than here — the same shape
+    // `NON_PATTERN_BEARING_ROLES` has, and not a fifth shared vocabulary (invariant 3): nothing
+    // new crosses the boundary and no name is added that a template could not already utter.
+    if (r.followsKey === true && !mayFollowKey(r.role)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `only ${KEY_FOLLOWING_ROLES.join(' and ')} have a fundamental worth tuning to the key (§4.1)`,
+        path: ['followsKey'],
+      })
+    }
+    // §4.1/#339. Two authorities over one pitch. `pitch` names the degree this part plays, which
+    // is already in the key by construction; following would then displace that note a second
+    // time and the part would land off the tonic it was asked for. Checkable here, unlike the
+    // hook conflict `pitch` has with `Template.hooks` — both fields are on the request, so the
+    // schema can refuse it rather than a test having to.
+    if (r.pitch !== undefined && r.followsKey === true) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'a request that names its degree is already in the key: it cannot also follow it (§4.1)',
+        path: ['followsKey'],
+      })
+    }
     if (r.optional === true && r.inessential === undefined) {
       ctx.addIssue({
         code: 'custom',

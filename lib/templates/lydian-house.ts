@@ -450,7 +450,22 @@ export const lydianHouse: Template = {
     { id: 'r-pad', role: 'pad', priority: 1, character: 'soft', sustain: 'continuous', polyphony: 4 },
     { id: 'r-bass-mid', role: 'bass-mid', priority: 1, character: 'dark', sustain: 'continuous' },
 
-    { id: 'r-kick', role: 'kick', priority: 2, character: 'dark', sustain: 'continuous' },
+    /**
+     * §4.1/#339. **House tunes its kick, and this direction has a specific reason beyond that.**
+     *
+     * The kick here is `dark` — long, round, most of its energy in the fundamental — and it sits
+     * under a `dark` `bass-mid` holding the root. That is the pairing #339 describes: two low
+     * voices, one of them tuned to the key and one of them not, beating against each other on
+     * every downbeat. Techno makes that collision on purpose; a house record does not.
+     */
+    {
+      id: 'r-kick',
+      role: 'kick',
+      priority: 2,
+      character: 'dark',
+      sustain: 'continuous',
+      followsKey: true,
+    },
     {
       id: 'r-closed-hat',
       role: 'closed-hat',
