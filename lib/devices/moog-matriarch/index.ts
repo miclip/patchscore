@@ -665,11 +665,6 @@ function inModule(module: string, params: AuthoredParam[]): AuthoredParam[] {
   return params.map((param) => ({ ...param, module }))
 }
 
-/** The same stamp for the four blocks that are a single control. */
-function boxed(module: string, param: AuthoredParam): AuthoredParam {
-  return { ...param, module }
-}
-
 // ---------------------------------------------------------------------------
 // Parameter blocks
 // ---------------------------------------------------------------------------
@@ -681,14 +676,16 @@ function boxed(module: string, param: AuthoredParam): AuthoredParam {
  * in another, which is how the instrument prints it (`panel.ts`, x 754.15 inside x 751.92).
  * Nesting changes nothing here: a module is the innermost box a control sits in.
  */
-function voiceMode(mode: (typeof VOICE_MODE)[number]): AuthoredParam {
-  return boxed('PARAPHONY', pick('VOICE MODE', mode, VOICE_MODE, cite(51), {
-    hint: mode === '4' ? 'paraphonic-4' : 'mono-stack',
-    note:
-      mode === '4'
-        ? 'Each key plays one oscillator, so the four detunes sit at zero and the chord is in tune'
-        : 'All four oscillators play from one key, which is what makes the detunes a unison',
-  }))
+function voiceMode(mode: (typeof VOICE_MODE)[number]): AuthoredParam[] {
+  return inModule('PARAPHONY', [
+    pick('VOICE MODE', mode, VOICE_MODE, cite(51), {
+      hint: mode === '4' ? 'paraphonic-4' : 'mono-stack',
+      note:
+        mode === '4'
+          ? 'Each key plays one oscillator, so the four detunes sit at zero and the chord is in tune'
+          : 'All four oscillators play from one key, which is what makes the detunes a unison',
+    }),
+  ])
 }
 
 /**
@@ -750,13 +747,12 @@ function osc(
 }
 
 /** The main sync button, emitted once where any oscillator uses sync. */
-function syncEnable(on: boolean): AuthoredParam {
-  return boxed(
-    'OSCILLATORS',
+function syncEnable(on: boolean): AuthoredParam[] {
+  return inModule('OSCILLATORS', [
     pick('SYNC ENABLE', on ? 'ON' : 'OFF', SYNC, cite(14), {
       note: on ? 'Must be lit for any individual oscillator SYNC button to do anything (p.15)' : undefined,
     }),
-  )
+  ])
 }
 
 /** The five mixer levels. Only the channels a recipe actually uses are emitted. */
@@ -882,21 +878,20 @@ function mod(opts: {
     // **Not** the MODULATION box. This is the wheel under your left hand, drawn in
     // LEFT-HAND CONTROLLER beside PITCH and GLIDE, ninety-five millimetres below the modulation
     // enclosure. See `inModule`.
-    boxed('LEFT-HAND CONTROLLER', travel('MOD', opts.wheel, { hint: 'mod-gate' })),
+    ...inModule('LEFT-HAND CONTROLLER', [travel('MOD', opts.wheel, { hint: 'mod-gate' })]),
   ]
 }
 
 /** The second LFO, in UTILITIES (2). Patchable only — nothing routes it internally. */
-function lfo(rate: number): AuthoredParam {
+function lfo(rate: number): AuthoredParam[] {
   // The **right-hand** UTILITIES box. The panel prints that word twice; `inModule` records the
   // coordinate that picks between them, because the label cannot.
-  return boxed(
-    'UTILITIES',
+  return inModule('UTILITIES', [
     num('LFO RATE', rate, LFO_HZ, cite(43), {
       unit: 'Hz',
       note: 'A CV at LFO RATE IN takes it past the knob’s 520 Hz to about 620 (p.43)',
     }),
-  )
+  ])
 }
 
 /** The arpeggiator's switches, for the recipes that are about the arpeggiator. */
@@ -923,8 +918,8 @@ function seq(bank: (typeof OCT_BANK)[number], file: (typeof SEQUENCE)[number]): 
 }
 
 /** GLIDE, one knob for the whole instrument. p.12 prints no time range for it. */
-function glide(value: number): AuthoredParam {
-  return boxed('LEFT-HAND CONTROLLER', travel('GLIDE', value))
+function glide(value: number): AuthoredParam[] {
+  return inModule('LEFT-HAND CONTROLLER', [travel('GLIDE', value)])
 }
 
 // ---------------------------------------------------------------------------
@@ -955,7 +950,7 @@ const RECIPES: Recipe[] = [
     title: 'Kick with the filter envelope cabled onto Oscillator 1’s pitch',
     routing: `${PLAYED}, VOICE MODE 1 so all four oscillators sound one note. One cable: FILTER ENV OUT to OSCILLATORS 1 PITCH IN — the envelope reaches the filters from the panel and everything else only through that jack (p.27)`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...osc(1, { octave: "16'", wave: 'TRIANGLE' }),
       ...osc(2, { octave: "16'", wave: 'TRIANGLE', frequency: 0 }),
       ...mixer({ o1: 84, o2: 60 }),
@@ -963,7 +958,7 @@ const RECIPES: Recipe[] = [
       ...env('FILTER', 0, 14, 0, 12),
       ...env('AMPLITUDE', 0, 16, 0, 14),
       ...output(78, 'AMP ENV'),
-      glide(0),
+      ...glide(0),
     ],
     patch: [
       cable(
@@ -982,7 +977,7 @@ const RECIPES: Recipe[] = [
     title: 'Sub from all four triangles stacked on one key',
     routing: `${PLAYED}, VOICE MODE 1. No cable — the mixer, both filters and both amplifiers are normalled`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...osc(1, { octave: "16'", wave: 'TRIANGLE' }),
       ...osc(2, { octave: "16'", wave: 'TRIANGLE', frequency: 0 }),
       ...osc(3, { octave: "8'", wave: 'TRIANGLE', frequency: 0 }),
@@ -992,7 +987,7 @@ const RECIPES: Recipe[] = [
       ...env('FILTER', 6, 30, 90, 24),
       ...env('AMPLITUDE', 4, 30, 92, 22),
       ...output(74, 'AMP ENV'),
-      glide(0),
+      ...glide(0),
     ],
     articulation: [{ slot: 'offbeat', set: { tie: true }, hint: 'tie-step' }],
     verified: false,
@@ -1005,7 +1000,7 @@ const RECIPES: Recipe[] = [
     title: 'Four saws spread across seven semitones into an overdriven mixer',
     routing: `${PLAYED}, VOICE MODE 1 — this is the sound the mono mode exists for. No cable`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...osc(1, { octave: "16'", wave: 'SAWTOOTH' }),
       ...osc(2, { octave: "16'", wave: 'SAWTOOTH', frequency: 3, detuneGrit: 3 }),
       ...osc(3, { octave: "8'", wave: 'SAWTOOTH', frequency: -2, detuneGrit: -2 }),
@@ -1015,7 +1010,7 @@ const RECIPES: Recipe[] = [
       ...env('FILTER', 0, 40, 40, 26),
       ...env('AMPLITUDE', 0, 44, 48, 24),
       ...output(70, 'AMP ENV'),
-      glide(6),
+      ...glide(6),
     ],
     articulation: [{ slot: 'accent', set: { ratchet: 2 }, hint: 'ratchet-step' }],
     verified: false,
@@ -1028,14 +1023,14 @@ const RECIPES: Recipe[] = [
     title: 'Acid line: one saw, resonance near self-oscillation, cutoff tracking the keyboard',
     routing: `${PLAYED}, VOICE MODE 1. No cable — ENVELOPE AMT reaches the cutoff from the panel. **Accent:** there is none on this box. p.46 names three lanes — "Notes, Rests, Ties, and Ratchets" — and an accent is not among them. A ratchet repeats the step rather than emphasising it, so the accented steps this direction asks for are left unplayed here rather than approximated`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...osc(1, { octave: "8'", wave: 'SAWTOOTH' }),
       ...mixer({ o1: 86 }),
       ...filters({ cutoff: 1200, darkness: -35, res1: 78, res2: 30, spacing: 50, envAmt: 74, kbTrack: 100, mode: 'STEREO LP / LP' }),
       ...env('FILTER', 0, 20, 6, 16),
       ...env('AMPLITUDE', 0, 24, 10, 18),
       ...output(70, 'AMP ENV'),
-      glide(18),
+      ...glide(18),
     ],
     /**
      * The slide, on the lane p.46 does declare — and the contrast with the accent above is the
@@ -1058,7 +1053,7 @@ const RECIPES: Recipe[] = [
     title: 'Snare: noise over two short mid tones, both filters open',
     routing: `${PLAYED}, VOICE MODE 1. No cable — noise is one of the five normalled mixer channels`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...osc(1, { octave: "8'", wave: 'TRIANGLE' }),
       ...osc(2, { octave: "4'", wave: 'SQUARE', frequency: 5 }),
       ...mixer({ o1: 44, o2: 30, noise: 88 }),
@@ -1066,7 +1061,7 @@ const RECIPES: Recipe[] = [
       ...env('FILTER', 0, 15, 0, 12),
       ...env('AMPLITUDE', 0, 17, 0, 14),
       ...output(74, 'AMP ENV'),
-      glide(0),
+      ...glide(0),
     ],
     articulation: [{ slot: 'fill', set: { ratchet: 4 }, hint: 'ratchet-step' }],
     verified: false,
@@ -1081,8 +1076,8 @@ const RECIPES: Recipe[] = [
     title: 'Three oscillators hard-sync’d down the chain, FREQUENCY as timbre',
     routing: `${PLAYED}, VOICE MODE 1. No cable. p.15's sync chain is 2 to 1, 3 to 2 and 4 to 3, and SYNC ENABLE has to be lit for any of them`,
     params: [
-      voiceMode('1'),
-      syncEnable(true),
+      ...voiceMode('1'),
+      ...syncEnable(true),
       ...osc(1, { octave: "8'", wave: 'SAWTOOTH' }),
       ...osc(2, { octave: "8'", wave: 'SAWTOOTH', sync: true, mainSync: true, frequency: 64 }),
       ...osc(3, { octave: "4'", wave: 'SAWTOOTH', sync: true, mainSync: true, frequency: 58 }),
@@ -1091,7 +1086,7 @@ const RECIPES: Recipe[] = [
       ...env('FILTER', 0, 26, 18, 20),
       ...env('AMPLITUDE', 0, 28, 22, 22),
       ...output(70, 'AMP ENV'),
-      glide(0),
+      ...glide(0),
     ],
     verified: false,
   },
@@ -1103,7 +1098,7 @@ const RECIPES: Recipe[] = [
     title: 'Linear FM: Oscillator 1 into Oscillator 2’s LIN FM input',
     routing: `${PLAYED}, VOICE MODE 1. One cable: OSCILLATORS 1 WAVE OUT to OSCILLATORS 2 LIN FM IN. Oscillator 1's mixer level is down because it is the modulator, not a voice`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...osc(1, { octave: "8'", wave: 'TRIANGLE' }),
       ...osc(2, { octave: "4'", wave: 'TRIANGLE', frequency: -5, detuneGrit: 4 }),
       ...mixer({ o1: 0, o2: 90 }),
@@ -1112,7 +1107,7 @@ const RECIPES: Recipe[] = [
       ...env('AMPLITUDE', 2, 36, 14, 28),
       ...output(68, 'AMP ENV'),
       ...delay({ time: 22, spacing: 60, feedback: 34, mix: 26, pingPong: false }),
-      glide(0),
+      ...glide(0),
     ],
     patch: [
       cable(
@@ -1134,7 +1129,7 @@ const RECIPES: Recipe[] = [
     title: 'Tom: two triangles, envelope onto pitch, a little noise for the skin',
     routing: `${PLAYED}, VOICE MODE 1. One cable: FILTER ENV OUT to OSCILLATORS 1 PITCH IN, shorter and shallower than the kick’s`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...osc(1, { octave: "16'", wave: 'TRIANGLE' }),
       ...osc(2, { octave: "8'", wave: 'TRIANGLE', frequency: 2 }),
       ...mixer({ o1: 80, o2: 26, noise: 18 }),
@@ -1142,7 +1137,7 @@ const RECIPES: Recipe[] = [
       ...env('FILTER', 0, 24, 0, 18),
       ...env('AMPLITUDE', 0, 26, 0, 20),
       ...output(74, 'AMP ENV'),
-      glide(0),
+      ...glide(0),
     ],
     patch: [
       cable('ENVELOPE GENERATORS · FILTER ENV OUT', 'OSCILLATORS · 1 PITCH IN', 'The pitch fall that makes it a tom and not a click'),
@@ -1157,14 +1152,14 @@ const RECIPES: Recipe[] = [
     title: 'Noise alone, through both filters in series',
     routing: `${PLAYED}, VOICE MODE 1. No cable — SERIES puts the high pass in front of the low pass on the panel (p.20)`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...osc(1, { octave: "8'", wave: 'SAWTOOTH' }),
       ...mixer({ o1: 0, noise: 96 }),
       ...filters({ cutoff: 3600, darkness: -30, res1: 56, res2: 44, spacing: 66, envAmt: 24, kbTrack: 0, mode: 'SERIES HP / LP' }),
       ...env('FILTER', 0, 30, 24, 26),
       ...env('AMPLITUDE', 0, 32, 26, 28),
       ...output(66, 'AMP ENV'),
-      glide(0),
+      ...glide(0),
     ],
     verified: false,
   },
@@ -1176,7 +1171,7 @@ const RECIPES: Recipe[] = [
     title: 'Sample and hold stepping filter 2 alone, into the stereo delay',
     routing: `${PLAYED}, VOICE MODE 1. One cable: S / H OUT to CUTOFF 2 IN. p.38 is explicit that nothing routes the sample-and-hold internally, and CUTOFF 2 IN reaches only the second filter, so filter 1 stays still while filter 2 steps`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...osc(1, { octave: "16'", wave: 'TRIANGLE' }),
       ...osc(2, { octave: "8'", wave: 'TRIANGLE', frequency: 4, detuneGrit: 2 }),
       ...mixer({ o1: 62, o2: 58, noise: 12 }),
@@ -1186,7 +1181,7 @@ const RECIPES: Recipe[] = [
       ...output(62, 'DRONE'),
       ...delay({ time: 44, spacing: 66, feedback: 58, mix: 52, pingPong: true }),
       ...mod({ rate: 2.2, wave: 'S / H', wheel: 0 }),
-      glide(40),
+      ...glide(40),
     ],
     patch: [
       cable(
@@ -1207,7 +1202,7 @@ const RECIPES: Recipe[] = [
     title: 'Four-note pad: one oscillator per key, all four detunes at zero',
     routing: `${PLAYED}, **VOICE MODE 4** — each key plays one oscillator (p.51), so this is a real four-note chord rather than a stack. Every FREQUENCY sits at zero because a detune here would put a chord note out of tune. No cable`,
     params: [
-      voiceMode('4'),
+      ...voiceMode('4'),
       ...osc(1, { octave: "8'", wave: 'TRIANGLE' }),
       ...osc(2, { octave: "8'", wave: 'TRIANGLE', frequency: 0 }),
       ...osc(3, { octave: "8'", wave: 'TRIANGLE', frequency: 0 }),
@@ -1219,7 +1214,7 @@ const RECIPES: Recipe[] = [
       ...output(66, 'AMP ENV'),
       ...delay({ time: 52, spacing: 68, feedback: 44, mix: 42, pingPong: true }),
       ...mod({ rate: 0.4, wave: 'SINE', assign: 'ALL', cutoffAmt: 30, wheel: 45 }),
-      glide(0),
+      ...glide(0),
     ],
     verified: false,
   },
@@ -1231,7 +1226,7 @@ const RECIPES: Recipe[] = [
     title: 'Four-note pad an octave down, saws, cutoff low and still',
     routing: `${PLAYED}, **VOICE MODE 4**. No cable`,
     params: [
-      voiceMode('4'),
+      ...voiceMode('4'),
       ...osc(1, { octave: "16'", wave: 'SAWTOOTH' }),
       ...osc(2, { octave: "16'", wave: 'SAWTOOTH', frequency: 0 }),
       ...osc(3, { octave: "16'", wave: 'SAWTOOTH', frequency: 0 }),
@@ -1242,7 +1237,7 @@ const RECIPES: Recipe[] = [
       ...env('AMPLITUDE', 46, 58, 88, 86),
       ...output(66, 'AMP ENV'),
       ...delay({ time: 60, spacing: 58, feedback: 36, mix: 34, pingPong: false }),
-      glide(0),
+      ...glide(0),
     ],
     verified: false,
   },
@@ -1254,7 +1249,7 @@ const RECIPES: Recipe[] = [
     title: 'Chord stab, four notes, everything short',
     routing: `${PLAYED}, **VOICE MODE 4**. No cable. MULTI TRIG matters here — with it lit the envelopes retrigger on every new key (p.51)`,
     params: [
-      voiceMode('4'),
+      ...voiceMode('4'),
       ...osc(1, { octave: "8'", wave: 'SQUARE' }),
       ...osc(2, { octave: "8'", wave: 'SQUARE', frequency: 0 }),
       ...osc(3, { octave: "8'", wave: 'SAWTOOTH', frequency: 0 }),
@@ -1265,7 +1260,7 @@ const RECIPES: Recipe[] = [
       ...env('AMPLITUDE', 0, 20, 44, 16),
       ...output(74, 'AMP ENV'),
       ...delay({ time: 18, spacing: 62, feedback: 26, mix: 22, pingPong: true }),
-      glide(0),
+      ...glide(0),
     ],
     verified: false,
   },
@@ -1277,7 +1272,7 @@ const RECIPES: Recipe[] = [
     title: 'Clean chord stab, triangles, no delay',
     routing: `${PLAYED}, **VOICE MODE 4**. No cable`,
     params: [
-      voiceMode('4'),
+      ...voiceMode('4'),
       ...osc(1, { octave: "8'", wave: 'TRIANGLE' }),
       ...osc(2, { octave: "8'", wave: 'TRIANGLE', frequency: 0 }),
       ...osc(3, { octave: "8'", wave: 'TRIANGLE', frequency: 0 }),
@@ -1287,7 +1282,7 @@ const RECIPES: Recipe[] = [
       ...env('FILTER', 2, 22, 46, 18),
       ...env('AMPLITUDE', 2, 24, 50, 20),
       ...output(70, 'AMP ENV'),
-      glide(0),
+      ...glide(0),
     ],
     verified: false,
   },
@@ -1299,7 +1294,7 @@ const RECIPES: Recipe[] = [
     title: 'Lead: narrow pulse over a saw, glide on, vibrato on the mod slider',
     routing: `${PLAYED}, VOICE MODE 1. No cable — PITCH MOD ASSIGN at ALL reaches every oscillator from the panel`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...osc(1, { octave: "8'", wave: 'NARROW PULSE' }),
       ...osc(2, { octave: "8'", wave: 'SAWTOOTH', frequency: 2 }),
       ...mixer({ o1: 76, o2: 58 }),
@@ -1309,7 +1304,7 @@ const RECIPES: Recipe[] = [
       ...output(72, 'AMP ENV'),
       ...delay({ time: 30, spacing: 64, feedback: 32, mix: 24, pingPong: true }),
       ...mod({ rate: 5.2, wave: 'SINE', assign: 'ALL', pitchAmt: 18, pulseWidthAmt: 24, wheel: 30 }),
-      glide(34),
+      ...glide(34),
     ],
     verified: false,
   },
@@ -1321,7 +1316,7 @@ const RECIPES: Recipe[] = [
     title: 'Arpeggio over two octaves, in the order the notes were held',
     routing: `${PLAYED}, VOICE MODE 1 with MODE on ARP. Hold the notes and press PLAY; HOLD keeps the pattern running once your hand is off (p.49)`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...arp('ORD', '2'),
       ...osc(1, { octave: "8'", wave: 'SQUARE' }),
       ...osc(2, { octave: "8'", wave: 'SAWTOOTH', frequency: 2 }),
@@ -1331,7 +1326,7 @@ const RECIPES: Recipe[] = [
       ...env('AMPLITUDE', 0, 28, 32, 24),
       ...output(70, 'AMP ENV'),
       ...delay({ time: 26, spacing: 66, feedback: 40, mix: 30, pingPong: true }),
-      glide(0),
+      ...glide(0),
     ],
     articulation: [{ slot: 'ghost', set: { ratchet: 2 }, hint: 'ratchet-step' }],
     verified: false,
@@ -1344,7 +1339,7 @@ const RECIPES: Recipe[] = [
     title: 'Arpeggio, one octave, forward and back, triangles only',
     routing: `${PLAYED}, VOICE MODE 1 with MODE on ARP and DIRECTION on FW / BW`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...arp('FW / BW', '1'),
       ...osc(1, { octave: "8'", wave: 'TRIANGLE' }),
       ...osc(2, { octave: "8'", wave: 'TRIANGLE', frequency: 0 }),
@@ -1353,7 +1348,7 @@ const RECIPES: Recipe[] = [
       ...env('FILTER', 4, 30, 26, 26),
       ...env('AMPLITUDE', 4, 32, 30, 28),
       ...output(68, 'AMP ENV'),
-      glide(0),
+      ...glide(0),
     ],
     verified: false,
   },
@@ -1367,7 +1362,7 @@ const RECIPES: Recipe[] = [
     title: 'Riser: the modulation oscillator on every oscillator’s pitch, under your hand',
     routing: `${PLAYED}, VOICE MODE 1. No cable — PITCH MOD ASSIGN at ALL is the panel route. Raise MOD as the section builds; p.36 is explicit that the AMT knobs do nothing until it is off its minimum`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...osc(1, { octave: "8'", wave: 'SAWTOOTH' }),
       ...osc(2, { octave: "8'", wave: 'SAWTOOTH', frequency: 4, detuneGrit: 3 }),
       ...osc(3, { octave: "4'", wave: 'SAWTOOTH', frequency: -3, detuneGrit: -2 }),
@@ -1378,7 +1373,7 @@ const RECIPES: Recipe[] = [
       ...output(64, 'DRONE'),
       ...delay({ time: 36, spacing: 70, feedback: 62, mix: 46, pingPong: true }),
       ...mod({ rate: 8.5, wave: 'SAWTOOTH', assign: 'ALL', pitchAmt: 62, cutoffAmt: 44, wheel: 70 }),
-      glide(0),
+      ...glide(0),
     ],
     verified: false,
   },
@@ -1390,7 +1385,7 @@ const RECIPES: Recipe[] = [
     title: 'Impact: everything at once into a long ping-pong delay',
     routing: `${PLAYED}, VOICE MODE 1. No cable. The delay is what makes it an impact rather than a hit`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...osc(1, { octave: "16'", wave: 'SAWTOOTH' }),
       ...osc(2, { octave: "16'", wave: 'NARROW PULSE', frequency: -6, detuneGrit: 4 }),
       ...osc(3, { octave: "8'", wave: 'SAWTOOTH', frequency: 6, detuneGrit: 3 }),
@@ -1401,7 +1396,7 @@ const RECIPES: Recipe[] = [
       ...env('AMPLITUDE', 0, 48, 0, 74),
       ...output(78, 'AMP ENV'),
       ...delay({ time: 66, spacing: 74, feedback: 70, mix: 62, pingPong: true }),
-      glide(0),
+      ...glide(0),
     ],
     verified: false,
   },
@@ -1413,7 +1408,7 @@ const RECIPES: Recipe[] = [
     title: 'Sweep: both filters in series, SPACING closing the gap between them',
     routing: `${PLAYED}, VOICE MODE 1. One cable: the second LFO's triangle into CUTOFF 1 IN, which moves the high pass alone — the panel has no internal route for this LFO at all (p.42)`,
     params: [
-      voiceMode('1'),
+      ...voiceMode('1'),
       ...osc(1, { octave: "16'", wave: 'SAWTOOTH' }),
       ...osc(2, { octave: "8'", wave: 'SAWTOOTH', frequency: 5, detuneGrit: 3 }),
       ...mixer({ o1: 72, o2: 68, noise: 30 }),
@@ -1422,8 +1417,8 @@ const RECIPES: Recipe[] = [
       ...env('AMPLITUDE', 62, 52, 94, 78),
       ...output(64, 'DRONE'),
       ...delay({ time: 58, spacing: 72, feedback: 56, mix: 50, pingPong: true }),
-      lfo(0.2),
-      glide(0),
+      ...lfo(0.2),
+      ...glide(0),
     ],
     patch: [
       cable(
