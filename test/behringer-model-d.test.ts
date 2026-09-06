@@ -2,14 +2,17 @@ import { describe, expect, it } from 'vitest'
 import {
   DeviceSchema,
   evidenceFor,
+  groupedParams,
   jackFact,
   moodState,
+  paramLabel,
   renderGuide,
   resolve,
   type AuthoredParam,
   type Recipe,
 } from '../lib/core/index'
 import { device } from '../lib/devices/behringer-model-d/index'
+import { MODEL_D_PANEL } from '../lib/devices/behringer-model-d/panel'
 import { device as neutron } from '../lib/devices/behringer-neutron/index'
 import { TEMPLATES } from '../lib/templates/index'
 
@@ -470,5 +473,375 @@ describe('MODEL D manifest', () => {
       'model-d-kick-hard',
       'model-d-sweep-dark',
     ])
+  })
+})
+
+/**
+ * §3.1/#385. **Seven boxes drawn, six with controls in them, one of them nested — and three
+ * controls that belong to no box at all.**
+ *
+ * The sixth device in the library to author `module`, and the one where the mapping is least
+ * derivable from a name. Four block helpers each span two boxes, and none of the four could be
+ * stamped wholesale:
+ *
+ *     feedback()     EXT IN, EXT IN VOLUME -> MIXER      MAIN VOLUME -> OUTPUT
+ *     modulation()   six controls -> CONTROLLERS         OSCILLATOR MODULATION -> (border)
+ *                                                        FILTER MODULATION -> MODIFIERS
+ *     osc3()         RANGE, FREQUENCY, WAVEFORM -> OSCILLATOR BANK   CONTROL -> (border)
+ *     loudness()     ATTACK, DECAY TIME, SUSTAIN -> LOUDNESS CONTOUR  LOUD DECAY -> MODIFIERS
+ *
+ * The mapping below is a reading of p.40's patch sheet, pinned by name, and an edit that moves a
+ * control has to come here and say so.
+ */
+describe('every control is boxed by the panel section it sits in (#385)', () => {
+  /** The reading. Left is the authored name; right is the silkscreen around the control. */
+  const SECTIONS: Record<string, string> = {
+    'TUNE': 'CONTROLLERS',
+    'GLIDE': 'CONTROLLERS',
+    'OSC 3 / FILTER EG': 'CONTROLLERS',
+    'NOISE (MOD SRC) / LFO': 'CONTROLLERS',
+    'MOD MIX': 'CONTROLLERS',
+    'MOD DEPTH': 'CONTROLLERS',
+    'LFO WAVEFORM': 'CONTROLLERS',
+    'LFO RATE': 'CONTROLLERS',
+
+    'OSC 1 RANGE': 'OSCILLATOR BANK',
+    'OSC 1 WAVEFORM': 'OSCILLATOR BANK',
+    'OSC 2 RANGE': 'OSCILLATOR BANK',
+    'OSC 2 FREQUENCY': 'OSCILLATOR BANK',
+    'OSC 2 WAVEFORM': 'OSCILLATOR BANK',
+    'OSC 3 RANGE': 'OSCILLATOR BANK',
+    'OSC 3 FREQUENCY': 'OSCILLATOR BANK',
+    'OSC 3 WAVEFORM': 'OSCILLATOR BANK',
+
+    // The five channel switches and the levels that follow them. `OSC 1` names the mixer switch;
+    // `OSC 1 RANGE` above names an oscillator knob — one prefix, two sections.
+    'OSC 1': 'MIXER',
+    'OSC 1 VOLUME': 'MIXER',
+    'OSC 2': 'MIXER',
+    'OSC 2 VOLUME': 'MIXER',
+    'OSC 3': 'MIXER',
+    'OSC 3 VOLUME': 'MIXER',
+    'NOISE': 'MIXER',
+    'NOISE VOLUME': 'MIXER',
+    'WHITE / PINK': 'MIXER',
+    'EXT IN': 'MIXER',
+    'EXT IN VOLUME': 'MIXER',
+
+    'MAIN VOLUME': 'OUTPUT',
+
+    'FILTER MODE': 'MODIFIERS',
+    'FILTER MODULATION': 'MODIFIERS',
+    'KEYBOARD CONTROL 1': 'MODIFIERS',
+    'KEYBOARD CONTROL 2': 'MODIFIERS',
+    'CUTOFF FREQUENCY': 'MODIFIERS',
+    'FILTER EMPHASIS': 'MODIFIERS',
+    'AMOUNT OF CONTOUR': 'MODIFIERS',
+    'FILTER ATTACK': 'MODIFIERS',
+    'FILTER DECAY TIME': 'MODIFIERS',
+    'FILTER SUSTAIN': 'MODIFIERS',
+    'FILTER DECAY': 'MODIFIERS',
+    'LOUD DECAY': 'MODIFIERS',
+
+    'LOUDNESS ATTACK': 'LOUDNESS CONTOUR',
+    'LOUDNESS DECAY TIME': 'LOUDNESS CONTOUR',
+    'LOUDNESS SUSTAIN': 'LOUDNESS CONTOUR',
+  }
+
+  /** The three that carry no module, for the two reasons `inModule` records. */
+  const LOOSE = ['OSC 3 CONTROL', 'OSCILLATOR MODULATION', 'MULTI TRIGGER']
+
+  const byName = new Map<string, Set<string>>()
+  for (const recipe of device.recipes) {
+    for (const param of params(recipe)) {
+      const module = (param as { module?: string }).module ?? '(none)'
+      const found = byName.get(param.name)
+      if (found === undefined) byName.set(param.name, new Set([module]))
+      else found.add(module)
+    }
+  }
+
+  const groups = MODEL_D_PANEL.features.flatMap((f) =>
+    f.kind === 'group' ? [{ label: f.label, x0: f.x, y0: f.y, x1: f.x + f.w, y1: f.y + f.h }] : [],
+  )
+  const box = (label: string) => {
+    const g = groups.find((x) => x.label === label)
+    if (g === undefined) throw new Error(`no box ${label}`)
+    return g
+  }
+  const drawn = (label: string) => {
+    for (const f of MODEL_D_PANEL.features) {
+      if (f.kind === 'knob' && f.label === label) {
+        return { x0: f.x, x1: f.x + f.d, cx: f.x + f.d / 2, cy: f.y + f.d / 2 }
+      }
+      if (f.kind === 'button' && f.label === label) {
+        return { x0: f.x, x1: f.x + f.w, cx: f.x + f.w / 2, cy: f.y + f.h / 2 }
+      }
+    }
+    throw new Error(`no control ${label}`)
+  }
+  const inside = (
+    g: { x0: number; y0: number; x1: number; y1: number },
+    p: { cx: number; cy: number },
+  ) => p.cx >= g.x0 && p.cx <= g.x1 && p.cy >= g.y0 && p.cy <= g.y1
+
+  it('accounts for every parameter of every recipe, in a box or deliberately out of one', () => {
+    const unaccounted = [...byName.keys()].filter(
+      (name) => SECTIONS[name] === undefined && !LOOSE.includes(name),
+    )
+    expect(unaccounted).toEqual([])
+    expect(byName.size).toBe(Object.keys(SECTIONS).length + LOOSE.length)
+    expect(byName.size).toBe(46)
+  })
+
+  it('gives every boxed name one module and only one', () => {
+    for (const [name, mods] of byName) {
+      if (LOOSE.includes(name)) continue
+      expect([...mods], name).toEqual([SECTIONS[name]])
+    }
+  })
+
+  it('leaves exactly the three loose controls loose', () => {
+    const loose = [...byName].filter(([, mods]) => mods.has('(none)')).map(([n]) => n).sort()
+    expect(loose).toEqual([...LOOSE].sort())
+    for (const name of LOOSE) expect([...(byName.get(name) ?? [])], name).toEqual(['(none)'])
+  })
+
+  it('draws every module it names, and leaves MIDI empty', () => {
+    const modules = new Set(Object.values(SECTIONS))
+    expect([...modules].sort()).toEqual([
+      'CONTROLLERS',
+      'LOUDNESS CONTOUR',
+      'MIXER',
+      'MODIFIERS',
+      'OSCILLATOR BANK',
+      'OUTPUT',
+    ])
+    const labels = groups.flatMap((g) => (g.label === undefined ? [] : [g.label]))
+    expect(labels).toHaveLength(7)
+    for (const module of modules) expect(labels, module).toContain(module)
+    // The seventh. It holds a USB B port and two DINs, and a socket is not a setting.
+    expect(labels).toContain('MIDI')
+    expect(modules.has('MIDI')).toBe(false)
+  })
+
+  // -------------------------------------------------------------------------
+  // The nested box
+  // -------------------------------------------------------------------------
+
+  it('nests LOUDNESS CONTOUR inside MODIFIERS, and boxes by the innermost of the two', () => {
+    const modifiers = box('MODIFIERS')
+    const contour = box('LOUDNESS CONTOUR')
+    expect(contour.x0).toBeGreaterThanOrEqual(modifiers.x0)
+    expect(contour.x1).toBeLessThanOrEqual(modifiers.x1)
+    expect(contour.y1).toBeLessThanOrEqual(modifiers.y1)
+    // The panel's own division: the nested box's top edge is a straight run at y 79.1.
+    expect(contour.y0).toBeCloseTo(79.1, 1)
+    for (const name of ['LOUDNESS ATTACK', 'LOUDNESS DECAY TIME', 'LOUDNESS SUSTAIN']) {
+      const c = drawn(name)
+      expect(inside(contour, c), name).toBe(true)
+      expect([...(byName.get(name) ?? [])], name).toEqual(['LOUDNESS CONTOUR'])
+    }
+  })
+
+  it('keeps LOUD DECAY out of the nested box, which is what splits loudness()', () => {
+    // The switch is level with the three knobs but well left of the nested rectangle, so it is
+    // MODIFIERS. Stamping the whole helper `LOUDNESS CONTOUR` would have put a MODIFIERS switch
+    // inside a box that does not contain it.
+    const c = drawn('LOUD DECAY')
+    expect(inside(box('LOUDNESS CONTOUR'), c)).toBe(false)
+    expect(c.cx).toBeLessThan(box('LOUDNESS CONTOUR').x0)
+    expect([...(byName.get('LOUD DECAY') ?? [])]).toEqual(['MODIFIERS'])
+  })
+
+  // -------------------------------------------------------------------------
+  // The two border switches, by measurement rather than by memory
+  // -------------------------------------------------------------------------
+
+  it('leaves the two border switches unmoduled, and records how far each one straddles', () => {
+    // `panel.ts` calls both "on the line, not inside either box". The drawing bears that out by
+    // very different margins, and the numbers are pinned so a later edit argues with the
+    // measurement rather than with a memory of it.
+    const controllers = box('CONTROLLERS')
+    const bank = box('OSCILLATOR BANK')
+    expect(controllers.x1).toBeCloseTo(63.6, 1)
+    expect(bank.x0).toBeCloseTo(65.5, 1)
+
+    const oscMod = drawn('OSCILLATOR MODULATION')
+    // Spans the whole gap: left of the CONTROLLERS edge, right of the OSCILLATOR BANK edge.
+    expect(oscMod.x0).toBeLessThan(controllers.x1)
+    expect(oscMod.x1).toBeGreaterThan(bank.x0)
+
+    const osc3Control = drawn('OSC 3 CONTROL')
+    // Only clips it: the left edge crosses by a quarter of a millimetre and the centre is inside.
+    expect(osc3Control.x0).toBeLessThan(bank.x0)
+    expect(bank.x0 - osc3Control.x0).toBeLessThan(1)
+    expect(inside(bank, osc3Control)).toBe(true)
+
+    expect([...(byName.get('OSCILLATOR MODULATION') ?? [])]).toEqual(['(none)'])
+    expect([...(byName.get('OSC 3 CONTROL') ?? [])]).toEqual(['(none)'])
+  })
+
+  it('leaves MULTI TRIGGER unmoduled because it is a mode, not the switch used to reach it', () => {
+    // p.13: flick A-440 within five seconds of power-up and count the LED flashes back. A-440 is
+    // a CONTROLLERS switch; multi-trigger is not that switch. Boxing it there would be the same
+    // error as boxing a menu setting under the button that opens the menu.
+    expect([...(byName.get('MULTI TRIGGER') ?? [])]).toEqual(['(none)'])
+    const drawnLabels = MODEL_D_PANEL.features.flatMap((f) =>
+      (f.kind === 'button' || f.kind === 'knob') && f.label !== undefined ? [f.label] : [],
+    )
+    expect(drawnLabels).not.toContain('MULTI TRIGGER')
+  })
+
+  it('boxes the six MODIFIERS switches that sit outside the MODIFIERS rectangle', () => {
+    // A column running down the outside of the section they belong to: all six at cx 233.67,
+    // 2.3 mm left of the box edge. They are MODIFIERS because the section is what they are —
+    // p.10 lists items 30-41 as the modifiers — not because a rectangle contains them.
+    const modifiers = box('MODIFIERS')
+    for (const name of [
+      'FILTER MODE',
+      'FILTER MODULATION',
+      'KEYBOARD CONTROL 1',
+      'KEYBOARD CONTROL 2',
+      'FILTER DECAY',
+      'LOUD DECAY',
+    ]) {
+      const c = drawn(name)
+      expect(c.cx, name).toBeCloseTo(233.67, 1)
+      expect(inside(modifiers, c), name).toBe(false)
+      expect([...(byName.get(name) ?? [])], name).toEqual(['MODIFIERS'])
+    }
+  })
+
+  // -------------------------------------------------------------------------
+  // The other two split helpers
+  // -------------------------------------------------------------------------
+
+  it('splits feedback() between the mixer channel and the output knob', () => {
+    // p.12 says the feedback level depends on both knobs, so the helper emits all three — but
+    // they are at opposite ends of the panel and the boxes say so.
+    expect([...(byName.get('EXT IN') ?? [])]).toEqual(['MIXER'])
+    expect([...(byName.get('EXT IN VOLUME') ?? [])]).toEqual(['MIXER'])
+    expect([...(byName.get('MAIN VOLUME') ?? [])]).toEqual(['OUTPUT'])
+    expect(inside(box('MIXER'), drawn('EXT IN VOLUME'))).toBe(true)
+  })
+
+  it('splits modulation() three ways, with the border switch between the two boxes', () => {
+    for (const name of [
+      'OSC 3 / FILTER EG',
+      'NOISE (MOD SRC) / LFO',
+      'MOD MIX',
+      'MOD DEPTH',
+      'LFO WAVEFORM',
+      'LFO RATE',
+    ]) {
+      expect([...(byName.get(name) ?? [])], name).toEqual(['CONTROLLERS'])
+    }
+    expect([...(byName.get('OSCILLATOR MODULATION') ?? [])]).toEqual(['(none)'])
+    expect([...(byName.get('FILTER MODULATION') ?? [])]).toEqual(['MODIFIERS'])
+  })
+
+  it('keeps every parameter name exactly as it was authored, and trims none of them', () => {
+    expect([...byName.keys()].sort()).toEqual([...Object.keys(SECTIONS), ...LOOSE].sort())
+    const label = (name: string, module: string) =>
+      paramLabel({
+        name,
+        value: 1,
+        provenance: { state: 'authored', cite: { kind: 'manual', source: 'x' } },
+        module,
+      })
+    // No name in this file carries a ` · ` prefix, so `paramLabel` is the identity everywhere —
+    // including on the pair a prefix parse would have collided, `OSC 1` and `OSC 1 RANGE`.
+    for (const [name, module] of Object.entries(SECTIONS)) {
+      expect(label(name, module), name).toBe(name)
+    }
+    expect(label('OSC 1', 'MIXER')).toBe('OSC 1')
+    expect(label('OSC 1 RANGE', 'OSCILLATOR BANK')).toBe('OSC 1 RANGE')
+  })
+})
+
+/**
+ * §8/#385. **The boxes a reader actually gets**, and on this device that is a claim with a sharp
+ * edge on it: authored order is preserved exactly, so three sections are drawn **twice** in a
+ * part.
+ *
+ * `groupedParams` cuts on adjacent runs. `osc3()` puts a border switch between `OSC 3 RANGE` and
+ * `OSC 3 FREQUENCY`, so `OSCILLATOR BANK` opens, closes and opens again; `loudness()` returns to
+ * `MODIFIERS` after the nested contour, so that one does too; and every recipe that calls
+ * `modulation()` reaches `CONTROLLERS` a second time after the mixer.
+ *
+ * That is left visible rather than sorted away. Merging the boxes would mean moving `OSC 3
+ * CONTROL` away from the oscillator whose scale it decides, moving `LOUD DECAY` away from the
+ * contour it switches, or moving the whole modulation block up the recipe — three changes to the
+ * order a reader sets these controls in, bought with three fewer silkscreens on the page. The
+ * sequences are pinned here so the trade is a decision on the record rather than a surprise.
+ */
+describe('a real MODEL D guide draws the panel, repeats and all (#385)', () => {
+  const result = alone()
+
+  it('resolves a part on it at all, so the assertions below are not vacuous', () => {
+    expect(result.assignments.length).toBeGreaterThan(0)
+    expect(result.assignments.every((a) => a.deviceId === 'behringer-model-d')).toBe(true)
+  })
+
+  it('cuts every part into the same spine, with the border switch inside the oscillator bank', () => {
+    for (const assignment of result.assignments) {
+      const boxes = groupedParams(assignment.params).map((g) => g.module)
+      // The opening five runs are identical on every recipe this box has.
+      expect(boxes.slice(0, 5), assignment.role).toEqual([
+        'CONTROLLERS',
+        'OSCILLATOR BANK',
+        undefined,
+        'OSCILLATOR BANK',
+        'MIXER',
+      ])
+      // And every part ends with the nested contour and the switch that belongs outside it.
+      const tail = boxes.filter((b) => b !== undefined)
+      expect(tail[tail.length - 2], assignment.role).toBe('LOUDNESS CONTOUR')
+      expect(tail[tail.length - 1], assignment.role).toBe('MODIFIERS')
+    }
+  })
+
+  it('draws OSCILLATOR BANK and MODIFIERS twice, which is the cost of the authored order', () => {
+    for (const assignment of result.assignments) {
+      const boxes = groupedParams(assignment.params)
+        .map((g) => g.module)
+        .filter((m): m is string => m !== undefined)
+      const count = (m: string) => boxes.filter((b) => b === m).length
+      expect(count('OSCILLATOR BANK'), assignment.role).toBe(2)
+      expect(count('MODIFIERS'), assignment.role).toBe(2)
+      // MIXER, OUTPUT and the nested contour are each drawn once, whatever the recipe.
+      expect(count('MIXER'), assignment.role).toBe(1)
+      expect(count('LOUDNESS CONTOUR'), assignment.role).toBe(1)
+      expect(count('OUTPUT'), assignment.role).toBeLessThanOrEqual(1)
+      // CONTROLLERS is once, or twice where the recipe states a modulation mix.
+      expect(count('CONTROLLERS'), assignment.role).toBeLessThanOrEqual(2)
+    }
+  })
+
+  it('keeps the reading order: concatenating the runs is the parameter list', () => {
+    for (const assignment of result.assignments) {
+      const groups = groupedParams(assignment.params)
+      expect(groups.flatMap((g) => [...g.params]), assignment.role).toEqual([...assignment.params])
+    }
+  })
+
+  it('draws the boxes in the guide, one lamp each, with the loose switches bare', () => {
+    const md = renderGuide(result)
+    for (const module of [
+      'CONTROLLERS',
+      'OSCILLATOR BANK',
+      'MIXER',
+      'MODIFIERS',
+      'LOUDNESS CONTOUR',
+    ]) {
+      expect(md, module).toContain(`- **● ${module}**`)
+    }
+    expect(md).toContain('- **OSC 3 CONTROL**')
+    expect(md).toContain('- **OSCILLATOR MODULATION**')
+    expect(md).not.toContain('● OSC 3 CONTROL')
+    expect(md).not.toContain('● OSCILLATOR MODULATION')
+    // The empty box is never drawn, because a box exists only where a parameter names it.
+    expect(md).not.toContain('● MIDI')
   })
 })
