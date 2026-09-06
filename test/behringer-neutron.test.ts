@@ -2,7 +2,9 @@ import { describe, expect, expectTypeOf, it } from 'vitest'
 import {
   DeviceSchema,
   evidenceFor,
+  groupedParams,
   jackFact,
+  paramLabel,
   renderGuide,
   resolve,
   moodState,
@@ -10,6 +12,7 @@ import {
   type Recipe,
 } from '../lib/core/index'
 import { device, type NeutronJack } from '../lib/devices/behringer-neutron/index'
+import { NEUTRON_PANEL } from '../lib/devices/behringer-neutron/panel'
 import { device as crave } from '../lib/devices/behringer-crave/index'
 import { TEMPLATES } from '../lib/templates/index'
 
@@ -487,5 +490,243 @@ describe('NEUTRON manifest', () => {
         expect(guide).toContain(entry.note as string)
       }
     }
+  })
+})
+
+/**
+ * §3.1/#385. **Twelve boxes, and the silkscreen is what decides them.**
+ *
+ * The third device in the library to author `module`, after the Muse pilot and the Subsequent 37.
+ * It is here because it is the case where the *unboxed* half is the substantial half: this panel
+ * is thirteen rectangles, twelve of them labelled, and nine of the recipes' controls sit outside
+ * every one of them — above the oscillator boxes, in the gap between them, or in the one
+ * rectangle the drawing leaves unnamed.
+ *
+ * So the mapping below is a reading of the instrument, pinned by name, and an edit that moves a
+ * control from a box to the loose run (or back) has to come here and say so.
+ */
+describe('every control is boxed by the panel section it sits in (#385)', () => {
+  /** The reading. Left is the authored name; right is the silkscreen above the control. */
+  const SECTIONS: Record<string, string> = {
+    'OSC 1 SHAPE': 'OSC 1',
+    'OSC 1 WIDTH': 'OSC 1',
+    'OSC 2 SHAPE': 'OSC 2',
+    'OSC 2 WIDTH': 'OSC 2',
+    'VCF MODE': 'VCF',
+    'VCF FREQ': 'VCF',
+    'VCF RESO': 'VCF',
+    'VCF KEY TRK': 'VCF',
+    'VCF MOD DEPTH': 'VCF',
+    'VCF ENV DEPTH': 'VCF',
+    'LFO SHAPE': 'LFO',
+    'LFO MIDI CLOCK SYNC': 'LFO',
+    'LFO RATE': 'LFO',
+    'LFO DIVISION': 'LFO',
+    'LFO KEY SYNC': 'LFO',
+    'DELAY TIME': 'DELAY',
+    'DELAY REPEATS': 'DELAY',
+    'DELAY MIX': 'DELAY',
+    'OD DRIVE': 'OVERDRIVE',
+    'OD TONE': 'OVERDRIVE',
+    'OD LEVEL': 'OVERDRIVE',
+    'ENV 1 A': 'ENVELOPE 1',
+    'ENV 1 D': 'ENVELOPE 1',
+    'ENV 1 S': 'ENVELOPE 1',
+    'ENV 1 R': 'ENVELOPE 1',
+    'ENV 2 A': 'ENVELOPE 2',
+    'ENV 2 D': 'ENVELOPE 2',
+    'ENV 2 S': 'ENVELOPE 2',
+    'ENV 2 R': 'ENVELOPE 2',
+    'VOLUME': 'OUTPUT',
+    'S&H RATE': 'SAMPLE & HOLD',
+    'S&H GLIDE': 'SAMPLE & HOLD',
+    'SLEW': 'SLEW RATE LIMITER',
+    'PORTA TIME': 'SLEW RATE LIMITER',
+    'ATTENUATOR 1': 'ATTENUATORS',
+  }
+
+  /**
+   * The nine the panel leaves outside every rectangle. Measured coordinates are in `panel.ts`
+   * and restated on `inModule`: the two `TUNE` knobs and `OSC MIX` are on the row above the
+   * oscillator boxes, the two `RANGE` buttons are the pair in the 15.7 mm gap between them with
+   * `OSC SYNC` and `PARAPHONIC` below, and `NOISE` and `VCA BIAS` are the one group rectangle the
+   * drawing carries with no label on it.
+   */
+  const LOOSE = [
+    'NOISE',
+    'OSC 1 RANGE',
+    'OSC 1 TUNE',
+    'OSC 2 RANGE',
+    'OSC 2 TUNE',
+    'OSC MIX',
+    'OSC SYNC',
+    'PARAPHONIC',
+    'VCA BIAS',
+  ]
+
+  /** Every authored parameter of every recipe, once per distinct name. */
+  const byName = new Map<string, Set<string>>()
+  for (const recipe of device.recipes) {
+    for (const param of params(recipe)) {
+      const module = (param as { module?: string }).module ?? '(none)'
+      const found = byName.get(param.name)
+      if (found === undefined) byName.set(param.name, new Set([module]))
+      else found.add(module)
+    }
+  }
+
+  it('accounts for every parameter of every recipe, in a box or deliberately out of one', () => {
+    // Whole-device rather than spot-checked: a block helper added later with no `inModule` around
+    // it is exactly the miss this catches, and it would otherwise surface as one loose run in one
+    // guide nobody happens to render.
+    const unaccounted = [...byName.keys()].filter(
+      (name) => SECTIONS[name] === undefined && !LOOSE.includes(name),
+    )
+    expect(unaccounted).toEqual([])
+    expect(byName.size).toBe(Object.keys(SECTIONS).length + LOOSE.length)
+  })
+
+  it('gives every boxed name one module and only one', () => {
+    for (const [name, mods] of byName) {
+      if (LOOSE.includes(name)) continue
+      expect([...mods], name).toEqual([SECTIONS[name]])
+    }
+  })
+
+  it('leaves the nine loose controls loose, in every recipe that sets them', () => {
+    // §3.1: an unmoduled param is not a gap. Boxing these would put a control in a rectangle the
+    // panel draws somewhere else, or under a name the panel does not print at all.
+    for (const name of LOOSE) {
+      expect([...(byName.get(name) ?? [])], name).toEqual(['(none)'])
+    }
+    const loose = [...byName].filter(([, mods]) => mods.has('(none)')).map(([name]) => name).sort()
+    expect(loose).toEqual([...LOOSE].sort())
+  })
+
+  it('draws exactly the twelve sections the panel labels, and nothing the panel does not', () => {
+    const modules = new Set<string>()
+    for (const mods of byName.values()) for (const m of mods) if (m !== '(none)') modules.add(m)
+    const labels = NEUTRON_PANEL.features.flatMap((f) =>
+      f.kind === 'group' && f.label !== undefined ? [f.label] : [],
+    )
+    // Same set, both ways: no module the panel does not label, and no labelled section left
+    // without a control in it.
+    expect([...modules].sort()).toEqual([...labels].sort())
+    expect(labels).toHaveLength(12)
+  })
+
+  it('leaves NOISE and VCA BIAS out of the one rectangle the panel draws unlabelled', () => {
+    // p.7 heads its own paragraph "3.1.4 Noise & VCA Bias", but that is the manual's section
+    // title and not a word printed on the box. §8 has somebody looking for a silkscreen.
+    const unlabelled = NEUTRON_PANEL.features.filter((f) => f.kind === 'group' && f.label === undefined)
+    expect(unlabelled).toHaveLength(1)
+    expect([...(byName.get('NOISE') ?? [])]).toEqual(['(none)'])
+    expect([...(byName.get('VCA BIAS') ?? [])]).toEqual(['(none)'])
+  })
+
+  it('keeps the TUNE and RANGE pair together, on the loose side of the line', () => {
+    // `tune()` exists so the switch travels beside the value whose scale it sets. Boxing RANGE
+    // into `OSC n` while TUNE stayed above would have put the pair in two different boxes.
+    for (const n of [1, 2]) {
+      for (const recipe of device.recipes) {
+        const names = params(recipe).map((p) => p.name)
+        const at = names.indexOf(`OSC ${n} RANGE`)
+        expect(at, recipe.id).toBeGreaterThanOrEqual(0)
+        expect(names[at + 1], recipe.id).toBe(`OSC ${n} TUNE`)
+      }
+    }
+  })
+
+  it('keeps every parameter name exactly as it was authored', () => {
+    // `name` is #107's hoist key, `sameRenderedParam`'s comparison and the string every test
+    // above names, so nothing keyed on one moves. The forty-four are the same forty-four.
+    expect([...byName.keys()].sort()).toEqual([...Object.keys(SECTIONS), ...LOOSE].sort())
+    for (const name of ['OSC 1 SHAPE', 'OSC 2 WIDTH', 'VCF FREQ', 'ENV 1 A', 'S&H RATE', 'ATTENUATOR 1']) {
+      expect(byName.has(name), name).toBe(true)
+    }
+  })
+
+  it('trims no label, because this file spells its prefixes with a space', () => {
+    // `paramLabel` trims an exact `${module} · ` prefix and nothing else. `OSC 1 SHAPE` under
+    // box `OSC 1` therefore keeps its whole name — the box is the grouping here, not a rename.
+    const label = (name: string, module: string) =>
+      paramLabel({
+        name,
+        value: 1,
+        provenance: { state: 'authored', cite: { kind: 'manual', source: 'x' } },
+        module,
+      })
+    expect(label('OSC 1 SHAPE', 'OSC 1')).toBe('OSC 1 SHAPE')
+    expect(label('VCF FREQ', 'VCF')).toBe('VCF FREQ')
+    expect(label('ENV 1 A', 'ENVELOPE 1')).toBe('ENV 1 A')
+    expect(label('VOLUME', 'OUTPUT')).toBe('VOLUME')
+  })
+})
+
+/**
+ * §8/#385. **The boxes a reader actually gets**, which is a claim about authored *order* and not
+ * only about the stamps.
+ *
+ * `groupedParams` cuts on adjacent runs, so a section interrupted and resumed comes out as two
+ * boxes carrying one label — an authoring-order defect the device folder owns. Every recipe runs
+ * `voiceMode`, the two oscillator blocks, `output`, `filter`, the two envelopes, `overdrive` and
+ * then whatever else it uses, in that sequence, and the three loose runs fall where the panel
+ * puts the controls that make them.
+ */
+describe('a real NEUTRON guide renders one box per section (#385)', () => {
+  const result = alone()
+
+  it('resolves a part on it at all, so the assertions below are not vacuous', () => {
+    expect(result.assignments.length).toBeGreaterThan(0)
+    expect(result.assignments.every((a) => a.deviceId === 'behringer-neutron')).toBe(true)
+  })
+
+  it('opens every part with the same ten runs, loose and boxed alternating down the panel', () => {
+    for (const assignment of result.assignments) {
+      const groups = groupedParams(assignment.params)
+      expect(groups.slice(0, 10).map((g) => g.module), assignment.role).toEqual([
+        // PARAPHONIC, OSC SYNC, OSC 1 RANGE, OSC 1 TUNE
+        undefined,
+        'OSC 1',
+        // OSC 2 RANGE, OSC 2 TUNE
+        undefined,
+        'OSC 2',
+        // OSC MIX, NOISE, VCA BIAS
+        undefined,
+        'OUTPUT',
+        'VCF',
+        'ENVELOPE 1',
+        'ENVELOPE 2',
+        'OVERDRIVE',
+      ])
+    }
+  })
+
+  it('never draws one section as two boxes', () => {
+    for (const assignment of result.assignments) {
+      const boxed = groupedParams(assignment.params)
+        .map((g) => g.module)
+        .filter((m): m is string => m !== undefined)
+      expect(new Set(boxed).size, assignment.role).toBe(boxed.length)
+    }
+  })
+
+  it('keeps the reading order: concatenating the runs is the parameter list', () => {
+    for (const assignment of result.assignments) {
+      const groups = groupedParams(assignment.params)
+      expect(groups.flatMap((g) => [...g.params]), assignment.role).toEqual([...assignment.params])
+    }
+  })
+
+  it('draws the boxes in the guide, one lamp each', () => {
+    const md = renderGuide(result)
+    for (const module of ['OSC 1', 'OSC 2', 'OUTPUT', 'VCF', 'ENVELOPE 1', 'ENVELOPE 2', 'OVERDRIVE']) {
+      expect(md, module).toContain(`- **● ${module}**`)
+    }
+    // And the loose controls stay loose lines, with no lamp of their own.
+    expect(md).toContain('- **OSC MIX**')
+    expect(md).toContain('- **VCA BIAS**')
+    expect(md).not.toContain('● OSC MIX')
+    expect(md).not.toContain('● NOISE')
   })
 })

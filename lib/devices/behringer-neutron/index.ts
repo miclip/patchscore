@@ -507,6 +507,57 @@ function pick(
 }
 
 /**
+ * §3.1/#385. **Stamps a run of parameters with the silkscreened section its controls sit in**,
+ * so the guide draws the panel's own boxes instead of one seventy-line list. The Muse's helper,
+ * unchanged, because the shape of the job is the same one.
+ *
+ * ## Twelve boxes, and the panel draws every one of them
+ *
+ * `panel.ts` carries thirteen `group` rectangles. Twelve of them are labelled and each is a
+ * module below — `OSC 1`, `OSC 2`, `VCF`, `LFO`, `DELAY`, `OVERDRIVE`, `ENVELOPE 1`,
+ * `ENVELOPE 2`, `OUTPUT`, `SAMPLE & HOLD`, `SLEW RATE LIMITER`, `ATTENUATORS`. The thirteenth,
+ * at x=133.3, carries `NOISE` and `VCA BIAS` and **has no label on the instrument**: p.7 heads
+ * its own paragraph *3.1.4 Noise & VCA Bias*, but that is the manual's section title and not a
+ * word printed anywhere on the box. §8 has somebody standing at the machine looking for a
+ * silkscreen, so those two stay unmoduled rather than being boxed under a name the panel does
+ * not print.
+ *
+ * ## Nine controls outside every box, and they are outside on the drawing
+ *
+ * §3.1 says an unmoduled parameter is not a gap, and these nine are the case it was written
+ * for. Measured off p.24 in `panel.ts`, the two `OSC n` rectangles span x 19.5-48.0 and
+ * 63.7-93.0 and start at y 49.2:
+ *
+ *  - **`OSC MIX`** (x 52.2-60.5, wholly above at y 27.1-35.4) and **both `TUNE` knobs**, whose
+ *    centres are at y 44.6 with the box tops at 49.2, sit on the shared row the `OCTAVE` label
+ *    heads rather than inside either rectangle.
+ *  - **`OSC 1 RANGE`** (x 46.4-52.3) and **`OSC 2 RANGE`** (x 60.6-66.5) are a pair of buttons
+ *    side by side in the 15.7 mm gap *between* the boxes, straddling their inner edges — the
+ *    octave cluster with the `8`/`16`/`32` LED columns, not either oscillator's rectangle.
+ *  - **`OSC SYNC`** and **`PARAPHONIC`** are the two the panel comment already calls out as
+ *    belonging to neither box (p.7 items 8 and 9).
+ *  - **`NOISE`** and **`VCA BIAS`** are the unlabelled rectangle above.
+ *
+ * Leaving `OSC n RANGE` out is also what keeps `tune()` intact: the whole point of that helper
+ * is that the switch travels beside the value it sets the scale for, and boxing one of the two
+ * would put them in different boxes.
+ *
+ * ## Names are left exactly as authored
+ *
+ * As on the Muse and the Subsequent 37. `name` is #107's hoist key, `sameRenderedParam`'s
+ * comparison and the string every fixture names, so nothing keyed on one moves.
+ *
+ * **Nothing trims here, and that is a fact about this box's spelling.** `paramLabel` trims an
+ * exact `${module} · ` prefix and this file separates with a space — `OSC 1 SHAPE` inside
+ * box `OSC 1` keeps its whole name. Re-spelling forty-four names to buy a trim is a rename with
+ * its own blast radius and is not what #385 asked for; the box is the grouping, and the repeat
+ * is the cost of leaving every name where it was.
+ */
+function inModule(module: string, params: AuthoredParam[]): AuthoredParam[] {
+  return params.map((param) => ({ ...param, module }))
+}
+
+/**
  * **`TUNE` and the `RANGE` that says which scale it was read off, emitted together.**
  *
  * The whole point of this helper is that it is impossible to author a tune figure in this file
@@ -531,7 +582,13 @@ function tune(osc: 1 | 2, semitones: number, range: (typeof OSC_RANGES)[number])
   ]
 }
 
-/** One oscillator, whole: the range and tune pair, then its shape and pulse width. */
+/**
+ * One oscillator, whole: the range and tune pair, then its shape and pulse width.
+ *
+ * **The pair stays outside the box and the two knobs go in it**, which is where the drawing puts
+ * them — see `inModule`. `RANGE` is one of the two buttons in the gap between the rectangles and
+ * `TUNE` is on the row above, so the box `OSC n` holds exactly `SHAPE` and `WIDTH`.
+ */
 function osc(
   n: 1 | 2,
   semitones: number,
@@ -541,14 +598,16 @@ function osc(
 ): AuthoredParam[] {
   return [
     ...tune(n, semitones, range),
-    pick(`OSC ${n} SHAPE`, shape, OSC_SHAPES, 25, {
-      hint: 'osc-shape-blend',
-      note:
-        shape === 'Tone Mod' || shape === 'Square'
-          ? 'PULSE WIDTH only affects these two shapes (p.10)'
-          : undefined,
-    }),
-    num(`OSC ${n} WIDTH`, width, PERCENT, 25, { unit: '%' }),
+    ...inModule(`OSC ${n}`, [
+      pick(`OSC ${n} SHAPE`, shape, OSC_SHAPES, 25, {
+        hint: 'osc-shape-blend',
+        note:
+          shape === 'Tone Mod' || shape === 'Square'
+            ? 'PULSE WIDTH only affects these two shapes (p.10)'
+            : undefined,
+      }),
+      num(`OSC ${n} WIDTH`, width, PERCENT, 25, { unit: '%' }),
+    ]),
   ]
 }
 
@@ -561,7 +620,7 @@ function filter(
   modDepth: number,
   envDepth: number,
 ): AuthoredParam[] {
-  return [
+  return inModule('VCF', [
     pick('VCF MODE', mode, VCF_MODES, 25),
     num('VCF FREQ', freqHz, CUTOFF_HZ, 25, {
       unit: 'Hz',
@@ -583,12 +642,12 @@ function filter(
       unit: '%',
       note: 'Depth of ENVELOPE 2, which is normalled to the filter (p.12)',
     }),
-  ]
+  ])
 }
 
 /** One ADSR. Envelope 1 is normalled to the VCA, envelope 2 to the filter (p.12). */
 function env(n: 1 | 2, attack: number, decay: number, sustain: number, release: number): AuthoredParam[] {
-  return [
+  return inModule(`ENVELOPE ${n}`, [
     num(`ENV ${n} A`, attack, ATTACK_MS, 25, { unit: 'ms', note: '300 µs to 5 s, linear attack' }),
     num(`ENV ${n} D`, decay, DECAY_MS, 25, {
       unit: 'ms',
@@ -597,23 +656,23 @@ function env(n: 1 | 2, attack: number, decay: number, sustain: number, release: 
     }),
     num(`ENV ${n} S`, sustain, SUSTAIN_V, 25, { unit: 'V', note: 'A level, given as a voltage' }),
     num(`ENV ${n} R`, release, RELEASE_MS, 25, { unit: 'ms', note: '1.5 ms to 6 s, exponential release' }),
-  ]
+  ])
 }
 
 /** The overdrive. `grit` lives on DRIVE, which is what the section is for. */
 function overdrive(drive: number, tone: number, level: number): AuthoredParam[] {
-  return [
+  return inModule('OVERDRIVE', [
     num('OD DRIVE', drive, DRIVE_RANGE, 25, { mood: [{ axis: 'grit', amount: 3 }] }),
     num('OD TONE', tone, ZERO_TEN, 25, {
       note: 'Left boosts the lows, right thins them and lifts the highs (p.7)',
     }),
     travel('OD LEVEL', level, 'p.25 gives this as "0 dB to -∞" — a named endpoint, so percent of travel'),
-  ]
+  ])
 }
 
 /** The bucket-brigade delay. `space` lives on MIX, and nowhere else on this box. */
 function delay(timeMs: number, repeats: number, mix: number): AuthoredParam[] {
-  return [
+  return inModule('DELAY', [
     num('DELAY TIME', timeMs, DELAY_MS, 25, {
       unit: 'ms',
       note: 'p.12 gives the low end as 24 ms; the specifications say 25 ms',
@@ -623,7 +682,7 @@ function delay(timeMs: number, repeats: number, mix: number): AuthoredParam[] {
       note: 'Fully right with MIX right, repeats build without end (p.7)',
     }),
     num('DELAY MIX', mix, PERCENT, 25, { unit: '%', mood: [{ axis: 'space', amount: 22 }] }),
-  ]
+  ])
 }
 
 /**
@@ -631,7 +690,7 @@ function delay(timeMs: number, repeats: number, mix: number): AuthoredParam[] {
  * `0 to 10 (0.01Hz to 10kHz)`.
  */
 function lfo(shape: (typeof LFO_SHAPES)[number], rate: number, keySync: 'on' | 'off'): AuthoredParam[] {
-  return [
+  return inModule('LFO', [
     pick('LFO SHAPE', shape, LFO_SHAPES, 25, {
       hint: 'lfo-shape-blend',
       note: shape === 'Ramp' ? 'p.11 calls this shape Reverse Sawtooth' : undefined,
@@ -642,7 +701,7 @@ function lfo(shape: (typeof LFO_SHAPES)[number], rate: number, keySync: 'on' | '
     }),
     num('LFO RATE', rate, LFO_RATE, 25, { note: '0.01 Hz to 10 kHz across the travel' }),
     pick('LFO KEY SYNC', keySync, ON_OFF, 25, { note: 'Restarts the LFO phase on each MIDI note' }),
-  ]
+  ])
 }
 
 /**
@@ -657,7 +716,7 @@ function lfoSynced(
   division: (typeof LFO_DIVISIONS)[number],
   keySync: 'on' | 'off',
 ): AuthoredParam[] {
-  return [
+  return inModule('LFO', [
     pick('LFO SHAPE', shape, LFO_SHAPES, 25, {
       hint: 'lfo-shape-blend',
       note: shape === 'Ramp' ? 'p.11 calls this shape Reverse Sawtooth' : undefined,
@@ -670,10 +729,17 @@ function lfoSynced(
       note: 'Set by the LFO RATE knob position, anticlockwise 4/1 to clockwise 1/64',
     }),
     pick('LFO KEY SYNC', keySync, ON_OFF, 25, { note: 'Restarts the LFO phase on each MIDI note' }),
-  ]
+  ])
 }
 
-/** The three that every recipe sets whatever else it does. */
+/**
+ * The four that every recipe sets whatever else it does — and they sit in three different places
+ * on the panel, which is why only the last one is boxed.
+ *
+ * `OSC MIX` is on the oscillator row above the two boxes; `NOISE` and `VCA BIAS` are the
+ * unlabelled rectangle between the VCF strip and the envelopes; `VOLUME` is the one control of
+ * the four that has a silkscreen over it. See `inModule`.
+ */
 function output(oscMix: number, noise: number, vcaBias: number, volume: number): AuthoredParam[] {
   return [
     travel('OSC MIX', oscMix, 'p.25 gives this only as a linear blend between OSC 1 and 2, with no scale'),
@@ -682,8 +748,29 @@ function output(oscMix: number, noise: number, vcaBias: number, volume: number):
       unit: '%',
       note: 'Opens the VCA without a note — turn it down for a gated part (p.10)',
     }),
-    num('VOLUME', volume, PERCENT, 25, { unit: '%' }),
+    ...inModule('OUTPUT', [num('VOLUME', volume, PERCENT, 25, { unit: '%' })]),
   ]
+}
+
+/**
+ * `ATTENUATOR 1`, in the box the panel draws around the two attenuator knobs.
+ *
+ * A helper rather than a bare `travel()` call inside five recipes, so the box cannot be forgotten
+ * on the sixth. Attenuator 2 is never authored — p.21 has the bipolar LFO normalled through it
+ * into both pulse widths, and no recipe here moves that.
+ */
+function attenuator1(value: number, note: string): AuthoredParam[] {
+  return inModule('ATTENUATORS', [travel('ATTENUATOR 1', value, note)])
+}
+
+/** `PORTA TIME` and `SLEW`, the two knobs inside the SLEW RATE LIMITER box. */
+function slewLimiter(params: AuthoredParam[]): AuthoredParam[] {
+  return inModule('SLEW RATE LIMITER', params)
+}
+
+/** `RATE` and `GLIDE`, the two knobs inside the SAMPLE & HOLD box. */
+function sampleHold(params: AuthoredParam[]): AuthoredParam[] {
+  return inModule('SAMPLE & HOLD', params)
 }
 
 /** The two switches that decide how many notes the patch can sound and how the pair relate. */
@@ -735,8 +822,7 @@ const recipes: Recipe[] = [
       ...env(1, 0.3, 180, 0, 30),
       ...env(2, 0.3, 55, 0, 20),
       ...overdrive(2, 4, 70),
-      travel(
-        'ATTENUATOR 1',
+      ...attenuator1(
         12,
         'p.25 gives this as "+4 dB to -∞" — a named endpoint, so percent of travel. Low: a 9 V envelope into a 1 V/octave input is nine octaves',
       ),
@@ -772,7 +858,7 @@ const recipes: Recipe[] = [
       ...env(1, 0.3, 200, 0, 40),
       ...env(2, 0.3, 70, 0, 25),
       ...overdrive(8, 3, 55),
-      travel('ATTENUATOR 1', 15, 'p.25 gives this as "+4 dB to -∞" — a named endpoint, so percent of travel'),
+      ...attenuator1(15, 'p.25 gives this as "+4 dB to -∞" — a named endpoint, so percent of travel'),
     ],
     patch: [
       cable('OUT · ENV2', 'IN · ATT1 IN', 'supplies the pitch envelope; ATT 1 IN has no normal'),
@@ -863,10 +949,12 @@ const recipes: Recipe[] = [
       ...env(1, 1, 300, 3, 40),
       ...env(2, 1, 180, 0, 40),
       ...overdrive(5, 7, 62),
-      num('PORTA TIME', 120, PORTA_MS, 25, {
-        unit: 'ms',
-        note: 'Off fully left; the slide between MIDI notes grows to the right (p.7)',
-      }),
+      ...slewLimiter([
+        num('PORTA TIME', 120, PORTA_MS, 25, {
+          unit: 'ms',
+          note: 'Off fully left; the slide between MIDI notes grows to the right (p.7)',
+        }),
+      ]),
     ],
   },
   {
@@ -887,7 +975,9 @@ const recipes: Recipe[] = [
       ...env(1, 1, 260, 2, 35),
       ...env(2, 1, 150, 0, 30),
       ...overdrive(10, 8, 50),
-      num('PORTA TIME', 90, PORTA_MS, 25, { unit: 'ms', note: 'Off fully left (p.7)' }),
+      ...slewLimiter([
+        num('PORTA TIME', 90, PORTA_MS, 25, { unit: 'ms', note: 'Off fully left (p.7)' }),
+      ]),
     ],
     patch: [
       cable(
@@ -917,7 +1007,7 @@ const recipes: Recipe[] = [
       ...env(1, 0.3, 420, 0, 60),
       ...env(2, 0.3, 140, 0, 40),
       ...overdrive(3, 5, 68),
-      travel('ATTENUATOR 1', 20, 'p.25 gives this as "+4 dB to -∞" — a named endpoint, so percent of travel'),
+      ...attenuator1(20, 'p.25 gives this as "+4 dB to -∞" — a named endpoint, so percent of travel'),
     ],
     patch: [
       cable('OUT · ENV2', 'IN · ATT1 IN', 'supplies the pitch envelope; ATT 1 IN has no normal'),
@@ -1014,7 +1104,9 @@ const recipes: Recipe[] = [
       ...env(1, 1, 350, 6, 90),
       ...env(2, 1, 200, 2, 70),
       ...overdrive(9, 7, 55),
-      num('PORTA TIME', 40, PORTA_MS, 25, { unit: 'ms', note: 'Off fully left (p.7)' }),
+      ...slewLimiter([
+        num('PORTA TIME', 40, PORTA_MS, 25, { unit: 'ms', note: 'Off fully left (p.7)' }),
+      ]),
     ],
   },
   {
@@ -1076,7 +1168,7 @@ const recipes: Recipe[] = [
       ...env(2, 1800, 3500, 3, 2400),
       ...overdrive(0, 3, 74),
       ...lfoSynced('Triangle', '2/1', 'off'),
-      travel('ATTENUATOR 1', 30, 'p.25 gives this as "+4 dB to -∞" — a named endpoint, so percent of travel'),
+      ...attenuator1(30, 'p.25 gives this as "+4 dB to -∞" — a named endpoint, so percent of travel'),
     ],
     patch: [
       cable(
@@ -1111,14 +1203,16 @@ const recipes: Recipe[] = [
       ...env(2, 900, 2400, 3, 1600),
       ...overdrive(0, 5, 72),
       ...delay(600, 55, 45),
-      num('S&H RATE', 4.5, SH_RATE_HZ, 25, {
-        unit: 'Hz',
-        note: 'The knob, or IN · S&H CLOCK if something else is clocking it',
-      }),
-      num('S&H GLIDE', 260, SH_GLIDE_MS, 25, {
-        unit: 'ms',
-        note: 'Limits the rate of change between samples, so the steps become a glide (p.12)',
-      }),
+      ...sampleHold([
+        num('S&H RATE', 4.5, SH_RATE_HZ, 25, {
+          unit: 'Hz',
+          note: 'The knob, or IN · S&H CLOCK if something else is clocking it',
+        }),
+        num('S&H GLIDE', 260, SH_GLIDE_MS, 25, {
+          unit: 'ms',
+          note: 'Limits the rate of change between samples, so the steps become a glide (p.12)',
+        }),
+      ]),
     ],
     patch: [
       cable(
@@ -1155,7 +1249,7 @@ const recipes: Recipe[] = [
       ...env(1, 2400, 800, 9, 300),
       ...env(2, 3000, 600, 9, 200),
       ...overdrive(3, 8, 62),
-      travel('ATTENUATOR 1', 45, 'p.25 gives this as "+4 dB to -∞" — a named endpoint, so percent of travel'),
+      ...attenuator1(45, 'p.25 gives this as "+4 dB to -∞" — a named endpoint, so percent of travel'),
     ],
     patch: [
       cable('OUT · ENV2', 'IN · ATT1 IN', 'supplies the climb; ATT 1 IN has no normal'),
@@ -1202,10 +1296,12 @@ const recipes: Recipe[] = [
       ...env(2, 2400, 4000, 6, 2400),
       ...overdrive(2, 4, 68),
       ...lfoSynced('Triangle', '4/1', 'off'),
-      num('SLEW', 800, SLEW_MS, 25, {
-        unit: 'ms',
-        note: 'Limits how fast the voltage may change, which rounds the ends of the sweep (p.8)',
-      }),
+      ...slewLimiter([
+        num('SLEW', 800, SLEW_MS, 25, {
+          unit: 'ms',
+          note: 'Limits how fast the voltage may change, which rounds the ends of the sweep (p.8)',
+        }),
+      ]),
     ],
     patch: [
       cable('OUT · LFO', 'IN · SLEW IN', 'supplies the sweep; SLEW IN has no normal'),
