@@ -3883,12 +3883,13 @@ ink and the reason the two cannot drift on *which* boxes a sentence covers.
 source* and *sync to it*. Never master/slave. "Master FX" and "master bus" stay — that is the
 master-copy sense, universal in music production, and not half of a pair.
 
-**Parameter lists are grouped by panel module, where a device says what its modules are (#385).**
+**Parameter lists are grouped by module, where a device says what its modules are (#385).**
 
 Reported from the machine: `muse-stab-hard` prints 75 parameters, and seventy-five rows is not a
 thing anybody reads standing up. They were already grouped — by *scope*, per-part against
 song-wide, which is a fact about our model rather than about the instrument in front of somebody.
-By module they are the panel's own sections, and a reader crosses the instrument in that order.
+By module they are the instrument's own named sections — silkscreened on most boxes, drawn on a
+screen by the ones with a screen — and a reader crosses the machine in that order.
 
 - **`module` is an optional authored string on a parameter** (§3.1), in the device's own words,
   carried through the resolver unchanged and never derived. Nothing in the model can work it out:
@@ -3896,6 +3897,22 @@ By module they are the panel's own sections, and a reader crosses the instrument
   sits on a panel. Absent is the ordinary case and means only that nobody has said — a box whose
   panel is one undivided surface has nothing to put there, and an unmoduled parameter is not a gap
   (invariant 5).
+- **A module is the named surface the reader walks to, and on a screen device that is not the
+  panel.** The reading is always the *innermost named box a control sits in*, and what draws that
+  box depends on the instrument. On the Muse or the Matriarch it is silkscreen. On the three MPCs
+  it is a plugin editor: `panel.ts` there draws pads, a screen and four Q-Links, and not one
+  control any recipe states is printed on any of them, while the manual names a tab and, inside
+  it, the group each parameter row belongs to. `Transient` and `LP Filter` are boxes for the same
+  reason `FILTER 1` is — somebody standing at the machine is looking at that word.
+  - **Named by the document, not by us.** A tab whose table has no group column *is* the innermost
+    group (DrumSynth's `Drum Sound`), and a group the manual labels for two things at once keeps
+    that label even when one recipe reaches only half of it (TubeSynth's `LFO 1/LFO 2`). Trimming
+    it to `LFO 1` would read better and would be a category we invented.
+  - **A module is not a device's whole taxonomy.** Only the surfaces a recipe actually reaches are
+    boxed. The MPCs leave their track and plugin selectors, Timing Correct and every insert-slot
+    control unmoduled, because none of those sits inside a plugin editor — and an insert slot in
+    particular is a *different* editor addressed by its slot number, where the slot is the only
+    thing telling one `Mix` from another.
 - **Not derived from the ` · ` name prefix.** #385 counted it: 3,419 parameters carry one against
   10,884 that do not, and one device in thirty-nine is consistent. It is a habit two authors had,
   not a structure to lift, and reading it would work by luck on one folder while teaching the next
@@ -3920,12 +3937,21 @@ By module they are the panel's own sections, and a reader crosses the instrument
   lists parameters as evidence, with no box around them, where the prefix is the only thing
   identifying which control is meant.
 
-**Scope: one device, deliberately.** The Muse authors `module` on all 1,328 of its parameter
-instances across 17 modules; no other device authors one and every other guide renders exactly as
-before. This is #385's own "cheaper first move" — module membership for ten thousand parameters
-across thirty-eight devices is device-authoring work at library scale, and the point of piloting
-on one box is to find out whether panel-shaped boxes are better to read before committing anyone
-to the rest.
+**Scope: a growing minority of the library, one device at a time.** The Muse piloted it (#413) on
+all 1,328 of its parameter instances across 17 modules, and the Subsequent 37 (#416), the NEUTRON
+(#425), the minilogue xd (#426), the Matriarch (#427), the Subharmonicon (#430), the MODEL D
+(#429) and the three MPCs (#385) have followed. Every device that authors none renders exactly as
+it did before, which is the property that makes this landable one folder at a time: module
+membership for ten thousand parameters across the rest is device-authoring work at library scale,
+and each box is a fresh reading of its own document rather than a pattern copied off the last one.
+
+**The MPCs are what generalised the definition**, and they are worth reading before the next
+screen device. They are the first boxes where the module is not silkscreened on anything, the
+first where three plugins collide on four control names — `LP Cutoff` is Bassline's `Filter` on
+p.428 and TubeSynth's `LP Filter` on p.516 — so the box is the only thing telling them apart, and
+the first where the reading travels: `akai-mpc-xl` takes the recipes by reference and
+`akai-mpc-one-g2` rebuilds every one of them onto a different document, so its `retargetParam`
+throws if a stamp changes under it.
 
 **Three semantic states are designed; one is implemented.**
 
