@@ -1694,6 +1694,44 @@ describe('the trigger note, by track mode (§2.1/§2.2/#86)', () => {
     ])
     for (const recipe of tuned) expect(recipe.mode, recipe.id).toBe('transposed')
   })
+
+  /**
+   * §2.1/§3.1/#86. **The sentence those seven carry instead of a note on the step.**
+   *
+   * The mode says nothing and must keep saying nothing; what the reader gets is prose on the
+   * `TUNE` itself. Pinned as one shared string across the class, because the failure this guards
+   * is not a rewording but a recipe joining the class without it — the same rot `impliedMode`
+   * above catches on the mode field, one field over.
+   *
+   * The wording is written out here rather than imported. The device folder is where it is
+   * authored and this is a second copy on purpose: a note that changes should change in a diff
+   * somebody reads, and §8's reader is standing at a machine holding the two numbers it explains.
+   */
+  it('says on every transposed TUNE what to write on the step, in one shared sentence', () => {
+    const SHARED =
+      'Write C5 on the step. This TUNE moves the sample that many semitones, so C5 here is not ' +
+      'the recorded pitch; C5 with TUNE 0 is a different, untransposed patch, and that one plays ' +
+      'the recording as recorded (p.90, p.116).'
+
+    const tuneNote = (recipe: Recipe): string | undefined =>
+      (recipe.params as AuthoredParam[]).find((p) => p.name === 'TUNE')?.note
+
+    const transposed = recipesOn('track-sample').filter((r) => r.mode === 'transposed')
+    expect(transposed).toHaveLength(7)
+    for (const recipe of transposed) {
+      // `toContain` rather than equality: `tm-metallic-dirty` adds a word about its own -3 after
+      // the shared sentence, and a recipe with something of its own to say should not have to
+      // choose between saying it and reading like the rest of the class.
+      expect(tuneNote(recipe), recipe.id).toContain(SHARED)
+      expect(tuneNote(recipe)?.startsWith(SHARED), recipe.id).toBe(true)
+    }
+
+    // And nowhere else. A `TUNE` at zero is the untransposed patch the sentence points *at*, so
+    // printing the sentence there would tell a reader to change nothing to reach where they are.
+    for (const recipe of device.recipes.filter((r) => r.mode !== 'transposed')) {
+      expect(tuneNote(recipe) ?? '', recipe.id).not.toContain('Write C5 on the step')
+    }
+  })
 })
 
 /**

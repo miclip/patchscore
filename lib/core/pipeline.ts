@@ -1400,11 +1400,26 @@ export function stackedPart(assignment: {
  * about what to write on the step, on parts whose manual prints the answer — drift a reader can
  * hear, so it is a bump.
  *
+ * **12** — §2.1/§3.1/#86. The Tracker Mini's seven **transposed** recipes state on their own
+ * `TUNE` what the mode deliberately does not state on the step: write `C5`, this `TUNE` moves it
+ * off the recorded pitch, and `TUNE 0` is the different untransposed patch that plays the
+ * recording as recorded (p.90, p.116). Entry 11 gave `C5` back to the parts p.90's sentence is
+ * true of and left these seven silent, which was right about the claim and thin as an
+ * instruction — a reader was holding the box's default note and was not told what the recipe
+ * below it does to that note.
+ *
+ * The note stays off the mode and no compensating note is computed, so `noteInstruction` answers
+ * exactly as it did and nothing about addressing moved. `Score` is untouched, no candidate is
+ * added and none excluded, and the same parts land on the same voices. What moves is ink on a
+ * parameter, on every guide those seven recipes reach: a permalink shared before this renders a
+ * guide missing a sentence its own inputs now produce, which is drift a reader can see, so it is
+ * a bump rather than a widening.
+ *
  * It lives beside `ResolveInput` because that is the contract it versions. `permalink.ts`
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
  */
-export const RESOLVER_VERSION = 11
+export const RESOLVER_VERSION = 12
 
 /**
  * #161. The two decisions the user may take back off the direction: tempo and key. Both

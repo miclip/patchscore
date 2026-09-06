@@ -111,13 +111,13 @@ describe('the v1 wire format', () => {
    */
   it('pins the two stamps at the numbers they currently stand at', () => {
     // They move for unrelated reasons and this is the file that says so. The format last moved at
-    // §7.5/#340, for `placement`; the engine last moved at §2.2/#86, when the Tracker Mini's
-    // sample pool declared track modes and its untransposed whole-sample parts started carrying a
-    // trigger note. That added no field to this encoding at all — the mode falls out of the
-    // recipe the resolver already picks, so a rig is still a list of device ids and nothing here
-    // had to learn a new key.
+    // §7.5/#340, for `placement`; the engine last moved at §2.1/#86, when the Tracker Mini's
+    // seven transposed recipes started saying on their own `TUNE` what to write on the step and
+    // what the tuning does to it. That added no field to this encoding either — the note is
+    // authored in the device folder, so a rig is still a list of device ids and nothing here had
+    // to learn a new key.
     expect(FORMAT_VERSION).toBe(4)
-    expect(RESOLVER_VERSION).toBe(11)
+    expect(RESOLVER_VERSION).toBe(12)
   })
 
   it('writes a list as one parameter per element, so nothing needs a separator', () => {

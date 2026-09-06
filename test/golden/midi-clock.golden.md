@@ -533,6 +533,7 @@ Source — A dry kick one-shot under 400 ms, attack intact and no room printed o
 - **PLAY MODE** `1-Shot`
 - **FILTER TYPE** `Low-pass`
 - **TUNE** `-3` st (-24…24 st)
+  - ↳ note: Write C5 on the step. This TUNE moves the sample that many semitones, so C5 here is not the recorded pitch; C5 with TUNE 0 is a different, untransposed patch, and that one plays the recording as recorded (p.90, p.116).
 - **CUTOFF** `74` % (0…100 %)
 - **OVERDRIVE** `18` % (0…100 %)
 - **ENVELOPE · DECAY** `0.28` Sec (0…10 Sec)
