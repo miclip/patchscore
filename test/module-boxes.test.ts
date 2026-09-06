@@ -538,7 +538,8 @@ describe('a real Muse guide renders panel boxes, in both renderers (#385)', () =
 describe('no other device is affected (#385)', () => {
   it('lists every device in the library authoring a module', () => {
     // #385's cheaper first move was one folder; the Subsequent 37 is the second, the NEUTRON the
-    // third, the minilogue xd the fourth, the Matriarch the fifth and the MODEL D the sixth,
+    // third, the minilogue xd the fourth, the Matriarch the fifth, the MODEL D the sixth and
+    // the Subharmonicon the seventh,
     // and this list is the standing count of how far it has gone. Every device not named here
     // renders exactly as it did, which is what the goldens then prove byte for byte.
     const authoring = DEVICES.filter((d) =>
@@ -550,6 +551,7 @@ describe('no other device is affected (#385)', () => {
       'korg-minilogue-xd',
       'moog-matriarch',
       'moog-muse',
+      'moog-subharmonicon',
       'moog-subsequent-37',
     ])
   })
@@ -566,7 +568,7 @@ describe('hoistOrder keeps the legacy sort where nothing is moduled (§7.2)', ()
   }
 
   it('sorts by name in code unit order when no parameter carries a module', () => {
-    // The order every guide in the library renders today. Forty devices author no module
+    // The order every guide in the library renders today. Thirty-nine devices author no module
     // and their bytes must not move because one device now does.
     const out = hoistedParams([[scoped('ZULU'), scoped('ALPHA'), scoped('MIKE')]])
     expect(out.groups[0]?.params.map((p) => p.name)).toEqual(['ALPHA', 'MIKE', 'ZULU'])
