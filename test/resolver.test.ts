@@ -1370,9 +1370,13 @@ describe('neutral mood is inert (§6.1, NEUTRAL_MOOD)', () => {
   })
 
   it('holds across the whole authored library, which is where it was caught', () => {
+    // The allocation is stated rather than omitted (#433): a parameter that takes its value from
+    // the stack refuses to resolve without one, and an unstacked part is the case this sweep is
+    // about — every authored point read back exactly as authored, with no mood behind it. At a
+    // width of one a sourced value *is* its authored point, so the claim below is unchanged.
     for (const device of DEVICES) {
       for (const recipe of device.recipes) {
-        const resolved = resolveParams(recipe, NEUTRAL_MOOD)
+        const resolved = resolveParams(recipe, NEUTRAL_MOOD, { stackWidth: 1 })
         recipe.params.forEach((authored, i) => {
           const got = resolved[i] as (typeof resolved)[number]
           expect(got.value, `${device.id} / ${recipe.id} / ${authored.name}`).toBe(authored.value)

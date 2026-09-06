@@ -419,6 +419,14 @@ function realisationText(assignment: ResolvedAssignment): string {
  * The same fact as `realisationText`, written as something to do rather than something to know.
  * Phase 2 is a list of what went where; phase 6 is the reader standing at the instrument, and
  * "load a chord sample" is a step they will otherwise not take.
+ *
+ * **The heading is `Chord voicing` and it used to be `Polyphony` (#433).** A synth slot on the
+ * Tracker Mini has a control printed `Polyphony`, and it means something else: how many voices
+ * that instrument may sound at once, where this heading means how many notes the part spreads
+ * over how many voices. The two stood a few lines apart in one guide, and a reader who had read
+ * this section had every reason to believe the box's control was covered. It was not, and the
+ * part did not sound. The panel's word belongs to the panel — a control is found by its printed
+ * name and cannot be renamed here — so this one moved.
  */
 function realisationInstruction(assignment: ResolvedAssignment): string {
   if (assignment.notes <= 1) return ''
@@ -426,7 +434,7 @@ function realisationInstruction(assignment: ResolvedAssignment): string {
   const n = num(assignment.notes)
   if (isStacked(assignment)) {
     return (
-      `Polyphony — ${notes}, one on each of ${n} voices. **Every voice takes these same ` +
+      `Chord voicing — ${notes}, one on each of ${n} voices. **Every voice takes these same ` +
       `settings**: it is one sound played ${n} times over, not ${n} sounds, and a difference ` +
       `between them is a difference you will hear inside the chord. Which voice takes which ` +
       `note is in Hook.`
@@ -434,13 +442,13 @@ function realisationInstruction(assignment: ResolvedAssignment): string {
   }
   if (assignment.recipe.realisation === 'sampled-chord') {
     return (
-      `Polyphony — ${notes}, already inside the sample. Load the chord sample(s) onto this one ` +
+      `Chord voicing — ${notes}, already inside the sample. Load the chord sample(s) onto this one ` +
       `voice rather than spreading the notes across ${n}. One sample covers its chord shape at ` +
       `any root; a different shape needs its own — see Hook.`
     )
   }
   return (
-    `Polyphony — ${notes} sounding at once on this one voice. It needs a genuinely polyphonic ` +
+    `Chord voicing — ${notes} sounding at once on this one voice. It needs a genuinely polyphonic ` +
     `voice, not ${n} separate ones.`
   )
 }

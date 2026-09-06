@@ -120,6 +120,37 @@ const SECONDS_10 = { min: 0, max: 10 } //           0.00-10 Sec
 const SECONDS_3 = { min: 0, max: 3 } //             0.00 - 3 Sec
 const AUDIO_HZ = { min: 20, max: 20000 } //         20Hz - 20kHz
 
+/**
+ * §3.1/#433. **The synth slot's own voice count**, and the one range on this box read off prose
+ * rather than a Range column.
+ *
+ * p.148, the CONFIGURING A SYNTHESIZER bullet list: *"Polyphony: The number of voices assigned
+ * to the synth. Up to 8 voices of polyphony are available in total in Tracker+ across all
+ * synths. The 8 voices are divided and allocated per synth, for example Synth 1 = 3, Synth 2 =
+ * 3, Synth 3 = 2."* The screen shot below it on the same page — and again on p.147 — shows the
+ * field reading `1`.
+ *
+ * **What the page prints and what it does not.** The maximum is printed: eight is the whole
+ * budget across all three slots, so no one slot can be set above it. The minimum is not printed
+ * anywhere; `1` is what the field reads in both screen shots, and a slot at zero would sound
+ * nothing. The *per-slot* maximum in force at any moment is smaller still — eight less whatever
+ * the other two slots hold — and no page gives a way to read it, so it is not modelled.
+ *
+ * **These bounds are a requirement, not a display bound** (§3.1). `POLYPHONY` takes its value
+ * from the stack the resolver chose, and a width outside this range throws rather than being
+ * rounded into it, so the range has to cover every width either pool can produce. Both pools are
+ * eight tracks and a stack never exceeds its pool, so `1-8` covers them exactly — and the two
+ * numbers agreeing is a fact about this box rather than a coincidence to lean on. A narrower
+ * range here would be a promise the box cannot keep.
+ *
+ * The sentence names **Tracker+** in a Tracker Mini manual. It is the only occurrence of that
+ * word in the document, and this is the second place this manual carries text from another
+ * machine (see the head note on p.270's eight-track claim). It does not reach the value: what
+ * this recipe sets is the stack width, which is three or four, and it is under eight on either
+ * reading of the sentence.
+ */
+const SYNTH_VOICES = { min: 1, max: 8 } //          1-8, and 8 is the budget across all 3 slots
+
 /** A range citation. The page is the one carrying that parameter's own printed bound. */
 function cite(page: number): Cite {
   return { kind: 'manual', source: `Polyend Tracker Mini Manual 2.2.1b, p.${page}` }
@@ -404,6 +435,24 @@ const SYNTH_POOL_ROLES: Role[] = SAMPLE_POOL_ROLES.filter((r) => r !== 'vox-chop
  *
  * `label` is what the guide calls them when a part cannot be made for want of one (§7.3), so it
  * is the manual's own word and plural: a reader is looking for *synth slots* on p.146.
+ *
+ * ## The eight voices behind the three slots are **not** modelled, and this records why (#433)
+ *
+ * p.148 gives the slots a second, finer resource: *"Up to 8 voices of polyphony are available in
+ * total ... across all synths. The 8 voices are divided and allocated per synth."* Slots are
+ * counted here; voices are not. Since #433 a stacked part sets its slot's `POLYPHONY` to the
+ * width it was given, so a guide now *asks* for voices by name — three slots at four voices each
+ * would ask for twelve, and the box has eight.
+ *
+ * **Measured, and nothing reaches it.** The worst demand any reachable rig makes on this box is
+ * **5 of 8** — a four-wide pad on one slot beside a bass-mid on another (`ambient-dub`, seed 1,
+ * the Mini alone) — swept over the Mini alone, both Polyend boxes and the whole catalogue, every
+ * direction, seeds 1-12. Every other allocation asks for less. So this is a headroom note rather
+ * than a bug, and modelling it today would be a second resource kind, a second refusal path and a
+ * `RESOLVER_VERSION` bump bought against a case no reader can currently produce.
+ *
+ * What would change that is a direction asking for two wide chords on this box at once, which is
+ * a `resources` entry costed in voices rather than slots, not a value anyone should adjust here.
  */
 export const SYNTH_SLOT = 'synth-slot'
 export const SYNTH_SLOTS = 3
@@ -478,6 +527,37 @@ const SYNTH_RECIPES: Recipe[] = [
     title: 'Slow detuned pad, long swell',
     params: [
       pick('MODEL', 'VAP', SYNTH_MODELS, 146),
+      /**
+       * §12.4/#433. **The setting without which a stacked chord does not sound**, and the only
+       * value in this file the resolver supplies rather than the author.
+       *
+       * A `pad` request of three notes is spread one note per track (p.103), but all three
+       * tracks play *one* synth slot, and that slot has its own voice count. Left at the `1`
+       * both screen shots show, three tracks share one voice and the last note wins: reported
+       * from the machine as a triad that sounded a single note, with the reader having to find
+       * `Polyphony` and raise it by hand.
+       *
+       * `valueFrom: 'stack-width'` is what makes the number right at 3 *and* at 4. The width is
+       * the direction's, not the box's — `industrial-techno` asks a three-note pad, other
+       * directions ask four — so no number written here could be correct for both, and one
+       * written for three would be silently wrong for four in exactly the way this began.
+       *
+       * The point stays `verified: false` like every other point on this box, and here that is
+       * a stronger statement than usual: no page says a VAP pad wants three voices, because no
+       * page could — the count is a property of the guide's own allocation. The *range* is p.148's
+       * and cited (`SYNTH_VOICES`). Sitting on the row beside `MODEL` because that is where the
+       * box puts it: Synth Parameters page 1 of 2, `Model | Polyphony | Gain | Panning | ...`.
+       *
+       * Named on the base recipe, so **both pool twins carry it**. `onBothPools` exists to stop
+       * them drifting, and they would drift here for the worst possible reason: the twins are one
+       * patch in one synth slot (`sharedAs`), so a pad on tracks 1-8 needs this setting exactly
+       * as much as a pad on tracks 9-16 does, and the slot cannot tell which is playing it.
+       */
+      num('POLYPHONY', 1, SYNTH_VOICES, 148, {
+        valueFrom: 'stack-width',
+        note:
+          'Eight voices are shared across the three synth slots — this is this slot’s share',
+      }),
       pick('FILTER TYPE', 'Low Pass SVF 12dB', VAP_FILTERS, 158),
       num('OSC MIX', 0, BIPOLAR_PCT, 158, { unit: '%' }),
       num('SHAPE 1', 28, UNITLESS_100, 158),

@@ -1428,6 +1428,69 @@ instruction with no control for a controller number to address. `AuthoredTextPar
 is not a fifth shared vocabulary (invariant 3) — no template names a CC and nothing joins on one;
 it travels device → resolver → renderer exactly as `unit` and `note` do.
 
+### `valueFrom`, the one value a device folder may decline to give
+
+**A stacked chord did not sound** (#433). A Tracker Mini pad spread across three tracks plays one
+synth slot, that slot carries its own voice count — printed `Polyphony`, shipping at `1` — and
+three tracks sharing one voice sound the last note only. The width was in the guide's own prose,
+*"3 notes, one on each of 3 voices"*, and never reached a control.
+
+**No device folder can hold that number.** `AuthoredParam` is device data, and the right value is a
+property of the *allocation*: the same recipe is asked for three voices by `industrial-techno` and
+four by `ambient-dub`. A recipe authored `3` is silently wrong for the four-note pad in exactly the
+way the missing setting was wrong for the three.
+
+```ts
+type ParamValueSource     = 'stack-width'                 // a closed list, and meant to stay small
+type AuthoredNumericParam = { …; valueFrom?: ParamValueSource }
+type AuthoredEnumParam    = { …  }                        // a width is a number
+type AuthoredTextParam    = { …  }                        // an instruction is not a control
+type ResolvedParam        = { …  }                        // unchanged: the value is just the value
+```
+
+Omitted is the ordinary case. Set, the resolver replaces the point with the named allocation fact,
+and the authored `value` is what the control reads when that fact is at rest — a stack width of
+one, which is an unstacked part. So the authored number stays real and stays subject to §3.1's
+refinement that a point sit inside its own range; it is the floor of the control, not a
+placeholder.
+
+**Neither a missing allocation nor an over-wide one is approximated.** A sourced value is a
+*requirement* — this many voices, or the part does not sound the notes the guide has already told
+the reader to write — so the two soft answers are both refused. A default of `{ stackWidth: 1 }`
+would make a caller that forgot the allocation indistinguishable from a part that really is on one
+voice, and print `POLYPHONY 1` on a triad: #433 again, reached from inside the engine rather than
+from a missing recipe line. Clamping a width into the control's range would print a number the
+reader can enter and a chord that plays short. Both throw. `range` is therefore a requirement here
+and not a display bound: it must cover every width the pool this recipe sits on can produce, 1 to
+the pool's own size, which `test/stack-polyphony.test.ts` holds every device in the library to.
+Nothing in the catalogue can reach either throw today; what they guard is the next device, where an
+author narrows a range below its pool and nothing else would say so.
+
+**Mood is refused beside it**, at the schema. The count the resolver chose is the count that sounds
+the part, and a darkness knob nudging a three-voice slot to two silences a note of the chord —
+#433 reintroduced from the other end. Two authorities over one number, and only one of them can be
+right.
+
+**A sourced value has not `derived`.** `Provenance.derived` means *mood took it from here*, and it
+carries the axes that did it; a `stack-width` parameter declares no mood and can never legally be
+in that state. Rendering `1 → 3` would put an arrow where there is no arithmetic and name no axis
+behind it. The authority gate is unchanged and still the point's own `verified` — which on the one
+parameter that uses this today is `false`, and honestly so: no page says a VAP pad wants three
+voices, because no page could. The *range* is the manual's claim and is cited, exactly as §3.2
+splits every other value on that box.
+
+**Not a general expression language, and not a fifth shared vocabulary** (invariant 3). No template
+names a source and nothing joins on one. Each member is a specific number the resolver already
+knows and a device may ask for by name; a second is a decision to take on its own evidence, the way
+a split-timbre voice count (#424) would be.
+
+**The guide's own heading moved to make room.** §8's realisation sentence was headed `Polyphony`,
+which is what the Tracker Mini prints on the control this fixes — one word for *how many notes the
+part spreads over how many voices* and for *how many voices this instrument may sound at once*,
+standing a few lines apart in one guide. A reader who had read the section had every reason to
+believe the box's control was covered. The panel's word belongs to the panel, so the heading is now
+`Chord voicing` in both renderers (§8).
+
 ### 3.2 Provenance is three-state, because a legal value is not a verified value
 
 Invariant 4 originally read "no parameter value that isn't manual-verified or explicitly flagged
@@ -4472,6 +4535,13 @@ bottom and then move to the next, so a per-chord table would have a reader enter
 jumping two columns, entering one note and jumping back. Phase 6 states the instruction that stops
 three voices becoming three sounds — every voice takes the same settings. Both renderers, written
 out twice per §8.
+
+**And the box may have to be told how wide the stack is** (#433). Saying it in prose is not the
+same as setting it: a Tracker Mini pad on three tracks plays one synth slot, and that slot's own
+voice count ships at `1`, so the triad sounded a single note until a reader found the control and
+raised it. Where a device has such a control it declares `valueFrom: 'stack-width'` on it (§3.1)
+and the resolver fills in the width it chose. It is the device's claim to make: nothing here
+assumes a stack costs voices, because on a sampler pool it does not.
 
 **12.5 — Section-transition patterns: fills are out of v1; `Pattern` stays flat.** See §4.3.
 One variant per request per section; change happens at section boundaries only. A bar offset (or
