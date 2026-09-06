@@ -198,19 +198,84 @@ const FX_SLOTS = ['DEL', 'REV', 'MOD'] as const
 const FX_STATES = ['OFF', 'ON', 'SELECT'] as const
 
 // ---------------------------------------------------------------------------
+// §3.1/#385 — the panel's own boxes
+// ---------------------------------------------------------------------------
+
+/**
+ * §3.1/#385. **Stamps a run of parameters with the silkscreened section its controls sit in**,
+ * so the guide draws the panel's own boxes instead of one forty-line list. The Muse's helper,
+ * unchanged, because the shape of the job is the same one.
+ *
+ * ## Seven boxes, and three of them hold sections a name would have split
+ *
+ * `panel.ts` draws eight labelled `group` rectangles. Seven carry controls a recipe states, and
+ * each is a module below. Three are the reason this is authored rather than parsed from a name
+ * prefix:
+ *
+ *  - **`VCO 1 / VCO 2 / MULTI ENGINE`** is *one* rectangle on the instrument, and the silkscreen
+ *    says so in as many words. Three name prefixes live in it — `VCO 1`, `VCO 2` and
+ *    `MULTI ENGINE` — plus `CROSS MOD DEPTH`, which carries no prefix at all and is drawn inside
+ *    the same box at x=196.6 on row 2. A prefix parse would have drawn three boxes and left the
+ *    cross-modulation knob loose between them.
+ *  - **`AMP EG / EG / LFO`** is the same shape at the other end of the panel: one rectangle,
+ *    three prefixes, thirteen controls.
+ *  - **`FILTER`** holds four controls that carry no prefix whatever — `CUTOFF`, `RESONANCE`,
+ *    `DRIVE` and `KEYTRACK` — which is the Subsequent 37's case exactly.
+ *
+ * `MASTER`, `VOICE MODE`, `MIXER` and `EFFECTS` are the straightforward four.
+ *
+ * ## `EDIT / SEQUENCER` is drawn and left empty, deliberately
+ *
+ * The eighth labelled rectangle. It holds eight buttons — EDIT MODE, WRITE, EXIT, SHIFT, MOTION
+ * MODE, PLAY, REC, REST — and **no recipe states any of them**, because none is a setting: they
+ * are the way you reach the menus and drive the sequencer.
+ *
+ * `SWING` is the parameter that would be put there by somebody reasoning from function rather
+ * than from the panel, and it must not be. It is a **PROGRAM EDIT setting reached through the
+ * display** (p.41), not a control inside that box — the Subsequent 37's `SWING` is unmoduled for
+ * the identical reason. §3.1 says an unmoduled param is not a gap, so `SWING` renders as a bare
+ * line and the box stays empty. A section with no controls in it is an honest outcome; a section
+ * given a member it does not have is a fact about the instrument invented to fill a field.
+ *
+ * ## Names are left exactly as authored
+ *
+ * As on the Muse, the Subsequent 37 and the NEUTRON. `name` is #107's hoist key,
+ * `sameRenderedParam`'s comparison and the string every fixture names, so nothing keyed on one
+ * moves — and `paramLabel` then trims only an exact `${module} · ` prefix, which lands the right
+ * way round in both directions here:
+ *
+ *  - `MIXER · VCO 1` reads **`VCO 1`** inside the MIXER box, and `EFFECTS · DEPTH` reads
+ *    `DEPTH`. The prefix was dead ink repeating the label above it.
+ *  - `VCO 1 · PITCH` and `VCO 2 · PITCH` keep their **whole** names, and so do
+ *    `AMP EG · ATTACK` and `EG · ATTACK` — in both boxes the prefix is the only thing telling
+ *    two controls apart, and the module is not that prefix, so nothing trims it.
+ */
+function inModule(module: string, params: AuthoredParam[]): AuthoredParam[] {
+  return params.map((param) => ({ ...param, module }))
+}
+
+/** The two long silkscreens, written once so a module cannot drift from `panel.ts`'s label. */
+const OSCILLATORS = 'VCO 1 / VCO 2 / MULTI ENGINE'
+const ENVELOPES = 'AMP EG / EG / LFO'
+
+// ---------------------------------------------------------------------------
 // Sections, in panel order. Every recipe is these blocks in this sequence.
 // ---------------------------------------------------------------------------
 
 /**
- * The two program-wide settings a recipe is entitled to state. PORTAMENTO is a front-panel knob
- * (p.17); Swing lives in PROGRAM EDIT and carries the hint that reaches it (p.41).
+ * The two program-wide settings a recipe is entitled to state, and they sit in two different
+ * places — which is why only the first is boxed.
+ *
+ * PORTAMENTO is a front-panel knob in the `MASTER` section (p.17). Swing lives in PROGRAM EDIT,
+ * behind the display, and carries the hint that reaches it (p.41); it is on no silkscreened
+ * section of this panel, so it carries no module. See `inModule`.
  *
  * Swing is the only param on this device that declares the `swing` axis, which is how §6 wants a
  * device to opt in — no capability check, just a parameter that names the axis.
  */
 function program(portamento: number, swing: number): AuthoredParam[] {
   return [
-    num('PORTAMENTO', portamento, { min: 0, max: 127 }, 17),
+    ...inModule('MASTER', [num('PORTAMENTO', portamento, { min: 0, max: 127 }, 17)]),
     num('SWING', swing, { min: -75, max: 75 }, 41, {
       unit: '%',
       mood: [{ axis: 'swing', amount: 45 }],
@@ -243,41 +308,41 @@ function program(portamento: number, swing: number): AuthoredParam[] {
  * templates actually make at three and four notes.
  */
 function poly(): AuthoredParam[] {
-  return [
+  return inModule('VOICE MODE', [
     sw('VOICE MODE TYPE', 'POLY', VOICE_MODES, 17),
     num('VOICE MODE DEPTH', 0, K, 17, {
       note: 'Left at 0 — turning right crosses into DUO, which spends two voices on every key',
     }),
-  ]
+  ])
 }
 
 /** POLY with the knob right: DUO, two voices stacked and detuned per key (p.17). Two notes. */
 function duo(depth: number): AuthoredParam[] {
-  return [
+  return inModule('VOICE MODE', [
     sw('VOICE MODE TYPE', 'POLY', VOICE_MODES, 17),
     num('VOICE MODE DEPTH', depth, K, 17, {
       note: 'Right of 0 is DUO: two voices stacked and detuned per key, so this patch plays two notes at a time',
     }),
-  ]
+  ])
 }
 
 /** UNISON: all four voices on one note, detuned against each other (p.17). Mono, and it says so. */
 function unison(detune: number): AuthoredParam[] {
-  return [
+  return inModule('VOICE MODE', [
     sw('VOICE MODE TYPE', 'UNISON', VOICE_MODES, 17, {
       note: 'All four voices stack into one — this patch plays a single note at a time',
     }),
     num('VOICE MODE DEPTH', detune, { min: 0, max: 50 }, 17, { unit: 'c', note: 'Detune between the stacked voices' }),
-  ]
+  ])
 }
 
 function vco1(wave: string, octave: string, pitch: number, shape: number): AuthoredParam[] {
-  return [
+  return inModule(OSCILLATORS, [
     sw('VCO 1 · WAVE', wave, VCO_WAVES, 18),
     sw('VCO 1 · OCTAVE', octave, VCO_OCTAVES, 18),
     num('VCO 1 · PITCH', pitch, { min: -1200, max: 1200 }, 18, { unit: 'c' }),
     num('VCO 1 · SHAPE', shape, K, 18, { note: 'Shape, complexity, or duty cycle of the selected wave' }),
-  ]
+  ])
 }
 
 /**
@@ -294,7 +359,7 @@ function vco2(
   ring: string,
   crossMod: number,
 ): AuthoredParam[] {
-  return [
+  return inModule(OSCILLATORS, [
     sw('VCO 2 · WAVE', wave, VCO_WAVES, 18),
     sw('VCO 2 · OCTAVE', octave, VCO_OCTAVES, 18),
     num('VCO 2 · PITCH', pitch, { min: -1200, max: 1200 }, 18, { unit: 'c' }),
@@ -305,7 +370,7 @@ function vco2(
       mood: [{ axis: 'grit', amount: 110 }],
       note: 'Oscillator 1 modulating the pitch of oscillator 2',
     }),
-  ]
+  ])
 }
 
 /**
@@ -325,11 +390,11 @@ const NOISE_SHAPE: Record<
 
 function noiseEngine(type: (typeof NOISE_TYPES)[number], shape: number): AuthoredParam[] {
   const { bounds, note } = NOISE_SHAPE[type]
-  return [
+  return inModule(OSCILLATORS, [
     sw('MULTI ENGINE · NOISE/VPM/USR', 'NOISE', MULTI_ENGINES, 19),
     sw('MULTI ENGINE · TYPE', type, NOISE_TYPES, 20),
     num('MULTI ENGINE · SHAPE', shape, bounds, 20, { unit: 'Hz', note }),
-  ]
+  ])
 }
 
 /**
@@ -338,27 +403,27 @@ function noiseEngine(type: (typeof NOISE_TYPES)[number], shape: number): Authore
  * bounds, and §3.2 has nowhere to hang a value whose legality nobody can check.
  */
 function vpmEngine(type: (typeof VPM_TYPES)[number]): AuthoredParam[] {
-  return [
+  return inModule(OSCILLATORS, [
     sw('MULTI ENGINE · NOISE/VPM/USR', 'VPM', MULTI_ENGINES, 19),
     sw('MULTI ENGINE · TYPE', type, VPM_TYPES, 21, {
       hint: 'multi-alt',
       note: 'SHAPE sets MOD DEPTH here, on a scale the manual gives no bounds for',
     }),
-  ]
+  ])
 }
 
 /** The three source levels (p.22). Balance is the whole of this section. */
 function mix(vco1Level: number, vco2Level: number, multi: number): AuthoredParam[] {
-  return [
+  return inModule('MIXER', [
     num('MIXER · VCO 1', vco1Level, K, 22),
     num('MIXER · VCO 2', vco2Level, K, 22),
     num('MIXER · MULTI', multi, K, 22),
-  ]
+  ])
 }
 
 /** The filter (p.23). CUTOFF carries darkness and RESONANCE carries grit, on every recipe. */
 function filt(cutoff: number, resonance: number, drive: string, keytrack: string): AuthoredParam[] {
-  return [
+  return inModule('FILTER', [
     num('CUTOFF', cutoff, K, 23, {
       mood: [{ axis: 'darkness', amount: -230 }],
       note: 'Set too low and the patch may be barely audible',
@@ -366,27 +431,27 @@ function filt(cutoff: number, resonance: number, drive: string, keytrack: string
     num('RESONANCE', resonance, K, 23, { mood: [{ axis: 'grit', amount: 150 }] }),
     sw('DRIVE', drive, THIRDS, 23, { note: 'The filter drive circuit, in three stages' }),
     sw('KEYTRACK', keytrack, THIRDS, 23, { note: '100% moves the cutoff with the key, centred on C4' }),
-  ]
+  ])
 }
 
 /** AMP EG (p.24) — the amplitude envelope, and where density and space are declared. */
 function ampEg(attack: number, decay: number, sustain: number, release: number): AuthoredParam[] {
-  return [
+  return inModule(ENVELOPES, [
     num('AMP EG · ATTACK', attack, K, 24),
     num('AMP EG · DECAY', decay, K, 24, { mood: [{ axis: 'density', amount: -140 }] }),
     num('AMP EG · SUSTAIN', sustain, K, 24),
     num('AMP EG · RELEASE', release, K, 24, { mood: [{ axis: 'space', amount: 170 }] }),
-  ]
+  ])
 }
 
 /** The second envelope (p.24). Two stages, a bipolar amount, and a three-way destination. */
 function eg(attack: number, decay: number, int: number, target: string): AuthoredParam[] {
-  return [
+  return inModule(ENVELOPES, [
     num('EG · ATTACK', attack, K, 24),
     num('EG · DECAY', decay, K, 24),
     num('EG · INT', int, { min: -100, max: 100 }, 24, { unit: '%', note: 'Negative applies the envelope downwards' }),
     sw('EG · TARGET', target, EG_TARGETS, 24),
-  ]
+  ])
 }
 
 /**
@@ -404,13 +469,13 @@ function eg(attack: number, decay: number, int: number, target: string): Authore
  * call, for the same reason, as `EFFECTS · TIME`.
  */
 function lfo(wave: string, mode: string, rate: number, int: number, target: string): AuthoredParam[] {
-  return [
+  return inModule(ENVELOPES, [
     sw('LFO · WAVE', wave, VCO_WAVES, 25),
     sw('LFO · MODE', mode, LFO_MODES, 25),
     num('LFO · RATE', rate, K, 25),
     num('LFO · INT', int, { min: 0, max: 511 }, 25, { hint: 'lfo-invert' }),
     sw('LFO · TARGET', target, LFO_TARGETS, 25),
-  ]
+  ])
 }
 
 /**
@@ -420,7 +485,7 @@ function lfo(wave: string, mode: string, rate: number, int: number, target: stri
  * two it does not name keep whatever the program already held.
  */
 function fx(slot: string, state: string, depth: number): AuthoredParam[] {
-  return [
+  return inModule('EFFECTS', [
     sw('EFFECTS · DEL/REV/MOD', slot, FX_SLOTS, 26, {
       note: 'Selects which effect the two knobs below are setting; the other two keep their stored values',
     }),
@@ -429,7 +494,7 @@ function fx(slot: string, state: string, depth: number): AuthoredParam[] {
       unit: '%',
       mood: [{ axis: 'space', amount: 20 }],
     }),
-  ]
+  ])
 }
 
 // ---------------------------------------------------------------------------
