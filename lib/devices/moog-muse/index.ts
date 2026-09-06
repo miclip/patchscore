@@ -83,8 +83,14 @@ import { MUSE_PANEL } from './panel'
  *
  * **The last row is the finding: with UNISON engaged a chord does not sound as a chord.**
  * `DYNAMIC VOICE ALLOCATION` is ruled out in both of its states, and `STACK` is not involved —
- * it was off, and every recipe here sets `MULTI MODE ON`, under which p.105 says it is ignored
- * anyway.
+ * it was off, and every recipe here sets `MULTI MODE ON`, under which it is ignored anyway.
+ *
+ * **The authority for that last clause is p.110, not p.105** (#424). p.105 describes STACK and
+ * says nothing about MULTI MODE; the NOTE that rules it out is under MULTI MODE on p.110 — *"In
+ * MULTI MODE the STACK and SPLIT buttons in VOICE CONTROL are ignored – STACKS, however, can
+ * still be achieved by sending duplicate MIDI messages to both MIDI channels."* Same conclusion,
+ * and it was always the right one; the page beside it was wrong, which is the one thing this file
+ * spends most of its length being careful about.
  *
  * ### How much weight each row carries, which is not the same for all four
  *
