@@ -168,10 +168,10 @@ One setting for the whole song — set it once, not once per part below.
 
 - **● VOICE CONTROL**
   - **TIMBRE A VOICE COUNT** `4` (0…8)
-    - ↳ note: Four each. The counts always sum to eight, so setting this sets the other
+    - ↳ note: The counts always sum to eight, so setting this sets the other — TIMBRE B gets the rest
     - ↳ hint: VOICE CONTROL, then MORE
   - **DYNAMIC VOICE ALLOCATION** `OFF`
-    - ↳ note: Its printed default. On, a busy timbre steals from the other and the four-each split stops holding
+    - ↳ note: Its printed default. On, a busy timbre steals from the other and the count above stops holding
     - ↳ hint: VOICE CONTROL, then MORE
   - **MULTI MODE** `ON`
     - ↳ note: Its printed default, and what makes the two timbres separately playable

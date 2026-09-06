@@ -13,6 +13,7 @@ import {
   compareCodeUnits,
   densityShift,
   energyBand,
+  devicePoolCapacity,
   expand,
   expandAll,
   inheritVerified,
@@ -1370,13 +1371,24 @@ describe('neutral mood is inert (§6.1, NEUTRAL_MOOD)', () => {
   })
 
   it('holds across the whole authored library, which is where it was caught', () => {
-    // The allocation is stated rather than omitted (#433): a parameter that takes its value from
-    // the stack refuses to resolve without one, and an unstacked part is the case this sweep is
-    // about — every authored point read back exactly as authored, with no mood behind it. At a
-    // width of one a sourced value *is* its authored point, so the claim below is unchanged.
+    // The allocation is stated rather than omitted (#433, #424): a parameter that takes its value
+    // from the allocation refuses to resolve without one, and **each source is stated at rest**,
+    // which is the case this sweep is about — every authored point read back exactly as authored,
+    // with no mood behind it. At rest a sourced value *is* its authored point, so the claim below
+    // is unchanged by either source existing.
+    //
+    // Rest is a width of one, which is an unstacked part; and, for a share, the box divided
+    // evenly between its own pool members, which is the split every recipe is authored against.
+    // Computed per device rather than written down, so a box with a different pool is swept at
+    // its own resting split and not at the Muse's.
     for (const device of DEVICES) {
+      const members = expand(device).filter((a) => a.poolId !== undefined).length
+      const evenShare = members === 0 ? 0 : Math.floor(devicePoolCapacity(device) / members)
       for (const recipe of device.recipes) {
-        const resolved = resolveParams(recipe, NEUTRAL_MOOD, { stackWidth: 1 })
+        const resolved = resolveParams(recipe, NEUTRAL_MOOD, {
+          stackWidth: 1,
+          devicePartShare: evenShare,
+        })
         recipe.params.forEach((authored, i) => {
           const got = resolved[i] as (typeof resolved)[number]
           expect(got.value, `${device.id} / ${recipe.id} / ${authored.name}`).toBe(authored.value)

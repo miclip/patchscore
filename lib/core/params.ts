@@ -161,17 +161,32 @@ export const ParamScopeSchema = z.enum(PARAM_SCOPES)
  * note, because the synth slot carrying all three was still set to one voice. The width was
  * present in the guide's own prose and simply never carried into a setting.
  *
- * **A closed one-member list, and it is meant to stay small.** This is not a general expression
+ * `device-part-share` is the second, and it was taken on its own evidence exactly as this note
+ * said it would have to be. Reported from the machine (#424): a Muse left carrying one part still
+ * printed `TIMBRE A VOICE COUNT 4`, so a pad that wanted headroom got four of the box's eight
+ * voices and the setting beside it *stopped it reclaiming the other four* — p.106's sum-to-eight
+ * rule means half the instrument was allocated to a timbre carrying nothing. Like a stack width,
+ * this is not taste and not a manual figure: it is how many parts the resolver put on the box,
+ * which no recipe can know when it is authored, because the same recipe is right at 8 alone and
+ * right at 4 sharing.
+ *
+ * **A closed two-member list, and it is meant to stay small.** This is not a general expression
  * language and it is not a fifth shared vocabulary (invariant 3): nothing in a template names a
  * source and nothing joins on one. Each member is a specific number the resolver already knows
- * and a device may ask for by name. Adding a second is a decision to take on its own evidence,
- * the way #424's split-timbre voice count would be.
+ * and a device may ask for by name. A third is a decision to take on its own evidence, the way
+ * these two were.
  *
- * **Numeric only.** A width is a number. An enum whose option depended on the allocation would
- * need a mapping from a count onto an authored option set, which nothing has asked for, and a
- * text param is a written instruction rather than a control.
+ * **The two are not the same question and must not be merged.** A stack width is *this part's*
+ * footprint — how many voices carry it — and it differs part by part on one box. A part share is
+ * *the box's* division among the parts on it, and it is one number for the whole device however
+ * many parts read it. Collapsing them would give the Muse's pad and sub different counts for a
+ * `song`-scoped field that sets one box-wide value, unhoist it, and print it twice.
+ *
+ * **Numeric only.** A width is a number and so is a share. An enum whose option depended on the
+ * allocation would need a mapping from a count onto an authored option set, which nothing has
+ * asked for, and a text param is a written instruction rather than a control.
  */
-export const PARAM_VALUE_SOURCES = ['stack-width'] as const
+export const PARAM_VALUE_SOURCES = ['stack-width', 'device-part-share'] as const
 
 export type ParamValueSource = (typeof PARAM_VALUE_SOURCES)[number]
 
@@ -190,16 +205,18 @@ export type AuthoredNumericParam = {
    *
    * Omitted is the ordinary case and means `value` above is the value. Set, the resolver
    * replaces the point with the named allocation fact, and `value` is what the parameter reads
-   * when that fact is at rest — a stack width of one, which is an unstacked part. So the
-   * authored number is still real and still has to sit inside its own range; it is the floor of
-   * the control rather than a placeholder.
+   * when that fact is at rest — a stack width of one, which is an unstacked part; a part share
+   * for a box divided evenly among its pool members, which is the Muse's four-and-four. So the
+   * authored number is still real and still has to sit inside its own range; it is the resting
+   * position of the control rather than a placeholder.
    *
    * **`range` is a requirement here, not a display bound.** A sourced value says *this many
-   * voices, or the part does not sound the notes the guide printed*, so a width the control has
+   * voices, or the part does not sound the notes the guide printed*, so a count the control has
    * no room for is a conflict rather than something to round off: the resolver throws instead of
    * clamping, and throws again if it is handed no allocation at all. Declare a range that covers
-   * every width the pool this recipe sits on can produce — 1 to the pool's own size — because a
-   * narrower one is a promise the box cannot keep.
+   * every value the source can produce on this device — 1 to the pool's own size for a
+   * `stack-width`, and down from the device's whole pool capacity for a `device-part-share` —
+   * because a narrower one is a promise the box cannot keep.
    *
    * **Mood is refused beside it** (`AuthoredNumericParamSchema`). The count the resolver chose
    * is the count that sounds the part, and a darkness knob nudging it to 2 would silence a note

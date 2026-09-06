@@ -220,7 +220,7 @@ describe('the format carries an absent mood, and older links keep theirs (#310)'
      * reading beside `SongOverrides`, applied to #161's two fields, then #200's, then #340's. The
      * number below belongs to whoever last bumped it; the claim here is that #310 was not them.
      */
-    expect(RESOLVER_VERSION).toBe(9)
+    expect(RESOLVER_VERSION).toBe(10)
   })
 
   it('writes no axis at all when the reader has set no mood', () => {

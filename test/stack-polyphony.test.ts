@@ -6,6 +6,8 @@ import {
   AuthoredParamSchema,
   NEUTRAL_MOOD,
   PARAM_VALUE_SOURCES,
+  devicePoolCapacity,
+  expand,
   moodState,
   renderGuide,
   resolve,
@@ -50,10 +52,12 @@ function polyphonyOf(assignment: ResolvedAssignment): number | undefined {
 }
 
 describe('the authored declaration (§3.1)', () => {
-  it('names exactly one source, and it is the stack width', () => {
-    // The list is closed on purpose. A second member is a decision to take on its own evidence,
-    // the way #424's split-timbre voice count would be — not a slot to fill.
-    expect(PARAM_VALUE_SOURCES).toEqual(['stack-width'])
+  it('names exactly two sources, and both were taken on their own evidence', () => {
+    // The list is closed on purpose and it is not a slot to fill. This test used to say "exactly
+    // one" and name #424's split-timbre voice count as the shape a second would have to have;
+    // #424 then produced the evidence — a Muse alone on a rig telling its reader to lock four of
+    // eight voices away — and the second member is that, not a generalisation of the first.
+    expect(PARAM_VALUE_SOURCES).toEqual(['stack-width', 'device-part-share'])
   })
 
   it('accepts `valueFrom` on a numeric', () => {
@@ -63,9 +67,30 @@ describe('the authored declaration (§3.1)', () => {
     expect(parsed.success).toBe(true)
   })
 
+  it('accepts `valueFrom` on the second source too', () => {
+    const parsed = AuthoredNumericParamSchema.safeParse(
+      numericParam({ valueFrom: 'device-part-share', value: 4, range: { min: 0, max: 8 } }),
+    )
+    expect(parsed.success).toBe(true)
+  })
+
   it('refuses a source it does not know', () => {
     const parsed = AuthoredNumericParamSchema.safeParse(
       numericParam({ valueFrom: 'voice-count' }),
+    )
+    expect(parsed.success).toBe(false)
+  })
+
+  it('refuses mood beside the second source as well', () => {
+    // The refinement is on the field rather than on the member, so this holds for every source
+    // the list ever gains: two authorities over one number is the thing being refused.
+    const parsed = AuthoredNumericParamSchema.safeParse(
+      numericParam({
+        valueFrom: 'device-part-share',
+        value: 4,
+        range: { min: 0, max: 8, verified: FIXTURE_CITE },
+        mood: [{ axis: 'darkness', amount: 2 }],
+      }),
     )
     expect(parsed.success).toBe(false)
   })
@@ -126,6 +151,15 @@ describe('resolving one (§7 step 9)', () => {
     range: { min: 1, max: 8, verified: FIXTURE_CITE },
   })
 
+  /** #424's shape: the Muse's own control, with its own range and its own resting point. */
+  const shared = numericParam({
+    name: 'TIMBRE A VOICE COUNT',
+    value: 4,
+    unit: undefined,
+    valueFrom: 'device-part-share',
+    range: { min: 0, max: 8, verified: FIXTURE_CITE },
+  })
+
   it('reads the width the allocation carries', () => {
     expect(resolveParam(sourced, false, NEUTRAL_MOOD, { stackWidth: 3 }).value).toBe(3)
     expect(resolveParam(sourced, false, NEUTRAL_MOOD, { stackWidth: 4 }).value).toBe(4)
@@ -142,6 +176,43 @@ describe('resolving one (§7 step 9)', () => {
     // The silent version of this prints `POLYPHONY 1` on a triad, which is #433 reached from
     // inside the engine instead of from a missing recipe line.
     expect(() => resolveParam(sourced, false, NEUTRAL_MOOD)).toThrow(/no allocation/)
+  })
+
+  it('refuses an allocation that carries the other source', () => {
+    // #424. With two members, "no allocation" is no longer the only way to arrive with nothing:
+    // a caller can hand over an allocation that answers a question this parameter did not ask.
+    // A source is absent unless it is stated, so reading the neighbouring member — or falling
+    // back to the authored point — would be the same silent-plausible-number failure the throw
+    // above exists to stop, reached from one field over.
+    expect(() => resolveParam(sourced, false, NEUTRAL_MOOD, { devicePartShare: 8 })).toThrow(
+      /no allocation carrying one/,
+    )
+    expect(() => resolveParam(shared, false, NEUTRAL_MOOD, { stackWidth: 3 })).toThrow(
+      /no allocation carrying one/,
+    )
+  })
+
+  it('dispatches on the source rather than reading whichever number is there', () => {
+    // The two are different questions and an allocation carries both at once: a stacked part on
+    // a shared box has a width and a share, and they are not the same number. A dispatch that
+    // read the first defined field would print one of them under the other's name.
+    const both = { stackWidth: 3, devicePartShare: 8 }
+    expect(resolveParam(sourced, false, NEUTRAL_MOOD, both).value).toBe(3)
+    expect(resolveParam(shared, false, NEUTRAL_MOOD, both).value).toBe(8)
+  })
+
+  it('reads the share the allocation carries, at both of the counts the Muse produces', () => {
+    expect(resolveParam(shared, false, NEUTRAL_MOOD, { devicePartShare: 8 }).value).toBe(8)
+    expect(resolveParam(shared, false, NEUTRAL_MOOD, { devicePartShare: 4 }).value).toBe(4)
+  })
+
+  it('refuses a share the control has no room for, exactly as it refuses a width', () => {
+    expect(() => resolveParam(shared, false, NEUTRAL_MOOD, { devicePartShare: 9 })).toThrow(
+      /outside its declared range 0-8/,
+    )
+    expect(() => resolveParam(shared, false, NEUTRAL_MOOD, { devicePartShare: -1 })).toThrow(
+      /outside its declared range 0-8/,
+    )
   })
 
   it('refuses a width the control has no room for, rather than rounding it off', () => {
@@ -279,39 +350,82 @@ describe('the Tracker Mini pad, on the rigs that reach it (§12.4)', () => {
   })
 })
 
+describe('what a share is divided out of (#424)', () => {
+  const museDevice = DEVICES.find((d) => d.id === 'moog-muse')
+
+  it('counts every voice a pool can sound, not the members', () => {
+    // The Muse is a pool of two timbres at four voices each, and p.106's rule is about the eight
+    // — "the Voice Count settings for TIMBRE A and B… always sum to eight". A capacity that
+    // counted members would be 2 and would divide into a count no page recognises.
+    expect(devicePoolCapacity(museDevice!)).toBe(8)
+  })
+
+  it('is zero for a box whose voices are individually authored', () => {
+    // A TR-1000's BD, SD and LT are three separate timbres, not a budget to share out. There is
+    // no control on that box a share could be written to, and the sweep below refuses one.
+    const tr1000 = DEVICES.find((d) => d.id === 'roland-tr-1000')
+    expect(devicePoolCapacity(tr1000!)).toBe(0)
+  })
+})
+
 describe('the range is a requirement, and the library keeps it (§3.1)', () => {
-  it('covers every width the pool behind each sourced parameter can produce', () => {
-    // This is what keeps the resolver's two throws theoretical. A width outside the declared
-    // range is refused rather than rounded, and the widest stack a recipe can ever be given is
-    // the size of the pool it sits on — so a range narrower than its pool is a promise the box
-    // cannot keep, and it is an authoring mistake nothing else in the build would name.
+  it('covers everything the source behind each sourced parameter can produce', () => {
+    // This is what keeps the resolver's throws theoretical. A number outside the declared range
+    // is refused rather than rounded, so a range narrower than its source's reach is a promise
+    // the box cannot keep — an authoring mistake nothing else in the build would name.
     //
-    // Swept over the whole library rather than the one device that uses this today: the next
+    // Swept over the whole library rather than the two devices that use this today: the next
     // device to declare a sourced parameter should meet this on the way in, not after a reader
-    // hits the throw.
-    let checked = 0
+    // hits the throw. **Each source has its own reach and they are checked separately**, because
+    // one rule covering both would have to be the looser of the two.
+    let widths = 0
+    let shares = 0
     for (const device of DEVICES) {
       for (const r of device.recipes) {
         for (const param of r.params) {
           if (param.kind !== 'numeric' || param.valueFrom === undefined) continue
-          // `voice` on a recipe is the `poolId ?? voiceId` the lookup keys on (§2.2), so this
-          // finds the pool where there is one and the fixed voice where there is not.
-          const voice = device.voices.find((v) => v.id === r.voice)
-          const widest = voice !== undefined && voice.kind === 'pool' ? voice.count : 1
-          expect(
-            param.range.min,
-            `${device.id}/${r.id}/${param.name}: an unstacked part is a width of 1`,
-          ).toBeLessThanOrEqual(1)
+          const where = `${device.id}/${r.id}/${param.name}`
+
+          if (param.valueFrom === 'stack-width') {
+            // `voice` on a recipe is the `poolId ?? voiceId` the lookup keys on (§2.2), so this
+            // finds the pool where there is one and the fixed voice where there is not. The
+            // widest stack a recipe can ever be given is the size of the pool it sits on.
+            const voice = device.voices.find((v) => v.id === r.voice)
+            const widest = voice !== undefined && voice.kind === 'pool' ? voice.count : 1
+            expect(param.range.min, `${where}: an unstacked part is a width of 1`).toBeLessThanOrEqual(1)
+            expect(
+              param.range.max,
+              `${where}: the pool it sits on is ${String(widest)} wide`,
+            ).toBeGreaterThanOrEqual(widest)
+            widths += 1
+            continue
+          }
+
+          // #424. A share is the device's whole pool capacity divided by the parts on the box,
+          // so the largest it can ever be is that capacity — one part alone — and it falls from
+          // there. The floor is checked at one share per pool member, which is the box divided
+          // as finely as its own members allow; below that a device is carrying more parts than
+          // it has voices to name, which no allocation in this library produces.
+          const capacity = devicePoolCapacity(device)
+          expect(capacity, `${where}: a share is a division of a pool, and this device has none`)
+            .toBeGreaterThan(0)
+          const members = expand(device).filter((a) => a.poolId !== undefined).length
           expect(
             param.range.max,
-            `${device.id}/${r.id}/${param.name}: the pool it sits on is ${String(widest)} wide`,
-          ).toBeGreaterThanOrEqual(widest)
-          checked += 1
+            `${where}: one part alone takes all ${String(capacity)} of this box's voices`,
+          ).toBeGreaterThanOrEqual(capacity)
+          expect(
+            param.range.min,
+            `${where}: ${String(members)} parts sharing takes it to ${String(Math.floor(capacity / members))}`,
+          ).toBeLessThanOrEqual(Math.floor(capacity / members))
+          shares += 1
         }
       }
     }
-    // The Tracker Mini's soft pad, on both pool twins. A sweep that found nothing would pass.
-    expect(checked).toBe(2)
+    // The Tracker Mini's soft pad on both pool twins, and the Muse's count on all eighteen of its
+    // recipes. A sweep that found nothing would pass silently.
+    expect(widths).toBe(2)
+    expect(shares).toBe(18)
   })
 })
 

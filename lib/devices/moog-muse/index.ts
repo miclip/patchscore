@@ -51,8 +51,15 @@ import { MUSE_PANEL } from './panel'
  *
  * **This under-claims a single-timbre patch and does so deliberately.** One timbre alone can have
  * all eight. But a number the resolver reads has to hold whatever the other timbre is doing, and
- * four is the count that is true no matter what lands on the other one. Every recipe carries
- * `TIMBRE A VOICE COUNT 4` as a param so the reader sets the box to the split the guide assumed.
+ * four is the count that is true no matter what lands on the other one.
+ *
+ * **`TIMBRE A VOICE COUNT` is no longer four (#424).** Every recipe carries the control so the
+ * reader sets the box to the split the guide assumed — and what the guide assumed is now read off
+ * the allocation rather than fixed: `valueFrom: 'device-part-share'` gives it `8` where the Muse
+ * carries one part and `4` where it carries two. The manifest's `polyphony: 4` is untouched and
+ * stays the conservative figure the *search* reasons with; the count is what the *reader* is
+ * told, and telling a reader with one part on the box to keep four voices locked away was the
+ * defect. Under-claiming to the search is safe; under-allocating on the panel is audible.
  *
  * ## `patchPolyphony`: MONO is cited, UNISON is observed, and they arrive at the same number
  *
@@ -151,14 +158,27 @@ import { MUSE_PANEL } from './panel'
  *
  * ### The conclusion is limited to the four-voice split, deliberately
  *
- * **Only the four-voice split was tested**, which is the split `TIMBRE A VOICE COUNT 4` gives and
- * the only one any recipe here authors. Whether UNISON collapses to one note at *every* voice
- * count is unknown: a timbre allocated six or eight voices was not tried.
+ * **Only the four-voice split was tested**, which is the split the authored `TIMBRE A VOICE
+ * COUNT 4` gives. Whether UNISON collapses to one note at *every* voice count is unknown: a
+ * timbre allocated six or eight voices was not tried.
  *
  * `patchPolyphony: 1` is therefore right for every recipe in this file and is **not** modelled as
  * a function of the count. Making it one would mean authoring a rule across a range nobody has
- * played, which is the thing this manifest is most careful not to do — and the guide sets the
- * count itself, so the untested region is not one a reader following it can reach. If somebody
+ * played, which is the thing this manifest is most careful not to do.
+ *
+ * **#424 weakened the guard that used to close this paragraph, and it is worth saying which
+ * one.** It read *"the guide sets the count itself, so the untested region is not one a reader
+ * following it can reach"* — true while the count was pinned at four, and no longer true by
+ * construction: a Muse carrying one part is now told `8`. What holds instead is contingent. The
+ * two UNISON recipes are `muse-stab-hard` and `muse-stab-dirty`, both `patchPolyphony: 1`, and
+ * `patchVoiceCeiling` excludes them from every `stab` request this library ships, all of which
+ * ask for a chord — so no direction can currently put one of them alone on the box, and a sweep
+ * of the catalogue finds none. A single-note `stab` request would make the untested region
+ * reachable, and that is the change to watch for rather than a change to this file.
+ *
+ * The reading itself is count-independent and points the same way: p.104 stacks *currently
+ * unused* voices onto the active one, and eight unused voices stack no less than four. So the
+ * conclusion is unchanged and only the measurement is narrower than the region. If somebody
  * plays a chord under UNISON at a different allocation and it sounds, this becomes conditional
  * and the recipes are where it changes.
  *
@@ -1004,8 +1024,10 @@ const ARP_CLOCK_DIV = ['STRGHT', 'TRPLT', 'DOTTED', 'COMBO'] as const
  * engaged, DETUNE subtly differentiates the tracking behavior between the two oscillators"*. One
  * knob, three meanings, selected by the two buttons beside it.
  *
- * `TIMBRE A VOICE COUNT` is carried because this manifest's `polyphony: 4` assumes it. p.106's
- * sum-to-eight rule means setting it also sets the other one.
+ * `TIMBRE A VOICE COUNT` is carried because a reader has to be told how the box is divided, and
+ * p.106's sum-to-eight rule means setting it also sets the other one. It is the one control here
+ * whose value is not this file's: `valueFrom: 'device-part-share'` reads it off the allocation
+ * (#424), so the number the guide prints is the division the guide actually made.
  */
 /**
  * §3.1/#385. **Stamp the panel module every parameter in a block belongs to.**
@@ -1052,6 +1074,30 @@ function voice(unison: string, mono: string, detune: number): AuthoredParam[] {
     {
       kind: 'numeric',
       name: 'TIMBRE A VOICE COUNT',
+      /**
+       * §7 step 9/#424. **The count is the allocation's, not this file's.**
+       *
+       * Reported from the machine: a Muse left carrying one part still read `4` here, so a pad
+       * that wanted headroom got four voices — and p.106's sum-to-eight rule handed the other
+       * four to a timbre carrying nothing. Half the instrument allocated on behalf of nobody,
+       * and the setting beside it was what stopped the part reclaiming it.
+       *
+       * No recipe can hold the number. The same patch is right at `8` when it is alone on the
+       * box and right at `4` when a second part is sharing it, and which of those is true is a
+       * fact about the *rig and the direction*, not about the sound. `devicePartShare` divides
+       * the pool's eight voices by the parts the search put on the box, so the reader is told to
+       * set what the guide actually assumed.
+       *
+       * `4` stays as the authored point, and it is a real value rather than a placeholder: it is
+       * what this control reads with the box divided evenly between its two timbres, which is
+       * the resting position and the split every one of these recipes was authored against.
+       *
+       * **`scope: 'song'` is what makes this safe to source from the device.** The count is one
+       * box-wide field, and every part on the Muse reads the same share by construction, so the
+       * value hoists above the parts and is printed once. A per-part source would give the pad
+       * and the sub different counts and print the field twice, each claiming to set one screen.
+       */
+      valueFrom: 'device-part-share',
       value: 4,
       // p.106 states the rule — "The Voice Count settings for TIMBRE A and B will move with
       // respect to each other and always sum to eight" — and prints an example reading 6 and 2,
@@ -1062,16 +1108,25 @@ function voice(unison: string, mono: string, detune: number): AuthoredParam[] {
       // **It is now read rather than inferred (#329), and the inference was right** — including
       // the part that looked least likely. A minimum of `0` means a timbre can be given no voices
       // at all, which the sum rule implies and no page confirms.
+      //
+      // **The range is a requirement now, not a display bound** (§3.1/#433). It has to cover
+      // every share this box can produce — `8` alone, `4` shared — and `0-8` does, with room
+      // under it that no allocation reaches.
       range: { min: 0, max: 8, verified: OBSERVED },
       verified: false,
       scope: 'song',
       hint: 'voice-count',
-      note: 'Four each. The counts always sum to eight, so setting this sets the other',
+      // The note had to stop saying "Four each", because the value it sits beside is no longer
+      // always four. What is true at both counts is the rule the manual actually prints: the two
+      // sum to eight, so whatever this is set to decides the other.
+      note: 'The counts always sum to eight, so setting this sets the other — TIMBRE B gets the rest',
     },
     sw('DYNAMIC VOICE ALLOCATION', 'OFF', OFF_ON, 106, {
       scope: 'song',
       hint: 'voice-count',
-      note: 'Its printed default. On, a busy timbre steals from the other and the four-each split stops holding',
+      // Same correction as the count above: "the four-each split" named a value this control's
+      // neighbour no longer always has.
+      note: 'Its printed default. On, a busy timbre steals from the other and the count above stops holding',
     }),
   ])
 }

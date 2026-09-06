@@ -35,6 +35,7 @@ import type {
   AuthoredNumericParam,
   AuthoredParam,
   Cite,
+  ParamValueSource,
   Provenance,
   ResolvedParam,
   Verified,
@@ -514,6 +515,29 @@ export function poolWidth(device: Device, assignable: Assignable): number {
 }
 
 /**
+ * §7 step 9/#424. **Every voice this device's pools can sound at once**, summed over its pools:
+ * a pool of two timbres at four voices each is eight, which is what a Muse has.
+ *
+ * The denominator of a `device-part-share`. Read off `voices` for the same reason `poolWidth`
+ * is — the size of a pool is a fact about the device, and duplicating it onto every member is
+ * the way the two come to disagree.
+ *
+ * **Pools only, and fixed voices contribute nothing.** A pool's members are interchangeable by
+ * construction (§2.2), which is what makes "divide them among the parts" a sentence that means
+ * anything. A TR-1000's BD, SD and LT are three individually authored timbres; sharing them out
+ * is not a thing a reader can do, and there is no control that would say so. A device with no
+ * pool has a capacity of `0`, which is not a share anybody can take — `test/stack-polyphony.test.ts`
+ * refuses a `device-part-share` authored on one rather than letting it resolve to nothing.
+ */
+export function devicePoolCapacity(device: Device): number {
+  let total = 0
+  for (const voice of device.voices) {
+    if (voice.kind === 'pool') total += voice.count * voice.polyphony
+  }
+  return total
+}
+
+/**
  * §12.4/#40. Whether `notes` simultaneous notes can be had from this pool by **stacking** —
  * `notes` of its members playing the same patch, one note of the chord each, which is the
  * method the Polyend manual itself prescribes (p.103: "To create chords, multiple tracks would
@@ -877,7 +901,39 @@ export type ParamAllocation = {
    * unstacked part. Read from the assignment rather than recomputed, so the number a
    * `stack-width` parameter takes is the same number the guide's own prose prints.
    */
-  readonly stackWidth: number
+  readonly stackWidth?: number
+  /**
+   * §7 step 9/#424. **The box's voices divided equally among the parts on it** —
+   * `devicePoolCapacity(device)` over however many assignments this device carries, floored.
+   *
+   * A fact about the *device*, not about the part, and that is the property the Muse's
+   * `song`-scoped `TIMBRE A VOICE COUNT` needs: every part on one box reads the same number, so
+   * the value hoists above the parts and is printed once, the way a box-wide field has to be.
+   * A per-part source would give a pad and a sub different counts for one field.
+   */
+  readonly devicePartShare?: number
+}
+
+/**
+ * §7 step 9/#433, #424. **Source dispatch, and the switch is exhaustive on purpose.**
+ *
+ * `PARAM_VALUE_SOURCES` is a closed list, so a third member fails to compile here rather than
+ * falling through to `undefined` and being reported as a missing allocation — which would name
+ * the caller for a mistake the author made.
+ *
+ * `undefined` means the allocation carries nothing for this source. It is never a value: see
+ * `ParamAllocation`'s note on why there is no default standing behind either member.
+ */
+function sourcedValue(
+  source: ParamValueSource,
+  allocation: ParamAllocation,
+): number | undefined {
+  switch (source) {
+    case 'stack-width':
+      return allocation.stackWidth
+    case 'device-part-share':
+      return allocation.devicePartShare
+  }
 }
 
 /**
@@ -942,10 +998,16 @@ export function resolveParam(
   // line, no error anywhere, and a chord that plays short. That is the failure this parameter
   // exists to remove, so it is refused rather than approximated.
   //
-  // Unreachable on the one parameter that uses this today: a stack never exceeds its pool, the
-  // pool is eight tracks, and the range is 1-8, which `test/stack-polyphony.test.ts` holds every
-  // device to. What is guarded is the next one, where an author narrows a range below the pool
-  // it sits on and nothing else would say so.
+  // Unreachable on the two parameters that use this today: a stack never exceeds its pool, and a
+  // part share never exceeds the capacity it is divided out of. Both ranges cover their source's
+  // whole reach, which `test/stack-polyphony.test.ts` holds every device to. What is guarded is
+  // the next one, where an author narrows a range below what the source can hand it and nothing
+  // else would say so.
+  //
+  // **The allocation is missing in two different ways and both are refused**, because a source
+  // is absent unless a caller states it. A caller with no allocation at all has forgotten the
+  // whole thing; a caller whose allocation carries the other member has forgotten this one, and
+  // defaulting either would put a plausible number on the line with no error anywhere.
   let sourced: number | undefined
   if (param.valueFrom !== undefined) {
     if (allocation === undefined) {
@@ -953,7 +1015,12 @@ export function resolveParam(
         `parameter '${param.name}' takes its value from '${param.valueFrom}' and was resolved with no allocation`,
       )
     }
-    sourced = allocation.stackWidth
+    sourced = sourcedValue(param.valueFrom, allocation)
+    if (sourced === undefined) {
+      throw new Error(
+        `parameter '${param.name}' takes its value from '${param.valueFrom}' and was resolved with no allocation carrying one`,
+      )
+    }
     if (sourced < param.range.min || sourced > param.range.max) {
       throw new Error(
         `parameter '${param.name}' needs ${String(sourced)} from '${param.valueFrom}', outside its declared range ${String(param.range.min)}-${String(param.range.max)}`,
