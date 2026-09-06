@@ -282,3 +282,33 @@ describe('trigger notes: read on the shared manual, and declined (§2.1/#334)', 
     expect(device.voices.some((v) => v.triggerNote !== undefined)).toBe(false)
   })
 })
+
+/**
+ * §3.1/#385. **The editor groups arrive intact, and that is a claim about the sharing.**
+ *
+ * `recipes` is taken from the sibling by reference, so the boxes come with the values and cannot
+ * come apart from them — which is right, because the plugin editors are the same software on both
+ * boxes and their group names are printed in the one document both manifests cite. What this
+ * guards is the *shape* of the borrow rather than the reading: `recipes: liveIII.recipes` is one
+ * line, and a later author who maps or rebuilds it here — the way the One G2 has to — would drop
+ * `module` with nothing else changing and no page number looking wrong.
+ */
+describe('the plugin editor boxes survive the sharing (#385)', () => {
+  const modulesOf = (recipes: readonly Recipe[]) =>
+    recipes.map((r) => r.params.map((p) => `${r.id}/${p.name}=${String((p as { module?: string }).module)}`))
+
+  it('carries every module the sibling authors, on every parameter, in order', () => {
+    expect(modulesOf(device.recipes)).toEqual(modulesOf(liveIII.recipes))
+  })
+
+  it('actually boxes something, so the check above cannot pass on two empty readings', () => {
+    const boxed = device.recipes.flatMap((r) =>
+      r.params.flatMap((p) => {
+        const m = (p as { module?: string }).module
+        return m === undefined ? [] : [m]
+      }),
+    )
+    expect(boxed.length).toBeGreaterThan(200)
+    expect(new Set(boxed).size).toBe(19)
+  })
+})

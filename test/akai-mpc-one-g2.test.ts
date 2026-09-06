@@ -370,3 +370,42 @@ describe('trigger notes: read on v3.9, and declined (§2.1/#334)', () => {
     expect(device.voices.some((v) => v.triggerNote !== undefined)).toBe(false)
   })
 })
+
+/**
+ * §3.1/#385. **The editor groups survive the retargeting, and the retargeting is where they could
+ * be lost.**
+ *
+ * The XL takes its recipes by reference; this manifest rebuilds every one of them, and two of its
+ * three parameter branches already reconstruct a field rather than spread it. `module` rides
+ * through only on the `...param` at the head of each branch, so it is a property of how the
+ * function is written rather than anything the types insist on.
+ *
+ * **`retargetParam`'s throw is exercised by the import, not by a test below.** `recipes` is built
+ * at module scope, so bringing this file in runs the guard over every parameter of every recipe
+ * before a single `it` starts — a branch that dropped a stamp would fail collection rather than
+ * an assertion. What the two tests here add is the half a throw cannot state: that the stamps
+ * which arrive are *the sibling's*, in the sibling's order, and that there are some.
+ *
+ * **A module is not retargeted.** `Transient` and `LP Filter` are the plugin editor's own group
+ * names and that editor is the same software on both boxes; only the page it is documented on
+ * moves, which is what the rest of this file is about.
+ */
+describe('the plugin editor boxes survive the retargeting (#385)', () => {
+  const stamps = (recipes: readonly Recipe[]) =>
+    recipes.map((r) => r.params.map((p) => `${r.id}/${p.name}=${String((p as { module?: string }).module)}`))
+
+  it('carries every module the sibling authors, unchanged and in order', () => {
+    expect(stamps(device.recipes)).toEqual(stamps(liveIII.recipes))
+  })
+
+  it('actually boxes something, so the check above cannot pass on two empty readings', () => {
+    const boxed = device.recipes.flatMap((r) =>
+      r.params.flatMap((p) => {
+        const m = (p as { module?: string }).module
+        return m === undefined ? [] : [m]
+      }),
+    )
+    expect(boxed.length).toBeGreaterThan(200)
+    expect(new Set(boxed).size).toBe(19)
+  })
+})

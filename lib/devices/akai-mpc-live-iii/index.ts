@@ -741,6 +741,59 @@ function art(
   return { slot, set, ...(hint === undefined ? {} : { hint }) }
 }
 
+/**
+ * §3.1/#385. **One editor group's worth of controls**, and the reading behind every call to it.
+ *
+ * ## The box here is a plugin editor's, not the panel's
+ *
+ * Every other device authoring `module` reads it off silkscreen — the Muse's `FILTER 1`, the
+ * Matriarch's `LEFT-HAND CONTROLLER`. This box has none to read: `panel.ts` draws sixteen pads, a
+ * screen and four Q-Links, and not one control any recipe here states is printed on it. What a
+ * reader actually stands in front of is the touchscreen, and the plugin editors on it *are*
+ * divided and *are* named — the manual prints tabs down the bottom of each editor and, inside a
+ * tab, a leftmost column naming the group each row belongs to.
+ *
+ * So the module is **the manual's innermost named editor group**:
+ *
+ *  - Bassline's `Osc / Filter / Envelope` tab (p.428) splits into `Oscillator`, `Filter` and
+ *    `Envelope`, and the screenshot on that page silkscreens the same three words across the
+ *    editor. The tab is the outer box and is not what a control sits in.
+ *  - Where a tab's table has **no group column, the tab is the innermost group**: DrumSynth's
+ *    `Drum Sound` (p.431) is one undivided table, so `Drum Sound` is the box.
+ *  - `LFO 1/LFO 2` (p.518) is the manual's own label for one group whose rows describe both
+ *    LFOs. Only LFO 1 is authored here, but `LFO 1` is not a name the document prints as a
+ *    group, and inventing one to read better is the thing #385 rules out.
+ *  - `Amp Envelope` and `Filter Envelope` are two groups in one tab (p.517), which is why the
+ *    stages below are stamped where they are called rather than sorted by their names.
+ *
+ * **Nothing outside an editor is boxed.** `Track Type`, `Plugin` and `Drum Type` choose which
+ * editor is open rather than sitting in one; `TC Swing` is Timing Correct, reached from six
+ * places (p.74) and none of them a plugin; an `Insert 1 · …` control is a *different* plugin's
+ * editor addressed by its slot, and the slot is what tells two `Mix` controls apart; a drum-pad
+ * recipe is the sampler (pp.211-227), which is the MPC's own program editor and not a plugin.
+ * All of them stay unmoduled, which §3.1 says is the ordinary case and not a gap.
+ *
+ * ## Stamped in the recipe, so the grouping is what the recipe shows
+ *
+ * The Muse's shape exactly, and for the Muse's reason: a run of controls goes in together, so the
+ * box a reader will see is the bracket an author already typed. The alternative — stamping each
+ * one-line control helper — makes the box a property of the control and reads as a value the
+ * recipe cannot see. `test/akai-mpc-live-iii.test.ts` holds the whole-device reading either way.
+ *
+ * ## Names are left exactly as authored
+ *
+ * As on the Muse, the Subsequent 37, the NEUTRON, the minilogue xd and the Matriarch. `name` is
+ * #107's hoist key, `sameRenderedParam`'s comparison and the string every fixture names.
+ *
+ * **Nothing trims here.** `paramLabel` trims an exact `${module} · ` prefix and no name in a box
+ * carries one: `Transient Attack` and `EQ Low Gain` separate with a space, so the box groups them
+ * and the line still reads whole. The `Insert 1 · …` names are the only ` · ` names in the file
+ * and they are deliberately unmoduled, so none of them trims either.
+ */
+function inModule(module: string, params: AuthoredParam[]): AuthoredParam[] {
+  return params.map((param) => ({ ...param, module }))
+}
+
 // ---------------------------------------------------------------------------
 // Recipes (§3)
 // ---------------------------------------------------------------------------
@@ -817,12 +870,15 @@ const recipes: Recipe[] = [
     verified: false,
     params: [
       trackType('Plugin'), plugin('DrumSynth'), drumType('Kick'),
-      dsVelocity(30), dsGain(-2),
-      dsTransAttack(45, [{ axis: 'density', amount: -25 }]),
-      dsDistDrive(6, [{ axis: 'grit', amount: 18 }]), dsDistMix(25),
-      dsLowFreq(58), dsLowGain(3.5, [{ axis: 'darkness', amount: 3 }]),
-      dsHighGain(-1.5, [{ axis: 'darkness', amount: -6 }]),
-      dsRatio(4), dsCompAttack(8), dsCompThreshold(-14),
+      ...inModule('Drum Sound', [dsVelocity(30), dsGain(-2)]),
+      ...inModule('Transient', [dsTransAttack(45, [{ axis: 'density', amount: -25 }])]),
+      ...inModule('Distortion', [dsDistDrive(6, [{ axis: 'grit', amount: 18 }]), dsDistMix(25)]),
+      ...inModule('EQ', [
+        dsLowFreq(58),
+        dsLowGain(3.5, [{ axis: 'darkness', amount: 3 }]),
+        dsHighGain(-1.5, [{ axis: 'darkness', amount: -6 }]),
+      ]),
+      ...inModule('Compressor', [dsRatio(4), dsCompAttack(8), dsCompThreshold(-14)]),
     ],
     articulation: [art('downbeat', { velocity: 120 }, 'step-velocity')],
   },
@@ -835,11 +891,14 @@ const recipes: Recipe[] = [
     verified: false,
     params: [
       trackType('Plugin'), plugin('DrumSynth'), drumType('Snare'),
-      dsVelocity(45), dsGain(-3),
-      dsTransAttack(30), dsTransSustain(-20, [{ axis: 'density', amount: -30 }]),
-      dsDistDrive(4, [{ axis: 'grit', amount: 20 }]), dsDistMix(20),
-      dsHighFreq(6000), dsHighGain(2.5, [{ axis: 'darkness', amount: -7 }]),
-      dsRatio(6), dsCompAttack(3), dsCompThreshold(-18),
+      ...inModule('Drum Sound', [dsVelocity(45), dsGain(-3)]),
+      ...inModule('Transient', [
+        dsTransAttack(30),
+        dsTransSustain(-20, [{ axis: 'density', amount: -30 }]),
+      ]),
+      ...inModule('Distortion', [dsDistDrive(4, [{ axis: 'grit', amount: 20 }]), dsDistMix(20)]),
+      ...inModule('EQ', [dsHighFreq(6000), dsHighGain(2.5, [{ axis: 'darkness', amount: -7 }])]),
+      ...inModule('Compressor', [dsRatio(6), dsCompAttack(3), dsCompThreshold(-18)]),
     ],
     articulation: [art('backbeat', { velocity: 124 }, 'step-velocity')],
   },
@@ -852,11 +911,12 @@ const recipes: Recipe[] = [
     verified: false,
     params: [
       trackType('Plugin'), plugin('DrumSynth'), drumType('Clap'),
-      dsVelocity(55), dsGain(-5),
-      dsTransSustain(-35, [{ axis: 'density', amount: -25 }]),
-      dsHighFreq(8000), dsHighGain(4, [{ axis: 'darkness', amount: -8 }]),
-      dsDistHighCut(18000, [{ axis: 'darkness', amount: -9000 }]),
-      delayReverbFx('AIR Reverb'), reverbType('Small Chamber'), reverbMix(14, [{ axis: 'space', amount: 24 }]),
+      ...inModule('Drum Sound', [dsVelocity(55), dsGain(-5)]),
+      ...inModule('Transient', [dsTransSustain(-35, [{ axis: 'density', amount: -25 }])]),
+      ...inModule('EQ', [dsHighFreq(8000), dsHighGain(4, [{ axis: 'darkness', amount: -8 }])]),
+      ...inModule('Distortion', [dsDistHighCut(18000, [{ axis: 'darkness', amount: -9000 }])]),
+      delayReverbFx('AIR Reverb'), reverbType('Small Chamber'),
+      reverbMix(14, [{ axis: 'space', amount: 24 }]),
     ],
     articulation: [art('backbeat', { velocity: 112 }, 'step-velocity')],
   },
@@ -869,9 +929,9 @@ const recipes: Recipe[] = [
     verified: false,
     params: [
       trackType('Plugin'), plugin('DrumSynth'), drumType('HiHat'),
-      dsVelocity(65), dsGain(-9),
-      dsTransSustain(-55, [{ axis: 'density', amount: -20 }]),
-      dsHighFreq(11000), dsHighGain(1.5, [{ axis: 'darkness', amount: -6 }]),
+      ...inModule('Drum Sound', [dsVelocity(65), dsGain(-9)]),
+      ...inModule('Transient', [dsTransSustain(-55, [{ axis: 'density', amount: -20 }])]),
+      ...inModule('EQ', [dsHighFreq(11000), dsHighGain(1.5, [{ axis: 'darkness', amount: -6 }])]),
       swing(54),
     ],
     articulation: [
@@ -888,10 +948,10 @@ const recipes: Recipe[] = [
     verified: false,
     params: [
       trackType('Plugin'), plugin('DrumSynth'), drumType('HiHat'),
-      dsVelocity(60), dsGain(-8),
-      dsTransSustain(25, [{ axis: 'density', amount: -30 }]),
-      dsDistHighCut(20000, [{ axis: 'darkness', amount: -10000 }]),
-      dsHighFreq(12000), dsHighGain(3),
+      ...inModule('Drum Sound', [dsVelocity(60), dsGain(-8)]),
+      ...inModule('Transient', [dsTransSustain(25, [{ axis: 'density', amount: -30 }])]),
+      ...inModule('Distortion', [dsDistHighCut(20000, [{ axis: 'darkness', amount: -10000 }])]),
+      ...inModule('EQ', [dsHighFreq(12000), dsHighGain(3)]),
     ],
     articulation: [art('offbeat', { velocity: 104 }, 'step-velocity')],
   },
@@ -904,8 +964,9 @@ const recipes: Recipe[] = [
     verified: false,
     params: [
       trackType('Plugin'), plugin('DrumSynth'), drumType('Ride'),
-      dsVelocity(70), dsGain(-11),
-      dsTransAttack(20), dsHighFreq(9000), dsHighGain(2.5, [{ axis: 'darkness', amount: -7 }]),
+      ...inModule('Drum Sound', [dsVelocity(70), dsGain(-11)]),
+      ...inModule('Transient', [dsTransAttack(20)]),
+      ...inModule('EQ', [dsHighFreq(9000), dsHighGain(2.5, [{ axis: 'darkness', amount: -7 }])]),
       delayReverbFx('AIR Reverb'), reverbType('Room'), reverbMix(12, [{ axis: 'space', amount: 20 }]),
     ],
     articulation: [art('offbeat', { velocity: 96 }, 'step-velocity')],
@@ -919,13 +980,16 @@ const recipes: Recipe[] = [
     verified: false,
     params: [
       trackType('Plugin'), plugin('DrumSynth'), drumType('Tom'),
-      dsVelocity(50), dsGain(-6),
-      dsTransAttack(35, [{ axis: 'density', amount: -20 }]),
-      dsTransShape(62),
-      dsLowFreq(180), dsLowGain(2, [{ axis: 'darkness', amount: 3 }]),
-      dsHighFreq(7000), dsHighGain(3, [{ axis: 'darkness', amount: -8 }]),
-      dsDistHighCut(16000, [{ axis: 'darkness', amount: -7000 }]),
-      dsRatio(3), dsCompAttack(12), dsCompThreshold(-16),
+      ...inModule('Drum Sound', [dsVelocity(50), dsGain(-6)]),
+      ...inModule('Transient', [dsTransAttack(35, [{ axis: 'density', amount: -20 }]), dsTransShape(62)]),
+      ...inModule('EQ', [
+        dsLowFreq(180),
+        dsLowGain(2, [{ axis: 'darkness', amount: 3 }]),
+        dsHighFreq(7000),
+        dsHighGain(3, [{ axis: 'darkness', amount: -8 }]),
+      ]),
+      ...inModule('Distortion', [dsDistHighCut(16000, [{ axis: 'darkness', amount: -7000 }])]),
+      ...inModule('Compressor', [dsRatio(3), dsCompAttack(12), dsCompThreshold(-16)]),
     ],
     articulation: [
       art('fill', { velocity: 118 }, 'step-velocity'),
@@ -941,13 +1005,23 @@ const recipes: Recipe[] = [
     verified: false,
     params: [
       trackType('Plugin'), plugin('DrumSynth'), drumType('Tom'),
-      dsVelocity(40), dsGain(-4),
-      dsTransAttack(-15), dsTransSustain(20, [{ axis: 'density', amount: -25 }]),
-      dsTransShape(30),
-      dsLowFreq(95), dsLowGain(5, [{ axis: 'darkness', amount: 4 }]),
-      dsHighFreq(5000), dsHighGain(-4, [{ axis: 'darkness', amount: -6 }]),
-      dsDistDrive(3, [{ axis: 'grit', amount: 16 }]), dsDistMix(18),
-      dsDistHighCut(6000, [{ axis: 'darkness', amount: -2500 }]),
+      ...inModule('Drum Sound', [dsVelocity(40), dsGain(-4)]),
+      ...inModule('Transient', [
+        dsTransAttack(-15),
+        dsTransSustain(20, [{ axis: 'density', amount: -25 }]),
+        dsTransShape(30),
+      ]),
+      ...inModule('EQ', [
+        dsLowFreq(95),
+        dsLowGain(5, [{ axis: 'darkness', amount: 4 }]),
+        dsHighFreq(5000),
+        dsHighGain(-4, [{ axis: 'darkness', amount: -6 }]),
+      ]),
+      ...inModule('Distortion', [
+        dsDistDrive(3, [{ axis: 'grit', amount: 16 }]),
+        dsDistMix(18),
+        dsDistHighCut(6000, [{ axis: 'darkness', amount: -2500 }]),
+      ]),
     ],
     articulation: [
       art('fill', { velocity: 108 }, 'step-velocity'),
@@ -964,11 +1038,14 @@ const recipes: Recipe[] = [
     verified: false,
     params: [
       trackType('Plugin'), plugin('Bassline'),
-      blWave('Sine'), blSub(70), blFifth(0),
-      blCutoff(220, [{ axis: 'darkness', amount: -110 }]),
-      blHpCutoff(10), blReso(8), blFilterEnv(0),
-      blAmpDecay(72, [{ axis: 'density', amount: -22 }]), blFilterDecay(40),
-      blGlide(35),
+      ...inModule('Oscillator', [blWave('Sine'), blSub(70), blFifth(0), blGlide(35)]),
+      ...inModule('Filter', [
+        blCutoff(220, [{ axis: 'darkness', amount: -110 }]),
+        blHpCutoff(10),
+        blReso(8),
+        blFilterEnv(0),
+      ]),
+      ...inModule('Envelope', [blAmpDecay(72, [{ axis: 'density', amount: -22 }]), blFilterDecay(40)]),
     ],
     articulation: [art('downbeat', { 'note-length': 240 }, 'step-note-length')],
   },
@@ -981,12 +1058,18 @@ const recipes: Recipe[] = [
     verified: false,
     params: [
       trackType('Plugin'), plugin('Bassline'),
-      blWave('Saw'), blSub(35), blFifth(12),
-      blCutoff(620, [{ axis: 'darkness', amount: -260 }]),
-      blReso(38), blFilterEnv(55),
-      blAmpDecay(46, [{ axis: 'density', amount: -18 }]), blFilterDecay(34),
-      blDriveType('Overdrive'), blDriveAmount(44, [{ axis: 'grit', amount: 30 }]),
-      blFilterControl(35),
+      ...inModule('Oscillator', [blWave('Saw'), blSub(35), blFifth(12)]),
+      ...inModule('Filter', [
+        blCutoff(620, [{ axis: 'darkness', amount: -260 }]),
+        blReso(38),
+        blFilterEnv(55),
+      ]),
+      ...inModule('Envelope', [blAmpDecay(46, [{ axis: 'density', amount: -18 }]), blFilterDecay(34)]),
+      ...inModule('Velocity', [blFilterControl(35)]),
+      ...inModule('Global', [
+        blDriveType('Overdrive'),
+        blDriveAmount(44, [{ axis: 'grit', amount: 30 }]),
+      ]),
     ],
     articulation: [art('downbeat', { velocity: 112, 'note-length': 88 }, 'step-note-length')],
   },
@@ -1014,15 +1097,16 @@ const recipes: Recipe[] = [
      */
     params: [
       trackType('Plugin'), plugin('Bassline'),
-      blWave('Square'), blSub(12), blFifth(0),
-      blCutoff(300, [{ axis: 'darkness', amount: -130 }]),
-      blHpCutoff(45),
-      blReso(76, [{ axis: 'grit', amount: 12 }]),
-      blFilterEnv(84),
-      blAmpDecay(28, [{ axis: 'density', amount: -10 }]), blFilterDecay(24),
-      blGlide(85), blEnvRetrigger('Off'),
-      blDriveType('Clip'), blDriveAmount(32, [{ axis: 'grit', amount: 34 }]),
-      blFilterControl(72),
+      ...inModule('Oscillator', [blWave('Square'), blSub(12), blFifth(0), blGlide(85)]),
+      ...inModule('Filter', [
+        blCutoff(300, [{ axis: 'darkness', amount: -130 }]),
+        blHpCutoff(45),
+        blReso(76, [{ axis: 'grit', amount: 12 }]),
+        blFilterEnv(84),
+      ]),
+      ...inModule('Envelope', [blAmpDecay(28, [{ axis: 'density', amount: -10 }]), blFilterDecay(24)]),
+      ...inModule('Velocity', [blEnvRetrigger('Off'), blFilterControl(72)]),
+      ...inModule('Global', [blDriveType('Clip'), blDriveAmount(32, [{ axis: 'grit', amount: 34 }])]),
     ],
     articulation: [
       art('downbeat', { 'note-length': 30 }, 'step-note-length'),
@@ -1051,15 +1135,31 @@ const recipes: Recipe[] = [
     verified: false,
     params: [
       trackType('Plugin'), plugin('TubeSynth'),
-      tsOctave1("8'"), tsFine1(0), tsShape1('Triangle'), tsQuad('On'), tsDetune(28),
-      tsOctave2("16'"), tsShape2('Saw'), tsMicroDetune(18), tsSubShape('Triangle'),
-      tsLevel('Osc 1', 70), tsLevel('Osc 2', 45), tsLevel('Sub Osc', 30),
-      tsCutoff(52, [{ axis: 'darkness', amount: -22 }]), tsReso(14), tsSlope(24),
-      tsFilterEnv(20), tsKeytrack(30),
-      tsEnv('Amp Attack', 900, [{ axis: 'density', amount: -400 }]),
-      tsEnv('Amp Decay', 2400), tsSustain('Amp Sustain', 78),
-      tsEnv('Amp Release', 3200),
-      delayReverbFx('AIR Reverb'), reverbType('Concert Hall'), reverbPreDelay(35), reverbMix(34, [{ axis: 'space', amount: 30 }]),
+      ...inModule('Oscillator 1', [
+        tsOctave1("8'"),
+        tsFine1(0),
+        tsShape1('Triangle'),
+        tsQuad('On'),
+        tsDetune(28),
+      ]),
+      ...inModule('Oscillator 2', [tsOctave2("16'"), tsShape2('Saw'), tsMicroDetune(18)]),
+      ...inModule('Sub Oscillator', [tsSubShape('Triangle')]),
+      ...inModule('Mixer', [tsLevel('Osc 1', 70), tsLevel('Osc 2', 45), tsLevel('Sub Osc', 30)]),
+      ...inModule('LP Filter', [
+        tsCutoff(52, [{ axis: 'darkness', amount: -22 }]),
+        tsReso(14),
+        tsSlope(24),
+        tsFilterEnv(20),
+        tsKeytrack(30),
+      ]),
+      ...inModule('Amp Envelope', [
+        tsEnv('Amp Attack', 900, [{ axis: 'density', amount: -400 }]),
+        tsEnv('Amp Decay', 2400),
+        tsSustain('Amp Sustain', 78),
+        tsEnv('Amp Release', 3200),
+      ]),
+      delayReverbFx('AIR Reverb'), reverbType('Concert Hall'), reverbPreDelay(35),
+      reverbMix(34, [{ axis: 'space', amount: 30 }]),
     ],
   },
   {
@@ -1071,15 +1171,26 @@ const recipes: Recipe[] = [
     verified: false,
     params: [
       trackType('Plugin'), plugin('TubeSynth'),
-      tsOctave1("4'"), tsFine1(0), tsShape1('Pulse'), tsQuad('Off'),
-      tsOctave2("8'"), tsShape2('Saw'), tsMicroDetune(9),
-      tsLevel('Osc 1', 85), tsLevel('Osc 2', 55), tsLevel('Ring Mod', 10),
-      tsCutoff(78, [{ axis: 'darkness', amount: -30 }]),
-      tsReso(34, [{ axis: 'grit', amount: 10 }]), tsSlope(12), tsKeytrack(65),
-      tsEnv('Amp Attack', 6), tsEnv('Amp Decay', 700),
-      tsSustain('Amp Sustain', 62, [{ axis: 'density', amount: -20 }]),
-      tsEnv('Amp Release', 300),
-      tsDrive(22, [{ axis: 'grit', amount: 28 }]),
+      ...inModule('Oscillator 1', [tsOctave1("4'"), tsFine1(0), tsShape1('Pulse'), tsQuad('Off')]),
+      ...inModule('Oscillator 2', [tsOctave2("8'"), tsShape2('Saw'), tsMicroDetune(9)]),
+      ...inModule('Mixer', [
+        tsLevel('Osc 1', 85),
+        tsLevel('Osc 2', 55),
+        tsLevel('Ring Mod', 10),
+        tsDrive(22, [{ axis: 'grit', amount: 28 }]),
+      ]),
+      ...inModule('LP Filter', [
+        tsCutoff(78, [{ axis: 'darkness', amount: -30 }]),
+        tsReso(34, [{ axis: 'grit', amount: 10 }]),
+        tsSlope(12),
+        tsKeytrack(65),
+      ]),
+      ...inModule('Amp Envelope', [
+        tsEnv('Amp Attack', 6),
+        tsEnv('Amp Decay', 700),
+        tsSustain('Amp Sustain', 62, [{ axis: 'density', amount: -20 }]),
+        tsEnv('Amp Release', 300),
+      ]),
     ],
     articulation: [art('accent', { velocity: 122 }, 'step-velocity')],
   },
@@ -1097,15 +1208,26 @@ const recipes: Recipe[] = [
      */
     params: [
       trackType('Plugin'), plugin('TubeSynth'),
-      tsOctave1("8'"), tsFine1(0), tsShape1('Saw'), tsQuad('Off'),
-      tsOctave2("8'"), tsShape2('Square'), tsMicroDetune(22),
-      tsLevel('Osc 1', 80), tsLevel('Osc 2', 70),
-      tsCutoff(58, [{ axis: 'darkness', amount: -26 }]), tsReso(28), tsSlope(24),
-      tsFilterEnv(70),
-      tsEnv('Filter Attack', 2), tsEnv('Filter Decay', 180), tsSustain('Filter Sustain', 10),
-      tsEnv('Amp Attack', 2), tsEnv('Amp Decay', 260),
-      tsSustain('Amp Sustain', 0, [{ axis: 'density', amount: 30 }]),
-      tsEnv('Amp Release', 180),
+      ...inModule('Oscillator 1', [tsOctave1("8'"), tsFine1(0), tsShape1('Saw'), tsQuad('Off')]),
+      ...inModule('Oscillator 2', [tsOctave2("8'"), tsShape2('Square'), tsMicroDetune(22)]),
+      ...inModule('Mixer', [tsLevel('Osc 1', 80), tsLevel('Osc 2', 70)]),
+      ...inModule('LP Filter', [
+        tsCutoff(58, [{ axis: 'darkness', amount: -26 }]),
+        tsReso(28),
+        tsSlope(24),
+        tsFilterEnv(70),
+      ]),
+      ...inModule('Filter Envelope', [
+        tsEnv('Filter Attack', 2),
+        tsEnv('Filter Decay', 180),
+        tsSustain('Filter Sustain', 10),
+      ]),
+      ...inModule('Amp Envelope', [
+        tsEnv('Amp Attack', 2),
+        tsEnv('Amp Decay', 260),
+        tsSustain('Amp Sustain', 0, [{ axis: 'density', amount: 30 }]),
+        tsEnv('Amp Release', 180),
+      ]),
     ],
     articulation: [art('accent', { velocity: 120, 'note-length': 48 }, 'step-note-length')],
   },
@@ -1118,16 +1240,23 @@ const recipes: Recipe[] = [
     verified: false,
     params: [
       trackType('Plugin'), plugin('TubeSynth'),
-      tsOctave1("8'"), tsFine1(0), tsShape1('Square'), tsQuad('Off'),
-      tsOctave2("4'"), tsShape2('Square'), tsMicroDetune(4),
-      tsLevel('Osc 1', 75), tsLevel('Osc 2', 40),
-      tsCutoff(66, [{ axis: 'darkness', amount: -24 }]), tsReso(12), tsSlope(12), tsKeytrack(45),
-      tsEnv('Amp Attack', 1), tsEnv('Amp Decay', 140), tsSustain('Amp Sustain', 0),
-      tsEnv('Amp Release', 90),
-      delayReverbFx('AIR Delay'), delaySync('On'),
-      delayFeedback(32, [{ axis: 'space', amount: 18 }]),
-      delayMix(24, [{ axis: 'space', amount: 22 }]),
-      swing(56),
+      ...inModule('Oscillator 1', [tsOctave1("8'"), tsFine1(0), tsShape1('Square'), tsQuad('Off')]),
+      ...inModule('Oscillator 2', [tsOctave2("4'"), tsShape2('Square'), tsMicroDetune(4)]),
+      ...inModule('Mixer', [tsLevel('Osc 1', 75), tsLevel('Osc 2', 40)]),
+      ...inModule('LP Filter', [
+        tsCutoff(66, [{ axis: 'darkness', amount: -24 }]),
+        tsReso(12),
+        tsSlope(12),
+        tsKeytrack(45),
+      ]),
+      ...inModule('Amp Envelope', [
+        tsEnv('Amp Attack', 1),
+        tsEnv('Amp Decay', 140),
+        tsSustain('Amp Sustain', 0),
+        tsEnv('Amp Release', 90),
+      ]),
+      delayReverbFx('AIR Delay'), delaySync('On'), delayFeedback(32, [{ axis: 'space', amount: 18 }]),
+      delayMix(24, [{ axis: 'space', amount: 22 }]), swing(56),
     ],
     articulation: [art('offbeat', { velocity: 96, 'note-length': 24 }, 'step-note-length')],
   },
@@ -1140,16 +1269,38 @@ const recipes: Recipe[] = [
     verified: false,
     params: [
       trackType('Plugin'), plugin('TubeSynth'),
-      tsOctave1("4'"), tsFine1(7), tsShape1('Saw'), tsQuad('On'), tsDetune(55),
-      tsOctave2("2'"), tsShape2('Noise'),
-      tsLevel('Osc 1', 60), tsLevel('Osc 2', 55),
-      tsCutoff(40, [{ axis: 'darkness', amount: -18 }]), tsReso(46), tsSlope(24),
-      tsFilterEnv(95),
-      tsEnv('Filter Attack', 3200), tsEnv('Filter Decay', 400),
-      tsSustain('Filter Sustain', 100),
-      tsEnv('Amp Attack', 1800), tsSustain('Amp Sustain', 100), tsEnv('Amp Release', 260),
-      tsLfoShape('Saw Up'), tsLfoDest('Pitch'), tsLfoSync('Off'), tsLfoRate(0.5),
-      tsLfoDepth(18, [{ axis: 'grit', amount: 14 }]),
+      ...inModule('Oscillator 1', [
+        tsOctave1("4'"),
+        tsFine1(7),
+        tsShape1('Saw'),
+        tsQuad('On'),
+        tsDetune(55),
+      ]),
+      ...inModule('Oscillator 2', [tsOctave2("2'"), tsShape2('Noise')]),
+      ...inModule('Mixer', [tsLevel('Osc 1', 60), tsLevel('Osc 2', 55)]),
+      ...inModule('LP Filter', [
+        tsCutoff(40, [{ axis: 'darkness', amount: -18 }]),
+        tsReso(46),
+        tsSlope(24),
+        tsFilterEnv(95),
+      ]),
+      ...inModule('Filter Envelope', [
+        tsEnv('Filter Attack', 3200),
+        tsEnv('Filter Decay', 400),
+        tsSustain('Filter Sustain', 100),
+      ]),
+      ...inModule('Amp Envelope', [
+        tsEnv('Amp Attack', 1800),
+        tsSustain('Amp Sustain', 100),
+        tsEnv('Amp Release', 260),
+      ]),
+      ...inModule('LFO 1/LFO 2', [
+        tsLfoShape('Saw Up'),
+        tsLfoDest('Pitch'),
+        tsLfoSync('Off'),
+        tsLfoRate(0.5),
+        tsLfoDepth(18, [{ axis: 'grit', amount: 14 }]),
+      ]),
     ],
     articulation: [art('last-hit', { velocity: 127, 'note-length': 384 }, 'step-note-length')],
   },
@@ -1186,17 +1337,40 @@ const recipes: Recipe[] = [
      */
     params: [
       trackType('Plugin'), plugin('TubeSynth'),
-      tsOctave1("8'"), tsFine1(0), tsShape1('Triangle'), tsQuad('On'), tsDetune(34),
-      tsOctave2("16'"), tsShape2('Saw'), tsMicroDetune(14), tsSubShape('Triangle'),
-      tsLevel('Osc 1', 62), tsLevel('Osc 2', 48), tsLevel('Sub Osc', 26),
-      tsCutoff(16, [{ axis: 'darkness', amount: -8 }]), tsReso(20), tsSlope(24),
-      tsFilterEnv(100), tsKeytrack(10),
-      tsEnv('Filter Attack', 9000, [{ axis: 'density', amount: -3000 }]),
-      tsEnv('Filter Decay', 6000), tsSustain('Filter Sustain', 100),
-      tsEnv('Amp Attack', 2000), tsEnv('Amp Decay', 5000),
-      tsSustain('Amp Sustain', 94), tsEnv('Amp Release', 3600),
-      tsEnv3Dest('Osc1 Quad Det.'), tsEnv3StartLevel(0), tsEnv3StartTime(0),
-      tsEnv3SlopeHold(55, [{ axis: 'space', amount: 20 }]),
+      ...inModule('Oscillator 1', [
+        tsOctave1("8'"),
+        tsFine1(0),
+        tsShape1('Triangle'),
+        tsQuad('On'),
+        tsDetune(34),
+      ]),
+      ...inModule('Oscillator 2', [tsOctave2("16'"), tsShape2('Saw'), tsMicroDetune(14)]),
+      ...inModule('Sub Oscillator', [tsSubShape('Triangle')]),
+      ...inModule('Mixer', [tsLevel('Osc 1', 62), tsLevel('Osc 2', 48), tsLevel('Sub Osc', 26)]),
+      ...inModule('LP Filter', [
+        tsCutoff(16, [{ axis: 'darkness', amount: -8 }]),
+        tsReso(20),
+        tsSlope(24),
+        tsFilterEnv(100),
+        tsKeytrack(10),
+      ]),
+      ...inModule('Filter Envelope', [
+        tsEnv('Filter Attack', 9000, [{ axis: 'density', amount: -3000 }]),
+        tsEnv('Filter Decay', 6000),
+        tsSustain('Filter Sustain', 100),
+      ]),
+      ...inModule('Amp Envelope', [
+        tsEnv('Amp Attack', 2000),
+        tsEnv('Amp Decay', 5000),
+        tsSustain('Amp Sustain', 94),
+        tsEnv('Amp Release', 3600),
+      ]),
+      ...inModule('Envelope 3', [
+        tsEnv3Dest('Osc1 Quad Det.'),
+        tsEnv3StartLevel(0),
+        tsEnv3StartTime(0),
+        tsEnv3SlopeHold(55, [{ axis: 'space', amount: 20 }]),
+      ]),
       delayReverbFx('AIR Reverb'), reverbType('Large Chamber'), reverbPreDelay(45),
       reverbMix(38, [{ axis: 'space', amount: 26 }]),
     ],
@@ -1215,8 +1389,7 @@ const recipes: Recipe[] = [
     },
     params: [
       trackType('Drum'), samplePlay('One Shot'), layerPlay('Velocity (Vel)'), padPoly('Mono'),
-      globalSemi(0), globalFine(0), layerSemi(2),
-      velStart(0), velEnd(127),
+      globalSemi(0), globalFine(0), layerSemi(2), velStart(0), velEnd(127),
     ],
     articulation: [art('backbeat', { velocity: 96 }, 'step-velocity')],
   },
@@ -1233,9 +1406,8 @@ const recipes: Recipe[] = [
       hint: 'sample-assign',
     },
     params: [
-      trackType('Drum'), samplePlay('One Shot'), layerPlay('Cycle (Cyc)'), padPoly('Poly'),
-      velStart(0), velEnd(90),
-      artSpeed(100), artDynamics(70, [{ axis: 'density', amount: 40 }]),
+      trackType('Drum'), samplePlay('One Shot'), layerPlay('Cycle (Cyc)'), padPoly('Poly'), velStart(0),
+      velEnd(90), artSpeed(100), artDynamics(70, [{ axis: 'density', amount: 40 }]),
       artStereo(45, [{ axis: 'space', amount: 30 }]),
     ],
     articulation: [art('ghost', { velocity: 44, probability: 55 }, 'event-probability')],
@@ -1253,9 +1425,8 @@ const recipes: Recipe[] = [
     },
     params: [
       trackType('Drum'), samplePlay('One Shot'), layerPlay('Velocity (Vel)'), padPoly('Poly'),
-      layerSemi(-5),
-      drumFx(1, 'Ring Mod'), drumFx(2, 'Wave Folder'),
-      harmonicFx('AIR Distortion'), distMode('Wrap'), distDrive(14, [{ axis: 'grit', amount: 26 }]),
+      layerSemi(-5), drumFx(1, 'Ring Mod'), drumFx(2, 'Wave Folder'), harmonicFx('AIR Distortion'),
+      distMode('Wrap'), distDrive(14, [{ axis: 'grit', amount: 26 }]),
       distMix(55, [{ axis: 'grit', amount: 20 }]),
     ],
     articulation: [art('offbeat', { velocity: 100 }, 'step-velocity')],
@@ -1273,9 +1444,8 @@ const recipes: Recipe[] = [
     },
     params: [
       trackType('Drum'), samplePlay('Note On'), layerPlay('Velocity (Vel)'), padPoly('Mono'),
-      drumFx(1, 'Bit Crush'), drumFx(2, 'Decimator'),
-      harmonicFx('AIR Lo-Fi'), loFiBits(7, [{ axis: 'grit', amount: -4 }]),
-      loFiRate(9000, [{ axis: 'darkness', amount: -4500 }]),
+      drumFx(1, 'Bit Crush'), drumFx(2, 'Decimator'), harmonicFx('AIR Lo-Fi'),
+      loFiBits(7, [{ axis: 'grit', amount: -4 }]), loFiRate(9000, [{ axis: 'darkness', amount: -4500 }]),
     ],
     articulation: [art('accent', { velocity: 108, 'note-length': 96 }, 'step-note-length')],
   },
@@ -1299,9 +1469,8 @@ const recipes: Recipe[] = [
       hint: 'sample-assign',
     },
     params: [
-      trackType('Drum'), samplePlay('Note On'), layerPlay('Crossfade'), padPoly('Mono'),
-      globalSemi(-12), globalFine(-8),
-      delayReverbFx('AIR Reverb'), reverbType('Large Studio'), reverbPreDelay(60),
+      trackType('Drum'), samplePlay('Note On'), layerPlay('Crossfade'), padPoly('Mono'), globalSemi(-12),
+      globalFine(-8), delayReverbFx('AIR Reverb'), reverbType('Large Studio'), reverbPreDelay(60),
       reverbMix(40, [{ axis: 'space', amount: 28 }]),
     ],
     articulation: [art('downbeat', { 'note-length': 768 }, 'step-note-length')],
@@ -1324,10 +1493,8 @@ const recipes: Recipe[] = [
     },
     params: [
       trackType('Drum'), samplePlay('One Shot'), layerPlay('Velocity (Vel)'), padPoly('Poly'),
-      globalSemi(0), globalFine(0),
-      drumFx(1, 'High Pass'),
-      delayReverbFx('AIR Delay'), delaySync('On'), delayFeedback(22),
-      delayMix(18, [{ axis: 'space', amount: 20 }]),
+      globalSemi(0), globalFine(0), drumFx(1, 'High Pass'), delayReverbFx('AIR Delay'), delaySync('On'),
+      delayFeedback(22), delayMix(18, [{ axis: 'space', amount: 20 }]),
     ],
     articulation: [art('accent', { velocity: 116 }, 'step-velocity')],
   },
@@ -1344,9 +1511,7 @@ const recipes: Recipe[] = [
     },
     params: [
       trackType('Drum'), samplePlay('One Shot'), layerPlay('Velocity (Vel)'), padPoly('Mono'),
-      muteGroup(1),
-      velStart(0), velEnd(127),
-      delayReverbFx('AIR Reverb'), reverbType('Scoring Stage'),
+      muteGroup(1), velStart(0), velEnd(127), delayReverbFx('AIR Reverb'), reverbType('Scoring Stage'),
       reverbMix(30, [{ axis: 'space', amount: 26 }]),
     ],
     articulation: [art('first-hit', { velocity: 127 }, 'step-velocity')],

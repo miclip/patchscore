@@ -356,8 +356,29 @@ function retargetNote(note: string, own?: { from: number; to: number }): string 
 /**
  * One parameter, with its cited range or option list moved onto this box's document — and its
  * option list narrowed where v3.9 prints fewer entries than v3.7 did.
+ *
+ * **The `module` has to arrive intact**, and `retargetOne` below carries it only because every
+ * branch spreads `...param`. That is a property of how the function happens to be written rather
+ * than anything the types insist on: a branch rebuilt field by field — which is how the two enum
+ * branches already treat `options` — would drop the box silently, and the loss would surface as
+ * one editor group missing from one guide on one of the three MPCs. So the stamp is checked
+ * rather than trusted, the way `pageInV39` checks a citation it has not mapped (invariant 2).
+ *
+ * A module is *not* retargeted: `Transient` and `LP Filter` are the plugin editor's own group
+ * names and the editor is the same software on both boxes. Only the page it is documented on
+ * moves, which is what everything else in this file is about.
  */
 function retargetParam(param: AuthoredParam): AuthoredParam {
+  const out = retargetOne(param)
+  if (out.module !== param.module) {
+    throw new Error(
+      `retargeting dropped the module on ${param.name}: ${String(param.module)} became ${String(out.module)}`,
+    )
+  }
+  return out
+}
+
+function retargetOne(param: AuthoredParam): AuthoredParam {
   if (param.verified !== undefined && param.verified !== false) {
     throw new Error(`retargeting a cited point value is not implemented: ${param.name}`)
   }

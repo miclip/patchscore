@@ -539,13 +539,17 @@ describe('no other device is affected (#385)', () => {
   it('lists every device in the library authoring a module', () => {
     // #385's cheaper first move was one folder; the Subsequent 37 is the second, the NEUTRON the
     // third, the minilogue xd the fourth, the Matriarch the fifth, the MODEL D the sixth and
-    // the Subharmonicon the seventh,
-    // and this list is the standing count of how far it has gone. Every device not named here
+    // the Subharmonicon the seventh, and the three MPCs are the eighth reading — one folder that
+    // authors it and two that inherit it, by reference and by retargeting.
+    // This list is the standing count of how far it has gone. Every device not named here
     // renders exactly as it did, which is what the goldens then prove byte for byte.
     const authoring = DEVICES.filter((d) =>
       d.recipes.some((r) => r.params.some((p) => (p as { module?: string }).module !== undefined)),
     ).map((d) => d.id)
     expect(authoring).toEqual([
+      'akai-mpc-live-iii',
+      'akai-mpc-one-g2',
+      'akai-mpc-xl',
       'behringer-model-d',
       'behringer-neutron',
       'korg-minilogue-xd',

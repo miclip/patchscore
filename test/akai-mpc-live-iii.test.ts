@@ -659,3 +659,240 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(device.voices.some((v) => v.triggerNote !== undefined)).toBe(false)
   })
 })
+
+/**
+ * §3.1/#385. **The boxes are a plugin editor's, and this box has no panel to check them against.**
+ *
+ * The sixth device in the library to author `module`, after the Muse (#413), the Subsequent 37
+ * (#416), the NEUTRON (#425), the minilogue xd (#426) and the Matriarch (#427) — and the first
+ * where the box is not silkscreened on anything. `panel.ts` draws sixteen pads, a screen and four
+ * Q-Links; not one control any recipe here states is printed on it. What a reader stands in front
+ * of is the touchscreen, where the manual names a tab and, inside it, the group each row belongs
+ * to (pp.428-429, 431-432, 515-518).
+ *
+ * That removes the cross-check the Matriarch has — no coordinate says which box a control is in —
+ * so the reading is written down here instead, keyed by **plugin and name together**. It has to
+ * be: the three plugins collide on four names, `LP Cutoff` most sharply, which is Bassline's
+ * `Filter` on p.428 and TubeSynth's `LP Filter` on p.516. A name alone cannot say which box.
+ *
+ * Three things are asserted that a reader cannot get off a name:
+ *
+ *  - **Nothing outside an editor is boxed.** The selectors that choose which editor is open, the
+ *    Timing Correct swing, the drum-pad sampler controls and every `Insert 1 · …` are unmoduled,
+ *    which §3.1 says is the ordinary case and not a gap (invariant 5).
+ *  - **No module opens twice in a recipe.** DESIGN.md §8 says two boxes with one label is an
+ *    authoring order that does not match the instrument, and that the fix belongs in the folder.
+ *  - **Nothing trims.** `paramLabel` takes off an exact `${module} · ` prefix; `Transient Attack`
+ *    separates with a space, so every line still prints whole inside its box.
+ */
+describe('every plugin control is boxed by the editor group the manual names (#385)', () => {
+  /**
+   * The reading. Keyed `<plugin>/<name>`, because the plugins share names and the box is what
+   * tells two `LP Cutoff` controls apart — which is the load-bearing consequence §3.1 warns of.
+   */
+  const GROUPS: Record<string, string> = {
+    // -- DrumSynth. Drum Sound (p.431) is one undivided table, so the tab is the group ------
+    'DrumSynth/Velocity': 'Drum Sound',
+    'DrumSynth/Gain': 'Drum Sound',
+    // Trans/Dist (p.432)
+    'DrumSynth/Transient Attack': 'Transient',
+    'DrumSynth/Transient Sustain': 'Transient',
+    'DrumSynth/Transient Shape': 'Transient',
+    'DrumSynth/Distortion Drive': 'Distortion',
+    'DrumSynth/Distortion Mix': 'Distortion',
+    'DrumSynth/Distortion High Cut': 'Distortion',
+    // EQ/Comp (p.432)
+    'DrumSynth/EQ Low Freq': 'EQ',
+    'DrumSynth/EQ Low Gain': 'EQ',
+    'DrumSynth/EQ High Freq': 'EQ',
+    'DrumSynth/EQ High Gain': 'EQ',
+    'DrumSynth/Comp Ratio': 'Compressor',
+    'DrumSynth/Comp Attack': 'Compressor',
+    'DrumSynth/Comp Threshold': 'Compressor',
+
+    // -- Bassline. Osc / Filter / Envelope (p.428) -----------------------------------------
+    'Bassline/Waveform': 'Oscillator',
+    'Bassline/Sub-Octave': 'Oscillator',
+    'Bassline/Fifth': 'Oscillator',
+    'Bassline/Glide Time': 'Oscillator',
+    'Bassline/LP Cutoff': 'Filter',
+    'Bassline/HP Cutoff': 'Filter',
+    'Bassline/Reso': 'Filter',
+    'Bassline/Filter Env': 'Filter',
+    'Bassline/Amp Decay': 'Envelope',
+    'Bassline/Filter Decay': 'Envelope',
+    // Velocity / Global / Chorus (p.429)
+    'Bassline/Filter Control': 'Velocity',
+    'Bassline/Env Retrigger': 'Velocity',
+    'Bassline/Drive Type': 'Global',
+    'Bassline/Drive Amount': 'Global',
+
+    // -- TubeSynth. Oscillator (p.515) -----------------------------------------------------
+    'TubeSynth/Osc 1 Octave': 'Oscillator 1',
+    'TubeSynth/Osc 1 Fine': 'Oscillator 1',
+    'TubeSynth/Osc 1 Shape': 'Oscillator 1',
+    'TubeSynth/Quad': 'Oscillator 1',
+    'TubeSynth/Detune': 'Oscillator 1',
+    'TubeSynth/Osc 2 Octave': 'Oscillator 2',
+    'TubeSynth/Osc 2 Shape': 'Oscillator 2',
+    'TubeSynth/Micro Detune': 'Oscillator 2',
+    'TubeSynth/Sub Osc Shape': 'Sub Oscillator',
+    // Mixer / Filter (p.516)
+    'TubeSynth/Osc 1 Level': 'Mixer',
+    'TubeSynth/Osc 2 Level': 'Mixer',
+    'TubeSynth/Sub Osc Level': 'Mixer',
+    'TubeSynth/Ring Mod Level': 'Mixer',
+    'TubeSynth/Mixer Drive': 'Mixer',
+    'TubeSynth/LP Cutoff': 'LP Filter',
+    'TubeSynth/LP Reso': 'LP Filter',
+    'TubeSynth/LP Slope': 'LP Filter',
+    'TubeSynth/LP Env': 'LP Filter',
+    'TubeSynth/LP Keytrack': 'LP Filter',
+    // Envelope (p.517)
+    // `Filter Release` is absent: `tsEnv` accepts the stage and no recipe reaches it. The map is
+    // what the manifest authors, so adding the first recipe that sweeps a release out has to add
+    // the line here too — which is the whole reach of the first test below.
+    'TubeSynth/Filter Attack': 'Filter Envelope',
+    'TubeSynth/Filter Decay': 'Filter Envelope',
+    'TubeSynth/Filter Sustain': 'Filter Envelope',
+    'TubeSynth/Amp Attack': 'Amp Envelope',
+    'TubeSynth/Amp Decay': 'Amp Envelope',
+    'TubeSynth/Amp Sustain': 'Amp Envelope',
+    'TubeSynth/Amp Release': 'Amp Envelope',
+    'TubeSynth/Envelope 3 Destination': 'Envelope 3',
+    'TubeSynth/Envelope 3 Start Level': 'Envelope 3',
+    'TubeSynth/Envelope 3 Start Time': 'Envelope 3',
+    'TubeSynth/Envelope 3 Slope Hold': 'Envelope 3',
+    // LFO (p.518). The manual's own label for the group; only LFO 1 is authored.
+    'TubeSynth/LFO 1 Shape': 'LFO 1/LFO 2',
+    'TubeSynth/LFO 1 Destination': 'LFO 1/LFO 2',
+    'TubeSynth/LFO 1 Sync': 'LFO 1/LFO 2',
+    'TubeSynth/LFO 1 Rate': 'LFO 1/LFO 2',
+    'TubeSynth/LFO 1 Depth': 'LFO 1/LFO 2',
+  }
+
+  /**
+   * The controls that are deliberately outside every box, by name — the ordinary case §3.1
+   * describes. Three kinds, and the reason differs for each:
+   *
+   *  - `Track Type`, `Plugin`, `Drum Type` choose which editor is open rather than sitting in one.
+   *  - `TC Swing` is Timing Correct, reached from six places (p.74), none of them a plugin.
+   *  - an `Insert 1 · …` is a *different* plugin's editor addressed by its slot, and the slot is
+   *    what tells its `Mix` from a DrumSynth's. Boxing it as `Insert 1` would trim that away.
+   *  - everything else here is the drum-pad sampler (pp.211-227), which is the MPC's own program
+   *    editor and not a plugin — a separate reading nobody has done.
+   */
+  const UNMODULED = new Set([
+    'Track Type',
+    'Plugin',
+    'Drum Type',
+    'Insert 1',
+    'TC Swing',
+    'Sample Play',
+    'Layer Play',
+    'Pad Polyphony',
+    'Mute Group',
+    'Global Semi',
+    'Global Fine',
+    'Semi',
+    'Vel Start',
+    'Vel End',
+    'Articulation Speed',
+    'Articulation Dynamics',
+    'Articulation Stereo',
+  ])
+
+  /** The two families whose names carry an ordinal, so the set above cannot spell them out. */
+  const UNMODULED_PREFIX = ['Insert 1 · ', 'Drum FX ']
+
+  /** The plugin a recipe is editing, or `undefined` where it states no plugin at all. */
+  const pluginOf = (recipe: Recipe): string | undefined => {
+    const p = recipe.params.find((x) => x.name === 'Plugin')
+    return p === undefined ? undefined : String(p.value)
+  }
+
+  /** Every authored parameter of every recipe, as `<plugin>/<name>` → the modules seen on it. */
+  const byKey = new Map<string, Set<string>>()
+  for (const recipe of device.recipes) {
+    const plugin = pluginOf(recipe) ?? '(no plugin)'
+    for (const param of recipe.params) {
+      const module = (param as { module?: string }).module
+      const key = module === undefined ? param.name : `${plugin}/${param.name}`
+      const found = byKey.get(key)
+      if (found === undefined) byKey.set(key, new Set([module ?? '(none)']))
+      else found.add(module ?? '(none)')
+    }
+  }
+
+  it('boxes every plugin control, with nothing left over on either side', () => {
+    // Whole-device rather than spot-checked: a helper added later with no stamp on it is exactly
+    // the miss this catches, and it would otherwise surface as one loose run in one guide.
+    const boxed = [...byKey].filter(([, mods]) => !mods.has('(none)')).map(([key]) => key)
+    expect(boxed.filter((key) => GROUPS[key] === undefined)).toEqual([])
+    expect(new Set(boxed)).toEqual(new Set(Object.keys(GROUPS)))
+  })
+
+  it('gives every boxed control one module and only one', () => {
+    for (const [key, mods] of byKey) {
+      if (mods.has('(none)')) continue
+      expect([...mods], key).toEqual([GROUPS[key]])
+    }
+  })
+
+  it('leaves the selectors, Timing Correct, the sampler and the insert slots unmoduled', () => {
+    const loose = [...byKey].filter(([, mods]) => mods.has('(none)')).map(([key]) => key)
+    // A parameter is never both — nothing here is boxed in one recipe and loose in another.
+    for (const [, mods] of byKey) expect(mods.size).toBe(1)
+    const unexpected = loose.filter(
+      (n) => !UNMODULED.has(n) && !UNMODULED_PREFIX.some((p) => n.startsWith(p)),
+    )
+    expect(unexpected).toEqual([])
+    // And every name the reading calls loose is actually reached by some recipe, so the set
+    // above cannot rot into a list of names that no longer exist.
+    for (const name of UNMODULED) expect(loose, name).toContain(name)
+  })
+
+  it('opens no module twice in one recipe', () => {
+    // §8: a module interrupted and resumed renders as two boxes with the same label. The
+    // unmoduled run is exempt — it legitimately brackets the boxes, selectors above and insert
+    // effects below — and it carries no label to duplicate.
+    for (const recipe of device.recipes) {
+      const runs: string[] = []
+      for (const param of recipe.params) {
+        const module = (param as { module?: string }).module
+        if (module !== undefined && runs[runs.length - 1] !== module) runs.push(module)
+      }
+      expect(runs, recipe.id).toEqual([...new Set(runs)])
+    }
+  })
+
+  it('names nineteen editor groups and trims nothing off a line', () => {
+    const modules = new Set(Object.values(GROUPS))
+    expect([...modules].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))).toEqual([
+      'Amp Envelope',
+      'Compressor',
+      'Distortion',
+      'Drum Sound',
+      'EQ',
+      'Envelope',
+      'Envelope 3',
+      'Filter',
+      'Filter Envelope',
+      'Global',
+      'LFO 1/LFO 2',
+      'LP Filter',
+      'Mixer',
+      'Oscillator',
+      'Oscillator 1',
+      'Oscillator 2',
+      'Sub Oscillator',
+      'Transient',
+      'Velocity',
+    ])
+    // `paramLabel` trims an exact `${module} · ` prefix and no boxed name carries one.
+    for (const key of Object.keys(GROUPS)) {
+      const name = key.slice(key.indexOf('/') + 1)
+      expect(name.startsWith(`${GROUPS[key]} · `), key).toBe(false)
+    }
+  })
+})

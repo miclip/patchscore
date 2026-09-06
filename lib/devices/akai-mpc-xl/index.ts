@@ -26,7 +26,9 @@ import { MPC_XL_PANEL } from './panel'
  *
  * So this file takes from `lib/devices/akai-mpc-live-iii`:
  *
- *     recipes            every recipe and every value inside one
+ *     recipes            every recipe and every value inside one, and every editor group
+ *                        (§3.1/#385) — the plugin editors are the same software on both boxes,
+ *                        so a `Transient` box here is the sibling's reading, not a second one
  *     voices             the three pools: pad, mono-track, poly-track
  *     comfortableVoices  twelve
  *     features           perStep, lfo, sidechain
