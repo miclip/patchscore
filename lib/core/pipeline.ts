@@ -1385,11 +1385,26 @@ export function stackedPart(assignment: {
  * shared before this renders a guide whose count is wrong for the allocation the same inputs
  * produce, which is drift a reader can hear, so it is a bump rather than a widening.
  *
+ * **11** — §2.1/§2.2/#86. The Tracker Mini's sample pool declares **track modes**, so a whole
+ * sample played untransposed carries `Trigger note — C5 · MIDI 60` (p.90, with the octave off
+ * the box's own `Middle C` setting) where it carried nothing. This is entry 8's shape on a second
+ * box, and it is the other half of #422: that issue took a pool-wide `C5` off both Polyend
+ * boxes because it was false for the sliced, granular and transposed recipes those folders ship,
+ * and this gives it back to the recipes it was true of and to no others. The Mini's seven
+ * transposed recipes, its Beat Slice chop, its granular texture and its four synth patches still
+ * state nothing, and the full-size Tracker is untouched.
+ *
+ * Entry 2's reading again. `Score` is untouched, no candidate is added and none excluded, the
+ * pool gains a mode *table* rather than a selection so expansion is unchanged at eight members,
+ * and §7.1 reads neither field. A permalink shared before this renders a guide that is silent
+ * about what to write on the step, on parts whose manual prints the answer — drift a reader can
+ * hear, so it is a bump.
+ *
  * It lives beside `ResolveInput` because that is the contract it versions. `permalink.ts`
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
  */
-export const RESOLVER_VERSION = 10
+export const RESOLVER_VERSION = 11
 
 /**
  * #161. The two decisions the user may take back off the direction: tempo and key. Both
