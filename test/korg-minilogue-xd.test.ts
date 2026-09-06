@@ -5,7 +5,10 @@ import {
   NEUTRAL_MOOD,
   assignableKey,
   expand,
+  groupedParams,
+  paramLabel,
   realisationOf,
+  renderGuide,
   requiredVoicePolyphony,
   resolve,
   type Assignable,
@@ -14,6 +17,7 @@ import {
   type RoleRequest,
 } from '../lib/core/index'
 import { device } from '../lib/devices/korg-minilogue-xd/index'
+import { MINILOGUE_XD_PANEL } from '../lib/devices/korg-minilogue-xd/panel'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 import { template } from './fixtures'
@@ -628,5 +632,270 @@ describe('the recipe library', () => {
       every().flatMap((p) => (p.kind === 'numeric' ? (p.mood ?? []).map((m) => m.axis) : [])),
     )
     expect([...axes].sort()).toEqual(['darkness', 'density', 'grit', 'space', 'swing'])
+  })
+})
+
+/**
+ * §3.1/#385. **Seven boxes, and three of them hold a section a name would have split.**
+ *
+ * The fourth device in the library to author `module`, after the Muse, the Subsequent 37 and the
+ * NEUTRON. It is the one where the *long silkscreens* do the work: `VCO 1 / VCO 2 / MULTI ENGINE`
+ * and `AMP EG / EG / LFO` are each one rectangle on the instrument carrying three name prefixes,
+ * and `FILTER` holds four controls that carry no prefix at all. A module derived from the name
+ * would have drawn eleven boxes, split both of those blocks, and left `CUTOFF`, `RESONANCE`,
+ * `DRIVE`, `KEYTRACK` and `CROSS MOD DEPTH` in no box whatever.
+ *
+ * So the mapping below is a reading of the panel, pinned by name, and an edit that moves a
+ * control has to come here and say so.
+ */
+describe('every control is boxed by the panel section it sits in (#385)', () => {
+  const OSCILLATORS = 'VCO 1 / VCO 2 / MULTI ENGINE'
+  const ENVELOPES = 'AMP EG / EG / LFO'
+
+  /** The reading. Left is the authored name; right is the silkscreen around the control. */
+  const SECTIONS: Record<string, string> = {
+    'PORTAMENTO': 'MASTER',
+
+    'VOICE MODE TYPE': 'VOICE MODE',
+    'VOICE MODE DEPTH': 'VOICE MODE',
+
+    'VCO 1 · WAVE': OSCILLATORS,
+    'VCO 1 · OCTAVE': OSCILLATORS,
+    'VCO 1 · PITCH': OSCILLATORS,
+    'VCO 1 · SHAPE': OSCILLATORS,
+    'VCO 2 · WAVE': OSCILLATORS,
+    'VCO 2 · OCTAVE': OSCILLATORS,
+    'VCO 2 · PITCH': OSCILLATORS,
+    'VCO 2 · SHAPE': OSCILLATORS,
+    'VCO 2 · SYNC': OSCILLATORS,
+    'VCO 2 · RING': OSCILLATORS,
+    'CROSS MOD DEPTH': OSCILLATORS,
+    'MULTI ENGINE · NOISE/VPM/USR': OSCILLATORS,
+    'MULTI ENGINE · TYPE': OSCILLATORS,
+    'MULTI ENGINE · SHAPE': OSCILLATORS,
+
+    'MIXER · VCO 1': 'MIXER',
+    'MIXER · VCO 2': 'MIXER',
+    'MIXER · MULTI': 'MIXER',
+
+    'CUTOFF': 'FILTER',
+    'RESONANCE': 'FILTER',
+    'DRIVE': 'FILTER',
+    'KEYTRACK': 'FILTER',
+
+    'AMP EG · ATTACK': ENVELOPES,
+    'AMP EG · DECAY': ENVELOPES,
+    'AMP EG · SUSTAIN': ENVELOPES,
+    'AMP EG · RELEASE': ENVELOPES,
+    'EG · ATTACK': ENVELOPES,
+    'EG · DECAY': ENVELOPES,
+    'EG · INT': ENVELOPES,
+    'EG · TARGET': ENVELOPES,
+    'LFO · WAVE': ENVELOPES,
+    'LFO · MODE': ENVELOPES,
+    'LFO · RATE': ENVELOPES,
+    'LFO · INT': ENVELOPES,
+    'LFO · TARGET': ENVELOPES,
+
+    'EFFECTS · DEL/REV/MOD': 'EFFECTS',
+    'EFFECTS · OFF/ON/SELECT': 'EFFECTS',
+    'EFFECTS · DEPTH': 'EFFECTS',
+  }
+
+  /** The one control on no silkscreened section of this panel. */
+  const LOOSE = ['SWING']
+
+  /** Every authored parameter of every recipe, once per distinct name. */
+  const byName = new Map<string, Set<string>>()
+  for (const recipe of device.recipes) {
+    for (const param of params(recipe)) {
+      const module = (param as { module?: string }).module ?? '(none)'
+      const found = byName.get(param.name)
+      if (found === undefined) byName.set(param.name, new Set([module]))
+      else found.add(module)
+    }
+  }
+
+  it('accounts for every parameter of every recipe, in a box or deliberately out of one', () => {
+    // Whole-device rather than spot-checked: a block helper added later with no `inModule` around
+    // it is exactly the miss this catches, and it would otherwise surface as one loose run in one
+    // guide nobody happens to render.
+    const unaccounted = [...byName.keys()].filter(
+      (name) => SECTIONS[name] === undefined && !LOOSE.includes(name),
+    )
+    expect(unaccounted).toEqual([])
+    expect(byName.size).toBe(Object.keys(SECTIONS).length + LOOSE.length)
+  })
+
+  it('gives every boxed name one module and only one', () => {
+    for (const [name, mods] of byName) {
+      if (LOOSE.includes(name)) continue
+      expect([...mods], name).toEqual([SECTIONS[name]])
+    }
+  })
+
+  it('leaves SWING unboxed because it is a PROGRAM EDIT setting, not a control in a section', () => {
+    // p.41 puts it behind the display. The Subsequent 37's SWING is unmoduled for the identical
+    // reason, and §3.1 says an unmoduled param is not a gap.
+    expect([...(byName.get('SWING') ?? [])]).toEqual(['(none)'])
+    const loose = [...byName].filter(([, mods]) => mods.has('(none)')).map(([name]) => name)
+    expect(loose).toEqual(LOOSE)
+  })
+
+  it('draws exactly the seven sections that hold a stated control', () => {
+    const modules = new Set<string>()
+    for (const mods of byName.values()) for (const m of mods) if (m !== '(none)') modules.add(m)
+    expect([...modules].sort()).toEqual([
+      ENVELOPES,
+      'EFFECTS',
+      'FILTER',
+      'MASTER',
+      'MIXER',
+      OSCILLATORS,
+      'VOICE MODE',
+    ])
+    // Every one of them is a label `panel.ts` draws, spelled the same way.
+    const labels = MINILOGUE_XD_PANEL.features.flatMap((f) =>
+      f.kind === 'group' && f.label !== undefined ? [f.label] : [],
+    )
+    for (const module of modules) expect(labels, module).toContain(module)
+  })
+
+  it('leaves the EDIT / SEQUENCER box drawn and empty rather than inventing a member', () => {
+    // The eighth labelled rectangle. It holds EDIT MODE, WRITE, EXIT, SHIFT, MOTION MODE, PLAY,
+    // REC and REST — the way you reach the menus and drive the sequencer, and not one of them a
+    // setting a recipe states. A section with no controls in it is an honest outcome.
+    const labels = MINILOGUE_XD_PANEL.features.flatMap((f) =>
+      f.kind === 'group' && f.label !== undefined ? [f.label] : [],
+    )
+    expect(labels).toContain('EDIT / SEQUENCER')
+    expect(labels).toHaveLength(8)
+    const boxed = new Set<string>()
+    for (const mods of byName.values()) for (const m of mods) boxed.add(m)
+    expect(boxed.has('EDIT / SEQUENCER')).toBe(false)
+  })
+
+  it('keeps the three blocks a name parse would have split in one box each', () => {
+    // The claim that makes this device worth authoring rather than deriving.
+    const under = (module: string) =>
+      [...byName].filter(([, mods]) => mods.has(module)).map(([name]) => name).length
+    expect(under(OSCILLATORS)).toBe(14)
+    expect(under(ENVELOPES)).toBe(13)
+    // And the five that carry no ` · ` prefix at all still land in a box.
+    for (const [name, module] of [
+      ['CUTOFF', 'FILTER'],
+      ['RESONANCE', 'FILTER'],
+      ['DRIVE', 'FILTER'],
+      ['KEYTRACK', 'FILTER'],
+      ['CROSS MOD DEPTH', OSCILLATORS],
+    ] as const) {
+      expect([...(byName.get(name) ?? [])], name).toEqual([module])
+    }
+  })
+
+  it('keeps every parameter name exactly as it was authored', () => {
+    // `name` is #107's hoist key, `sameRenderedParam`'s comparison and the string every test
+    // above names, so nothing keyed on one moves.
+    expect([...byName.keys()].sort()).toEqual([...Object.keys(SECTIONS), ...LOOSE].sort())
+    for (const name of ['MIXER · VCO 1', 'VCO 1 · PITCH', 'AMP EG · ATTACK', 'CUTOFF']) {
+      expect(byName.has(name), name).toBe(true)
+    }
+  })
+
+  it('trims a label only where the box already says it', () => {
+    // Inside MIXER and EFFECTS the prefix is dead ink. Inside the two long boxes it is the only
+    // thing telling two controls apart, and `paramLabel` leaves it exactly because the module is
+    // not that prefix.
+    const label = (name: string, module: string) =>
+      paramLabel({
+        name,
+        value: 1,
+        provenance: { state: 'authored', cite: { kind: 'manual', source: 'x' } },
+        module,
+      })
+    expect(label('MIXER · VCO 1', 'MIXER')).toBe('VCO 1')
+    expect(label('EFFECTS · DEPTH', 'EFFECTS')).toBe('DEPTH')
+    expect(label('VCO 1 · PITCH', OSCILLATORS)).toBe('VCO 1 · PITCH')
+    expect(label('VCO 2 · PITCH', OSCILLATORS)).toBe('VCO 2 · PITCH')
+    expect(label('AMP EG · ATTACK', ENVELOPES)).toBe('AMP EG · ATTACK')
+    expect(label('EG · ATTACK', ENVELOPES)).toBe('EG · ATTACK')
+    expect(label('CUTOFF', 'FILTER')).toBe('CUTOFF')
+    // `VOICE MODE DEPTH` separates with a space, not ` · `, so the box does not trim it either.
+    expect(label('VOICE MODE DEPTH', 'VOICE MODE')).toBe('VOICE MODE DEPTH')
+  })
+})
+
+/**
+ * §8/#385. **The boxes a reader actually gets**, which is a claim about authored *order* and not
+ * only about the stamps.
+ *
+ * `groupedParams` cuts on adjacent runs, so a section interrupted and resumed comes out as two
+ * boxes carrying one label — an authoring-order defect the device folder owns. Every recipe here
+ * runs `program`, the voice-mode rung, `vco1`, `vco2`, the multi engine, `mix`, `filt`, `ampEg`,
+ * `eg`, `lfo` and `fx` in that sequence, so each part renders eight runs and each section appears
+ * exactly once.
+ */
+describe('a real minilogue xd guide renders one box per section (#385)', () => {
+  const result = resolve({
+    devices: DEVICES.filter((d) => d.id === 'korg-minilogue-xd'),
+    template: industrialTechno,
+    mood: NEUTRAL_MOOD,
+    seed: 1,
+  })
+
+  it('resolves a part on it at all, so the assertions below are not vacuous', () => {
+    expect(result.assignments.length).toBeGreaterThan(0)
+    expect(result.assignments.every((a) => a.deviceId === 'korg-minilogue-xd')).toBe(true)
+  })
+
+  it('cuts each part into MASTER, the bare swing line, and the six sections after it', () => {
+    for (const assignment of result.assignments) {
+      const groups = groupedParams(assignment.params)
+      expect(groups.map((g) => g.module), assignment.role).toEqual([
+        'MASTER',
+        undefined,
+        'VOICE MODE',
+        'VCO 1 / VCO 2 / MULTI ENGINE',
+        'MIXER',
+        'FILTER',
+        'AMP EG / EG / LFO',
+        'EFFECTS',
+      ])
+      // Runs, not buckets: concatenating them reproduces the order the guide renders.
+      expect(groups.flatMap((g) => [...g.params]), assignment.role).toEqual([...assignment.params])
+    }
+  })
+
+  it('draws the boxes in the guide, one lamp each, with swing loose above them', () => {
+    const md = renderGuide(result)
+    for (const module of [
+      'MASTER',
+      'VOICE MODE',
+      'VCO 1 / VCO 2 / MULTI ENGINE',
+      'MIXER',
+      'FILTER',
+      'AMP EG / EG / LFO',
+      'EFFECTS',
+    ]) {
+      expect(md, module).toContain(`- **● ${module}**`)
+    }
+    expect(md).toContain('- **SWING**')
+    expect(md).not.toContain('● SWING')
+    expect(md).not.toContain('● EDIT / SEQUENCER')
+  })
+
+  it('prints no parameter line still carrying its own box label', () => {
+    // The ink #385 exists to remove: three `MIXER · …` rows under a heading reading MIXER.
+    const bullets = renderGuide(result)
+      .split('\n')
+      .filter((line) => /^\s*- \*\*(?!●)/.test(line))
+    expect(bullets.length).toBeGreaterThan(20)
+    for (const module of ['MIXER', 'EFFECTS']) {
+      expect(bullets.filter((line) => line.includes(`**${module} · `)), module).toEqual([])
+    }
+    // And the six inside the two long boxes keep theirs, because the module is not the prefix.
+    for (const kept of ['VCO 1 · PITCH', 'VCO 2 · PITCH', 'AMP EG · ATTACK', 'EG · ATTACK']) {
+      expect(bullets.some((line) => line.includes(`**${kept}**`)), kept).toBe(true)
+    }
   })
 })

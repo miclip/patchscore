@@ -537,13 +537,19 @@ describe('a real Muse guide renders panel boxes, in both renderers (#385)', () =
 
 describe('no other device is affected (#385)', () => {
   it('lists every device in the library authoring a module', () => {
-    // #385's cheaper first move was one folder; the Subsequent 37 is the second and the NEUTRON
-    // the third, and this list is the standing count of how far it has gone. Every device not
-    // named here renders exactly as it did, which is what the goldens then prove byte for byte.
+    // #385's cheaper first move was one folder; the Subsequent 37 is the second, the NEUTRON the
+    // third and the minilogue xd the fourth, and this list is the standing count of how far it
+    // has gone. Every device not named here renders exactly as it did, which is what the goldens
+    // then prove byte for byte.
     const authoring = DEVICES.filter((d) =>
       d.recipes.some((r) => r.params.some((p) => (p as { module?: string }).module !== undefined)),
     ).map((d) => d.id)
-    expect(authoring).toEqual(['behringer-neutron', 'moog-muse', 'moog-subsequent-37'])
+    expect(authoring).toEqual([
+      'behringer-neutron',
+      'korg-minilogue-xd',
+      'moog-muse',
+      'moog-subsequent-37',
+    ])
   })
 
   it('renders no box on a rig that authors none', () => {
@@ -558,7 +564,7 @@ describe('hoistOrder keeps the legacy sort where nothing is moduled (§7.2)', ()
   }
 
   it('sorts by name in code unit order when no parameter carries a module', () => {
-    // The order every guide in the library renders today. Forty-three devices author no module
+    // The order every guide in the library renders today. Forty-two devices author no module
     // and their bytes must not move because one device now does.
     const out = hoistedParams([[scoped('ZULU'), scoped('ALPHA'), scoped('MIKE')]])
     expect(out.groups[0]?.params.map((p) => p.name)).toEqual(['ALPHA', 'MIKE', 'ZULU'])

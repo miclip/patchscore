@@ -893,62 +893,69 @@ Routing — Send the hi-hats to the FX bus: press SEND, use SELECT to light OPEN
 
 Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 
-- **PORTAMENTO** `20` (0…127)
+- **● MASTER**
+  - **PORTAMENTO** `20` (0…127)
 - **SWING** `0` % (-75…75 %)
   - ↳ note: 0 is straight; the arpeggiator uses the same value
   - ↳ hint: EDIT MODE, PROGRAM EDIT, button 7
-- **VOICE MODE TYPE** `POLY`
-- **VOICE MODE DEPTH** `0` (0…1023)
-  - ↳ note: Left at 0 — turning right crosses into DUO, which spends two voices on every key
-- **VCO 1 · WAVE** `SAW`
-- **VCO 1 · OCTAVE** `16'`
-- **VCO 1 · PITCH** `0` c (-1200…1200 c)
-- **VCO 1 · SHAPE** `380` (0…1023)
-  - ↳ note: Shape, complexity, or duty cycle of the selected wave
-- **VCO 2 · WAVE** `TRI`
-- **VCO 2 · OCTAVE** `8'`
-- **VCO 2 · PITCH** `-9` c (-1200…1200 c)
-- **VCO 2 · SHAPE** `200` (0…1023)
-- **VCO 2 · SYNC** `OFF`
-  - ↳ note: Locks oscillator 2 to the phase of oscillator 1
-- **VCO 2 · RING** `OFF`
-  - ↳ note: Oscillator 1 ring-modulates oscillator 2
-- **CROSS MOD DEPTH** `0` (0…1023)
-  - ↳ note: Oscillator 1 modulating the pitch of oscillator 2
-- **MULTI ENGINE · NOISE/VPM/USR** `NOISE`
-- **MULTI ENGINE · TYPE** `Low`
-- **MULTI ENGINE · SHAPE** `400` Hz (10…21000 Hz)
-  - ↳ note: CUTOFF — the low-pass filter on the noise
-- **MIXER · VCO 1** `700` (0…1023)
-- **MIXER · VCO 2** `540` (0…1023)
-- **MIXER · MULTI** `120` (0…1023)
-- **CUTOFF** `300` (0…1023)
-  - ↳ note: Set too low and the patch may be barely audible
-- **RESONANCE** `180` (0…1023)
-- **DRIVE** `50%`
-  - ↳ note: The filter drive circuit, in three stages
-- **KEYTRACK** `50%`
-  - ↳ note: 100% moves the cutoff with the key, centred on C4
-- **AMP EG · ATTACK** `620` (0…1023)
-- **AMP EG · DECAY** `760` (0…1023)
-- **AMP EG · SUSTAIN** `800` (0…1023)
-- **AMP EG · RELEASE** `780` (0…1023)
-- **EG · ATTACK** `500` (0…1023)
-- **EG · DECAY** `700` (0…1023)
-- **EG · INT** `-18` % (-100…100 %)
-  - ↳ note: Negative applies the envelope downwards
-- **EG · TARGET** `CUTOFF`
-- **LFO · WAVE** `TRI`
-- **LFO · MODE** `NORMAL`
-- **LFO · RATE** `110` (0…1023)
-- **LFO · INT** `70` (0…511)
-  - ↳ hint: Hold SHIFT, turn INT to invert
-- **LFO · TARGET** `CUTOFF`
-- **EFFECTS · DEL/REV/MOD** `REV`
-  - ↳ note: Selects which effect the two knobs below are setting; the other two keep their stored values
-- **EFFECTS · OFF/ON/SELECT** `ON`
-  - ↳ hint: Hold SHIFT, flip to SELECT
-- **EFFECTS · DEPTH** `62` % (0…100 %)
+- **● VOICE MODE**
+  - **VOICE MODE TYPE** `POLY`
+  - **VOICE MODE DEPTH** `0` (0…1023)
+    - ↳ note: Left at 0 — turning right crosses into DUO, which spends two voices on every key
+- **● VCO 1 / VCO 2 / MULTI ENGINE**
+  - **VCO 1 · WAVE** `SAW`
+  - **VCO 1 · OCTAVE** `16'`
+  - **VCO 1 · PITCH** `0` c (-1200…1200 c)
+  - **VCO 1 · SHAPE** `380` (0…1023)
+    - ↳ note: Shape, complexity, or duty cycle of the selected wave
+  - **VCO 2 · WAVE** `TRI`
+  - **VCO 2 · OCTAVE** `8'`
+  - **VCO 2 · PITCH** `-9` c (-1200…1200 c)
+  - **VCO 2 · SHAPE** `200` (0…1023)
+  - **VCO 2 · SYNC** `OFF`
+    - ↳ note: Locks oscillator 2 to the phase of oscillator 1
+  - **VCO 2 · RING** `OFF`
+    - ↳ note: Oscillator 1 ring-modulates oscillator 2
+  - **CROSS MOD DEPTH** `0` (0…1023)
+    - ↳ note: Oscillator 1 modulating the pitch of oscillator 2
+  - **MULTI ENGINE · NOISE/VPM/USR** `NOISE`
+  - **MULTI ENGINE · TYPE** `Low`
+  - **MULTI ENGINE · SHAPE** `400` Hz (10…21000 Hz)
+    - ↳ note: CUTOFF — the low-pass filter on the noise
+- **● MIXER**
+  - **VCO 1** `700` (0…1023)
+  - **VCO 2** `540` (0…1023)
+  - **MULTI** `120` (0…1023)
+- **● FILTER**
+  - **CUTOFF** `300` (0…1023)
+    - ↳ note: Set too low and the patch may be barely audible
+  - **RESONANCE** `180` (0…1023)
+  - **DRIVE** `50%`
+    - ↳ note: The filter drive circuit, in three stages
+  - **KEYTRACK** `50%`
+    - ↳ note: 100% moves the cutoff with the key, centred on C4
+- **● AMP EG / EG / LFO**
+  - **AMP EG · ATTACK** `620` (0…1023)
+  - **AMP EG · DECAY** `760` (0…1023)
+  - **AMP EG · SUSTAIN** `800` (0…1023)
+  - **AMP EG · RELEASE** `780` (0…1023)
+  - **EG · ATTACK** `500` (0…1023)
+  - **EG · DECAY** `700` (0…1023)
+  - **EG · INT** `-18` % (-100…100 %)
+    - ↳ note: Negative applies the envelope downwards
+  - **EG · TARGET** `CUTOFF`
+  - **LFO · WAVE** `TRI`
+  - **LFO · MODE** `NORMAL`
+  - **LFO · RATE** `110` (0…1023)
+  - **LFO · INT** `70` (0…511)
+    - ↳ hint: Hold SHIFT, turn INT to invert
+  - **LFO · TARGET** `CUTOFF`
+- **● EFFECTS**
+  - **DEL/REV/MOD** `REV`
+    - ↳ note: Selects which effect the two knobs below are setting; the other two keep their stored values
+  - **OFF/ON/SELECT** `ON`
+    - ↳ hint: Hold SHIFT, flip to SELECT
+  - **DEPTH** `62` % (0…100 %)
 
 ### Minitaur
 
