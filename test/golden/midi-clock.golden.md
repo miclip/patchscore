@@ -57,7 +57,7 @@ noise       ██████ ██████ ██████████
   - p3 · exact `hard` · 3 notes stacked one per voice · every section
 - **`impact`** → TR-1000 · CC — *Crash marking the top of a section*
   - p4 · exact `hard` · Drop, Peak
-- **`pad`** → Tracker Mini · Synth Track 1, Synth Track 2 and Synth Track 3 — *Slow detuned pad, long swell*
+- **`pad`** → Tracker Mini · Track 9, Track 10 and Track 11 — *Slow detuned pad, long swell*
   - p4 · substituted — asked `dark`, authored `soft` · 3 notes stacked one per voice · every section
 - **`riser`** → Tracker Mini · Track 6 — *Sample played backwards, the envelope swelling it into the change*
   - p4 · exact `bright` · Build, Breakdown
@@ -114,7 +114,7 @@ A step is a trigger, not a note with a length: the instrument's own envelope end
 - bar 2 · step 23 · `Db3` (`C#3`) · 6th · MIDI 49
 - bar 2 · step 27 · `C3` · 5th · MIDI 48
 
-### `pad` — Tracker Mini · Synth Track 1, Synth Track 2 and Synth Track 3
+### `pad` — Tracker Mini · Track 9, Track 10 and Track 11
 
 **Slow detuned pad, long swell** — settings in Sound design
 
@@ -124,21 +124,21 @@ No note-length field on this box — a note runs until the next note on the same
 
 Stacked chord — 3 voices, one note each. There is no chord to play on any one of them. All 3 take the same settings — one sound repeated across the stack, not 3 different sounds.
 
-Lowest note to the lowest voice: **Synth Track 1** takes the bottom of every chord and **Synth Track 3** the top. Hold that order and the voicing keeps its shape as the progression moves; cross the voices over and the chord changes character between bars with nothing here saying so.
+Lowest note to the lowest voice: **Track 9** takes the bottom of every chord and **Track 11** the top. Hold that order and the voicing keeps its shape as the progression moves; cross the voices over and the chord changes character between bars with nothing here saying so.
 
-**Synth Track 1** — lowest note
+**Track 9** — lowest note
 
 - bar 1 · step 1 · `F3` · root · MIDI 53
 - bar 5 · step 65 · `Db4` (`C#4`) · 6th · MIDI 61
 - bar 7 · step 97 · `Eb4` (`D#4`) · 7th · MIDI 63
 
-**Synth Track 2** — note 2 from the bottom
+**Track 10** — note 2 from the bottom
 
 - bar 1 · step 1 · `Ab3` (`G#3`) · 3rd · MIDI 56
 - bar 5 · step 65 · `F4` · root · MIDI 65
 - bar 7 · step 97 · `G4` · 2nd · MIDI 67
 
-**Synth Track 3** — highest note
+**Track 11** — highest note
 
 - bar 1 · step 1 · `C4` · 5th · MIDI 60
 - bar 5 · step 65 · `Ab4` (`G#4`) · 3rd · MIDI 68
@@ -458,7 +458,7 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 - `first-hit` → `accent` true on step 1
   - ↳ hint: ACCENT [STEP], then step keys
 
-### `pad` — Tracker Mini · Synth Track 1, Synth Track 2 and Synth Track 3
+### `pad` — Tracker Mini · Track 9, Track 10 and Track 11
 
 
 **The hook is the pattern** — see Hook above for its steps and what each one carries. Nothing separate to program here.
@@ -564,13 +564,14 @@ Routing — Tracks 1-8 — costs no synth slot, and one loaded sample serves eve
 - **ENVELOPE · RELEASE** `0.2` Sec (0…10 Sec)
 - **OVERDRIVE** `16` % (0…100 %)
 
-#### Synth Track 1, Synth Track 2 and Synth Track 3 — `pad`: Slow detuned pad, long swell
+#### Track 9, Track 10 and Track 11 — `pad`: Slow detuned pad, long swell
 
 Chord voicing — 3 notes, one on each of 3 voices. **Every voice takes these same settings**: it is one sound played 3 times over, not 3 sounds, and a difference between them is a difference you will hear inside the chord. Which voice takes which note is in Hook.
 
-Routing — Synth Track n is panel track n+8 — costs one of the three project synth slots
+Routing — Tracks 9-16 — costs one of the three project synth slots
 
 - **MODEL** `VAP`
+  - ↳ hint: Each note step: hold [Instrument], select synth
 - **POLYPHONY** `3` (1…8)
   - ↳ note: Eight voices are shared across the three synth slots — this is this slot’s share
 - **FILTER TYPE** `Low Pass SVF 12dB`

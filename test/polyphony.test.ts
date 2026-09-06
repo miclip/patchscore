@@ -860,7 +860,11 @@ describe('the guide says which realisation the reader got', () => {
       expect(text.split('you trigger a sample')).toHaveLength(sampled.length + 1)
     }
     // The voices named, in reading order, in the phase that says where the part lives.
-    expect(md).toContain('Tracker Mini · Synth Track 2, Synth Track 3 and Synth Track 4')
+    //
+    // §2.2/#86. **The panel's numbers, not the pool's ordinals.** These are `track-synth`
+    // ordinals 2, 3 and 4, and the box calls those tracks 10, 11 and 12 (p.22). The reader is
+    // walking to the machine, so the guide has to name the tracks that are on it.
+    expect(md).toContain('Tracker Mini · Track 10, Track 11 and Track 12')
   })
 
   /**
