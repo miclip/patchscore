@@ -706,64 +706,72 @@ Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely p
 
 Routing — FILT CONT into OSC 1V/OCT is the whole trick: the filter envelope becomes a pitch envelope, and the filter decay time is the only thing shaping it
 
-- **TUNE** `0` st (-2…2 st)
-  - ↳ note: Moves OSC 1, 2 and 3 together (p.8). p.12 calls the marks semitones "as a general guide"
-- **GLIDE** `0` (0…10)
-  - ↳ note: Portamento between notes; off fully anticlockwise (p.8)
-- **OSC 1 RANGE** `32'`
-  - ↳ note: Six overlapping ranges across 0.1 Hz to 20 kHz (p.34); LO puts it below audio
-- **OSC 1 WAVEFORM** `triangular`
-- **OSC 2 RANGE** `32'`
-- **OSC 2 FREQUENCY** `0` st (-7…7 st)
-  - ↳ note: Offset from OSC 1 within the selected range; p.12 calls the marks semitones "as a general guide"
-- **OSC 2 WAVEFORM** `triangular`
-- **OSC 3 RANGE** `32'`
+- **● CONTROLLERS**
+  - **TUNE** `0` st (-2…2 st)
+    - ↳ note: Moves OSC 1, 2 and 3 together (p.8). p.12 calls the marks semitones "as a general guide"
+  - **GLIDE** `0` (0…10)
+    - ↳ note: Portamento between notes; off fully anticlockwise (p.8)
+- **● OSCILLATOR BANK**
+  - **OSC 1 RANGE** `32'`
+    - ↳ note: Six overlapping ranges across 0.1 Hz to 20 kHz (p.34); LO puts it below audio
+  - **OSC 1 WAVEFORM** `triangular`
+  - **OSC 2 RANGE** `32'`
+  - **OSC 2 FREQUENCY** `0` st (-7…7 st)
+    - ↳ note: Offset from OSC 1 within the selected range; p.12 calls the marks semitones "as a general guide"
+  - **OSC 2 WAVEFORM** `triangular`
+  - **OSC 3 RANGE** `32'`
 - **OSC 3 CONTROL** `on`
   - ↳ note: On, so OSC 3 follows the keyboard and TUNE moves it with the other two (p.8, p.9)
-- **OSC 3 FREQUENCY** `0` st (-7…7 st)
-  - ↳ note: Offset from OSC 1, and the only pitch control OSC 3 answers to besides TUNE. p.12 calls the marks semitones "as a general guide"
-- **OSC 3 WAVEFORM** `triangular`
-- **OSC 1** `on`
-- **OSC 1 VOLUME** `10` (0…10)
-- **OSC 2** `off`
-- **OSC 3** `off`
-- **NOISE** `off`
-- **EXT IN** `on`
-  - ↳ hint: Leave EXT empty — the output feeds back
-- **EXT IN VOLUME** `3` (0…10)
-  - ↳ note: Nothing patched at EXT, so this is the output fed back into the mixer — "extra phat bass or extra crunch" (p.12)
-- **MAIN VOLUME** `7` (0…10)
-  - ↳ note: The feedback level depends on this knob as well as on EXT IN VOLUME (p.12)
+- **● OSCILLATOR BANK**
+  - **OSC 3 FREQUENCY** `0` st (-7…7 st)
+    - ↳ note: Offset from OSC 1, and the only pitch control OSC 3 answers to besides TUNE. p.12 calls the marks semitones "as a general guide"
+  - **OSC 3 WAVEFORM** `triangular`
+- **● MIXER**
+  - **OSC 1** `on`
+  - **OSC 1 VOLUME** `10` (0…10)
+  - **OSC 2** `off`
+  - **OSC 3** `off`
+  - **NOISE** `off`
+  - **EXT IN** `on`
+    - ↳ hint: Leave EXT empty — the output feeds back
+  - **EXT IN VOLUME** `3` (0…10)
+    - ↳ note: Nothing patched at EXT, so this is the output fed back into the mixer — "extra phat bass or extra crunch" (p.12)
+- **● OUTPUT**
+  - **MAIN VOLUME** `7` (0…10)
+    - ↳ note: The feedback level depends on this knob as well as on EXT IN VOLUME (p.12)
 - **OSCILLATOR MODULATION** `off`
-- **FILTER MODULATION** `off`
-- **FILTER MODE** `low pass`
-  - ↳ note: 24 dB per octave either way (p.34)
-- **CUTOFF FREQUENCY** `-1` (-4…4)
-  - ↳ note: The one knob on this panel marked -4 to +4. p.15’s calibration table prints a 5 here, which is not on the scale
-- **FILTER EMPHASIS** `3` (0…10)
-  - ↳ note: Resonance — a level boost at the cutoff frequency (p.10)
-- **AMOUNT OF CONTOUR** `4` (0…10)
-  - ↳ note: How far the filter contour shifts the cutoff (p.10)
-- **KEYBOARD CONTROL 1** `off`
-  - ↳ note: A third of maximum tracking on its own, and with switch 2 the maximum (p.10)
-- **KEYBOARD CONTROL 2** `off`
-  - ↳ note: Two thirds of maximum tracking on its own, and with switch 1 the maximum (p.10)
-- **FILTER ATTACK** `1` ms (1…10000 ms)
-  - ↳ note: p.34 gives the travel as 1 ms to 10 s; the knob is silkscreened 10/200/600 M-SEC then 1/5/10 SEC
-- **FILTER DECAY TIME** `55` ms (4…35000 ms)
-  - ↳ note: p.34 gives the travel as "4 ms to >35 s" — an open top end, so this range is its stated floor; the knob is silkscreened only as far as 10 SEC
-- **FILTER SUSTAIN** `0` (0…10)
-  - ↳ note: The cutoff the contour holds after attack and decay (p.10)
-- **FILTER DECAY** `off`
-  - ↳ note: The switch, not the knob: on, the cutoff takes the decay time to fall after a note is released (p.10)
-- **LOUDNESS ATTACK** `1` ms (1…10000 ms)
-  - ↳ note: p.34 gives the travel as 1 ms to 10 s; the knob is silkscreened 10/200/600 M-SEC then 1/5/10 SEC
-- **LOUDNESS DECAY TIME** `220` ms (4…35000 ms)
-  - ↳ note: p.34 gives the travel as "4 ms to >35 s" — an open top end, so this range is its stated floor; the knob is silkscreened only as far as 10 SEC
-- **LOUDNESS SUSTAIN** `0` (0…10)
-  - ↳ note: The level the contour holds after attack and decay (p.10)
-- **LOUD DECAY** `off`
-  - ↳ note: The switch, not the knob: off, the note stops the moment it is released (p.10)
+- **● MODIFIERS**
+  - **FILTER MODULATION** `off`
+  - **FILTER MODE** `low pass`
+    - ↳ note: 24 dB per octave either way (p.34)
+  - **CUTOFF FREQUENCY** `-1` (-4…4)
+    - ↳ note: The one knob on this panel marked -4 to +4. p.15’s calibration table prints a 5 here, which is not on the scale
+  - **FILTER EMPHASIS** `3` (0…10)
+    - ↳ note: Resonance — a level boost at the cutoff frequency (p.10)
+  - **AMOUNT OF CONTOUR** `4` (0…10)
+    - ↳ note: How far the filter contour shifts the cutoff (p.10)
+  - **KEYBOARD CONTROL 1** `off`
+    - ↳ note: A third of maximum tracking on its own, and with switch 2 the maximum (p.10)
+  - **KEYBOARD CONTROL 2** `off`
+    - ↳ note: Two thirds of maximum tracking on its own, and with switch 1 the maximum (p.10)
+  - **FILTER ATTACK** `1` ms (1…10000 ms)
+    - ↳ note: p.34 gives the travel as 1 ms to 10 s; the knob is silkscreened 10/200/600 M-SEC then 1/5/10 SEC
+  - **FILTER DECAY TIME** `55` ms (4…35000 ms)
+    - ↳ note: p.34 gives the travel as "4 ms to >35 s" — an open top end, so this range is its stated floor; the knob is silkscreened only as far as 10 SEC
+  - **FILTER SUSTAIN** `0` (0…10)
+    - ↳ note: The cutoff the contour holds after attack and decay (p.10)
+  - **FILTER DECAY** `off`
+    - ↳ note: The switch, not the knob: on, the cutoff takes the decay time to fall after a note is released (p.10)
+- **● LOUDNESS CONTOUR**
+  - **LOUDNESS ATTACK** `1` ms (1…10000 ms)
+    - ↳ note: p.34 gives the travel as 1 ms to 10 s; the knob is silkscreened 10/200/600 M-SEC then 1/5/10 SEC
+  - **LOUDNESS DECAY TIME** `220` ms (4…35000 ms)
+    - ↳ note: p.34 gives the travel as "4 ms to >35 s" — an open top end, so this range is its stated floor; the knob is silkscreened only as far as 10 SEC
+  - **LOUDNESS SUSTAIN** `0` (0…10)
+    - ↳ note: The level the contour holds after attack and decay (p.10)
+- **● MODIFIERS**
+  - **LOUD DECAY** `off`
+    - ↳ note: The switch, not the knob: off, the note stops the moment it is released (p.10)
 
 **Patch**
 

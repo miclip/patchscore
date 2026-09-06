@@ -457,6 +457,96 @@ function decay(name: string, ms: number, mood?: AuthoredNumericParam['mood']): A
 }
 
 // ---------------------------------------------------------------------------
+// §3.1/#385 — the panel's own boxes
+// ---------------------------------------------------------------------------
+
+/**
+ * §3.1/#385. **Stamps a run of parameters with the silkscreened section its controls sit in**,
+ * so the guide draws the panel's own boxes instead of one forty-six-line list. The Muse's helper,
+ * unchanged and the only one in this file.
+ *
+ * ## Seven boxes drawn, six with controls in them, and one nested
+ *
+ * `panel.ts` draws seven labelled sections, measured off p.40's patch sheet:
+ *
+ *     MIDI              x   3.3 …  60.8   y   1.4 …  27.4
+ *     CONTROLLERS       x   1.4 …  63.6   y  28.7 … 126.8
+ *     OSCILLATOR BANK   x  65.5 … 148.5   y   1.4 … 126.2
+ *     MIXER             x 153.1 … 231.4   y   1.4 … 126.2
+ *     MODIFIERS         x 236.0 … 309.2   y   1.4 … 126.2
+ *     LOUDNESS CONTOUR  x 243.2 … 309.2   y  79.1 … 126.2   <- inside MODIFIERS
+ *     OUTPUT            x 313.8 … 352.3   y   1.4 … 126.2
+ *
+ * **`MIDI` renders empty.** It holds a USB B port and two DIN sockets, and a socket is not a
+ * setting — no recipe states one, and none could. A labelled box with nothing in it is the
+ * honest outcome, as on the minilogue xd's `EDIT / SEQUENCER` (#426) and the Matriarch's
+ * left-hand `UTILITIES` (#427).
+ *
+ * **`LOUDNESS CONTOUR` is nested inside `MODIFIERS`**, and the panel draws the division itself:
+ * its top edge is a straight run at y 79.1. A module is the innermost box a control sits in, so
+ * the three loudness knobs on row 3 — all at cy 99.24, all between x 254.3 and 300.02 — are
+ * `LOUDNESS CONTOUR`, and everything else in the section is `MODIFIERS`.
+ *
+ * ## Three controls carry no module, for two different reasons
+ *
+ * - **`OSCILLATOR MODULATION` and `OSC 3 CONTROL`** are the two switches `panel.ts` puts on the
+ *   `CONTROLLERS`/`OSCILLATOR BANK` border — *"drawn where the sheet draws them: on the line, not
+ *   inside either box"*. The drawing bears that out, though by very different margins, and the
+ *   numbers are worth writing down rather than rounding into agreement:
+ *
+ *       OSCILLATOR MODULATION   spans x 55.38 … 70.88   across the whole 63.6-65.5 gap
+ *       OSC 3 CONTROL           spans x 65.25 … 73.75   crossing the 65.5 edge by 0.25 mm
+ *
+ *   The first straddles the border outright. The second only clips it, and its *centre* is 4 mm
+ *   inside `OSCILLATOR BANK` — so this one rests on `panel.ts`'s reading of the sheet rather than
+ *   on a comfortable margin. Both are left unmoduled, and `test/behringer-model-d.test.ts` pins
+ *   the coordinates so a later edit argues with the measurement rather than with a memory of it.
+ *
+ * - **`MULTI TRIGGER` is not on the panel at all.** It is a power-on setting reached by flicking
+ *   `A-440` within five seconds of switch-on and counting LED flashes back (p.13). `A-440` is a
+ *   control in `CONTROLLERS`; multi-trigger is not that control, it is a mode you reach through
+ *   it, and boxing it under the switch used to get there would be the same error as boxing a menu
+ *   setting under the button that opens the menu. §3.1 says an unmoduled param is not a gap.
+ *
+ * ## Six of the `MODIFIERS` switches are outside the rectangle, and are `MODIFIERS` anyway
+ *
+ * `FILTER MODE`, `FILTER MODULATION`, `KEYBOARD CONTROL 1`, `KEYBOARD CONTROL 2`, `FILTER DECAY`
+ * and `LOUD DECAY` all sit at cx 233.67, which is 2.3 mm left of the `MODIFIERS` box edge at
+ * 236.0 — a column running down the outside of the section they belong to. They are `MODIFIERS`
+ * because the section is what they are: p.10 lists items 30-41 as the modifiers, and `panel.ts`
+ * files all six under its own `---- MODIFIERS` heading. A rectangle is evidence, not the whole of
+ * it, and here the section listing is the better evidence.
+ *
+ * ## Four helpers span two boxes each, and none of the four is stamped wholesale
+ *
+ *  - **`feedback()`** — `EXT IN` and `EXT IN VOLUME` are mixer channel 4 (`MIXER`); `MAIN VOLUME`
+ *    is the output knob (`OUTPUT`). The helper emits all three because p.12 says the feedback
+ *    level depends on both knobs, and the pairing survives the split.
+ *  - **`modulation()`** — six controls in `CONTROLLERS`, then `OSCILLATOR MODULATION` on the
+ *    border, then `FILTER MODULATION` in `MODIFIERS`. One block, three boxes, in that order.
+ *  - **`osc3()`** — `RANGE`, `FREQUENCY` and `WAVEFORM` are `OSCILLATOR BANK`; `CONTROL` between
+ *    them is on the border.
+ *  - **`loudness()`** — three knobs in `LOUDNESS CONTOUR`, then `LOUD DECAY` back out in
+ *    `MODIFIERS`.
+ *
+ * **Authored order is preserved exactly, and two boxes are therefore drawn twice per part.**
+ * `groupedParams` cuts on adjacent runs, so `osc3()` splitting `OSCILLATOR BANK` around its
+ * border switch renders that section as two boxes, and `loudness()` returning to `MODIFIERS`
+ * after the nested contour renders that one as two as well. That is the panel's own adjacency
+ * meeting the order a reader sets these controls in, and it is left visible rather than sorted
+ * away: re-ordering to merge the boxes would move a border switch away from the oscillator it
+ * belongs to, and move `LOUD DECAY` away from the loudness knobs it sits level with.
+ *
+ * ## Names are left exactly as authored
+ *
+ * As on the Muse, the Subsequent 37, the NEUTRON, the minilogue xd and the Matriarch. Nothing
+ * trims: `paramLabel` trims an exact `${module} · ` prefix and no name in this file carries one.
+ */
+function inModule(module: string, params: AuthoredParam[]): AuthoredParam[] {
+  return params.map((param) => ({ ...param, module }))
+}
+
+// ---------------------------------------------------------------------------
 // Sections, each emitted whole so a value never leaves the switch that scales it
 // ---------------------------------------------------------------------------
 
@@ -467,7 +557,7 @@ function decay(name: string, ms: number, mood?: AuthoredNumericParam['mood']): A
  * `osc3()` below is what states.
  */
 function perf(tuneSt: number, glide: number): AuthoredParam[] {
-  return [
+  return inModule('CONTROLLERS', [
     num('TUNE', tuneSt, TUNE_ST, SPECS, {
       unit: 'st',
       step: 0.1,
@@ -476,19 +566,19 @@ function perf(tuneSt: number, glide: number): AuthoredParam[] {
     num('GLIDE', glide, ZERO_TEN, SPECS, {
       note: 'Portamento between notes; off fully anticlockwise (p.8)',
     }),
-  ]
+  ])
 }
 
 /** OSC 1: a range and a shape. It is the one oscillator with no `FREQUENCY` knob of its own. */
 function osc1(range: (typeof OSC_RANGES)[number], wave: (typeof OSC12_WAVES)[number]): AuthoredParam[] {
-  return [
+  return inModule('OSCILLATOR BANK', [
     pick('OSC 1 RANGE', range, OSC_RANGES, SPECS, {
       note: 'Six overlapping ranges across 0.1 Hz to 20 kHz (p.34); LO puts it below audio',
     }),
     pick('OSC 1 WAVEFORM', wave, OSC12_WAVES, SPECS, {
       note: wave === 'wide pulse' ? 'p.9 calls this shape "medium pulse"' : undefined,
     }),
-  ]
+  ])
 }
 
 /** OSC 2: a range, a frequency in semitones, and a shape. */
@@ -497,7 +587,7 @@ function osc2(
   semitones: number,
   wave: (typeof OSC12_WAVES)[number],
 ): AuthoredParam[] {
-  return [
+  return inModule('OSCILLATOR BANK', [
     pick('OSC 2 RANGE', range, OSC_RANGES, SPECS),
     num('OSC 2 FREQUENCY', semitones, OSC_FREQ_ST, SPECS, {
       unit: 'st',
@@ -507,7 +597,7 @@ function osc2(
     pick('OSC 2 WAVEFORM', wave, OSC12_WAVES, SPECS, {
       note: wave === 'wide pulse' ? 'p.9 calls this shape "medium pulse"' : undefined,
     }),
-  ]
+  ])
 }
 
 /**
@@ -522,53 +612,64 @@ function osc3(
   wave: (typeof OSC3_WAVES)[number],
 ): AuthoredParam[] {
   return [
-    pick('OSC 3 RANGE', range, OSC_RANGES, SPECS, {
-      note:
-        range === 'LO'
-          ? 'LO — this is OSC 3 used as a second modulation source rather than as a voice (p.13)'
-          : undefined,
-    }),
+    ...inModule('OSCILLATOR BANK', [
+      pick('OSC 3 RANGE', range, OSC_RANGES, SPECS, {
+        note:
+          range === 'LO'
+            ? 'LO — this is OSC 3 used as a second modulation source rather than as a voice (p.13)'
+            : undefined,
+      }),
+    ]),
+    // On the CONTROLLERS/OSCILLATOR BANK border, so no box — see `inModule`. It sits between
+    // RANGE and FREQUENCY because that is the order the block has always emitted, and moving it
+    // to merge the two OSCILLATOR BANK boxes would take a border switch away from the oscillator
+    // whose scale it decides.
     pick('OSC 3 CONTROL', control, ON_OFF, SPECS, {
       note:
         control === 'on'
           ? 'On, so OSC 3 follows the keyboard and TUNE moves it with the other two (p.8, p.9)'
           : 'Off, so the keyboard, pitch wheel, mod wheel and TUNE all leave OSC 3 where it is (p.8, p.9)',
     }),
-    num('OSC 3 FREQUENCY', semitones, OSC_FREQ_ST, SPECS, {
-      unit: 'st',
-      step: 0.1,
-      note:
-        control === 'on'
-          ? 'Offset from OSC 1, and the only pitch control OSC 3 answers to besides TUNE. p.12 calls the marks semitones "as a general guide"'
-          : 'A free-running position: with CONTROL off nothing else moves this oscillator. p.12 calls the marks semitones "as a general guide"',
-    }),
-    pick('OSC 3 WAVEFORM', wave, OSC3_WAVES, SPECS, {
-      note:
-        wave === 'reverse saw'
-          ? 'Reverse saw is OSC 3’s own shape — OSC 1 and 2 carry triangular/saw in this position (p.34)'
-          : wave === 'wide pulse'
-            ? 'p.9 calls this shape "medium pulse"'
-            : undefined,
-    }),
+    ...inModule('OSCILLATOR BANK', [
+      num('OSC 3 FREQUENCY', semitones, OSC_FREQ_ST, SPECS, {
+        unit: 'st',
+        step: 0.1,
+        note:
+          control === 'on'
+            ? 'Offset from OSC 1, and the only pitch control OSC 3 answers to besides TUNE. p.12 calls the marks semitones "as a general guide"'
+            : 'A free-running position: with CONTROL off nothing else moves this oscillator. p.12 calls the marks semitones "as a general guide"',
+      }),
+      pick('OSC 3 WAVEFORM', wave, OSC3_WAVES, SPECS, {
+        note:
+          wave === 'reverse saw'
+            ? 'Reverse saw is OSC 3’s own shape — OSC 1 and 2 carry triangular/saw in this position (p.34)'
+            : wave === 'wide pulse'
+              ? 'p.9 calls this shape "medium pulse"'
+              : undefined,
+      }),
+    ]),
   ]
 }
 
 /** One mixer channel: the on/off switch, and a level only when the switch is on. */
 function channel(name: string, level: number | null): AuthoredParam[] {
-  if (level === null) return [pick(name, 'off', ON_OFF, SPECS)]
-  return [pick(name, 'on', ON_OFF, SPECS), num(`${name} VOLUME`, level, ZERO_TEN, SPECS)]
+  if (level === null) return inModule('MIXER', [pick(name, 'off', ON_OFF, SPECS)])
+  return inModule('MIXER', [
+    pick(name, 'on', ON_OFF, SPECS),
+    num(`${name} VOLUME`, level, ZERO_TEN, SPECS),
+  ])
 }
 
 /** The noise channel, which carries a colour as well as a level. */
 function noise(level: number | null, colour: (typeof NOISE_COLOURS)[number]): AuthoredParam[] {
-  if (level === null) return [pick('NOISE', 'off', ON_OFF, SPECS)]
-  return [
+  if (level === null) return inModule('MIXER', [pick('NOISE', 'off', ON_OFF, SPECS)])
+  return inModule('MIXER', [
     pick('NOISE', 'on', ON_OFF, SPECS),
     num('NOISE VOLUME', level, ZERO_TEN, SPECS),
     pick('WHITE / PINK', colour, NOISE_COLOURS, SPECS, {
       note: 'Pink tilts the noise toward the low end; white is flat',
     }),
-  ]
+  ])
 }
 
 /**
@@ -581,21 +682,29 @@ function noise(level: number | null, colour: (typeof NOISE_COLOURS)[number]): Au
  */
 function feedback(level: number, mainVolume: number): AuthoredParam[] {
   return [
-    pick('EXT IN', 'on', ON_OFF, SPECS, { hint: 'feedback-path' }),
-    num('EXT IN VOLUME', level, ZERO_TEN, SPECS, {
-      mood: [{ axis: 'grit', amount: 2 }],
-      note: 'Nothing patched at EXT, so this is the output fed back into the mixer — "extra phat bass or extra crunch" (p.12)',
-    }),
-    num('MAIN VOLUME', mainVolume, ZERO_TEN, SPECS, {
-      mood: [{ axis: 'grit', amount: 1 }],
-      note: 'The feedback level depends on this knob as well as on EXT IN VOLUME (p.12)',
-    }),
+    // Mixer channel 4 and its level knob …
+    ...inModule('MIXER', [
+      pick('EXT IN', 'on', ON_OFF, SPECS, { hint: 'feedback-path' }),
+      num('EXT IN VOLUME', level, ZERO_TEN, SPECS, {
+        mood: [{ axis: 'grit', amount: 2 }],
+        note: 'Nothing patched at EXT, so this is the output fed back into the mixer — "extra phat bass or extra crunch" (p.12)',
+      }),
+    ]),
+    // … and the OUTPUT knob at the other end of the panel, which is half of the same gesture.
+    ...inModule('OUTPUT', [
+      num('MAIN VOLUME', mainVolume, ZERO_TEN, SPECS, {
+        mood: [{ axis: 'grit', amount: 1 }],
+        note: 'The feedback level depends on this knob as well as on EXT IN VOLUME (p.12)',
+      }),
+    ]),
   ]
 }
 
 /** The external input switched off, which is what a recipe wanting no feedback says. */
 function noFeedback(): AuthoredParam[] {
-  return [pick('EXT IN', 'off', ON_OFF, SPECS, { note: 'No feedback path into the mixer (p.12)' })]
+  return inModule('MIXER', [
+    pick('EXT IN', 'off', ON_OFF, SPECS, { note: 'No feedback path into the mixer (p.12)' }),
+  ])
 }
 
 /**
@@ -617,32 +726,38 @@ function modulation(opts: {
   toFilter: 'on' | 'off'
 }): AuthoredParam[] {
   return [
-    pick('OSC 3 / FILTER EG', opts.sourceA, MOD_SOURCE_A, SPECS, {
-      note: 'What sits at the anticlockwise end of MOD MIX (p.13)',
-    }),
-    pick('NOISE (MOD SRC) / LFO', opts.sourceB, MOD_SOURCE_B, SPECS, {
-      note: 'What sits at the clockwise end of MOD MIX (p.13)',
-    }),
-    travel(
-      'MOD MIX',
-      opts.mix,
-      'p.34 gives this knob only as a blend between the two switch positions, with words where 0 and 10 sit on its neighbours — so percent of travel. 0% is fully toward the left switch',
-    ),
-    num('MOD DEPTH', opts.depth, ZERO_TEN, SPECS, {
-      note: 'How much of the mix is applied; a MIDI mod wheel moves it too (p.8)',
-    }),
-    pick('LFO WAVEFORM', opts.lfoWave, LFO_WAVES, SPECS, {
-      note: 'Silkscreened as two glyphs rather than as words',
-    }),
-    num('LFO RATE', opts.lfoRate, ZERO_TEN, SPECS, {
-      note: '0.05 Hz to 200 Hz across the travel, and up to 300 Hz with a voltage at LFO CV (p.34)',
-    }),
+    ...inModule('CONTROLLERS', [
+      pick('OSC 3 / FILTER EG', opts.sourceA, MOD_SOURCE_A, SPECS, {
+        note: 'What sits at the anticlockwise end of MOD MIX (p.13)',
+      }),
+      pick('NOISE (MOD SRC) / LFO', opts.sourceB, MOD_SOURCE_B, SPECS, {
+        note: 'What sits at the clockwise end of MOD MIX (p.13)',
+      }),
+      travel(
+        'MOD MIX',
+        opts.mix,
+        'p.34 gives this knob only as a blend between the two switch positions, with words where 0 and 10 sit on its neighbours — so percent of travel. 0% is fully toward the left switch',
+      ),
+      num('MOD DEPTH', opts.depth, ZERO_TEN, SPECS, {
+        note: 'How much of the mix is applied; a MIDI mod wheel moves it too (p.8)',
+      }),
+      pick('LFO WAVEFORM', opts.lfoWave, LFO_WAVES, SPECS, {
+        note: 'Silkscreened as two glyphs rather than as words',
+      }),
+      num('LFO RATE', opts.lfoRate, ZERO_TEN, SPECS, {
+        note: '0.05 Hz to 200 Hz across the travel, and up to 300 Hz with a voltage at LFO CV (p.34)',
+      }),
+    ]),
+    // On the CONTROLLERS/OSCILLATOR BANK border, so no box — see `inModule`.
     pick('OSCILLATOR MODULATION', opts.toOscillators, ON_OFF, SPECS, {
       note: 'On, the modulation mix moves all three oscillators (p.8)',
     }),
-    pick('FILTER MODULATION', opts.toFilter, ON_OFF, SPECS, {
-      note: 'On, the modulation mix moves the cutoff (p.10)',
-    }),
+    // The other destination is a MODIFIERS switch, and the filter block follows it straight on.
+    ...inModule('MODIFIERS', [
+      pick('FILTER MODULATION', opts.toFilter, ON_OFF, SPECS, {
+        note: 'On, the modulation mix moves the cutoff (p.10)',
+      }),
+    ]),
   ]
 }
 
@@ -650,7 +765,7 @@ function modulation(opts: {
 function noModulation(): AuthoredParam[] {
   return [
     pick('OSCILLATOR MODULATION', 'off', ON_OFF, SPECS),
-    pick('FILTER MODULATION', 'off', ON_OFF, SPECS),
+    ...inModule('MODIFIERS', [pick('FILTER MODULATION', 'off', ON_OFF, SPECS)]),
   ]
 }
 
@@ -674,7 +789,7 @@ function filter(opts: {
   sustain: number
   decaySwitch: 'on' | 'off'
 }): AuthoredParam[] {
-  return [
+  return inModule('MODIFIERS', [
     pick('FILTER MODE', opts.mode, FILTER_MODES, SPECS, {
       note: '24 dB per octave either way (p.34)',
     }),
@@ -704,7 +819,7 @@ function filter(opts: {
     pick('FILTER DECAY', opts.decaySwitch, ON_OFF, SPECS, {
       note: 'The switch, not the knob: on, the cutoff takes the decay time to fall after a note is released (p.10)',
     }),
-  ]
+  ])
 }
 
 /** The loudness contour. `density` lives on its decay, which is what shortens a part. */
@@ -715,16 +830,24 @@ function loudness(
   decaySwitch: 'on' | 'off',
 ): AuthoredParam[] {
   return [
-    attack('LOUDNESS ATTACK', attackMs),
-    decay('LOUDNESS DECAY TIME', decayMs, [
-      { axis: 'density', amount: -Math.round(decayMs * 0.35) },
+    // The three knobs the panel draws inside the nested box, all on row 3 at cy 99.24.
+    ...inModule('LOUDNESS CONTOUR', [
+      attack('LOUDNESS ATTACK', attackMs),
+      decay('LOUDNESS DECAY TIME', decayMs, [
+        { axis: 'density', amount: -Math.round(decayMs * 0.35) },
+      ]),
+      num('LOUDNESS SUSTAIN', sustain, ZERO_TEN, SPECS, {
+        note: 'The level the contour holds after attack and decay (p.10)',
+      }),
     ]),
-    num('LOUDNESS SUSTAIN', sustain, ZERO_TEN, SPECS, {
-      note: 'The level the contour holds after attack and decay (p.10)',
-    }),
-    pick('LOUD DECAY', decaySwitch, ON_OFF, SPECS, {
-      note: 'The switch, not the knob: off, the note stops the moment it is released (p.10)',
-    }),
+    // Back out in MODIFIERS: the switch sits at cx 233.67, left of the nested box entirely,
+    // level with the knobs above. Keeping it here rather than merging it into the earlier
+    // MODIFIERS run is what keeps it beside the contour it switches.
+    ...inModule('MODIFIERS', [
+      pick('LOUD DECAY', decaySwitch, ON_OFF, SPECS, {
+        note: 'The switch, not the knob: off, the note stops the moment it is released (p.10)',
+      }),
+    ]),
   ]
 }
 
