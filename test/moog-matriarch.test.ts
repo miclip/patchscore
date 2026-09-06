@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { moodState, receiveTransports, resolve, sendTransports } from '../lib/core/index'
+import {
+  NEUTRAL_MOOD,
+  groupedParams,
+  moodState,
+  paramLabel,
+  receiveTransports,
+  renderGuide,
+  resolve,
+  sendTransports,
+} from '../lib/core/index'
 import { device } from '../lib/devices/moog-matriarch/index'
+import { MATRIARCH_PANEL } from '../lib/devices/moog-matriarch/panel'
 import { device as grandmother } from '../lib/devices/moog-grandmother/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, ambientDub, industrialTechno } from '../lib/templates/index'
@@ -355,5 +365,337 @@ describe('Matriarch per-step (§4.3)', () => {
   it('counts two LFOs, neither of them clock-synced', () => {
     expect(device.features?.lfo?.count).toBe(2)
     expect(device.features?.lfo?.syncable).toBe(false)
+  })
+})
+
+/**
+ * §3.1/#385. **Eleven boxes, and this panel draws every one of them in ink.**
+ *
+ * The fifth device in the library to author `module`, after the Muse (#413), the Subsequent 37
+ * (#416), the NEUTRON (#425) and the minilogue xd (#426), and the one where the panel is least
+ * ambiguous and most treacherous at the same time. `panel.ts` draws ten module enclosures
+ * measured off p.9, plus `PARAPHONY` nested inside `OUTPUT` and `LEFT-HAND CONTROLLER` below the
+ * panel band. Twelve boxes; eleven hold a control some recipe states.
+ *
+ * Two things here are not readable off a name, and both are asserted below rather than described:
+ *
+ *  - **`MOD` is not in `MODULATION`.** It is the wheel under the player's left hand, drawn in
+ *    `LEFT-HAND CONTROLLER` beside `PITCH` and `GLIDE`, while `mod()` emits it in the same block
+ *    as six controls that really are in the modulation enclosure. Stamping that helper wholesale
+ *    is the natural move and is wrong.
+ *  - **Two boxes are silkscreened `UTILITIES`.** The label does not say which one a control is
+ *    in; the coordinate does.
+ */
+describe('every control is boxed by the panel enclosure it sits in (#385)', () => {
+  /** The reading. Left is the authored name; right is the box the panel draws around it. */
+  const SECTIONS: Record<string, string> = {
+    'VOICE MODE': 'PARAPHONY',
+
+    'MODE': 'ARP/SEQ',
+    'DIRECTION': 'ARP/SEQ',
+    'OCT / BANK': 'ARP/SEQ',
+
+    'SYNC ENABLE': 'OSCILLATORS',
+    'OSCILLATOR 1 OCTAVE': 'OSCILLATORS',
+    'OSCILLATOR 1 WAVEFORM': 'OSCILLATORS',
+    'OSCILLATOR 2 OCTAVE': 'OSCILLATORS',
+    'OSCILLATOR 2 WAVEFORM': 'OSCILLATORS',
+    'OSCILLATOR 2 SYNC': 'OSCILLATORS',
+    'OSCILLATOR 2 FREQUENCY': 'OSCILLATORS',
+    'OSCILLATOR 3 OCTAVE': 'OSCILLATORS',
+    'OSCILLATOR 3 WAVEFORM': 'OSCILLATORS',
+    'OSCILLATOR 3 SYNC': 'OSCILLATORS',
+    'OSCILLATOR 3 FREQUENCY': 'OSCILLATORS',
+    'OSCILLATOR 4 OCTAVE': 'OSCILLATORS',
+    'OSCILLATOR 4 WAVEFORM': 'OSCILLATORS',
+    'OSCILLATOR 4 SYNC': 'OSCILLATORS',
+    'OSCILLATOR 4 FREQUENCY': 'OSCILLATORS',
+
+    // The mixer's five level knobs, whose panel labels are the bare oscillator numbers — which
+    // is why they are not `OSCILLATOR n LEVEL` and why the two blocks cannot be told apart by
+    // prefix.
+    'OSCILLATOR 1': 'MIXER',
+    'OSCILLATOR 2': 'MIXER',
+    'OSCILLATOR 3': 'MIXER',
+    'OSCILLATOR 4': 'MIXER',
+    'NOISE': 'MIXER',
+
+    'CUTOFF': 'FILTERS',
+    'FILTER MODE': 'FILTERS',
+    'RESONANCE 1': 'FILTERS',
+    'RESONANCE 2': 'FILTERS',
+    'SPACING': 'FILTERS',
+    'ENVELOPE AMT': 'FILTERS',
+    'KB TRACKING': 'FILTERS',
+
+    'FILTER ATTACK': 'ENVELOPE GENERATORS',
+    'FILTER DECAY': 'ENVELOPE GENERATORS',
+    'FILTER SUSTAIN': 'ENVELOPE GENERATORS',
+    'FILTER RELEASE': 'ENVELOPE GENERATORS',
+    'AMPLITUDE ATTACK': 'ENVELOPE GENERATORS',
+    'AMPLITUDE DECAY': 'ENVELOPE GENERATORS',
+    'AMPLITUDE SUSTAIN': 'ENVELOPE GENERATORS',
+    'AMPLITUDE RELEASE': 'ENVELOPE GENERATORS',
+
+    'VCA MODE': 'OUTPUT',
+    'MAIN VOLUME': 'OUTPUT',
+
+    'DELAY TIME': 'STEREO DELAY',
+    'DELAY SPACING': 'STEREO DELAY',
+    'DELAY FEEDBACK': 'STEREO DELAY',
+    'DELAY MIX': 'STEREO DELAY',
+    'PING PONG': 'STEREO DELAY',
+
+    'MODULATION RATE': 'MODULATION',
+    'MODULATION WAVEFORM': 'MODULATION',
+    'PITCH MOD ASSIGN': 'MODULATION',
+    'PITCH AMT': 'MODULATION',
+    'CUTOFF AMT': 'MODULATION',
+    'PULSE WIDTH AMT': 'MODULATION',
+
+    // The two the modulation block and the glide block hand to the same enclosure.
+    'MOD': 'LEFT-HAND CONTROLLER',
+    'GLIDE': 'LEFT-HAND CONTROLLER',
+
+    'LFO RATE': 'UTILITIES',
+  }
+
+  /** Every authored parameter of every recipe, once per distinct name. */
+  const byName = new Map<string, Set<string>>()
+  for (const recipe of device.recipes) {
+    for (const param of recipe.params) {
+      const module = (param as { module?: string }).module ?? '(none)'
+      const found = byName.get(param.name)
+      if (found === undefined) byName.set(param.name, new Set([module]))
+      else found.add(module)
+    }
+  }
+
+  /** Every `group` the panel draws, with its label and its rectangle. */
+  const groups = MATRIARCH_PANEL.features.flatMap((f) =>
+    f.kind === 'group' ? [{ label: f.label, x: f.x, y: f.y, w: f.w, h: f.h }] : [],
+  )
+  const knobAt = (label: string) => {
+    const f = MATRIARCH_PANEL.features.find((x) => x.kind === 'knob' && x.label === label)
+    if (f === undefined || f.kind !== 'knob') throw new Error(`no knob ${label}`)
+    return { cx: f.x + f.d / 2, cy: f.y + f.d / 2 }
+  }
+  const inside = (
+    box: { x: number; y: number; w: number; h: number },
+    p: { cx: number; cy: number },
+  ) => p.cx >= box.x && p.cx <= box.x + box.w && p.cy >= box.y && p.cy <= box.y + box.h
+
+  it('boxes every parameter of every recipe, with nothing left over on either side', () => {
+    // Whole-device rather than spot-checked: a block helper added later with no stamp around it
+    // is exactly the miss this catches, and it would otherwise surface as one loose run in one
+    // guide nobody happens to render.
+    const unmapped = [...byName.keys()].filter((name) => SECTIONS[name] === undefined)
+    expect(unmapped).toEqual([])
+    expect(byName.size).toBe(Object.keys(SECTIONS).length)
+  })
+
+  it('leaves no parameter unmoduled at all, which is unusual and deliberate', () => {
+    // Every other device authoring `module` has at least one control off the panel — the Muse's
+    // menu settings, the Subsequent 37's and the minilogue xd's SWING. Every control this box
+    // states is printed inside an enclosure, so there is no honest loose run to render.
+    const loose = [...byName].filter(([, mods]) => mods.has('(none)')).map(([name]) => name)
+    expect(loose).toEqual([])
+  })
+
+  it('gives every name one module and only one', () => {
+    for (const [name, mods] of byName) expect([...mods], name).toEqual([SECTIONS[name]])
+  })
+
+  it('draws every module it names, and names eleven of the twelve boxes drawn', () => {
+    const modules = new Set(Object.values(SECTIONS))
+    expect(modules.size).toBe(11)
+    const labels = groups.flatMap((g) => (g.label === undefined ? [] : [g.label]))
+    for (const module of modules) expect(labels, module).toContain(module)
+    // Twelve boxes, two of which share the `UTILITIES` label — so eleven distinct labels drawn,
+    // and every one of them is a module except the empty half of that pair.
+    expect(groups).toHaveLength(12)
+    expect(new Set(labels).size).toBe(11)
+  })
+
+  // -------------------------------------------------------------------------
+  // The bare `MOD` trap
+  // -------------------------------------------------------------------------
+
+  it('puts the bare MOD wheel in LEFT-HAND CONTROLLER and never in MODULATION', () => {
+    // `mod()` emits seven controls and six of them are in the modulation enclosure. Stamping the
+    // whole block would put a wheel you reach with your left hand inside a box of knobs you reach
+    // with your right, and the rendered guide would look perfectly reasonable while saying it.
+    expect([...(byName.get('MOD') ?? [])]).toEqual(['LEFT-HAND CONTROLLER'])
+    const inModulation = [...byName]
+      .filter(([, mods]) => mods.has('MODULATION'))
+      .map(([name]) => name)
+      .sort()
+    expect(inModulation).toEqual([
+      'CUTOFF AMT',
+      'MODULATION RATE',
+      'MODULATION WAVEFORM',
+      'PITCH AMT',
+      'PITCH MOD ASSIGN',
+      'PULSE WIDTH AMT',
+    ])
+    expect(inModulation).not.toContain('MOD')
+  })
+
+  it('reads the MOD wheel off the drawing, not off the helper it is emitted by', () => {
+    // The geometric half of the same claim, so a later edit cannot quietly move it back: the MOD
+    // fader is inside the LEFT-HAND CONTROLLER rectangle and nowhere near the MODULATION one.
+    const fader = MATRIARCH_PANEL.features.find((f) => f.kind === 'grid' && f.label === 'MOD')
+    if (fader === undefined || fader.kind !== 'grid') throw new Error('no MOD fader')
+    const centre = { cx: fader.x + fader.w / 2, cy: fader.y + fader.h / 2 }
+    const lhc = groups.find((g) => g.label === 'LEFT-HAND CONTROLLER')
+    const modulation = groups.find((g) => g.label === 'MODULATION')
+    if (lhc === undefined || modulation === undefined) throw new Error('missing box')
+    expect(inside(lhc, centre)).toBe(true)
+    expect(inside(modulation, centre)).toBe(false)
+    // GLIDE is in the same enclosure, which is what lets the two share one run.
+    expect(inside(lhc, knobAt('GLIDE'))).toBe(true)
+  })
+
+  // -------------------------------------------------------------------------
+  // The duplicate UTILITIES silkscreen
+  // -------------------------------------------------------------------------
+
+  it('finds two boxes silkscreened UTILITIES, so the label cannot say which', () => {
+    const utilities = groups.filter((g) => g.label === 'UTILITIES')
+    expect(utilities).toHaveLength(2)
+    // Left-hand box first, right-hand second — asserted so the coordinates below cannot drift.
+    expect(utilities.map((g) => Math.round(g.x))).toEqual([163, 507])
+  })
+
+  it('places LFO RATE in the right-hand UTILITIES by coordinate, the only thing that can', () => {
+    const [left, right] = groups.filter((g) => g.label === 'UTILITIES')
+    if (left === undefined || right === undefined) throw new Error('missing UTILITIES box')
+    const lfoRate = knobAt('LFO RATE')
+    expect(inside(right, lfoRate)).toBe(true)
+    expect(inside(left, lfoRate)).toBe(false)
+    expect([...(byName.get('LFO RATE') ?? [])]).toEqual(['UTILITIES'])
+  })
+
+  it('leaves the left-hand UTILITIES empty, because no recipe states a control in it', () => {
+    // Four mults and the two attenuators. The mults are passive and the attenuator knobs only
+    // matter to a cable, so nothing there is a setting — the box renders no parameters, exactly
+    // as the minilogue xd's EDIT / SEQUENCER does (#426). A labelled box with nothing in it is
+    // an honest outcome; giving it a member it does not have would not be.
+    const [left] = groups.filter((g) => g.label === 'UTILITIES')
+    if (left === undefined) throw new Error('missing UTILITIES box')
+    const knobsInLeft = MATRIARCH_PANEL.features.flatMap((f) =>
+      f.kind === 'knob' && f.label !== undefined && inside(left, { cx: f.x + f.d / 2, cy: f.y + f.d / 2 })
+        ? [f.label]
+        : [],
+    )
+    expect(knobsInLeft).toEqual(['ATTENUATOR 1', 'ATTENUATOR 2'])
+    for (const knob of knobsInLeft) expect(byName.has(knob), knob).toBe(false)
+    // And exactly one authored parameter carries the shared label, so the ambiguity a reader
+    // meets is one box to find rather than two boxes with settings in both.
+    const carrying = [...byName].filter(([, mods]) => mods.has('UTILITIES')).map(([n]) => n)
+    expect(carrying).toEqual(['LFO RATE'])
+  })
+
+  // -------------------------------------------------------------------------
+  // Names and labels
+  // -------------------------------------------------------------------------
+
+  it('keeps every parameter name exactly as it was authored', () => {
+    // `name` is #107's hoist key, `sameRenderedParam`'s comparison and the string every test
+    // above names, so nothing keyed on one moves.
+    expect([...byName.keys()].sort()).toEqual([...Object.keys(SECTIONS)].sort())
+  })
+
+  it('trims no label, because no name in this file carries a ` · ` prefix', () => {
+    const label = (name: string, module: string) =>
+      paramLabel({
+        name,
+        value: 1,
+        provenance: { state: 'authored', cite: { kind: 'manual', source: 'x' } },
+        module,
+      })
+    for (const [name, module] of Object.entries(SECTIONS)) {
+      expect(label(name, module), name).toBe(name)
+    }
+    // In particular the two pairs a trim would have collided: the mixer's `OSCILLATOR 1` keeps
+    // its whole name inside MIXER, and `FILTER ATTACK` keeps its inside ENVELOPE GENERATORS.
+    expect(label('OSCILLATOR 1', 'MIXER')).toBe('OSCILLATOR 1')
+    expect(label('FILTER ATTACK', 'ENVELOPE GENERATORS')).toBe('FILTER ATTACK')
+  })
+})
+
+/**
+ * §8/#385. **The boxes a reader actually gets**, which is a claim about authored *order* and not
+ * only about the stamps.
+ *
+ * `groupedParams` cuts on adjacent runs, so an enclosure interrupted and resumed comes out as two
+ * boxes carrying one label — and on this device the near miss is real: `mod()` ends in
+ * `LEFT-HAND CONTROLLER` and `glide()` is the same enclosure, so anything emitted between them
+ * would split it. Every recipe emits them adjacent, and this is what holds that.
+ */
+describe('a real Matriarch guide renders one box per enclosure (#385)', () => {
+  const result = resolve({
+    devices: DEVICES.filter((d) => d.id === 'moog-matriarch'),
+    template: industrialTechno,
+    mood: NEUTRAL_MOOD,
+    seed: 1,
+  })
+
+  it('resolves a part on it at all, so the assertions below are not vacuous', () => {
+    expect(result.assignments.length).toBeGreaterThan(0)
+    expect(result.assignments.every((a) => a.deviceId === 'moog-matriarch')).toBe(true)
+  })
+
+  it('renders every part as boxes only, with no loose run anywhere', () => {
+    for (const assignment of result.assignments) {
+      const groups = groupedParams(assignment.params)
+      expect(groups.length, assignment.role).toBeGreaterThan(0)
+      expect(groups.every((g) => g.module !== undefined), assignment.role).toBe(true)
+    }
+  })
+
+  it('never draws one enclosure as two boxes', () => {
+    for (const assignment of result.assignments) {
+      const boxed = groupedParams(assignment.params).map((g) => g.module)
+      expect(new Set(boxed).size, assignment.role).toBe(boxed.length)
+    }
+  })
+
+  it('opens on PARAPHONY and closes on LEFT-HAND CONTROLLER, in the setup order authored', () => {
+    for (const assignment of result.assignments) {
+      const boxes = groupedParams(assignment.params).map((g) => g.module)
+      expect(boxes[0], assignment.role).toBe('PARAPHONY')
+      expect(boxes[boxes.length - 1], assignment.role).toBe('LEFT-HAND CONTROLLER')
+      // The spine every recipe shares, whatever optional blocks sit around it.
+      for (const module of ['OSCILLATORS', 'MIXER', 'FILTERS', 'ENVELOPE GENERATORS', 'OUTPUT']) {
+        expect(boxes, `${assignment.role}/${module}`).toContain(module)
+      }
+      expect(boxes.indexOf('OSCILLATORS')).toBeLessThan(boxes.indexOf('MIXER'))
+      expect(boxes.indexOf('MIXER')).toBeLessThan(boxes.indexOf('FILTERS'))
+      expect(boxes.indexOf('FILTERS')).toBeLessThan(boxes.indexOf('ENVELOPE GENERATORS'))
+      expect(boxes.indexOf('ENVELOPE GENERATORS')).toBeLessThan(boxes.indexOf('OUTPUT'))
+    }
+  })
+
+  it('keeps the reading order: concatenating the runs is the parameter list', () => {
+    for (const assignment of result.assignments) {
+      const groups = groupedParams(assignment.params)
+      expect(groups.flatMap((g) => [...g.params]), assignment.role).toEqual([...assignment.params])
+    }
+  })
+
+  it('draws the boxes in the guide, one lamp each', () => {
+    const md = renderGuide(result)
+    for (const module of [
+      'PARAPHONY',
+      'OSCILLATORS',
+      'MIXER',
+      'FILTERS',
+      'ENVELOPE GENERATORS',
+      'OUTPUT',
+      'LEFT-HAND CONTROLLER',
+    ]) {
+      expect(md, module).toContain(`- **● ${module}**`)
+    }
   })
 })
