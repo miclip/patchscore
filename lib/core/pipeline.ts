@@ -26,6 +26,7 @@ import {
   bandFor,
   bindArticulation,
   compareCodeUnits,
+  devicePoolCapacity,
   resolveParams,
   resolvePatch,
   resolveSourceAudio,
@@ -1372,11 +1373,23 @@ export function stackedPart(assignment: {
  * carried none. A permalink shared before this renders a guide that is silent about the one
  * setting without which the part does not sound, which is drift a reader can hear.
  *
+ * **10** — §7 step 9/#424. A second allocation source, `device-part-share`, and the Muse's
+ * `TIMBRE A VOICE COUNT` declares it. Reported from the machine: a Muse left carrying one part
+ * still read `TIMBRE A VOICE COUNT 4`, so a pad got four of the box's eight voices and p.106's
+ * sum-to-eight rule allocated the other four to a timbre carrying nothing — the guide was
+ * telling the reader to lock away half the instrument on behalf of nobody.
+ *
+ * This is entry 2's reading again. `Score` is untouched, no candidate is added and none
+ * excluded, and no assignment moves — the same parts land on the same voices. What moves is the
+ * number printed on one control: a one-part Muse now reads `8` where it read `4`. A permalink
+ * shared before this renders a guide whose count is wrong for the allocation the same inputs
+ * produce, which is drift a reader can hear, so it is a bump rather than a widening.
+ *
  * It lives beside `ResolveInput` because that is the contract it versions. `permalink.ts`
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
  */
-export const RESOLVER_VERSION = 9
+export const RESOLVER_VERSION = 10
 
 /**
  * #161. The two decisions the user may take back off the direction: tempo and key. Both
@@ -1737,11 +1750,44 @@ export function resolve(input: ResolveInput): ResolveResult {
       : undefined
   }
 
+  /**
+   * §7 step 9/#424. **How many parts each box ended up carrying**, which is the denominator of
+   * every `device-part-share` below.
+   *
+   * Counted over the whole allocation before any part is resolved, because the share is a fact
+   * about the device rather than about the assignment reading it: the Muse's pad and its sub
+   * both have to be told `4`, and a count taken part by part could not say so. One pass, so a
+   * rig of ten boxes costs one walk of the assignment list rather than ten.
+   */
+  const partsPerDevice = new Map<DeviceId, number>()
+  for (const a of allocation.assignments) {
+    partsPerDevice.set(a.deviceId, (partsPerDevice.get(a.deviceId) ?? 0) + 1)
+  }
+
+  /**
+   * §7 step 9/#424. **The box's voices split evenly between the parts on it**, floored.
+   *
+   * Floored rather than rounded, and the direction matters: a device carrying more parts than
+   * its capacity divides into gets the conservative share, so the counts across the box sum to
+   * no more than it has. Rounding up would over-allocate a pool the manual says sums to a
+   * fixed total, which is the failure `TIMBRE A VOICE COUNT` exists to avoid from the other end.
+   *
+   * `undefined` where the device is not in the rig at all, which cannot happen — the allocation
+   * is built from these devices — and is handled by *not* supplying the source rather than by
+   * inventing a share. A sourced parameter then throws where it is resolved, naming itself.
+   */
+  const devicePartShare = (deviceId: DeviceId): number | undefined => {
+    const device = deviceById.get(deviceId)
+    if (device === undefined) return undefined
+    return Math.floor(devicePoolCapacity(device) / (partsPerDevice.get(deviceId) ?? 1))
+  }
+
   // Steps 8 and 9.
   const assignments: ResolvedAssignment[] = allocation.assignments.map((a) => {
     const request = requestById.get(a.requestId) as RoleRequest
     const bySection = patterns.get(a.requestId)
     const sourceAudio = resolveSourceAudio(a.recipe)
+    const share = devicePartShare(a.deviceId)
 
     return {
       requestId: a.requestId,
@@ -1762,9 +1808,14 @@ export function resolve(input: ResolveInput): ResolveResult {
         ...(sourceAudio === undefined ? {} : { sourceAudio }),
         ...(a.recipe.routing === undefined ? {} : { routing: a.recipe.routing }),
       },
-      // §7 step 9/#433. The stack width reaches the parameters here, and from `stackedPart` so
-      // that a `stack-width` setting and the prose above it are the same number by construction.
-      params: resolveParams(a.recipe, mood, { stackWidth: stackedPart(a)?.width ?? 1 }),
+      // §7 step 9/#433, #424. Both allocation sources reach the parameters here. The stack width
+      // comes from `stackedPart` so that a `stack-width` setting and the prose above it are the
+      // same number by construction; the part share comes from the whole allocation, so every
+      // part on one box reads one count and a `song`-scoped field hoists above them.
+      params: resolveParams(a.recipe, mood, {
+        stackWidth: stackedPart(a)?.width ?? 1,
+        ...(share === undefined ? {} : { devicePartShare: share }),
+      }),
       patch: resolvePatch(a.recipe),
       sections: a.sections,
       pitch: resolveRequestPitch(request, key),

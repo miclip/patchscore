@@ -116,7 +116,7 @@ describe('the v1 wire format', () => {
     // the width falls out of the allocation, so a rig is still a list of device ids and nothing
     // here had to learn a new key.
     expect(FORMAT_VERSION).toBe(4)
-    expect(RESOLVER_VERSION).toBe(9)
+    expect(RESOLVER_VERSION).toBe(10)
   })
 
   it('writes a list as one parameter per element, so nothing needs a separator', () => {
