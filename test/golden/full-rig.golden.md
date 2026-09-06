@@ -644,7 +644,7 @@ A step is one note long and nothing here sets a length: `Tie/Rest` joins a note 
 
 #### Voice — `stab`: Three-note BasicWaves stab, envelope straight onto the cutoff
 
-Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
+Chord voicing — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 
 - **Paraphonic** `On`
   - ↳ note: p.10: lit, the four voices trigger independently and share the one analog filter
@@ -899,7 +899,7 @@ Routing — Send the hi-hats to the FX bus: press SEND, use SELECT to light OPEN
 
 #### Voice — `pad`: Low pad with the filter shut down over the top of it
 
-Polyphony — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
+Chord voicing — 3 notes sounding at once on this one voice. It needs a genuinely polyphonic voice, not 3 separate ones.
 
 - **● MASTER**
   - **PORTAMENTO** `20` (0…127)

@@ -461,15 +461,17 @@ describe('a guide that places nothing resolves exactly as it did (invariant 6)',
     // carrying no placement could not have been written by a build that had no field to write it
     // in. `FORMAT_VERSION` is the stamp that moves when the encoding lands.
     //
-    // **The number is not this test's claim and it has moved twice since.** #383 took it 6 -> 7
-    // when two Muse recipes stopped being candidates for every `stab` request in the library, and
-    // §2.2/#86 took it 7 -> 8 when a pool gained track modes and the Digitakt II's whole-sample
-    // parts started carrying a trigger note. Both are changes to what the resolver *decides* or
-    // what it hands a renderer, and both are exactly the kind #340 was not.
+    // **The number is not this test's claim and it has moved three times since.** #383 took it
+    // 6 -> 7 when two Muse recipes stopped being candidates for every `stab` request in the
+    // library; §2.2/#86 took it 7 -> 8 when a pool gained track modes and the Digitakt II's
+    // whole-sample parts started carrying a trigger note; and §12.4/#433 took it 8 -> 9 when a
+    // stacked part started carrying the voice count the stack needs. All three are changes to
+    // what the resolver *decides* or what it hands a renderer, and all three are exactly the kind
+    // #340 was not.
     // The literal is kept rather than imported so that a bump has to be read here too — this is
     // one of the three places that reasoned about the constant, and a silent move past a file
     // that argued it should not move is the thing worth catching.
-    expect(RESOLVER_VERSION).toBe(8)
+    expect(RESOLVER_VERSION).toBe(9)
   })
 
   it('renders byte for byte the same with no placements, and none asked for', () => {

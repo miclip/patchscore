@@ -35,6 +35,10 @@ import { Instruction, ParamLine } from './instruction'
  *
  * Hand-written to match the Markdown renderer word for word. The two share no code path, so the
  * only thing keeping them in step is that someone wrote the same sentence twice on purpose.
+ *
+ * **The heading is `Chord voicing`, not `Polyphony` (#433)** — the Markdown renderer's note says
+ * why, and both had to move together or the two guides would disagree about a word whose whole
+ * problem was that it meant two things at once.
  */
 function realisationInstruction(a: ResolvedAssignment): string {
   if (a.notes <= 1) return ''
@@ -42,20 +46,20 @@ function realisationInstruction(a: ResolvedAssignment): string {
   const n = num(a.notes)
   if (isStacked(a)) {
     return (
-      `Polyphony — ${notes}, one on each of ${n} voices. Every voice takes these same settings: ` +
+      `Chord voicing — ${notes}, one on each of ${n} voices. Every voice takes these same settings: ` +
       `it is one sound played ${n} times over, not ${n} sounds, and a difference between them is ` +
       `a difference you will hear inside the chord. Which voice takes which note is in Hook.`
     )
   }
   if (a.recipe.realisation === 'sampled-chord') {
     return (
-      `Polyphony — ${notes}, already inside the sample. Load the chord sample(s) onto this one ` +
+      `Chord voicing — ${notes}, already inside the sample. Load the chord sample(s) onto this one ` +
       `voice rather than spreading the notes across ${n}. One sample covers its chord shape at ` +
       `any root; a different shape needs its own — see Hook.`
     )
   }
   return (
-    `Polyphony — ${notes} sounding at once on this one voice. It needs a genuinely polyphonic ` +
+    `Chord voicing — ${notes} sounding at once on this one voice. It needs a genuinely polyphonic ` +
     `voice, not ${n} separate ones.`
   )
 }

@@ -1360,11 +1360,23 @@ export function stackedPart(assignment: {
  * check. So this is entry 2's reading and not entry 6's: no value moved and no assignment moved,
  * and it bumps because the guide's content can see it.
  *
+ * **9** — §12.4/#433. A recipe may declare a parameter whose value is the **stack width** the
+ * resolver chose, and the Tracker Mini's soft pad declares one. Reported from the machine: a pad
+ * stacked across three tracks sounded a single note, because the synth slot carrying all three
+ * was still set to one voice, and the guide never said to raise it. The width was in the guide's
+ * own prose the whole time and simply never reached a setting.
+ *
+ * This is entry 2's reading and not entry 6's. `Score` is untouched, no candidate is added and
+ * none excluded, no assignment moves and no search decision changes — what moves is that a
+ * stacked pad on that box now carries a `POLYPHONY` line reading the width, where before it
+ * carried none. A permalink shared before this renders a guide that is silent about the one
+ * setting without which the part does not sound, which is drift a reader can hear.
+ *
  * It lives beside `ResolveInput` because that is the contract it versions. `permalink.ts`
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
  */
-export const RESOLVER_VERSION = 8
+export const RESOLVER_VERSION = 9
 
 /**
  * #161. The two decisions the user may take back off the direction: tempo and key. Both
@@ -1750,7 +1762,9 @@ export function resolve(input: ResolveInput): ResolveResult {
         ...(sourceAudio === undefined ? {} : { sourceAudio }),
         ...(a.recipe.routing === undefined ? {} : { routing: a.recipe.routing }),
       },
-      params: resolveParams(a.recipe, mood),
+      // §7 step 9/#433. The stack width reaches the parameters here, and from `stackedPart` so
+      // that a `stack-width` setting and the prose above it are the same number by construction.
+      params: resolveParams(a.recipe, mood, { stackWidth: stackedPart(a)?.width ?? 1 }),
       patch: resolvePatch(a.recipe),
       sections: a.sections,
       pitch: resolveRequestPitch(request, key),

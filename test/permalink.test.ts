@@ -105,17 +105,18 @@ describe('the v1 wire format', () => {
    * announce that a link's own inputs now resolve to different bytes, so a change to it that no
    * test reads is the failure mode the constant was created to prevent.
    *
-   * `RESOLVER_VERSION` went to 7 at #383, where two Muse recipes stopped being candidates for
-   * every `stab` request the library ships. See its history block in `lib/core/pipeline.ts` for
+   * `RESOLVER_VERSION` went to 9 at #433, where a stacked pad on the Tracker Mini gained the one
+   * setting without which it does not sound. See its history block in `lib/core/pipeline.ts` for
    * what each number means.
    */
   it('pins the two stamps at the numbers they currently stand at', () => {
     // They move for unrelated reasons and this is the file that says so. The format last moved at
-    // §7.5/#340, for `placement`; the engine last moved at §2.2/#86, for track modes, which added
-    // no field to this encoding at all — a mode is chosen by the recipe, so a rig is still a list
-    // of device ids and nothing here had to learn a new key.
+    // §7.5/#340, for `placement`; the engine last moved at §12.4/#433, for a parameter that takes
+    // its value from the stack the resolver chose, which added no field to this encoding at all —
+    // the width falls out of the allocation, so a rig is still a list of device ids and nothing
+    // here had to learn a new key.
     expect(FORMAT_VERSION).toBe(4)
-    expect(RESOLVER_VERSION).toBe(8)
+    expect(RESOLVER_VERSION).toBe(9)
   })
 
   it('writes a list as one parameter per element, so nothing needs a separator', () => {

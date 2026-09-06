@@ -545,7 +545,7 @@ Source — An open hat one-shot with a real tail — the release gates it short,
 
 #### Track 3, Track 4 and Track 5 — `stab`: Single-note sample struck short, one note per track
 
-Polyphony — 3 notes, one on each of 3 voices. **Every voice takes these same settings**: it is one sound played 3 times over, not 3 sounds, and a difference between them is a difference you will hear inside the chord. Which voice takes which note is in Hook.
+Chord voicing — 3 notes, one on each of 3 voices. **Every voice takes these same settings**: it is one sound played 3 times over, not 3 sounds, and a difference between them is a difference you will hear inside the chord. Which voice takes which note is in Hook.
 
 Source — A single-note tonal sample — one pitch, with a front edge. Yours, or one note rendered here; it does not need to be a chord and should not be one
 
@@ -566,11 +566,13 @@ Routing — Tracks 1-8 — costs no synth slot, and one loaded sample serves eve
 
 #### Synth Track 1, Synth Track 2 and Synth Track 3 — `pad`: Slow detuned pad, long swell
 
-Polyphony — 3 notes, one on each of 3 voices. **Every voice takes these same settings**: it is one sound played 3 times over, not 3 sounds, and a difference between them is a difference you will hear inside the chord. Which voice takes which note is in Hook.
+Chord voicing — 3 notes, one on each of 3 voices. **Every voice takes these same settings**: it is one sound played 3 times over, not 3 sounds, and a difference between them is a difference you will hear inside the chord. Which voice takes which note is in Hook.
 
 Routing — Synth Track n is panel track n+8 — costs one of the three project synth slots
 
 - **MODEL** `VAP`
+- **POLYPHONY** `3` (1…8)
+  - ↳ note: Eight voices are shared across the three synth slots — this is this slot’s share
 - **FILTER TYPE** `Low Pass SVF 12dB`
 - **OSC MIX** `0` % (-100…100 %)
 - **SHAPE 1** `28` (0…100)

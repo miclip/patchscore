@@ -148,6 +148,35 @@ export type ParamScope = (typeof PARAM_SCOPES)[number]
 
 export const ParamScopeSchema = z.enum(PARAM_SCOPES)
 
+/**
+ * §3.1/#433. **The one allocation fact an authored value may be replaced by.**
+ *
+ * Almost every value in this library is a fact about the box, and a device folder is the only
+ * place that knows one. `stack-width` is the exception the model had no way to write down: a
+ * synth slot's voice count is not taste and not a manual figure, it is *how many voices the
+ * resolver put this part on*, and no recipe can know that when it is authored — the same recipe
+ * is right at 3 and right at 4 depending on how many notes the direction's chord has.
+ *
+ * Reported from the machine (#433): a Tracker Mini pad stacked across three tracks sounded one
+ * note, because the synth slot carrying all three was still set to one voice. The width was
+ * present in the guide's own prose and simply never carried into a setting.
+ *
+ * **A closed one-member list, and it is meant to stay small.** This is not a general expression
+ * language and it is not a fifth shared vocabulary (invariant 3): nothing in a template names a
+ * source and nothing joins on one. Each member is a specific number the resolver already knows
+ * and a device may ask for by name. Adding a second is a decision to take on its own evidence,
+ * the way #424's split-timbre voice count would be.
+ *
+ * **Numeric only.** A width is a number. An enum whose option depended on the allocation would
+ * need a mapping from a count onto an authored option set, which nothing has asked for, and a
+ * text param is a written instruction rather than a control.
+ */
+export const PARAM_VALUE_SOURCES = ['stack-width'] as const
+
+export type ParamValueSource = (typeof PARAM_VALUE_SOURCES)[number]
+
+export const ParamValueSourceSchema = z.enum(PARAM_VALUE_SOURCES)
+
 // ---------------------------------------------------------------------------
 // Authored — what a device folder contains, and the only shape an author writes.
 // ---------------------------------------------------------------------------
@@ -156,6 +185,27 @@ export type AuthoredNumericParam = {
   kind: 'numeric'
   name: string
   value: number
+  /**
+   * §3.1/#433. **Where the value comes from, when it is not this file's to give.**
+   *
+   * Omitted is the ordinary case and means `value` above is the value. Set, the resolver
+   * replaces the point with the named allocation fact, and `value` is what the parameter reads
+   * when that fact is at rest — a stack width of one, which is an unstacked part. So the
+   * authored number is still real and still has to sit inside its own range; it is the floor of
+   * the control rather than a placeholder.
+   *
+   * **`range` is a requirement here, not a display bound.** A sourced value says *this many
+   * voices, or the part does not sound the notes the guide printed*, so a width the control has
+   * no room for is a conflict rather than something to round off: the resolver throws instead of
+   * clamping, and throws again if it is handed no allocation at all. Declare a range that covers
+   * every width the pool this recipe sits on can produce — 1 to the pool's own size — because a
+   * narrower one is a promise the box cannot keep.
+   *
+   * **Mood is refused beside it** (`AuthoredNumericParamSchema`). The count the resolver chose
+   * is the count that sounds the part, and a darkness knob nudging it to 2 would silence a note
+   * of the chord — the exact failure #433 was filed about, reintroduced from the other end.
+   */
+  valueFrom?: ParamValueSource
   range: NumericRange
   step?: number
   unit?: string
@@ -270,6 +320,7 @@ export const AuthoredNumericParamSchema = z
   .strictObject({
     kind: z.literal('numeric'),
     value: z.number().finite(),
+    valueFrom: ParamValueSourceSchema.optional(),
     range: NumericRangeSchema,
     step: z.number().finite().positive().optional(),
     unit: z.string().min(1).optional(),
@@ -280,6 +331,13 @@ export const AuthoredNumericParamSchema = z
   .refine((p) => p.value >= p.range.min && p.value <= p.range.max, {
     message: 'value must sit inside its own declared range',
     path: ['value'],
+  })
+  // #433. A sourced value and a mood offset are two authorities over one number, and the
+  // allocation's is the one that makes the part sound. Refused at the schema rather than
+  // silently ignored in the resolver, so an author finds out at the build.
+  .refine((p) => !(p.valueFrom !== undefined && p.mood !== undefined), {
+    message: 'a parameter taking its value from the allocation may not also declare mood',
+    path: ['mood'],
   })
 
 export const AuthoredEnumParamSchema = z

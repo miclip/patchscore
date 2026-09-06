@@ -871,10 +871,33 @@ function moodContribution(
  * make a device with an unverified recipe silently ignore the knobs — a bug report, and the
  * debt hidden rather than shown.
  */
+export type ParamAllocation = {
+  /**
+   * Voices carrying the part, one note each — `stackedPart().width`, and `1` for the ordinary
+   * unstacked part. Read from the assignment rather than recomputed, so the number a
+   * `stack-width` parameter takes is the same number the guide's own prose prints.
+   */
+  readonly stackWidth: number
+}
+
+/**
+ * §7 step 9/#433. **Optional, and with no default**, which is the whole of the discipline here.
+ *
+ * A default would have to be `{ stackWidth: 1 }`, and one is the answer for an unstacked part —
+ * so a caller that forgot the allocation and a caller whose part really is on one voice would be
+ * indistinguishable, and the first would print `POLYPHONY 1` on a three-note chord. That is
+ * *precisely* the guide #433 was filed about, arrived at from inside the engine instead of from a
+ * missing recipe line.
+ *
+ * So an ordinary parameter still resolves with no allocation at all — nothing about a `CUTOFF`
+ * depends on one — and a sourced parameter without one throws. A caller holding an unstacked part
+ * says `{ stackWidth: 1 }` and means it.
+ */
 export function resolveParam(
   param: AuthoredParam,
   recipeVerified: Verified | undefined,
   state: MoodState,
+  allocation?: ParamAllocation,
 ): ResolvedParam {
   const point = inheritVerified(param.verified, recipeVerified)
 
@@ -908,14 +931,46 @@ export function resolveParam(
   }
 
   const rangeCite = inheritVerified(param.range.verified, recipeVerified)
+
+  // §7 step 9/#433. **A value the allocation decides, not the author.** Where `valueFrom` names
+  // a source, that source *is* the value and the authored point is only what it reads at rest.
+  //
+  // **Neither missing nor out of range is survivable, and both used to be.** A sourced parameter
+  // is a *requirement*: this many voices, or the part does not sound the notes the guide has
+  // already told the reader to write. Defaulting a missing allocation to one and clamping an
+  // over-wide one into the control's range both end the same way — a plausible number on the
+  // line, no error anywhere, and a chord that plays short. That is the failure this parameter
+  // exists to remove, so it is refused rather than approximated.
+  //
+  // Unreachable on the one parameter that uses this today: a stack never exceeds its pool, the
+  // pool is eight tracks, and the range is 1-8, which `test/stack-polyphony.test.ts` holds every
+  // device to. What is guarded is the next one, where an author narrows a range below the pool
+  // it sits on and nothing else would say so.
+  let sourced: number | undefined
+  if (param.valueFrom !== undefined) {
+    if (allocation === undefined) {
+      throw new Error(
+        `parameter '${param.name}' takes its value from '${param.valueFrom}' and was resolved with no allocation`,
+      )
+    }
+    sourced = allocation.stackWidth
+    if (sourced < param.range.min || sourced > param.range.max) {
+      throw new Error(
+        `parameter '${param.name}' needs ${String(sourced)} from '${param.valueFrom}', outside its declared range ${String(param.range.min)}-${String(param.range.max)}`,
+      )
+    }
+  }
+
   const declaresMood = (param.mood?.length ?? 0) > 0
   // The legality gate. Note the asymmetry that §3.2 insists on: an unverified range does not
   // make the value provisional, it makes the parameter deaf to mood.
   const moodAllowed = declaresMood && rangeCite !== false
 
-  let value = param.value
+  let value = sourced ?? param.value
   let axes: MoodAxis[] = []
-  if (moodAllowed) {
+  // A sourced value is deaf to mood by construction as well as by schema: the count the
+  // resolver chose is the count that sounds the part, and the two authorities cannot both hold.
+  if (sourced === undefined && moodAllowed) {
     const contribution = moodContribution(param, state)
     axes = contribution.axes
     // **A zero net offset leaves the authored value exactly as authored.** `NEUTRAL_MOOD`
@@ -939,7 +994,14 @@ export function resolveParam(
   // "Moved" is measured on the *result*, not on the offset. A push that rounding or clamping
   // erases has not moved anything, and rendering `TUNE 52 → 52` with a derived badge would
   // claim arithmetic that is not visible in the value.
-  const moved = value !== param.value
+  //
+  // **A sourced value has not moved, however far it sits from the authored point** (#433).
+  // `from` means *mood took it from here*, and `Provenance.derived` carries the axes that did
+  // it — a state a `stack-width` parameter can never legally be in, since it declares no mood.
+  // Reporting `1 → 3` on a line no knob touched would put an arrow where there is no arithmetic
+  // and name no axis behind it. The authority gate is unchanged and still the point's own
+  // `verified`: cited, and the line is `authored`; not, and it is `provisional`.
+  const moved = sourced === undefined && value !== param.value
 
   let provenance: Provenance
   if (point === false) {
@@ -985,6 +1047,10 @@ export function resolveParam(
 }
 
 /** §7 step 9 for a whole recipe. Authored order, which is the order the guide renders. */
-export function resolveParams(recipe: Recipe, state: MoodState): ResolvedParam[] {
-  return recipe.params.map((param) => resolveParam(param, recipe.verified, state))
+export function resolveParams(
+  recipe: Recipe,
+  state: MoodState,
+  allocation?: ParamAllocation,
+): ResolvedParam[] {
+  return recipe.params.map((param) => resolveParam(param, recipe.verified, state, allocation))
 }
