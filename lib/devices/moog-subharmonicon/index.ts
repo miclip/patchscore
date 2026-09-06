@@ -618,6 +618,74 @@ type VoiceOpts = {
 }
 
 /**
+ * §3.1/#385. **Stamps a run of parameters with the silkscreened section its controls sit in**,
+ * so the guide draws the panel's own structures instead of one forty-two-line list. The Muse's
+ * helper, unchanged and the only one in this file.
+ *
+ * ## This panel has no boxes, and four section silkscreens anyway
+ *
+ * Every other device in this series draws rectangles: `panel.ts` gives the Subharmonicon **no
+ * `group` features at all**, because p.50 encloses nothing. What it prints instead are *headed*
+ * structures — a centred word with rules running out from it to the edges of the controls it
+ * covers — and there are four of them behind the parameters a recipe states:
+ *
+ *  - **`OSCILLATORS`**, centred at the top of the whole left-centre block with a rule either side
+ *    ending in a boxed `1` and `2`. It covers both VCOs, the four subharmonic dividers, the six
+ *    source levels, and the two shared buttons at its foot.
+ *  - **`SEQ 1 ASSIGN`** and **`SEQ 2 ASSIGN`**, each a centred word on a bracket that drops down
+ *    around exactly three buttons — `OSC 1`/`SUB 1`/`SUB 2` and `OSC 2`/`SUB 1`/`SUB 2`. They are
+ *    nested inside the `OSCILLATORS` structure and are the innermost thing over those buttons, so
+ *    they are what the six carry.
+ *  - **`POLYRHYTHM`**, over the four dividers and the eight destination buttons beneath them.
+ *
+ * `panel.ts` draws `OSCILLATORS` and `POLYRHYTHM` as `label` features already; the two assign
+ * brackets it does not draw, and they were read off p.50 directly for this change.
+ *
+ * ## Eight controls carry no module, because that part of the panel is not divided
+ *
+ * `CUTOFF`, `RESONANCE`, `VCF ATTACK`, `VCF DECAY`, `VCF EG AMT`, `VCA ATTACK`, `VCA DECAY` and
+ * `VOLUME` are two columns of knobs down the right-hand third of the instrument, each with its
+ * own label over it and **nothing over the group**. There is no filter heading and no amplifier
+ * heading; p.50 prints eight control labels and no fifth section word. §3.1 is explicit that one
+ * undivided surface has nothing to put in `module`, and inventing `FILTER` here would be putting
+ * a silkscreen on the box that Moog did not.
+ *
+ * ## Three more silkscreens exist and stay empty
+ *
+ * `SEQUENCER 1`, `SEQUENCER 2` and `TEMPO` are printed on this panel and hold no parameter,
+ * because their controls are deliberately not recipe parameters — the eight `STEP` knobs are
+ * pitch and pitch is the direction's (§4.3), `TEMPO` is the song's (#167), and `RESET`, `EG`,
+ * `NEXT`, `PLAY` and `TRIGGER` are performance. `voice()`'s own doc comment already records that
+ * exclusion; this is the same decision seen from the boxing side, and a section that renders
+ * empty is the honest consequence rather than a gap.
+ *
+ * ## `OSCILLATORS` is drawn twice per part, and that is authored order kept
+ *
+ * The block runs oscillators, mixer, **filter and amplifier**, then `QUANTIZE` and `SEQ OCT` —
+ * which are back inside the `OSCILLATORS` structure, at the foot of it. `groupedParams` cuts on
+ * adjacent runs, so the section opens, closes around the eight loose right-hand controls, and
+ * opens again for those two buttons.
+ *
+ * That is left alone. Moving the two buttons up beside the sub dividers would merge the boxes and
+ * would break the sentence `voice()` is written as — *"the order a reader works across it"* — by
+ * putting two shared switches before the mixer they do not belong to. The run tests pin the
+ * sequence so the repeat is a decision on the record.
+ *
+ * ## Names are left exactly as authored, and two groups trim
+ *
+ * `paramLabel` trims an exact `${module} · ` prefix, which lands the right way round here:
+ *
+ *  - `SEQ 1 ASSIGN · OSC 1` reads **`OSC 1`** inside its box, and the other five likewise. The
+ *    prefix was dead ink repeating the bracket above it.
+ *  - `RHYTHM 1 · SEQ 1` keeps its **whole** name inside `POLYRHYTHM`, because the module is not
+ *    that prefix — and it must, since `RHYTHM 1 · SEQ 1` and `RHYTHM 2 · SEQ 1` would otherwise
+ *    both read `SEQ 1` in one box.
+ */
+function inModule(module: string, params: AuthoredParam[]): AuthoredParam[] {
+  return params.map((param) => ({ ...param, module }))
+}
+
+/**
  * The panel in one call, in the order a reader works across it: oscillators, mixer, filter,
  * envelopes, output, then the sequencer and polyrhythm settings that decide when any of it
  * sounds.
@@ -641,27 +709,29 @@ function voice(o: VoiceOpts): AuthoredParam[] {
   /** Present only on the two recipes read off a factory patch sheet. */
   const sheet = o.sheet === undefined ? {} : { where: o.sheet }
   return [
-    // -- oscillator 1 -----------------------------------------------------------------
-    num('VCO 1 FREQ', o.freq1, VCO_HZ, cite(18), { unit: 'Hz', hint: 'tune-pitch' }),
-    pick('VCO 1 WAVE', o.wave1, WAVE, cite(19), { hint: 'wave-switch' }),
-    num('SUB 1 FREQ (VCO 1)', o.sub1a, SUB_DIV, cite(18), { hint: 'sub-divider' }),
-    num('SUB 2 FREQ (VCO 1)', o.sub1b, SUB_DIV, cite(19), { hint: 'sub-divider' }),
+    ...inModule('OSCILLATORS', [
+      // -- oscillator 1 ---------------------------------------------------------------
+      num('VCO 1 FREQ', o.freq1, VCO_HZ, cite(18), { unit: 'Hz', hint: 'tune-pitch' }),
+      pick('VCO 1 WAVE', o.wave1, WAVE, cite(19), { hint: 'wave-switch' }),
+      num('SUB 1 FREQ (VCO 1)', o.sub1a, SUB_DIV, cite(18), { hint: 'sub-divider' }),
+      num('SUB 2 FREQ (VCO 1)', o.sub1b, SUB_DIV, cite(19), { hint: 'sub-divider' }),
 
-    // -- oscillator 2 -----------------------------------------------------------------
-    num('VCO 2 FREQ', o.freq2 ?? o.freq1, VCO_HZ, cite(19), { unit: 'Hz', hint: 'tune-pitch' }),
-    pick('VCO 2 WAVE', o.wave2 ?? o.wave1, WAVE, cite(20), { hint: 'wave-switch' }),
-    num('SUB 1 FREQ (VCO 2)', o.sub2a ?? 1, SUB_DIV, cite(20), { hint: 'sub-divider' }),
-    num('SUB 2 FREQ (VCO 2)', o.sub2b ?? 1, SUB_DIV, cite(20), { hint: 'sub-divider' }),
+      // -- oscillator 2 ---------------------------------------------------------------
+      num('VCO 2 FREQ', o.freq2 ?? o.freq1, VCO_HZ, cite(19), { unit: 'Hz', hint: 'tune-pitch' }),
+      pick('VCO 2 WAVE', o.wave2 ?? o.wave1, WAVE, cite(20), { hint: 'wave-switch' }),
+      num('SUB 1 FREQ (VCO 2)', o.sub2a ?? 1, SUB_DIV, cite(20), { hint: 'sub-divider' }),
+      num('SUB 2 FREQ (VCO 2)', o.sub2b ?? 1, SUB_DIV, cite(20), { hint: 'sub-divider' }),
 
-    // -- the mixer: six sources into one filter ---------------------------------------
-    travel('VCO 1 LEVEL', o.lvlVco1, sheet),
-    travel('SUB 1 LEVEL (VCO 1)', o.lvlSub1a ?? 0, sheet),
-    travel('SUB 2 LEVEL (VCO 1)', o.lvlSub1b ?? 0, sheet),
-    travel('VCO 2 LEVEL', o.lvlVco2 ?? 0, sheet),
-    travel('SUB 1 LEVEL (VCO 2)', o.lvlSub2a ?? 0, sheet),
-    travel('SUB 2 LEVEL (VCO 2)', o.lvlSub2b ?? 0, sheet),
+      // -- the mixer: six sources into one filter, under the same silkscreen ----------
+      travel('VCO 1 LEVEL', o.lvlVco1, sheet),
+      travel('SUB 1 LEVEL (VCO 1)', o.lvlSub1a ?? 0, sheet),
+      travel('SUB 2 LEVEL (VCO 1)', o.lvlSub1b ?? 0, sheet),
+      travel('VCO 2 LEVEL', o.lvlVco2 ?? 0, sheet),
+      travel('SUB 1 LEVEL (VCO 2)', o.lvlSub2a ?? 0, sheet),
+      travel('SUB 2 LEVEL (VCO 2)', o.lvlSub2b ?? 0, sheet),
+    ]),
 
-    // -- filter and amplifier ---------------------------------------------------------
+    // -- filter and amplifier: two undivided columns, so no module at all (see `inModule`)
     num('CUTOFF', o.cutoff, CUTOFF_HZ, cite(23), {
       unit: 'Hz',
       ...(o.darkness === undefined ? {} : { mood: [{ axis: 'darkness', amount: o.darkness }] }),
@@ -684,30 +754,40 @@ function voice(o: VoiceOpts): AuthoredParam[] {
     }),
     travel('VOLUME', o.volume ?? 70, sheet),
 
-    // -- shared: the two buttons that replace other controls' scales -------------------
-    pick('QUANTIZE', o.quantize, QUANTIZE, cite(21)),
-    pick('SEQ OCT', o.seqOct, SEQ_OCT, cite(28)),
+    // -- shared: the two buttons at the foot of the OSCILLATORS structure, which is why
+    //    that silkscreen opens a second box here. See `inModule`.
+    ...inModule('OSCILLATORS', [
+      pick('QUANTIZE', o.quantize, QUANTIZE, cite(21)),
+      pick('SEQ OCT', o.seqOct, SEQ_OCT, cite(28)),
+    ]),
 
-    // -- what each sequencer's four steps move ----------------------------------------
-    pick('SEQ 1 ASSIGN · OSC 1', o.assign1[0], BUTTON, cite(26)),
-    pick('SEQ 1 ASSIGN · SUB 1', o.assign1[1], BUTTON, cite(26)),
-    pick('SEQ 1 ASSIGN · SUB 2', o.assign1[2], BUTTON, cite(26)),
-    pick('SEQ 2 ASSIGN · OSC 2', assign2[0], BUTTON, cite(27)),
-    pick('SEQ 2 ASSIGN · SUB 1', assign2[1], BUTTON, cite(27)),
-    pick('SEQ 2 ASSIGN · SUB 2', assign2[2], BUTTON, cite(27)),
+    // -- what each sequencer's four steps move, under its own bracket ------------------
+    ...inModule('SEQ 1 ASSIGN', [
+      pick('SEQ 1 ASSIGN · OSC 1', o.assign1[0], BUTTON, cite(26)),
+      pick('SEQ 1 ASSIGN · SUB 1', o.assign1[1], BUTTON, cite(26)),
+      pick('SEQ 1 ASSIGN · SUB 2', o.assign1[2], BUTTON, cite(26)),
+    ]),
+    ...inModule('SEQ 2 ASSIGN', [
+      pick('SEQ 2 ASSIGN · OSC 2', assign2[0], BUTTON, cite(27)),
+      pick('SEQ 2 ASSIGN · SUB 1', assign2[1], BUTTON, cite(27)),
+      pick('SEQ 2 ASSIGN · SUB 2', assign2[2], BUTTON, cite(27)),
+    ]),
 
     // -- the polyrhythm: four dividers, and which sequencer each advances --------------
-    ...o.rhythm.flatMap((divider, i): AuthoredParam[] => {
-      const [toSeq1, toSeq2] = o.drives[i] as [Button, Button]
-      return [
-        num(`RHYTHM ${i + 1}`, divider, RHYTHM_DIV, cite(30), {
-          ...(o.density === undefined ? {} : { mood: [{ axis: 'density', amount: o.density }] }),
-          ...(i === 0 ? { hint: 'rhythm-divider' } : {}),
-        }),
-        pick(`RHYTHM ${i + 1} · SEQ 1`, toSeq1, BUTTON, cite(30)),
-        pick(`RHYTHM ${i + 1} · SEQ 2`, toSeq2, BUTTON, cite(30)),
-      ]
-    }),
+    ...inModule(
+      'POLYRHYTHM',
+      o.rhythm.flatMap((divider, i): AuthoredParam[] => {
+        const [toSeq1, toSeq2] = o.drives[i] as [Button, Button]
+        return [
+          num(`RHYTHM ${i + 1}`, divider, RHYTHM_DIV, cite(30), {
+            ...(o.density === undefined ? {} : { mood: [{ axis: 'density', amount: o.density }] }),
+            ...(i === 0 ? { hint: 'rhythm-divider' } : {}),
+          }),
+          pick(`RHYTHM ${i + 1} · SEQ 1`, toSeq1, BUTTON, cite(30)),
+          pick(`RHYTHM ${i + 1} · SEQ 2`, toSeq2, BUTTON, cite(30)),
+        ]
+      }),
+    ),
   ]
 }
 
