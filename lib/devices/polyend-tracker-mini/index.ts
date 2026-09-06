@@ -90,9 +90,9 @@ import { TRACKER_MINI_PANEL } from './panel'
  *    because the role that wanted it is better served without it — a smaller gap than a missing
  *    recipe, and a different one. ACD was in the third position again, unwritable under the old
  *    slot cap, until the cap lifted and `acid + dirty` was authored off p.154.
- *  - **Pool ordinals always start at 1** (§2.2), so `track-synth` expands to "Synth Track 1..8"
- *    while the panel calls those tracks 9-16. Each pool-B recipe carries the mapping in its
- *    `routing` line, which is the only place the guide can say it today.
+ *  - **Pool ordinals always start at 1** (§2.2) and the panel numbers the tracks 1-16, so the two
+ *    disagree on pool B. `memberLabels` settles it (#86): `track-synth` ordinal 1 is named
+ *    `Track 9`, and the reader is never asked to add eight. See `SYNTH_TRACK_LABELS`.
  *
  * The manual contradicts itself on the track count: p.270 still reads "Tracker Mini has 8 voices.
  * Each voice is represented by each of the 8 tracks", which is the pre-2.0 machine. p.22 and
@@ -389,6 +389,28 @@ const VAP_FILTERS = [
 /** p.146's five models, in the order the selector lists them. */
 const SYNTH_MODELS = ['ACD', 'FAT', 'VAP', 'WTFM', 'PERC']
 
+/**
+ * §8.1. **The `MODEL` row, and the one place the per-step fact is written.**
+ *
+ * Every synth recipe on this box picks a model, and every one of them needs the same sentence
+ * beside it: the instrument is chosen *per step* (p.146, and see the `pick-synth` hint). So the
+ * row is a helper rather than four hand-written enum params. `onBothPools` already stops the two
+ * pool twins of one patch drifting; this stops the four *patches* drifting from each other,
+ * which is the drift that actually happened — `pick-synth` sat in the `hints` table unused while
+ * four recipes set `MODEL` with nothing pointing at it.
+ *
+ * Omission is a separate failure from drift and a helper cannot catch it: a fifth synth recipe
+ * could still reach for the generic enum helper directly. `test/tracker-mini.test.ts` holds that
+ * shut, by requiring the hint on every recipe that spends a synth slot rather than on every
+ * recipe that happens to call this function.
+ *
+ * p.146 is the model list's own page and the page the sentence is printed on, so one citation
+ * serves the option set and the hint alike.
+ */
+function model(value: string): AuthoredEnumParam {
+  return pick('MODEL', value, SYNTH_MODELS, 146, { hint: 'pick-synth' })
+}
+
 // ---------------------------------------------------------------------------
 // Roles
 // ---------------------------------------------------------------------------
@@ -420,6 +442,42 @@ const SAMPLE_POOL_ROLES: Role[] = [
  * make a ride.
  */
 const SYNTH_POOL_ROLES: Role[] = SAMPLE_POOL_ROLES.filter((r) => r !== 'vox-chop')
+
+/**
+ * §2.2/#86. **The panel's own number for each track**, and the one place this folder writes the
+ * disjoint partition down as data rather than as prose.
+ *
+ * p.22: *"Tracker Mini has 16 tracks. The first 8 can operate with sample instruments, synths and
+ * MIDI and tracks 9-16 are used for MIDI and synths."* Sixteen numbered tracks on one machine.
+ * The two pools here are halves of that numbering — `track-sample` **is** panel tracks 1-8 and
+ * `track-synth` **is** panel tracks 9-16 — so a member's name is its printed track number and
+ * nothing has to be added to it at the machine.
+ *
+ * **The partition is a modelling choice, not a capability claim, and this is the honest way to
+ * say it.** p.22 permits a synth on either half; what it forbids is a *sample instrument* above
+ * track 8. So the pools do not divide the box by what a track can hold — `SYNTH_POOL_ROLES`
+ * above is the subset, and the synth recipes exist twice precisely because tracks 1-8 host
+ * synths too. What the pools divide is *which eight tracks the guide sends you to*, and the
+ * split had to fall somewhere: sample instruments can only live on 1-8, so that is where the
+ * sample pool goes, and the synth pool takes what is left. Every `onBothPools` twin has said so
+ * in its `routing` line since it was written — the synth twin has always been tracks 9-16 — and
+ * these lists put the same fact where the reader meets it, in the name of the track.
+ *
+ * **This is why `track-synth` no longer counts from 1.** Pool ordinals always start at 1 (§2.2)
+ * and must, since they key occupancy and symmetry breaking, so the counted form named the eight
+ * synth tracks `Synth Track 1`-`Synth Track 8` while the panel called them 9-16. A reader
+ * standing at the box was told to use a track that is there, under a number that is not, and had
+ * to carry `n+8` from the routing line to the heading to fix it. §8 exists to prevent exactly
+ * that. `memberLabels` is display only — `voiceId` stays `track-synth-3`, `ordinal` stays 3, and
+ * the resolver is untouched.
+ *
+ * `track-sample` gets a list too, and it is the counted form the default already produced. It is
+ * written out because the two lists are one fact: sixteen track numbers, used once each. Left to
+ * the default, half the partition would be data and half would be a coincidence of `label`, and
+ * the test below could only check the half that is written down.
+ */
+const SAMPLE_TRACK_LABELS: string[] = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => `Track ${n}`)
+const SYNTH_TRACK_LABELS: string[] = [9, 10, 11, 12, 13, 14, 15, 16].map((n) => `Track ${n}`)
 
 // ---------------------------------------------------------------------------
 // Cross-pool duplication
@@ -487,7 +545,7 @@ function onBothPools(
       id: `${base.id}-synth`,
       voice: 'track-synth',
       consumes,
-      routing: 'Synth Track n is panel track n+8 — costs one of the three project synth slots',
+      routing: 'Tracks 9-16 — costs one of the three project synth slots',
     },
   ]
 }
@@ -501,7 +559,7 @@ const SYNTH_RECIPES: Recipe[] = [
     character: 'dark',
     title: 'Wide detuned reese, filter well down',
     params: [
-      pick('MODEL', 'FAT', SYNTH_MODELS, 146),
+      model('FAT'),
       pick('FILTER TYPE', 'Low Pass OB 24dB', FAT_FILTERS, 156),
       num('FATNESS', 78, UNITLESS_100, 156, { hint: 'edit-patch' }),
       num('BRIGHTNESS', 22, UNITLESS_100, 156, {
@@ -526,7 +584,7 @@ const SYNTH_RECIPES: Recipe[] = [
     character: 'soft',
     title: 'Slow detuned pad, long swell',
     params: [
-      pick('MODEL', 'VAP', SYNTH_MODELS, 146),
+      model('VAP'),
       /**
        * §12.4/#433. **The setting without which a stacked chord does not sound**, and the only
        * value in this file the resolver supplies rather than the author.
@@ -581,7 +639,7 @@ const SYNTH_RECIPES: Recipe[] = [
     character: 'bright',
     title: 'Cutting two-oscillator lead with glide',
     params: [
-      pick('MODEL', 'VAP', SYNTH_MODELS, 146),
+      model('VAP'),
       pick('FILTER TYPE', 'Low Pass OB 24dB', VAP_FILTERS, 158),
       num('SHAPE 1', 74, UNITLESS_100, 158),
       num('PW 1', -18, PW, 158),
@@ -631,7 +689,7 @@ const SYNTH_RECIPES: Recipe[] = [
     character: 'dirty',
     title: 'Squelching single-oscillator line, resonance up and envelope biting',
     params: [
-      pick('MODEL', 'ACD', SYNTH_MODELS, 146),
+      model('ACD'),
       pick('FILTER TYPE', 'Low Pass RD3', ACD_FILTERS, 154),
       num('SAW MIX', 100, PCT, 154, { unit: '%' }),
       num('SQUARE MIX', 0, PCT, 154, { unit: '%' }),
@@ -1994,6 +2052,8 @@ export const device: Device = {
       id: 'track-sample',
       label: 'Track',
       count: 8,
+      // §2.2/#86. Panel tracks 1-8. See `SAMPLE_TRACK_LABELS`.
+      memberLabels: SAMPLE_TRACK_LABELS,
       roles: SAMPLE_POOL_ROLES,
       polyphony: 1,
     },
@@ -2008,8 +2068,12 @@ export const device: Device = {
     {
       kind: 'pool',
       id: 'track-synth',
+      // The bank's name on the rack diagram, where it sits beside the sample bank and has to be
+      // told apart from it. A *member* is named by `memberLabels` — panel tracks 9-16.
       label: 'Synth Track',
       count: 8,
+      // §2.2/#86. Panel tracks 9-16. See `SYNTH_TRACK_LABELS`.
+      memberLabels: SYNTH_TRACK_LABELS,
       roles: SYNTH_POOL_ROLES,
       polyphony: 1,
     },
@@ -2071,7 +2135,32 @@ export const device: Device = {
   hints: {
     'pick-fx': 'Hold [FX1], press (Up)/(Down)',
     'inst-params': 'Screen button 4 cycles instrument pages',
-    'pick-synth': 'Hold [Instrument], press (Up)/(Down)',
+    /**
+     * §8.1/#432. **Per step, and that is the whole point of the wording.**
+     *
+     * p.146, under the five model descriptions: *"Hold [Instrument] to select a synth for the
+     * step."* The instrument is a column in the pattern, not a property of the track — p.22's
+     * pattern page draws `[Note]`, `[Instrument]`, `[FX1]` and `[FX2]` as parameters *of a step*
+     * — so loading FAT into a slot does not point any step at it. A step plays whichever
+     * instrument is assigned to it, which after the load is still whatever was in that column
+     * before; where that is a MIDI instrument the step sends MIDI out and sounds nothing
+     * internally, and otherwise it plays the wrong patch. Either way the settings printed on
+     * this page belong to a patch that step is not playing, and the box reports nothing amiss.
+     *
+     * **This is not the cause of #432's reported symptom, and must not be read as one.** That
+     * report — a stacked pad where making one note extreme changed nothing — is #433's: the
+     * synth slot kept the single voice both of p.148's screen shots show, so the three tracks
+     * shared one voice and the last note won. The fix is the `POLYPHONY` row below. #432 named
+     * two gaps beside it, and the reporter already knew the instrument is chosen per step; what
+     * they were owed is a guide that says so, which is what this hint is for.
+     *
+     * The old text was `Hold [Instrument], press (Up)/(Down)`, which is the same gesture with
+     * the load-bearing half missing: it reads as something you do once. `(Up)/(Down)` is real —
+     * p.74, *"Hold [Instrument] + (Up) or (Down). Adds the highlighted instrument from the
+     * instrument list"* — and is dropped anyway, because a hint has room for one thing and
+     * *when* to do this is the half a reader gets wrong.
+     */
+    'pick-synth': 'Each note step: hold [Instrument], select synth',
     'synth-params': 'Press [2] for synth parameters',
     'edit-patch': 'Press [Edit Patch] screen button',
     // p.142's Aid row: "Hold to play the grain from the current position selected. Also hold

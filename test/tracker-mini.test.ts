@@ -3,6 +3,7 @@ import {
   CHARACTERS,
   DeviceSchema,
   ROLES,
+  SUBORDINATE,
   assign,
   expand,
   isSustainedPart,
@@ -22,6 +23,7 @@ import {
 } from '../lib/core/index'
 import {
   DUPLICATED_SYNTH_RECIPES,
+  SYNTH_SLOT,
   SYNTH_SLOTS,
   device,
 } from '../lib/devices/polyend-tracker-mini/index'
@@ -121,6 +123,101 @@ describe('Tracker Mini manifest', () => {
     ])
     // Every one carries an ordinal and its pool id, so occupancy and recipe lookup stay apart.
     expect(assignables.every((a) => a.ordinal !== undefined && a.poolId !== undefined)).toBe(true)
+  })
+
+  /**
+   * §2.2/#86. **The sixteen names are the sixteen tracks the box has.**
+   *
+   * p.22 numbers them 1-16 on one machine and splits them there: *"The first 8 can operate with
+   * sample instruments, synths and MIDI and tracks 9-16 are used for MIDI and synths."* The two
+   * pools are the two halves of that numbering, so the union of their member names is the panel
+   * and nothing else — no number twice, none missing, none invented.
+   *
+   * This is the assertion the pair of lists buys. With `track-sample` left to the counted default
+   * only half the partition would be data, and the half that reads `Track 1`-`Track 8` could
+   * drift under a `label` change with nothing here to catch it.
+   */
+  it('names the sixteen members after the sixteen panel tracks, each once (p.22)', () => {
+    const sample = pool('track-sample').memberLabels
+    const synth = pool('track-synth').memberLabels
+
+    expect(sample).toEqual([
+      'Track 1', 'Track 2', 'Track 3', 'Track 4',
+      'Track 5', 'Track 6', 'Track 7', 'Track 8',
+    ])
+    expect(synth).toEqual([
+      'Track 9', 'Track 10', 'Track 11', 'Track 12',
+      'Track 13', 'Track 14', 'Track 15', 'Track 16',
+    ])
+
+    // Disjoint and exhaustive: the two halves are the whole box, counted once.
+    const all = [...(sample ?? []), ...(synth ?? [])]
+    expect(new Set(all).size, 'two tracks sharing a name').toBe(16)
+  })
+
+  /**
+   * §2.2/#86. **Display only** — the field is a word, not a re-numbering.
+   *
+   * Pool ordinals start at 1 and must: `voiceId` keys occupancy, `ordinal` breaks §7.1's
+   * symmetry, and recipe lookup keys on `poolId`. `memberLabels` moves none of that, which is
+   * the whole reason the panel's numbering can be told the truth without the resolver noticing.
+   */
+  it('expands each track under its panel number while the ordinals stay 1-8 (§2.2)', () => {
+    const members = expand(device)
+    const byPool = (id: string) => members.filter((a) => a.poolId === id)
+
+    expect(byPool('track-sample').map((a) => a.label)).toEqual([
+      'Track 1', 'Track 2', 'Track 3', 'Track 4',
+      'Track 5', 'Track 6', 'Track 7', 'Track 8',
+    ])
+    // Pool B's ordinal 1 is the box's track 9, and the reader is never asked to add eight.
+    expect(byPool('track-synth').map((a) => a.label)).toEqual([
+      'Track 9', 'Track 10', 'Track 11', 'Track 12',
+      'Track 13', 'Track 14', 'Track 15', 'Track 16',
+    ])
+
+    // Untouched by the rename: the identifiers the resolver actually works in.
+    expect(byPool('track-synth').map((a) => a.ordinal)).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+    expect(byPool('track-synth').map((a) => a.voiceId)).toEqual([
+      'track-synth-1', 'track-synth-2', 'track-synth-3', 'track-synth-4',
+      'track-synth-5', 'track-synth-6', 'track-synth-7', 'track-synth-8',
+    ])
+    // No track name is used by both pools, so "Track 3" in a guide is one track, not two.
+    expect(new Set(members.map((a) => a.label)).size).toBe(16)
+  })
+
+  /**
+   * §8. The reader-facing half. A label in the manifest proves nothing to somebody standing at
+   * the box; what matters is that the guide sends them to a track the box has.
+   *
+   * `Synth Track` survives as the *bank* name on the rack diagram (§10), where the two pools sit
+   * side by side and have to be told apart. It is not a control, so it must never reach a
+   * heading, a chord-stack line or a gap line — those name tracks.
+   */
+  it('sends the reader to a panel track, never to a pool ordinal, in a rendered guide (§8)', () => {
+    let paths = 0
+    for (const template of TEMPLATES) {
+      for (const seed of [1, 7]) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        const md = renderGuide(result)
+        const where = `${template.id} seed ${String(seed)}`
+
+        // The pool's own word never reaches the page, in any of the places a voice is named.
+        expect(md, where).not.toContain('Synth Track')
+
+        for (const a of result.assignments) {
+          for (const assignable of a.assignables) {
+            if (assignable.poolId !== 'track-synth') continue
+            paths += 1
+            // The name is the panel's, and it is in the guide beside the part.
+            expect(assignable.label, where).toBe(`Track ${String((assignable.ordinal ?? 0) + 8)}`)
+            expect(md, `${where}: ${assignable.label}`).toContain(assignable.label)
+          }
+        }
+      }
+    }
+    // The sweep is only worth anything if something landed on pool B.
+    expect(paths, 'no direction placed a part on track-synth').toBeGreaterThan(0)
   })
 
   it('gives the two pools different roles, the synth pool a strict subset (p.22)', () => {
@@ -280,6 +377,139 @@ describe('Tracker Mini manifest', () => {
       if (!(recipe.params as AuthoredParam[]).some((p) => p.name === 'MODEL')) continue
       expect(recipe.sourceAudio, recipe.id).toBeUndefined()
     }
+  })
+
+  // -------------------------------------------------------------------------
+  // The instrument is per step (§8.1, p.146)
+  // -------------------------------------------------------------------------
+
+  /**
+   * §8.1/invariant 7/#432. **The gesture, and when to make it.**
+   *
+   * p.146: *"Hold [Instrument] to select a synth for the step."* Loading FAT into a slot points
+   * no step at it. A step plays whichever instrument is assigned to it — after the load, still
+   * whatever was in that column — so the reader hears the wrong patch, or, where that column
+   * holds a MIDI instrument, hears nothing internally while the notes leave by the MIDI port.
+   * So the hint has to carry the *per step* half; the gesture on its own reads as something you
+   * do once.
+   *
+   * **Not the cause of #432's reported symptom.** That was #433's slot polyphony, fixed by the
+   * `POLYPHONY` row this box now authors; the reporter knew the instrument is per step. #432
+   * named this gap alongside it, and closing it is what these assertions are about.
+   *
+   * Under eight words, like every other hint on this box, because a hint is a jog.
+   */
+  it('says the synth is chosen per step, in the hint the reader gets (p.146)', () => {
+    const hint = device.hints?.['pick-synth']
+    expect(hint).toBe('Each note step: hold [Instrument], select synth')
+
+    // The three things it has to carry: the button, the gesture, and the per-step half.
+    expect(hint).toContain('[Instrument]')
+    expect(hint?.toLowerCase()).toContain('hold')
+    expect(hint?.toLowerCase()).toContain('step')
+
+    // Invariant 7, at this box's own bar rather than the renderer's looser one.
+    for (const [key, text] of Object.entries(device.hints ?? {})) {
+      expect(text.split(/\s+/).length, `${key}: ${text}`).toBeLessThan(8)
+    }
+  })
+
+  /**
+   * §8.1. **Attached where it cannot be omitted**, which is the half a helper cannot buy on its
+   * own. `model()` stops the four `MODEL` rows drifting apart; this stops a fifth synth recipe
+   * being written without one. The set is defined by what a recipe *spends* — a synth slot —
+   * rather than by which helper it happened to call, so a hand-rolled row fails here.
+   */
+  it('hangs the per-step hint on every MODEL row, one per synth recipe (§8.1)', () => {
+    const synthRecipes = device.recipes.filter((r) =>
+      (r.consumes ?? []).some((c) => c.resource === SYNTH_SLOT),
+    )
+    // Four patches on two pools. If this is 0 the assertions below say nothing.
+    expect(synthRecipes.length).toBe(DUPLICATED_SYNTH_RECIPES * 2)
+
+    for (const recipe of synthRecipes) {
+      const models = (recipe.params as AuthoredParam[]).filter((p) => p.name === 'MODEL')
+      expect(models.length, recipe.id).toBe(1)
+      const model = models[0] as AuthoredParam
+      expect(model.hint, recipe.id).toBe('pick-synth')
+      // A key into the table, never the jog itself: the text lives in one place.
+      expect(Object.keys(device.hints ?? {}), recipe.id).toContain(model.hint)
+    }
+
+    // And the other side — a recipe with no slot to spend has no model to pick, so the hint
+    // must not turn up on a sample recipe where it would be a instruction for a different box.
+    for (const recipe of device.recipes) {
+      if (synthRecipes.includes(recipe)) continue
+      for (const param of recipe.params as AuthoredParam[]) {
+        expect(param.hint, `${recipe.id} / ${param.name}`).not.toBe('pick-synth')
+      }
+    }
+  })
+
+  /** Every hint a recipe reaches for is one this device declares. */
+  it('points every parameter and articulation hint at a gesture it declares', () => {
+    const hints = new Set(Object.keys(device.hints ?? {}))
+    for (const recipe of device.recipes) {
+      for (const param of recipe.params as AuthoredParam[]) {
+        if (param.hint === undefined) continue
+        expect(hints.has(param.hint), `${recipe.id} / ${param.name}`).toBe(true)
+      }
+      for (const entry of recipe.articulation ?? []) {
+        if (entry.hint === undefined) continue
+        expect(hints.has(entry.hint), `${recipe.id} / ${entry.slot}`).toBe(true)
+      }
+    }
+  })
+
+  /**
+   * §8.1. The reader-facing half, both ways round. A hint in the manifest is worth nothing until
+   * it is under the `MODEL` line in the document somebody is holding, and §8.1's other rule is
+   * that turning hints off removes them and changes nothing else.
+   */
+  it('renders the per-step hint under MODEL with hints on, and drops it with them off', () => {
+    const jog = `${SUBORDINATE.hint} Each note step: hold [Instrument], select synth`
+    // `ResolvedRecipeRef` deliberately carries no `consumes` (§3.1 keeps the authored form out
+    // of the renderer's reach), so the synth recipes are named from the manifest and matched by
+    // id — the same set the manifest test above pins.
+    const synthIds = new Set(
+      device.recipes
+        .filter((r) => (r.consumes ?? []).some((c) => c.resource === SYNTH_SLOT))
+        .map((r) => r.id),
+    )
+    let seen = 0
+
+    for (const template of TEMPLATES) {
+      for (const seed of [1, 7]) {
+        const result = resolve({ devices: [device], template, mood: moodState(), seed })
+        const placesSynth = result.assignments.some((a) => synthIds.has(a.recipe.id))
+        const where = `${template.id} seed ${String(seed)}`
+
+        const on = renderGuide(result)
+        const off = renderGuide(result, { hints: false })
+
+        if (placesSynth) {
+          seen += 1
+          expect(on, where).toContain(jog)
+          // Subordinate to the value, on its own line, directly under the row it is about.
+          const lines = on.split('\n')
+          const at = lines.findIndex((l) => l.includes(jog))
+          expect(lines[at - 1], where).toContain('**MODEL**')
+        }
+
+        // Hints off removes the line and nothing else — the box's whole hint vocabulary.
+        expect(off, where).not.toContain(jog)
+        for (const text of Object.values(device.hints ?? {})) {
+          expect(off, `${where}: ${text}`).not.toContain(`${SUBORDINATE.hint} ${text}`)
+        }
+        expect(off, where).toBe(
+          on
+            .split('\n')
+            .filter((l) => !l.includes(SUBORDINATE.hint))
+            .join('\n'),
+        )
+      }
+    }
+    expect(seen, 'no direction placed a synth patch on this box').toBeGreaterThan(0)
   })
 
   /**
