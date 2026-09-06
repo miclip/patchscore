@@ -1313,6 +1313,42 @@ describe('the note above the grid reads the same in both guides (§4.1/§2.1)', 
   })
 
   /**
+   * §2.1/§3.1/#86. **The other half of the same reader's question**, and it is prose rather than
+   * an arm: a transposed part still gets no note above the grid, so what it does get is a
+   * sentence on its own `TUNE` in phase 6 telling the reader to write `C5` and what this tuning
+   * does to it.
+   *
+   * Here rather than in the device file because it is a two-renderer claim exactly as the arm
+   * above is. A `note` reaches the page through a different path in each renderer — `paramLines`
+   * in one, `Instruction` in the other — so a note that lands in the Markdown and not in the web
+   * view is a real failure and the device file cannot see it.
+   */
+  it('prints the transposed TUNE sentence in both guides, on the parts that transpose', () => {
+    const result = resolve({
+      devices: trackerMini,
+      template: industrialTechno,
+      mood: moodState(),
+      seed: 1,
+    })
+
+    // The parts whose recipe transposes: they carry no trigger note, and this sentence is what
+    // they carry instead. Counted, so a sentence leaking onto an untransposed part shows up.
+    // By the recipe's authored mode, read off the folder: `ResolvedRecipeRef` carries no mode,
+    // and inferring one from the resolved `TUNE` would be this file agreeing with itself.
+    const modeOf = (id: string) =>
+      trackerMini[0]?.recipes.find((r) => r.id === id)?.mode
+    const transposed = result.assignments.filter((a) => modeOf(a.recipe.id) === 'transposed')
+    expect(transposed.length).toBeGreaterThan(0)
+    for (const a of transposed) expect(noteInstruction(a).kind, a.role).toBe('none')
+
+    const sentence = 'Write C5 on the step. This TUNE moves the sample that many semitones'
+    for (const guide of [renderGuide(result), text(html(result))]) {
+      expect(guide.split(sentence).length - 1).toBe(transposed.length)
+      expect(guide).toContain('C5 with TUNE 0 is a different, untransposed patch')
+    }
+  })
+
+  /**
    * The arm itself, on a result carrying the field rather than on a device that authors it.
    *
    * Hand-set for exactly the reason the sweep in the Polyend files is not: this is a claim about

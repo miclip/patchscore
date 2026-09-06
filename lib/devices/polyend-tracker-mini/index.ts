@@ -178,6 +178,37 @@ const TRIGGER_NOTE_CITE: Cite = {
     'value"); p.54 and p.285 (Config > MIDI > Middle C, C-3 to C-6); p.298 (set-up table at C-5)',
 }
 
+/**
+ * §2.1/§2.2/#86. **What to write on the step when the instrument is transposed**, and it is the
+ * one thing the seven `transposed` recipes here left a reader to work out for themselves.
+ *
+ * Two printed facts, and the reader standing at the box has to hold both. p.90: *"The default
+ * note value is C5 which plays a sample at its original pitch value"*. p.116 prints `TUNE` as
+ * -24 to +24 semitones and ships it at zero, and it moves the instrument underneath whatever
+ * note the step carries. So on these recipes `C5` is still the note to write — it is the box's
+ * default and nothing here changes it — and what comes out is the recording moved by the `TUNE`
+ * printed directly above this line, rather than the recording.
+ *
+ * **The mode still carries no `triggerNote`, and must not gain one.** `Trigger note — C5` is a
+ * claim that the note plays the sample as recorded, which is exactly what is false here; that is
+ * why #421 swept the class off these recipes. This is the prose that was missing, not a way back
+ * in — it goes on the parameter, in phase 6, where the number it qualifies is.
+ *
+ * **No compensating note is computed, and that refusal is unchanged.** `TUNE -3` makes `D#5` the
+ * note that plays the recording, and that arithmetic is ours rather than the manual's: an
+ * invented value carrying a citation borrowed from a sentence about the untransposed case, which
+ * is what §3.1 exists to prevent. The reader is told what the two printed numbers do to each
+ * other and keeps both.
+ *
+ * **One string across all seven**, so the class reads alike at the machine and a recipe that
+ * gains a `TUNE` without it is visible rather than merely different. `test/tracker-mini.test.ts`
+ * pins the set.
+ */
+const TRANSPOSED_TUNE_NOTE =
+  'Write C5 on the step. This TUNE moves the sample that many semitones, so C5 here is not ' +
+  'the recorded pitch; C5 with TUNE 0 is a different, untransposed patch, and that one plays ' +
+  'the recording as recorded (p.90, p.116).'
+
 function num(
   name: string,
   value: number,
@@ -781,7 +812,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
-      num('TUNE', -3, SEMITONES_24, 116, { unit: 'st' }),
+      num('TUNE', -3, SEMITONES_24, 116, { unit: 'st', note: TRANSPOSED_TUNE_NOTE }),
       num('CUTOFF', 74, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -16 }] }),
       num('OVERDRIVE', 18, PCT, 120, { unit: '%', mood: [{ axis: 'grit', amount: 22 }] }),
       secs('ENVELOPE · DECAY', 0.28, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.09 }] }),
@@ -808,6 +839,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('TUNE', -7, SEMITONES_24, 116, {
         unit: 'st',
         mood: [{ axis: 'darkness', amount: -3 }],
+        note: TRANSPOSED_TUNE_NOTE,
       }),
       num('CUTOFF', 46, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -14 }] }),
       secs('ENVELOPE · DECAY', 0.62, SECONDS_10, 126),
@@ -831,7 +863,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'High-pass', FILTER_TYPES, 117),
       num('CUTOFF', 22, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: 12 }] }),
-      num('TUNE', 2, SEMITONES_24, 116, { unit: 'st' }),
+      num('TUNE', 2, SEMITONES_24, 116, { unit: 'st', note: TRANSPOSED_TUNE_NOTE }),
       secs('ENVELOPE · DECAY', 0.3, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.1 }] }),
       num('DELAY SEND', 12, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 24 }] }),
       swing(),
@@ -922,7 +954,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     },
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
-      num('TUNE', 4, SEMITONES_24, 116, { unit: 'st' }),
+      num('TUNE', 4, SEMITONES_24, 116, { unit: 'st', note: TRANSPOSED_TUNE_NOTE }),
       num('PANNING', 18, PAN, 116),
       secs('ENVELOPE · DECAY', 0.11, SECONDS_10, 126),
       swing(),
@@ -968,7 +1000,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
-      num('TUNE', -5, SEMITONES_24, 116, { unit: 'st' }),
+      num('TUNE', -5, SEMITONES_24, 116, { unit: 'st', note: TRANSPOSED_TUNE_NOTE }),
       num('CUTOFF', 52, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -15 }] }),
       secs('ENVELOPE · DECAY', 0.44, SECONDS_10, 126),
       swing(),
@@ -1098,7 +1130,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('PLAY MODE', 'Forward loop', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
       num('CUTOFF', 44, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -18 }] }),
-      num('TUNE', -2, SEMITONES_24, 116, { unit: 'st' }),
+      num('TUNE', -2, SEMITONES_24, 116, { unit: 'st', note: TRANSPOSED_TUNE_NOTE }),
       secs('ENVELOPE · ATTACK', 1.4, SECONDS_10, 126),
       secs('ENVELOPE · RELEASE', 2.2, SECONDS_10, 126),
       // The sustained level of the chord while the step holds it. Instrument Volume is *not*
@@ -1468,7 +1500,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       num('TUNE', -3, SEMITONES_24, 116, {
         unit: 'st',
-        note: 'A little down, which lengthens the ring as well as lowering it',
+        note: `${TRANSPOSED_TUNE_NOTE} A little down here, which lengthens the ring as well as lowering it.`,
       }),
       pick('FILTER TYPE', 'Band-pass', FILTER_TYPES, 117),
       num('CUTOFF', 72, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -30 }] }),
@@ -2115,6 +2147,13 @@ export const device: Device = {
      * is what §3.1 exists to prevent. The recipe already prints its `TUNE`; the reader who wants
      * the sample at its recorded pitch on those parts has the two numbers and did not get a third
      * one made up for them.
+     *
+     * **What the seven transposed recipes do get is prose, on the `TUNE` itself.** Silence about
+     * the note was right as a claim and thin as an instruction: a reader was left holding p.90's
+     * default without being told what this recipe does to it. `TRANSPOSED_TUNE_NOTE` says to
+     * write `C5`, says the printed `TUNE` moves it off the recorded pitch, and names `TUNE 0` as
+     * the different, untransposed patch that plays the recording as recorded. No note is computed
+     * and the mode below still authors none.
      */
     {
       kind: 'pool',
@@ -2147,6 +2186,12 @@ export const device: Device = {
            * table that is true: it keeps a sliced or granular recipe from naming this mode, and
            * it cannot see the number that separates it from `whole-sample`. The test file carries
            * that half. See the note above this pool.
+           *
+           * **Silent here, and spoken on the parameter.** Every recipe in this mode carries
+           * `TRANSPOSED_TUNE_NOTE` on its `TUNE`, which is where the reader meets the number that
+           * makes this mode what it is. A note on a step is a claim about addressing and there is
+           * none to make; what to write on the step is an instruction, and it belongs beside the
+           * setting that changes what writing it does.
            */
           id: 'transposed',
           label: 'The same four, with instrument TUNE off zero',
