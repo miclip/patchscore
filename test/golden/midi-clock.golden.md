@@ -122,7 +122,7 @@ A step is a trigger, not a note with a length: the instrument's own envelope end
 
 No note-length field on this box — a note runs until the next note on the same voice, and `OFF` is how you stop one sooner. The rows below are what you enter, in the order you enter them.
 
-Stacked chord — 3 voices, one note each. There is no chord to play on any one of them.
+Stacked chord — 3 voices, one note each. There is no chord to play on any one of them. All 3 take the same settings — one sound repeated across the stack, not 3 different sounds.
 
 Lowest note to the lowest voice: **Synth Track 1** takes the bottom of every chord and **Synth Track 3** the top. Hold that order and the voicing keeps its shape as the progression moves; cross the voices over and the chord changes character between bars with nothing here saying so.
 
@@ -152,7 +152,7 @@ Lowest note to the lowest voice: **Synth Track 1** takes the bottom of every cho
 
 No note-length field on this box — a note runs until the next note on the same voice, and `OFF` is how you stop one sooner. The rows below are what you enter, in the order you enter them.
 
-Stacked chord — 3 voices, one note each. There is no chord to play on any one of them.
+Stacked chord — 3 voices, one note each. There is no chord to play on any one of them. All 3 take the same settings — one sound repeated across the stack, not 3 different sounds.
 
 Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and **Track 5** the top. Hold that order and the voicing keeps its shape as the progression moves; cross the voices over and the chord changes character between bars with nothing here saying so.
 

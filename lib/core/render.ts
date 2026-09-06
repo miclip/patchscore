@@ -57,7 +57,7 @@ import {
   type InterDevicePatch,
   type ResolveResult,
   type ResolvedAssignment,
-  type VoiceControlSource, type SequencerGroup, patternDriver, sequencerGroups, narrowToGroup, unplayedHooks, devicesInGroup, devicesOutsideGroups,} from './pipeline'
+  type VoiceControlSource, type SequencerGroup, patternDriver, sequencerGroups, narrowToGroup, unplayedHooks, devicesInGroup, devicesOutsideGroups, stackedPart, type StackedPart,} from './pipeline'
 import { GUIDE_PHASES, count, ioText, mixerText, num, searchCapNotice} from './guide'
 import type { GuideLayout } from './guide'
 import {
@@ -393,9 +393,15 @@ function whereText(assignment: ResolvedAssignment): string {
   return `${assignment.deviceName} · ${voicesLabel(assignment)}`
 }
 
-/** §12.4/#40. Whether this part is a chord spread across several voices, one note each. */
+/**
+ * §12.4/#40. Whether this part is a chord spread across several voices, one note each.
+ *
+ * The verdict is `stackedPart`'s (§12.4/#431), asked here as a yes/no because most of this file
+ * only branches on it. `stackedHookLines` takes the notice itself, where the width is a number
+ * it prints.
+ */
 function isStacked(assignment: ResolvedAssignment): boolean {
-  return assignment.assignables.length > 1
+  return stackedPart(assignment) !== undefined
 }
 
 function realisationText(assignment: ResolvedAssignment): string {
@@ -1485,15 +1491,24 @@ function stackedHookLines(
   framed: boolean,
   carriedBy: ResolvedAssignment,
   notice: NoteDurationNotice,
+  stack: StackedPart,
 ): Line[] {
   const out: Line[] = []
   const voices = carriedBy.assignables
-  const width = voices.length
+  const width = stack.width
   const chords = chordsOf(hook).map((chord) => ({ step: chord.step, notes: lowToHigh(chord.notes) }))
 
+  // #431. The second sentence is the one a reader was missing, and it is a claim about the
+  // *part* rather than about the box: one recipe, one set of values, the same on every voice.
+  // Somebody read a three-voice pad as three synths' worth of sound design and concluded the
+  // guide had over-committed a box that holds three. It stops at what `stackedPart` can support
+  // — whether those settings are shared from one place or entered on each track is the box's
+  // fact and unknown here. Said in this phase as well as in Sound design because this is where
+  // the voices are named one at a time, which is what made them look separate.
   out.push(
     `Stacked chord — ${count(width, 'voice')}, one note each. There is no chord to play on ` +
-      'any one of them.',
+      `any one of them. All ${num(width)} take the same settings — one sound repeated across ` +
+      `the stack, not ${num(width)} different sounds.`,
   )
   out.push('')
   out.push(
@@ -1614,8 +1629,9 @@ function hookLines(
   // §12.4/#40. And the other way of not playing a chord on one voice: several voices, one note
   // each. The list below would tell the reader to enter three notes on a voice that sounds one,
   // and say nothing about which voice gets which — which is the half they cannot work out.
-  if (carriedBy !== undefined && isStacked(carriedBy)) {
-    out.push(...stackedHookLines(hook, framed, carriedBy, notice))
+  const stack = carriedBy === undefined ? undefined : stackedPart(carriedBy)
+  if (carriedBy !== undefined && stack !== undefined) {
+    out.push(...stackedHookLines(hook, framed, carriedBy, notice, stack))
     return out
   }
 

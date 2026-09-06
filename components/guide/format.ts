@@ -5,7 +5,7 @@ import { STEPS_PER_BAR, clockFollowing, clockWires } from '@/lib/core'
 import type { Gap, ResolvedHook, ResolvedNote } from '@/lib/core'
 import type { PlacementRefusal, RefusedPlacement } from '@/lib/core'
 import type { FxSource, SidechainReading } from '@/lib/core'
-import { noDuckers, pumpIsBoxByBox } from '@/lib/core'
+import { noDuckers, pumpIsBoxByBox, stackedPart } from '@/lib/core'
 
 /**
  * §8/#82. Re-exported rather than redefined. These four were byte-identical in this file and in
@@ -455,9 +455,15 @@ export function voicesLabel(assignment: { assignables: readonly { label: string 
   return `${labels.slice(0, -1).join(', ')} and ${last}`
 }
 
-/** §12.4/#40. Whether this part is a chord spread across several voices, one note each. */
+/**
+ * §12.4/#40. Whether this part is a chord spread across several voices, one note each.
+ *
+ * Delegated rather than restated: `stackedPart` is the shared verdict (§12.4/#431), and the one
+ * thing the page and the Markdown guide must not disagree about here is *whether* a part is a
+ * stack. The words around it stay this renderer's own.
+ */
 export function isStacked(assignment: { assignables: readonly unknown[] }): boolean {
-  return assignment.assignables.length > 1
+  return stackedPart(assignment) !== undefined
 }
 
 /** Notes low to high, and a total order: see the Markdown renderer's `lowToHigh`. */

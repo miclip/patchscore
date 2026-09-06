@@ -1233,6 +1233,44 @@ export type ResolvedAssignment = {
 }
 
 /**
+ * §12.4/#431. **What a stacked part is on the instrument.** Several voices carrying one note
+ * each are all the same sound: one set of settings repeated across the stack, not several
+ * different sounds. Reported from the machine by somebody reading a three-track pad on a
+ * Tracker Mini as three synths' worth of sound design, on a box that holds three altogether.
+ *
+ * The claim is safe for every stack, and it is the model that makes it so rather than any
+ * device fact: an assignment carries **one** recipe and **one** `params` set however many
+ * assignables it lands on, so no voice in a stack is set differently from its neighbours.
+ *
+ * **It says nothing about the reader's labour**, and the difference is the whole of what this
+ * may claim. Whether the same settings are reached from one place or entered by hand on every
+ * track is the box's own fact, and nothing here knows it: a device where the stack shares one
+ * configured instrument and a device where three tracks must be dialled in identically are
+ * indistinguishable from this side. So no renderer may say *set up once*, *copied*, or that a
+ * reader need not configure the members separately. Slots, tracks and budgets are likewise the
+ * box's claims to make, not this one's.
+ *
+ * One decision in one place, the arrangement `contentNotice`, `noteDurationNotice` and
+ * `patternEntryNotice` already sit in (#33). The words are each renderer's own (§8); the
+ * verdict is not.
+ *
+ * `undefined` for the ordinary one-voice part, like `patternEntryNotice` and unlike
+ * `noteDurationNotice`: a part on a single voice has no question here, and a sentence saying so
+ * on every part of every guide would be noise.
+ */
+export type StackedPart = {
+  /** Voices carrying the part, one note each. Always more than one. */
+  width: number
+}
+
+export function stackedPart(assignment: {
+  assignables: readonly unknown[]
+}): StackedPart | undefined {
+  const width = assignment.assignables.length
+  return width > 1 ? { width } : undefined
+}
+
+/**
  * Invariant 6, in full: *same inputs + same seed + **same resolver version** -> byte-identical
  * guide*. The version is the third term, and it exists because §8.2 permalinks carry inputs
  * only. A link made last month re-resolves under whatever engine is deployed today, so without
