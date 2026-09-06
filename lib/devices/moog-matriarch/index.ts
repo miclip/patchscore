@@ -601,18 +601,94 @@ const LFO_HZ = { min: 0.07, max: 520 }
 const DETUNE_ST = { min: -7, max: 7 }
 
 // ---------------------------------------------------------------------------
+// §3.1/#385 — the panel's own boxes
+// ---------------------------------------------------------------------------
+
+/**
+ * §3.1/#385. **Stamps a run of parameters with the silkscreened box its controls sit in**, so
+ * the guide draws the panel's own enclosures instead of one fifty-line list. The Muse's helper,
+ * unchanged, because the shape of the job is the same one.
+ *
+ * ## The panel is unusually literal about this, and that is the point
+ *
+ * `panel.ts` draws **ten module enclosures** — they are real ink on this instrument, measured off
+ * p.9 — plus two more the drawing carries: `PARAPHONY`, a box drawn *inside* `OUTPUT`, and
+ * `LEFT-HAND CONTROLLER`, the assembly below the panel band. Eleven of the twelve hold a control
+ * some recipe states, so eleven modules appear below.
+ *
+ * ## Two boxes are silkscreened `UTILITIES`, and one of them is empty
+ *
+ * This panel prints the same word twice — `module(162.65, 33.31, 'UTILITIES')` and
+ * `module(507.48, 33.54, 'UTILITIES')` — so the module string alone does not say which box a
+ * control is in. Geometry does, and it is the reason `LFO RATE` is placed by coordinate rather
+ * than by name:
+ *
+ *     LFO RATE knob   cx 523.9   inside 507.48 … 541.02   (the right-hand box)
+ *                                outside 162.65 … 195.96  (the left-hand box)
+ *
+ * The left-hand `UTILITIES` holds four mults and the two attenuators, and **no recipe states any
+ * of them** — the attenuator knobs only matter to a cable, and the mults are passive. So it is a
+ * labelled box that renders no parameters, exactly as the minilogue xd's `EDIT / SEQUENCER` does
+ * (#426), and leaving it empty is the honest outcome rather than a defect.
+ *
+ * The consequence is worth stating plainly: **a reader whose guide shows a `UTILITIES` box has to
+ * look at two places on the panel to find it.** That ambiguity belongs to the instrument, not to
+ * us. Inventing `UTILITIES (RIGHT)` would put a silkscreen on this box that Moog did not print,
+ * which is the thing invariant 5 forbids. `JACKS` already distinguishes them in jack *ids*
+ * (`UTILITIES 1 · ` / `UTILITIES 2 · `), because an id has to be unique; a module is a label, and
+ * the label is what the panel says.
+ *
+ * ## `mod()` spans two boxes, and splitting it is the whole care of this change
+ *
+ * The modulation block emits six controls that are inside the `MODULATION` enclosure —
+ * `MODULATION RATE`, `MODULATION WAVEFORM`, `PITCH MOD ASSIGN`, `PITCH AMT`, `CUTOFF AMT`,
+ * `PULSE WIDTH AMT` — and then **`MOD`, which is not in that box at all**. `MOD` is the physical
+ * wheel: `fader(75.81, 260.98, …, 'MOD')`, ninety-five millimetres below the modulation
+ * enclosure, inside `LEFT-HAND CONTROLLER` beside `PITCH` and `GLIDE`.
+ *
+ * Stamping the helper wholesale would have been the natural move and would have been wrong — it
+ * would put a wheel you reach with your left hand inside a box of knobs you reach with your
+ * right. `GLIDE` is in the same enclosure and every recipe emits it immediately after `mod()`, so
+ * the two land in one `LEFT-HAND CONTROLLER` run rather than two.
+ *
+ * ## Names are left exactly as authored
+ *
+ * As on the Muse, the Subsequent 37, the NEUTRON and the minilogue xd. `name` is #107's hoist
+ * key, `sameRenderedParam`'s comparison and the string every fixture names, so nothing keyed on
+ * one moves.
+ *
+ * **Nothing trims here.** `paramLabel` trims an exact `${module} · ` prefix, and no name in this
+ * file carries one — `OSCILLATOR 1 OCTAVE` and `FILTER ATTACK` separate with spaces. The box is
+ * the grouping; the names stay where they were.
+ */
+function inModule(module: string, params: AuthoredParam[]): AuthoredParam[] {
+  return params.map((param) => ({ ...param, module }))
+}
+
+/** The same stamp for the four blocks that are a single control. */
+function boxed(module: string, param: AuthoredParam): AuthoredParam {
+  return { ...param, module }
+}
+
+// ---------------------------------------------------------------------------
 // Parameter blocks
 // ---------------------------------------------------------------------------
 
-/** The switch everything else in a recipe depends on. See the header. */
+/**
+ * The switch everything else in a recipe depends on. See the header.
+ *
+ * `PARAPHONY` is its box, and the panel draws that box *inside* `OUTPUT` — one enclosure nested
+ * in another, which is how the instrument prints it (`panel.ts`, x 754.15 inside x 751.92).
+ * Nesting changes nothing here: a module is the innermost box a control sits in.
+ */
 function voiceMode(mode: (typeof VOICE_MODE)[number]): AuthoredParam {
-  return pick('VOICE MODE', mode, VOICE_MODE, cite(51), {
+  return boxed('PARAPHONY', pick('VOICE MODE', mode, VOICE_MODE, cite(51), {
     hint: mode === '4' ? 'paraphonic-4' : 'mono-stack',
     note:
       mode === '4'
         ? 'Each key plays one oscillator, so the four detunes sit at zero and the chord is in tune'
         : 'All four oscillators play from one key, which is what makes the detunes a unison',
-  })
+  }))
 }
 
 /**
@@ -646,7 +722,7 @@ function osc(
     pick(`OSCILLATOR ${n} OCTAVE`, opts.octave, OSC_OCTAVE, cite(13)),
     pick(`OSCILLATOR ${n} WAVEFORM`, opts.wave, OSC_WAVE, cite(15)),
   ]
-  if (n === 1) return out
+  if (n === 1) return inModule('OSCILLATORS', out)
   const sync = opts.sync === true
   const live = sync && opts.mainSync === true
   out.push(
@@ -670,14 +746,17 @@ function osc(
             : { mood: [{ axis: 'grit', amount: opts.detuneGrit }] }),
         }),
   )
-  return out
+  return inModule('OSCILLATORS', out)
 }
 
 /** The main sync button, emitted once where any oscillator uses sync. */
 function syncEnable(on: boolean): AuthoredParam {
-  return pick('SYNC ENABLE', on ? 'ON' : 'OFF', SYNC, cite(14), {
-    note: on ? 'Must be lit for any individual oscillator SYNC button to do anything (p.15)' : undefined,
-  })
+  return boxed(
+    'OSCILLATORS',
+    pick('SYNC ENABLE', on ? 'ON' : 'OFF', SYNC, cite(14), {
+      note: on ? 'Must be lit for any individual oscillator SYNC button to do anything (p.15)' : undefined,
+    }),
+  )
 }
 
 /** The five mixer levels. Only the channels a recipe actually uses are emitted. */
@@ -687,7 +766,7 @@ function mixer(levels: { o1: number; o2?: number; o3?: number; o4?: number; nois
   if (levels.o3 !== undefined) out.push(travel('OSCILLATOR 3', levels.o3))
   if (levels.o4 !== undefined) out.push(travel('OSCILLATOR 4', levels.o4))
   if (levels.noise !== undefined) out.push(travel('NOISE', levels.noise))
-  return out
+  return inModule('MIXER', out)
 }
 
 /** Both ladder filters. `CUTOFF` is the one control on this panel mood may move. */
@@ -701,7 +780,7 @@ function filters(opts: {
   kbTrack: number
   mode: (typeof FILTER_MODE)[number]
 }): AuthoredParam[] {
-  return [
+  return inModule('FILTERS', [
     num('CUTOFF', opts.cutoff, CUTOFF_HZ, cite(21), {
       unit: 'Hz',
       mood: [{ axis: 'darkness', amount: opts.darkness }],
@@ -713,7 +792,7 @@ function filters(opts: {
     travel('SPACING', opts.spacing, { hint: 'bipolar-centre' }),
     travel('ENVELOPE AMT', opts.envAmt, { hint: 'bipolar-centre' }),
     travel('KB TRACKING', opts.kbTrack, { hint: 'kb-track-full' }),
-  ]
+  ])
 }
 
 /**
@@ -728,22 +807,22 @@ function env(
   s: number,
   r: number,
 ): AuthoredParam[] {
-  return [
+  return inModule('ENVELOPE GENERATORS', [
     travel(`${which} ATTACK`, a),
     travel(`${which} DECAY`, d),
     travel(`${which} SUSTAIN`, s),
     travel(`${which} RELEASE`, r),
-  ]
+  ])
 }
 
 /** The output stage. */
 function output(volume: number, vca: (typeof VCA_MODE)[number]): AuthoredParam[] {
-  return [
+  return inModule('OUTPUT', [
     pick('VCA MODE', vca, VCA_MODE, cite(29), {
       ...(vca === 'DRONE' ? { note: 'Holds the amplifiers open, so the part sounds without a key held' } : {}),
     }),
     travel('MAIN VOLUME', volume),
-  ]
+  ])
 }
 
 /** The stereo analog delay, emitted only where a recipe actually uses it. */
@@ -754,7 +833,7 @@ function delay(opts: {
   mix: number
   pingPong?: boolean
 }): AuthoredParam[] {
-  return [
+  return inModule('STEREO DELAY', [
     travel('DELAY TIME', opts.time),
     travel('DELAY SPACING', opts.spacing, {
       hint: 'bipolar-centre',
@@ -765,7 +844,7 @@ function delay(opts: {
     ...(opts.pingPong === undefined
       ? []
       : [pick('PING PONG', opts.pingPong ? 'ON' : 'OFF', SYNC, cite(33))]),
-  ]
+  ])
 }
 
 /**
@@ -784,30 +863,40 @@ function mod(opts: {
   wheel: number
 }): AuthoredParam[] {
   return [
-    num('MODULATION RATE', opts.rate, MOD_HZ, cite(36), { unit: 'Hz' }),
-    pick('MODULATION WAVEFORM', opts.wave, MOD_WAVE, cite(36)),
-    ...(opts.assign === undefined
-      ? []
-      : [pick('PITCH MOD ASSIGN', opts.assign, PITCH_MOD_ASSIGN, cite(36))]),
-    ...(opts.pitchAmt === undefined ? [] : [travel('PITCH AMT', opts.pitchAmt)]),
-    ...(opts.cutoffAmt === undefined ? [] : [travel('CUTOFF AMT', opts.cutoffAmt)]),
-    ...(opts.pulseWidthAmt === undefined
-      ? []
-      : [
-          travel('PULSE WIDTH AMT', opts.pulseWidthAmt, {
-            note: 'Only reaches an oscillator whose WAVEFORM is SQUARE or NARROW PULSE (p.37)',
-          }),
-        ]),
-    travel('MOD', opts.wheel, { hint: 'mod-gate' }),
+    ...inModule('MODULATION', [
+      num('MODULATION RATE', opts.rate, MOD_HZ, cite(36), { unit: 'Hz' }),
+      pick('MODULATION WAVEFORM', opts.wave, MOD_WAVE, cite(36)),
+      ...(opts.assign === undefined
+        ? []
+        : [pick('PITCH MOD ASSIGN', opts.assign, PITCH_MOD_ASSIGN, cite(36))]),
+      ...(opts.pitchAmt === undefined ? [] : [travel('PITCH AMT', opts.pitchAmt)]),
+      ...(opts.cutoffAmt === undefined ? [] : [travel('CUTOFF AMT', opts.cutoffAmt)]),
+      ...(opts.pulseWidthAmt === undefined
+        ? []
+        : [
+            travel('PULSE WIDTH AMT', opts.pulseWidthAmt, {
+              note: 'Only reaches an oscillator whose WAVEFORM is SQUARE or NARROW PULSE (p.37)',
+            }),
+          ]),
+    ]),
+    // **Not** the MODULATION box. This is the wheel under your left hand, drawn in
+    // LEFT-HAND CONTROLLER beside PITCH and GLIDE, ninety-five millimetres below the modulation
+    // enclosure. See `inModule`.
+    boxed('LEFT-HAND CONTROLLER', travel('MOD', opts.wheel, { hint: 'mod-gate' })),
   ]
 }
 
 /** The second LFO, in UTILITIES (2). Patchable only — nothing routes it internally. */
 function lfo(rate: number): AuthoredParam {
-  return num('LFO RATE', rate, LFO_HZ, cite(43), {
-    unit: 'Hz',
-    note: 'A CV at LFO RATE IN takes it past the knob’s 520 Hz to about 620 (p.43)',
-  })
+  // The **right-hand** UTILITIES box. The panel prints that word twice; `inModule` records the
+  // coordinate that picks between them, because the label cannot.
+  return boxed(
+    'UTILITIES',
+    num('LFO RATE', rate, LFO_HZ, cite(43), {
+      unit: 'Hz',
+      note: 'A CV at LFO RATE IN takes it past the knob’s 520 Hz to about 620 (p.43)',
+    }),
+  )
 }
 
 /** The arpeggiator's switches, for the recipes that are about the arpeggiator. */
@@ -815,27 +904,27 @@ function arp(
   direction: (typeof DIRECTION)[number],
   octBank: (typeof OCT_BANK)[number],
 ): AuthoredParam[] {
-  return [
+  return inModule('ARP/SEQ', [
     pick('MODE', 'ARP', ARP_MODE, cite(45)),
     pick('DIRECTION', direction, DIRECTION, cite(46)),
     pick('OCT / BANK', octBank, OCT_BANK, cite(46), {
       note: 'In ARP this is the octave span; in SEQ it selects the sequence bank (p.46)',
     }),
-  ]
+  ])
 }
 
 /** The sequencer's file selector, for the recipes that are about the sequencer. */
 function seq(bank: (typeof OCT_BANK)[number], file: (typeof SEQUENCE)[number]): AuthoredParam[] {
-  return [
+  return inModule('ARP/SEQ', [
     pick('MODE', 'SEQ', ARP_MODE, cite(45)),
     pick('OCT / BANK', bank, OCT_BANK, cite(46)),
     pick('SEQUENCE', file, SEQUENCE, cite(46), { note: 'Bank times sequence is p.90’s twelve files' }),
-  ]
+  ])
 }
 
 /** GLIDE, one knob for the whole instrument. p.12 prints no time range for it. */
 function glide(value: number): AuthoredParam {
-  return travel('GLIDE', value)
+  return boxed('LEFT-HAND CONTROLLER', travel('GLIDE', value))
 }
 
 // ---------------------------------------------------------------------------
