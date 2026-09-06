@@ -440,7 +440,20 @@ export const weave: Template = {
     // the data: the toms are at the top of the second tier, with the widest band range and the
     // only accent below the hats. Emphatically not inessential. A kit direction with no toms is
     // a different direction.
-    { id: 'r-tom', role: 'tom', priority: 2, character: 'dark', sustain: 'continuous' },
+    //
+    // §4.1/#339: and being the lead voice is why it follows the key. A tom is the most pitched
+    // thing in a kit, and here it is carrying the accents under a sub that holds the root — a
+    // fill a semitone out of the key is the one thing in this piece a listener would hear as
+    // wrong. **The kick does not follow**, four lines up, and the two together are the position:
+    // the low end is the anchor, the toms are the melody over it.
+    {
+      id: 'r-tom',
+      role: 'tom',
+      priority: 2,
+      character: 'dark',
+      sustain: 'continuous',
+      followsKey: true,
+    },
     // `clean` rather than `dirty`, and the reason is §3.4 rather than taste: the two are
     // *opposites* on the grit axis, so §3.5 refuses the substitution outright at distance 4 —
     // a direction asking for a dirty hat gets an honest gap from every box that authors only a

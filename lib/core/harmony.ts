@@ -146,6 +146,37 @@ function absoluteSemitone(letterIndex: number, accidental: number, octave: numbe
 }
 
 /**
+ * §4.1/#339. **How far the tonic sits from C, in semitones, by the shorter way round.**
+ *
+ * The arithmetic behind a drum that follows the key. A drum recipe's authored pitch is written
+ * against no key at all — nobody tunes a kick to C on purpose, C is just where a number with no
+ * key behind it lands — so the displacement from C is what turns that authored number into the
+ * same drum in the song's key. Adding it preserves whatever the author did on top: a tom at `-5`
+ * is five semitones below its own fundamental in every key, which is the character of that recipe
+ * and not an accident of the direction picking A.
+ *
+ * **The mode is deliberately not read.** A tonic is a pitch class; `F lydian` and `F minor` put a
+ * drum in the same place, and a drum has no third to decide between them. `parseKey` is still
+ * what reads the string, because a key this build cannot read must produce no displacement rather
+ * than a guessed one (invariant 5) — `undefined`, exactly as `resolveHook` reports it.
+ *
+ * **Shortest, and signed: -6 to +5.** A drum can move either way and the shorter move is the one
+ * that changes it least — `G` is five semitones down rather than seven up, which on a sampler is
+ * the difference between a kick that keeps its weight and one that loses half its length. The
+ * tritone is the one distance with no shorter side, and it resolves **downward** for the same
+ * reason: down lengthens a sample, up shortens it, so a coin-flip that has to land somewhere
+ * lands on the side that keeps the drum. No direction that follows the key offers an F#, so this
+ * is a rule with no caller today — it is here because a reader may type one (§7's key override).
+ */
+export function tonicDisplacement(key: string): number | undefined {
+  const parsed = parseKey(key)
+  if (parsed === undefined) return undefined
+  const letterIndex = LETTERS.indexOf(parsed.letter as (typeof LETTERS)[number])
+  const pitchClass = mod((NATURAL_PITCH_CLASS[letterIndex] as number) + parsed.accidental, 12)
+  return mod(pitchClass + 6, 12) - 6
+}
+
+/**
  * The one place the spelling is decided. The letter comes from counting scale steps up the
  * letter cycle from the tonic's letter, so F minor's third is some kind of A and never a G# —
  * then the accidental is whatever makes that letter land on the pitch we already computed.

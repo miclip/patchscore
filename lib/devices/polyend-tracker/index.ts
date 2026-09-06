@@ -442,7 +442,10 @@ const RECIPES: Recipe[] = [
     params: [
       ...oneShot('At the transient, no lead-in', 'Just past the body, before any tail'),
       ...filter('Low-pass', 88, 6, -14),
-      num('TUNE', -2, SEMITONES_24, 110, { unit: 'st' }),
+      // §4.1/#339. The drum's fundamental — the Mini's reading on the full-size box, same
+      // control and same trade: a sample transposed is a sample re-timed, and ±24 semitones is
+      // far more room than the ±6 a key can ask for.
+      num('TUNE', -2, SEMITONES_24, 110, { unit: 'st', fundamentalPitch: true }),
       ...drive(24, 16),
       ...ampEnv(0, 0.26, 0, 0.09, { decay: -0.06 }),
       swing(),
@@ -650,7 +653,7 @@ const RECIPES: Recipe[] = [
     params: [
       ...oneShot('At the head', 'Where the pitch settles out'),
       ...filter('Low-pass', 46, 16, -18),
-      num('TUNE', -5, SEMITONES_24, 110, { unit: 'st' }),
+      num('TUNE', -5, SEMITONES_24, 110, { unit: 'st', fundamentalPitch: true }),
       ...ampEnv(0, 0.55, 0, 0.2, { decay: -0.18 }),
       swing(),
     ],

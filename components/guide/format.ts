@@ -70,8 +70,12 @@ export function rangeText(range: ResolvedRange, unit: string | undefined): strin
 
 /**
  * §3.2's rendered value, split rather than concatenated so the two halves can be styled
- * differently: `from` is where mood started, `now` is what to dial. `from` is present exactly
- * when mood moved the value — which for a provisional point is still true and still shown.
+ * differently: `from` is where the value started, `now` is what to dial. `from` is present
+ * exactly when something moved it — which for a provisional point is still true and still shown.
+ *
+ * Two things can move it and this does not say which: a mood knob, or the song's key on a drum
+ * whose direction tunes it (§4.1/#339). Both are the same instruction to a reader standing at the
+ * box, and `Provenance` is where the difference lives for anything that needs it.
  */
 export type ValueParts = { from?: string; now: string }
 

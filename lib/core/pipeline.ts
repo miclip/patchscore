@@ -33,6 +33,7 @@ import {
   selectPatterns,
   triggerNoteFor,
   type BoundArticulation,
+  type KeyFollow,
   type PatternSelection,
   type ResolvedPatchEntry,
   type ResolvedSourceAudio,
@@ -45,7 +46,14 @@ import {
   type SearchReport,
   type Shortfall,
 } from './search'
-import { chooseHook, chooseKey, parseKey, resolvePitch, type HookChoice } from './harmony'
+import {
+  chooseHook,
+  chooseKey,
+  parseKey,
+  resolvePitch,
+  tonicDisplacement,
+  type HookChoice,
+} from './harmony'
 import type { InspirationDiagnostic } from './inspiration'
 
 /**
@@ -1415,11 +1423,30 @@ export function stackedPart(assignment: {
  * guide missing a sentence its own inputs now produce, which is drift a reader can see, so it is
  * a bump rather than a widening.
  *
+ * **13** — §4.1/#339. **A drum may be tuned to the song's key**, where the direction asks for it
+ * and the box has a semitone fundamental to move. A request carries `followsKey`, a recipe's
+ * pitch parameter carries `fundamentalPitch`, and where the two meet the value moves by the
+ * tonic's displacement from C. Every tom request follows; kicks follow in Lydian House, Hip-Hop
+ * and Major-Key Electro and stay put everywhere else, which is #339's table and a musical
+ * position the library had been taking silently by never taking it.
+ *
+ * **The most visible drift of any entry here, and it is drift by design.** A Tracker Mini tom in
+ * `weave`'s G reads `TUNE -5 → -10 st` where it read `-5`; the same guide in E reads `-1`. That
+ * is the same permalink producing a different number, which is exactly what the stamp is for —
+ * and unlike every entry above it, the number moves with the *key* rather than once and for all,
+ * so a reader replaying an old link is being told to tune a drum against a bass line it was
+ * never tuned against.
+ *
+ * Entry 2's reading, not entry 6's, despite how much moves. `Score` is untouched, no candidate is
+ * added and none excluded, and no assignment moves — the same drums land on the same boxes.
+ * `measure:search` is identical before and after on the worst legal rig, because nothing here
+ * reaches the search at all: the flag is read in step 9, after every allocation is settled.
+ *
  * It lives beside `ResolveInput` because that is the contract it versions. `permalink.ts`
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
  */
-export const RESOLVER_VERSION = 12
+export const RESOLVER_VERSION = 13
 
 /**
  * #161. The two decisions the user may take back off the direction: tempo and key. Both
@@ -1789,6 +1816,23 @@ export function resolve(input: ResolveInput): ResolveResult {
    * both have to be told `4`, and a count taken part by part could not say so. One pass, so a
    * rig of ten boxes costs one walk of the assignment list rather than ten.
    */
+  /**
+   * §4.1/§7 step 9/#339. **The song's key, where a request asked to be tuned to it.**
+   *
+   * `undefined` in three cases and all three are the same answer — the part does not move: the
+   * direction did not ask (`followsKey` absent, which is nearly every request in the library), the
+   * song has no key, or the key is one `parseKey` cannot read. The last is #161's rule again —
+   * an unreadable key is reported and the direction's own answer stands, never guessed at.
+   *
+   * Computed once per assignment rather than once per rig because the *request* decides, and a
+   * direction may ask for two drums and tune only one of them.
+   */
+  const keyFollowFor = (request: RoleRequest): KeyFollow | undefined => {
+    if (request.followsKey !== true || key === undefined) return undefined
+    const semitones = tonicDisplacement(key)
+    return semitones === undefined ? undefined : { semitones, key }
+  }
+
   const partsPerDevice = new Map<DeviceId, number>()
   for (const a of allocation.assignments) {
     partsPerDevice.set(a.deviceId, (partsPerDevice.get(a.deviceId) ?? 0) + 1)
@@ -1842,10 +1886,18 @@ export function resolve(input: ResolveInput): ResolveResult {
       // comes from `stackedPart` so that a `stack-width` setting and the prose above it are the
       // same number by construction; the part share comes from the whole allocation, so every
       // part on one box reads one count and a `song`-scoped field hoists above them.
-      params: resolveParams(a.recipe, mood, {
-        stackWidth: stackedPart(a)?.width ?? 1,
-        ...(share === undefined ? {} : { devicePartShare: share }),
-      }),
+      params: resolveParams(
+        a.recipe,
+        mood,
+        {
+          stackWidth: stackedPart(a)?.width ?? 1,
+          ...(share === undefined ? {} : { devicePartShare: share }),
+        },
+        // §4.1/#339. The direction's decision, carried to the parameters that say they are the
+        // voice's fundamental pitch. Absent for every request that does not follow the key, so
+        // a recipe resolved for one of those cannot move however it is marked.
+        keyFollowFor(request),
+      ),
       patch: resolvePatch(a.recipe),
       sections: a.sections,
       pitch: resolveRequestPitch(request, key),

@@ -111,13 +111,14 @@ describe('the v1 wire format', () => {
    */
   it('pins the two stamps at the numbers they currently stand at', () => {
     // They move for unrelated reasons and this is the file that says so. The format last moved at
-    // §7.5/#340, for `placement`; the engine last moved at §2.1/#86, when the Tracker Mini's
-    // seven transposed recipes started saying on their own `TUNE` what to write on the step and
-    // what the tuning does to it. That added no field to this encoding either — the note is
-    // authored in the device folder, so a rig is still a list of device ids and nothing here had
-    // to learn a new key.
+    // §7.5/#340, for `placement`; the engine last moved at §4.1/#339, when a drum whose
+    // direction tunes it started following the song's key — one bump after §2.1/#86 gave the
+    // Tracker Mini's seven transposed recipes a `TUNE` note saying what to write on the step.
+    // Neither added a field to this encoding: the note is authored in the device folder, and
+    // key-following is a direction's decision met by a recipe's control, so a link is still a
+    // rig, a direction, a mood and a seed and nothing here had to learn a new key.
     expect(FORMAT_VERSION).toBe(4)
-    expect(RESOLVER_VERSION).toBe(12)
+    expect(RESOLVER_VERSION).toBe(13)
   })
 
   it('writes a list as one parameter per element, so nothing needs a separator', () => {

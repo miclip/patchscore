@@ -179,16 +179,23 @@ function rangeText(range: ResolvedRange, unit: string | undefined): string {
 }
 
 /**
- * §3.2's rendered column: `52`, or `52 → 45` — the arrow appears exactly when mood moved the
- * value, which for a `provisional` point is still true and still shown. It is not a mark and does
- * not survive as one: it says what the number *was*, which is a fact about the dial rather than
+ * §3.2's rendered column: `52`, or `52 → 45` — the arrow appears exactly when the value moved,
+ * which for a `provisional` point is still true and still shown. It is not a mark and does not
+ * survive as one: it says what the number *was*, which is a fact about the dial rather than
  * about who checked it.
+ *
+ * **Two things can have moved it, and the arrow does not say which** (§4.1/#339). Mood is one;
+ * the song's key is the other, on a drum whose direction tunes it. Nothing here distinguishes
+ * them, deliberately: at the machine the reader is being told where the knob started and where to
+ * put it, and both answers are the same instruction. `Provenance` carries `axes` and
+ * `keySemitones` for anything that needs to tell them apart, and the legend says the page's half
+ * of it in one line rather than per value.
  */
 function valueText(param: ResolvedParam): string {
   const now = typeof param.value === 'number' ? num(param.value) : param.value
   const { provenance } = param
   // `authored` never moved, by construction. The other two states carry `from` exactly when
-  // mood changed the result — including `provisional`, which §3.2 still renders `52 → 45`.
+  // mood or the key changed the result — including `provisional`, which §3.2 renders `52 → 45`.
   if (provenance.state === 'authored') return now
   return provenance.from === undefined ? now : `${num(provenance.from)} → ${now}`
 }
@@ -2966,9 +2973,9 @@ function occupiedCounts(result: ResolveResult): Map<DeviceId, number> {
  * because §8.1's toggle must not move anything else on the page.
  */
 const LEGEND = [
-  'Values are starting points — dial them to taste. Where a mood knob moved one you see the move',
-  '(`52 → 45`). Every value carries its range — `38 (0…100)` — so you can tell at a glance whether',
-  'the screen in front of you is the one the line is about.',
+  'Values are starting points — dial them to taste. Where a mood knob or the key moved one you see',
+  'the move (`52 → 45`). Every value carries its range — `38 (0…100)` — so you can tell at a glance',
+  'whether the screen in front of you is the one the line is about.',
 ]
 
 /**

@@ -66,6 +66,46 @@ export function bearsPattern(role: Role): boolean {
   return !NON_PATTERN_BEARING_ROLES.includes(role)
 }
 
+/**
+ * §4.1/#339. **The two drums a direction may ask to follow the song's key.**
+ *
+ * A closed claim about the existing `ROLES` list, in `NON_PATTERN_BEARING_ROLES`'s shape and here
+ * for its reasons: nothing new crosses the template/device boundary, no name is added that a
+ * template or a device could not already utter, and invariant 3 is untouched.
+ *
+ * **Two, and the shortness is the point again.** A fundamental worth tuning is what qualifies a
+ * role, and the rest of the kit does not have one a listener can place:
+ *
+ *  - `snare`, `clap` — broadband by construction. Moving one thins it or does nothing.
+ *  - `closed-hat`, `open-hat`, `ride` — metal, inharmonic, no fundamental to move.
+ *  - `rim` — a click. What pitch it has is body resonance under a transient, and tuning that to
+ *    the key moves the wood rather than a note anybody hears as one.
+ *  - `ghost-perc` — the texture between the hits, mixed under everything. Its job is that it is
+ *    not heard as a pitch, and giving it one is working against the part.
+ *  - `noise`, `metallic` — the two `body` roles beside `tom`, and both are named for having no
+ *    stable pitch. A `metallic` recipe is authored *inharmonic on purpose*.
+ *
+ * Everything else in `ROLES` is either tonal — `sub`, `bass-mid`, `pad`, `lead`, `stab`, `arp`,
+ * `acid`, `vox-chop`, `texture` — where the notes come from a hook or a `pitch` and a
+ * displacement on top would transpose them twice, or transitional, where §4.2 gives a part a few
+ * bars and no harmonic role at all.
+ *
+ * **Enforced in `RoleRequestSchema`, not left to review.** The boundary is #339's settled answer
+ * and this is a list that only drifts by accident: a direction reaching for `followsKey` on a
+ * `snare` because a kick nearby has one is exactly the mistake nobody would defend in writing.
+ */
+export const KEY_FOLLOWING_ROLES: readonly Role[] = ['kick', 'tom']
+
+/**
+ * Whether a direction may ask this role to be tuned to the key. See `KEY_FOLLOWING_ROLES`.
+ *
+ * A predicate for the reason `bearsPattern` is one: callers ask about a single role, and the
+ * question reads better than the membership test it is written on.
+ */
+export function mayFollowKey(role: Role): boolean {
+  return KEY_FOLLOWING_ROLES.includes(role)
+}
+
 /** §3.4. Six characters, three opposed pairs. */
 export const CHARACTERS = ['hard', 'soft', 'bright', 'dark', 'clean', 'dirty'] as const
 

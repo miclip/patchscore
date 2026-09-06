@@ -227,6 +227,43 @@ export type AuthoredNumericParam = {
   step?: number
   unit?: string
   /**
+   * §3.1/§4.1/#339. **This control is where the voice's fundamental pitch is set, in semitones.**
+   *
+   * The device half of a drum that follows the song's key, and the *whole* of the device half:
+   * a request that follows the key (`RoleRequest.followsKey`) moves every parameter carrying this
+   * marker by the tonic's displacement from C, and a recipe with none of them does not move.
+   *
+   * **Absence is how a box declines, and there is no capability field to check.** Exactly the
+   * shape mood already has (§6.1): a device opts out of an axis by authoring no parameter that
+   * declares it, and a device opts out of key-following by authoring no fundamental pitch. A
+   * `canFollowKey` flag would be a second answer to a question the parameters already answer, and
+   * the two would drift.
+   *
+   * **What it may be put on, and this is the narrow part.** The control has to *be* the pitch of
+   * a fixed sound — a sample's transposition, a preset drum voice's key offset — in semitones, so
+   * that adding a semitone means what it says. Two things it is not:
+   *
+   *  - **Not an interval between two oscillators.** A Matriarch's `OSCILLATOR 2 FREQUENCY` is
+   *    osc 2 *against* osc 1; moving it detunes the voice rather than transposing it.
+   *  - **Not an oscillator a played note already tunes.** Where the pitch comes from the note on
+   *    the step — which is #334/#440's trigger note, a different mechanism entirely — a semitone
+   *    offset here would transpose a second time on top of it.
+   *
+   * A voice whose fundamental genuinely takes two controls marks both: they move by the same
+   * displacement, so the interval between them survives.
+   *
+   * **A semitone unit is required** (`AuthoredNumericParamSchema`), because the marker is a claim
+   * about arithmetic. `TUNE -45%` is a percentage of a range no manual states — the whole
+   * complaint of #338 — and adding 5 to it produces a number in no unit at all. The check is
+   * against `st` in either case, which is how the library spells it; that is a closed list about
+   * *spelling*, not a fifth shared vocabulary (invariant 3), since nothing in a template names a
+   * unit and nothing joins on one.
+   *
+   * `true` only, for the reason `reArticulatesHook` is: `false` would be a second spelling of the
+   * default.
+   */
+  fundamentalPitch?: true
+  /**
    * §3.1/#324, settled at #414. **The MIDI CC this control answers to** — the controller number
    * that addresses it, where a reader driving the box from a sequencer needs one.
    *
@@ -323,6 +360,20 @@ const paramCommon = {
   scope: ParamScopeSchema.optional(),
 }
 
+/**
+ * §3.1/#339. **Is this unit semitones?** — the gate on `fundamentalPitch`.
+ *
+ * One spelling, two cases: the library writes `st` on sixty-seven parameters and `St` on the
+ * TR-1000's `COARSE`, because each device folder spells the unit the way its own manual does and
+ * that discipline is worth more than a house style. `toLowerCase` rather than
+ * `toLocaleLowerCase`, which is §7.2's rule and matters here for a real reason and not a
+ * theoretical one — under a Turkish locale `'ST'` lowercases to a dotless `ı`, and the check
+ * would answer differently on one developer's machine.
+ */
+function isSemitoneUnit(unit: string | undefined): boolean {
+  return unit !== undefined && unit.toLowerCase() === 'st'
+}
+
 /** `0-127`, the whole of the MIDI CC space. A number outside it addresses nothing (§3.1/#324). */
 export const MidiCcSchema = z
   .int()
@@ -341,6 +392,7 @@ export const AuthoredNumericParamSchema = z
     range: NumericRangeSchema,
     step: z.number().finite().positive().optional(),
     unit: z.string().min(1).optional(),
+    fundamentalPitch: z.literal(true).optional(),
     midiCc: MidiCcSchema.optional(),
     mood: z.array(MoodOffsetSchema).min(1).optional(),
     ...paramCommon,
@@ -348,6 +400,20 @@ export const AuthoredNumericParamSchema = z
   .refine((p) => p.value >= p.range.min && p.value <= p.range.max, {
     message: 'value must sit inside its own declared range',
     path: ['value'],
+  })
+  // §4.1/#339. A fundamental pitch is a claim that adding one to this number moves the voice by
+  // one semitone, and only a semitone unit says so. `TUNE 30%` is a percentage of a range no
+  // manual prints (#338) and `PITCH 56` on a 0-127 macro is a controller position; adding a
+  // displacement to either produces a number in no unit at all, on a line that looks checked.
+  .refine((p) => p.fundamentalPitch !== true || isSemitoneUnit(p.unit), {
+    message: 'a fundamental pitch must be authored in semitones: give it the unit the manual does',
+    path: ['unit'],
+  })
+  // The same rule `mood` is held to, for the same reason. A sourced value is the allocation's,
+  // and a key displacement added on top would be a second authority over one number.
+  .refine((p) => !(p.valueFrom !== undefined && p.fundamentalPitch === true), {
+    message: 'a parameter taking its value from the allocation is not a fundamental pitch',
+    path: ['fundamentalPitch'],
   })
   // #433. A sourced value and a mood offset are two authorities over one number, and the
   // allocation's is the one that makes the part sound. Refused at the schema rather than
@@ -412,22 +478,56 @@ export type Provenance =
       /** 52 → 45, and which knobs did it. */
       from: number
       axes: MoodAxis[]
+      /** §4.1/#339. Semitones the song's key asked for, where it asked for any. */
+      keySemitones?: number
     }
-  | { state: 'provisional'; from?: number; axes?: MoodAxis[] }
+  | { state: 'provisional'; from?: number; axes?: MoodAxis[]; keySemitones?: number }
+
+/**
+ * §4.1/#339. **What the key asked for, which is not always what the line reads.**
+ *
+ * Present on a derived or provisional value exactly when a `followsKey` request met a
+ * `fundamentalPitch` parameter and the displacement was non-zero — so a song in C, whose
+ * displacement is zero, leaves the value `authored` and says nothing, because nothing happened.
+ *
+ * It records the **displacement, not the distance travelled**. Where the control runs out of
+ * range the value clamps and the two differ; `from` and the rendered value are always the truth
+ * about the dial, and this is the truth about the request. Both are worth carrying: a reader sees
+ * the first, and the second is what a test can hold a device's authoring to.
+ *
+ * Never zero, and never on an `authored` value: both would be a record of a move that did not
+ * happen, which is the same discipline `axes` is held to — an axis that contributed nothing is
+ * not listed.
+ */
+const KeySemitonesSchema = z
+  .number()
+  .int()
+  .refine((n) => n !== 0, { message: 'a key displacement of zero moved nothing: omit it' })
 
 export const ProvenanceSchema = z.discriminatedUnion('state', [
   z.strictObject({ state: z.literal('authored'), cite: CiteSchema }),
-  z.strictObject({
-    state: z.literal('derived'),
-    cite: CiteSchema,
-    rangeCite: CiteSchema,
-    from: z.number().finite(),
-    axes: z.array(MoodAxisSchema).min(1),
-  }),
+  z
+    .strictObject({
+      state: z.literal('derived'),
+      cite: CiteSchema,
+      rangeCite: CiteSchema,
+      from: z.number().finite(),
+      axes: z.array(MoodAxisSchema),
+      keySemitones: KeySemitonesSchema.optional(),
+    })
+    // `axes` was `.min(1)` while mood was the only thing that could move a value, and that was
+    // the same claim this refinement makes: a derived value names what derived it. The key is now
+    // a second answer, so the requirement is one of the two rather than that one — an empty
+    // `axes` with no `keySemitones` beside it is a value that says it moved and cannot say why.
+    .refine((p) => p.axes.length > 0 || p.keySemitones !== undefined, {
+      message: 'a derived value must name what moved it: a mood axis, a key displacement, or both',
+      path: ['axes'],
+    }),
   z.strictObject({
     state: z.literal('provisional'),
     from: z.number().finite().optional(),
     axes: z.array(MoodAxisSchema).optional(),
+    keySemitones: KeySemitonesSchema.optional(),
   }),
 ])
 

@@ -371,6 +371,7 @@ function num(
     unit?: string
     mood?: { axis: 'darkness' | 'density' | 'grit' | 'swing' | 'space'; amount: number }[]
     note?: string
+    fundamentalPitch?: true
   } = {},
 ): AuthoredParam {
   return {
@@ -395,11 +396,27 @@ const fx2 = (e: (typeof FX2_EFFECTS)[number]) => pick('FX2', e, FX2_EFFECTS, cit
  * which is the axis a sampler answers most directly: pitching the whole sample down is what
  * darkens it, since there is no cutoff on this manual with a scale to move.
  */
-const ptch = (v: number, mood = true) =>
+const ptch = (v: number, mood = true, fundamental = false) =>
   num('PTCH', v, { min: -12, max: 12 }, cites(118, 137), {
     unit: 'st',
+    ...(fundamental ? { fundamentalPitch: true as const } : {}),
     ...(mood ? { mood: [{ axis: 'darkness' as const, amount: -5 }] } : {}),
   })
+
+/**
+ * §4.1/#339. **`PTCH` on a drum, where it is the drum's fundamental and not an effect.**
+ *
+ * The same control and the same citation; what the flag adds is that this recipe's sample *is*
+ * the drum, so transposing it transposes the voice — which is what lets a direction tune the part
+ * to the song's key. The distinction is per recipe rather than per control: `PTCH` on a `texture`
+ * or a `vox-chop` moves a sample that already carries its own pitch, and a key displacement there
+ * would move it away from the note it was sampled at.
+ *
+ * The cost is this box's to bear openly: a FLEX machine transposes by resampling, so a tom moved
+ * five semitones is a shorter tom. `tonicDisplacement` takes the shorter way round for exactly
+ * that reason, and the recipes below are authored with the room to take it.
+ */
+const drumPtch = (v: number, mood = true) => ptch(v, mood, true)
 
 /** Comb filter `TUNE` — *"changes the pitch by up to 2 semitones up or down"* (p.130). */
 const combTune = (v: number) => num('TUNE', v, { min: -2, max: 2 }, cite(130), { unit: 'st' })
@@ -548,7 +565,7 @@ const recipes: Recipe[] = [
     },
     params: [
       machine('FLEX'),
-      ptch(0),
+      drumPtch(0),
       slic('OFF'),
       lenUnsliced('OFF'),
       loopMode('OFF'),
@@ -573,7 +590,7 @@ const recipes: Recipe[] = [
     },
     params: [
       machine('FLEX'),
-      ptch(-2),
+      drumPtch(-2),
       slic('OFF'),
       lenUnsliced('OFF'),
       loopMode('OFF'),
@@ -1174,7 +1191,7 @@ const recipes: Recipe[] = [
     },
     params: [
       machine('FLEX'),
-      ptch(5),
+      drumPtch(5),
       slic('OFF'),
       lenUnsliced('TIME'),
       loopMode('OFF'),
@@ -1206,7 +1223,7 @@ const recipes: Recipe[] = [
     },
     params: [
       machine('FLEX'),
-      ptch(-7),
+      drumPtch(-7),
       slic('OFF'),
       lenUnsliced('TIME'),
       loopMode('OFF'),

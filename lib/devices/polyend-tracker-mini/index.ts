@@ -812,7 +812,23 @@ const SAMPLE_RECIPES: Recipe[] = [
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
-      num('TUNE', -3, SEMITONES_24, 116, { unit: 'st', note: TRANSPOSED_TUNE_NOTE }),
+      // §4.1/#339. **The drum's fundamental**, so a direction that tunes its kick to the song's
+      // key moves this control and nothing else on the box. The cost is the one this box cannot
+      // hide: `TUNE` transposes by resampling, so a kick moved down is a longer kick. Five
+      // semitones is the furthest any direction that follows can ask for, and ±24 leaves room
+      // for it in every key.
+      //
+      // **The note beside it stays true, and stays true because of what it says.** #441 wrote it
+      // for exactly this control on exactly these recipes: *write C5, this `TUNE` moves the
+      // sample that many semitones*. It describes the number rather than repeating it, so a key
+      // that changes the number does not falsify the sentence — which is also why nothing here
+      // computes a compensating note. #440's refusal is untouched: `transposed` carries no
+      // `triggerNote`, and following the key gives it no reason to.
+      num('TUNE', -3, SEMITONES_24, 116, {
+        unit: 'st',
+        fundamentalPitch: true,
+        note: TRANSPOSED_TUNE_NOTE,
+      }),
       num('CUTOFF', 74, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -16 }] }),
       num('OVERDRIVE', 18, PCT, 120, { unit: '%', mood: [{ axis: 'grit', amount: 22 }] }),
       secs('ENVELOPE · DECAY', 0.28, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.09 }] }),
@@ -838,6 +854,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
       num('TUNE', -7, SEMITONES_24, 116, {
         unit: 'st',
+        fundamentalPitch: true,
         mood: [{ axis: 'darkness', amount: -3 }],
         note: TRANSPOSED_TUNE_NOTE,
       }),
@@ -1000,7 +1017,11 @@ const SAMPLE_RECIPES: Recipe[] = [
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
-      num('TUNE', -5, SEMITONES_24, 116, { unit: 'st', note: TRANSPOSED_TUNE_NOTE }),
+      num('TUNE', -5, SEMITONES_24, 116, {
+        unit: 'st',
+        fundamentalPitch: true,
+        note: TRANSPOSED_TUNE_NOTE,
+      }),
       num('CUTOFF', 52, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -15 }] }),
       secs('ENVELOPE · DECAY', 0.44, SECONDS_10, 126),
       swing(),

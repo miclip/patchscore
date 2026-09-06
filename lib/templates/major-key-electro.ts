@@ -365,7 +365,26 @@ export const majorKeyElectro: Template = {
    * bass and the hats are what make it move; the melodic three are what make it major.
    */
   roles: [
-    { id: 'r-kick', role: 'kick', priority: 1, character: 'hard', sustain: 'continuous' },
+    /**
+     * §4.1/#339. **The kick follows the key, and in this direction that is not a close call.**
+     *
+     * #339 leaves the kick to the direction because techno and house disagree about it, and this
+     * is the pop end of the argument: an electro kick sits under a bass line playing the root on
+     * the downbeat, in a major key, with a lead over the top. A kick pitched against that reads
+     * as a mistake rather than as an anchor. The four keys this direction offers are C, D, F and
+     * A — nothing further than five semitones from C, so the move is small in every one of them.
+     *
+     * `snare` below does not, and never could: #339's table rules the broadband voices out
+     * because moving them thins them or does nothing at all.
+     */
+    {
+      id: 'r-kick',
+      role: 'kick',
+      priority: 1,
+      character: 'hard',
+      sustain: 'continuous',
+      followsKey: true,
+    },
     { id: 'r-snare', role: 'snare', priority: 1, character: 'clean', sustain: 'continuous' },
 
     { id: 'r-bass-mid', role: 'bass-mid', priority: 2, character: 'dirty', sustain: 'continuous' },
@@ -376,7 +395,17 @@ export const majorKeyElectro: Template = {
       character: 'bright',
       sustain: 'continuous',
     },
-    { id: 'r-tom', role: 'tom', priority: 2, character: 'bright', sustain: 'continuous' },
+    // §4.1/#339. Every tom request in the library follows the key, and a `bright` one has the
+    // most to lose by not: brightness here is a tom tuned up, where the fundamental is closest to
+    // the surface and an interval against the lead is easiest to hear.
+    {
+      id: 'r-tom',
+      role: 'tom',
+      priority: 2,
+      character: 'bright',
+      sustain: 'continuous',
+      followsKey: true,
+    },
 
     { id: 'r-lead', role: 'lead', priority: 3, character: 'bright', sustain: 'continuous' },
     { id: 'r-arp', role: 'arp', priority: 3, character: 'clean', sustain: 'continuous' },
