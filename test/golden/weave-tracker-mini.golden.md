@@ -575,7 +575,7 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 One setting for the whole pattern — set it once, not once per part below.
 
 - **SWING** `50` % (25…75 %)
-  - ↳ note: 50% is no swing; set once, it applies across the whole pattern
+  - ↳ note: 50% is no swing; put it on step 1 — one entry covers every track for the pattern
   - ↳ hint: Hold [FX1], press (Up)/(Down)
 
 #### Track 1 — `kick`: Tight one-shot kick, tuned down, no tail

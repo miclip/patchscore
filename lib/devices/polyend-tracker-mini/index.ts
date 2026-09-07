@@ -242,9 +242,19 @@ function num(
  * it travels on the range's own citation and in the `note` — which is how `EQ BASS AMOUNT`'s
  * "25 is neutral" is already carried on the Deluge.
  *
- * **Pattern-wide, though it is entered on a step.** The same page: *"Swing on a step track will
- * apply across the pattern."* So the `note` says so, because the value appears under every part
- * this box carries and a reader should not set it sixteen times.
+ * **There is no swing setting on this box, and the guide must not imply one.** `SWING` is FX
+ * type `I`, entered on a step, and the reader has to put it somewhere. The `note` used to read
+ * *"set once, it applies across the whole pattern"*, which is true about its reach and silent
+ * about the only part a reader standing at the machine needs — *where*. Reported from the
+ * machine: *"i dont think the tracker mini has a gobal swing setting"*. They were right; every
+ * mention of swing in 344 pages is this FX (pp.91, 96, 108, 110, 176, 177, 185, 186).
+ *
+ * What the pages do say, and what the note now carries: p.110's summary is *"Applies a swing
+ * from any step track for the entire pattern"* — **from**, and p.185's own example places two,
+ * `I 45` on step 1 and `I 35` on step 9, with the diagram drawing the value change mid-pattern.
+ * So an entry holds from its step to the end of the pattern rather than being a pattern
+ * property, and step 1 is what makes one entry cover the whole thing. p.185's diagram labels
+ * the effect **All Tracks**, so it is one entry for the box and not one per part.
  *
  * Not `micro-move` (p.186), which nudges a single step forward and is the per-step control. It
  * would take one edit per offbeat hit and an invented percentage-to-value scale to reproduce
@@ -259,7 +269,7 @@ function swing(): AuthoredNumericParam {
     unit: '%',
     mood: [{ axis: 'swing', amount: 25 }],
     hint: 'pick-fx',
-    note: '50% is no swing; set once, it applies across the whole pattern',
+    note: '50% is no swing; put it on step 1 — one entry covers every track for the pattern',
     scope: 'pattern',
   })
 }

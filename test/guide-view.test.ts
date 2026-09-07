@@ -738,7 +738,11 @@ describe('pattern-global settings are set once per device, not once per part (#1
     for (const doc of [text(html(landing)), renderGuide(landing)]) {
       expect(doc).toContain('Pattern-wide')
       expect(doc).toContain('One setting for the whole pattern')
-      expect(doc).toContain('50% is no swing; set once, it applies across the whole pattern')
+      // The note has to say *where*, not only how far it reaches. `SWING` is FX type `I`,
+      // entered on a step, and this box has no swing setting to find — the reason the note
+      // changed is on `swing()` in the manifest.
+      expect(doc).toContain('put it on step 1')
+      expect(doc).toContain('50% is no swing')
       expect(doc).toContain('Pattern-wide: one setting for every track, saved with the pattern')
       expect(doc).toContain('Hold [FX1], press (Up)/(Down)')
       // The Tracker Mini's SWING page. Evidence, and §8 renders none of that.

@@ -1383,7 +1383,7 @@ describe('Tracker Mini manifest', () => {
     }
   })
 
-  it('carries pattern swing on every recipe, because it is one setting for the pattern', () => {
+  it('carries pattern swing on every recipe, and says which step to put it on', () => {
     for (const recipe of device.recipes) {
       const swing = (recipe.params as AuthoredParam[]).find((p) => p.name === 'SWING')
       expect(swing, recipe.id).toBeDefined()
@@ -1393,7 +1393,11 @@ describe('Tracker Mini manifest', () => {
       // Amount == the distance to each bound, so the whole knob moves it and none of the travel
       // is spent against a clamp (§6.1).
       expect(swing.mood).toEqual([{ axis: 'swing', amount: 25 }])
-      expect(swing.note, recipe.id).toContain('whole pattern')
+      // Not 'whole pattern' on its own, which is what the note used to say and is the half
+      // that misled a reader at the machine: there is no swing setting on this box to set,
+      // and an entry holds from the step it is on. See `swing()` in the manifest.
+      expect(swing.note, recipe.id).toContain('put it on step 1')
+      expect(swing.note, recipe.id).toContain('every track')
     }
   })
 })

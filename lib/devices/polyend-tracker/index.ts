@@ -203,10 +203,17 @@ function unscaled(
  * `verified: false`: the page prints where the neutral *is*, not that this recipe should sit
  * there, and §3.2 splits those two claims exactly this way.
  *
- * **Pattern-wide, though it is entered on a step.** The same page: *"Applies a swing from any
- * step track for the entire pattern"*, and *"Also applied to MIDI Out"*. So the `note` says so,
- * because the value appears under every part this box carries and a reader should not set it
- * eight times.
+ * **There is no swing setting on this box, and the guide must not imply one.** `SWING` is FX
+ * type `I`, entered on a step, so the reader has to put it somewhere. Every mention of swing in
+ * 260 pages is this FX (pp.102, 104, 142, 143, 151, 152) — the same as the Mini, which is where
+ * this was reported from the machine.
+ *
+ * p.104's summary is *"Applies a swing from any step track for the entire pattern"* — **from**,
+ * and p.151's example places two entries at different values, with the diagram drawing the
+ * change mid-pattern. So an entry holds from its step to the end of the pattern rather than
+ * being a pattern property, and step 1 is what makes one entry cover the whole thing. The
+ * diagram labels the effect **All Tracks**, and the description adds *"Also applied to MIDI
+ * Out"*, so it is one entry for the box and not one per part.
  *
  * `amount` is 25, the distance from 50 to each printed bound, so the whole sweep of the axis
  * moves the value and no part of the travel is spent against a clamp.
@@ -216,7 +223,7 @@ function swing(): AuthoredNumericParam {
     unit: '%',
     mood: [{ axis: 'swing', amount: 25 }],
     hint: 'pick-fx',
-    note: '50% is no swing; set once, it applies across the whole pattern and to MIDI Out',
+    note: '50% is no swing; put it on step 1 — one entry covers every track, and MIDI Out',
     scope: 'pattern',
   })
 }
