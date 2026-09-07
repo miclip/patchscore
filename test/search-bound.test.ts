@@ -713,9 +713,19 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
       250, 159, 160, 159, 160, 159, 160, 159, 250, 158, 159, 159, 159, 158, 160, 158, 159, 159,
       158, 159, 159, 159, 159, 160
     ],
+    // #443. The only row the TR-1000's `ghost-perc clean` moved, and it moved **both ways** —
+    // another instance of the point recorded on `industrial-techno` below. `ambient-dub` is the
+    // one direction that asks for `ghost-perc clean`, and before this recipe existed no device
+    // authored that character, so all twelve of its parts were §3.5 substitutions onto a `soft`
+    // recipe. Seeds where the new candidate lets the search commit early fall (1: 643 -> 611,
+    // 18: 1,119 -> 1,047); seeds where it opens a branch the RS was not previously worth
+    // exploring rise, and rise further (17: 278 -> 925, 21: 279 -> 919). Every one of them is
+    // three or four digits against a 2,000,000 cap. The legal-rig figure `measure:search` gates
+    // on did not move — 47,284 before and after — and neither did the catalogue benchmark,
+    // 586,551.
     'ambient-dub': [
-      272, 643, 276, 469, 649, 274, 276, 463, 281, 278, 276, 495, 276, 281, 275, 272, 468, 278,
-      1119, 640, 280, 279, 272, 276
+      272, 611, 272, 466, 617, 274, 272, 460, 277, 274, 272, 492, 272, 277, 275, 272, 460, 925,
+      1047, 609, 590, 919, 272, 397
     ],
     'breakbeat': [
       717, 68839, 1479, 558, 68387, 238, 241, 561, 241, 561, 241, 560, 1559, 642, 349, 826, 2649,
