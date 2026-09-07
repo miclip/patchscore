@@ -1348,6 +1348,11 @@ const VOICE_ROLES = [
 
 export const device: Device = {
   id: 'behringer-neutron',
+  // §3.1/#466. `OSC 1 SHAPE`, `LFO RATE`, `DELAY TIME` — this manifest spaces its block
+  // names, as the panel prints them.
+  // Without a declaration the inert check forms no group here at all, and that silence
+  // reads as a clean result; see `Device.inertBlockSeparator`.
+  inertBlockSeparator: ' ',
   name: 'NEUTRON',
   maker: 'Behringer',
   kind: 'semi-modular',

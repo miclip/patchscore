@@ -1336,6 +1336,11 @@ const RECIPES: Recipe[] = [
 
 export const device: Device = {
   id: 'synthstrom-deluge',
+  // §3.1/#466. `OSC 1 TYPE`, `ENV 1 ATTACK`, `MOD FX RATE` — this manifest spaces its block
+  // names, as the display prints them.
+  // Without a declaration the inert check forms no group here at all, and that silence
+  // reads as a clean result; see `Device.inertBlockSeparator`.
+  inertBlockSeparator: ' ',
   name: 'Deluge',
   maker: 'Synthstrom Audible',
   kind: 'groovebox',

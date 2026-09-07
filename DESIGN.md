@@ -4377,6 +4377,41 @@ throws if a stamp changes under it.
     the evidence says exactly what was and was not looked at, so a reader who knows the panel
     wires the thing anyway can disagree on the spot. A flat "inert" would be asking to be believed
     instead, which an inference from a naming convention has not earned.
+  - **The separator is a device-level fact, and the audit names the devices it still could not
+    group** (#466). Before it, ` · ` was a constant: thirteen of forty-six manifests used it and
+    the other twenty-six formed no group at all, so more than half the library's parameters had
+    never been examined and `INERT` reported a candidate count over all of it with nothing to say
+    so. A silence that cannot be told from a clean result is the failure the check itself exists
+    to catch, one level up, so both halves were fixed.
+
+    `Device.inertBlockSeparator` is the first: a manifest that names blocks `LFO RATE` rather than
+    `LFO · RATE` declares `' '`, and one that declares nothing keeps the default — which is how
+    `module` shipped. Nine manifests declare it, and the reach went **13 examined / 26 unreadable
+    to 22 / 17**, with the seven parameterless manifests unchanged and the candidate list unchanged
+    at the Muse's two. That last part is the acceptance test: a widened grouping that found a new
+    candidate would have to argue for it rather than bank it.
+
+    It does not reach the harder case, and the report is what keeps that honest. Where a
+    modulation source is the *value* of a `SOURCE` parameter rather than any part of a name — the
+    Circuit Tracks' MOD MATRIX — no separator rule can group it. So `INERT` prints its own reach:
+    a `reach` line for how many devices were examined, and a `gaps` line naming **every** device
+    that was not, uncapped, because a reader asking whether their box was looked at is asking
+    about one name. A manifest with no authored parameters is counted on `reach` and never named
+    on `gaps` — it has nothing for a naming convention to hide.
+
+    **A coarser separator makes coarser groups, and that is a loss of precision in both
+    directions.** On ` `, the DFAM's `VCO 1 FREQUENCY` and `VCO 2 LEVEL` are one `VCO` group
+    rather than two, so the conjunction is evaluated across controls belonging to different
+    things. It can *manufacture* a candidate — a route from one sub-block pairing with a depth
+    from another, where `LFO 1 DEST OFF` and `LFO 2 DEPTH 0` raise `disconnected` on an `LFO`
+    block that is not a thing on the panel — and it can *silence* one, because a route authored
+    anywhere in the merged group takes the whole group out of the destinationless branch.
+
+    So the trade is not that the check stays correct at a coarser grain. It is that **nothing
+    here gates anything**: every entry is a candidate a person judges, and a declared separator is
+    an authored claim checked the way any other is. The nine were measured before they were
+    declared, and the test suite pins the library's candidate list exactly, so a separator that
+    begins manufacturing one fails a test rather than reaching a reader.
 
   **Rendered expanded and muted, not collapsed.** Every control stays visible and dialable —
   collapsing them would make the claim structural and unarguable, and it is neither. The web guide

@@ -1489,6 +1489,11 @@ const VOICE_ROLES: Role[] = [
 
 export const device: Device = {
   id: 'moog-matriarch',
+  // §3.1/#466. `OSCILLATOR 1 OCTAVE`, `LFO RATE`, `DELAY TIME` — this manifest spaces its block
+  // names, as the panel prints them.
+  // Without a declaration the inert check forms no group here at all, and that silence
+  // reads as a clean result; see `Device.inertBlockSeparator`.
+  inertBlockSeparator: ' ',
   name: 'Matriarch',
   maker: 'Moog',
   kind: 'semi-modular',

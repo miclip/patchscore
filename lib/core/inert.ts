@@ -29,16 +29,27 @@ import type { AuthoredParam } from './params'
 import { compareCodeUnits } from './resolver'
 
 /**
- * The separator a device *may* put between a block and the control on it. It is a convention, not
- * a rule, and most of the library does not follow it — a manifest is free to name a control
- * `CUTOFF` with no prefix at all, and many do. That is the whole reach of this check: it can only
- * group what a naming convention already groups, and a device that names things differently is
- * invisible to it rather than clean. #388's option 1, and the reason for option 3 beside it.
+ * The separator a manifest puts between a block and the control on it **unless it says otherwise**
+ * — see `Device.inertBlockSeparator`, which is #466's cheap half. It is a convention, not a
+ * rule, and a manifest is free to name a control `CUTOFF` with no prefix at all, and many
+ * do. That is the reach of this check: it can only group what a naming convention already groups,
+ * and a device whose names carry no separator it knows about is invisible to it rather than clean.
+ * #388's option 1, and the reason for option 3 beside it.
  */
 const BLOCK_SEP = ' · '
 
 /**
- * The block a parameter sits on, inferred from its name. `MOD OSC · PITCH ▸ OSC 1` → `MOD OSC`.
+ * The separator to read this device's names with. One line, and it is the only place the default
+ * is applied — grouping, the route and depth tails, the level lookup and `inertCoverage` all take
+ * it from here, so a device cannot be grouped on one separator and read on another.
+ */
+function separatorOf(device: Device): string {
+  return device.inertBlockSeparator ?? BLOCK_SEP
+}
+
+/**
+ * The block a parameter sits on, read off its name. `MOD OSC · PITCH ▸ OSC 1` → `MOD OSC`;
+ * on a device declaring ` `, `LFO RATE` → `LFO`.
  *
  * **This is `module` read off the name rather than off the field**, and that is deliberate. A
  * `module` is optional, most devices do not set it, and the two coordinate systems disagree where
@@ -46,14 +57,14 @@ const BLOCK_SEP = ' · '
  * reader walks to, and it is the MOD OSC's level. The check needs the second reading, so it takes
  * the name apart and leaves `module` alone.
  */
-function blockOf(name: string): string | undefined {
-  const i = name.indexOf(BLOCK_SEP)
+function blockOf(name: string, sep: string): string | undefined {
+  const i = name.indexOf(sep)
   return i === -1 ? undefined : name.slice(0, i)
 }
 
 /** The half after the block: `MOD OSC · PITCH ▸ OSC 1` → `PITCH ▸ OSC 1`. */
-function withinBlock(name: string, block: string): string {
-  return name.slice(block.length + BLOCK_SEP.length)
+function withinBlock(name: string, block: string, sep: string): string {
+  return name.slice(block.length + sep.length)
 }
 
 /**
@@ -136,9 +147,10 @@ export type InertFinding = {
  * the range rather than `0`.
  */
 export function recipeInertFindings(device: Device, recipe: Recipe): InertFinding[] {
+  const sep = separatorOf(device)
   const blocks = new Map<string, AuthoredParam[]>()
   for (const param of recipe.params) {
-    const block = blockOf(param.name)
+    const block = blockOf(param.name, sep)
     if (block === undefined) continue
     const group = blocks.get(block) ?? []
     group.push(param)
@@ -146,7 +158,7 @@ export function recipeInertFindings(device: Device, recipe: Recipe): InertFindin
   }
   const found: InertFinding[] = []
   for (const [block, group] of blocks) {
-    const finding = judgeBlock(device, recipe, block, group)
+    const finding = judgeBlock(device, recipe, block, group, sep)
     if (finding !== undefined) found.push(finding)
   }
   return found.sort((a, b) => compareCodeUnits(a.block, b.block))
@@ -178,10 +190,11 @@ function judgeBlock(
   recipe: Recipe,
   block: string,
   group: readonly AuthoredParam[],
+  sep: string,
 ): InertFinding | undefined {
-  const routes = group.filter((p) => ROUTE_NAME.test(withinBlock(p.name, block)))
+  const routes = group.filter((p) => ROUTE_NAME.test(withinBlock(p.name, block, sep)))
   const depths = group.filter(
-    (p) => p.kind === 'numeric' && DEPTH_NAME.test(withinBlock(p.name, block)),
+    (p) => p.kind === 'numeric' && DEPTH_NAME.test(withinBlock(p.name, block, sep)),
   )
   /**
    * The block's audio level, which lives on another block's name: `MIXER · MOD OSC` is a MIXER
@@ -191,8 +204,8 @@ function judgeBlock(
   const level = recipe.params.find(
     (p) =>
       p.kind === 'numeric' &&
-      p.name.endsWith(`${BLOCK_SEP}${block}`) &&
-      blockOf(p.name) !== block,
+      p.name.endsWith(`${sep}${block}`) &&
+      blockOf(p.name, sep) !== block,
   )
 
   if (routes.length > 0 && depths.length > 0) {
@@ -215,7 +228,7 @@ function judgeBlock(
     }
   }
 
-  if (routes.length === 0 && MODULATOR_BLOCK.test(block) && !pointedElsewhere(recipe, block)) {
+  if (routes.length === 0 && MODULATOR_BLOCK.test(block) && !pointedElsewhere(recipe, block, sep)) {
     return {
       deviceId: device.id,
       recipeId: recipe.id,
@@ -239,11 +252,11 @@ function judgeBlock(
  * one. The name is matched as a substring, so the failure is toward silence: prose that happens to
  * contain the block's name clears it.
  */
-function pointedElsewhere(recipe: Recipe, block: string): boolean {
+function pointedElsewhere(recipe: Recipe, block: string, sep: string): boolean {
   const said: string[] = [recipe.routing ?? '']
   for (const entry of recipe.patch ?? []) said.push(entry.from, entry.to, entry.note ?? '')
   for (const param of recipe.params) {
-    if (blockOf(param.name) === block) continue
+    if (blockOf(param.name, sep) === block) continue
     said.push(param.name, param.note ?? '')
     if (typeof param.value === 'string') said.push(param.value)
   }
@@ -315,4 +328,78 @@ export function inertNotice(
   const finding = blocks.get(group.module)
   if (finding === undefined || finding.params !== group.params.length) return undefined
   return `Appears inert — ${finding.detail}.`
+}
+
+// ---------------------------------------------------------------------------
+// §3.1/#466. What the check could not look at.
+// ---------------------------------------------------------------------------
+
+/**
+ * §3.1/#466. **Which devices the grouping could form a group on, and which it could not.**
+ *
+ * The separator is a convention, and the module doc above already says a device that names things
+ * differently is *invisible to the check rather than clean*. That sentence was true and nothing
+ * printed it: `INERT` said "2 candidates on 1 device" while thirteen of the library's forty-six
+ * devices were the only ones it had ever read. More than half the library's authored parameters
+ * had never been examined by it, and the line read as an all-clear.
+ *
+ * That is the same failure the check exists to catch, one level up — a signal that looks healthy
+ * because something else stands in for it — so the fix is invariant 5 applied to the instrument:
+ * say what was not examined. **It changes no predicate.** The judgement in `judgeBlock` is
+ * untouched and the same recipes raise the same candidates; this only reports the denominator
+ * those candidates were counted against.
+ *
+ * **It moves as the grouping widens, which is the point of having it.**
+ * `Device.inertBlockSeparator` took nine manifests from unexamined to examined and the numbers
+ * went 13/26 to 22/17 with the candidate list unchanged — a measurement that could not have
+ * been stated before this line existed.
+ * The seventeen that remain include the shapes no separator reaches, where the modulation source
+ * is the *value* of a parameter rather than part of a name.
+ *
+ * **The three groups are a partition of the library, and the third is not a blind spot.** A
+ * device with no authored parameters has nothing for a name convention to hide — a sequencer or a
+ * mixer whose manifest is capabilities and no recipes is fully examined by an empty walk. Folding
+ * it in with the twenty-six would overstate the debt, which is the mistake this function exists to
+ * stop making in the other direction.
+ */
+export type InertCoverage = {
+  /**
+   * Devices with at least one parameter name their **own** separator splits — `separatorOf`, not
+   * `BLOCK_SEP` — so a manifest declaring `' '` is examined on the character it actually names
+   * blocks with. These are the ones the check has read.
+   */
+  examined: readonly string[]
+  /**
+   * Devices with authored parameters and not one name the check can group. Their silence in the
+   * report says nothing about them, which is exactly what needed printing.
+   */
+  unexamined: readonly string[]
+  /** Devices with no authored parameters at all. Nothing to group, so no gap to report. */
+  noParams: readonly string[]
+}
+
+/**
+ * The partition above, over a whole library, each list sorted by code unit (invariant 6, and the
+ * locale rule in `CLAUDE.md`).
+ *
+ * It asks the same question of a name that `blockOf` does — is there a separator in it — so the
+ * coverage cannot drift from what the walk actually grouped.
+ */
+export function inertCoverage(devices: readonly Device[]): InertCoverage {
+  const examined: string[] = []
+  const unexamined: string[] = []
+  const noParams: string[] = []
+  for (const device of devices) {
+    const params = device.recipes.flatMap((r) => r.params)
+    if (params.length === 0) noParams.push(device.id)
+    else if (params.some((p) => blockOf(p.name, separatorOf(device)) !== undefined))
+      examined.push(device.id)
+    else unexamined.push(device.id)
+  }
+  const sorted = (ids: string[]): string[] => ids.sort(compareCodeUnits)
+  return {
+    examined: sorted(examined),
+    unexamined: sorted(unexamined),
+    noParams: sorted(noParams),
+  }
 }
