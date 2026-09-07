@@ -183,6 +183,105 @@ import type { Role } from '../../core/vocabulary'
  * *"at knob position 90% you reach a duty cycle of 99%"* becomes *"97%"* at p.118. No recipe uses
  * the Vocoder model, so nothing here depends on either figure.
  *
+ * ## Every printed LFO block goes somewhere, and seven that went nowhere are gone (#465)
+ *
+ * #384 was reported off the Muse: a guide lists an LFO's settings and never says where the
+ * modulation went. Sixteen recipes here did the same thing — three controls printed, and nothing
+ * in the model naming a destination — and this box hides it better than the Muse did.
+ *
+ * **There is no attenuator on this LFO, so there is no tell.** The Muse's four copied blocks all
+ * carried `AMPLITUDE 0`: an attenuator shut ahead of every destination, one value a reader can
+ * point at, and the plainest evidence a block was pasted rather than chosen. The MicroFreak's LFO
+ * is `Shape`, `Sync` and `Rate`, and every one of those is a defensible setting standing alone. Its
+ * depth is not on the block at all — it is the Matrix amount, which is precisely the row that was
+ * missing. So nothing in these sixteen recipes separated a chosen LFO from a copied one, and each
+ * had to be decided from what its own title says the patch is for. Sixteen recipes, sixteen
+ * decisions.
+ *
+ * **The library-wide check cannot see this device.** `recipeInertFindings` groups a block by the
+ * ` · ` prefix in a parameter name (§3.1/#388), and nothing on this box uses that separator, so
+ * the MicroFreak is invisible to the audit rather than clean in it. The guard is therefore local
+ * and is a test: any recipe printing an `LFO` block carries a `Matrix  LFO > …` row, and that
+ * row's amount is nonzero.
+ *
+ * **Nine routed**, each taking its destination from what its own title already claims. Every
+ * destination named below is a real Matrix point: p.30, *"The Matrix has 35 patch points"*, five
+ * sources against seven destinations, of which *"The first four destinations are Pitch, Wave,
+ * Timbre, and Cutoff."* The knob a destination lands on is the model's, so the reason is written
+ * in the model's display name (p.35) rather than in the destination's:
+ *
+ *   `mf-pad-soft`        Wave    12   SuperWave's `Wave`. The CycEnv already has `Cutoff` — the
+ *                                     "opening slowly" — and a second modulator on that corner is
+ *                                     a corner nobody can predict. Shallow at 0.35 Hz: the pad's
+ *                                     motion is the envelope's and this is the shimmer over it.
+ *   `mf-lead-bright`     Pitch    5   Vibrato, which is what a 5.2 Hz sine on a one-note lead is
+ *                                     for, and the one destination `PRESSURE > Timbre` is not
+ *                                     already on. The shallowest route on the device: the manual
+ *                                     prints no semitone span for the `Pitch` destination, so the
+ *                                     depth is set by a lead having to stay in tune.
+ *   `mf-lead-hard`       Timbre  14   `Amount`, the two-operator FM index, and the one deliberate
+ *                                     stack: `ENV > Timbre -38` already pulls the index down
+ *                                     across the note, and the square at 9 Hz flutters it on top.
+ *                                     p.30 sanctions exactly that (see below). "Biting" is the
+ *                                     index, so the index is what moves.
+ *   `mf-lead-soft`       Pitch    5   The same vibrato at the same depth, and here the only row.
+ *                                     Unison has already spread four voices 0.9 st apart and that
+ *                                     spread is static, so the player's vibrato is the axis left.
+ *   `mf-bass-mid-dirty`  Timbre  12   `Fold` on the Bass model. "Noise between the fold stages" is
+ *                                     the title; the square at 5 Hz moves which stage is folding.
+ *                                     Kept shallow because `ENV > Cutoff 44` owns the note's shape
+ *                                     and a bass keeps its fundamental.
+ *   `mf-bass-mid-dark`   Timbre  14   `Sym` on BasicWaves, so this is pulse-width modulation, and
+ *                                     "pulse width off centre" is what the title is about. The
+ *                                     filter is at 26 with the top gone, so `Cutoff` would be a
+ *                                     route into a part of the sound this patch removed.
+ *   `mf-arp-dark`        Timbre  24   `Sculpting` on Harmo, which the title names outright. Synced
+ *                                     to 1/4, so it steps with the arpeggio rather than across it.
+ *   `mf-texture-dark`    Wave    18   `Inharm` on Modal — "inharmonic and slow", and the CycEnv
+ *                                     already has `Timbre`, which is the striking. Random gliding
+ *                                     at 0.18 Hz is the body itself changing between strikes.
+ *   `mf-noise-hard`      Cutoff  24   A narrow resonant BPF over noise is a pitched band, and
+ *                                     stepping its centre at 16 Hz is what makes it metallic. The
+ *                                     same shape as `mf-noise-dirty`'s `LFO > Cutoff 34`, one
+ *                                     character apart and shallower, because resonance is 66 here
+ *                                     against 44 there and the same sweep carries further.
+ *
+ * **A second row is normal, and the manual demonstrates it.** Five of the nine land on a recipe
+ * that already had a Matrix row, and `mf-lead-hard` puts the LFO on a destination the envelope is
+ * already on. p.30 is explicit: *"the Matrix also serves as a mixer. You could for example control
+ * the pitch of the oscillator with the Key/Arp source and with the LFO. The two modulations are
+ * added together."* Thirty-five points exist and no recipe here uses more than three.
+ *
+ * **Zero is not a route, which is why the test checks the amount and not the row.** p.29's LED
+ * table reads *"LED OFF = no routing is made OR the amount is set at 0"*, and p.30 says it
+ * outright: *"Setting any modulation routing to a zero value will disable the LED and the Matrix
+ * will show it as not connected."* A `Matrix  LFO > … 0` would print a full block a reader sets
+ * and does not hear, which is #384 again in different ink.
+ *
+ * **Seven dropped**, and they are not a rule about roles — it is what these seven turned out to
+ * have in common, which is that no cyclic motion belongs in them:
+ *
+ *   `mf-stab-hard`       "envelope straight onto the cutoff", and a 320 ms decay per key. The
+ *                        patch is a shape, not a cycle; a 6 Hz square gets under two periods into
+ *                        the note and there is nothing it should be moving in them.
+ *   `mf-stab-bright`     The same, at 420 ms with the top left open.
+ *   `mf-stab-clean`      The same, and worse than the same: on `Chords`, `Wave` is the chord type
+ *                        and `Timbre` is `Inv/Transp` (p.42), so modulating either changes the
+ *                        chord under the reader's hand — the opposite of "one key one chord".
+ *   `mf-sub-dark`        "everything above it removed" leaves one fundamental under a filter at 18
+ *                        with resonance 8. Every destination this box has either moves that pitch
+ *                        or reaches for content the recipe deleted.
+ *   `mf-sub-clean`       The patch *is* `Saturate 8` and `Fold 6` — it is defined by having its two
+ *                        shaping knobs near zero. An LFO on either puts back exactly what the
+ *                        recipe took out.
+ *   `mf-vox-chop-clean`  The one recipe whose points are cited (p.43: wave 100, timbre 40, shape
+ *                        30, yielding the word *"Filter"*). Cycling any of the three walks the box
+ *                        off the settings that citation is for, which is the cited-wrong-value
+ *                        error wearing a new hat, and the recipe asks for no motion anyway.
+ *   `mf-vox-chop-dirty`  "pressure dragging the formants" — `PRESSURE > Timbre 56` gives that
+ *                        motion to the player on purpose. An LFO doing the same job on a timer
+ *                        takes it back off them.
+ *
  * ## The panel is drawn, and half of it is measured
  *
  * This shipped undrawn, on the finding that §10 wants one complete, unobstructed, fully-labelled
@@ -779,6 +878,9 @@ const recipes: Recipe[] = [
       ...envelope(1700, 4200, 78, 34, 'On'),
       ...cyclingEnv('Run', 2500, 1800, 400, 40),
       ...lfoFree('Sine', 0.35),
+      // The CycEnv has `Cutoff`, so the LFO takes SuperWave's `Wave` — the shimmer over the
+      // opening, not a second hand on the same corner.
+      matrix('LFO', 'Wave', 12),
       matrix('CycEnv', 'Cutoff', 28, [{ axis: 'darkness', amount: -18 }]),
       ...glideTime(0),
     ],
@@ -835,7 +937,7 @@ const recipes: Recipe[] = [
       ...filter('LPF', 38, 58),
       ...envelope(0, 320, 12, 74, 'On'),
       ...cyclingEnv('Env', 0, 180, 0, 30),
-      ...lfoFree('Square', 6),
+      // No LFO: 320 ms per key, the envelope straight onto the cutoff, and nothing that cycles.
       ...glideTime(0),
     ],
   },
@@ -853,7 +955,7 @@ const recipes: Recipe[] = [
       ...filter('HPF', 22, 34),
       ...envelope(0, 420, 20, 56, 'On'),
       ...cyclingEnv('Env', 0, 240, 0, 36),
-      ...lfoFree('Triangle', 4.5),
+      // No LFO: a 420 ms stab is a shape, not a cycle.
       ...glideTime(0),
     ],
   },
@@ -878,7 +980,8 @@ const recipes: Recipe[] = [
       ...filter('LPF', 62, 20),
       ...envelope(20, 640, 34, 40, 'On'),
       ...cyclingEnv('Env', 0, 300, 0, 24),
-      ...lfoFree('Sine', 2.2),
+      // No LFO: on Chords, `Wave` is the chord type and `Timbre` is `Inv/Transp` (p.42), so cycling
+      // either changes the chord under the reader's hand.
       ...glideTime(0),
     ],
   },
@@ -899,6 +1002,8 @@ const recipes: Recipe[] = [
       ...envelope(20, 900, 70, 48, 'On'),
       ...cyclingEnv('Env', 60, 420, 0, 38),
       ...lfoFree('Sine', 5.2),
+      // Vibrato. 5.2 Hz on a one-note lead, and the one destination pressure is not already on.
+      matrix('LFO', 'Pitch', 5),
       matrix('PRESSURE', 'Timbre', 42),
       ...glideTime(60),
     ],
@@ -937,6 +1042,9 @@ const recipes: Recipe[] = [
       ...envelope(0, 560, 48, 66, 'On'),
       ...cyclingEnv('Env', 0, 220, 0, 52),
       ...lfoFree('Square', 9),
+      // Both onto the FM index, which p.30 sanctions outright: "The two modulations are added
+      // together." The envelope pulls it down across the note; the square flutters it on top.
+      matrix('LFO', 'Timbre', 14),
       matrix('ENV', 'Timbre', -38),
       ...glideTime(0),
     ],
@@ -973,6 +1081,9 @@ const recipes: Recipe[] = [
       ...envelope(120, 1100, 74, 40, 'On'),
       ...cyclingEnv('Env', 200, 600, 0, 34),
       ...lfoFree('Sine', 3.4),
+      // The Unison spread is static, so the player's vibrato is the axis left. Same depth as
+      // `mf-lead-bright`, for the same reason.
+      matrix('LFO', 'Pitch', 5),
       ...glideTime(120),
     ],
   },
@@ -994,6 +1105,9 @@ const recipes: Recipe[] = [
       ...envelope(0, 480, 30, 62, 'On'),
       ...cyclingEnv('Env', 0, 200, 0, 40),
       ...lfoFree('Square', 5),
+      // `Timbre` is `Fold` on the Bass model, so this is which stage is folding. Shallow: the
+      // envelope owns the note's shape and the fundamental stays put.
+      matrix('LFO', 'Timbre', 12),
       matrix('ENV', 'Cutoff', 44, [{ axis: 'darkness', amount: -20 }]),
       ...glideTime(40),
     ],
@@ -1014,6 +1128,10 @@ const recipes: Recipe[] = [
       ...envelope(0, 620, 24, 48, 'On'),
       ...cyclingEnv('Env', 0, 260, 0, 30),
       ...lfoFree('Triangle', 2.8),
+      // `Timbre` is `Sym` on BasicWaves, so a triangle here is pulse-width modulation and the
+      // title's "pulse width off centre" is the thing that moves. The filter is at 26, so
+      // `Cutoff` would be a route into what this patch removed.
+      matrix('LFO', 'Timbre', 14),
       ...glideTime(0),
     ],
   },
@@ -1034,7 +1152,8 @@ const recipes: Recipe[] = [
       ...filter('LPF', 18, 8),
       ...envelope(0, 780, 68, 12, 'On'),
       ...cyclingEnv('Env', 0, 300, 0, 20),
-      ...lfoFree('Sine', 0.5),
+      // No LFO: one fundamental under a filter at 18. Every destination either moves that pitch or
+      // reaches for content this recipe removed.
       ...glideTime(0),
     ],
   },
@@ -1053,7 +1172,7 @@ const recipes: Recipe[] = [
       ...filter('LPF', 22, 6),
       ...envelope(0, 860, 72, 10, 'On'),
       ...cyclingEnv('Env', 0, 340, 0, 18),
-      ...lfoFree('Sine', 0.4),
+      // No LFO: the patch is `Saturate 8` and `Fold 6`. Modulating either puts back what it took out.
       ...glideTime(0),
     ],
   },
@@ -1093,6 +1212,9 @@ const recipes: Recipe[] = [
       ...envelope(0, 440, 14, 44, 'On'),
       ...cyclingEnv('Loop', 0, 300, 0, 34),
       ...lfoSynced('Triangle', '1/4'),
+      // `Sculpting` on Harmo, which the title names. Synced to 1/4, so it steps with the
+      // arpeggio rather than across it.
+      matrix('LFO', 'Timbre', 24),
       ...glideTime(0),
     ],
   },
@@ -1112,6 +1234,9 @@ const recipes: Recipe[] = [
       ...envelope(1400, 7600, 58, 30, 'On'),
       ...cyclingEnv('Run', 4200, 3600, 900, 56),
       ...lfoFree('Random gliding', 0.18),
+      // `Wave` is `Inharm` on Modal — the title's "inharmonic". The CycEnv has `Timbre`, which is
+      // the striking, so this is the body changing between strikes.
+      matrix('LFO', 'Wave', 18),
       matrix('CycEnv', 'Timbre', 48),
       ...glideTime(0),
     ],
@@ -1177,6 +1302,9 @@ const recipes: Recipe[] = [
       ...envelope(0, 520, 10, 54, 'On'),
       ...cyclingEnv('Env', 0, 240, 0, 46),
       ...lfoFree('Random stepped', 16),
+      // A narrow resonant BPF over noise is a pitched band; stepping its centre is what makes it
+      // metallic. `mf-noise-dirty`'s route with resonance 66 against 44, so shallower.
+      matrix('LFO', 'Cutoff', 24),
       ...glideTime(0),
     ],
   },
@@ -1218,7 +1346,8 @@ const recipes: Recipe[] = [
       ...filter('BPF', 58, 30),
       ...envelope(0, 460, 22, 30, 'On'),
       ...cyclingEnv('Env', 0, 220, 0, 28),
-      ...lfoFree('Sine', 3),
+      // No LFO: the three knobs above are p.43's own settings for the word "Filter". Cycling any of
+      // them walks the box off the settings that citation is for.
       ...glideTime(0),
     ],
   },
@@ -1252,7 +1381,7 @@ const recipes: Recipe[] = [
       ...filter('HPF', 30, 56),
       ...envelope(0, 300, 8, 48, 'On'),
       ...cyclingEnv('Env', 0, 180, 0, 40),
-      ...lfoFree('Random stepped', 8),
+      // No LFO: `PRESSURE > Timbre` below gives the formant motion to the player on purpose.
       matrix('PRESSURE', 'Timbre', 56, [{ axis: 'grit', amount: 18 }]),
       ...glideTime(0),
     ],
