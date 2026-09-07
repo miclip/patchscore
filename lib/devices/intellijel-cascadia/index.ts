@@ -126,8 +126,12 @@ import { CASCADIA_PANEL } from './panel'
  *    which is a period at one end and a frequency at the other. That is not a range; converting
  *    one end to match the other would be arithmetic nobody printed, so the rate is travel.
  *  - **Envelope B's stage times.** p.34 explicitly defers them ("The following section provides
- *    only a generic overview") and the DETAILS chapters that follow print no figures either.
- *    Envelope B's *modes* are cited; its times are travel.
+ *    only a generic overview"), so its *modes* are cited and its stage values are travel.
+ *    **Corrected at #452:** the DETAILS chapters are not silent after all — p.83 gives RISE
+ *    *"from 2ms at the bottom, to 5 seconds at the top"* and p.84 the same sentence for FALL, on
+ *    the pages that discuss ENVELOPE mode. The sliders here stay `travel` because that is what
+ *    every unmarked Cascadia control is in this file, but the ceiling is a fact now and the riser
+ *    below uses it.
  *  - **Any per-step articulation.** Cascadia has no sequencer, so `features.perStep` is absent
  *    and no recipe articulates. See `routing` on the recipes: this box is played from whatever
  *    is sequencing the rig.
@@ -1256,8 +1260,17 @@ const RECIPES: Recipe[] = [
     role: 'riser',
     character: 'bright',
     voice: 'voice',
+    /**
+     * #452. **Already routed, and the list that said otherwise was reading names.** The chain is
+     * `ENVELOPE B` in `ENV`/`AHR` with its rise, the cable into `VCF · FM 3`, and `travel('VCF ·
+     * FM 3', 92)` as the depth — a source, a destination and an amount, none of which is spelled
+     * `LFO` or `MOD`, which is exactly why a name-matcher missed it.
+     *
+     * What was missing is what a reader needs beside it: where the gate comes from, that this
+     * does not repeat, and how long it can climb for. All three are on the page.
+     */
     title: 'Slow rise on the cutoff, noise climbing under it',
-    routing: `${PLAYED}. Envelope B in AHR at SLOW is the lift; hold the gate for its length`,
+    routing: `${PLAYED}. **One gate, one climb — this does not repeat.** p.83: the attack *"is triggered by the rising edge of a gate signal sent to the GATE/SYNC [5.D] input"*, and with nothing patched there that gate is the played note or the front-panel MANUAL GATE button (p.39). Hold it for the whole build — *"If the gate length is shorter than the rise time, the envelope will begin to fall before reaching its maximum value"* (p.83). \`CYCLE\` is the Envelope B type that repeats; this is \`AHR\`, so one gate is one gesture. **The climb has a ceiling:** p.83 tops the RISE slider out at five seconds, which is under three bars at 134 BPM. Past that the filter holds where it arrived rather than falling back, so a longer section still works — it simply stops travelling`,
     params: [
       pick('ENVELOPE B · MODE', 'ENV', ENV_B_MODES, cite(35)),
       pick('ENVELOPE B · TYPE', 'AHR', ENV_B_TYPES, cite(35)),

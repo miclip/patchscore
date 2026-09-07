@@ -106,6 +106,9 @@ const REVIEWED_UNITS = [
   'ms',
   's',
   'st',
+  // p.27 of the TR-8S Reference Manual, on its KIT: LFO rate under Tempo Sync ON: a count of
+  // sequencer steps, printed singular, and the box's own word rather than our abbreviation.
+  'step',
   '°',
 ]
 

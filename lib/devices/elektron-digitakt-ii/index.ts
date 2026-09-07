@@ -780,11 +780,41 @@ const recipes: Recipe[] = [
     mode: 'whole-sample',
     title: 'Sample played backwards into the change',
     verified: false,
+    /**
+     * #452. **One gesture, and the reason is the document rather than the box.** `LFO MODE ONE`
+     * and `FADE -48` are here with no destination and no depth, which is the state #452 was filed
+     * about — but the repair a sibling would suggest is not available.
+     *
+     * p.114's APPENDIX C prints the audio-track destinations and gives the filter's as
+     * *"FILTER: (machine dependent parameters)"*, so the cutoff has no spelling to author. The
+     * depth is the harder half: p.59 describes `DEP` in prose — bipolar, *"a center setting,
+     * 0.00, equals no modulation depth"* — and prints **no range** for it, or for `SPD`, anywhere
+     * in the document. On the first Digitakt both are printed (`-64.00-63.00`, p.48), which is
+     * exactly the kind of difference #196 says must not be assumed to carry between siblings, so
+     * nothing is copied across and no numeric is authored here.
+     *
+     * **So the movement is unauthored, not absent**, and `routing` says which. The two are
+     * different facts (invariant 5): a reader who owns this box can dial a depth in a few
+     * seconds, and telling them the box cannot do it would be false.
+     */
     sourceAudio: {
       need:
-        'A sample with a long decaying tail — REVERSE turns that tail into the rise, so the tail ' +
-        'is the part that matters',
+        'A bright metallic tail three to four bars long at your tempo — a crash left to ring, a ' +
+        'bowed cymbal, a noise wash. REVERSE plays it backwards once per trig (p.94) and nothing ' +
+        'here stretches it, so the file is the gesture: at `TUNE 0` it lasts exactly as long as ' +
+        'it was recorded (p.93). The trig below holds three bars, so a shorter file leaves ' +
+        'silence before the change and a longer one gets cut by the release',
     },
+    routing:
+      '**One gesture, and it does not come back.** `LFO MODE ONE` *"starts when a note is ' +
+      'trigged, then runs to the end of the waveform and then stops"* (p.59), and `REVERSE` ' +
+      'plays the sample once per trig (p.94). Put the trig three bars before the change; ' +
+      'nothing retriggers it and nothing loops. **Set the depth by ear, because this manual ' +
+      'prints no scale for it** — p.59 gives `DEP` and `SPD` in prose only, so open `DEP` from ' +
+      '`0.00` until the rise is the size you want rather than reaching for a number here. **The ' +
+      'cutoff is the destination the manual will not name:** p.114 prints it as `FILTER: ' +
+      '(machine dependent parameters)`, and p.58\u2019s MOD page figure spells it `LP4 FREQ` only ' +
+      'with the LOWPASS 4 machine loaded, not this one\u2019s multi-mode filter',
     params: [src('ONESHOT'), play('REVERSE'), fltr('MULTI-MODE'), ampMode('ADSR'), lfoMode('ONE'), fade(-48)],
     articulation: [art('last-hit', { velocity: 127, 'note-length': 48 }, 'trig-params')],
   },
@@ -885,9 +915,16 @@ const recipes: Recipe[] = [
      * **The LFO would be the other way to do this and it cannot be authored here.** A sweep is an
      * LFO walking the cutoff, and naming an LFO without naming what it moves is the instruction
      * #332 found unfinishable. p.114 lists the audio-track destinations and prints the filter's
-     * as `FILTER: (machine dependent parameters)`, so the on-screen spelling of the cutoff
-     * destination appears nowhere in this manual. Writing one would put a word on the screen the
-     * box does not show, which is the same reason `LFO WAVE` is absent from this manifest.
+     * as `FILTER: (machine dependent parameters)`, so the cutoff has no spelling in the appendix.
+     * Writing one would put a word on the screen the box does not show, which is the same reason
+     * `LFO WAVE` is absent from this manifest.
+     *
+     * **Narrowed at #452, because the sentence used to claim more than the page supports.** It
+     * read *"the on-screen spelling of the cutoff destination appears nowhere in this manual"*,
+     * and p.58's MOD page figure does show one — `LP4 FREQ` — with the `LOWPASS 4` machine
+     * loaded. p.114 also prints twenty-seven other destinations perfectly plainly. So what is
+     * missing is a spelling for *this* filter, not a modulation surface for the box, and the
+     * conclusion is unchanged: this recipe's `MULTI-MODE` cutoff still has no printed name.
      *
      * **No articulation, and this one is checked rather than assumed** (#108). No direction
      * authors a step variant for `sweep`, so `selectPattern` returns `none` in every section and

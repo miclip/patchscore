@@ -1062,15 +1062,17 @@ const recipes: Recipe[] = [
      * lit [GATE] button should find it in the guide rather than deduce it.
      *
      * `LOOP ON` is the half a single exclusive playback mode could not say, and it is what makes
-     * the part work on a real sample: eight steps at 132 BPM is about 1.8 seconds, and a chord
-     * recording shorter than that would simply stop halfway through the held note. Looped, it
+     * the part work on a real sample: sixteen pads cover one measure (p.99), so `HOLD STEP 8` is
+     * half a bar — about 0.9 seconds at 132 BPM — and a chord recording shorter than that would
+     * simply stop halfway through the held note. Looped, it
      * fills whatever the step is held for (p.32), and the loop is inaudible under a sustained
      * chord. The two are independent buttons, so nothing here has to be given up for the other.
      */
     sourceAudio: {
       need:
-        'Sustained chord sample(s) — one per chord shape the hook plays; see Hook. Length is not ' +
-        'critical, because the loop fills the held step, but the loop point has to be clean',
+        'Sustained chord sample(s) — one per chord shape the hook plays; see Hook. Half a bar or ' +
+        'longer, so the held step is covered before the loop comes round. Past that the length ' +
+        'is not critical, because the loop fills the held step, but the loop point has to be clean',
     },
     params: [
       gateMode('ON'),
@@ -1093,10 +1095,44 @@ const recipes: Recipe[] = [
     role: 'riser',
     character: 'bright',
     voice: 'pad',
+    /**
+     * #452. **One gesture, decided rather than left over — and on this box the decision is
+     * forced.**
+     *
+     * There is no LFO anywhere in this manual: the word does not occur in 274 pages. The whole
+     * per-sample set is `ATTACK / HOLD / RELEASE` (p.77), `SPEED / PITCH / FINE / VOLUME / PAN /
+     * BPM SET / VINYL MODE` (pp.80-81) and the four playback switches, so the only thing that
+     * varies with time is an amp envelope pointed at volume and nothing else.
+     *
+     * **What this box does have is bus-scoped, which is a different fact from having none.** EFX
+     * MOTION records a knob move into the pattern and plays it back with it (p.111) — a real
+     * destination and a real travel, and `sp-sweep-soft` on this same device is built on it. It
+     * belongs to a **bus**, though, and p.49 assigns buses per sample: a move recorded on this
+     * pad's bus sweeps every other pad sharing it. Trading the riser's reverb and dragging three
+     * other parts along to modulate one reversed tail is the wrong trade, so the rise stays the
+     * reversal and `routing` says so instead of implying the box cannot.
+     *
+     * The MFX modulators are the other half of the same answer and disqualify themselves on the
+     * page: Super Filter *"can be varied cyclically"* (p.220), Wah *"cyclically changing the
+     * tone"* (p.231), Tremolo/Pan *"Cyclically varies"* (p.233). A riser travels once.
+     */
     title: 'Sample played backwards into the change',
     verified: false,
+    routing:
+      '**One trigger, and it does not come back.** `GATE MODE ONE-SHOT` plays the sample once to ' +
+      'the end and ignores the pad until it finishes — p.31 is explicit that a phrase shorter ' +
+      'than the sample does not retrigger it. Put one step two bars before the change and leave ' +
+      'the rest of the part empty. **Nothing modulates after that, and it is the box rather than ' +
+      'the recipe:** there is no LFO in this manual and no per-sample modulator at all. The one ' +
+      'moving thing the SP-404MK2 has is a knob move recorded into the pattern (EFX MOTION, ' +
+      'p.111), and it belongs to a bus, so it would sweep every other pad on this one with it ' +
+      '(p.49)',
     sourceAudio: {
-      need: 'A sample with a long decaying tail — reversed, that tail becomes the rise, so the tail is the part that matters',
+      need:
+        'A sample whose decay is the long part — a cymbal, a reverb tail, struck metal left to ' +
+        'ring. Reversed, that decay becomes the rise, so the decay is what has to fill the file. ' +
+        'Cut it to two bars at your tempo: it plays end to end once at its recorded length, so ' +
+        'the file length is the gesture length',
     },
     params: [
       gateMode('ONE-SHOT'),
@@ -1391,7 +1427,9 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need:
         'A sustained source that holds without changing — a drone, a held chord, a noise bed. The ' +
-        'filter supplies the movement, so anything already moving fights it',
+        'filter supplies the movement, so anything already moving fights it. One, two or four ' +
+        'bars, cut on the bar: the file is the loop and it runs until you stop it, so the sweep ' +
+        'lasts as long as the pattern rather than as long as the file',
     },
     routing:
       '**Record the sweep into the pattern.** Press [REC], then [MARK] to start EFX MOTION REC, ' +

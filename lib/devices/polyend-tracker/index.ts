@@ -820,7 +820,10 @@ const RECIPES: Recipe[] = [
     title: 'A rendered triad, played back as one long note',
     realisation: 'sampled-chord',
     sourceAudio: {
-      need: 'A single sample of the whole chord, sustaining, so one track can hold it',
+      need:
+        'A single sample of the whole chord, sustaining, so one track can hold it — two bars or ' +
+        'more, with a bar of steady tone after the attack for the loop below to sit in. The pad ' +
+        'is as long as the trigger is held to its Note OFF step (p.119), not as long as the file',
       prep: {
         text: 'Play the triad across three tracks, then Render: it "bounces or exports an audio file based on the selected pattern / tracks which can then be made immediately available as a sample"',
         verified: { kind: 'manual', source: 'Polyend Tracker Manual 1.9.2a, p.187' },
@@ -873,18 +876,23 @@ const RECIPES: Recipe[] = [
      * The obvious dark riser closes a low-pass across the bar while the level climbs. This box
      * will not do it, twice over. Its per-step FX lanes include `high-pass` and no low-pass at
      * all (p.129's list), so the closing cannot be drawn per step the way the bright riser draws
-     * its opening. And the Instrument Automation page has **one** envelope shaping **one**
-     * destination (p.115) — point it at `Cutoff` and the amp envelope is gone, because there is
-     * no global one underneath it.
+     * its opening. So the filter is set once at `CUTOFF 30` and stays there, and the climb is
+     * `volume` on the step lane from 34 to 100. What arrives is pressure with no top on it, which
+     * is the distinction from `bright` — that one opens a high-pass upward and is heard as the
+     * bottom falling away.
      *
-     * So the two halves cannot both move: either the filter closes or the level swells. The level
-     * is the half that carries a riser, so the filter is set once at `CUTOFF 30` and stays there,
-     * and the climb is `volume` on the step lane from 34 to 100. What arrives is pressure with no
-     * top on it, which is the distinction from `bright` — that one opens a high-pass upward and
-     * is heard as the bottom falling away.
+     * **This paragraph used to carry a second reason and the second reason was wrong** (#452).
+     * It said the Instrument Automation page has *one* envelope shaping *one* destination, so
+     * pointing it at `Cutoff` would cost the amp envelope — and concluded that the two halves
+     * cannot both move. p.115's diagram callout says the opposite in as many words: *"Each
+     * destination has the option of an LFO, envelope or no automation."* Six destinations, six
+     * slots. The callout is a graphic beside a screen shot, which is exactly the place
+     * `pdftotext` cannot reach and `CLAUDE.md` says to render the page for.
      *
-     * Recorded rather than worked around: a reader who wants the filter to move as well has to
-     * automate it by hand, and the guide should not imply otherwise.
+     * The values here are left as they are rather than re-authored on the correction: a filter
+     * envelope alongside the volume one is a musical change to a shipped recipe and wants its own
+     * pass. What is fixed now is the record, so the next reader does not inherit a limit the box
+     * does not have.
      */
     title: 'Low rumble swelling across the bar with the filter held shut',
     sourceAudio: {
@@ -910,7 +918,13 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'track',
     title: 'Reversed grains washing in before the change',
-    sourceAudio: { need: 'A cymbal wash or any sound with a long, smooth decay', hint: 'scan-grain' },
+    sourceAudio: {
+      need:
+        'A cymbal wash or any sound with two bars or more of smooth, unchanging decay, so the ' +
+        'grain has somewhere to sit. Granular loops one 380 ms slice in place (p.136) rather ' +
+        'than playing the file through — the file picks the spot, and the Note OFF ends the wash',
+      hint: 'scan-grain',
+    },
     params: [
       pick('PLAY MODE', 'Granular', PLAY_MODES, 121, { hint: 'play-mode' }),
       unscaled('POSITION', 'Late in the file, in the decay'),

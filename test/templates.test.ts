@@ -137,8 +137,13 @@ const SHARED_VOCABULARY = new Set(
  * the unit §8's at-the-machine writing counts in. Renaming the parameter would put a word on the
  * screen that is not the one on the box; forbidding the direction the word would leave it no way
  * to say how long a section is.
+ *
+ * **`up` is the sixth, and it arrived the same way** (#452). The OP-XY's step-component page
+ * prints `ramp up` as the name of the thing that climbs, so the parameter is called `RAMP UP`;
+ * two directions say a hat is *"up there"*. A preposition names no box, and the alternative was
+ * to rename a control after the manual had already named it.
  */
-const NON_IDENTIFYING_ENGLISH = new Set(['bars', 'hand', 'key', 'one', 'transient'])
+const NON_IDENTIFYING_ENGLISH = new Set(['bars', 'hand', 'key', 'one', 'transient', 'up'])
 
 function tokens(text: string): string[] {
   return text
@@ -228,8 +233,15 @@ describe('invariant 3 — a template never names a device', () => {
    * substrings which no token exemption can reach. Every word here is one that identifies nothing
    * on its own, which is why exempting it opens no hole.
    */
-  it('exempts exactly five English words, and adding a sixth is a decision', () => {
-    expect([...NON_IDENTIFYING_ENGLISH].sort()).toEqual(['bars', 'hand', 'key', 'one', 'transient'])
+  it('exempts exactly six English words, and adding a seventh is a decision', () => {
+    expect([...NON_IDENTIFYING_ENGLISH].sort()).toEqual([
+      'bars',
+      'hand',
+      'key',
+      'one',
+      'transient',
+      'up',
+    ])
   })
 
   it('contains no device id or folder name as a substring', () => {

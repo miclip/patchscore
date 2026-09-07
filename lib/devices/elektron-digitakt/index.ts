@@ -1497,8 +1497,10 @@ const recipes: Recipe[] = [
     verified: false,
     sourceAudio: {
       need:
-        'A sample with a long decaying tail — REVERSE turns that tail into the rise, so the tail is ' +
-        'the part that matters',
+        'A bright cymbal tail at least four bars long — a crash, a ride left to ring, a metallic ' +
+        'noise tail. REVERSE plays it backwards once per trig (p.82), so place that trig four ' +
+        'bars before the change: the LFO below takes four bars to make its single pass, and the ' +
+        'tail has to still be sounding when it gets there',
     },
     /**
      * `ONE` runs the waveform once and stops, which is what makes the LFO an envelope (p.48) —
@@ -1741,13 +1743,18 @@ const recipes: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A sustained source that holds without changing — a drone, a pad chord, a noise bed. The ' +
-        'filter supplies all the movement, so anything already moving fights it',
+        'A steady drone, held chord or noise bed about a bar long, with a seam that loops ' +
+        'cleanly. `FORWARD LOOP` cycles it for as long as the trig holds (p.82), and `SRC LEN` ' +
+        'and `LOOP` pick the region of the file that repeats rather than a length in bars ' +
+        '(p.83), so the source does not have to be as long as the gesture. The filter supplies ' +
+        'all the movement, so anything already moving fights it',
     },
     routing:
       '**One trig, where the gesture starts.** There is no step pattern for this part; place a ' +
       'single trig at the top of the section and `LFO MODE ONE` runs the pass from it and stops ' +
-      '(p.48). **The rate is deliberately off the beat grid:** `SPD 1` against `MULT BPM 4` reads ' +
+      '(p.48). **Give that trig a long `LEN` on the TRIG page** — p.82 says that is what sets ' +
+      'how long a `FORWARD LOOP` keeps looping, bounded by `HOLD` and `AMP DEC`, both near ' +
+      'their ceiling here. **The rate is deliberately off the beat grid:** `SPD 1` against `MULT BPM 4` reads ' +
       "32 in p.49's table, one pass every 32 bars, which is why it is not one of the 8, 16 or 32 " +
       'settings p.47 suggests for movement you want to hear against the beat. **To fall instead ' +
       'of lift**, set `DEP` negative — same patch, inverted (p.48)',

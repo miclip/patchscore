@@ -792,8 +792,41 @@ const recipes: Recipe[] = [
     role: 'riser',
     character: 'bright',
     voice: 'track',
+    /**
+     * #452. **Checked against its own manual rather than against its sibling's, and the two
+     * answers differ.** The Digitakt II's appendix prints the filter destination as
+     * *"FILTER: (machine dependent parameters)"* and has no spelling for a cutoff; this box's
+     * APPENDIX D (p.118) prints **`FILTER: Frequency`** flat, and the `MULTI-MODE` filter this
+     * recipe selects is the one it belongs to (p.102). So the destination is establishable here
+     * and is not there — two manuals, two answers, neither carried across (#196).
+     *
+     * **What stops the chain being authored is the depth, not the destination.** p.63 gives `DEP`
+     * in prose only — bipolar, *"a center setting, 0.00, equals no modulation depth"* — and
+     * prints no range for it or for `SPD` anywhere. `FADE` is the one LFO numeric this manual
+     * bounds (`-64-63`), which is why it is the one this manifest carries. An unranged numeric
+     * would be invariant 5's territory, so the depth stays the reader's and `routing` says so.
+     *
+     * **A trap on the page the reader would otherwise reach for.** p.64's speed table captions
+     * itself *"measured in sequencer steps"*, and its numbers are byte-identical to the first
+     * Digitone's p.55 table, which captions itself *"measured in whole note values"* — while the
+     * Digitakt II's genuinely step-based table gives 2048 where both Digitones give 128. So this
+     * caption is the wrong one and a bar count read off it is sixteen times fast. `routing` warns
+     * rather than converting, because which half of Elektron's own table is wrong is an inference
+     * and not a printed fact.
+     */
     title: 'WAVETONE riser, one LFO pass into the change',
     verified: false,
+    routing:
+      '**One pass, and it does not come back.** `LFO MODE ONE` *"starts when a note is trigged, ' +
+      'then runs to the end of the waveform and then stops"* (p.63), and `RAMP` travels one way ' +
+      'and stays where it arrives. Place the trig at the top of the run-up; nothing retriggers ' +
+      'it. **Point `DEST` at `FILTER: Frequency`** — APPENDIX D, p.118, prints it, and the ' +
+      'multi-mode filter above is what it moves (p.102). **Then set `DEP` and `SPD` by ear, ' +
+      'because this manual prints no scale for either:** p.63 gives only that `DEP` is bipolar ' +
+      'and that *"a center setting, 0.00, equals no modulation depth"*, so open it from zero ' +
+      'until the filter arrives where you want it. **Do not read a bar count off p.64\u2019s speed ' +
+      'table** — its caption says sequencer steps over numbers that are the first Digitone\u2019s ' +
+      'whole-note table, so it reads sixteen times fast. Time the pass against the section',
     params: [
       syn('WAVETONE'),
       playMode('MONO'),
