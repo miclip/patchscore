@@ -4670,3 +4670,133 @@ html {
 .knob-source[data-set='no'] {
   visibility: hidden;
 }
+
+/* ------------------------------------------------------------- vocabulary */
+
+/*
+ * #457. The word itself is the control. It carries no box, no glyph and no extra character —
+ * `font: inherit` down to `letter-spacing` and `text-transform` so a term inside a silkscreen
+ * label is still silkscreen, and `vertical-align: baseline` so swapping the text for a button
+ * does not move the line it sits on. What is added is the underline.
+ */
+.vocab-term {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  vertical-align: baseline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--edge-strong);
+  text-underline-offset: 3px;
+  position: relative;
+}
+
+/*
+ * #21's rule that a hit target and a drawn control are different sizes, applied to a word: a
+ * silkscreen label is about 13px tall and a finger is not. The target is grown by an overlay
+ * that takes no space, because padding on the word would grow the line box and move the page —
+ * which is the one thing this feature may not do. It reaches beyond the word, so a term set
+ * immediately beside other tappable ink would need this reconsidered.
+ */
+.vocab-term::after {
+  content: '';
+  position: absolute;
+  inset: -14px -8px;
+}
+
+.vocab-term:hover {
+  text-decoration-color: var(--accent);
+}
+
+.vocab-term:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  text-decoration-color: var(--accent);
+}
+
+/*
+ * A native modal dialog: the browser puts it in the top layer, so it is over the page whatever
+ * the word it belongs to happens to sit inside, and it is out of the flow entirely — opening one
+ * cannot move the page under the word that opened it (§8.1's rule for hints, same reason).
+ *
+ * The padding is on the card inside, not here. A click on the dialog element itself is how a
+ * click on the backdrop arrives, and padding here would turn the card's own margin into a
+ * dismiss target.
+ *
+ * The card renders wherever its term does, so it inherits whatever that line is set in — the
+ * density term sits in a silkscreen `<legend>`, and without this reset the definition came out in
+ * tracked uppercase, which is a paragraph nobody can read. Typography here is the modal's own.
+ */
+.vocab-modal {
+  font-family: var(--font-label);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  color: var(--ink);
+  width: min(420px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: auto;
+  padding: 0;
+  background: var(--panel-1);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+}
+
+.vocab-modal::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+
+.vocab-modal-card {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 16px;
+}
+
+.vocab-modal-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--silkscreen);
+}
+
+.vocab-kind {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.vocab-def {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.vocab-close {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--silkscreen);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}

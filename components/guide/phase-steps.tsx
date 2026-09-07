@@ -20,6 +20,7 @@ import {
   tightestReStrike,
 } from '@/lib/core'
 import { count, hintText, num, voicesLabel } from './format'
+import { VocabularyTerm } from '../vocabulary-term'
 import {
   HookRef,
   Instruction,
@@ -98,7 +99,9 @@ function Articulation({
         return (
           <li key={`${entry.slot}-${entry.steps.join('.')}`}>
             <Instruction {...(hint === undefined ? {} : { hint })}>
-              <span className="mono slot">{entry.slot}</span>
+              <span className="mono slot">
+                <VocabularyTerm word={entry.slot} />
+              </span>
               <span className="arrow" aria-hidden="true">
                 →
               </span>
@@ -241,7 +244,11 @@ function BlockBody({
   if (selection.outcome === 'none') {
     return (
       <p className="quiet">
-        No pattern authored for <span className="mono">{a.role}</span> at any band (asked for band{' '}
+        No pattern authored for{' '}
+        <span className="mono">
+          <VocabularyTerm word={a.role} />
+        </span>{' '}
+        at any band (asked for band{' '}
         <span className="mono">{num(selection.band)}</span>).
       </p>
     )
@@ -267,7 +274,9 @@ function BlockBody({
       <ul className="slots">
         {slotGroups(selection.pattern).map(({ slot, hits }) => (
           <li key={slot}>
-            <span className="mono slot">{slot}</span>
+            <span className="mono slot">
+              <VocabularyTerm word={slot} />
+            </span>
             <span className="token-sep">—</span>
             <span className="mono">{slotSteps(hits)}</span>
           </li>
@@ -422,7 +431,9 @@ export function PhaseSteps({
       {result.assignments.map((a) => (
         <section className="part" key={a.requestId}>
           <h4>
-            <span className="role mono">{a.role}</span>
+            <span className="role mono">
+              <VocabularyTerm word={a.role} />
+            </span>
             <span className="token-sep">—</span>
             <span className="quiet">
               {a.deviceName} · {voicesLabel(a)}
