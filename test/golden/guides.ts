@@ -25,10 +25,10 @@ import { droneStudy, industrialTechno, weave } from '../../lib/templates/index'
  *  - **tr-1000** — one drum machine, which cannot carry a tonal part at all. Most of the
  *    template becomes gaps, so this is the fixture that proves invariant 5 renders honestly at
  *    scale rather than only in the one-gap case.
- *  - **tr-6s** — one drum machine a size down, and the only fixture here that renders all three
- *    of §7.3's shortfall headings at once. `tr-1000` did until its LT took `bass-mid`; the full
- *    argument is beside `TR_6S` below, because it is a claim about which absences a guide has to
- *    keep showing rather than about the renderer.
+ *  - **rd-9** — another drum machine, and the only fixture here that renders all three of §7.3's
+ *    shortfall headings at once. `tr-1000` did until its LT took `bass-mid`, then `tr-6s` did
+ *    until #443 gave that box an `open-hat`; the full argument is beside `RD_9` below, because it
+ *    is a claim about which absences a guide has to keep showing rather than about the renderer.
  *  - **midi-clock** — Tracker Mini + TR-1000, added with #103/#104 as the one rig here that
  *    resolved onto `midi-din`. `tr-1000` still cannot reach the phase-3 material those issues
  *    added, being a source whose manual prints neither a clock-output menu nor a note on its MIDI
@@ -201,29 +201,37 @@ const MUSE = DEVICES.filter((d) => d.id === 'moog-muse')
  *
  * `tr-1000` pinned all three shortfall states at once — a limit of the boxes, a recipe nobody
  * has written, and a part the direction is finished without — until the TR-1000's LT took
- * `bass-mid` and closed that guide's only unauthored line. Closing it is the outcome
- * `authored-rig-coverage.test.ts` pushes toward and not a regression, but the byte-level pin on
- * the middle heading went with it, and `render.test.ts`'s synthetic Golden Techno rig is not the
- * same claim: what that block has to survive is a *real* guide at real scale, where the line
- * names a real track on a real box and forty-odd assignables compete for it.
+ * `bass-mid` and closed that guide's only unauthored line. `tr-6s` took the role and held it
+ * until #443 authored `open-hat hard` on the TR-6S, which gave §3.5 something to substitute for
+ * the `dark` this direction asks for and closed *that* guide's only unauthored line.
  *
- * The TR-6S is that guide one box down. Alone on Industrial Techno at seed 18 it fills five
- * requests and reports all three kinds — `open-hat` unauthored, `sub`, `metallic` and `impact`
- * contended out of the room it has, `stab` with no voice for it at all, and `pad` and `riser`
- * excused by the direction. It also carries both `rig-limit` reasons in one guide, which is a
- * second thing `tr-1000` used to be alone in: `no-room` and `no-capable-voice` print different
- * sentences and a fixture with only one of them pins only one.
+ * **Twice now, and both times for the same good reason**, so it is worth saying what the pattern
+ * is rather than only moving the fixture again: this heading names a gap the library is actively
+ * closing, so whichever box holds it is a box somebody is about to fix. Closing it is the outcome
+ * `authored-rig-coverage.test.ts` pushes toward and not a regression — but the byte-level pin on
+ * the middle heading goes with it each time, and `render.test.ts`'s synthetic Golden Techno rig
+ * is not the same claim: what that block has to survive is a *real* guide at real scale, where
+ * the line names a real track on a real box and forty-odd assignables compete for it.
  *
- * Nothing else about it is load-bearing. It is deliberately the *smallest* Roland here rather
- * than an interesting one: this file wants a guide with holes of every kind, and a box that runs
- * out of tracks is how you get one without inventing a rig nobody owns.
+ * **The RD-9 is that guide, and its unauthored line is the same one both times.** Alone on
+ * Industrial Techno at seed 18 it fills five requests and reports all three kinds — `open-hat`
+ * unauthored, `sub` and `impact` contended out of the room it has, `bass-mid` and `stab` with no
+ * voice for them at all, and `pad` and `riser` excused by the direction. `open-hat dark` is
+ * authored nowhere in the library, which is #443's table one row further down; the TR-6S escaped
+ * it by gaining a neighbouring character rather than that one. It also carries both `rig-limit`
+ * reasons in one guide, which is a second thing `tr-1000` used to be alone in: `no-room` and
+ * `no-capable-voice` print different sentences and a fixture with only one of them pins only one.
+ *
+ * Nothing else about it is load-bearing. It is deliberately a plain drum machine rather than an
+ * interesting one: this file wants a guide with holes of every kind, and a box that runs out of
+ * tracks is how you get one without inventing a rig nobody owns.
  */
-const TR_6S = DEVICES.filter((d) => d.id === 'roland-tr-6s')
+const RD_9 = DEVICES.filter((d) => d.id === 'behringer-rd-9')
 
 export const GUIDE_NAMES = [
   'full-rig',
   'tr-1000',
-  'tr-6s',
+  'rd-9',
   'midi-clock',
   'muse',
   'deluge-drone-study',
@@ -241,13 +249,13 @@ export type GuideName = (typeof GUIDE_NAMES)[number]
  * which is the one thing a fixture test must not do. A fixture on a fourth template leaves this
  * list alone and the techno assertions keep meaning what they meant.
  */
-export const TECHNO_GUIDE_NAMES = ['full-rig', 'tr-1000', 'tr-6s', 'midi-clock', 'muse'] as const
+export const TECHNO_GUIDE_NAMES = ['full-rig', 'tr-1000', 'rd-9', 'midi-clock', 'muse'] as const
 
 /** The rendered guide for one fixture name. Pure — the same bytes on every call. */
 const RIGS: Record<GuideName, Fixture> = {
   'full-rig': { devices: DEVICES, template: industrialTechno },
   'tr-1000': { devices: TR_1000, template: industrialTechno },
-  'tr-6s': { devices: TR_6S, template: industrialTechno },
+  'rd-9': { devices: RD_9, template: industrialTechno },
   'midi-clock': { devices: MIDI_CLOCK, template: industrialTechno },
   'muse': { devices: MUSE, template: industrialTechno },
   'deluge-drone-study': { devices: DELUGE, template: droneStudy },

@@ -436,6 +436,50 @@ const recipes: Recipe[] = [
     articulation: [{ slot: 'backbeat', set: { flam: true }, hint: 'flam' }],
     verified: false,
   },
+  {
+    id: 'tr6s-snare-clean',
+    role: 'snare',
+    character: 'clean',
+    voice: 'sd',
+    title: 'Snare with nothing on it',
+    /**
+     * #443. `snare clean` was authored nowhere in the library, so every direction asking for one
+     * got the `bright` recipe substituted — a snare with `H BOOST` on it, which is the opposite
+     * of what the reader asked for on the axis they asked on.
+     *
+     * **`THRU`, which p.8 defines as *"No INST FX effect is applied."*** §3.4 puts `clean` at
+     * `grit -1`, and on a box where every character above is a choice of INST FX, the bottom of
+     * that axis is the absence of one. The other three snares each reach for a type that changes
+     * the sound's content — `TRANSIENT`, `H BOOST`, `CRUSHER` — and this one is the tuned snare
+     * underneath all of them.
+     *
+     * **`THRU` is a setting and not an omission**, which is why it is written down. The reader is
+     * standing at the box with whatever the kit had loaded; a recipe that said nothing about
+     * INST FX would leave a `CRUSHER` from the last kit sitting on the part. `tr6s-ride-clean`
+     * takes the same position on the same character and this recipe follows it.
+     *
+     * So the recipe is the common block and the one gated parameter the snare has: tune, decay,
+     * the wires, and the two sends. §3 says that is what a recipe is — the settings that get one
+     * part sounding right — and here the shortness of the list is the content of it.
+     */
+    params: [
+      tone('SD category, ACB', 'SNAPPY below exists only for ACB tones of the SD category (p.7)'),
+      num('TUNE', 0, BIPOLAR, 7, { mood: [{ axis: 'darkness', amount: -70 }], hint: 'inst-edit' }),
+      num('DECAY', 96, UNIT, 7, { mood: [{ axis: 'density', amount: -40 }] }),
+      num('SNAPPY', 176, UNIT, 7, {
+        mood: [{ axis: 'grit', amount: 70 }],
+        note: 'The wires are the noise in a snare, so grit rides them here — with THRU below there is no effect to push instead (p.7)',
+      }),
+      instFx('THRU'),
+      ...sends(28, 14, 90),
+      shuffle(),
+    ],
+    articulation: [
+      { slot: 'backbeat', set: { accent: true }, hint: 'accent-step' },
+      { slot: 'ghost', set: { weak: true }, hint: 'weak-step' },
+    ],
+    verified: false,
+  },
 
   // ---- LT ----------------------------------------------------------------
   {
@@ -681,6 +725,120 @@ const recipes: Recipe[] = [
     // use CloseHH to close (mute) the sustained sound of OpenHH."
     routing: 'KIT Edit > MUTE, OH = CH — the closed hat chokes the open one (p.6)',
     articulation: [{ slot: 'offbeat', set: { accent: true }, hint: 'accent-step' }],
+    verified: false,
+  },
+  {
+    id: 'tr6s-open-hat-hard',
+    role: 'open-hat',
+    character: 'hard',
+    voice: 'oh',
+    title: 'Open hat struck hard and cut short',
+    /**
+     * #443, and the pair below with it. Both `open-hat hard` and `open-hat soft` were authored
+     * nowhere in the library, and every direction asking for either got `bright` substituted.
+     *
+     * **The reason they are separate recipes and not `bright` renamed is that the box separates
+     * them, on its own page.** `bright` is `tone +1` and reaches for `H BOOST` — *"Boost 0–255,
+     * adjusts the amount of boost"*, plus the frequency above which it applies (p.8). That is
+     * content in the top end. `hard` and `soft` are `force ±1`, and p.8 gives `TRANSIENT` two
+     * bipolar controls that are about force and nothing else:
+     *
+     *  - `Attack  -128–0–+127` — *"Emphasizes or softens the attack."*
+     *  - `Release -128–0–+127` — *"Emphasizes or softens the release."*
+     *
+     * So the pair lives on those two controls and neither one is reachable by moving `H BOOST`.
+     * The question asked of this issue was whether `hard` is the existing bright sound under
+     * another name; on this box it is not, and the two rows above are the evidence.
+     *
+     * **`Attack` is what carries the pair, and it is the one control whose sign reverses**: `+88`
+     * here, `-72` on the `soft` recipe below. `Release` is negative on both, because it is not a
+     * force control in opposite directions — a hat hit hard and cut off and a hat hit gently both
+     * stop sooner than the one left ringing, and the `bright` recipe above is the one that rings.
+     * What separates these two is the front of the sound and how loud it is, which is what
+     * `force` means.
+     *
+     * `EnvDepth 0–255` (p.8) is set here and on the `soft` recipe, because it is what the page
+     * says the other two are scaled by — *"Adjusts the intensity of Attack and Release"* — and
+     * a signed attack under an unstated depth is a setting whose effect the recipe has not
+     * actually pinned.
+     *
+     * **A hard open hat is still an open hat.** `DECAY 104` is well above the closed hat's `44`
+     * and below the bright one's `150`: the tail is truncated, not removed, and the choke
+     * routing is the same one. A hat that stopped ringing would be the neighbouring *role*.
+     */
+    params: [
+      tone('CH/OH category'),
+      num('TUNE', 24, BIPOLAR, 7, { mood: [{ axis: 'darkness', amount: -70 }], hint: 'inst-edit' }),
+      num('DECAY', 104, UNIT, 7, { mood: [{ axis: 'density', amount: -40 }] }),
+      num('LEVEL', 176, UNIT, 7, { note: 'Level is read after INST FX on this box (p.7)' }),
+      instFx('TRANSIENT'),
+      num('TRANSIENT ENV DEPTH', 200, UNIT, 8, {
+        note: 'Scales the two below — without it their sign is a setting with no stated size (p.8)',
+      }),
+      num('TRANSIENT ATTACK', 88, BIPOLAR, 8, { mood: [{ axis: 'grit', amount: 70 }] }),
+      num('TRANSIENT RELEASE', -64, BIPOLAR, 8, {
+        note: 'Negative softens the release — the ring is cut rather than boosted (p.8)',
+      }),
+      ...sends(20, 16, 80),
+      shuffle(),
+    ],
+    routing: 'KIT Edit > MUTE, OH = CH — the closed hat chokes the open one (p.6)',
+    articulation: [{ slot: 'accent', set: { accent: true }, hint: 'accent-step' }],
+    verified: false,
+  },
+  {
+    id: 'tr6s-open-hat-soft',
+    role: 'open-hat',
+    character: 'soft',
+    voice: 'oh',
+    title: 'Open hat played gently, and short with it',
+    /**
+     * The other half of the pair above, on the same two controls.
+     *
+     * **A softly-struck hat is short, not long**, and that is the whole shape of this recipe.
+     * Less energy goes into the cymbal, so less comes back out and it stops sooner: `Attack`
+     * negative *softens* the attack in the manual's own word, `Release` negative softens the
+     * release with it, and `DECAY 76` puts this below every other open hat on the box. Quiet and
+     * blunt and brief, which is the three things one gentle stick does at once.
+     *
+     * The decays across the four hat recipes are the ordering this recipe has to hold, and a test
+     * pins it: `CH 44 < OH soft 76 < OH hard 104 < OH bright 150`. Below the closed hat it would
+     * stop being the role; above `hard` it would be a quiet version of it rather than a soft one.
+     *
+     * **Not `tr6s-noise-soft` under another name**, which is the near miss on this voice. That
+     * recipe pulls `TUNE` to `-40` and opens `DECAY` to `220` behind an `LPF`, and what comes out
+     * is a wash with no hat left in it — it is authored on `noise` for that reason, and it is the
+     * long one where this is the short one. This keeps the hat: the choke is wired, `TUNE` stays
+     * positive, and the part is still played on the offbeat.
+     *
+     * `LPF` was the obvious alternative and is the wrong axis: taking the top off is `darkness`,
+     * which is a mood knob here and `dark` a different character. A soft part is quieter and
+     * blunter, not darker.
+     */
+    params: [
+      tone('CH/OH category'),
+      num('TUNE', 20, BIPOLAR, 7, { mood: [{ axis: 'darkness', amount: -70 }], hint: 'inst-edit' }),
+      num('DECAY', 76, UNIT, 7, {
+        mood: [{ axis: 'density', amount: -30 }],
+        note: 'The shortest open hat on the box, and still well clear of the closed one',
+      }),
+      num('LEVEL', 104, UNIT, 7, { note: 'Under the pattern rather than on top of it' }),
+      instFx('TRANSIENT'),
+      num('TRANSIENT ENV DEPTH', 160, UNIT, 8, {
+        note: 'Scales the two below — without it their sign is a setting with no stated size (p.8)',
+      }),
+      num('TRANSIENT ATTACK', -72, BIPOLAR, 8, {
+        mood: [{ axis: 'grit', amount: 110 }],
+        note: 'Negative softens the attack (p.8) — grit rising is what puts the edge back',
+      }),
+      num('TRANSIENT RELEASE', -40, BIPOLAR, 8, {
+        note: 'Negative softens the release too (p.8): a gentle hit rings for less time, not more',
+      }),
+      ...sends(56, 40, 120),
+      shuffle(),
+    ],
+    routing: 'KIT Edit > MUTE, OH = CH — the closed hat chokes the open one (p.6)',
+    articulation: [{ slot: 'offbeat', set: { weak: true }, hint: 'weak-step' }],
     verified: false,
   },
   {

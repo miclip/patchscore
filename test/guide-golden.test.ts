@@ -105,11 +105,15 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
     // things to do about it. One rig shows all three at once only because it is too small for
     // the direction, which is exactly why a one-drum-machine fixture is the one that pins them.
     //
-    // **It was `tr-1000` until the TR-1000's LT took `bass-mid`**, which closed that guide's only
-    // unauthored line. `tr-6s` is the same shape one box down and carries all three, plus both
-    // `rig-limit` reasons — `no room` where a track is already busy, and no capable voice at all
-    // for a tonal part. See the fixture's own note in `golden/guides.ts`.
-    const one = guideText('tr-6s')
+    // **It was `tr-1000` until the TR-1000's LT took `bass-mid`, then `tr-6s` until #443 gave
+    // that box an `open-hat`**, each time closing that guide's only unauthored line. `rd-9` is
+    // the same shape again and carries all three, plus both `rig-limit` reasons — `no room` where
+    // a track is already busy, and no capable voice at all for a tonal part.
+    //
+    // The subject moving twice is the finding, not the churn: this heading names a gap somebody
+    // is actively closing, so it migrates to whichever box has not been fixed yet. Both moves
+    // were content improvements. See the fixture's own note in `golden/guides.ts`.
+    const one = guideText('rd-9')
 
     expect(one).toContain('### Gaps')
     expect(one).toContain('This rig cannot make these parts.')
