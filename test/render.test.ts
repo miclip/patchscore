@@ -1305,7 +1305,12 @@ describe('Master FX names what processes audio (§8 phase 7)', () => {
     const start = body.indexOf('**Master FX**')
     expect(start, 'master FX heading').toBeGreaterThan(-1)
     const rest = body.slice(start + 1)
-    const end = rest.indexOf('**Arrangement variations**')
+    // #264 put a second block between this one and the arrangement, so this ends at whichever
+    // block heading comes next rather than at one named heading.
+    const ends = ['**Tuning**', '**Arrangement variations**']
+      .map((heading) => rest.findIndex((line) => line.startsWith(heading)))
+      .filter((at) => at !== -1)
+    const end = ends.length === 0 ? -1 : Math.min(...ends)
     return (end === -1 ? rest : rest.slice(0, end)).filter((l) => l !== '')
   }
 

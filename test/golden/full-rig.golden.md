@@ -1266,6 +1266,10 @@ What processes audio in this rig:
 - OP-XY — carries effects, though no part in this guide reaches them
 - Zoom LiveTrak L-8 — is a mixer and recorder (stereo main out · USB audio · audio in)
 
+**Tuning** — derived from this arrangement
+
+Loop Peak with the MODEL D kick and Minitaur sub. Sweep the kick's tuning slowly; stop where its tail adds weight instead of beating against the sub, then check the full progression in F minor before committing.
+
 **Arrangement variations**
 
 Sections that program identically, part for part — build one and copy it:

@@ -1,6 +1,6 @@
 import { Fragment } from 'react'
 import type { BandGroup, FxSource, ResolveResult, Role } from '@/lib/core'
-import { bandTrajectory, fxSources, sidechainReading } from '@/lib/core'
+import { bandTrajectory, fxSources, lowEndPairing, sidechainReading } from '@/lib/core'
 import { count, fxText, num, sidechainSentences } from './format'
 import { TokenList } from './instruction'
 import { VocabularyTerm } from '../vocabulary-term'
@@ -77,13 +77,26 @@ function GroupNotes({ group }: { group: BandGroup }) {
   )
 }
 
-/** §8 phase 7. Sidechain, master FX, arrangement variations — what happens once it plays. */
+/** §8 phase 7. Sidechain, master FX, tuning, arrangement variations — what happens once it plays. */
 export function PhaseFinishing({ result }: { result: ResolveResult }) {
   const sidechain = sidechainSentences(sidechainReading(result.devices))
   const fx = fxSources(result.devices, result.assignments)
   const byId = new Map(result.devices.map((d) => [d.id, d]))
   const only = fx[0] as FxSource | undefined
   const trajectory = bandTrajectory(result)
+  const lowEnd = lowEndPairing(result)
+  /*
+   * §8/#264. The Markdown sibling of this sentence is in `render.ts`, written by hand there as
+   * it is here: the *facts* are `lib/core/mix.ts`'s and the ink is each renderer's own (#33).
+   * `test/guide-view.test.ts` holds the two to the same words.
+   *
+   * Built as one string rather than as JSX text so the key clause cannot pick up or lose a space
+   * against its sibling — which is the whole failure mode a hand-written pair has.
+   */
+  const listen =
+    "Sweep the kick's tuning slowly; stop where its tail adds weight instead of beating " +
+    'against the sub, then check the full progression' +
+    `${lowEnd?.key === undefined ? '' : ` in ${lowEnd.key}`} before committing.`
 
   return (
     <>
@@ -122,6 +135,47 @@ export function PhaseFinishing({ result }: { result: ResolveResult }) {
               </li>
             ))}
           </ul>
+        </>
+      )}
+
+      {/* §8/#264. After the master chain and before the arrangement, because it is the last
+          thing done to the sound itself and the first thing done by ear. The label names where
+          this comes from — the arrangement above it — because nothing here is off a manual and it
+          must not wear a citation's clothes. Deliberately not the `· derived` form: that is the
+          per-value badge #394 removed, and `Provenance`'s vocabulary means an authored point moved
+          by a mood axis, which this is not. */}
+      {lowEnd === undefined ? null : (
+        <>
+          <h4>
+            Tuning <span className="quiet">— derived from this arrangement</span>
+          </h4>
+          {/*
+            `kick` and `sub` are written here rather than carried from the model, which knows them
+            as the two field names it pairs. They are plain prose too, and deliberately not
+            `RoleList`'s token treatment: this is a sentence — *the TR-8S kick*, not a list of
+            parts — and a `VocabularyTerm` inside it would put a tappable word mid-paragraph whose
+            hit target reaches 14px above and below the line (#21, `.vocab-term::after`), over the
+            prose either side. The same word is a term everywhere the guide lists parts.
+
+            One box carrying both parts names it once, for the reason the Master FX block above
+            drops its "nothing else in this rig" clause at a rig of one (#144): the two-box
+            sentence prints the same name twice and reads as a rack the reader cannot see.
+          */}
+          <p>
+            Loop <strong>{lowEnd.listenIn}</strong> with the{' '}
+            {lowEnd.sameDevice ? (
+              <>
+                <strong>{lowEnd.kick.deviceName}</strong>
+                {"'s kick and sub"}
+              </>
+            ) : (
+              <>
+                <strong>{lowEnd.kick.deviceName}</strong> kick and{' '}
+                <strong>{lowEnd.sub.deviceName}</strong> sub
+              </>
+            )}
+            {`. ${listen}`}
+          </p>
         </>
       )}
 

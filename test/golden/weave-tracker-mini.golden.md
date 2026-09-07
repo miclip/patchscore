@@ -683,6 +683,10 @@ No box in this rig has a sidechain.
 
 The Tracker Mini carries REVERB SEND in its recipes; it is the only box here, so that is the whole master chain.
 
+**Tuning** — derived from this arrangement
+
+Loop Twist with the Tracker Mini's kick and sub. Sweep the kick's tuning slowly; stop where its tail adds weight instead of beating against the sub, then check the full progression in E aeolian before committing.
+
 **Arrangement variations**
 
 Sections that program identically, part for part — build one and copy it:
