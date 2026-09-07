@@ -212,6 +212,12 @@ describe('TR-1000 manifest', () => {
       'tr1000-bass-mid-dark': [63, 65],
       'tr1000-bass-mid-dirty': [63],
       'tr1000-rim-clean': [60],
+      // #443. p.60 is `8X Rim Shot`'s own table; p.66 and p.67 are the RS's `CMP` and `IFX`
+      // blocks, which p.33's audio diagram puts on this track between the amp envelope and the
+      // mixer. Both are selected off rather than set, so the numerics here are all p.60's — but
+      // the entry names every page the recipe rests on, which is what a reader of the block's
+      // citation sentence sees.
+      'tr1000-ghost-perc-clean': [60, 66, 67],
       'tr1000-ghost-perc-soft': [62],
       'tr1000-clap-bright': [62],
       'tr1000-clap-soft': [59],
@@ -223,7 +229,7 @@ describe('TR-1000 manifest', () => {
       'tr1000-ride-clean': [62],
       'tr1000-metallic-dirty': [62],
     }
-    expect(Object.keys(PAGES)).toHaveLength(24)
+    expect(Object.keys(PAGES)).toHaveLength(25)
     for (const recipe of device.recipes) {
       const allowed = PAGES[recipe.id]
       expect(allowed, recipe.id).toBeDefined()
@@ -259,7 +265,7 @@ describe('TR-1000 manifest', () => {
       expect(p, `${r.id} has no GEN`).toBeDefined()
       return { id: r.id, param: p as AuthoredParam }
     })
-    expect(gens).toHaveLength(24)
+    expect(gens).toHaveLength(25)
 
     for (const { id, param } of gens) {
       expect(param.kind, id).toBe('enum')
@@ -296,12 +302,15 @@ describe('TR-1000 manifest', () => {
       expect(['Analog', 'ACB', 'FM', 'PCM', 'Sample'], id).not.toContain(param.value)
     }
 
-    // Every recipe reaches for a different generator; 22 recipes sharing three names would
-    // mean the option sets are decoration.
-    // 22 distinct generators over 24 recipes since #345: the two `noise` recipes both load
-    // `VA Noise`, on the two different fixed voices that declare the role. That is the one place
-    // on this box where the same generator is reached twice, and it is a fact about the voices
-    // rather than about the generators.
+    // Recipes reach for their own generator; 25 recipes sharing three names would mean the
+    // option sets are decoration.
+    // 23 distinct generators over 25 recipes since #443, so two names are reached twice and both
+    // repeats are facts about the *voices* rather than about the generators: the two `noise`
+    // recipes both load `VA Noise` on the two different fixed voices that declare the role
+    // (#345), and RS carries both `tr1000-rim-clean` and `tr1000-ghost-perc-clean` on
+    // `8X Rim Shot` (#443) — one rim backbeat at +3St, one ghost tick an octave up with the
+    // snappy off, which is the only rim table on p.60-62 whose `NOISE` makes that difference
+    // authorable at all.
     expect(new Set(gens.map((g) => (g.param as { value: string }).value)).size).toBe(23)
   })
 
@@ -318,6 +327,97 @@ describe('TR-1000 manifest', () => {
         expect(p.options.values.every((o) => o.includes('Open')), recipe.id).toBe(true)
       }
     }
+  })
+
+  /**
+   * #443. `ambient-dub` asks for `ghost-perc clean` and, until this recipe, no device in the
+   * library authored that character, so all twelve of its parts were §3.5 substitutions onto a
+   * `soft` one. The risk in closing a gap that way is authoring the same sound twice under two
+   * names, which #443 says outright is the wrong answer — a substitution at least says what it
+   * did. So the claims that make this a second *sound* are pinned here rather than left to a
+   * reader comparing two value lists.
+   *
+   * `clean` is a claim about grit, not about level: undistorted, minimally noisy, short enough
+   * that the tail does not smear the grid, and dry. Each assertion below is one of those words.
+   */
+  it('authors a ghost-perc `clean` that is a second sound, not the soft one renamed', () => {
+    const recipeOf = (id: string) => {
+      const r = device.recipes.find((x) => x.id === id)
+      if (r === undefined) throw new Error(`no recipe ${id}`)
+      return r
+    }
+    const paramOf = (id: string, name: string) => {
+      const p = (recipeOf(id).params as AuthoredParam[]).find((x) => x.name === name)
+      if (p === undefined) throw new Error(`${id} has no ${name}`)
+      return p
+    }
+    const value = (id: string, name: string) => {
+      const p = paramOf(id, name)
+      if (p.kind !== 'numeric') throw new Error(`${id} / ${name} is not numeric`)
+      return p.value
+    }
+    const selected = (id: string, name: string) => {
+      const p = paramOf(id, name)
+      if (p.kind !== 'enum') throw new Error(`${id} / ${name} is not an enum`)
+      return p
+    }
+
+    const CLEAN = 'tr1000-ghost-perc-clean'
+    const SOFT = 'tr1000-ghost-perc-soft'
+    expect(recipeOf(CLEAN).character).toBe('clean')
+    expect(recipeOf(CLEAN).voice).toBe('rs')
+
+    // **The generator is the load-bearing choice**, because it decides which claims are even
+    // authorable. `8X Rim Shot` (p.60) is the only rim table on p.60-62 carrying `NOISE` and
+    // `BODY` - the two components of the sound that are not the stick. `9X Rim Shot` (p.62),
+    // which `soft` loads, has neither: its only grit control is `FREQ MOD`, so a `clean` written
+    // on it could only be `soft` with one knob turned down. Two different generators is what
+    // stops that being what happened here.
+    expect(selected(CLEAN, 'GEN').value).toBe('8X Rim Shot')
+    expect(selected(SOFT, 'GEN').value).toBe('9X Rim Shot')
+
+    // Undistorted, in the three places this box can add grit to one track. `NOISE` is the
+    // generator's own snappy; `CMP` and `IFX` are the track's, and p.33's audio diagram puts
+    // both of them in the RS's chain (`GEN -> FILTER -> AMP ENV -> COMP -> INST FX -> GAIN ->
+    // MIXER`) rather than in the kit's. Selecting them off is the whole point: a recipe silent
+    // about them inherits whatever the loaded kit left switched on, and a tick arriving through
+    // somebody else's compressor and somebody else's DRIVE is not undistorted.
+    expect(value(CLEAN, 'NOISE')).toBe(0)
+
+    const cmp = selected(CLEAN, 'CMP SW')
+    expect(cmp.value).toBe('OFF')
+    expect(cmp.options.values).toEqual(['OFF', 'ON'])
+    expect(cmp.options.verified).toEqual({
+      kind: 'manual',
+      source: 'TR-1000 Reference Manual (eng02) v1.13+, p.66',
+    })
+
+    const ifx = selected(CLEAN, 'IFX TYPE')
+    expect(ifx.value).toBe('BYPASS')
+    expect(ifx.options.verified).toEqual({
+      kind: 'manual',
+      source: 'TR-1000 Reference Manual (eng02) v1.13+, p.67',
+    })
+    // The set is the page's whole Value column, not a narrowed one, so the two entries this
+    // recipe is being kept out of are visible in the guide beside the one it selects.
+    expect(ifx.options.values).toContain('DRIVE')
+    expect(ifx.options.values).toContain('CRUSHER')
+    expect(ifx.options.values[0]).toBe('BYPASS')
+    // The selection stays taste; only the set is cited (§3.1), as everywhere else on this box.
+    expect(cmp.verified).toBe(false)
+    expect(ifx.verified).toBe(false)
+
+    // Short, and dry, both against `soft` rather than against a number chosen here. `soft` is
+    // *quiet*; if `clean` were merely a renaming, these would be equal.
+    expect(value(CLEAN, 'DECAY')).toBeLessThan(value(SOFT, 'DECAY'))
+    expect(value(CLEAN, 'RVB SEND')).toBeLessThan(value(SOFT, 'RVB SEND'))
+    expect(value(CLEAN, 'DLY SEND')).toBeLessThan(value(SOFT, 'DLY SEND'))
+
+    // And it is still a ghost. The part is addressed by `PatternSlot`, never by step index, so
+    // it survives whichever of `ambient-dub`'s four ghost variants the seed selects.
+    expect(recipeOf(CLEAN).articulation).toEqual([
+      { slot: 'ghost', set: { weak: true }, hint: 'weak-step' },
+    ])
   })
 
   it('keeps every GEN option verbatim from one page of the list', () => {

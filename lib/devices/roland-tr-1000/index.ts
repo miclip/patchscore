@@ -444,6 +444,38 @@ const TOM_GENS = [
 
 const STICK_GENS = ['808 Rim Shot', '909 Rim Shot', '8X Rim Shot', '9X Rim Shot', 'CR78 Rim Shot-CL']
 
+/**
+ * The whole INST FX set, verbatim from the `IFX` block's Value column on p.67, in the order it
+ * prints them. `BYPASS` is first there and first here, and the page states what it means —
+ * *"No INST FX effect is applied"* — which is why a recipe can select it and mean something.
+ *
+ * The set is not narrowed to what is authored today, for the same reason the generator sets are
+ * not (see `gen()` below): the options are what the page documents for this slot, and a reader
+ * looking at the guide should see the rest of the insert rather than only the one entry a recipe
+ * happened to reach for. `DRIVE` — *"Uncolored distortion"* — and `CRUSHER` are the two the
+ * `clean` ghost is being kept out of.
+ */
+const IFX_TYPES = [
+  'BYPASS',
+  'DRIVE',
+  'CRUSHER',
+  'FILTER',
+  'BOOST',
+  'ISOLATOR',
+  'SATURATOR',
+  'EQUALIZER',
+  'FREQ SHIFT',
+  'RING MOD',
+  'SPREAD',
+  'CHORUS',
+  'PITCH DELAY',
+  'FLANGER',
+  'PHASER',
+  'DELAY',
+  'SDD-320',
+  'FATTENER',
+]
+
 const CLAP_GENS = [
   '808 Hand Clap',
   '909 Hand Clap',
@@ -1328,6 +1360,67 @@ export const device: Device = {
         send('DLY', 0),
         shuffle(),
       ],
+      verified: false,
+    },
+    /**
+     * #443. `clean` and `soft` are not one ghost with two names here, because the RS's two rim
+     * generators expose different controls and the two characters ask for different ones.
+     *
+     * `soft` below is *quiet*: `9X Rim Shot` (p.62), pitched down, tail left long enough to blur,
+     * sent to both effects. This one is *undistorted*, which is a claim about grit rather than
+     * level. `8X Rim Shot` (p.60) is the generator that can make it: it is the only rim table on
+     * either page carrying `NOISE`, *"Adjusts the volume of the snappy"*, and `BODY`, *"the volume
+     * of the body resonance"* — the two components that are not the stick. With `NOISE` at 0 and
+     * `BODY` nearly off, what is left is the tick itself and nothing around it.
+     *
+     * `9X Rim Shot` cannot be authored this way: its only grit control is `FREQ MOD`, cross-
+     * modulation between the oscillators, and turning that off is a subtraction from the soft
+     * recipe rather than a different sound. It has no `NOISE` and no `BODY` to floor.
+     *
+     * `COARSE` is the other half. `ambient-dub`'s note on the part asks for a shaker figure that
+     * fills the grid without asking to be listened to, and a shaker lives an octave above where a
+     * rim backbeat sits — +12St is the top of the printed range and puts the tick clear of the
+     * snare band, where `tr1000-rim-clean` above deliberately sits at +3St to cut through it.
+     */
+    {
+      id: 'tr1000-ghost-perc-clean',
+      role: 'ghost-perc',
+      character: 'clean',
+      voice: 'rs',
+      title: 'Dry tick an octave up, no snappy at all',
+      params: [
+        gen('8X Rim Shot', STICK_GENS),
+        num('TUNE', 8, BIPOLAR, '%', 60, { mood: [{ axis: 'darkness', amount: -16 }] }),
+        num('TONE', 10, BIPOLAR, '%', 60, { hint: 'Defined, not sharp' }),
+        num('DECAY', 5, PCT, '%', 60, { hint: 'Shorter than the step it sits on' }),
+        num('COARSE', 12, SEMITONES, 'St', 60, { hint: 'An octave up, into shaker register' }),
+        num('BODY', 6, PCT, '%', 60, { hint: 'The resonance is what rings; keep it off' }),
+        num('NOISE', 0, PCT, '%', 60, { hint: 'Snappy off: the tick is the whole sound' }),
+        // The RS's own chain, in the order p.33's audio diagram draws it: the SINGLE TRACK row
+        // (`RS, HC, CH, OH, CC, RC`) runs GEN -> FILTER -> AMP ENV -> COMP -> INST FX -> GAIN ->
+        // MIXER, so both of these sit on this track ahead of the sends and neither is kit state.
+        // The kit's own processing — MFX, the AFX drive, the reverb and delay returns — is a
+        // different part of that diagram, marked `KIT :`, and nothing here touches it.
+        //
+        // They are on this recipe and not on `soft` because `clean` is the character that has
+        // to *claim* something about them. A recipe silent about a compressor inherits whatever
+        // the loaded kit left switched on, which is the argument `send` already makes for a send
+        // of 0: on this box, off is an instruction. A ghost tick arriving through somebody
+        // else's compressor and somebody else's DRIVE is not undistorted, however carefully the
+        // generator was set.
+        sel('CMP SW', 'OFF', ['OFF', 'ON'], 66, {
+          hint: 'The tick is not worth compressing',
+          note: 'The track’s own compressor, ahead of its insert FX',
+        }),
+        sel('IFX TYPE', 'BYPASS', IFX_TYPES, 67, {
+          hint: 'Nothing in the insert at all',
+          note: 'This instrument’s insert FX, not the kit’s MFX',
+        }),
+        send('RVB', 6, 6),
+        send('DLY', 0),
+        shuffle(),
+      ],
+      articulation: [{ slot: 'ghost', set: { weak: true }, hint: 'weak-step' }],
       verified: false,
     },
     {
