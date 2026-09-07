@@ -116,6 +116,11 @@ const IMPLEMENTATION = [
   // §4.3's authoring helpers. `variant` sorts a pattern's hits into step order, which is what
   // makes two variants written in a different group order byte-identical downstream.
   'authoring.ts',
+  // §3.1/#388's inert check. It sorts its candidates by device, recipe and block, and the audit
+  // prints that order — so a locale-dependent tie-break here would give a laptop and CI two
+  // different reports. Scanned rather than excluded for `guide.ts`'s reason as well: a renderer
+  // is going to read it.
+  'inert.ts',
 ]
 const BANNED = [
   'localeCompare',

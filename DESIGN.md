@@ -4160,13 +4160,18 @@ the first where the reading travels: `akai-mpc-xl` takes the recipes by referenc
 `akai-mpc-one-g2` rebuilds every one of them onto a different document, so its `retargetParam`
 throws if a stamp changes under it.
 
-**Three semantic states are designed; one is implemented.**
+**Three semantic states are designed; two are implemented.**
 
-- **`live` — the module is in the patch.** The only state implemented, and it is a **default
-  rather than a finding**: with no init data, nothing can say whether a module differs from its
-  initialised values, so every module renders as live. That a recipe authors a parameter is *not*
-  evidence the module differs from init — an authored value may equal the init value, and often
-  will. Live is what a box reads as while the question is unanswered.
+- **`live` — the module is in the patch.** Still a **default rather than a finding**: with no init
+  data, nothing can say whether a module differs from its initialised values, so a module renders
+  as live unless something else is positively established about it. That a recipe authors a
+  parameter is *not* evidence the module differs from init — an authored value may equal the init
+  value, and often will. Live is what a box reads as while the question is unanswered.
+
+  It is also what a box reads as when the `inert` check below **cannot match it**, which is the
+  common case rather than the exceptional one. A group whose block or parameter count does not
+  match a candidate exactly stays live, and so does #107's device-level block, which has no single
+  recipe behind it. Live is the fallback in both directions.
 - **`at init` — the module sits at its initialised values.** Not implemented. It requires
   **per-parameter init values read off the instrument** — `observed` provenance specifically
   (§3.1), not `manual`: the Muse's manual documents *that* there is an initialised patch and a
@@ -4181,12 +4186,61 @@ throws if a stamp changes under it.
   destroys the distinction that must not blur — **"same as init" and "not authored" must never
   render alike**, one being a module left alone and the other a gap a reader is entitled to see
   (invariant 5), and both simply vanishing looks identical on the page.
-- **`inert` — the module was configured and reaches nothing**, because a route is off or a depth
-  is zero. Deferred to #388, and its *treatment* is unsettled rather than merely unbuilt: a panel
-  has no idiom for the difference between a module left alone and one configured to no effect.
+- **`inert` — the module was configured and nothing in the recipe appears to be listening**,
+  because every route is off and every depth zero, or because a modulator has nowhere authored to
+  point.
 
-Until the second state exists, a module box distinguishes nothing between one module and another,
-and that is the honest description of what shipped.
+  **Two issues, and the split matters when reading the code.** The *detection* is #388's: it
+  landed as the audit's `INERT` block, it is what `npm run audit` reports, and it answers a
+  library-wide question about the device folders. The *rendering* is #385's, and it is what this
+  section describes — the same judgement asked one recipe at a time and drawn on the box a reader
+  is standing in front of. One implementation serves both, so the report and the page cannot come
+  to disagree about which values are doing nothing; what #385 added is the per-recipe entry point,
+  the match to a rendered group, and the ink.
+
+  It is a **candidate rather than a finding of fact** (invariant 5), and rests on one recipe's
+  authored evidence — its parameters, its patch entries,
+  its routing prose — which cannot see what the panel wires, what the manifest says elsewhere, or
+  what a mechanism outside the parameter model would do.
+
+  **The group is inferred from the parameter name prefix, and that inference can be wrong.** It
+  can only group what a naming convention already groups, and a device that names its controls
+  differently is invisible to the check rather than clean. Two consequences follow, and both are
+  deliberate:
+
+  - **The match to a rendered box is exact on both halves** — the block the candidate was raised
+    on *is* the module the box is labelled with, and the box holds exactly as many controls as the
+    block does. The two coordinate systems genuinely differ (the block is a name prefix, `module`
+    is an authored field, and the Muse's `MIXER · MOD OSC` sits on the MIXER box while belonging
+    to the MOD OSC block), and the renderer legitimately draws subsets: #107 lifts a control out
+    of a part, and `groupedParams` cuts on adjacent runs. A count that has moved means the box is
+    not the group that was judged, so it stays live. **Under-marking is the failure to prefer**: a
+    box wrongly left live costs a reader nothing, and a box wrongly marked costs them a control
+    they had to set.
+  - **The evidence is rendered with the claim**, in both guides, as
+    `Appears inert — 4 routes off, 2 depths 0, level 0.` or
+    `Appears inert — no authored destination found.` The qualification says how sure this is and
+    the evidence says exactly what was and was not looked at, so a reader who knows the panel
+    wires the thing anyway can disagree on the spot. A flat "inert" would be asking to be believed
+    instead, which an inference from a naming convention has not earned.
+
+  **Rendered expanded and muted, not collapsed.** Every control stays visible and dialable —
+  collapsing them would make the claim structural and unarguable, and it is neither. The web guide
+  dims the ground, dashes the edge and steps the label down one token, going no dimmer than the
+  ink the guide already uses for prose it expects read (§8 is read at the machine, in poor light);
+  Markdown hangs the sentence off the module label and keeps every nested bullet. This is the
+  difference from `at init` above, whose design is dimmed **and** collapsed: that state would be a
+  reading of the instrument, and this one is an inference a reader may need to overrule.
+
+**The module lamp is unchanged, and stays reserved for the `at init` distinction.** It is steady
+and solid on every box, in both guides, and #388 gave it no second state. A lamp carries no
+evidence — it would have to be taken on trust, which is the wrong shape for an inference — so the
+inert claim is drawn on the box and said in words. The dark lamp remains #385's, waiting on the
+`observed` init values that would make it a reading rather than a guess.
+
+So a module box now distinguishes *some* modules from others, on a question authored evidence can
+answer. It still distinguishes nothing about init, which is the question it was first designed
+around, and that remains the honest description of what has not shipped.
 
 Export as Markdown, plus a print stylesheet for PDF. A real PDF pipeline is disproportionate
 work for v1.

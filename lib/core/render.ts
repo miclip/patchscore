@@ -28,6 +28,8 @@ import {
   paramLabel,
   renderedParams,
 } from './params'
+import type { InertFinding } from './inert'
+import { inertBlocks, inertNotice } from './inert'
 import type { Pattern, PatternHit } from './template'
 import { STEPS_PER_BAR } from './template'
 import { reStrikesHeldNote, tightestReStrike } from './timing'
@@ -2202,10 +2204,17 @@ function paramLines(param: ResolvedParam, device: Device | undefined, options: H
  * §8/#385. **The lamp beside a module label**, in the one form Markdown has for one.
  *
  * Steady and solid, always — it says *this is a module*, not *this module is doing something*.
- * There is no second state and nothing infers one: a hollow ring would be a claim about whether
- * the box is at its init values, which nothing in the model knows and nothing here guesses
- * (invariant 5). Its web sibling is `.module-led` in `app/globals.css`, a flat dot with no glow
- * and no bevel, and `test/module-boxes.test.ts` pins the pair.
+ * **Still one state, and #388 did not give it a second one.** The lamp #385 designed lit-or-dark
+ * needs per-parameter init values read off the instrument, and those do not exist; a hollow ring
+ * would be a claim about whether the box sits at its init values, which nothing in the model
+ * knows and nothing here guesses (invariant 5).
+ *
+ * What #388 added is a different claim on a different mark: `inertNotice` says, in words and with
+ * its evidence, that nothing in the recipe appears to be listening to this box. That is inference
+ * from authored evidence rather than a reading of the instrument, so it is written where a reader
+ * can weigh it — beside the label, in a sentence — and not encoded in a lamp that would have to be
+ * believed. Its web sibling is `.module-led` in `app/globals.css`, a flat dot with no glow and no
+ * bevel, and `test/module-boxes.test.ts` pins the pair.
  *
  * **§10 says to resist LEDs outside the rack, and it is unchanged.** The lamp contradicts it and
  * ships to be looked at on a real guide, not because the rule was reconsidered — the note at the
@@ -2233,11 +2242,20 @@ const MODULE_LED = '\u25cf'
  * A run that declared no module prints exactly the bullets it always printed, at the same
  * indent — no header, no lamp, nothing around it — so a guide whose devices name no modules is
  * byte-for-byte the guide it was before modules existed. The goldens are the check on that.
+ *
+ * **§8/#388. A box nothing appears to be listening to says so on its label, and keeps every
+ * control under it.** The sentence is `inertNotice`'s, shared with the web view; the ` — ` that
+ * hangs it off the label is this renderer's own, the same join `**<sections>** — <headline>`
+ * already uses in phase 5. Nothing collapses and nothing is dropped: the reader is standing at
+ * the machine and may know the panel wires what the recipe does not say it does, so they get the
+ * qualification, the evidence and all nine values — not eight of them behind a fold.
  */
 function paramBlockLines(
   params: readonly ResolvedParam[],
   device: Device | undefined,
   options: HintSetting,
+  /** #107's device-level block passes none: it has no single recipe to judge against. */
+  blocks: ReadonlyMap<string, InertFinding> = new Map(),
 ): Line[] {
   const out: Line[] = []
   for (const group of groupedParams(params)) {
@@ -2245,7 +2263,8 @@ function paramBlockLines(
       for (const param of group.params) out.push(...paramLines(param, device, options))
       continue
     }
-    out.push(`- **${MODULE_LED} ${group.module}**`)
+    const notice = inertNotice(blocks, group)
+    out.push(`- **${MODULE_LED} ${group.module}**${notice === undefined ? '' : ` — ${notice}`}`)
     for (const param of group.params) {
       // Two spaces, the same step `paramLines` already uses to hang a note under its value — so
       // a boxed note lands one level deeper than its own bullet rather than beside it.
@@ -2677,7 +2696,7 @@ function soundForPart(
       // a heading with no body under it.
       out.push('Nothing to set for this part alone; every setting it has is above.')
     } else {
-      out.push(...paramBlockLines(own, device, options))
+      out.push(...paramBlockLines(own, device, options, inertBlocks(device, a.recipe.id)))
     }
     if (a.patch.length > 0) {
       out.push('')
