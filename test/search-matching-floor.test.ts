@@ -1501,8 +1501,27 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * higher and the candidate arrives where the search has already committed.
    *
    * Twenty-six consecutive zeroes, across twenty-two devices and sixteen content changes.
+   *
+   * **Three recipes take it up 2,904 nodes and the gap stays at zero — a twenty-seventh time.**
+   * 502,855 -> 505,759 unrepaired and the same repaired. The TR-6S's `snare clean` and its
+   * `open-hat soft` and `hard`, the three characters #443's substitution count named on this box.
+   *
+   * **Twenty times the Digitone's clap, on the same three-recipe count as the entry above it, and
+   * the reason is which roles they land on.** The two entries before this one bought roles
+   * `industrial-techno` asks for optionally or on a voice already spent; these three land on
+   * `snare` and `open-hat`, both asked for outright and both near the top of the direction's
+   * priority list, so the candidates arrive where the search is still walking rather than where
+   * it has already committed. Fixed voices, so it is three candidates and not twelve — a pool
+   * would have multiplied them.
+   *
+   * Still 2,904 nodes on a walk of half a million, and **the legal-rig figure `measure:search`
+   * gates on did not move at all** — 47,284 on `weave` seed 15, before and after. The catalogue
+   * benchmark beside it went 583,511 -> 586,551, which is the whole of the movement: half a
+   * percent on a rig nobody can select.
+   *
+   * Twenty-seven consecutive zeroes, across twenty-three devices and seventeen content changes.
    */
-  it('walks the recorded 502,855 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 505,759 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1510,7 +1529,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(502_855)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(505_759)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement
