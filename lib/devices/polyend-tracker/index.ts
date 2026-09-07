@@ -36,12 +36,18 @@ import { TRACKER_PANEL } from './panel'
  *    (p.111) and that range does not move, but `Disabled` makes both inert and the three live
  *    types sweep in different directions. A cutoff with no type beside it is a number with no
  *    subject.
- *  - **`AUTOMATION DESTINATION` and `AUTOMATION TYPE` travel with every envelope value.** There
- *    is no dedicated amp envelope on this box: Attack, Decay, Sustain and Release exist on the
- *    Instrument Automation page and only apply to the destination selected, and only while Type
- *    reads `Envelope` (p.115: *"Available parameters will depend on the destination and the
- *    automation type selected"*). An ADSR authored without those two names an envelope the
- *    reader has no way to find.
+ *  - **Every automation value carries its destination in its own name.** There is no dedicated
+ *    amp envelope on this box: Attack, Decay, Sustain and Release exist on the Instrument
+ *    Automation page and only apply to the destination selected, and only while Type reads
+ *    `Envelope` (p.115: *"Available parameters will depend on the destination and the automation
+ *    type selected"*). So the destination is the prefix — `VOLUME ENVELOPE · DECAY`,
+ *    `GRANULAR POSITION LFO SPEED` — and it names the row a reader scrolls to. An ADSR
+ *    without one names an envelope the reader has no way to find, which is why the prefix is
+ *    never optional. **A single `AUTOMATION DESTINATION` selector is what this replaced**
+ *    (#454): the page's own callout is *"Each destination has the option of an LFO, envelope or
+ *    no automation"*, so the six rows are six independent slots, and one selector per recipe
+ *    could hold one of them and made the second inexpressible. The Tracker Mini names its
+ *    automation the same way, for the same reason.
  *
  * **Citation regime: legality is cited, authority never is.** Every *point* below is taste and
  * stays `verified: false`, enums included; every *range* and every *option set* is the manual's
@@ -246,13 +252,19 @@ const FILTER_TYPES = ['Disabled', 'Low-pass', 'High-pass', 'Band-pass']
 /**
  * p.115, the Instrument Automation page, read off the on-screen selectors.
  *
- *  - `Destination` is the six the screen lists. Every envelope and LFO on this box is *per
- *    destination*; there is no global amp envelope, which is why `DESTINATION` appears beside
- *    every ADSR value below.
+ *  - `Destination` is the six rows the screen lists, and the callout beside the screen shot says
+ *    what each row owns: *"Each destination has the option of an LFO, envelope or no
+ *    automation."* Six slots, independent of one another. So this list is **not** an option set
+ *    on a parameter; it is the vocabulary the parameter *names* are built from, uppercased —
+ *    `VOLUME AUTOMATION TYPE`, `GRANULAR POSITION LFO SPEED`. Exported because
+ *    `test/polyend-tracker` checks every prefix authored below against it, and that check is what
+ *    replaced the option set: a seventh destination cannot be invented, and the six this page
+ *    prints stay the whole of what a recipe may drive.
  *  - `Type` is `Off / Envelope / LFO`, and it decides which of the remaining columns exist at all.
+ *    It is authored **per destination**, so a recipe driving two rows carries two of them.
  *  - `Shape` is the LFO's five.
  */
-const AUTOMATION_DESTINATIONS = [
+export const AUTOMATION_DESTINATIONS = [
   'Volume',
   'Panning',
   'Cutoff',
@@ -273,7 +285,11 @@ const LFO_SHAPES = ['Rev Saw', 'Saw', 'Triangle', 'Square', 'Random']
  *
  * The footnote carves out an exception no flat list can carry: *"128 to 32 Step Speed options are
  * not available with Volume as the destination."* The one use here modulates Granular Position,
- * where the whole list is legal, so the options stay complete.
+ * where the whole list is legal, so the options stay complete rather than being trimmed to one
+ * destination's subset. Nothing in `DeviceSchema` can see that pairing — the list is legal
+ * per column and illegal only in combination, the `SNAPPY` shape `CLAUDE.md` describes — so
+ * `test/polyend-tracker` sweeps every recipe for a `<DESTINATION> LFO SPEED` and checks the five
+ * withdrawn entries against the destination its prefix names.
  */
 const LFO_SPEEDS = [
   '128', '96', '65', '48', '32',
@@ -312,14 +328,20 @@ const TRACK_ROLES: Role[] = [
 
 
 /**
- * The amplitude envelope, which on this box is six settings and not four.
+ * The amplitude envelope, which on this box is the `Volume` row of the automation page and not a
+ * section of its own.
  *
  * There is no dedicated amp envelope: Attack, Decay, Sustain and Release live on the Instrument
  * Automation page and shape **whichever destination is selected**, and only while Type reads
  * `Envelope` (p.115: *"Available parameters will depend on the destination and the automation
- * type selected"*). So the destination and the type travel with every envelope below, for the
- * same reason `FILTER TYPE` travels with `CUTOFF` — an ADSR without them is a scale with no
- * switch, and a reader has no page to enter it on.
+ * type selected"*). So the row is named in front of every value — `VOLUME ENVELOPE · DECAY`
+ * — and the type that arms it is named the same way, for the same reason `FILTER TYPE`
+ * travels with `CUTOFF`: an ADSR without them is a scale with no switch, and a reader has no
+ * page to enter it on.
+ *
+ * **This helper is the `Volume` row and says so; it is not the whole automation page.** p.115
+ * gives the other five rows their own slots (#454), so a recipe that wants the filter to move
+ * authors `CUTOFF AUTOMATION TYPE` beside this rather than instead of it.
  *
  * `density` rides on Decay and Release: a denser arrangement wants shorter sounds, which is the
  * convention the rest of the library already follows on envelope times.
@@ -332,30 +354,76 @@ function ampEnv(
   mood: { decay?: number; release?: number; sustain?: number } = {},
 ): AuthoredParam[] {
   return [
-    pick('AUTOMATION DESTINATION', 'Volume', AUTOMATION_DESTINATIONS, 115, {
+    pick('VOLUME AUTOMATION TYPE', 'Envelope', AUTOMATION_TYPES, 115, {
       hint: 'inst-automation',
-      note: 'the envelope shapes this destination only — there is no global amp envelope',
+      note: 'On the Volume row — this envelope shapes that row only, not the instrument',
     }),
-    pick('AUTOMATION TYPE', 'Envelope', AUTOMATION_TYPES, 115),
-    secs('ATTACK', attack, SECONDS_10, 120),
+    secs('VOLUME ENVELOPE · ATTACK', attack, SECONDS_10, 120),
     secs(
-      'DECAY',
+      'VOLUME ENVELOPE · DECAY',
       decay,
       SECONDS_10,
       120,
       mood.decay === undefined ? {} : { mood: [{ axis: 'density', amount: mood.decay }] },
     ),
-    num('SUSTAIN', sustain, PCT, 120, {
+    num('VOLUME ENVELOPE · SUSTAIN', sustain, PCT, 120, {
       unit: '%',
       ...(mood.sustain === undefined ? {} : { mood: [{ axis: 'density', amount: mood.sustain }] }),
     }),
     secs(
-      'RELEASE',
+      'VOLUME ENVELOPE · RELEASE',
       release,
       SECONDS_10,
       120,
       mood.release === undefined ? {} : { mood: [{ axis: 'density', amount: mood.release }] },
     ),
+  ]
+}
+
+/**
+ * The `Cutoff` row of the same page, which is a **second** envelope and not a re-use of the one
+ * above (#454). p.115's callout is what makes it authorable: *"Each destination has the option of
+ * an LFO, envelope or no automation."* So a recipe can shape the level and the filter at once,
+ * and until the naming changed it could say only one of them.
+ *
+ * `Amount` is authored here and not on the `Volume` row, which is the asymmetry the Mini already
+ * settled: on the amp row the envelope *is* the level and 100 is the ordinary reading, while on
+ * a modulation row the Amount is the depth and the sound is different at every setting. p.120
+ * prints its scale in the envelope's own subsection — *"The amount will set how much of the
+ * envelope is applied 0-100%"* — so it is a cited range here, where the LFO's identically
+ * named field is not (see the header).
+ *
+ * **The filter type is the recipe's, not this helper's.** An envelope on `Cutoff` opens a
+ * low-pass and closes a high-pass, so the two recipes below both carry `Low-pass` beside it and
+ * nothing here assumes one.
+ *
+ * **Its `Decay` is shorter than the amp envelope's on both callers, and that is the whole point
+ * of a second row.** An envelope whose times match the one on `Volume` is heard as more of the
+ * amp shape rather than as the filter moving — `Amount` scales the sweep but cannot separate
+ * two identical curves. A shorter decay closes the filter while the note is still sounding, which
+ * is the moment a reader hears as filter movement. So a caller that copies its `ampEnv` times has
+ * authored a second destination that says nothing, and this note is here to stop the next one.
+ */
+function cutoffEnv(
+  attack: number,
+  decay: number,
+  sustain: number,
+  release: number,
+  amount: number,
+): AuthoredParam[] {
+  return [
+    pick('CUTOFF AUTOMATION TYPE', 'Envelope', AUTOMATION_TYPES, 115, {
+      hint: 'inst-automation',
+      note: 'On the Cutoff row, alongside the Volume row above — p.115 gives each its own slot',
+    }),
+    secs('CUTOFF ENVELOPE · ATTACK', attack, SECONDS_10, 120),
+    secs('CUTOFF ENVELOPE · DECAY', decay, SECONDS_10, 120),
+    num('CUTOFF ENVELOPE · SUSTAIN', sustain, PCT, 120, { unit: '%' }),
+    secs('CUTOFF ENVELOPE · RELEASE', release, SECONDS_10, 120),
+    num('CUTOFF ENVELOPE · AMOUNT', amount, PCT, 120, {
+      unit: '%',
+      note: 'How much of the envelope reaches the cutoff — the depth of the sweep',
+    }),
   ]
 }
 
@@ -741,15 +809,18 @@ const RECIPES: Recipe[] = [
       num('LENGTH', 640, GRAIN_MS, 136, { unit: 'ms' }),
       pick('SHAPE', 'Gauss', GRAIN_SHAPES, 136),
       pick('LOOP', 'Forward', GRAIN_LOOPS, 136),
-      pick('AUTOMATION DESTINATION', 'Granular Position', AUTOMATION_DESTINATIONS, 115, {
+      pick('GRANULAR POSITION AUTOMATION TYPE', 'LFO', AUTOMATION_TYPES, 115, {
         hint: 'inst-automation',
+        note: 'On the Granular Position row of the Instrument Automation page',
       }),
-      pick('AUTOMATION TYPE', 'LFO', AUTOMATION_TYPES, 115),
-      pick('SHAPE (LFO)', 'Triangle', LFO_SHAPES, 115),
-      pick('SPEED', '8', LFO_SPEEDS, 117, {
+      pick('GRANULAR POSITION LFO SHAPE', 'Triangle', LFO_SHAPES, 115),
+      pick('GRANULAR POSITION LFO SPEED', '8', LFO_SPEEDS, 117, {
         note: 'in pattern steps; the whole list is legal here, unlike on a volume destination',
       }),
-      unscaled('AMOUNT', 'Enough drift to hear, not enough to leave the note'),
+      unscaled(
+        'GRANULAR POSITION LFO AMOUNT',
+        'Enough drift to hear, not enough to leave the note',
+      ),
       ...filter('Low-pass', 56, 6, -20),
       reverbSend(42, 30),
       swing(),
@@ -817,6 +888,13 @@ const RECIPES: Recipe[] = [
     role: 'pad',
     character: 'soft',
     voice: 'track',
+    /**
+     * **A chord that sustains is shaped by its amplitude, and #454's second row is declined
+     * here.** The sample is a rendered triad held to its Note OFF, so what makes it a pad is the
+     * 1.6 s attack and the 2.4 s release on the `Volume` row. A filter envelope would move the
+     * colour of a held chord under itself once per trig, which is a sound this role does not
+     * want; the tone is set once at `CUTOFF 48` and the direction's darkness moves it.
+     */
     title: 'A rendered triad, played back as one long note',
     realisation: 'sampled-chord',
     sourceAudio: {
@@ -850,6 +928,27 @@ const RECIPES: Recipe[] = [
     role: 'riser',
     character: 'bright',
     voice: 'track',
+    /**
+     * **The filter already moves, and it moves on the step lane rather than the automation
+     * page.** #454 read this recipe's static `CUTOFF 12` against its title and called the filter
+     * parked, which is true of the instrument page and false of the recipe: the articulation
+     * below writes `high-pass` from 10 at the first hit to 74 at the last, and p.173 says what
+     * that FX does — *"Adjust the instrument cutoff frequency of the high pass filter"*. It is
+     * the same control. p.173's own worked example is this exact gesture, five `H` steps ramping
+     * 25 to 100 under one trig, drawn as `Filter Sweep`.
+     *
+     * **So a second writer is what this declines, not movement.** An LFO on the `Cutoff`
+     * destination would be legal and expressible since #454, and it would point at the cutoff the
+     * `H` lane is already writing. The manual gives no precedence between them: p.115 describes
+     * the automation page and p.173 the step FX, and neither says which holds the value when both
+     * are set. Authoring both would tell a reader to set two controls whose combined result this
+     * library cannot state, which is the `SNAPPY` mistake wearing a third name.
+     *
+     * The step lane is also the better of the two here. p.115 puts `Cutoff` among the
+     * destinations where the LFO *"is semi-free running and resets on playback. Does not reset on
+     * a note"*, so a saw would not be started by the trig that starts the riser, while the `H`
+     * steps are placed where the reader puts them and rise with the hits.
+     */
     title: 'Noise riser opening upward across the bar',
     sourceAudio: { need: 'A long noise sweep or a bowed cymbal, several bars of rising energy', hint: 'load-sample' },
     params: [
@@ -889,10 +988,11 @@ const RECIPES: Recipe[] = [
      * slots. The callout is a graphic beside a screen shot, which is exactly the place
      * `pdftotext` cannot reach and `CLAUDE.md` says to render the page for.
      *
-     * The values here are left as they are rather than re-authored on the correction: a filter
-     * envelope alongside the volume one is a musical change to a shipped recipe and wants its own
-     * pass. What is fixed now is the record, so the next reader does not inherit a limit the box
-     * does not have.
+     * **That pass has now run, and this recipe still declines** (#454). A `Cutoff` envelope is
+     * authorable here and would be wrong: the title is *held shut*, and the part is pressure with
+     * no top on it. A filter that opened would make it the bright riser with a different sample.
+     * The reason survives p.115 because it never depended on p.115 — what the correction
+     * removed was a second reason that did.
      */
     title: 'Low rumble swelling across the bar with the filter held shut',
     sourceAudio: {
@@ -917,6 +1017,14 @@ const RECIPES: Recipe[] = [
     role: 'sweep',
     character: 'soft',
     voice: 'track',
+    /**
+     * **The movement here is the grains and the level, and a second automation row would fight
+     * both** (#454 asked). `LOOP Reverse` on a 380 ms grain is the wash, and the long amp
+     * envelope with `reverb-send` climbing on the last hit is what carries it in. A filter
+     * envelope on top would articulate a sound whose whole character is that it has no
+     * articulation, and the `Cutoff` row is left `Off` for that reason rather than for the one
+     * #454 corrected.
+     */
     title: 'Reversed grains washing in before the change',
     sourceAudio: {
       need:
@@ -1013,9 +1121,20 @@ const RECIPES: Recipe[] = [
      * Five directions ask for this role, three `dark` and two `dirty`, which §3.4 puts at sqrt(2)
      * — so one recipe reaches all five and `dark` is the exact match for the majority.
      *
-     * The filter envelope is the part: `AUTOMATION DESTINATION Cutoff` with an envelope is what
-     * gives a bass note its shape on this box, and it is the same mechanism the lead uses one
-     * destination along.
+     * The filter envelope is the part: `CUTOFF AUTOMATION TYPE Envelope` is what gives a bass
+     * note its shape on this box, and it is the same mechanism the lead uses one row along.
+     *
+     * **It is authored now, and until #454 it could not be.** The title has promised a filter
+     * envelope since this recipe landed while the params carried the `Volume` row alone, because
+     * one `AUTOMATION DESTINATION` selector held one row and the amp envelope had it. p.115 gives
+     * the `Cutoff` row its own slot, so both are set and the note has two shapes rather than one
+     * twice. **`DECAY 0.18` against the amp row's `0.42` is what makes them two.** The filter
+     * closes in well under half the time the level takes, so the note is still sounding when the
+     * top has gone — that is the moment heard as the filter moving. Matching the amp times
+     * would have been heard as more of the amp shape, whatever `AMOUNT` was set to. `AMOUNT 58`
+     * is the depth: far enough that the top of each note is heard arriving, short of the sweep
+     * becoming the part. Nothing on the step lanes writes `Cutoff` here, so the envelope is the
+     * only thing moving it (the `H` step FX would be, and this recipe places none).
      */
     sourceAudio: {
       need:
@@ -1029,6 +1148,7 @@ const RECIPES: Recipe[] = [
       num('FINETUNE', 0, CENTS_100, 110, { unit: 'c' }),
       ...filter('Low-pass', 44, 34, -18),
       ...ampEnv(0.01, 0.42, 24, 0.18),
+      ...cutoffEnv(0.01, 0.18, 24, 0.18, 58),
       swing(),
     ],
     articulation: [
@@ -1085,9 +1205,19 @@ const RECIPES: Recipe[] = [
      * that should slide rather than switched on for the track; `volume` is another, so the accent
      * is the same kind of thing. #283 asks a box to bind or state each; this one binds both.
      *
-     * The filter envelope is the squelch. `AUTOMATION DESTINATION Cutoff` with a fast decay is
+     * The filter envelope is the squelch. `CUTOFF AUTOMATION TYPE Envelope` with a fast decay is
      * what a resonant sweep per note is on this box, and the resonance is high enough that the
      * peak is the sound rather than a colour on it.
+     *
+     * **It is authored now, and until #454 it could not be** (the same correction as the bass
+     * above). An acid line without it is a static resonant filter and a volume shape, which is
+     * the one thing this role is not. **`DECAY 0.08` against the amp row's `0.26` is the
+     * squelch**: the filter shuts in about a third of the note, so the resonant peak falls away
+     * while the level is still there, which is the sound this role is named for. A decay that
+     * matched the amp's would have opened and closed with the level and been heard as nothing.
+     * `SUSTAIN 0` and `RELEASE 0.12` keep the whole sweep inside the note, and `AMOUNT 76` is
+     * deeper than the bass's because the peak travelling is what the ear follows here.
+     * `RESONANCE 76` is already set below, so the sweep has something to sweep.
      *
      * **The line's pitch is per step and is not authored here.** A tracker row carries its own
      * note, so the Hook phase supplies the figure and this recipe supplies the voice.
@@ -1103,6 +1233,7 @@ const RECIPES: Recipe[] = [
       num('TUNE', -12, SEMITONES_24, 110, { unit: 'st' }),
       ...filter('Low-pass', 32, 76, -16),
       ...ampEnv(0.01, 0.26, 0, 0.12),
+      ...cutoffEnv(0.01, 0.08, 0, 0.12, 76),
       swing(),
     ],
     articulation: [

@@ -13,7 +13,7 @@ import {
   type Recipe,
   type Role,
 } from '../lib/core/index'
-import { device } from '../lib/devices/polyend-tracker/index'
+import { AUTOMATION_DESTINATIONS, device } from '../lib/devices/polyend-tracker/index'
 import { TEMPLATES } from '../lib/templates/index'
 
 /**
@@ -30,7 +30,12 @@ import { TEMPLATES } from '../lib/templates/index'
  *  2. **There is no amp envelope on this box.** Attack, Decay, Sustain and Release live on the
  *     Instrument Automation page and shape whichever destination is selected, only while Type
  *     reads `Envelope` (p.115). An ADSR with neither beside it names an envelope a reader has no
- *     page to enter.
+ *     page to enter. Since #454 the destination is carried in the parameter's **name** rather
+ *     than in a selector of its own — `VOLUME ENVELOPE · DECAY`, `GRANULAR POSITION LFO
+ *     SPEED` — because p.115's callout gives each of the six rows its own slot (*"Each
+ *     destination has the option of an LFO, envelope or no automation"*) and one selector could
+ *     only ever name one of them. So what is checked below is that every automation value names
+ *     a destination p.115 prints, and that the row it names is the row the recipe armed.
  *
  * Two smaller traps are pinned as absences. The five step-FX LFO rate tables in ch.7 are **not
  * one table** — the Volume LFO's (p.165) prints `2` where the other four print `3/4` at the same
@@ -142,7 +147,16 @@ describe('Tracker manifest', () => {
       // pp.123, 131, 136 print these as `Variable` — the scale is the loaded file's own length,
       // so any NumericRange here would be invented (invariant 5).
       for (const recipe of device.recipes) {
-        for (const name of ['START', 'END', 'LOOP START', 'LOOP END', 'POSITION', 'WINDOW', 'AMOUNT']) {
+        const unscaledNames = [
+          'START',
+          'END',
+          'LOOP START',
+          'LOOP END',
+          'POSITION',
+          'WINDOW',
+          'GRANULAR POSITION LFO AMOUNT',
+        ]
+        for (const name of unscaledNames) {
           const p = named(recipe, name)
           if (p === undefined) continue
           expect(p.kind, `${recipe.id} / ${name}`).toBe('text')
@@ -171,24 +185,107 @@ describe('Tracker manifest', () => {
   })
 
   describe('there is no amp envelope, only an automation destination (p.115)', () => {
-    it('carries the destination and the type with every ADSR value', () => {
-      const withEnv = device.recipes.filter((r) => has(r, 'ATTACK', 'DECAY', 'SUSTAIN', 'RELEASE'))
-      expect(withEnv.length).toBeGreaterThan(10)
-      for (const recipe of withEnv) {
-        expect(named(recipe, 'AUTOMATION DESTINATION'), recipe.id).toBeDefined()
-        expect(pointOf(recipe, 'AUTOMATION TYPE'), recipe.id).toBe('Envelope')
-        expect(pointOf(recipe, 'AUTOMATION DESTINATION'), recipe.id).toBe('Volume')
+    it('names a destination p.115 prints in front of every automation value', () => {
+      // The prefix is the whole mechanism since #454, so it is what the sweep measures rather
+      // than a count of parameters that happen to be there. `AUTOMATION_DESTINATIONS` is the
+      // manual's own six, uppercased: a seventh would be a row the screen does not have.
+      const legal = new Set(AUTOMATION_DESTINATIONS.map((d) => d.toUpperCase()))
+      const seen = new Set<string>()
+      for (const recipe of device.recipes) {
+        for (const param of params(recipe)) {
+          const prefix = /^(.+?) (?:AUTOMATION TYPE|ENVELOPE · |LFO )/.exec(param.name)?.[1]
+          if (prefix === undefined) continue
+          expect(legal, `${recipe.id} / ${param.name}`).toContain(prefix)
+          seen.add(prefix)
+        }
+      }
+      expect([...seen].sort()).toEqual(['CUTOFF', 'GRANULAR POSITION', 'VOLUME'])
+    })
+
+    it('arms the row every ADSR value is authored on, and arms it as an envelope', () => {
+      // Every recipe, not only the ones with a Volume envelope: since #454 a recipe may drive
+      // two rows, and the row that goes unarmed is the one nobody is looking at. An `ATTACK`
+      // under a row reading `Off` is a value the box ignores.
+      const armed: string[] = []
+      for (const recipe of device.recipes) {
+        for (const param of params(recipe)) {
+          const prefix = /^(.+?) ENVELOPE · /.exec(param.name)?.[1]
+          if (prefix === undefined) continue
+          expect(pointOf(recipe, `${prefix} AUTOMATION TYPE`), `${recipe.id} / ${param.name}`).toBe(
+            'Envelope',
+          )
+          armed.push(`${recipe.id}: ${prefix}`)
+        }
+      }
+      // Counted, so the sweep cannot pass by inspecting nothing. Twenty-five recipes shape the
+      // Volume row; two of those shape the Cutoff row as well.
+      const rows = [...new Set(armed)]
+      expect(rows.filter((r) => r.endsWith(': VOLUME'))).toHaveLength(25)
+      expect(rows.filter((r) => r.endsWith(': CUTOFF'))).toEqual([
+        'tr-bass-mid-dark: CUTOFF',
+        'tr-acid-hard: CUTOFF',
+      ])
+    })
+
+    /**
+     * #454. The two recipes whose titles have always promised a filter envelope, and which could
+     * not carry one while a single `AUTOMATION DESTINATION` held the `Volume` row. What is pinned
+     * is the **whole chain** — the row armed, the four times, and a depth — because any one of
+     * them missing is a modulator that moves nothing, which is the state #452 was reported for.
+     */
+    it('gives the bass and the acid line a cutoff envelope beside the volume one', () => {
+      for (const [id, chain, amount] of [
+        ['tr-bass-mid-dark', { ATTACK: 0.01, DECAY: 0.18, SUSTAIN: 24, RELEASE: 0.18 }, 58],
+        ['tr-acid-hard', { ATTACK: 0.01, DECAY: 0.08, SUSTAIN: 0, RELEASE: 0.12 }, 76],
+      ] as const) {
+        const recipe = device.recipes.find((r) => r.id === id)
+        if (recipe === undefined) throw new Error(`no recipe '${id}'`)
+
+        // Both rows are armed, and they are two rows rather than one moved.
+        expect(pointOf(recipe, 'VOLUME AUTOMATION TYPE'), id).toBe('Envelope')
+        expect(pointOf(recipe, 'CUTOFF AUTOMATION TYPE'), id).toBe('Envelope')
+
+        for (const [stage, value] of Object.entries(chain)) {
+          expect(pointOf(recipe, `CUTOFF ENVELOPE · ${stage}`), `${id} / ${stage}`).toBe(value)
+        }
+
+        // **The decay is shorter than the amp envelope's, and that is load-bearing.** An
+        // envelope whose times match the one on the `Volume` row is heard as more of the amp
+        // shape rather than as the filter moving, and `AMOUNT` cannot separate two identical
+        // curves. So the second destination is only worth its ink while this holds.
+        const cutoffDecay = pointOf(recipe, 'CUTOFF ENVELOPE · DECAY')
+        const volumeDecay = pointOf(recipe, 'VOLUME ENVELOPE · DECAY')
+        expect(typeof cutoffDecay, id).toBe('number')
+        expect(typeof volumeDecay, id).toBe('number')
+        expect(cutoffDecay as number, `${id}: the filter has to close first`).toBeLessThan(
+          volumeDecay as number,
+        )
+
+        // The depth is what makes it modulation rather than a routing declaration. p.120 prints
+        // its scale in the envelope's own subsection, so unlike the LFO's Amount it is a cited
+        // numeric and not `unscaled`.
+        const depth = named(recipe, 'CUTOFF ENVELOPE · AMOUNT')
+        expect(depth?.kind, id).toBe('numeric')
+        if (depth?.kind !== 'numeric') throw new Error('unreachable')
+        expect(depth.value, id).toBe(amount)
+        expect(depth.value, id).toBeGreaterThan(0)
+        expect(depth.range.verified, id).toEqual({ kind: 'manual', source: `${MANUAL}120` })
+
+        // And the filter it sweeps is switched on, or the envelope moves an inert control.
+        expect(pointOf(recipe, 'FILTER TYPE'), id).toBe('Low-pass')
       }
     })
 
     it('keeps the one LFO off the destination p.117 forbids its speed list on', () => {
       // "128 to 32 Step Speed options are not available with Volume as the destination." The
       // options here are the whole 29-entry list, which is only legal away from Volume.
-      const withLfo = device.recipes.filter((r) => pointOf(r, 'AUTOMATION TYPE') === 'LFO')
+      const withLfo = device.recipes.filter((r) =>
+        params(r).some((p) => p.name.endsWith('AUTOMATION TYPE') && pointOf(r, p.name) === 'LFO'),
+      )
       expect(withLfo).toHaveLength(1)
       for (const recipe of withLfo) {
-        expect(pointOf(recipe, 'AUTOMATION DESTINATION'), recipe.id).not.toBe('Volume')
-        const speed = named(recipe, 'SPEED')!
+        expect(pointOf(recipe, 'GRANULAR POSITION AUTOMATION TYPE'), recipe.id).toBe('LFO')
+        const speed = named(recipe, 'GRANULAR POSITION LFO SPEED')!
         expect(speed.kind).toBe('enum')
         if (speed.kind !== 'enum') return
         expect(speed.options.values).toHaveLength(29)
@@ -197,6 +294,48 @@ describe('Tracker manifest', () => {
         expect(speed.options.values[2]).toBe('65')
         expect(speed.options.verified).toEqual({ kind: 'manual', source: `${MANUAL}117` })
       }
+    })
+
+    /**
+     * p.117's footnote is the pairing nothing in the build can see: *"128 to 32 Step Speed
+     * options are not available with Volume as the destination."* The option set is legal as a
+     * column and illegal only in combination, which is the `SNAPPY` shape `CLAUDE.md` names, so
+     * `DeviceSchema` will never catch it and neither will reading one recipe.
+     *
+     * Modelled on `test/tracker-mini`'s sweep, and counted for the same reason: a rule that
+     * measures a name instead of the thing passes by matching nothing (the failure #452 was
+     * reported for). The list below is what the device authors today; a recipe that adds a speed
+     * has to add a line here, which is the point.
+     */
+    it('pairs no volume destination with a speed p.117 withdraws from it', () => {
+      const SLOW_SPEEDS = ['128', '96', '65', '48', '32']
+      const seen: string[] = []
+
+      for (const recipe of device.recipes) {
+        for (const param of params(recipe)) {
+          const destination = /^(.+) LFO SPEED$/.exec(param.name)?.[1]
+          if (destination === undefined) continue
+          if (param.kind !== 'enum') throw new Error(`${recipe.id}: ${param.name} is not an enum`)
+
+          // A speed row belongs to the destination named in front of it, and that destination
+          // has to be the row the recipe actually switched to `LFO`.
+          expect(
+            pointOf(recipe, `${destination} AUTOMATION TYPE`),
+            `${recipe.id}: ${param.name}`,
+          ).toBe('LFO')
+
+          seen.push(`${recipe.id}: ${destination} ${param.value}`)
+
+          if (destination === 'VOLUME') {
+            expect(
+              SLOW_SPEEDS,
+              `${recipe.id}: ${param.name} is illegal on Volume (p.117)`,
+            ).not.toContain(param.value)
+          }
+        }
+      }
+
+      expect(seen).toEqual(['tr-texture-soft: GRANULAR POSITION 8'])
     })
 
     it('authors no step-FX LFO rate at all, because the five printed tables disagree', () => {
