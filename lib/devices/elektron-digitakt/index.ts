@@ -186,6 +186,29 @@ import { DIGITAKT_PANEL } from './panel'
  * outside what `articulation` can carry, #57). So no authored recipe is note-addressed today.
  * That is a fact about the recipes, not about the pool, and the pool is where the field lives.
  *
+ * **#369 closed the question this pointed at, and the answer is that a slice ordinal is not the
+ * guide's business.** p.86's `NOTE` mapping is fully printed and still unwritable: the only fact
+ * worth printing about a slice is which one holds the syllable, and that is in the reader's audio
+ * rather than on any page we hold. So `triggerNote` means an original pitch and nothing else, on
+ * every box in this library, and this pool authors none — permanently, not pending a shape. What
+ * this box says about slices it says through `GRID`, `SLICE` and `SLICE LEN` (p.86), which are
+ * ordinary cited params and are the authority. See `DESIGN.md` §2.1/§4.1.
+ *
+ * **And `dt-vox-chop-bright` declares no `noteAddressing`, because on this recipe a note is not an
+ * ordinal.** A `slice-ordinal` kind says *notes on this part select slices*, which is true of `NOTE`
+ * setting and of nothing else: p.86 gives `SLICE` as `(NOTE, 1-64)` and scopes the whole
+ * keyboard-override warning to *"a track that uses the Slice machine **and when SLICE is set to
+ * NOTE**"*. This recipe sets `SLICE 1`, a fixed number, for its own reasons (see its note — #57).
+ * Under a fixed number the manual says nothing about the step note here, and p.43's general audio
+ * track rule — *"Trig Note sets the pitch of the note when trigged"* — is the only sentence in
+ * force, so a note is a pitch as far as this document goes.
+ *
+ * Marking it would suppress a hook that applies and print a sentence saying a note picks a slice,
+ * on a track where the slice is picked by the parameter one line above it. **The mark follows the
+ * `SLICE` value, not the machine**, and a future recipe here that authors `SLICE NOTE` is the one
+ * that should carry it — with the param on the recipe, so the pairing cannot come apart the way
+ * `CLAUDE.md` records for the TR-8S's tone table.
+ *
  * ## The octave convention, recorded and deliberately not used
  *
  * p.23 states it and confirms it from the floor: `C5` is MIDI 60, and *"Note numbers 0-7

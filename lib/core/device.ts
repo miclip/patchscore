@@ -55,14 +55,17 @@ import {
  * writing `midi`, and cite it — a MIDI number derived from SPN by habit is an invented value
  * however carefully the note name beside it was read.
  *
- * **This models the whole-sample case only, and the boundary is deliberate.** A *sliced*
+ * **This models the whole-sample case only, and the boundary is permanent (#369).** A *sliced*
  * instrument is addressed by note too, and it is not the same fact: on the Tracker Mini's Beat
  * Slice mode `C2` selects the first slice and the next semitone the next slice, so a note there
- * is a slice address rather than a pitch or an original-pitch marker. Nothing in this vocabulary
- * can say that, and authoring a slice base in this field would make two different kinds of value
- * share one name — which reads as correct right up to the first sliced instrument somebody uses
- * for something pitched. #334 named this as its third category and nobody has designed it yet.
- * Until something can say it, a sliced voice authors nothing here.
+ * is an ordinal rather than a pitch or an original-pitch marker. Authoring a slice base in this
+ * field would make two different kinds of value share one name — which reads as correct right up
+ * to the first sliced instrument somebody uses for something pitched. #334 named this as its
+ * third category and #369 decided it: a slice ordinal is not the guide's business, because the
+ * only thing worth printing about a slice is which one carries the syllable and that lives in the
+ * reader's audio file. So a sliced voice authors nothing here, permanently, and the field carries
+ * an original pitch and nothing else. What a guide does say about slices it says through the
+ * device's own slice params and articulation, which are unaffected. See `DESIGN.md` §4.1.
  *
  * **`verified` is a `Cite`, so an uncited trigger note cannot be authored at all.** Not
  * `Verified`, and the difference is invariant 5 rather than invariant 4. Most authored values are
@@ -119,6 +122,65 @@ export const TriggerNoteSchema = z.strictObject({
  * inside the folder, the same class as `PoolId` and `RecipeId`. No template names one and none
  * can; the four shared vocabularies are untouched.
  */
+/**
+ * §2.1/§4.1/#369. **What a note written on a step does here, when it is not a pitch.**
+ *
+ * One kind, and the field exists to carry exactly that one: `kind: 'slice-ordinal'` says *notes on
+ * this part select slices*. Successive notes select successive slices, and no pitch is touched.
+ *
+ * **Which note is the first slice is exactly what this does not say**, and the omission is the
+ * design rather than a gap in it: the base is `C2` on the Tracker Mini, `C1` on both Digitakts and
+ * `C0` on the Octatrack, every one of them printed, and none of them written here. It is the third
+ * category §4.1 names — neither `RoleRequest.pitch` (a part that wants a musical note) nor
+ * `TriggerNote` (a voice that wants one particular note).
+ *
+ * **Ordinal-value-free, and that is the whole design.** It carries no base note, no ordinal and no
+ * count, because #369 decided a slice ordinal is outside what a guide can say: the mapping is
+ * printed in every manual that has one, and the fact that would make a number worth writing —
+ * which slice holds the syllable — lives in audio the reader recorded. So this says *what kind of
+ * thing a note is here* and stops. Anything carrying a slice number would be the slice base in
+ * `TriggerNote`'s clothing, which is the failure the whole issue is about.
+ *
+ * **It is cited all the same, and for `TriggerNote`'s reason rather than for invariant 4's.**
+ * `verified` is a `Cite`, never a `Verified`, so `false` is refused exactly as omission is. Most
+ * authored values are a starting point a reader adjusts and `false` is the honest word for one
+ * nobody has checked; this is not that kind of value. It *removes* things — a hook's notes, the
+ * note line above a grid — so a guessed one deletes the only instruction a part had, and it
+ * deletes it invisibly, since a page that prints nothing looks the same however the claim was
+ * arrived at. There is no state between "the manual says a note selects a slice here" and "we do
+ * not know how this voice is addressed", so the schema admits none.
+ *
+ * The citation is an **authoring gate, not ink**: §8 renders no per-value citation (invariant 4),
+ * and there is no note on the page to hang one beside. What it buys is that the claim cannot be
+ * made without evidence — which matters most on the five sliced recipes in this library that
+ * could not produce that evidence and are therefore unmarked.
+ *
+ * **What it is for is refusing, not printing.** Three consumers read it and all three subtract:
+ * `noteInstruction` says nothing above the grid, `hookAuthority` is not granted, and phase 4 says
+ * the hook cannot apply rather than printing pitches at a part that would read them as slice
+ * numbers. Nothing downstream turns it into an instruction.
+ *
+ * **A discriminated object rather than a bare flag**, so the *kind* of addressing is what a
+ * consumer tests. A second kind would be a different subtraction, and code keyed on presence alone
+ * would apply this one's rules to it.
+ *
+ * **Not a fifth shared vocabulary (invariant 3).** It is a fact a device states about its own
+ * addressing, the same class as `polyphony`, `triggerNote` or a cited range. No template names it
+ * and none can; what a template contributes is a hook, and this is the engine's answer to whether
+ * that hook has a subject here.
+ */
+export type NoteAddressing = {
+  /** The one kind there is: successive notes select successive slices, and no pitch is touched. */
+  kind: 'slice-ordinal'
+  /** The page that says so. A `Cite`, never a `Verified` — see above. */
+  verified: Cite
+}
+
+export const NoteAddressingSchema = z.strictObject({
+  kind: z.literal('slice-ordinal'),
+  verified: CiteSchema,
+})
+
 export type TrackMode = {
   /** Device-local: 'whole-sample', 'sliced', 'midi'. Unique within the voice that declares it. */
   id: string
@@ -126,10 +188,23 @@ export type TrackMode = {
   label: string
   /**
    * §2.1. The note that addresses a member **in this mode**, where the box has one. Omitted where
-   * the mode has no such note, which is the honest answer for a sliced track (the note is a slice
-   * address, #369) and for a MIDI track (the note is being sent out, not sounding a sample).
+   * the mode has no such note, which is the settled answer for a sliced track (the note is an
+   * ordinal, and #369 put ordinals outside the guide's business for good) and for a MIDI track
+   * (the note is being sent out, not sounding a sample).
    */
   triggerNote?: TriggerNote
+  /**
+   * §4.1/#369. **What a note does in this mode, where it is not a pitch** — see `NoteAddressing`.
+   *
+   * Mutually exclusive with `triggerNote`, and `TrackModeSchema` refuses both: one says the note
+   * plays the sound as it is and the other says the note is not a pitch at all, so a mode claiming
+   * both is claiming a `C5` that is simultaneously an original pitch and slice 49.
+   *
+   * Omitted is the ordinary answer and means *a note here is an ordinary note*. Absence is not a
+   * claim that the mode is pitched — a MIDI mode carries neither field — so nothing may read
+   * `undefined` as "pitched" beyond declining to subtract.
+   */
+  noteAddressing?: NoteAddressing
   /**
    * §3.2. **The param that puts this mode in force, and the values that select it.**
    *
@@ -147,17 +222,27 @@ export type TrackMode = {
   selectedBy?: { param: string; values: string[] }
 }
 
-export const TrackModeSchema = z.strictObject({
-  id: z.string().min(1),
-  label: z.string().min(1),
-  triggerNote: TriggerNoteSchema.optional(),
-  selectedBy: z
-    .strictObject({
-      param: z.string().min(1),
-      values: z.array(z.string().min(1)).min(1),
-    })
-    .optional(),
-})
+export const TrackModeSchema = z
+  .strictObject({
+    id: z.string().min(1),
+    label: z.string().min(1),
+    triggerNote: TriggerNoteSchema.optional(),
+    noteAddressing: NoteAddressingSchema.optional(),
+    selectedBy: z
+      .strictObject({
+        param: z.string().min(1),
+        values: z.array(z.string().min(1)).min(1),
+      })
+      .optional(),
+  })
+  // §2.1/#369. The two fields are contradictory claims about one note, so a mode carrying both
+  // fails the build rather than letting `triggerNoteFor` and `noteAddressingFor` disagree on the
+  // page about whether a `C5` is an original pitch or slice 49.
+  .refine((mode) => !(mode.triggerNote !== undefined && mode.noteAddressing !== undefined), {
+    message:
+      'a mode states either a trigger note or a note addressing, never both — a note cannot be an original pitch and a slice ordinal at once (§2.1/§4.1)',
+    path: ['noteAddressing'],
+  })
 
 /**
  * Some devices have fixed, named voices (TR-1000: BD, SD, LT...). Others have fungible
@@ -1903,6 +1988,20 @@ export type Recipe = {
    * decides is how the track is *addressed* — see `TrackMode` and `triggerNoteFor`.
    */
   mode?: string
+  /**
+   * §4.1/#369. **What a note does on this recipe, where it is not a pitch** — see `NoteAddressing`.
+   *
+   * **Here only for a voice that declares no modes.** Where a voice has a mode table the addressing
+   * belongs to the mode, because that is what the mode table *is*, and `DeviceSchema` refuses this
+   * field on a moded voice for the same reason it refuses a pool that declares both a note and a
+   * table: one fact with two spellings is one drift from disagreeing with itself. The Tracker Mini
+   * and the Digitakt II therefore mark a mode; the boxes with no modes mark the recipe.
+   *
+   * It is on the recipe rather than the voice because a sliced instrument is what a recipe *loads*,
+   * not what a track *is* — the same pool holds a whole-sample chop and a Beat Slice one, and a
+   * voice-wide field would be wrong about whichever it did not mean.
+   */
+  noteAddressing?: NoteAddressing
   title: string
   /** §12.4. How the notes are made. Omitted means `polyphonic-voice`. */
   realisation?: Realisation
@@ -1937,6 +2036,7 @@ export const RecipeSchema = z
     character: CharacterSchema,
     voice: z.string().min(1),
     mode: z.string().min(1).optional(),
+    noteAddressing: NoteAddressingSchema.optional(),
     title: z.string().min(1),
     realisation: RealisationSchema.optional(),
     sourceAudio: SourceAudioSchema.optional(),
@@ -3411,7 +3511,39 @@ export const DeviceSchema = z
        * that states nothing, so the omission would look exactly like the honest gap it is not.
        * A recipe naming a mode on a voice with none is a typo the author meant to be load-bearing.
        */
+      /**
+       * §4.1/#369. **The addressing has exactly one home per voice, and this is what keeps it
+       * there.**
+       *
+       * On a moded voice the mode owns it: a recipe naming `sliced` is already saying which
+       * addressing it is in, so a second copy on the recipe is the drift `selectedBy` exists to
+       * prevent, arriving one field over. On an unmoded voice the recipe owns it, because that is
+       * the only place a sliced instrument is named at all.
+       *
+       * And on either, a slice-addressed part must not also resolve to a trigger note: `C5` cannot
+       * be an original pitch and slice 49 at once. `TrackModeSchema` catches the mode case; this
+       * catches the recipe case, where the note sits on the voice a field away.
+       */
       const modes = modesByVoice.get(recipe.voice)
+      if (recipe.noteAddressing !== undefined) {
+        if (modes !== undefined) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `voice '${recipe.voice}' declares modes, so its note addressing belongs to the mode rather than to this recipe (§2.2/§4.1)`,
+            path: ['recipes', i, 'noteAddressing'],
+          })
+        }
+        // `poolId ?? voiceId` (§2.2), which for both authored shapes is the voice's own `id`.
+        const voice = device.voices.find((v) => v.id === recipe.voice)
+        if (voice?.triggerNote !== undefined) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `recipe is '${recipe.noteAddressing.kind}' addressed, but voice '${recipe.voice}' declares a trigger note — a note cannot be an original pitch and a slice ordinal at once (§2.1/§4.1)`,
+            path: ['recipes', i, 'noteAddressing'],
+          })
+        }
+      }
+
       if (modes === undefined) {
         if (recipe.mode !== undefined) {
           ctx.addIssue({

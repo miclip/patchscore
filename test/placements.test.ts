@@ -472,11 +472,13 @@ describe('a guide that places nothing resolves exactly as it did (invariant 6)',
     // own `TUNE` what to write on the step; and §4.1/#339 took it 12 -> 13 when a drum started
     // following the song's key, which moves a rendered value with the key rather than once and
     // for all. All seven are changes to what the resolver *decides* or what it hands a renderer,
-    // and all seven are exactly the kind #340 was not.
+    // and all seven are exactly the kind #340 was not. §4.1/#369 took it 13 -> 14 when a part
+    // whose notes select slices stopped taking its hook's authority, which is entry 2's reading
+    // again and the eighth of the same kind.
     // The literal is kept rather than imported so that a bump has to be read here too — this is
     // one of the three places that reasoned about the constant, and a silent move past a file
     // that argued it should not move is the thing worth catching.
-    expect(RESOLVER_VERSION).toBe(13)
+    expect(RESOLVER_VERSION).toBe(14)
   })
 
   it('renders byte for byte the same with no placements, and none asked for', () => {

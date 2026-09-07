@@ -179,6 +179,28 @@ const TRIGGER_NOTE_CITE: Cite = {
 }
 
 /**
+ * §4.1/#369. **The pages that say a note in Beat Slice mode is a slice number**, cited for the
+ * `beat-sliced` mode's `noteAddressing`.
+ *
+ * Four sentences rather than one, because what makes this claim safe is that every one of them
+ * **scopes itself to beat slice by name** — the neighbouring `Slice` mode is the opposite fact on
+ * the same pages, and a citation that did not carry the scope would be the cited-range hazard
+ * `CLAUDE.md` records, arriving as a cited *mode*.
+ *
+ * A `Cite` and not a `Verified`, for the reason `TRIGGER_NOTE_CITE` is one: this claim deletes a
+ * hook and the note line above a grid, so an unchecked one deletes a reader's only instruction
+ * and does it invisibly.
+ */
+const SLICE_ORDINAL_CITE: Cite = {
+  kind: 'manual',
+  source:
+    `${MANUAL}, p.90 ("The first slice of a beat slice sample will be triggered using note C2"); ` +
+    'p.100 ("When using a beat sliced instrument, the first slice played is assigned as C2"); ' +
+    'p.106 (the same, on the step-note page); p.132 ("Slice 1 starts on note C2", over a waveform ' +
+    'annotated C2-C3 across slices 1-12)',
+}
+
+/**
  * §2.1/§2.2/#86. **What to write on the step when the instrument is transposed**, and it is the
  * one thing the seven `transposed` recipes here left a reader to work out for themselves.
  *
@@ -350,12 +372,35 @@ function unscaled(
  * concatenation rather than a fourth list to keep in step.
  */
 const WHOLE_SAMPLE_PLAY_MODES = ['1-Shot', 'Forward loop', 'Backward loop', 'Pingpong loop']
-const SLICED_PLAY_MODES = ['Slice', 'Beat Slice']
+/**
+ * §4.1/#369. **The two sliced play modes are one option-set entry apart and opposite about what a
+ * note does, so they are two modes rather than one.**
+ *
+ * They were `['Slice', 'Beat Slice']` under a single `sliced` mode, which was right about the
+ * thing that mode then carried (neither has a trigger note) and wrong about the thing it carries
+ * now. p.127's play-mode table already separates them — *"Slice — Sample is sliced. Used for pitch
+ * base melodies"* against *"Beat Slice — Sample is sliced. Used for beat based instruments"* — and
+ * p.132 spells out the consequence for the step note both ways:
+ *
+ *  - **Slice**: *"Slice selected for the instrument will play at the note pitch, default note for
+ *    original sample pitch is C5. This will play notes melodically based on the step note and
+ *    current pitch scale."* A note there is a **pitch**, applied to whichever slice is selected.
+ *  - **Beat Slice**: *"Slice 1 starts on note C2"*, over a waveform annotated `C2 C#2 D2 …` across
+ *    slices 1-12. A note there is an **ordinal**.
+ *
+ * Splitting them is what keeps `noteAddressing` honest. Marked on the pair, a `Slice` recipe would
+ * inherit *notes here select slices* from a page that says the opposite about it, and the guide
+ * would suppress a hook that part can actually play. No recipe uses `Slice` today, which makes
+ * this the cheap moment to separate them rather than a reason not to.
+ */
+const SLICE_PLAY_MODES = ['Slice']
+const BEAT_SLICE_PLAY_MODES = ['Beat Slice']
 const RE_SYNTHESISED_PLAY_MODES = ['Wavetable', 'Granular']
 
 const PLAY_MODES = [
   ...WHOLE_SAMPLE_PLAY_MODES,
-  ...SLICED_PLAY_MODES,
+  ...SLICE_PLAY_MODES,
+  ...BEAT_SLICE_PLAY_MODES,
   ...RE_SYNTHESISED_PLAY_MODES,
 ]
 
@@ -1068,8 +1113,30 @@ const SAMPLE_RECIPES: Recipe[] = [
     role: 'vox-chop',
     character: 'dirty',
     voice: 'track-sample',
-    mode: 'sliced',
+    mode: 'beat-sliced',
     title: 'Beat-sliced vocal, crushed and reversed in',
+    /**
+     * **This is the recipe #369's ruling is about, and the only part in the library that carries
+     * it.** `PLAY MODE Beat Slice` puts the track on p.90's slice addressing — `C2` is slice 1 and
+     * each semitone above it the next — so a note written on a step here is an ordinal, not a
+     * pitch. The `beat-sliced` mode below says exactly that, and nothing more (§2.1/§4.1).
+     *
+     * **A pitched hook does not apply here, and since #369 the guide says so instead of printing
+     * one.** `major-key-electro` hooks `vox-chop` and this is what fills it on a Mini-only rig.
+     * Before #369 the hook took the part's authority (#100): phase 4 printed eight degrees spelled
+     * in the song's key and phase 5 replaced this part's grid with a pointer to them — so the one
+     * instruction a reader could act on was `G4`, which selects whichever slice sits twenty-odd
+     * semitones up their own file. Every value on those rows was right and the instruction was
+     * wrong.
+     *
+     * Now `hookAuthority` is not granted, phase 4 says the hook cannot apply because a note picks
+     * a slice here, and phase 5 prints the variant grid — a rhythm the reader can enter, with the
+     * slices coming from `NO OF SLICES` and `PLAY MODE` in phase 6. **No slice numbers are offered
+     * in the hook's place**: which slice holds which syllable is in the reader's audio, so a list
+     * of ordinals would be invented content (invariant 5). And this folder answers with no notes
+     * of its own — a device deciding music is invariant 3, and a second set beside the hook's is
+     * #100's two-instructions-for-one-step.
+     */
     sourceAudio: {
       need:
         'One or two bars of vocal at this tempo — a phrase, not a word. Beat Slice cuts it into ' +
@@ -2245,10 +2312,16 @@ export const device: Device = {
      * eight tracks under every recipe, and this folder ships four kinds of counter-example:
      *
      *  - **Beat Slice.** The sentence directly after the one quoted above, same page: *"The first
-     *    slice of a beat slice sample will be triggered using note C2"* (p.90, repeated p.106,
-     *    and p.132 — *"Slice 1 starts on note C2"*, successive notes taking successive slices).
-     *    Under that mode a note is a slice address, so `C5` sits two octaves into the file rather
-     *    than at the recording. `tm-vox-chop-dirty` is `PLAY MODE Beat Slice`.
+     *    slice of a beat slice sample will be triggered using note C2"* (p.90, repeated p.100 and
+     *    p.106, and p.132 — *"Slice 1 starts on note C2"*, successive notes taking successive
+     *    slices). Under that mode a note is a slice address, so `C5` sits two octaves into the
+     *    file rather than at the recording. `tm-vox-chop-dirty` is `PLAY MODE Beat Slice`, and
+     *    since #369 that mode says so in the model, cited: `noteAddressing` with a `kind` of
+     *    `'slice-ordinal'` and these pages on its `verified`.
+     *
+     *    **`Slice` is a different mode and the opposite answer**, which is why the two are no
+     *    longer one entry. p.132 again: under `Slice` the selected slice *"will play at the note
+     *    pitch"* and the notes are melodic in the current scale. A note there is a pitch.
      *  - **Granular, and Wavetable beside it in the same option list.** `tm-texture-soft` runs
      *    Granular, which re-reads the file by position (pp.121-122's Granular Position) instead of
      *    playing it through; a wavetable is frames rather than a recording. *"Plays it at its
@@ -2339,16 +2412,64 @@ export const device: Device = {
         },
         {
           /**
-           * **No note, and the refusal is the point.** p.90: *"The first slice of a beat slice
-           * sample will be triggered using note C2"*, p.132: *"Slice 1 starts on note C2"*, with
-           * successive notes taking successive slices. So the note here is a slice address — an
-           * ordinal wearing a note's shape — and `TriggerNote` says in as many words that putting
-           * one in that field would give two kinds of value one name (#369). `C2` is read and
-           * deliberately not authored.
+           * **`Slice`, where a note is an ordinary pitch** — p.132: *"Slice selected for the
+           * instrument will play at the note pitch, default note for original sample pitch is C5.
+           * This will play notes melodically based on the step note and current pitch scale."*
+           * p.127 files it under *"used for pitch base melodies"*, and p.126's pad diagram shows a
+           * scale rather than a slice list.
+           *
+           * So this mode declares no `noteAddressing`, and the distinction is load-bearing: it sits
+           * one option-set entry from `beat-sliced` below, which is. Grouping the two — which this
+           * folder did until #369 — would have told the engine that a `Slice` recipe cannot play a
+           * hook, on a mode whose own page says it plays melodies.
+           *
+           * **No `triggerNote` either, and that is a smaller claim than it looks.** p.132's `C5`
+           * is the original sample pitch here exactly as p.90's is under a whole-sample mode, so
+           * the sentence is available. It is not authored because no recipe uses this mode, and a
+           * cited value nothing reaches is a value nobody has checked against a rendered guide;
+           * the first `Slice` recipe should author it and cite p.132.
            */
           id: 'sliced',
-          label: 'Slice / Beat Slice',
-          selectedBy: { param: 'PLAY MODE', values: SLICED_PLAY_MODES },
+          label: 'Slice',
+          selectedBy: { param: 'PLAY MODE', values: SLICE_PLAY_MODES },
+        },
+        {
+          /**
+           * **`Beat Slice`, where a note is an ordinal — and this is the one mode in the library
+           * that says so** (§4.1/#369).
+           *
+           * Four pages, all scoped to beat slice by name: p.90 *"The first slice of a beat slice
+           * sample will be triggered using note C2"*; p.100 *"When using a beat sliced instrument,
+           * the first slice played is assigned as C2"*; p.106 the same again; p.132 *"Slice 1
+           * starts on note C2"*, printed over a waveform annotated `C2 C#2 D2 D#2 …` across slices
+           * 1-12. So a note here is a slice number wearing a note's shape.
+           *
+           * **`noteAddressing` rather than a `triggerNote` holding `C2`.** The field means *this
+           * note plays the voice's sound as it is*, and `C2` does not — it plays slice 1, whatever
+           * that turns out to be. #369 decided the ordinal is outside what a guide can carry at
+           * all: the mapping is printed in full above, and the fact that would make a number worth
+           * writing, which slice holds the syllable, is in audio the reader recorded. So the mark
+           * says *notes here are not pitches*, carries no slice number, and is permanent.
+           *
+           * **It is cited all the same** (`SLICE_ORDINAL_CITE`, the four pages above). The claim
+           * subtracts — a hook and a note line — so it has to be as unguessable as a trigger note,
+           * and the schema refuses `false` here exactly as it refuses it there.
+           *
+           * What it buys is three refusals downstream — no note above the grid, no hook authority,
+           * and a phase 4 sentence saying why the hook cannot apply — on `tm-vox-chop-dirty`,
+           * which `major-key-electro` hooks. What this box *does* say about slices it says in that
+           * recipe's `PLAY MODE` and `NO OF SLICES`, which are untouched.
+           *
+           * **The `S` step FX is not evidence against this and is worth saying so once.** p.198
+           * reprints the full-size manual's slice-FX page verbatim, examples included, and those
+           * examples hold a constant `F5` beside a varying `S` — which contradicts p.132's own C2
+           * rule two chapters earlier. Four scoped sentences on the Mini's own pages outweigh one
+           * inherited table, and the recipe below sets no `S`.
+           */
+          id: 'beat-sliced',
+          label: 'Beat Slice',
+          noteAddressing: { kind: 'slice-ordinal', verified: SLICE_ORDINAL_CITE },
+          selectedBy: { param: 'PLAY MODE', values: BEAT_SLICE_PLAY_MODES },
         },
         {
           /**

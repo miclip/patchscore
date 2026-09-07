@@ -1469,7 +1469,15 @@ describe('the trigger note, by track mode (§2.1/§2.2/#86)', () => {
    * from the manual rather than imported from the folder. A guard that reads the table it is
    * guarding proves nothing.
    */
-  const SLICED = ['Slice', 'Beat Slice']
+  /**
+   * §4.1/#369. **Two entries, not one, because p.132 answers them differently.** Under `Slice` the
+   * selected slice *"will play at the note pitch"* and the notes are melodic in the current scale;
+   * under `Beat Slice` *"Slice 1 starts on note C2"* and a note is an ordinal. They shared a mode
+   * until `noteAddressing` gave that mode something to say, at which point one entry would have
+   * claimed a suppression the `Slice` page contradicts.
+   */
+  const SLICE = ['Slice']
+  const BEAT_SLICE = ['Beat Slice']
   const RE_SYNTHESISED = ['Wavetable', 'Granular']
 
   function value(recipe: Recipe, name: string): string | number | undefined {
@@ -1491,7 +1499,8 @@ describe('the trigger note, by track mode (§2.1/§2.2/#86)', () => {
     if (value(recipe, 'MODEL') !== undefined) return 'synth'
     const play = value(recipe, 'PLAY MODE')
     if (typeof play !== 'string') return `no PLAY MODE and no MODEL on ${recipe.id}`
-    if (SLICED.includes(play)) return 'sliced'
+    if (SLICE.includes(play)) return 'sliced'
+    if (BEAT_SLICE.includes(play)) return 'beat-sliced'
     if (RE_SYNTHESISED.includes(play)) return 're-synthesised'
     const tune = value(recipe, 'TUNE')
     // p.116 ships TUNE at zero, so a recipe that never sets it is untransposed.
@@ -1506,6 +1515,7 @@ describe('the trigger note, by track mode (§2.1/§2.2/#86)', () => {
       'whole-sample',
       'transposed',
       'sliced',
+      'beat-sliced',
       're-synthesised',
       'synth',
       'midi',
@@ -1546,7 +1556,8 @@ describe('the trigger note, by track mode (§2.1/§2.2/#86)', () => {
     })
     // The same four, deliberately: what separates the two is a number `selectedBy` cannot read.
     expect(selectedBy.get('transposed')).toEqual(selectedBy.get('whole-sample'))
-    expect(selectedBy.get('sliced')).toEqual({ param: 'PLAY MODE', values: SLICED })
+    expect(selectedBy.get('sliced')).toEqual({ param: 'PLAY MODE', values: SLICE })
+    expect(selectedBy.get('beat-sliced')).toEqual({ param: 'PLAY MODE', values: BEAT_SLICE })
     expect(selectedBy.get('re-synthesised')).toEqual({
       param: 'PLAY MODE',
       values: RE_SYNTHESISED,
@@ -1568,7 +1579,10 @@ describe('the trigger note, by track mode (§2.1/§2.2/#86)', () => {
     const count = (mode: string) => sample.filter((r) => r.mode === mode).length
     expect(count('whole-sample')).toBe(13)
     expect(count('transposed')).toBe(7)
-    expect(count('sliced')).toBe(1)
+    // `Slice` is a declared mode nothing selects, the same way `midi` is: the play mode exists on
+    // the box and no recipe here loads a melodic sliced instrument.
+    expect(count('sliced')).toBe(0)
+    expect(count('beat-sliced')).toBe(1)
     expect(count('re-synthesised')).toBe(1)
     expect(count('synth')).toBe(4)
 
@@ -1628,7 +1642,7 @@ describe('the trigger note, by track mode (§2.1/§2.2/#86)', () => {
           for (const assignable of a.assignables) {
             expect(assignable.triggerNote, where).toBeUndefined()
             if (assignable.poolId === 'track-sample') {
-              expect(assignable.modes?.length, where).toBe(6)
+              expect(assignable.modes?.length, where).toBe(7)
             }
           }
         }
@@ -1678,7 +1692,7 @@ describe('the trigger note, by track mode (§2.1/§2.2/#86)', () => {
 
     // A slice address, not an original-pitch marker: p.90's next sentence puts slice 1 at C2.
     expect(playMode('tm-vox-chop-dirty')).toBe('Beat Slice')
-    expect(modeOf('tm-vox-chop-dirty')).toBe('sliced')
+    expect(modeOf('tm-vox-chop-dirty')).toBe('beat-sliced')
     // Re-read by position rather than played through, so "as recorded" is not what happens.
     expect(playMode('tm-texture-soft')).toBe('Granular')
     expect(modeOf('tm-texture-soft')).toBe('re-synthesised')
@@ -1800,9 +1814,14 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     const { grid } = sweep()
 
     // The population, as measured on this library. 216 until #345 authored the seven roles the
-    // sample pool declared and no recipe served. Neither #422's decline nor this moved it: what
-    // changes is which arm each part lands in, not whether it is counted.
-    expect(grid.length).toBe(276)
+    // sample pool declared and no recipe served. Neither #422's decline nor #86 moved it: what
+    // changed there is which arm each part lands in, not whether it is counted.
+    //
+    // §4.1/#369 is the first change to move the population itself, 276 -> 282, and the six are the
+    // Beat Slice `vox-chop`. They used to leave by the `hookAuthority` door below; now the hook
+    // does not take a part whose notes select slices, so they draw a grid like any other part and
+    // are counted here. `hooked` drops by the same six.
+    expect(grid.length).toBe(282)
     expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch', 'trigger'])
 
     // The pitch arm is `sub` alone, in the octave the directions ask a sub for — unchanged
@@ -1819,8 +1838,10 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
       'C5/60',
     ])
 
-    // The blank arm, counted rather than glossed. Every one of these is a transposed recipe.
-    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(108)
+    // The blank arm, counted rather than glossed. Every one of these is a transposed recipe or,
+    // since §4.1/#369, the Beat Slice chop — where the silence is `noteAddressing`'s rather than
+    // a missing citation's, and means *no note here is a pitch* rather than *we did not read it*.
+    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(114)
   })
 
   it('splits the percussion by whether its own recipe transposes the sample', () => {
@@ -1854,6 +1875,10 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
       ['rim', 18],
       ['snare', 18],
       ['tom', 6],
+      // §4.1/#369, and the one entry here that is not a `TUNE`. `tm-vox-chop-dirty` is Beat Slice,
+      // so a note on its grid would select a slice — the mode says so and `noteInstruction` prints
+      // nothing rather than the direction's degree.
+      ['vox-chop', 6],
     ])
   })
 
@@ -1863,7 +1888,11 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     // program. Asserted rather than assumed — "hook or sustained" was the guess, and this box
     // produces no sustained sample-track part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(80)
+    // 80 until §4.1/#369 took the six Beat Slice `vox-chop` parts out: a hook is not this part's
+    // rhythm when the reader cannot enter its notes, so they draw their own grid instead and are
+    // counted in `grid` above.
+    expect(hooked.length).toBe(74)
+    expect(hooked.some((h) => h.endsWith('/vox-chop'))).toBe(false)
     expect(sustained).toEqual([])
     // 12 until #345. The three new entries are `riser` and `sweep`, which no direction authors a
     // step variant for — both say so in their own `PATTERNS` note, and it is why neither recipe

@@ -168,6 +168,22 @@ const NO_NOTE: NoteInstruction = { kind: 'none' }
 
 export function noteInstruction(a: ResolvedAssignment): NoteInstruction {
   if (a.hookAuthority !== undefined || isSustainedPart(a)) return NO_NOTE
+  /**
+   * §4.1/#369. **A part whose notes select slices gets no note instruction, and this arm comes
+   * before both of the ones below it.**
+   *
+   * The trigger arm cannot fire here — `DeviceSchema` refuses a slice-addressed part that also
+   * carries a trigger note — so this is really about `pitch`. That one is a direction's musical
+   * decision, resolved against the song's key, and it reaches any part whose request authored a
+   * degree. On a Beat Slice track it would print a note name above a grid where the note names a
+   * piece of audio, which is precisely the two-kinds-of-value-under-one-name failure #369 exists
+   * to close. A hook is caught upstream by `hookAuthority` never being granted; an authored
+   * `pitch` has no such gate, so it needs this one.
+   *
+   * Silence rather than a substitute. The right value would be a slice number, and the guide does
+   * not have one to give (invariant 5).
+   */
+  if (a.noteAddressing?.kind === 'slice-ordinal') return NO_NOTE
   if (a.pitch !== undefined) return { kind: 'pitch', ...a.pitch }
   if (a.triggerNote !== undefined) return { kind: 'trigger', ...a.triggerNote }
   return NO_NOTE

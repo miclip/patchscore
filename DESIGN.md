@@ -172,13 +172,21 @@ a true sentence fastened to the wrong object: it was authored, declined at #422,
 the one `TrackMode` p.90's sentence is true of. See §2.2. The full-size Tracker still authors
 none — its manual does not say what a written step note does under either sliced mode.
 
-**It models the whole-sample case only.** A *sliced* instrument is addressed by note as well, and
-that is not the same fact: under the Tracker Mini's Beat Slice mode `C2` selects the first slice
-and the next semitone the next slice, so the note is a slice address rather than a pitch or an
-original-pitch marker. Nothing here can say which of the two a voice is doing, and authoring a
-slice base in this field would give two different kinds of value one name — which reads as correct
-until the first sliced instrument somebody uses for something pitched. §4.1's third category names
-this and does not design it; until something can say it, a sliced voice authors nothing.
+**It models the whole-sample case only, and that boundary is settled rather than provisional
+(#369).** A *sliced* instrument is addressed by note as well, and that is not the same fact: under
+the Tracker Mini's Beat Slice mode `C2` selects the first slice and the next semitone the next
+slice, so the note is an ordinal rather than a pitch or an original-pitch marker. Authoring a slice
+base in this field would give two different kinds of value one name — which reads as correct until
+the first sliced instrument somebody uses for something pitched. §4.1 decides it: a slice ordinal
+is not this guide's business, so `triggerNote` carries an original pitch and nothing else, on every
+box, and a sliced voice authors none. That is what the field means, not a hole waiting on a shape,
+and every folder whose manual prints a slice-select note records it as read and declined.
+
+**What such a voice states instead is `noteAddressing: { kind: 'slice-ordinal', verified: Cite }`**
+(§4.1), which says a note here is not a pitch and carries no slice number. The two are mutually
+exclusive and the schema enforces it: one claims a note plays the sound as it is, the other that no
+note is a pitch, and a mode asserting both is asserting that one `C5` is an original pitch and
+slice 49 at once.
 
 It is a value a device authors about itself, in the class of `polyphony` or a cited range, and not
 a fifth shared vocabulary (invariant 3): no template names it and none can.
@@ -246,9 +254,10 @@ no question asked of the reader: it is a consequence of an allocation the resolv
 
 ```ts
 type TrackMode = {
-  id: string                  // device-local: 'whole-sample' | 'sliced' | 'midi'
+  id: string                  // device-local: 'whole-sample' | 'beat-sliced' | 'midi'
   label: string               // 'ONESHOT / WERP / STRETCH / REPITCH'
   triggerNote?: TriggerNote   // §2.1, where this mode has one
+  noteAddressing?: NoteAddressing    // §4.1/#369, where a note here is not a pitch at all
   selectedBy?: { param: string; values: string[] }   // the param that puts it in force
 }
 ```
@@ -269,7 +278,9 @@ prints `C5` for a slice address. `DeviceSchema` refuses the disagreement, which 
 recipe carries the switch, so the pairing cannot come apart. A schema also refuses a pool
 declaring both a `triggerNote` and `modes`, and a recipe naming no mode on a moded voice: the
 second matters because the omission would resolve to silence, which is indistinguishable from the
-honest gap it is not.
+honest gap it is not. It refuses two more of the same family for `noteAddressing` (§4.1): a mode
+claiming both that and a `triggerNote`, and the field on a recipe whose voice has a mode table —
+where the mode is its home, for the reason `selectedBy` exists.
 
 **A mode is not one of invariant 3's shared vocabularies.** Mode ids are device-local strings
 validated inside the folder, the same class as `poolId` and a recipe id. No template names one and
@@ -2243,7 +2254,7 @@ template can reach it, and it is never compared against a hook's pitch. What thi
 bind it to is the citation rule — because octave numbering is a convention, a `midi` written beside
 a note name read off a manual page has to cite the box's own mapping, not scientific pitch notation.
 
-#### A note is not always a pitch, and the third category is still unmodelled
+#### A note is not always a pitch, and the third kind is not this guide's to say (#369)
 
 `RoleRequest.pitch` and `VoiceSpec.triggerNote` between them cover a part that wants a musical note
 and a voice that wants one particular note. There is a third: **a voice on which a note is neither**
@@ -2251,18 +2262,89 @@ and a voice that wants one particular note. There is a third: **a voice on which
 loaded sample and each semitone above it the next slice, so a note there names a piece of audio and
 carries no pitch at all.
 
-Nothing in this design can say that, and the consequence is visible today. Where a direction
-authors a hook for a role a sliced recipe fills — `major-key-electro`'s `vox-chop` on the Tracker
-Mini's `tm-vox-chop-dirty` — the hook supplies `G4`, which on that instrument selects whichever
-slice sits twenty-odd semitones up. §4.3/#100 gives the hook authority and phase 5 prints no note
-of its own, so nothing false reaches the page; that suppression is currently the honest answer
-rather than a gap being hidden.
+**#369 closes this rather than scheduling it: a slice ordinal is outside what a guide can say.**
+Not for want of a citation. Every manual that has the mapping prints it in full — the Tracker
+Mini's `C2` (pp.90/106/132), the Digitakt's and the Digitakt II's `C1` (pp.24/86, and p.26), the
+Octatrack's `C0 (12)`–`D#5 (75)` across slices 1-64 (pp.69/139) — and on all of them successive
+notes take successive slices from a printed base. What no page holds is the only thing that would make an ordinal worth printing:
+**which slice is the syllable**, which lives in the audio the reader recorded and loaded. A guide
+naming a slice number would be choosing content it has never heard (invariant 5), and one naming
+the base note alone would be reprinting a manual line beside a part it does not decide.
 
-It is not a conflict to arbitrate. A device folder replacing a direction's notes would be a device
-deciding music (invariant 3), and printing both would hand a reader two instructions for one step,
-which is exactly what #100 exists to prevent. What is missing is a way for a voice to say *notes
-here address slices*, and until one exists no correct answer is available for a hooked part on a
-sliced recipe. Recorded here so the next attempt starts from the gap rather than from the symptom.
+So the shape #334 asked for is not going to be designed. What a device may state instead is a fact
+about its own addressing that carries **no ordinal** and a **citation**:
+
+```ts
+type NoteAddressing = { kind: 'slice-ordinal'; verified: Cite }
+
+noteAddressing?: NoteAddressing   // on a TrackMode, or on a Recipe where the voice has no modes
+```
+
+It says *notes on this part select slices* and carries no base note, no ordinal and no count —
+because a value is exactly what this section has just ruled out.
+
+**`verified` is a `Cite`, not a `Verified`, and for §2.1's reason rather than invariant 4's.** An
+uncited addressing cannot be authored at all. Most values are a starting point a reader adjusts and
+`false` is the honest word for an unchecked one; this is not that kind of value, because it
+*subtracts* — a hook's notes, and the note line above a grid. A guessed one removes the only
+instruction a part had, and removes it invisibly, since a page that prints nothing looks the same
+however the claim was reached. §8 renders no citation beside it (invariant 4) and there is no note
+left on the page to hang one on: the citation is an authoring gate, and what it buys is visible in
+the five sliced recipes below that could not produce one.
+
+`noteAddressingFor` resolves it the way `triggerNoteFor` resolves its sibling — from the mode where
+the voice has a table, from the recipe where it does not — and it lands on the part as
+`ResolvedAssignment.noteAddressing`, **citation intact**. Four consequences follow, and all four
+are built:
+
+- **`TriggerNote` stays original-pitch-only** (§2.1). A slice base is never written into it, on any
+  box. Not pending a field and not pending a mode: it means *which note plays this voice's sound as
+  it is*, an ordinal is not that, and a value of the second kind under the first kind's name is the
+  failure the field exists to prevent. The two are now mutually exclusive in the schema — a mode
+  declaring both fails to build, as does a slice-addressed recipe on a voice carrying a note.
+- **The device's own slice parameters are the authority, and they already are one.** Cutting and
+  selecting are ordinary cited params a folder authors and a guide prints — the Tracker's `NUMBER
+  OF SLICES` beside its `PLAY MODE`, the Digitakt's `GRID`, `SLICE` and `SLICE LEN`, the
+  Octatrack's `SLIC ON` and the `LEN` option set that travels with it. Where a box addresses slices
+  from its own per-step FX the articulation carries it, which the full-size Tracker does with the
+  `S` step FX on p.164. Nothing here is touched by this ruling: this is where a reader's slice
+  instruction belongs, and it is device knowledge on the same side of invariant 3 as any other.
+- **A pitched hook does not apply to a slice-addressed part, and no longer takes it.** A hook
+  states musical intent for a voice that plays pitches; a Beat Slice track plays ordinals, so there
+  is nothing on it for the intent to mean and no translation into one — translating would need the
+  slice contents, which is exactly the fact nobody has. `hookAuthority` is therefore withheld
+  (`RESOLVER_VERSION` 14), **phase 4 prints the reason and none of the hook's notes**, and phase 5
+  prints the variant grid it used to replace with a pointer — the rhythm being the half of the part
+  a reader can actually enter. No slice numbers are offered in the hook's place (invariant 5), and
+  a device folder may not answer with notes of its own (invariant 3): printing a second set beside
+  the hook's would hand one step two instructions, which is what #100 exists to prevent.
+- **Nothing is written above such a grid either.** `noteInstruction` answers `none` before it
+  reaches the pitch arm, so a direction that authored a degree for a role a sliced recipe fills
+  does not get it printed over a track where a note names a piece of audio.
+
+**The case this was opened about is closed.** `major-key-electro` hooks `vox-chop`, a
+Tracker-Mini-only rig fills it with `tm-vox-chop-dirty`, and that recipe is `PLAY MODE Beat Slice`.
+The guide used to print eight degrees spelled in the song's key and replace the part's grid with a
+pointer to them, so the one instruction a reader could act on was a `G4` that selects whichever
+slice sits twenty-odd semitones up their own file — every value right, the instruction wrong. It
+now says the hook cannot apply because a note picks which slice plays, and prints the grid.
+
+**The library ships six sliced recipes and the mark is claimed on one.** The restraint is the
+point, and it is what the citation gate is for: marking a part *removes* a hook and a note line, so
+a mark where a note really is a pitch costs the reader their only instruction. All six, by name:
+
+| Recipe | Sliced by | Marked? |
+| --- | --- | --- |
+| `tm-vox-chop-dirty` | `PLAY MODE Beat Slice` | **Yes.** pp.90/100/106/132 state slice 1 = `C2` and every one of the four scopes itself to *beat slice* by name |
+| `tr-vox-chop-bright` | `PLAY MODE Slice` | No — pp.126-127 say the selected slice plays *melodically in the current pitch scale*. A note there **is** a pitch, so the hook applies |
+| `tr-vox-chop-dirty` | `PLAY MODE Beat Slice` | No — this manual states no base note in 308 pages, and its own p.164 example holds a constant `F5` beside a varying slice number |
+| `dt-vox-chop-bright` | `SLICE` machine, `SLICE 1` | No — p.86 scopes the override to *"when SLICE is set to NOTE"*, and this recipe fixes a number |
+| `dt2-vox-chop-bright` | `SRC MACHINE SLICE` | No — same conditional (pp.26/98), and no `SLICE` is authored at all |
+| `ot-vox-chop-bright` | `SLIC ON` | No, and here the premise fails rather than the citation: **`STRT` selects the slice** (pp.81/118), and p.139's note map is scoped by p.138 to the SLICES trig mode plus a project MIDI setting |
+
+The Mini's `Slice` and `Beat Slice` are the opposite fact on one page, so they are two modes rather
+than one entry — otherwise a future `Slice` recipe would inherit a suppression its own page
+contradicts. Each folder records its own reason, so the next sweep does not re-derive them.
 
 **Resolution never clamps or transposes to fit what a voice can reach.** `Assignable` carries no
 note range, and inventing one at the template layer would be the same leak. A hook states musical
@@ -3770,7 +3852,18 @@ Do not reorder.
    is going to walk to the box and touch all three, and a count is not a thing you can touch. A
    one-note part says nothing about realisation, because there is nothing to say
 3. **Rig integration** — clock source, MIDI routing, audio outs, mixer channels
-4. **Hook** — written before sound design. A part carried by a `sampled-chord` recipe (§12.4) is
+4. **Hook** — written before sound design.
+
+   **A part whose notes select slices (§4.1/#369) gets one sentence instead of the notes**: that
+   the hook cannot apply, that a note on this recipe picks which slice plays rather than sounding
+   a pitch, and where to go for the two halves it *can* act on — the rhythm in phase 5, the cut and
+   the slice in phase 6. It is said rather than silently skipped, because a hook section missing a
+   role reads as a bug and sends the reader looking for notes that are not coming; and it offers no
+   slice numbers in their place, because which slice holds the syllable is in audio nobody here has
+   heard (invariant 5). It prints above the bars-and-key line, which describes a hook this part is
+   not going to play.
+
+   A part carried by a `sampled-chord` recipe (§12.4) is
    rendered as **two lists rather than one**: the chord shapes, as content to obtain or render
    before starting, and the steps, as trigger events. The ordinary note-per-chord rendering
    would tell its reader to enter three notes on a voice that sounds one. Grouping is by
@@ -3804,8 +3897,11 @@ Do not reorder.
 5. **Step programming** — the selected template pattern per part (§4.3), rendered per device with
    that device's slot articulation bound to it (§7 step 8).
 
-   **Except where a hook resolved for that part's role, in which case the hook is the pattern**
-   and this phase prints a pointer to phase 4 rather than a grid (#100). One authority per part:
+   **Except where a hook resolved for that part's role *and the part can play notes*, in which
+   case the hook is the pattern** and this phase prints a pointer to phase 4 rather than a grid
+   (#100). The second half is §4.1/#369: a part whose notes select slices is handed no authority,
+   so it draws its ordinary grid here and phase 4 says why it prints no notes. One authority per
+   part:
    a hook states steps, lengths and pitches, a variant states steps of its own, and the two
    disagreed on the page with nothing saying which to play — Drone Study's `texture` was three
    sustained notes above and seven retriggers here, against a 1.8 second attack. The
