@@ -965,4 +965,18 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
       'industrial-techno/riser',
     ])
   })
+  it('says which step to put the swing on, because this box has no swing setting', () => {
+    // Nothing pinned SWING on this box until the Mini's note was found to be misleading at the
+    // machine and this one carried the same sentence. `SWING` is FX type `I`, entered on a step
+    // (p.151); p.104's summary is "Applies a swing from any step track for the entire pattern",
+    // and the example on p.151 places two entries at different values. So the reach is the
+    // pattern and the reader still has to choose a step, which is the half the note used to omit.
+    for (const recipe of device.recipes) {
+      const swing = (recipe.params as AuthoredParam[]).find((p) => p.name === 'SWING')
+      if (swing?.kind !== 'numeric') throw new Error(`${recipe.id}: SWING is not numeric`)
+      expect(swing.note, recipe.id).toContain('put it on step 1')
+      expect(swing.note, recipe.id).toContain('every track')
+      expect(swing.note, recipe.id).toContain('50% is no swing')
+    }
+  })
 })
