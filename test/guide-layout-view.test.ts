@@ -1,7 +1,7 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { moodState, resolve, sequencerGroups, unplayedHooks } from '../lib/core/index'
+import { moodState, renderGuide, resolve, sequencerGroups, unplayedHooks } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 import { Guide } from '../components/guide/guide'
@@ -126,5 +126,68 @@ describe('the view still renders every part, whatever the rig (invariant 5)', ()
     const result = resolve({ devices: [], template: industrial, mood: moodState({}), seed: 1 })
     expect(sequencerGroups(result)).toEqual([])
     expect(() => view(result)).not.toThrow()
+  })
+})
+
+/**
+ * §8/#240/#455. **A rig-wide fact is stated once, and the count is the assertion.**
+ *
+ * Reported from a phone, on a one-box rig: *"when there's only one box we repeat these sections,
+ * we should hide one"*. The `Rig integration` phase and the box's own `Patching` heading were
+ * printing the same three callouts a screen apart — clock source, why that box holds the job,
+ * and the menu that routes its clock out.
+ *
+ * The cause was a call site rather than a layout: `Patching` reached for `PhaseRig` and narrowed
+ * its per-box list with `detail`, which does nothing about everything above that list. So the
+ * rig-wide half printed once per phase **plus once per box** — measured N+1 at one, two and
+ * three boxes, worst on the biggest rig rather than the smallest.
+ *
+ * **Counted against the Markdown sibling rather than against a fixed number**, which is the #33
+ * discipline this file already follows: the two renderers share no ink, so the claim that
+ * survives a rewrite of either is that they say a thing the same number of times. A snapshot of
+ * markup would fail on every restyle and would have caught none of this.
+ */
+describe('a rig-wide fact is stated once, however many boxes there are (§8/#455)', () => {
+  const RIG_WIDE = ['Why this box', 'Clock source'] as const
+  const strip = (html: string) =>
+    html.replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ')
+  const times = (text: string, needle: string) => text.split(needle).length - 1
+
+  for (const ids of [
+    ['polyend-tracker-mini'],
+    ['polyend-tracker-mini', 'roland-tr-1000'],
+    ['polyend-tracker-mini', 'roland-tr-1000', 'moog-dfam'],
+  ]) {
+    it(`states each rig-wide fact once across ${ids.length} box${ids.length === 1 ? '' : 'es'}`, () => {
+      const result = resolve({
+        devices: rig(...ids),
+        template: industrial,
+        mood: moodState({}),
+        seed: 3,
+      })
+      const web = strip(view(result))
+      const markdown = renderGuide(result, { layout: 'sequencer' })
+      for (const fact of RIG_WIDE) {
+        // Once, and the same once the Markdown guide says it. The sibling is the reference
+        // because it has been right about this all along — `rigLinesFor` returns
+        // `deviceRigBlocks` and nothing else.
+        expect(times(markdown, fact), `${fact} in the Markdown guide`).toBe(1)
+        expect(times(web, fact), `${fact} in the web guide, ${ids.length} box(es)`).toBe(1)
+      }
+    })
+  }
+
+  it('still draws a per-box block for every box, which is the half that is meant to repeat', () => {
+    const result = resolve({
+      devices: rig('polyend-tracker-mini', 'roland-tr-1000'),
+      template: industrial,
+      mood: moodState({}),
+      seed: 3,
+    })
+    const web = strip(view(result))
+    // The fix must not have removed the list along with the duplication: each box still states
+    // its own clock, sockets, audio and mixer where its parts are worked.
+    for (const name of ['Tracker Mini', 'TR-1000']) expect(web).toContain(name)
+    expect(times(web, 'mixer')).toBeGreaterThanOrEqual(2)
   })
 })

@@ -181,8 +181,12 @@ export function PhaseRig({
    * anything carrying no parts (§2.4) — because each remaining box's block is drawn in the
    * section where its parts are worked instead.
    *
-   * The rig-wide half above is unaffected: the clock source and what it rests on are facts about
-   * the rig, and belong where the rig is described whichever way the guide is read.
+   * **That other block is `RigBoxes` and not this component**, which is the repair in #455. A
+   * box's `Patching` heading used to call `PhaseRig` with a narrowed `detail`, and narrowing the
+   * per-box list does nothing about everything above it: the clock source, why that box holds
+   * the job, the menu that routes its clock out and the warm-up notices are rig-wide, so they
+   * printed again under every box. Once in this phase plus once per box is N+1 copies of one
+   * fact, and at one box it is the same three callouts twice on one screen.
    */
   detail?: readonly Device[]
 }) {
@@ -300,79 +304,107 @@ export function PhaseRig({
       */}
       <VoiceControl patch={result.interDevicePatch} />
 
-      <ul className="boxes">
-        {(detail ?? result.devices).map((device) => {
-          const parts = occupied.get(device.id) ?? 0
-          const clock = clockParts(device)
-          return (
-            <li key={device.id}>
-              <div className="box-head">
-                <strong>{device.name}</strong>
-                <span className="quiet">
-                  {device.kind} · {count(parts, 'part')}
-                </span>
-              </div>
-              <dl className="box-facts">
-                <div>
-                  <dt>clock</dt>
-                  {/*
-                    #121. Four states, not two — this said `receives clock only` for a mixer whose
-                    manual never mentions MIDI, and then named the transports it would arrive on.
-                    The claim and the wire are decided together in `clockParts` for that reason,
-                    and rendered apart so §10's rule about prose and identifiers survives: a box
-                    with no clock at all names no wire.
-                  */}
-                  <dd>
-                    {clock.claim}
-                    {clock.transport === undefined ? null : (
-                      <>
-                        {' · '}
-                        <span className="mono">{clock.transport}</span>
-                      </>
-                    )}
-                    {/*
-                      A box whose two directions run on different wires — the Mother-32 sends
-                      only over `analog-clock` and takes clock over `midi-din` too. The labels
-                      are prose and stay here; which wires they name is `clockWires`' answer.
-                    */}
-                    {clock.send === undefined ? null : (
-                      <>
-                        {' · out: '}
-                        <span className="mono">{clock.send}</span>
-                        {' · in: '}
-                        <span className="mono">{clock.receive}</span>
-                      </>
-                    )}
-                  </dd>
-                </div>
-                {/*
-                  #103. What this box's manual says about the sockets *this* rig's clock runs
-                  through — the Tracker Mini's Type B adapter is the case, and Type B is the
-                  uncommon one. Filtered by transport and deduped in `clockJackNotes`, so a USB
-                  rig hears nothing about a MIDI adapter and a note true of the In and the Out
-                  both is printed once rather than reading as two separate warnings.
-                */}
-                {source === undefined
-                  ? null
-                  : clockJackNotes(device, source.transport).map((jackNote) => (
-                      <div key={jackNote.jacks.join(',')}>
-                        <dt className="mono">{jackNote.jacks.join(', ')}</dt>
-                        <dd>{jackNote.note}</dd>
-                      </div>
-                    ))}
-                <div>
-                  <dt>audio</dt>
-                  <dd>{ioText(device)}</dd>
-                </div>
-                <div>
-                  <dt>mixer</dt>
-                  <dd>{mixerText(device, parts)}</dd>
-                </div>
-              </dl>
-            </li>
-          )
-        })}
-      </ul>
+      <RigBoxes result={result} occupied={occupied} devices={detail ?? result.devices} />
     </>
+  )
+}
+
+/**
+ * §8/#240, #455. **The per-box half of rig integration, on its own.**
+ *
+ * The `Rig integration` phase and a box's own `Patching` heading both want this list and only
+ * one of them wants what sits above it. Splitting them is what makes "once per box" and "once
+ * per rig" separately expressible; before #455 the `Patching` site reached for `PhaseRig` and
+ * got the rig-wide callouts along with the list.
+ *
+ * The Markdown renderer has had the two apart all along — `rigLinesFor` returns
+ * `deviceRigBlocks` and nothing else — so this is the web side catching up to its sibling
+ * rather than a new idea. #33 is the standing warning that the two drift in exactly this way,
+ * and that only one of them is pinned by a golden.
+ */
+export function RigBoxes({
+  result,
+  occupied,
+  devices,
+}: {
+  result: ResolveResult
+  occupied: Map<DeviceId, number>
+  devices: readonly Device[]
+}) {
+  const source = result.clockSource
+  return (
+    <ul className="boxes">
+      {devices.map((device) => {
+        const parts = occupied.get(device.id) ?? 0
+        const clock = clockParts(device)
+        return (
+          <li key={device.id}>
+            <div className="box-head">
+              <strong>{device.name}</strong>
+              <span className="quiet">
+                {device.kind} · {count(parts, 'part')}
+              </span>
+            </div>
+            <dl className="box-facts">
+              <div>
+                <dt>clock</dt>
+                {/*
+                  #121. Four states, not two — this said `receives clock only` for a mixer whose
+                  manual never mentions MIDI, and then named the transports it would arrive on.
+                  The claim and the wire are decided together in `clockParts` for that reason,
+                  and rendered apart so §10's rule about prose and identifiers survives: a box
+                  with no clock at all names no wire.
+                */}
+                <dd>
+                  {clock.claim}
+                  {clock.transport === undefined ? null : (
+                    <>
+                      {' · '}
+                      <span className="mono">{clock.transport}</span>
+                    </>
+                  )}
+                  {/*
+                    A box whose two directions run on different wires — the Mother-32 sends
+                    only over `analog-clock` and takes clock over `midi-din` too. The labels
+                    are prose and stay here; which wires they name is `clockWires`' answer.
+                  */}
+                  {clock.send === undefined ? null : (
+                    <>
+                      {' · out: '}
+                      <span className="mono">{clock.send}</span>
+                      {' · in: '}
+                      <span className="mono">{clock.receive}</span>
+                    </>
+                  )}
+                </dd>
+              </div>
+              {/*
+                #103. What this box's manual says about the sockets *this* rig's clock runs
+                through — the Tracker Mini's Type B adapter is the case, and Type B is the
+                uncommon one. Filtered by transport and deduped in `clockJackNotes`, so a USB
+                rig hears nothing about a MIDI adapter and a note true of the In and the Out
+                both is printed once rather than reading as two separate warnings.
+              */}
+              {source === undefined
+                ? null
+                : clockJackNotes(device, source.transport).map((jackNote) => (
+                    <div key={jackNote.jacks.join(',')}>
+                      <dt className="mono">{jackNote.jacks.join(', ')}</dt>
+                      <dd>{jackNote.note}</dd>
+                    </div>
+                  ))}
+              <div>
+                <dt>audio</dt>
+                <dd>{ioText(device)}</dd>
+              </div>
+              <div>
+                <dt>mixer</dt>
+                <dd>{mixerText(device, parts)}</dd>
+              </div>
+            </dl>
+          </li>
+        )
+      })}
+    </ul>
   )
 }
