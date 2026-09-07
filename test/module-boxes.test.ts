@@ -22,10 +22,15 @@ import { Guide } from '../components/guide/guide'
  * here is that each renderer draws that one decision — same modules, same count, same order, one
  * lamp per box — and that a parameter list naming no module is the list it always was.
  *
- * **No device in the library authors a `module` yet**, which is the point of injecting them: the
- * plumbing lands before the content, and the committed goldens are the standing proof that an
- * unmoduled guide did not move a byte. Injection also keeps this file honest about what it is
- * testing — the renderers — rather than about one box's panel.
+ * **The fixtures inject a `module` rather than reaching for a device that authors one**, and they
+ * still do now that ten devices in the library do (the Muse first, at #385; the count is asserted
+ * below rather than repeated here). Injection keeps this file honest about what it is testing —
+ * the renderers — rather than about one box's panel, and it keeps the assertions stable against a
+ * device folder being re-authored. The describes further down carry the real-library half.
+ *
+ * The line this replaced said no device authored one at all. That was true when the plumbing
+ * landed ahead of the content, and the committed goldens are still the standing proof that an
+ * unmoduled guide did not move a byte.
  */
 
 const MANUAL: Cite = { kind: 'manual', source: 'fixture manual p.1' }
@@ -168,6 +173,12 @@ describe('both renderers box the same modules (§8/#33)', () => {
   it('carries no second lamp state, because nothing infers one', () => {
     // A hollow ring anywhere would be a claim about whether the box sits at its init values.
     // Nothing in the model knows that and nothing here guesses it (invariant 5).
+    //
+    // **#388 did not change this, and it is the distinction worth keeping.** A module nothing in
+    // the recipe appears to be listening to is now marked — but as a sentence carrying its own
+    // evidence, on the box rather than on the lamp, because that claim is inference from one
+    // recipe and has to be arguable. The init-values claim is not inference; it is data nobody
+    // has. `test/inert-modules.test.ts` covers the mark, and asserts the lamp is untouched.
     expect(md).not.toContain('○')
     expect(markup).not.toContain('○')
     expect(markup).not.toContain('module-led-off')
@@ -387,6 +398,11 @@ describe('the module box on a phone and on paper (#21)', () => {
     // 5), and every module defaults to live because the question is unanswered rather than
     // because anything found it live. The single state is also why the lamp is on trial rather
     // than settled: one state carries no information, and §10 — unamended — says to resist it.
+    //
+    // #388's `.module-box.inert` is not that second state and takes no token from here: it asks
+    // whether anything in the *recipe* is listening, which authored evidence can answer, not what
+    // the instrument reads, which nothing can. It is drawn on the box, from the panel and ink
+    // tokens — `test/inert-modules.test.ts` holds it to that.
     expect(css).not.toContain('--lamp-dark')
     expect(css).not.toContain('.module-led-off')
     expect(occurrences(css, '--lamp:')).toBe(2)

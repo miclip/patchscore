@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { auditDevice, formatAudit, inertFindings } from '../scripts/audit-verified'
+import { inertFindings, recipeInertFindings } from '../lib/core/index'
+import { auditDevice, formatAudit } from '../scripts/audit-verified'
 import { device, enumParam, numericParam, recipe } from './fixtures'
 
 /**
@@ -191,6 +192,40 @@ describe('what the check raises in the library today (#388)', () => {
   it('is sorted by code unit, so the report is byte-identical run to run (invariant 6)', () => {
     const keys = found.map((f) => `${f.deviceId} ${f.recipeId} ${f.block}`)
     expect(keys).toEqual([...keys].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)))
+  })
+})
+
+/**
+ * The renderer's entry point. A guide holds one device and one recipe, not a library, so the
+ * judgement has to be reachable at that unit — and the two views have to agree, or the page and
+ * the report become a second opinion about which values are doing nothing.
+ */
+describe('one recipe answers the same as the library walk (#388)', () => {
+  it('reconstructs the whole library report, recipe by recipe', () => {
+    const perRecipe = DEVICES.flatMap((d) => d.recipes.flatMap((r) => recipeInertFindings(d, r)))
+    // Same candidates, same evidence. Only the ordering differs, which `inertFindings` owns.
+    const key = (f: { deviceId: string; recipeId: string; block: string; detail: string }) =>
+      `${f.deviceId} ${f.recipeId} ${f.block} ${f.detail}`
+    expect(perRecipe.map(key).sort()).toEqual(inertFindings(DEVICES).map(key).sort())
+  })
+
+  it('raises nothing for a recipe the library walk does not raise', () => {
+    const muse = DEVICES.find((d) => d.id === 'moog-muse')
+    const repaired = muse?.recipes.find((r) => r.id === 'muse-stab-hard')
+    expect(repaired).toBeDefined()
+    if (muse !== undefined && repaired !== undefined) {
+      expect(recipeInertFindings(muse, repaired)).toEqual([])
+    }
+  })
+
+  it('raises both of a recipe that has two candidates, in block order (invariant 6)', () => {
+    const muse = DEVICES.find((d) => d.id === 'moog-muse')
+    const sub = muse?.recipes.find((r) => r.id === 'muse-sub-clean')
+    expect(sub).toBeDefined()
+    if (muse !== undefined && sub !== undefined) {
+      const found = recipeInertFindings(muse, sub)
+      expect(found.map((f) => f.block)).toEqual(['LFO 1', 'MOD OSC'])
+    }
   })
 })
 

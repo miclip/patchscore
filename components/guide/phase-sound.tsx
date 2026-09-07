@@ -13,12 +13,15 @@ import {
   controlPositionNotice,
   groupedParams,
   hoistedParams,
+  inertBlocks,
+  inertNotice,
   renderedParams,
 } from '@/lib/core'
 import type {
   CapabilityEvidence,
   ContentNotice,
   ControlPositionNotice,
+  InertFinding,
   ParamGroup,
   ParamScope,
   ScopedParams,
@@ -148,14 +151,28 @@ function ParamLines({
  * A group that declared no module renders as bare lines with nothing around them, so a guide
  * whose devices name no modules produces exactly the markup it produced before this existed.
  */
-function ModuleBox({ group, owner }: { group: ParamGroup; owner: Device | undefined }) {
+function ModuleBox({
+  group,
+  owner,
+  blocks,
+}: {
+  group: ParamGroup
+  owner: Device | undefined
+  blocks: ReadonlyMap<string, InertFinding>
+}) {
   if (group.module === undefined) return <ParamLines params={group.params} owner={owner} />
+  const notice = inertNotice(blocks, group)
   return (
-    <div className="module-box">
+    <div className={notice === undefined ? 'module-box' : 'module-box inert'}>
       <p className="module-label">
+        {/* Still one lamp state (#385): the mark that would say *this box is doing nothing* is a
+            sentence below, where a reader can weigh its evidence, not a lamp they must believe. */}
         <span className="module-led" aria-hidden="true" />
         <span>{group.module}</span>
       </p>
+      {/* Read out, never `aria-hidden`: it is the qualification on everything under it, and a
+          screen-reader user dialling these values needs it more than a sighted one, not less. */}
+      {notice === undefined ? null : <p className="module-note">{notice}</p>}
       <ParamLines params={group.params} owner={owner} />
     </div>
   )
@@ -172,16 +189,19 @@ function ModuleBox({ group, owner }: { group: ParamGroup; owner: Device | undefi
 function Params({
   params,
   owner,
+  blocks = new Map(),
 }: {
   params: readonly ResolvedParam[]
   owner: Device | undefined
+  /** #107's device-level block passes none: it has no single recipe to judge against. */
+  blocks?: ReadonlyMap<string, InertFinding>
 }) {
   return (
     <div className="params">
       {groupedParams(params).map((group, i) => (
         // Indexed, because runs mean the same module can legitimately open two boxes — see
         // `groupedParams` on why that is left visible rather than merged away.
-        <ModuleBox key={`${i}-${group.module ?? ''}`} group={group} owner={owner} />
+        <ModuleBox key={`${i}-${group.module ?? ''}`} group={group} owner={owner} blocks={blocks} />
       ))}
     </div>
   )
@@ -457,7 +477,7 @@ export function SoundForPart({
            they are authored, and they are above. */
         <p className="quiet">Nothing to set for this part alone; every setting it has is above.</p>
       ) : (
-        <Params params={own} owner={owner} />
+        <Params params={own} owner={owner} blocks={inertBlocks(owner, a.recipe.id)} />
       )}
 
       {a.patch.length === 0 ? null : (

@@ -230,7 +230,7 @@ One setting for the whole song — set it once, not once per part below.
   - **WAVE MIX** `0` % (0…100 %) · MIDI CC 53
   - **SYNC 2▸1** `OFF`
     - ↳ note: Locks oscillator 2 to the phase of oscillator 1
-- **● MOD OSC**
+- **● MOD OSC** — Appears inert — 4 routes off, 2 depths 0, level 0.
   - **AUDIO** `OFF`
     - ↳ note: Sub-audio: eight per-voice LFOs, one for each voice
   - **WAVEFORM** `SINE`
@@ -299,7 +299,7 @@ One setting for the whole song — set it once, not once per part below.
 - **● DELAY**
   - **TIMBRE A / TIMBRE B** `OFF`
     - ↳ note: Two separate buttons, one per timbre — engage the one for the timbre this part is on. Disengaged, this part bypasses the delay on a fully analog path
-- **● LFO 1**
+- **● LFO 1** — Appears inert — no authored destination found.
   - **WAVEFORM** `TRIANGLE`
   - **RATE** `0.1` Hz (0.01…40 Hz)
     - ↳ note: The default range; RATE MIN and RATE MAX in the MORE menu can widen it to 1 kHz
@@ -417,7 +417,7 @@ One setting for the whole song — set it once, not once per part below.
 - **● DELAY**
   - **TIMBRE A / TIMBRE B** `OFF`
     - ↳ note: Two separate buttons, one per timbre — engage the one for the timbre this part is on. Disengaged, this part bypasses the delay on a fully analog path
-- **● LFO 1**
+- **● LFO 1** — Appears inert — no authored destination found.
   - **WAVEFORM** `RANDOM`
   - **RATE** `5.5` Hz (0.01…40 Hz)
     - ↳ note: The default range; RATE MIN and RATE MAX in the MORE menu can widen it to 1 kHz
