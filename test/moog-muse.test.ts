@@ -5,6 +5,7 @@ import {
   isSustainedPart,
   moodState,
   noteInstruction,
+  recipeInertFindings,
   renderGuide,
   resolve,
 } from '../lib/core/index'
@@ -1574,31 +1575,16 @@ describe('the stabs print no modulator that reaches nothing (#384)', () => {
   })
 
   /**
-   * **Documented debt against #388, not desired behaviour.** #384 is scoped to the stabs and this
-   * change is too, but the same five parameters sit on ten other recipes with the same absent
-   * destination — and unlike the MOD OSC list above, none of these can be repaired by routing,
-   * because the destination would have to go through the MOD MAP this manifest declares out of
-   * scope. So the honest fix for each is removal, one musical judgment at a time.
-   *
-   * Pinned so the next reader meets the number as a fact rather than rediscovering it.
+   * The stabs stay without an LFO 1, and #460 is why that has to be re-asserted rather than left
+   * to the test above. Six recipes now *do* author one with a destination, so "no LFO 1 on a
+   * stab" stopped being a consequence of the block being unroutable and became a judgment about
+   * a part that is over in a fifth of a second. Held here so re-adding one is a decision.
    */
-  it('records, as debt against #388, how many recipes still author an LFO 1 that reaches nothing', () => {
+  it('still authors no LFO 1 on a stab, now that six other recipes route theirs', () => {
     const carrying = device.recipes.filter((recipe) =>
       recipe.params.some((param) => param.name.startsWith('LFO 1')),
     )
-    expect(carrying.map((recipe) => recipe.role).sort()).toEqual([
-      'bass-mid',
-      'bass-mid',
-      'bass-mid',
-      'pad',
-      'pad',
-      'pad',
-      'sub',
-      'sub',
-      'texture',
-      'texture',
-    ])
-    // No stab among them, which is what this change did.
+    expect(carrying.length).toBeGreaterThan(0)
     expect(carrying.filter((recipe) => recipe.role === 'stab')).toEqual([])
   })
 })
@@ -1684,23 +1670,243 @@ describe('the four inert MOD OSC blocks are routed, one judgment per recipe', ()
   })
 
   /**
-   * The other half of the change is what it did **not** touch. LFO 1 on the two `bass-mid`
-   * recipes is a separate defect with a separate repair — it is destinationless rather than
-   * unrouted, and no route exists to give it (see the debt test above) — so a routing change
-   * that quietly removed or altered it would be two decisions in one diff.
+   * The MOD OSC routing left the two `bass-mid` LFO 1 blocks alone, and #460 took them out
+   * entirely — both carried `AMPLITUDE 0` into no destination. That is a second decision on the
+   * same two recipes, so it is asserted where it happened rather than folded in here: the MOD OSC
+   * route below is what this change made, and it survived the removal.
    */
-  it('leaves LFO 1 on the two bass-mid recipes exactly as it was', () => {
+  it('keeps its own MOD OSC routes on the two bass-mid recipes, whose LFO 1 has since gone', () => {
     for (const id of ['muse-bass-mid-hard', 'muse-bass-mid-dark']) {
-      const lfo = recipe(id).params.filter((param) => param.name.startsWith('LFO 1'))
-      expect(lfo, id).toHaveLength(5)
-      expect(valueOf(id, 'LFO 1 · WAVEFORM'), id).toBe('TRIANGLE')
-      expect(valueOf(id, 'LFO 1 · AMPLITUDE'), id).toBe(0)
+      expect(recipe(id).params.filter((param) => param.name.startsWith('LFO 1')), id).toEqual([])
     }
-    expect(valueOf('muse-bass-mid-hard', 'LFO 1 · RATE')).toBe(0.8)
-    expect(valueOf('muse-bass-mid-dark', 'LFO 1 · RATE')).toBe(0.5)
+    expect(valueOf('muse-bass-mid-hard', 'MOD OSC · FILTER ▸ 2')).toBe('ON')
+    expect(valueOf('muse-bass-mid-dark', 'MOD OSC · PITCH ▸ OSC 2')).toBe('ON')
     // And the two leads still carry PITCH LFO rather than LFO 1, which the routing did not move.
     for (const id of ['muse-lead-bright', 'muse-lead-hard']) {
       expect(recipe(id).params.filter((param) => param.name.startsWith('LFO 1')), id).toEqual([])
+    }
+  })
+})
+
+/**
+ * #460. **Ten recipes authored an LFO 1 that reached nothing, and this is the ten decisions.**
+ *
+ * The report was made at the instrument, against #384: *"it lists the LFO 1 settings but don't
+ * seem assign a modulation"*. #390 fixed the three stabs; the other ten kept printing fifty rows
+ * that said nothing about where any of it went, and `npm run audit` had been raising them since
+ * #419 gave the check a parameter-level pass.
+ *
+ * **Six route and four stop printing, and the split is not a policy.** #460 asks for routing where
+ * a recipe has an intention and removal where it does not, so the question was put to each title
+ * one at a time. The four that were dropped all carry `AMPLITUDE 0` — the attenuator shut ahead
+ * of every destination (p.52), which is zero depth into nowhere and the plainest evidence a block
+ * was copied in rather than chosen. The six that route each take their destination off their own
+ * title, and `muse-texture-dirty` states it outright: *"held under a random LFO"*.
+ *
+ * **The routing is one parameter, and that is what stops this coming back.** A destination and a
+ * depth authored separately can be half-written, which is the defect in its simplest form. Here
+ * the source polarity, the destination and the signed depth are the *name and value of a single
+ * numeric* — `LFO 1 · BI ▸ VCA PAN AMOUNT 20` — and `lfo1` will not compile without one. So the
+ * assertions below are mostly about the pairing rather than about the values: no recipe can
+ * reach a state this issue was filed against.
+ *
+ * Pages, all footer-checked against `Muse_Manual-1.4.0.pdf` (printed folio equals PDF index
+ * throughout this range): `ASSIGN` on the LFO is p.53, the quick assign view is pp.61-62, the MOD
+ * MAP begins on p.97 — **the contents entry says 96 and is wrong**, PDF 96 is the PROGRAMMER's
+ * PATCH mode — the source list carrying `LFO 1 (UNI)` and `LFO 1 (BI)` is p.98, and the signed
+ * destination amount and the destination list are pp.101-102.
+ */
+describe('every LFO 1 either says where it goes or is not printed (#460)', () => {
+  const recipe = (id: string) => device.recipes.find((r) => r.id === id)!
+  const lfoParams = (id: string) =>
+    recipe(id).params.filter((param) => param.name.startsWith('LFO 1'))
+  const valueOf = (id: string, name: string) =>
+    recipe(id).params.find((param) => param.name === name)?.value
+
+  /**
+   * The six, with the sentence each one's title makes. What is asserted is the *destination*,
+   * because the destination is the decision: the same five parameters pointed somewhere else is
+   * a different patch, not a rounding error.
+   *
+   * **`destination` and `control` are two vocabularies and the pair is the point.** The first is
+   * spelled as the MOD MAP spells it (pp.101-102) and is what the screen shows while the slot is
+   * confirmed; the second is what is written beside the reader's hand. `VCF 2 CUTOFF` on the
+   * screen is the `FILTER 2 CUTOFF` knob on the panel. The manifest holds the pairing in one
+   * table and derives the instruction from it, so this repeats the pairing rather than reading it
+   * back — a mapping asserted against itself would agree with any edit to it.
+   */
+  const ROUTED = [
+    { id: 'muse-pad-soft', polarity: 'BI', destination: 'VCA PAN', control: 'PAN', amount: 20 },
+    {
+      id: 'muse-pad-dark',
+      polarity: 'BI',
+      destination: 'VCF 2 CUTOFF',
+      control: 'FILTER 2 CUTOFF',
+      amount: 15,
+    },
+    {
+      id: 'muse-pad-bright',
+      polarity: 'BI',
+      destination: 'VCF 2 RES',
+      control: 'FILTER 2 RESONANCE',
+      amount: 15,
+    },
+    {
+      id: 'muse-bass-mid-dirty',
+      polarity: 'UNI',
+      destination: 'MIX RING MOD',
+      control: 'MIXER RING MOD',
+      amount: 15,
+    },
+    { id: 'muse-texture-soft', polarity: 'BI', destination: 'VCA PAN', control: 'PAN', amount: 30 },
+    {
+      id: 'muse-texture-dirty',
+      polarity: 'UNI',
+      destination: 'VCA LEVEL',
+      control: 'LEVEL',
+      amount: 50,
+    },
+  ] as const
+
+  /** The four, each with the reason its own recipe comment gives at length. */
+  const DROPPED = [
+    { id: 'muse-bass-mid-hard', because: 'a per-note snap says nothing about what should move' },
+    { id: 'muse-bass-mid-dark', because: 'the title says nothing on the patch moves at all' },
+    { id: 'muse-sub-dark', because: 'one fundamental, and every audible destination breaks it' },
+    { id: 'muse-sub-clean', because: 'the sine is a filter, so its only destination is its pitch' },
+  ] as const
+
+  it('answers all ten, and answers each of them once', () => {
+    const ids = [...ROUTED.map((r) => r.id), ...DROPPED.map((d) => d.id)]
+    expect(new Set(ids).size).toBe(10)
+    // And the ten are the whole of it: nothing else on the device carries an LFO 1 block, so a
+    // new recipe that authors one arrives here rather than into the audit.
+    const carrying = device.recipes
+      .filter((r) => r.params.some((param) => param.name.startsWith('LFO 1')))
+      .map((r) => r.id)
+    expect([...carrying].sort()).toEqual([...ROUTED.map((r) => r.id)].sort())
+  })
+
+  it.each(ROUTED)('routes $id to $destination at $amount, as $polarity', (route) => {
+    const name = `LFO 1 · ${route.polarity} ▸ ${route.destination} AMOUNT`
+    const param = recipe(route.id).params.find((p) => p.name === name)
+    expect(param, `${route.id} is missing ${name}`).toBeDefined()
+    expect(param?.kind).toBe('numeric')
+    expect(param?.value).toBe(route.amount)
+  })
+
+  /**
+   * **The observable half of a guard `lfo1` runs at load.** A zero depth is a MOD MAP slot with
+   * nothing travelling through it (p.62's *"a setting of noon resulting in 0% modulation"*), which
+   * renders as a full box a reader sets and does not hear — #384's report, not a near miss of it.
+   * The manifest throws on it rather than authoring it, so a regression takes the whole device
+   * module down and every test in this file with it. This is what says the guard is *about* the
+   * right thing, which a throw nobody can call cannot say on its own.
+   */
+  it.each(ROUTED)('gives $id a depth that is not zero, on the signed scale p.101 prints', (r) => {
+    const param = recipe(r.id).params.find(
+      (p) => p.name.startsWith('LFO 1 · ') && p.name.endsWith('AMOUNT'),
+    ) as AuthoredNumericParam | undefined
+    expect(param?.value, r.id).not.toBe(0)
+    expect(param?.range).toEqual({
+      min: -100,
+      max: 100,
+      verified: { kind: 'manual', source: "Muse User's Manual v1.4.0, p.101" },
+    })
+    expect(param?.unit, r.id).toBe('%')
+  })
+
+  /**
+   * **The pairing, which is the half of this that has to survive the next edit.** A destination
+   * without a depth is a routing nobody hears; a depth without a destination is #384. Neither is
+   * expressible while the two are one parameter, and this is what says so: on every routed
+   * recipe, every LFO 1 parameter that names a destination *is* the depth, and there is no second
+   * parameter on the block holding either half on its own.
+   */
+  it.each(ROUTED)('keeps $id destination and depth in one parameter, never two', (r) => {
+    const block = lfoParams(r.id)
+    const pointing = block.filter((p) => p.name.includes('▸'))
+    expect(pointing, r.id).toHaveLength(1)
+    expect(pointing[0]?.name.endsWith('AMOUNT'), r.id).toBe(true)
+    expect(pointing[0]?.kind, r.id).toBe('numeric')
+    // No depth anywhere else on the block, so there is nothing for a destination to come apart
+    // from. `AMPLITUDE` is the source attenuator and is named as one, not as an amount.
+    const depths = block.filter((p) => /AMOUNT|DEPTH/.test(p.name))
+    expect(depths.map((p) => p.name), r.id).toEqual([pointing[0]?.name])
+    // Six parameters: the five the block always had, plus the assignment.
+    expect(block, r.id).toHaveLength(6)
+  })
+
+  /**
+   * **`AMPLITUDE` is the second way this block can reach nothing**, and it is the one #384 caught:
+   * p.52 calls it *"an attenuator placed before any modulation destinations"*, so a route at any
+   * depth behind an amplitude of zero is inaudible. The other guard `lfo1` runs at load, and this
+   * is the half of it a test can see — the four recipes that carried `AMPLITUDE 0` are the four
+   * that stopped printing the block rather than the four that were routed behind a shut
+   * attenuator.
+   */
+  it.each(ROUTED)('opens the attenuator ahead of $id’s destination', (r) => {
+    expect(Number(valueOf(r.id, 'LFO 1 · AMPLITUDE')), r.id).toBeGreaterThan(0)
+  })
+
+  /**
+   * Polarity is a real choice on this box and not decoration: `ASSIGN POLARITY (BI, UNI. DEFAULT:
+   * BI)` (p.58) decides which of `LFO 1 (BI)` and `LFO 1 (UNI)` (p.98) the ASSIGN button reaches
+   * for, and a `UNI` route needs the `BI-POLAR` soft button on the quick assign view (p.62) to
+   * get there. So a reader following a `UNI` line has to be told, and a `BI` one does not.
+   */
+  it.each(ROUTED)('tells $id’s reader the gesture, and the polarity when it is not the default', (r) => {
+    const note = lfoParams(r.id).find((p) => p.name.includes('▸'))?.note ?? ''
+    expect(note, r.id).toContain('Press ASSIGN')
+    expect(note, r.id).toContain('ENTER')
+    expect(note.includes('press BI-POLAR to choose UNI'), r.id).toBe(r.polarity === 'UNI')
+  })
+
+  /**
+   * **The instruction names the panel control, and the panel control is derived rather than
+   * written.** The manifest holds destination and control in one table; if that table ever pairs
+   * a screen name with the wrong knob, a reader is sent to a control that assigns something else
+   * — silently, because both names are real. So the pairing is repeated here from the manual and
+   * from the panel rather than read back out of the manifest.
+   *
+   * `PAN` and `LEVEL` are the two where the screen and the panel happen to agree; the other three
+   * are the cases this exists for.
+   */
+  it.each(ROUTED)('sends $id’s reader to $control, the knob $destination is on', (r) => {
+    const note = lfoParams(r.id).find((p) => p.name.includes('▸'))?.note ?? ''
+    expect(note, r.id).toContain(`turn ${r.control} —`)
+  })
+
+  it.each(DROPPED)('prints no LFO 1 at all on $id — $because', (d) => {
+    expect(lfoParams(d.id), d.id).toEqual([])
+  })
+
+  /**
+   * The four were not chosen by role. All four carried `AMPLITUDE 0`, and none of the six that
+   * route did — which is the evidence #460 asks for and the reason the split reads as ten
+   * decisions rather than one rule about subs.
+   */
+  it('drops exactly the blocks whose attenuator was shut', () => {
+    const shut = ['muse-bass-mid-hard', 'muse-bass-mid-dark', 'muse-sub-dark', 'muse-sub-clean']
+    expect(DROPPED.map((d) => d.id)).toEqual(shut)
+    // The three stabs #390 removed are not in this list and must not be re-added by it.
+    expect(DROPPED.map((d) => d.id).filter((id) => id.includes('stab'))).toEqual([])
+  })
+
+  /**
+   * And the whole point, asked of the shared check rather than of this file's own reading: the
+   * audit's INERT block raises nothing about an LFO 1 anywhere in the library. `muse-sub-dark`
+   * and `muse-sub-clean` still raise their MOD OSC, which is a different defect with a decision
+   * of its own — see the debt test above.
+   */
+  it('leaves the check with no LFO 1 candidate on any recipe', () => {
+    for (const r of device.recipes) {
+      const blocks = recipeInertFindings(device, r).map((f) => f.block)
+      expect(blocks, r.id).not.toContain('LFO 1')
+    }
+    const subs = ['muse-sub-dark', 'muse-sub-clean']
+    for (const id of subs) {
+      expect(recipeInertFindings(device, recipe(id)).map((f) => f.block), id).toEqual(['MOD OSC'])
     }
   })
 })
