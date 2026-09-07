@@ -199,26 +199,80 @@ describe('Tracker manifest', () => {
           seen.add(prefix)
         }
       }
-      expect([...seen].sort()).toEqual(['GRANULAR POSITION', 'VOLUME'])
+      expect([...seen].sort()).toEqual(['CUTOFF', 'GRANULAR POSITION', 'VOLUME'])
     })
 
     it('arms the row every ADSR value is authored on, and arms it as an envelope', () => {
-      const withEnv = device.recipes.filter((r) =>
-        has(r, 'VOLUME ENVELOPE · ATTACK', 'VOLUME ENVELOPE · DECAY'),
-      )
-      expect(withEnv.length).toBeGreaterThan(10)
-      for (const recipe of withEnv) {
-        expect(pointOf(recipe, 'VOLUME AUTOMATION TYPE'), recipe.id).toBe('Envelope')
-        // And the reverse: nothing names a row it never switched on. An `ATTACK` under a row
-        // reading `Off` is a value the box ignores, which is what the type param exists to rule
-        // out (#454 made it per row, so this has to be checked per row).
+      // Every recipe, not only the ones with a Volume envelope: since #454 a recipe may drive
+      // two rows, and the row that goes unarmed is the one nobody is looking at. An `ATTACK`
+      // under a row reading `Off` is a value the box ignores.
+      const armed: string[] = []
+      for (const recipe of device.recipes) {
         for (const param of params(recipe)) {
           const prefix = /^(.+?) ENVELOPE · /.exec(param.name)?.[1]
           if (prefix === undefined) continue
           expect(pointOf(recipe, `${prefix} AUTOMATION TYPE`), `${recipe.id} / ${param.name}`).toBe(
             'Envelope',
           )
+          armed.push(`${recipe.id}: ${prefix}`)
         }
+      }
+      // Counted, so the sweep cannot pass by inspecting nothing. Twenty-five recipes shape the
+      // Volume row; two of those shape the Cutoff row as well.
+      const rows = [...new Set(armed)]
+      expect(rows.filter((r) => r.endsWith(': VOLUME'))).toHaveLength(25)
+      expect(rows.filter((r) => r.endsWith(': CUTOFF'))).toEqual([
+        'tr-bass-mid-dark: CUTOFF',
+        'tr-acid-hard: CUTOFF',
+      ])
+    })
+
+    /**
+     * #454. The two recipes whose titles have always promised a filter envelope, and which could
+     * not carry one while a single `AUTOMATION DESTINATION` held the `Volume` row. What is pinned
+     * is the **whole chain** — the row armed, the four times, and a depth — because any one of
+     * them missing is a modulator that moves nothing, which is the state #452 was reported for.
+     */
+    it('gives the bass and the acid line a cutoff envelope beside the volume one', () => {
+      for (const [id, chain, amount] of [
+        ['tr-bass-mid-dark', { ATTACK: 0.01, DECAY: 0.18, SUSTAIN: 24, RELEASE: 0.18 }, 58],
+        ['tr-acid-hard', { ATTACK: 0.01, DECAY: 0.08, SUSTAIN: 0, RELEASE: 0.12 }, 76],
+      ] as const) {
+        const recipe = device.recipes.find((r) => r.id === id)
+        if (recipe === undefined) throw new Error(`no recipe '${id}'`)
+
+        // Both rows are armed, and they are two rows rather than one moved.
+        expect(pointOf(recipe, 'VOLUME AUTOMATION TYPE'), id).toBe('Envelope')
+        expect(pointOf(recipe, 'CUTOFF AUTOMATION TYPE'), id).toBe('Envelope')
+
+        for (const [stage, value] of Object.entries(chain)) {
+          expect(pointOf(recipe, `CUTOFF ENVELOPE · ${stage}`), `${id} / ${stage}`).toBe(value)
+        }
+
+        // **The decay is shorter than the amp envelope's, and that is load-bearing.** An
+        // envelope whose times match the one on the `Volume` row is heard as more of the amp
+        // shape rather than as the filter moving, and `AMOUNT` cannot separate two identical
+        // curves. So the second destination is only worth its ink while this holds.
+        const cutoffDecay = pointOf(recipe, 'CUTOFF ENVELOPE · DECAY')
+        const volumeDecay = pointOf(recipe, 'VOLUME ENVELOPE · DECAY')
+        expect(typeof cutoffDecay, id).toBe('number')
+        expect(typeof volumeDecay, id).toBe('number')
+        expect(cutoffDecay as number, `${id}: the filter has to close first`).toBeLessThan(
+          volumeDecay as number,
+        )
+
+        // The depth is what makes it modulation rather than a routing declaration. p.120 prints
+        // its scale in the envelope's own subsection, so unlike the LFO's Amount it is a cited
+        // numeric and not `unscaled`.
+        const depth = named(recipe, 'CUTOFF ENVELOPE · AMOUNT')
+        expect(depth?.kind, id).toBe('numeric')
+        if (depth?.kind !== 'numeric') throw new Error('unreachable')
+        expect(depth.value, id).toBe(amount)
+        expect(depth.value, id).toBeGreaterThan(0)
+        expect(depth.range.verified, id).toEqual({ kind: 'manual', source: `${MANUAL}120` })
+
+        // And the filter it sweeps is switched on, or the envelope moves an inert control.
+        expect(pointOf(recipe, 'FILTER TYPE'), id).toBe('Low-pass')
       }
     })
 
