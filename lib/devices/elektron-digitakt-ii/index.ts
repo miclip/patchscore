@@ -52,9 +52,11 @@ import { DIGITAKT_II_PANEL } from './panel'
  *    their note its own meaning — *"Slices play from C1 and upwards, wrapping around after the
  *    last slice, when using the Grid and Slice machines and set SLICE to NOTE"* — so the note
  *    there is a **slice address**, base `C1`, next semitone the next slice. `TriggerNote` refuses
- *    this explicitly: a slice base in that field would give two kinds of value one name, which is
- *    #369's category and undesigned. **p.26's `C1` is therefore read and deliberately not
- *    authored.**
+ *    this explicitly: a slice base in that field would give two kinds of value one name.
+ *    **p.26's `C1` is therefore read and deliberately not authored.** #369 settled that it never
+ *    will be: an ordinal is outside what a guide can say, because the fact worth printing about a
+ *    slice is which one holds the syllable and that is in the reader's audio, not on p.26. The
+ *    mode below carries no note permanently rather than pending a shape.
  *  - **MIDI tracks.** p.53's own warning: *"Please note that MIDI tracks has a different set of
  *    parameters on the TRIG, SRC, FLTR, and AMP page."* A `NOTE` there is a note being sent out,
  *    not a loaded sample's original pitch. `MIDI` is a cited member of the `SRC MACHINE` set
@@ -1091,7 +1093,37 @@ export const device: Device = {
            * Slice machines and set SLICE to NOTE"*. So the note there is a slice address — an
            * ordinal wearing a note's shape — and `TriggerNote` says in as many words that putting
            * one in that field would give two kinds of value one name. p.26's `C1` is read and
-           * deliberately not authored; #369 is where it belongs when something can say it.
+           * deliberately not authored.
+           *
+           * **#369 decided that nothing will ever be able to say it, and this is final.** The
+           * mapping is not the missing piece — p.26 prints it in full. What is missing is which
+           * slice holds the syllable, which lives in the reader's audio file, so a slice ordinal
+           * is outside what a guide can carry (invariant 5). This mode therefore has no
+           * `triggerNote` permanently. What the box says about slices it says through the
+           * `SRC MACHINE` value and the slice params on the recipe, which are the authority.
+           * `DESIGN.md` §2.1/§4.1.
+           *
+           * **This mode deliberately declares no `noteAddressing`, and the reason is the
+           * conditional in p.26's own sentence.** A `slice-ordinal` kind says *notes on this part
+           * select slices*, and here that holds only *"when using the Grid and Slice machines
+           * **and set SLICE to NOTE**"*. `SLICE` also takes a fixed number — p.98 proves it from
+           * the other side, *"with SLICE set to 2 and LEN set to 3 the sample plays from the start
+           * of slice 2 to the end of slice 4"* — and under a number the manual says nothing about
+           * the step note, leaving p.53's general rule (*"Trig Note sets the pitch of the note when
+           * trigged"*) in force. `dt2-vox-chop-bright` authors no `SLICE` at all, so this mode
+           * cannot claim the note is an ordinal on it.
+           *
+           * Marking the mode would put the machine and the addressing one field apart with nothing
+           * tying them, which is the drift `selectedBy` exists to stop, arriving through the door
+           * it does not watch. **The mark belongs on a recipe that carries `SLICE NOTE` as a
+           * param**, where the two cannot come apart — which is `CLAUDE.md`'s repair for the
+           * TR-8S's tone table and the minilogue xd's `SHAPE`, and is what the Mini's
+           * `beat-sliced` has by construction, its whole mode being one `PLAY MODE` value.
+           *
+           * A third route exists and is neither: p.28's **SLICES trig mode**, where *"the
+           * [TRIG 1-16] keys trigger the slices defined by these machines"*. Keys, not notes, and
+           * a global mode the reader chooses — recorded so the next reader does not find it and
+           * think it changes the answer above.
            */
           id: 'sliced',
           label: 'SLICE / GRID',

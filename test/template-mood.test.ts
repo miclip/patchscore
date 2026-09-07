@@ -217,14 +217,16 @@ describe('the format carries an absent mood, and older links keep theirs (#310)'
      * source, 10 to 11 when the Tracker Mini's sample pool declared modes and its untransposed
      * parts got p.90's `C5` back, 11 to 12 when that box's seven transposed parts started saying
      * on their own `TUNE` what to write on the step instead, and 12 to 13 for §4.1/#339, where a
-     * drum in a direction that tunes it follows the song's key. All eight change what a link's
-     * own inputs resolve to, and all eight carry their own entry in `RESOLVER_VERSION`'s history.
+     * drum in a direction that tunes it follows the song's key, and 13 to 14 for §4.1/#369, where
+     * a part whose notes select slices stopped taking its hook's authority. All nine change what a
+     * link's own inputs resolve to, and all nine carry their own entry in `RESOLVER_VERSION`'s
+     * history.
      *
      * What this test is about is that widening the input set is **not** that kind of change — the
      * reading beside `SongOverrides`, applied to #161's two fields, then #200's, then #340's. The
      * number below belongs to whoever last bumped it; the claim here is that #310 was not them.
      */
-    expect(RESOLVER_VERSION).toBe(13)
+    expect(RESOLVER_VERSION).toBe(14)
   })
 
   it('writes no axis at all when the reader has set no mood', () => {

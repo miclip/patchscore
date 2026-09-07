@@ -12,6 +12,7 @@ import {
 import type {
   Assignable,
   Device,
+  NoteAddressing,
   WarmUp,
   JackSignalKind,
   JackSpec,
@@ -30,6 +31,7 @@ import {
   resolveParams,
   resolvePatch,
   resolveSourceAudio,
+  noteAddressingFor,
   selectPatterns,
   triggerNoteFor,
   type BoundArticulation,
@@ -1209,6 +1211,37 @@ export type ResolvedAssignment = {
    * disagree about.
    */
   triggerNote: TriggerNote | undefined
+  /**
+   * §4.1/#369. **What a note on this part is, when it is not a pitch** — a `kind` of
+   * `'slice-ordinal'` says successive notes select successive slices and no pitch is touched, with
+   * the page that says so on `verified`. See `NoteAddressing`.
+   *
+   * The mirror image of `triggerNote` above and resolved beside it: that field says *this note
+   * plays the sound as it is*, this one says *no note here is a pitch at all*. `DeviceSchema`
+   * refuses a part that would carry both.
+   *
+   * **Every consumer subtracts.** `noteInstruction` returns `none`, `hookAuthority` below is not
+   * granted, and phase 4 says the hook cannot apply instead of printing its notes. Nothing turns
+   * this into an instruction, because the instruction would have to be a slice number and #369
+   * decided a slice number is not the guide's to invent (invariant 5).
+   *
+   * `undefined` is the ordinary answer and says only that a note here is an ordinary note.
+   */
+  noteAddressing: NoteAddressing | undefined
+  /**
+   * §4.3/#100, as amended by #369.
+   *
+   * Set where a hook **resolved** for this part's role *and* the part can play notes. A
+   * slice-addressed part cannot: the hook's degrees are musical intent for a voice that plays
+   * pitches, and this one plays ordinals, so there is nothing on it for them to mean. Granting
+   * authority there would hand the part's rhythm to a line the reader cannot enter, and phase 5
+   * would replace a grid they *can* enter with a pointer to it.
+   *
+   * So the two facts are read together and the check is `noteAddressing`, never the role or the
+   * recipe id: the question is whether this voice reads a note as a pitch, which is exactly what
+   * that field answers. Phase 4 reads the same field to say why it prints no notes, so the page
+   * states the reason rather than quietly omitting the part.
+   */
   hookAuthority: HookId | undefined
   /**
    * §4.3/§8. **The direction's answer to what this part's variants mean against its hook**, from
@@ -1442,11 +1475,33 @@ export function stackedPart(assignment: {
  * `measure:search` is identical before and after on the worst legal rig, because nothing here
  * reaches the search at all: the flag is read in step 9, after every allocation is settled.
  *
+ * **14** — §4.1/#369. **A part whose notes select slices no longer takes a hook's authority.** A
+ * device may now state `noteAddressing: { kind: 'slice-ordinal', verified: Cite }` on a sliced mode
+ * or recipe, saying that a note there is an ordinal and not a pitch — cited, because the claim
+ * subtracts. Where that meets a resolved hook, `hookAuthority`
+ * stays `undefined`, phase 4 says the hook cannot apply instead of printing its degrees, and
+ * phase 5 renders the variant grid it was previously replacing with a pointer.
+ *
+ * Entry 2's reading, and its exact mirror. That entry gave a hooked part's rhythm to its hook;
+ * this one takes it back on the parts that cannot play a hook at all. No *value* moves — `Score`
+ * is untouched, no candidate is added or excluded, the same recipes land on the same voices, and
+ * `measure:search` is identical, because the flag is read in step 9 after every allocation is
+ * settled. What moves is which of two authorities phase 5 prints for the one recipe in the library
+ * that states the addressing — the Tracker Mini's Beat Slice chop — and whether phase 4 prints a
+ * line of notes or a sentence saying why it does not. A link shared before this renders a
+ * `major-key-electro` Tracker Mini guide whose vox-chop is eight pitches the reader would enter as
+ * slice numbers, and after it a grid they can actually play. That is drift a reader can hear, so
+ * it is a bump.
+ *
+ * **Small blast radius, and deliberately so.** Five other sliced recipes ship unmarked, because
+ * `noteAddressing` is cite-gated and none of their manuals supports the claim — see §4.1. The
+ * bump is for the field existing and being read, not for the size of the change it made.
+ *
  * It lives beside `ResolveInput` because that is the contract it versions. `permalink.ts`
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
  */
-export const RESOLVER_VERSION = 13
+export const RESOLVER_VERSION = 14
 
 /**
  * #161. The two decisions the user may take back off the direction: tempo and key. Both
@@ -1862,6 +1917,10 @@ export function resolve(input: ResolveInput): ResolveResult {
     const bySection = patterns.get(a.requestId)
     const sourceAudio = resolveSourceAudio(a.recipe)
     const share = devicePartShare(a.deviceId)
+    // §4.1/#369. Asked once, because two fields below read it and a fact derived twice is a fact
+    // two consumers can come to disagree about — the reason `hookAuthority` is resolved here at
+    // all rather than looked up by each renderer.
+    const addressing = noteAddressingFor(a.recipe, a.assignables[0])
 
     return {
       requestId: a.requestId,
@@ -1907,7 +1966,13 @@ export function resolve(input: ResolveInput): ResolveResult {
       // one (§2.2/#86). Either way there is one value here, not one per voice, so this is not the
       // bug `Assignment.assignables` warns about.
       triggerNote: triggerNoteFor(a.recipe, a.assignables[0]),
-      hookAuthority: hookAuthorityByRole.get(a.role),
+      // §4.1/#369. The head of the stack answers here too, and for the same reason: addressing is
+      // a property of the pool's mode or of the recipe, neither of which varies by ordinal.
+      noteAddressing: addressing,
+      // #100/#369. A hook resolved for the role is this part's rhythm — unless the part reads a
+      // note as a slice number, where the hook has no subject and phase 4 says so instead.
+      hookAuthority:
+        addressing?.kind === 'slice-ordinal' ? undefined : hookAuthorityByRole.get(a.role),
       reArticulatesHook: request.reArticulatesHook === true,
       patterns: a.sections.map((section) => {
         const selection: PatternSelection = bySection?.get(section) ?? {

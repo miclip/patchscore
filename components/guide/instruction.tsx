@@ -246,6 +246,38 @@ export function HookRef() {
 }
 
 /**
+ * §4.1/#369. **Phase 4 for a part that reads a note as a slice number**, worded as
+ * `HOOK_CANNOT_APPLY_SLICED` in `lib/core/render.ts` words it (#33).
+ *
+ * The other sibling of `HookRef`, and the mirror of it: that one hands a part's rhythm *to* the
+ * hook, this one says the hook has nothing to hand. On a Beat Slice track the hook's degrees would
+ * be entered as ordinals, so a correctly spelled `G4` selects whichever slice sits twenty-odd
+ * semitones up the file — right value, wrong instruction. Unlike `HookRef` a grid still follows in
+ * phase 5, because the rhythm is real and the reader can enter it.
+ *
+ * **It offers no slice numbers and must not** (invariant 5): which slice holds which syllable is
+ * in the reader's own audio, and a list of ordinals would be content the guide has never heard.
+ * Sound design is not a substitute either — it sets the sample *up* for slicing and chooses no
+ * slice, because on a note-addressed part the choice is the note and the note is the reader's. The
+ * last sentence hands that back rather than pointing at a setting they would not find.
+ *
+ * Only Sound design is a link. Step programming has no anchor in `GuideNav` and inventing one for
+ * this sentence would mean a new nav key both layouts have to answer for — a `sound` pointer plus
+ * a named phase is what the Markdown sibling carries, and the two must read alike.
+ */
+export function SlicedHookRef() {
+  return (
+    <p className="sound-ref hook-ref">
+      <strong>This part cannot play the hook.</strong> On this recipe a note picks which slice plays
+      rather than sounding a pitch, so there is no note here to write. Program its rhythm in Step
+      programming, and set the sample up for slicing in{' '}
+      <PhaseLink to="sound">Sound design</PhaseLink>. Which slice lands on each step is yours to
+      choose at the machine.
+    </p>
+  )
+}
+
+/**
  * §4.2/invariant 5. The sibling of `HookRef` for a part whose *role* does not bear a pattern
  * (`NON_PATTERN_BEARING_ROLES`) and whose hook did not resolve, so there is nothing to point at.
  *

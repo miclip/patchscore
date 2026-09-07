@@ -176,7 +176,7 @@ import { OCTATRACK_MKII_PANEL } from './panel'
  * So the pitch a reader wants is the direction's, under §4.1, reaching the page through
  * `RoleRequest.pitch`.
  *
- * ## This is the second slice-addressed box, and that is #369 rather than this field
+ * ## This is the second slice-addressed box, and #369 decided that a slice ordinal is not ours
  *
  * `ot-vox-chop-bright` authors `SLIC ON`, so the case is live on a real guide rather than
  * hypothetical. p.69 §12.7.4: *"If a sample contains slices, this mode can be used to trigger the
@@ -185,9 +185,21 @@ import { OCTATRACK_MKII_PANEL } from './panel'
  *
  * **A slice-select note is an ordinal in disguise and must not be written into `TriggerNote`**,
  * which means original pitch and is printed to the reader as addressing. The Digitakt hit the
- * same thing from its own manual (#367) and declined for its own reasons; two boxes make it a
- * design question rather than a device one, and it is #369's. Nothing here waits on that: this
- * decline stands on p.66 whatever #369 decides.
+ * same thing from its own manual (#367) and declined for its own reasons; two boxes made it a
+ * design question rather than a device one, and **#369 answered it: the guide does not carry
+ * slice ordinals at all.** Not because p.139 is unclear — it is exhaustive — but because the fact
+ * that would make an ordinal worth printing is which slice holds the syllable, and that is in the
+ * reader's audio rather than in any document (invariant 5). So `TriggerNote` stays
+ * original-pitch-only on every box, `C0` is read and never authored, and this is settled rather
+ * than deferred. What the guide says about slices here it says through `SLIC`, `STRT` and the
+ * `LEN` option set that travels with them, which are ordinary cited params and are the authority.
+ * `DESIGN.md` §2.1/§4.1.
+ *
+ * **What this box does *not* get is #369's `noteAddressing` mark**, and the reason is on p.81 and
+ * p.138 rather than in the ruling: slices here are selected by `STRT`, not by a note, and p.139's
+ * map is scoped to a global trig mode nothing in the model selects. See `ot-vox-chop-bright`.
+ *
+ * Nothing here ever waited on that: this decline stands on p.66 on its own.
  *
  * ## The octave convention, recorded and deliberately not used — and it is not the Digitakt's
  *
@@ -810,11 +822,40 @@ const recipes: Recipe[] = [
      * cannot carry (see `PER_STEP`). What it can carry is where the slices land, so this one
      * nudges rather than pretending to choose.
      *
-     * **This is the recipe that makes #369 live rather than hypothetical.** With `SLIC ON` the
-     * box will take a note per slice from outside — p.139 maps `C0 (12)`–`D#5 (75)` onto slices
-     * 1-64 — and that note is an ordinal, not the pitch a sample plays at. It is deliberately not
-     * written into `triggerNote` (§2.1/#334), which means original pitch and prints to the reader
-     * as addressing. #369 owns what the guide should say instead.
+     * **This is the recipe that made #369 live rather than hypothetical, and #369 is now closed.**
+     * With `SLIC ON` the box will take a note per slice from outside — p.139 maps `C0 (12)`–`D#5
+     * (75)` onto slices 1-64 — and that note is an ordinal, not the pitch a sample plays at. It is
+     * deliberately not written into `triggerNote` (§2.1/#334), which means original pitch and
+     * prints to the reader as addressing.
+     *
+     * **What the guide says instead is what it already says: these params.** A slice ordinal is
+     * outside what a guide can carry, because which slice holds the syllable is in the reader's
+     * audio; so `SLIC`, `STRT` and `LEN` are the whole of this recipe's slice instruction, and
+     * there is nothing further owed. `DESIGN.md` §4.1.
+     *
+     * **This recipe deliberately declares no `noteAddressing`, and on this box the reason is
+     * stronger than a missing citation — the premise is wrong.** A `slice-ordinal` kind says
+     * *a note on this part selects a slice*. Here a note does not select a slice at all: **`STRT`
+     * does.** p.81: *"The SLIC parameter… needs to be set to ON for the sequencer to be able to
+     * play back individual slices. The STRT parameter of the SRC MAIN page then selects which
+     * slices that should be played."* p.118 says it again on FLEX MAIN, beside `PTCH` as a
+     * separate knob. That is why this recipe pairs `SLIC ON` with `lenSliced` and leaves the
+     * choosing to `STRT`.
+     *
+     * p.139's `C0`–`D#5` map is real and is **not** in force by default. p.138 frames the whole
+     * appendix entry: it applies *"when choosing the SLICES TRIG mode (and set the AUDIO NOTE IN
+     * parameter to FOLLOW FW) and in the SLICES MIDI MAP configuration"* — a global trig mode
+     * selected with `[FUNC]` + `[UP]`/`[DOWN]` (p.68) plus a project MIDI setting (pp.70-71),
+     * neither of which this recipe sets and neither of which the model has a shape for (that is
+     * #86's whole-device half, explicitly deferred). Under the addressing that *is* in force, a
+     * note is something else entirely: the STANDARD map (pp.137-138) makes `C1`-`G1` track play
+     * and `C5 (72)`-`C7 (96)` Track Sample Pitch ±12, and CHROMATIC does the same through `PTCH`.
+     *
+     * So on the Octatrack a hook's notes are not ordinals, and marking this recipe would suppress
+     * a hook on a false premise while telling the reader their notes pick slices when `STRT` does.
+     * **`PTCH` and slice selection are orthogonal here, and that is the fact worth keeping.**
+     * (One documentation defect noted in passing: p.70 calls the setting `FOLLOW TM` and appendix
+     * C calls it `FOLLOW FW` six times. Same parameter; nothing here rests on either spelling.)
      */
     sourceAudio: {
       need:

@@ -19,6 +19,7 @@ import type {
   ArticulationEntry,
   Assignable,
   Device,
+  NoteAddressing,
   PatchEntry,
   Recipe,
   TrackMode,
@@ -116,10 +117,11 @@ export function recipeVoiceKey(assignable: Assignable): string {
  * function of device data and sixteen tracks worth sixteen assignables (§4.2).
  *
  * A mode with no note resolves to nothing, which is the honest answer and not a gap: a sliced
- * track's note is a slice address (#369) and a MIDI track's is a note being sent out, so there is
- * no note that plays the voice's sound as it is. `DeviceSchema` refuses a recipe that names no
- * mode on a moded voice, so the `undefined` branch below is unreachable for any device that
- * builds — it is here because a total function is cheaper than a cast.
+ * track's note is an ordinal the guide deliberately does not carry (#369, settled) and a MIDI
+ * track's is a note being sent out, so there is no note that plays the voice's sound as it is.
+ * `DeviceSchema` refuses a recipe that names no mode on a moded voice, so the `undefined` branch
+ * below is unreachable for any device that builds — it is here because a total function is
+ * cheaper than a cast.
  */
 export function triggerNoteFor(
   recipe: Recipe,
@@ -129,6 +131,31 @@ export function triggerNoteFor(
   if (assignable.modes === undefined) return assignable.triggerNote
   if (recipe.mode === undefined) return undefined
   return assignable.modes.find((mode) => mode.id === recipe.mode)?.triggerNote
+}
+
+/**
+ * §4.1/#369. **Whether a note on this part is a pitch at all**, once the recipe is known — the
+ * sibling of `triggerNoteFor` and resolved the same way, because it answers the same question
+ * from the other side.
+ *
+ * The two sources mirror §2.2's split rather than adding a third rule: a voice with a mode table
+ * puts the addressing on the mode, because which mode a track is in *is* what that table decides;
+ * a voice without one puts it on the recipe, because on such a box a sliced instrument is
+ * something a recipe loads rather than something a track is. `DeviceSchema` refuses the recipe
+ * field on a moded voice, so exactly one of these two branches can answer for any given part.
+ *
+ * `undefined` means *a note here is an ordinary note* and never anything stronger. A mode that
+ * states nothing — a MIDI track, a granular one — is not thereby claiming to be pitched, so no
+ * consumer may read the absence as a licence to print something it would not otherwise print.
+ */
+export function noteAddressingFor(
+  recipe: Recipe,
+  assignable: Assignable | undefined,
+): NoteAddressing | undefined {
+  if (assignable === undefined) return undefined
+  if (assignable.modes === undefined) return recipe.noteAddressing
+  if (recipe.mode === undefined) return undefined
+  return assignable.modes.find((mode) => mode.id === recipe.mode)?.noteAddressing
 }
 
 /**

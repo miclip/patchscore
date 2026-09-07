@@ -1417,16 +1417,20 @@ describe('the note above the grid reads the same in both guides (§4.1/§2.1)', 
   })
 
   /**
-   * §4.1's third category. `major-key-electro`'s `vox-chop` lands on `tm-vox-chop-dirty`, a Beat
-   * Slice patch, and the direction hooks that role — so the hook is the authority (#100) and
-   * phase 5 prints no note of its own in either guide.
+   * §4.1's third category, and the case that named it. `major-key-electro`'s `vox-chop` lands on
+   * `tm-vox-chop-dirty`, a Beat Slice patch, and the direction hooks that role.
    *
-   * **This used to be the interesting case and now it is the ordinary one.** The suppression was
-   * what stood between a sliced instrument and a `C5` that would have been false on it; the device
-   * no longer authors that `C5`, so the hook is doing one job here rather than two. Kept because
-   * the hook's authority is the claim, and it is independent of what the voice carries.
+   * **The reason nothing is written above this grid has now changed twice, and the claim here is
+   * the one that survived both.** It was the hook taking authority (#100), which suppressed the
+   * note line as a side effect. Then §2.1/#86 stopped the device authoring a `C5` that was false
+   * on a sliced track. Now §4.1/#369 says the thing directly: the mode declares that a note here
+   * selects a slice, so `noteInstruction` answers `none` on its own account and the hook does not
+   * take the part at all — phase 5 prints its grid, and it still carries no note.
+   *
+   * So this test keeps asserting the ink and no longer asserts which mechanism produced it. The
+   * mechanism is `test/slice-addressing.test.ts`'s.
    */
-  it('says nothing above the grid where a hook owns the part, in both', () => {
+  it('says nothing above the grid where a note would select a slice, in both', () => {
     const result = resolve({
       devices: trackerMini,
       template: majorKeyElectro,
@@ -1435,7 +1439,8 @@ describe('the note above the grid reads the same in both guides (§4.1/§2.1)', 
     })
     const chop = result.assignments.find((a) => a.role === 'vox-chop')
     expect(chop?.recipe.id).toBe('tm-vox-chop-dirty')
-    expect(chop?.hookAuthority).toBeDefined()
+    expect(chop?.noteAddressing?.kind).toBe('slice-ordinal')
+    expect(chop?.hookAuthority).toBeUndefined()
 
     const md = renderGuide(result).split('### `vox-chop`')[1]?.split('###')[0] as string
     const web = text(html(result)).split('vox-chop')[1] as string

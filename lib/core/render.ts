@@ -1619,6 +1619,33 @@ function hookLines(
     return out
   }
 
+  /**
+   * §4.1/#369. **The hook resolved, and the part that would carry it reads a note as a slice
+   * number — so this prints the reason and no pitches.**
+   *
+   * The alternative is what this replaced: eight note names, correctly spelled in the song's key,
+   * over a Beat Slice track where writing `G4` selects whichever slice sits twenty-odd semitones
+   * up the file. Every value on those rows was right and the instruction was wrong, which is the
+   * cited-range hazard `CLAUDE.md` records arriving through the template layer instead.
+   *
+   * **Said, never silently dropped.** A hook section that skipped the role would read as a bug,
+   * and the reader would go looking for the notes; invariant 5 wants the gap named. What is named
+   * is the box's behaviour rather than our machinery — no hook id, no field name, nothing about
+   * `noteAddressing` — because the reader's question is why there are no notes here and the answer
+   * is that this part does not play notes.
+   *
+   * **Before the bars-and-key line**, which is the one thing that would still have been true: it
+   * describes a hook this part is not going to play, and putting it above a sentence retracting
+   * the whole section is how a reader ends up entering the first row anyway. Phase 5 then prints
+   * this part's grid in the ordinary way, because `hookAuthority` was never granted (#100/#369) —
+   * the reader gets the rhythm they can actually enter, and slices come from the recipe's own
+   * `SLICE`-family params in phase 6.
+   */
+  if (carriedBy?.noteAddressing?.kind === 'slice-ordinal') {
+    out.push(HOOK_CANNOT_APPLY_SLICED)
+    return out
+  }
+
   const hook = choice.chosen.hook
   const framed = gridFits(hook)
   out.push(`${num(hook.bars)} bars in ${hook.key}.`)
@@ -1909,6 +1936,33 @@ function mergeBlocks(
 const HOOK_IS_THE_PATTERN =
   '**The hook is the pattern** — see Hook above for its steps and what each one carries. ' +
   'Nothing separate to program here.'
+
+/**
+ * §4.1/#369. **What phase 4 says where the hook resolved but the part that carries it addresses
+ * slices by note.**
+ *
+ * Three things, in the order a reader needs them: that the line is not coming, why, and where to
+ * go instead. The middle one is the whole sentence — *a note here picks which slice plays* — and
+ * it is stated as a fact about the recipe rather than as a limitation of ours, because it is one:
+ * the box works this way whatever the guide does.
+ *
+ * **It offers no substitute and must not.** The obvious-looking repair is a list of slice numbers
+ * against the hook's rhythm, and that is content the guide has never heard — which slice holds
+ * which syllable is in the reader's own file (#369, invariant 5). Offering one would be inventing
+ * an assignment to fill a hole.
+ *
+ * **The pointers say what each phase actually decides, and the third sentence is the correction
+ * that matters.** Phase 6 sets the sample *up* for slicing — the Mini's `PLAY MODE Beat Slice` and
+ * `NO OF SLICES` — and it does not choose a slice, because on a note-addressed part nothing in the
+ * recipe can: the choice is the note, and the note is the reader's. An earlier draft sent them to
+ * Sound design for "which slice it plays", which is a setting they would not find. So the sentence
+ * hands the job back explicitly rather than leaving a gap where a pointer used to be.
+ */
+const HOOK_CANNOT_APPLY_SLICED =
+  '**This part cannot play the hook.** On this recipe a note picks which slice plays rather than ' +
+  'sounding a pitch, so there is no note here to write. Program its rhythm in Step programming, ' +
+  'and set the sample up for slicing in Sound design. Which slice lands on each step is yours to ' +
+  'choose at the machine.'
 
 /**
  * §4.2/invariant 5. What phase 5 says for a part whose *role* does not bear a pattern

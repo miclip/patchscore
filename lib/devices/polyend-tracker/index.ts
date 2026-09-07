@@ -1566,6 +1566,51 @@ export const device: Device = {
      *    Mini's, which settles it outright at `C2`** — and the weakness cuts against the field
      *    rather than for it: `C5` on a sliced instrument is a claim the pages do not support.
      *    `tr-vox-chop-bright` is `Slice` and `tr-vox-chop-dirty` is `Beat Slice`.
+     *
+     *    **#369 makes this permanent for a reason that does not depend on the weakness.** Even
+     *    where a manual does settle the mapping — the Mini's `C2` — a slice-select note is an
+     *    ordinal, and an ordinal is outside what a guide can say: the only fact worth printing
+     *    about a slice is which one holds the syllable, and that is in the reader's audio rather
+     *    than on any page. So the decline here would stand even if p.126 were as explicit as
+     *    p.90, and `triggerNote` carries an original pitch and nothing else on every box in this
+     *    library. See `DESIGN.md` §2.1/§4.1.
+     *
+     *    **This box is the one that already says the slice thing the right way**, which is why the
+     *    ruling costs it nothing: `S` is a device-native per-step FX, so `articulation` carries a
+     *    slice per slot — `{ slot: 'accent', set: { slice: 9 } }` on `tr-vox-chop-bright` — and
+     *    that is a cited device fact addressed by `PatternSlot`, not a note pretending to be one.
+     *
+     * ## Neither sliced recipe here declares a `noteAddressing`, and both refusals are cited (#369)
+     *
+     * #369 gave devices a cited way to say *notes on this part select slices*, which suppresses a
+     * hook and the note line above the grid. **This folder claims it on nothing**, and it is worth
+     * saying why once, because the two recipes fail the test in opposite directions.
+     *
+     *  - **`tr-vox-chop-bright` is `Slice`, where a note is a pitch — so claiming it would be
+     *    false.** p.126: *"Slice mode is typically used to slice a melodic audio sample… The pads
+     *    in Slice mode represent current scale"*, over a pad grid labelled `C3`–`B6` captioned
+     *    *"Pads play the selected slice melodically in the current pitch scale."* p.127 says the
+     *    same from the parameter side: `Slice` *"selects the slice number… Also will select the
+     *    slice to playback in scale when in Slice Play Mode."* One slice is selected and the note
+     *    pitches it, which is p.122's general rule for this box (*"Note value affects pitch"*).
+     *    A hook resolved for this part therefore **does** apply, and it still takes authority.
+     *  - **`tr-vox-chop-dirty` is `Beat Slice`, and this manual never says what a step note does
+     *    there — so marking it would be invented.** p.126 has *"Pads select and play each slice
+     *    individually"* over a grid labelled `1`–`48`, which is about the pads and not the step.
+     *    There is no base note, no note→slice table and nothing in the MIDI chapter; a sweep of
+     *    all 308 pages for a sentence carrying both *slice* and a note word lands on pp.96, 126,
+     *    127, 129, 143 and 164 and none of them answers it. **p.164's own worked example argues
+     *    the other way**: every step reads `F5 16 ---- S n`, one constant note beside a varying
+     *    slice number, which is a page showing the slice chosen by the FX rather than by the note.
+     *
+     *    The Mini settles it at `C2` and this box is the same firmware family, so the temptation
+     *    is to carry the fact across. That is exactly the import invariant 2 allows only with a
+     *    guard, and there is no guard available for a fact this manual does not contain: 1.9.2a
+     *    does not print the C2 sentence, and a value read off a *sibling's* page is invented here
+     *    however carefully the sibling was read. Left unmarked and unclaimed (invariant 5).
+     *
+     * So a hook reaching either recipe prints its notes as it always did. What the reader gets for
+     * slices is `articulation` — cited, per-slot, and the thing this box actually has.
      *  - **Granular and Wavetable.** `tr-texture-soft`, `tr-noise-dirty` and `tr-sweep-soft` run
      *    Granular, which re-reads the file by position rather than playing it through, and
      *    `tr-lead-bright` runs Wavetable, where there is no recording to be at its original pitch

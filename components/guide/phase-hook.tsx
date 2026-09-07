@@ -31,7 +31,7 @@ import {
   stackPosition,
   voicesLabel,
 } from './format'
-import { SoundRef } from './instruction'
+import { SlicedHookRef, SoundRef } from './instruction'
 import { VocabularyTerm } from '../vocabulary-term'
 
 /**
@@ -537,6 +537,15 @@ function HookBlock({
         <p className="callout">
           Not resolved: {choice.chosen.reason} — {choice.chosen.detail}
         </p>
+      ) : /*
+          §4.1/#369. The hook resolved and the part carrying it reads a note as a slice number, so
+          this says why there are no notes instead of printing eight of them at a reader who would
+          enter them as ordinals. Same sentence and same placement as the Markdown — above the
+          bars-and-key line, which describes a hook this part is not going to play (#33). Phase 5
+          prints its grid in the ordinary way, because `hookAuthority` was never granted.
+        */
+      carriedBy?.noteAddressing?.kind === 'slice-ordinal' ? (
+        <SlicedHookRef />
       ) : (
         <>
           <p className="quiet">
