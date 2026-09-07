@@ -9,13 +9,15 @@ import type { DownloadFile, StudioEnv } from './session'
  * `test/studio-render.test.ts` renders in Node, where a stray `window` read throws rather than
  * producing a hydration mismatch that only shows up in someone's console.
  *
- * `localStorage` and `clipboard` are read through `?.` and inside the session module's `try`,
- * because reaching for either can throw on access alone — blocked site data for the first, an
- * insecure context for the second.
+ * `localStorage`, `sessionStorage` and `clipboard` are read through `?.` and inside the session
+ * module's `try`, because reaching for any of them can throw on access alone — blocked site data
+ * for the first two, an insecure context for the third.
  */
 export function browserEnv(): StudioEnv {
   return {
     storage: () => (typeof window === 'undefined' ? undefined : window.localStorage),
+    /** Per tab, and empty in a tab opened fresh — which is the whole of #448's marker. */
+    session: () => (typeof window === 'undefined' ? undefined : window.sessionStorage),
     location: () => (typeof window === 'undefined' ? undefined : window.location),
     history: () => (typeof window === 'undefined' ? undefined : window.history),
     clipboard: () => (typeof navigator === 'undefined' ? undefined : navigator.clipboard),

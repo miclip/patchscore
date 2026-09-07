@@ -61,6 +61,9 @@ function exportEnv(overrides: Partial<StudioEnv> = {}) {
     storage: () => {
       throw new Error('export must not touch storage')
     },
+    session: () => {
+      throw new Error('export must not touch the tab store')
+    },
     location: () => {
       throw new Error('export must not touch location')
     },

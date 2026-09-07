@@ -36,15 +36,41 @@ import { SEED_MAX, SEED_MIN } from '../lib/core/index'
 
 const ORIGIN = 'https://patchscore.app'
 
+/**
+ * What Next 16's App Router keeps in `history.state` on `/`. Read off the dev build in #448:
+ * the router restores a Back navigation from it, so a `replaceState(null, …)` of ours throws
+ * away the router's own bookkeeping.
+ */
+const NEXT_HISTORY_STATE = { __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: { tree: ['', {}] } }
+
 /** A location, a history and a clipboard, wired to each other the way a browser wires them. */
-function fakeBrowser(options: { search?: string; storage?: 'ok' | 'none' | 'throws' } = {}) {
+function fakeBrowser(
+  options: {
+    search?: string
+    storage?: 'ok' | 'none' | 'throws'
+    /** The per-tab store. `'none'`/`'throws'` are the browsers that will not give us one. */
+    session?: 'ok' | 'none' | 'throws'
+  } = {},
+) {
   const state = {
     pathname: '/',
     search: options.search ?? '',
     stored: null as string | null,
     /** Writes attempted, not the value — the bug this counts was one of rate, not of content. */
     storeWrites: 0,
+    /** Every key written to `localStorage`, so a per-tab marker landing there is a failure. */
+    storeKeys: [] as string[],
     replaceCalls: [] as string[],
+    /** The first argument of every `replaceState` — `null` is the #448 defect. */
+    replaceStates: [] as unknown[],
+    /** What the browser is holding for this entry. Next's, until something replaces it. */
+    historyState: { ...NEXT_HISTORY_STATE } as unknown,
+    /**
+     * `sessionStorage`: per tab, survives a reload and a Back, absent in a tab opened fresh.
+     * A plain map, key-agnostic on purpose — these tests assert what the studio remembers, not
+     * what it calls it.
+     */
+    tab: new Map<string, string>(),
     copied: [] as string[],
     downloaded: [] as DownloadFile[],
     printed: 0,
@@ -55,9 +81,19 @@ function fakeBrowser(options: { search?: string; storage?: 'ok' | 'none' | 'thro
       return key === STUDIO_STORAGE_KEY ? state.stored : null
     },
     setItem(key: string, value: string) {
+      state.storeKeys.push(key)
       if (key !== STUDIO_STORAGE_KEY) return
       state.storeWrites++
       state.stored = value
+    },
+  }
+
+  const tabStorage = {
+    getItem(key: string) {
+      return state.tab.get(key) ?? null
+    },
+    setItem(key: string, value: string) {
+      state.tab.set(key, value)
     },
   }
 
@@ -70,14 +106,29 @@ function fakeBrowser(options: { search?: string; storage?: 'ok' | 'none' | 'thro
               throw new Error('site data blocked')
             }
           : () => storage,
+    session:
+      options.session === 'none'
+        ? () => undefined
+        : options.session === 'throws'
+          ? () => {
+              throw new Error('session storage blocked')
+            }
+          : () => tabStorage,
     location: () => ({
       pathname: state.pathname,
       search: state.search,
       href: `${ORIGIN}${state.pathname}${state.search}`,
     }),
     history: () => ({
-      replaceState(_data: unknown, _unused: string, url: string) {
+      get state() {
+        return state.historyState
+      },
+      replaceState(data: unknown, _unused: string, url: string) {
         state.replaceCalls.push(url)
+        state.replaceStates.push(data)
+        // A browser replaces the entry's state wholesale. Anything the caller did not carry
+        // over is gone from here on, which is exactly the loss #448 reports.
+        state.historyState = data
         const query = url.indexOf('?')
         state.pathname = query === -1 ? url : url.slice(0, query)
         state.search = query === -1 ? '' : url.slice(query)
@@ -89,7 +140,7 @@ function fakeBrowser(options: { search?: string; storage?: 'ok' | 'none' | 'thro
         return Promise.resolve()
       },
     }),
-    download: () => (file) => {
+    download: () => (file: DownloadFile) => {
       state.downloaded.push(file)
     },
     print: () => () => {
@@ -424,6 +475,9 @@ describe('what the user is told, and never blocked by', () => {
       storage: () => {
         throw new Error('no')
       },
+      session: () => {
+        throw new Error('no')
+      },
       location: () => {
         throw new Error('no')
       },
@@ -568,7 +622,10 @@ describe('sync writes the canonical query and the studio', () => {
     syncStudio(env, inputs, undefined)
 
     const boot = bootstrapStudio(env)
-    expect(boot.source).toBe('link')
+    // `'own-link'` rather than `'link'`, and the change is the #448 fix rather than a slip: this
+    // is a sync and a bootstrap in *one tab*, which is a reload, not somebody's shared link.
+    // The round trip — the property this test is about — is unchanged.
+    expect(boot.source).toBe('own-link')
     expect(boot.inputs).toEqual(inputs)
   })
 
@@ -706,6 +763,355 @@ describe('a shared link never writes to the visitor’s studio', () => {
     expect(boot.notices).toEqual([])
     const report = syncStudio(env, boot.inputs, boot.rig, { persist: boot.persist })
     expect(report.notice).toBeUndefined()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #448: the studio's own URL is not somebody else's link
+// ---------------------------------------------------------------------------
+
+/**
+ * The defect, in one line: the studio writes its own state into the address bar on every edit,
+ * and then reads any query on `/` as a link somebody sent. So one reload turns a session
+ * read-only against its own storage, silently, for the rest of its life.
+ *
+ * The marker cannot be `history.state` — Next 16's App Router rewrites it on mount, verified in
+ * #448. It is `sessionStorage`: per tab, survives a reload and a Back, and **absent in a tab
+ * opened fresh**, which is the case that has to stay read-only. The studio records the query it
+ * last wrote there, and an arriving query is its own only when it matches.
+ *
+ * These tests reach the seam through `StudioEnv.session`, alongside `storage` and for the same
+ * reason: reaching for `window.sessionStorage` can throw on access alone, so the act of getting
+ * it is what gets injected.
+ */
+describe('the six ways to arrive at the studio (#448)', () => {
+  /**
+   * The issue's table, one `it` per row. Five of the six carry a query on `/` and were
+   * indistinguishable before this fix; three of those five are the visitor's own session and
+   * two are not.
+   *
+   *   1  the bare root, from the nav                    own      storage
+   *   2  a reload of your own URL                       own      own-link
+   *   3  a Back into your own `/?…`                     own      own-link
+   *   4  a link somebody sent, in a fresh tab           theirs   link
+   *   5  a foreign link pasted into your tab            theirs   link
+   *   6  your own bookmark, in a fresh tab              theirs   link  (#304 wins the tie)
+   *
+   * A cold start is not a row here — it carries no query, so it was never in doubt, and
+   * `bootstrap precedence` already covers it.
+   */
+
+  /** A rig the visitor had before this one, so `recent` has something to recover. */
+  const PREVIOUS_RIG: StoredRigV1 = {
+    id: 'previous',
+    name: 'The old rack',
+    devices: [{ deviceId: CATALOGUE.devices[1] as string, settings: {} }],
+  }
+
+  /** Somebody's own studio, on disk, with a named rig and a history worth not losing. */
+  function ownDoc(over: Partial<GuideInputsV1> = {}) {
+    const rig: StoredRigV1 = {
+      id: 'local',
+      name: 'Studio rack',
+      devices: [{ deviceId: CATALOGUE.devices[0] as string, settings: {} }],
+    }
+    return JSON.stringify(studioDoc({ ...DEFAULT_INPUTS, ...over }, rig, [PREVIOUS_RIG]))
+  }
+
+  /**
+   * A tab opened fresh on a URL, carrying the same `localStorage` and **no** tab store — which
+   * is the whole distinction this fix rests on.
+   */
+  function freshTab(search: string, stored: string | null) {
+    const browser = fakeBrowser({ search })
+    browser.state.stored = stored
+    return browser
+  }
+
+  // 1 --------------------------------------------------------------------
+  it('a return to the bare root restores from storage and goes on saving', () => {
+    // What the nav's "Studio" link does: `/`, no query (components/site-nav.tsx).
+    const { env, state } = fakeBrowser()
+    state.stored = ownDoc({ seed: 111 })
+
+    const boot = bootstrapStudio(env)
+    expect(boot.source).toBe('storage')
+    expect(boot.inputs.seed).toBe(111)
+    expect(boot.rig?.name).toBe('Studio rack')
+    expect(boot.persist).toBe(true)
+  })
+
+  // 2 --------------------------------------------------------------------
+  it('a reload of your own studio is still yours, because the tab remembers the query it wrote', () => {
+    const { env, state } = fakeBrowser()
+    state.stored = ownDoc({ seed: 111 })
+
+    // A session that has been running: the URL now carries what the studio put there.
+    const first = bootstrapStudio(env)
+    const edited = withSeed(first.inputs, 777)
+    syncStudio(env, edited, first.rig, { persist: first.persist })
+    expect(state.search).toContain('seed=777')
+
+    // The reload. Same tab, same URL, a new bootstrap.
+    const after = bootstrapStudio(env)
+
+    expect(after.persist).toBe(true)
+    expect(after.source).toBe('own-link')
+    // The address bar wins on the inputs — it is what the guide on screen is addressed by.
+    expect(after.inputs.seed).toBe(777)
+    // The rig is not in a URL, so it comes back off disk rather than being lost.
+    expect(after.rig?.name).toBe('Studio rack')
+    expect(after.notices).toEqual([])
+  })
+
+  // 3 --------------------------------------------------------------------
+  it('a Back into your own studio is still yours, a page later', () => {
+    const { env, state } = fakeBrowser()
+    state.stored = ownDoc({ seed: 111 })
+
+    // Your session, running: the URL and the tab now carry what the studio wrote.
+    const first = bootstrapStudio(env)
+    syncStudio(env, withSeed(first.inputs, 777), first.rig, { persist: first.persist })
+    const entry = { pathname: state.pathname, search: state.search, state: state.historyState }
+    expect(entry.search).toContain('seed=777')
+
+    // A device page — a real route with its own history entry, pushed by the router.
+    state.pathname = '/devices/roland-tr-1000'
+    state.search = ''
+    state.historyState = { __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: { tree: ['devices', {}] } }
+
+    // Back. The browser restores the entry whole: the URL and the state that was saved with it,
+    // and the tab store, which was never a history entry, is simply still there.
+    state.pathname = entry.pathname
+    state.search = entry.search
+    state.historyState = entry.state
+
+    const back = bootstrapStudio(env)
+    expect(back.source).toBe('own-link')
+    expect(back.persist).toBe(true)
+    // The query is what the entry carried, so the guide is the one they left.
+    expect(back.inputs.seed).toBe(777)
+    // Neither the rig nor the history is in a URL: both come back off disk.
+    expect(back.rig?.name).toBe('Studio rack')
+    expect(back.recent.map((r) => r.name)).toEqual(['The old rack'])
+    expect(back.notices).toEqual([])
+
+    // And it saves again, which is the half of #448 the reporter actually noticed.
+    const after = syncStudio(env, withSeed(back.inputs, 888), back.rig, { persist: back.persist })
+    expect(after.persisted).toBe(true)
+    expect(state.stored).toContain('888')
+  })
+
+  // 4 --------------------------------------------------------------------
+  it('a link somebody sent, opened in a fresh tab, is still read-only (#304)', () => {
+    const shared = link({ seed: 999, devices: [CATALOGUE.devices[1] as string] })
+    const { env, state } = freshTab(shared, ownDoc({ seed: 111 }))
+    const untouched = state.stored
+
+    const boot = bootstrapStudio(env)
+    expect(boot.source).toBe('link')
+    expect(boot.persist).toBe(false)
+    expect(boot.inputs.seed).toBe(999)
+
+    syncStudio(env, boot.inputs, boot.rig, { persist: boot.persist })
+    expect(state.stored).toBe(untouched)
+  })
+
+  // 5 --------------------------------------------------------------------
+  it('a foreign link pasted into the tab that had your studio is read-only too', () => {
+    const { env, state } = fakeBrowser()
+    state.stored = ownDoc({ seed: 111 })
+
+    // Your own session, running: the tab now remembers a query.
+    const mine = bootstrapStudio(env)
+    syncStudio(env, withSeed(mine.inputs, 777), mine.rig, { persist: mine.persist })
+    const untouched = state.stored
+
+    // Somebody's link, pasted over it. Same tab, a query the studio never wrote.
+    state.search = link({ seed: 424242, devices: [CATALOGUE.devices[1] as string] })
+    const boot = bootstrapStudio(env)
+
+    expect(boot.source).toBe('link')
+    expect(boot.persist).toBe(false)
+    expect(boot.inputs.seed).toBe(424242)
+
+    syncStudio(env, boot.inputs, boot.rig, { persist: boot.persist })
+    expect(state.stored).toBe(untouched)
+  })
+
+  // 6 --------------------------------------------------------------------
+  it('your own bookmark in a fresh tab is treated as shared, because nothing says otherwise', () => {
+    /**
+     * The one case that is a deliberate loss rather than a repair. A bookmark of your own studio
+     * and a link a friend sent you arrive identically — a query on `/`, in a tab with no history
+     * of its own — and nothing in the URL can tell them apart. #304 decides the tie: a session
+     * that might be somebody else's guide does not write to your rig. The cost is that a
+     * bookmarked studio opens read-only until you go to the bare root; the alternative cost is
+     * silently overwriting a rig, which is the failure #304 exists to prevent.
+     */
+    const owner = fakeBrowser()
+    owner.state.stored = ownDoc({ seed: 111 })
+    const mine = bootstrapStudio(owner.env)
+    syncStudio(owner.env, withSeed(mine.inputs, 777), mine.rig, { persist: mine.persist })
+    const bookmarked = owner.state.search
+
+    const { env, state } = freshTab(bookmarked, owner.state.stored)
+    const untouched = state.stored
+    const boot = bootstrapStudio(env)
+
+    expect(boot.source).toBe('link')
+    expect(boot.persist).toBe(false)
+
+    syncStudio(env, boot.inputs, boot.rig, { persist: boot.persist })
+    expect(state.stored).toBe(untouched)
+  })
+})
+
+describe('what the tab remembers, and what it must not (#448)', () => {
+  it('claims nothing until it has written something — a cold start marks no tab', () => {
+    const { env, state } = fakeBrowser()
+    const boot = bootstrapStudio(env)
+
+    expect(boot.source).toBe('default')
+    expect(boot.persist).toBe(true)
+    expect(state.tab.size).toBe(0)
+  })
+
+  it('an own session records the query it wrote, in the tab and nowhere else', () => {
+    const { env, state } = fakeBrowser()
+    const boot = bootstrapStudio(env)
+    const report = syncStudio(env, withSeed(boot.inputs, 777), boot.rig, { persist: boot.persist })
+
+    expect([...state.tab.values()].some((v) => v.includes('seed=777'))).toBe(true)
+    // Per tab, so it cannot leak into another tab and make a shared link look like yours.
+    expect(state.storeKeys).toEqual([STUDIO_STORAGE_KEY])
+    expect(report.persisted).toBe(true)
+  })
+
+  it('a shared-link session records nothing, so reloading it stays read-only', () => {
+    const shared = link({ seed: 999, devices: [CATALOGUE.devices[1] as string] })
+    const { env, state } = fakeBrowser({ search: shared })
+    state.stored = JSON.stringify(studioDoc({ ...DEFAULT_INPUTS, seed: 111 }))
+    const untouched = state.stored
+
+    const boot = bootstrapStudio(env)
+    syncStudio(env, boot.inputs, boot.rig, { persist: boot.persist })
+    expect(state.tab.size).toBe(0)
+
+    // The reload. Still somebody else's guide, still not writing to this visitor's studio.
+    const after = bootstrapStudio(env)
+    expect(after.source).toBe('link')
+    expect(after.persist).toBe(false)
+    syncStudio(env, after.inputs, after.rig, { persist: after.persist })
+    expect(state.stored).toBe(untouched)
+  })
+
+  it('a browser that will not give us a tab store falls back to read-only, and never throws', () => {
+    for (const session of ['none', 'throws'] as const) {
+      const { env, state } = fakeBrowser({ search: link({ seed: 999 }), session })
+      state.stored = JSON.stringify(studioDoc({ ...DEFAULT_INPUTS, seed: 111 }))
+      const untouched = state.stored
+
+      let boot: ReturnType<typeof bootstrapStudio> | undefined
+      expect(() => {
+        boot = bootstrapStudio(env)
+      }).not.toThrow()
+      // Unprovable ownership is not ownership: #304 is the safe answer, not the convenient one.
+      expect(boot?.persist).toBe(false)
+      expect(() =>
+        syncStudio(env, boot!.inputs, boot!.rig, { persist: boot!.persist }),
+      ).not.toThrow()
+      expect(state.stored).toBe(untouched)
+    }
+  })
+
+  it('a tab store that will not write does not stop the guide, or the save', () => {
+    const { env, state } = fakeBrowser({ session: 'throws' })
+    const boot = bootstrapStudio(env)
+    // No query, so nothing about ownership was in doubt — this session owns its studio and
+    // saves, whatever sessionStorage does.
+    expect(boot.persist).toBe(true)
+    const report = syncStudio(env, withSeed(boot.inputs, 777), boot.rig, { persist: boot.persist })
+    expect(report.persisted).toBe(true)
+    expect(state.stored).not.toBeNull()
+  })
+})
+
+describe('the address bar is ours to write, the history entry is not (#448)', () => {
+  it('keeps Next’s router state instead of replacing it with null', () => {
+    const { env, state } = fakeBrowser()
+    const boot = bootstrapStudio(env)
+    syncStudio(env, withSeed(boot.inputs, 777), boot.rig, { persist: boot.persist })
+
+    expect(state.replaceStates.length).toBe(1)
+    expect(state.replaceStates[0]).not.toBeNull()
+    // The App Router restores a Back navigation from these. Dropping them is invisible until
+    // somebody presses Back.
+    expect(state.historyState).toMatchObject(NEXT_HISTORY_STATE)
+  })
+
+  it('keeps it in a shared-link session too, where the URL is still canonicalised', () => {
+    const { env, state } = fakeBrowser({ search: link({ seed: 999 }) })
+    const boot = bootstrapStudio(env)
+    syncStudio(env, boot.inputs, boot.rig, { persist: boot.persist })
+
+    expect(state.historyState).toMatchObject(NEXT_HISTORY_STATE)
+  })
+
+  it('keeps whatever the router put there next, rather than a snapshot taken once', () => {
+    const { env, state } = fakeBrowser()
+    const boot = bootstrapStudio(env)
+    syncStudio(env, withSeed(boot.inputs, 777), boot.rig, { persist: boot.persist })
+
+    // The router re-writes its own state as the app navigates; the next sync must carry the
+    // state that is there *now*, not the one this module saw first.
+    state.historyState = { __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: { tree: ['', { moved: true }] } }
+    syncStudio(env, withSeed(boot.inputs, 778), boot.rig, { persist: boot.persist })
+
+    expect(state.historyState).toMatchObject({
+      __PRIVATE_NEXTJS_INTERNALS_TREE: { tree: ['', { moved: true }] },
+    })
+  })
+})
+
+describe('the #448 reproduction, end to end', () => {
+  /**
+   * The three phases from the issue, as one test. Phase A persists today; phase B is where a
+   * reloaded session stopped writing, and phase C is what the reporter actually saw — "studio
+   * loses track of the rig and seed when you return to it".
+   */
+  it('a reloaded session goes on saving, and a walk to another page and back finds it', () => {
+    const { env, state } = fakeBrowser()
+
+    // Phase A: a bare `/`, clean storage, one edit. This has always worked.
+    const first = bootstrapStudio(env)
+    const a = withSeed(first.inputs, 1111)
+    syncStudio(env, a, first.rig, { persist: first.persist })
+    expect(loadStudio(() => ({ getItem: () => state.stored, setItem: () => {} }), CATALOGUE)).toMatchObject({
+      status: 'ok',
+    })
+    expect(state.stored).toContain('1111')
+
+    // Phase B: the reload, then another edit. The screen and the store must agree.
+    const reloaded = bootstrapStudio(env)
+    expect(reloaded.persist).toBe(true)
+    const b = withDevice(withSeed(reloaded.inputs, 2222), CATALOGUE.devices[0] as string, true)
+    const report = syncStudio(env, b, reloaded.rig, { persist: reloaded.persist })
+    expect(report.persisted).toBe(true)
+
+    const stored = loadStudio(() => ({ getItem: () => state.stored, setItem: () => {} }), CATALOGUE)
+    expect(stored.status).toBe('ok')
+    const onDisk = stored.status === 'ok' ? guideInputsFrom(stored.doc) : undefined
+    expect(onDisk?.seed).toBe(2222)
+    expect(onDisk?.devices).toEqual(b.devices)
+
+    // Phase C: a device page, then "Studio" in the nav — a bare `/`, query dropped.
+    state.search = ''
+    const back = bootstrapStudio(env)
+    expect(back.source).toBe('storage')
+    expect(back.inputs.seed).toBe(2222)
+    expect(back.inputs.devices).toEqual(b.devices)
+    expect(back.persist).toBe(true)
   })
 })
 

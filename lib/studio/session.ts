@@ -193,7 +193,16 @@ export const DEFAULT_INPUTS: GuideInputsV1 = {
 // ---------------------------------------------------------------------------
 
 export type LocationLike = { search: string; pathname: string; href: string }
-export type HistoryLike = { replaceState(data: unknown, unused: string, url: string): void }
+/**
+ * `state` is read as well as written (#448). The entry's state belongs to whoever put it there
+ * — on `/` that is Next's App Router, which restores a Back navigation from it — so a sync
+ * carries it across rather than replacing it with `null`. Optional because a browser is not
+ * obliged to have anything there, and `readonly` because nothing here assigns it directly.
+ */
+export type HistoryLike = {
+  readonly state?: unknown
+  replaceState(data: unknown, unused: string, url: string): void
+}
 export type ClipboardLike = { writeText(text: string): Promise<void> }
 
 /** One file, handed to the browser to save. Text only — nothing here builds a binary. */
@@ -215,6 +224,12 @@ export type PrintLike = () => void
  */
 export type StudioEnv = {
   storage: StorageSource
+  /**
+   * `sessionStorage`, which is `localStorage`'s shape with a different lifetime: per tab,
+   * surviving a reload and a Back, and **absent in a tab opened fresh**. That last property is
+   * the whole of #448 — see `STUDIO_TAB_KEY`.
+   */
+  session: StorageSource
   location: () => LocationLike | null | undefined
   history: () => HistoryLike | null | undefined
   clipboard: () => ClipboardLike | null | undefined
@@ -244,6 +259,49 @@ export type NoticeKind =
 
 export type StudioNotice = { kind: NoticeKind; message: string }
 
+/**
+ * Where a tab records the query it last wrote to its own address bar (#448).
+ *
+ * **The studio writes its own state into the URL**, debounced, on every edit — so within a
+ * moment of the first change every visitor's address bar carries a full query, not just people
+ * who opened a shared link. The bootstrap read any query as somebody else's link, so one reload
+ * turned an ordinary session read-only against its own storage for the rest of its life, and
+ * said nothing about it.
+ *
+ * `history.state` cannot hold the marker: Next's App Router rewrites it on mount, verified in
+ * #448 — a marker set before a reload is gone after it. `sessionStorage` has exactly the
+ * lifetime the question needs. It survives a reload and a Back, so a session that was yours
+ * stays yours; it is per tab, so nothing here can make a link opened elsewhere look like yours;
+ * and it is **empty in a tab opened fresh**, which is the case #304 requires to stay read-only.
+ *
+ * The value is the canonical query, so a foreign link pasted into a tab that had your studio in
+ * it fails the comparison and is treated as what it is.
+ */
+export const STUDIO_TAB_KEY = 'patchscore:studio:tab'
+
+/** The query this tab last wrote, or nothing — including when there is no tab store to ask. */
+function tabQuery(env: StudioEnv): string | undefined {
+  try {
+    const store = env.session()
+    if (store === null || store === undefined) return undefined
+    return store.getItem(STUDIO_TAB_KEY) ?? undefined
+  } catch {
+    // A tab store we cannot read is not a notice: it costs this session the reload repair and
+    // nothing else, and the safe answer — somebody else's link — is the one it already gave.
+    return undefined
+  }
+}
+
+/** Claim the URL just written as this tab's own. Never throws, and never blocks a save. */
+function rememberTabQuery(env: StudioEnv, query: string): void {
+  try {
+    env.session()?.setItem(STUDIO_TAB_KEY, query)
+  } catch {
+    // Same trade as reading it: the cost is that a reload of this tab opens read-only, which is
+    // what every browser did before #448 and is not worth interrupting a guide for.
+  }
+}
+
 export type Bootstrap = {
   inputs: GuideInputsV1
   /**
@@ -261,7 +319,7 @@ export type Bootstrap = {
    * back to the bare root.
    */
   recent: readonly StoredRigV1[]
-  source: 'link' | 'storage' | 'default'
+  source: 'link' | 'own-link' | 'storage' | 'default'
   /**
    * Whether this session may write to local storage — **false for the whole session** when the
    * inputs came from a valid permalink.
@@ -332,11 +390,53 @@ export function bootstrapStudio(
             `ignored: ${names}.`,
         })
       }
+      /**
+       * #448. Is this query one *we* wrote, in *this* tab? A reload, a Back into `/?…`, and the
+       * address bar the studio has been keeping up to date all arrive here, and every one of
+       * them is the visitor's own session rather than a link somebody sent.
+       *
+       * Compared **canonically** rather than by raw string: the marker holds what
+       * `encodeGuideInputs` produced, so re-encoding what was decoded is the same bytes for our
+       * own URL and different bytes for anyone else's.
+       *
+       * The tab store is asked *before* local storage, and that order is load-bearing: a
+       * session that turns out to be somebody else's link must not have read the visitor's
+       * studio at all (see below).
+       */
+      if (tabQuery(env) === encodeGuideInputs(decoded.inputs, catalogue)) {
+        // The URL wins on the inputs — it is what the guide on screen is addressed by, and on a
+        // reload it is the freshest thing there is. The rig was never in a URL, so it comes back
+        // off disk along with the history, and this session goes on saving.
+        const own = loadStudio(env.storage, catalogue)
+        if (own.status === 'invalid') {
+          notices.push({
+            kind: 'stored-unreadable',
+            message: `Your saved studio could not be read — ${own.detail}. Keeping the guide in the address bar.`,
+          })
+        } else if (own.status === 'unavailable') {
+          notices.push({ kind: 'storage-unavailable', message: STORAGE_UNAVAILABLE })
+        }
+        return {
+          inputs: decoded.inputs,
+          rig: own.status === 'ok' ? own.doc.rig : undefined,
+          recent: own.status === 'ok' ? (own.doc.recent ?? []) : [],
+          source: 'own-link',
+          persist: true,
+          notices,
+        }
+      }
+
       // A link carries device ids, not a rig — and nothing here creates one. This session is
       // read-only against storage from now on (`persist: false`); the visitor's own rig is left
       // exactly where it was, unread and unwritten.
       // #304: no history either. This session may not write storage, so offering to swap in a
       // rig from it would be the page acting on a studio it is not allowed to touch.
+      //
+      // #448 leaves one case here deliberately: your own bookmark, opened in a fresh tab, is
+      // indistinguishable from a link a friend sent — a query on `/`, in a tab with no history
+      // of its own. #304 decides the tie. The cost is a bookmarked studio that opens read-only
+      // until the visitor reaches the bare root; the alternative cost is silently overwriting
+      // somebody's rig, which is the failure #304 exists to prevent.
       return {
         inputs: decoded.inputs,
         rig: undefined,
@@ -435,11 +535,22 @@ export function syncStudio(
   const query = encodeGuideInputs(inputs, catalogue)
 
   let href: string | undefined
+  /** Whether the address bar actually took it — the marker below may only claim a URL we wrote. */
+  let wroteUrl = false
   try {
     const history = env.history()
     const location = env.location()
     if (history !== null && history !== undefined && location !== null && location !== undefined) {
-      history.replaceState(null, '', `${location.pathname}?${query}`)
+      /**
+       * #448. The entry's state is carried across, not replaced with `null`.
+       *
+       * On `/` it holds Next's App Router bookkeeping — `{ __NA, __PRIVATE_NEXTJS_INTERNALS_TREE }`
+       * — which the router restores a Back navigation from. Overwriting it is invisible until
+       * somebody presses Back. Read at **every** sync rather than snapshotted once, because the
+       * router rewrites its own state as the app navigates.
+       */
+      history.replaceState(history.state ?? null, '', `${location.pathname}?${query}`)
+      wroteUrl = true
       href = env.location()?.href
     }
   } catch {
@@ -451,6 +562,15 @@ export function syncStudio(
   // The URL is canonicalised either way — it is how the guide on screen is addressed, and a
   // stale address bar is its own bug. Storage is the part that is somebody's property.
   if (!persist) return { query, href, persisted: false, notice: undefined }
+
+  /**
+   * #448. This tab now owns the URL it just wrote, so a reload of it is this session rather than
+   * a stranger's link. Only here: a read-only session returned above and records nothing, or
+   * reloading somebody's shared link would promote it to ownership and lose #304 through the
+   * back door. And only when the URL was written, since a marker for a URL that is not in the
+   * address bar matches nothing on arrival.
+   */
+  if (wroteUrl) rememberTabQuery(env, query)
 
   /**
    * #304. The history is computed from what is on disk rather than carried through the sync
