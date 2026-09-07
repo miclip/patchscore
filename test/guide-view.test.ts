@@ -7,6 +7,7 @@ import {
   bandTrajectory,
   hoistedParams,
   fxSources,
+  lowEndPairing,
   moodState,
   noteInstruction,
   renderGuide,
@@ -21,6 +22,7 @@ import {
   industrialTechno,
   majorKeyElectro,
   relay,
+  weave,
 } from '../lib/templates/index'
 import { DEFAULT_INPUTS } from '../lib/studio/session'
 import { readFileSync } from 'node:fs'
@@ -681,6 +683,151 @@ describe("Finishing's Master FX says the same thing in both renderers (#59)", ()
     expect(authored.filter((name) => anyEffect.test(name))).toEqual([])
     expect(master(text(html(sparse)))).toContain(line)
     expect(master(renderGuide(sparse))).toContain(line)
+  })
+})
+
+describe("Finishing's Tuning block says the same thing in both renderers (#264)", () => {
+  /**
+   * The same rule as the two blocks above: the *facts* — which two parts, which section, which
+   * key — are derived once in `lib/core/mix.ts`, and the sentence is written twice. What makes
+   * this one worth its own describe is that the sentence is the whole feature: #264 is a piece of
+   * mix advice, so a drifting copy is not a formatting difference, it is one of two readers being
+   * told to listen for something else.
+   */
+  const block = (doc: string) =>
+    doc.slice(doc.indexOf('Master FX'), doc.indexOf('Arrangement variations'))
+
+  /**
+   * A TR-8S and a Deluge on Industrial Techno: the kick lands on the drum machine and the sub on
+   * the Deluge, which is the pairing #264 is written about. Two named boxes rather than the whole
+   * library for the reason `bothScopes` above names two — an exact tie across the catalogue is
+   * settled by a seeded permutation, so an unrelated device landing could quietly move the kick.
+   */
+  const lowEnd = resolve({
+    devices: DEVICES.filter((d) => d.id === 'roland-tr-8s' || d.id === 'synthstrom-deluge'),
+    template: industrialTechno,
+    mood: NEUTRAL_MOOD,
+    seed: 1,
+  })
+
+  const sentence =
+    'Loop Peak with the TR-8S kick and Deluge sub. ' +
+    "Sweep the kick's tuning slowly; stop where its tail adds weight instead of beating " +
+    'against the sub, then check the full progression in A minor before committing.'
+
+  it('gives both readers the same instruction, word for word', () => {
+    // Stated as facts first, so a search that moved the kick fails here saying what moved rather
+    // than as an unreadable string diff.
+    expect(lowEndPairing(lowEnd)).toEqual({
+      kick: { deviceName: 'TR-8S' },
+      sub: { deviceName: 'Deluge' },
+      sameDevice: false,
+      key: 'A minor',
+      listenIn: 'Peak',
+    })
+    expect(block(text(html(lowEnd)))).toContain(sentence)
+    expect(block(renderGuide(lowEnd))).toContain(sentence)
+  })
+
+  it('labels the block derived, because nothing in it comes off a manual', () => {
+    // #264: this is mix advice, not a value read off a page, and it must not wear a citation's
+    // clothes. The label is on the block and said once — invariant 4 keeps provenance marks off
+    // the values themselves, and this is not one.
+    expect(block(renderGuide(lowEnd))).toContain('**Tuning** — derived from this arrangement')
+    expect(block(text(html(lowEnd)))).toContain('Tuning — derived from this arrangement')
+    // Never the `· derived` badge: that is the per-value mark #394 took off every line, and
+    // `test/citation-sentence.test.ts` bans the string in both guides.
+    expect(renderGuide(lowEnd)).not.toContain('· derived')
+    expect(text(html(lowEnd))).not.toContain('· derived')
+  })
+
+  it('names the busiest section both parts occupy, in both renderers', () => {
+    // Derived here independently of `mix.ts`, so the assertion is a second opinion rather than a
+    // restatement: the highest-energy section the kick and the sub share.
+    const kick = lowEnd.assignments.find((a) => a.role === 'kick') as ResolveResult['assignments'][number]
+    const sub = lowEnd.assignments.find((a) => a.role === 'sub') as ResolveResult['assignments'][number]
+    const shared = lowEnd.template.structure.filter(
+      (s) => kick.sections.includes(s.name) && sub.sections.includes(s.name),
+    )
+    const busiest = shared.reduce((best, s) => (s.energy > best.energy ? s : best))
+    expect(busiest.name).toBe('Peak')
+    for (const doc of [block(text(html(lowEnd))), block(renderGuide(lowEnd))]) {
+      expect(doc).toContain(`Loop ${busiest.name} with the`)
+    }
+  })
+
+  it('prints for a kick whose tuning control is in no absolute unit at all (#264)', () => {
+    // The case the issue's first, arithmetic draft disqualified: 60 of the library's tune
+    // parameters are in no pitch unit, so a semitone offset cannot be computed from them — and
+    // the ear-based instruction is exactly what their reader needs instead. Measured on the
+    // resolved parameters rather than assumed: nothing on this kick is authored in semitones.
+    const kick = lowEnd.assignments.find((a) => a.role === 'kick') as ResolveResult['assignments'][number]
+    expect(kick.params.length).toBeGreaterThan(0)
+    expect(kick.params.filter((p) => p.unit?.toLowerCase() === 'st')).toEqual([])
+    expect(block(renderGuide(lowEnd))).toContain(sentence)
+    expect(block(text(html(lowEnd)))).toContain(sentence)
+  })
+
+  it('names one box once where it carries both parts', () => {
+    // A Tracker Mini alone on Weave: the kick and the sub are two tracks of one instrument, and
+    // *the Tracker Mini kick and Tracker Mini sub* prints the same name twice — a sentence about
+    // a rack the reader cannot see, which is #144's shape one block over.
+    const oneBox = resolve({
+      devices: DEVICES.filter((d) => d.id === 'polyend-tracker-mini'),
+      template: weave,
+      mood: NEUTRAL_MOOD,
+      seed: 1,
+    })
+    expect(lowEndPairing(oneBox)).toEqual({
+      kick: { deviceName: 'Tracker Mini' },
+      sub: { deviceName: 'Tracker Mini' },
+      sameDevice: true,
+      key: 'G aeolian',
+      listenIn: 'Twist',
+    })
+    const sameBox =
+      "Loop Twist with the Tracker Mini's kick and sub. " +
+      "Sweep the kick's tuning slowly; stop where its tail adds weight instead of beating " +
+      'against the sub, then check the full progression in G aeolian before committing.'
+    expect(block(text(html(oneBox)))).toContain(sameBox)
+    expect(block(renderGuide(oneBox))).toContain(sameBox)
+    for (const doc of [block(text(html(oneBox))), block(renderGuide(oneBox))]) {
+      expect(doc).not.toContain('Tracker Mini kick and Tracker Mini sub')
+    }
+  })
+
+  it('says nothing at all where the guide has no pair to balance', () => {
+    // No sub requested: there is no second part in the low end, and inventing one to have
+    // something to say is invariant 5.
+    const noSub = resolve({
+      devices: GOLDEN_DEVICES,
+      template: { ...GOLDEN_TEMPLATE, roles: GOLDEN_TEMPLATE.roles.filter((r) => r.role !== 'sub') },
+      mood: GOLDEN_MOOD,
+      seed: GOLDEN_SEED,
+    })
+    expect(lowEndPairing(noSub)).toBeUndefined()
+    expect(renderGuide(noSub)).not.toContain('**Tuning**')
+    expect(text(html(noSub))).not.toContain('Tuning — derived')
+  })
+
+  it('says nothing where the two parts never sound at once', () => {
+    const apart = resolve({
+      devices: GOLDEN_DEVICES,
+      template: {
+        ...GOLDEN_TEMPLATE,
+        roles: GOLDEN_TEMPLATE.roles.map((r) => {
+          if (r.id === 'r-kick') return { ...r, sustain: 'transient' as const, sections: ['Intro'] }
+          if (r.id === 'r-sub') return { ...r, sustain: 'transient' as const, sections: ['Drop'] }
+          return r
+        }),
+      },
+      mood: GOLDEN_MOOD,
+      seed: GOLDEN_SEED,
+    })
+    // Both parts are here; what is missing is a section to hear them in together.
+    expect(apart.assignments.filter((a) => a.role === 'kick' || a.role === 'sub')).toHaveLength(2)
+    expect(renderGuide(apart)).not.toContain('**Tuning**')
+    expect(text(html(apart))).not.toContain('Tuning — derived')
   })
 })
 

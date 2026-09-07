@@ -4087,7 +4087,8 @@ Do not reorder.
    printed there is nothing to repeat and nothing to hoist, and both are gone from the model as
    well as from the page. #107's hoisting above is untouched, because it is about *where a setting
    is stated* — a fact about the box, not about evidence
-7. **Finishing** — sidechain, master FX, and the arrangement as a **band trajectory** (§6.3):
+7. **Finishing** — sidechain, master FX, tuning the low end by ear (#264), and the arrangement
+   as a **band trajectory** (§6.3):
    which sections program identically part for part, and which parts do not follow the band.
    Deliberately not a second copy of phases 1–3 — it printed the device list, a bars-and-energy
    table and every role under every section heading, and all three already exist above it.
@@ -4143,6 +4144,63 @@ Do not reorder.
    `unused` is emitted only when nothing else speaks for the box, so a `MASTER FX` silkscreen is
    never followed by a weaker restatement of itself. *Nothing in this rig processes audio* now
    means what it says — no box in the rig has effects at all
+
+   **Tuning parts against each other is mix work, and it sits between the master chain and the
+   arrangement** (#264). It is the last thing done to the sound itself and the first thing done by
+   ear: everything above it is set, and everything below it is structure. The block is one
+   paragraph under *Tuning — derived from this arrangement*, naming the two boxes, the two parts
+   and the section to loop while judging them — *Loop Peak with the TR-8S kick and Deluge sub.
+   Sweep the kick's tuning slowly; stop where its tail adds weight instead of beating against the
+   sub, then check the full progression in A minor before committing.* **One box carrying both
+   parts is named once** — *the Tracker Mini's kick and sub* — for the reason the Master FX
+   sentence above drops its "nothing else in this rig" clause at a rig of one: the two-box
+   sentence prints the same name twice and reads as a rack the reader cannot see.
+
+   **The kick against the sub, and nothing else yet.** #263 split in two: what a *box* needs —
+   warm-up, a tuning routine — is a fact about hardware and lives in phase 3, and this is the
+   musical half. The obvious pair is the low end, where two parts share a register narrow enough
+   that a clash is what a listener hears first. Pitching a clap or a metallic hit out of something
+   else's way is the same kind of judgement and is not here; the pair is one because the advice is
+   only worth printing where the collision is certain.
+
+   **It reads no parameter — not a name, not a value, not a unit** — and that is the correction
+   #264 records rather than an implementation detail. The first draft was arithmetic: read
+   `song.key`, find a `TUNE`, print *tune the kick to the root*. Swept over the whole catalogue —
+   every device against all eleven directions on seeds 1–12, 132 resolved guides — the 98 distinct
+   tune parameters those guides reached split **30 in an absolute unit (`st`, `c`, `Hz`) against 68
+   in another unit or none**: 44 carrying no unit at all, 16 in `%`, 8 in `% travel`. A semitone
+   offset cannot be computed from `TUNE = -96` on a TR-8S or from `30 % travel` on an RD-9, and
+   inventing the mapping is what invariant 5 forbids. (#264's own first sample, over 21 guides,
+   read 17 against 60.) Under the sound-engineering reading none of them are disqualified: *tune
+   the kick until its tail stops clashing with the bass* is real, actionable guidance on a box
+   printing `-96`, where *set it to C* would be a fabrication. The unit gate was solving the wrong
+   problem, and the parts with no absolute unit are the ones whose reader most needs the
+   instruction, because their own panel will not answer the question either. §4.1/#339's
+   `followsKey` is untouched by this and stays where it is: that moves an authored value the
+   direction asked to follow the key, and this asks a person to listen.
+
+   **The section is the busiest one both parts occupy** — highest `energy` in `structure`, ties to
+   the section authored first. A judgement made while listening needs a place to listen, and the
+   busiest shared section is where the low end is most crowded; judging it in an intro that plays
+   half the arrangement is judging the easy case.
+
+   **Silent where there is no pair, or nowhere to hear it.** No sub requested, no box that can
+   carry one, a part that became a §7.3 shortfall — all three mean the same thing to the reader
+   and print nothing. So does a kick and a sub that never share a section: an instruction to loop
+   one and listen to both would describe a moment the arrangement does not contain.
+
+   **Labelled with where it comes from, once, on the block.** Nothing here is off a manual and it
+   must not wear a citation's clothes, so the block names its source — the arrangement above it —
+   where a device block names its documents. It says what the advice rests on rather than what the
+   guide declined to give it, which is a sentence about our reasoning and not about their track.
+   It is not a provenance mark on a value — §3.2 keeps those off the guide entirely, and #394 paid
+   off the cost of one on every line. **And it is deliberately not spelled `· derived`**, which it
+   was for one revision: that is the exact per-value badge #394 removed, banned by name in both
+   guides, and a reader who learned it beside a value reads it as one wherever it appears.
+   `Provenance`'s vocabulary is not borrowed here for the reason §8's re-strike derivation does
+   not borrow it — that word means an authored point moved by a mood axis, and this is neither.
+   The facts are derived once in `lib/core/mix.ts` and the sentence is written twice, like every
+   other §8 claim (#33)
 
 #### A statement has to have referents (#144)
 

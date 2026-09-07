@@ -763,6 +763,10 @@ What processes audio in this rig:
 - Tracker Mini — carries REVERB SEND in its recipes
 - TR-1000 — carries REVERB, DELAY, MASTER FX and ANALOG FX on the panel, and DLY SEND and RVB SEND in its recipes
 
+**Tuning** — derived from this arrangement
+
+Loop Peak with the Tracker Mini kick and TR-1000 sub. Sweep the kick's tuning slowly; stop where its tail adds weight instead of beating against the sub, then check the full progression in F minor before committing.
+
 **Arrangement variations**
 
 Sections that program identically, part for part — build one and copy it:

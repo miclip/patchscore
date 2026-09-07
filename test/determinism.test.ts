@@ -121,6 +121,10 @@ const IMPLEMENTATION = [
   // different reports. Scanned rather than excluded for `guide.ts`'s reason as well: a renderer
   // is going to read it.
   'inert.ts',
+  // §8/#264's low-end pair. It orders the sections the kick and the sub share and tie-breaks two
+  // requests of one role by id, so a locale-dependent comparison here would hand two platforms
+  // two different parts to balance — and it is read by renderers, which is `guide.ts`'s reason.
+  'mix.ts',
 ]
 const BANNED = [
   'localeCompare',

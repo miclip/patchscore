@@ -72,6 +72,7 @@ import {
   type SectionChain,
 } from './arrangement'
 import { fxSources, type FxSource } from './fx'
+import { lowEndPairing } from './mix'
 import {
   noDuckers,
   pumpIsBoxByBox,
@@ -2832,6 +2833,37 @@ function phaseFinishing(result: ResolveResult): Line[] {
     }
   }
   out.push('')
+
+  // §8/#264. Between the master chain and the arrangement, because it is the last thing done to
+  // the sound itself and the first thing done by ear: everything above is set and everything
+  // below is structure. Nothing is printed where there is no pair or nowhere to hear it.
+  const lowEnd = lowEndPairing(result)
+  if (lowEnd !== undefined) {
+    /*
+     * The label names where this comes from — the arrangement above it — because nothing here
+     * comes off a manual and it must not wear a citation's clothes (#264).
+     *
+     * **Not `· derived`**, which is what it said for one revision. That is the exact per-value
+     * badge #394 took off every line, and `test/citation-sentence.test.ts` bans the string
+     * outright — rightly, because a reader who learned it as a value mark reads it as one here.
+     * `Provenance`'s vocabulary is not borrowed for this, for the reason `reStrikeLines` gives
+     * one screen up: that word means an authored point moved by a mood axis, and this is neither.
+     */
+    out.push('**Tuning** — derived from this arrangement')
+    out.push('')
+    // One box carrying both parts names it once. The two-box sentence over a one-box rig prints
+    // the same name twice, which reads as a rig the reader does not have (#144's neighbourhood).
+    const parts = lowEnd.sameDevice
+      ? `${lowEnd.kick.deviceName}'s kick and sub`
+      : `${lowEnd.kick.deviceName} kick and ${lowEnd.sub.deviceName} sub`
+    out.push(
+      `Loop ${lowEnd.listenIn} with the ${parts}. ` +
+        "Sweep the kick's tuning slowly; stop where its tail adds weight instead of beating " +
+        'against the sub, then check the full progression' +
+        `${lowEnd.key === undefined ? '' : ` in ${lowEnd.key}`} before committing.`,
+    )
+    out.push('')
+  }
 
   out.push('**Arrangement variations**')
   out.push('')
