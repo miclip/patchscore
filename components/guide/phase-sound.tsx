@@ -25,6 +25,7 @@ import type {
 } from '@/lib/core'
 import { count, hintText, isStacked, num, voicesLabel } from './format'
 import { Instruction, ParamLine } from './instruction'
+import { VocabularyTerm } from '../vocabulary-term'
 
 /**
  * §12.4, and an instruction rather than a note: the two realisations are two different things to
@@ -431,7 +432,9 @@ export function SoundForPart({
     <div className="recipe">
       <h5>
         <span>{voicesLabel(a)}</span>
-        <span className="role mono">{a.role}</span>
+        <span className="role mono">
+          <VocabularyTerm word={a.role} />
+        </span>
         <span className="recipe-title">{a.recipe.title}</span>
       </h5>
 

@@ -3,6 +3,7 @@ import type { BandGroup, FxSource, ResolveResult, Role } from '@/lib/core'
 import { bandTrajectory, fxSources, sidechainReading } from '@/lib/core'
 import { count, fxText, num, sidechainSentences } from './format'
 import { TokenList } from './instruction'
+import { VocabularyTerm } from '../vocabulary-term'
 
 /** `kick`, `kick and sub`, `kick, sub and clap` — the Markdown sibling joins the same way. */
 function RoleList({ roles }: { roles: readonly Role[] }) {
@@ -13,7 +14,9 @@ function RoleList({ roles }: { roles: readonly Role[] }) {
           {i === 0 ? null : (
             <span className="token-sep">{i === roles.length - 1 ? ' and ' : ', '}</span>
           )}
-          <span className="role mono">{role}</span>
+          <span className="role mono">
+            <VocabularyTerm word={role} />
+          </span>
         </Fragment>
       ))}
     </>

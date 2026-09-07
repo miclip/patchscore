@@ -32,6 +32,7 @@ import {
   voicesLabel,
 } from './format'
 import { SoundRef } from './instruction'
+import { VocabularyTerm } from '../vocabulary-term'
 
 /**
  * §2.6/#142. **How the box in front of the reader ends a note**, above the notes it governs.
@@ -512,7 +513,9 @@ function HookBlock({
         The reroll fact worth having is stated once, up in the intro.
       */}
       <h4>
-        <span className="role mono">{choice.forRole}</span>
+        <span className="role mono">
+          <VocabularyTerm word={choice.forRole} />
+        </span>
         {carriedBy === undefined ? null : (
           <>
             <span className="token-sep">—</span>

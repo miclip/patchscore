@@ -11,20 +11,30 @@ import { searchCapNotice } from '@/lib/core'
 import { placementRow } from '../placement-controls'
 import { PlacementControl } from './placement-control'
 import { adviceText, count, isStacked, num, refusalText, voicesLabel } from './format'
+import { VocabularyTerm } from '../vocabulary-term'
 
 /** §3.5. Why this recipe, in the one case where the answer is not "it matched". */
 function recipeWhy(a: ResolvedAssignment) {
   if (a.recipe.outcome === 'exact') {
     return (
       <>
-        exact <span className="mono">{a.character}</span>
+        exact{' '}
+        <span className="mono">
+          <VocabularyTerm word={a.character} />
+        </span>
       </>
     )
   }
   return (
     <>
-      substituted — asked <span className="mono">{a.character}</span>, authored{' '}
-      <span className="mono">{a.recipe.character}</span>
+      substituted — asked{' '}
+      <span className="mono">
+        <VocabularyTerm word={a.character} />
+      </span>
+      , authored{' '}
+      <span className="mono">
+        <VocabularyTerm word={a.recipe.character} />
+      </span>
     </>
   )
 }
@@ -121,7 +131,9 @@ export function PhaseVoices({
           {result.assignments.map((a) => (
             <li key={a.requestId}>
               <div className="part-head">
-                <span className="role mono">{a.role}</span>
+                <span className="role mono">
+                  <VocabularyTerm word={a.role} />
+                </span>
                 <span className="arrow" aria-hidden="true">
                   →
                 </span>
@@ -227,8 +239,12 @@ function ShortfallList<T extends Shortfall>({
     <ul className="advice">
       {shortfalls.map((shortfall) => (
         <li key={shortfall.requestId}>
-          <span className="role mono">{shortfall.role}</span>
-          <span className="mono quiet">{shortfall.character}</span>
+          <span className="role mono">
+            <VocabularyTerm word={shortfall.role} />
+          </span>
+          <span className="mono quiet">
+            <VocabularyTerm word={shortfall.character} />
+          </span>
           <span className="quiet">p{num(shortfall.priority)}</span>
           <span className="advice-text">{sentence(shortfall)}</span>
         </li>

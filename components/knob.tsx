@@ -2,7 +2,9 @@
 
 import { useId, useRef, useState } from 'react'
 import type { ChangeEvent, KeyboardEvent, PointerEvent } from 'react'
+import type { MoodAxis } from '@/lib/core'
 import { clampMood, dragValue, MOOD_MAX, MOOD_MIN } from './knob-math'
+import { VocabularyTerm } from './vocabulary-term'
 
 /**
  * §10 / #10. A mood knob: vertical drag, Shift for fine adjustment, **and** an always-visible
@@ -58,7 +60,11 @@ function angleFor(value: number): number {
 }
 
 export type KnobProps = {
-  label: string
+  /**
+   * The axis, which is also the word #457 defines. Typed rather than `string` so only a word the
+   * glossary knows can be rendered as a term.
+   */
+  label: MoodAxis
   value: number
   onChange: (value: number) => void
   /** One line under the control. §10's restraint applies: a jog, not documentation. */
@@ -163,7 +169,18 @@ export function Knob({ label, value, onChange, hint, source }: KnobProps) {
 
   return (
     <div className="knob">
-      <label className="knob-label" htmlFor={fieldId}>
+      {/*
+        #457. The visible name is a definition trigger, and it is a *sibling* of the input rather
+        than its `<label>`: a button inside a label makes one control that does two things, and
+        clicking the word to read what darkness means would also focus the number field.
+        The association is kept by a real `<label for>` rather than an `aria-label`, for the
+        reason `.sr-only` already exists — a string with no element behind it cannot be targeted
+        by voice control and cannot be checked against an `id` (#53).
+      */}
+      <div className="knob-label">
+        <VocabularyTerm word={label} />
+      </div>
+      <label className="sr-only" htmlFor={fieldId}>
         {label}
       </label>
 

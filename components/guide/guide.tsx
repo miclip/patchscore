@@ -37,6 +37,7 @@ import { PhaseSong } from './phase-song'
 import { PhaseSound, SoundForPart, SoundShared } from './phase-sound'
 import { PhaseSteps } from './phase-steps'
 import { PhaseVoices } from './phase-voices'
+import { VocabularyTerm } from '../vocabulary-term'
 
 /**
  * #33. `ResolveResult` rendered as a web page — the sibling of `lib/core/render.ts`, never a
@@ -172,7 +173,10 @@ function PerformedHere({
                 {hostId !== undefined && a.deviceId === hostId
                   ? voicesLabel(a)
                   : `${a.deviceName} · ${voicesLabel(a)}`}
-                <span className="role mono"> {a.role}</span>
+                <span className="role mono">
+                  {' '}
+                  <VocabularyTerm word={a.role} />
+                </span>
               </h4>
               {one.song.hooks.length === 0 ? null : (
                 <>

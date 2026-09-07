@@ -1,6 +1,7 @@
 'use client'
 
 import { DENSITY_DETENTS, densityShift } from '@/lib/core'
+import { VocabularyTerm } from './vocabulary-term'
 
 /**
  * §6.3 / §12.2. Density is quantised, and it is a *lean*, not the band itself: the section's
@@ -28,7 +29,11 @@ export function DensityDetents({ value, onChange, source }: DensityDetentsProps)
 
   return (
     <fieldset className="detents">
-      <legend className="knob-label">density</legend>
+      {/* #457. The label is the definition's trigger — the reader is choosing here, not
+          executing, and this is the one control whose name is the whole of what it says. */}
+      <legend className="knob-label">
+        <VocabularyTerm word="density" />
+      </legend>
       <div className="detent-row">
         {DENSITY_DETENTS.map((detent, zone) => (
           <label className="detent" key={detent}>

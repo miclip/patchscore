@@ -1,5 +1,6 @@
 import type { Arrangement, Harmony, Section } from '@/lib/core'
 import { num } from './format'
+import { VocabularyTerm } from '../vocabulary-term'
 
 /**
  * The two tables that describe a template rather than a guide: the progression in degrees, and
@@ -159,7 +160,7 @@ export function ArrangementGrid({ plan }: { plan: Arrangement }) {
           {plan.rows.map((row) => (
             <tr key={row.requestId}>
               <th scope="row" className="mono">
-                {row.role}
+                <VocabularyTerm word={row.role} />
                 <span className="sr-only">
                   {row.throughout
                     ? ' plays throughout'
