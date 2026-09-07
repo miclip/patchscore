@@ -238,7 +238,7 @@ describe('§2.6/#121 the device page names the facts, not only the count', () =>
   it('names the path a reader would want to check', () => {
     const gaps = devicePage(DELUGE).capabilityGaps
     const undocumented = gaps.find((g) => g.kind === 'undocumented')
-    expect(undocumented?.facts).toContain('clock.preferredSource')
+    expect(undocumented?.facts.map((f) => f.path)).toContain('clock.preferredSource')
   })
 
   it('groups by state and orders the groups by the work behind them', () => {
@@ -252,9 +252,8 @@ describe('§2.6/#121 the device page names the facts, not only the count', () =>
   /** §7.2. Paths in code unit order, never manifest key order — moving a line must move nothing. */
   it('lists paths deterministically within a state', () => {
     for (const gap of devicePage(TR).capabilityGaps) {
-      expect([...gap.facts]).toEqual(
-        [...gap.facts].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)),
-      )
+      const paths = gap.facts.map((f) => f.path)
+      expect(paths).toEqual([...paths].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)))
     }
   })
 
@@ -262,7 +261,7 @@ describe('§2.6/#121 the device page names the facts, not only the count', () =>
   it('accounts for every non-citation finding the audit reports', () => {
     for (const device of DEVICES) {
       const findings = auditDevice(device).findings.filter((f) => 'fact' in f)
-      const shown = capabilityGaps(findings).flatMap((g) => g.facts)
+      const shown = capabilityGaps(device, findings).flatMap((g) => g.facts)
       expect(shown.length).toBe(findings.length)
     }
   })

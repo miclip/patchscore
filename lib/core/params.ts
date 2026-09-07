@@ -1222,9 +1222,8 @@ export function effectiveVerified(
  *
  * **Grouping here loses nothing, because the coarse answer is the only one anybody renders.**
  * This function answers *which documents am I going to need open*, which has one right answer per
- * corpus. The exact file stays on `Cite.source` in the manifest — see `DESIGN.md` §3.2, which
- * records the missing per-value answer as an accepted cost with the repair owed to the device
- * page.
+ * corpus. The exact file stays on `Cite.source`, which is what a device page's `Parameter sources`
+ * panel prints per value (§3.2/#410) — the finer answer has a surface, and it is not this one.
  *
  * The path pattern is deliberately narrow: a trailing `", "` then one comma-free, space-free path
  * ending in `.md`. A document *title* ending in ".md" would contain spaces and is left alone, and

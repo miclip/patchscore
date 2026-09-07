@@ -58,12 +58,14 @@ These are load-bearing. If one stops being true, stop and fix the architecture.
    `ResolvedParam.provenance` is non-optional, so a value whose provenance nobody decided cannot
    be constructed (§3.1), and `npm run audit` (§9) counts provisional points, unverified ranges
    and mood-inert params on their own lines, so the debt stays measurable whether or not anything
-   renders it. **The guides render none of it** — no provenance mark, no citation. **And no other
-   surface renders a per-value one either**: a device page carries the counts, the documents that
-   box's ranges cite and four device-level citations, never the page behind one number (§3.2).
-   Nothing is presented as manual-verified unless it is; what makes that airtight now is that
-   nothing rendered is presented as manual-verified at all, and what keeps it honest is the
-   compiler and the audit rather than ink.
+   renders it. **The guides render none of it** — no provenance mark, no citation — and that is
+   settled (§8/#394). **A device page renders the per-value answer**, because its reader is at a
+   desk rather than at a rack: for every authored parameter, the citation in force on the point,
+   on a numeric range and on an enum's option set, one row per recipe, under the parameter's own
+   name (§3.2/#410). It carries the counts, the documents that box's ranges cite and four
+   device-level citations as it always did. Nothing is presented as manual-verified unless it is;
+   what keeps that honest is the compiler and the audit, and what a reader can now *check* it
+   against is the device page.
 5. Gaps are shown honestly. Never invent an assignment to fill a hole.
 6. Same inputs + same seed + same resolver version → byte-identical guide **on any platform**.
    `Math.random()` appears nowhere in the resolver, and neither does any locale-dependent
@@ -680,8 +682,9 @@ for.
 
 No state borrows another's words, and the place they are still told apart in words is the
 **device page** — `capabilitySentence` counts each state and `capabilityGaps` names the field
-paths in the unsettled ones. Neither prints the page a cited fact rests on, and neither prints a
-`reason`.
+paths in the unsettled ones. Since #410 it also carries what those facts *say*: the path stays
+visible and the `reason`, a `partly` fact's `proven` and `open`, and the page behind a
+`cited-against` open behind a `<details>`.
 `npm run audit` splits the same total across two lines, `caps` for the three states with a document
 behind them and `gaps` for the three without (§9), and `undocumented` stays out of `unchecked`
 because reporting finished research as a backlog invites somebody to do it twice.
@@ -704,11 +707,17 @@ those now read the same whether a manual was read, was not read, or was read and
 is a real loss of the honesty invariant 5 asks for, it is recorded here rather than argued away,
 and the repair when it comes belongs in the **prose of those two lines**, not in a restored badge.
 
-**Where the `reason` reaches a reader is now nowhere rendered.** It is required on all three
-unsettled states, it is in the manifest, and `npm run audit` counts the states it hangs off — but
-the guide printed it and no longer does, and the device page prints paths grouped by state without
-it (see #121 below). Nor does any surface print the *page* a `cited-against` fact rests on. The
-device page is where both should land, because that is where a reader is sitting down to ask.
+**Where the `reason` reaches a reader is the device page** (#410), and for two commits it was
+nowhere. It is required on all three unsettled states, it is in the manifest, and `npm run audit`
+counts the states it hangs off — but the guide printed it, §8 dropped it with every other mark,
+and the device page printed paths grouped by state without it (see #121 below). Nor did any
+surface print the *page* a `cited-against` fact rests on. Both land on the device page now,
+because that is where a reader is sitting down to ask, and both are **progressive**: the path is
+the visible summary, the prose is behind it. #35's objection was never to the reason — it was to
+four paragraphs stacked under a heading, and an expander answers it without leaving the finding
+unsaid. A fact the manifest is silent about — `false`, nobody checked — renders as its bare path
+and not as an expander, because one opening onto an empty body tells a reader they missed
+something.
 
 #### What was rejected
 
@@ -769,10 +778,12 @@ showing it, and the gap between the two was wide enough to be worth a rule.
   rewrite would be the page inventing a second name for a field that already has one. The
   *reasons* were kept off this page — each is a paragraph, and four stacked is #35's failure moved
   to a new surface — because the guide printed them once, where the fact was being acted on. **The
-  guide no longer prints them**, so that argument has lost its other half and the reason currently
-  reaches no rendered surface at all. This page is where it should land, and #35's objection is a
-  reason to make it progressive disclosure rather than a reason to leave it unsaid. The same is
-  true of `cited-against`'s page, which this page groups by state and does not print.
+  guide stopped printing them**, so that argument lost its other half and for two commits the
+  reason reached no rendered surface at all. #410 landed it here, as progressive disclosure rather
+  than as a wall: #35's objection was to four paragraphs stacked, not to the finding, and an
+  expander answers it. `cited-against`'s page and a `partly` fact's two halves land the same
+  way — `proven` and `open` stay two fields and are labelled separately, because folding either
+  into a sentence is the prose workaround #236 replaced.
 - **The states are drawn apart, on the device page.** #120 added `unread` and `cited-against` and
   deliberately left them wearing `undocumented`'s ink, because inventing an identity for them
   there would have been a rendering decision made by a type error. They have their own now, and
@@ -1641,29 +1652,51 @@ exempt because its firmware sits past its comma. `test/citation-sentence.test.ts
 property over the whole catalogue rather than over fixtures, because the next shape will be
 authored in a device folder and no fixture would see it.
 
-**Be exact about where the rest of the evidence went, because it did not all land somewhere.**
-`ResolvedParam.provenance` is still non-optional and `npm run audit` still counts every state —
-invariant 4 in full — and a device page reports, for one box, how many of its points and ranges
-are cited and to which *documents* (`rangeDocuments`, names without page numbers), which
-capability facts are unsettled and in what state, and four citations of its own with pages: panel
-span, warm-up, quick tune, calibration.
+**Be exact about where the rest of the evidence went.** `ResolvedParam.provenance` is still
+non-optional and `npm run audit` still counts every state — invariant 4 in full — and a device
+page reports, for one box, how many of its points and ranges are cited and to which *documents*
+(`rangeDocuments`, names without page numbers), which capability facts are unsettled and in what
+state, and four citations of its own with pages: panel span, warm-up, quick tune, calibration.
+Since #410 it also reports the page behind each individual value, which is the half that used to
+land nowhere.
 
-**No rendered surface carries a per-*value* citation.** *Where did `DECAY 38` come from* was
+**No *guide* carries a per-value citation, and none will.** *Where did `DECAY 38` come from* was
 answerable on the guide's `↳ cite:` line, and the block sentence does not answer it: it says which
-documents that box's numbers rest on and across which pages, not which of them backs one line. For
-a single number the manifest is where that page lives, and the audit is what stops the uncited
-share drifting. That is the real cost of this decision. It is smaller than it was when the guide
-said nothing — a reader with the document and a span has somewhere to go, which is most of what
-the `↳ cite:` line was for — and it is accepted because §8's reader is not asking the per-value
-question and because the count that would reveal a rot — *3 of 41 values cited* — is on the device
-page and in the audit. Making a per-value citation reachable again belongs on the device page, and
-is not a reason to put a mark back on a guide's lines.
+documents that box's numbers rest on and across which pages, not which of them backs one line.
+That was the real cost of #394's decision, and it was accepted because §8's reader is standing at
+a machine and is not asking the per-value question — a page number beside a value is a line you
+step over on the way to the number, a `title` attribute has no hover on the phone §21 designs for,
+and neither exists on paper. Restoring a mark to a guide's lines re-buys that cost and is not the
+repair.
 
-**That repair is #410**, filed rather than argued away, and it is scoped to the device page for the
-reason above. Note what it is not blocked on: `ResolvedParam.provenance`, `range.verified` and
-`optionsVerified` already carry every citation it needs and the audit already counts them, so this
-is a rendering gap and nothing has to be re-authored. Two facts §2.6 records as the same gap belong
-in the same surface — a capability fact's `reason`, and the page behind a `cited-against` fact.
+**The repair is the device page, and it landed at #410.** Its `Parameter sources` panel answers
+*where did this number's bounds come from* for every authored parameter on the box, which is the
+question a reader at a desk asks and §8's reader does not. Four decisions carry it:
+
+- **The name is ink; the evidence is behind it.** Every parameter name renders in monospace at
+  every width, because a reader arrives holding `DECAY` and the panel is useless if `DECAY` cannot
+  be found on it. Each name is a `<details>` summary, because a box in this library authors up to
+  1,328 parameters across its recipes and a flat list of them all is a page nobody scrolls.
+- **Grouped by the panel module the manifest names, and by the recipe's role where it names
+  none** — never an `Other` bucket. Two thirds of the library declares no module, so a
+  module-only grouping would leave most boxes as one heap; `Other` names nothing and would report
+  an author's honest silence as a hole, which is invariant 5 read backwards. The fallback is per
+  *parameter*, not per device, so the minilogue xd's seven modules and its one unmoduled `SWING`
+  both group correctly.
+- **One row per recipe, and identical names are not merged.** The TR-1000 reads `DECAY` off five
+  pages of one manual because five instrument types print their own tables; de-duplicating by name
+  would keep one of the five and discard the rest silently, which is the failure this issue exists
+  to end. Each row names the recipe's title, role and character, because a page reference a reader
+  cannot match to the line in their hand is not an answer.
+- **The three claims stay three claims.** The point's citation, a numeric range's and an enum
+  `options`' are separate columns, resolved through the same `effectiveVerified` the resolver and
+  the audit use, and the two words for an absence stay apart: a point nobody checked is
+  **provisional**, bounds or an option set nobody checked are **unverified**.
+
+Nothing had to be re-authored for any of it: `ResolvedParam.provenance`, `range.verified` and
+`optionsVerified` already carried every citation, and the audit already counted them. It was a
+rendering gap. The two facts §2.6 records as the same gap — a capability fact's `reason`, and the
+page behind a `cited-against` — landed on the same surface and in the same shape.
 
 Skimming a single line a reader still cannot tell *unmarked because it is a starting point* from
 *unmarked because nobody got to it yet*; that was already true under the second scheme for the
@@ -3487,9 +3520,10 @@ Three rules on the ink, all of them #35's lesson:
   information, and rendering nothing in its place implies a confidence the guide does not have.
   That argument was not wrong; it lost to the surface. §8 is read standing at a rack, where the
   reader cannot act on a page number, and a rule that keeps one line of evidence while dropping
-  every other is a rule with one exception and no principle. §2.6 records where the reason should
-  land instead, which is the device page — it does not carry it yet, so *"no page states that
-  leading a rig is its job"* currently reaches nobody.
+  every other is a rule with one exception and no principle. §2.6 records where the reason lands
+  instead, which is the device page: since #410 it carries the reason behind the path, so *"no page
+  states that leading a rig is its job"* reaches a reader again — at a desk, where a page number is
+  something they can act on, rather than at a rack, where it is not.
 
 Both renderers say all of this, in their own words (§8's standing rule about ink): the page is
 what somebody is holding at the rack (#21), so a fact that reaches only the Markdown reaches
@@ -4303,9 +4337,10 @@ Three guards:
   params separately (§3.2), so none of the three quietly accumulates, and splitting the cited
   remainder into manual and observed so neither is read as the other. **This is where the debt is
   visible to the project.** A guide renders no provenance at all (§3.2) and a device page reports
-  counts for one box, so the audit is the only surface that answers "how much of the library rests
-  on somebody's ears" — which is what makes invariant 4 a guarantee held by the compiler and this
-  script rather than by ink — and, since #22, the
+  one box — its counts, and since #410 the page behind each of its values — so the audit is still
+  the only surface that answers "how much of the *library* rests on somebody's ears", which is what
+  makes invariant 4 a guarantee held by the compiler and this script rather than by ink — and,
+  since #22, the
   capability facts a manifest has spoken about (§2.6), split six ways over two lines — `caps` for
   the states with a document behind them and `gaps` for the states without, because `undocumented`
   is finished work, `unchecked` is work nobody has started, and `unread` is work nobody here can

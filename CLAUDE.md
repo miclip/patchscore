@@ -47,13 +47,32 @@ update `DESIGN.md` in the same commit.
    Templates never name a device; devices never name a genre. Adding a fifth shared vocabulary is
    an architecture change, not a convenience.
 4. Every *resolved* value carries provenance — `authored`, `derived`, or `provisional`. Enforced
-   by the type system: `ResolvedParam.provenance` is non-optional. **It is mostly a model
-   guarantee rather than ink**: no surface renders a per-value citation, and a guide renders no
-   provenance mark. What a guide does render is **one sentence per device block**, naming the
-   documents that box's *rendered* settings rest on and the span of pages they came off
-   (`citationSentence` over `renderedParams`, both legality gates) — once per box, never on a
-   line. A device page carries counts, the documents its ranges cite, and
-   four device-level citations. `npm run audit` is what keeps it honest. See `DESIGN.md` §3.2.
+   by the type system: `ResolvedParam.provenance` is non-optional. **In the model it is a compiler
+   guarantee; in ink it is two surfaces saying different amounts, on purpose.**
+
+   **A guide renders no provenance mark and no per-value citation, and must not start.** What it
+   renders is **one sentence per device block**, naming the documents that box's *rendered*
+   settings rest on and the span of pages they came off (`citationSentence` over `renderedParams`,
+   both legality gates) — once per box, never on a line. §8 is read at the machine with both hands
+   busy, and #394 paid off the cost of a mark on every line; putting one back is not an
+   improvement to be argued for here.
+
+   **A device page answers the per-value question, because its reader is at a desk** (#410). Its
+   `Parameter sources` panel carries, for every authored parameter, the citation in force on the
+   point, on a numeric range and on an enum's option set — each claim separately, since a cited
+   range does not verify the point inside it. Four rules hold it together:
+   - **Names are ink**, in monospace, at every width: a reader arrives holding `DECAY` and has to
+     find `DECAY`. The *evidence* is behind a `<details>`, which is what keeps a 1,328-parameter
+     box skimmable.
+   - **Grouped by the panel module where one is authored, and by the recipe's role where none
+     is.** Never an `Other` bucket — see `paramProvenance`.
+   - **One row per recipe.** A name authored on twenty-two recipes off five pages keeps all five;
+     de-duplicating by name would pick one citation and drop the rest.
+   - **Capability facts disclose progressively too**: the path is always visible, the `reason`,
+     a `partly` fact's `proven`/`open` and a `cited-against` page are behind the expander.
+
+   The page also carries counts, the documents its ranges cite, and four device-level citations.
+   `npm run audit` is what keeps the library-wide totals honest. See `DESIGN.md` §3.2 and §2.6.
 5. Gaps are shown honestly. Never invent an assignment to fill a hole.
 6. Same inputs + same seed + same resolver version → byte-identical guide, **on any platform**.
 7. Hints are jogs (under ~8 words), not documentation.

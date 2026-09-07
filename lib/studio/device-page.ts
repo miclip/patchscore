@@ -1,5 +1,22 @@
-import type { Character, Device, Role, Template } from '@/lib/core'
-import { CHARACTERS, ROLES, clockWires, expand } from '@/lib/core'
+import type {
+  AuthoredParam,
+  Character,
+  Cite,
+  Device,
+  Recipe,
+  Role,
+  Template,
+  Verified,
+} from '@/lib/core'
+import {
+  CHARACTERS,
+  ROLES,
+  clockWires,
+  compareCodeUnits,
+  effectiveVerified,
+  evidenceFor,
+  expand,
+} from '@/lib/core'
 import { TEMPLATES } from '@/lib/templates'
 import { deviceHref, deviceLabel, templateHref, plural } from './catalogue'
 import { coverage } from './coverage'
@@ -116,6 +133,11 @@ export type DevicePage = {
    */
   capabilityGaps: readonly CapabilityGap[]
   /**
+   * §3.2/#410. **Which page each parameter's claims were read off**, grouped so a reader can
+   * find the one they arrived with. Empty for a box with no recipes.
+   */
+  paramProvenance: readonly ParamProvenanceGroup[]
+  /**
    * Every direction, in template order, with what this box alone covers of it. Empty for a box
    * with no assignables: three rows of "0 of 12" say the same thing three times, and the page
    * says it once in prose instead.
@@ -131,20 +153,71 @@ export type DevicePage = {
  * "the clock topology" would be this page inventing a name for a field the manifest already
  * names. §10's rule about values applies — they render monospace, because they are identifiers.
  *
- * The *reasons* stay on the facts and are not printed here. Each one is a paragraph (the
- * Deluge's runs to four clauses across three page references), and four of them stacked is #35's
- * failure moved to a new page.
- *
- * **That argument has lost its other half.** It held while the guide printed the reason once,
- * where the fact was being acted on; §8 now prints no capability evidence at all (§3.2), so the
- * reason reaches no rendered surface. This page is where it should land, and #35 is a reason to
- * disclose it progressively rather than a reason to keep leaving it unsaid — §2.6 carries the
+ * The *reasons* were kept off this page until #410. Each one is a paragraph (the Deluge's runs to
+ * four clauses across three page references), and four of them stacked is #35's failure moved to a
+ * new page — an argument that held while the guide printed the reason once, where the fact was
+ * being acted on. §8 prints no capability evidence at all (§3.2), which left the reason reaching
+ * no rendered surface, and #35's objection was to four paragraphs stacked rather than to the
+ * finding. So it lands here, behind the path: see `CapabilityFactDisclosure`. §2.6 carries the
  * record.
  */
 export type CapabilityGap = {
   kind: 'cited-against' | 'partly' | 'undocumented' | 'unread' | 'unchecked'
   /** Code unit order (§7.2), inherited from the audit — never manifest key order. */
-  facts: readonly string[]
+  facts: readonly CapabilityFactDisclosure[]
+}
+
+/**
+ * §2.6/#410. **One unsettled capability fact, with what the manifest actually recorded about it.**
+ *
+ * The path was all this carried, and #410 names the rest as the same gap: a `reason` is required
+ * on three of these states and a `cited-against` carries a page, both counted by the audit and
+ * rendered nowhere. A required field that reaches no surface is a field an author writes for the
+ * schema rather than for a reader.
+ *
+ * Every field but `path` is optional because the states carry different evidence, and none is
+ * synthesised for a state that has none: `unchecked` is `false` in the manifest and has nothing
+ * to say, which is what it means.
+ *
+ * `partly` keeps `proven` and `open` apart rather than folding either into `reason`. That split
+ * is the whole of #236 — one half has a page behind it and the other does not — and collapsing
+ * them into a sentence here would restore the workaround the state was added to replace.
+ */
+export type CapabilityFactDisclosure = {
+  /** The manifest's own field path: `clock.preferredSource`, not a friendlier rewrite. */
+  path: string
+  /** Required by the schema on `undocumented`, `unread` and `cited-against`; absent otherwise. */
+  reason?: string
+  /** The document read: `cited-against`'s page, and the page behind `partly`'s proven half. */
+  cite?: Cite
+  /** `partly` only: what that page establishes. */
+  proven?: string
+  /** `partly` only: what it leaves open, which is why the fact is not a plain citation. */
+  open?: string
+}
+
+/**
+ * What the manifest recorded at one path, flattened for the disclosure above.
+ *
+ * Read off `capabilityEvidence` rather than off the finding, because a finding says only that a
+ * fact is unsettled. A path with no entry cannot reach here — the audit walks the same map — so
+ * the empty result is the unreachable case and not a silent hole.
+ */
+function factDisclosure(device: Device, path: string): CapabilityFactDisclosure {
+  const evidence = evidenceFor(device, path)
+  if (evidence === undefined || evidence === false) return { path }
+  switch (evidence.kind) {
+    case 'unknown':
+    case 'unread':
+      return { path, reason: evidence.reason }
+    case 'cited-against':
+      return { path, reason: evidence.reason, cite: evidence.cite }
+    case 'partly':
+      return { path, cite: evidence.cite, proven: evidence.proven, open: evidence.open }
+    default:
+      // A citation, which the audit does not report as a gap. Unreachable through `auditDevice`.
+      return { path }
+  }
 }
 
 /**
@@ -165,8 +238,15 @@ const GAP_KIND_OF: Record<string, CapabilityGap['kind']> = {
   'unchecked-capability': 'unchecked',
 }
 
-export function capabilityGaps(findings: readonly AuditFinding[]): CapabilityGap[] {
-  const byKind = new Map<CapabilityGap['kind'], string[]>()
+/**
+ * The device is a parameter because the findings carry a path and nothing else, and #410 asks
+ * for the reason and the page behind it — both of which live on the manifest.
+ */
+export function capabilityGaps(
+  device: Device,
+  findings: readonly AuditFinding[],
+): CapabilityGap[] {
+  const byKind = new Map<CapabilityGap['kind'], CapabilityFactDisclosure[]>()
   for (const finding of findings) {
     // The parameter findings share the array and carry no `fact`; they are the other coordinate
     // system (§2.6) and belong to the tables above, not here.
@@ -174,7 +254,7 @@ export function capabilityGaps(findings: readonly AuditFinding[]): CapabilityGap
     const kind = GAP_KIND_OF[finding.kind]
     if (kind === undefined) continue
     const facts = byKind.get(kind) ?? []
-    facts.push(finding.fact)
+    facts.push(factDisclosure(device, finding.fact))
     byKind.set(kind, facts)
   }
   return CAPABILITY_GAP_ORDER.flatMap((kind) => {
@@ -394,6 +474,188 @@ export function deviceDescription(device: Device, page: Omit<DevicePage, 'descri
   )
 }
 
+// ---------------------------------------------------------------------------
+// §3.2/#410 — where one parameter's value, bounds and options were read off
+// ---------------------------------------------------------------------------
+
+/**
+ * §3.2/#410. **One authored parameter, on one recipe, with its citations already inherited.**
+ *
+ * The three claims are kept apart because they are three claims, exactly as §3.1 keeps them
+ * apart in the manifest: the *point* decides authority, the *range* and the *option set* decide
+ * legality, and a cited range does not verify the number inside it. Each is absent when nothing
+ * is in force — and the word for that absence is deliberately not stored, because a point with
+ * no citation is `provisional` and a range with no citation is `unverified`, and one field
+ * cannot carry both words honestly (§3.2). A renderer says which it is.
+ *
+ * **Inheritance is applied here and not left to the reader.** `effectiveVerified` is the same
+ * function the audit and the resolver use, so a value the audit counts as cited cannot appear
+ * uncited on this page — one rule, three readers (§3.1).
+ *
+ * **The point *value* is not carried, and that is a decision rather than an omission.** Mood
+ * moves it (§6.1), so the authored number is often not the number on the guide line a reader
+ * arrived from, and printing it here would look like the page disagreeing with the guide. What
+ * survives mood is the range, which is also the thing #410 says a reader is usually asking
+ * about. The recipe is what tells two lines of the same name apart, so the recipe is what
+ * identifies an occurrence.
+ */
+export type ParamOccurrence = {
+  recipeId: string
+  /** The recipe's own title, role and character: how a reader recognises which line is theirs. */
+  title: string
+  role: Role
+  character: Character
+  kind: AuthoredParam['kind']
+  /** Numerics only. Carried because `0…255` is half of what a reader is matching against. */
+  unit?: string
+  /** The citation in force for the point value. Absent → provisional. */
+  point?: Cite
+  /** Numerics only: the bounds and the citation in force for them. No cite → unverified. */
+  range?: { min: number; max: number; cite?: Cite }
+  /** Enums only: the option set and the citation in force for it. No cite → unverified. */
+  options?: { values: readonly string[]; cite?: Cite }
+}
+
+/**
+ * One parameter *name* and every recipe that authors it.
+ *
+ * **One occurrence per recipe, never one per name.** The TR-1000 authors `DECAY` on twenty-two
+ * recipes across five pages of its reference manual; de-duplicating by name would pick one of
+ * those five and silently discard the other four, which is the failure #410 exists to end rather
+ * than a tidier version of it. Identical citations repeat, and that is the honest shape: it says
+ * the same page backs all of them.
+ */
+export type ParamProvenanceEntry = {
+  /** The authored name, unabbreviated — this is the string a reader arrives with. */
+  name: string
+  occurrences: readonly ParamOccurrence[]
+}
+
+/**
+ * §3.1/§8/#410. **A group of parameters a reader can skim**, keyed by the panel module the
+ * manifest names, or by the role of the recipe when it names none.
+ *
+ * Boxes here reach 1,328 authored parameters, so a flat list is a list nobody reads (#385 is the
+ * sibling problem on the guide side, and reached the same answer: cut by module). Two thirds of
+ * the library declares no module at all, though, and for those a single undifferentiated heap is
+ * the same failure with a bigger font.
+ *
+ * **The fallback is the recipe's role, and there is no `Other` bucket.** A role is what the
+ * parameter is *for* — it is one of the four shared vocabularies, every recipe has exactly one,
+ * and this page already prints its role coverage in the same terms above. "Other" names nothing;
+ * it is a heading that tells a reader only that the library had nowhere to put something, which
+ * is invariant 5's honesty read backwards — a real fact reported as a gap.
+ *
+ * A discriminated union rather than one `label`, so a renderer cannot print a role where it
+ * meant a module: the two are different kinds of claim, and a module is free prose in the
+ * device's own words while a role is vocabulary.
+ */
+export type ParamProvenanceGroup =
+  | { kind: 'module'; module: string; params: readonly ParamProvenanceEntry[] }
+  | { kind: 'role'; role: Role; params: readonly ParamProvenanceEntry[] }
+
+function occurrenceOf(recipe: Recipe, param: AuthoredParam): ParamOccurrence {
+  const point = cited(effectiveVerified(param.verified, recipe.verified))
+  const base: ParamOccurrence = {
+    recipeId: recipe.id,
+    title: recipe.title,
+    role: recipe.role,
+    character: recipe.character,
+    kind: param.kind,
+    ...(point === undefined ? {} : { point }),
+  }
+  if (param.kind === 'numeric') {
+    const cite = cited(effectiveVerified(param.range.verified, recipe.verified))
+    return {
+      ...base,
+      ...(param.unit === undefined ? {} : { unit: param.unit }),
+      range: {
+        min: param.range.min,
+        max: param.range.max,
+        ...(cite === undefined ? {} : { cite }),
+      },
+    }
+  }
+  if (param.kind === 'enum') {
+    const cite = cited(effectiveVerified(param.options.verified, recipe.verified))
+    return {
+      ...base,
+      options: { values: param.options.values, ...(cite === undefined ? {} : { cite }) },
+    }
+  }
+  return base
+}
+
+/**
+ * The citation in force, or nothing. `false` and an omission that inherited nothing are the same
+ * state here and are deliberately indistinguishable, exactly as they are in the audit
+ * (`isCited`): both mean nobody checked.
+ */
+function cited(verified: Verified | undefined): Cite | undefined {
+  return verified === undefined || verified === false ? undefined : verified
+}
+
+/**
+ * §3.2/#410. Every authored parameter on the box, grouped and ordered so two builds of the same
+ * library produce the same page.
+ *
+ * **Ordering, and none of it is authoring order.** Modules sort by code unit and roles by the
+ * `ROLES` vocabulary, which is the order `rolesCovered` already prints on this same page —
+ * a page that ordered its roles two ways would read as two pages. Names sort by code unit, and
+ * occurrences by recipe id, which is unique within a manifest and therefore a total order. No
+ * `localeCompare` anywhere: ICU collation varies by platform, and a page that reordered itself
+ * on CI is invariant 6 broken with no error to show for it.
+ *
+ * Module groups come before role groups rather than interleaving by label, because the two are
+ * answers to different questions — *where on the panel* and *what for* — and a reader working
+ * down a panel should not have `kick` land between `FILTER` and `MIXER`.
+ */
+export function paramProvenance(device: Device): readonly ParamProvenanceGroup[] {
+  const modules = new Map<string, Map<string, ParamOccurrence[]>>()
+  const roles = new Map<Role, Map<string, ParamOccurrence[]>>()
+
+  for (const recipe of device.recipes) {
+    for (const param of recipe.params) {
+      // The manifest's own answer to which group this belongs in: the panel block if the author
+      // named one, and otherwise what the recipe is for. Never a third, empty answer.
+      const into =
+        param.module === undefined
+          ? (roles.get(recipe.role) ?? new Map<string, ParamOccurrence[]>())
+          : (modules.get(param.module) ?? new Map<string, ParamOccurrence[]>())
+      if (param.module === undefined) roles.set(recipe.role, into)
+      else modules.set(param.module, into)
+      const occurrences = into.get(param.name) ?? []
+      occurrences.push(occurrenceOf(recipe, param))
+      into.set(param.name, occurrences)
+    }
+  }
+
+  const entries = (byName: Map<string, ParamOccurrence[]>): ParamProvenanceEntry[] =>
+    [...byName.keys()].sort(compareCodeUnits).map((name) => ({
+      name,
+      occurrences: (byName.get(name) as ParamOccurrence[])
+        .slice()
+        .sort((a, b) => compareCodeUnits(a.recipeId, b.recipeId)),
+    }))
+
+  return [
+    ...[...modules.keys()].sort(compareCodeUnits).map(
+      (module): ParamProvenanceGroup => ({
+        kind: 'module',
+        module,
+        params: entries(modules.get(module) as Map<string, ParamOccurrence[]>),
+      }),
+    ),
+    ...ROLES.filter((role) => roles.has(role)).map(
+      (role): ParamProvenanceGroup => ({
+        kind: 'role',
+        role,
+        params: entries(roles.get(role) as Map<string, ParamOccurrence[]>),
+      }),
+    ),
+  ]
+}
+
 export function devicePage(device: Device): DevicePage {
   const assignables = expand(device).length
   // One audit, two readings of it: the counts for the sentence, the facts for the block under it.
@@ -407,7 +669,8 @@ export function devicePage(device: Device): DevicePage {
     roles: rolesCovered(device),
     characters: CHARACTERS.filter((c) => device.recipes.some((r) => r.character === c)),
     provenance: audit.counts,
-    capabilityGaps: capabilityGaps(audit.findings),
+    capabilityGaps: capabilityGaps(device, audit.findings),
+    paramProvenance: paramProvenance(device),
     // Template order, which is the authored order of `lib/templates`.
     directions: assignables === 0 ? [] : TEMPLATES.map((t) => directionFit(device, t)),
   }
