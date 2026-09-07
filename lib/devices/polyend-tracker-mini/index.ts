@@ -1725,12 +1725,32 @@ const SAMPLE_RECIPES: Recipe[] = [
     title: 'Sample played backwards under an eight-bar cutoff rise',
     sourceAudio: {
       need:
-        'A bright cymbal or metallic tail with eight bars of audible sound on it — a long crash, ' +
-        'a bowed cymbal, a metallic wash. START and END below take the eight bars that get used, ' +
-        'so trim the dead air past END: reversed playback starts there, and p.196 warns a long ' +
-        'silent tail reverses into no sound at all. Trig it at the note it was recorded at — ' +
-        'p.128 plays the sample faster on a higher note and slower on a lower one, so the note ' +
-        'you write moves the eight bars with it',
+        'A bright cymbal or metallic tail — a long crash, a bowed cymbal, a metallic wash. ' +
+        'After any optional transposition, START to END has to contain eight bars of audible ' +
+        'sound. Two things help if your recording is shorter: Routing offers an octave-down that ' +
+        'plays the same file at half speed, and the procedure below renders a reverb tail on the ' +
+        'box. Neither makes sound out of silence, and p.196 reverses a long silent tail into no ' +
+        'sound at all — so pull END back to where the tail is still sounding',
+      prep: {
+        text:
+          'Manual p.230, Rendering and Exporting Internal Audio: a pattern render is useful to ' +
+          '"lock in FX1 / FX2 and send effects into an audio sample", and reverb is a send here ' +
+          '(p.120) — so this is how the box prints a tail longer than any recording you have. ' +
+          'Put the cymbal on the first step of the track, hold [Shift] + the D-Pad to select ' +
+          'eight bars of steps so the whole decay falls inside the selection, then [More] -> ' +
+          '[Render Selection] -> name it -> [Render & Load] (p.231, p.104). The render arrives ' +
+          'in the instrument list ready to load here, with the tail already in the file ' +
+          'before any of the playback settings below are applied.',
+        verified: {
+          kind: 'manual',
+          source:
+            `${MANUAL}, p.230 (Rendering and Exporting Internal Audio: a pattern render is ` +
+            '"useful to lock in FX1 / FX2 and send effects into an audio sample"); p.231 ' +
+            '(Rendering Selection In A Pattern, steps 3-7); p.104 (the same [Render Selection] ' +
+            '/ [Render & Load] buttons, step by step); p.60 ([Render Selection] — "Renders ' +
+            'the selection to a new audio sample")',
+        },
+      },
     },
     /**
      * §4.2. **Two mechanisms, both this box's own, and the manual supplies the caveat for one of
@@ -1814,6 +1834,73 @@ const SAMPLE_RECIPES: Recipe[] = [
      * air past `END` reverses into silence at the front of the rise, and the fix is to pull `END`
      * back to where the tail is still sounding.
      *
+     * ## The eight bars have to exist, and two things put them within reach
+     *
+     * **The requirement is real and it is not the file's length.** It is eight bars of audible
+     * sound between `START` and `END` *at the note the step carries*, which is a different number
+     * from eight bars of recording: p.128 makes the note value varispeed, *"higher note values
+     * will shorten i.e. speed up the sample while lower values will elongate"*. An octave below
+     * the note the part is triggered at covers twice the bars, with `TUNE` still at 0.
+     *
+     * **The anchor is the part's own trigger note, not the recording's pitch**, and the
+     * difference is the whole reason `routing` is worded as it is. This recipe is in the
+     * `whole-sample` mode, so the guide prints `Trigger note — C5` for it off p.90 — *"The
+     * default note value is C5 which plays a sample at its original pitch value"* — and the
+     * octave below that is `C4` whatever the reader loaded. **What the box does not know is the
+     * recording's own pitch**, and p.128 says so in the same breath as the varispeed: *"Sample
+     * tempo and pitch are not automatically analysed in Tracker Mini and therefore not normally
+     * known unless manually noted when sampling"*. So "an octave below the sample's recorded
+     * note" would be an instruction nobody can carry out, and worse than vague — a reader who
+     * sampled a `G3` crash and wrote `G2` would be seventeen semitones below `C5`, not twelve.
+     * The trigger note is the one anchor here that is printed, cited and already in front of
+     * them.
+     *
+     * **What the manual prints is the direction, and the figure it draws is an octave** — `G6`
+     * faster, `G5` original, `G4` slower — and it prints no ratio anywhere. The halving is what
+     * an octave *means* under resampling, not a number read off a page, so `routing` says the
+     * octave rather than quoting a factor the manual does not carry.
+     *
+     * **And it is an option rather than the recipe's answer.** Playing a bright source an octave
+     * down darkens it, which is a real cost on a part whose character is `bright`, and the cutoff
+     * ramp does not offset it: a low-pass opening is not an octave of spectrum coming back. So
+     * `routing` states the trade and sends a reader who does not want it to the other method,
+     * which costs nothing in tone.
+     *
+     * **And the box can print the tail it needs.** p.230: a pattern render is *"useful to lock in
+     * FX1 / FX2 and send effects into an audio sample"*, and reverb is a send on this box (p.120)
+     * — so a cymbal struck on the first step of an eight-bar selection renders as an eight-bar
+     * file with its own decay inside it. `prep` carries the buttons (p.231, and p.104 for the
+     * same procedure step by step). That is the answer for a reader whose library holds no
+     * eight-bar crash, and it needs no second device and no editing off the box.
+     *
+     * **Neither lever removes the condition, and saying so is the point.** Transposition stretches
+     * what is there and does not make silence audible; a render is only as long as the decay
+     * inside the selection. p.196 is unforgiving about the difference — dead air past `END`
+     * reverses into no sound at the front of the rise. So the recipe states the eight bars,
+     * states both levers, and does not pretend either one is a way out of the requirement.
+     *
+     * ## Why the arrival is worth that requirement
+     *
+     * **The obvious way to drop the length requirement is a loop mode, and p.130 is why it is
+     * refused.** `Backward loop` would cycle a short tail for as long as the step holds, so no
+     * recording would ever be too short — the requirement would simply go away. What it does with
+     * the first pass is the problem: p.130, *"Sample plays from the start position to the loop
+     * end, then restarts from the loop end, playing in reverse"*. The gesture opens *forwards*,
+     * so the transient — the one thing this recipe exists to land on the change — sounds at the
+     * start of the eight bars instead of at their end. A riser whose hit arrives eight bars early
+     * is not a riser, and no amount of source-length convenience buys that back.
+     *
+     * **Nor does the step FX rescue the loop.** p.196 scopes `r` to the step: *"The reverse will
+     * take place only on the step activated"*, over a figure of `1-Shot` playback running `End`
+     * to `Start`. Nothing on that page says how a `<<<` composes with a play mode that carries a
+     * direction of its own — whether it reverses the loop, the first pass, or cancels against it.
+     * That pairing is unprinted, and pairing a cited effect with an uncited mode is the
+     * cited-range hazard `CLAUDE.md` records wearing a third name.
+     *
+     * So the trade is stated rather than hidden: `1-Shot` plus `r <<<` keeps both halves printed
+     * and the transient where the recipe says it lands, and pays for it with a source requirement
+     * the recipe tells the reader two documented ways to meet.
+     *
      * **No articulation, checked rather than assumed** (#108). Neither direction asking for
      * `riser` authors a step variant for it, so there is no slot for a gesture to address and
      * the reverse goes in `routing`, where a reader will meet it.
@@ -1829,11 +1916,18 @@ const SAMPLE_RECIPES: Recipe[] = [
       'transient lands on the change. **What moves:** the cutoff, once per LFO cycle — `128` is ' +
       'counted in pattern steps (p.123), so it is eight bars where a bar is 16 steps. **What ' +
       'does not:** the sample is `1-Shot`, *"plays start to end once"* (p.127), and the pitch is ' +
-      'fixed, because the destination is `Cutoff` and not `Finetune`. **The ramp is not started ' +
+      'not automated over the rise, because the destination is `Cutoff` and not `Finetune`. ' +
+      '**The ramp is not started ' +
       'by your trig** — p.121 has `Cutoff` among the destinations where the LFO *"is semi-free ' +
       'running and resets on playback. Does not reset on a note"*, so the eight bars are counted ' +
       'from where you pressed play. Put the section on that eight-bar grid and the climb arrives ' +
-      'with the change',
+      'with the change. **If the tail runs out before the eight bars do**, one option is to ' +
+      'write the note an octave below this part\u2019s trigger note: p.128 elongates a sample ' +
+      'on a lower note, so it plays the same file at half speed and covers twice the bars. It ' +
+      'transposes the source down with it, so the part sounds darker than the recording you ' +
+      'chose \u2014 the cutoff ramp opens a filter, it does not put back an octave. If that is ' +
+      'the wrong trade for a bright riser, leave the note alone and print a longer tail ' +
+      'instead: Source above has the procedure. `TUNE` stays at 0 either way',
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127, {
         note: 'p.127: "Plays start to end once" — the sample does not repeat; the filter cycle does',
@@ -1846,7 +1940,10 @@ const SAMPLE_RECIPES: Recipe[] = [
         note: 'Reversed, this is where the gesture arrives — put it on the hit, not before it',
       }),
       unscaled('END', 'Eight bars later, while the tail is still audible', {
-        note: 'Reversed playback starts here; trim the dead air past it, or p.196 gives silence',
+        note:
+          'Eight bars as it plays, not of file: if you take Routing\u2019s octave-down, the ' +
+          'same eight bars take half the recording. Reversed playback starts here, so trim the ' +
+          'dead air past it or p.196 gives silence',
       }),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
       num('CUTOFF', 30, PCT, 117, {
