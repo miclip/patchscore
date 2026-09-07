@@ -827,6 +827,11 @@ const recipes: Recipe[] = [
 
 export const device: Device = {
   id: 'moog-minitaur',
+  // §3.1/#466. `VCO 2 FREQ`, `LFO RATE`, `EG AMOUNT` — this manifest spaces its block
+  // names, as the panel prints them.
+  // Without a declaration the inert check forms no group here at all, and that silence
+  // reads as a clean result; see `Device.inertBlockSeparator`.
+  inertBlockSeparator: ' ',
   name: 'Minitaur',
   maker: 'Moog',
   /**

@@ -16,7 +16,7 @@ import { pathToFileURL } from 'node:url'
 import type { AuditCounts, AuditFinding, DeviceAudit } from '../lib/studio/provenance'
 import { auditDevice, libraryCounts, totalCounts } from '../lib/studio/provenance'
 import type { Device, Template } from '../lib/core/index'
-import { inertFindings, unrequestedRecipes } from '../lib/core/index'
+import { inertCoverage, inertFindings, unrequestedRecipes } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 import {
@@ -33,8 +33,8 @@ import {
  * implementation behind them.
  */
 export type { AuditCounts, AuditFinding, AuditKind, DeviceAudit } from '../lib/studio/provenance'
-export type { InertFinding, InertKind } from '../lib/core/index'
-export { inertFindings }
+export type { InertCoverage, InertFinding, InertKind } from '../lib/core/index'
+export { inertCoverage, inertFindings }
 export {
   ZERO_COUNTS,
   auditDevice,
@@ -165,6 +165,52 @@ function inertBlock(devices: readonly Device[]): string[] {
     )
   }
   if (found.length > SHOWN) lines.push(`      … and ${String(found.length - SHOWN)} more`)
+  lines.push(...coverageLines(devices))
+  return lines
+}
+
+/**
+ * §3.1/#466. **The denominator the count above was taken against, in two lines.**
+ *
+ * The candidate count is a floor, and until #466 nothing said so. `INERT` printed *"2 candidates
+ * on 1 device"* while the grouping had only ever read the thirteen manifests naming blocks with
+ * ` · ` — every parameter on the other twenty-six was invisible to it rather than clean. A line
+ * that reads as an all-clear over a library it has more than half not looked at is the failure the
+ * check itself exists to catch, so this is invariant 5 turned on the instrument.
+ *
+ * **`reach` and `gaps` are the same total split by one question: could a group be formed here?**
+ * They are named for the `caps`/`gaps` pair above and split on the same principle. `reach` is the
+ * denominator — how many manifests the check actually read, and how many had nothing to read.
+ * `gaps` is the debt: manifests with parameters authored under names no separator groups, whose
+ * silence in `blocks` says nothing about them.
+ *
+ * **The gap list is printed in full rather than capped.** `blocks` shows twenty and counts the
+ * rest, because that list is a work queue a healthy library keeps empty. This one is the opposite
+ * shape: it is a fact about the library's *reach*, it shrinks only when the grouping widens, and a
+ * reader asking "was my box looked at?" is asking about one name a `… and 5 more` would hide.
+ *
+ * **A device with no authored parameters is counted on `reach` and never named on `gaps`.** It has
+ * nothing for a naming convention to hide, so calling seven capability-only manifests unreadable
+ * would overstate the debt in the direction opposite the one this line exists to correct.
+ */
+function coverageLines(devices: readonly Device[]): string[] {
+  const { examined, unexamined, noParams } = inertCoverage(devices)
+  const lines = [
+    `    reach  ${n(examined.length)} of ${String(devices.length)} devices examined — ` +
+      `${String(noParams.length)} more author no parameters, so there is nothing to group`,
+    `    gaps   ${n(unexamined.length)} unexamined — parameters authored, and no name this ` +
+      `check can group`,
+  ]
+  const PER_LINE = 3
+  for (let i = 0; i < unexamined.length; i += PER_LINE) {
+    lines.push(
+      `      ${unexamined
+        .slice(i, i + PER_LINE)
+        .map((id) => id.padEnd(28))
+        .join('')
+        .trimEnd()}`,
+    )
+  }
   return lines
 }
 

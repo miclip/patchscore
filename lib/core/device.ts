@@ -2889,6 +2889,50 @@ export type Device = {
    * rendered at the machine and both used to carry the claim as a field.
    */
   capabilityEvidence?: Record<string, CapabilityEvidence>
+  /**
+   * §3.1/#466. **What this manifest puts between a block and the control on it**, for the inert
+   * check's grouping only (`lib/core/inert.ts`). Defaults to ` · `; a device naming its controls
+   * `LFO RATE` declares `' '` instead.
+   *
+   * The default is not the library's habit — **thirteen of forty-six manifests used ` · ` and
+   * twenty-six used nothing the check knew about**. It is the default because it was the constant
+   * this field replaced, so a manifest that declares nothing keeps exactly today's behaviour,
+   * which is how `module` shipped.
+   *
+   * **It is a naming fact, not a capability**, and it changes no value, no render and no search.
+   * The check groups parameters by the prefix their names share, so a box whose names carry no
+   * separator it knows about forms no group at all and every parameter on it is invisible to the
+   * check rather than clean — which is the state those twenty-six were in, their silence reading
+   * as a clean result. This is the cheap half of the repair: a manifest consistent with itself
+   * says which separator it is consistent on.
+   *
+   * **It does not reach the harder case and must not be read as doing so.** Where a modulation
+   * source is the *value* of a `SOURCE` parameter rather than any part of a name — the Circuit
+   * Tracks' MOD MATRIX — no separator rule can group it, and those boxes stay unexamined and are
+   * named as such by `npm run audit`.
+   *
+   * **A coarser separator makes coarser groups, and that is a real loss of precision in both
+   * directions rather than a quieter reading.** On ` `, the DFAM's `VCO 1 FREQUENCY` and
+   * `VCO 2 LEVEL` are one `VCO` group rather than two, so the conjunction is evaluated across
+   * controls belonging to different things. Both directions follow:
+   *
+   * - **It can manufacture a candidate.** A route from one sub-block pairs with a depth from
+   *   another, and neither would have raised anything alone. `LFO 1 DEST OFF` with
+   *   `LFO 2 DEPTH 0` raises nothing under ` · ` beyond a `destinationless` note on `LFO 2`;
+   *   merged under ` `, it raises `disconnected` on a block called `LFO` that is not a thing on
+   *   the panel, citing evidence from two different oscillators.
+   * - **It can also silence one.** A route authored anywhere in the merged group takes the whole
+   *   group out of the `destinationless` branch, so an unrouted second modulator stops being
+   *   asked about.
+   *
+   * What makes the trade acceptable is not that the check stays correct — it is that **nothing
+   * here gates anything**. Every entry is a candidate a person judges (`recipeInertFindings`),
+   * and a declared separator is a claim the author makes about their own manifest, checked the
+   * way any other authored claim is: the nine that declare `' '` were measured first, and
+   * `test/audit-inert.test.ts` pins the library's candidate list exactly, so a separator that
+   * starts manufacturing one fails a test rather than reaching a reader.
+   */
+  inertBlockSeparator?: string
   /** A flat lookup keyed by action, referenced by recipes. A few words to jog you. */
   hints?: Record<string, string>
   manual?: ManualRef
@@ -2940,6 +2984,8 @@ export const DeviceSchema = z
         message: 'capabilityEvidence declares at least one fact, or is omitted',
       })
       .optional(),
+    // §3.1/#466. Omitted by every manifest that names blocks with ` · `; see the field above.
+    inertBlockSeparator: z.string().min(1).optional(),
     hints: z.record(z.string().min(1), z.string().min(1)).optional(),
     manual: ManualRefSchema.optional(),
     productPage: z

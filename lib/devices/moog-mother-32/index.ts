@@ -1414,6 +1414,11 @@ const VOICE_ROLES: Role[] = [
 
 export const device: Device = {
   id: 'moog-mother-32',
+  // §3.1/#466. `VCO WAVE`, `LFO RATE`, `VCF MOD AMOUNT` — this manifest spaces its block
+  // names, as the panel prints them.
+  // Without a declaration the inert check forms no group here at all, and that silence
+  // reads as a clean result; see `Device.inertBlockSeparator`.
+  inertBlockSeparator: ' ',
   name: 'Mother-32',
   maker: 'Moog',
   kind: 'semi-modular',

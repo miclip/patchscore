@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { inertFindings, recipeInertFindings } from '../lib/core/index'
+import type { AuthoredParam, Device } from '../lib/core/index'
+import {
+  compareCodeUnits,
+  inertCoverage,
+  inertFindings,
+  recipeInertFindings,
+} from '../lib/core/index'
+import { DeviceSchema } from '../lib/core/device'
 import { auditDevice, formatAudit } from '../scripts/audit-verified'
 import { device, enumParam, numericParam, recipe } from './fixtures'
 
@@ -293,5 +300,222 @@ describe('the INERT block is a report, not a gate (#388)', () => {
   it('calls them candidates rather than findings of fact (invariant 5)', () => {
     expect(report).toContain('candidates on')
     expect(report).toContain('appears to be listening')
+  })
+})
+
+/**
+ * §3.1/#466. **The check's silence and a clean result are different facts, and the report has to
+ * tell them apart.**
+ *
+ * `INERT` counted candidates over the whole library while the grouping had only ever read the
+ * thirteen manifests that name blocks with ` · `. The other twenty-six are invisible to it, not
+ * clean, and the line said nothing — which is the check's own failure mode (a signal that looks
+ * healthy because something else stands in for it) turned on the instrument. These tests hold the
+ * partition honest and hold the predicate still: nothing here may change what is raised.
+ */
+describe('the report says what the grouping could not examine (#466)', () => {
+  const coverage = inertCoverage(DEVICES)
+
+  it('splits the library into read, unread, and nothing to read', () => {
+    const all = [...coverage.examined, ...coverage.unexamined, ...coverage.noParams]
+    expect(all).toHaveLength(DEVICES.length)
+    expect(new Set(all).size).toBe(DEVICES.length)
+  })
+
+  it('counts a device as examined only when a name carries the separator', () => {
+    const seen = device({
+      id: 'seen-box',
+      recipes: [recipe({ params: [numericParam({ name: 'MOD OSC · FREQUENCY' })] })],
+    })
+    const unseen = device({
+      id: 'unseen-box',
+      recipes: [recipe({ params: [numericParam({ name: 'LFO Rate' })] })],
+    })
+    const empty = device({ id: 'empty-box', recipes: [] })
+    expect(inertCoverage([seen, unseen, empty])).toEqual({
+      examined: ['seen-box'],
+      unexamined: ['unseen-box'],
+      noParams: ['empty-box'],
+    })
+  })
+
+  /**
+   * A capability-only manifest has nothing for a naming convention to hide, so it is counted and
+   * passed over. Folding it in with the twenty-six would overstate the debt in the other
+   * direction, which is the same mistake this line exists to stop making.
+   */
+  it('does not call a device with no authored parameters blind', () => {
+    const report = formatAudit(
+      DEVICES.map((d) => auditDevice(d)),
+      false,
+    )
+    for (const id of coverage.noParams) {
+      expect(report.slice(report.indexOf('  INERT')), id).not.toContain(id)
+    }
+  })
+
+  it('sorts each list by code unit, so the report is byte-identical anywhere', () => {
+    for (const ids of [coverage.examined, coverage.unexamined, coverage.noParams]) {
+      expect([...ids].sort(compareCodeUnits)).toEqual([...ids])
+    }
+  })
+
+  describe('the INERT block prints it', () => {
+    const report = formatAudit(
+      DEVICES.map((d) => auditDevice(d)),
+      false,
+    )
+    const block = report.slice(report.indexOf('  INERT'))
+
+    it('states how many devices were examined, of how many', () => {
+      // Derived, as the `blocks` line's test is: widening the grouping should fail the
+      // reconciliation in one place, not two.
+      expect(block).toContain(
+        `reach  ${String(coverage.examined.length).padStart(5)} of ${String(DEVICES.length)} ` +
+          `devices examined`,
+      )
+      expect(block).toContain(`${String(coverage.noParams.length)} more author no parameters`)
+      expect(block).toContain(`gaps   ${String(coverage.unexamined.length).padStart(5)} unexamined`)
+    })
+
+    /**
+     * In full, not capped. `blocks` shows twenty and counts the rest because that list is a work
+     * queue; this one answers "was my box looked at?", and a `… and 14 more` would hide the one
+     * name a reader came for.
+     */
+    it('names every device it could not group, with none left off', () => {
+      for (const id of coverage.unexamined) expect(block, id).toContain(id)
+      expect(block.slice(block.indexOf('    gaps '))).not.toContain('…')
+    })
+  })
+
+  /**
+   * The whole point of change 1: it reports the denominator and touches no predicate. #466's
+   * acceptance test starts here — the Muse's two `MOD OSC` blocks must still be the library's
+   * candidates, and nothing else may have appeared.
+   */
+  it('leaves the candidates exactly as they were', () => {
+    expect(inertFindings(DEVICES).map((f) => `${f.deviceId} ${f.recipeId} ${f.block}`)).toEqual([
+      'moog-muse muse-sub-clean MOD OSC',
+      'moog-muse muse-sub-dark MOD OSC',
+    ])
+  })
+})
+
+/**
+ * §3.1/#466. **A manifest that names blocks with a different separator says so.**
+ *
+ * Twenty-six of forty-six devices carried no ` · ` at all, so the check could not form a single
+ * group on them and their silence was indistinguishable from a clean result. Nine of them name
+ * blocks with a space, consistently, and a declared separator is the cheap half of the repair: it
+ * moves them from unexamined to examined without touching the predicate.
+ *
+ * **What these tests mostly guard is that nothing moved.** A widening that found a candidate would
+ * have to argue for it (#466 says so in as many words), and this one finds none: the library's
+ * candidates are still the Muse's two, and the nine devices went from invisible to read-and-silent.
+ */
+describe('a device may declare its own block separator (#466)', () => {
+  const spaced = (params: AuthoredParam[]): Device =>
+    device({ inertBlockSeparator: ' ', recipes: [recipe({ params })] })
+
+  it('reads a device the default separator cannot see at all', () => {
+    const params = [
+      numericParam({ name: 'LFO RATE', value: 40 }),
+      enumParam({ name: 'LFO WAVE', value: 'TRI', options: { values: ['TRI', 'SQR'] } }),
+    ]
+    const dev = spaced(params)
+    const found = recipeInertFindings(dev, dev.recipes[0]!)
+    expect(found).toHaveLength(1)
+    expect(found[0]?.block).toBe('LFO')
+    expect(found[0]?.kind).toBe('destinationless')
+    // The same names under the default form no group at all, which is the state #466 is about.
+    const blind = device({ recipes: [recipe({ params })] })
+    expect(recipeInertFindings(blind, blind.recipes[0]!)).toEqual([])
+  })
+
+  it('reads the route, depth and level tails with the declared separator too', () => {
+    const dev = spaced([
+      enumParam({ name: 'LFO DEST', value: 'OFF', options: { values: ['OFF', 'VCF'] } }),
+      numericParam({ name: 'LFO AMOUNT', value: 0 }),
+      numericParam({ name: 'MIXER LFO', value: 0 }),
+    ])
+    const found = recipeInertFindings(dev, dev.recipes[0]!)
+    expect(found).toHaveLength(1)
+    expect(found[0]?.kind).toBe('disconnected')
+    // `MIXER LFO` is the level, read off the tail with the separator the grouping used.
+    expect(found[0]?.detail).toBe('1 routes off, 1 depths 0, level 0')
+    expect(found[0]?.params).toBe(2)
+  })
+
+  it('clears a block the recipe points somewhere, whatever the separator', () => {
+    const dev = spaced([
+      numericParam({ name: 'LFO RATE', value: 40 }),
+      numericParam({ name: 'VCF CUTOFF', value: 60, note: 'LFO sweeps this' }),
+    ])
+    expect(recipeInertFindings(dev, dev.recipes[0]!)).toEqual([])
+  })
+
+  it('defaults to ` · ` when a manifest declares nothing', () => {
+    const dev = device({
+      recipes: [recipe({ params: [numericParam({ name: 'MOD OSC · FREQUENCY' })] })],
+    })
+    expect(dev.inertBlockSeparator).toBeUndefined()
+    expect(inertCoverage([dev])).toEqual({
+      examined: ['fixture-drum'],
+      unexamined: [],
+      noParams: [],
+    })
+  })
+
+  it('takes the field in the schema, and refuses an empty one', () => {
+    const base = device({ recipes: [] })
+    expect(DeviceSchema.safeParse({ ...base, inertBlockSeparator: ' ' }).success).toBe(true)
+    expect(DeviceSchema.safeParse({ ...base, inertBlockSeparator: '' }).success).toBe(false)
+    expect(DeviceSchema.safeParse(base).success).toBe(true)
+  })
+
+  /**
+   * **The cost of a coarse separator, held as a fixture rather than as a claim.** A merged group
+   * evaluates the conjunction across controls belonging to different things, so it can pair a
+   * route from one sub-block with a depth from another and raise a `disconnected` candidate on a
+   * block that is not a thing on the panel — where the finer separator raises a `destinationless`
+   * note about the one modulator that has no route. Not quieter: different, and arguably wrong.
+   *
+   * This is why the trade rests on the check gating nothing and on the acceptance test below,
+   * rather than on the grouping staying correct at a coarser grain.
+   */
+  it('can manufacture a candidate a finer separator would not raise', () => {
+    const named = (sep: string) => [
+      enumParam({ name: `LFO 1${sep}DEST`, value: 'OFF', options: { values: ['OFF', 'VCF'] } }),
+      numericParam({ name: `LFO 2${sep}DEPTH`, value: 0 }),
+    ]
+    const fine = device({ recipes: [recipe({ params: named(' · ') })] })
+    const coarse = spaced(named(' '))
+    const one = recipeInertFindings(fine, fine.recipes[0]!)
+    expect(one.map((f) => [f.block, f.kind])).toEqual([['LFO 2', 'destinationless']])
+    const two = recipeInertFindings(coarse, coarse.recipes[0]!)
+    expect(two.map((f) => [f.block, f.kind])).toEqual([['LFO', 'disconnected']])
+    expect(two[0]?.detail).toBe('1 routes off, 1 depths 0, no level')
+  })
+
+  it('is declared by nine manifests, and moved exactly those nine', () => {
+    const declared = DEVICES.filter((d) => d.inertBlockSeparator !== undefined)
+    expect(declared.map((d) => d.id)).toEqual([
+      'behringer-crave',
+      'behringer-model-d',
+      'behringer-neutron',
+      'moog-dfam',
+      'moog-grandmother',
+      'moog-matriarch',
+      'moog-minitaur',
+      'moog-mother-32',
+      'synthstrom-deluge',
+    ])
+    for (const d of declared) expect(d.inertBlockSeparator, d.id).toBe(' ')
+    const coverage = inertCoverage(DEVICES)
+    expect(coverage.examined).toHaveLength(22)
+    expect(coverage.unexamined).toHaveLength(17)
+    expect(coverage.noParams).toHaveLength(7)
+    for (const d of declared) expect(coverage.examined, d.id).toContain(d.id)
   })
 })

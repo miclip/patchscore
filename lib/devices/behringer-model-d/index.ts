@@ -1547,6 +1547,11 @@ const VOICE_ROLES = [
 
 export const device: Device = {
   id: 'behringer-model-d',
+  // §3.1/#466. `OSC 1 RANGE`, `LFO WAVEFORM`, `CUTOFF FREQUENCY` — this manifest spaces
+  // its block names, as the panel prints them.
+  // Without a declaration the inert check forms no group here at all, and that silence
+  // reads as a clean result; see `Device.inertBlockSeparator`.
+  inertBlockSeparator: ' ',
   name: 'MODEL D',
   maker: 'Behringer',
   /**
