@@ -9,7 +9,12 @@ import type { Device } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceHref, deviceLabel } from '@/lib/studio/catalogue'
 import { REPOSITORY_URL } from '@/lib/studio/feedback'
-import type { CapabilityGap } from '@/lib/studio/device-page'
+import type {
+  CapabilityFactDisclosure,
+  CapabilityGap,
+  ParamOccurrence,
+  ParamProvenanceGroup,
+} from '@/lib/studio/device-page'
 import {
   capabilitySentence,
   clockText,
@@ -48,6 +53,189 @@ const GAP_LABEL: Record<CapabilityGap['kind'], string> = {
  * Every number is derived in `lib/studio/device-page.ts`, and the provenance counts are the audit's
  * own (`npm run audit`), so the page and the command line cannot disagree.
  */
+
+/**
+ * §2.6/#121/#410. **One capability fact: the path always, the reasoning on request.**
+ *
+ * The path alone was all this could say, and #410 names what was missing as the same gap: a
+ * `reason` the schema *requires* of three of these states, and the page behind a `cited-against`.
+ * Both were authored, both were counted by the audit, and neither reached a reader — a field
+ * written for the schema rather than for anybody.
+ *
+ * Progressive rather than printed out, which is §2.6's own resolution of #35: the Deluge's reason
+ * runs to four clauses across three page references, and four of those stacked under a heading is
+ * the wall of prose this page was careful not to become. Closed, the block is the list of paths it
+ * has always been; open, it is the whole finding.
+ *
+ * **A fact with nothing to disclose is not a disclosure.** `unchecked` is `false` in the manifest
+ * — authored, nobody checked — and it carries no reason because there is nothing to say. It
+ * renders as the bare path, because an expander that opens onto an empty box tells a reader they
+ * missed something when the manifest is simply silent.
+ */
+function CapabilityFact({ fact }: { fact: CapabilityFactDisclosure }) {
+  const hasBody =
+    fact.reason !== undefined ||
+    fact.proven !== undefined ||
+    fact.open !== undefined ||
+    fact.cite !== undefined
+  if (!hasBody) return <p className="fact-path mono">{fact.path}</p>
+  return (
+    <details className="disclosure">
+      <summary className="mono">{fact.path}</summary>
+      <div className="disclosure-body">
+        {fact.reason === undefined ? null : <p>{fact.reason}</p>}
+        {/*
+          §2.6/#236. The two halves of a partly-cited fact stay two halves. One has a page behind
+          it and one does not, and a reader who cannot see which is which is back to the prose
+          workaround the state was added to replace.
+        */}
+        {fact.proven === undefined ? null : (
+          <p>
+            <strong>The page establishes</strong> {fact.proven}
+          </p>
+        )}
+        {fact.open === undefined ? null : (
+          <p>
+            <strong>It leaves open</strong> {fact.open}
+          </p>
+        )}
+        {fact.cite === undefined ? null : <p className="note">{citeText(fact.cite)}</p>}
+      </div>
+    </details>
+  )
+}
+
+/**
+ * §3.2/#410. **One occurrence: which recipe, and what each of its claims rests on.**
+ *
+ * A row rather than a sentence, because the claims are independent and a reader is checking one
+ * of them. The point and the legality gate are separate columns for the reason §3.1 keeps them
+ * separate in the manifest and the tables above keep them separate on this page: a cited range
+ * does not verify the number inside it, and the two even take different words for the same
+ * absence — a point with no citation is **provisional**, bounds with none are **unverified**.
+ *
+ * Every citation goes through `citeText`, so the kind is visible beside the source. `manual —
+ * TR-6S Parameter Guide eng02, p.7` and `observed — TR-6S unit, firmware 1.05` are not the same
+ * claim (§3.1) and a bare page reference would flatten them into one.
+ */
+function OccurrenceRow({ occurrence }: { occurrence: ParamOccurrence }) {
+  return (
+    <tr>
+      {/*
+        `data-label` on every cell, because below 640px the row stacks and each value has to say
+        what it is (#21). The heading row is the label above that width and is hidden below it;
+        this is the same stacking the capability gaps and the machine facts already do, for the
+        same reason — side by side at 390px the values break mid-word down a third of the line.
+      */}
+      <td data-label="Recipe">{occurrence.title}</td>
+      <td data-label="Role · character" className="mono">
+        {occurrence.role} · {occurrence.character}
+      </td>
+      <td data-label="Value cited to">
+        {occurrence.point === undefined ? (
+          <span className="empty-cell">provisional</span>
+        ) : (
+          citeText(occurrence.point)
+        )}
+      </td>
+      <td data-label="Bounds or options cited to">
+        {legalityCite(occurrence) ?? (
+          <span className="empty-cell">{occurrence.kind === 'text' ? '—' : 'unverified'}</span>
+        )}
+      </td>
+      {/*
+        Last, and after both citations, because it is the one cell with no ceiling on its width:
+        an option set runs to seventeen values on this box. The citations are what the panel is
+        for, so they stay in view and the list is what trails off into the scroller (#21).
+      */}
+      <td data-label="Bounds or options" className="mono">
+        {occurrence.range === undefined
+          ? occurrence.options === undefined
+            ? ''
+            : occurrence.options.values.join(' · ')
+          : `${occurrence.range.min}…${occurrence.range.max}${
+              occurrence.unit === undefined ? '' : ` ${occurrence.unit}`
+            }`}
+      </td>
+    </tr>
+  )
+}
+
+/** The citation on the legality gate — a numeric's bounds, an enum's option set (§3.2). */
+function legalityCite(occurrence: ParamOccurrence): string | undefined {
+  const cite = occurrence.range?.cite ?? occurrence.options?.cite
+  return cite === undefined ? undefined : citeText(cite)
+}
+
+/**
+ * §3.2/§8/#410. **One panel module's parameters, or one role's**, each name an expander.
+ *
+ * The names are visible and the citations are behind them, which is the only shape that answers
+ * #410 without becoming the thing it complains about: a reader arrives holding `DECAY` and needs
+ * to *find* `DECAY`, so every name is ink at every width; a box here authors up to 1,328
+ * parameters across its recipes, so every occurrence printed flat is a page nobody scrolls.
+ *
+ * The heading says which kind of group it is. A module is the device's own prose for a block of
+ * its panel and a role is one of the four shared vocabularies (invariant 3) — printing both as
+ * bare headings would invite a reader to read `FILTER` and `kick` as the same kind of word.
+ */
+function ParamGroupBlock({ group }: { group: ParamProvenanceGroup }) {
+  return (
+    <section className="param-group">
+      <h3>
+        <span className="mono">{group.kind === 'module' ? group.module : group.role}</span>{' '}
+        <span className="sub">{group.kind === 'module' ? 'panel module' : 'role'}</span>
+      </h3>
+      <ul className="param-entries">
+        {group.params.map((entry) => (
+          <li key={entry.name}>
+            <details className="disclosure">
+              {/*
+                The name in monospace and at full size (§10/#21): it is an identifier printed on
+                the box, it is the string a reader arrived with, and shrinking it to fit a phone
+                is the one thing #21 forbids outright.
+              */}
+              <summary>
+                <span className="mono">{entry.name}</span>{' '}
+                <span className="sub">
+                  {entry.occurrences.length} recipe{entry.occurrences.length === 1 ? '' : 's'}
+                </span>
+              </summary>
+              {/*
+                #21. Wide content scrolls inside its own container and the page body never does.
+                A recipe title beside two citations is wider than 390px and there is nothing to be
+                gained by wrapping a page reference onto three lines.
+              */}
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th scope="col">Recipe</th>
+                      <th scope="col">Role · character</th>
+                      {/*
+                        Two claims, two columns, and the words for their absence differ (§3.2):
+                        a point nobody checked is **provisional**, bounds nobody checked are
+                        **unverified**. One heading cannot be true of both.
+                      */}
+                      <th scope="col">Value cited to</th>
+                      <th scope="col">Bounds or options cited to</th>
+                      <th scope="col">Bounds or options</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {entry.occurrences.map((occurrence) => (
+                      <OccurrenceRow key={occurrence.recipeId} occurrence={occurrence} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
 
 export const dynamicParams = false
 
@@ -302,7 +490,11 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               {page.capabilityGaps.map((gap) => (
                 <Fragment key={gap.kind}>
                   <dt>{GAP_LABEL[gap.kind]}</dt>
-                  <dd className="mono">{gap.facts.join(', ')}</dd>
+                  <dd>
+                    {gap.facts.map((fact) => (
+                      <CapabilityFact key={fact.path} fact={fact} />
+                    ))}
+                  </dd>
                 </Fragment>
               ))}
             </dl>
@@ -315,6 +507,40 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           </p>
         </section>
       </div>
+
+      {/*
+        §3.2/#410. **Where one parameter's value and bounds were read off** — the question the
+        counts above can total and cannot point at, and the guide deliberately does not answer.
+        §8 is read at the machine with both hands busy, so #394 took the per-value mark off a
+        guide line and left the answer reachable only by opening the repository. This is the
+        surface for the reader at a desk, which is who asks.
+      */}
+      {page.paramProvenance.length === 0 ? null : (
+        <section className="panel span-2 param-sources">
+          <header>
+            <h2>Parameter sources</h2>
+            <p className="note">
+              Every authored parameter, and the page behind each of its claims. Open a name.
+            </p>
+          </header>
+          {/*
+            Grouped by the panel block the manifest names, and by what the recipe is for where it
+            names none — never a bucket called Other, which would name nothing and report an
+            author's honest silence as a hole (invariant 5).
+          */}
+          {page.paramProvenance.map((group) => (
+            <ParamGroupBlock
+              key={`${group.kind}:${group.kind === 'module' ? group.module : group.role}`}
+              group={group}
+            />
+          ))}
+          <p className="note">
+            One row per recipe, because one name can be read off more than one page: this box
+            authors {page.provenance.params} values across {device.recipes.length} recipes, and a
+            list de-duplicated by name would keep one citation and drop the rest.
+          </p>
+        </section>
+      )}
 
       {device.warmUp === undefined &&
       device.calibration === undefined &&

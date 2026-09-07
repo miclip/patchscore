@@ -725,6 +725,222 @@ body {
   }
 }
 
+/* A state's facts stack; each is its own expander or, where there is nothing to open, its path. */
+.capability-gaps dd {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* ------------------------------------------------- progressive disclosure */
+
+/*
+ * §2.6/§3.2/#410. **The name is ink; the evidence is a tap away.**
+ *
+ * Two things on this page have the same shape — a capability fact's reasoning, and every citation
+ * behind a parameter — and both were unreachable for the same reason: printed flat they are a
+ * wall (a box authors up to 1,328 parameters and the Deluge's reason for one fact runs to four
+ * clauses), and omitted they are provenance nobody can check. §2.6 settles it as progressive
+ * disclosure, and this is the one style for both.
+ *
+ * `<details>` and not a script: this page is a server component with no client boundary anywhere
+ * on it (#84), so the expander works with no JavaScript, prints what it is asked to, and is in
+ * the prerendered HTML where a crawler can read it.
+ *
+ * **The summary is a touch target** (#21). 20px of line inside 12px of padding is 44px, which is
+ * the target this page is read on far more often than a mouse — and unlike a knob, a summary's
+ * hit area and its visual size are the same box, so the padding has to carry it.
+ */
+.disclosure {
+  min-width: 0;
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+}
+
+.disclosure > summary {
+  padding: 12px 10px;
+  line-height: 20px;
+  cursor: pointer;
+  color: var(--ink);
+  min-width: 0;
+  /* A parameter name is an identifier and breaks anywhere before it widens the page (#21). */
+  overflow-wrap: anywhere;
+}
+
+.disclosure > summary::marker {
+  color: var(--ink-dim);
+}
+
+.disclosure > summary:hover {
+  color: var(--silkscreen);
+}
+
+.disclosure[open] > summary {
+  border-bottom: 1px solid var(--edge);
+}
+
+.disclosure .sub {
+  color: var(--ink-dim);
+  font-size: 12px;
+}
+
+.disclosure-body {
+  padding: 10px;
+  min-width: 0;
+}
+
+.disclosure-body p {
+  margin: 0 0 8px;
+  max-width: 66ch;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.disclosure-body p:last-child {
+  margin-bottom: 0;
+}
+
+.disclosure-body strong {
+  color: var(--silkscreen);
+  font-weight: 600;
+}
+
+/*
+ * Block margins rather than container padding, so the scroller's own box is inset and the table
+ * inside it still runs the full width it needs (#21: the container scrolls, never the page).
+ */
+.disclosure > .table-scroll {
+  margin: 8px 10px 10px;
+}
+
+/*
+ * A fact the manifest is silent about — `false`, nobody checked. It is the path and nothing else,
+ * and it deliberately does not look like an expander: an expander opening onto an empty box tells
+ * a reader they have missed something when there is nothing there.
+ */
+.fact-path {
+  margin: 0;
+  padding: 4px 2px;
+  color: var(--ink-dim);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------ parameter sources */
+
+.param-group {
+  margin-top: 16px;
+  min-width: 0;
+}
+
+.param-group:first-of-type {
+  margin-top: 0;
+}
+
+.param-group h3 {
+  margin: 0 0 8px;
+}
+
+.param-group h3 .sub {
+  color: var(--ink-dim);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.param-entries {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.param-entries > li {
+  min-width: 0;
+}
+
+/* The two words that stand where a citation would: `provisional` on a point, `unverified` on a
+ * range or an option set. Dim, because they are the absence of a claim rather than a claim. */
+.empty-cell {
+  color: var(--ink-dim);
+}
+
+/*
+ * #21. **Below 640px the occurrence row stacks, because the answer must not be the last thing on
+ * the line.**
+ *
+ * A five-column row does fit — inside its scroller, with the page body still fixed (which is the
+ * rule, and it held). It is the wrong shape anyway: a recipe title on this box runs to a sentence,
+ * so at 390px the first column fills the viewport on its own and the citation — the one thing the
+ * panel exists to show — sits entirely off-screen behind a horizontal drag nobody knows to make.
+ *
+ * So the row becomes a stack of labelled values, which is what `.capability-gaps` and
+ * `.machine-facts` already do at this width and for this reason. The `data-label` is the column
+ * heading, restated per value because the heading row is above the fold once the row stacks.
+ * Nothing shrinks: §21's rule is wrap or scroll, never smaller type.
+ *
+ * The scroller stays around it. It costs nothing when the content fits, and an option set of
+ * seventeen values is still wider than a phone.
+ */
+@media (max-width: 639px) {
+  .param-entries table,
+  .param-entries tbody,
+  .param-entries tr,
+  .param-entries td {
+    display: block;
+    min-width: 0;
+  }
+
+  /*
+   * `.catalogue-page table` sets `min-width: max-content` further down the file and would win on
+   * source order alone, which kept a stacked row as wide as its longest recipe title and pushed
+   * the citation back off the screen. The extra class is what makes the stack actually stack.
+   */
+  .catalogue-page .param-entries table {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .param-entries thead {
+    display: none;
+  }
+
+  .param-entries tr {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--edge);
+  }
+
+  .param-entries tr:last-child {
+    border-bottom: 0;
+  }
+
+  /*
+   * `white-space: nowrap` is right for every other table on the site — a step grid that reflows
+   * is a grid whose numbers stop lining up — and wrong for a stacked row, where it is the one
+   * thing still holding a recipe title on a single line off the edge of the screen.
+   */
+  .catalogue-page .param-entries td {
+    padding: 2px 0;
+    border: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .param-entries td::before {
+    content: attr(data-label);
+    display: block;
+    font-family: var(--font-label);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+}
+
 /*
  * §3.2's counts, said in a sentence. Full ink and full size: it is the reason to trust the page,
  * and a dim 12px note is where a reader's eye goes last.
