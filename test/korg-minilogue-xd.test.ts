@@ -635,6 +635,144 @@ describe('the recipe library', () => {
   })
 })
 
+// ---------------------------------------------------------------------------
+// §3.5 - the dark stab, and what makes it one
+// ---------------------------------------------------------------------------
+
+/**
+ * `hip-hop` asks for a four-note stab in `dark`, and until this recipe existed the nearest
+ * neighbour answered it: every placement of that request onto this box came back `substituted`.
+ * A recipe id and a `character` field are enough to end that, which is exactly the risk — the
+ * cheapest way to close a substitution is to copy the clean stab, rename it, and ship a patch
+ * that is dark in the manifest and not in the room.
+ *
+ * So these assertions are about the *sound*, read off the controls the manual says produce it.
+ * p.23 opens the FILTER section with the claim the recipe rests on - the low-pass filter "creates
+ * a brighter or darker sound by selectively filtering certain parts of the harmonic spectrum" -
+ * and the tests below check that the filter is what moved, that the oscillators and the noise
+ * moved with it, and that none of it was paid for out of the four voices the chord needs.
+ */
+describe('the dark stab is dark by its filter, not by its name', () => {
+  function stab(character: string): Recipe {
+    const found = device.recipes.find((r) => r.role === 'stab' && r.character === character)
+    if (!found) throw new Error(`no ${character} stab`)
+    return found
+  }
+
+  function numeric(recipe: Recipe, name: string): { value: number; min: number; max: number } {
+    const param = paramNamed(recipe, name)
+    if (param?.kind !== 'numeric') throw new Error(`${recipe.id}: no numeric ${name}`)
+    return { value: param.value, min: param.range.min, max: param.range.max }
+  }
+
+  function enumerated(recipe: Recipe, name: string): string {
+    const param = paramNamed(recipe, name)
+    if (param?.kind !== 'enum') throw new Error(`${recipe.id}: no switch ${name}`)
+    return param.value
+  }
+
+  it('keeps all four voices, because the request it answers is a four-note chord', () => {
+    // The one thing a dark patch must not buy its weight with. VOICE MODE DEPTH right of 0 is
+    // DUO (p.17), two voices per key out of four, and a stab that spent them would print four
+    // notes for a patch that plays two - so this recipe joins `poly()` like every other chord
+    // recipe on the box, and the request it exists for is read off the shipped direction.
+    const recipe = stab('dark')
+    expect(recipe.id).toBe('mxd-stab-dark')
+    expect(enumerated(recipe, 'VOICE MODE TYPE')).toBe('POLY')
+    expect(numeric(recipe, 'VOICE MODE DEPTH').value).toBe(0)
+    expect(notesAvailable(recipe)).toBe(4)
+    expect(recipe.patchPolyphony).toBeUndefined()
+
+    const asked = TEMPLATES.flatMap((t) => t.roles).filter(
+      (r) => r.role === 'stab' && r.character === 'dark',
+    )
+    expect(asked.length).toBeGreaterThan(0)
+    for (const request of asked) {
+      expect(request.polyphony ?? 1, request.id).toBeLessThanOrEqual(notesAvailable(recipe))
+    }
+  })
+
+  it('shuts the low-pass far below the clean stab and leaves the resonance alone', () => {
+    // Darkness is the corner frequency, and on this device it has to be *only* that: RESONANCE
+    // and DRIVE are the grit axis (p.23 - the drive circuit's three stages, and resonance
+    // "giving a distinctive character"), so leaning on either would walk this patch towards
+    // `dirty` instead of darkening it. Both are held here against the stabs that do lean on them.
+    const dark = numeric(stab('dark'), 'CUTOFF')
+    const clean = numeric(stab('clean'), 'CUTOFF')
+    expect(dark.value).toBeLessThan(clean.value / 2)
+    // Still a value the filter can be at. p.23 warns that "if the CUTOFF value is set too low,
+    // the volume may be extremely low" and names no number for "too low", so the floor below is
+    // **ours** - a design guard on this recipe, chosen so a `darkness` offset of -230 still
+    // leaves the patch above 0 - and not a threshold read off the page.
+    expect([dark.min, dark.max]).toEqual([0, 1023])
+    expect(dark.value).toBeGreaterThan(230)
+
+    const resonance = numeric(stab('dark'), 'RESONANCE').value
+    expect(resonance).toBeLessThan(numeric(stab('hard'), 'RESONANCE').value)
+    expect(resonance).toBeLessThan(numeric(stab('dirty'), 'RESONANCE').value)
+    expect(resonance).toBeLessThanOrEqual(200)
+    expect(enumerated(stab('dark'), 'DRIVE')).toBe('0%')
+    // And the cutoff is the parameter mood's darkness axis moves, so the axis and the character
+    // are pulling the same control rather than two different ones (§6).
+    const cutoff = paramNamed(stab('dark'), 'CUTOFF')
+    if (cutoff?.kind !== 'numeric') throw new Error('no CUTOFF')
+    expect((cutoff.mood ?? []).map((m) => m.axis)).toEqual(['darkness'])
+  })
+
+  it('puts the weight under the chord with the oscillators, not beside it with a new name', () => {
+    // The renamed-patch check, done by comparison rather than by inspection: same panel, same
+    // forty-odd controls, and the ones that carry the sound are all at different positions. The
+    // low octave on VCO 2 - louder than VCO 1 - is where "low-weighted" actually lives.
+    const dark = stab('dark')
+    const clean = stab('clean')
+    expect(params(dark).map((p) => p.name)).toEqual(params(clean).map((p) => p.name))
+
+    expect(enumerated(dark, 'VCO 1 · WAVE')).toBe('SAW')
+    expect(enumerated(dark, 'VCO 2 · WAVE')).toBe('SAW')
+    expect(enumerated(dark, 'VCO 2 · OCTAVE')).toBe("16'")
+    expect(enumerated(clean, 'VCO 2 · OCTAVE')).toBe("8'")
+    expect(numeric(dark, 'MIXER · VCO 2').value).toBeGreaterThan(numeric(dark, 'MIXER · VCO 1').value)
+    expect(numeric(clean, 'MIXER · VCO 2').value).toBeLessThan(numeric(clean, 'MIXER · VCO 1').value)
+
+    // No sync, no ring, no cross modulation: the ways this box gets *dirty* (p.19) are all off,
+    // which is what keeps `dark` and `dirty` two different recipes rather than one loud one.
+    expect(enumerated(dark, 'VCO 2 · SYNC')).toBe('OFF')
+    expect(enumerated(dark, 'VCO 2 · RING')).toBe('OFF')
+    expect(numeric(dark, 'CROSS MOD DEPTH').value).toBe(0)
+  })
+
+  it('closes the noise on its own printed scale, the one the type selects (p.20)', () => {
+    // `noiseEngine` is unchanged and is used unchanged: NOISE, the TYPE, and the SHAPE range that
+    // TYPE names travel together, so a low-passed noise cannot end up carrying the high-pass
+    // scale. `Low` is "a low-pass filter will be used", CUTOFF [10.0Hz...21.0kHz] - the same row
+    // the clean stab reads, set well down it.
+    const dark = stab('dark')
+    expect(enumerated(dark, 'MULTI ENGINE · NOISE/VPM/USR')).toBe('NOISE')
+    expect(enumerated(dark, 'MULTI ENGINE · TYPE')).toBe('Low')
+    const shape = numeric(dark, 'MULTI ENGINE · SHAPE')
+    expect([shape.min, shape.max]).toEqual([10, 21000])
+    expect(shape.value).toBeLessThan(numeric(stab('clean'), 'MULTI ENGINE · SHAPE').value / 2)
+    const param = paramNamed(dark, 'MULTI ENGINE · SHAPE')
+    if (param?.kind !== 'numeric') throw new Error('no SHAPE')
+    expect(param.unit).toBe('Hz')
+    expect(param.range.verified).toMatchObject({ source: `${MANUAL}, p.20` })
+  })
+
+  it('answers a dark chord stab exactly, where the box used to substitute', () => {
+    // §3.5's three outcomes, on the request the direction makes. Before this recipe the four
+    // candidates were hard, clean, dirty and bright, and the search took the nearest of them;
+    // the assertion is that the exact one is now chosen, and that it is chosen for a four-note
+    // part rather than only for a single note.
+    const result = rig([ask({ id: 'r-stab', role: 'stab', character: 'dark', polyphony: 4 })])
+    expect(result.shortfalls).toEqual([])
+    const [assigned] = result.assignments
+    expect(assigned?.recipe.outcome).toBe('exact')
+    expect(assigned?.recipe.id).toBe('mxd-stab-dark')
+    expect(assigned?.recipe.character).toBe('dark')
+    expect(assigned?.notes).toBe(4)
+  })
+})
+
 /**
  * §3.1/#385. **Seven boxes, and three of them hold a section a name would have split.**
  *
