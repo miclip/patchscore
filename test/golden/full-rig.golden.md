@@ -59,7 +59,7 @@ noise       ██████ ██████ ██████████
   - p4 · exact `hard` · Drop, Peak
 - **`pad`** → minilogue xd · Voice — *Low pad with the filter shut down over the top of it*
   - p4 · exact `dark` · 3 notes at once on one polyphonic voice · every section
-- **`riser`** → TR-8S · CC — *A sample played backwards into the change*
+- **`riser`** → TR-8S · CC — *A sample played backwards, the filter climbing under it into the change*
   - p4 · exact `bright` · Build, Breakdown
 - **`noise`** → RD-9 · OPEN — *Open hat held long and high-passed into a noise wash*
   - p5, optional · exact `dirty` · every section
@@ -602,7 +602,7 @@ A step is one note long and nothing here sets a length: `Tie/Rest` joins a note 
 
 ### `riser` — TR-8S · CC
 
-**A sample played backwards into the change** — settings in Sound design
+**A sample played backwards, the filter climbing under it into the change** — settings in Sound design
 
 **Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 1)
 
@@ -1183,9 +1183,11 @@ Routing — KIT Edit > MUTE, OH = CH so CloseHH chokes the open hat (p.27)
 - **DELAY SEND** `48` (0…255)
   - ↳ hint: INST Edit > DelaySend
 
-#### CC — `riser`: A sample played backwards into the change
+#### CC — `riser`: A sample played backwards, the filter climbing under it into the change
 
-Source — A sample with a long decaying tail loaded into the Sample tone; a negative RATE plays it backwards, so the tail becomes the rise
+Source — A bright cymbal tail about one bar long — a crash, a reverse cymbal, a splash left to ring — loaded into the Sample tone; RATE -0.7 plays it backwards at seven-tenths speed, so a one-bar source stretches to about 1.4 bars and the tail becomes the rise
+
+Routing — **One trig, on the step 1.4 bars before the change** — there is no step pattern for this part, and the reversed sample plays once from it. The climb is the LFO on `FltCutoff`, one cycle per `22.50` steps (p.27), so it arrives with the transient rather than repeating under it. `KIT: LFO` is **kit-wide**: a second instrument set to a depth shares this waveform and rate, which is worth knowing before a hat starts breathing
 
 - **TONE** `Sample`
   - ↳ note: Everything below the TUNE line is in the "Sample tone only" block (p.31) and does not exist on an ACB tone
@@ -1197,6 +1199,26 @@ Source — A sample with a long decaying tail loaded into the Sample tone; a neg
 - **SPREAD** `32` (-50…50)
   - ↳ note: Skews pitch L/R for a stereo image
 - **BIT REDUCE** `3` (0…12)
+- **FLT TYPE** `LPF`
+  - ↳ hint: Hold [SHIFT], press [INST]
+- **FLT CUTOFF** `128` (0…255)
+  - ↳ note: The centre p.30 writes its LFO Depth example around, so the sweep is the full range
+- **FLT RESO** `40` (0…255)
+- **KIT: LFO Waveform** `SAW`
+  - ↳ note: Kit-wide: one waveform and one rate for every instrument that takes a depth
+  - ↳ hint: Hold [SHIFT], press [KIT]
+- **KIT: LFO Tempo Sync** `ON`
+  - ↳ note: ON, or Rate reads on p.27’s other scale (0-255) and stops being a step count
+  - ↳ hint: Hold [SHIFT], press [KIT]
+- **KIT: LFO Rate** `22.5` step (0.25…64 step)
+  - ↳ note: 22.50 steps is 1.4 bars at 16 to the bar — the length RATE -0.7 makes of a one-bar source
+  - ↳ hint: Hold [SHIFT], press [KIT]
+- **LFO** `FltCutoff`
+  - ↳ note: p.30: "Selects the parameter that is modified by the LFO"
+  - ↳ hint: Hold [SHIFT], press [INST]
+- **LFO DEPTH** `64` (-128…127)
+  - ↳ note: The travel, and its sign is the direction — 0 is the state this recipe used to be in
+  - ↳ hint: Hold [SHIFT], press [INST]
 - **INST FX TYPE** `THRU`
   - ↳ hint: Hold [SHIFT], press [INST]
 - **REVERB SEND** `150` (0…255)

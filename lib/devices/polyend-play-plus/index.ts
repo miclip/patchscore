@@ -1213,8 +1213,26 @@ const SAMPLE_RECIPES: Recipe[] = [
     title: 'Rising repeat tightening into the bar line',
     /**
      * `Raise` is the repeat type doing the work, and it is a printed option rather than a
-     * description of one (p.72). The grid is the densest eight-step figure on the page, so the
-     * ratchet accelerates across the run-up rather than ticking evenly.
+     * description of one (p.72).
+     *
+     * **#452, on what moves here and what does not.** An audio sample track carries no modulation
+     * at all: p.60's overview lists every parameter the fifteen knobs address and §5.6 (p.89)
+     * lists every one that belongs to the sample, and neither carries a source, a destination or
+     * a depth. Every LFO in this manual — a shape, an `Amount`, something to point at — sits
+     * inside a synth engine's table (pp.97-110) and needs `TRACK MODE` on `MIDI / Synth`, which
+     * is a patch and not a sample. So the movement is **absent on this voice**, not unauthored:
+     * the pages that would carry it are read and they enumerate.
+     *
+     * What does travel is the fade-in, and p.69 makes it proportional rather than absolute:
+     * *"Attack time of the sample start. This would enable a fade in of the audio when the sample
+     * is triggered"*, and *"The value is set in % as sample duration varies."* At 66 the rise is
+     * two thirds of whatever is loaded, so `sourceAudio`'s bar count and this number are one
+     * setting read twice — which is why the note below quotes the source length back.
+     *
+     * **The grid claim used to overstate the page and is corrected.** `16 Hits|8 Steps` is not
+     * the densest figure p.72 prints — `32 Hits|8 Steps` follows it — and nothing on that page
+     * describes acceleration: Repeat Grid *"Sets the step repetition density"*, which is an even
+     * count. The ratchet is a ratchet.
      */
     sourceAudio: {
       need: 'A rising noise sweep or reverse cymbal one to two bars long',
@@ -1226,11 +1244,21 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('REPEAT GRID', '16 Hits|8 Steps', REPEAT_GRIDS, 72),
       pick('FILTER', 'High Pass', FILTER_MODES, 66),
       num('FILTER CUTOFF', 20, DJ_FILTER, 188, { mood: [{ axis: 'darkness', amount: -9 }] }),
-      num('SAMPLE ATTACK', 66, PCT, 69, { unit: '%', step: 0.1 }),
+      num('SAMPLE ATTACK', 66, PCT, 69, {
+        unit: '%',
+        step: 0.1,
+        note: 'A percentage of the sample (p.69), so a two-bar source rises over about a bar and a third',
+      }),
       num('DELAY SEND', 34, PCT, 70, { unit: '%', mood: [{ axis: 'space', amount: 26 }] }),
       delayPreset('Rabbithole'),
       swing(),
     ],
+    routing:
+      '**One trigger, and it does not come back on its own.** Place it so the sample lands on ' +
+      'the downbeat you are building to; nothing here retriggers the part between sections. The ' +
+      'rise is the fade-in — `SAMPLE ATTACK` is a percentage of what you loaded (p.69) — with ' +
+      'the repeat tightening under it. There is no LFO on a sample track to add to that: p.60 ' +
+      'and p.89 list every parameter one has, and modulation is not among them',
     articulation: [{ slot: 'last-hit', set: { volume: 2 } }],
     verified: false,
   },

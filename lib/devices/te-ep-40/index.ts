@@ -738,7 +738,9 @@ const recipes: Recipe[] = [
     voice: 'pad',
     title: 'Supertone siren, leant on for the turnaround',
     sourceAudio: supertone(
-      'One of the ten supertone sounds — the pressure-sensitive siren rather than a bass or lead tone',
+      'One of the ten supertone sounds — a dub siren rather than a bass or lead tone. Nothing is ' +
+      'loaded and nothing is stretched here, so the length is the length of the press: hold it ' +
+      'one to two bars into the turnaround and let go on the change',
     ),
     params: [pick('PLAY MODE', 'key', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
     routing:

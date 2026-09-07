@@ -199,6 +199,123 @@ function instFx(value: (typeof INST_FX_TYPES)[number]): AuthoredParam {
 }
 
 /**
+ * p.27's `KIT: LFO` waveforms, verbatim and in the screen's order. Cited once, like
+ * `INST_FX_TYPES`, because every recipe that reaches for the LFO picks from this one set.
+ */
+const LFO_WAVEFORMS = ['SIN', 'TRI', 'SAW', 'SQR', 'S&H'] as const
+
+/**
+ * p.30's `LFO` row, whose Value column is a list of parameters rather than a scale: *"Selects the
+ * parameter that is modified by the LFO."* Transcribed in the manual's order and complete, so the
+ * option set is the legality claim and the selection stays taste (§3.2).
+ *
+ * **It spans both tone blocks and that is not a transcription slip.** `Tune` through `InstFX` are
+ * common to all tones; `(BD) Attack`, `(SD) Snappy` and `(TOM) Color` are the three category-gated
+ * ones; everything from `(SAMPLE) Coarse` on is the p.31 Sample-tone block. So *choosing* one of
+ * the later entries asserts what is loaded in the slot, exactly as setting `SNAPPY` does — which
+ * is why `lfo()` below is only ever called from a recipe whose `TONE` already says `Sample`.
+ */
+const LFO_DESTINATIONS = [
+  'Tune',
+  'Decay',
+  'Level',
+  'Pan',
+  'ReverbSend',
+  'DelaySend',
+  'InstFX',
+  '(BD) Attack',
+  '(SD) Snappy',
+  '(TOM) Color',
+  '(SAMPLE) Coarse',
+  'Rate',
+  'Spread',
+  'BitReduce',
+  'Attack',
+  'HoldMode',
+  'HoldTime',
+  'HoldStep',
+  'FltType',
+  'FltCutoff',
+  'FltReso',
+  'FltEnvAtk',
+  'FltEnvDecay',
+  'FltEnvDepth',
+  'FltVelo',
+] as const
+
+/**
+ * #452. **The LFO as one chain, because it is spread over two pages and two scopes.**
+ *
+ * Three of its five parts are kit-wide on p.27 — `Waveform`, `Tempo Sync`, `Rate` — and two are
+ * per instrument on p.30, the destination and its `LFO Depth`. A recipe that authored the rate
+ * without the depth would be #452's own finding: a modulator named and nothing modulated. So they
+ * travel together, the same discipline `ctrlCoarse` uses for the `[CTRL]` pairing.
+ *
+ * **`Tempo Sync: ON` is what makes `rate` a musical number.** p.27 gives two scales for the same
+ * control — *"(TempoSync = OFF) 0-255"* against *"(TempoSync = ON) 64.00-0.25 step (steps of
+ * 0.25)"* — so the value here is only legible under the switch beside it, and `CLAUDE.md`'s rule
+ * about a cited range that is the wrong range is exactly this shape. Under `ON` the unit is
+ * sequencer steps, which is tempo-independent: **at 16 steps to the bar, `64.00` is four bars**
+ * and `22.50` is a bar and two fifths. The recipes state that assumption rather than implying it.
+ *
+ * **Depth is bipolar** (`-128-0-+127`, p.30), so the direction of travel is the depth's sign and
+ * not the waveform's — which is what lets one `SAW` serve a climb here and would serve a fall
+ * inverted. p.30 also gives the reading of the number: *"If the setting of the parameter to be
+ * modified is 128 (the center value), setting LFO Depth to +/-64 will cause the parameter to vary
+ * in a range of 0-255."*
+ *
+ * **What p.27 does not say is whether the LFO restarts with the trig**, and no page here does. It
+ * says the rate synchronises to the tempo and stops. So the recipes say the cycle is locked to
+ * the step grid and leave the phase question alone rather than inventing an answer to it.
+ */
+function lfo(
+  destination: (typeof LFO_DESTINATIONS)[number],
+  depth: number,
+  rate: number,
+  rateNote: string,
+): AuthoredParam[] {
+  return [
+    {
+      kind: 'enum',
+      name: 'KIT: LFO Waveform',
+      value: 'SAW',
+      options: { values: [...LFO_WAVEFORMS], verified: cite(27) },
+      verified: false,
+      hint: 'kit-edit',
+      note: 'Kit-wide: one waveform and one rate for every instrument that takes a depth',
+    },
+    {
+      kind: 'enum',
+      name: 'KIT: LFO Tempo Sync',
+      value: 'ON',
+      options: { values: ['OFF', 'ON'], verified: cite(27) },
+      verified: false,
+      hint: 'kit-edit',
+      note: 'ON, or Rate reads on p.27\u2019s other scale (0-255) and stops being a step count',
+    },
+    num('KIT: LFO Rate', rate, { min: 0.25, max: 64 }, 27, {
+      step: 0.25,
+      unit: 'step',
+      hint: 'kit-edit',
+      note: rateNote,
+    }),
+    {
+      kind: 'enum',
+      name: 'LFO',
+      value: destination,
+      options: { values: [...LFO_DESTINATIONS], verified: cite(30) },
+      verified: false,
+      hint: 'inst-edit',
+      note: 'p.30: "Selects the parameter that is modified by the LFO"',
+    },
+    num('LFO DEPTH', depth, BIPOLAR, 30, {
+      hint: 'inst-edit',
+      note: 'The travel, and its sign is the direction — 0 is the state this recipe used to be in',
+    }),
+  ]
+}
+
+/**
  * #183. **The `[CTRL]` knob assignment, carried as two params so the pairing cannot come apart.**
  *
  * `Coarse` is only on a `[CTRL]` knob when `KIT: CTRL Sel = User`, and p.28's second row exists
@@ -661,11 +778,37 @@ const recipes: Recipe[] = [
     role: 'riser',
     character: 'bright',
     voice: 'cc',
-    title: 'A sample played backwards into the change',
+    /**
+     * #452. **This recipe used to be a reversed sample and nothing else, and the box was never
+     * the reason.** p.30's INST table carries an `LFO` row whose value list is *parameters* —
+     * *"Selects the parameter that is modified by the LFO"* — and an `LFO Depth` beside it, so
+     * every instrument has a modulation destination and a depth of its own. p.27's `KIT: LFO`
+     * supplies the waveform and a tempo-synced rate. Nothing had to be invented; the chain was
+     * simply never authored, which is the whole shape of #452.
+     *
+     * **The destination is the Sample tone's own filter, not INST FX.** `FltCutoff` is on p.30's
+     * list and the filter it moves is p.31's Sample-tone block, which is the one with a cutoff to
+     * travel across. INST FX sits after it (p.31) and takes no modulation input at all, so
+     * pointing the LFO at `InstFX` would switch effect *types* rather than open one.
+     *
+     * **The rate is the gesture's own length.** `22.50` steps is 1.4 bars at 16 to the bar, which
+     * is what `RATE -0.7` makes of a one-bar source (see `sourceAudio`) — so the cutoff arrives
+     * at the top of its climb as the reversed transient lands, and the cycle does not come round
+     * a second time inside one gesture. #451 and #452 answer with the same number here, which is
+     * the sign the two were describing one gesture rather than two.
+     */
+    title: 'A sample played backwards, the filter climbing under it into the change',
+    routing:
+      '**One trig, on the step 1.4 bars before the change** — there is no step pattern for this ' +
+      'part, and the reversed sample plays once from it. The climb is the LFO on `FltCutoff`, ' +
+      'one cycle per `22.50` steps (p.27), so it arrives with the transient rather than ' +
+      'repeating under it. `KIT: LFO` is **kit-wide**: a second instrument set to a depth shares ' +
+      'this waveform and rate, which is worth knowing before a hat starts breathing',
     sourceAudio: {
       need:
-        'A sample with a long decaying tail loaded into the Sample tone; a negative RATE plays ' +
-        'it backwards, so the tail becomes the rise',
+        'A bright cymbal tail about one bar long — a crash, a reverse cymbal, a splash left to ' +
+        'ring — loaded into the Sample tone; RATE -0.7 plays it backwards at seven-tenths speed, ' +
+        'so a one-bar source stretches to about 1.4 bars and the tail becomes the rise',
     },
     params: [
       tone(
@@ -680,6 +823,28 @@ const recipes: Recipe[] = [
       }),
       num('SPREAD', 32, { min: -50, max: 50 }, 31, { note: 'Skews pitch L/R for a stereo image' }),
       num('BIT REDUCE', 3, { min: 0, max: 12 }, 31, { mood: [{ axis: 'grit', amount: 9 }] }),
+      // The Sample tone's own filter, p.31's block — not INST FX, which is the one below it and
+      // has no envelope or modulation input. `128` is the centre p.30's worked example is written
+      // for, so the depth beside it sweeps the whole range rather than a slice of it.
+      {
+        kind: 'enum',
+        name: 'FLT TYPE',
+        value: 'LPF',
+        options: { values: ['LPF', 'HPF'], verified: cite(31) },
+        verified: false,
+        hint: 'inst-edit',
+      },
+      num('FLT CUTOFF', 128, UNIT, 31, {
+        mood: [{ axis: 'darkness', amount: -40 }],
+        note: 'The centre p.30 writes its LFO Depth example around, so the sweep is the full range',
+      }),
+      num('FLT RESO', 40, UNIT, 31),
+      ...lfo(
+        'FltCutoff',
+        64,
+        22.5,
+        '22.50 steps is 1.4 bars at 16 to the bar — the length RATE -0.7 makes of a one-bar source',
+      ),
       instFx('THRU'),
       ...sends(150, 90, 105),
       shuffle(),
@@ -698,16 +863,44 @@ const recipes: Recipe[] = [
      * octave down (`COARSE TUNE -12`, p.31's semitone scale) through the `LPF` on the INST FX, so
      * what arrives is weight rather than brightness.
      *
+     * **#452 gave it the climb it was describing.** The LFO on `Level` is the dark counterpart of
+     * the bright riser's `FltCutoff` — same chain, p.27 and p.30, pointed at pressure instead of
+     * brightness, which is the distinction this recipe already argued and could not previously
+     * make happen. `LEVEL 128` with `LFO DEPTH +64` is p.30's own worked example read straight:
+     * *"If the setting of the parameter to be modified is 128 (the center value), setting LFO
+     * Depth to +/-64 will cause the parameter to vary in a range of 0-255."*
+     *
+     * The rate is four bars rather than the two `RATE -0.5` makes of a one-bar source, and
+     * deliberately: `sourceAudio` says *at least* two bars because `COARSE TUNE -12` may or may
+     * not be varispeed here, and a cycle shorter than the gesture would turn over audibly if the
+     * longer reading is the true one. A cycle longer than the gesture just gets cut off at the
+     * change, which is what a riser wants anyway.
+     *
      * `BIT REDUCE 0` rather than the bright riser's 3: grit reads as brightness on this box, since
      * the artefacts it adds are all above the fundamental. A dark riser wants none of them, and
      * leaving the parameter at zero is also what keeps the `grit` mood axis honest — it can add
      * some back if the direction asks.
+     *
+     * #451, on the length: p.31's Rate scale is a playback *speed* as well as a direction —
+     * *"-0.01--0.99: Play backward at a lower speed"* — so `RATE -0.5` runs the source at half
+     * speed and doubles how long it takes, where the bright riser's `-0.7` stretches by about
+     * 1.4. The need says **at least** two bars rather than two, because `COARSE TUNE -12` is on
+     * this recipe as well and p.31 says only *"Specifies the pitch in semitone steps"* — it does
+     * not say whether the octave down is varispeed, which would lengthen the gesture again.
+     * Two bars is the floor either way, and a floor is the number a reader can act on.
      */
-    title: 'A sample played backwards an octave down, lowpassed into the change',
+    title: 'A sample played backwards an octave down, swelling into the change',
+    routing:
+      '**One trig, on the step two bars before the change** — one reversed play, no repeat. The ' +
+      'swell is the LFO on `Level`, one cycle per `64.00` steps, which is four bars at 16 to the ' +
+      'bar (p.27): longer than the reverse takes, so the level climbs the whole way rather than ' +
+      'turning over inside the gesture. `KIT: LFO` is kit-wide, so its waveform and rate are ' +
+      'shared with any other instrument given a depth',
     sourceAudio: {
       need:
-        'A sample with a long decaying tail loaded into the Sample tone; a negative RATE plays ' +
-        'it backwards, so the tail becomes the rise',
+        'A dark tail about one bar long — a low cymbal, a struck floor tom, a rumble left to ' +
+        'ring — loaded into the Sample tone; RATE -0.5 plays it backwards at half speed, so a ' +
+        'one-bar source runs at least two bars and the tail becomes the rise',
     },
     params: [
       tone(
@@ -722,6 +915,18 @@ const recipes: Recipe[] = [
       }),
       num('SPREAD', 12, { min: -50, max: 50 }, 31, { note: 'Skews pitch L/R for a stereo image' }),
       num('BIT REDUCE', 0, { min: 0, max: 12 }, 31, { mood: [{ axis: 'grit', amount: 9 }] }),
+      // p.30's own worked example, used as written: a destination sitting at the centre value of
+      // 128 with a depth of +/-64 *"will cause the parameter to vary in a range of 0-255"*. So the
+      // level starts at the bottom of the ramp and arrives at the top of it.
+      num('LEVEL', 128, UNIT, 30, {
+        note: 'The centre p.30 writes its LFO Depth example around — the swell runs the full range',
+      }),
+      ...lfo(
+        'Level',
+        64,
+        64,
+        '64.00 steps is four bars at 16 to the bar, so one climb covers the whole reverse',
+      ),
       instFx('LPF'),
       ...sends(96, 48, 105),
       shuffle(),
@@ -975,8 +1180,10 @@ const recipes: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A chord sample per shape the hook plays, loaded as a User tone; see Hook for which and ' +
-        'for the semitone offset on each step',
+        'A rendered chord sample about one bar long per shape the hook plays, loaded as a User ' +
+        'tone; HOLD MODE Whole plays it to its end without decaying, so the sample\'s own ' +
+        'length is the pad\'s length. See Hook for which shapes and for the semitone offset on ' +
+        'each step',
     },
     params: [
       tone('Sample', 'A User tone — p.30 lists User as "Tones that use imported samples"'),

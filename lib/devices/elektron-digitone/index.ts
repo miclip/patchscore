@@ -1205,6 +1205,25 @@ const recipes: Recipe[] = [
     role: 'riser',
     character: 'bright',
     voice: 'track',
+    /**
+     * #452. **Everything was here except the one line that makes it modulation.** `RMP`, a speed,
+     * a fade and `lfoDep(52)` on p.54's cited `-64.00-63.00` — a shape and a real depth — with no
+     * `DEST`, so the recipe named a modulator and moved nothing. That is the finding #452 is
+     * about, in its purest form: the parameters that *look* like an LFO were all present.
+     *
+     * **The destination is a `text` param rather than an enum, deliberately.** APPENDIX C prints
+     * the audio-track list — `FILTER: Frequency` among some fifty entries — so a list does exist
+     * and an enum would be the usual shape (§3.2). Transcribing fifty entries that nothing else
+     * in this manifest needs would be fifty chances to make a legality claim off a misread line,
+     * so what is authored is the one destination this recipe sets, with the page that prints it
+     * in its note. The option set stays unclaimed rather than claimed wrongly.
+     *
+     * The manual's own cross-reference is stale, which is why the note cites the appendix and not
+     * the entry: p.54 §11.11.4 points at *"page 104"* and APPENDIX C is printed on p.99.
+     *
+     * The filter is a **highpass** at `FREQ 60`, so a rising ramp on the cutoff lifts the floor
+     * rather than opening the top — a thinning rise, which is what this patch's title describes.
+     */
     title: 'One LFO pass into the change, running to the end of the waveform and stopping',
     verified: false,
     params: [
@@ -1227,6 +1246,13 @@ const recipes: Recipe[] = [
       revSend(52),
       lfoMode('ONE'),
       lfoWave('RMP'),
+      {
+        kind: 'text',
+        name: 'DEST',
+        value: 'FILTER: Frequency',
+        verified: false,
+        note: 'APPENDIX C, p.99, lists it; the screen abbreviates it — press [YES] to confirm',
+      },
       lfoSpd(6),
       lfoMult('4'),
       lfoFade(-46),

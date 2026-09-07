@@ -616,7 +616,10 @@ const recipes: Recipe[] = [
     voice: 'pad',
     title: 'Sustained pad, stretched to the bar',
     sourceAudio: fromLibrary(
-      'A slow, sustained tone with no transient — strings, a bowed sound, a held synth note',
+      'A slow, sustained tone with no transient — strings, a bowed sound, a held synth note. ' +
+      'Two to four seconds of recording is plenty: BAR stretches whatever is loaded to the bar ' +
+      'count you set, so that count is the length you hear and the recording only decides how ' +
+      'far it had to travel to get there',
       'melodic sounds are 500-599',
     ),
     params: [
@@ -725,7 +728,15 @@ const recipes: Recipe[] = [
         note: '[Y] sets the bar count — the guide’s example is one bar or two',
       }),
     ],
-    routing: 'Group D',
+    routing:
+      'Group D. **One press, one play** — `oneshot` plays the sample through and nothing ' +
+      'retriggers it, so put the step where the last bar or two before the change begins and it ' +
+      'will not come back on its own. **Nothing modulates it either:** there is no LFO on this ' +
+      'box and no envelope past attack and release, so the rise is the recording\u2019s own shape ' +
+      'fitted to the bar count rather than a filter opening under it. The one thing that can ' +
+      'move is the fader — hold [FADER] and the LPF pad, then hold [RECORD] and move it to ' +
+      'record the sweep into the pattern — and it moves the whole group, so give this group ' +
+      'nothing you mind it taking with it',
   },
   {
     id: 'ep133-impact-hard',

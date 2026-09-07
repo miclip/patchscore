@@ -295,6 +295,10 @@ describe('TR-8S manifest', () => {
       { min: -50, max: 50, why: 'sample Spread' },
       { min: 0, max: 12, why: 'sample Bit Reduce' },
       { min: -1, max: 1, step: 0.01, why: 'sample Rate, the one control with a stated resolution' },
+      // p.27's KIT: LFO Rate, and the only reason it is a shape at all is the switch beside it:
+      // the same control prints `0-255` with Tempo Sync OFF and `64.00-0.25 step (steps of 0.25)`
+      // with it ON. The recipes author ON, so this is the scale in force (#452).
+      { min: 0.25, max: 64, step: 0.25, why: 'KIT: LFO Rate in steps, under Tempo Sync ON' },
     ]
     let checked = 0
     for (const recipe of device.recipes) {
@@ -727,6 +731,65 @@ describe('the two roles this box declared and served nowhere (§345)', () => {
       const axis = (lpf.mood ?? []).find((m) => m.axis === 'darkness')
       if (axis === undefined) continue
       expect(axis.amount, `${recipe.id} LPF cutoff`).toBeGreaterThan(0)
+    }
+  })
+})
+
+/**
+ * §3.2/#452. **The LFO chain, and the pairing no schema can check.**
+ *
+ * Five parameters over two pages and two scopes make one modulation: p.27's kit-wide `Waveform`,
+ * `Tempo Sync` and `Rate`, and p.30's per-instrument destination and `LFO Depth`. Each is legal on
+ * its own — which is exactly how this device shipped recipes that named no destination and moved
+ * nothing — so what is asserted here is the chain, in both directions.
+ *
+ * `Tempo Sync` earns its own assertion. p.27 prints two scales for `Rate` and the switch decides
+ * which is in force: `0-255` under `OFF`, `64.00-0.25 step` under `ON`. Every rate authored here
+ * is a step count, so every recipe carrying one must also carry the `ON` that makes it true —
+ * `CLAUDE.md`'s "a cited range can still be the wrong range", in the one place on this box where
+ * the two scales share a name.
+ */
+describe('the LFO is a whole chain or is not there at all (§3.2/#452)', () => {
+  const named = (recipe: (typeof device.recipes)[number], name: string) =>
+    recipe.params.find((p) => p.name === name)
+
+  it('gives every LFO rate its destination, its depth and the switch that scales it', () => {
+    const withLfo = device.recipes.filter((r) => named(r, 'KIT: LFO Rate') !== undefined)
+    expect(withLfo.map((r) => r.id)).toEqual(['tr8s-riser-bright', 'tr8s-riser-dark'])
+
+    for (const recipe of withLfo) {
+      const sync = named(recipe, 'KIT: LFO Tempo Sync')
+      expect(sync?.kind === 'enum' && sync.value, recipe.id).toBe('ON')
+
+      const rate = named(recipe, 'KIT: LFO Rate')
+      if (rate?.kind !== 'numeric') throw new Error(`${recipe.id}: no rate`)
+      expect(rate.range.min, recipe.id).toBe(0.25)
+      expect(rate.range.max, recipe.id).toBe(64)
+
+      // A destination and a depth that is not zero. #452's finding was recipes carrying one of
+      // the two and reading as modulated.
+      const destination = named(recipe, 'LFO')
+      expect(destination?.kind, recipe.id).toBe('enum')
+      const depth = named(recipe, 'LFO DEPTH')
+      if (depth?.kind !== 'numeric') throw new Error(`${recipe.id}: no depth`)
+      expect(depth.value, recipe.id).not.toBe(0)
+
+      // And the parameter it modifies is authored, or the depth travels over a value the reader
+      // never sets. Both destinations in use are Sample-tone parameters, which the TONE says.
+      const modified = destination?.kind === 'enum' ? destination.value : ''
+      const target = modified === 'FltCutoff' ? 'FLT CUTOFF' : modified.toUpperCase()
+      expect(named(recipe, target), `${recipe.id}: ${modified}`).toBeDefined()
+
+      const tone = named(recipe, 'TONE')
+      expect(tone?.kind === 'text' && tone.value, recipe.id).toBe('Sample')
+    }
+  })
+
+  it('never authors a depth, a destination or a waveform without the rest of the chain', () => {
+    const PARTS = ['KIT: LFO Waveform', 'KIT: LFO Tempo Sync', 'KIT: LFO Rate', 'LFO', 'LFO DEPTH']
+    for (const recipe of device.recipes) {
+      const present = PARTS.filter((name) => named(recipe, name) !== undefined)
+      expect(present.length === 0 || present.length === PARTS.length, recipe.id).toBe(true)
     }
   })
 })

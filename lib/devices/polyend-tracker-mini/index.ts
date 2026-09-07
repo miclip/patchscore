@@ -393,9 +393,11 @@ const LFO_SHAPES = ['Rev Saw', 'Saw', 'Triangle', 'Square', 'Random']
  * `65` is the manual's, not a transcription slip for 64.
  *
  * The footnote carves out an exception no flat list can carry: *"128 to 32 Step speed options
- * are not available with volume as the destination."* Every use here modulates Granular
- * Position, where the whole list is legal — which is why the options stay complete rather than
- * being trimmed to the subset one destination allows.
+ * are not available with volume as the destination."* Both uses here modulate Granular Position
+ * and Cutoff, where the whole list is legal — which is why the options stay complete rather than
+ * being trimmed to the subset one destination allows. **`Volume` is the destination that would
+ * make this list wrong**, and `test/tracker-mini` asserts no recipe pairs it with one of the
+ * five speeds the footnote withdraws.
  */
 const LFO_SPEEDS = [
   '128', '96', '65', '48', '32',
@@ -1141,7 +1143,12 @@ const SAMPLE_RECIPES: Recipe[] = [
     title: 'Rendered chord sample, filtered back and swelled',
     realisation: 'sampled-chord',
     sourceAudio: {
-      need: 'Chord sample(s) — yours, or rendered to audio here; one per chord shape the hook plays',
+      need:
+        'A soft sustained chord about one bar long per shape the hook plays — yours, or ' +
+        'rendered to audio here. `Forward loop` cycles it for as long as the step holds ' +
+        '(p.127), so it is the loop that fills the pad rather than the file: a clean boundary ' +
+        'matters more than a long recording, and a steady bar loops where a bar still moving ' +
+        'clicks',
       prep: {
         text:
           'Manual p.104, Rendering Tracks To Audio Chords: place the notes of one chord on ' +
@@ -1648,25 +1655,97 @@ const SAMPLE_RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'track-sample',
     mode: 'whole-sample',
-    title: 'Sample played backwards, the envelope swelling it into the change',
+    title: 'Sample played backwards under an eight-bar cutoff rise',
     sourceAudio: {
       need:
-        'A sample with a long decaying tail — reversed, that tail is the rise, so the tail is the ' +
-        'part that matters. p.196 warns a very long tail can reverse into silence, so check the ' +
-        'end point after you turn it round',
+        'A bright cymbal or metallic tail with eight bars of audible sound on it — a long crash, ' +
+        'a bowed cymbal, a metallic wash. START and END below take the eight bars that get used, ' +
+        'so trim the dead air past END: reversed playback starts there, and p.196 warns a long ' +
+        'silent tail reverses into no sound at all. Trig it at the note it was recorded at — ' +
+        'p.128 plays the sample faster on a higher note and slower on a lower one, so the note ' +
+        'you write moves the eight bars with it',
     },
     /**
      * §4.2. **Two mechanisms, both this box's own, and the manual supplies the caveat for one of
      * them.** `r` is the Reverse Sample step FX, printed `<<<` or `>>>` (p.196), and reversing a
-     * decaying tail is the oldest riser there is. The envelope does the rest: p.126's `Attack`
-     * runs `0.00-10 Sec`, so the level climbs across the bars rather than arriving with the trig.
+     * decaying tail is the oldest riser there is. The climb is an LFO on the filter: p.121's
+     * Instrument Automation page pairs a destination with a `Type`, and a `Saw` on `Cutoff` opens
+     * the top end across the bars instead of arriving with the trig.
      *
-     * **The volume LFO is deliberately not the mechanism**, and this is the footnote that decides
-     * it. p.123's speed table carries *"128 to 32 Step speed options are not available with
-     * volume as the destination"* — the four slowest settings, which are exactly the ones a build
-     * across four bars would want. An envelope has no such restriction and p.125 says it is
-     * *"more of a one-shot function"* that *"typically operates across a note length"*, which is
-     * what a riser is. Reaching for the LFO here would have been a value the box refuses.
+     * ## Why the LFO, and why it is on `Cutoff` rather than `Volume`
+     *
+     * **The reporter asked for automation and the box only offers it one way here.** There is no
+     * amp envelope on this machine: p.115 draws both instrument pages, page 1 is `Volume /
+     * Panning / Tune / Finetune / Filter Type / Cutoff / Resonance / More`, and `More` is the
+     * effects page (p.119). Every `ADSR` and every LFO on the Tracker Mini lives on Instrument
+     * Automation 2/2 and shapes **a destination** — p.121, *"Each destination has the option of
+     * an LFO, envelope or no automation"*. So a recipe that names no destination has connected
+     * nothing, which is what this one used to do.
+     *
+     * **`Volume` is closed to a rise this long, and the footnote is the whole reason.** p.123's
+     * speed table is asterisked on its first column: *"128 to 32 Step speed options are not
+     * available with volume as the destination."* The five slowest speeds — the only ones that
+     * span a phrase — are illegal on `Volume`, so a slow ramp has to go to `Cutoff` or
+     * `Finetune`. Pairing `Volume` with `128` would be a value read off a scale not in force,
+     * which is the `SNAPPY` mistake in `CLAUDE.md` wearing a different name. `test/tracker-mini`
+     * asserts the pairing, because nothing else in the build would catch it.
+     *
+     * **The envelope cannot reach eight bars either.** p.126 ceilings `Attack` at `10 Sec`, which
+     * is about five bars at the tempi this role is asked for. An envelope resets per note and an
+     * LFO on `Cutoff` does not (below), so the trade is real — but five bars is not eight, and
+     * the length is what the reader asked about.
+     *
+     * ## The numbers, and the assumption under them
+     *
+     * p.123: LFO speeds are *"hard synchronised to the project tempo"* and counted **in steps**,
+     * which is the tempo-independent unit a riser wants. `128` is one cycle per 128 steps, so at
+     * **16 steps to the bar it is eight bars** — a phrase, and the length a build is usually cut
+     * in. Pattern length is configurable on this box, so the recipe states the 16 rather than
+     * assuming it: at another pattern length the same `128` is a different number of bars.
+     *
+     * `Saw` and not `Rev Saw`, off p.122's own labels: *"Saw — Ideal for ramp up sounds"* against
+     * *"Reverse Saw — Ideal for ramp down sounds"*. A riser is a ramp up. `CUTOFF 30` is where the
+     * ramp starts from, lowered from 78 when the rise moved onto the filter: a filter already
+     * open has nowhere to travel.
+     *
+     * ## What does not move, argued rather than left out
+     *
+     * **`Finetune` is on p.121's destination list and is deliberately not used.** Two reasons, and
+     * the second is the box's. p.116 ranges `Finetune` at *"-100 Cents to +100 Cents"*, so it is a
+     * detune rather than a climb — a semitone of bend cannot carry a build. And p.128 makes the
+     * note value varispeed on this machine, *"higher note values will shorten i.e. speed up the
+     * sample while lower values will elongate"*, so pitch movement on a reversed sample is also
+     * length movement: automating it would slide the arrival off the change the eight bars were
+     * measured to. The pitch stays fixed, and `routing` says so rather than leaving the reader to
+     * ask a second time.
+     *
+     * **The sample does not repeat, and that is the other half of the reporter's question.**
+     * `1-Shot` *"plays start to end once"* (p.127). What repeats is the *filter* cycle, every
+     * eight bars, which is a different claim and is why both are stated.
+     *
+     * ## The one caveat, and it is the box's rather than the recipe's
+     *
+     * **The cutoff LFO is not started by the trig.** p.121 splits its destinations: `Volume` and
+     * `Wavetable Position` reset the LFO *"on each new note"*, while `Panning`, `Finetune`,
+     * `Cutoff` and `Granular Position` are *"semi-free running and reset on playback. Does not
+     * reset on a note."* So the eight-bar ramp is counted from where playback started, not from
+     * the `<<<`, and it lines up when the section sits on that eight-bar grid. That is stated in
+     * `routing` instead of being quietly hoped for — it is the honest cost of the only mechanism
+     * on this box that reaches eight bars.
+     *
+     * **The full-size Tracker answers the same gesture differently**, and the difference is this
+     * footnote rather than taste: `tr-riser-bright` puts an envelope on `Volume` with `START` and
+     * `END` on the sample. On the Mini that route tops out at five bars, and its LFO alternative
+     * is closed on `Volume` by p.123. Same maker, same gesture, different page — so the recipes
+     * diverge on a cited fact rather than drifting.
+     *
+     * ## `START` and `END` are where the length question is actually answered
+     *
+     * Not by the file's length: p.127's Sample Playback page trims what plays, so the gesture is
+     * `END` minus `START`. Reversed, playback runs `END` to `START` (p.196), which puts the
+     * transient last, on the change. That is also the actionable form of p.196's warning — dead
+     * air past `END` reverses into silence at the front of the rise, and the fix is to pull `END`
+     * back to where the tail is still sounding.
      *
      * **No articulation, checked rather than assumed** (#108). Neither direction asking for
      * `riser` authors a step variant for it, so there is no slot for a gesture to address and
@@ -1678,21 +1757,49 @@ const SAMPLE_RECIPES: Recipe[] = [
      * library sits on that pair.
      */
     routing:
-      '**Set `r` to `<<<` on the step that starts the rise** — the Reverse Sample step FX, ' +
-      'p.196. The envelope below does the swell; the reverse is what makes a decay into a build. ' +
-      'p.196 also warns that a long tail can reverse into silence, so shorten the sample end if ' +
-      'nothing sounds',
+      '**Set `r` to `<<<` on the step eight bars before the change** — the Reverse Sample step ' +
+      'FX, p.196. Reversed, playback runs from END back to START, so the tail rises and the ' +
+      'transient lands on the change. **What moves:** the cutoff, once per LFO cycle — `128` is ' +
+      'counted in pattern steps (p.123), so it is eight bars where a bar is 16 steps. **What ' +
+      'does not:** the sample is `1-Shot`, *"plays start to end once"* (p.127), and the pitch is ' +
+      'fixed, because the destination is `Cutoff` and not `Finetune`. **The ramp is not started ' +
+      'by your trig** — p.121 has `Cutoff` among the destinations where the LFO *"is semi-free ' +
+      'running and resets on playback. Does not reset on a note"*, so the eight bars are counted ' +
+      'from where you pressed play. Put the section on that eight-bar grid and the climb arrives ' +
+      'with the change',
     params: [
-      pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
-      pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
-      num('CUTOFF', 78, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -30 }] }),
-      num('RESONANCE', 26, PCT, 117, { unit: '%' }),
-      secs('ENVELOPE · ATTACK', 3.4, SECONDS_10, 126, {
-        note: 'The climb. Longer than the section start-to-change if you want it still rising',
+      pick('PLAY MODE', '1-Shot', PLAY_MODES, 127, {
+        note: 'p.127: "Plays start to end once" — the sample does not repeat; the filter cycle does',
       }),
-      num('ENVELOPE · SUSTAIN', 100, PCT, 126, { unit: '%' }),
-      secs('ENVELOPE · RELEASE', 0.4, SECONDS_10, 126, {
-        note: 'Short, so the rise stops at the change rather than hanging over it',
+      // p.127's Sample Playback page: Preview, Start, End, Zoom, with Play Mode beside them.
+      // Both are times into the loaded file, so the scale is the reader's sample (§3.2) and
+      // there is no range for a citation to gate — `unscaled`, like Granular Position.
+      unscaled('START', 'At the cymbal transient', {
+        hint: 'sample-playback',
+        note: 'Reversed, this is where the gesture arrives — put it on the hit, not before it',
+      }),
+      unscaled('END', 'Eight bars later, while the tail is still audible', {
+        note: 'Reversed playback starts here; trim the dead air past it, or p.196 gives silence',
+      }),
+      pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
+      num('CUTOFF', 30, PCT, 117, {
+        unit: '%',
+        mood: [{ axis: 'darkness', amount: -30 }],
+        note: 'Where the rise starts from — a filter already open has nowhere to travel',
+      }),
+      num('RESONANCE', 26, PCT, 117, { unit: '%' }),
+      pick('CUTOFF AUTOMATION TYPE', 'LFO', AUTOMATION_TYPES, 121, {
+        hint: 'inst-params',
+        note: 'On the Cutoff row of Instrument Automation 2/2 — this is what connects the rise',
+      }),
+      pick('CUTOFF LFO SHAPE', 'Saw', LFO_SHAPES, 121, {
+        note: 'p.122: "Saw — Ideal for ramp up sounds"; Rev Saw is the ramp down',
+      }),
+      pick('CUTOFF LFO SPEED', '128', LFO_SPEEDS, 123, {
+        note: 'In pattern steps: 128 steps is eight bars where a bar is 16 steps',
+      }),
+      unscaled('CUTOFF LFO AMOUNT', '60%', {
+        note: 'How far the ramp travels; the Saw is what makes it travel upward (p.122)',
       }),
       num('REVERB SEND', 54, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 44 }] }),
       swing(),
@@ -1708,8 +1815,10 @@ const SAMPLE_RECIPES: Recipe[] = [
     title: 'Held source with the cutoff climbing once, over the longest envelope the box has',
     sourceAudio: {
       need:
-        'A sustained source that holds without changing — a drone, a held chord, a noise bed. ' +
-        'The filter supplies the movement, so anything already moving fights it',
+        'A steady drone, held chord or noise bed about one bar long, looping cleanly. ' +
+        '`Forward loop` cycles it (p.127), which is what holds the source under a filter sweep ' +
+        'of about five bars — the file does not have to be that long, it has to loop without a ' +
+        'seam. The filter supplies the movement, so anything already moving fights it',
     },
     /**
      * §4.2. **An envelope rather than the LFO, and the arithmetic is why.**
@@ -2397,6 +2506,8 @@ export const device: Device = {
     // p.142's Aid row: "Hold to play the grain from the current position selected. Also hold
     // while adjusting position to 'scan' for the desired sound."
     'scan-grain': 'Hold [Preview] while turning Position',
+    // p.127: the Sample Playback page is "accessed by default to [3] button or from the [Menu]".
+    'sample-playback': 'Press [3] for Sample Playback',
   },
 
   /**

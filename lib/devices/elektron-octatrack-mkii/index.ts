@@ -871,7 +871,7 @@ const recipes: Recipe[] = [
     role: 'riser',
     character: 'bright',
     voice: 'track',
-    title: 'Riser pitched up across the bar by a one-shot LFO',
+    title: 'Riser lifted across the bar by a one-shot LFO on the pitch',
     verified: false,
     /**
      * `ONE` is the LFO trig mode that *"will make the LFO restart when a sample is trigged, run
@@ -881,7 +881,12 @@ const recipes: Recipe[] = [
      * of 16, 32 or 64"*, and that is the note on the parameter rather than an invented range.
      */
     sourceAudio: {
-      need: 'A sustained noise or a held tone with no transient — the rise has to come from the LFO',
+      need:
+        'A sustained noise or held tone with no transient, and a second or two of it is plenty. ' +
+        '`LEN` on `TIME` picks how much plays from `STRT` and `LOOP MODE ON` cycles that region ' +
+        '(pp.118, 85), so the file\u2019s length is not the gesture\u2019s — two bars of rise comes ' +
+        'from the trig and the envelope, not from the recording. Trim `LEN` to a region that ' +
+        'loops without a seam; anything with an attack in it ticks once a bar',
       hint: 'quick-assign',
     },
     params: [
@@ -897,6 +902,18 @@ const recipes: Recipe[] = [
       fx1('FILTER'),
       filterSlope('LP', '12'),
     ],
+    routing:
+      '**Point the LFO at the pitch, then set how far by ear.** `PMTR` chooses what the LFO ' +
+      'moves — p.60: *"LFOs can only modulate parameters found in the TRACK PARAMETER MAIN ' +
+      'pages"* — and the target here is `PTCH`, which p.60\u2019s LFO SETUP screen shows in that ' +
+      'field as `PB` over `PTCH`, and p.118 defines (integer changes are semitones). `TRIG ONE` ' +
+      '*"will make the LFO restart when a sample is trigged, run for one cycle and then stop"* ' +
+      '(p.60), so the climb happens once. **`SPD`, `DEP` and the waveform stay yours, and that ' +
+      'is the manual rather than the box:** p.60 prints no scale for either and the `WAVE` field ' +
+      'shows a picture rather than a word, so pick the rising ramp by its glyph and open `DEP` ' +
+      'from 0 until the lift arrives at the change. **The pass is one-shot; the sound is not** — ' +
+      '`LOOP MODE ON` keeps the region cycling for as long as the trig sustains (pp.85, 118), so ' +
+      'what does not repeat is the rise. Place the trig two bars before the change',
     articulation: [art('last-hit', { 'slide-trig': true }, 'trig-edit')],
   },
   {

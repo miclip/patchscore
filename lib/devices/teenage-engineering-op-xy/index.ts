@@ -218,6 +218,30 @@ const SAMPLER_SET = citeSpan('§18 pp.77-83, one sampler per section')
 const PLAY_MODES = ['poly', 'mono', 'legato'] as const
 
 /**
+ * #452. p.31's step-component reference table, the `ramp up` row, read off a render of the page —
+ * the text layer scrambles this table completely. Ten printed values, five spans against two
+ * intervals, and p.30 says what they do: *"ramp up alters the note of the selected step by
+ * following a ramp in the current scale. each time the step is triggered, the note increments up
+ * the ramp. use the accidentals to select the interval."*
+ *
+ * That is a destination — the step's note, in the scale — and a printed depth, which is what
+ * #452 asks a riser to carry. It is also the reason this recipe's climb is *per trigger* rather
+ * than continuous, and the `routing` says so rather than implying a sweep.
+ */
+const RAMP_UP = [
+  'ramp 2 steps 1 octave',
+  'ramp 3 steps 1 octave',
+  'ramp 4 steps 1 octave',
+  'ramp 5 steps 1 octave',
+  'ramp 6 steps 1 octave',
+  'ramp 2 steps 3 octaves',
+  'ramp 3 steps 3 octaves',
+  'ramp 4 steps 3 octaves',
+  'ramp 5 steps 3 octaves',
+  'ramp 6 steps 3 octaves',
+] as const
+
+/**
  * p.33, arpeggio. The manual writes *"patterns include: up / down / up/down / up/repeat/down /
  * random / play order"* — **"include", not "are"** — so this is a set of options proven
  * available rather than a proven-complete list, which is all an enum's legality gate claims.
@@ -636,12 +660,23 @@ const recipes: Recipe[] = [
     role: 'riser',
     character: 'bright',
     voice: 'track',
-    title: 'hardsync riser, the sync point climbing into the change',
+    title: 'hardsync riser, the note ramping up into the change',
     /**
      * **A gesture rather than a recording, which is why this is an engine and the impact above is
-     * not.** p.96 describes hardsync as a second oscillator restarted by the first, so moving the
-     * sync point is a timbral climb that goes somewhere — the sound a riser is. A sampled riser
-     * would be a recording of one, and this box can make it instead.
+     * not.** A sampled riser would be a recording of one, and this box can make it instead.
+     *
+     * **#452 corrected two things here, and the second was load-bearing.** The page was wrong —
+     * hardsync is §20.5 on p.97, while p.96 is §20.4 `external`, which is what the head note
+     * cites it for. And the mechanism was not in the manual at all: p.97's four encoders are
+     * `freq`, `sub`, `noise` and `lowcut`, there is no `sync` encoder anywhere on it, and the
+     * page's whole prose line is *"hardsync is perfect for stabs, jabs and solid basses."* So
+     * "the sync point climbing" was a plausible sentence about a control that does not exist.
+     *
+     * **What climbs instead is printed and cited.** p.30: *"ramp up alters the note of the
+     * selected step by following a ramp in the current scale. each time the step is triggered,
+     * the note increments up the ramp"*, and p.31's table prints the spans and intervals. The
+     * climb is therefore stepwise and finite — six triggers and it stops — which is a different
+     * gesture from a sweep and is described as one.
      *
      * The other request for this role is Ambient Dub's `dark`, which §3.4 puts at distance 2 from
      * `bright` — the one distance §3.5 refuses. It stays a shortfall rather than buying a second
@@ -651,12 +686,17 @@ const recipes: Recipe[] = [
     params: [
       pick('ENGINE', 'hardsync', ENGINES, ENGINE_SET, { hint: 'engine' }),
       pick('PLAY MODE', 'mono', PLAY_MODES, cite(43), { hint: 'play-mode' }),
+      pick('STEP COMPONENT \u00b7 RAMP UP', 'ramp 6 steps 3 octaves', RAMP_UP, cite(31), {
+        note: 'p.30: the note increments up the ramp each time the step is triggered',
+      }),
       pick('FX II', 'reverb', SEND_FX, SEND_FX_SET, { hint: 'fx' }),
     ],
     routing:
-      'Melodic group (p.73). The climb is the sync encoder moved across the bars into the change ' +
-      '— p.96 gives hardsync its second oscillator restarted by the first, so the sync point is ' +
-      'what travels',
+      'Melodic group (p.73). **One step, not a loop.** The climb is `ramp up` on that step — ' +
+      'p.30: *"each time the step is triggered, the note increments up the ramp"* — so six ' +
+      'triggers walk it three octaves and then it stops rather than coming back round. Put it on ' +
+      'the first step of the last two bars before the change. The `freq` encoder (p.97) shifts ' +
+      'the harmonics under it if you want a second hand on the sound',
   },
   {
     id: 'opxy-sweep-soft',

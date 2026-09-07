@@ -1598,13 +1598,28 @@ const RECIPES: Recipe[] = [
     role: 'riser',
     character: 'bright',
     voice: 'voice',
-    title: 'A ten-second filter attack with the sequencer climbing under it',
-    routing: `${CLOCKED}. p.24's Attack range tops out at 10 seconds and this uses most of it, so the section arrives as the filter does. SEQ OCT at ±5 gives the four steps the widest climb the box has (p.28)`,
+    /**
+     * #452. **This riser was on the no-movement list and should not have been** — the chain is
+     * `VCF EG AMT 96` into `VCF ATTACK 8000`, which p.24 spells out: *"This knob controls the
+     * amount, or depth, of change to the Cutoff Frequency caused by the VCF EG… Positive (+)
+     * values will cause the VCF EG to open the filter on the Attack stage"*. A destination and a
+     * depth, both authored, plus the `SEQ 1` cable into `CUTOFF` on top.
+     *
+     * **What was missing is the answer to the reporter's actual question, and this box has an
+     * unusual one.** p.24's NOTE under `VCF ATTACK`: *"the VCF EG will not restart even when a
+     * new trigger or gate is received. Only once the Attack phase has been completed can a new
+     * trigger or gate be received to restart the VCF EG."* So the sequencer hammering underneath
+     * does **not** chop the eight-second climb up — every trigger inside it is ignored — and
+     * then it **does** come round again once the attack and decay have run. Both halves are
+     * surprising, neither was written down, and `routing` now says them.
+     */
+    title: 'An eight-second filter attack with the sequencer climbing under it',
+    routing: `${CLOCKED}. The sweep is the VCF EG: \`VCF ATTACK\` at eight seconds against p.24's ten-second ceiling, with \`VCF EG AMT\` nearly full positive — *"Positive (+) values will cause the VCF EG to open the filter on the Attack stage"*. **The sequencer under it does not chop the climb up.** p.24: *"the VCF EG will not restart even when a new trigger or gate is received. Only once the Attack phase has been completed can a new trigger or gate be received"* — so every step inside those eight seconds is ignored and the sweep runs whole. **It does come back**, though: once the attack and decay have run, the next step starts it again, which is roughly three passes across a sixteen-bar build at 130 BPM. For one climb and no more, leave PLAY unlit and press TRIGGER once where the build starts, with the EG button lit (p.28). SEQ OCT at ±5 gives the four steps the widest climb the box has (p.28)`,
     patch: [
       cable(
         'OUT · SEQ 1',
         'IN · CUTOFF',
-        'The sequencer opens the filter in steps as well as playing the pitch — the AQUATIC CHORDS and STAR-GATE sheets both draw this cable',
+        'The sequencer opens the filter in steps as well as playing the pitch — the AQUATIC CHORDS and MELLOW HARMONIES sheets both draw this cable',
         45,
       ),
     ],

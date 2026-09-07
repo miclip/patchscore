@@ -165,18 +165,27 @@ const OCTAVES = { min: 1, max: 8 }
  * numbers themselves — `-50` and `+50`, as numbers, against the two ends of the control — so the
  * range is the range as printed.
  */
-const PITCH_DEPTH = { min: -50, max: 50 }
+const MOD_DEPTH = { min: -50, max: 50 }
+
+/**
+ * The pitch destination's own name for it, kept because three kick recipes read better with it
+ * and because the bound is the same one: the community note is about *"patch cables / modulation
+ * depth"* generally, not about pitch.
+ */
+const PITCH_DEPTH = MOD_DEPTH
 
 /**
  * Both halves in one citation, the same way `DX7_OPTIONS_CITE` spans two sources: naming only the
  * community doc would leave the connection and its sign unsubstantiated, and naming only the
  * guidebook would leave the bound invented.
  */
-const PITCH_DEPTH_CITE: Cite = {
+const MOD_DEPTH_CITE: Cite = {
   kind: 'manual',
   source:
     'Deluge Official Guidebook OS 4.1 (OLED), p.120 and p.122 + community firmware release_1_2_1, automation_view.md',
 }
+
+const PITCH_DEPTH_CITE = MOD_DEPTH_CITE
 
 function num(
   name: string,
@@ -1223,16 +1232,64 @@ const RECIPES: Recipe[] = [
     role: 'riser',
     character: 'bright',
     voice: 'track',
-    title: 'Saw riser, top end open, thrown into the reverb',
+    /**
+     * #452. **This one really did have nothing, and the articulation was the tell.** A saw, a
+     * treble boost and two sends, with `{ automation: 1 }` on `last-hit` naming a *lane* and no
+     * destination and no value — the appearance of movement rather than movement, which is the
+     * shape #452 was filed about. The entry is dropped: neither direction asking for `riser`
+     * draws a step pattern, so it never reached a reader anyway.
+     *
+     * **The chain that replaces it is the one this file already ships three times**, pointed at a
+     * different row of the same matrix. p.122's modulation table ticks `ENV 2` against *"LPF /
+     * HPF Frequency / Resonance"* under `Per Voice`, and only `Overall Volume`/`ENV 1` and
+     * `Pitch: Overall`/`X` are hard-connected — the LPF row is free. p.120 gives the depth its
+     * sign: *"A value other than '0' will create a modulation connection… Depth can be positive
+     * and negative values."*
+     *
+     * **`SUSTAIN 50` is deliberate and p.125 is why.** *"When either of the 2 envelopes modulate
+     * a parameter other than volume level, it does so with a 'bipolar' behaviour… when the
+     * sustain is set to 25 (default for ENV2), that stage of the envelope will match the current
+     * setting of the target parameter without modulation."* Above 25 holds the destination above
+     * its knob setting, so the filter stays where the climb left it instead of falling back
+     * under the change.
+     *
+     * **What is not claimed: how long the climb is in seconds.** No source in `manuals/` prints a
+     * time for any Deluge envelope stage — the community menu file bounds the stage `0-50` and
+     * names no unit — so `42` is a starting point to dial against the bar count, and `routing`
+     * says that rather than implying a duration. The bar count itself *is* citable, and p.60 is
+     * where the reader's real question is answered.
+     */
+    title: 'Saw riser, ENV 2 opening the filter, thrown into the reverb',
+    routing:
+      'The climb is `ENV 2` on the low-pass rather than the note: p.122 ticks `ENV 2` against ' +
+      '"LPF / HPF Frequency / Resonance", p.120 sets the depth — *"Depth can be positive and ' +
+      'negative values"* — and p.125 says a sustain above 25 holds a non-volume destination ' +
+      'above its knob setting instead of falling back. **Set the clip length to the build before ' +
+      'you play it in.** p.60: the default clip length is one bar and [SHIFT] + (SCROLL) changes ' +
+      'it, the display showing bars : beats : 16ths. A clip loops at its length, so a one-bar ' +
+      'riser repeats sixteen times under a sixteen-bar build; at the build\u2019s own length it ' +
+      'climbs once. **How long the attack is in seconds is not something any source here prints**, ' +
+      'so dial it against that bar count rather than against a number',
     params: [
       clipType('Synth'),
       pick('OSC 1 TYPE', 'Saw', OSC_TYPES, cite(81)),
+      env(2, 'ATTACK', 42, {
+        hint: 'env2-lpf',
+        note: 'The climb. 50 is the longest attack the menu offers, in no stated unit',
+      }),
+      env(2, 'DECAY', 30),
+      env(2, 'SUSTAIN', 50, {
+        note: 'p.125: 25 is the knob setting untouched, so above it the filter holds open',
+      }),
+      num('ENV 2 \u2192 LPF FREQ DEPTH', 38, MOD_DEPTH, MOD_DEPTH_CITE, {
+        hint: 'env2-lpf',
+        note: 'Positive, so the filter opens as the envelope rises',
+      }),
       num('EQ TREBLE AMOUNT', 35, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -8 }] }),
       num('REVERB AMOUNT', 23, Z50, cite(225), { mood: [{ axis: 'space', amount: 16 }] }),
       num('DELAY AMOUNT', 16, Z50, cite(222), { mood: [{ axis: 'space', amount: 10 }] }),
       swing(),
     ],
-    articulation: [{ slot: 'last-hit', set: { automation: 1 }, hint: 'automation-view' }],
     verified: false,
   },
   {
@@ -1514,6 +1571,7 @@ export const device: Device = {
     // drill into the destination, press (SELECT) again, and the modulation sources appear.
     'env-menu': 'Press (SELECT), ENV 1, then ATTACK / DECAY',
     'env2-pitch': 'In PITCH, press (SELECT) again, pick ENV 2',
+    'env2-lpf': 'In LPF FREQ, press (SELECT), pick ENV 2',
     // p.87: "Press [AUDITION] + [SYNTH] to create a synth clip on the row selected".
     'kit-synth-row': '[AUDITION] + [SYNTH] makes a synth row',
     'arp-menu': 'Hold [SHIFT], press [ARP]',

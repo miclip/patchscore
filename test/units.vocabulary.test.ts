@@ -19,6 +19,10 @@ import { DEVICES } from '../lib/devices/registry.generated'
  *    differently because two Roland manuals do.
  *  - **`Sec` on the Tracker Mini.** Printed 49 times in that manual.
  *  - **`Bits` on the Tracker Mini and the MPCs.** Printed as `Bits`.
+ *  - **`step` on the TR-8S** (#452). p.27 prints its `KIT: LFO` rate as *"(TempoSync = ON)
+ *    64.00-0.25 step (steps of 0.25)"*, singular, beside the same control's other scale. It is a
+ *    count of sequencer steps rather than a time, which is what makes an LFO rate tempo-
+ *    independent, and it is the manual's own word for it.
  *  - **`s` on the Muse** (#381). Not from a manual — that box prints no time unit anywhere — but
  *    from the screen, which shows `0-10 s` on the six envelope time stages. Same rule, different
  *    document: it is the box's own spelling, read off the box, and the citation carries the
@@ -48,6 +52,7 @@ const VOCABULARY = new Set([
   'Sec',
   's',
   'Bits',
+  'step',
 ])
 
 describe('unit spellings are one vocabulary (§3.1)', () => {
