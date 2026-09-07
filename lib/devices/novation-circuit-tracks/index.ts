@@ -129,6 +129,48 @@ import { CIRCUIT_TRACKS_PANEL } from './panel'
  * `filter frequency` as a destination, and p.4 gives the LFO a one-shot switch and a fade mode.
  * A synth track builds the gesture. So the roles stayed and the recipes are there.
  *
+ * ## Every LFO block on this box is routed, and two of the four were not (#465)
+ *
+ * #332 already says it and #384 reported it from a different box: an LFO named with no
+ * destination is an instruction nobody can carry out. `ct-riser-bright` and `ct-sweep-soft` were
+ * written under that rule and route. **`ct-pad-soft` and `ct-texture-dark` printed an LFO block
+ * and named nothing**, which is the same defect on the two recipes a reader is far more likely to
+ * open.
+ *
+ * **Both are routed rather than dropped, and the deciding fact is that neither block is evidence
+ * of a copy.** Where a device gives an attenuator, a value shut at zero is the tell that a block
+ * was pasted rather than chosen — that is how the Muse's four were separated from its six. This
+ * engine has no such control: p.4's LFO section is waveform, phase offset, slew rate, delay, rate
+ * and rate sync, and the depth lives on the mod matrix slot, which is precisely the thing that was
+ * absent. So there is nothing here to read as an accident, and both blocks are *specific* rather
+ * than default — `ct-pad-soft` has a triangle at rate 28 with `LFO 1 SLEW RATE 40`, which is
+ * gentle movement someone dialled, and `ct-texture-dark`'s title names *"a slow filter"* outright
+ * and then set a sine at rate sync 20 to be it. Routing finishes two sentences already started;
+ * dropping would delete the half that was right.
+ *
+ * Both take `filter frequency`, destination 12 on p.9's Mod Matrix Table, from `LFO 1 +/-`,
+ * source 7 on the same page. Bipolar on both, and for the same reason: each title puts the part
+ * *under* something (*"opening under everything"*, *"sitting below the parts"*), so the movement
+ * has to travel either side of where `FILTER FREQUENCY` already sits rather than only push up
+ * into the parts above it. That is the sweep's reasoning too, and the riser is the one recipe on
+ * this box that wants `LFO 1 +`, because a build only goes one way.
+ *
+ * **Depth is where the four differ, and p.4 fixes the scale**: `mod matrix 1 depth`, NRPN 1:86,
+ * `0 – 127 (-64 – 63)`, default `64 (0)`. So 64 is no modulation, and a test on this box asks for
+ * a depth *away from 64* rather than a depth away from zero — a `DEPTH 0` here is full negative
+ * and perfectly audible, and a rule that checked for zero would pass the one value that means
+ * silence.
+ *
+ *   `ct-pad-soft`      76  (+12)  the shallowest, and it runs all section: a breath, not a sweep
+ *   `ct-texture-dark`  84  (+20)  more travel, because a noise bed under a 24 dB low pass needs it
+ *   `ct-sweep-soft`    88  (+24)  a gesture, one pass, `ONE SHOT`
+ *   `ct-riser-bright` 104  (+40)  a gesture against a cutoff parked at 34, so it has to climb far
+ *
+ * **The two new ones carry no `LFO 1 ONE SHOT`, and that is the difference that matters at the
+ * machine.** p.4's switch is what separates a gesture from a wobble on this engine; a pad and a
+ * texture want the wobble, so the switch stays off and the LFO free-runs. The test asserts the
+ * routing triplet on all four and the one-shot on the two gestures only.
+ *
  * **What #345 changes for a reader is the placement control**, and that is measurable rather than
  * argued: before this, opening it on a Circuit Tracks answered *"no soft ghost-perc for your
  * Circuit Tracks"* for all seven — #345's own opening sentence, on this box. All seven now offer.
@@ -360,9 +402,10 @@ const OSC_ROUTINGS = [
  * is what the page names and not a range: `direct`, then `velocity` at 4 through `env 3` at 12.
  * A source list with invented members would be a claim about the box.
  *
- * `filter frequency` at destination 12 is the entry two recipes below hang on. #332's rule is
- * that naming an LFO without naming what it moves is an instruction nobody can carry out, and on
- * this box the destination is printed, so the instruction finishes.
+ * `filter frequency` at destination 12 is the entry **all four** recipes below hang on — the two
+ * gestures it was written for, and the pad and the texture that #465 routed onto it. #332's rule
+ * is that naming an LFO without naming what it moves is an instruction nobody can carry out, and
+ * on this box the destination is printed, so the instruction finishes.
  */
 const MOD_SOURCES = [
   'direct',
@@ -1365,6 +1408,17 @@ const SYNTH_RECIPES: Recipe[] = [
       pick('LFO 1 WAVEFORM', 'triangle', LFO_WAVES, prg(10)),
       num('LFO 1 RATE', 28, ENV_FULL),
       num('LFO 1 SLEW RATE', 40, ENV_FULL),
+      // #465. The triangle at rate 28 with slew 40 is already gentle movement; what it did not
+      // have was anywhere to go. `LFO 1 +/-` because the title says the pad opens *under*
+      // everything — it should breathe either side of FILTER FREQUENCY 62 rather than only push up
+      // into the parts above it. Depth 76 is +12 off p.4's centre, and it is the shallowest route
+      // on the box on purpose: no ONE SHOT here, so this runs for the whole section.
+      pick('MOD MATRIX 1 SOURCE 1', 'LFO 1 +/-', MOD_SOURCES, prg(9)),
+      pick('MOD MATRIX 1 DESTINATION', 'filter frequency', MOD_DESTINATIONS, prg(9)),
+      signed('MOD MATRIX 1 DEPTH', 76, ENV_FULL, {
+        hint: 'patch-editor',
+        note: '64 is no modulation; +12 either side of the cutoff, which is a breath rather than a sweep',
+      }),
       pick('CHORUS TYPE', 'Chorus', CHORUS_TYPES, prg(4)),
       num('CHORUS LEVEL', 72, ENV_FULL, { hint: 'synth-macro-8' }),
       num('CHORUS RATE', 30, ENV_FULL),
@@ -1477,6 +1531,18 @@ const SYNTH_RECIPES: Recipe[] = [
       pick('LFO 1 WAVEFORM', 'sine', LFO_WAVES, prg(10)),
       num('LFO 1 RATE', 12, ENV_FULL),
       num('LFO 1 RATE SYNC', 20, SYNC_INDEX, { note: 'An index into the sync-rate list, not a rate' }),
+      // #465. **"under a slow filter" is the title, and until now nothing carried it out.** The
+      // sine at rate sync 20 is the slow part; destination 12 is the filter. `LFO 1 +/-` so the
+      // bed moves both ways around FILTER FREQUENCY 44 and never parks brighter than it started,
+      // which is what keeps it "below the parts". Depth 84 is +20 off centre — deeper than the
+      // pad, because a noise bed through a 24 dB low pass needs more travel to be heard moving,
+      // and still under the sweep's 88.
+      pick('MOD MATRIX 1 SOURCE 1', 'LFO 1 +/-', MOD_SOURCES, prg(9)),
+      pick('MOD MATRIX 1 DESTINATION', 'filter frequency', MOD_DESTINATIONS, prg(9)),
+      signed('MOD MATRIX 1 DEPTH', 84, ENV_FULL, {
+        hint: 'patch-editor',
+        note: '64 is no modulation; +20 either side of the cutoff, running continuously — there is no ONE SHOT on this one',
+      }),
       num('EQ BASS LEVEL', 74, ENV_FULL, { note: '64 is flat; above it lifts the bottom' }),
       reverbSend(88, { mood: [{ axis: 'space', amount: 38 }] }),
       swing(),

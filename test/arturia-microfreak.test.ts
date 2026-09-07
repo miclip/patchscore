@@ -208,3 +208,177 @@ describe('MicroFreak oscillator', () => {
     }
   })
 })
+
+/**
+ * #465. **Where the LFO goes.** Sixteen recipes printed an `LFO` block and named no destination,
+ * which is #384's report — a reader sets three controls and hears nothing change.
+ *
+ * The Muse could be audited into shape because its copied blocks carried `AMPLITUDE 0`, an
+ * attenuator visibly shut. **This box has no such tell.** Its LFO is `Shape`, `Sync` and `Rate`,
+ * all three defensible standing alone, and the depth is not on the block at all — it is the Matrix
+ * amount, the row that was missing. So there was nothing to detect, and each of the sixteen was
+ * decided from what its own title says the patch is for: nine routed, seven dropped.
+ *
+ * `recipeInertFindings` cannot help here either. It groups a block by the ` · ` prefix in a
+ * parameter name (§3.1/#388) and nothing on this box uses that separator, so the MicroFreak is
+ * invisible to the library-wide check rather than clean in it. **These tests are the guard**, and
+ * they are written as sixteen separate cases plus the invariant, so a future recipe cannot
+ * reintroduce the shape by being added rather than by being edited.
+ */
+
+/** `id → destination and amount`, exactly as the manifest is expected to author them. */
+const LFO_ROUTED: ReadonlyArray<readonly [string, string, number]> = [
+  ['mf-pad-soft', 'Wave', 12],
+  ['mf-lead-bright', 'Pitch', 5],
+  ['mf-lead-hard', 'Timbre', 14],
+  ['mf-lead-soft', 'Pitch', 5],
+  ['mf-bass-mid-dirty', 'Timbre', 12],
+  ['mf-bass-mid-dark', 'Timbre', 14],
+  ['mf-arp-dark', 'Timbre', 24],
+  ['mf-texture-dark', 'Wave', 18],
+  ['mf-noise-hard', 'Cutoff', 24],
+]
+
+/** The seven the block was removed from, and the reason each is not a cycle. */
+const LFO_DROPPED: ReadonlyArray<readonly [string, string]> = [
+  ['mf-stab-hard', 'a 320 ms stab is a shape, not a cycle'],
+  ['mf-stab-bright', 'a 420 ms stab is a shape, not a cycle'],
+  ['mf-stab-clean', 'p.42 puts the chord type and its inversion on the modulated knobs'],
+  ['mf-sub-dark', 'one fundamental, and everything above it removed'],
+  ['mf-sub-clean', 'the patch is its two shaping knobs held near zero'],
+  ['mf-vox-chop-clean', "p.43's own settings for the word Filter, cited on the point"],
+  ['mf-vox-chop-dirty', 'pressure owns the formant motion on purpose'],
+]
+
+/** The four destinations p.30 states outright: "Pitch, Wave, Timbre, and Cutoff". */
+const HARDWIRED_DESTINATIONS = ['Pitch', 'Wave', 'Timbre', 'Cutoff']
+
+function recipe(id: string): Recipe {
+  const found = device.recipes.find((r) => r.id === id)
+  if (found === undefined) throw new Error(`no recipe ${id}`)
+  return found
+}
+
+/** The three controls `lfoFree`/`lfoSynced` emit, which is what "prints an LFO block" means. */
+function lfoBlock(r: Recipe): AuthoredParam[] {
+  return params(r).filter((p) => p.name.startsWith('LFO '))
+}
+
+function lfoRoutes(r: Recipe): AuthoredParam[] {
+  return params(r).filter((p) => p.name.startsWith('Matrix  LFO > '))
+}
+
+describe('MicroFreak LFO routing (#465)', () => {
+  it('accounts for every recipe: nine routed, seven dropped, six already routed', () => {
+    // Guards the two tables below against drifting out of the manifest. 22 recipes, and the six
+    // not named in either table are the ones that already carried a route before #465.
+    const named = new Set([...LFO_ROUTED.map(([id]) => id), ...LFO_DROPPED.map(([id]) => id)])
+    expect(named.size).toBe(16)
+    for (const id of named) expect(() => recipe(id), id).not.toThrow()
+    const untouched = device.recipes.filter((r) => !named.has(r.id))
+    expect(untouched).toHaveLength(6)
+    // Every one of those six is routed already, which is why #465 did not have to decide them.
+    for (const r of untouched) expect(lfoRoutes(r), r.id).toHaveLength(1)
+  })
+
+  /**
+   * The invariant, and the one that has to survive a recipe nobody has written yet: a printed LFO
+   * block is a promise the guide's reader will hear something.
+   *
+   * The amount is checked rather than the row's presence, because p.29's LED table reads *"LED OFF
+   * = no routing is made OR the amount is set at 0"* and p.30 states it outright — *"Setting any
+   * modulation routing to a zero value will disable the LED and the Matrix will show it as not
+   * connected."* A zero row is the same defect wearing a citation.
+   */
+  it('routes every LFO block it prints, to a nonzero amount', () => {
+    for (const r of device.recipes) {
+      if (lfoBlock(r).length === 0) continue
+      const routes = lfoRoutes(r)
+      expect(routes.length, `${r.id} prints an LFO block`).toBeGreaterThan(0)
+      for (const route of routes) {
+        if (route.kind !== 'numeric') throw new Error(`${r.id}: ${route.name} is not numeric`)
+        expect(route.value, `${r.id}: ${route.name}`).not.toBe(0)
+      }
+    }
+  })
+
+  it('never routes an LFO it does not print', () => {
+    for (const r of device.recipes) {
+      if (lfoRoutes(r).length === 0) continue
+      // Three controls: Shape, Sync, Rate. Fewer would be a route to a block with no settings.
+      expect(lfoBlock(r).map((p) => p.name).sort(), r.id).toEqual(['LFO Rate', 'LFO Shape', 'LFO Sync'])
+    }
+  })
+
+  for (const [id, destination, amount] of LFO_ROUTED) {
+    it(`routes ${id} to ${destination} at ${amount}`, () => {
+      const r = recipe(id)
+      expect(lfoBlock(r), `${id} still prints its LFO`).toHaveLength(3)
+      const routes = lfoRoutes(r)
+      expect(routes.map((p) => p.name), id).toEqual([`Matrix  LFO > ${destination}`])
+      const route = routes[0]
+      if (route?.kind !== 'numeric') throw new Error(`${id}: no numeric route`)
+      expect(route.value).toBe(amount)
+      expect(route.unit).toBe('%')
+      // p.28 gives the amount its range outright: "any amount from -100% to +100%".
+      expect(route.range).toEqual({ min: -100, max: 100, verified: expect.anything() })
+      expect(route.range.verified).toEqual({
+        kind: 'manual',
+        source: 'MicroFreak User Manual 4.0.3 p.28',
+      })
+      // p.30: "The first four destinations are Pitch, Wave, Timbre, and Cutoff." Assign 1-3 are
+      // whatever a reader assigns them to, so a recipe may not name one without saying which knob.
+      expect(HARDWIRED_DESTINATIONS, `${id} routes to ${destination}`).toContain(destination)
+    })
+  }
+
+  for (const [id, why] of LFO_DROPPED) {
+    it(`drops the LFO from ${id}: ${why}`, () => {
+      const r = recipe(id)
+      expect(lfoBlock(r).map((p) => p.name), id).toEqual([])
+      expect(lfoRoutes(r).map((p) => p.name), id).toEqual([])
+    })
+  }
+
+  /**
+   * #465 removed three parameters from seven recipes and added one to nine. It was allowed to
+   * touch nothing else, and a Matrix row from another source is exactly what a careless edit takes
+   * with it — `mf-vox-chop-dirty`'s `PRESSURE` row is the whole reason its LFO went.
+   */
+  it('leaves every Matrix row from another source alone', () => {
+    const others = new Map<string, number>()
+    for (const r of device.recipes) {
+      for (const p of params(r)) {
+        if (!p.name.startsWith('Matrix  ') || p.name.startsWith('Matrix  LFO > ')) continue
+        if (p.kind !== 'numeric') throw new Error(`${r.id}: ${p.name} is not numeric`)
+        others.set(`${r.id} ${p.name}`, p.value)
+      }
+    }
+    expect(Object.fromEntries([...others].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))).toEqual({
+      'mf-bass-mid-dirty Matrix  ENV > Cutoff': 44,
+      'mf-lead-bright Matrix  PRESSURE > Timbre': 42,
+      'mf-lead-hard Matrix  ENV > Timbre': -38,
+      'mf-pad-soft Matrix  CycEnv > Cutoff': 28,
+      'mf-texture-dark Matrix  CycEnv > Timbre': 48,
+      'mf-vox-chop-dirty Matrix  PRESSURE > Timbre': 56,
+    })
+  })
+
+  /**
+   * p.30: *"the Matrix also serves as a mixer. You could for example control the pitch of the
+   * oscillator with the Key/Arp source and with the LFO. The two modulations are added together."*
+   * So a second row is the manual's own worked example, and `mf-lead-hard` stacking the LFO onto a
+   * destination the envelope already has is the case that quotation exists to license.
+   */
+  it('keeps every recipe well inside the 35 patch points, and stacks where p.30 says it may', () => {
+    for (const r of device.recipes) {
+      const rows = params(r).filter((p) => p.name.startsWith('Matrix  '))
+      expect(rows.length, r.id).toBeLessThanOrEqual(35)
+      expect(rows.length, r.id).toBeLessThanOrEqual(3)
+    }
+    const hard = params(recipe('mf-lead-hard'))
+      .filter((p) => p.name.startsWith('Matrix  ') && p.name.endsWith(' > Timbre'))
+      .map((p) => p.name)
+    expect(hard).toEqual(['Matrix  LFO > Timbre', 'Matrix  ENV > Timbre'])
+  })
+})

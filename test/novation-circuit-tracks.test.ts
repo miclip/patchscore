@@ -957,3 +957,151 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(drawn).toBeGreaterThan(0)
   })
 })
+
+/**
+ * #465. **Every LFO block this box prints is routed to something the manual names.**
+ *
+ * #332's rule already covered the two gestures and a test above pins them. It did not cover
+ * `ct-pad-soft` and `ct-texture-dark`, which printed an LFO block and named no destination — the
+ * same hole on the two recipes a reader is far likelier to open than a riser.
+ *
+ * Both were routed rather than dropped, because **neither block is evidence of a copy**. On a box
+ * with an attenuator, a depth shut at zero is the tell that a block was pasted; this engine has no
+ * such control (p.4's LFO section is waveform, phase, slew, delay, rate and rate sync) and the
+ * depth lives on the mod matrix slot, which is the part that was missing. Both blocks are specific
+ * — a triangle with a slew rate, and a sine at a sync index under a title that says *"slow
+ * filter"* — so routing finishes a sentence rather than inventing one.
+ *
+ * **The depth check is against 64, not against 0.** p.4 gives `mod matrix 1 depth` as
+ * `0 – 127 (-64 – 63)` with default `64 (0)`, so `DEPTH 0` is full negative and audible while
+ * `DEPTH 64` is silence. A nonzero-value rule would pass exactly the one number that means
+ * nothing happens, which is why this asserts distance from the centre instead.
+ */
+describe('Circuit Tracks LFO routing (#465)', () => {
+  /** The three parameters a complete routing needs, in the order a reader sets them. */
+  const SLOT = ['MOD MATRIX 1 SOURCE 1', 'MOD MATRIX 1 DESTINATION', 'MOD MATRIX 1 DEPTH'] as const
+
+  /** p.4: `mod matrix 1 depth`, `0 – 127 (-64 – 63)`, default `64 (0)`. */
+  const DEPTH_CENTRE = 64
+
+  /** Every recipe that prints any part of the LFO block, whatever it does with it. */
+  function lfoRecipes(): Recipe[] {
+    return device.recipes.filter((r) => params(r).some((p) => p.name.startsWith('LFO 1 ')))
+  }
+
+  function slotValue(recipe: Recipe, name: (typeof SLOT)[number]): string | number | undefined {
+    const p = paramNamed(recipe, name)
+    return p?.kind === 'enum' ? p.value : p?.kind === 'numeric' ? p.value : undefined
+  }
+
+  it('has exactly four recipes carrying an LFO block, and knows which four', () => {
+    // Named rather than counted, so a fifth recipe reaching for the LFO lands in the cases below
+    // instead of quietly widening a number.
+    expect(lfoRecipes().map((r) => r.id).sort()).toEqual([
+      'ct-pad-soft',
+      'ct-riser-bright',
+      'ct-sweep-soft',
+      'ct-texture-dark',
+    ])
+  })
+
+  /**
+   * The invariant, and the one that has to hold for a recipe nobody has written yet. All three
+   * parts, because a source with no destination and a destination with no source are the same
+   * hole seen from opposite sides, and a depth at the centre is the hole with both halves filled.
+   */
+  it('completes the source, destination and depth on every LFO block it prints', () => {
+    for (const recipe of lfoRecipes()) {
+      for (const name of SLOT) {
+        expect(paramNamed(recipe, name), `${recipe.id} is missing ${name}`).toBeDefined()
+      }
+      const source = paramNamed(recipe, 'MOD MATRIX 1 SOURCE 1')
+      const destination = paramNamed(recipe, 'MOD MATRIX 1 DESTINATION')
+      const depth = paramNamed(recipe, 'MOD MATRIX 1 DEPTH')
+      if (source?.kind !== 'enum' || destination?.kind !== 'enum' || depth?.kind !== 'numeric') {
+        throw new Error(`${recipe.id}: the routing slot is not the shape the manifest promises`)
+      }
+      // The source is an LFO rather than an envelope or the keyboard: this is the check about
+      // *this* block, and `env filter` in the slot would leave the LFO unrouted all the same.
+      expect(source.value, recipe.id).toMatch(/^LFO 1 /)
+      // Both values come off p.9's own lists, which is what makes them a reading of the page.
+      expect(source.options.values, recipe.id).toContain(source.value)
+      expect(destination.options.values, recipe.id).toContain(destination.value)
+      expect(source.options.verified, recipe.id).toEqual({ kind: 'manual', source: `${PROGRAMMER}9` })
+      expect(destination.options.verified, recipe.id).toEqual({
+        kind: 'manual',
+        source: `${PROGRAMMER}9`,
+      })
+      // p.4's centre. Not zero — `DEPTH 0` is full negative here and perfectly audible.
+      expect(depth.value, `${recipe.id} sets the depth to p.4's no-modulation centre`).not.toBe(
+        DEPTH_CENTRE,
+      )
+      expect(depth.range, recipe.id).toEqual({
+        min: 0,
+        max: 127,
+        verified: { kind: 'manual', source: `${PROGRAMMER}4` },
+      })
+      expect(depth.note, recipe.id).toContain('64')
+    }
+  })
+
+  it('never fills a routing slot without an LFO block to route', () => {
+    const ids = new Set(lfoRecipes().map((r) => r.id))
+    for (const recipe of device.recipes) {
+      if (ids.has(recipe.id)) continue
+      for (const name of SLOT) {
+        expect(paramNamed(recipe, name), `${recipe.id} routes an LFO it never sets`).toBeUndefined()
+      }
+    }
+  })
+
+  /**
+   * The four exact routings. `ct-pad-soft` and `ct-texture-dark` are #465's; the riser and the
+   * sweep are pinned in the same table so a later edit cannot quietly move one while the other
+   * two are being read.
+   */
+  const ROUTES: ReadonlyArray<readonly [string, string, number, boolean]> = [
+    // id, source, depth, is a one-shot gesture
+    ['ct-pad-soft', 'LFO 1 +/-', 76, false],
+    ['ct-texture-dark', 'LFO 1 +/-', 84, false],
+    ['ct-sweep-soft', 'LFO 1 +/-', 88, true],
+    ['ct-riser-bright', 'LFO 1 +', 104, true],
+  ]
+
+  for (const [id, source, depth, gesture] of ROUTES) {
+    it(`routes ${id} from ${source} to filter frequency at depth ${String(depth)}`, () => {
+      const recipe = device.recipes.find((r) => r.id === id)
+      expect(recipe, id).toBeDefined()
+      expect(slotValue(recipe!, 'MOD MATRIX 1 SOURCE 1')).toBe(source)
+      // Destination 12 on p.9, and the same one on all four: it is the only destination this box
+      // prints that any of these four titles is about.
+      expect(slotValue(recipe!, 'MOD MATRIX 1 DESTINATION')).toBe('filter frequency')
+      expect(slotValue(recipe!, 'MOD MATRIX 1 DEPTH')).toBe(depth)
+
+      /*
+       * p.4's `lfo 1 one shot` is what separates a gesture from a wobble on this engine, and it is
+       * the difference between the two pairs: the riser and the sweep run one pass from the note,
+       * the pad and the texture free-run for the whole section. Asserted in both directions,
+       * because a one-shot silently added to the pad would stop it moving after one cycle and
+       * nothing else here would notice.
+       */
+      const once = paramNamed(recipe!, 'LFO 1 ONE SHOT')
+      if (gesture) {
+        expect(once?.kind === 'enum' ? once.value : undefined, id).toBe('ON')
+      } else {
+        expect(once, `${id} is a wobble, not a gesture`).toBeUndefined()
+      }
+    })
+  }
+
+  /**
+   * The depths are an ordering, not four independent numbers: a pad breathing, a bed moving, and
+   * two gestures that have to arrive. Pinned as the ordering so a future edit to one value has to
+   * be an edit to the argument.
+   */
+  it('orders the four depths from the quietest movement to the furthest climb', () => {
+    const depths = ROUTES.map(([, , depth]) => depth)
+    expect(depths).toEqual([...depths].sort((a, b) => a - b))
+    for (const depth of depths) expect(depth).toBeGreaterThan(DEPTH_CENTRE)
+  })
+})
