@@ -1921,3 +1921,95 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     expect(authoring.every((d) => d.voices.every((v) => v.triggerNote === undefined))).toBe(true)
   })
 })
+
+/**
+ * §3.2/#452. **The riser's automation, and the one pairing the manual withdraws.**
+ *
+ * The reporter asked for the rise to be automation rather than a static patch, and on this box
+ * that has exactly one shape: p.121's Instrument Automation page pairs a destination with a
+ * `Type`, so a modulator with no destination moves nothing. What is pinned here is the whole
+ * chain — destination, type, shape, speed and a depth — because any one of them missing is the
+ * state the recipe was in before.
+ *
+ * The second test is the one that cannot be seen by reading a recipe. p.123's speed table is
+ * asterisked: *"128 to 32 Step speed options are not available with volume as the destination."*
+ * Nothing in `DeviceSchema` knows that, because the option list is legal per column and illegal
+ * only in combination — the `SNAPPY` shape `CLAUDE.md` describes. So it is asserted across every
+ * recipe on the device rather than on the riser alone: the next recipe to reach for a slow LFO
+ * is the one this protects.
+ */
+describe('the riser is automated, and no slow LFO lands on volume (§3.2/#452)', () => {
+  const SLOW_SPEEDS = ['128', '96', '65', '48', '32']
+
+  function paramsOf(id: string) {
+    const recipe = device.recipes.find((r) => r.id === id)
+    if (recipe === undefined) throw new Error(`no recipe '${id}'`)
+    return new Map(recipe.params.map((p) => [p.name, p]))
+  }
+
+  it('routes the bright riser through a Saw LFO on the cutoff, at 128 steps and a real depth', () => {
+    const params = paramsOf('tm-riser-bright')
+
+    for (const [name, value] of [
+      ['CUTOFF AUTOMATION TYPE', 'LFO'],
+      ['CUTOFF LFO SHAPE', 'Saw'],
+      ['CUTOFF LFO SPEED', '128'],
+    ] as const) {
+      const param = params.get(name)
+      expect(param, name).toBeDefined()
+      expect(param?.kind, name).toBe('enum')
+      if (param?.kind !== 'enum') throw new Error('unreachable')
+      expect(param.value, name).toBe(value)
+      // The option set is the legality claim (§3.2), so each carries its own page.
+      expect(param.options.verified, name).not.toBe(false)
+    }
+
+    // The depth is what makes it modulation rather than a routing declaration — #452's whole
+    // finding was recipes that named a modulator and moved nothing. `unscaled` because p.121
+    // prints no range for an LFO's Amount, so what is asserted is that it is present and not
+    // zero. The *direction* is the cited `Saw` above, not a sign the manual never prints.
+    const amount = params.get('CUTOFF LFO AMOUNT')
+    expect(amount?.kind).toBe('text')
+    if (amount?.kind !== 'text') throw new Error('unreachable')
+    expect(amount.value).toMatch(/^[1-9]/)
+
+    // And the sample under it still does not repeat, which is the reporter's other question.
+    const play = params.get('PLAY MODE')
+    expect(play?.kind === 'enum' && play.value).toBe('1-Shot')
+  })
+
+  it('pairs no volume destination with a speed p.123 withdraws from it', () => {
+    // Counted, so the sweep cannot pass by matching nothing — the failure #452 was reported for
+    // is a rule that measures a name instead of the thing.
+    const seen: string[] = []
+
+    for (const recipe of device.recipes) {
+      const names = recipe.params.map((p) => p.name)
+      for (const name of names) {
+        const destination = /^(.+) LFO SPEED$/.exec(name)?.[1]
+        if (destination === undefined) continue
+
+        const speed = recipe.params.find((p) => p.name === name)
+        if (speed?.kind !== 'enum') throw new Error(`${recipe.id}: ${name} is not an enum`)
+
+        // A speed row belongs to the destination named in front of it, and that destination has
+        // to be the one the recipe actually switched to `LFO`.
+        const type = recipe.params.find((p) => p.name === `${destination} AUTOMATION TYPE`)
+        expect(type?.kind === 'enum' && type.value, `${recipe.id}: ${name}`).toBe('LFO')
+
+        seen.push(`${recipe.id}: ${destination} ${speed.value}`)
+
+        if (destination === 'VOLUME') {
+          expect(SLOW_SPEEDS, `${recipe.id}: ${name} is illegal on volume (p.123)`).not.toContain(
+            speed.value,
+          )
+        }
+      }
+    }
+
+    expect(seen).toEqual([
+      'tm-texture-soft: POSITION 16',
+      'tm-riser-bright: CUTOFF 128',
+    ])
+  })
+})

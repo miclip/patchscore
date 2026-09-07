@@ -59,7 +59,7 @@ noise       ██████ ██████ ██████████
   - p4 · exact `hard` · Drop, Peak
 - **`pad`** → Tracker Mini · Track 9, Track 10 and Track 11 — *Slow detuned pad, long swell*
   - p4 · substituted — asked `dark`, authored `soft` · 3 notes stacked one per voice · every section
-- **`riser`** → Tracker Mini · Track 6 — *Sample played backwards, the envelope swelling it into the change*
+- **`riser`** → Tracker Mini · Track 6 — *Sample played backwards under an eight-bar cutoff rise*
   - p4 · exact `bright` · Build, Breakdown
 - **`noise`** → TR-1000 · OH — *White noise burst on the open-hat track, up where the hats sit*
   - p5, optional · exact `dirty` · every section
@@ -467,7 +467,7 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 
 ### `riser` — Tracker Mini · Track 6
 
-**Sample played backwards, the envelope swelling it into the change** — settings in Sound design
+**Sample played backwards under an eight-bar cutoff rise** — settings in Sound design
 
 **Trigger note** — `C5` · MIDI 60
 
@@ -589,21 +589,32 @@ Routing — Tracks 9-16 — costs one of the three project synth slots
 - **AMP ENV RELEASE** `2.4` Sec (0…10 Sec)
 - **VOICE VOLUME** `86` % (0…200 %)
 
-#### Track 6 — `riser`: Sample played backwards, the envelope swelling it into the change
+#### Track 6 — `riser`: Sample played backwards under an eight-bar cutoff rise
 
-Source — A sample with a long decaying tail — reversed, that tail is the rise, so the tail is the part that matters. p.196 warns a very long tail can reverse into silence, so check the end point after you turn it round
+Source — A bright cymbal or metallic tail with eight bars of audible sound on it — a long crash, a bowed cymbal, a metallic wash. START and END below take the eight bars that get used, so trim the dead air past END: reversed playback starts there, and p.196 warns a long silent tail reverses into no sound at all. Trig it at the note it was recorded at — p.128 plays the sample faster on a higher note and slower on a lower one, so the note you write moves the eight bars with it
 
-Routing — **Set `r` to `<<<` on the step that starts the rise** — the Reverse Sample step FX, p.196. The envelope below does the swell; the reverse is what makes a decay into a build. p.196 also warns that a long tail can reverse into silence, so shorten the sample end if nothing sounds
+Routing — **Set `r` to `<<<` on the step eight bars before the change** — the Reverse Sample step FX, p.196. Reversed, playback runs from END back to START, so the tail rises and the transient lands on the change. **What moves:** the cutoff, once per LFO cycle — `128` is counted in pattern steps (p.123), so it is eight bars where a bar is 16 steps. **What does not:** the sample is `1-Shot`, *"plays start to end once"* (p.127), and the pitch is fixed, because the destination is `Cutoff` and not `Finetune`. **The ramp is not started by your trig** — p.121 has `Cutoff` among the destinations where the LFO *"is semi-free running and resets on playback. Does not reset on a note"*, so the eight bars are counted from where you pressed play. Put the section on that eight-bar grid and the climb arrives with the change
 
 - **PLAY MODE** `1-Shot`
+  - ↳ note: p.127: "Plays start to end once" — the sample does not repeat; the filter cycle does
+- **START** `At the cymbal transient`
+  - ↳ note: Reversed, this is where the gesture arrives — put it on the hit, not before it
+  - ↳ hint: Press [3] for Sample Playback
+- **END** `Eight bars later, while the tail is still audible`
+  - ↳ note: Reversed playback starts here; trim the dead air past it, or p.196 gives silence
 - **FILTER TYPE** `Low-pass`
-- **CUTOFF** `78` % (0…100 %)
+- **CUTOFF** `30` % (0…100 %)
+  - ↳ note: Where the rise starts from — a filter already open has nowhere to travel
 - **RESONANCE** `26` % (0…100 %)
-- **ENVELOPE · ATTACK** `3.4` Sec (0…10 Sec)
-  - ↳ note: The climb. Longer than the section start-to-change if you want it still rising
-- **ENVELOPE · SUSTAIN** `100` % (0…100 %)
-- **ENVELOPE · RELEASE** `0.4` Sec (0…10 Sec)
-  - ↳ note: Short, so the rise stops at the change rather than hanging over it
+- **CUTOFF AUTOMATION TYPE** `LFO`
+  - ↳ note: On the Cutoff row of Instrument Automation 2/2 — this is what connects the rise
+  - ↳ hint: Screen button 4 cycles instrument pages
+- **CUTOFF LFO SHAPE** `Saw`
+  - ↳ note: p.122: "Saw — Ideal for ramp up sounds"; Rev Saw is the ramp down
+- **CUTOFF LFO SPEED** `128`
+  - ↳ note: In pattern steps: 128 steps is eight bars where a bar is 16 steps
+- **CUTOFF LFO AMOUNT** `60%`
+  - ↳ note: How far the ramp travels; the Saw is what makes it travel upward (p.122)
 - **REVERB SEND** `54` % (0…100 %)
 
 ### TR-1000
