@@ -32,7 +32,7 @@ import { GuideNavContext, currentSection, phaseAnchor } from './nav'
 import type { GuideNav, GuideSection } from './nav'
 import { PhaseFinishing } from './phase-finishing'
 import { PhaseHook } from './phase-hook'
-import { PhaseRig } from './phase-rig'
+import { PhaseRig, RigBoxes } from './phase-rig'
 import { PhaseSong } from './phase-song'
 import { PhaseSound, SoundForPart, SoundShared } from './phase-sound'
 import { PhaseSteps } from './phase-steps'
@@ -107,7 +107,15 @@ function PerformedHere({
       {rig === undefined || rig.length === 0 ? null : (
         <>
           <h4 className="group-phase">Patching</h4>
-          <PhaseRig result={result} occupied={occupiedCounts(result.assignments)} detail={rig} />
+          {/*
+            §8/#240, #455. `RigBoxes` and not `PhaseRig`. This box's clock, sockets, audio and
+            mixer are what a reader standing here needs; the clock *source* and the menu that
+            routes it are facts about the rig and are stated once, in `Rig integration`. Calling
+            `PhaseRig` printed both, so those callouts appeared again under every box — at one
+            box, the same three one screen apart. The Markdown renderer has always pushed
+            `deviceRigBlocks` alone here (#33).
+          */}
+          <RigBoxes result={result} occupied={occupiedCounts(result.assignments)} devices={rig} />
         </>
       )}
 
