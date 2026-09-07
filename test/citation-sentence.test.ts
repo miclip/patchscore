@@ -652,16 +652,23 @@ describe('the Muse rests on a manual and on one person’s unit, and says both',
    * chapter, reached through `RECIEVE CC` — one of the settings #107 hoists to the top of the box,
    * which is rendered here and belongs in the answer. Nothing between them is invented: every page
    * in the list below was cited by something on this page.
+   *
+   * p.101 arrived with #460: it is the MOD MAP's `DESTINATION`, which prints the signed range a
+   * routed `LFO 1` depth sits on. A page a reader would not otherwise be sent to, and the box now
+   * genuinely rests on it.
    */
   it('spans every page the block actually reads, including the ones enums reach', () => {
     const manual = citedSources(museRendered()).find((source) => source.kind === 'manual')
-    expect(manual?.pages).toEqual([27, 28, 30, 31, 34, 35, 36, 39, 44, 46, 47, 52, 53, 57, 105, 106, 110, 111])
-    // Without the enum gate this stopped at p.52 — pp.53, 57 and 105-111 are cited by option sets
-    // alone, and a `ResolvedParam` that dropped `options` could not see any of them.
+    // prettier-ignore
+    expect(manual?.pages).toEqual([27, 28, 30, 31, 34, 35, 36, 39, 44, 46, 47, 52, 53, 57, 101, 105, 106, 110, 111])
+    // Without the enum gate this stopped at pp.27 and 52 — pp.53, 57 and 105-111 are cited by
+    // option sets alone, and a `ResolvedParam` that dropped `options` could not see any of them.
+    // p.101 survives the drop because #460's routed depth is a numeric with a cited range, which
+    // is the half of the box this gate was never about.
     const withoutEnums = citedSources(
       museRendered().map(({ optionsVerified: _dropped, ...rest }) => rest),
     ).find((source) => source.kind === 'manual')
-    expect(withoutEnums?.pages).toEqual([27, 52])
+    expect(withoutEnums?.pages).toEqual([27, 52, 101])
   })
 
   it('renders it once per box in both renderers and both layouts', () => {

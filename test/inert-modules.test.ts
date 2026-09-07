@@ -15,7 +15,7 @@ import {
   renderGuide,
   resolve,
 } from '../lib/core/index'
-import type { Device, ResolveResult } from '../lib/core/index'
+import type { Device, InertFinding, ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 import { Guide } from '../components/guide/guide'
@@ -99,18 +99,26 @@ function musesBoxes(): Box[] {
 
 const BOXES = musesBoxes()
 
-describe('every one of the twelve candidates is marked on the box it was raised on (#388)', () => {
-  it('has twelve to mark, so the assertions below are not vacuous', () => {
-    expect(inertFindings(DEVICES)).toHaveLength(12)
+describe('every candidate is marked on the box it was raised on (#388)', () => {
+  /**
+   * **Two, and it was twelve when #385 wrote this.** #460 answered the ten destinationless
+   * `LFO 1` candidates one recipe at a time — six routed, four dropped — leaving the two `sub`
+   * `MOD OSC` blocks, which are `disconnected` rather than `destinationless` and are pinned as
+   * debt in `test/audit-inert.test.ts` and `test/moog-muse.test.ts`.
+   *
+   * The count is asserted so the sweep below cannot pass by having nothing to find. It is not a
+   * target: repairing the two subs should fail here and be re-read, not edited past.
+   */
+  it('has candidates to mark, so the assertions below are not vacuous', () => {
+    expect(inertFindings(DEVICES)).toHaveLength(2)
     expect(inertFindings(DEVICES).every((f) => f.deviceId === 'moog-muse')).toBe(true)
+    expect(inertFindings(DEVICES).every((f) => f.kind === 'disconnected')).toBe(true)
   })
 
   /*
-   * The decision, over all twelve. Not every recipe resolves — `muse-bass-mid-hard` is reachable
-   * through no direction the library ships, so the render sweep below covers eleven — and a
-   * candidate that only the audit can see is still a candidate the renderer must be right about
-   * the day a direction reaches it. So this asks the shared decision the same question the
-   * renderers ask it, on the group each renderer would build.
+   * The decision, over both. A candidate the render sweep never reaches is still one the renderer
+   * must be right about the day a direction reaches its recipe, so this asks the shared decision
+   * the same question the renderers ask it, on the group each renderer would build.
    */
   it('answers with the exact sentence for each, given the box the renderers build', () => {
     for (const finding of inertFindings(DEVICES)) {
@@ -232,8 +240,25 @@ describe('both renderers say the same thing about the same boxes (§8/#33)', () 
   it('prints the qualification and the evidence, word for word, in both', () => {
     for (const doc of [md, markup]) {
       expect(doc).toContain('Appears inert — 4 routes off, 2 depths 0, level 0.')
-      expect(doc).toContain('Appears inert — no authored destination found.')
     }
+    // The destinationless sentence is `inertNotice`'s other branch, and #460 left nothing in the
+    // library to raise it — so it is checked against the decision rather than against the page.
+    // Both branches go through the same `Appears inert — ${detail}.`, and this is what proves the
+    // second one still says it, on a candidate built here.
+    const destinationless: InertFinding = {
+      deviceId: 'moog-muse',
+      recipeId: 'muse-pad-soft',
+      block: 'LFO 1',
+      kind: 'destinationless',
+      params: 5,
+      detail: 'no authored destination found',
+    }
+    expect(
+      inertNotice(new Map([['LFO 1', destinationless]]), {
+        module: 'LFO 1',
+        params: new Array<unknown>(5),
+      }),
+    ).toBe('Appears inert — no authored destination found.')
     // A verdict rather than a candidate is the thing invariant 5 forbids.
     for (const doc of [md, markup]) {
       expect(doc).not.toContain('Is inert')

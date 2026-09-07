@@ -111,6 +111,22 @@ describe('a modulator with nowhere to point (#388)', () => {
     expect(findings(lfo)[0]?.detail).toBe('no authored destination found')
   })
 
+  /**
+   * #460's shape, which the Muse now authors on six recipes: the destination and the depth are
+   * **one** parameter, `LFO 1 · BI ▸ VCA PAN AMOUNT 20`. It reads as a route because the name
+   * carries `▸` and as a depth because it carries `AMOUNT`, so the block is judged by the
+   * disconnected branch rather than the destinationless one — and a numeric value clears it,
+   * since a route that is off is a *string* the check can match against `OFF`.
+   */
+  it('stays silent when one parameter is the destination and the depth at once', () => {
+    const atomic = [...lfo, numericParam({ name: 'LFO 1 · BI ▸ VCA PAN AMOUNT', value: 20 })]
+    expect(findings(atomic)).toEqual([])
+    // And a depth of zero is still silent: an authored destination is an authored destination,
+    // and #388's third clause is what keeps a bipolar depth's neutral point from reading as off.
+    const atNoon = [...lfo, numericParam({ name: 'LFO 1 · BI ▸ VCA PAN AMOUNT', value: 0 })]
+    expect(findings(atNoon)).toEqual([])
+  })
+
   it('stays silent when the block carries its own destination control', () => {
     const targeted = [
       ...lfo,
@@ -167,14 +183,18 @@ describe('what the check raises in the library today (#388)', () => {
     expect(disconnected.every((f) => f.params === 9)).toBe(true)
   })
 
-  it('raises the ten destinationless LFO 1 recipes', () => {
-    const destinationless = found.filter((f) => f.kind === 'destinationless')
-    expect(destinationless).toHaveLength(10)
-    expect(destinationless.every((f) => f.block === 'LFO 1')).toBe(true)
-    // Three `pad`, three `bass-mid`, two `sub`, two `texture` — #388's own count.
-    expect(new Set(destinationless.map((f) => f.recipeId.split('-')[1]))).toEqual(
-      new Set(['pad', 'bass', 'sub', 'texture']),
-    )
+  /**
+   * **#460 closed this one out, and the number that matters is zero.** The check raised ten
+   * `LFO 1` candidates on the Muse — three `pad`, three `bass-mid`, two `sub`, two `texture` —
+   * and all ten were answered per recipe: six name a MOD MAP destination in the parameter that
+   * carries their depth, and four stopped printing the block. `test/moog-muse.test.ts` holds the
+   * ten decisions one at a time.
+   *
+   * Not vacuous: `a modulator with nowhere to point` above proves the branch still fires, on a
+   * fixture rather than on whatever the library happens to contain.
+   */
+  it('raises no destinationless candidate anywhere in the library (#460)', () => {
+    expect(found.filter((f) => f.kind === 'destinationless')).toEqual([])
   })
 
   it('does not raise the recipe #384 already repaired', () => {
@@ -218,14 +238,31 @@ describe('one recipe answers the same as the library walk (#388)', () => {
     }
   })
 
+  /**
+   * Two candidates on one recipe, in block order. This used to ask `muse-sub-clean`, which
+   * carried an `LFO 1` beside its `MOD OSC` until #460 removed it; no recipe in the library
+   * raises two any more, so the shape is built rather than borrowed. What is being checked is
+   * `recipeInertFindings`'s sort, which is invariant 6's business and not the Muse's.
+   */
   it('raises both of a recipe that has two candidates, in block order (invariant 6)', () => {
-    const muse = DEVICES.find((d) => d.id === 'moog-muse')
-    const sub = muse?.recipes.find((r) => r.id === 'muse-sub-clean')
-    expect(sub).toBeDefined()
-    if (muse !== undefined && sub !== undefined) {
-      const found = recipeInertFindings(muse, sub)
-      expect(found.map((f) => f.block)).toEqual(['LFO 1', 'MOD OSC'])
-    }
+    const two = device({
+      recipes: [
+        recipe({
+          params: [
+            ...modOscParams(),
+            enumParam({
+              name: 'LFO 1 · WAVEFORM',
+              value: 'TRI',
+              options: { values: ['TRI', 'SAW'] },
+            }),
+            numericParam({ name: 'LFO 1 · RATE', value: 2 }),
+          ],
+        }),
+      ],
+    })
+    const found = recipeInertFindings(two, two.recipes[0]!)
+    expect(found.map((f) => f.block)).toEqual(['LFO 1', 'MOD OSC'])
+    expect(found.map((f) => f.kind)).toEqual(['destinationless', 'disconnected'])
   })
 })
 
@@ -248,7 +285,9 @@ describe('the INERT block is a report, not a gate (#388)', () => {
 
   it('says what raised each candidate, so the line is actionable', () => {
     expect(report).toContain('4 routes off, 2 depths 0, level 0')
-    expect(report).toContain('no authored destination found')
+    // The destinationless wording is not in today's report because #460 left nothing to raise it
+    // — `says only that it found no authored destination` above holds the string, on a fixture.
+    for (const f of inertFindings(DEVICES)) expect(report, f.recipeId).toContain(f.detail)
   })
 
   it('calls them candidates rather than findings of fact (invariant 5)', () => {

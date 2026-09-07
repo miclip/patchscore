@@ -358,11 +358,31 @@ import { MUSE_PANEL } from './panel'
  *
  * ## What is left out, and why
  *
- * **The 64-step sequencer and the MOD MAP.** Patterns are template-owned (§4.3), so no recipe
- * carries step hits; and a 16-slot modulation matrix per timbre with a 34-entry source list, a
- * 33-entry controller list, an 18-entry function list and a 69-entry destination list
- * (pp.98-102) is a patch language, not a parameter. The `ASSIGN` buttons that write into it are
- * likewise absent.
+ * **The 64-step sequencer, and the MOD MAP as a matrix.** Patterns are template-owned (§4.3), so
+ * no recipe carries step hits; and a 16-slot modulation matrix per timbre with a 34-entry source
+ * list, a 33-entry controller list, an 18-entry function list and a 69-entry destination list
+ * (pp.98-102) is a patch language, not a parameter. Nothing here models a slot's `FUNCTION`, its
+ * `CONTROLLER`, the summing rule between the two amounts (p.100), or the fifteen other slots.
+ *
+ * **What #460 does author is one slot's worth of it, and the distinction is the whole of why the
+ * omission still stands.** Six recipes carry a single `LFO 1 · <POLARITY> ▸ <DESTINATION> AMOUNT`
+ * — a source, a destination and a signed depth in **one** parameter, written from the panel by
+ * the quick assign gesture the manual documents at p.53 and pp.61-62: press `ASSIGN`, turn the
+ * destination control, press `ENTER`. That is a control a reader sets, at the machine, in one
+ * move. The matrix above is a thing they would have to *program*, and this file still declines to
+ * model it.
+ *
+ * The two are told apart by what can come loose. An atomic assignment cannot: the destination and
+ * the depth are the same parameter, `lfo1` will not compile without a route, and the route's
+ * destination is one of five names rather than a string. A modelled matrix has a source field, a
+ * destination field, an amount field, a function and a controller, each editable alone — which is
+ * five ways for a routing to end up half-written, and #384 was the report of exactly that failure
+ * in its simplest form.
+ *
+ * **What the types cannot say, `lfo1` refuses at load instead**: a route behind `AMPLITUDE 0`, or
+ * one at zero depth. Both are shapes that compile, render a full box, and reach nothing — which
+ * is the report rather than a near miss of it. See `lfo1` for why that is a throw here and a
+ * candidate in the audit.
  *
  * **`VELO AMT` and the three envelope `CURVE` settings.** p.40 gives the curves as *"ranging from
  * 100% logarithmic, through linear, to 100% exponential"* and prints no default; `VELO AMT` is the
@@ -1640,19 +1660,120 @@ function midiSetup(): AuthoredParam[] {
 }
 
 /**
- * LFO 1 (pp.52-53, 57). `SYNC` is `OFF` on every recipe so that the printed Hz range is the one in
- * force — with it on, `RATE` jumps between clock divisions the manual never enumerates.
+ * The MOD MAP destinations this file routes `LFO 1` to, each against the panel control a reader
+ * turns to select it.
+ *
+ * **Two vocabularies, and they are not the same words.** The key is spelled as the MOD MAP spells
+ * it (pp.101-102), because that is what the screen shows while the slot is confirmed; the value is
+ * what is written beside the reader's hand. `VCF 2 CUTOFF` on the screen is the `FILTER 2 CUTOFF`
+ * knob on the panel, and a reader sent to the second is looking at the first. Holding the pair in
+ * one table is what stops a route naming a destination off one panel and a control off another.
+ *
+ * **The table is the type**, so `Lfo1Route.destination` is five names rather than `string`: a
+ * destination this device does not route cannot be typed, and a typo does not compile. It is
+ * deliberately not the manual's full 69-entry list — that list is the matrix this file declines to
+ * model, and copying it here would be modelling it. What is enumerated is what is authored.
+ */
+const LFO_1_DESTINATIONS = {
+  'VCA PAN': 'PAN',
+  'VCA LEVEL': 'LEVEL',
+  'VCF 2 CUTOFF': 'FILTER 2 CUTOFF',
+  'VCF 2 RES': 'FILTER 2 RESONANCE',
+  'MIX RING MOD': 'MIXER RING MOD',
+} as const
+
+/**
+ * A MOD MAP slot, written from the panel in one gesture (#460).
+ *
+ * **This is one parameter and not three, and that is the whole design.** A destination without a
+ * depth is a routing nobody can hear, and a depth without a destination is the defect #384
+ * reported from the box — *"it lists the LFO 1 settings but don't seem assign a modulation"*. So
+ * the source polarity, the destination and the amount travel in the **name** of a single numeric,
+ * `LFO 1 · BI ▸ VCA PAN AMOUNT 20`, and there is no edit that separates them.
+ *
+ * Each field cites a different page:
+ *
+ *  - `polarity` picks between `LFO 1 (UNI)` and `LFO 1 (BI)`, both in the MOD MAP source list on
+ *    p.98. The LFO's own `ASSIGN POLARITY (BI, UNI. DEFAULT: BI)` (p.58) decides which one the
+ *    ASSIGN button reaches for, and the `BI-POLAR` soft button on the quick assign view (p.62)
+ *    changes it there and then — which is why a `UNI` route tells the reader to press it and a
+ *    `BI` one does not.
+ *  - `destination` is a key of `LFO_1_DESTINATIONS`, which is where the panel control in the
+ *    instruction comes from. There is no second field for it, so the two cannot disagree.
+ *  - `amount` is signed and in percent, p.101: *"Setting a positive amount will increase the
+ *    direct modulation amount (post FUNCTION) from the source to the destination, while a
+ *    negative amount will invert the modulation"*, bounded by *"the sum of the two values cannot
+ *    exceed 100 or go below -100"*. No recipe here assigns a CONTROLLER, so the destination
+ *    amount has the whole of that range to itself.
+ *
+ * **The gesture is one move and the note says so** (p.53, p.62): press `ASSIGN`, turn the
+ * destination control — the same turn selects it *and* sets the depth — then `ENTER`. A reader
+ * who stops after the turn has an assignment at whatever depth their hand left it, which is why
+ * the note ends where it does.
+ */
+type Lfo1Route = {
+  polarity: 'BI' | 'UNI'
+  destination: keyof typeof LFO_1_DESTINATIONS
+  amount: number
+}
+
+/**
+ * LFO 1 (pp.52-53, 57-58). `SYNC` is `OFF` on every recipe so that the printed Hz range is the one
+ * in force — with it on, `RATE` jumps between clock divisions the manual never enumerates.
  *
  * `RATE MIN` and `RATE MAX` are carried because they are what the cited range actually is: p.52
  * says the knob *"defaults to 0.01 Hz–40.00 Hz but has a maximum range of 0.00 Hz – 1.00 kHz
  * (configurable in MORE menu)"*, and those two settings are saved per patch.
+ *
+ * ## #460, and two different kinds of guarantee
+ *
+ * Ten recipes authored this block with nowhere for it to go. Six now name a destination and four
+ * stopped printing the block at all — and what keeps that from coming back is **two mechanisms
+ * that are worth not confusing**, because they fail at different times and cover different things.
+ *
+ * **The type says a route exists and names something real.** `route` is required, so an `LFO 1`
+ * with no destination does not compile; `destination` is a key of `LFO_1_DESTINATIONS`, so it is
+ * one of five names this file has checked against pp.101-102 rather than any string. That is the
+ * whole of what a type can do here.
+ *
+ * **The guards below say the route is audible, and only a run can know it.** A type cannot tell
+ * `20` from `0`, and #384's finding was not that the routing was missing — it was that fifty rows
+ * of settings did nothing. Two numbers alone put the block back in that state:
+ *
+ *  - **`AMPLITUDE 0`**, which p.52 calls *"an attenuator placed before any modulation
+ *    destinations"*. Shut, it silences the route at the source however deep the destination
+ *    amount is, and four of the ten carried exactly that.
+ *  - **`amount 0`**, which p.62 gives as *"a setting of noon resulting in 0% modulation"* — a
+ *    slot in the MOD MAP with nothing travelling through it.
+ *
+ * Either would render as a full `LFO 1` box that a reader sets by hand and does not hear, which is
+ * the whole report. So they throw at module load: the audit's `INERT` check reports candidates and
+ * never gates (§3.1/#388), correctly, because it is inference over a naming convention — this is
+ * not inference, it is one manifest refusing a shape it already knows is wrong, in the shape
+ * `akai-mpc-xl`'s `shared()` uses for the same reason.
+ *
+ * Nothing here judges *which* destination or *how deep*. That is a musical judgment, it is made
+ * per recipe against the recipe's own title, and it is argued at each call site.
  */
 function lfo1(
   waveform: string,
   rate: number,
   amplitude: number,
+  route: Lfo1Route,
   perVoice = 'GLOBAL',
 ): AuthoredParam[] {
+  const assignment = `${route.polarity} ▸ ${route.destination} AMOUNT`
+  if (amplitude === 0) {
+    throw new Error(
+      `moog-muse: LFO 1 · ${assignment} sits behind AMPLITUDE 0, an attenuator shut ahead of every destination (p.52) — the route is inaudible`,
+    )
+  }
+  if (route.amount === 0) {
+    throw new Error(
+      `moog-muse: LFO 1 · ${assignment} is a MOD MAP slot at zero depth (p.62) — the destination is assigned and nothing reaches it`,
+    )
+  }
+  const control = LFO_1_DESTINATIONS[route.destination]
   return inModule('LFO 1', [
     sw('LFO 1 · WAVEFORM', waveform, LFO_WAVES, 53),
     num('LFO 1 · RATE', rate, { min: 0.01, max: 40 }, 52, {
@@ -1670,6 +1791,13 @@ function lfo1(
     sw('LFO 1 · LFO TYPE', perVoice, ['GLOBAL', 'PER-VOICE'], 57, {
       hint: 'edit-submenu',
       note: 'PER-VOICE gives eight separate LFOs, one per voice',
+    }),
+    num(`LFO 1 · ${assignment}`, route.amount, { min: -100, max: 100 }, 101, {
+      unit: '%',
+      note:
+        route.polarity === 'UNI'
+          ? `Press ASSIGN, press BI-POLAR to choose UNI, then turn ${control} — one turn picks the destination and sets this depth — then ENTER`
+          : `Press ASSIGN, then turn ${control} — one turn picks the destination and sets this depth — then ENTER`,
     }),
   ])
 }
@@ -1825,7 +1953,23 @@ const recipes: Recipe[] = [
       ...vca(65, 65),
       ...sharedDelay(),
       ...delayRouting('ON'),
-      ...lfo1('TRIANGLE', 0.24, 20, 'PER-VOICE'),
+      // #460, and the first of six destinations this file authors. **Pan**, because the title
+      // already says where this patch lives — *"filters in stereo, nothing arriving at once"* —
+      // and `PAN SPREAD 65` has the eight voices spread out to be moved. `PER-VOICE` makes it
+      // eight LFOs rather than one, so each voice drifts across the field on its own clock and the
+      // pair never lands together. Every other axis is spoken for: the MOD OSC has the pitch, both
+      // corners are what `STR` puts in stereo, and a level route on a pad that is all attack
+      // envelope would fight `vcaEnv`.
+      //
+      // `20` on a ±100 scale is a fifth of the way out from centre, at 0.24 Hz. Small on purpose:
+      // this is meant to be noticed as width rather than as movement.
+      ...lfo1(
+        'TRIANGLE',
+        0.24,
+        20,
+        { polarity: 'BI', destination: 'VCA PAN', amount: 20 },
+        'PER-VOICE',
+      ),
     ],
   },
   {
@@ -1854,7 +1998,18 @@ const recipes: Recipe[] = [
       ...vca(65, 50),
       ...sharedDelay(),
       ...delayRouting('ON'),
-      ...lfo1('TRIANGLE', 0.14, 15, 'PER-VOICE'),
+      // #460. **Filter 2's corner, and deliberately not filter 1's.** The MOD OSC above already
+      // has `f1: 'ON'`, and two modulators on one corner is a corner nobody can predict. Filter 2
+      // is the second ladder in the `SER` chain at `420`, which is under the note: a bipolar ±15%
+      // at 0.14 Hz is the darkness breathing, and it never opens far enough to put a top on a
+      // patch whose title says there is none.
+      ...lfo1(
+        'TRIANGLE',
+        0.14,
+        15,
+        { polarity: 'BI', destination: 'VCF 2 CUTOFF', amount: 15 },
+        'PER-VOICE',
+      ),
     ],
   },
   {
@@ -1885,7 +2040,18 @@ const recipes: Recipe[] = [
       ...vca(65, 70),
       ...sharedDelay(),
       ...delayRouting('ON'),
-      ...lfo1('TRIANGLE', 0.42, 20, 'PER-VOICE'),
+      // #460. **The resonance rather than the cutoff**, which is the one destination this title
+      // names: *"resonance up in the air"* is FILTER 2's `45` at `6000`. The MOD OSC has `f2: 'ON'`
+      // on the same filter's corner, so pointing this at the corner too would be two hands on one
+      // knob; the peak's height is a separate control and is what the patch is about. `15` at
+      // 0.42 Hz makes the top shimmer rather than sweep.
+      ...lfo1(
+        'TRIANGLE',
+        0.42,
+        20,
+        { polarity: 'BI', destination: 'VCF 2 RES', amount: 15 },
+        'PER-VOICE',
+      ),
     ],
   },
 
@@ -1934,32 +2100,22 @@ const recipes: Recipe[] = [
       ...vca(80, 25),
       ...sharedDelay(),
       ...delayRouting('OFF'),
-      // #384. **No `lfo1` block either, on any of the three stabs.** LFO 1 has no destination in
-      // this manifest's parameter model and cannot be given one here: the only mechanism the
-      // instrument offers for pointing it anywhere is the MOD MAP, and the `ASSIGN` quick-assign
-      // page writes a MOD MAP slot rather than setting a control (p.39, p.63). This file already
-      // declares both out of scope — see *"What is left out, and why"* — so five parameters
-      // configuring a source that reaches nothing was the manifest disagreeing with itself.
+      // #384. **No `lfo1` block either, on any of the three stabs**, and #460 leaves that
+      // standing rather than revisiting it. `AMPLITUDE 0` on this recipe and on `bright` is what
+      // made it plain: p.52 calls that knob an attenuator ahead of every destination, so it was
+      // zero depth into no destination at all.
       //
-      // `AMPLITUDE 0` on this recipe and on `bright` made it plainer: p.53 calls that knob an
-      // attenuator ahead of every destination, so it was zero depth into no destination at all.
+      // **The reason has changed and the answer has not.** #384 said a destination could not be
+      // authored; that was true of this file then and is false now — six recipes carry one, and
+      // `lfo1` will not compile without it (see *"What is left out, and why"*). What still holds
+      // is the second half of #384's argument: choosing where LFO 1 should point on a stab is a
+      // musical judgment nobody has made. A stab is over in a fifth of a second, and none of the
+      // three titles asks for anything to move inside it. The six routed recipes each took their
+      // destination off their own title; there is nothing here to take one off.
       //
-      // Authoring a MOD MAP slot is **possible** — pp.98-102 enumerate the sources and the
-      // destinations, and `LFO 1 (UNI)` and `LFO 1 (BI)` are both in the source list. It is not
-      // done here for two reasons that are worth keeping apart. A slot is a source, a
-      // destination, an amount, a function and a controller travelling together, which is a
-      // patch language rather than a parameter and is the architecture decision this manifest
-      // already took. And choosing where LFO 1 should point on a stab is a musical judgment
-      // nobody has made, so authoring one would be adding a layer under cover of removing one.
-      //
-      // `PITCH LFO` is untouched and is why this is a gap rather than a rule: it carries its own
-      // `▸ OSC 1` and `▸ OSC 2` routing switches on the panel, so the three `lead` recipes state
-      // where it goes and reach a destination without the MOD MAP.
-      //
-      // **Ten other recipes still author LFO 1 and #384 does not touch them** — three `pad`,
-      // three `bass-mid`, two `sub`, two `texture`. The defect is identical and the issue is
-      // scoped to the stabs; `test/moog-muse.test.ts` pins the list so the number is met rather
-      // than rediscovered, and #388 is the check that would generate it.
+      // `PITCH LFO` is untouched, and it is still the control: it carries its own `▸ OSC 1` and
+      // `▸ OSC 2` routing switches on the panel, so the three `lead` recipes reach a destination
+      // without going near the MOD MAP at all.
     ],
   },
   {
@@ -2179,7 +2335,12 @@ const recipes: Recipe[] = [
       ...vca(90, 0),
       ...sharedDelay(),
       ...delayRouting('OFF'),
-      ...lfo1('TRIANGLE', 0.8, 0),
+      // #460. **No `lfo1` block.** It carried `AMPLITUDE 0` — an attenuator shut ahead of every
+      // destination (p.52) — into no destination at all, which is zero depth into nowhere, and
+      // `TRIANGLE` at 0.8 Hz on a patch whose whole statement is a per-note snap says nothing
+      // about where it wanted to go. Routing it would be inventing an intention; the four other
+      // recipes that carry one had it in their titles. #384's repair on `muse-stab-hard`, applied
+      // to the same shape.
     ],
   },
   {
@@ -2218,7 +2379,10 @@ const recipes: Recipe[] = [
       ...vca(90, 0),
       ...sharedDelay(),
       ...delayRouting('OFF'),
-      ...lfo1('TRIANGLE', 0.5, 0),
+      // #460. **No `lfo1` block**, for `muse-bass-mid-hard`'s reason: `AMPLITUDE 0` into no
+      // destination. And this is the recipe where routing would have been worst — *"both ladders
+      // low, nothing above the fundamental"* with both ENVELOPE AMOUNTs at noon says nothing on
+      // this patch moves, so any destination a slow triangle could reach contradicts the title.
     ],
   },
   {
@@ -2248,7 +2412,16 @@ const recipes: Recipe[] = [
       ...vca(85, 0),
       ...sharedDelay(),
       ...delayRouting('OFF'),
-      ...lfo1('RANDOM', 5.5, 15),
+      // #460. **The ring modulator's fader, which is the control this title names**, and the one
+      // destination here that is neither the FM the recipe already runs nor the corner the MOD OSC
+      // already has. `RANDOM` at 5.5 Hz into `MIX RING MOD` is the inharmonic pair stuttering in
+      // and out under the note rather than sitting at one level.
+      //
+      // **`UNI`, and it is the polarity that makes this work.** The fader is at `40`; a bipolar
+      // source would spend half its time pulling it down, which on a random wave is a hole in the
+      // note. Unipolar adds from `40` upwards and nothing below it, so the base the title calls
+      // *"sitting under the note"* stays put and the bursts go over the top of it.
+      ...lfo1('RANDOM', 5.5, 15, { polarity: 'UNI', destination: 'MIX RING MOD', amount: 15 }),
     ],
   },
   {
@@ -2278,7 +2451,11 @@ const recipes: Recipe[] = [
       ...vca(95, 0),
       ...sharedDelay(),
       ...delayRouting('OFF'),
-      ...lfo1('TRIANGLE', 0.1, 0),
+      // #460. **No `lfo1` block.** `TRIANGLE` at 0.1 Hz with `AMPLITUDE 0` is the block the issue
+      // calls *"copied in and never wired"*, and a sub is where routing is worst rather than
+      // merely unjustified: *"nothing else in the mixer"* leaves one fundamental, and every
+      // destination that would be audible on it moves the pitch or the level of the note the rest
+      // of the guide is tuned against. Its MOD OSC is pinned as the same debt (#388).
     ],
   },
   {
@@ -2310,7 +2487,10 @@ const recipes: Recipe[] = [
       ...vca(90, 0),
       ...sharedDelay(),
       ...delayRouting('OFF'),
-      ...lfo1('TRIANGLE', 0.1, 0),
+      // #460. **No `lfo1` block**, and this is the strongest case of the four. The sine *is* a
+      // self-oscillating filter 1, so its only audible destination is the corner that sets its
+      // pitch — modulating it detunes the sub, which is the one thing a sub may not do. Zero
+      // amplitude into no destination, removed rather than pointed at the control that breaks it.
     ],
   },
 
@@ -2341,7 +2521,20 @@ const recipes: Recipe[] = [
       ...vca(55, 85),
       ...sharedDelay(),
       ...delayRouting('ON'),
-      ...lfo1('TRIANGLE', 0.08, 35, 'PER-VOICE'),
+      // #460. **Pan again, and for the reason the title gives away by omission.** The MOD OSC
+      // owns the pitch here — *"per-voice modulation oscillators drifting the pitches apart"* is
+      // the whole patch — so the axis left for a second per-voice modulator is where each voice
+      // sits, and `PAN SPREAD 85` has already spread them out to be moved.
+      //
+      // `30`, deeper than `muse-pad-soft`'s `20`, at 0.08 Hz — the slowest rate on the device.
+      // A texture is allowed to move further because it takes half a minute to get there.
+      ...lfo1(
+        'TRIANGLE',
+        0.08,
+        35,
+        { polarity: 'BI', destination: 'VCA PAN', amount: 30 },
+        'PER-VOICE',
+      ),
     ],
   },
   {
@@ -2369,7 +2562,24 @@ const recipes: Recipe[] = [
       ...vca(55, 80),
       ...sharedDelay(),
       ...delayRouting('ON'),
-      ...lfo1('RANDOM', 1.6, 50, 'PER-VOICE'),
+      // #460. **The one recipe whose title states the destination outright**: *"Noise and ring
+      // modulator held under a random LFO"*. Held under — so the LFO is on the level, and `RANDOM`
+      // at 1.6 Hz into `VCA LEVEL` is what makes the mixer's noise and ring modulator stutter in
+      // and out instead of sitting there. `50` is the deepest route on the device, and it is the
+      // only one a title asks for in those words.
+      //
+      // **`UNI`, so `VCA · LEVEL 55` is the floor and every step is upward from it.** p.101: a
+      // positive amount adds; a unipolar source never goes below zero, so the level rests at `55`
+      // and jumps above it, which is a random gate opening rather than a tremolo. Bipolar would
+      // put half the cycle under `55` as well, and a texture that keeps dropping out from under a
+      // mix is a hole rather than a layer.
+      ...lfo1(
+        'RANDOM',
+        1.6,
+        50,
+        { polarity: 'UNI', destination: 'VCA LEVEL', amount: 50 },
+        'PER-VOICE',
+      ),
     ],
   },
 

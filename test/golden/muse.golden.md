@@ -299,18 +299,6 @@ One setting for the whole song — set it once, not once per part below.
 - **● DELAY**
   - **TIMBRE A / TIMBRE B** `OFF`
     - ↳ note: Two separate buttons, one per timbre — engage the one for the timbre this part is on. Disengaged, this part bypasses the delay on a fully analog path
-- **● LFO 1** — Appears inert — no authored destination found.
-  - **WAVEFORM** `TRIANGLE`
-  - **RATE** `0.1` Hz (0.01…40 Hz)
-    - ↳ note: The default range; RATE MIN and RATE MAX in the MORE menu can widen it to 1 kHz
-  - **AMPLITUDE** `0` % (0…100 %) · MIDI CC 13
-    - ↳ note: An attenuator ahead of every destination
-  - **SYNC** `OFF`
-    - ↳ note: Off, so RATE is the free-running Hz scale rather than tempo divisions
-    - ↳ hint: Press MORE in that section
-  - **LFO TYPE** `GLOBAL`
-    - ↳ note: PER-VOICE gives eight separate LFOs, one per voice
-    - ↳ hint: Press MORE in that section
 
 #### Timbre 2 — `bass-mid`: Mono, overload up and the ring modulator sitting under the note
 
@@ -417,7 +405,7 @@ One setting for the whole song — set it once, not once per part below.
 - **● DELAY**
   - **TIMBRE A / TIMBRE B** `OFF`
     - ↳ note: Two separate buttons, one per timbre — engage the one for the timbre this part is on. Disengaged, this part bypasses the delay on a fully analog path
-- **● LFO 1** — Appears inert — no authored destination found.
+- **● LFO 1**
   - **WAVEFORM** `RANDOM`
   - **RATE** `5.5` Hz (0.01…40 Hz)
     - ↳ note: The default range; RATE MIN and RATE MAX in the MORE menu can widen it to 1 kHz
@@ -429,6 +417,8 @@ One setting for the whole song — set it once, not once per part below.
   - **LFO TYPE** `GLOBAL`
     - ↳ note: PER-VOICE gives eight separate LFOs, one per voice
     - ↳ hint: Press MORE in that section
+  - **UNI ▸ MIX RING MOD AMOUNT** `15` % (-100…100 %)
+    - ↳ note: Press ASSIGN, press BI-POLAR to choose UNI, then turn MIXER RING MOD — one turn picks the destination and sets this depth — then ENTER
 
 ## 7. Finishing
 
