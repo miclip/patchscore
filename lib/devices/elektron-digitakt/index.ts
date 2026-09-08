@@ -1572,11 +1572,40 @@ const recipes: Recipe[] = [
      * `LFO MODE ONE` and `MULT BPM 8` against `SPD 4` are read the same way as the bright riser:
      * p.49's table makes that four bars, once, and then it stops. `VOL 40` leaves the headroom
      * `DEP 56` needs to climb into — a swell has to start below where it ends.
+     *
+     * ## What the box does with the file, which is the half the `need` line owes the reader
+     *
+     * **`FORWARD` on the Oneshot machine plays it through once and stops.** p.82's A.2.2 is
+     * explicit — *"The sample will be played back once every time it is triggered"* — and the two
+     * `LOOP` entries beside it are the modes that would do otherwise. So nothing here repeats the
+     * file to fill the four bars.
+     *
+     * **And nothing here fits it to them either.** `BARS` — *"the total duration of the sample
+     * measured in bars ... relative to the set BPM"* — is a Werp parameter (p.84) and a Repitch
+     * parameter (p.85), and Repitch's page opens by saying stretching to the pattern's tempo is
+     * what that machine is *for*. The Oneshot machine has neither. Those are printed statements
+     * about the other two machines rather than an inference about this one, which is why they can
+     * be cited beside the claim.
+     *
+     * **What the line deliberately does not say is that the *recording* must be four bars long.**
+     * `TUNE -24` is two octaves down, and on a box where pitch and playback speed are coupled that
+     * would be one bar of audio covering four. p.82's `TUNE` entry says only that it *"sets the
+     * pitch of the sample"* and is silent on duration; the Werp and Slice entries are the ones
+     * that say *"without affecting the timing"* (pp.84, 86), which makes the coupling on this
+     * machine a strong reading of a contrast and not a printed fact. So the `need` line asks for
+     * four bars **in what plays**, which is true either way, and leaves the arithmetic to the
+     * reader rather than citing a page that does not carry it. The Tracker Mini's riser can do
+     * that sum because p.128 states the varispeed outright; this manual does not.
      */
     title: 'Low drone swelling on one LFO pass, the filter never opening',
     verified: false,
     sourceAudio: {
-      need: 'A sustained low drone, rumble or noise bed that holds for at least four bars',
+      need:
+        'A sustained low drone, rumble or noise bed that holds for at least four bars. FORWARD ' +
+        'plays the file through once per trig and never loops it (p.82), and the Oneshot machine ' +
+        'has no `BARS` to fit it to a bar count the way Werp and Repitch do (pp.84-85) — so the ' +
+        'four bars have to be there in what plays, and the LFO below adds the swell rather than ' +
+        'the length',
     },
     params: [
       machine('ONESHOT'),

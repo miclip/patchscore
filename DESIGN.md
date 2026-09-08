@@ -3930,6 +3930,85 @@ Do not reorder.
    band label in phase 7 — and on a one-part direction that is the whole guide unaffected by its
    own arrangement.
 
+   **And except where a `riser`'s direction authored no variant for it at any band** (#473), in
+   which case the phase says so **once for the part** rather than once per section.
+   This is a third sentence that replaces a grid, and it is the one that had been missing: a
+   `riser` in Industrial Techno and a `sweep` in Ambient Dub printed *no pattern authored for
+   `riser` at any band (asked for band 1)* under every heading the part occupied. Three things
+   were wrong with that. It repeated one absence; it named a **band**, which reads as a near-miss
+   when nothing exists at any band to have missed; and it left the reader with no instruction at
+   all under a part that has one — a riser or a sweep is a single event, and its **placement** is
+   the whole of what the direction is asking for. So the sentence states the absence first and
+   then hands over the placement: *the direction authors no grid for this part. Place its single
+   trig so the gesture arrives at the change.* A note line still follows where the part has one,
+   because a trig is placed on a note.
+
+   **The gesture arrives at the change; the trig does not.** The sentence said *where you put the
+   trig is where it arrives* first, and that is false of every riser in the library — the trig is
+   the onset and a four-bar rise lands four bars later, so a reader following it would place the
+   trig on the downbeat they were building towards and hear the swell start there. Naming the
+   target rather than the onset is the half a template can state. **How far ahead of the change
+   the trig goes is the device's to say**, because it is a fact about that box's envelope or sweep
+   and the seventeen answers differ — `dt-riser-bright` says *place that trig four bars before the
+   change* in its `sourceAudio.need`, and `ot-riser-bright` says the file's length is not the
+   gesture's at all. That split is the same one §3/#101 already draws: what the part needs is the
+   direction's, what the box does with it is the recipe's.
+
+   **`riser` alone, and the narrowness is the whole of what makes it true.** The predicate was
+   written first over every pattern-bearing role, on the reasoning that the emptiness was the fact
+   and the role was not — and a catalogue sweep refuted it. Every device against every direction
+   over six seeds puts **522** parts into that emptiness, and **228 of them are `texture`**:
+   Hip-Hop's crackle, which that direction's own note calls *a bed*, and Ambient Dub's, which
+   *breathes*. Neither is an event that arrives anywhere.
+
+   Scoping to §4.2's transitional roles fixed that and left one case still wrong. **A `sweep` is
+   not always a lift.** Ambient Dub scopes one to `Swell` and one to `Recede`, and the second falls
+   away from the crest — so *arrives at the change* is true of one instance of the role and reads
+   as a climb the reader does not want for the other. A `riser` has no second reading: the name is
+   the direction of travel. So the rule settles **every `riser` entry in the library** and nothing
+   else yet.
+
+   **The inventory this settles, and what is left.** `unpatternedArticulation`
+   (`lib/core/reachability.ts`) is the list: recipes carrying articulation for a role some
+   direction requests and no direction patterns, so no variant is ever selected and the gesture has
+   nothing to land on. Across the library it is **35 entries — 17 `riser`, 13 `pad`, 5 `sweep`**.
+   This settles all 17 risers, and each of the other two is waiting on something different:
+
+   - **13 `pad`** need nothing here. They are already held-part semantics (`isSustainedPart`,
+     *Held, not struck*), which is a different claim about a different thing and the right one.
+   - **5 `sweep`** need **wording that distinguishes lifting from receding** before they can share
+     a sentence. That is a copy problem rather than a predicate one, and until it is written they
+     keep the band-specific report.
+
+   Everything else with the same emptiness — `texture` above, which is not in this inventory
+   because those recipes carry no articulation — **keeps the band-specific hole report**, which is
+   what it always had and what invariant 5 asks for on a role a direction could reasonably have
+   patterned: Drone Study patterns a `texture`.
+
+   **Nothing in that list loses its articulation, and no variant is authored to make one land.**
+   The entries are recipes that are correct as written against directions that are correct as
+   written; what was missing was a sentence in phase 5, and that is the only thing that changed.
+   A direction authoring variants for one of these roles later turns each entry into a live gesture
+   or a genuine `deadArticulationSlots` finding, and this list stays the one to re-check.
+
+   **It is a third claim beside the two above, not a variant of either.** `isSustainedPart` says
+   the **role is held** (`NON_PATTERN_BEARING_ROLES`, `pad` alone), so it drops the note line with
+   the grid. `isSingleTrigRiser` says the **part is one event aimed at a change**, so it keeps the
+   note. No role may be both, and `test/vocabulary.test.ts` pins it, because a role in both would
+   be told it sustains and that it is a single trig.
+
+   **Only where *every* section came back `none`.** A direction that patterns a part in some
+   sections and not others has said something about the ones it skipped, and §6.3's per-section
+   report is what says it — those blocks are untouched, band number and all. And #100 is read
+   first: a hooked part authors no variants by construction, so every one of them satisfies this
+   predicate and would be told to place a trig for a figure phase 4 has already written out.
+
+   **Invariant 5 is intact, and the first clause is why.** Nothing is being hidden — the guide
+   still says the direction authored no grid, in the sentence's opening words, and phase 7's
+   trajectory still reports the part as unpatterned across the arrangement. What changed is that
+   the absence is stated once and followed by the instruction it implies, rather than restated
+   under each heading with a band number that decides nothing.
+
    **Sections that are not a whole number of repeats are named, with the arithmetic** (#105).
    Drone Study's sections are 9, 15, 21, 33, 18, 24 and 12 bars against a 16-bar cycle, a 16-bar
    hook and 4-bar variants: nothing divides, and that is authored intent — out-of-phase

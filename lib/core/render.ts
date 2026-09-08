@@ -66,6 +66,7 @@ import {
   arrangement,
   bandTrajectory,
   chainPlan,
+  isSingleTrigRiser,
   isSustainedPart,
   noteInstruction,
   type BandGroup,
@@ -2024,6 +2025,49 @@ const SUSTAINED_NOT_STRUCK =
   'authors no grid for it. Nothing to program here.'
 
 /**
+ * §8 phase 5/#473. What phase 5 says for a **`riser`** whose direction authored no variant for it
+ * in **any** section (`isSingleTrigRiser`).
+ *
+ * **It replaces a block per section, not a sentence.** Before this, such a part printed
+ * `no pattern authored for \`riser\` at any band (asked for band 1)` once per merged group — the
+ * same absence restated under two or three headings, each carrying a band number that decides
+ * nothing, because nothing was authored at any band. At the machine that is a part with no
+ * instruction under it, said several times.
+ *
+ * **The absence is still stated, which is what keeps invariant 5.** The sentence opens on it:
+ * the direction authored no grid. What it stops doing is leaving the reader there — a `riser` is
+ * one event whose *placement* is the whole of what it asks for, and that is an instruction the
+ * guide can give without inventing a step map it does not have.
+ *
+ * **It says the gesture arrives at the change, not that the trig does.** The first draft read
+ * *where you put the trig is where it arrives*, which is false of every riser in the library: the
+ * trig is the onset, and a four-bar rise arrives four bars later. A reader following that sentence
+ * would place the trig on the downbeat they were building towards and hear the swell start there.
+ * Where the trig goes relative to the change is a fact about the recipe's own envelope or sweep
+ * length, which the device folder states in its `sourceAudio.need` — this half names the target.
+ *
+ * **It names no band and must not.** The band a section asked for is real and §6.3's trajectory
+ * in phase 7 still reports it; printing it beside a part that has nothing at any band was the
+ * number that made the old block read as a near-miss rather than as a decision.
+ *
+ * **Risers only, and every other unpatterned part keeps the old block.** The scope narrowed twice.
+ * The first draft read the emptiness alone, which swept in Hip-Hop's crackle and Ambient Dub's
+ * bed — parts their own directions describe as running underneath everything, and 228 of the 522
+ * parts that reach the emptiness. Scoping to §4.2's transitional roles left `sweep` still wrong:
+ * Ambient Dub scopes one to `Swell` and one to `Recede`, and this sentence reads as a climb for
+ * the one that falls away from the crest. A `riser` has no second reading — the name is the
+ * direction of travel — so it is the one role the sentence is uniformly true of. See
+ * `isSingleTrigRiser`.
+ *
+ * The sibling of `SUSTAINED_NOT_STRUCK` above and neither the same claim nor its opposite: that
+ * one says the role is held and suppresses the note line with the grid, this one says the part is
+ * one event and keeps the note, because a trig is placed on a note.
+ */
+const SINGLE_TRIG =
+  '**One trig, not a figure** — the direction authors no grid for this part. Place its single ' +
+  'trig so the gesture arrives at the change.'
+
+/**
  * §4.3/§8. What phase 5 says for a part whose hook is held and whose variants say where it is
  * struck again (`RoleRequest.reArticulatesHook`).
  *
@@ -2130,12 +2174,18 @@ function phaseSteps(
     // grid, so there is nothing to draw. A pad reaches this branch only when its hook did not
     // resolve — where one did, `deferred` is already true and says where to look instead.
     const sustained = isSustainedPart(a)
+    // §8 phase 5/#473. A `riser` the direction never patterned anywhere. Read after
+    // `deferred`, because a hook that owns the part already answers the question this one asks —
+    // and a re-articulating part reaching here has no map, so `HOOK_IS_THE_PATTERN` is the
+    // pointer it already fell back to.
+    const singleTrig = !deferred && isSingleTrigRiser(a)
     /**
-     * The two sentences that *replace* a grid rather than qualifying one: a deferred part whose
-     * hook is the pattern, and a sustained part with nothing to strike. Everything else is a part
-     * a reader programs, whether or not any variant resolved.
+     * The three sentences that *replace* a grid rather than qualifying one: a deferred part whose
+     * hook is the pattern, a sustained part with nothing to strike, and a `riser` the direction
+     * authored no variant for at any band. Everything else is a part a reader programs, including
+     * an unpatterned `texture` or `sweep`, which still report their hole per band (§6.3).
      */
-    const replacesGrid = (deferred && !a.reArticulatesHook) || sustained
+    const replacesGrid = (deferred && !a.reArticulatesHook) || sustained || singleTrig
     const blocks = replacesGrid ? [] : mergeBlocks(a, deviceById, options, result.song.bpm)
     if (deferred) {
       out.push('')
@@ -2151,6 +2201,9 @@ function phaseSteps(
     } else if (sustained) {
       out.push('')
       out.push(SUSTAINED_NOT_STRUCK)
+    } else if (singleTrig) {
+      out.push('')
+      out.push(SINGLE_TRIG)
     }
 
     /**

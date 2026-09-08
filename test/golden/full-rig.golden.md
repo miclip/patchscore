@@ -604,7 +604,7 @@ A step is one note long and nothing here sets a length: `Tie/Rest` joins a note 
 
 **A sample played backwards, the filter climbing under it into the change** — settings in Sound design
 
-**Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 1)
+**One trig, not a figure** — the direction authors no grid for this part. Place its single trig so the gesture arrives at the change.
 
 ### `noise` — RD-9 · OPEN
 

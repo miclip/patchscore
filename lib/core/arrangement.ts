@@ -126,6 +126,49 @@ export function isSustainedPart(a: ResolvedAssignment): boolean {
 }
 
 /**
+ * §8 phase 5/#473. A **`riser`** whose direction authored no variant for it anywhere — every
+ * section it occupies came back `none`.
+ *
+ * The sibling of `isSustainedPart` over the same emptiness, and neither the same claim nor its
+ * complement. That one says the **role is held**, so it suppresses the grid and the note line
+ * together. This one says the **part is one event aimed at a change**, which still has a note to
+ * place and a placement that is the whole of the instruction.
+ *
+ * **`riser` alone, and the narrowing happened twice.** It was written first over every
+ * pattern-bearing role, and a catalogue sweep refuted that: 522 parts reach the emptiness and 228
+ * of them are `texture` — Hip-Hop's crackle, which its own direction calls *a bed*, and Ambient
+ * Dub's, which *breathes*. Neither is an event that arrives anywhere. Scoping to §4.2's
+ * `TRANSITIONAL_ROLES` fixed that and left one case still wrong: **a `sweep` is not always a
+ * lift.** Ambient Dub scopes one to `Swell` and one to `Recede` — the second falls away from the
+ * crest — so the sentence's *arrives at the change* is true of one instance of that role and a
+ * climb the reader does not want for the other. A riser has no such second reading: the name is
+ * the direction of travel.
+ *
+ * So this is the narrowest predicate that makes the sentence uniformly true, and widening it is a
+ * copy question rather than a predicate question — `sweep` needs wording that distinguishes
+ * lifting from receding before it can share one.
+ *
+ * **`every` and not `some`, so a mixed part is not caught.** A direction that authors variants for
+ * some of a part's sections and not others has said something about the ones it skipped, and
+ * §6.3's per-section report is what says it. This is only for the part the direction never
+ * patterned at all.
+ *
+ * No `bearsPattern` guard: `riser` bears a pattern and `pad` is the only role that does not, so a
+ * part cannot satisfy this and `isSustainedPart` both. `test/vocabulary.test.ts` pins that rather
+ * than leaving it to a redundant clause here.
+ *
+ * Exported for the reason `isSustainedPart` is: both renderers ask it, and two spellings of one
+ * musical claim are one drift away from disagreeing on the page (#33).
+ */
+export function isSingleTrigRiser(a: ResolvedAssignment): boolean {
+  return (
+    a.role === 'riser' &&
+    a.patterns.length > 0 &&
+    a.patterns.every((p) => p.selection.outcome === 'none')
+  )
+}
+
+/**
  * §4.1/§2.1. **What to write on the steps**, decided once for both renderers.
  *
  * Phase 5 says which steps to hit. Two different facts can say what to put on them, they come
