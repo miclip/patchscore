@@ -249,6 +249,81 @@ function num(
 }
 
 /**
+ * §3.1/§3.2/#475. **The two FX sends, in the dB the screen prints — not the percentage the
+ * prose prints.**
+ *
+ * Reported from the machine: *"the reverb send for tracker mini is in % but device has db"*, and
+ * *"delay send is db as well"*. p.120 says both things within a centimetre of itself. Under
+ * **Reverb Send** the prose reads `Range 0-100%`; the screen illustration directly beneath the
+ * same fader reads `Reverb send  -inf dB`, and the **Delay Send** block below it repeats the
+ * pair exactly. The manifest authored the half a reader never sees.
+ *
+ * **Both statements are true, and that is the sharper version of `CLAUDE.md`'s standing trap.**
+ * Read off the box: the bottom position is `-inf dB`, the first step above it `-39.60 dB`, the
+ * next `-39.20 dB`, the top `0.00 dB`. A step of 0.40 dB, and the arithmetic closes exactly —
+ * `-39.60 + 99 x 0.40 = 0.00`, so there are 101 positions and `0-100%` is the **internal index**
+ * of them. It is not a wrong range cited off the wrong page; it is the right range for a layer
+ * the reader has no access to. Nobody can dial to `54 %`, because no percentage appears anywhere
+ * on this box — they would have to press `+` fifty-four times from the bottom and count.
+ *
+ * It also broke the promise the guide's own legend makes, that a printed range lets you tell at
+ * a glance whether the screen in front of you is the one the line is about. With `-18.40 dB` on
+ * the screen and `54 %` on the page, it cannot.
+ *
+ * **The range is `observed`, and it has to be**, because the document cannot support it: the
+ * only page that prints a scale for these controls prints the other one. §3.1's `observed` is
+ * not a softer `provisional` — somebody read this on hardware, and the firmware is in the string
+ * because a screen readout is a property of the software.
+ *
+ * **The floor is -39.60 and not -inf**, which is the one thing about this range that looks
+ * wrong and is not. `NumericRange` requires finite bounds, and `-inf` is not a point on the
+ * 0.40 dB grid anyway — it is the position *below* the grid, where the send is closed. So the
+ * range covers the audible travel, and `SEND_OFF_NOTE` carries the step below it. The one
+ * recipe that wants the send shut says so as text, through `unscaled`; see `tm-sub-dark`.
+ *
+ * **The values are converted, not re-chosen** (#475). Each was authored as an index and each has
+ * exactly one right answer at `-39.60 + (index - 1) x 0.40`; the `space` amounts scale by the
+ * same 0.40, since the map is affine across the finite part. What that does **not** settle is
+ * whether each converted value is still the sound its recipe's title claims — these were very
+ * likely picked as if the control were linear amplitude, and `-36.80 dB` is close to inaudible.
+ * Re-judging them needs ears and is per recipe. This is the half that stops the guide being
+ * unusable at the machine.
+ */
+const SEND_OBSERVED: Cite = { kind: 'observed', source: 'Tracker Mini unit, firmware 2.2.1' }
+
+/** `-inf`, then -39.60 dB to 0.00 dB in 0.40 steps. The finite part; see `SEND_OFF_NOTE`. */
+const SEND_DB = { min: -39.6, max: 0, verified: SEND_OBSERVED }
+
+/**
+ * On every send, because the floor of the printed range is not the bottom of the control and a
+ * reader who cannot find `-inf` on a `-39.6…0` scale would reasonably assume it is not there.
+ */
+const SEND_OFF_NOTE = '-39.60 dB is the quietest step; one below it the send reads -inf dB, off'
+
+/**
+ * A send, with the observed dB range rather than `num`'s manual page. Everything else is `num`:
+ * the point stays `verified: false`, because reading the scale off the box says what the
+ * positions are and nothing about which one a kick wants (§3.2).
+ */
+function send(
+  name: string,
+  value: number,
+  extra: Partial<AuthoredNumericParam> = {},
+): AuthoredNumericParam {
+  return {
+    kind: 'numeric',
+    name,
+    value,
+    range: SEND_DB,
+    verified: false,
+    unit: 'dB',
+    step: 0.4,
+    note: SEND_OFF_NOTE,
+    ...extra,
+  }
+}
+
+/**
  * §6.1. The swing axis, as an ordinary cited numeric (#62).
  *
  * p.185, the Swing step FX (`I`): *"Introduces a groove or shuffle into the pattern timing. 50%
@@ -342,7 +417,7 @@ function pick(
  * §3.2/#102. A setting the manual gives **no scale for**, so there is no legality gate for a
  * citation to attach to and the point is provisional by construction.
  *
- * This is the shape the box forces exactly twice, and both times for the same reason. Granular
+ * **Two of its three uses are that**, and both for the same reason. Granular
  * `Position`'s Range column on p.142 reads *"Variable"* — the scale is the loaded sample's own
  * length, so any `NumericRange` written here would be invented (invariant 5), and an absolute
  * time would point at a different place in every file a reader loads. The LFO's `Amount` on the
@@ -350,6 +425,13 @@ function pick(
  * envelope is applied 0-100%"* is the **envelope's** Amount, in the envelope's own subsection,
  * and the same field means something else with `Type` set to LFO. Borrowing that bound would be
  * the TR-8S `SNAPPY` mistake — a range cited off the scale that is not in force.
+ *
+ * **The third is a different case and worth naming so it is not read as a fourth of the first**
+ * (#475). `tm-sub-dark`'s `REVERB SEND` has a scale, and `SEND_DB` above states it; the value it
+ * wants is the one position that scale does not contain. `-inf dB` sits a step below `-39.60`
+ * and is where the control is closed, so a numeric would put it on the continuum with every
+ * other send and invite mood to move it off the very position the recipe is choosing. Not a
+ * missing range — a value outside a known one.
  *
  * Not a return of `INSTRUMENT`, the text param #101 removed. That one put a manual page on a
  * text *point* because it had nowhere else to go, badging the reader's choice of sample as
@@ -917,7 +999,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       }),
       num('CUTOFF', 46, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -14 }] }),
       secs('ENVELOPE · DECAY', 0.62, SECONDS_10, 126),
-      num('REVERB SEND', 8, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 18 }] }),
+      send('REVERB SEND', -36.8, { mood: [{ axis: 'space', amount: 7.2 }] }),
       swing(),
     ],
     articulation: [{ slot: 'downbeat', set: { volume: 92 } }],
@@ -939,7 +1021,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       num('CUTOFF', 22, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: 12 }] }),
       num('TUNE', 2, SEMITONES_24, 116, { unit: 'st', note: TRANSPOSED_TUNE_NOTE }),
       secs('ENVELOPE · DECAY', 0.3, SECONDS_10, 126, { mood: [{ axis: 'density', amount: -0.1 }] }),
-      num('DELAY SEND', 12, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 24 }] }),
+      send('DELAY SEND', -35.2, { mood: [{ axis: 'space', amount: 9.6 }] }),
       swing(),
     ],
     articulation: [
@@ -962,7 +1044,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       num('PANNING', 6, PAN, 116),
       num('FINETUNE', 22, FINE_CENTS, 116, { unit: 'c' }),
-      num('REVERB SEND', 26, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 26 }] }),
+      send('REVERB SEND', -29.6, { mood: [{ axis: 'space', amount: 10.4 }] }),
       secs('ENVELOPE · RELEASE', 0.4, SECONDS_10, 126),
       swing(),
     ],
@@ -1053,7 +1135,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('FILTER TYPE', 'Band-pass', FILTER_TYPES, 117),
       num('CUTOFF', 62, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -12 }] }),
       secs('ENVELOPE · RELEASE', 0.9, SECONDS_10, 126),
-      num('REVERB SEND', 16, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 20 }] }),
+      send('REVERB SEND', -33.6, { mood: [{ axis: 'space', amount: 8 }] }),
       swing(),
     ],
     articulation: [{ slot: 'accent', set: { 'random-volume': 12 } }],
@@ -1243,7 +1325,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       // `NumericRange` rightly refuses a non-finite bound — so the level that can be stated
       // honestly is the envelope's, which p.126 prints as a plain 0-100%.
       num('ENVELOPE · SUSTAIN', 84, PCT, 126, { unit: '%' }),
-      num('REVERB SEND', 30, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 24 }] }),
+      send('REVERB SEND', -28, { mood: [{ axis: 'space', amount: 9.6 }] }),
       swing(),
     ],
     articulation: [{ slot: 'first-hit', set: { 'gate-length': 95 } }],
@@ -1413,7 +1495,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('LOOP', 'Forward', GRAIN_LOOPS, 142),
       pick('FILTER TYPE', 'Low-pass', FILTER_TYPES, 117),
       num('CUTOFF', 48, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -20 }] }),
-      num('REVERB SEND', 42, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 30 }] }),
+      send('REVERB SEND', -23.2, { mood: [{ axis: 'space', amount: 12 }] }),
       // **The grains have to move, or the title is a lie.** p.142: *"Modulating grain position
       // is at the heart of the Tracker Mini's implementation of granular synthesis"*, and p.143
       // says where it is done — Instrument Parameters page 2, the Granular Position row, an LFO
@@ -1566,9 +1648,17 @@ const SAMPLE_RECIPES: Recipe[] = [
       secs('ENVELOPE · RELEASE', 0.3, SECONDS_10, 126, {
         note: 'Short, so one note clears before the next — a sub that overlaps itself is mud',
       }),
-      num('REVERB SEND', 0, PCT, 120, {
-        unit: '%',
-        note: 'Zero deliberately, and not a mood target — reverb on a sub is what a mix cannot undo',
+      // The one send on this box authored at the bottom of the control, and the bottom is not a
+      // number: `-inf dB` sits one step below `-39.60` and is where the send is closed. Text
+      // rather than a numeric, through `unscaled`, because it is not a point on the 0.40 dB grid
+      // — a numeric would put it on the continuum with the others and invite mood to move it,
+      // and this parameter declines mood on purpose. Not omitted, either: the TR-1000's `send`
+      // helper already settled that one, *"on this box, off is an instruction"* — a recipe silent
+      // about a send inherits whatever the loaded kit left switched on.
+      unscaled('REVERB SEND', '-inf dB', {
+        note:
+          '-inf dB is the off position, deliberately, and not a mood target — reverb on a sub ' +
+          'is what a mix cannot undo',
       }),
       swing(),
     ],
@@ -1613,7 +1703,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       secs('ENVELOPE · ATTACK', 0.01, SECONDS_10, 126),
       secs('ENVELOPE · DECAY', 0.9, SECONDS_10, 126),
       num('ENVELOPE · SUSTAIN', 0, PCT, 126, { unit: '%' }),
-      num('REVERB SEND', 34, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 38 }] }),
+      send('REVERB SEND', -26.4, { mood: [{ axis: 'space', amount: 15.2 }] }),
       swing(),
     ],
     articulation: [
@@ -1645,8 +1735,8 @@ const SAMPLE_RECIPES: Recipe[] = [
     params: [
       pick('PLAY MODE', '1-Shot', PLAY_MODES, 127),
       pick('FILTER TYPE', 'Disabled', FILTER_TYPES, 117),
-      num('REVERB SEND', 46, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 40 }] }),
-      num('DELAY SEND', 22, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 26 }] }),
+      send('REVERB SEND', -21.6, { mood: [{ axis: 'space', amount: 16 }] }),
+      send('DELAY SEND', -31.2, { mood: [{ axis: 'space', amount: 10.4 }] }),
       swing(),
     ],
     routing:
@@ -1697,7 +1787,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       pick('FILTER TYPE', 'Band-pass', FILTER_TYPES, 117),
       num('CUTOFF', 66, PCT, 117, { unit: '%', mood: [{ axis: 'darkness', amount: -26 }] }),
       num('RESONANCE', 40, PCT, 117, { unit: '%', mood: [{ axis: 'grit', amount: 22 }] }),
-      num('REVERB SEND', 18, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 30 }] }),
+      send('REVERB SEND', -32.8, { mood: [{ axis: 'space', amount: 12 }] }),
       swing(),
     ],
     routing:
@@ -1965,7 +2055,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       unscaled('CUTOFF LFO AMOUNT', '60%', {
         note: 'How far the ramp travels; the Saw is what makes it travel upward (p.122)',
       }),
-      num('REVERB SEND', 54, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 44 }] }),
+      send('REVERB SEND', -18.4, { mood: [{ axis: 'space', amount: 17.6 }] }),
       swing(),
     ],
     verified: false,
@@ -2054,7 +2144,7 @@ const SAMPLE_RECIPES: Recipe[] = [
       secs('ENVELOPE · ATTACK', 1.2, SECONDS_10, 126),
       num('ENVELOPE · SUSTAIN', 96, PCT, 126, { unit: '%' }),
       secs('ENVELOPE · RELEASE', 1.6, SECONDS_10, 126),
-      num('REVERB SEND', 62, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 46 }] }),
+      send('REVERB SEND', -15.2, { mood: [{ axis: 'space', amount: 18.4 }] }),
       swing(),
     ],
     verified: false,
@@ -2117,7 +2207,7 @@ const SAMPLE_RECIPES: Recipe[] = [
         unit: '%',
         note: 'Zero, so each arpeggiated note clears before the next — the figure stays legible',
       }),
-      num('DELAY SEND', 28, PCT, 120, { unit: '%', mood: [{ axis: 'space', amount: 34 }] }),
+      send('DELAY SEND', -28.8, { mood: [{ axis: 'space', amount: 13.6 }] }),
       swing(),
     ],
     // **No articulation, and the arpeggiator is the reason** — this recipe carried a

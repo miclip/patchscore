@@ -5,6 +5,7 @@ import {
   ROLES,
   SUBORDINATE,
   assign,
+  compareCodeUnits,
   expand,
   isSustainedPart,
   moodState,
@@ -988,14 +989,23 @@ describe('Tracker Mini manifest', () => {
         // kick". Written at every site rather than inherited, so a later citation on the
         // recipe cannot promote values nobody checked.
         expect(param.verified, where).toBe(false)
-        expect(param.range.verified, where).toMatchObject({
-          kind: 'manual',
-          source: expect.stringContaining(CITE_PREFIX),
-        })
+        // **The two sends are the one range on this box the manual cannot support** (#475).
+        // p.120 prints `Range 0-100%` in prose and `-inf dB` on the screen a centimetre below
+        // it; the percentage is the internal index of 101 positions and no reader can see it.
+        // So their legality gate is a reading of the hardware. Listed by name rather than read
+        // off the cite kind, or this would assert whatever the folder happened to do.
+        const observed = param.name === 'REVERB SEND' || param.name === 'DELAY SEND'
+        expect(param.range.verified, where).toMatchObject(
+          observed
+            ? { kind: 'observed', source: expect.stringContaining('firmware 2.2.1') }
+            : { kind: 'manual', source: expect.stringContaining(CITE_PREFIX) },
+        )
         // A step is a *granularity*, not a claim, so it needs no citation — but it must not
-        // appear on a parameter whose grid nobody has a reason to believe. Seconds are the
-        // one case here: the manual prints their bounds to two decimals (p.126).
+        // appear on a parameter whose grid nobody has a reason to believe. Two cases here: the
+        // manual prints seconds to two decimals (p.126), and the sends' 0.40 dB was counted off
+        // the box in the same pass that gave them their range.
         if (param.unit === 'Sec') expect(param.step, where).toBe(0.01)
+        else if (observed) expect(param.step, where).toBe(0.4)
         else expect(param.step, where).toBeUndefined()
       }
 
@@ -1018,7 +1028,10 @@ describe('Tracker Mini manifest', () => {
     const counts = auditDevice(device).counts
     expect(counts.unverifiedRanges).toBe(0)
     expect(counts.moodInert).toBe(0)
-    expect(counts.manualRanges).toBe(counts.numerics)
+    // Every range is cited; the sends are cited to hardware and the rest to the manual, and the
+    // sum is what says no range slipped out of both branches above.
+    expect(counts.manualRanges + counts.observedRanges).toBe(counts.numerics)
+    expect(counts.observedRanges).toBeGreaterThan(0)
 
     // No *setting* is cited on its point, enums included: `verified` there is a claim about the
     // selected value, and every selection here is taste. The option sets carry their own
@@ -1049,10 +1062,19 @@ describe('Tracker Mini manifest', () => {
         p.kind === 'numeric' ? [p.range.verified] : p.kind === 'enum' ? [p.options.verified] : [],
       ),
     )
-    const pages = legality
-      .filter((v) => v !== undefined && v !== false)
+    const cites = legality.filter((v) => v !== undefined && v !== false)
+    // #475's sends cite a unit and a firmware, not a page, so there is no page for this to
+    // check. Partitioned rather than skipped: the `observed` half is asserted just below, so a
+    // range that lost its citation entirely cannot hide in the gap between the two.
+    const observed = cites.filter((v) => v.kind === 'observed')
+    expect(observed.length).toBeGreaterThan(0)
+    for (const cite of observed) expect(cite.source).not.toContain('p.')
+
+    const pages = cites
+      .filter((v) => v.kind === 'manual')
       .map((v) => Number((v as { source: string }).source.split('p.')[1]))
     expect(pages.length).toBeGreaterThan(0)
+    expect(pages.length + observed.length).toBe(cites.length)
     for (const page of pages) {
       expect(Number.isInteger(page)).toBe(true)
       // The manual runs to p.343; the parameter chapters start at p.113.
@@ -1461,6 +1483,212 @@ describe('time parameters (§6.1)', () => {
  * that configuration still say nothing. The argument is in the folder, above `track-sample`;
  * these tests are the half of it the schema cannot carry.
  */
+/**
+ * §3.1/§3.2/#475. **The FX sends, in the dB the box prints rather than the percentage the page
+ * prints.**
+ *
+ * Reported from the machine, and confirmed against both halves of p.120: the prose reads
+ * `Range 0-100%`, the screen illustration a centimetre below it reads `-inf dB`. Read off the
+ * unit at firmware 2.2.1, the control has 101 positions — `-inf`, then `-39.60 dB` to `0.00 dB`
+ * in 0.40 steps — so `0-100%` is the internal *index* of those positions and is the layer no
+ * reader can see or dial.
+ *
+ * The conversion is exact and mechanical: index `n` is `-39.60 + (n - 1) x 0.40`, and a `space`
+ * amount, being a delta in index units across an affine map, scales by the same 0.40. **The
+ * numbers below are restated here from the reading rather than imported from the folder** — a
+ * guard that computes its expectation with the manifest's own helper proves only that the helper
+ * is self-consistent.
+ *
+ * What these do **not** claim is that each converted value is still the sound its recipe's title
+ * wants. That is the second half of #475, it needs ears, and it is per recipe.
+ */
+describe('reverb and delay sends carry the scale the screen shows (§3.1/#475)', () => {
+  const SEND_CITE = {
+    kind: 'observed',
+    source: 'Tracker Mini unit, firmware 2.2.1',
+  }
+  const FLOOR = -39.6
+  const STEP = 0.4
+
+  /**
+   * Every send this box authors, with the index it used to carry and the `space` amount beside
+   * it — `null` where the recipe declines the axis. Fourteen rows, which is the count #475
+   * reported for this device; a fifteenth send arriving unlisted fails the first test below.
+   */
+  const SENDS: { recipe: string; param: string; index: number; space: number | null }[] = [
+    { recipe: 'tm-kick-dark', param: 'REVERB SEND', index: 8, space: 18 },
+    { recipe: 'tm-snare-bright', param: 'DELAY SEND', index: 12, space: 24 },
+    { recipe: 'tm-clap-bright', param: 'REVERB SEND', index: 26, space: 26 },
+    { recipe: 'tm-ride-clean', param: 'REVERB SEND', index: 16, space: 20 },
+    { recipe: 'tm-pad-soft-chord', param: 'REVERB SEND', index: 30, space: 24 },
+    { recipe: 'tm-texture-soft', param: 'REVERB SEND', index: 42, space: 30 },
+    { recipe: 'tm-sub-dark', param: 'REVERB SEND', index: 0, space: null },
+    { recipe: 'tm-metallic-dirty', param: 'REVERB SEND', index: 34, space: 38 },
+    { recipe: 'tm-impact-hard', param: 'REVERB SEND', index: 46, space: 40 },
+    { recipe: 'tm-impact-hard', param: 'DELAY SEND', index: 22, space: 26 },
+    { recipe: 'tm-noise-dirty', param: 'REVERB SEND', index: 18, space: 30 },
+    { recipe: 'tm-riser-bright', param: 'REVERB SEND', index: 54, space: 44 },
+    { recipe: 'tm-sweep-soft', param: 'REVERB SEND', index: 62, space: 46 },
+    { recipe: 'tm-arp-clean', param: 'DELAY SEND', index: 28, space: 34 },
+  ]
+
+  /** The reading itself, as three sentences of arithmetic rather than one call to the manifest. */
+  const dbAt = (index: number) => Number((FLOOR + (index - 1) * STEP).toFixed(2))
+
+  function sendParams(): { recipe: string; param: AuthoredParam }[] {
+    return device.recipes.flatMap((recipe) =>
+      (recipe.params as AuthoredParam[])
+        .filter((p) => p.name === 'REVERB SEND' || p.name === 'DELAY SEND')
+        .map((param) => ({ recipe: recipe.id, param })),
+    )
+  }
+
+  it('closes on the top of the scale, which is what makes the step 0.40', () => {
+    // `-39.60 + 99 x 0.40 = 0.00`. If this is not exact the reading is not a 101-position grid
+    // and every conversion below is built on a taper nobody measured.
+    expect(dbAt(100)).toBe(0)
+    expect(dbAt(1)).toBe(FLOOR)
+    expect(dbAt(2)).toBe(-39.2)
+  })
+
+  it('authors exactly the fourteen sends #475 counted, and no others', () => {
+    const found = sendParams().map((s) => `${s.recipe}/${s.param.name}`).sort(compareCodeUnits)
+    const listed = SENDS.map((s) => `${s.recipe}/${s.param}`).sort(compareCodeUnits)
+    expect(found).toEqual(listed)
+  })
+
+  it('states no send in percent, on any recipe', () => {
+    for (const { recipe, param } of sendParams()) {
+      if (param.kind !== 'numeric') continue
+      expect(param.unit, `${recipe}: ${param.name}`).toBe('dB')
+      expect(param.range.min, `${recipe}: ${param.name}`).not.toBe(0)
+      expect(param.range.max, `${recipe}: ${param.name}`).not.toBe(100)
+    }
+  })
+
+  it('gives every finite send the observed range, the 0.40 step and the off note', () => {
+    const numerics = sendParams().filter(({ param }) => param.kind === 'numeric')
+    expect(numerics).toHaveLength(SENDS.length - 1)
+
+    for (const { recipe, param } of numerics) {
+      if (param.kind !== 'numeric') throw new Error('unreachable')
+      expect(param.range, `${recipe}: ${param.name}`).toEqual({
+        min: FLOOR,
+        max: 0,
+        verified: SEND_CITE,
+      })
+      expect(param.step, `${recipe}: ${param.name}`).toBe(STEP)
+      expect(param.unit, `${recipe}: ${param.name}`).toBe('dB')
+      // §3.2 splits the two claims: the scale was read on hardware, and that says nothing about
+      // which position a kick wants. The point stays taste.
+      expect(param.verified, `${recipe}: ${param.name}`).toBe(false)
+      // The floor of the printed range is not the bottom of the control, and a reader who cannot
+      // find `-inf` on a `-39.6…0` scale would reasonably conclude the box has no off.
+      expect(param.note, `${recipe}: ${param.name}`).toContain('-inf dB')
+    }
+  })
+
+  it('cites hardware rather than the page whose prose is the wrong half', () => {
+    for (const { recipe, param } of sendParams()) {
+      if (param.kind !== 'numeric') continue
+      const cite = param.range.verified
+      if (cite === false || cite === undefined) throw new Error(`${recipe}: ${param.name} uncited`)
+      expect(cite.kind, `${recipe}: ${param.name}`).toBe('observed')
+      // p.120 is the page that says both things. Citing it for this range is the defect.
+      expect(cite.source, `${recipe}: ${param.name}`).not.toContain(CITE_PREFIX)
+      // A screen readout is a property of the software, so the firmware is load-bearing.
+      expect(cite.source, `${recipe}: ${param.name}`).toContain('firmware 2.2.1')
+    }
+  })
+
+  it('converts each value by -39.60 + (index - 1) x 0.40', () => {
+    for (const row of SENDS) {
+      if (row.index === 0) continue
+      const found = sendParams().filter((s) => s.recipe === row.recipe && s.param.name === row.param)
+      expect(found, `${row.recipe}: ${row.param}`).toHaveLength(1)
+      const param = found[0]?.param
+      if (param?.kind !== 'numeric') throw new Error(`${row.recipe}: ${row.param} is not numeric`)
+      expect(param.value, `${row.recipe}: ${row.param} was index ${row.index}`).toBe(dbAt(row.index))
+    }
+  })
+
+  it('scales every space amount by the same 0.40', () => {
+    for (const row of SENDS) {
+      const param = sendParams().find(
+        (s) => s.recipe === row.recipe && s.param.name === row.param,
+      )?.param
+      if (param === undefined) throw new Error(`${row.recipe}: ${row.param} missing`)
+      const space =
+        param.kind === 'numeric'
+          ? param.mood?.find((m) => m.axis === 'space')?.amount
+          : undefined
+
+      if (row.space === null) {
+        // The sub declines the axis, and that refusal is the point of its note.
+        expect(space, `${row.recipe}: ${row.param}`).toBeUndefined()
+        continue
+      }
+      expect(space, `${row.recipe}: ${row.param}`).toBe(Number((row.space * STEP).toFixed(2)))
+    }
+  })
+
+  it('keeps every mood-moved send on the 0.40 grid and inside the range', () => {
+    // An amount off the grid would round on resolution and print a value the box cannot show.
+    for (const recipe of device.recipes) {
+      const hasSend = (recipe.params as AuthoredParam[]).some(
+        (p) => p.name === 'REVERB SEND' || p.name === 'DELAY SEND',
+      )
+      if (!hasSend) continue
+      for (const space of [0, 25, 50, 75, 100]) {
+        for (const p of resolveParams(recipe, moodState({ space }))) {
+          if (p.name !== 'REVERB SEND' && p.name !== 'DELAY SEND') continue
+          if (typeof p.value !== 'number') continue
+          const steps = p.value / STEP
+          expect(
+            Math.abs(steps - Math.round(steps)),
+            `${recipe.id}: ${p.name} at space ${space} is ${p.value}`,
+          ).toBeLessThan(1e-9)
+          expect(p.value, `${recipe.id}: ${p.name} at space ${space}`).toBeGreaterThanOrEqual(FLOOR)
+          expect(p.value, `${recipe.id}: ${p.name} at space ${space}`).toBeLessThanOrEqual(0)
+        }
+      }
+    }
+  })
+
+  /**
+   * The one send authored at the bottom of the control, and the bottom is not a number.
+   *
+   * Omitting it was never an option — `roland-tr-1000`'s own send helper carries the argument in
+   * its comment, *"on this box, off is an instruction"*: a recipe silent about a send inherits
+   * whatever the loaded kit left switched on, and a sub through somebody else's reverb is what
+   * this recipe's note says a mix cannot undo. Pinning it to `-39.60` is wrong for the plainer
+   * reason that the range floor is quiet rather than off, and quiet reverb on a sub is reverb.
+   */
+  it('says the sub is off as text, because -inf is not a point on the scale', () => {
+    const param = sendParams().find((s) => s.recipe === 'tm-sub-dark')?.param
+    expect(param).toBeDefined()
+    if (param?.kind !== 'text') throw new Error('tm-sub-dark REVERB SEND is not text')
+
+    expect(param.value).toBe('-inf dB')
+    // No range, so nothing invites mood to move it — and this recipe declines the axis on
+    // purpose rather than by omission, which is what the note is there to say.
+    expect(param.verified).toBe(false)
+    expect(param.note).toContain('-inf dB')
+    expect(param.note).toContain('not a mood target')
+    expect(param.note).toContain('a mix cannot undo')
+  })
+
+  it('leaves that send visible to the FX section, text or not', () => {
+    // §8 phase 7 reads resolved parameter *names*, so a send that changed kind must still be the
+    // evidence that this box has a reverb.
+    const params = resolveParams(
+      device.recipes.find((r) => r.id === 'tm-sub-dark') as Recipe,
+      moodState(),
+    )
+    expect(params.map((p) => p.name)).toContain('REVERB SEND')
+  })
+})
+
 describe('the trigger note, by track mode (§2.1/§2.2/#86)', () => {
   const modes = pool('track-sample').modes ?? []
 
