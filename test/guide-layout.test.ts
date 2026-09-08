@@ -90,6 +90,26 @@ describe('the sequencer layout is a permutation of the phase layout (§8/#230)',
     })
   }
 
+  it('prints the in-rig source callout once, under either layout (§8/#487)', () => {
+    // A CRAVE and an SP-404MK2: the kick lands on the sampler and the synth beside it can make
+    // one. The callout is a fact about the **rig**, so it must not follow `detail` — the
+    // sequencer layout narrows that to the boxes no section covers, and a rig-wide sentence read
+    // off it would vanish in exactly the rigs that have one.
+    const result = resolve({
+      devices: rig('behringer-crave', 'roland-sp-404mk2'),
+      template: industrial,
+      mood: moodState({}),
+      seed: 3,
+    })
+    for (const layout of ['phase', 'sequencer'] as const) {
+      const md = renderGuide(result, { layout })
+      expect(md.split('**Before you start**').length - 1, `${layout}: one callout`).toBe(1)
+      expect(md).toContain(
+        '[Kick with the filter driven into itself](https://patchscore.app/devices/behringer-crave)',
+      )
+    }
+  })
+
   it('renders every part in both, on every template', () => {
     for (const template of TEMPLATES) {
       const result = resolve({ devices: [...DEVICES], template, mood: moodState({}), seed: 5 })

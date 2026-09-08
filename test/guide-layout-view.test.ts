@@ -24,6 +24,29 @@ const rig = (...ids: string[]) => DEVICES.filter((d) => ids.includes(d.id))
 const view = (result: ReturnType<typeof resolve>) =>
   renderToStaticMarkup(createElement(Guide, { result, seed: 3 }))
 
+describe('the in-rig source callout prints once under either layout (§8/#487)', () => {
+  /**
+   * The web half of `guide-layout.test.ts`'s claim, and it is a claim about placement rather than
+   * about words: `PhaseRig` draws the callout, both layouts render `PhaseRig` exactly once, and
+   * the per-box `RigBoxes` — which the sequencer layout draws under every group — must not. That
+   * split is #455's, and this is the sentence that would have exposed it had it come first.
+   */
+  const result = resolve({
+    devices: rig('behringer-crave', 'roland-sp-404mk2'),
+    template: industrial,
+    mood: moodState({}),
+    seed: 3,
+  })
+
+  for (const layout of ['phase', 'sequencer'] as const) {
+    it(`says it once in the ${layout} layout, with the patch linked`, () => {
+      const html = renderToStaticMarkup(createElement(Guide, { result, seed: 3, layout }))
+      expect(html.split('Make it here first').length - 1).toBe(1)
+      expect(html).toContain('href="/devices/behringer-crave"')
+    })
+  }
+})
+
 describe('the server render is the default layout, so hydration matches (#12)', () => {
   it('renders the sequencer sections, which is what the default now is', () => {
     const result = resolve({

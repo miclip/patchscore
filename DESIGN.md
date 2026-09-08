@@ -3973,7 +3973,53 @@ Do not reorder.
    names every voice it takes — "Tracker Mini · Track 4, Track 5 and Track 6" — because the reader
    is going to walk to the box and touch all three, and a count is not a thing you can touch. A
    one-note part says nothing about realisation, because there is nothing to say
-3. **Rig integration** — clock source, MIDI routing, audio outs, mixer channels
+3. **Rig integration** — clock source, MIDI routing, audio outs, mixer channels.
+
+   **And, where the rig holds both halves of it, one callout saying the rig can already make a
+   part the guide is sending its reader to find** (#487). A recipe that declares `sourceAudio`
+   (§3) tells the reader to go and load audio the voice does not generate. That is right on its
+   own terms and can be wrong about the room it is read in: across every two-box rig in the
+   library, 47% of them have the *other* box authoring a recipe for the same role that needs
+   nothing loaded — a reader with a sampler and a mono synth told to find a kick sample, while
+   the synth beside it has an authored kick patch with cited values on it. Both halves already
+   existed and neither knew about the other; `lib/core/in-rig-source.ts` is the join, over `Role`
+   and nothing else (invariant 3).
+
+   **It belongs here because it is preparation.** A part you are going to build on one box and
+   sample into another does not exist yet, so it has to be settled before the hook and the grid
+   ask for it — which rules out Finishing, what you do to a track that already exists, and Sound
+   design, where the destination's own settings are. Within the phase it sits after the cables
+   and before the per-box blocks: sync, then patching, then what to have ready, then the boxes.
+
+   **One sentence for the rig, and one pair in it.** Per part it would repeat under every
+   sampled role in a rig that has several; all of them at once is a list nobody standing at a
+   rack reads. So the callout is rig-wide and names exactly one actionable pair. `kick` wins the
+   choice — it is the foundational part in every direction the library authors, and it is where
+   the substitution is most audible, which is the case the defect was reported from. Where no
+   kick is paired the direction's own `priority` governs (§4.4), and the keys below it decide
+   nothing musical: role, destination box, maker box, maker recipe, all by code unit so the
+   answer is byte-identical everywhere (§7.2, invariant 6).
+
+   **What it says, and what it must not.** It names the maker box, the destination box and the
+   role, and it names the maker recipe as a link to that box's `/devices/<id>` page — #478 put
+   those patches on a page a reader can open, which is what makes *build it there* an
+   instruction rather than a suggestion. **The page links relative and the Markdown links
+   absolute**, because the Markdown downloads and is read away from the site (§8.2), where a
+   site-relative href resolves against nothing and the callout would promise a patch page while
+   handing over a dead link. Both forms are built from one origin and one path shape in
+   `lib/core/guide.ts` — which is where the canonical origin now lives, since `lib/core` imports
+   from `lib/studio` nowhere and a second copy of a host is a second canonical. It says only to build it there and sample it into the
+   destination. **No sampling procedure**: how to record into the destination is that box's own
+   manual, and neither renderer knows a menu on any box.
+
+   **Silent where the rig has no such pair**, which is 53% of two-box rigs and every one-box rig
+   (invariant 5, and #144's rule one block over — a one-box rig has no *other* box to name). The
+   maker's own recipe must need nothing loaded, and the maker must not be the box the part is
+   already on. Nothing is derived off a manual here, so nothing carries a citation: like the
+   clock source, the sidechain reading and #264's tuning block, it is computed from the rig the
+   reader assembled and labelled by being where derived rig facts live. The pair is decided once
+   in `lib/core` and the sentence is written twice, like every other §8 claim (#33), and it
+   prints once under both layouts (§8/#230) because it is rig-wide rather than per box
 4. **Hook** — written before sound design.
 
    **A part whose notes select slices (§4.1/#369) gets one sentence instead of the notes**: that

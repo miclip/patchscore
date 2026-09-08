@@ -60,7 +60,8 @@ import {
   type ResolveResult,
   type ResolvedAssignment,
   type VoiceControlSource, type SequencerGroup, patternDriver, sequencerGroups, narrowToGroup, unplayedHooks, devicesInGroup, devicesOutsideGroups, stackedPart, type StackedPart,} from './pipeline'
-import { GUIDE_PHASES, count, ioText, mixerText, num, searchCapNotice} from './guide'
+import { GUIDE_PHASES, count, devicePageUrl, ioText, mixerText, num, searchCapNotice} from './guide'
+import { inRigSource } from './in-rig-source'
 import type { GuideLayout } from './guide'
 import {
   arrangement,
@@ -1079,6 +1080,42 @@ function phaseRig(
   const voice = voiceControl(result.interDevicePatch)
   if (voice.length > 0) {
     out.push(...voice)
+    out.push('')
+  }
+
+  /**
+   * §8/#487. **The rig already contains the sound this guide is sending the reader to find.**
+   *
+   * After the cables and before the per-box blocks, which is where preparation belongs: a part
+   * you are going to build on one box and sample into another does not exist yet, so it is
+   * settled before the hook and the grid ask for it. Not Finishing, which is what you do to a
+   * track that exists, and not Sound design, which is where the destination's own settings are.
+   *
+   * One sentence for the rig (#35's shape again), never one per part — and one *pair*, chosen by
+   * `inRigSource`, because a busy rig offers several and a list of them is a list nobody reads.
+   *
+   * `result`, **not `detail`**. This is a fact about the rig in front of the reader, like the
+   * warm-up block above it, and the sequencer layout hands `detail` only the boxes no section
+   * covers — so reading `detail` here would silence the sentence in exactly the rigs that have
+   * one. `guide-layout.test.ts`'s permutation check is what catches that class of miss.
+   *
+   * Nothing here says *how* to sample. The destination box's own manual does that, this renderer
+   * knows no menu on any box, and #478's kit section on the maker's page covers the source side.
+   *
+   * The link is **absolute**, unlike the page's. This document downloads as a file (§8.2) and is
+   * read away from the site, where a site-relative href resolves against nothing — so the callout
+   * would promise a patch page and hand over a dead link. `devicePageUrl` builds it from the one
+   * origin and the one path shape.
+   */
+  const inRig = inRigSource(result)
+  if (inRig !== undefined) {
+    const patch = `[${inRig.maker.recipeTitle}](${devicePageUrl(inRig.maker.deviceId)})`
+    out.push(
+      `**Before you start** — the ${inRig.maker.deviceName} can make the \`${inRig.role}\` the ` +
+        `${inRig.destination.deviceName} is asking you to go and find. ` +
+        `Build ${patch} on the ${inRig.maker.deviceName}, then sample it into the ` +
+        `${inRig.destination.deviceName}.`,
+    )
     out.push('')
   }
 

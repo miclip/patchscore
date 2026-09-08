@@ -1,4 +1,5 @@
 import type { Device } from './device'
+import type { DeviceId } from './ids'
 import type { SearchReport } from './search'
 /**
  * §8. The shape of the guide document, independent of how it is rendered.
@@ -92,6 +93,56 @@ export function num(value: number): string {
 export function count(n: number, singular: string, plural?: string): string {
   if (n === 1) return `${num(n)} ${singular}`
   return `${num(n)} ${plural ?? `${singular}s`}`
+}
+
+/**
+ * The canonical origin, in one place — and this is that place since #487.
+ *
+ * `app/layout.tsx` sets `metadataBase` from it, `app/sitemap.ts` lists it and `app/robots.ts`
+ * points at the sitemap under it. Those three must agree: a canonical tag naming a host the
+ * sitemap does not list, or a sitemap under a host that 308s away, tells a crawler two different
+ * things. `lib/studio/site.ts` re-exports it, so all three still read it from where they always
+ * did and there is still exactly one definition.
+ *
+ * It moved down a layer because the Markdown guide needs it and cannot reach up: `lib/core`
+ * imports from `lib/studio` nowhere. A copy here would be a second canonical host, which is the
+ * one thing the comment above is about.
+ *
+ * The apex, not `www` — `www.patchscore.app` returns a 308 here.
+ */
+export const SITE_ORIGIN = 'https://patchscore.app'
+
+/**
+ * §8/#487. **Where a box's page lives**, as a site-relative path — the one address both renderers
+ * link to, and the one the web guide uses as-is.
+ *
+ * It is here for this module's own reason: both renderers need it, neither owns it, and a second
+ * copy of a URL shape is how a link comes to point at nothing after a route moves. The Markdown
+ * renderer cannot reach `deviceHref` in `lib/studio` — `lib/core` imports from `lib/studio`
+ * nowhere — so the shape lives at the layer both sides can see and `deviceHref` delegates to it,
+ * which keeps `deviceHref`'s own claim true: one place, so the sitemap, the card, the canonical
+ * and now the guide agree.
+ */
+export function devicePagePath(deviceId: DeviceId): string {
+  return `/devices/${deviceId}`
+}
+
+/**
+ * §8.2/#487. The same address **absolute**, which is what a link in the Markdown guide has to be.
+ *
+ * A guide downloads as a file and is read away from the site — in an editor, on a phone, printed
+ * — where `/devices/roland-tr-1000` resolves against whatever the reader's viewer thinks the base
+ * is, which is nothing. The callout promises a patch page; a relative link in a saved file breaks
+ * that promise silently, and a broken link nobody sees fail is worse than no link.
+ *
+ * The web guide keeps the relative form. Same-origin navigation on the site is what `next/link`
+ * is for, and an absolute href there would leave the router and reload the page.
+ *
+ * Built from the two above rather than written out, so the origin and the path each stay one
+ * authority: change the route and both forms move; change the host and both forms move.
+ */
+export function devicePageUrl(deviceId: DeviceId): string {
+  return `${SITE_ORIGIN}${devicePagePath(deviceId)}`
 }
 
 /** §2.3. What audio a box has, as one line. */

@@ -77,6 +77,8 @@ None.
 - On the Tracker Mini, set `Config > MIDI > Clock Out` to `MIDI Out jack`
   - ↳ note: Off, USB, MIDI Out jack, USB + MIDI Out jack — clock leaves only by the routing set here
 
+**Before you start** — the TR-1000 can make the `kick` the Tracker Mini is asking you to go and find. Build [Low long kick that owns the bottom](https://patchscore.app/devices/roland-tr-1000) on the TR-1000, then sample it into the Tracker Mini.
+
 - **Tracker Mini** — groovebox · 9 parts
   - clock: sends clock · midi-din/usb
   - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284)

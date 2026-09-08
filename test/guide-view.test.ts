@@ -4,9 +4,13 @@ import { describe, expect, it } from 'vitest'
 import {
   GUIDE_PHASES,
   NEUTRAL_MOOD,
+  SITE_ORIGIN,
+  devicePagePath,
+  devicePageUrl,
   bandTrajectory,
   hoistedParams,
   fxSources,
+  inRigSource,
   lowEndPairing,
   moodState,
   noteInstruction,
@@ -689,6 +693,216 @@ describe("Finishing's Master FX says the same thing in both renderers (#59)", ()
     expect(authored.filter((name) => anyEffect.test(name))).toEqual([])
     expect(master(text(html(sparse)))).toContain(line)
     expect(master(renderGuide(sparse))).toContain(line)
+  })
+})
+
+describe('Rig integration says the rig can make the part, in both renderers (#487)', () => {
+  /**
+   * §8/#487. The pair is derived once in `lib/core/in-rig-source.ts`; the sentence is written
+   * twice, and here they are deliberately **not** the same words — the standing rule in §8 is one
+   * decision and two hand-written vocabularies. So what is asserted is that both readers are told
+   * the same four things: which box can make it, which box is being sent to find it, which role,
+   * and which patch to open.
+   *
+   * A CRAVE and an SP-404MK2 on Industrial Techno, which is the rig the issue was reported from:
+   * a mono synth and a sampler, the kick on the sampler, and an authored analog kick on the synth
+   * beside it. Two named boxes rather than the library, for the reason `bothScopes` above names
+   * two — an exact tie across the catalogue is settled by a seeded permutation, so an unrelated
+   * device landing could quietly move the kick.
+   */
+  const sampledKick = resolve({
+    devices: DEVICES.filter((d) => d.id === 'behringer-crave' || d.id === 'roland-sp-404mk2'),
+    template: industrialTechno,
+    mood: NEUTRAL_MOOD,
+    seed: 3,
+  })
+
+  /**
+   * Rig integration, and nothing above or below it. The page's jump-nav names all seven phases
+   * before the body does (#341), so the markup side reads `sectionsOf` — slicing the whole
+   * document would find the heading in the nav and return nothing at all.
+   */
+  const mdRig = (doc: string) =>
+    doc.slice(doc.indexOf('## 3. Rig integration'), doc.indexOf('## 4. Hook'))
+
+  const pageRig = (result: ResolveResult) => {
+    const body = text(sectionsOf(result))
+    return body.slice(body.indexOf('Rig integration'), body.indexOf('Hook'))
+  }
+
+  it('names both boxes, the role and the patch, in each renderer’s own words', () => {
+    // Stated as facts first, so a search that moved the kick fails here saying what moved rather
+    // than as an unreadable string diff.
+    expect(inRigSource(sampledKick)).toEqual({
+      role: 'kick',
+      destination: { requestId: 'r-kick', deviceId: 'roland-sp-404mk2', deviceName: 'SP-404MK2' },
+      maker: {
+        deviceId: 'behringer-crave',
+        deviceName: 'CRAVE',
+        recipeId: 'crave-kick-dirty',
+        recipeTitle: 'Kick with the filter driven into itself',
+      },
+    })
+    const md = mdRig(renderGuide(sampledKick))
+    const page = pageRig(sampledKick)
+    for (const doc of [md, page]) {
+      expect(doc).toContain('CRAVE')
+      expect(doc).toContain('SP-404MK2')
+      expect(doc).toContain('kick')
+      expect(doc).toContain('Kick with the filter driven into itself')
+      // Build it there, sample it into the destination — and no procedure for doing so, which is
+      // the destination box's own manual (§8/#487).
+      expect(doc).toMatch(/sample it into the SP-404MK2/)
+    }
+    // Two vocabularies, not one: the openings differ on purpose, and a copy-paste of one into the
+    // other would make this file stop being a parity check and start being a snapshot.
+    expect(md).toContain('**Before you start**')
+    expect(page).toContain('Make it here first')
+  })
+
+  it('links the patch to the maker’s device page, in both renderers', () => {
+    // #478 put that patch on a page a reader can open, which is what makes *build it there* an
+    // instruction. One origin and one path shape underneath both, so the two cannot drift apart.
+    expect(renderGuide(sampledKick)).toContain(
+      `[Kick with the filter driven into itself](${devicePageUrl('behringer-crave')})`,
+    )
+    expect(html(sampledKick)).toContain(
+      `<a href="${devicePagePath('behringer-crave')}">` +
+        `${escaped('Kick with the filter driven into itself')}</a>`,
+    )
+  })
+
+  it('is absolute in the file and relative on the page, from one origin and one path (§8.2)', () => {
+    // The Markdown downloads and is read away from the site, where a site-relative href resolves
+    // against nothing — so the callout would promise a patch page and hand over a dead link. The
+    // page keeps the relative form, which is what `next/link` navigates without a reload.
+    expect(devicePageUrl('behringer-crave')).toBe(
+      `${SITE_ORIGIN}${devicePagePath('behringer-crave')}`,
+    )
+    expect(renderGuide(sampledKick)).toContain('](https://patchscore.app/devices/')
+    // And the guide's Markdown carries no bare site-relative link anywhere, which is the failure
+    // this replaced rather than a property of this one callout.
+    expect(renderGuide(sampledKick)).not.toContain('](/devices/')
+    expect(html(sampledKick)).not.toContain(`href="${SITE_ORIGIN}`)
+  })
+
+  it('names one pair, not every pair the rig offers', () => {
+    // This rig can make six of the sampled roles in-rig. Naming all of them would be a list
+    // nobody standing at a rack reads, so one is chosen — and it is the kick.
+    const pairable = new Set<string>()
+    for (const a of sampledKick.assignments) {
+      if (a.recipe.sourceAudio === undefined) continue
+      for (const device of sampledKick.devices) {
+        if (device.id === a.deviceId) continue
+        if (device.recipes.some((r) => r.role === a.role && r.sourceAudio === undefined)) {
+          pairable.add(a.role)
+        }
+      }
+    }
+    expect(pairable.size).toBeGreaterThan(1)
+    expect(pairable).toContain('kick')
+    for (const doc of [renderGuide(sampledKick), text(html(sampledKick))]) {
+      expect(doc.split('sample it into').length - 1).toBe(1)
+    }
+  })
+
+  it('falls to the direction’s priority where no kick was sent shopping', () => {
+    // An MPC Live III and a Tracker on Ambient Dub: four roles pairable, none of them the kick,
+    // and `sub` is the one the direction ranked first (§4.4).
+    const noKick = resolve({
+      devices: DEVICES.filter((d) => d.id === 'akai-mpc-live-iii' || d.id === 'polyend-tracker'),
+      template: ambientDub,
+      mood: NEUTRAL_MOOD,
+      seed: 3,
+    })
+    const pair = inRigSource(noKick)
+    expect(pair?.role).toBe('sub')
+    // Derived here independently: no kick part in this guide is being sent to find audio, and
+    // `sub` really is the lowest-priority-number role among the ones that are.
+    const shopping = noKick.assignments.filter((a) => a.recipe.sourceAudio !== undefined)
+    expect(shopping.filter((a) => a.role === 'kick')).toEqual([])
+    const paired = shopping.filter((a) =>
+      noKick.devices.some(
+        (d) =>
+          d.id !== a.deviceId &&
+          d.recipes.some((r) => r.role === a.role && r.sourceAudio === undefined),
+      ),
+    )
+    expect(Math.min(...paired.map((a) => a.priority))).toBe(
+      paired.find((a) => a.role === 'sub')?.priority,
+    )
+    for (const doc of [renderGuide(noKick), text(html(noKick))]) {
+      expect(doc).toContain('MPC Live III')
+      expect(doc).toContain('Bassline sine with the sub-octave under it, filter almost shut')
+    }
+  })
+
+  it('says nothing at a two-box rig where neither box makes what the other loads', () => {
+    // A Digitakt II and an SP-404MK2 on Industrial Techno: eleven parts sent shopping across two
+    // samplers, and not one of them has a box beside it that plays the part from scratch. The
+    // one-box case below is the easy arm of silence; this is the arm that has two boxes to name
+    // and must still name neither (invariant 5).
+    const twoSamplers = resolve({
+      devices: DEVICES.filter((d) => d.id === 'elektron-digitakt-ii' || d.id === 'roland-sp-404mk2'),
+      template: industrialTechno,
+      mood: NEUTRAL_MOOD,
+      seed: 3,
+    })
+    expect(twoSamplers.devices).toHaveLength(2)
+    expect(
+      twoSamplers.assignments.filter((a) => a.recipe.sourceAudio !== undefined).length,
+    ).toBeGreaterThan(1)
+    expect(inRigSource(twoSamplers)).toBeUndefined()
+    expect(renderGuide(twoSamplers)).not.toContain('Before you start')
+    expect(text(html(twoSamplers))).not.toContain('Make it here first')
+    expect(html(twoSamplers)).not.toContain('href="/devices/')
+  })
+
+  it('counts a hybrid box as a maker, because the test is per recipe (#487)', () => {
+    // A Digitakt II and a Tracker Mini, which looks like two samplers and is not: the Tracker
+    // Mini's sample tracks run its own synth engine, and `tm-bass-mid-dark-sample` is one of
+    // them — `mode: synth`, no `sourceAudio`, nothing to load. So the pair is real and the
+    // callout prints. Pinned because the opposite reading is the plausible one: a rule written
+    // per *device* — "is this box a sampler" — would go silent here and be wrong about a box
+    // that genuinely makes the part.
+    const hybrid = resolve({
+      devices: DEVICES.filter(
+        (d) => d.id === 'elektron-digitakt-ii' || d.id === 'polyend-tracker-mini',
+      ),
+      template: industrialTechno,
+      mood: NEUTRAL_MOOD,
+      seed: 3,
+    })
+    const pair = inRigSource(hybrid)
+    expect(pair?.role).toBe('bass-mid')
+    expect(pair?.maker.deviceId).toBe('polyend-tracker-mini')
+    // The claim rests on the recipe, so assert the recipe rather than the box.
+    const maker = hybrid.devices.find((d) => d.id === 'polyend-tracker-mini')
+    const patch = maker?.recipes.find((r) => r.id === pair?.maker.recipeId)
+    expect(patch?.sourceAudio).toBeUndefined()
+    for (const doc of [renderGuide(hybrid), text(html(hybrid))]) {
+      expect(doc).toContain('Tracker Mini')
+      expect(doc).toContain('Digitakt II')
+      expect(doc).toContain('Wide detuned reese, filter well down')
+    }
+  })
+
+  it('says nothing at all where the rig holds no such pair', () => {
+    // A Tracker Mini alone on Weave. It is sent to find plenty of audio and there is no second
+    // box to make any of it — inventing one to have something to say is invariant 5, and #144 is
+    // the same rule: a sentence naming another box, read at a rack holding one.
+    const alone = resolve({
+      devices: DEVICES.filter((d) => d.id === 'polyend-tracker-mini'),
+      template: weave,
+      mood: NEUTRAL_MOOD,
+      seed: 1,
+    })
+    expect(alone.assignments.some((a) => a.recipe.sourceAudio !== undefined)).toBe(true)
+    expect(inRigSource(alone)).toBeUndefined()
+    expect(renderGuide(alone)).not.toContain('Before you start')
+    expect(text(html(alone))).not.toContain('Make it here first')
+    // And no orphaned link to a device page, which is the other half of rendering nothing.
+    expect(html(alone)).not.toContain('href="/devices/')
   })
 })
 
