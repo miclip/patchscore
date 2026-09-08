@@ -95,6 +95,8 @@ None.
 
 - Why this box sends them — 3 boxes here claim that job, so the names settled it
 
+**Before you start** — the MPC Live III can make the `riser` the TR-8S is asking you to go and find. Build [TubeSynth riser: LFO on pitch, free-running, filter opening over the bar](https://patchscore.app/devices/akai-mpc-live-iii) on the MPC Live III, then sample it into the TR-8S.
+
 - **MPC Live III** — groovebox · 0 parts
   - clock: sends clock · out: midi-din/usb · in: midi-din/usb/ableton-link
   - audio: stereo main out · 4 individual outs · USB audio · audio in

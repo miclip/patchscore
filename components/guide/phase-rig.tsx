@@ -10,9 +10,12 @@ import {
   clockJackNotes,
   clockSourceBasis,
   clockSourceSetup,
+  devicePagePath,
+  inRigSource,
   quickTuneNotices,
   warmUpNotices,
 } from '@/lib/core'
+import Link from 'next/link'
 import { clockParts, count, ioText, list, mixerText, syncText } from './format'
 
 /**
@@ -304,8 +307,40 @@ export function PhaseRig({
       */}
       <VoiceControl patch={result.interDevicePatch} />
 
+      <InRigSourceNote result={result} />
+
       <RigBoxes result={result} occupied={occupied} devices={detail ?? result.devices} />
     </>
+  )
+}
+
+/**
+ * §8/#487. **A part this guide sends the reader shopping for, and the box beside it that can
+ * play the part from scratch.**
+ *
+ * After the cables and before the per-box list, because it is preparation: the sound does not
+ * exist yet, and it has to before the hook and the grid ask for it. This renderer's own words
+ * (#33) around one decision made in `lib/core/in-rig-source.ts` — which pair, and whether there
+ * is one at all.
+ *
+ * `result.devices`, never the narrowed `detail`. The sentence is about the rig, so the sequencer
+ * layout — which passes only the boxes no section covers — must not be able to lose it.
+ *
+ * The recipe title is the link, and it goes to the maker's page: #478 put that patch on a page a
+ * reader can open, which is what makes *build it there* an instruction rather than a suggestion.
+ * How to sample is the destination box's own manual, and this component knows no menu on any box.
+ */
+function InRigSourceNote({ result }: { result: ResolveResult }) {
+  const pair = inRigSource(result)
+  if (pair === undefined) return null
+  return (
+    <p className="callout">
+      <strong>Make it here first</strong> — the {pair.destination.deviceName} is being sent to
+      find a <span className="mono">{pair.role}</span>, and the {pair.maker.deviceName} in this
+      rig can play one already. Build{' '}
+      <Link href={devicePagePath(pair.maker.deviceId)}>{pair.maker.recipeTitle}</Link> on the{' '}
+      {pair.maker.deviceName}, then sample it into the {pair.destination.deviceName}.
+    </p>
   )
 }
 

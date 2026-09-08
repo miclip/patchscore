@@ -125,6 +125,10 @@ const IMPLEMENTATION = [
   // requests of one role by id, so a locale-dependent comparison here would hand two platforms
   // two different parts to balance — and it is read by renderers, which is `guide.ts`'s reason.
   'mix.ts',
+  // §8/#487's in-rig source pairing. Its whole output is one choice among many candidates, and
+  // four of the five keys that make it are string comparisons of ids — the exact shape §7.2's
+  // rule exists for. Read by renderers too, which is `guide.ts`'s reason.
+  'in-rig-source.ts',
 ]
 const BANNED = [
   'localeCompare',

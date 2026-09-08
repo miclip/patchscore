@@ -1,4 +1,5 @@
 import type { Device, DeviceKind, Template } from '@/lib/core'
+import { devicePagePath } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { TEMPLATES } from '@/lib/templates'
 import { ANY_KIND, NO_DEVICE_FILTER, deviceView, kindsPresent, templateView } from './picker'
@@ -103,9 +104,13 @@ export function deviceLabel(device: Device): string {
   return lower.startsWith(device.maker.toLowerCase()) ? device.name : `${device.maker} ${device.name}`
 }
 
-/** `/devices/roland-tr-1000`. One place, so the sitemap, the card and the canonical agree. */
+/**
+ * `/devices/roland-tr-1000`. One place, so the sitemap, the card and the canonical agree — and
+ * since #487 the guide as well, which is why the shape itself is `devicePagePath` in `lib/core`:
+ * the Markdown renderer links here too and cannot import from this layer.
+ */
 export function deviceHref(device: Device): string {
-  return `/devices/${device.id}`
+  return devicePagePath(device.id)
 }
 
 /** `/directions/ambient-dub`. The device pages link here, so it lives beside `deviceHref`. */
