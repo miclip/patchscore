@@ -545,7 +545,8 @@ describe('the library after the migration', () => {
   })
 
   /**
-   * The nine Owner's Manual pages #22 named, now where a machine can read them.
+   * The nine Owner's Manual pages #22 named, now where a machine can read them — less
+   * `io.audioIn`, which moved to the Reference Manual's Sampling chapter at #490.
    *
    * Each was re-read on the rendered page before it moved, and two were wrong: the clock comment
    * cited p.33 for "sync settings" and p.33 is the backup procedure — p.30 is the synchronization
@@ -563,11 +564,21 @@ describe('the library after the migration', () => {
     })
     // p.12's connector tables — the one page naming every socket the five transports run on.
     expect(evidenceFor(tr1000, 'clock.transport')).toMatchObject({ source: expect.stringContaining('p.12') })
-    for (const fact of ['io.main', 'io.individualOuts', 'io.audioIn', 'io.usbAudio'] as const) {
+    for (const fact of ['io.main', 'io.individualOuts', 'io.usbAudio'] as const) {
       expect(evidenceFor(tr1000, fact), fact).toMatchObject({
         source: expect.stringContaining('p.12'),
       })
     }
+    // `io.audioIn` is the exception and the only `io` fact off p.12 (#490). p.12 names the jacks
+    // and stops; the Reference Manual's Sampling chapter names them *and* shows what arrives
+    // there being used — p.40's `INPUT` takes `EXT IN`, "Only the audio input to the EXTERNAL IN
+    // jacks is sampled", and pp.41-43 edit, play back and import the result. Asserted exactly
+    // rather than by `stringContaining`, because the loop above would accept a p.12 citation
+    // silently coming back and this is the one fact where that would be a regression.
+    expect(evidenceFor(tr1000, 'io.audioIn')).toEqual({
+      kind: 'manual',
+      source: 'TR-1000 Reference Manual (eng02) v1.13+, pp.40-43',
+    })
     // p.14: "The variations (A-H) and fill-ins each have 10 tracks (BD, SD, LT, HT, ...)".
     expect(evidenceFor(tr1000, 'voices')).toMatchObject({ source: expect.stringContaining('p.14') })
     // p.17's STEP EDIT table plus p.18's ACCENT [STEP] — three of the eight are gestures, not
