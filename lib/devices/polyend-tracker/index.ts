@@ -950,7 +950,14 @@ const RECIPES: Recipe[] = [
      * steps are placed where the reader puts them and rise with the hits.
      */
     title: 'Noise riser opening upward into the change',
-    sourceAudio: { need: 'A long noise sweep or a bowed cymbal, at least four bars of rising energy', hint: 'load-sample' },
+    sourceAudio: {
+      need:
+        'A long noise sweep or a bowed cymbal, at least four bars of rising energy — a floor, ' +
+        'not the length of the section it crosses. The part is a single trig: 1-Shot plays the ' +
+        'file once at its own duration (p.122), and nothing here loops or stretches it. Place ' +
+        'the trig so the rise arrives at the change',
+      hint: 'load-sample',
+    },
     params: [
       ...oneShot('At the quiet start', 'At the peak, before any drop'),
       ...filter('High-pass', 12, 30, -10),
@@ -996,7 +1003,11 @@ const RECIPES: Recipe[] = [
      */
     title: 'Low rumble swelling into the change with the filter held shut',
     sourceAudio: {
-      need: 'A long low rumble, sub sweep or bowed low string, at least four bars of rising energy',
+      need:
+        'A long low rumble, sub sweep or bowed low string, at least four bars of rising energy ' +
+        '— a floor, not the length of the section it crosses. The part is a single trig: 1-Shot ' +
+        'plays the file once at its own duration (p.122), and nothing here loops or stretches ' +
+        'it. Place the trig so the swell arrives at the change',
       hint: 'load-sample',
     },
     params: [
