@@ -2042,3 +2042,119 @@ describe('the riser is automated, and no slow LFO lands on volume (§3.2/#452)',
     ])
   })
 })
+
+/**
+ * §3/#101. **The riser's source-length problem, and the decision that keeps it.**
+ *
+ * The recipe asks for eight bars of audible sound, which is a heavier demand than any other
+ * sample part on this box makes. The cheap way out is a loop mode — `Backward loop` cycles a
+ * short tail forever, so no recording is ever too short — and it is refused because p.130 makes
+ * its first pass run *forwards*: *"Sample plays from the start position to the loop end, then
+ * restarts from the loop end, playing in reverse"*. The transient the whole recipe exists to land
+ * on the change would sound eight bars early. p.196 does not rescue it either: it scopes `r` to
+ * *"the step activated"* and says nothing about composing with a mode that carries a direction of
+ * its own.
+ *
+ * So the requirement stays, and what the recipe owes the reader instead is two documented ways to
+ * meet it — the note an octave down (p.128's varispeed) and a render of the box's own reverb tail
+ * (p.230/p.231/p.104). Three things can rot here and none of them is visible from a parameter
+ * table, which is why they are asserted rather than left to the prose:
+ *
+ *  - the play mode drifting to a loop, quietly trading the arrival for the convenience;
+ *  - a lever being described without its page, which is what makes it checkable;
+ *  - the honest sentence being trimmed as redundant — that neither lever makes silence audible,
+ *    so the eight bars are still a condition on the reader's file.
+ */
+describe('the bright riser keeps its arrival and says how to reach eight bars (§3/#101)', () => {
+  const riser = device.recipes.find((r) => r.id === 'tm-riser-bright')
+  if (riser === undefined) throw new Error("no recipe 'tm-riser-bright'")
+
+  it('stays 1-Shot with the step reverse, rather than taking a loop mode', () => {
+    const play = riser.params.find((p) => p.name === 'PLAY MODE')
+    expect(play?.kind === 'enum' && play.value).toBe('1-Shot')
+
+    // Named individually: it is the *loop* modes that would drop the length requirement and lose
+    // the transient, and `Slice`, `Wavetable` and `Granular` would fail for unrelated reasons.
+    for (const mode of ['Forward loop', 'Backward loop', 'Pingpong loop']) {
+      expect(play?.kind === 'enum' && play.value, mode).not.toBe(mode)
+    }
+
+    // The reverse is the other half of the pair, and it lives in prose because #108 found no slot
+    // to hang it on. If it goes, `1-Shot` alone plays the transient first and the recipe is wrong.
+    expect(riser.routing).toContain('<<<')
+    expect(riser.routing).toContain('p.196')
+  })
+
+  it('is in the mode that gives the trigger note the octave is measured from', () => {
+    // `routing` says "an octave below this part's trigger note", which is only an instruction
+    // because the mode authors one. A recipe that gained a `TUNE` would move to `transposed`,
+    // which authors no note at all (#421/#422), and the sentence would be pointing at nothing.
+    expect(riser.mode).toBe('whole-sample')
+    expect(riser.params.some((p) => p.name === 'TUNE')).toBe(false)
+
+    const pool = device.voices.find((v) => v.kind === 'pool' && v.id === 'track-sample')
+    if (pool === undefined || pool.kind !== 'pool') throw new Error("no 'track-sample' pool")
+    const mode = pool.modes?.find((m) => m.id === 'whole-sample')
+    expect(mode?.triggerNote?.note).toBe('C5')
+  })
+
+  it('states the eight audible bars, and both documented ways to get them', () => {
+    const source = riser.sourceAudio
+    expect(source).toBeDefined()
+    if (source === undefined) throw new Error('unreachable')
+
+    expect(source.need).toContain('eight bars of audible sound')
+    // Reader-facing prose only: the field name `prep` is ours, and a reader has no `prep` to
+    // look at — what they see is the bullet under the Source line.
+    expect(source.need).not.toContain('prep')
+
+    // Lever one is an instruction at the machine, so it is in `routing` with its page. The octave
+    // is what p.128 draws; the recipe must not quote a ratio the manual never prints.
+    expect(riser.routing).toContain('p.128')
+    // The rise does not move the pitch; the optional octave-down does. Saying the pitch is
+    // "fixed" would be contradicted by the sentence four clauses later.
+    expect(riser.routing).toContain('not automated over the rise')
+    expect(riser.routing).not.toContain('the pitch is fixed')
+    // Anchored to the part's own trigger note rather than to a note name or to the recording's
+    // pitch. `C5` is authored on the `whole-sample` mode and rendered for this part, so the
+    // octave below it is well defined; the recording's own pitch is exactly what p.128 says the
+    // box does not know, so an instruction phrased against it could not be carried out.
+    expect(riser.routing).toContain('octave below this part\u2019s trigger note')
+    expect(riser.routing).not.toMatch(/octave below `C[0-9]/)
+
+    // An option with its cost stated, not the recipe's answer — and the cost is not written off.
+    // A low-pass opening does not put back an octave of transposed spectrum, and claiming it did
+    // would sell the lever as free.
+    expect(riser.routing).toContain('one option is')
+    expect(riser.routing).toContain('darker')
+    expect(riser.routing).toContain('it does not put back an octave')
+    // A reader who declines the trade is sent to the other method rather than left with it.
+    expect(riser.routing).toContain('print a longer tail')
+
+    // Lever two is a procedure, so it is `prep` — and `prep.verified` is required rather than
+    // inherited (§3), which is the whole reason the page cannot go missing here.
+    const prep = source.prep
+    expect(prep).toBeDefined()
+    if (prep === undefined) throw new Error('unreachable')
+    expect(prep.text).toContain('[Render Selection]')
+    expect(prep.text).toContain('[Render & Load]')
+    expect(prep.verified).not.toBe(false)
+    if (prep.verified === false) throw new Error('unreachable')
+    // p.230 is the sentence that makes the render *capture the reverb*; p.104 is only the buttons.
+    // Citing the buttons alone would leave the load-bearing claim uncited.
+    expect(prep.verified.source).toContain('p.230')
+    expect(prep.verified.source).toContain('p.104')
+  })
+
+  it('does not let either lever read as a way out of the requirement', () => {
+    const need = device.recipes.find((r) => r.id === 'tm-riser-bright')?.sourceAudio?.need
+    expect(need).toBeDefined()
+    // The honest half: transposition stretches what is there, and p.196 turns a silent tail into
+    // no sound at all. A rewrite that keeps the levers and drops this reads as a promise.
+    expect(need).toContain('After any optional transposition')
+    expect(need).toContain('p.196')
+    // And the octave-down is offered, not announced as something already done to the note.
+    expect(need).toContain('Routing offers an octave-down')
+    expect(need).not.toMatch(/drops the\s+note/)
+  })
+})
