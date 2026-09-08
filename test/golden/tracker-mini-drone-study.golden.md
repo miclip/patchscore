@@ -145,7 +145,7 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 
 ### Tracker Mini
 
-*This block draws on the Polyend Tracker Mini Manual 2.2.1b, pp.117-185; its values are starting points.*
+*This block draws on the Polyend Tracker Mini Manual 2.2.1b, pp.117-185 and the instrument at firmware 2.2.1; its values are starting points.*
 
 **Content**
 
@@ -172,7 +172,8 @@ Source — A sustained tonal source, two seconds or longer — a held synth note
 - **LOOP** `Forward`
 - **FILTER TYPE** `Low-pass`
 - **CUTOFF** `48` % (0…100 %)
-- **REVERB SEND** `42` % (0…100 %)
+- **REVERB SEND** `-23.2` dB (-39.6…0 dB)
+  - ↳ note: -39.60 dB is the quietest step; one below it the send reads -inf dB, off
 - **POSITION AUTOMATION TYPE** `LFO`
   - ↳ note: On the Granular Position row of Instrument Automation 2/2
   - ↳ hint: Screen button 4 cycles instrument pages

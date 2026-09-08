@@ -564,7 +564,7 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 
 ### Tracker Mini
 
-*This block draws on the Polyend Tracker Mini Manual 2.2.1b, pp.116-185; its values are starting points.*
+*This block draws on the Polyend Tracker Mini Manual 2.2.1b, pp.116-185 and the instrument at firmware 2.2.1; its values are starting points.*
 
 **Content**
 
@@ -605,8 +605,8 @@ Source — A clean sustained low tone with a stable, known pitch — a sine or a
 - **ENVELOPE · SUSTAIN** `100` % (0…100 %)
 - **ENVELOPE · RELEASE** `0.3` Sec (0…10 Sec)
   - ↳ note: Short, so one note clears before the next — a sub that overlaps itself is mud
-- **REVERB SEND** `0` % (0…100 %)
-  - ↳ note: Zero deliberately, and not a mood target — reverb on a sub is what a mix cannot undo
+- **REVERB SEND** `-inf dB`
+  - ↳ note: -inf dB is the off position, deliberately, and not a mood target — reverb on a sub is what a mix cannot undo
 
 #### Track 3 — `closed-hat`: Short closed hat, nudged off the grid
 
@@ -671,7 +671,8 @@ Source — A struck metal one-shot — bell, spring, pipe, anvil, brake drum. In
 - **ENVELOPE · ATTACK** `0.01` Sec (0…10 Sec)
 - **ENVELOPE · DECAY** `0.9` Sec (0…10 Sec)
 - **ENVELOPE · SUSTAIN** `0` % (0…100 %)
-- **REVERB SEND** `34` % (0…100 %)
+- **REVERB SEND** `-26.4` dB (-39.6…0 dB)
+  - ↳ note: -39.60 dB is the quietest step; one below it the send reads -inf dB, off
 
 ## 7. Finishing
 

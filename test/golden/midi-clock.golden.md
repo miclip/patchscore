@@ -512,7 +512,7 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 
 ### Tracker Mini
 
-*This block draws on the Polyend Tracker Mini Manual 2.2.1b, pp.116-185; its values are starting points.*
+*This block draws on the Polyend Tracker Mini Manual 2.2.1b, pp.116-185 and the instrument at firmware 2.2.1; its values are starting points.*
 
 **Content**
 
@@ -617,7 +617,8 @@ Routing — **Set `r` to `<<<` on the step eight bars before the change** — th
   - ↳ note: In pattern steps: 128 steps is eight bars where a bar is 16 steps
 - **CUTOFF LFO AMOUNT** `60%`
   - ↳ note: How far the ramp travels; the Saw is what makes it travel upward (p.122)
-- **REVERB SEND** `54` % (0…100 %)
+- **REVERB SEND** `-18.4` dB (-39.6…0 dB)
+  - ↳ note: -39.60 dB is the quietest step; one below it the send reads -inf dB, off
 
 ### TR-1000
 
