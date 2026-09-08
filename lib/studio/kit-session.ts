@@ -1,0 +1,141 @@
+import type { Device, Recipe, Role } from '@/lib/core'
+import { KIT_ROLES, kitRecipes } from './device-page'
+
+/**
+ * §3.7/#478. **A kit session: the sounds one box makes, in the order they are built, with the
+ * slot each one is going to end up in.**
+ *
+ * Pure, and deliberately a view model rather than a renderer. Nothing here draws anything, and
+ * nothing here resolves: `kitRecipes` has already decided which recipes qualify and in what
+ * order (§3.6), and this adds exactly the two facts a reader working down that list needs and
+ * the selection alone does not carry — **what to call each sound once it exists**, and **which
+ * core kit sounds this box will not be giving them**.
+ *
+ * **What it is not**, and each of these is a boundary rather than an omission:
+ *
+ *  - **No recording capability.** No device gained a field, no manifest says whether a box can
+ *    sample, and nothing here asks one. The destination is the reader's, below.
+ *  - **No song.** No mood, no arrangement, no step pattern, no tempo — §3.6's limit, unchanged.
+ *    A kit is twelve sounds, not an arrangement of them.
+ *  - **No new recipes.** Every `Recipe` below is the same object the device page and the guide
+ *    already render, by reference.
+ */
+
+/**
+ * §3.7. **Where the sounds go, and the only answer a one-device page can honestly give.**
+ *
+ * `reader-supplied` means *the reader's own recorder, sampler or DAW — whatever they have*. The
+ * model names no destination device because it knows of none: this surface is reached with no
+ * rig and no direction (§3.6), so the other boxes in the room are not facts it holds.
+ *
+ * **This does not reopen §3.6's refusal, it is the other side of it.** What §3.6 declined to
+ * print was an *in-rig* destination — "record it into the Digitakt" — because that is a claim
+ * about a second device the page has never been told about. Naming the reader's own recorder
+ * makes no claim about any box at all; it says who owns the far end of the cable, which is the
+ * one thing that is true on every rig.
+ *
+ * A single-member union on purpose. A second kind — an in-rig destination, once a surface exists
+ * that knows the rig — is a real possibility, and `kind` is what lets that land without every
+ * reader of this type having to guess whether the absence of a field meant "reader's own" or
+ * "nobody has looked".
+ */
+export type KitDestination = { kind: 'reader-supplied' }
+
+/** §3.7. One sound in the session: what it is called, what plays it, and what builds it. */
+export type KitSlot = {
+  /**
+   * `KICK 1`, `CLOSED HAT 2` — the role, spelled for a label, with its position within that
+   * role in this kit.
+   *
+   * **Always numbered, even where the role appears once.** The alternative — bare `KICK` until
+   * a second one exists — renames an existing slot the day a device folder authors another
+   * kick, and a slot name is the thing a reader has written on a pad, a file or a strip of
+   * tape. Numbering from the start costs one character and never moves.
+   *
+   * Derived from the role and the kit order, so it is a pure function of the manifest: same
+   * manifest, same names, on any platform (invariant 6). It is not authored anywhere and must
+   * not become authorable — a name a device folder could set would be a device naming something
+   * outside its own capabilities, and two boxes would spell `CLOSED HAT` differently by Tuesday.
+   */
+  name: string
+  role: Role
+  recipe: Recipe
+}
+
+/** §3.7. What one box offers somebody building a kit at it. */
+export type KitSession = {
+  device: Device
+  destination: KitDestination
+  /** `kitRecipes` order, one slot each. */
+  slots: readonly KitSlot[]
+  /** Core kit roles this box authors nothing for, in kit order — see `CORE_KIT_ROLES`. */
+  absent: readonly Role[]
+}
+
+/**
+ * §3.7. **The three kit roles that are colour rather than kit** — `KIT_ROLES`' own last group,
+ * the fills a reader reaches for after the skins and the metal are down.
+ *
+ * Named here so `CORE_KIT_ROLES` can be one list minus another instead of a second ordering to
+ * keep in step with the first. §3.6 already files `KIT_ROLES` in three groups; this is the third
+ * of them, quoted rather than re-derived.
+ */
+const KIT_FILL_ROLES: readonly Role[] = ['ghost-perc', 'noise', 'impact']
+
+/**
+ * §3.7/invariant 5. **The kit sounds whose absence is worth saying out loud**, in kit order:
+ * the skins and the metal, which is `KIT_ROLES` without the fills.
+ *
+ * **A gap is only honest if it is a gap in something.** Reported against all twelve roles, the
+ * Cascadia — a mono synth that makes a genuinely usable kick, tom, metallic, noise and impact —
+ * would be listed as missing `ghost-perc`, which nobody was looking for and which is not a hole
+ * in a kit. Reported against the nine, it says it has no snare, clap, rim, closed hat, open hat
+ * or ride, and every one of those is a sound a reader will notice they cannot play.
+ *
+ * The line is not "which roles are common" but which ones a kit is *made of*: the fills are what
+ * goes between the sounds a beat is built from, and a kit with no `ghost-perc` is a kit.
+ */
+export const CORE_KIT_ROLES: readonly Role[] = KIT_ROLES.filter(
+  (role) => !KIT_FILL_ROLES.includes(role),
+)
+
+/**
+ * §3.7. `closed-hat` → `CLOSED HAT`. The role id, spelled for a label a reader writes on a pad.
+ *
+ * No `toLocaleUpperCase`, no `Intl`: role ids are ASCII by construction (§1), and a locale-aware
+ * upper case is exactly the class of call CLAUDE.md forbids for producing different bytes on two
+ * machines with no error anywhere.
+ */
+function slotLabel(role: Role): string {
+  return role.replace(/-/g, ' ').toUpperCase()
+}
+
+/**
+ * §3.7. **The session for one box, or `undefined` where there is no kit to have a session
+ * about.**
+ *
+ * `undefined` rather than an empty session, because §3.6's `KIT_MINIMUM` is a claim and not a
+ * length check: below four kit sounds the product does not say *this box can make you a kit*,
+ * and a session carrying no slots and nine absent roles would be that claim made in the
+ * negative, on a page for a box whose recipes are all still there to read.
+ */
+export function kitSession(device: Device): KitSession | undefined {
+  const recipes = kitRecipes(device)
+  if (recipes.length === 0) return undefined
+
+  // Counted as the ordered list is walked, so the ordinal is the reader's own position in the
+  // kit rather than anything about where the recipe sits in the manifest.
+  const seen = new Map<Role, number>()
+  const slots = recipes.map((recipe): KitSlot => {
+    const ordinal = (seen.get(recipe.role) ?? 0) + 1
+    seen.set(recipe.role, ordinal)
+    return { name: `${slotLabel(recipe.role)} ${ordinal}`, role: recipe.role, recipe }
+  })
+
+  return {
+    device,
+    destination: { kind: 'reader-supplied' },
+    slots,
+    absent: CORE_KIT_ROLES.filter((role) => !seen.has(role)),
+  }
+}

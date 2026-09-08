@@ -1703,6 +1703,16 @@ Five properties carry the whole design, and each one is a thing an earlier draft
   oscillator range on p.27 to the MIDI chapter on p.111 — rather than a defect in the summary.
 - **A box citing nothing gets no sentence**, rather than a sentence saying so. The absence is not
   a claim, and the count that would reveal a rot lives where a project can act on it.
+- **The machinery reads claims, not parameters** (#478). `citedSources`, `citedShare`,
+  `dominantRangeCite` and `citationSentence` take `CitationClaims` — a point, a range and an
+  option set, each a `Verified` — and two projections produce them: `resolvedClaims` from a
+  guide's rendered params, `authoredClaims` from a device folder's authored ones with the
+  recipe's citation inherited on §3.1's rules. Before this the input was `ResolvedParam`, so a
+  surface holding authored params and no song had to run them through the resolver, carrying a
+  centred mood it did not have, purely to render a sentence. The claims are what both stages
+  hold. `test/citation-sentence.test.ts` asserts the two projections agree on every recipe in
+  the library, so the kit session's sentence cannot become a second answer to the guide's
+  question.
 
 **A locator is not a title, and the library writes five shapes of one.** #173 was five files under
 one tagged corpus reading as five documents; the same defect returned through the OP-XY's
@@ -2146,7 +2156,8 @@ a build instruction filed behind a bibliography.
 **Where to record it is deliberately absent.** That is a fact about the *other* box in the rig —
 measured at #478, 47% of two-box rigs contain a part whose recipe sends the reader looking for a
 sound the other box has an authored recipe for — and it belongs with the rig-derived prose, not
-on a page that knows one device. The panel names no destination.
+on a page that knows one device. The panel names no destination — §3.7 settles what the *session*
+may say instead, and it is not a box in the rig.
 
 **The markup is this surface's own, sharing the guide's two settled decisions.** §10's monospace
 value treatment and #385's module boxes are how a parameter reads everywhere in the product, and
@@ -2172,6 +2183,148 @@ per-value answer is `Parameter sources`, one section below, under the name print
 **What this issue was for.** Judge it not by whether the page renders but by whether somebody
 with two boxes stops seeing a drum gap. If it gets used, that is the evidence for the standalone
 kit guide #478 defers; if it does not, this saved that work.
+
+### 3.7 The kit session: a destination the reader owns, in three renderings
+
+§3.6 selects the sounds. This is the model the surfaces are built against, and it adds exactly
+two things to that selection: **what each sound is going to be called**, and **which core kit
+sounds this box is not going to give the reader**. `kitSession` (`lib/studio/kit-session.ts`) is
+pure, returns `undefined` where §3.6 declines the claim, and draws nothing.
+
+Three things render it: §3.6's panel on the device page, the Markdown below, and the standalone
+page at `/devices/<id>/kit`. None of the three parses another's output.
+
+**The destination is `reader-supplied`, and that is the only answer this surface can honestly
+give.** It means *the reader's own recorder, sampler or DAW — whatever they have*. §3.6 refused
+to print a destination and was right to: what it refused was an **in-rig** one, "record it into
+the Digitakt", which is a claim about a second box a page reached with no rig has never been told
+about. Naming the reader's own recorder makes no claim about any device at all. It says who owns
+the far end of the cable, which is true on every rig, and it is what lets the guide say *record
+each hit* without a capability behind it.
+
+**No device gained a recording capability, and none was consulted.** Whether a box can sample is
+a fact about that box, `capabilityEvidence` is where such a fact would have to live, and no
+manifest states it. Deriving one — "it has an audio input, so it records" — is invariant 5's
+failure in a new place, and it is not needed: the destination is not a device.
+
+`kind` is a single-member union on purpose. An in-rig destination is a real possibility once a
+surface exists that knows the rig, and the discriminant is what lets that land without every
+reader of the type having to guess whether a missing field meant *the reader's own* or *nobody
+has looked*.
+
+**Slot names are derived, never authored, and always numbered.** `KICK 1`, `CLOSED HAT 2` — the
+role spelled for a label, with its position within that role in this kit. Numbered even where the
+role appears once, because the alternative renames an existing slot the day a folder authors a
+second kick, and a slot name is what a reader has written on a pad, a file or a strip of tape. A
+name a device folder could set would be a device naming something outside its own capabilities,
+and two boxes would spell `CLOSED HAT` differently by Tuesday. Derived, it is a pure function of
+the manifest and byte-identical anywhere (invariant 6) — ASCII upper case, never `toLocaleUpperCase`.
+
+**Absences are reported against the nine core kit roles, not all twelve** — `KIT_ROLES` without
+`ghost-perc`, `noise` and `impact`, which are §3.6's own third group, the fills. A gap is only
+honest if it is a gap in something. Against twelve, the Cascadia — which makes a genuinely usable
+kick, tom, metallic, noise and impact — would be reported as missing `ghost-perc`, which nobody
+was looking for and which is not a hole in a kit. Against nine it reports no snare, clap, rim,
+closed hat, open hat or ride, and every one of those is a sound a reader will notice they cannot
+play. Invariant 5, aimed at something.
+
+**The boundary, restated because it is the whole shape of this step.** No recipe is written, no
+mood applies, no arrangement or step pattern exists, and every `Recipe` in a slot is the same
+object the device page and the guide already render, held by reference so a value cannot come to
+live in two places. A kit is a set of sounds; a song is what §4 is for.
+
+#### The Markdown a session renders
+
+`renderKitSession` (`lib/studio/kit-markdown.ts`) is the first surface built on the model, and it
+is Markdown rather than a page: §8's output is what this product hands somebody standing at a
+machine, and a kit session is read in exactly that position. There is no route and no component
+for it yet.
+
+It prints the model and nothing else, in this order: the box, one sentence saying what the list
+is, **the destination sentence, once**, the block citation, then a section per slot — the slot's
+name and the recipe's title, its role and character, its `routing`, its cables, its authored
+settings — and last, the core roles the box does not make.
+
+Four things about it are decisions rather than layout:
+
+- **Every slot ends with the hit to record and the name to record it under** — *Record one hit
+  with your recorder as `KICK 1`.* The name is the model's, so the label on the pad and the
+  heading above it cannot come apart. *One hit* rather than *record this sound*: the difference
+  is between something a sampler can trigger and something the reader has to edit afterwards.
+- **The reader copy is instructions, not statements about the product.** The destination is
+  *Record each hit with the sampler, recorder, or DAW you use*, and the gap section is *Bring
+  snare, clap, rim, closed hat, open hat and ride from another box or a sample library*. Neither
+  says what this page declines to do, neither claims anything about the rig it cannot see, and
+  neither says what the box cannot make — *nothing here makes a snare* is a claim nobody
+  checked, and what has or has not been authored is never the reader's business. A recipe with
+  no settings prints no `Settings` heading, for the same reason.
+- **Routing, then cables, then settings** — the order it happens at the machine, and the web
+  panel's order too. §8 prints its patch last because a reader there has the box wired already
+  and is working down a list of parts; a reader here is building one patch from nothing, and the
+  cables come before the knobs whose meaning they change.
+- **One citation sentence for the whole document, over the settings this session renders and no
+  others, with no mark or page on any value.** Invariant 4's ink rule exactly as §8 states it,
+  and the *same sentence*: `citationSentence` is imported rather than restated, so the two
+  surfaces cannot drift apart. Nothing is resolved to build it — `authoredClaims` projects the
+  three claims §3.2 counts straight off the authored params, with the recipe's citation
+  inherited. There is no #107 hoisting, because a control appearing in two slots is set twice by
+  a reader who builds both.
+- **Hints always print, and there is no `Show hints`.** §8.1 hides a jog for a reader who has
+  outgrown the page; this reader is deciding whether to build the patch at all — the same call
+  §3.6 made for the web panel.
+
+The guide's conventions are imported wherever the export exists — §10's monospace values, #385's
+module boxes and `groupedParams`' cut, `SUBORDINATE`'s `↳ note:` and `↳ hint:`, `paramLabel`'s
+trimmed names, the `` `from` → `to` `` cable. A reader arriving from a guide must not have to
+learn a second convention for the same fact.
+
+#### The page at `/devices/<id>/kit`
+
+The panel on a device page folds every sound away, because a device page is read by somebody
+deciding what a box *is* and twenty-two expanded sounds is a page nobody skims. This page is for
+the reader who has decided: every slot open, in model order, on one address they can send to a
+phone, print, or save as Markdown.
+
+- **It exists exactly where a kit does.** `generateStaticParams` enumerates the boxes
+  `kitSession` answers for — 24 of the 46 today — and `dynamicParams` is off, so a device with
+  three kit sounds 404s rather than rendering a page whose title makes a claim its body cannot
+  keep. A folder that authors a fourth gets the page, the sitemap entry and the link with no UI
+  edit (invariant 2).
+- **It renders from the model, never from the Markdown.** Parsing one renderer's output to
+  produce another's is how two surfaces come to disagree about something neither decided. What
+  they share instead is `lib/studio/kit-text.ts`, which holds every sentence they both say — the
+  title, the lead, the destination, the record action, the citation and the gap — so parity is
+  structural and the tests confirm it rather than carrying it.
+- **One React reading of a recipe, not two.** `components/catalogue/kit-parts.tsx` holds what is
+  *inside* a sound — routing, cables, values, notes, hints, module boxes — and both the panel and
+  this page render it. A second interpretation would let a reader who moved between the two find
+  the same control described two ways, and neither would be wrong enough to notice.
+- **A server component but for two buttons.** Download Markdown hands over exactly
+  `renderKitSession` of the session on screen, and Print opens the browser's own dialog
+  (§8.2/#12 — no PDF library, then or now). `KitActions` is the only client boundary; everything
+  else is in the prerendered HTML, which is what a crawler, a reader with no JavaScript and a
+  sheet of paper all receive.
+- **Phone first, paper second, both by §21's rules.** One column at every width, wrap rather than
+  shrink, nothing that scrolls the body sideways. On paper the buttons and the two navigation
+  links go, `.kit-panel` joins `.guide-panel` in surviving the panel-hiding rule, and a slot is
+  `break-inside: avoid` — half a patch at the foot of a sheet is a reader turning the page
+  mid-build.
+- **No song and no controls for one.** No mood, no seed, no direction, no arrangement, no clock.
+  §3.7's boundary, unchanged, and asserted as markup.
+
+**`test/golden/cascadia.kit.golden.md` pins the bytes** (`npm run gen:kits` regenerates it), and
+`test/kit-golden.test.ts` re-renders it under `LANG=tr_TR.UTF-8` in a subprocess, the same
+hostile-locale check the guide goldens carry. The Cascadia is the fixture because it is the box
+the section was argued from: eight sounds, two duplicated roles, a patch list on every one, six
+of the nine core roles absent — and a front-panel button that plays all of it with nothing else
+in the room.
+
+**There is no HTML golden**, and that is a deliberate asymmetry rather than an omission. The
+Markdown is a document whose bytes a reader keeps, so byte equality is the claim worth pinning;
+the page is markup whose class names and element choices are ink that will move. What
+`test/kit-page.test.ts` pins instead is the two things that must not move — that every
+substantive line the Markdown prints appears in the page's text, and that the slots, names,
+order, citation and gap match the model — so a restyle costs nothing and a lost cable fails.
 
 ---
 

@@ -3,7 +3,8 @@ import type { MetadataRoute } from 'next'
 import { SITE_ORIGIN } from '@/lib/studio/site'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { TEMPLATES } from '@/lib/templates'
-import { deviceHref, templateHref } from '@/lib/studio/catalogue'
+import { kitSession } from '@/lib/studio/kit-session'
+import { deviceHref, kitHref, templateHref } from '@/lib/studio/catalogue'
 
 /**
  * The root, both catalogue indexes, one entry per device, one per direction (#84), and #174's
@@ -38,6 +39,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
+    /*
+     * §3.7/#478. One per box that offers a kit, and none for the rest — the same test this file
+     * states above: there is a page at it whose canonical is itself. `kitSession` is what
+     * `generateStaticParams` enumerates too, so a box that authors a fourth kit sound appears in
+     * both without an edit, and one that does not is absent from both.
+     */
+    ...DEVICES.flatMap((device) =>
+      kitSession(device) === undefined
+        ? []
+        : [
+            {
+              url: `${SITE_ORIGIN}${kitHref(device)}`,
+              changeFrequency: 'monthly' as const,
+              priority: 0.5,
+            },
+          ],
+    ),
     {
       url: `${SITE_ORIGIN}/directions`,
       changeFrequency: 'weekly' as const,

@@ -663,9 +663,75 @@ export function sameCite(a: Cite, b: Cite | undefined): boolean {
  * point values leads on count and not on dominance. Dominance wins, because the sentence is
  * telling a reader which book their *bounds* came out of.
  */
-export function dominantRangeCite(params: readonly ResolvedParam[]): Cite | undefined {
+/**
+ * §3.2/#478. **What one rendered setting claims about where it came from**, and the whole of what
+ * the citation machinery below reads: the point, and the two legality gates beside it.
+ *
+ * **Three claims and not one, because §3.1 makes them independent.** A cited range says the box
+ * permits these bounds; a cited option set says the box offers these choices; a cited point says
+ * somebody read this value off a document. A reader would open the book for any of them, and the
+ * sentence picks its verb from how many of each there are — so they are counted apart and
+ * carried apart.
+ *
+ * **A projection, so the machinery is not tied to one stage of the pipeline.** It used to take
+ * `ResolvedParam`, which meant a surface with authored params and no song — #478's kit session —
+ * had to run them through the resolver to ask what they rested on, carrying a mood it did not
+ * have and did not want in order to render a sentence. The claims are what both stages actually
+ * hold; `resolvedClaims` and `authoredClaims` are the two ways in, and neither is privileged.
+ *
+ * `false` is a claim: nobody checked this. `undefined` on `range` or `options` means the
+ * parameter has no such gate at all — an enum has no bounds, a numeric no option set — and the
+ * two must not be conflated, since a gate that exists unchecked is §3.2's separate statement.
+ */
+export type CitationClaims = {
+  /** The point's citation, or `false` where the value itself rests on nobody. */
+  point: Verified
+  /** A numeric's bounds. Absent where the parameter has no range. */
+  range?: Verified
+  /** An enum's option set. Absent where the parameter has no options. */
+  options?: Verified
+}
+
+/**
+ * §3.2. The claims a **rendered** guide setting makes. `provenance` is the resolver's answer to
+ * the point — `provisional` is precisely "nobody checked this value" — and the two gates are
+ * carried through resolution unchanged.
+ */
+export function resolvedClaims(params: readonly ResolvedParam[]): readonly CitationClaims[] {
+  return params.map((param) => ({
+    point: param.provenance.state === 'provisional' ? false : param.provenance.cite,
+    ...(param.range === undefined ? {} : { range: param.range.verified ?? false }),
+    ...(param.optionsVerified === undefined ? {} : { options: param.optionsVerified }),
+  }))
+}
+
+/**
+ * §3.1/§3.2. The claims a device folder's **authored** params make, with the recipe's citation
+ * inherited exactly as §3.1 states it: a citation on the param wins, an explicit `false` on the
+ * param wins, and a recipe with none inherits nothing, which is `false`.
+ *
+ * The same rule `inheritVerified` applies at resolve time, written here in terms of
+ * `effectiveVerified` because a module this low cannot import the resolver — and asserted
+ * against it in `test/citation-sentence.test.ts`, so the two cannot drift.
+ *
+ * `recipeVerified` is passed rather than the recipe, because `Recipe` is declared above this
+ * layer and this needs one field of it.
+ */
+export function authoredClaims(
+  params: readonly AuthoredParam[],
+  recipeVerified?: Verified,
+): readonly CitationClaims[] {
+  const inherit = (own: Verified | undefined): Verified => effectiveVerified(own, recipeVerified) ?? false
+  return params.map((param) => ({
+    point: inherit(param.verified),
+    ...(param.kind === 'numeric' ? { range: inherit(param.range.verified) } : {}),
+    ...(param.kind === 'enum' ? { options: inherit(param.options.verified) } : {}),
+  }))
+}
+
+export function dominantRangeCite(claims: readonly CitationClaims[]): Cite | undefined {
   const counts = new Map<string, { cite: Cite; n: number }>()
-  for (const cite of params.flatMap(legalityCites)) {
+  for (const cite of claims.flatMap(legalityCites)) {
     const key = `${cite.kind} ${cite.source}`
     const seen = counts.get(key)
     if (seen === undefined) counts.set(key, { cite, n: 1 })
@@ -689,14 +755,11 @@ export function dominantRangeCite(params: readonly ResolvedParam[]): Cite | unde
   return bestCount < 2 || tied ? undefined : best
 }
 
-/** A param's legality citations: its range's, its option set's, or neither. Never its point's. */
-function legalityCites(param: ResolvedParam): Cite[] {
+/** A setting's legality citations: its range's, its option set's, or neither. Never its point's. */
+function legalityCites(claims: CitationClaims): Cite[] {
   const out: Cite[] = []
-  const range = param.range?.verified
-  if (range !== undefined && range !== false) out.push(range)
-  if (param.optionsVerified !== undefined && param.optionsVerified !== false) {
-    out.push(param.optionsVerified)
-  }
+  if (claims.range !== undefined && claims.range !== false) out.push(claims.range)
+  if (claims.options !== undefined && claims.options !== false) out.push(claims.options)
   return out
 }
 
@@ -842,7 +905,7 @@ function splitLocator(source: string, kind: CiteKind): { name: string; pages: nu
  * **siblings**. A shared decision housed inside one of them would make the other a dependent of
  * it, and the next shared decision would land in whichever file happened to need it first.
  */
-export function citedSources(params: readonly ResolvedParam[]): readonly CitedSource[] {
+export function citedSources(claims: readonly CitationClaims[]): readonly CitedSource[] {
   type Entry = {
     kind: CiteKind
     name: string
@@ -864,13 +927,13 @@ export function citedSources(params: readonly ResolvedParam[]): readonly CitedSo
     for (const page of pages) entry.pages.add(page)
   }
 
-  for (const param of params) {
-    if (param.provenance.state !== 'provisional') add(param.provenance.cite, false)
-    for (const cite of legalityCites(param)) add(cite, true)
+  for (const claim of claims) {
+    if (claim.point !== false) add(claim.point, false)
+    for (const cite of legalityCites(claim)) add(cite, true)
   }
 
   // The document the bounds keep pointing at, reduced to the document — the grain this list is in.
-  const dominant = dominantRangeCite(params)
+  const dominant = dominantRangeCite(claims)
   const leads =
     dominant === undefined || dominant.kind === 'observed'
       ? undefined
@@ -920,17 +983,16 @@ export type CitedShare = {
  * saying otherwise, and `ranges` and `options` stay apart because the sentence has to name what it
  * is talking about — a box whose only cited gate is an option set has no cited range to claim.
  */
-export function citedShare(params: readonly ResolvedParam[]): CitedShare {
+export function citedShare(claims: readonly CitationClaims[]): CitedShare {
   let points = 0
   let ranges = 0
   let options = 0
-  for (const param of params) {
-    if (param.provenance.state !== 'provisional') points += 1
-    const range = param.range?.verified
-    if (range !== undefined && range !== false) ranges += 1
-    if (param.optionsVerified !== undefined && param.optionsVerified !== false) options += 1
+  for (const claim of claims) {
+    if (claim.point !== false) points += 1
+    if (claim.range !== undefined && claim.range !== false) ranges += 1
+    if (claim.options !== undefined && claim.options !== false) options += 1
   }
-  return { total: params.length, points, ranges, options }
+  return { total: claims.length, points, ranges, options }
 }
 
 // ---------------------------------------------------------------------------

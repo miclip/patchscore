@@ -1076,13 +1076,15 @@ body {
   }
 }
 
-.kit-entry .disclosure-body > .quiet {
+.kit-entry .disclosure-body > .quiet,
+.kit-slot > .quiet {
   margin: 0 0 8px;
   max-width: 66ch;
 }
 
 /* `.patch` is declared further down the file and would win on source order alone. */
-.kit-entry .kit-patch {
+.kit-entry .kit-patch,
+.kit-slot .kit-patch {
   margin: 0 0 10px;
 }
 
@@ -1091,7 +1093,8 @@ body {
  * flatten an authored note against the line above it. Restated at three classes so the note under
  * a value reads here exactly as it reads in a guide.
  */
-.kit-section .subordinate.note {
+.kit-section .subordinate.note,
+.kit-page .subordinate.note {
   margin: 2px 0 0;
   font-size: 11.5px;
 }
@@ -1158,6 +1161,154 @@ body {
 /* Three classes, because `.panel .note` above zeroes the margin on every note in a panel. */
 .kit-section .note.kit-foot {
   margin-top: 12px;
+}
+
+/*
+ * §3.7/#478. **The standalone kit page: the same sounds, every one of them open.**
+ *
+ * The panel above folds each sound away because a device page is skimmed. This page is the other
+ * reader — somebody who has decided to build the kit and wants it all in front of them, on a
+ * phone propped against the box or on a sheet beside it. So there is no disclosure here and no
+ * chrome to speak of: a head, a list of sounds, and what is missing from the kit.
+ *
+ * **Everything below obeys §21's rules for a phone**, because that is the primary context: one
+ * column at every width, wrap rather than shrink, and nothing that can push the body sideways.
+ * The inner reading of a sound needs no rules of its own — `KitBody` renders the same markup the
+ * panel does, and `.kit-params`, `.kit-patch` and `.module-box` above already answer for it.
+ */
+.kit-page-head {
+  margin: 0 0 18px;
+  min-width: 0;
+}
+
+.kit-page-head h1 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  line-height: 1.25;
+  /* A device label plus four words. It wraps; it never scrolls and never shrinks (§21). */
+  overflow-wrap: break-word;
+}
+
+.kit-page .kit-lead,
+.kit-destination {
+  margin: 0 0 8px;
+  max-width: 66ch;
+  color: var(--ink);
+  min-width: 0;
+}
+
+/*
+ * §3.2's one sentence, in the prose face at full ink — the same weight `.provenance-lead` gives
+ * it on the device page. It is the reason to trust every value below, and a dim 11px line is
+ * where a reader's eye goes last.
+ */
+.kit-cites {
+  margin: 0 0 12px;
+  max-width: 66ch;
+  color: var(--ink-dim);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * Wrapping, because at 390px two labelled buttons do not sit on one line beside a 44px target.
+ * The row growing to two lines is the rule working, not failing (§21).
+ */
+.kit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 0 0 8px;
+}
+
+.kit-back {
+  margin: 0;
+}
+
+.kit-slots {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+/*
+ * One card per sound. The ordinal is written into the markup rather than left to a counter, for
+ * the reason the panel's is: it is the reader's place in a sequence, which is content, and a CSS
+ * counter is invisible to anything reading the page as text.
+ */
+.kit-slot {
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  padding: 12px 14px;
+  background: var(--panel-1);
+  min-width: 0;
+}
+
+/*
+ * Ordinal, slot name, then the title — the title wraps under the two labels on a narrow screen
+ * rather than squeezing them. `min-width: 0` on the title is what lets it wrap at all inside a
+ * flex row.
+ */
+.kit-page .kit-slot-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--silkscreen);
+}
+
+.kit-slot-head .kit-ordinal {
+  color: var(--ink-dim);
+}
+
+/*
+ * The label the reader is about to write on a pad, drawn as a value (§10): it is a name to copy
+ * exactly, which is the same claim a parameter value makes.
+ */
+.kit-slot-name {
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.kit-page .kit-title {
+  min-width: 0;
+  font-weight: 400;
+  overflow-wrap: break-word;
+}
+
+.kit-page .kit-meta {
+  margin: 0 0 10px;
+  color: var(--ink-dim);
+  font-size: 11.5px;
+}
+
+/*
+ * The action that ends a sound, set apart from the settings above it by a rule rather than by
+ * weight: it is the last thing to do, not the loudest.
+ */
+.kit-record {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--edge);
+  color: var(--ink);
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.kit-page .kit-gap p {
+  margin: 0;
+  max-width: 66ch;
+}
+
+/* The panel's link out to the page above. */
+.kit-open {
+  margin: 8px 0 0;
 }
 
 /*
@@ -4098,8 +4249,16 @@ html {
    */
   .patch-chain,
   .patchbay,
-  .panel:not(.guide-panel):not(.rack-section),
+  /*
+   * §3.7/#478. `.kit-panel` joins `.guide-panel` here for the same reason: the standalone kit
+   * page is a document somebody prints and takes to the machine, so its panels are the content
+   * of the sheet rather than chrome around one. Its buttons go, with every other control.
+   */
+  .panel:not(.guide-panel):not(.kit-panel):not(.rack-section),
   .guide-actions,
+  .kit-actions,
+  .kit-back,
+  .kit-open,
   /*
    * #341. **Navigation is chrome; every section is content.**
    *
@@ -4146,6 +4305,16 @@ html {
    * colour. A treatment that had leaned on the ground would have printed as an ordinary box.
    */
   .module-box {
+    break-inside: avoid;
+  }
+
+  /*
+   * §3.7/#478. One sound is one thing to do at the machine, and half of it at the foot of a
+   * sheet is a reader turning the page mid-patch — the same claim `.module-box` makes one scale
+   * down. The card's border survives onto paper as a thin grey outline, which is what keeps the
+   * sounds apart once the ground is white.
+   */
+  .kit-slot {
     break-inside: avoid;
   }
 
