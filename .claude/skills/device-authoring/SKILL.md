@@ -68,6 +68,47 @@ rather than a typo.
 More generally: **neither Moog nor Roland has a filename convention, so search rather than guess.**
 Twelve guesses at those patterns produced one file; a web search produced the rest at once.
 
+**Check the edition before you cite it, and record the day you checked.** The manual in
+`manuals/` is the one somebody fetched once; the maker may have published several since. The
+Cascadia cited `v1.1 (2023.04.18)` on all 175 of its citations while Intellijel offered v1.4,
+whose Entropic Sequence Generator gives `RISE`, `FALL` and `SHAPE` different jobs on Env B (#480).
+Nothing was wrong with any citation. Nobody had asked whether the document was current.
+
+The workflow, for a new box and for one you are revising:
+
+1. Go to the maker's own current source for this box — their downloads or support page, the
+   product page's manual link, a docs site — and read the edition they publish now: a version on
+   the cover, a filename, a changelog page. `manuals/README.md` records where each file here came
+   from, and some rows have no usable link: Polyend's downloads page blocks an automated fetch,
+   the TR-1000 GEN/INST list has no confirmed URL at all, and a hashed filename like the Hapax's
+   changes whenever Squarp revises it. Where the row points at a support page rather than a file,
+   that page is the thing to read.
+2. If it matches what you are citing, record the day on the manifest:
+
+   ```ts
+   manual: {
+     title: 'Intellijel Cascadia Manual',
+     edition: 'v1.4 (2026.04.13)',
+     currentEditionConfirmedOn: '2026-09-08',   // ISO, and only beside an `edition`
+   },
+   ```
+
+3. If it does not match, fetch the new one, read its changelog, and re-cite what moved before
+   touching the date. That is a separate piece of work and usually its own issue: #481 was the
+   Cascadia's 175 citations against v1.4.
+4. If you cannot establish what the maker publishes now — the page is gone, the box is retired,
+   the download is behind something you cannot reach — **leave the field off**. An absent date is
+   a question still open, which is true. A date on a check that did not happen is a false answer
+   to the one question this field exists to ask, and it will read as settled to everyone after
+   you.
+
+`npm run audit`'s `EDITIONS` block names every manifest nobody has checked, and prints the list
+uncapped. Adding a device with no date puts its id on the `open` list.
+
+**The date in `manuals/README.md` is a different date.** That column says a URL answered on a day,
+which it records as `link checked`. A live link to a superseded PDF is exactly the state the
+Cascadia was in, so one does not stand in for the other.
+
 **A cited range can still be the wrong range.** Where a manual prints more than one scale for a
 control, the citation beside the value proves nothing on its own — the value has to come from the
 scale actually in force. Two devices have hit this: the TR-8S's `SNAPPY` exists only for ACB tones
@@ -484,6 +525,9 @@ If a change to make the device fit would break an invariant, stop and raise it. 
       `cited-against` names a reason, and `unread` names its document.
 - [ ] `content` is declared, or its absence is explained at the `content` path.
 - [ ] `productPage` is the maker's own page and answered 200 to a GET, or is absent on purpose.
+- [ ] The cited `edition` is the one the maker publishes today, and the day you checked is on
+      `manual.currentEditionConfirmedOn`. If you did not check, say so rather than dating it: the
+      audit's `EDITIONS` block counts an absent date correctly and a wrong one not at all.
 - [ ] The panel's coordinates were measured and its aspect checked; nothing vendor-drawn shipped.
 - [ ] `npm run audit` `caps` line did not regress; the numbers are in the commit message.
 - [ ] `npm run audit`'s **`REACH`** block does not name your device. A recipe there is authored,

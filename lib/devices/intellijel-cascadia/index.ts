@@ -1916,7 +1916,14 @@ export const device: Device = {
     'manual-gate': 'MANUAL GATE fires both envelopes',
   },
 
-  manual: { title: 'Intellijel Cascadia Manual', edition: 'v1.4 (2026.04.13)' },
+  manual: {
+    title: 'Intellijel Cascadia Manual',
+    edition: 'v1.4 (2026.04.13)',
+    // #480/#481. v1.4 is the edition every citation here reads, and #481 established it as the
+    // one Intellijel publishes. This is the box the field exists for: it cited v1.1 for months
+    // while v1.4 was on the downloads page.
+    currentEditionConfirmedOn: '2026-09-08',
+  },
 
   productPage: 'https://intellijel.com/shop/eurorack/cascadia/',
 

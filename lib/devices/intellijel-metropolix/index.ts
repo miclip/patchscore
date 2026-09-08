@@ -189,7 +189,13 @@ export const device: Device = {
     'jacks[TRK 2 · GATE]': cite(18),
   },
 
-  manual: { title: 'Metropolix Manual', edition: 'v1.6' },
+  manual: {
+    title: 'Metropolix Manual',
+    edition: 'v1.6',
+    // #480 checked both Intellijel boxes against the downloads page and found this one already
+    // current at v1.6.
+    currentEditionConfirmedOn: '2026-09-08',
+  },
 
   productPage: 'https://intellijel.com/shop/desktop/metropolix-solo/',
 

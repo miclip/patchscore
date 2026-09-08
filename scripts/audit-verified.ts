@@ -135,6 +135,88 @@ function reachBlock(devices: readonly Device[], templates: readonly Template[]):
 }
 
 // ---------------------------------------------------------------------------
+// §2.3/#480. EDITIONS — whether the document a manifest cites is still the one the maker
+// publishes. Hand-recorded on `Device.manual.currentEditionConfirmedOn`; no fetching.
+// ---------------------------------------------------------------------------
+
+/** What the report counts, ids sorted by code unit so the list is stable on any platform. */
+export type EditionCurrency = {
+  /** Cites an edition, and carries a date somebody confirmed that edition current. */
+  dated: { deviceId: string; on: string }[]
+  /** Cites an edition nobody has checked against what the maker publishes now. */
+  open: string[]
+  /** Names a manual with no edition, so there is no cited edition to confirm. */
+  absent: string[]
+}
+
+export function editionCurrency(devices: readonly Device[]): EditionCurrency {
+  const dated: { deviceId: string; on: string }[] = []
+  const open: string[] = []
+  const absent: string[] = []
+  for (const d of devices) {
+    if (d.manual?.edition === undefined) absent.push(d.id)
+    else if (d.manual.currentEditionConfirmedOn === undefined) open.push(d.id)
+    else dated.push({ deviceId: d.id, on: d.manual.currentEditionConfirmedOn })
+  }
+  const byId = (a: string, b: string): number => compareCodeUnits(a, b)
+  dated.sort((a, b) => byId(a.deviceId, b.deviceId))
+  open.sort(byId)
+  absent.sort(byId)
+  return { dated, open, absent }
+}
+
+/**
+ * §2.3/#480. **A citation can be correct and the document behind it superseded**, and until this
+ * block nothing here could tell the two apart. The Cascadia cited v1.1 on all 175 of its
+ * citations while Intellijel published v1.4; the Metropolix cited v1.6, which was current. Every
+ * check in the repo read the two the same way.
+ *
+ * `dated` is the answer somebody recorded by hand, on a date. `open` is the manifests where the
+ * question has not been asked. `absent` is the denominator's other half: a manual named with no
+ * edition, so there is no cited edition to confirm and this block can say nothing about it.
+ *
+ * **Both lists print in full**, like the inert `gaps` list and for its reason. They are facts
+ * about how much of the library has been checked, they shrink one manifest at a time, and a
+ * reader asking whether their box was looked at is asking about the one name a cap would hide.
+ * `absent` is named as well as counted because a manifest citing no edition is not a clean
+ * result: nobody can confirm a printing it never wrote down.
+ *
+ * Nothing gates. An unchecked edition is a question nobody has asked, and the date it wants is a
+ * person opening a downloads page.
+ */
+function editionBlock(devices: readonly Device[]): string[] {
+  const { dated, open, absent } = editionCurrency(devices)
+  const cited = dated.length + open.length
+  const lines = [
+    '  EDITIONS',
+    `    dated  ${n(dated.length)} of ${String(cited)} cited editions carry a date somebody ` +
+      `confirmed them current on`,
+    `    open   ${n(open.length)} editions nobody has checked against what the maker publishes now`,
+    ...idLines(open),
+    `    absent ${n(absent.length)} ${absent.length === 1 ? 'manifest names' : 'manifests name'} ` +
+      `a manual with no edition, so there is no cited edition to confirm`,
+    ...idLines(absent),
+  ]
+  return lines
+}
+
+/** Device ids, three to a line, in the order they were given. Shared by both lists above. */
+function idLines(ids: readonly string[]): string[] {
+  const PER_LINE = 3
+  const lines: string[] = []
+  for (let i = 0; i < ids.length; i += PER_LINE) {
+    lines.push(
+      `      ${ids
+        .slice(i, i + PER_LINE)
+        .map((id) => id.padEnd(28))
+        .join('')
+        .trimEnd()}`,
+    )
+  }
+  return lines
+}
+
+// ---------------------------------------------------------------------------
 // §3.1/#388. INERT — a value authored where something else in the same recipe stops it doing
 // anything. The finding is `lib/core/inert.ts`; what is here is the report.
 // ---------------------------------------------------------------------------
@@ -242,6 +324,7 @@ export function formatAudit(
 
   lines.push(...countsBlock('TOTAL', total ?? totalCounts(ordered)), '')
   lines.push(...reachBlock(DEVICES, TEMPLATES), '')
+  lines.push(...editionBlock(DEVICES), '')
   lines.push(...inertBlock(DEVICES), '')
   return lines.join('\n')
 }
