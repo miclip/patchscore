@@ -805,7 +805,8 @@ const PITCH_AND_SUB_1: [Button, Button, Button] = ['LIT', 'LIT', 'UNLIT']
 const SUBS_ONLY: [Button, Button, Button] = ['UNLIT', 'LIT', 'LIT']
 
 /**
- * How this box is driven, said once per recipe and then extended by each one.
+ * How this box is driven, carried by every recipe and then extended by each one — a guide prints
+ * it once per part, the kit page once for the page (§3.7/#496).
  *
  * §7.4's cable is `IN · CLOCK` or `IN · MIDI IN`; what happens after it arrives is this box's
  * own business, and it is four dividers rather than a step grid. See the header.
@@ -893,6 +894,18 @@ const ACCENT_OCTAVE = {
 const UNDERTONE =
   'The chord is an undertone chord: every note under the two VCOs is that VCO divided by a whole number, so the SUB FREQ integers decide which chord exists. If the direction wants an interval these dividers cannot make, move a VCO rather than forcing a divider'
 
+/**
+ * §3.7/#496. **The two halves of a routing line**: `CLOCKED` is the box, `detail` is the sound.
+ *
+ * A guide sees no difference — `recipeRouting` composes them back into the one sentence that was
+ * here before, so no rendered byte moves. The kit page is what the split is for: it hoists the
+ * shared half into its own header and prints `detail` alone under each sound, instead of opening
+ * every slot with the same paragraph.
+ */
+function clocked(detail: string): Pick<Recipe, 'routingPreamble' | 'routing'> {
+  return { routingPreamble: CLOCKED, routing: detail }
+}
+
 const RECIPES: Recipe[] = [
   // ---- low ---------------------------------------------------------------------------
   {
@@ -901,7 +914,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Two octaves under the oscillator, with the oscillator itself muted',
-    routing: `${CLOCKED}. The VCO is silent at the mixer and only its subharmonics are heard — SUB 1 at ÷4 is two octaves down, SUB 2 at ÷8 is three. That is how this box reaches below its own 262 Hz floor (p.18)`,
+    ...clocked(`The VCO is silent at the mixer and only its subharmonics are heard — SUB 1 at ÷4 is two octaves down, SUB 2 at ÷8 is three. That is how this box reaches below its own 262 Hz floor (p.18)`),
     params: voice({
       freq1: 262,
       wave1: 'UP',
@@ -936,7 +949,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Square bass an octave down, filter tracking just above the fundamental',
-    routing: `${CLOCKED}. SUB 1 at ÷2 puts the body one octave under the VCO and the VCO is left in the mix under it, so the line has an upper edge to filter`,
+    ...clocked(`SUB 1 at ÷2 puts the body one octave under the VCO and the VCO is left in the mix under it, so the line has an upper edge to filter`),
     params: voice({
       freq1: 294,
       wave1: 'UP',
@@ -972,7 +985,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Both oscillators and three subharmonics pushed into the mixer',
-    routing: `${CLOCKED}. p.21: "The mixer can be pushed into a warm distortion by setting the sound sources near their maximum levels" — here that is the point, and five channels are near the top. ${UNDERTONE}`,
+    ...clocked(`p.21: "The mixer can be pushed into a warm distortion by setting the sound sources near their maximum levels" — here that is the point, and five channels are near the top. ${UNDERTONE}`),
     params: voice({
       freq1: 294,
       wave1: 'UP',
@@ -1015,7 +1028,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'The ladder filter self-oscillating, opened by a sequencer clock',
-    routing: `${CLOCKED}. This is the BATERIA patch sheet (p.47) read off its own drawing: every mixer level is fully down, RESONANCE is fully up, and what you hear is the filter's own oscillation gated by a clock. The sheet's NOTES are the tuning instruction — "Kick drum tuning is controlled via filter CUTOFF. Adjust VCF DECAY and EG AMT knobs for different kick drum flavors"`,
+    ...clocked(`This is the BATERIA patch sheet (p.47) read off its own drawing: every mixer level is fully down, RESONANCE is fully up, and what you hear is the filter's own oscillation gated by a clock. The sheet's NOTES are the tuning instruction — "Kick drum tuning is controlled via filter CUTOFF. Adjust VCF DECAY and EG AMT knobs for different kick drum flavors"`),
     patch: [
       cable(
         'OUT · SEQ 2 CLK',
@@ -1077,7 +1090,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'The same filter ping, tuned up and given a longer tail',
-    routing: `${CLOCKED}. The kick's trick at a higher CUTOFF and a longer VCF DECAY, which is what p.47 means by "different kick drum flavors" — one control decides the pitch of the drum`,
+    ...clocked(`The kick's trick at a higher CUTOFF and a longer VCF DECAY, which is what p.47 means by "different kick drum flavors" — one control decides the pitch of the drum`),
     params: voice({
       freq1: 262,
       wave1: 'UP',
@@ -1113,7 +1126,7 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     title: 'All six sources up, the filter crescendoing under them',
-    routing: `${CLOCKED}. Read off the SPIRAL WAYS patch sheet (p.48), whose NOTES give the two intervals in the manual's own words: "Tune SUB VCO 1 FREQ 1 to a Fifth. Tune SUB VCO 2 SUB 2 to a Major 3rd." In the undertone series those are the ÷3 and ÷5 dividers, and "Adjust VCF ATTACK for crescendo depth" is the sheet's own instruction for how far the filter travels. ${UNDERTONE}`,
+    ...clocked(`Read off the SPIRAL WAYS patch sheet (p.48), whose NOTES give the two intervals in the manual's own words: "Tune SUB VCO 1 FREQ 1 to a Fifth. Tune SUB VCO 2 SUB 2 to a Major 3rd." In the undertone series those are the ÷3 and ÷5 dividers, and "Adjust VCF ATTACK for crescendo depth" is the sheet's own instruction for how far the filter travels. ${UNDERTONE}`),
     patch: [
       cable(
         'OUT · VCF EG',
@@ -1165,7 +1178,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'A low undertone chord with the ladder almost shut over it',
-    routing: `${CLOCKED}. Both VCOs sit near the bottom of their four octaves and the chord is built entirely underneath them, so the filter has very little above the fundamentals to remove. ${UNDERTONE}`,
+    ...clocked(`Both VCOs sit near the bottom of their four octaves and the chord is built entirely underneath them, so the filter has very little above the fundamentals to remove. ${UNDERTONE}`),
     params: voice({
       freq1: 262,
       wave1: 'UP',
@@ -1208,7 +1221,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Chord voiced high, with the sequencers moving the dividers under a fixed root',
-    routing: `${CLOCKED}. SEQ 1 ASSIGN leaves OSC 1 dark and lights both SUB buttons, which p.26 describes exactly: the step knobs move "the integer value of SUB 1" while the VCO holds. The root stays put and the chord inverts underneath it, which is a voicing this box can do and a keyboard cannot. ${UNDERTONE}`,
+    ...clocked(`SEQ 1 ASSIGN leaves OSC 1 dark and lights both SUB buttons, which p.26 describes exactly: the step knobs move "the integer value of SUB 1" while the VCO holds. The root stays put and the chord inverts underneath it, which is a voicing this box can do and a keyboard cannot. ${UNDERTONE}`),
     params: voice({
       freq1: 880,
       wave1: 'DOWN',
@@ -1251,7 +1264,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'The whole chord through a fast envelope and a hard filter edge',
-    routing: `${CLOCKED}. Both envelopes at their 1 ms attack (p.24), a short VCA decay, and the filter opened hard by the envelope rather than by the CUTOFF knob. ${UNDERTONE}`,
+    ...clocked(`Both envelopes at their 1 ms attack (p.24), a short VCA decay, and the filter opened hard by the envelope rather than by the CUTOFF knob. ${UNDERTONE}`),
     params: voice({
       freq1: 440,
       wave1: 'UP',
@@ -1295,7 +1308,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Six channels near maximum, so the mixer clips before the filter sees it',
-    routing: `${CLOCKED}. p.21: "The mixer can be pushed into a warm distortion by setting the sound sources near their maximum levels." All six are, and the two VCOs are two hertz apart so the chord beats against itself. ${UNDERTONE}`,
+    ...clocked(`p.21: "The mixer can be pushed into a warm distortion by setting the sound sources near their maximum levels." All six are, and the two VCOs are two hertz apart so the chord beats against itself. ${UNDERTONE}`),
     params: voice({
       freq1: 392,
       wave1: 'UP',
@@ -1339,7 +1352,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'One oscillator high, a fifth under it, filter well open',
-    routing: `${CLOCKED}. VCO 2 is down at the mixer, so the line is a single voice with its ÷3 subharmonic a twelfth below to give it body. SEQ OCT at ±2 lets the four steps cover four octaves (p.28)`,
+    ...clocked(`VCO 2 is down at the mixer, so the line is a single voice with its ÷3 subharmonic a twelfth below to give it body. SEQ OCT at ±2 lets the four steps cover four octaves (p.28)`),
     params: voice({
       freq1: 1046,
       wave1: 'DOWN',
@@ -1375,7 +1388,7 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     title: 'Sawtooth line with a slow filter attack behind every note',
-    routing: `${CLOCKED}. The VCF envelope is slower than the VCA's, so each note arrives dull and opens after it — p.24's Attack range starts at 1 ms and reaches 10 seconds, and this sits well inside it`,
+    ...clocked(`The VCF envelope is slower than the VCA's, so each note arrives dull and opens after it — p.24's Attack range starts at 1 ms and reaches 10 seconds, and this sits well inside it`),
     params: voice({
       freq1: 698,
       wave1: 'DOWN',
@@ -1411,7 +1424,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Two sequencers on coprime dividers, one playing both oscillators',
-    routing: `${CLOCKED}. This is the polyrhythm doing the arpeggio: RHYTHM 1 at ÷3 advances Sequencer 1 and RHYTHM 2 at ÷4 advances Sequencer 2, so the two four-step figures realign every twelve. The cable is p.26's own example — SEQ 1 into VCO 2 — which puts one sequencer's pitch on both oscillators while the other keeps its own`,
+    ...clocked(`This is the polyrhythm doing the arpeggio: RHYTHM 1 at ÷3 advances Sequencer 1 and RHYTHM 2 at ÷4 advances Sequencer 2, so the two four-step figures realign every twelve. The cable is p.26's own example — SEQ 1 into VCO 2 — which puts one sequencer's pitch on both oscillators while the other keeps its own`),
     patch: [
       cable(
         'OUT · SEQ 1',
@@ -1460,7 +1473,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Ladder filter near self-oscillation, envelope opening it every step',
-    routing: `${CLOCKED}. p.23 is the whole patch: "Pushing the RESONANCE level to its maximum and lowering the CUTOFF value can cause the filter to self-oscillate." This sits just under that, so the resonance sings without taking over, and VCF EG AMT does the rest. **Accent:** there is none on this box. p.26 makes a step "a variable tuning knob and an LED", so there is no velocity lane and no accent lane to mark one step louder than its neighbours. SEQ OCT would take a step up an octave, and that is a different note rather than a louder one — so the accented steps this direction asks for are left unplayed here rather than approximated. **Slide:** there is none either. \`pitch\` is the one per-step lane this box declares, no glide or portamento setting appears anywhere in this recipe, and its four steps are advanced by the RHYTHM dividers rather than tied to one another — so a line here steps between its notes instead of sliding into them`,
+    ...clocked(`p.23 is the whole patch: "Pushing the RESONANCE level to its maximum and lowering the CUTOFF value can cause the filter to self-oscillate." This sits just under that, so the resonance sings without taking over, and VCF EG AMT does the rest. **Accent:** there is none on this box. p.26 makes a step "a variable tuning knob and an LED", so there is no velocity lane and no accent lane to mark one step louder than its neighbours. SEQ OCT would take a step up an octave, and that is a different note rather than a louder one — so the accented steps this direction asks for are left unplayed here rather than approximated. **Slide:** there is none either. \`pitch\` is the one per-step lane this box declares, no glide or portamento setting appears anywhere in this recipe, and its four steps are advanced by the RHYTHM dividers rather than tied to one another — so a line here steps between its notes instead of sliding into them`),
     params: voice({
       freq1: 330,
       wave1: 'UP',
@@ -1496,7 +1509,7 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     title: 'Very slow dividers, a long filter swell, nothing arriving on a beat',
-    routing: `${CLOCKED}. Both generators are near ÷16, so the four steps take a long time to come round and the part reads as a drift rather than a figure. The cable feeds the filter envelope back into a divider, which is SLIP & FALL's and SPIRAL WAYS' shared trick (pp.46, 48). ${UNDERTONE}`,
+    ...clocked(`Both generators are near ÷16, so the four steps take a long time to come round and the part reads as a drift rather than a figure. The cable feeds the filter envelope back into a divider, which is SLIP & FALL's and SPIRAL WAYS' shared trick (pp.46, 48). ${UNDERTONE}`),
     patch: [
       cable(
         'OUT · VCF EG',
@@ -1547,7 +1560,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Coprime dividers ringing against each other with the filter wide open',
-    routing: `${CLOCKED}. The four dividers are 5, 7, 11 and 13 against two VCOs a tone apart, so nothing in the chord shares a partial and the result is inharmonic. The cable puts a subharmonic on the other oscillator's pulse width at audio rate, which p.32 says a cable there replaces the normalled sawtooth`,
+    ...clocked(`The four dividers are 5, 7, 11 and 13 against two VCOs a tone apart, so nothing in the chord shares a partial and the result is inharmonic. The cable puts a subharmonic on the other oscillator's pulse width at audio rate, which p.32 says a cable there replaces the normalled sawtooth`),
     patch: [
       cable(
         'OUT · VCO 1 SUB 2',
@@ -1614,7 +1627,7 @@ const RECIPES: Recipe[] = [
      * surprising, neither was written down, and `routing` now says them.
      */
     title: 'An eight-second filter attack with the sequencer climbing under it',
-    routing: `${CLOCKED}. The sweep is the VCF EG: \`VCF ATTACK\` at eight seconds against p.24's ten-second ceiling, with \`VCF EG AMT\` nearly full positive — *"Positive (+) values will cause the VCF EG to open the filter on the Attack stage"*. **The sequencer under it does not chop the climb up.** p.24: *"the VCF EG will not restart even when a new trigger or gate is received. Only once the Attack phase has been completed can a new trigger or gate be received"* — so every step inside those eight seconds is ignored and the sweep runs whole. **It does come back**, though: once the attack and decay have run, the next step starts it again, which is roughly three passes across a sixteen-bar build at 130 BPM. For one climb and no more, leave PLAY unlit and press TRIGGER once where the build starts, with the EG button lit (p.28). SEQ OCT at ±5 gives the four steps the widest climb the box has (p.28)`,
+    ...clocked(`The sweep is the VCF EG: \`VCF ATTACK\` at eight seconds against p.24's ten-second ceiling, with \`VCF EG AMT\` nearly full positive — *"Positive (+) values will cause the VCF EG to open the filter on the Attack stage"*. **The sequencer under it does not chop the climb up.** p.24: *"the VCF EG will not restart even when a new trigger or gate is received. Only once the Attack phase has been completed can a new trigger or gate be received"* — so every step inside those eight seconds is ignored and the sweep runs whole. **It does come back**, though: once the attack and decay have run, the next step starts it again, which is roughly three passes across a sixteen-bar build at 130 BPM. For one climb and no more, leave PLAY unlit and press TRIGGER once where the build starts, with the EG button lit (p.28). SEQ OCT at ±5 gives the four steps the widest climb the box has (p.28)`),
     patch: [
       cable(
         'OUT · SEQ 1',
@@ -1663,7 +1676,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Every source at the bottom of its range, fired once by the trigger button',
-    routing: `${CLOCKED}. All four dividers are near ÷16 under low VCOs, so what lands is the bottom of the box. Hit TRIGGER by hand for the one-shot: with the EG button lit, p.28 says it "will instantly restart the envelope generators without waiting for the next step". ${UNDERTONE}`,
+    ...clocked(`All four dividers are near ÷16 under low VCOs, so what lands is the bottom of the box. Hit TRIGGER by hand for the one-shot: with the EG button lit, p.28 says it "will instantly restart the envelope generators without waiting for the next step". ${UNDERTONE}`),
     params: voice({
       freq1: 262,
       wave1: 'UP',
@@ -1705,7 +1718,7 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     title: 'The filter falling through five octaves under a held chord',
-    routing: `${CLOCKED}. VCF EG AMT is inverted, so p.24's "Inverse (–) values will close the filter during the Attack stage" makes the sweep go downward instead of up. The cable adds the filter envelope to the amplifier so the level falls with it. ${UNDERTONE}`,
+    ...clocked(`VCF EG AMT is inverted, so p.24's "Inverse (–) values will close the filter during the Attack stage" makes the sweep go downward instead of up. The cable adds the filter envelope to the amplifier so the level falls with it. ${UNDERTONE}`),
     patch: [
       cable(
         'OUT · VCF EG',

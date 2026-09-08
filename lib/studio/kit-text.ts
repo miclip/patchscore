@@ -44,6 +44,25 @@ export function kitLead(session: KitSession): string {
 export const KIT_DESTINATION = 'Record each hit with the sampler, recorder, or DAW you use.'
 
 /**
+ * §3.7/#496. **The routing fact every sound on a page shares, as the sentence to print once.**
+ *
+ * `undefined` in, `undefined` out, and a renderer given that prints nothing: a header sentence is
+ * a claim over every sound under it, so there is no half-hoisted state to draw.
+ *
+ * It takes the preamble rather than the session because §3.6's folded panel hoists too and has
+ * only recipes — `sharedRoutingPreamble` is what answers for either. Three surfaces, one sentence,
+ * which is what this module is for.
+ *
+ * The full stop is added here rather than authored, for the reason `RecipeSchema` refuses a
+ * preamble that carries one: the same string is a sentence in this header and a clause inside a
+ * guide's routing line, and only the surface printing it knows which. `Routing — ` stays with each
+ * renderer, beside the identical label it already writes over a slot.
+ */
+export function kitRouting(preamble: string | undefined): string | undefined {
+  return preamble === undefined ? undefined : `${preamble}.`
+}
+
+/**
  * §3.7. The action that ends every slot, up to the slot's name — which each renderer sets in its
  * own monospace: backticks in Markdown, a `mono` span on the page.
  */

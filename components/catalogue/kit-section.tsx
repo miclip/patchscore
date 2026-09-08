@@ -3,6 +3,8 @@ import type { Device, Recipe } from '@/lib/core'
 import { num } from '@/lib/core'
 import { KitBody } from '@/components/catalogue/kit-parts'
 import { kitHref } from '@/lib/studio/catalogue'
+import { sharedRoutingPreamble } from '@/lib/studio/kit-session'
+import { kitRouting } from '@/lib/studio/kit-text'
 
 /**
  * §3.2/#478. **The drum sounds a box makes from scratch, as patches to build and record.**
@@ -42,7 +44,17 @@ import { kitHref } from '@/lib/studio/catalogue'
  * Order is content rather than decoration, so the ordinal is read out rather than hidden: the
  * copy above tells a reader to work down the list, and *3* is how they find their place again.
  */
-function KitEntry({ recipe, device, at }: { recipe: Recipe; device: Device; at: number }) {
+function KitEntry({
+  recipe,
+  device,
+  at,
+  hoisted,
+}: {
+  recipe: Recipe
+  device: Device
+  at: number
+  hoisted: boolean
+}) {
   return (
     <li>
       <details className="disclosure kit-entry">
@@ -63,7 +75,7 @@ function KitEntry({ recipe, device, at }: { recipe: Recipe; device: Device; at: 
         </summary>
         <div className="disclosure-body">
           {/* Routing, cables, settings — `KitBody`, which the standalone page lays open. */}
-          <KitBody recipe={recipe} device={device} />
+          <KitBody recipe={recipe} device={device} hoisted={hoisted} />
         </div>
       </details>
     </li>
@@ -77,6 +89,17 @@ function KitEntry({ recipe, device, at }: { recipe: Recipe; device: Device; at: 
  */
 export function KitSection({ device, kit }: { device: Device; kit: readonly Recipe[] }) {
   if (kit.length === 0) return null
+  /**
+   * §3.7/#496. **The way this box is played, once, above the sounds it is true of.**
+   *
+   * The panel folds each sound away, so the repetition #496 measured is not on screen here the
+   * way it is on the page — but it is in the markup a crawler and a reader with no JavaScript
+   * receive, and it is on screen the moment somebody opens two sounds to compare them. The
+   * sentence is shared with the standalone page and the Markdown rather than written again;
+   * three surfaces disagreeing about a fact none of them decided is what `kit-text.ts` exists to
+   * prevent.
+   */
+  const routing = kitRouting(sharedRoutingPreamble(kit))
   return (
     <section className="panel span-2 kit-section">
       <header>
@@ -88,9 +111,16 @@ export function KitSection({ device, kit }: { device: Device; kit: readonly Reci
         down the list: open one, patch it, set the values, then record a single hit before moving
         to the next.
       </p>
+      {routing === undefined ? null : <p className="kit-routing">Routing — {routing}</p>}
       <ol className="kit-list">
         {kit.map((recipe, i) => (
-          <KitEntry key={recipe.id} recipe={recipe} device={device} at={i + 1} />
+          <KitEntry
+            key={recipe.id}
+            recipe={recipe}
+            device={device}
+            at={i + 1}
+            hoisted={routing !== undefined}
+          />
         ))}
       </ol>
       <p className="note kit-foot">

@@ -1,6 +1,6 @@
 import { Fragment } from 'react'
 import type { AuthoredParam, Device, ParamScope, PatchEntry, Recipe } from '@/lib/core'
-import { groupedParams, num, paramLabel } from '@/lib/core'
+import { groupedParams, num, paramLabel, recipeRouting } from '@/lib/core'
 import { hintText } from '@/components/guide/format'
 
 /**
@@ -157,10 +157,29 @@ function KitPatch({ entries }: { entries: readonly PatchEntry[] }) {
  * empty block is a reader looking for something that is not there, and a line about it would be
  * a line about this library rather than about the box in front of them.
  */
-export function KitBody({ recipe, device }: { recipe: Recipe; device: Device }) {
+export function KitBody({
+  recipe,
+  device,
+  hoisted = false,
+}: {
+  recipe: Recipe
+  device: Device
+  /**
+   * §3.7/#496. Whether the container has already printed this recipe's `routingPreamble` in its
+   * own header, in which case the sound prints only its own half.
+   *
+   * A container passes it only after `sharedRoutingPreamble` said every sound on the page carries
+   * the same one, so `false` here — the default, and the answer on three of the nine boxes with a
+   * kit — prints `recipeRouting`, which is the whole line exactly as it was before the split.
+   * Hoisting is a property of laying every sound out at once, which is why it is the container's
+   * call and not this component's.
+   */
+  hoisted?: boolean
+}) {
+  const routing = hoisted ? recipe.routing : recipeRouting(recipe)
   return (
     <>
-      {recipe.routing === undefined ? null : <p className="quiet">Routing — {recipe.routing}</p>}
+      {routing === undefined ? null : <p className="quiet">Routing — {routing}</p>}
       {recipe.patch === undefined || recipe.patch.length === 0 ? null : (
         <KitPatch entries={recipe.patch} />
       )}

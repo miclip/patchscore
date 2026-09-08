@@ -790,8 +790,10 @@ const VOICE_ROLES: Role[] = [
 // ---------------------------------------------------------------------------
 
 /**
- * How this box is driven, said once per recipe because it is the thing a reader of a Cascadia
- * page most needs and the guide has nowhere else to put it: there is no sequencer here.
+ * How this box is driven, carried by every recipe because it is the thing a reader of a Cascadia
+ * page most needs and the guide has nowhere else to put it: there is no sequencer here. A guide
+ * prints it once per part; the kit page prints it once for the page (§3.7/#496), which is what
+ * made 194 characters eight times worth fixing rather than shortening.
  *
  * **The third way in is the front panel, and it is named because a reader with no controller
  * has no other one.** #478's kit section renders these recipes to somebody standing at the box
@@ -812,6 +814,18 @@ const PLAYED =
   'which gates any envelope whose own GATE input is empty (p.54) — Cascadia has no sequencer ' +
   'of its own'
 
+/**
+ * §3.7/#496. **The two halves of a routing line**: `PLAYED` is the box, `detail` is the sound.
+ *
+ * A guide sees no difference — `recipeRouting` composes them back into the one sentence that was
+ * here before, so no rendered byte moves. The kit page is what the split is for: it hoists the
+ * shared half into its own header and prints `detail` alone under each sound, instead of opening
+ * every slot with the same paragraph.
+ */
+function played(detail: string): Pick<Recipe, 'routingPreamble' | 'routing'> {
+  return { routingPreamble: PLAYED, routing: detail }
+}
+
 const RECIPES: Recipe[] = [
   // ---- low --------------------------------------------------------------------------
   {
@@ -820,7 +834,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Sine kick: Envelope B dropped into VCO A pitch, filter bypassed to the amp',
-    routing: `${PLAYED}. Envelope B does the pitch drop, Envelope A the body`,
+    ...played(`Envelope B does the pitch drop, Envelope A the body`),
     params: [
       pick('VCO A · TZFM/EXP', 'EXP', FM_TYPES, cite(23)),
       pick('VCO A · AC/DC', 'DC', FM_COUPLING, cite(24)),
@@ -863,7 +877,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Folded kick: the wave folder back into the mixer, soft clip engaged',
-    routing: `${PLAYED}. The folder replaces the ring modulator on mixer channel 1`,
+    ...played(`The folder replaces the ring modulator on mixer channel 1`),
     params: [
       num('VCO A · OCTAVE', 1, OCTAVE, cite(22), { mood: [{ axis: 'darkness', amount: -1 }] }),
       travel('WAVE FOLDER · FOLD', 64, { note: 'more folds, more upper harmonics' }),
@@ -904,7 +918,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Sub one octave down, straight past the filter',
-    routing: `${PLAYED}. The mixer’s SUB jack is a direct output, so nothing else is heard`,
+    ...played(`The mixer’s SUB jack is a direct output, so nothing else is heard`),
     params: [
       pick('MIXER · SUB TYPE', 'SUB -1', SUB_TYPES, cite(42)),
       num('VCO A · OCTAVE', 2, OCTAVE, cite(22), { mood: [{ axis: 'darkness', amount: -1 }] }),
@@ -935,7 +949,7 @@ const RECIPES: Recipe[] = [
     character: 'clean',
     voice: 'voice',
     title: 'Two octaves down through the ladder filter, resonance off',
-    routing: `${PLAYED}. Filter B’s ladder is the second low pass, reached from the utilities`,
+    ...played(`Filter B’s ladder is the second low pass, reached from the utilities`),
     params: [
       pick('MIXER · SUB TYPE', 'SUB -2', SUB_TYPES, cite(42)),
       pick('MIXER · SOFT CLIP', 'OFF', ON_OFF, cite(42)),
@@ -966,7 +980,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Saw and pulse driven into the filter, amp envelope on the cutoff',
-    routing: `${PLAYED}. VCF LEVEL above unity is where the dirt comes from (p.48)`,
+    ...played(`VCF LEVEL above unity is where the dirt comes from (p.48)`),
     params: [
       travel('MIXER · SAW', 74),
       travel('MIXER · PULSE', 52),
@@ -1021,7 +1035,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Triangle bass under a two-pole filter, no resonance',
-    routing: `${PLAYED}. The triangle is a direct mixer output; the pulse and saw stay down`,
+    ...played(`The triangle is a direct mixer output; the pulse and saw stay down`),
     params: [
       pick('VCF · MODE', 'LP2', FILTER_MODES, cite(46)),
       travel('VCF · FREQ', 26),
@@ -1055,7 +1069,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Resonant ladder squelch, envelope on the cutoff, driven in',
-    routing: `${PLAYED}. Q high enough to whistle: every LP mode self-oscillates (p.46). **Accent:** and **Slide:** both belong to whatever is driving this box. Cascadia has no sequencer, no arpeggiator and no step editor, so there is no step here to accent and none to slide from \u2014 both gestures arrive with the notes, from the controller or sequencer playing it`,
+    ...played(`Q high enough to whistle: every LP mode self-oscillates (p.46). **Accent:** and **Slide:** both belong to whatever is driving this box. Cascadia has no sequencer, no arpeggiator and no step editor, so there is no step here to accent and none to slide from \u2014 both gestures arrive with the notes, from the controller or sequencer playing it`),
     params: [
       pick('VCF · MODE', 'LP4', FILTER_MODES, cite(46)),
       travel('VCF · FREQ', 22),
@@ -1093,7 +1107,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Band-pass squelch with the pulse thinned right down',
-    routing: `${PLAYED}. BP4 keeps the top and drops the weight. **Accent:** and **Slide:** both belong to whatever is driving this box. Cascadia has no sequencer, no arpeggiator and no step editor, so there is no step here to accent and none to slide from \u2014 both gestures arrive with the notes, from the controller or sequencer playing it`,
+    ...played(`BP4 keeps the top and drops the weight. **Accent:** and **Slide:** both belong to whatever is driving this box. Cascadia has no sequencer, no arpeggiator and no step editor, so there is no step here to accent and none to slide from \u2014 both gestures arrive with the notes, from the controller or sequencer playing it`),
     params: [
       pick('VCF · MODE', 'BP4', FILTER_MODES, cite(46)),
       travel('VCF · FREQ', 46),
@@ -1130,7 +1144,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Ring modulator fed a square, notched rather than filtered',
-    routing: `${PLAYED}. RING MOD is already on mixer channel 1 (p.43); this changes what it eats`,
+    ...played(`RING MOD is already on mixer channel 1 (p.43); this changes what it eats`),
     params: [
       pick('VCF · MODE', 'NT2', FILTER_MODES, cite(46)),
       travel('VCF · FREQ', 38),
@@ -1166,7 +1180,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Hard-synced ring mod, high-passed to a strike',
-    routing: `${PLAYED}. VCO A syncs to VCO B by default (p.25); this drives the sync harder`,
+    ...played(`VCO A syncs to VCO B by default (p.25); this drives the sync harder`),
     params: [
       pick('VCO A · SYNC TYPE', 'HARD', SYNC_TYPES, cite(24)),
       pick('VCF · MODE', 'HP4', FILTER_MODES, cite(46)),
@@ -1199,7 +1213,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Tuned tom: sine with a short pitch fall, no sub under it',
-    routing: `${PLAYED}. Same pitch-drop idea as the kick, tuned up and shortened`,
+    ...played(`Same pitch-drop idea as the kick, tuned up and shortened`),
     params: [
       pick('VCO A · TZFM/EXP', 'EXP', FM_TYPES, cite(23)),
       pick('VCO A · AC/DC', 'DC', FM_COUPLING, cite(24)),
@@ -1234,7 +1248,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Noise alone through the filter, cutoff sampled and held',
-    routing: `${PLAYED}. S&H is clocked from MIDI CLK by default (p.56), so it moves in time`,
+    ...played(`S&H is clocked from MIDI CLK by default (p.56), so it moves in time`),
     params: [
       pick('MIXER · NOISE TYPE', 'ALT', NOISE_TYPES, cite(42)),
       // #479. Beside `NOISE TYPE`, deliberately, rather than hoisted: the two are one decision,
@@ -1272,7 +1286,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Pink noise slewed smooth, low-passed and sitting still',
-    routing: `${PLAYED}. Slew turns the stepped S&H into a drift (p.57)`,
+    ...played(`Slew turns the stepped S&H into a drift (p.57)`),
     params: [
       pick('MIXER · NOISE TYPE', 'PINK', NOISE_TYPES, cite(42)),
       travel('MIXER · NOISE', 70),
@@ -1310,8 +1324,7 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     title: 'Sample & hold on the fold amount: a new colour on every note',
-    routing:
-      `${PLAYED}. The manual's own patch (p.14): Envelope B clocks the S&H, the S&H sets the fold`,
+    ...played(`The manual's own patch (p.14): Envelope B clocks the S&H, the S&H sets the fold`),
     params: [
       travel('WAVE FOLDER · FOLD', 40),
       travel('WAVE FOLDER · MOD', 68, { note: 'how far the random voltage moves the fold' }),
@@ -1358,7 +1371,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Two saws a fifth apart, filter opened, ring mod out of the way',
-    routing: `${PLAYED}. VCO B replaces the ring modulator on mixer channel 1`,
+    ...played(`VCO B replaces the ring modulator on mixer channel 1`),
     params: [
       pick('VCO B · RANGE', 'VCO', VCO_B_RANGE, cite(27)),
       pick('VCO B · PITCH SOURCE', 'PITCH A+B', PITCH_SOURCES, cite(27)),
@@ -1394,8 +1407,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'One-note stab: folded pulse, gate extended so a trigger fills it',
-    routing:
-      `${PLAYED}. One note, not a chord — this box has one voice, so a chord request gets a gap`,
+    ...played(`One note, not a chord — this box has one voice, so a chord request gets a gap`),
     params: [
       pick('ENVELOPE A · HOLD POSITION', 'Gate Extender', HOLD_POSITIONS, cite(29), ),
       pick('ENVELOPE A · SPEED', 'FAST', ENV_SPEEDS, cite(31)),
@@ -1435,8 +1447,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'One-voice drone, Envelope B cycling under the cutoff',
-    routing:
-      `${PLAYED}. Monophonic: a pad request of more than one note is an honest gap, not this`,
+    ...played(`Monophonic: a pad request of more than one note is an honest gap, not this`),
     params: [
       pick('ENVELOPE B · MODE', 'LFO', ENV_B_MODES, cite(35)),
       pick('ENVELOPE B · LFO SHAPE', 'Tilting LFO', ENV_B_LFO_SHAPES, cite(93), {
@@ -1493,7 +1504,7 @@ const RECIPES: Recipe[] = [
      * does not repeat, and how long it can climb for. All three are on the page.
      */
     title: 'Slow rise on the cutoff, noise climbing under it',
-    routing: `${PLAYED}. **One gate, one climb — this does not repeat.** p.83: the attack *"is triggered by the rising edge of a gate signal sent to the GATE/SYNC [5.D] input"*, and with nothing patched there that gate is the played note or the front-panel MANUAL GATE button (p.39). Hold it for the whole build — *"If the gate length is shorter than the rise time, the envelope will begin to fall before reaching its maximum value"* (p.83). \`CYCLE\` is the Envelope B type that repeats; this is \`AHR\`, so one gate is one gesture. **The climb has a ceiling:** p.83 tops the RISE slider out at five seconds, which is under three bars at 134 BPM. Past that the filter holds where it arrived rather than falling back, so a longer section still works — it simply stops travelling`,
+    ...played(`**One gate, one climb — this does not repeat.** p.83: the attack *"is triggered by the rising edge of a gate signal sent to the GATE/SYNC [5.D] input"*, and with nothing patched there that gate is the played note or the front-panel MANUAL GATE button (p.39). Hold it for the whole build — *"If the gate length is shorter than the rise time, the envelope will begin to fall before reaching its maximum value"* (p.83). \`CYCLE\` is the Envelope B type that repeats; this is \`AHR\`, so one gate is one gesture. **The climb has a ceiling:** p.83 tops the RISE slider out at five seconds, which is under three bars at 134 BPM. Past that the filter holds where it arrived rather than falling back, so a longer section still works — it simply stops travelling`),
     params: [
       pick('ENVELOPE B · MODE', 'ENV', ENV_B_MODES, cite(35)),
       pick('ENVELOPE B · TYPE', 'AHR', ENV_B_TYPES, cite(35)),
@@ -1526,7 +1537,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Burst of pulses into the amp, folded on the way',
-    routing: `${PLAYED}. Envelope B in BURST is a pulse train inside one envelope (p.35)`,
+    ...played(`Envelope B in BURST is a pulse train inside one envelope (p.35)`),
     params: [
       pick('ENVELOPE B · MODE', 'BURST', ENV_B_MODES, cite(35)),
       pick('ENVELOPE B · TYPE', 'AD', ENV_B_TYPES, cite(35)),
@@ -1567,7 +1578,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'LFO X walking the cutoff of a phaser',
-    routing: `${PLAYED}. LFO X is free-running (p.61): it does not lock to the rig’s clock`,
+    ...played(`LFO X is free-running (p.61): it does not lock to the rig’s clock`),
     params: [
       pick('VCF · MODE', 'PHZ', FILTER_MODES, cite(46)),
       travel('VCF · FREQ', 32),
@@ -1638,8 +1649,7 @@ const RECIPES: Recipe[] = [
      * the reader performs, and the note on the slider says so.
      */
     title: 'Scramble the entropic sequence across the join, then lock what lands',
-    routing:
-      `${PLAYED}. The gesture is one slider: SHAPE up to mutate the eleven-step cutoff sequence, down to keep it (p.93)`,
+    ...played(`The gesture is one slider: SHAPE up to mutate the eleven-step cutoff sequence, down to keep it (p.93)`),
     params: [
       pick('ENVELOPE B · MODE', 'LFO', ENV_B_MODES, cite(35)),
       pick('ENVELOPE B · LFO SHAPE', 'Entropic Sequence Generator', ENV_B_LFO_SHAPES, cite(93), {

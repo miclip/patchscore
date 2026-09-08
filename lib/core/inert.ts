@@ -25,6 +25,7 @@
  */
 
 import type { Device, Recipe } from './device'
+import { recipeRouting } from './device'
 import type { AuthoredParam } from './params'
 import { compareCodeUnits } from './resolver'
 
@@ -253,7 +254,9 @@ function judgeBlock(
  * contain the block's name clears it.
  */
 function pointedElsewhere(recipe: Recipe, block: string, sep: string): boolean {
-  const said: string[] = [recipe.routing ?? '']
+  // §3.7/#496. The composed line: a preamble naming the block points it just as a tail would,
+  // and reading half of what an author wrote would raise candidates the recipe already answers.
+  const said: string[] = [recipeRouting(recipe) ?? '']
   for (const entry of recipe.patch ?? []) said.push(entry.from, entry.to, entry.note ?? '')
   for (const param of recipe.params) {
     if (blockOf(param.name, sep) === block) continue

@@ -493,7 +493,12 @@ function voice(o: VoiceOpts): AuthoredParam[] {
   ]
 }
 
-/** How this box is driven, said once per recipe. p.30 and p.31 are both this sentence. */
+/**
+ * How this box is driven, carried by every recipe. p.30 and p.31 are both this sentence.
+ *
+ * A guide prints it once per part; the kit page hoists it into its header and prints it once for
+ * the whole page (§3.7/#496), which is what `clocked` below is for.
+ */
 const CLOCKED =
   'Plays its own 8-step analog sequencer. Clock it at ADV / CLOCK — one step per rising edge, and the TEMPO knob is then ignored'
 
@@ -526,6 +531,18 @@ const FIRST_HIT = { slot: 'first-hit' as const, set: { velocity: 100 }, hint: 'v
 // Recipes (§3)
 // ---------------------------------------------------------------------------
 
+/**
+ * §3.7/#496. **The two halves of a routing line**: `CLOCKED` is the box, `detail` is the sound.
+ *
+ * A guide sees no difference — `recipeRouting` composes them back into the one sentence that was
+ * here before, so no rendered byte moves. The kit page is what the split is for: it hoists the
+ * shared half into its own header and prints `detail` alone under each sound, instead of opening
+ * every slot with the same paragraph.
+ */
+function clocked(detail: string): Pick<Recipe, 'routingPreamble' | 'routing'> {
+  return { routingPreamble: CLOCKED, routing: detail }
+}
+
 const RECIPES: Recipe[] = [
   // ---- low ---------------------------------------------------------------------------
   {
@@ -534,7 +551,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Square kick with the pitch envelope doing the whole thump',
-    routing: `${CLOCKED}. No patch cable: the VCO envelope is normalled to both oscillators and VCO 1 EG AMOUNT is the only thing that decides how far the pitch falls`,
+    ...clocked(`No patch cable: the VCO envelope is normalled to both oscillators and VCO 1 EG AMOUNT is the only thing that decides how far the pitch falls`),
     params: voice({
       freq1: 22,
       wave1: 'SQUARE',
@@ -562,7 +579,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Triangle kick, filter almost shut, the tail allowed to ring',
-    routing: `${CLOCKED}. p.19: at 12 o'clock the VCF decay "is useful for allowing the decay of kick drums, toms, and other sounds to ring through naturally"`,
+    ...clocked(`p.19: at 12 o'clock the VCF decay "is useful for allowing the decay of kick drums, toms, and other sounds to ring through naturally"`),
     params: voice({
       freq1: 18,
       wave1: 'TRIANGLE',
@@ -590,7 +607,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Kick with noise shaking the filter, mixer pushed into clipping',
-    routing: `${CLOCKED}. p.16 warns that high mixer levels "produce a more aggressive and clipped sound" on this all-analog path — here that is the point`,
+    ...clocked(`p.16 warns that high mixer levels "produce a more aggressive and clipped sound" on this all-analog path — here that is the point`),
     params: voice({
       freq1: 24,
       wave1: 'SQUARE',
@@ -620,7 +637,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Sub with both envelopes flat, so only the sequencer moves the pitch',
-    routing: `${CLOCKED}. p.15: with the VCO EG AMOUNT knobs at centre "no Pitch Modulation will occur", which the page calls "quite useful for creating sequenced bass lines"`,
+    ...clocked(`p.15: with the VCO EG AMOUNT knobs at centre "no Pitch Modulation will occur", which the page calls "quite useful for creating sequenced bass lines"`),
     params: voice({
       freq1: 10,
       wave1: 'TRIANGLE',
@@ -648,7 +665,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Sequenced bass line, square, filter tracking just above the fundamental',
-    routing: `${CLOCKED}. p.13: the square wave is "useful for creating deep, hard-hitting bass sounds"`,
+    ...clocked(`p.13: the square wave is "useful for creating deep, hard-hitting bass sounds"`),
     params: voice({
       freq1: 28,
       wave1: 'SQUARE',
@@ -676,7 +693,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Bass with oscillator 2 folded in through linear FM',
-    routing: `${CLOCKED}. p.14: turning 1→2 FM AMOUNT right increases the modulation of oscillator 2 by oscillator 1 — "complex, springy, bell-like, or aggressive" depending on where both are tuned`,
+    ...clocked(`p.14: turning 1→2 FM AMOUNT right increases the modulation of oscillator 2 by oscillator 1 — "complex, springy, bell-like, or aggressive" depending on where both are tuned`),
     params: voice({
       freq1: 26,
       wave1: 'SQUARE',
@@ -710,7 +727,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Snare from noise over a short square body, high-passed',
-    routing: `${CLOCKED}. p.16: the white noise generator is "useful for creating snare drums and high-hats, and also for adding depth and attack to pitched percussion sounds"`,
+    ...clocked(`p.16: the white noise generator is "useful for creating snare drums and high-hats, and also for adding depth and attack to pitched percussion sounds"`),
     params: voice({
       freq1: 52,
       wave1: 'SQUARE',
@@ -738,7 +755,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Snare with the body thinned right out and the noise on top',
-    routing: `${CLOCKED}. p.17: high-pass mode is "ideal for crafting bright, thin, or snappier sounds"`,
+    ...clocked(`p.17: high-pass mode is "ideal for crafting bright, thin, or snappier sounds"`),
     params: voice({
       freq1: 58,
       wave1: 'TRIANGLE',
@@ -767,7 +784,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Clap: noise only, fast attack, decay just long enough to have a body',
-    routing: `${CLOCKED}. p.21: a VCA decay around 9 o'clock is "useful for creating short blips, hits, and claps where a small portion of the body of a sound is desirable"`,
+    ...clocked(`p.21: a VCA decay around 9 o'clock is "useful for creating short blips, hits, and claps where a small portion of the body of a sound is desirable"`),
     params: voice({
       freq1: 50,
       wave1: 'SQUARE',
@@ -796,7 +813,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Tight hat: noise, high-passed, the shortest decay on the knob',
-    routing: `${CLOCKED}. p.15 puts SEQ PITCH MOD at OFF for "droning and non-pitched percussion sounds like high-hats"; p.21 calls the minimum VCA decay "ideal for crafting short sounds with sharp attacks, such as tight hi-hats"`,
+    ...clocked(`p.15 puts SEQ PITCH MOD at OFF for "droning and non-pitched percussion sounds like high-hats"; p.21 calls the minimum VCA decay "ideal for crafting short sounds with sharp attacks, such as tight hi-hats"`),
     params: voice({
       freq1: 64,
       wave1: 'SQUARE',
@@ -823,7 +840,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'The same hat with the amplifier let go, so it rings instead of ticking',
-    routing: `${CLOCKED}. One knob apart from the closed hat, which is what "open" means on a box with one voice: p.21's VCA decay is the whole difference`,
+    ...clocked(`One knob apart from the closed hat, which is what "open" means on a box with one voice: p.21's VCA decay is the whole difference`),
     params: voice({
       freq1: 64,
       wave1: 'SQUARE',
@@ -850,7 +867,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Hard sync and FM together: the sharp, clangorous end of this box',
-    routing: `${CLOCKED}. p.14: hard sync is "useful for creating sharp, metallic, and flange-like sounds", and the page says the two oscillator interactions "can be utilized individually or at the same time"`,
+    ...clocked(`p.14: hard sync is "useful for creating sharp, metallic, and flange-like sounds", and the page says the two oscillator interactions "can be utilized individually or at the same time"`),
     params: voice({
       freq1: 46,
       wave1: 'SQUARE',
@@ -882,7 +899,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Oscillator 2 patched into the filter, so pitch shakes the cutoff',
-    routing: `${CLOCKED}. p.20's TIP verbatim: "Try patching out of VCO 2 into the VCF MOD input. With the NOISE / VCF MOD knob set at maximum, listen to how the Pitch of Oscillator 2 affects the sound of the Filter."`,
+    ...clocked(`p.20's TIP verbatim: "Try patching out of VCO 2 into the VCF MOD input. With the NOISE / VCF MOD knob set at maximum, listen to how the Pitch of Oscillator 2 affects the sound of the Filter."`),
     params: voice({
       freq1: 42,
       wave1: 'SQUARE',
@@ -922,7 +939,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Cymbal sizzle: noise on the filter, long decay, nothing pitched',
-    routing: `${CLOCKED}. p.20: modulating cutoff from the noise generator is "useful for adding sizzle to cymbal sounds"`,
+    ...clocked(`p.20: modulating cutoff from the noise generator is "useful for adding sizzle to cymbal sounds"`),
     params: voice({
       freq1: 70,
       wave1: 'SQUARE',
@@ -955,7 +972,7 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     title: 'Triangle tom with the drum-head punch p.15 describes',
-    routing: `${CLOCKED}. p.13: the triangle wave is "useful for crafting organic percussion sounds like toms or marimbas". p.15 puts the VCO decay at 9-10 o'clock for "the punch that occurs when a drum head is hit with a drum stick or beater"`,
+    ...clocked(`p.13: the triangle wave is "useful for crafting organic percussion sounds like toms or marimbas". p.15 puts the VCO decay at 9-10 o'clock for "the punch that occurs when a drum head is hit with a drum stick or beater"`),
     params: voice({
       freq1: 36,
       wave1: 'TRIANGLE',
@@ -983,7 +1000,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Tom with an exaggerated pitch spike and noise on the attack',
-    routing: `${CLOCKED}. p.16: "larger values will result in more exaggerated and extreme sounds". The noise is p.16's other use for that channel — "adding depth and attack to pitched percussion sounds"`,
+    ...clocked(`p.16: "larger values will result in more exaggerated and extreme sounds". The noise is p.16's other use for that channel — "adding depth and attack to pitched percussion sounds"`),
     params: voice({
       freq1: 40,
       wave1: 'TRIANGLE',
@@ -1012,7 +1029,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Noise alone, with the filter shaken by the same generator',
-    routing: `${CLOCKED}. p.20: modulating cutoff from noise gives "dirty, distorted, or lo-fi sounds"`,
+    ...clocked(`p.20: modulating cutoff from noise gives "dirty, distorted, or lo-fi sounds"`),
     params: voice({
       freq1: 50,
       wave1: 'SQUARE',
@@ -1040,7 +1057,7 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     title: 'Decays long enough to wash together, which p.21 calls drone-like',
-    routing: `${CLOCKED}. p.21, past 12 o'clock: "Sounds begin to wash together in an almost drone-like manner, while retaining their individuality"`,
+    ...clocked(`p.21, past 12 o'clock: "Sounds begin to wash together in an almost drone-like manner, while retaining their individuality"`),
     params: voice({
       freq1: 34,
       wave1: 'TRIANGLE',
@@ -1074,7 +1091,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'The eight steps played as a line rather than as a kit',
-    routing: `${CLOCKED}. p.15: with both oscillators assigned, the PITCH knobs are "useful for creating sequenced bass and lead lines where Oscillator 1 and Oscillator 2 are tuned in unison". p.13 notes the oscillators "track pitch accurately over multiple octaves"`,
+    ...clocked(`p.15: with both oscillators assigned, the PITCH knobs are "useful for creating sequenced bass and lead lines where Oscillator 1 and Oscillator 2 are tuned in unison". p.13 notes the oscillators "track pitch accurately over multiple octaves"`),
     params: voice({
       freq1: 62,
       wave1: 'SQUARE',
@@ -1105,7 +1122,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'One hit with everything open: the loudest thing this box does',
-    routing: `${CLOCKED}. p.21 at 10 o'clock is "ideal for short, but hard-hitting thumps"; the resonance here is p.18's self-oscillation territory, which adds a sine on top of the hit`,
+    ...clocked(`p.21 at 10 o'clock is "ideal for short, but hard-hitting thumps"; the resonance here is p.18's self-oscillation territory, which adds a sine on top of the hit`),
     params: voice({
       freq1: 20,
       wave1: 'SQUARE',
@@ -1135,7 +1152,7 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     title: 'A filter sweep by hand: the cutoff knob is the gesture',
-    routing: `${CLOCKED}. p.19 calls a VCF decay at 12 o'clock "a more natural sweep of the Filter", and p.19's TIP: "Turning the RESONANCE knob to the right will exaggerate any modulation of the Filter's Cutoff Frequency"`,
+    ...clocked(`p.19 calls a VCF decay at 12 o'clock "a more natural sweep of the Filter", and p.19's TIP: "Turning the RESONANCE knob to the right will exaggerate any modulation of the Filter's Cutoff Frequency"`),
     params: voice({
       freq1: 44,
       wave1: 'SQUARE',

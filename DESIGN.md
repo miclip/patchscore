@@ -1098,6 +1098,17 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   ],
   routing: 'Keep out of the analog FX path so the panel FILTER acts only on LT',
 
+  // §3.7/#496. The half of the routing line that is about the *box* rather than this sound,
+  // split out so a surface laying every recipe open can say it once. `recipeRouting` composes
+  // the two back into one string for §8, so splitting a folder moves no rendered byte.
+  routingPreamble: 'Plays its own 8-step analog sequencer. Clock it at ADV / CLOCK',
+  // `routingJoin` is omitted here, so the two compose as `<preamble>. <routing>` — the tail is
+  // its own sentence, which is what it reads as. `routingJoin: 'clause'` attaches it with a
+  // comma instead, for a tail that finishes the preamble's sentence rather than starting one:
+  // the Matriarch's `…or over MIDI IN, VOICE MODE 1 so all four oscillators sound one note`.
+  // It is authored because it is prose — a comma in front of `Keep out of the analog FX path`
+  // above would be a splice, and nothing can tell that from either half alone.
+
   // Default citation only. It is *inherited* by any param, patch entry or articulation entry
   // that does not carry its own `verified` (§3.1) — and all three of those really do carry one;
   // the two entry kinds did not until #49, which made this sentence false of two of the three
@@ -1184,6 +1195,35 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   all and so declares one on every recipe) and its own test enforces it. The Tracker Mini's
   three synth slots used to be enforced the same way and are not any more: they are a declared
   resource (§2.3/#25), which is what a rule becomes once the model can hold it.
+- **A routing fact that is about the box goes in `routingPreamble`, not in every recipe's
+  `routing`** (§3.7/#496). Six folders open every recipe with one shared constant — *Plays its
+  own 8-step analog sequencer…*, *played from MIDI IN or EXT IN PITCH/GATE…* — because it is the
+  first thing a reader of any one of those recipes needs. On the kit page (§3.7) that put the same
+  paragraph at the top of every sound: the Cascadia printed 194 identical characters eight times,
+  two thirds of that page's routing prose, ahead of the half that says what makes each sound
+  different.
+
+  **A guide repeats it too, per routed part, and #496 deliberately left that alone.** The claim is
+  not that repetition is right there, or that a guide prints the sentence once per box — it does
+  not. It is that the measured case is mild and the fix is not free. Swept over every shipped
+  direction, seeds 0-23 and four rig shapes, no guide put any of these six preambles on a page more
+  than **twice**, against eight and fifteen on the kit pages the issue measured. Hoisting it in §8
+  would move guide bytes, and the guide goldens are this repo's byte contract — the thing that
+  proves a rendering change changed no rendering. Paying that to remove a second occurrence is a
+  bad trade, and it stays available: the split is authored and §8 can hoist it the day a direction
+  makes it worth doing.
+
+  So `recipeRouting` composes the halves back into the string that was there before — `routingJoin`
+  says whether the sound's half starts a new sentence or continues the box's as a clause — and §8
+  receives what it always received. No golden moved, which is the evidence rather than the claim.
+
+  `RecipeSchema` refuses a preamble with no `routing` under it, a join with no preamble, and a
+  preamble ending in punctuation, since the join and the header's full stop are both supplied.
+
+  **The split is authored, never computed.** A longest common prefix over the rendered strings was
+  the obvious alternative and it is a different claim: a prefix that happens to match is not a fact
+  somebody marked as being about the box. It would hoist a coincidence the day two recipes opened
+  alike, and stop hoisting the day one of them gained a comma.
 - A recipe never authors hits, step counts or bar structure. If you catch yourself writing
   `hits: [1, 5, 9, 13]` inside a device folder, that pattern belongs to a template (§4.3) —
   four-on-the-floor is a property of the genre, not of the TR-1000.
@@ -2228,6 +2268,22 @@ was looking for and which is not a hole in a kit. Against nine it reports no sna
 closed hat, open hat or ride, and every one of those is a sound a reader will notice they cannot
 play. Invariant 5, aimed at something.
 
+**A routing fact true of the box is said once, above the sounds it is true of** (#496). Six of the
+nine boxes with a kit open every recipe with the same sentence, because it is the first thing a
+reader of any one of those recipes needs — and laid open, that put 194 identical characters at the
+top of all eight Cascadia sounds, two thirds of the page's routing prose, ahead of the half that
+says what makes each sound different. `sharedRoutingPreamble` answers with the `routingPreamble`
+(§3) every slot carries, if they all carry the same one, and `kitSession` puts it on the session;
+`kitRouting` turns it into the sentence all three surfaces print. Each slot then prints its own
+half alone.
+
+Two things hold that honest. **The preamble is authored, not a prefix somebody's renderer noticed**
+— §3 says why. And **the hoist is all-or-nothing**: one slot out of eight without the fact and
+`sharedRoutingPreamble` answers `undefined`, every slot prints its whole composed line exactly as
+before, and no header sentence is drawn. A header claim over a page is true of every sound under
+it or it is not made. The three boxes that write each routing line whole are the unhoisted case,
+and they are what the code path is tested against.
+
 **The boundary, restated because it is the whole shape of this step.** No recipe is written, no
 mood applies, no arrangement or step pattern exists, and every `Recipe` in a slot is the same
 object the device page and the guide already render, held by reference so a value cannot come to
@@ -2241,9 +2297,10 @@ machine, and a kit session is read in exactly that position. There is no route a
 for it yet.
 
 It prints the model and nothing else, in this order: the box, one sentence saying what the list
-is, **the destination sentence, once**, the block citation, then a section per slot — the slot's
-name and the recipe's title, its role and character, its `routing`, its cables, its authored
-settings — and last, the core roles the box does not make.
+is, **the destination sentence, once**, **the shared routing sentence where there is one, once**,
+the block citation, then a section per slot — the slot's name and the recipe's title, its role
+and character, its own half of the routing line, its cables, its authored settings — and last,
+the core roles the box does not make.
 
 Four things about it are decisions rather than layout:
 
@@ -2262,6 +2319,10 @@ Four things about it are decisions rather than layout:
   panel's order too. §8 prints its patch last because a reader there has the box wired already
   and is working down a list of parts; a reader here is building one patch from nothing, and the
   cables come before the knobs whose meaning they change.
+- **The routing fact the whole page shares sits with the destination, not under every sound**
+  (#496). Both are facts about the reader's whole session rather than about one patch, and both
+  are printed once, in the header, above the sounds they are true of. The header and every slot
+  carry the same `Routing — ` label, because it is the same kind of fact at two scopes.
 - **One citation sentence for the whole document, over the settings this session renders and no
   others, with no mark or page on any value.** Invariant 4's ink rule exactly as §8 states it,
   and the *same sentence*: `citationSentence` is imported rather than restated, so the two
@@ -2298,7 +2359,10 @@ phone, print, or save as Markdown.
 - **One React reading of a recipe, not two.** `components/catalogue/kit-parts.tsx` holds what is
   *inside* a sound — routing, cables, values, notes, hints, module boxes — and both the panel and
   this page render it. A second interpretation would let a reader who moved between the two find
-  the same control described two ways, and neither would be wrong enough to notice.
+  the same control described two ways, and neither would be wrong enough to notice. `KitBody`
+  takes one thing from its container, `hoisted`, because whether the shared routing sentence has
+  already been said is a property of laying every sound out at once — the container's call, not
+  the component's. Both containers hoist, and both take the sentence from `kitRouting`.
 - **A server component but for two buttons.** Download Markdown hands over exactly
   `renderKitSession` of the session on screen, and Print opens the browser's own dialog
   (§8.2/#12 — no PDF library, then or now). `KitActions` is the only client boundary; everything
@@ -2318,6 +2382,19 @@ hostile-locale check the guide goldens carry. The Cascadia is the fixture becaus
 the section was argued from: eight sounds, two duplicated roles, a patch list on every one, six
 of the nine core roles absent — and a front-panel button that plays all of it with nothing else
 in the room.
+
+**`test/routing-preamble.test.ts` holds the hoist itself**, on each of the six boxes that authored
+the split and on each of the three renderers: the session carries the authored preamble, the
+renderer prints it **exactly once**, and every slot prints **exactly its authored tail**. The
+unhoisted path is pinned beside it — no shared preamble reported, every slot's whole composed line
+still printed, no header sentence drawn.
+
+Structural, and not a similarity measure. The bug was never a wrong byte: every test asserted the
+shared sentence was *present*, and a sentence printed eight times passes that. A bound on how alike
+two tails may be would replace one blind spot with another — it would fail a box whose sounds
+honestly open the same way (the Matriarch's seven kit sounds all really are `VOICE MODE 1`) and
+pass a box that had put the paragraph back in different words. What two authors open a sentence
+with is prose, and a character count over it is an authoring policy nobody decided.
 
 **There is no HTML golden**, and that is a deliberate asymmetry rather than an omission. The
 Markdown is a document whose bytes a reader keeps, so byte equality is the claim worth pinning;

@@ -4,13 +4,15 @@
 
 Record each hit with the sampler, recorder, or DAW you use.
 
+Routing — played from MIDI IN or EXT IN PITCH/GATE, or by holding the front panel MANUAL GATE button, which gates any envelope whose own GATE input is empty (p.54) — Cascadia has no sequencer of its own.
+
 *This block draws on the Intellijel Cascadia Manual v1.4, pp.22-58; its values are starting points.*
 
 ## 1. `KICK 1` — Sine kick: Envelope B dropped into VCO A pitch, filter bypassed to the amp
 
 `kick` · `hard`
 
-Routing — played from MIDI IN or EXT IN PITCH/GATE, or by holding the front panel MANUAL GATE button, which gates any envelope whose own GATE input is empty (p.54) — Cascadia has no sequencer of its own. Envelope B does the pitch drop, Envelope A the body
+Routing — Envelope B does the pitch drop, Envelope A the body
 
 **Patch**
 
@@ -47,7 +49,7 @@ Record one hit with your recorder as `KICK 1`.
 
 `kick` · `dirty`
 
-Routing — played from MIDI IN or EXT IN PITCH/GATE, or by holding the front panel MANUAL GATE button, which gates any envelope whose own GATE input is empty (p.54) — Cascadia has no sequencer of its own. The folder replaces the ring modulator on mixer channel 1
+Routing — The folder replaces the ring modulator on mixer channel 1
 
 **Patch**
 
@@ -78,7 +80,7 @@ Record one hit with your recorder as `KICK 2`.
 
 `tom` · `hard`
 
-Routing — played from MIDI IN or EXT IN PITCH/GATE, or by holding the front panel MANUAL GATE button, which gates any envelope whose own GATE input is empty (p.54) — Cascadia has no sequencer of its own. Same pitch-drop idea as the kick, tuned up and shortened
+Routing — Same pitch-drop idea as the kick, tuned up and shortened
 
 **Patch**
 
@@ -109,7 +111,7 @@ Record one hit with your recorder as `TOM 1`.
 
 `metallic` · `dark`
 
-Routing — played from MIDI IN or EXT IN PITCH/GATE, or by holding the front panel MANUAL GATE button, which gates any envelope whose own GATE input is empty (p.54) — Cascadia has no sequencer of its own. RING MOD is already on mixer channel 1 (p.43); this changes what it eats
+Routing — RING MOD is already on mixer channel 1 (p.43); this changes what it eats
 
 **Patch**
 
@@ -139,7 +141,7 @@ Record one hit with your recorder as `METALLIC 1`.
 
 `metallic` · `hard`
 
-Routing — played from MIDI IN or EXT IN PITCH/GATE, or by holding the front panel MANUAL GATE button, which gates any envelope whose own GATE input is empty (p.54) — Cascadia has no sequencer of its own. VCO A syncs to VCO B by default (p.25); this drives the sync harder
+Routing — VCO A syncs to VCO B by default (p.25); this drives the sync harder
 
 **Patch**
 
@@ -167,7 +169,7 @@ Record one hit with your recorder as `METALLIC 2`.
 
 `noise` · `dirty`
 
-Routing — played from MIDI IN or EXT IN PITCH/GATE, or by holding the front panel MANUAL GATE button, which gates any envelope whose own GATE input is empty (p.54) — Cascadia has no sequencer of its own. S&H is clocked from MIDI CLK by default (p.56), so it moves in time
+Routing — S&H is clocked from MIDI CLK by default (p.56), so it moves in time
 
 **Patch**
 
@@ -198,7 +200,7 @@ Record one hit with your recorder as `NOISE 1`.
 
 `noise` · `dark`
 
-Routing — played from MIDI IN or EXT IN PITCH/GATE, or by holding the front panel MANUAL GATE button, which gates any envelope whose own GATE input is empty (p.54) — Cascadia has no sequencer of its own. Slew turns the stepped S&H into a drift (p.57)
+Routing — Slew turns the stepped S&H into a drift (p.57)
 
 **Patch**
 
@@ -229,7 +231,7 @@ Record one hit with your recorder as `NOISE 2`.
 
 `impact` · `hard`
 
-Routing — played from MIDI IN or EXT IN PITCH/GATE, or by holding the front panel MANUAL GATE button, which gates any envelope whose own GATE input is empty (p.54) — Cascadia has no sequencer of its own. Envelope B in BURST is a pulse train inside one envelope (p.35)
+Routing — Envelope B in BURST is a pulse train inside one envelope (p.35)
 
 **Patch**
 

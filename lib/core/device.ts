@@ -2026,6 +2026,42 @@ export type Recipe = {
   patch?: PatchEntry[]
   articulation?: ArticulationEntry[]
   routing?: string
+  /**
+   * §3.7/#496. **The half of `routing` that is about the box rather than about this sound**, split
+   * out so a surface laying every recipe open can say it once.
+   *
+   * Six device folders route every recipe through one shared constant — *Plays its own 8-step
+   * analog sequencer…*, *played from MIDI IN or EXT IN PITCH/GATE…* — because it is the first
+   * thing a reader of any one of those recipes needs. On the kit page (§3.7) the same recipes are
+   * open at once, and the Cascadia printed 194 identical characters eight times, two thirds of
+   * that page's routing prose (#496).
+   *
+   * **§8 repeats it too — once per routed part, not once per box — and #496 left that alone on
+   * purpose.** A guide is not exempt because repetition is right there; it is untouched because
+   * the measured case is mild and the fix is not free. Swept over every shipped direction, seeds
+   * 0-23 and four rig shapes, no guide put any of these six preambles on a page more than twice,
+   * against the eight and fifteen the kit pages carried. Hoisting in §8 would move guide bytes,
+   * and the guide goldens are the byte contract that proves a rendering change changed nothing it
+   * did not mean to. So the halves compose back into exactly the string that was there before —
+   * see `recipeRouting`, which is what §8 and the audits read — and §8 can hoist the day a
+   * direction makes a second occurrence worth a golden diff.
+   *
+   * **Authored, never computed.** The alternative was a longest common prefix over the rendered
+   * strings, and a prefix that happens to match is not the same claim as a fact an author marked
+   * as being about the box: it would hoist a coincidence the day two recipes opened alike, and
+   * stop hoisting the day one of them gained a comma.
+   */
+  routingPreamble?: string
+  /**
+   * §3.7/#496. How `routing` attaches to `routingPreamble`: as a clause of its sentence rather
+   * than as a new one. Omitted means a new sentence, which is what five of the six folders do.
+   *
+   * The join is prose and cannot be guessed. The Matriarch's twenty recipes read *…or over MIDI
+   * IN, VOICE MODE 1 so all four oscillators sound one note*; the DFAM's read *…the TEMPO knob is
+   * then ignored. No patch cable…*. Composing both with a full stop would rewrite twenty routing
+   * lines, and #496 is a rendering fix: no guide byte moves.
+   */
+  routingJoin?: 'clause'
   verified?: Verified
 }
 
@@ -2046,8 +2082,51 @@ export const RecipeSchema = z
     patch: z.array(PatchEntrySchema).min(1).optional(),
     articulation: z.array(ArticulationEntrySchema).min(1).optional(),
     routing: z.string().min(1).optional(),
+    routingPreamble: z.string().min(1).optional(),
+    routingJoin: z.literal('clause').optional(),
     verified: VerifiedSchema.optional(),
   })
+  // §3.7/#496. A preamble is one half of a routing line, so the other half has to exist. Without
+  // this a folder could put its whole routing in the shared field, where the kit page would hoist
+  // it into the header and the sound itself would say nothing at all.
+  .refine((r) => !(r.routingPreamble !== undefined && r.routing === undefined), {
+    message:
+      'routingPreamble is the shared half of a routing line — the sound-specific half goes in `routing` (§3.7)',
+    path: ['routing'],
+  })
+  // The join describes how one field meets another, so it needs both of them.
+  .refine((r) => !(r.routingJoin !== undefined && r.routingPreamble === undefined), {
+    message: 'routingJoin says how `routing` attaches to `routingPreamble`, so it needs one (§3.7)',
+    path: ['routingJoin'],
+  })
+  // `recipeRouting` supplies the punctuation the halves meet on, and the kit header prints the
+  // preamble as a sentence of its own. A preamble that ends in its own stop or comma gets one of
+  // each in a guide and a stray mark in the header, and neither would fail anything.
+  .refine((r) => !/[.,;:]$/.test(r.routingPreamble ?? ''), {
+    message:
+      'routingPreamble carries no trailing punctuation — `recipeRouting` supplies the join (§3.7)',
+    path: ['routingPreamble'],
+  })
+
+/**
+ * §3.7/#496. **A recipe's routing as one string**: the shared preamble, the join, and the recipe's
+ * own half, composed back into the sentence a device folder used to write whole.
+ *
+ * Every reader but the kit surfaces goes through this — §8's part block, the web guide's routing
+ * line, and `lib/core/inert.ts`'s walk over what a recipe *says*, which has to see all of it or it
+ * starts raising a module the preamble already points. The kit surfaces are the one exception:
+ * they hoist the preamble into the page header and print the halves apart (§3.7).
+ *
+ * Undefined in, undefined out. A recipe with no `routing` has no preamble either — `RecipeSchema`
+ * refuses that pair — so there is nothing to compose.
+ */
+export function recipeRouting(
+  recipe: Pick<Recipe, 'routing' | 'routingPreamble' | 'routingJoin'>,
+): string | undefined {
+  const { routing, routingPreamble, routingJoin } = recipe
+  if (routing === undefined || routingPreamble === undefined) return routing
+  return `${routingPreamble}${routingJoin === 'clause' ? ',' : '.'} ${routing}`
+}
 
 // ---------------------------------------------------------------------------
 // §2.3 Device manifest

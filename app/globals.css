@@ -968,6 +968,22 @@ body {
   min-width: 0;
 }
 
+/*
+ * §3.7/#496. The way the box is played, said once above the sounds it is true of — the panel, the
+ * standalone page and the Markdown all put it in the same place, between the lead and the list.
+ *
+ * Full ink and the prose measure, because it is an instruction a reader acts on before the first
+ * patch rather than a note about the page. It carries jack names and a page number, so it wraps
+ * at any width and never scrolls the body sideways (§21).
+ */
+.kit-routing {
+  margin: 0 0 12px;
+  max-width: 66ch;
+  color: var(--ink);
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
 .kit-list {
   display: grid;
   gap: 6px;
@@ -1190,6 +1206,7 @@ body {
 }
 
 .kit-page .kit-lead,
+.kit-page .kit-routing,
 .kit-destination {
   margin: 0 0 8px;
   max-width: 66ch;

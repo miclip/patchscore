@@ -5,6 +5,7 @@ import {
   jackFact,
   NEUTRAL_MOOD,
   RecipeSchema,
+  recipeRouting,
   expand,
   renderGuide,
   resolve,
@@ -129,10 +130,18 @@ describe('Cascadia manifest', () => {
   it('claims no per-step editing, because there is no sequencer', () => {
     expect(device.features?.perStep).toBeUndefined()
     for (const recipe of device.recipes) expect(recipe.articulation, recipe.id).toBeUndefined()
-    // Every recipe says where the notes come from instead.
+    // Every recipe says where the notes come from instead — and says it in the half of the
+    // routing line that is about the box (§3.7/#496), which is what the kit page hoists into its
+    // header rather than reprinting under all eight sounds. The claim is over the composed line,
+    // because that is what a guide prints and what a reader of one sees.
     for (const recipe of device.recipes) {
-      expect(recipe.routing, recipe.id).toContain('no sequencer of its own')
+      expect(recipeRouting(recipe), recipe.id).toContain('no sequencer of its own')
+      expect(recipe.routingPreamble, recipe.id).toContain('no sequencer of its own')
+      expect(recipe.routing, recipe.id).not.toContain('no sequencer of its own')
     }
+    // One preamble, not twenty-one that happen to agree: the hoist is only honest if every
+    // recipe carries the same authored string.
+    expect(new Set(device.recipes.map((r) => r.routingPreamble)).size).toBe(1)
   })
 
   // -------------------------------------------------------------------------

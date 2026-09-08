@@ -17,6 +17,7 @@ import {
   kitDescription,
   kitGap,
   kitLead,
+  kitRouting,
   kitTitle,
 } from '@/lib/studio/kit-text'
 
@@ -88,7 +89,17 @@ export async function generateMetadata({
  * reader is about to write on a pad, and the record line under it repeats it for the same
  * reason: the two cannot come apart, since both are `slot.name`.
  */
-function Slot({ slot, at, session }: { slot: KitSlot; at: number; session: KitSession }) {
+function Slot({
+  slot,
+  at,
+  session,
+  hoisted,
+}: {
+  slot: KitSlot
+  at: number
+  session: KitSession
+  hoisted: boolean
+}) {
   return (
     <li className="kit-slot">
       <h3 className="kit-slot-head">
@@ -97,7 +108,7 @@ function Slot({ slot, at, session }: { slot: KitSlot; at: number; session: KitSe
         <span className="kit-title">{slot.recipe.title}</span>
       </h3>
       <p className="kit-meta mono">{`${slot.recipe.role} · ${slot.recipe.character}`}</p>
-      <KitBody recipe={slot.recipe} device={session.device} />
+      <KitBody recipe={slot.recipe} device={session.device} hoisted={hoisted} />
       <p className="kit-record">
         {KIT_RECORD}
         <span className="mono">{slot.name}</span>.
@@ -114,6 +125,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const label = deviceLabel(session.device)
   const cites = kitCitation(session)
   const gap = kitGap(session)
+  const routing = kitRouting(session.routingPreamble)
 
   return (
     <main className="shell catalogue-page kit-page">
@@ -121,6 +133,17 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         <h1>{kitTitle(session.device)}</h1>
         <p className="kit-lead">{kitLead(session)}</p>
         <p className="kit-destination">{KIT_DESTINATION}</p>
+        {/*
+          §3.7/#496. **How the box is played, once, where every sound below is played that way.**
+
+          This page lays every slot open, which is what turned a fact true of the box into a
+          paragraph printed eight times — two thirds of the Cascadia's routing prose, and about
+          five lines of a 390px screen before the half that says what makes each sound different.
+          It goes with the destination sentence above it, which is the other fact that is true of
+          the whole page. `kitRouting` answers `undefined` where the slots share nothing, and then
+          every slot prints its whole routing line exactly as before.
+        */}
+        {routing === undefined ? null : <p className="kit-routing">Routing — {routing}</p>}
         {/*
           §3.2/invariant 4. One sentence for the whole document, over the settings below and no
           others, and no mark or page on any value. The same sentence the Markdown prints, from
@@ -140,7 +163,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
       <ol className="kit-slots">
         {session.slots.map((slot, i) => (
-          <Slot key={slot.recipe.id} slot={slot} at={i + 1} session={session} />
+          <Slot
+            key={slot.recipe.id}
+            slot={slot}
+            at={i + 1}
+            session={session}
+            hoisted={routing !== undefined}
+          />
         ))}
       </ol>
 

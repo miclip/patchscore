@@ -747,7 +747,8 @@ function arp(
 // ---------------------------------------------------------------------------
 
 /**
- * How this box is driven, said once per recipe. It has a keyboard, an arpeggiator and a
+ * How this box is driven, carried by every recipe — a guide prints it once per part, the kit page
+ * once for the page (§3.7/#496). It has a keyboard, an arpeggiator and a
  * sequencer, and it can be played over MIDI — but it cannot usefully be played from a single
  * pitch-and-gate pair, for the reason in the header, so the sentence says what it does say.
  */
@@ -769,6 +770,29 @@ const accentCable = (): PatchEntry =>
   )
 
 /**
+ * §3.7/#496. **The two halves of a routing line**: `PLAYED` is the box, `detail` is the sound.
+ *
+ * A guide sees no difference — `recipeRouting` composes them back into the one sentence that was
+ * here before, so no rendered byte moves. The kit page is what the split is for: it hoists the
+ * shared half into its own header and prints `detail` alone under each sound, instead of opening
+ * every slot with the same paragraph.
+ *
+ * `join` is the punctuation the two halves meet on, and it is authored because it is prose: the
+ * two arpeggiator recipes read *…or over MIDI IN, with MODE on ARP*, where the rest start a new
+ * sentence. It cannot be guessed from either half.
+ */
+function played(
+  detail: string,
+  join?: 'clause',
+): Pick<Recipe, 'routingPreamble' | 'routingJoin' | 'routing'> {
+  return {
+    routingPreamble: PLAYED,
+    ...(join === undefined ? {} : { routingJoin: join }),
+    routing: detail,
+  }
+}
+
+/**
  * `verified: false` on every recipe, explicitly rather than by omission. §3.1 makes the recipe
  * citation the default a param inherits when it carries none, and nothing here cites a *recipe*.
  *
@@ -788,7 +812,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Kick with the envelope cabled to Oscillator 1’s pitch',
-    routing: `${PLAYED}. Two cables: + ENV OUT to OSCILLATORS 1 PITCH IN for the drop — there is no normalled envelope-to-pitch route on this box — and KB VEL OUT to CUTOFF IN, without which p.30 says the accent is inaudible`,
+    ...played(`Two cables: + ENV OUT to OSCILLATORS 1 PITCH IN for the drop — there is no normalled envelope-to-pitch route on this box — and KB VEL OUT to CUTOFF IN, without which p.30 says the accent is inaudible`),
     params: [
       ...osc1("32'", 'TRIANGLE'),
       ...osc2({ octave: "16'", wave: 'TRIANGLE', sync: 'OFF', frequency: 0 }),
@@ -815,7 +839,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Sub from both triangles an octave apart, filter almost shut',
-    routing: `${PLAYED}. No cable — the mixer, the ladder filter and the amplifier are all normalled`,
+    ...played(`No cable — the mixer, the ladder filter and the amplifier are all normalled`),
     params: [
       ...osc1("32'", 'TRIANGLE'),
       ...osc2({ octave: "16'", wave: 'TRIANGLE', sync: 'OFF', frequency: 0 }),
@@ -833,7 +857,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Two saws detuned into an overdriven mixer',
-    routing: `${PLAYED}. No cable. The dirt is the mixer: p.14 and p.15 both say settings above 1 o'clock impart gentle distortion, and higher settings more`,
+    ...played(`No cable. The dirt is the mixer: p.14 and p.15 both say settings above 1 o'clock impart gentle distortion, and higher settings more`),
     params: [
       ...osc1("16'", 'SAW'),
       ...osc2({ octave: "8'", wave: 'SAW', sync: 'OFF', frequency: 3, detuneGrit: 3 }),
@@ -853,7 +877,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Acid line: one saw, resonance near self-oscillation, envelope on the cutoff',
-    routing: `${PLAYED}. One cable, and it is the one p.30 instructs: KB VEL OUT to CUTOFF IN, so an accented step opens the filter further than an unaccented one`,
+    ...played(`One cable, and it is the one p.30 instructs: KB VEL OUT to CUTOFF IN, so an accented step opens the filter further than an unaccented one`),
     params: [
       ...osc1("8'", 'SAW'),
       ...osc2({ octave: "8'", wave: 'SAW', sync: 'OFF', frequency: 0 }),
@@ -887,7 +911,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Snare: noise over a short mid tone, both through the ladder',
-    routing: `${PLAYED}. No cable. Noise is one of the three normalled mixer channels, so the body and the crack share one filter and one envelope`,
+    ...played(`No cable. Noise is one of the three normalled mixer channels, so the body and the crack share one filter and one envelope`),
     params: [
       ...osc1("8'", 'TRIANGLE'),
       ...osc2({ octave: "4'", wave: 'SQUARE', sync: 'OFF', frequency: 5 }),
@@ -909,7 +933,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Hard sync, and FREQUENCY as a timbre knob rather than a tuning one',
-    routing: `${PLAYED}. No cable. p.11: "Sync is useful for creating sharp, metallic, and flange-like sounds"`,
+    ...played(`No cable. p.11: "Sync is useful for creating sharp, metallic, and flange-like sounds"`),
     params: [
       ...osc1("8'", 'SAW'),
       ...osc2({ octave: "4'", wave: 'SAW', sync: 'ON', frequency: 64 }),
@@ -927,7 +951,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Linear FM from Oscillator 1 into Oscillator 2',
-    routing: `${PLAYED}. One cable: OSCILLATORS 1 WAVE OUT to OSCILLATORS 2 LIN FM IN. p.13 calls linear FM here "brash, metallic, or bell-like"`,
+    ...played(`One cable: OSCILLATORS 1 WAVE OUT to OSCILLATORS 2 LIN FM IN. p.13 calls linear FM here "brash, metallic, or bell-like"`),
     params: [
       ...osc1("8'", 'TRIANGLE'),
       ...osc2({ octave: "4'", wave: 'TRIANGLE', sync: 'OFF', frequency: -5, detuneGrit: 4 }),
@@ -954,7 +978,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Tom: one triangle, envelope to pitch, a touch of noise for the skin',
-    routing: `${PLAYED}. Two cables, the same pair as the kick's: + ENV OUT to OSCILLATORS 1 PITCH IN, shorter and shallower, and KB VEL OUT to CUTOFF IN for the accent (p.30)`,
+    ...played(`Two cables, the same pair as the kick's: + ENV OUT to OSCILLATORS 1 PITCH IN, shorter and shallower, and KB VEL OUT to CUTOFF IN for the accent (p.30)`),
     params: [
       ...osc1("16'", 'TRIANGLE'),
       ...osc2({ octave: "8'", wave: 'TRIANGLE', sync: 'OFF', frequency: 2 }),
@@ -977,7 +1001,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Noise alone, filtered hard and driven into the mixer',
-    routing: `${PLAYED}. No cable — the noise generator is normalled to its own mixer channel`,
+    ...played(`No cable — the noise generator is normalled to its own mixer channel`),
     params: [
       ...osc1("8'", 'SAW'),
       ...osc2({ octave: "8'", wave: 'SAW', sync: 'OFF', frequency: 0 }),
@@ -995,7 +1019,7 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     title: 'Sample and hold stepping the cutoff, into the spring tank',
-    routing: `${PLAYED}. One cable: S/H OUT to CUTOFF IN. p.24 is explicit that nothing routes the sample-and-hold internally, so without the cable this recipe is silent motion`,
+    ...played(`One cable: S/H OUT to CUTOFF IN. p.24 is explicit that nothing routes the sample-and-hold internally, so without the cable this recipe is silent motion`),
     params: [
       ...osc1("16'", 'TRIANGLE'),
       ...osc2({ octave: "8'", wave: 'TRIANGLE', sync: 'OFF', frequency: 4, detuneGrit: 2 }),
@@ -1023,7 +1047,7 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     title: 'Pad: slow attack, sustain held, spring reverb well up',
-    routing: `${PLAYED}. No cable. Every voice here is monophonic, so a chord is stacked by hand or by holding the arpeggiator`,
+    ...played(`No cable. Every voice here is monophonic, so a chord is stacked by hand or by holding the arpeggiator`),
     params: [
       ...osc1("16'", 'TRIANGLE'),
       ...osc2({ octave: "8'", wave: 'TRIANGLE', sync: 'OFF', frequency: 3, detuneGrit: 2 }),
@@ -1042,7 +1066,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Dark pad: saws an octave down, cutoff low, no modulation at all',
-    routing: `${PLAYED}. No cable`,
+    ...played(`No cable`),
     params: [
       ...osc1("32'", 'SAW'),
       ...osc2({ octave: "16'", wave: 'SAW', sync: 'OFF', frequency: -4, detuneGrit: 2 }),
@@ -1060,7 +1084,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Lead: narrow pulse over a saw, glide on, cutoff tracking the keyboard',
-    routing: `${PLAYED}. No cable`,
+    ...played(`No cable`),
     params: [
       ...osc1("8'", 'NARROW PULSE'),
       ...osc2({ octave: "8'", wave: 'SAW', sync: 'OFF', frequency: 2 }),
@@ -1079,7 +1103,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Stab: everything short, KB RLS so the tail is the release and nothing else',
-    routing: `${PLAYED}. No cable. p.21's KB RLS gives an instant attack at full sustain while the key is held, then the RELEASE time`,
+    ...played(`No cable. p.21's KB RLS gives an instant attack at full sustain while the key is held, then the RELEASE time`),
     params: [
       ...osc1("8'", 'SQUARE'),
       ...osc2({ octave: "8'", wave: 'SAW', sync: 'OFF', frequency: -3, detuneGrit: 3 }),
@@ -1099,7 +1123,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Arpeggio over two octaves, in the order the notes were held',
-    routing: `${PLAYED}, with MODE on ARP. Hold the notes and press PLAY; HOLD keeps the pattern running once your hand is off (p.30)`,
+    ...played(`with MODE on ARP. Hold the notes and press PLAY; HOLD keeps the pattern running once your hand is off (p.30)`, 'clause'),
     params: [
       ...osc1("8'", 'SQUARE'),
       ...osc2({ octave: "8'", wave: 'SAW', sync: 'OFF', frequency: 2 }),
@@ -1118,7 +1142,7 @@ const RECIPES: Recipe[] = [
     character: 'clean',
     voice: 'voice',
     title: 'Arpeggio, one octave, forward and back, triangles only',
-    routing: `${PLAYED}, with MODE on ARP and DIRECTION on FWD / BKWD`,
+    ...played(`with MODE on ARP and DIRECTION on FWD / BKWD`, 'clause'),
     params: [
       ...osc1("8'", 'TRIANGLE'),
       ...osc2({ octave: "8'", wave: 'TRIANGLE', sync: 'OFF', frequency: 0 }),
@@ -1139,7 +1163,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Riser: the modulation oscillator on the pitch, rate climbing under your hand',
-    routing: `${PLAYED}. No cable — PITCH AMT reaches both oscillators from the panel. Raise MOD as the section builds; p.23 is explicit that nothing happens until it is off its minimum`,
+    ...played(`No cable — PITCH AMT reaches both oscillators from the panel. Raise MOD as the section builds; p.23 is explicit that nothing happens until it is off its minimum`),
     params: [
       ...osc1("8'", 'SAW'),
       ...osc2({ octave: "8'", wave: 'SAW', sync: 'OFF', frequency: 4, detuneGrit: 3 }),
@@ -1158,7 +1182,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Impact: noise and both oscillators at once into the spring tank',
-    routing: `${PLAYED}. No cable. The tank is what makes it an impact rather than a hit — p.21's MIX at maximum leaves only the reverb`,
+    ...played(`No cable. The tank is what makes it an impact rather than a hit — p.21's MIX at maximum leaves only the reverb`),
     params: [
       ...osc1("32'", 'SAW'),
       ...osc2({ octave: "16'", wave: 'NARROW PULSE', sync: 'OFF', frequency: -6, detuneGrit: 4 }),
@@ -1178,7 +1202,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Sweep: the high pass patched in front of the ladder, so both ends close',
-    routing: `${PLAYED}. Two cables, and they are p.15's own TIP: MIXER OUTPUT to the HIGH PASS FILTER INPUT, then its OUTPUT to the FILTER INPUT — "Now you have two filters for sculpting sounds"`,
+    ...played(`Two cables, and they are p.15's own TIP: MIXER OUTPUT to the HIGH PASS FILTER INPUT, then its OUTPUT to the FILTER INPUT — "Now you have two filters for sculpting sounds"`),
     params: [
       ...osc1("16'", 'SAW'),
       ...osc2({ octave: "8'", wave: 'SAW', sync: 'OFF', frequency: 5, detuneGrit: 3 }),
