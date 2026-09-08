@@ -6,7 +6,7 @@ own and a musical direction and gives back a build guide: song structure, which 
 part on which of your boxes, step patterns, sound design with real parameter values, and how to
 cable and clock the rig.
 
-**No LLM, anywhere.** The resolver is a pure function. The same rig, the same direction and the
+The resolver is a pure function. The same rig, the same direction and the
 same seed produce a byte-identical guide on any platform. Variety comes from combinatorics and
 seeded selection.
 
