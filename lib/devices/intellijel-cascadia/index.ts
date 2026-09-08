@@ -636,13 +636,50 @@ const CTRL_SOURCES = ['LEVEL', 'X', 'TIME']
 
 /** p.35: "ENVELOPE MODE (top position)", "LFO MODE (middle position)", "BURST MODE (bottom)". */
 const ENV_B_MODES = ['ENV', 'LFO', 'BURST']
+type EnvBMode = 'ENV' | 'LFO' | 'BURST'
 
 /**
- * p.35: with MODE at ENV or BURST the switch "selects between CYCLE, AHR, and AD modes"; with
- * MODE at LFO it selects `FREE`, `SYNC` or `LFV`. One physical switch, two printed label
- * columns, so one option set with all six — the panel prints all six beside the same toggle.
+ * §3.1/#499. **One three-position switch, two printed label columns, and `MODE` decides which
+ * column is live.** The set a reader can choose from is the one their `MODE` selects, so it is
+ * two constants rather than one list of six.
+ *
+ * p.35 states the rule: *"If the MODE SELECT switch is set to either BURST or ENVELOPE, the
+ * switch selects between CYCLE, AHR, and AD modes, as indicated by the labels on the left. If
+ * the MODE SELECT switch is set to LFO, the switch selects different LFO options, as indicated
+ * by the labels on the right."*
+ *
+ * This used to be one array of all six, on the reasoning that the panel prints all six beside
+ * the same toggle. The panel does; the switch still has three positions, and half the names were
+ * unreachable in whichever mode the recipe had just set. On an enum the option set **is** the
+ * legality gate (§3.2), so six names against three positions is the `CLAUDE.md` trap in its enum
+ * form — the TR-8S's `SNAPPY` and the minilogue xd's `SHAPE`, where a citation is honest and the
+ * scale beside it is still not the one in force. `assertEnvBTypes` below is what stops it
+ * coming apart again.
+ *
+ * Panel order, top to bottom, as pp.82-83 label the positions — the same choice `NOISE_TYPES`
+ * makes, because a reader is matching a name to a physical position rather than reading prose.
  */
-const ENV_B_TYPES = ['CYCLE', 'AHR', 'AD', 'FREE', 'SYNC', 'LFV']
+const ENV_B_TYPES_ENV = ['AD', 'AHR', 'CYCLE']
+const ENV_B_TYPES_LFO = ['FREE', 'SYNC', 'LFV']
+
+/**
+ * The pairing, in one place so a recipe cannot state a `MODE` and a `TYPE` that disagree. Throws
+ * at module load, which is where a device folder's mistakes belong (invariant 2's registry
+ * generation runs this).
+ */
+function envB(mode: EnvBMode, type: string): AuthoredEnumParam[] {
+  const types = mode === 'LFO' ? ENV_B_TYPES_LFO : ENV_B_TYPES_ENV
+  if (!types.includes(type)) {
+    throw new Error(
+      `intellijel-cascadia: ENVELOPE B TYPE '${type}' is not a position of the switch with ` +
+        `MODE at '${mode}' — that column is ${types.join(', ')} (p.35)`,
+    )
+  }
+  return [
+    pick('ENVELOPE B · MODE', mode, ENV_B_MODES, cite(35)),
+    pick('ENVELOPE B · TYPE', type, types, cite(mode === 'LFO' ? 89 : 35)),
+  ]
+}
 
 /**
  * p.93/#481. **Which LFO the middle MODE position actually runs — and it is not a control on the
@@ -841,8 +878,7 @@ const RECIPES: Recipe[] = [
       num('VCO A · OCTAVE', 1, OCTAVE, cite(22), { mood: [{ axis: 'darkness', amount: -1 }] }),
       num('VCO A · PITCH', 0, FINE_TUNE, cite(22), { unit: 'st' }),
       travel('VCO A · FM 1', 22, { note: 'how far the pitch falls' }),
-      pick('ENVELOPE B · MODE', 'ENV', ENV_B_MODES, cite(35)),
-      pick('ENVELOPE B · TYPE', 'AD', ENV_B_TYPES, cite(35)),
+      ...envB('ENV', 'AD'),
       travel('ENVELOPE B · RISE', 0),
       travel('ENVELOPE B · FALL', 12, { note: 'the drop; longer is a boomier kick' }),
       pick('ENVELOPE A · SPEED', 'FAST', ENV_SPEEDS, cite(31)),
@@ -1222,8 +1258,7 @@ const RECIPES: Recipe[] = [
       travel('VCO A · FM 1', 16),
       travel('MIXER · IN 2', 72, { note: 'IN 2 is VCO A’s sine by default (p.43)' }),
       travel('MIXER · SUB', 0),
-      pick('ENVELOPE B · MODE', 'ENV', ENV_B_MODES, cite(35)),
-      pick('ENVELOPE B · TYPE', 'AD', ENV_B_TYPES, cite(35)),
+      ...envB('ENV', 'AD'),
       travel('ENVELOPE B · FALL', 20),
       pick('ENVELOPE A · SPEED', 'FAST', ENV_SPEEDS, cite(31)),
       num('ENVELOPE A · ATTACK', 1, ENV_A_TIMES.FAST.attack, cite(31), { unit: 'ms' }),
@@ -1329,8 +1364,7 @@ const RECIPES: Recipe[] = [
       travel('WAVE FOLDER · FOLD', 40),
       travel('WAVE FOLDER · MOD', 68, { note: 'how far the random voltage moves the fold' }),
       travel('VCA A · AUX IN', 62, { note: 'AUX IN is the folder by default (p.53); raise it to hear this at all' }),
-      pick('ENVELOPE B · MODE', 'ENV', ENV_B_MODES, cite(35)),
-      pick('ENVELOPE B · TYPE', 'AD', ENV_B_TYPES, cite(35)),
+      ...envB('ENV', 'AD'),
       pick('VCF · MODE', 'LP4', FILTER_MODES, cite(46)),
       travel('VCF · FREQ', 30),
       travel('VCF · Q', 22),
@@ -1454,7 +1488,7 @@ const RECIPES: Recipe[] = [
         scope: 'song',
         note: 'the factory default; a box switched to the ESG goes back at boot or in the Config app',
       }),
-      pick('ENVELOPE B · TYPE', 'SYNC', ENV_B_TYPES, cite(35)),
+      pick('ENVELOPE B · TYPE', 'SYNC', ENV_B_TYPES_LFO, cite(89)),
       num('ENVELOPE B · PHASE', 90, PHASE_DEG, cite(36), { unit: '°' }),
       travel('ENVELOPE B · RATE', 22),
       pick('VCF · MODE', 'LP4', FILTER_MODES, cite(46)),
@@ -1506,8 +1540,7 @@ const RECIPES: Recipe[] = [
     title: 'Slow rise on the cutoff, noise climbing under it',
     ...played(`**One gate, one climb — this does not repeat.** p.83: the attack *"is triggered by the rising edge of a gate signal sent to the GATE/SYNC [5.D] input"*, and with nothing patched there that gate is the played note or the front-panel MANUAL GATE button (p.39). Hold it for the whole build — *"If the gate length is shorter than the rise time, the envelope will begin to fall before reaching its maximum value"* (p.83). \`CYCLE\` is the Envelope B type that repeats; this is \`AHR\`, so one gate is one gesture. **The climb has a ceiling:** p.83 tops the RISE slider out at five seconds, which is under three bars at 134 BPM. Past that the filter holds where it arrived rather than falling back, so a longer section still works — it simply stops travelling`),
     params: [
-      pick('ENVELOPE B · MODE', 'ENV', ENV_B_MODES, cite(35)),
-      pick('ENVELOPE B · TYPE', 'AHR', ENV_B_TYPES, cite(35)),
+      ...envB('ENV', 'AHR'),
       travel('ENVELOPE B · RISE', 88, { note: 'the whole gesture is this slider' }),
       travel('ENVELOPE B · FALL', 20),
       pick('VCF · MODE', 'HP4', FILTER_MODES, cite(46)),
@@ -1539,8 +1572,7 @@ const RECIPES: Recipe[] = [
     title: 'Burst of pulses into the amp, folded on the way',
     ...played(`Envelope B in BURST is a pulse train inside one envelope (p.35)`),
     params: [
-      pick('ENVELOPE B · MODE', 'BURST', ENV_B_MODES, cite(35)),
-      pick('ENVELOPE B · TYPE', 'AD', ENV_B_TYPES, cite(35)),
+      ...envB('BURST', 'AD'),
       travel('ENVELOPE B · RATE', 70, { note: 'how fast the pulses repeat' }),
       travel('ENVELOPE B · LENGTH', 34, { note: 'how long the burst lasts' }),
       travel('WAVE FOLDER · FOLD', 72),
@@ -1656,7 +1688,7 @@ const RECIPES: Recipe[] = [
         scope: 'song',
         note: 'hold MIDI LFO while powering on, or set LFO Shape in the Intellijel Config app',
       }),
-      pick('ENVELOPE B · TYPE', 'SYNC', ENV_B_TYPES, cite(35)),
+      pick('ENVELOPE B · TYPE', 'SYNC', ENV_B_TYPES_LFO, cite(89)),
       travel('ENVELOPE B · RISE', 34, {
         note: 'sequence rate; in SYNC it divides or multiplies the clock at GATE/SYNC, and p.93 prints no scale saying which position does which',
       }),
@@ -1705,6 +1737,43 @@ const RECIPES: Recipe[] = [
 // ---------------------------------------------------------------------------
 // Manifest
 // ---------------------------------------------------------------------------
+
+/**
+ * §3.1/#499. **The pairing, checked on every recipe rather than only the ones that used the
+ * helper.** Two recipes set `MODE` and `TYPE` several lines apart, so `envB` cannot reach them;
+ * a guard that covered five of the seven would be the same shape of gap as the bug.
+ *
+ * Runs at module load, which is where a device folder's own mistakes belong — `gen:registry`
+ * imports this file, so a mismatch fails the build rather than a request.
+ */
+function assertEnvBTypes(recipes: readonly Recipe[]): void {
+  for (const recipe of recipes) {
+    const mode = recipe.params.find((p) => p.name === 'ENVELOPE B · MODE')
+    const type = recipe.params.find((p) => p.name === 'ENVELOPE B · TYPE')
+    if (type === undefined) continue
+    if (mode === undefined) {
+      throw new Error(
+        `intellijel-cascadia: ${recipe.id} sets ENVELOPE B TYPE with no MODE beside it, so ` +
+          `which column of the switch it names is undecidable (p.35)`,
+      )
+    }
+    const live = mode.value === 'LFO' ? ENV_B_TYPES_LFO : ENV_B_TYPES_ENV
+    if (!live.includes(String(type.value))) {
+      throw new Error(
+        `intellijel-cascadia: ${recipe.id} sets ENVELOPE B TYPE '${String(type.value)}' with ` +
+          `MODE '${String(mode.value)}' — that column is ${live.join(', ')} (p.35)`,
+      )
+    }
+    if (type.kind === 'enum' && type.options.values !== live) {
+      throw new Error(
+        `intellijel-cascadia: ${recipe.id} offers the wrong ENVELOPE B TYPE column for MODE ` +
+          `'${String(mode.value)}' — expected ${live.join(', ')} (p.35)`,
+      )
+    }
+  }
+}
+
+assertEnvBTypes(RECIPES)
 
 export const device: Device = {
   id: 'intellijel-cascadia',
