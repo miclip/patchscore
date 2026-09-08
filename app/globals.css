@@ -3294,6 +3294,7 @@ button:active {
 .notes,
 .articulation,
 .chain-plan,
+.trig-placements,
 .patch {
   list-style: none;
   margin: 10px 0 0;
@@ -3831,6 +3832,25 @@ h4 > .token-sep,
 }
 
 .chain-plan strong {
+  color: var(--silkscreen);
+  font-weight: 600;
+}
+
+/* §8 phase 5/#488. One row per direction of travel, for the one part in the library that goes
+ * both ways. Wraps like `.chain-plan` does: the sentence is long enough to break on a phone, and
+ * the row breaks rather than the page (#21). */
+.trig-placements > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px 10px;
+  padding: 1px 0;
+  font-size: 12.5px;
+  min-width: 0;
+  max-width: 62ch;
+}
+
+.trig-placements strong {
   color: var(--silkscreen);
   font-weight: 600;
 }

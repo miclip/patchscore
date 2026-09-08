@@ -1,7 +1,7 @@
 import type { DeviceId, RequestId, SectionName } from './ids'
 import type { ResolveResult, ResolvedAssignment } from './pipeline'
 import type { Cite } from './params'
-import type { DensityBand } from './template'
+import type { DensityBand, Section } from './template'
 import { STEPS_PER_BAR } from './template'
 import { bearsPattern, type Role } from './vocabulary'
 
@@ -126,46 +126,134 @@ export function isSustainedPart(a: ResolvedAssignment): boolean {
 }
 
 /**
- * §8 phase 5/#473. A **`riser`** whose direction authored no variant for it anywhere — every
- * section it occupies came back `none`.
+ * §8 phase 5/#473/#488. A **`riser`** or **`sweep`** whose direction authored no variant for it
+ * anywhere — every section it occupies came back `none`.
  *
  * The sibling of `isSustainedPart` over the same emptiness, and neither the same claim nor its
  * complement. That one says the **role is held**, so it suppresses the grid and the note line
  * together. This one says the **part is one event aimed at a change**, which still has a note to
  * place and a placement that is the whole of the instruction.
  *
- * **`riser` alone, and the narrowing happened twice.** It was written first over every
- * pattern-bearing role, and a catalogue sweep refuted that: 522 parts reach the emptiness and 228
- * of them are `texture` — Hip-Hop's crackle, which its own direction calls *a bed*, and Ambient
- * Dub's, which *breathes*. Neither is an event that arrives anywhere. Scoping to §4.2's
- * `TRANSITIONAL_ROLES` fixed that and left one case still wrong: **a `sweep` is not always a
- * lift.** Ambient Dub scopes one to `Swell` and one to `Recede` — the second falls away from the
- * crest — so the sentence's *arrives at the change* is true of one instance of that role and a
- * climb the reader does not want for the other. A riser has no such second reading: the name is
- * the direction of travel.
+ * **Two roles, and the scope was narrowed twice before it was widened once.** It was written
+ * first over every pattern-bearing role, and a catalogue sweep refuted that: 522 parts reach the
+ * emptiness and 228 of them are `texture` — Hip-Hop's crackle, which its own direction calls *a
+ * bed*, and Ambient Dub's, which *breathes*. Neither is an event that arrives anywhere. Scoping
+ * to §4.2's `TRANSITIONAL_ROLES` fixed that and left one case still wrong: **a `sweep` is not
+ * always a lift.** Ambient Dub scopes one request to `Swell` and to `Recede`, and the second
+ * falls away from the crest, so #473's *arrives at the change* read as a climb the reader does
+ * not want for half of it.
  *
- * So this is the narrowest predicate that makes the sentence uniformly true, and widening it is a
- * copy question rather than a predicate question — `sweep` needs wording that distinguishes
- * lifting from receding before it can share one.
+ * #488 answered that where it always lived — in the **arrangement**, not in the predicate.
+ * `singleTrigPlacements` reads each occupied section's energy against its successor's, so the
+ * direction of travel is derived rather than assumed, and the role no longer has to promise one.
+ * `riser` reads the same delta: both requests in the library sit in rising sections today, so
+ * nothing about them changes, but the clause is now true by construction instead of by luck.
+ *
+ * **`impact` is deliberately not here.** It is transitional too, and it is a *hit* rather than a
+ * gesture with a length — there is no travel across a section for a placement sentence to
+ * describe. No direction leaves one unpatterned today, so this decides nothing that is printed;
+ * it is here so the next one to try does not inherit an answer nobody chose.
  *
  * **`every` and not `some`, so a mixed part is not caught.** A direction that authors variants for
  * some of a part's sections and not others has said something about the ones it skipped, and
  * §6.3's per-section report is what says it. This is only for the part the direction never
  * patterned at all.
  *
- * No `bearsPattern` guard: `riser` bears a pattern and `pad` is the only role that does not, so a
- * part cannot satisfy this and `isSustainedPart` both. `test/vocabulary.test.ts` pins that rather
- * than leaving it to a redundant clause here.
+ * No `bearsPattern` guard: `riser` and `sweep` both bear a pattern and `pad` is the only role that
+ * does not, so a part cannot satisfy this and `isSustainedPart` both. `test/vocabulary.test.ts`
+ * pins that rather than leaving it to a redundant clause here.
  *
  * Exported for the reason `isSustainedPart` is: both renderers ask it, and two spellings of one
  * musical claim are one drift away from disagreeing on the page (#33).
  */
-export function isSingleTrigRiser(a: ResolvedAssignment): boolean {
+const SINGLE_TRIG_ROLES: readonly Role[] = ['riser', 'sweep']
+
+export function isSingleTrigPart(a: ResolvedAssignment): boolean {
   return (
-    a.role === 'riser' &&
+    SINGLE_TRIG_ROLES.includes(a.role) &&
     a.patterns.length > 0 &&
     a.patterns.every((p) => p.selection.outcome === 'none')
   )
+}
+
+/**
+ * §8 phase 5/#488. Which way the arrangement travels out of one section a single-trig part
+ * occupies.
+ *
+ * Read off `structure[i].energy` against `structure[i + 1].energy` and nothing else. A section
+ * name would have been the shorter route — Ambient Dub calls the falling one `Recede` — and it is
+ * the wrong one twice over: it is a template internal leaking into a renderer, and it would say
+ * nothing at all about the next direction that spells the same shape differently.
+ *
+ * **Four cases, and the last two are not one case.** `level` is a section that *does* lead
+ * somewhere and leads somewhere no higher or lower; `ends` is the last section in the structure,
+ * which leads nowhere at all. Both leave the gesture's direction unstated, and folding them
+ * together would have printed one of two different truths as the other — the reader at the end of
+ * a track being told the next section sits at the same energy, when there is no next section.
+ * That is a small lie of exactly the kind invariant 5 exists to refuse, and it costs one variant
+ * to not tell.
+ *
+ * Neither says which way the gesture travels, and inventing a direction for either would be the
+ * same invariant broken in the direction nobody checks.
+ */
+export type TrigTravel = 'rises' | 'falls' | 'level' | 'ends'
+
+/** One direction of travel, and the sections this part occupies that share it. */
+export type TrigPlacement = {
+  travel: TrigTravel
+  /** In structure order, first appearance first. */
+  sections: SectionName[]
+}
+
+function travelOutOf(structure: readonly Section[], section: SectionName): TrigTravel {
+  const i = structure.findIndex((s) => s.name === section)
+  const here = structure[i]
+  const next = structure[i + 1]
+  // A section the part occupies that the structure does not name cannot happen — occupancy is
+  // built from the structure — and guessing a direction for it would be the invented travel this
+  // refuses. It reads as terminal, which is the answer that claims least.
+  if (here === undefined) return 'ends'
+  // The real one: the last section in the structure has nothing to travel into. Not `level` —
+  // see `TrigTravel` for why the two are told apart.
+  if (next === undefined) return 'ends'
+  if (next.energy > here.energy) return 'rises'
+  if (next.energy < here.energy) return 'falls'
+  return 'level'
+}
+
+/**
+ * §8 phase 5/#488. **What phase 5 has to say about a single-trig part**, decided once for both
+ * renderers: its occupied sections grouped by which way the arrangement travels out of them.
+ *
+ * Empty for every other part, so `singleTrigPlacements(...).length > 0` and `isSingleTrigPart`
+ * answer the same question — the predicate is called here rather than restated, because a second
+ * copy of the conjunction is how the two came to disagree the first time.
+ *
+ * **Grouped rather than listed per section**, and by first appearance so §8's reading order is
+ * unchanged. Ambient Dub's `sweep` is one request across `Swell` and `Recede` — 0.35 into
+ * Bloom's 0.62, then 0.40 into Ebb's 0.12 — so it is two groups and two sentences, where every
+ * `riser` in the library is one group and reads exactly as #473 left it.
+ *
+ * Grouping is by travel and not by adjacency, so a part that rises out of two sections either
+ * side of a fall still says the rising thing once. `TrigTravel`'s four cases are four groups at
+ * most, and no part in the library reaches more than two.
+ *
+ * Lives here for the reason `isSustainedPart` does: this module derives facts and renders
+ * nothing, and two spellings of one claim are one drift away from disagreeing on the page.
+ */
+export function singleTrigPlacements(
+  result: ResolveResult,
+  a: ResolvedAssignment,
+): TrigPlacement[] {
+  if (!isSingleTrigPart(a)) return []
+  const groups = new Map<TrigTravel, TrigPlacement>()
+  for (const entry of a.patterns) {
+    const travel = travelOutOf(result.template.structure, entry.section)
+    const existing = groups.get(travel)
+    if (existing === undefined) groups.set(travel, { travel, sections: [entry.section] })
+    else existing.sections.push(entry.section)
+  }
+  return [...groups.values()]
 }
 
 /**

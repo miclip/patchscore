@@ -57,16 +57,17 @@ export const TRANSITIONAL_ROLES: readonly Role[] = ['riser', 'impact', 'sweep']
  *
  * **`riser` moved, and it did not move here** (#473). An unpatterned `riser` now gets one
  * instruction saying it is a single trig rather than a band-specific hole report per section — but
- * that is `isSingleTrigRiser`'s decision, and it says something different from this list. This one
+ * that is `isSingleTrigPart`'s decision, and it says something different from this list. This one
  * claims the role is *held*, which is why it suppresses the note line and the grid together; that
  * one claims the part is *one event aimed at a change*, which still has a note to place. No role
  * may be both, and `test/vocabulary.test.ts` pins it, because a role in both would be told it
  * sustains and that it is a single trig.
  *
- * **`sweep` is the case that shows why that other predicate is not on this list either.** It is
- * transitional rather than held, and it still takes the band-specific report — Ambient Dub scopes
- * one to `Swell` and one to `Recede`, so *arrives at the change* would read as a climb on the
- * instance that falls away from the crest. That is a wording problem, not a membership one.
+ * **`sweep` joined that other predicate and still does not belong here** (#488). It was held back
+ * from it while the sentence promised a climb — Ambient Dub scopes one request to `Swell` and to
+ * `Recede`, and the second falls away from the crest. Reading the direction of travel off the
+ * structure's energy fixed the wording, which is what it always was; the role is transitional
+ * rather than held either way, so its membership was never the question.
  */
 export const NON_PATTERN_BEARING_ROLES: readonly Role[] = ['pad']
 

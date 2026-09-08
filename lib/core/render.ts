@@ -67,11 +67,13 @@ import {
   arrangement,
   bandTrajectory,
   chainPlan,
-  isSingleTrigRiser,
+  isSingleTrigPart,
   isSustainedPart,
   noteInstruction,
+  singleTrigPlacements,
   type BandGroup,
   type SectionChain,
+  type TrigPlacement,
 } from './arrangement'
 import { fxSources, type FxSource } from './fx'
 import { lowEndPairing } from './mix'
@@ -2062,8 +2064,8 @@ const SUSTAINED_NOT_STRUCK =
   'authors no grid for it. Nothing to program here.'
 
 /**
- * §8 phase 5/#473. What phase 5 says for a **`riser`** whose direction authored no variant for it
- * in **any** section (`isSingleTrigRiser`).
+ * §8 phase 5/#473/#488. What phase 5 says for a **`riser`** or **`sweep`** whose direction
+ * authored no variant for it in **any** section (`isSingleTrigPart`).
  *
  * **It replaces a block per section, not a sentence.** Before this, such a part printed
  * `no pattern authored for \`riser\` at any band (asked for band 1)` once per merged group — the
@@ -2071,38 +2073,94 @@ const SUSTAINED_NOT_STRUCK =
  * nothing, because nothing was authored at any band. At the machine that is a part with no
  * instruction under it, said several times.
  *
- * **The absence is still stated, which is what keeps invariant 5.** The sentence opens on it:
- * the direction authored no grid. What it stops doing is leaving the reader there — a `riser` is
- * one event whose *placement* is the whole of what it asks for, and that is an instruction the
- * guide can give without inventing a step map it does not have.
+ * **The absence is still stated, which is what keeps invariant 5.** The head sentence opens on
+ * it: the direction authored no grid. What it stops doing is leaving the reader there — one of
+ * these parts is a single event whose *placement* is the whole of what it asks for, and that is
+ * an instruction the guide can give without inventing a step map it does not have.
  *
- * **It says the gesture arrives at the change, not that the trig does.** The first draft read
- * *where you put the trig is where it arrives*, which is false of every riser in the library: the
- * trig is the onset, and a four-bar rise arrives four bars later. A reader following that sentence
- * would place the trig on the downbeat they were building towards and hear the swell start there.
- * Where the trig goes relative to the change is a fact about the recipe's own envelope or sweep
- * length, which the device folder states in its `sourceAudio.need` — this half names the target.
+ * **The placement clause reads the arrangement, not the role** (#488). #473 printed one sentence
+ * for `riser` and left `sweep` on the per-band report, because *arrives at the change* is a climb
+ * and Ambient Dub's `sweep` spends 36 bars walking away from one. The direction of travel was in
+ * the model the whole time — `structure[i].energy` against its successor's — so both roles now
+ * read it and the clause is true by construction rather than by which role happened to be asked
+ * for. See `singleTrigPlacements`.
+ *
+ * **The rising clause says the gesture arrives at the change, not that the trig does.** The first
+ * draft read *where you put the trig is where it arrives*, which is false of every riser in the
+ * library: the trig is the onset, and a four-bar rise arrives four bars later. A reader following
+ * that sentence would place the trig on the downbeat they were building towards and hear the swell
+ * start there. Where the trig goes relative to the change is a fact about the recipe's own envelope
+ * or sweep length, which the device folder states in its `sourceAudio.need` — this half names the
+ * target. **The falling clause is the same claim run backwards**: the trig goes early and the
+ * gesture spends the section coming down, so nothing in it points at a peak.
+ *
+ * **The two neutral clauses invent no travel, and they are two.** `level` is a section that leads
+ * into one at the same energy; `ends` is the last section in the structure, which leads nowhere.
+ * Both say where the reader may put the trig without claiming the arrangement asked for a lift or
+ * a fall, and each says which of the two situations it is in — printing one of them as the other
+ * would tell a reader at the end of a track that the next section sits level with this one, when
+ * there is no next section. Invariant 5 cuts this way too: a guessed direction is a value nobody
+ * authored, and so is a next section nobody wrote.
  *
  * **It names no band and must not.** The band a section asked for is real and §6.3's trajectory
  * in phase 7 still reports it; printing it beside a part that has nothing at any band was the
  * number that made the old block read as a near-miss rather than as a decision.
  *
- * **Risers only, and every other unpatterned part keeps the old block.** The scope narrowed twice.
- * The first draft read the emptiness alone, which swept in Hip-Hop's crackle and Ambient Dub's
- * bed — parts their own directions describe as running underneath everything, and 228 of the 522
- * parts that reach the emptiness. Scoping to §4.2's transitional roles left `sweep` still wrong:
- * Ambient Dub scopes one to `Swell` and one to `Recede`, and this sentence reads as a climb for
- * the one that falls away from the crest. A `riser` has no second reading — the name is the
- * direction of travel — so it is the one role the sentence is uniformly true of. See
- * `isSingleTrigRiser`.
+ * **Every other unpatterned part keeps the old block**, `texture` first among them. The first
+ * draft read the emptiness alone, which swept in Hip-Hop's crackle and Ambient Dub's bed — parts
+ * their own directions describe as running underneath everything, and 228 of the 522 parts that
+ * reach the emptiness. See `isSingleTrigPart` for why `impact` is not here either, and for why
+ * that decides nothing the library prints today.
  *
  * The sibling of `SUSTAINED_NOT_STRUCK` above and neither the same claim nor its opposite: that
  * one says the role is held and suppresses the note line with the grid, this one says the part is
  * one event and keeps the note, because a trig is placed on a note.
  */
-const SINGLE_TRIG =
-  '**One trig, not a figure** — the direction authors no grid for this part. Place its single ' +
-  'trig so the gesture arrives at the change.'
+const SINGLE_TRIG_HEAD =
+  '**One trig, not a figure** — the direction authors no grid for this part.'
+
+/**
+ * The placement clause per direction of travel, worded as `components/guide/instruction.tsx`
+ * words it — one claim, two vocabularies, and the drift to guard against is the two renderers
+ * telling a reader to build into a change and to fall out of one (#33).
+ */
+const TRIG_PLACEMENT: Record<TrigPlacement['travel'], string> = {
+  rises: 'Place its single trig so the gesture arrives at the change.',
+  /**
+   * **Near the opening, and it is the gesture that goes down rather than the section.** The
+   * clause read *falls away across the decline* first, which claims the one trig spans the
+   * section — 36 bars of it, on Ambient Dub's `Recede` — and no recipe in the library has an
+   * envelope that long. The trig is the onset here exactly as it is in the rising clause; what
+   * it does is send the energy the way the arrangement is already going.
+   */
+  falls: 'Place its single trig near the section’s opening to send the energy downward.',
+  level:
+    'Place its single trig wherever the gesture should be heard; the section it leads into sits ' +
+    'at the same energy.',
+  ends:
+    'Place its single trig wherever the gesture should be heard; nothing follows this section ' +
+    'for it to lead into.',
+}
+
+/**
+ * The whole instruction, which is one line for every part in the library but Ambient Dub's
+ * `sweep` and a line per direction for that one.
+ *
+ * **One group prints no section names**, because the instruction is then the same wherever the
+ * part plays and there is nothing to tell apart. Two groups print them, because the reader
+ * standing in one section has to know which of the two sentences is theirs.
+ */
+function singleTrigLines(placements: TrigPlacement[]): Line[] {
+  const first = placements[0]
+  if (placements.length === 1 && first !== undefined) {
+    return [`${SINGLE_TRIG_HEAD} ${TRIG_PLACEMENT[first.travel]}`]
+  }
+  return [
+    SINGLE_TRIG_HEAD,
+    '',
+    ...placements.map((p) => `- **${p.sections.join(', ')}** — ${TRIG_PLACEMENT[p.travel]}`),
+  ]
+}
 
 /**
  * §4.3/§8. What phase 5 says for a part whose hook is held and whose variants say where it is
@@ -2211,16 +2269,17 @@ function phaseSteps(
     // grid, so there is nothing to draw. A pad reaches this branch only when its hook did not
     // resolve — where one did, `deferred` is already true and says where to look instead.
     const sustained = isSustainedPart(a)
-    // §8 phase 5/#473. A `riser` the direction never patterned anywhere. Read after
-    // `deferred`, because a hook that owns the part already answers the question this one asks —
-    // and a re-articulating part reaching here has no map, so `HOOK_IS_THE_PATTERN` is the
+    // §8 phase 5/#473/#488. A `riser` or `sweep` the direction never patterned anywhere. Read
+    // after `deferred`, because a hook that owns the part already answers the question this one
+    // asks — and a re-articulating part reaching here has no map, so `HOOK_IS_THE_PATTERN` is the
     // pointer it already fell back to.
-    const singleTrig = !deferred && isSingleTrigRiser(a)
+    const singleTrig = !deferred && isSingleTrigPart(a)
     /**
      * The three sentences that *replace* a grid rather than qualifying one: a deferred part whose
-     * hook is the pattern, a sustained part with nothing to strike, and a `riser` the direction
-     * authored no variant for at any band. Everything else is a part a reader programs, including
-     * an unpatterned `texture` or `sweep`, which still report their hole per band (§6.3).
+     * hook is the pattern, a sustained part with nothing to strike, and a single-trig part the
+     * direction authored no variant for at any band. Everything else is a part a reader programs,
+     * including an unpatterned `texture` or `impact`, which still report their hole per band
+     * (§6.3).
      */
     const replacesGrid = (deferred && !a.reArticulatesHook) || sustained || singleTrig
     const blocks = replacesGrid ? [] : mergeBlocks(a, deviceById, options, result.song.bpm)
@@ -2240,7 +2299,7 @@ function phaseSteps(
       out.push(SUSTAINED_NOT_STRUCK)
     } else if (singleTrig) {
       out.push('')
-      out.push(SINGLE_TRIG)
+      out.push(...singleTrigLines(singleTrigPlacements(result, a)))
     }
 
     /**

@@ -12,7 +12,8 @@ import type {
 import {
   STEPS_PER_BAR,
   chainPlan,
-  isSingleTrigRiser,
+  isSingleTrigPart,
+  singleTrigPlacements,
   isSustainedPart,
   noteInstruction,
   patternDriver,
@@ -176,13 +177,14 @@ export function mergeBlocks(a: ResolvedAssignment): Block[] {
   // and `SustainedRef` says what the part is instead. Kept in step with the Markdown sibling's
   // `phaseSteps`, which suppresses on the same condition.
   if (isSustainedPart(a)) return []
-  // §8 phase 5/#473. And a `riser` whose direction authored no variant for it in any section:
-  // every block it would produce says the same absence under a different heading, so
-  // `SingleTrigRef` says it once instead. Kept in step with the Markdown sibling's `phaseSteps`,
-  // which suppresses on the same predicate. Two shapes are deliberately untouched — a part
-  // patterned in *some* section keeps the blocks that came back `none`, reported against the band
-  // that asked (§6.3), and so does every other unpatterned part, `texture` and `sweep` included.
-  if (a.hookAuthority === undefined && isSingleTrigRiser(a)) return []
+  // §8 phase 5/#473/#488. And a `riser` or `sweep` whose direction authored no variant for it in
+  // any section: every block it would produce says the same absence under a different heading, so
+  // `SingleTrigRef` says it once instead — once per direction of travel, where the part occupies
+  // sections that go both ways. Kept in step with the Markdown sibling's `phaseSteps`, which
+  // suppresses on the same predicate. Two shapes are deliberately untouched — a part patterned in
+  // *some* section keeps the blocks that came back `none`, reported against the band that asked
+  // (§6.3), and so does every other unpatterned part, `texture` first among them.
+  if (a.hookAuthority === undefined && isSingleTrigPart(a)) return []
   const merged = new Map<string, Block>()
   for (const entry of a.patterns) {
     const s = entry.selection
@@ -463,8 +465,8 @@ export function PhaseSteps({
             <HookPointer a={a} />
           ) : isSustainedPart(a) ? (
             <SustainedRef />
-          ) : isSingleTrigRiser(a) ? (
-            <SingleTrigRef />
+          ) : isSingleTrigPart(a) ? (
+            <SingleTrigRef placements={singleTrigPlacements(result, a)} />
           ) : null}
           <NoteLine a={a} />
           {/*
@@ -480,7 +482,7 @@ export function PhaseSteps({
           */}
           {(a.hookAuthority !== undefined && !a.reArticulatesHook) ||
           isSustainedPart(a) ||
-          (a.hookAuthority === undefined && isSingleTrigRiser(a))
+          (a.hookAuthority === undefined && isSingleTrigPart(a))
             ? null
             : (() => {
                 const entry = patternEntryNotice(deviceById.get(a.deviceId))

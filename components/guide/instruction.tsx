@@ -1,5 +1,5 @@
 import { Fragment, useContext } from 'react'
-import type { PatternDriver } from '@/lib/core'
+import type { PatternDriver, TrigPlacement } from '@/lib/core'
 import type { ReactNode } from 'react'
 import type { ResolvedParam } from '@/lib/core'
 import { paramLabel } from '@/lib/core'
@@ -295,9 +295,9 @@ export function SustainedRef() {
 }
 
 /**
- * §8 phase 5/#473. The sibling of `SustainedRef` for a **`riser`** whose direction authored no
- * variant for it at any band (`isSingleTrigRiser`), worded as `SINGLE_TRIG` in
- * `lib/core/render.ts` words it.
+ * §8 phase 5/#473/#488. The sibling of `SustainedRef` for a **`riser`** or **`sweep`** whose
+ * direction authored no variant for it at any band (`isSingleTrigPart`), worded as
+ * `SINGLE_TRIG_HEAD` and `TRIG_PLACEMENT` in `lib/core/render.ts` word it.
  *
  * It replaces the block-per-section that used to say `No pattern authored for riser at any band
  * (asked for band 1)` under two or three headings — one absence, restated, each time beside a band
@@ -305,20 +305,70 @@ export function SustainedRef() {
  * sentence's first clause, so invariant 5 is intact; what follows it is the instruction the guide
  * can actually give.
  *
- * **A `texture` or a `sweep` with the same emptiness does not take this**, and both keep the
- * band-specific hole report: a bed is not an event that arrives anywhere, and a `sweep` may be
- * a fall away from the crest rather than a lift into it. See `isSingleTrigRiser`.
+ * **Which instruction is the arrangement's answer, not this renderer's** (#488). #473 kept `sweep`
+ * on the hole report because *arrives at the change* is a climb and Ambient Dub's spends 36 bars
+ * walking away from one; `singleTrigPlacements` reads each occupied section's energy against its
+ * successor's, so the clause follows the direction of travel and the Markdown sibling gets the
+ * same answer from the same function (#33). Four clauses, because a section that leads into a
+ * quieter one, a louder one, one at the same energy, and no section at all are four different
+ * things to be standing in front of. A `texture` with the same emptiness still keeps the
+ * band-specific hole report.
+ *
+ * **Two groups print their section names and one does not.** With one, the instruction is the
+ * same wherever the part plays and there is nothing to tell apart — but Ambient Dub's `sweep`
+ * rises out of `Swell` and falls out of `Recede`, and a reader standing in one of them has to
+ * know which sentence is theirs.
  *
  * Split from `SustainedRef` because the claims are different: that one says the **role is held**
  * and drops the note line with the grid, this one says the **part is one event** — so a note line
  * may still follow, and should, because a trig is placed on a note.
  */
-export function SingleTrigRef() {
+const TRIG_PLACEMENT: Record<TrigPlacement['travel'], string> = {
+  rises: 'Place its single trig so the gesture arrives at the change.',
+  // Near the opening, and it is the gesture that goes down rather than the section: the trig is
+  // the onset here exactly as it is above, and no recipe has an envelope that spans 36 bars of
+  // `Recede`. See `TRIG_PLACEMENT` in `lib/core/render.ts`, which this must read alike.
+  falls: 'Place its single trig near the section’s opening to send the energy downward.',
+  // Two neutral clauses, not one. A section that leads into one at the same energy and a section
+  // that leads nowhere are different facts, and printing either as the other invents a next
+  // section or an energy nobody wrote.
+  level:
+    'Place its single trig wherever the gesture should be heard; the section it leads into sits ' +
+    'at the same energy.',
+  ends:
+    'Place its single trig wherever the gesture should be heard; nothing follows this section ' +
+    'for it to lead into.',
+}
+
+export function SingleTrigRef({ placements }: { placements: readonly TrigPlacement[] }) {
+  const head = (
+    <>
+      <strong>One trig, not a figure</strong> — the direction authors no grid for this part.
+    </>
+  )
+  const only = placements.length === 1 ? placements[0] : undefined
+  if (only !== undefined) {
+    return (
+      <p className="sound-ref hook-ref">
+        {head} {TRIG_PLACEMENT[only.travel]}
+      </p>
+    )
+  }
   return (
-    <p className="sound-ref hook-ref">
-      <strong>One trig, not a figure</strong> — the direction authors no grid for this part. Place
-      its single trig so the gesture arrives at the change.
-    </p>
+    <>
+      <p className="sound-ref hook-ref">{head}</p>
+      {/* Separators and section names are markup, never a CSS gap: a gap is invisible to a
+          screen reader, to a copy-paste and to a test. */}
+      <ul className="trig-placements">
+        {placements.map((p) => (
+          <li key={p.sections.join(',')}>
+            <strong>{p.sections.join(', ')}</strong>
+            <span className="token-sep">—</span>
+            <span>{TRIG_PLACEMENT[p.travel]}</span>
+          </li>
+        ))}
+      </ul>
+    </>
   )
 }
 
