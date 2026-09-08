@@ -1,3 +1,4 @@
+import { CableMark } from '@/components/cable-mark'
 import { Fragment } from 'react'
 import type { AuthoredParam, Device, ParamScope, PatchEntry, Recipe } from '@/lib/core'
 import { groupedParams, num, paramLabel, recipeRouting } from '@/lib/core'
@@ -133,6 +134,7 @@ function KitPatch({ entries }: { entries: readonly PatchEntry[] }) {
     <ul className="patch kit-patch">
       {entries.map((entry) => (
         <li key={`${entry.from}->${entry.to}`}>
+          <CableMark />
           <span className="mono">{entry.from}</span>
           <span className="arrow" aria-hidden="true">
             {' → '}

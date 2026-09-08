@@ -5272,3 +5272,56 @@ html {
   font-size: 13px;
   cursor: pointer;
 }
+
+/* ------------------------------------------------------- the patch-cable mark (#500) */
+
+/*
+ * §3.3/#500. A cable line and a parameter line sat in the same column with nothing but an arrow
+ * between them. This is the rack diagram's cable at reading size — casing, core, a plug at each
+ * end — so the object is one a reader already met when they picked their rig.
+ *
+ * Sized in `em` so it tracks the line it marks rather than a fixed pixel height, and
+ * `vertical-align` rather than a flex row because the cable line wraps on a phone and the mark
+ * must stay with the first line rather than being stretched by the row.
+ */
+.cable-mark {
+  width: 1.55em;
+  height: 0.66em;
+  margin-right: 0.45em;
+  vertical-align: baseline;
+  flex: none;
+}
+
+.cable-mark-casing {
+  fill: none;
+  stroke: #08090a;
+  stroke-width: 5.5;
+  stroke-linecap: round;
+}
+
+.cable-mark-core {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+
+.cable-mark-end {
+  fill: var(--accent);
+}
+
+/*
+ * On paper the casing is drawn against white, where a near-black sheath under a coloured core
+ * reads as a smudge at this size. The plugs and the lead carry the shape on their own.
+ */
+@media print {
+  .cable-mark-casing {
+    stroke: none;
+  }
+
+  .cable-mark-core,
+  .cable-mark-end {
+    stroke: #111;
+    fill: #111;
+  }
+}
