@@ -2859,10 +2859,25 @@ keep valid. Absolute is also the number the musician is thinking in.
 
 ## 6. Mood controls
 
-Continuous 0–100 values applied *after* recipe resolution. They apply offsets and character
-preferences; they never introduce parameter values of their own.
+Values on a 0–100 scale. They apply offsets and character preferences; they never introduce
+parameter values of their own. **They do not all land at one point in the pipeline**: parameter
+offsets apply *after* recipe resolution (§7 step 8), while character resolution (step 3) and
+density's band selection (step 4) both happen before assignment.
 
-**All five axes are parameter offsets, `swing` included.** #62 argued that swing could not be
+**Four axes are continuous; `density` is a three-position control, and it is the only one that
+reaches structure.** `darkness`, `grit`, `swing` and `space` take any value in range and drive
+parameter offsets, and two of them do one thing more: `darkness` and `grit` also move character
+resolution (§6.2), which is a choice among authored characters rather than an offset. `density`
+sits on the same 0–100 scale, but the UI exposes `DENSITY_DETENTS` and nothing between them, and
+`TemplateSchema` pins a *direction's opening* density to one of the three (§6.3, #317). Neither is
+a claim that no other value can exist: `densityShift` reads any value in range as one of three
+zones, so a density arriving from anywhere else still resolves, and the effect is quantised
+whatever the number is. Its second effect is not an offset either — it leans the section's pattern
+band by one, which *selects* among variants somebody authored for that role and band and mutates
+no hits (§4.3). Said here because the paragraph above read as "continuous, and offsets" of all
+five, and #476 took that as the rule a difficulty axis would be extending (§12.7).
+
+**All five axes carry parameter offsets, `swing` included.** #62 argued that swing could not be
 one — that it is a timing transform, and mood moves parameter values — and the hole in that
 argument is that a SHUFFLE knob *is* a parameter whose value means timing. The boxes had already
 made the abstraction: the TR-1000's pattern `SHUFFLE` (`-100–+100`, Reference p.26), the Tracker
@@ -5213,6 +5228,61 @@ the person who knows whether two toms are meant to be two boxes. Semantics: requ
 role and carrying `distinct: true` may not be assigned to the same `deviceId`. If the rig cannot
 satisfy it, the surplus requests become ordinary shortfalls (§7.3) rather than being silently
 collapsed. Default is `false`, so templates that do not care are unaffected.
+
+**12.7 — Difficulty is a template-local selector, and its high end is an architectural project.**
+See §4.1, §4.3 and §6. #476 asked whether difficulty is a sixth `MoodAxis`. It is not, and it is
+not a `TrackMode` (§2.2) or an inspiration (§5) either. Nothing here is built; this records the
+shape so the question is not re-derived.
+
+**The objection #476 raises against itself is answered, and it is density that answers it.** An
+axis is not confined to timbre and need not act late: density leans the section's band at §7 step
+4, before assignment (§4.3, §6.3). So "a mood axis may only offset parameters, after recipes" is
+not the rule, and it is not the reason difficulty fails to be one.
+
+**The reason is what the two knobs address.** Density leans *within* a topology the template
+already carries — four authored bands per role, one step either way — and the same axis has a
+device-side meaning at the same time, through the params that declare it (§6.1). Difficulty would
+select a whole authored harmony for the song, and no device parameter could ever declare it. A
+`MoodAxis` is shared vocabulary both sides may utter (invariant 3); a name only templates can
+speak weakens that union rather than extending it. `TrackMode` is a device's claim about one of
+its own tracks and can say nothing about harmony, and an inspiration replaces on `(role, band)`
+and never names a template (§5.1, §5.2). So the selector sits in the template, beside the
+alternatives it selects among, and neither half names the other.
+
+**It selects; it never generates — this proposal's boundary, not an impossibility.** A
+deterministic reharmoniser would break no invariant: invariant 1 is LLM calls and determinism,
+invariant 4 is resolved *parameter* provenance. What rules it out here is the premise the product
+is built on — the authored library is the product, §4.1 has harmony and hooks authored rather
+than generated, and invariant 5 makes an honest gap the standing alternative to filling one.
+Generation is a different product, decided in the open rather than arriving as a level of a knob.
+
+**The floor ships; it is just not selectable.** `acid-lineage` and `hip-hop` each carry
+`{ cycleBars: 4, progression: [{ degree: 'i', bars: 4 }] }` — one chord for the whole track, as
+those directions' own music. A low end *within* another direction is a different thing: nothing
+plays `industrial-techno` with its `i - VI - VII` collapsed, and offering that means authoring a
+second progression for it, per direction, by hand.
+
+**The high end changes what a `Template` can express.** `harmony` is one `{ cycleBars,
+progression }` for the whole guide, and the cheap part is what reads it mechanically — the type,
+`HarmonySchema`, `inspiration.ts`'s copy, §8's progression table and the direction page that
+shares it. The work is the model that does not exist: which progression is in force in a section,
+and chords resolved and spelled against the chosen key per section. Around it sits a semantic
+audit, per direction — hooks are authored to sit over one progression and have to be checked
+against a changing one, and §12.4's chord realisations are chosen by no code but their §8
+guidance (which shapes to record, one sample per shape, a voicing held in one order) assumes a
+single progression. Then renderer, schema, copy and fixtures.
+
+**Compatibility is a decision, not a foregone drift.** If levels default to the progression a
+direction carries today and resolve identically, links are preserved and `RESOLVER_VERSION` need
+not move; if any default output moves, it bumps and the affected prior permalinks render
+different music. Define the default deliberately rather than discover it.
+
+**Magnitude: one to two engineering weeks** for the model, resolution, rendering, compatibility
+and tests — before the progressions and hooks authored per direction, which is content work and
+unbounded by anything this estimate contains.
+
+**No level count is proposed, and no middle of the axis is described.** Whether difficulty should
+also touch part count, pattern band or voice allocation is unexamined and stays that way.
 
 ### Still open
 
