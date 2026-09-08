@@ -2478,12 +2478,53 @@ export const DeviceFeaturesSchema = z.strictObject({
     .optional(),
 })
 
-export type ManualRef = { title: string; edition?: string }
+/**
+ * §2.3/#480. The document a manifest's citations point into, and when somebody last checked that
+ * it is still the document the maker publishes.
+ *
+ * `edition` is the printing: a firmware string, a Roland `eng02`, a version and date off the
+ * cover. It says which copy was read. It says nothing about whether a newer one exists, and that
+ * is the gap #480 opened: the Cascadia cited v1.1 on all 175 of its citations while Intellijel
+ * were publishing v1.4, three firmware releases later, with an Entropic Sequence Generator that
+ * changes what `RISE`, `FALL` and `SHAPE` do on Env B. Every citation was correct against the
+ * document it named. Nothing in the repo could ask whether that document was still current.
+ *
+ * `currentEditionConfirmedOn` is that question answered by hand, as an ISO date: on this day
+ * somebody went to the maker's downloads page and found this edition to be the one on offer. A
+ * date rather than a boolean, because the claim decays. Confirmed in April says something in
+ * April and less every month after, and only a date lets a reader decide how much.
+ *
+ * **It is not a link check.** `manuals/README.md` records the day a URL last answered, which is a
+ * different fact about a different thing: a live link to a superseded PDF is exactly the state the
+ * Cascadia was in. That column now says "link checked" for the same reason this field is named
+ * for the edition.
+ *
+ * The schema refuses the date on a manual with no `edition`, since there is no printing for it to
+ * be about. `npm run audit` prints the split and names every manifest still unchecked; nothing
+ * gates on it, because an unchecked edition is a question nobody has asked rather than an error.
+ */
+export type ManualRef = {
+  title: string
+  edition?: string
+  /** ISO `YYYY-MM-DD`. Only meaningful beside an `edition`, and refused without one. */
+  currentEditionConfirmedOn?: string
+}
 
-export const ManualRefSchema = z.strictObject({
-  title: z.string().min(1),
-  edition: z.string().min(1).optional(),
-})
+export const ManualRefSchema = z
+  .strictObject({
+    title: z.string().min(1),
+    edition: z.string().min(1).optional(),
+    currentEditionConfirmedOn: z.iso.date().optional(),
+  })
+  .superRefine((manual, ctx) => {
+    if (manual.currentEditionConfirmedOn !== undefined && manual.edition === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'currentEditionConfirmedOn confirms an edition, so name the edition it confirms',
+        path: ['currentEditionConfirmedOn'],
+      })
+    }
+  })
 
 /**
  * §10. How much horizontal room the box takes up in a rack view, and where that was checked.

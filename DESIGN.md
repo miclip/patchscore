@@ -379,6 +379,9 @@ export const device: Device = {
     'features.lfo':     { kind: 'unknown', reason: 'the manual prints no target list' },
   },
 
+  // §2.3/#480. An optional `currentEditionConfirmedOn` records the day somebody checked that
+  // this edition is still the one the maker publishes. Absent here, because nobody has checked
+  // `eng02` against Roland's downloads page.
   manual: { title: 'TR-1000 Owner\'s Manual', edition: 'eng02' },
 
   recipes: [ /* §3 */ ],
@@ -387,6 +390,47 @@ export const device: Device = {
 
 `hints` is a flat lookup keyed by action, authored once per device and referenced by
 recipes. A few words to jog you, nothing more. Every string under ~8 words.
+
+#### The edition, and whether it is still the current one (#480)
+
+`edition` names the printing a manifest's citations were read against: a firmware string, a
+Roland `eng02`, a version and date off the cover. It cannot say whether the maker has since
+published a newer one, and that blindness cost the Cascadia. It cited `v1.1 (2023.04.18)` on all
+175 of its citations while Intellijel published v1.4, three firmware releases later, whose
+Entropic Sequence Generator gives `RISE`, `FALL` and `SHAPE` different jobs on Env B. Every
+citation was correct against the document it named, the manifest was complete and internally
+consistent, and it described an older instrument. It failed in the direction nobody files: the
+guide said less than the box could do.
+
+`currentEditionConfirmedOn` is the missing third number, recorded by hand as an ISO date. On that
+day somebody opened the maker's downloads page and found this edition to be the one on offer. A
+date and not a boolean, because the claim decays and only a date lets a reader judge by how much.
+The schema refuses it on a manual with no `edition`, since there would be no printing for it to
+be about.
+
+Two manifests carry a date, and the Cascadia is one of them:
+
+```ts
+// lib/devices/intellijel-cascadia
+manual: {
+  title: 'Intellijel Cascadia Manual',
+  edition: 'v1.4 (2026.04.13)',
+  currentEditionConfirmedOn: '2026-09-08',
+},
+```
+
+The other forty-four have no date, which is the ordinary state. A date nobody earned is worse
+than no date, because it reads as a check that happened.
+
+The day a link answered is a different fact and lives elsewhere. `manuals/README.md` records that
+per file under `link checked`, and a live link to a superseded PDF is exactly the state the
+Cascadia was in.
+
+Nothing fetches. Makers publish manuals at unstable URLs, return 403 rather than 404 for a wrong
+filename, and version them in the filename, the cover, a changelog page or nowhere, so a
+fetch-and-diff across a dozen makers is a larger project than the debt it would measure. The date
+is a person, a downloads page and one line of manifest. What the repo does mechanically is count:
+`npm run audit`'s `EDITIONS` block (§9) prints the split and names every manifest still unchecked.
 
 #### Device-global resources
 
@@ -4667,6 +4711,12 @@ Three guards:
   the states with a document behind them and `gaps` for the states without, because `undocumented`
   is finished work, `unchecked` is work nobody has started, and `unread` is work nobody here can
   start at all
+- an `EDITIONS` block (§2.3/#480) splitting the manifests three ways: those carrying a date
+  somebody confirmed their cited edition current on, then those where nobody has asked, then
+  those naming a manual with no edition, so there is no cited edition to confirm. Both of those
+  lists print in full, in that order, and the unchecked one is the work queue. A citation can be
+  correct and its document superseded, which is how the Cascadia cited v1.1 against a published
+  v1.4, and no other line here can see that
 
 Authoring stays one folder; deployment stays static.
 
