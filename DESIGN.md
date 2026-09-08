@@ -5507,9 +5507,13 @@ direction carries today and resolve identically, links are preserved and `RESOLV
 not move; if any default output moves, it bumps and the affected prior permalinks render
 different music. Define the default deliberately rather than discover it.
 
-**Magnitude: one to two engineering weeks** for the model, resolution, rendering, compatibility
-and tests — before the progressions and hooks authored per direction, which is content work and
-unbounded by anything this estimate contains.
+**Magnitude: a judgement, not a measurement.** One to two engineering weeks for the model,
+resolution, rendering, compatibility and tests, before the progressions and hooks authored per
+direction, which is content work and unbounded by anything that figure contains. It was offered by
+one reader during #476 and written down without being derived against a scoping of the per-section
+harmony work, so treat it as an order of magnitude and re-estimate before committing to it. The
+rest of this section rests on things somebody checked; this sentence does not, and it is marked so
+nobody later mistakes it for the same kind of claim.
 
 **No level count is proposed, and no middle of the axis is described.** Whether difficulty should
 also touch part count, pattern band or voice allocation is unexamined and stays that way.
