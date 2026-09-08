@@ -1106,9 +1106,9 @@ function hoistOrder(params: readonly ResolvedParam[]): ResolvedParam[] {
  * `module` is absent on the group that carries the unmoduled run, exactly as it is absent on the
  * parameter: nothing has been said, and there is no box to draw.
  */
-export type ParamGroup = {
+export type ParamGroup<P = ResolvedParam> = {
   module?: string
-  params: readonly ResolvedParam[]
+  params: readonly P[]
 }
 
 /**
@@ -1140,7 +1140,15 @@ export type ParamGroup = {
  * is untouched by module `FILTER` for the same reason. A name that is *only* the prefix would
  * trim to nothing, so it keeps its full name rather than rendering as an empty line.
  */
-export function paramLabel(param: ResolvedParam): string {
+/*
+ * #478. **Generic over the two fields it reads, so an authored parameter can ask the same
+ * question a resolved one asks.** The rule — trim the module's own prefix off a name inside a
+ * box already carrying it — is one rule about a `name` and a `module`, and the device page's kit
+ * section renders `AuthoredParam` because it calls no resolver. A second copy of the trim would
+ * be the thing the shared helper exists to prevent: one control reading two ways on two of our
+ * own surfaces. Nothing about the behaviour moves; `ResolvedParam` satisfies the constraint.
+ */
+export function paramLabel<P extends { name: string; module?: string }>(param: P): string {
   if (param.module === undefined) return param.name
   const prefix = `${param.module} \u00b7 `
   if (!param.name.startsWith(prefix)) return param.name
@@ -1174,9 +1182,16 @@ export function paramLabel(param: ResolvedParam): string {
  * a box only for a named group emits precisely what it emitted before any of this existed. An
  * empty list yields no groups at all.
  */
-export function groupedParams(params: readonly ResolvedParam[]): readonly ParamGroup[] {
-  const out: ParamGroup[] = []
-  let run: ResolvedParam[] | undefined
+/*
+ * #478. Generic for the reason `paramLabel` above is: this reads `module` and nothing else, and
+ * the kit section groups authored parameters. `ParamGroup` keeps `ResolvedParam` as its default,
+ * so every existing reference is unchanged.
+ */
+export function groupedParams<P extends { module?: string }>(
+  params: readonly P[],
+): readonly ParamGroup<P>[] {
+  const out: ParamGroup<P>[] = []
+  let run: P[] | undefined
   let current: string | undefined
   for (const param of params) {
     if (run === undefined || param.module !== current) {

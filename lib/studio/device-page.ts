@@ -138,6 +138,12 @@ export type DevicePage = {
    */
   paramProvenance: readonly ParamProvenanceGroup[]
   /**
+   * §3.2/#478. **The drum sounds this box makes from scratch**, in sampling order — see
+   * `kitRecipes`. Empty for a box that makes fewer than `KIT_MINIMUM` of them, which is most of
+   * the library and every pure sampler.
+   */
+  kit: readonly Recipe[]
+  /**
    * Every direction, in template order, with what this box alone covers of it. Empty for a box
    * with no assignables: three rows of "0 of 12" say the same thing three times, and the page
    * says it once in prose instead.
@@ -656,6 +662,77 @@ export function paramProvenance(device: Device): readonly ParamProvenanceGroup[]
   ]
 }
 
+/**
+ * §1/#478. **The order somebody builds a kit in**, which is not `ROLES` order and is not meant
+ * to be.
+ *
+ * `ROLES` is filed by register — low, backbeat, metal, body, tonal, transitional — because that is
+ * how a *direction* reaches for a part. Somebody standing at a box with a recorder is doing
+ * something else: laying down the skins first, then the metal over them, then whatever fills the
+ * gaps. So `tom` comes up beside the other struck heads instead of sitting under `body`, and
+ * `ghost-perc` drops past the metal to sit with the fills, where it is actually reached for.
+ *
+ * The twelve are the drum-role subset of `ROLES` and nothing more. `sub`, `bass-mid`, `texture`
+ * and the seven tonal roles are parts a kit plays *under*, not sounds a kit is made of, and
+ * `riser`/`sweep` are §4.2 transitions that last bars rather than one shot. `impact` is the
+ * transitional role that survives, because a one-shot is exactly what it already is.
+ *
+ * A local list rather than a fifth vocabulary in `lib/core` (invariant 3): nothing here crosses
+ * the template/device boundary, no template or device may now say a word it could not before, and
+ * the ordering is one page's answer to how a reader works rather than a claim the engine makes.
+ */
+export const KIT_ROLES: readonly Role[] = [
+  // skins
+  'kick', 'snare', 'clap', 'rim', 'tom',
+  // metal
+  'closed-hat', 'open-hat', 'ride', 'metallic',
+  // the fills between them
+  'ghost-perc', 'noise', 'impact',
+]
+
+/**
+ * #478. How many kit sounds a box has to author before the page offers them as a kit.
+ *
+ * **Four, and the threshold is the feature rather than a guard against an empty list.** The claim
+ * being made is *this box can make you a drum kit*, and a page that made it over one sound would
+ * be making it falsely — the three boxes that fall below the line today author two `noise`
+ * recipes, two `kick` recipes and one `metallic` respectively, which is one voice at a couple of
+ * characters and not a kit anybody could play. Below four, the recipes are still on the page in
+ * every other section; what is withheld is the claim, not the content.
+ */
+export const KIT_MINIMUM = 4
+
+/**
+ * §3.2/#478. **The drum sounds this box makes from scratch**, in the order somebody would sample
+ * them. Empty when it does not make enough of them to call a kit.
+ *
+ * **A selection, not new machinery.** Every recipe returned is already rendered elsewhere on this
+ * page and in guides; the whole of this function is *which* recipes and *in what order*.
+ *
+ * **`sourceAudio` is the line between making a sound and finding one** (§3/#101). A recipe that
+ * declares it is telling the reader to go and load audio the box does not generate, which is the
+ * opposite of the question this section answers — and it is what separates the twenty-four boxes
+ * here from the samplers, which author plenty of drum-role recipes and not one kit sound. The
+ * three MPCs are the case that shows why the test is per recipe rather than per device: they
+ * author both, and eight of their thirteen drum-role recipes are patches for their own synth
+ * engines.
+ *
+ * **Manifest order within a role, so duplicates stay distinct.** The Cascadia authors two kicks,
+ * two `metallic` and two `noise` recipes — different patches for different sounds — and any
+ * de-duplication by role would pick one of each and drop a third of the kit. `paramProvenance`
+ * refuses the same collapse by name for the same reason.
+ */
+export function kitRecipes(device: Device): readonly Recipe[] {
+  const qualifying = device.recipes.filter(
+    (recipe) => recipe.sourceAudio === undefined && KIT_ROLES.includes(recipe.role),
+  )
+  if (qualifying.length < KIT_MINIMUM) return []
+  // Built by walking the order rather than sorted into it: a filter per role preserves manifest
+  // order within that role by construction, where a comparator would be relying on the sort
+  // being stable.
+  return KIT_ROLES.flatMap((role) => qualifying.filter((recipe) => recipe.role === role))
+}
+
 export function devicePage(device: Device): DevicePage {
   const assignables = expand(device).length
   // One audit, two readings of it: the counts for the sentence, the facts for the block under it.
@@ -671,6 +748,7 @@ export function devicePage(device: Device): DevicePage {
     provenance: audit.counts,
     capabilityGaps: capabilityGaps(device, audit.findings),
     paramProvenance: paramProvenance(device),
+    kit: kitRecipes(device),
     // Template order, which is the authored order of `lib/templates`.
     directions: assignables === 0 ? [] : TEMPLATES.map((t) => directionFit(device, t)),
   }

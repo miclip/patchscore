@@ -2087,6 +2087,84 @@ occupy the assignable — it surfaces as the `no-recipe` gap of §7.3, which nam
 could have carried the part. The distinction this section draws is a *reporting* distinction and
 is recovered there, never in the objective.
 
+### 3.6 The kit section: a box's drum sounds, with no song around them
+
+**Twenty-seven boxes in this library author a drum sound that needs nothing loaded, and
+twenty-four of them author four or more** — the second figure is the one that renders a panel,
+because of the threshold below. Until #478 no surface said either. The product's every other
+output is a guide, and a guide needs a direction, a rig, a mood and a seed. Somebody who owns a
+mono synth and a recorder therefore got told, by each guide they generated, that they had no kick
+— while the CRAVE's five kit recipes sat in the manifest with cited values on them.
+
+So the device page carries a **Build a kit** panel: that box's drum-role recipes, rendered as
+patches to build and record, ordered the way somebody sampling a kit works.
+
+**It is a selection, and the whole point is that it is only a selection.** Nothing resolves, no
+template is imported, and no recipe was written for it. `kitRecipes` (`lib/studio/device-page.ts`)
+filters and orders; the panel renders what the guide already renders. That is what lets the
+section exist on a page reached with no rig and no direction — and it is equally the limit: there
+is no mood here, no arrangement and no step pattern, because all three are properties of a song
+this reader has not asked for.
+
+Four rules decide the content:
+
+- **Twelve roles, ordered for the hand rather than the register.** `kick`, `snare`, `clap`,
+  `rim`, `tom`, then `closed-hat`, `open-hat`, `ride`, `metallic`, then `ghost-perc`, `noise`,
+  `impact`. §1 files `ROLES` by register because that is how a *direction* reaches for a part;
+  somebody at a box with a recorder lays the skins down first, puts the metal over them, and
+  reaches for the fills last. So `tom` moves up beside the other struck heads and `ghost-perc`
+  drops past the metal. The tonal roles, `sub`, `bass-mid` and `texture` are what a kit plays
+  *under*; `riser` and `sweep` last bars rather than one shot. `impact` is the §4.2 transitional
+  role that stays, because a one-shot is what it already is.
+- **A recipe declaring `sourceAudio` is excluded** (§3/#101). That field is the line between
+  making a sound and finding one: a recipe carrying it tells the reader to go and load audio the
+  box does not generate, which is the opposite of the question the panel answers. It is what
+  separates these boxes from the samplers, which author plenty of drum-role recipes and not one
+  kit sound. Per recipe rather than per device, because the MPCs do both.
+- **Four or the panel does not appear.** The claim is *this box can make you a drum kit*, and
+  over one sound it would be false. The three boxes below the line author two `noise` recipes,
+  two `kick` recipes and one `metallic` — one voice at a couple of characters. Below four the
+  recipes are still on the page in every other section; what is withheld is the claim.
+- **Manifest order inside a role, so duplicates stay distinct.** The Cascadia authors two kicks,
+  two `metallic` and two `noise`, and they are different patches. De-duplicating by role would
+  pick one of each and drop a third of the kit — the same collapse `Parameter sources` refuses by
+  name, for the same reason.
+
+**Placement is between the orientation blocks and the citations**, after `Provenance` and before
+`Parameter sources`. A reader who has just been told what the box is and what it rests on is in
+a position to be told it can build them a kit; the same panel under `Parameter sources` would be
+a build instruction filed behind a bibliography.
+
+**Where to record it is deliberately absent.** That is a fact about the *other* box in the rig —
+measured at #478, 47% of two-box rigs contain a part whose recipe sends the reader looking for a
+sound the other box has an authored recipe for — and it belongs with the rig-derived prose, not
+on a page that knows one device. The panel names no destination.
+
+**The markup is this surface's own, sharing the guide's two settled decisions.** §10's monospace
+value treatment and #385's module boxes are how a parameter reads everywhere in the product, and
+a reader arriving from a guide must not have to learn a second convention; `paramLabel` and
+`groupedParams` are shared for that reason, since which lines belong together is structure. The
+rest is written here. §8.1's `Instruction` reserves a hint column that a toggle controls, and
+there is no toggle on a device page — a hint rendered into that column would be invisible.
+
+**Every entry is a closed native `<details>`, and both halves matter.** The long case is
+twenty-two sounds with up to forty-three parameters on one of them, so an expanded list is a page
+nobody skims — #410's finding about the panel below, reached again. Native, because the device
+page is a server component with no client boundary: every value is in the prerendered HTML, so a
+crawler and a reader with no JavaScript receive the whole kit whether or not anything can open it.
+
+**Two things the guide does not print appear here, and each is a correction rather than an
+addition.** A hint is visible, because §8.1's argument for hiding one is about a reader at the
+machine with a page they have outgrown, and this reader is deciding whether to build the patch at
+all. And a `pattern`- or `song`-scoped value is marked as one — roughly one parameter in ten here
+declares a scope, and unmarked, a reader working down a kit would set it again for every sound.
+**No provenance mark and no per-value citation**, exactly as invariant 4 requires of ink: the
+per-value answer is `Parameter sources`, one section below, under the name printed here.
+
+**What this issue was for.** Judge it not by whether the page renders but by whether somebody
+with two boxes stops seeing a drum gap. If it gets used, that is the evidence for the standalone
+kit guide #478 defers; if it does not, this saved that work.
+
 ---
 
 ## 4. Layer 3 — Templates
