@@ -469,9 +469,9 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 
 **Sample played backwards under an eight-bar cutoff rise** — settings in Sound design
 
-**Trigger note** — `C5` · MIDI 60
+**One trig, not a figure** — the direction authors no grid for this part. Place its single trig so the gesture arrives at the change.
 
-**Build, Breakdown** — no pattern authored for `riser` at any band (asked for band 1)
+**Trigger note** — `C5` · MIDI 60
 
 ### `noise` — TR-1000 · OH
 

@@ -118,8 +118,14 @@ const bothScopes = resolve({
  *
  * `industrial-techno` used to serve the joining assertion below and can no longer: its only
  * remaining hole is `riser`, and a one-item list joins nothing. Ambient Dub authors no variant
- * for `texture` or `sweep` and hooks neither, so both are real holes and the note about them is
- * a genuine two-item list rather than a fixture built to produce one.
+ * for `texture` or `sweep` and hooks neither, so phase 7's trajectory names both and the note
+ * about them is a genuine two-item list rather than a fixture built to produce one.
+ *
+ * **Both still take the band-specific hole report in phase 5** (#473). Only a `riser` takes *One
+ * trig, not a figure* there: a `sweep` is transitional but Ambient Dub scopes one to `Swell` and
+ * one to `Recede`, so the sentence would read as a climb for the half that falls away from the
+ * crest, and it waits on wording of its own. `bandTrajectory.unpatterned` is a different claim
+ * again — nothing varies across the bands for either — and that is what is joined below.
  */
 const twoHoles = resolve({
   devices: DEVICES,

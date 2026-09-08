@@ -676,6 +676,71 @@ describe('the roles the pool declares, and the recipes that answer them (#345)',
     expect(device.recipes.filter((r) => named(r, 'REL') !== undefined).map((r) => r.id))
       .toEqual(['dt-lead-bright'])
   })
+
+  /**
+   * §3/#101/#473. **The dark riser says what the box does with the file, because the reader has to
+   * go and find that file.**
+   *
+   * §8 phase 5 now says the central half for every unpatterned `riser` in the library — it is one
+   * trig, placed so the gesture arrives at the change. What it cannot say is what each box then
+   * does with the recording, because the answers differ box by box: an Octatrack loops a region
+   * out of a file whose length is not the gesture's, a Play+ repeats, a TR-8S varispeeds. So the
+   * per-box half lives on the recipe, and this one had it missing.
+   *
+   * The claim is asserted against the recipe's own machine and page rather than against the
+   * sentence, per #46 — the wording may be improved, but a `need` describing playback this recipe
+   * does not select is wrong however it is phrased.
+   */
+  it('states the dark riser playback against the machine the recipe actually selects', () => {
+    const riser = device.recipes.find((r) => r.id === 'dt-riser-dark')
+    expect(riser).toBeDefined()
+
+    // The two params the sentence is about. `PLAY FORWARD` on `MACHINE ONESHOT` is p.82's
+    // A.2.2 — "played back once every time it is triggered" — and the LOOP entries beside it
+    // are the modes that would do otherwise.
+    const machine = named(riser!, 'MACHINE')
+    const play = named(riser!, 'PLAY')
+    expect(machine?.kind === 'enum' ? machine.value : undefined).toBe('ONESHOT')
+    expect(play?.kind === 'enum' ? play.value : undefined).toBe('FORWARD')
+    // The citation is on the option set, which is where an enum's evidence lives (§3.2): p.82 is
+    // the Oneshot machine's own `PLAY` entry, not a sibling machine's identical list.
+    const playCite = play?.kind === 'enum' ? play.options.verified : false
+    expect(playCite !== false && playCite !== undefined && playCite.kind === 'manual'
+      ? playCite.source
+      : '').toContain('p.82')
+
+    const need = riser!.sourceAudio?.need ?? ''
+    expect(need).toContain('FORWARD')
+    expect(need).toContain('once per trig')
+    expect(need).toContain('p.82')
+
+    /**
+     * The other half, and the reason it can be stated: `BARS` is what fits a file to a bar count,
+     * and it belongs to Werp (p.84) and Repitch (p.85). The Oneshot machine has neither, so the
+     * absence is a fact about which machine this recipe is on rather than about the box.
+     *
+     * Checked against the manifest rather than taken from the sentence: if `BARS` ever became
+     * reachable from a Oneshot recipe, the `need` line would be claiming something false and this
+     * fails rather than the prose quietly rotting.
+     */
+    expect(named(riser!, 'BARS')).toBeUndefined()
+    for (const recipe of device.recipes) {
+      const m = named(recipe, 'MACHINE')
+      if (m?.kind !== 'enum' || m.value !== 'ONESHOT') continue
+      expect(named(recipe, 'BARS'), `${recipe.id} is ONESHOT and authors BARS`).toBeUndefined()
+    }
+
+    /**
+     * And what it must **not** say. `TUNE -24` is two octaves down, and p.82's `TUNE` entry is
+     * silent on duration — only the Werp and Slice entries say *"without affecting the timing"*.
+     * So whether the *recording* needs four bars or one is not a claim this manual supports, and
+     * the line asks for four bars in what plays instead.
+     */
+    expect(need).not.toMatch(/recording (itself )?(must|has to)/)
+    const tune = named(riser!, 'TUNE')
+    expect(tune?.kind === 'numeric' ? tune.value : 0, 'the recipe that makes the caveat real')
+      .toBeLessThan(0)
+  })
 })
 
 describe('trigger notes: read for, and declined (§2.1/#334)', () => {

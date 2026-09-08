@@ -31,6 +31,7 @@ export const RoleSchema = z.enum(ROLES)
 /** §4.2. The three roles that exist for a few bars rather than owning a voice for a track. */
 export const TRANSITIONAL_ROLES: readonly Role[] = ['riser', 'impact', 'sweep']
 
+
 /**
  * §4.2/invariant 5. Roles that are a note **held** rather than a rhythm **struck**, so an empty
  * step grid is not something a direction has failed to author for them.
@@ -49,10 +50,23 @@ export const TRANSITIONAL_ROLES: readonly Role[] = ['riser', 'impact', 'sweep']
  *
  * **Only `pad`, and the shortness of the list is the point.** `texture` is the case that proves
  * it: Ambient Dub holds one and authors no variant, Drone Study patterns one, and the same role
- * is therefore struck in a direction that wants it struck. Silence on `texture`, `sweep` and
- * `riser` can be a real hole and stays reported. A role earns a place here only when *no*
- * direction could reasonably pattern it; anything looser turns invariant 5's honesty into a way
- * of hiding gaps.
+ * is therefore struck in a direction that wants it struck. Silence on `texture` can be a real hole
+ * and stays reported as one, per band, exactly as it always was. A role earns a place here only
+ * when *no* direction could reasonably pattern it; anything looser turns invariant 5's honesty
+ * into a way of hiding gaps.
+ *
+ * **`riser` moved, and it did not move here** (#473). An unpatterned `riser` now gets one
+ * instruction saying it is a single trig rather than a band-specific hole report per section — but
+ * that is `isSingleTrigRiser`'s decision, and it says something different from this list. This one
+ * claims the role is *held*, which is why it suppresses the note line and the grid together; that
+ * one claims the part is *one event aimed at a change*, which still has a note to place. No role
+ * may be both, and `test/vocabulary.test.ts` pins it, because a role in both would be told it
+ * sustains and that it is a single trig.
+ *
+ * **`sweep` is the case that shows why that other predicate is not on this list either.** It is
+ * transitional rather than held, and it still takes the band-specific report — Ambient Dub scopes
+ * one to `Swell` and one to `Recede`, so *arrives at the change* would read as a climb on the
+ * instance that falls away from the crest. That is a wording problem, not a membership one.
  */
 export const NON_PATTERN_BEARING_ROLES: readonly Role[] = ['pad']
 

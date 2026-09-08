@@ -9,7 +9,9 @@ import {
   PatternSlotSchema,
   ROLES,
   RoleSchema,
+  NON_PATTERN_BEARING_ROLES,
   TRANSITIONAL_ROLES,
+  bearsPattern,
 } from '../lib/core/index'
 
 describe('closed vocabularies (invariant 3)', () => {
@@ -54,6 +56,24 @@ describe('closed vocabularies (invariant 3)', () => {
   it('marks the three section-scoped roles (§4.2)', () => {
     expect([...TRANSITIONAL_ROLES]).toEqual(['riser', 'impact', 'sweep'])
     for (const role of TRANSITIONAL_ROLES) expect(ROLES).toContain(role)
+  })
+
+  /**
+   * §8 phase 5/#473. Two sentences are decided off one emptiness — *Held, not struck* for a role
+   * this list names, and *One trig, not a figure* for a `riser` — so a `riser` appearing in
+   * `NON_PATTERN_BEARING_ROLES` would be told it sustains and that its single trig should be
+   * placed.
+   *
+   * Pinned here rather than guarded in `isSingleTrigRiser`, because a redundant clause in the
+   * predicate would hide the collision instead of failing on it.
+   */
+  it('keeps the held roles clear of the one #473 settles (§4.2)', () => {
+    expect(NON_PATTERN_BEARING_ROLES).not.toContain('riser')
+    expect(bearsPattern('riser')).toBe(true)
+    // `sweep` is transitional and still on the band-specific report: it is not held either, so
+    // neither list is where its answer comes from — its wording is (see `isSingleTrigRiser`).
+    expect(TRANSITIONAL_ROLES).toContain('sweep')
+    expect(NON_PATTERN_BEARING_ROLES).not.toContain('sweep')
   })
 })
 

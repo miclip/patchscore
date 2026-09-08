@@ -295,6 +295,34 @@ export function SustainedRef() {
 }
 
 /**
+ * §8 phase 5/#473. The sibling of `SustainedRef` for a **`riser`** whose direction authored no
+ * variant for it at any band (`isSingleTrigRiser`), worded as `SINGLE_TRIG` in
+ * `lib/core/render.ts` words it.
+ *
+ * It replaces the block-per-section that used to say `No pattern authored for riser at any band
+ * (asked for band 1)` under two or three headings — one absence, restated, each time beside a band
+ * number that decides nothing because nothing was authored at any band. The absence is still the
+ * sentence's first clause, so invariant 5 is intact; what follows it is the instruction the guide
+ * can actually give.
+ *
+ * **A `texture` or a `sweep` with the same emptiness does not take this**, and both keep the
+ * band-specific hole report: a bed is not an event that arrives anywhere, and a `sweep` may be
+ * a fall away from the crest rather than a lift into it. See `isSingleTrigRiser`.
+ *
+ * Split from `SustainedRef` because the claims are different: that one says the **role is held**
+ * and drops the note line with the grid, this one says the **part is one event** — so a note line
+ * may still follow, and should, because a trig is placed on a note.
+ */
+export function SingleTrigRef() {
+  return (
+    <p className="sound-ref hook-ref">
+      <strong>One trig, not a figure</strong> — the direction authors no grid for this part. Place
+      its single trig so the gesture arrives at the change.
+    </p>
+  )
+}
+
+/**
  * §8/#65. The sibling of `SustainedRef` for a part on a box that cannot hold a pattern, worded as
  * `patternEnteredElsewhere` in `lib/core/render.ts` words it.
  *

@@ -12,6 +12,7 @@ import type {
 import {
   STEPS_PER_BAR,
   chainPlan,
+  isSingleTrigRiser,
   isSustainedPart,
   noteInstruction,
   patternDriver,
@@ -28,6 +29,7 @@ import {
   SoundRef,
   EnteredElsewhereRef,
   SustainedRef,
+  SingleTrigRef,
 } from './instruction'
 
 const ROW = 16
@@ -174,6 +176,13 @@ export function mergeBlocks(a: ResolvedAssignment): Block[] {
   // and `SustainedRef` says what the part is instead. Kept in step with the Markdown sibling's
   // `phaseSteps`, which suppresses on the same condition.
   if (isSustainedPart(a)) return []
+  // §8 phase 5/#473. And a `riser` whose direction authored no variant for it in any section:
+  // every block it would produce says the same absence under a different heading, so
+  // `SingleTrigRef` says it once instead. Kept in step with the Markdown sibling's `phaseSteps`,
+  // which suppresses on the same predicate. Two shapes are deliberately untouched — a part
+  // patterned in *some* section keeps the blocks that came back `none`, reported against the band
+  // that asked (§6.3), and so does every other unpatterned part, `texture` and `sweep` included.
+  if (a.hookAuthority === undefined && isSingleTrigRiser(a)) return []
   const merged = new Map<string, Block>()
   for (const entry of a.patterns) {
     const s = entry.selection
@@ -454,6 +463,8 @@ export function PhaseSteps({
             <HookPointer a={a} />
           ) : isSustainedPart(a) ? (
             <SustainedRef />
+          ) : isSingleTrigRiser(a) ? (
+            <SingleTrigRef />
           ) : null}
           <NoteLine a={a} />
           {/*
@@ -467,7 +478,9 @@ export function PhaseSteps({
             Markdown sibling had the identical fault in the identical shape (#33: one decision,
             two vocabularies — including, it turns out, one bug twice).
           */}
-          {(a.hookAuthority !== undefined && !a.reArticulatesHook) || isSustainedPart(a)
+          {(a.hookAuthority !== undefined && !a.reArticulatesHook) ||
+          isSustainedPart(a) ||
+          (a.hookAuthority === undefined && isSingleTrigRiser(a))
             ? null
             : (() => {
                 const entry = patternEntryNotice(deviceById.get(a.deviceId))
