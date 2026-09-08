@@ -947,6 +947,219 @@ body {
   }
 }
 
+/* ------------------------------------------------------------ build a kit */
+
+/*
+ * §3.2/#478. **A worklist, and the closed list is the surface that has to work.**
+ *
+ * Twenty-two sounds is the long case in this library (the TR-1000), and it is an *ordered* one:
+ * the copy tells a reader to work down it. So this stays one column at every width. Two columns
+ * would fit the desktop viewport and break the only thing the list is claiming, which is that
+ * position 1 comes before position 2 — and an open `<details>` in a two-column grid drags its
+ * neighbour's row to match its height, so the cost is paid on both axes.
+ *
+ * What makes twenty-two rows skimmable instead is the ordinal column: a fixed monospace gutter
+ * the eye tracks straight down, with the title and the role held to their own columns beside it.
+ */
+.kit-lead {
+  margin: 0 0 12px;
+  color: var(--ink);
+  max-width: 66ch;
+  min-width: 0;
+}
+
+.kit-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+  /*
+   * The ordinal is written into the markup rather than left to a counter: it is content — the
+   * reader's place in a sequence — and a CSS counter is invisible to anything reading the page
+   * as text. `list-style: none` is what stops the browser printing a second one beside it.
+   */
+  counter-reset: none;
+}
+
+.kit-list > li {
+  min-width: 0;
+}
+
+/*
+ * Below 640px the meta drops under the title, because a title on this page runs to 87 characters
+ * at its longest and a right-hand column beside it would leave `kick · hard` two characters wide.
+ * §21's rule holds either way: wrap, never shrink the type.
+ */
+/*
+ * **The marker is drawn here rather than left to `::marker`, because the row is a grid.**
+ *
+ * A `<summary>` shows its triangle only while it is a `list-item`, and its marker is laid on the
+ * first line box of the summary's own content. A grid child is a block, so the native marker got
+ * an anonymous line of its own and sat above the row it belonged to — measured, not predicted.
+ * Two characters and no transform: the glyph swaps on `[open]`, which needs no animation and
+ * therefore raises none of `prefers-reduced-motion`'s questions.
+ *
+ * The rest of the page keeps the native marker (`.disclosure > summary::marker`), which is right
+ * there: those summaries are one inline name, and there is no grid to break.
+ */
+.kit-entry > summary {
+  list-style: none;
+}
+
+.kit-entry > summary::-webkit-details-marker {
+  display: none;
+}
+
+.kit-summary {
+  display: grid;
+  grid-template-columns: 1.1em 2.5ch minmax(0, 1fr);
+  gap: 2px 8px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .kit-summary {
+    grid-template-columns: 1.1em 2.5ch minmax(0, 1fr) auto;
+  }
+}
+
+/* Sized and coloured to sit beside the native markers the rest of the page draws. */
+.kit-marker {
+  color: var(--ink-dim);
+  font-size: 9px;
+}
+
+.kit-marker::before {
+  content: '\25B6';
+}
+
+.kit-entry[open] .kit-marker::before {
+  content: '\25BC';
+}
+
+/*
+ * The disclosure triangle is the `::marker` of the summary and sits outside this grid, so the
+ * ordinal is the first thing inside it. Dim, and right-aligned so two- and three-digit numbers
+ * stay on one edge.
+ */
+.kit-ordinal {
+  text-align: right;
+  color: var(--ink-dim);
+  font-size: 12px;
+}
+
+.kit-title {
+  color: var(--ink);
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/*
+ * Role and character, in the vocabulary's own words. On a phone it starts in the title's column
+ * rather than under the ordinal, so the ordinal gutter stays a clean vertical rule.
+ */
+.kit-meta {
+  grid-column: 3;
+  color: var(--ink-dim);
+  font-size: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 640px) {
+  .kit-meta {
+    grid-column: 4;
+    text-align: right;
+  }
+}
+
+.kit-entry .disclosure-body > .quiet {
+  margin: 0 0 8px;
+  max-width: 66ch;
+}
+
+/* `.patch` is declared further down the file and would win on source order alone. */
+.kit-entry .kit-patch {
+  margin: 0 0 10px;
+}
+
+/*
+ * `.panel .note` sets `margin: 0` and 12px and beats `.subordinate` on class count, which would
+ * flatten an authored note against the line above it. Restated at three classes so the note under
+ * a value reads here exactly as it reads in a guide.
+ */
+.kit-section .subordinate.note {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+}
+
+.kit-params {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.kit-param {
+  min-width: 0;
+}
+
+/*
+ * Name, value and scope on one wrapping row — the guide's `.instruction-line` shape, restated
+ * because this surface has no hint column to reserve and therefore no grid to sit in.
+ */
+.kit-param-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px 8px;
+  min-width: 0;
+}
+
+/*
+ * An option set can run to seventeen values, which is wider than a phone. It wraps inside the
+ * value row rather than scrolling: these are words with spaces in them, so a break lands between
+ * options and never inside one, and nothing here is a number to dial that a wrap could obscure.
+ */
+.kit-options {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/*
+ * `pattern-wide` / `song-wide`. Prose face, not `.mono`: it qualifies the value rather than being
+ * one (§10), which is the same reason `.value-cc` refuses the value face.
+ */
+.kit-scope {
+  color: var(--ink-dim);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+/*
+ * The hint, visible. It cannot use `.hint` — that column is `visibility: hidden` until §8.1's
+ * toggle turns it on, and there is no toggle on this page, so a hint in that class would be a
+ * jog nobody could ever read.
+ */
+.kit-hint {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ink-dim);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Three classes, because `.panel .note` above zeroes the margin on every note in a panel. */
+.kit-section .note.kit-foot {
+  margin-top: 12px;
+}
+
 /*
  * §3.2's counts, said in a sentence. Full ink and full size: it is the reason to trust the page,
  * and a dim 12px note is where a reader's eye goes last.

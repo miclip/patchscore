@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Footer } from '@/components/footer'
+import { KitSection } from '@/components/catalogue/kit-section'
 import { citeText, ioText } from '@/components/guide/format'
 import { PanelFigure } from '@/components/rack/panel-figure'
 import type { Device } from '@/lib/core'
@@ -507,6 +508,17 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           </p>
         </section>
       </div>
+
+      {/*
+        §3.2/#478. **The drum sounds this box makes on its own**, after the orientation blocks and
+        before the citations.
+
+        The placement is the argument. A reader who has just seen what the box is and what it is
+        cited against is in a position to be told it can build them a kit; the same section under
+        `Parameter sources` would be a build instruction filed behind a bibliography. It renders
+        nothing at all on a box that makes fewer than four of them.
+      */}
+      <KitSection device={device} kit={page.kit} />
 
       {/*
         §3.2/#410. **Where one parameter's value and bounds were read off** — the question the
