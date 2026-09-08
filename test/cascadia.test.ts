@@ -13,7 +13,8 @@ import {
   type AuthoredParam,
 } from '../lib/core/index'
 import { device, type CascadiaJack } from '../lib/devices/intellijel-cascadia/index'
-import { industrialTechno } from '../lib/templates/index'
+import { DEVICES } from '../lib/devices/registry.generated'
+import { generativeDrift, industrialTechno } from '../lib/templates/index'
 
 /**
  * #49. The Cascadia is the first device in the library whose recipes carry a `patch` list, so
@@ -24,7 +25,7 @@ import { industrialTechno } from '../lib/templates/index'
  * Every assertion below is about something that had never run against anything but a fixture.
  */
 
-const MANUAL = 'Intellijel Cascadia Manual v1.1, '
+const MANUAL = 'Intellijel Cascadia Manual v1.4, '
 
 function params(): { recipe: string; param: AuthoredParam }[] {
   return device.recipes.flatMap((r) =>
@@ -60,11 +61,11 @@ describe('Cascadia manifest', () => {
   })
 
   it('spans 348 mm, cited to the specifications page, cheeks and all (§10)', () => {
-    // p.110, verbatim: "Width: 348mm (including wood end cheeks)". The figure covers the whole
+    // p.122, verbatim: "Width: 348mm (including wood end cheeks)". The figure covers the whole
     // unit rather than the metal panel, which is the caveat the manifest records and the reason
     // the drawn panel adds no cheeks of its own — it would put the drawing wider than 348.
     expect(device.physical.panelSpanMm).toBe(348)
-    expect(device.physical.verified).toEqual({ kind: 'manual', source: `${MANUAL}p.110` })
+    expect(device.physical.verified).toEqual({ kind: 'manual', source: `${MANUAL}p.122` })
   })
 
   it('draws a panel whose aspect matches the two published figures', () => {
@@ -212,11 +213,15 @@ describe('Cascadia manifest', () => {
       // both renderers can reach it. The claim is unchanged and still required.
       const evidence = evidenceFor(device, jackFact(j.id))
       expect(evidence, j.id).not.toBe(false)
+      // One `p.N` for a jack the manual describes in one place, and an ascending `pp.` list for
+      // the three whose behaviour v1.4 documents across several — see #481 and the MIDI / CV
+      // block in `index.ts`. Both shapes are checked here rather than one being waved through.
       expect((evidence as { source: string }).source, j.id).toMatch(
-        /^Intellijel Cascadia Manual v1\.1, p\.\d+$/,
+        /^Intellijel Cascadia Manual v1\.4, (p\.\d+|pp\.\d+(?:, \d+)+)$/,
       )
     }
-    // Cited once each: no page list anywhere, and no id declared twice.
+    // One evidence entry per jack, and no id declared twice. A jack answering to several pages
+    // says so in one citation; it never gets a second entry.
     expect(new Set(jacks.map((j) => j.id)).size).toBe(jacks.length)
 
     // Every endpoint resolves to a declared jack of the right direction. The schema enforces
@@ -250,7 +255,7 @@ describe('Cascadia manifest', () => {
     for (const entry of cited) {
       const where = entry.verified
       if (where === false || where === undefined) throw new Error('unreachable')
-      expect(where.source).toMatch(/^Intellijel Cascadia Manual v1\.1, p\.1[1-6]$/)
+      expect(where.source).toMatch(/^Intellijel Cascadia Manual v1\.4, p\.1[1-6]$/)
     }
 
     // The recipe carries no default behind either. With the jacks citing themselves and every
@@ -340,12 +345,17 @@ describe('Cascadia manifest', () => {
     // `%`, because a third spelling of something already spelled `St` and `st` makes the drift
     // the units test tracks worse rather than better. `% travel` is kept because it is a
     // different claim, not a different spelling.
+    //
+    // `step` arrives with #481's ESG sequence length. It is the library's existing spelling for a
+    // count of sequencer steps — reviewed at #29 off the TR-8S's p.27, singular — even though
+    // this manual writes "from 1 to 16 steps". The box's plural is in the note; the unit is the
+    // library's, because one quantity gets one spelling.
     const units = new Set(
       params().flatMap(({ param }) =>
         param.kind === 'numeric' && param.unit !== undefined ? [param.unit] : [],
       ),
     )
-    expect([...units].sort()).toEqual(['%', '% travel', 'V', 'ms', 'st', '°'])
+    expect([...units].sort()).toEqual(['%', '% travel', 'V', 'ms', 'st', 'step', '°'])
   })
 
   // -------------------------------------------------------------------------
@@ -378,6 +388,316 @@ describe('Cascadia manifest', () => {
     // And nothing is authored for a role the voice does not declare.
     const declared = new Set<string>(voice().roles)
     for (const recipe of device.recipes) expect(declared.has(recipe.role), recipe.id).toBe(true)
+  })
+
+  // -------------------------------------------------------------------------
+  // §3.1/#481 — the Entropic Sequence Generator, and the switch it hangs on
+  // -------------------------------------------------------------------------
+
+  /**
+   * p.93: the ESG "replaces the Free/Sync tilting LFO". So `MODE = LFO` alone does not say what
+   * Envelope B is doing, and the three sliders under it mean different quantities depending on an
+   * instrument-wide setting made at boot. Every LFO-mode recipe has to name that setting or its
+   * values are uninterpretable — CLAUDE.md's rule about a cited range read off the wrong scale.
+   *
+   * Written as a sweep over the recipes rather than against the two that exist today, so the third
+   * LFO recipe somebody adds fails here rather than shipping ambiguous.
+   */
+  it('names the LFO shape on every Envelope B LFO recipe, because the mode decides the units', () => {
+    const lfoRecipes = device.recipes.filter((r) =>
+      (r.params as AuthoredParam[]).some(
+        (p) => p.kind === 'enum' && p.name === 'ENVELOPE B · MODE' && p.value === 'LFO',
+      ),
+    )
+    expect(lfoRecipes.length).toBeGreaterThan(1)
+
+    for (const recipe of lfoRecipes) {
+      const shape = (recipe.params as AuthoredParam[]).find(
+        (p) => p.name === 'ENVELOPE B · LFO SHAPE',
+      )
+      expect(shape, recipe.id).toBeDefined()
+      if (shape === undefined || shape.kind !== 'enum') throw new Error('unreachable')
+
+      // The option set is the legality claim (§3.2) and is p.93's, in the manual's own words.
+      expect(shape.options.values, recipe.id).toEqual(['Tilting LFO', 'Entropic Sequence Generator'])
+      expect((shape.options.verified as { source: string }).source, recipe.id).toBe(`${MANUAL}p.93`)
+
+      // One setting for the instrument, not for the part: it is not reached from the patch at all.
+      expect(shape.scope, recipe.id).toBe('song')
+      // And the recipe says how it is reached, or a reader hunts the panel for a switch that is
+      // not on it.
+      expect(shape.note, recipe.id).toMatch(/boot|powering on|Config app/)
+    }
+
+    // Both shapes are actually authored somewhere. A switch only one side of which is ever
+    // selected is a fact nobody can act on.
+    const chosen = new Set(
+      lfoRecipes.flatMap((r) =>
+        (r.params as AuthoredParam[])
+          .filter((p) => p.name === 'ENVELOPE B · LFO SHAPE' && p.kind === 'enum')
+          .map((p) => (p as { value: string }).value),
+      ),
+    )
+    expect([...chosen].sort()).toEqual(['Entropic Sequence Generator', 'Tilting LFO'])
+  })
+
+  /**
+   * The two quantities p.93 puts numbers on, and the one it does not.
+   *
+   * p.90 prints a real scale for this slider — 0.05 Hz to about 800 Hz, and a 2-to-8
+   * multiply/divide series when synced — but all of it is the *tilting* LFO's. Citing it on an ESG
+   * rate would be a correct citation off the wrong printed scale, which is the failure the
+   * manifest's own header calls out. So the rate stays travel and only the two cited ones carry a
+   * page.
+   */
+  it('cites the ESG’s length and probability to p.93, and leaves its rate as travel', () => {
+    const esg = device.recipes.find((r) => r.id === 'cascadia-sweep-soft')
+    if (esg === undefined) throw new Error('the ESG recipe should exist')
+    const by = (name: string) =>
+      (esg.params as AuthoredParam[]).find((p) => p.name === name)
+
+    const shape = by('ENVELOPE B · LFO SHAPE')
+    expect(shape?.kind === 'enum' ? shape.value : undefined).toBe('Entropic Sequence Generator')
+
+    // Clock-synced, and the clock is patched rather than assumed: p.93 says the GATE/SYNC input
+    // sets the base rate in SYNC mode, and the jack's own normal is the external gate (p.92).
+    const type = by('ENVELOPE B · TYPE')
+    expect(type?.kind === 'enum' ? type.value : undefined).toBe('SYNC')
+    expect(esg.patch?.map((c) => `${c.from} -> ${c.to}`)).toContain(
+      'MIDI / CV · MIDI CLK -> ENVELOPE B · GATE/SYNC',
+    )
+    // And the sequence has somewhere to go, or it is a modulator patched into nothing.
+    expect(esg.patch?.some((c) => c.from === 'ENVELOPE B · ENV B')).toBe(true)
+
+    const fall = by('ENVELOPE B · FALL')
+    if (fall?.kind !== 'numeric') throw new Error('sequence length should be numeric')
+    expect(fall.value).toBe(11)
+    expect(fall.unit).toBe('step')
+    expect(fall.range).toEqual({ min: 1, max: 16, verified: { kind: 'manual', source: `${MANUAL}p.93` } })
+
+    const shapeSlider = by('ENVELOPE B · SHAPE')
+    if (shapeSlider?.kind !== 'numeric') throw new Error('regeneration should be numeric')
+    expect(shapeSlider.unit).toBe('%')
+    expect(shapeSlider.range).toEqual({
+      min: 0,
+      max: 100,
+      verified: { kind: 'manual', source: `${MANUAL}p.93` },
+    })
+    expect(shapeSlider.value).toBeGreaterThanOrEqual(0)
+    expect(shapeSlider.value).toBeLessThanOrEqual(100)
+
+    // The rate carries no page, because p.93 prints no number for it.
+    const rise = by('ENVELOPE B · RISE')
+    if (rise?.kind !== 'numeric') throw new Error('the rate should be numeric')
+    expect(rise.unit).toBe('% travel')
+    expect(rise.range.verified).toBe(false)
+  })
+
+  /**
+   * #481. **The ESG recipe is reached by the resolver, on a rig somebody could actually own.**
+   *
+   * Authored-and-exact is not the same as selected, and on this box the difference has teeth: the
+   * `pad` role is authored and never wins, because every pad request in the library asks for three
+   * or four notes and this is one monophonic voice. `sweep` is the role where a mono box competes,
+   * and `generative-drift` asks for `sweep`/`soft` over its two middle sections.
+   *
+   * Two devices, so the rig is legal several times over against `MAX_RIG_DEVICES`. The MPC covers
+   * every higher-priority request and authors no sweep, which is the condition that leaves this one
+   * to the Cascadia — stated here so a future reader knows what the fixture is holding rather than
+   * having to re-derive it from an id.
+   *
+   * Asserted as an outcome, never as a cost (CLAUDE.md): the claim is "the ESG lands on the sweep",
+   * not a `Score` number that a re-ordering of the lower keys would move.
+   */
+  it('is selected for generative-drift’s sweep on a two-box rig (#481)', () => {
+    const mpc = DEVICES.find((d) => d.id === 'akai-mpc-live-iii')
+    if (mpc === undefined) throw new Error('the MPC Live III should be in the registry')
+
+    for (const seed of [0, 1, 2, 3]) {
+      const result = resolve({
+        devices: [device, mpc],
+        template: generativeDrift,
+        mood: NEUTRAL_MOOD,
+        seed,
+      })
+      const mine = result.assignments.filter((a) => a.deviceId === 'intellijel-cascadia')
+      expect(mine.map((a) => a.recipe?.id), `seed ${seed}`).toEqual(['cascadia-sweep-soft'])
+    }
+
+    // And it renders, hoisted: the boot setting is one setting for the instrument, so the guide
+    // states it above the parts rather than inside the one part this box carries.
+    const guide = renderGuide(
+      resolve({ devices: [device, mpc], template: generativeDrift, mood: NEUTRAL_MOOD, seed: 0 }),
+    )
+    expect(guide).toContain('Scramble the entropic sequence across the join, then lock what lands')
+    expect(guide).toContain('**ENVELOPE B · LFO SHAPE** `Entropic Sequence Generator`')
+    expect(guide).toContain('**ENVELOPE B · FALL** `11` step (1…16 step)')
+    expect(guide).toContain('hold MIDI LFO while powering on')
+    // The citation sentence names the edition and reaches the ESG's page (§8/#394).
+    expect(guide).toContain('Intellijel Cascadia Manual v1.4, pp.22-93')
+  })
+
+  // -------------------------------------------------------------------------
+  // §2.6/#481 — MPE, Dual Mono and the full CC range, recorded as capability
+  // -------------------------------------------------------------------------
+
+  /**
+   * Three of v1.4's four new features are facts about how the box is played and controlled rather
+   * than ways to make a part sound, so they land on the jacks that carry them and on nothing else.
+   *
+   * Each of the three jacks keeps the page that says it *exists* — pp.17, 18 and 21 — because that
+   * is the page a reader hunting the socket needs, and a citation that moved to the most recently
+   * read page would have dropped it silently.
+   */
+  it('records MPE, Dual Mono and the full CC range on the jacks that carry them (#481)', () => {
+    const jacks = new Map((device.jacks ?? []).map((j) => [j.id, j]))
+    const evidence = (id: string) =>
+      (evidenceFor(device, jackFact(id)) as { source: string }).source
+
+    // MPE X-axis. p.101 names the axis and the 48-semitone bend range; p.17 says the jack exists.
+    expect(jacks.get('MIDI / CV · MIDI PITCH')?.signal).toEqual(['pitch-cv'])
+    expect(evidence('MIDI / CV · MIDI PITCH')).toBe(`${MANUAL}pp.17, 101`)
+    expect(jacks.get('MIDI / CV · MIDI PITCH')?.note).toMatch(/X-axis/)
+
+    // MPE Y-axis is CC 74; Dual Mono puts voice 2's *pitch* here, which is why `pitch-cv` is
+    // declared alongside `cv`; pp.109 gives the selectable range.
+    expect(jacks.get('MIDI / CV · MIDI CC')?.signal).toEqual(['cv', 'pitch-cv'])
+    expect(evidence('MIDI / CV · MIDI CC')).toBe(`${MANUAL}pp.18, 100, 102, 109`)
+    expect(jacks.get('MIDI / CV · MIDI CC')?.note).toMatch(/CC 74/)
+    expect(jacks.get('MIDI / CV · MIDI CC')?.note).toMatch(/Dual Mono/)
+    expect(jacks.get('MIDI / CV · MIDI CC')?.note).toMatch(/0-127/)
+
+    // MPE Z-axis is pressure; Dual Mono puts voice 2's *gate* here, hence `gate`.
+    expect(jacks.get('MIDI / CV · MIDI MOD')?.signal).toEqual(['cv', 'gate'])
+    expect(evidence('MIDI / CV · MIDI MOD')).toBe(`${MANUAL}pp.21, 100, 102, 110`)
+    expect(jacks.get('MIDI / CV · MIDI MOD')?.note).toMatch(/Pressure/)
+    expect(jacks.get('MIDI / CV · MIDI MOD')?.note).toMatch(/Dual Mono/)
+    expect(jacks.get('MIDI / CV · MIDI MOD')?.note).toMatch(/0-127/)
+
+    // Every other jack keeps a single page. The multi-page form is for a socket whose behaviour
+    // the manual genuinely splits across chapters, not a licence to append pages anywhere.
+    const multi = (device.jacks ?? []).filter((j) => evidence(j.id).includes('pp.'))
+    expect(multi.map((j) => j.id).sort()).toEqual([
+      'MIDI / CV · MIDI CC',
+      'MIDI / CV · MIDI MOD',
+      'MIDI / CV · MIDI PITCH',
+    ])
+  })
+
+  /**
+   * **A tripwire, and it is meant to be tripped.**
+   *
+   * `MIDI CC` carries `pitch-cv` and `MIDI MOD` carries `gate` on p.100's authority, and both are
+   * true *only while the box is in Dual Mono* — a song-wide MIDI mode set at boot or in the Config
+   * app. The signal list is unconditional, so nothing in the type system stops a recipe patching
+   * `MIDI CC` into a pitch input on a box that is not in that mode, which would print a cable the
+   * reader's instrument does not have.
+   *
+   * The manifest declares one voice and one default topology deliberately (see the MIDI / CV block
+   * in `index.ts`), so today no recipe reaches for either. **If this test fails, the recipe that
+   * failed it owes the reader the mode**, the way every Envelope B LFO recipe owes them the LFO
+   * shape. Deleting the assertion is not the fix.
+   */
+  it('patches neither Dual Mono jack until a recipe can say the box is in that mode (#481)', () => {
+    const conditional = new Set(['MIDI / CV · MIDI CC', 'MIDI / CV · MIDI MOD'])
+    for (const recipe of device.recipes) {
+      for (const entry of recipe.patch ?? []) {
+        expect(conditional.has(entry.from), `${recipe.id}: ${entry.from}`).toBe(false)
+      }
+    }
+  })
+
+  // -------------------------------------------------------------------------
+  // §3.2/#479 — ALT is not a sound, so the recipe names which one
+  // -------------------------------------------------------------------------
+
+  /**
+   * p.42's `ALT` position defers: it plays *"the currently loaded ALTernative digital noise
+   * source"*, of which there are four, loaded by a button combination that is not on the panel.
+   * A recipe stopping at `ALT` has picked one of twelve sounds and written down none of them.
+   *
+   * Swept over the recipes rather than asserted against the one that has it today, so the next
+   * `ALT` recipe fails here instead of shipping underdetermined.
+   */
+  it('names which ALT noise is loaded wherever a recipe selects ALT (#479)', () => {
+    const altRecipes = device.recipes.filter((r) =>
+      (r.params as AuthoredParam[]).some(
+        (p) => p.kind === 'enum' && p.name === 'MIXER · NOISE TYPE' && p.value === 'ALT',
+      ),
+    )
+    expect(altRecipes.length).toBeGreaterThan(0)
+
+    for (const recipe of altRecipes) {
+      const source = (recipe.params as AuthoredParam[]).find(
+        (p) => p.name === 'MIXER · ALT NOISE SOURCE',
+      )
+      expect(source, recipe.id).toBeDefined()
+      if (source === undefined || source.kind !== 'enum') throw new Error('unreachable')
+
+      // The option set is p.42's four, in the manual's own words and its own order.
+      expect(source.options.values, recipe.id).toEqual(['Cymbal', 'Crunch', 'Crackle', 'Velvet'])
+      expect((source.options.verified as { source: string }).source, recipe.id).toBe(`${MANUAL}p.42`)
+
+      // The loading action is on the parameter, because that is the part a reader cannot work out
+      // from the panel — see the rendered-with-hints-off test below for why it lives here.
+      expect(source.note, recipe.id).toMatch(/MANUAL GATE/)
+      expect(source.note, recipe.id).toMatch(/MIDI CC/)
+      // And it is not a hint. #479 found `noise-alt` sitting in the hint table attached to
+      // nothing; a hint is a jog (invariant 7) and this is the value.
+      expect(source.hint, recipe.id).toBeUndefined()
+      expect(Object.keys(device.hints ?? {})).not.toContain('noise-alt')
+    }
+
+    // No sub-variant is authored, and the reason is on p.42: the three per source are unnamed,
+    // unnumbered and undisplayed, so there would be nothing a reader could confirm they reached.
+    for (const recipe of altRecipes) {
+      const names = (recipe.params as AuthoredParam[]).map((p) => p.name)
+      expect(names.filter((n) => /VARIATION|VARIANT/i.test(n)), recipe.id).toEqual([])
+    }
+  })
+
+  /**
+   * #479's second question. On this box the noise colour is a switch position, so a recipe setting
+   * a level with no type inherits whatever is loaded — which, if the switch is on `ALT`, is any of
+   * twelve sounds. `cascadia-sweep-dark` did exactly that; it now names `PINK`.
+   */
+  it('never sets a noise level without saying which noise (#479)', () => {
+    for (const recipe of device.recipes) {
+      const params = recipe.params as AuthoredParam[]
+      if (!params.some((p) => p.name === 'MIXER · NOISE')) continue
+      const type = params.find((p) => p.name === 'MIXER · NOISE TYPE')
+      expect(type, recipe.id).toBeDefined()
+      if (type === undefined || type.kind !== 'enum') throw new Error('unreachable')
+      expect((type.options.verified as { source: string }).source, recipe.id).toBe(`${MANUAL}p.42`)
+    }
+  })
+
+  /**
+   * **The reason the loading action is a `note` and not a `hint`, demonstrated rather than argued.**
+   *
+   * §8.1 gives hints a toggle, so anything living there is invisible to a reader who has turned
+   * them off — and *which of four sources is loaded, and how to load it* is the value on this
+   * parameter, not a jog about it (invariant 7). Rendered both ways on a rig that actually
+   * resolves the recipe, the line and its action are identical.
+   */
+  it('keeps the ALT loading action visible with hints switched off (§8.1/#479)', () => {
+    const crave = DEVICES.find((d) => d.id === 'behringer-crave')
+    const tr8s = DEVICES.find((d) => d.id === 'roland-tr-8s')
+    if (crave === undefined || tr8s === undefined) throw new Error('rig devices should exist')
+
+    const result = resolve({
+      devices: [device, crave, tr8s],
+      template: industrialTechno,
+      mood: NEUTRAL_MOOD,
+      seed: 0,
+    })
+    expect(result.assignments.map((a) => a.recipe?.id)).toContain('cascadia-noise-dirty')
+
+    for (const hints of [true, false]) {
+      const guide = renderGuide(result, { hints })
+      expect(guide, `hints: ${hints}`).toContain('**MIXER · ALT NOISE SOURCE** `Crunch`')
+      expect(guide, `hints: ${hints}`).toContain('hold MANUAL GATE and press MIDI CC to load it')
+    }
   })
 
   it('sends and receives clock, and says over what (§7.4)', () => {
