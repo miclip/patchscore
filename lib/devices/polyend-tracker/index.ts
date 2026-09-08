@@ -949,8 +949,8 @@ const RECIPES: Recipe[] = [
      * a note"*, so a saw would not be started by the trig that starts the riser, while the `H`
      * steps are placed where the reader puts them and rise with the hits.
      */
-    title: 'Noise riser opening upward across the bar',
-    sourceAudio: { need: 'A long noise sweep or a bowed cymbal, several bars of rising energy', hint: 'load-sample' },
+    title: 'Noise riser opening upward into the change',
+    sourceAudio: { need: 'A long noise sweep or a bowed cymbal, at least four bars of rising energy', hint: 'load-sample' },
     params: [
       ...oneShot('At the quiet start', 'At the peak, before any drop'),
       ...filter('High-pass', 12, 30, -10),
@@ -994,9 +994,9 @@ const RECIPES: Recipe[] = [
      * The reason survives p.115 because it never depended on p.115 — what the correction
      * removed was a second reason that did.
      */
-    title: 'Low rumble swelling across the bar with the filter held shut',
+    title: 'Low rumble swelling into the change with the filter held shut',
     sourceAudio: {
-      need: 'A long low rumble, sub sweep or bowed low string, several bars of rising energy',
+      need: 'A long low rumble, sub sweep or bowed low string, at least four bars of rising energy',
       hint: 'load-sample',
     },
     params: [
