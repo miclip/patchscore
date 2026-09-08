@@ -980,6 +980,14 @@ valid manifest today: the notice prints only where an assigned part loads audio,
 exactly what an enumerable box may not have, so the TR-1000's `GEN` list is named by each recipe's
 own cited enum instead. The branch stays because the state is real in the model.
 
+**One device declares `enumerable`: the TR-1000**, whose Preset GEN/INST List prints every
+generator name and whose 25 `GEN` option sets cite the page they come off — 24 to GEN list p.1
+and `METALLIC_GENS` to Reference p.62. The declaration is not ink: the notice stays silent
+because no recipe there loads audio, and that silence is correct for a box whose every voice
+generates its own sound. What it buys is the audit fact (the library stops counting this box
+among those nobody asked) and the schema guard, which closes a `sourceAudio` recipe there to
+every future recipe unless the content kind is deliberately changed.
+
 **The library still has no `user-supplied` device**, which is itself a finding: #111 named the
 Tracker Mini as the one genuinely user-supplied box, and it ships fifty packs.
 

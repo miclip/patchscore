@@ -906,6 +906,15 @@ export const device: Device = {
    * `comfortableVoices` is deliberately not here. Eight is a musical judgement about this box
    * (§12.4) and no page states it; a slot to cite it in would only invite citing p.14, which
    * says ten.
+   *
+   * Roland ships three documents and all three are cited below. The pages above are the Owner's
+   * Manual; `noteDuration`, the two `sidechain` halves and `io.audioIn` are the Reference
+   * Manual — parameter tables for the first three, the Sampling chapter for the last; and
+   * `content` is the Preset GEN/INST List, which is the only document that enumerates anything.
+   *
+   * `io.audioIn` is the one that moved (#490) and the only `io` fact not on p.12. Its own
+   * comment says why, and the short version is that the page proving the jacks carry audio and
+   * the page showing what arrives there is used are the same page.
    */
   /**
    * §2.6/#142. **A step on this box fires an instrument; nothing about it is a length.** The
@@ -922,15 +931,70 @@ export const device: Device = {
     reason: "the instrument's own envelope ends it, and `DECAY` is what sets that",
   },
 
+  /**
+   * §2.6/#111. **A document prints the names, so a part here references an entry instead of
+   * describing audio to go and find.** That is `enumerable` exactly, and this box is the state's
+   * worked example: the Preset GEN/INST List enumerates every generator, `gen()` above carries
+   * the list's own page as the option set's citation, and each recipe's `GEN` holds a verbatim
+   * Name off it. Twenty-five `GEN` sets, twenty-four of them cited to GEN list p.1 and
+   * `METALLIC_GENS` to Reference p.62 for the reason its own comment gives. The declaration says
+   * at device level what those sets already say one recipe at a time.
+   *
+   * **It renders nothing, and that is correct.** `contentNotice` prints only where an assigned
+   * part carries `sourceAudio`, and no recipe here does — every voice plays the box's own
+   * generator. A reader whose parts all generate has no audio to find, and a sentence about what
+   * the box ships would answer a question they never asked. What the declaration buys is
+   * elsewhere: `npm run audit` stops counting this box as one nobody asked, and `DeviceSchema`
+   * refuses `enumerable` beside a `sourceAudio` recipe, so the pairing is closed to every future
+   * recipe here unless the content kind is deliberately changed.
+   *
+   * **The box samples, and that is not what this field answers.** The Reference Manual's
+   * Sampling chapter (pp.40-43) was read before declaring: p.40 samples EXTERNAL IN, a track,
+   * MIX OUT or a track sum; p.41 edits the result and counts the slots; p.42 plays it back
+   * through a SAMPLE GEN; p.43 imports a file off a USB drive. So the capability is real and it
+   * is cited at `io.audioIn` below. No recipe here carries `sourceAudio` for a simpler reason
+   * than any claim about the box: every part this device is authored for uses a named internal
+   * generator, and no musical gap in those parts needs a reader to record or import material.
+   *
+   * `library` is the document's own title, because a reader looks the list up by that name.
+   */
+  content: { kind: 'enumerable', library: 'TR-1000 Preset GEN/INST List' },
+
   capabilityEvidence: {
     noteDuration: cite(59),
+    /**
+     * §2.6/#111. The list's own first page, which is `GEN_CITE` — the constant twenty-four of
+     * the twenty-five `GEN` option sets above already carry, deliberately not a second
+     * transcription of it. The declaration and those sets are the same claim about the same page
+     * at two altitudes, and one constant is what stops them drifting apart.
+     */
+    content: GEN_CITE,
     'clock.canSendClock': owner(30),
     'clock.canReceiveClock': owner(30),
     'clock.transport': owner(12),
 
     'io.main': owner(12),
     'io.individualOuts': owner(12),
-    'io.audioIn': owner(12),
+    /**
+     * §2.6/#490. **The Sampling chapter, not the connector table, and this is the one fact on
+     * this box whose page is in the other book.** p.40's `INPUT` parameter is what proves it:
+     * `EXT IN` is a value it takes, and its explanation reads *"Only the audio input to the
+     * EXTERNAL IN jacks is sampled"* — the jacks, named, carrying audio in. pp.41-43 are the
+     * rest of the chapter, which is what that input is for on this box: p.41 edits the recorded
+     * result and counts the slots, p.42 plays it back through a SAMPLE GEN, p.43 imports a file
+     * off a USB drive.
+     *
+     * **One document, deliberately.** Owner's p.12 says it more plainly — `EXTERNAL IN jacks`,
+     * *"These are the audio input jacks"*, in the rear-panel table the three `io` facts around
+     * this one cite — and a citation naming both books in one `source` is a string
+     * `splitLocator` would read as one document with the other's pages attached. A `Cite` holds
+     * one source, so the choice is which single document, and the chapter that both names the
+     * jacks and shows the input in use is the one that answers more of the question.
+     */
+    'io.audioIn': {
+      kind: 'manual',
+      source: 'TR-1000 Reference Manual (eng02) v1.13+, pp.40-43',
+    },
     'io.usbAudio': owner(12),
 
     voices: owner(14),

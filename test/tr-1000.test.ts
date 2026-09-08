@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   reachableSlots,
   CHARACTERS,
+  CONTENT_FACT,
   DeviceSchema,
+  contentNotice,
   NEUTRAL_MOOD,
   ROLES,
   renderGuide,
@@ -723,5 +725,73 @@ describe('TR-1000 manifest', () => {
         )
       }
     }
+  })
+})
+
+/**
+ * §2.6/#111/#490. **The box the `enumerable` state was written for, finally saying so.**
+ *
+ * `DeviceContent`'s own documentation has used this device as the state's example since #111
+ * ("exactly as the TR-1000's `GEN` does"), and the manifest still declared nothing — so the
+ * library counted it among the boxes nobody had asked what they ship. The reading is not new:
+ * twenty-four of the twenty-five `GEN` option sets above already cite GEN list p.1, and
+ * "names a real generator on every GEN" asserts every one of those citations exhaustively,
+ * `METALLIC_GENS` included. What is new is one device-level claim that the *document*
+ * enumerates them, which is a thing the schema can hold future recipes to and the audit can
+ * count.
+ *
+ * **None of it reaches a reader, and these tests pin that too.** `contentNotice` prints only
+ * where an assigned part carries `sourceAudio`; nothing here does, so the guide said nothing
+ * before this change and says nothing after it. That silence now rests on the schema rather
+ * than on the coincidence of nobody having authored a sampling recipe yet.
+ */
+describe('TR-1000 content is enumerable, and that renders nothing (§2.6/#111)', () => {
+  it('declares the printed list rather than leaving the question unasked', () => {
+    expect(device.content).toEqual({
+      kind: 'enumerable',
+      // The list's own title, as a reader would look it up — not a category we invented.
+      library: 'TR-1000 Preset GEN/INST List',
+    })
+  })
+
+  it('cites the list page, which is the page the GEN option sets cite', () => {
+    // The same source string the test above checks on twenty-four option sets, because the
+    // declaration and those sets are one claim about one page at two altitudes.
+    expect(device.capabilityEvidence?.[CONTENT_FACT]).toEqual({
+      kind: 'manual',
+      source: 'TR-1000 Preset GEN/INST List (eng02) v1.20, GEN list p.1',
+    })
+  })
+
+  it('cites the Sampling chapter for the audio input, which is where it is shown in use', () => {
+    // Moved off the Owner's connector table in #490. p.40's `INPUT` parameter names the jacks
+    // and says audio arrives at them — "Only the audio input to the EXTERNAL IN jacks is
+    // sampled" — and pp.41-43 are the rest of the chapter. One document rather than two: a
+    // `source` naming both books would be read by `splitLocator` as the first one carrying the
+    // second's pages.
+    expect(device.capabilityEvidence?.['io.audioIn']).toEqual({
+      kind: 'manual',
+      source: 'TR-1000 Reference Manual (eng02) v1.13+, pp.40-43',
+    })
+  })
+
+  it('loads no audio on any recipe, which is what `enumerable` promises', () => {
+    // The schema refuses the pair, so this is belt and braces — and it is the assertion that
+    // fails first and most legibly if somebody authors a sampling recipe here.
+    expect(device.recipes.filter((r) => r.sourceAudio !== undefined).map((r) => r.id)).toEqual([])
+  })
+
+  it('prints no content notice, because a reader here has nothing to go and find', () => {
+    // Not a gap. Every voice on this box plays its own generator, so a sentence about what the
+    // box ships would answer a question the reader never asked (§2.6). The notice is gated on a
+    // *part loading audio*, not on the declaration existing, and that gate is correct.
+    expect(contentNotice(device, device.recipes)).toBeUndefined()
+
+    const doc = renderGuide(
+      resolve({ devices: [device], template: industrialTechno, mood: NEUTRAL_MOOD, seed: 18 }),
+    )
+    // Pin that a guide was actually produced, or the absence below proves nothing.
+    expect(doc).toContain('TR-1000')
+    expect(doc).not.toContain('Ships ')
   })
 })

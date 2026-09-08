@@ -775,10 +775,20 @@ describe('a device with a shipped library is declared, not left unknown (§2.6/#
     expect(content.location, id).not.toEqual(content.library)
   })
 
-  it('has no device left declaring `enumerable`, and none may while its parts load files', () => {
-    // The state is not retired — the TR-1000's `GEN` list is its shape — but nothing in the
-    // library is in it today, and the schema now makes the contradiction that put all five here
-    // unrepresentable rather than merely discouraged.
+  it('has one device declaring `enumerable`, and none may while its parts load files', () => {
+    // The state used to be empty, and the sentence here said so. The TR-1000 was always its
+    // shape — the Preset GEN/INST List prints the generator names, and 24 of its 25 `GEN` option
+    // sets cite the page they are on — and #490 declared it rather than leaving it implied one
+    // recipe at a time. Named explicitly, so a second one is a decision somebody makes in
+    // review instead of a filter quietly returning two.
+    const enumerable = DEVICES.filter((d) => d.content?.kind === 'enumerable')
+      .map((d) => d.id)
+      .sort(byCodeUnit)
+    expect(enumerable).toEqual(['roland-tr-1000'])
+
+    // The schema makes the contradiction that once put all five sampling boxes here
+    // unrepresentable rather than merely discouraged. Asserted on the manifests as well, because
+    // this is the claim the declaration exists to keep true of recipes nobody has written yet.
     for (const d of DEVICES) {
       if (d.content?.kind !== 'enumerable') continue
       expect(
