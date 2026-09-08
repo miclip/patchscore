@@ -3,7 +3,7 @@ import type { PanelFeature, PanelLayout } from '@/lib/core'
 /**
  * §10. A simplified **original** drawing of the Cascadia's panel.
  *
- * Read off the LAYOUT figure on p.8 of the Cascadia Manual v1.1 — the one full-panel drawing in
+ * Read off the LAYOUT figure on p.8 of the Cascadia Manual v1.4 — the one full-panel drawing in
  * the document, with the fourteen sections called out by number. Our own geometry and line
  * weights; nothing traced, extracted or embedded.
  *
@@ -64,7 +64,7 @@ const IO_KNOBS: PanelFeature[] = [107, 125, 160, 191, 253, 283, 336].map((cx) =>
 
 export const CASCADIA_PANEL: PanelLayout = {
   panelRiseMm: 246,
-  verified: { kind: 'manual', source: 'Intellijel Cascadia Manual v1.1, p.8 (LAYOUT)' },
+  verified: { kind: 'manual', source: 'Intellijel Cascadia Manual v1.4, p.8 (LAYOUT)' },
   features: [
     // ---- 13: I/O CONTROL, the strip along the top -------------------------------
     { kind: 'group', x: 0, y: IO_Y, w: 348, h: 32, label: 'I/O CONTROL' },

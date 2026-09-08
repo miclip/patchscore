@@ -21,10 +21,58 @@ import { CASCADIA_PANEL } from './panel'
  * produced are recorded below rather than smoothed over, because a device authored to test a
  * shape is only useful if it reports what the shape did.
  *
- * **Source**: `manuals/cascadia_manual_v1.1_2023.04.18.pdf`, 110 pages, printed page number ==
- * PDF page number. One document, no firmware split — Cascadia's firmware change log has exactly
- * one entry ("1.1.0 (18 April, 2023) Release version", p.110), so unlike the Deluge there is no
- * second source and no moving target to name.
+ * **Source**: `manuals/cascadia_manual_v1.4_2026.04.13.pdf`, 122 pages, printed page number ==
+ * PDF page number, checked on ten footers across the book. One document, no firmware split —
+ * Intellijel reissues the whole manual per firmware, so unlike the Deluge there is no second
+ * source to read alongside it.
+ *
+ * **Re-cited from v1.1 (2023.04.18) at #481.** Eighteen of the nineteen pages this file cites sit
+ * at the same index in v1.4, and the reason is where the twelve added pages went in rather than
+ * how many there are.
+ *
+ * **Pages 1-92 align index for index. Divergence begins at p.93**, which is the inserted ESG
+ * section: v1.1's p.93 is v1.4's p.94, and everything after it moves. The shift is not a single
+ * block — the Config App chapter takes further insertions on the way through (v1.1's p.99 is
+ * v1.4's p.103, its p.106 is v1.4's p.113) — so a page number below 93 transfers and a page number
+ * above it has to be found again. Every one of the eighteen sits below 93, which is why they hold.
+ *
+ * The nineteenth is above it *and* is a page v1.4 splits in two: v1.1's p.110 carried FIRMWARE
+ * UPDATES and TECHNICAL SPECIFICATIONS together, where v1.4 gives them pp.118 and 122. The
+ * citation is on `physical.panelSpanMm`, so it follows the specifications table to 122 and not the
+ * firmware text to 118. Each page was matched against what its citation is *for* rather than
+ * against its first line — a page surviving is not the cited fact surviving, and this is the one
+ * that proves the difference. No authored value moved.
+ *
+ * ### The four post-v1.1 features, and what each one got
+ *
+ * v1.4's change log (pp.118-121) runs to 1.4 (Feb 27, 2024). Each entry was read against the
+ * pages that describe it and answered separately. **One is content; three are facts about the
+ * box.** "Assessed and capability-only" is a result here, not a shortfall — a mode that changes
+ * how the instrument is played and controlled is not a way to make a part sound.
+ *
+ * ```
+ * feature                       verdict            where it landed
+ * Entropic Sequence Generator   authored           cascadia-sweep-soft, cited p.93
+ * MPE                           capability-only    MIDI PITCH / CC / MOD notes, pp.101-102
+ * Dual Mono MIDI Mode           capability-only    MIDI CC / MOD signal kinds, p.100
+ * assignable CCs 0-127          capability-only    MIDI CC / MOD notes, pp.109-110
+ * ```
+ *
+ *  - **The ESG is the one that reached existing content**, because it *"will replace the Tilt LFO
+ *    on Env B"* and this file already authors RISE, FALL and SHAPE. Every LFO-mode recipe now
+ *    names which shape is in force; see `ENV_B_LFO_SHAPES`.
+ *  - **MPE** is a way of playing the box, not a sound it makes: p.101 gives the three axes and
+ *    p.102 says which socket carries each. Recorded on the jacks that carry them.
+ *  - **Dual Mono** is the one that changes what a socket *is* — p.100 puts voice 2's pitch on the
+ *    `MIDI CC` jack and voice 2's gate on `MIDI MOD`, "thus disabling these two jacks as MOD
+ *    sources on the first channel". The signal lists say so; the voice count deliberately does
+ *    not, for the reason set out beside the jacks.
+ *  - **The 0-127 CC range is the one with a caveat, and it is worth stating precisely**: the
+ *    change log records the firmware gaining it at 1.2.6.0, but v1.1's manual *already printed*
+ *    `(0 - 127)` on its pp.103-104, word for word what v1.4 prints on pp.109-110. So this is new
+ *    to the manifest and not new to the document, and describing it as an edition difference
+ *    would be wrong. It is recorded because those pages had never been cited here, not because
+ *    they changed.
  *
  * ---------------------------------------------------------------------------------------------
  * ## What a Cascadia recipe actually is
@@ -96,7 +144,7 @@ import { CASCADIA_PANEL } from './panel'
  *
  * **Cascadia is set with sliders, and its sliders carry no scale.** There are no numbers beside
  * the FREQ, Q, FM, mixer or fold travels — not on the panel, not in the manual, and the
- * TECHNICAL SPECIFICATIONS page (p.110) lists dimensions and power and nothing else. There is no
+ * TECHNICAL SPECIFICATIONS page (p.122) lists dimensions and power and nothing else. There is no
  * cutoff range in Hz anywhere in the document, and no resonance figure.
  *
  * So the library splits three ways here, and each way is a different claim:
@@ -153,7 +201,20 @@ import { CASCADIA_PANEL } from './panel'
 
 /** The manual, by printed page. */
 function cite(page: number): Cite {
-  return { kind: 'manual', source: `Intellijel Cascadia Manual v1.1, p.${page}` }
+  return { kind: 'manual', source: `Intellijel Cascadia Manual v1.4, p.${page}` }
+}
+
+/**
+ * The manual by several printed pages, ascending — `pp.18, 100, 102, 109`.
+ *
+ * §2.6/#481. Three of the MIDI / CV outputs answer to more than one page now, because v1.4
+ * documents modes that change what leaves the socket. The alternative was to move the citation to
+ * whichever page was read most recently, which would have quietly dropped the page that says the
+ * jack exists at all — and that page is the one a reader looking for the socket needs.
+ */
+function citePages(pages: readonly number[]): Cite {
+  const ascending = [...pages].sort((a, b) => a - b)
+  return { kind: 'manual', source: `Intellijel Cascadia Manual v1.4, pp.${ascending.join(', ')}` }
 }
 
 /**
@@ -184,10 +245,10 @@ function jack<Id extends string>(
   id: Id,
   direction: JackSpec['direction'],
   signal: JackSignalKind[],
-  page: number,
+  page: number | readonly number[],
   note?: string,
 ): JackSpec & { id: Id } {
-  JACK_EVIDENCE[jackFact(id)] = cite(page)
+  JACK_EVIDENCE[jackFact(id)] = typeof page === 'number' ? cite(page) : citePages(page)
   return { id, direction, signal, ...(note === undefined ? {} : { note }) }
 }
 
@@ -214,12 +275,54 @@ const JACKS = [
   // here. `signal` describes what is in the cable, not where the box learned it, so `MIDI PITCH`
   // is `pitch-cv` — 1.A calls it a "1V/octave CV output with a 10 octave range (±5V)" — and the
   // rest are the plain control voltages and pulses their own pages describe.
-  jack('MIDI / CV · MIDI PITCH', 'out', ['pitch-cv'], 17),
-  jack('MIDI / CV · MIDI CC', 'out', ['cv'], 18),
+  //
+  // **Three of these answer to more than one page after #481**, because v1.4 documents two MIDI
+  // modes that change what leaves the socket — and both are box-wide settings made at boot or in
+  // the Config app, not per-part controls.
+  //
+  // **The manifest still declares one voice with one default topology, and the reason is a limit
+  // in the schema rather than a judgement about the feature.** `JackSpec.signal` is a flat list and
+  // `Device.voices` is a fixed set: neither can be qualified by a mode, so there is no way to write
+  // "while the box is in Dual Mono, `MIDI CC` carries voice 2's pitch and there is a second voice
+  // to assign". A `Device` describes one topology, and the one it describes here is the box as it
+  // ships and as p.100's own instructions assume you are leaving it.
+  //
+  // Dual Mono's second voice is real, and declaring it unconditionally would be worse than not
+  // declaring it: it exists only while that mode is set, so the resolver would be offered a voice
+  // most readers' boxes do not have and would allocate parts to it. Expressing this properly is a
+  // change to `lib/core`, not something a device folder can reach, and nothing has asked for it
+  // yet — one box, one mode.
+  //
+  // **What that costs, stated rather than hidden.** `MIDI CC` declares `pitch-cv` and `MIDI MOD`
+  // declares `gate` on p.100's authority, and those are true *in Dual Mono only*. The signal list
+  // is unconditional, so nothing in the type system stops a future recipe patching `MIDI CC` into
+  // a pitch input without putting the box in the mode that makes it a pitch. `test/cascadia.test.ts`
+  // holds a tripwire on exactly that: a recipe reaching for either as a pitch or gate source has
+  // to come here and read this first.
+  jack(
+    'MIDI / CV · MIDI PITCH',
+    'out',
+    ['pitch-cv'],
+    [17, 101],
+    'p.101: in MPE this is the X-axis, and MPE Pitch Bend Range is set to 48 semitones',
+  ),
+  jack(
+    'MIDI / CV · MIDI CC',
+    'out',
+    ['cv', 'pitch-cv'],
+    [18, 100, 102, 109],
+    'p.102: the MPE Y-axis (Timbre), as CC 74 unipolar. p.100: in Dual Mono it carries voice 2’s pitch instead, so it stops being a mod source for voice 1. p.109: any CC 0-127, unipolar or bipolar',
+  ),
   jack('MIDI / CV · MIDI LFO', 'out', ['cv'], 19),
   jack('MIDI / CV · MIDI CLK', 'out', ['clock'], 20),
   jack('MIDI / CV · MIDI VEL', 'out', ['cv'], 21),
-  jack('MIDI / CV · MIDI MOD', 'out', ['cv'], 21),
+  jack(
+    'MIDI / CV · MIDI MOD',
+    'out',
+    ['cv', 'gate'],
+    [21, 100, 102, 110],
+    'p.102: the MPE Z-axis (Pressure), as Output Type = Pressure (Aftertouch). p.100: in Dual Mono it carries voice 2’s gate instead, so it stops being a mod source for voice 1. p.110: any CC 0-127, unipolar or bipolar',
+  ),
   jack('MIDI / CV · MIDI GATE', 'out', ['gate'], 21),
   jack('MIDI / CV · MIDI TRIG', 'out', ['trigger'], 21),
 
@@ -424,13 +527,20 @@ function travel(
 }
 
 /** §3.2: the option set is legality and is cited; the selection is authority and is taste. */
-function pick(name: string, value: string, options: string[], where: Cite): AuthoredEnumParam {
+function pick(
+  name: string,
+  value: string,
+  options: string[],
+  where: Cite,
+  extra: Partial<AuthoredEnumParam> = {},
+): AuthoredEnumParam {
   return {
     kind: 'enum',
     name,
     value,
     options: { values: options, verified: where },
     verified: false,
+    ...extra,
   }
 }
 
@@ -470,6 +580,36 @@ const SUB_TYPES = ['SUB -1', 'OR', 'SUB -2']
 const NOISE_TYPES = ['WHITE', 'ALT', 'PINK']
 
 /**
+ * p.42/#479. **`ALT` is not a sound, and a recipe that stops at `ALT` has not chosen one.**
+ *
+ * The switch has three positions and the third defers: *"ALT: Uses the currently loaded
+ * ALTernative digital noise source."* Which one is loaded is set by a button combination off the
+ * panel — *"hold down the MANUAL GATE [11.1] button while pressing one of the four MIDI/CV section
+ * buttons"* — and the four are named on the page: Cymbal, Crunch, Crackle and Velvet.
+ *
+ * This is CLAUDE.md's standing trap with the switch off the panel entirely. The TR-8S carries its
+ * loaded tone and the minilogue xd its `NOISE` type for the same reason: a value read against the
+ * wrong one of several scales is made up, however carefully the page beside it is cited. A `noise
+ * dirty` on Cymbal and a `noise dirty` on Velvet are not the same part.
+ *
+ * **The loading action lives in the parameter's `note`, not in `hints`.** §8.1 makes hints
+ * toggleable, so a reader with them off would see `Crunch` and have no route to it; invariant 7
+ * makes a hint a jog rather than the value, and *how you load the source* is the value here. The
+ * manifest used to carry `'noise-alt': 'Hold MANUAL GATE, press MIDI CC'` in its hint table
+ * attached to nothing at all, which is what #479 found.
+ *
+ * **The three sub-variants are deliberately not authored, and the page is why.** Each source
+ * cycles three further variations — Crunch's are *"three different downsampling variations"* — and
+ * the manual gives them no names, no numbers and no display: there is nothing to write down that a
+ * reader could confirm they had reached. §3.2 would need an option set, and inventing `1 / 2 / 3`
+ * would be an interface the box does not have. What makes that safe rather than a gap is the
+ * page's own closing note — *"switching to a new noise type will always select the first
+ * variation"* — so selecting the source lands somewhere definite, and the recipe describes a state
+ * the reader can actually reach.
+ */
+const ALT_NOISE_SOURCES = ['Cymbal', 'Crunch', 'Crackle', 'Velvet']
+
+/**
  * p.31, and it is a range selector rather than a preference: each position rescales every
  * envelope stage, which is why `ENV_A_TIMES` below is keyed by it.
  */
@@ -490,6 +630,31 @@ const ENV_B_MODES = ['ENV', 'LFO', 'BURST']
  * columns, so one option set with all six — the panel prints all six beside the same toggle.
  */
 const ENV_B_TYPES = ['CYCLE', 'AHR', 'AD', 'FREE', 'SYNC', 'LFV']
+
+/**
+ * p.93/#481. **Which LFO the middle MODE position actually runs — and it is not a control on the
+ * panel.**
+ *
+ * `MODE` at `LFO` and `TYPE` at `FREE` or `SYNC` do not settle what Envelope B is doing, because
+ * an instrument-wide setting decides whether those two positions drive the factory tilting LFO or
+ * the Entropic Sequence Generator, which "replaces the Free/Sync tilting LFO". p.93 gives both
+ * ways to set it: hold `MIDI LFO [1.C]` while powering on, or set `LFO Shape` in the Env B section
+ * of the Intellijel Config app. It survives power cycles either way.
+ *
+ * **This is CLAUDE.md's "a cited range can still be the wrong range", in its switch form.** Under
+ * the ESG the same three sliders mean sequence rate, sequence length and regeneration probability,
+ * so a `RISE` figure cited to the LFO pages is a different quantity from a `RISE` figure cited to
+ * p.93. The TR-8S and the minilogue xd solve this by putting the switch in the recipe, and so does
+ * every LFO-mode recipe below: the value and the mode it belongs to cannot come apart.
+ *
+ * `scope: 'song'` because it is one setting for the instrument rather than for a part — it is not
+ * reached from the patch at all, and the guide states it once above the parts rather than inside
+ * one of them.
+ *
+ * Both option strings are the manual's own: p.93 names "the factory default 'Tilting LFO'" and
+ * "the alternate 'Entropic Sequence Generator'".
+ */
+const ENV_B_LFO_SHAPES = ['Tilting LFO', 'Entropic Sequence Generator']
 
 /** p.24: "Hard Sync (bottom position); No Sync (middle position); and Soft Sync (top position)". */
 const SYNC_TYPES = ['SOFT', 'X', 'HARD']
@@ -534,6 +699,25 @@ const ENV_A_TIMES = {
 
 /** p.28: "It is 0 V at the bottom and 5 V at the top." */
 const SUSTAIN_V = { min: 0, max: 5 }
+
+/**
+ * p.93: the ESG "can generate repeatable random voltage sequences from 1 - 16 steps in length",
+ * and again under the slider — "FALL [5.4] : Sets the sequence length (from 1 to 16 steps)".
+ *
+ * A count, so the range is legality in the strongest sense on this box: a 17-step sequence is not
+ * a taste the reader is being talked out of, it is a setting the slider cannot reach.
+ */
+const ESG_STEPS = { min: 1, max: 16 }
+
+/**
+ * p.93: "SHAPE [5.5] : Sets the per-step regeneration probability (from 0% to 100%)."
+ *
+ * Note which slider this is **not**. Under the tilting LFO the same slider is `TILT`, and under
+ * the envelope it is `SHAPE` with no printed scale at all — the reason every other Envelope B
+ * slider in this file is `travel`. The percentage exists only in the ESG's own section, which is
+ * why the recipe that authors it also authors `ENV_B_LFO_SHAPES`.
+ */
+const ESG_REGEN_PCT = { min: 0, max: 100 }
 
 /** pp.22, 26: "This 8-position selector knob... Each clockwise rotation shifts the tuning up by one octave", detents 0-7. */
 const OCTAVE = { min: 0, max: 7 }
@@ -1022,7 +1206,12 @@ const RECIPES: Recipe[] = [
     title: 'Noise alone through the filter, cutoff sampled and held',
     routing: `${PLAYED}. S&H is clocked from MIDI CLK by default (p.56), so it moves in time`,
     params: [
-      pick('MIXER · NOISE TYPE', 'ALT', NOISE_TYPES, cite(42), ),
+      pick('MIXER · NOISE TYPE', 'ALT', NOISE_TYPES, cite(42)),
+      // #479. Beside `NOISE TYPE`, deliberately, rather than hoisted: the two are one decision,
+      // and a `song`-scoped line above the parts would put the pair on opposite sides of the page.
+      pick('MIXER · ALT NOISE SOURCE', 'Crunch', ALT_NOISE_SOURCES, cite(42), {
+        note: 'not on the panel — hold MANUAL GATE and press MIDI CC to load it; a fresh source always comes up on the first of its three variations',
+      }),
       travel('MIXER · NOISE', 84),
       pick('VCF · MODE', 'BP2', FILTER_MODES, cite(46)),
       travel('VCF · FREQ', 48),
@@ -1220,6 +1409,10 @@ const RECIPES: Recipe[] = [
       `${PLAYED}. Monophonic: a pad request of more than one note is an honest gap, not this`,
     params: [
       pick('ENVELOPE B · MODE', 'LFO', ENV_B_MODES, cite(35)),
+      pick('ENVELOPE B · LFO SHAPE', 'Tilting LFO', ENV_B_LFO_SHAPES, cite(93), {
+        scope: 'song',
+        note: 'the factory default; a box switched to the ESG goes back at boot or in the Config app',
+      }),
       pick('ENVELOPE B · TYPE', 'SYNC', ENV_B_TYPES, cite(35)),
       num('ENVELOPE B · PHASE', 90, PHASE_DEG, cite(36), { unit: '°' }),
       travel('ENVELOPE B · RATE', 22),
@@ -1352,6 +1545,11 @@ const RECIPES: Recipe[] = [
       travel('VCF · FM 3', 74),
       travel('LFO X / Y / Z · RATE', 14, { note: 'no printed scale; slow end is roughly 15 s' }),
       travel('MIXER · SAW', 58),
+      // #479's second question, answered rather than left: a level with no type inherits whatever
+      // the switch happens to be on, which on this box can be `ALT` and therefore any of twelve
+      // sounds. `PINK` is named on the same page as the dark one — "darker than white... more
+      // energy to the lower frequencies" — which is what a `sweep dark` wants under it.
+      pick('MIXER · NOISE TYPE', 'PINK', NOISE_TYPES, cite(42)),
       travel('MIXER · NOISE', 26),
       num('VCO A · OCTAVE', 3, OCTAVE, cite(22), { mood: [{ axis: 'darkness', amount: -1 }] }),
       pick('ENVELOPE A · SPEED', 'SLOW', ENV_SPEEDS, cite(31)),
@@ -1367,6 +1565,97 @@ const RECIPES: Recipe[] = [
         'LFO X / Y / Z · LFO X',
         'VCF · FM 3',
         'FM 3 has no normal; a bipolar ±5 V triangle either side of the setting (p.62)',
+      ),
+    ],
+    verified: false,
+  },
+  {
+    id: 'cascadia-sweep-soft',
+    role: 'sweep',
+    character: 'soft',
+    voice: 'voice',
+    /**
+     * §4.2/#481. **The Entropic Sequence Generator, and the only box in the library with one.**
+     *
+     * Envelope B's middle MODE position runs one of two entirely different circuits depending on a
+     * setting made at boot, so this recipe and `cascadia-pad-dark` are the same three sliders
+     * meaning different things — see `ENV_B_LFO_SHAPES`. That is why both name the shape and why
+     * neither may be read without it.
+     *
+     * **A sweep rather than a pad or a texture, and the manual is what decided it.** p.93 does not
+     * only describe the circuit, it tells you what to *do* with it: *"It can be fun to raise the
+     * SHAPE slider (or use the CV input) to mutate sequences, then lower it to lock them in."*
+     * That is a gesture with a beginning and an end rather than a setting, which is what §4.2
+     * means by transitional — the reader arrives at a section with an eleven-step sequence already
+     * running, scrambles it across the join, and drops the slider to keep whatever landed.
+     *
+     * The two roles that looked more obvious are both wrong for it. A `texture` is a bed that
+     * holds, and `cascadia-texture-soft` already holds that slot with the manual's own cited S&H
+     * patch from p.14. A `pad` is worse than merely occupied: every pad request in this library
+     * asks for three or four notes and this box is monophonic, so `cascadia-pad-dark` is never
+     * selected in any rig, and an ESG authored beside it would never have been read.
+     *
+     * **The rate is `travel` and that is a decision, not an omission.** p.90 prints a real scale
+     * for this slider — 0.05 Hz to about 800 Hz free-running, and a 2-to-8 multiply/divide series
+     * when synced — but every word of it is about the *tilting* LFO. p.93 gives the ESG no numbers
+     * at all. Citing p.90 here would be the exact failure CLAUDE.md names: a range correctly cited
+     * off the wrong printed scale. The two sliders p.93 *does* put numbers on are cited to p.93.
+     *
+     * **Eleven steps against a four-bar phrase.** Sixteen would lock to the bar and stop being a
+     * drift; eleven walks, so the sequence the reader locks in is one they have not heard land
+     * that way before. The authored `SHAPE` is the low end of p.93's advice — where the sequence
+     * repeats — because that is where the gesture *starts*; the raise and the drop are the part
+     * the reader performs, and the note on the slider says so.
+     */
+    title: 'Scramble the entropic sequence across the join, then lock what lands',
+    routing:
+      `${PLAYED}. The gesture is one slider: SHAPE up to mutate the eleven-step cutoff sequence, down to keep it (p.93)`,
+    params: [
+      pick('ENVELOPE B · MODE', 'LFO', ENV_B_MODES, cite(35)),
+      pick('ENVELOPE B · LFO SHAPE', 'Entropic Sequence Generator', ENV_B_LFO_SHAPES, cite(93), {
+        scope: 'song',
+        note: 'hold MIDI LFO while powering on, or set LFO Shape in the Intellijel Config app',
+      }),
+      pick('ENVELOPE B · TYPE', 'SYNC', ENV_B_TYPES, cite(35)),
+      travel('ENVELOPE B · RISE', 34, {
+        note: 'sequence rate; in SYNC it divides or multiplies the clock at GATE/SYNC, and p.93 prints no scale saying which position does which',
+      }),
+      num('ENVELOPE B · FALL', 11, ESG_STEPS, cite(93), {
+        // `step`, not the manual's plural `steps`: #29's vocabulary already carries the singular
+        // for a count of sequencer steps, off the TR-8S's p.27, and a second spelling of one
+        // quantity is the drift that test exists to stop.
+        unit: 'step',
+        note: 'sequence length; 11 never lands square against four bars',
+      }),
+      num('ENVELOPE B · SHAPE', 22, ESG_REGEN_PCT, cite(93), {
+        unit: '%',
+        note: 'start low, so it repeats; run it up to scramble, then back down to lock',
+      }),
+      pick('VCF · MODE', 'LP4', FILTER_MODES, cite(46)),
+      travel('VCF · FREQ', 40),
+      travel('VCF · Q', 34, { note: 'enough resonance that each step is audible as a step' }),
+      travel('VCF · FM 3', 46, { note: 'how far one step moves the cutoff' }),
+      travel('MIXER · SAW', 48),
+      travel('MIXER · IN 2', 40),
+      num('VCO A · OCTAVE', 3, OCTAVE, cite(22), { mood: [{ axis: 'darkness', amount: -1 }] }),
+      pick('ENVELOPE A · SPEED', 'SLOW', ENV_SPEEDS, cite(31)),
+      num('ENVELOPE A · ATTACK', 400, ENV_A_TIMES.SLOW.attack, cite(31), { unit: 'ms' }),
+      num('ENVELOPE A · SUSTAIN', 4, SUSTAIN_V, cite(28), { unit: 'V' }),
+      num('ENVELOPE A · RELEASE', 1800, ENV_A_TIMES.SLOW.decay, cite(31), {
+        unit: 'ms',
+        mood: [{ axis: 'space', amount: 1400 }],
+      }),
+    ],
+    patch: [
+      cable(
+        'MIDI / CV · MIDI CLK',
+        'ENVELOPE B · GATE/SYNC',
+        'breaks the external-gate normal; in LFO SYNC this clock is the step rate (p.93)',
+      ),
+      cable(
+        'ENVELOPE B · ENV B',
+        'VCF · FM 3',
+        'FM 3 has no normal — each step arrives as a new cutoff and holds until the next',
       ),
     ],
     verified: false,
@@ -1411,7 +1700,7 @@ export const device: Device = {
   io: { main: 'mono', individualOuts: 0, audioIn: true, usbAudio: false },
 
   /**
-   * §10. 348 mm horizontal span, from p.110's TECHNICAL SPECIFICATIONS.
+   * §10. 348 mm horizontal span, from p.122's TECHNICAL SPECIFICATIONS.
    *
    * **The figure includes the wood end cheeks**, and the page says so: "Width: 348mm (including
    * wood end cheeks)". This is the second time in this library that a stated width has meant
@@ -1430,7 +1719,7 @@ export const device: Device = {
    */
   physical: {
     panelSpanMm: 348,
-    verified: cite(110),
+    verified: cite(122),
   },
 
   /** §10. A simplified original drawing of the panel, read off p.8 (see `panel.ts`). */
@@ -1478,11 +1767,11 @@ export const device: Device = {
    * **Where the capability is documented, and what those pages actually say.** p.20 is the front
    * panel's `MIDI CLK` jack — an analog clock output with a division list, plus tap tempo framed
    * as *"particularly useful if you're not controlling Cascadia via MIDI"*. p.78's back-panel MIDI
-   * entries and p.106's Config App rows are the DIN and USB halves, and they say more than a jack
+   * entries and p.113's Config App rows are the DIN and USB halves, and they say more than a jack
    * list: both describe the port transmitting Cascadia's own Tap Clock and name a setup with no
    * DAW in it as what that is for, and p.78 records the DIN output as on in the factory settings.
    * (They also use the older clock vocabulary this project does not — CLAUDE.md — which is why
-   * they are described here rather than quoted. p.78 and p.106 disagree with each other about the
+   * they are described here rather than quoted. p.78 and p.113 disagree with each other about the
    * USB default; the DIN one is consistent.) There is no chapter about driving external gear and
    * the table of contents has no entry for one: everything about this box clocking anything else
    * lives in those two jack-and-settings descriptions.
@@ -1519,7 +1808,7 @@ export const device: Device = {
    * and the count stays apart from the claims.
    *
    * The pages behind this were re-read against the rendered PDF for #120, and one sentence in the
-   * old note did not survive it: p.78 and p.106 were described as jack lists and settings tables
+   * old note did not survive it: p.78 and p.113 were described as jack lists and settings tables
    * mentioning the clock output only in passing, and they are more than that. The finding holds;
    * the sentence supporting it did not, and the reason below says what those pages say.
    */
@@ -1552,7 +1841,7 @@ export const device: Device = {
       kind: 'cited-against',
       cite: cite(7),
       reason:
-        'the manual answers the question and the answer is no: p.7’s OVERVIEW calls this “a synthesist’s synthesizer — a well-considered, finely-honed, stand-alone instrument”, the cover an “Advanced, Performance-Oriented, Semi-Modular Synthesizer”, p.11’s MAKE A SOUND has a controller playing it with every signal arrow but the audio output pointing inward, and p.78’s MIDI IN is for “whichever controller, sequencer or MIDI interface you’ll use to play Cascadia”; p.78 and p.106 do describe the MIDI OUT and USB ports sending this box’s own Tap Clock for a setup with no DAW in it, DIN on by default, but that is a socket’s description rather than the box’s job (§7.4), and there is no chapter about driving external gear at all',
+        'the manual answers the question and the answer is no: p.7’s OVERVIEW calls this “a synthesist’s synthesizer — a well-considered, finely-honed, stand-alone instrument”, the cover an “Advanced, Performance-Oriented, Semi-Modular Synthesizer”, p.11’s MAKE A SOUND has a controller playing it with every signal arrow but the audio output pointing inward, and p.78’s MIDI IN is for “whichever controller, sequencer or MIDI interface you’ll use to play Cascadia”; p.78 and p.113 do describe the MIDI OUT and USB ports sending this box’s own Tap Clock for a setup with no DAW in it, DIN on by default, but that is a socket’s description rather than the box’s job (§7.4), and there is no chapter about driving external gear at all',
     },
   },
 
@@ -1620,7 +1909,6 @@ export const device: Device = {
   hints: {
     'channel-learn': 'Press the button beside MIDI PITCH',
     'tap-clock': 'Long-press MIDI CLK for TAP',
-    'noise-alt': 'Hold MANUAL GATE, press MIDI CC',
     'break-normal': 'A cable here replaces the default',
     'octave-detents': 'Eight detents, one octave each',
     'env-speed': 'FAST/MED/SLOW rescales every stage',
@@ -1628,7 +1916,7 @@ export const device: Device = {
     'manual-gate': 'MANUAL GATE fires both envelopes',
   },
 
-  manual: { title: 'Intellijel Cascadia Manual', edition: 'v1.1 (2023.04.18)' },
+  manual: { title: 'Intellijel Cascadia Manual', edition: 'v1.4 (2026.04.13)' },
 
   productPage: 'https://intellijel.com/shop/eurorack/cascadia/',
 

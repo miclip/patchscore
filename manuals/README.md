@@ -27,7 +27,6 @@ opened.
 | `deluge-community/` | **Community firmware docs, pinned to `release_1_2_1` (Chopin).** 23 menu docs + 10 feature docs, 222k chars. See below. | [repo](https://github.com/SynthstromAudible/DelugeFirmware) |
 | `Polyend-Tracker-Mini-Manual-2v2v1b.pdf` | Manual, 344pp. Appears complete. | polyend.com (downloads page blocks automated fetch) |
 | `cascadia_manual_v1.4_2026.04.13.pdf` | **Manual v1.4, 2026-04-13 — the current one, 122pp.** Five firmware releases newer than v1.1: the Entropic Sequence Generator (a Turing-machine LFO replacing the Tilt LFO on Env B, where `RISE`/`FALL`/`SHAPE` become sequence rate, length and per-step regeneration probability), MPE, Dual Mono MIDI Mode, Random Notes LFO shape, full-range assignable CCs. Changelog on printed 120. | [direct](https://intellijel.com/downloads/manuals/cascadia_manual_v1.4_2026.04.13.pdf), confirmed 2026-09-07 |
-| ~~`cascadia_manual_v1.1_2023.04.18.pdf`~~ | **Superseded — do not author from this.** v1.1, 2023-04-18, 110pp, the release edition. `lib/devices/intellijel-cascadia` still cites it on all 175 of its citations, so it is kept until that manifest is re-cited (#481). Pagination differs from v1.4; a page number is not transferable between them. | — |
 | `model-2400_om_e_vc.pdf` | Owner's Manual. | [docs](https://tascam.com/us/product/model_2400/docs) |
 | `ZEBU_Manual_Rrev2_Web_ENG.pdf` | ZOIA Euroburo manual, rev2. | empresseffects.com |
 | `Muse_Manual-1.4.0.pdf` | **Moog Muse**, 124pp / 196k chars / 18 ranges. Denser than the TR-1000 Reference, and the library's first 8-voice polysynth. | [direct](https://cdn.inmusicbrands.com/Moog/Muse/Muse_Manual-1.4.0.pdf), confirmed 2026-08-28 |
@@ -184,7 +183,6 @@ whole of each PDF, printed numeric ranges for controls:
 | manual | pages | printed ranges | per page |
 |---|---|---|---|
 | `Minitaur_Manual.pdf` | 19 | 10 | 0.53 |
-| `cascadia_manual_v1.1_2023.04.18.pdf` | 110 | 12 | 0.11 |   <!-- superseded by v1.4, 122pp; see the Present table -->
 | `Matriarch_Manual_012023.pdf` | 92 | 10 | 0.11 |
 | `Mother_32_Users_Manual.pdf` | 73 | 6 | 0.08 |
 | `DFAM_Manual.pdf` | 44 | 4 | 0.09 |
@@ -238,8 +236,9 @@ return the same answer.
   `https://intellijel.com/downloads/manuals/<filename>`, using exactly the filenames recorded
   above: [metropolix](https://intellijel.com/downloads/manuals/metropolix_manual_v1.6_2025.09.24.pdf)
   (200, 205pp, 339k chars — matches the count in the table) and
-  [cascadia](https://intellijel.com/downloads/manuals/cascadia_manual_v1.1_2023.04.18.pdf) (200,
-  8.5MB). The `/downloads/manuals/` segment is the load-bearing part; `/wp-content/uploads/…` and
+  [cascadia](https://intellijel.com/downloads/manuals/cascadia_manual_v1.4_2026.04.13.pdf) (200 on
+  2026-09-07, 8.9MB — the v1.1 filename resolved the same way and is no longer the edition to
+  fetch). The `/downloads/manuals/` segment is the load-bearing part; `/wp-content/uploads/…` and
   `/support/manuals/…` both return 404 as HTML.
 - **polyend.com returns 403 to any automated request**, so the Tracker Mini manual has to be
   fetched by hand from a browser. This is not a nicety: #80 had to leave the Cascadia's
