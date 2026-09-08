@@ -1,3 +1,4 @@
+import { CableMark } from '@/components/cable-mark'
 import type {
   Device,
   DeviceId,
@@ -106,6 +107,7 @@ function Patch({ entries }: { entries: readonly ResolvedPatchEntry[] }) {
       {entries.map((entry) => (
         <li key={`${entry.from}->${entry.to}`}>
           <Instruction {...(entry.note === undefined ? {} : { note: entry.note })}>
+            <CableMark />
             <span className="mono">{entry.from}</span>
             <span className="arrow" aria-hidden="true">
               →
