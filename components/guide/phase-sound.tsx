@@ -9,6 +9,7 @@ import type {
 } from '@/lib/core'
 import {
   citationSentence,
+  resolvedClaims,
   contentNotice,
   controlPositionNotice,
   groupedParams,
@@ -408,7 +409,7 @@ export function SoundShared({
   const positions = controlPositionNotice(device)
   // §3.2. The markdown renderer's own sentence, so the two cannot say different things — and
   // over the same set, which is the half that would drift silently if each counted its own way.
-  const cites = citationSentence(renderedParams(hoist, perPart))
+  const cites = citationSentence(resolvedClaims(renderedParams(hoist, perPart)))
   return (
     <>
       {cites === undefined ? null : <p className="quiet">{cites}</p>}

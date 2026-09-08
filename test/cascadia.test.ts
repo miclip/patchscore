@@ -14,6 +14,7 @@ import {
 } from '../lib/core/index'
 import { device, type CascadiaJack } from '../lib/devices/intellijel-cascadia/index'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { kitRecipes } from '../lib/studio/device-page'
 import { generativeDrift, industrialTechno } from '../lib/templates/index'
 
 /**
@@ -276,6 +277,39 @@ describe('Cascadia manifest', () => {
         const note = entry.note
         expect(note, `${recipe.id}: ${entry.from} -> ${entry.to}`).toBeDefined()
         expect(note as string, `${recipe.id}: ${entry.to}`).toMatch(/normal|manual’s cable/)
+      }
+    }
+  })
+
+  it('keeps MANUAL GATE armed on every kit-eligible recipe, and says so on the jack (p.54)', () => {
+    // #478's kit section claims this box makes these sounds *from scratch*, and with nothing
+    // sequencing a Cascadia the control that plays one is the front panel MANUAL GATE button.
+    // p.54 gives that button two conditions: it gates Envelope A and Envelope B by default only
+    // while nothing is patched into either of their GATE inputs, and a cable inserted into
+    // `PUSH GATE · GATE OUT` stops it gating them at all.
+    //
+    // **What this holds is one claim: on every kit recipe, both envelopes are still under
+    // MANUAL GATE.** It does not claim that a recipe patching one of those three sockets would
+    // be silent — with Envelope B's gate driven from elsewhere the button still reaches
+    // Envelope A, and what a recipe does with either envelope varies. The claim is that the
+    // button `routing` offers a reader still reaches both, and that no patch here takes it away.
+    //
+    // No recipe reaches for them today. This is the line that says so out loud, because the
+    // hazard is invisible in the patch list: `GATE OUT` is an output, so nothing about patching
+    // it looks like it takes anything away.
+    const gateOut = (device.jacks ?? []).find((j) => j.id === 'PUSH GATE · GATE OUT')
+    expect(gateOut?.note ?? '').toMatch(/MANUAL GATE/)
+    expect((evidenceFor(device, jackFact('PUSH GATE · GATE OUT')) as { source: string }).source)
+      .toBe(`${MANUAL}p.54`)
+
+    const disarms = ['PUSH GATE · GATE OUT', 'ENVELOPE A · GATE', 'ENVELOPE B · GATE/SYNC']
+    const kit = kitRecipes(device)
+    expect(kit.length).toBeGreaterThan(0)
+    for (const recipe of kit) {
+      for (const entry of recipe.patch ?? []) {
+        const where = `${recipe.id}: ${entry.from} -> ${entry.to}`
+        expect(disarms, where).not.toContain(entry.from)
+        expect(disarms, where).not.toContain(entry.to)
       }
     }
   })

@@ -36,7 +36,7 @@ import type { AuditCounts, AuditFinding } from './provenance'
  * `components/guide/format.ts`, and a module under `lib/` reaching up into `components/` to
  * borrow it would be the wrong direction for one sentence's worth of punctuation.
  */
-function andList(items: readonly string[]): string {
+export function andList(items: readonly string[]): string {
   if (items.length < 2) return items.join('')
   return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1] as string}`
 }

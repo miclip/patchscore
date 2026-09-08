@@ -5,6 +5,7 @@ import sitemap from '../app/sitemap'
 import { metadata } from '../app/layout'
 import { SITE_ORIGIN } from '../lib/studio/site'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { kitSession } from '../lib/studio/kit-session'
 import { TEMPLATES } from '../lib/templates/index'
 
 /**
@@ -27,7 +28,16 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
     const entries = sitemap()
     const urls = entries.map((e) => e.url)
     expect(urls[0]).toBe(SITE_ORIGIN)
-    expect(entries).toHaveLength(4 + DEVICES.length + TEMPLATES.length)
+    /*
+     * §3.7/#478 adds one entry per box that offers a kit — 24 of the 46 today — and it is listed
+     * here by the same test as everything else: there is a page at it whose canonical is itself.
+     * Derived from `kitSession`, which is also what prerenders those pages, so a box that
+     * authors a fourth kit sound appears in both without an edit and one that does not is absent
+     * from both.
+     */
+    const kits = DEVICES.filter((d) => kitSession(d) !== undefined)
+    expect(kits.length).toBe(24)
+    expect(entries).toHaveLength(4 + DEVICES.length + kits.length + TEMPLATES.length)
 
     // Derived rather than listed, and in source order: authoring a manifest or a template adds its
     // page here without an edit (invariant 2). The last entry is the exception and is meant to be:
@@ -36,6 +46,7 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
       SITE_ORIGIN,
       `${SITE_ORIGIN}/devices`,
       ...DEVICES.map((d) => `${SITE_ORIGIN}/devices/${d.id}`),
+      ...kits.map((d) => `${SITE_ORIGIN}/devices/${d.id}/kit`),
       `${SITE_ORIGIN}/directions`,
       ...TEMPLATES.map((t) => `${SITE_ORIGIN}/directions/${t.id}`),
       `${SITE_ORIGIN}/drum-machines`,

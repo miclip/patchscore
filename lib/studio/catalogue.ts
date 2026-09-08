@@ -113,6 +113,18 @@ export function deviceHref(device: Device): string {
   return devicePagePath(device.id)
 }
 
+/**
+ * §3.7/#478. `/devices/roland-tr-1000/kit` — the standalone kit session, under the device it is
+ * about, because that is what it is a view of. One place, so the device page's link, the sitemap
+ * and the page's own canonical cannot disagree.
+ *
+ * A path rather than a route object, and derived from `deviceHref` rather than rebuilt: a kit
+ * page exists only where a device page does.
+ */
+export function kitHref(device: Device): string {
+  return `${devicePagePath(device.id)}/kit`
+}
+
 /** `/directions/ambient-dub`. The device pages link here, so it lives beside `deviceHref`. */
 export function templateHref(template: Template): string {
   return `/directions/${template.id}`

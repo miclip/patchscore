@@ -19,7 +19,13 @@ import {
 } from './device'
 import type { DeviceId, SectionName } from './ids'
 import type { Role } from './vocabulary'
-import type { CitedSource, ParamScope, ResolvedParam, ResolvedRange } from './params'
+import type {
+  CitationClaims,
+  CitedSource,
+  ParamScope,
+  ResolvedParam,
+  ResolvedRange,
+} from './params'
 import {
   citedShare,
   citedSources,
@@ -27,6 +33,7 @@ import {
   hoistedParams,
   paramLabel,
   renderedParams,
+  resolvedClaims,
 } from './params'
 import type { InertFinding } from './inert'
 import { inertBlocks, inertNotice } from './inert'
@@ -2779,11 +2786,11 @@ function citedSourceText(source: CitedSource): string {
  * to be kept in agreement. `test/citation-sentence.test.ts` asserts the Markdown and React bytes
  * against each other for exactly that reason.
  */
-export function citationSentence(params: readonly ResolvedParam[]): string | undefined {
-  const sources = citedSources(params)
+export function citationSentence(claims: readonly CitationClaims[]): string | undefined {
+  const sources = citedSources(claims)
   if (sources.length === 0) return undefined
   const named = list(sources.map(citedSourceText))
-  const { total, points, ranges, options } = citedShare(params)
+  const { total, points, ranges, options } = citedShare(claims)
 
   if (points === total) return `Values on this box come from ${named}.`
   // **Strictly more than half.** At exactly half, *most* is false — and a fifty-fifty box is not
@@ -2822,7 +2829,9 @@ function soundShared(
   // groups counted once, not once per part — so it names the documents this reader would need
   // and no others, and the share its verb comes from is a share of what is on the page.
   const cites = citationSentence(
-    renderedParams(hoistedParams(mine.map((a) => a.params)), mine.map((a) => a.params)),
+    resolvedClaims(
+      renderedParams(hoistedParams(mine.map((a) => a.params)), mine.map((a) => a.params)),
+    ),
   )
   if (cites !== undefined) {
     out.push('')

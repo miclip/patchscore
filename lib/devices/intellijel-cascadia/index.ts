@@ -408,8 +408,21 @@ const JACKS = [
   jack('VCA A · IN', 'in', ['audio'], 53),
   jack('VCA A · LEVEL', 'in', ['cv'], 53),
 
-  // §11 PUSH GATE (p.54)
-  jack('PUSH GATE · GATE OUT', 'out', ['gate'], 54),
+  /**
+   * §11 PUSH GATE (p.54). **The note is the hazard, and it is why no recipe here reaches for this
+   * socket.** p.54 states two things about the MANUAL GATE button: it gates Envelope A and
+   * Envelope B by default when nothing is patched into either of their GATE inputs, and a cable
+   * inserted into `GATE OUT` stops it doing so. So the one control that makes this box speak with
+   * no sequencer attached is disarmed by patching the jack whose name says it carries that gate —
+   * which is exactly "anything a name alone would mislead a reader about".
+   */
+  jack(
+    'PUSH GATE · GATE OUT',
+    'out',
+    ['gate'],
+    54,
+    'a cable here stops the MANUAL GATE button triggering Envelope A and Envelope B, which by default it does whenever nothing is patched into either of their GATE inputs',
+  ),
 
   // §12 UTILITIES — the sections these recipes use (pp.56, 58, 62, 65, 68, 70)
   jack('S&H · TRIG', 'in', ['trigger', 'clock'], 56),
@@ -779,8 +792,25 @@ const VOICE_ROLES: Role[] = [
 /**
  * How this box is driven, said once per recipe because it is the thing a reader of a Cascadia
  * page most needs and the guide has nowhere else to put it: there is no sequencer here.
+ *
+ * **The third way in is the front panel, and it is named because a reader with no controller
+ * has no other one.** #478's kit section renders these recipes to somebody standing at the box
+ * with a recorder and nothing plugged in; p.54's MANUAL GATE button is what makes a sound for
+ * them, and a routing line that offered only two sockets they are not using read as *you cannot
+ * play this yet*.
+ *
+ * **The qualifying clause is p.54's own and is not padding.** The button gates an envelope only
+ * while that envelope's own GATE input is empty (pp.32, 39 say the same from the envelope end),
+ * and three recipes here do patch `ENVELOPE B · GATE/SYNC` — for those the button still reaches
+ * Envelope A and no longer reaches B. Stated flatly, the offer would be false on three of the
+ * twenty-one; stated with the condition, it is true on all of them and tells a reader what to
+ * look at when a hold does nothing. `test/cascadia.test.ts` holds the kit recipes to leaving
+ * both envelopes under the button.
  */
-const PLAYED = 'played from MIDI IN or EXT IN PITCH/GATE — Cascadia has no sequencer of its own'
+const PLAYED =
+  'played from MIDI IN or EXT IN PITCH/GATE, or by holding the front panel MANUAL GATE button, ' +
+  'which gates any envelope whose own GATE input is empty (p.54) — Cascadia has no sequencer ' +
+  'of its own'
 
 const RECIPES: Recipe[] = [
   // ---- low --------------------------------------------------------------------------

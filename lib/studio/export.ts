@@ -2,6 +2,10 @@ import { renderGuide } from '@/lib/core'
 import type { GuideLayout } from '@/lib/core'
 import type { ResolveResult } from '@/lib/core'
 import type { StudioEnv } from './session'
+import { MARKDOWN_TYPE, downloadText } from './download'
+import type { ExportResult } from './download'
+import type { KitSession } from './kit-session'
+import { renderKitSession } from './kit-markdown'
 
 /**
  * #12's export half: Markdown out, and print to paper or PDF.
@@ -44,14 +48,19 @@ export function guideFilename(result: ResolveResult, seed: number): string {
   return `patchscore-${result.template.id}-${seed}.md`
 }
 
-export type ExportResult = { ok: true; name: string } | { ok: false; message: string }
+/**
+ * #478. `downloadText`, `printPage` and their result types moved to `./download`, which imports
+ * no renderer at all. The kit page's two buttons are a client component, and a `'use client'`
+ * file importing *this* module would pull `renderGuide`, `renderKitSession` and the whole engine
+ * into the browser bundle to call a function that takes a string and a name. They are
+ * re-exported here so the studio's callers and `test/export.test.ts` keep one import.
+ */
+export { MARKDOWN_TYPE, downloadText, printPage } from './download'
+export type { ExportResult, PrintResult } from './download'
 
 /**
- * Hand the guide to the browser to save. Never throws.
- *
- * Honest about failure, like Copy link: a browser that refuses the download leaves the user
- * believing they have a file they do not have, and the guide they wanted is then gone as soon as
- * they close the tab.
+ * Hand the guide to the browser to save. Never throws — `downloadText` reports a refusal, since
+ * a user who believes they have a file they do not have loses the guide when the tab closes.
  */
 export function downloadGuideMarkdown(
   env: StudioEnv,
@@ -59,55 +68,32 @@ export function downloadGuideMarkdown(
   seed: number,
   layout?: GuideLayout,
 ): ExportResult {
-  const name = guideFilename(result, seed)
-
-  let save: ReturnType<StudioEnv['download']>
-  try {
-    save = env.download()
-  } catch {
-    return { ok: false, message: 'This browser will not let the page save files.' }
-  }
-  if (save === null || save === undefined) {
-    return { ok: false, message: 'This browser will not let the page save files.' }
-  }
-
-  try {
-    // `text/markdown` rather than `text/plain`: it is what the file is, and it stops a browser
-    // deciding to display it instead of saving it.
-    save({ name, text: guideMarkdown(result, layout), type: 'text/markdown;charset=utf-8' })
-  } catch {
-    return { ok: false, message: 'Saving was blocked. Use Print instead, or copy the link.' }
-  }
-
-  return { ok: true, name }
+  return downloadText(env, {
+    name: guideFilename(result, seed),
+    text: guideMarkdown(result, layout),
+    type: MARKDOWN_TYPE,
+  })
 }
 
-export type PrintResult = { ok: true } | { ok: false; message: string }
+/**
+ * §3.7/#478. `patchscore-intellijel-cascadia-kit.md`. Stable, for the reason a guide's name is:
+ * saving twice overwrites rather than accumulating `kit (3).md`. A device id is already
+ * constrained to letters, digits and hyphens, which is the intersection of what every filesystem
+ * accepts.
+ */
+export function kitFilename(session: KitSession): string {
+  return `patchscore-${session.device.id}-kit.md`
+}
 
 /**
- * Open the browser's own print dialog and do nothing else — no PDF generation, no new window, no
- * re-render into a printable clone. The page *is* the printable artefact; `@media print` decides
- * what survives onto paper.
+ * §3.7/#478. What the kit page's Download button hands over: **exactly** `renderKitSession` of
+ * the session on screen — the same bytes `test/kit-golden.test.ts` pins and the same document
+ * the page renders from, for the reason `guideMarkdown` is not a re-render.
  *
- * Never throws. A blocked `print()` is reported rather than swallowed, because a button that
- * silently does nothing is worse than one that says it could not.
+ * **Called on the server**, and the string is what crosses to the client (see `KitActions`). So
+ * there is no `downloadKitMarkdown(env, session)` beside its guide sibling: the session never
+ * reaches a browser, and nothing in the browser can render one.
  */
-export function printGuide(env: StudioEnv): PrintResult {
-  let open: ReturnType<StudioEnv['print']>
-  try {
-    open = env.print()
-  } catch {
-    return { ok: false, message: 'This browser will not let the page open the print dialog.' }
-  }
-  if (open === null || open === undefined) {
-    return { ok: false, message: 'This browser will not let the page open the print dialog.' }
-  }
-
-  try {
-    open()
-  } catch {
-    return { ok: false, message: 'Printing was blocked. Use your browser’s File → Print instead.' }
-  }
-
-  return { ok: true }
+export function kitMarkdown(session: KitSession): string {
+  return renderKitSession(session)
 }

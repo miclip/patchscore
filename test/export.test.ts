@@ -7,7 +7,7 @@ import {
   downloadGuideMarkdown,
   guideFilename,
   guideMarkdown,
-  printGuide,
+  printPage,
 } from '../lib/studio/export'
 import { CATALOGUE, DEFAULT_INPUTS } from '../lib/studio/session'
 import type { DownloadFile, StudioEnv } from '../lib/studio/session'
@@ -173,7 +173,7 @@ describe('printing opens the dialog and does nothing else', () => {
   it('calls print exactly once', () => {
     const open = vi.fn()
     const { env } = exportEnv({ print: () => open })
-    expect(printGuide(env).ok).toBe(true)
+    expect(printPage(env).ok).toBe(true)
     expect(open).toHaveBeenCalledTimes(1)
     expect(open).toHaveBeenCalledWith()
   })
@@ -182,14 +182,14 @@ describe('printing opens the dialog and does nothing else', () => {
     // Every other member of the env throws if touched, so this passing *is* the assertion:
     // printing is the browser's dialog and not a pipeline of our own.
     const { env, saved, printed } = exportEnv()
-    expect(printGuide(env).ok).toBe(true)
+    expect(printPage(env).ok).toBe(true)
     expect(saved).toEqual([])
     expect(printed()).toBe(1)
   })
 
   it('reports a browser that will not open the dialog', () => {
     const { env } = exportEnv({ print: () => undefined })
-    const outcome = printGuide(env)
+    const outcome = printPage(env)
     expect(outcome.ok).toBe(false)
     if (!outcome.ok) expect(outcome.message.length).toBeGreaterThan(0)
   })
@@ -200,7 +200,7 @@ describe('printing opens the dialog and does nothing else', () => {
         throw new Error('blocked')
       },
     })
-    expect(printGuide(env).ok).toBe(false)
+    expect(printPage(env).ok).toBe(false)
   })
 
   it('adds no PDF dependency', () => {

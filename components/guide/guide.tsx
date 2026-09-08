@@ -26,7 +26,7 @@ import {
 import { browserEnv } from '@/lib/studio/browser-env'
 import { DEFAULT_GUIDE_LAYOUT, GUIDE_LAYOUT_KEY, readGuideLayout } from '@/lib/studio/preferences'
 import { templateHref } from '@/lib/studio/catalogue'
-import { downloadGuideMarkdown, printGuide } from '@/lib/studio/export'
+import { downloadGuideMarkdown, printPage } from '@/lib/studio/export'
 import { occupiedCounts, voicesLabel } from './format'
 import { GuideNavContext, currentSection, phaseAnchor } from './nav'
 import type { GuideNav, GuideSection } from './nav'
@@ -602,7 +602,7 @@ export function Guide({
   }
 
   function onPrint() {
-    const outcome = printGuide(browserEnv())
+    const outcome = printPage(browserEnv())
     // Success says nothing: the print dialog is its own feedback, and a toast underneath a modal
     // is a toast nobody sees. Only failure is worth a line.
     setExported(outcome.ok ? undefined : { ok: false, message: outcome.message })

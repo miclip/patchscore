@@ -2,18 +2,29 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import {
+  authoredClaims,
   citationSentence,
   citedShare,
   citedSources,
   dominantRangeCite,
   hoistedParams,
   moodState,
+  NEUTRAL_MOOD,
   renderGuide,
   renderedParams,
   resolve,
+  resolveParams,
+  resolvedClaims,
   sameCite,
 } from '../lib/core/index'
-import type { Cite, GuideLayout, ResolveResult, ResolvedParam } from '../lib/core/index'
+import type {
+  AuthoredParam,
+  CitationClaims,
+  Cite,
+  GuideLayout,
+  ResolveResult,
+  ResolvedParam,
+} from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { droneStudy, industrialTechno } from '../lib/templates/index'
 import { Guide } from '../components/guide/guide'
@@ -60,52 +71,54 @@ function cite(source: string, kind: Cite['kind'] = 'manual'): Cite {
   return { kind, source } as Cite
 }
 
+/**
+ * The four fixtures below are **claims**, not parameters: `CitationClaims` is what the machinery
+ * reads (§3.2), and a name and a value were noise on every one of them. The two shapes that do
+ * need a whole parameter — a hoisted control, and a real box's rendered block — build one and
+ * project it with `resolvedClaims`, which is the guide's own way in.
+ */
+
 /** A value nobody checked: no point citation, no range at all. */
-function taste(name: string): ResolvedParam {
-  return { name, value: 52, provenance: { state: 'provisional' } }
+function taste(): CitationClaims {
+  return { point: false }
 }
 
 /** A value whose *bounds* were read off something and whose number was not. §3.1's common case. */
-function rangeCited(name: string, source: string, kind: Cite['kind'] = 'manual'): ResolvedParam {
-  return {
-    name,
-    value: 52,
-    range: { min: 0, max: 100, verified: cite(source, kind) },
-    provenance: { state: 'provisional' },
-  }
+function rangeCited(source: string, kind: Cite['kind'] = 'manual'): CitationClaims {
+  return { point: false, range: cite(source, kind) }
 }
 
 /** A value read off something, bounds and all. */
-function pointCited(name: string, source: string, kind: Cite['kind'] = 'manual'): ResolvedParam {
-  return {
-    name,
-    value: 52,
-    range: { min: 0, max: 100, verified: cite(source, kind) },
-    provenance: { state: 'authored', cite: cite(source, kind) },
-  }
+function pointCited(source: string, kind: Cite['kind'] = 'manual'): CitationClaims {
+  return { point: cite(source, kind), range: cite(source, kind) }
 }
 
 /**
  * An enum whose *option set* was read off something and whose choice was not. §3.2's other half
  * of the legality gate, and the one a `ResolvedParam` used to drop on the floor.
  */
-function optionsCited(name: string, source: string, kind: Cite['kind'] = 'manual'): ResolvedParam {
+function optionsCited(source: string, kind: Cite['kind'] = 'manual'): CitationClaims {
+  return { point: false, options: cite(source, kind) }
+}
+
+/** A whole parameter, for the two tests about which lines a block *renders* rather than cites. */
+function rangedParam(name: string, source: string): ResolvedParam {
   return {
     name,
-    value: 'analog',
-    optionsVerified: cite(source, kind),
+    value: 52,
+    range: { min: 0, max: 100, verified: cite(source) },
     provenance: { state: 'provisional' },
   }
 }
 
 /** A control #107 hoists: one setting for the whole pattern, carried by every part that uses it. */
 function hoisted(name: string, source: string): ResolvedParam {
-  return { ...rangeCited(name, source), scope: 'pattern' }
+  return { ...rangedParam(name, source), scope: 'pattern' }
 }
 
 describe('pages collapse to a span, never to a list (§3.2)', () => {
   it('prints one page as `p.N`', () => {
-    expect(citationSentence([rangeCited('A', `${MANUAL}, p.34`)])).toContain(
+    expect(citationSentence([rangeCited(`${MANUAL}, p.34`)])).toContain(
       `the ${MANUAL}, p.34`,
     )
   })
@@ -117,9 +130,9 @@ describe('pages collapse to a span, never to a list (§3.2)', () => {
    */
   it('collapses scattered pages of one document into the span between the ends', () => {
     const sentence = citationSentence([
-      rangeCited('A', `${MANUAL}, p.52`),
-      rangeCited('B', `${MANUAL}, p.27`),
-      rangeCited('C', `${MANUAL}, p.29`),
+      rangeCited(`${MANUAL}, p.52`),
+      rangeCited(`${MANUAL}, p.27`),
+      rangeCited(`${MANUAL}, p.29`),
     ])
     expect(sentence).toContain(`the ${MANUAL}, pp.27-52`)
     expect(sentence).not.toContain('pp.27, 29')
@@ -127,7 +140,7 @@ describe('pages collapse to a span, never to a list (§3.2)', () => {
   })
 
   it('reads a multi-page locator, so `pp.26, 117-118` widens the span rather than being skipped', () => {
-    expect(citationSentence([rangeCited('A', `${MANUAL}, pp.26, 117-118`)])).toContain(
+    expect(citationSentence([rangeCited(`${MANUAL}, pp.26, 117-118`)])).toContain(
       `the ${MANUAL}, pp.26-118`,
     )
   })
@@ -139,8 +152,8 @@ describe('pages collapse to a span, never to a list (§3.2)', () => {
    */
   it('groups a manual that omits the comma before its page', () => {
     const sentence = citationSentence([
-      rangeCited('A', 'MicroFreak User Manual 4.0.3 p.113'),
-      rangeCited('B', 'MicroFreak User Manual 4.0.3 p.53'),
+      rangeCited('MicroFreak User Manual 4.0.3 p.113'),
+      rangeCited('MicroFreak User Manual 4.0.3 p.53'),
     ])
     expect(sentence).toContain('the MicroFreak User Manual 4.0.3, pp.53-113')
     expect(sentence).not.toContain('p.113,')
@@ -149,7 +162,7 @@ describe('pages collapse to a span, never to a list (§3.2)', () => {
   /** A Roland citation sometimes names the section as well. The section locates part of a page. */
   it('drops the section parenthetical a page citation sometimes carries', () => {
     expect(
-      citationSentence([rangeCited('A', 'TR-1000 Reference Manual eng02, p.74 (Main specifications)')]),
+      citationSentence([rangeCited('TR-1000 Reference Manual eng02, p.74 (Main specifications)')]),
     ).toContain('the TR-1000 Reference Manual eng02, p.74')
   })
 
@@ -159,8 +172,8 @@ describe('pages collapse to a span, never to a list (§3.2)', () => {
    */
   it('gives a source with no pages no locator at all', () => {
     const sentence = citationSentence([
-      rangeCited('A', 'Deluge firmware release_1_2_1, menus/envelope/attack.md'),
-      rangeCited('B', 'Deluge firmware release_1_2_1, menus/envelope/decay.md'),
+      rangeCited('Deluge firmware release_1_2_1, menus/envelope/attack.md'),
+      rangeCited('Deluge firmware release_1_2_1, menus/envelope/decay.md'),
     ])
     expect(sentence).toContain('the Deluge firmware release_1_2_1;')
     expect(sentence).not.toContain('.md')
@@ -192,9 +205,7 @@ describe('a locator never reaches the page as though it were a title (#173)', ()
           ]
           for (const claim of claims) {
             if (claim === undefined || claim === false || claim.kind === 'observed') continue
-            const [source] = citedSources([
-              { name: 'x', value: 1, provenance: { state: 'authored', cite: claim } },
-            ])
+            const [source] = citedSources([{ point: claim }])
             const name = source?.name ?? ''
             if (/[,§]|\bpp?\.\s*\d/.test(name)) offenders.push(`${device.id}: ${name}`)
           }
@@ -210,13 +221,13 @@ describe('a locator never reaches the page as though it were a title (#173)', ()
    * contains a comma.
    */
   it('splits a citation at a comma the library never puts inside a title', () => {
-    expect(citedSources([rangeCited('A', 'OP-XY full guide v1.1.15, §18 pp.77-83, one sampler per section')])).toEqual([
+    expect(citedSources([rangeCited('OP-XY full guide v1.1.15, §18 pp.77-83, one sampler per section')])).toEqual([
       { kind: 'manual', name: 'OP-XY full guide v1.1.15', pages: [77, 83], count: 1, legality: 1 },
     ])
-    expect(citedSources([rangeCited('A', 'EP–133 K.O. II guide, /ep-133/modes 8.2.1, mirrored 2026-08-28')])).toEqual([
+    expect(citedSources([rangeCited('EP–133 K.O. II guide, /ep-133/modes 8.2.1, mirrored 2026-08-28')])).toEqual([
       { kind: 'manual', name: 'EP–133 K.O. II guide', pages: [], count: 1, legality: 1 },
     ])
-    expect(citedSources([rangeCited('A', 'Moog Minitaur Firmware v2.1 Addendum, PDF p.17 (unnumbered)')])).toEqual([
+    expect(citedSources([rangeCited('Moog Minitaur Firmware v2.1 Addendum, PDF p.17 (unnumbered)')])).toEqual([
       { kind: 'manual', name: 'Moog Minitaur Firmware v2.1 Addendum', pages: [17], count: 1, legality: 1 },
     ])
   })
@@ -226,7 +237,7 @@ describe('a locator never reaches the page as though it were a title (#173)', ()
    * head rule would leave `Muse` and throw away the firmware the sentence exists to report.
    */
   it('leaves an observation whole, because its firmware is past the comma', () => {
-    expect(citationSentence([rangeCited('A', 'Muse, firmware 1.4.0', 'observed')])).toContain(
+    expect(citationSentence([rangeCited('Muse, firmware 1.4.0', 'observed')])).toContain(
       'the instrument at firmware 1.4.0',
     )
   })
@@ -240,8 +251,8 @@ describe('the sentence names every source, and orders them by what they carry', 
    */
   it('keeps a document cited once beside the one cited forty times', () => {
     const params = [
-      ...Array.from({ length: 40 }, (_, i) => rangeCited(`A${i}`, `Big Manual, p.${10 + i}`)),
-      rangeCited('Z', 'Small Manual, p.3'),
+      ...Array.from({ length: 40 }, (_, i) => rangeCited(`Big Manual, p.${10 + i}`)),
+      rangeCited('Small Manual, p.3'),
     ]
     const sentence = citationSentence(params)
     expect(sentence).toContain('the Big Manual, pp.10-49')
@@ -251,8 +262,8 @@ describe('the sentence names every source, and orders them by what they carry', 
 
   /** A tie has no dominant document, so the order falls to code unit (§7.2) and stays fixed. */
   it('breaks a tie by code unit rather than by insertion order', () => {
-    const zFirst = citationSentence([rangeCited('A', 'Z Manual, p.1'), rangeCited('B', 'A Manual, p.1')])
-    const aFirst = citationSentence([rangeCited('A', 'A Manual, p.1'), rangeCited('B', 'Z Manual, p.1')])
+    const zFirst = citationSentence([rangeCited('Z Manual, p.1'), rangeCited('A Manual, p.1')])
+    const aFirst = citationSentence([rangeCited('A Manual, p.1'), rangeCited('Z Manual, p.1')])
     expect(zFirst).toBe(aFirst)
     expect(zFirst?.indexOf('A Manual')).toBeLessThan(zFirst?.indexOf('Z Manual') ?? -1)
   })
@@ -263,27 +274,27 @@ describe('the sentence names every source, and orders them by what they carry', 
    * they cannot look up — that this came off the box, and off which version of it.
    */
   it('names an observation as the instrument, at the firmware it was read on', () => {
-    expect(citationSentence([rangeCited('A', 'Muse, firmware 1.4.0', 'observed')])).toContain(
+    expect(citationSentence([rangeCited('Muse, firmware 1.4.0', 'observed')])).toContain(
       'the instrument at firmware 1.4.0',
     )
     // The TR-1000's observation names a screen as well, and the firmware is still what a reader
     // would check theirs against.
     expect(
-      citationSentence([rangeCited('A', 'TR-1000 unit, firmware 1.2.1, MOD TARGET screen', 'observed')]),
+      citationSentence([rangeCited('TR-1000 unit, firmware 1.2.1, MOD TARGET screen', 'observed')]),
     ).toContain('the instrument at firmware 1.2.1')
   })
 
   /** Invariant 5. A version nobody recorded is not one to invent. */
   it('stops at `the instrument` when the observation names no firmware', () => {
-    const sentence = citationSentence([rangeCited('A', 'the unit on the bench', 'observed')])
+    const sentence = citationSentence([rangeCited('the unit on the bench', 'observed')])
     expect(sentence).toContain('the instrument')
     expect(sentence).not.toContain('firmware')
   })
 
   it('says nothing at all about a box that cites nothing', () => {
-    expect(citationSentence([taste('A'), taste('B')])).toBeUndefined()
+    expect(citationSentence([taste(), taste()])).toBeUndefined()
     expect(citationSentence([])).toBeUndefined()
-    expect(citedSources([taste('A')])).toEqual([])
+    expect(citedSources([taste()])).toEqual([])
   })
 })
 
@@ -295,8 +306,8 @@ describe('the verb comes from the counts, because the obvious wording overclaims
    */
   it('draws on the documents rather than claiming their values, on a provisional majority', () => {
     const params = [
-      ...Array.from({ length: 9 }, (_, i) => rangeCited(`R${i}`, `${MANUAL}, p.10`)),
-      pointCited('P', `${MANUAL}, p.11`),
+      ...Array.from({ length: 9 }, (_, i) => rangeCited(`${MANUAL}, p.10`)),
+      pointCited(`${MANUAL}, p.11`),
     ]
     const sentence = citationSentence(params)
     expect(sentence).toBe(`This block draws on the ${MANUAL}, pp.10-11; its values are starting points.`)
@@ -315,20 +326,20 @@ describe('the verb comes from the counts, because the obvious wording overclaims
    */
   it('names neither gate, because those are the type’s words and not a reader’s', () => {
     const both = citationSentence([
-      rangeCited('A', `${MANUAL}, p.4`),
-      optionsCited('MODE', `${MANUAL}, p.4`),
+      rangeCited(`${MANUAL}, p.4`),
+      optionsCited(`${MANUAL}, p.4`),
     ])
     expect(both).toBe(`This block draws on the ${MANUAL}, p.4; its values are starting points.`)
     // The same sentence whichever gate carries it, so no reader has to learn the difference.
-    expect(citationSentence([optionsCited('MODE', `${MANUAL}, p.4`)])).toBe(both)
-    expect(citationSentence([rangeCited('A', `${MANUAL}, p.4`)])).toBe(both)
+    expect(citationSentence([optionsCited(`${MANUAL}, p.4`)])).toBe(both)
+    expect(citationSentence([rangeCited(`${MANUAL}, p.4`)])).toBe(both)
     for (const word of ['Ranges', 'Option lists', 'option set', 'legality', 'provisional']) {
       expect(both).not.toContain(word)
     }
   })
 
   it('says values, plainly, only when every point is cited', () => {
-    expect(citationSentence([pointCited('A', `${MANUAL}, p.10`), pointCited('B', `${MANUAL}, p.12`)])).toBe(
+    expect(citationSentence([pointCited(`${MANUAL}, p.10`), pointCited(`${MANUAL}, p.12`)])).toBe(
       `Values on this box come from the ${MANUAL}, pp.10-12.`,
     )
   })
@@ -336,9 +347,9 @@ describe('the verb comes from the counts, because the obvious wording overclaims
   it('says most, and names the rest, when the cited points are a majority but not all', () => {
     expect(
       citationSentence([
-        pointCited('A', `${MANUAL}, p.10`),
-        pointCited('B', `${MANUAL}, p.10`),
-        taste('C'),
+        pointCited(`${MANUAL}, p.10`),
+        pointCited(`${MANUAL}, p.10`),
+        taste(),
       ]),
     ).toBe(`Most values on this box come from the ${MANUAL}, p.10; the others are starting points.`)
   })
@@ -349,12 +360,12 @@ describe('the verb comes from the counts, because the obvious wording overclaims
    * a fifty-fifty box falls back to what its bounds say.
    */
   it('refuses `most` at exactly half, which is a real state and not a hypothetical', () => {
-    const half = citationSentence([pointCited('A', `${MANUAL}, p.10`), taste('B')])
+    const half = citationSentence([pointCited(`${MANUAL}, p.10`), taste()])
     expect(half).not.toContain('Most values')
     expect(half).toBe(`This block draws on the ${MANUAL}, p.10; its values are starting points.`)
     // One over half is `most`, so the boundary is where it is claimed to be and not lower.
     expect(
-      citationSentence([pointCited('A', `${MANUAL}, p.10`), pointCited('B', `${MANUAL}, p.10`), taste('C')]),
+      citationSentence([pointCited(`${MANUAL}, p.10`), pointCited(`${MANUAL}, p.10`), taste()]),
     ).toContain('Most values')
   })
 
@@ -364,11 +375,7 @@ describe('the verb comes from the counts, because the obvious wording overclaims
    * narrows to the values that were actually checked and says the rest are not.
    */
   it('speaks only for the checked values when no gate carries a citation', () => {
-    const params: ResolvedParam[] = [
-      { name: 'A', value: 52, provenance: { state: 'authored', cite: cite(`${MANUAL}, p.10`) } },
-      taste('B'),
-      taste('C'),
-    ]
+    const params: CitationClaims[] = [{ point: cite(`${MANUAL}, p.10`) }, taste(), taste()]
     expect(citationSentence(params)).toBe(
       `Checked values on this box draw on the ${MANUAL}, p.10; the others are starting points.`,
     )
@@ -378,15 +385,11 @@ describe('the verb comes from the counts, because the obvious wording overclaims
   /** One sentence, whatever the branch. A second would be the old surface growing back. */
   it('emits exactly one sentence in every branch', () => {
     const branches = [
-      [pointCited('A', `${MANUAL}, p.1`)],
-      [pointCited('A', `${MANUAL}, p.1`), pointCited('B', `${MANUAL}, p.2`), taste('C')],
-      [rangeCited('A', `${MANUAL}, p.1`), taste('B'), taste('C')],
-      [
-        { name: 'A', value: 52, provenance: { state: 'authored', cite: cite(`${MANUAL}, p.1`) } },
-        taste('B'),
-        taste('C'),
-      ],
-    ] as ResolvedParam[][]
+      [pointCited(`${MANUAL}, p.1`)],
+      [pointCited(`${MANUAL}, p.1`), pointCited(`${MANUAL}, p.2`), taste()],
+      [rangeCited(`${MANUAL}, p.1`), taste(), taste()],
+      [{ point: cite(`${MANUAL}, p.1`) }, taste(), taste()],
+    ] as CitationClaims[][]
     for (const sentence of [...branches.map(citationSentence), MUSE_SENTENCE, TR_6S_SENTENCE]) {
       expect(sentence?.endsWith('.')).toBe(true)
       expect(fullStops(sentence ?? '')).toBe(1)
@@ -418,7 +421,7 @@ describe('the sentence counts what is rendered, not what is assigned (§8/#107)'
     const assigned = muse.assignments.flatMap((a) => a.params).length
     const shown = rendered(muse, 'moog-muse').length
     expect(assigned).toBeGreaterThan(shown)
-    expect(citedShare(rendered(muse, 'moog-muse')).total).toBe(shown)
+    expect(citedShare(resolvedClaims(rendered(muse, 'moog-muse'))).total).toBe(shown)
     // Every hoisted name appears exactly once in the rendered set, however many parts carry it.
     const names = rendered(muse, 'moog-muse').map((param) => param.name)
     expect(names.filter((name) => name === 'MULTI MODE')).toHaveLength(1)
@@ -427,11 +430,13 @@ describe('the sentence counts what is rendered, not what is assigned (§8/#107)'
   it('reduces two parts sharing one pattern-wide control to one line', () => {
     const shared = hoisted('SWING', `${MANUAL}, p.9`)
     const perPart = [
-      [shared, rangeCited('A', `${MANUAL}, p.10`)],
-      [shared, rangeCited('B', `${MANUAL}, p.11`)],
+      [shared, rangedParam('A', `${MANUAL}, p.10`)],
+      [shared, rangedParam('B', `${MANUAL}, p.11`)],
     ]
-    const shown = renderedParams(hoistedParams(perPart), perPart)
-    expect(shown.map((param) => param.name)).toEqual(['SWING', 'A', 'B'])
+    const shown = resolvedClaims(renderedParams(hoistedParams(perPart), perPart))
+    expect(renderedParams(hoistedParams(perPart), perPart).map((p) => p.name)).toEqual([
+      'SWING', 'A', 'B',
+    ])
     expect(citedShare(shown)).toEqual({ total: 3, points: 0, ranges: 3, options: 0 })
     // Counted twice, `SWING` would make p.9 the most-cited page on the box and widen nothing else.
     expect(citedSources(shown)[0]!.count).toBe(3)
@@ -446,15 +451,15 @@ describe("an enum's option set is evidence, and reaches the sentence (§3.2)", (
    */
   it('names a document only an option set cites', () => {
     const sentence = citationSentence([
-      rangeCited('A', `${MANUAL}, p.10`),
-      optionsCited('MODE', 'Firmware Addendum, p.4'),
+      rangeCited(`${MANUAL}, p.10`),
+      optionsCited('Firmware Addendum, p.4'),
     ])
     expect(sentence).toContain(`the ${MANUAL}, p.10`)
     expect(sentence).toContain('the Firmware Addendum, p.4')
   })
 
   it('counts it as a legality claim rather than as an authority one', () => {
-    const params = [optionsCited('MODE', `${MANUAL}, p.4`), taste('B')]
+    const params = [optionsCited(`${MANUAL}, p.4`), taste()]
     expect(citedShare(params)).toEqual({ total: 2, points: 0, ranges: 0, options: 1 })
   })
 
@@ -464,19 +469,17 @@ describe("an enum's option set is evidence, and reaches the sentence (§3.2)", (
    * claim a check nobody made.
    */
   it('takes the legality branch on an option set alone', () => {
-    expect(citationSentence([optionsCited('MODE', `${MANUAL}, p.4`), taste('B')])).toBe(
+    expect(citationSentence([optionsCited(`${MANUAL}, p.4`), taste()])).toBe(
       `This block draws on the ${MANUAL}, p.4; its values are starting points.`,
     )
-    expect(citationSentence([optionsCited('MODE', `${MANUAL}, p.4`), taste('B')])).not.toContain(
+    expect(citationSentence([optionsCited(`${MANUAL}, p.4`), taste()])).not.toContain(
       'Checked values',
     )
   })
 
   /** An uncited option set is `false`, and `false` is not a source. */
   it('ignores an option set nobody checked', () => {
-    const params: ResolvedParam[] = [
-      { name: 'MODE', value: 'analog', optionsVerified: false, provenance: { state: 'provisional' } },
-    ]
+    const params: CitationClaims[] = [{ point: false, options: false }]
     expect(citedSources(params)).toEqual([])
     expect(citedShare(params).options).toBe(0)
   })
@@ -486,9 +489,9 @@ describe('dominantRangeCite reads both legality gates, and leads the sentence (�
   it('finds the citation a set of ranges repeats', () => {
     expect(
       dominantRangeCite([
-        rangeCited('A', `${MANUAL}, p.10`),
-        rangeCited('B', `${MANUAL}, p.10`),
-        rangeCited('C', `${MANUAL}, p.11`),
+        rangeCited(`${MANUAL}, p.10`),
+        rangeCited(`${MANUAL}, p.10`),
+        rangeCited(`${MANUAL}, p.11`),
       ]),
     ).toEqual(cite(`${MANUAL}, p.10`))
   })
@@ -501,9 +504,9 @@ describe('dominantRangeCite reads both legality gates, and leads the sentence (�
   it('finds one an option set repeats, which it could not see before', () => {
     expect(
       dominantRangeCite([
-        optionsCited('MODE', `${MANUAL}, p.4`),
-        optionsCited('SHAPE', `${MANUAL}, p.4`),
-        taste('C'),
+        optionsCited(`${MANUAL}, p.4`),
+        optionsCited(`${MANUAL}, p.4`),
+        taste(),
       ]),
     ).toEqual(cite(`${MANUAL}, p.4`))
   })
@@ -511,20 +514,20 @@ describe('dominantRangeCite reads both legality gates, and leads the sentence (�
   it('yields nothing on a tie, and nothing where nothing repeats', () => {
     expect(
       dominantRangeCite([
-        rangeCited('A', `${MANUAL}, p.10`),
-        rangeCited('B', `${MANUAL}, p.10`),
-        rangeCited('C', `${MANUAL}, p.11`),
-        rangeCited('D', `${MANUAL}, p.11`),
+        rangeCited(`${MANUAL}, p.10`),
+        rangeCited(`${MANUAL}, p.10`),
+        rangeCited(`${MANUAL}, p.11`),
+        rangeCited(`${MANUAL}, p.11`),
       ]),
     ).toBeUndefined()
-    expect(dominantRangeCite([rangeCited('A', `${MANUAL}, p.10`)])).toBeUndefined()
+    expect(dominantRangeCite([rangeCited(`${MANUAL}, p.10`)])).toBeUndefined()
   })
 
   /** A value citation is a claim about one number and does not generalise to the line beside it. */
   it('never considers a point citation, however often it repeats', () => {
-    const points: ResolvedParam[] = [
-      { name: 'A', value: 1, provenance: { state: 'authored', cite: cite(`${MANUAL}, p.10`) } },
-      { name: 'B', value: 2, provenance: { state: 'authored', cite: cite(`${MANUAL}, p.10`) } },
+    const points: CitationClaims[] = [
+      { point: cite(`${MANUAL}, p.10`) },
+      { point: cite(`${MANUAL}, p.10`) },
     ]
     expect(dominantRangeCite(points)).toBeUndefined()
   })
@@ -536,11 +539,11 @@ describe('dominantRangeCite reads both legality gates, and leads the sentence (�
    */
   it('leads with the document carrying the citation the bounds repeat', () => {
     const params = [
-      rangeCited('A', 'Repeated Manual, p.34'),
-      rangeCited('B', 'Repeated Manual, p.34'),
-      rangeCited('C', 'Scattered Manual, p.1'),
-      rangeCited('D', 'Scattered Manual, p.2'),
-      rangeCited('E', 'Scattered Manual, p.3'),
+      rangeCited('Repeated Manual, p.34'),
+      rangeCited('Repeated Manual, p.34'),
+      rangeCited('Scattered Manual, p.1'),
+      rangeCited('Scattered Manual, p.2'),
+      rangeCited('Scattered Manual, p.3'),
     ]
     expect(dominantRangeCite(params)).toEqual(cite('Repeated Manual, p.34'))
     const sources = citedSources(params)
@@ -555,14 +558,10 @@ describe('dominantRangeCite reads both legality gates, and leads the sentence (�
    * four times and every one of them is a point, so it is not where the bounds came from.
    */
   it('orders by legality claims rather than by how often a document is named at all', () => {
-    const params: ResolvedParam[] = [
-      rangeCited('A', 'Bounds Manual, p.10'),
-      rangeCited('B', 'Bounds Manual, p.11'),
-      ...(Array.from({ length: 4 }, (_, i) => ({
-        name: `P${i}`,
-        value: 1,
-        provenance: { state: 'authored', cite: cite('Point Manual, p.2') },
-      })) as ResolvedParam[]),
+    const params: CitationClaims[] = [
+      rangeCited('Bounds Manual, p.10'),
+      rangeCited('Bounds Manual, p.11'),
+      ...Array.from({ length: 4 }, (): CitationClaims => ({ point: cite('Point Manual, p.2') })),
     ]
     // No repeated claim, so the page-grain rule stays silent and the document grain decides.
     expect(dominantRangeCite(params)).toBeUndefined()
@@ -581,10 +580,10 @@ describe('dominantRangeCite reads both legality gates, and leads the sentence (�
     // Two of each, so neither dominates — which is only true because the kinds do not collapse.
     expect(
       dominantRangeCite([
-        rangeCited('A', 'X, p.1'),
-        rangeCited('B', 'X, p.1'),
-        rangeCited('C', 'X, p.1', 'observed'),
-        rangeCited('D', 'X, p.1', 'observed'),
+        rangeCited('X, p.1'),
+        rangeCited('X, p.1'),
+        rangeCited('X, p.1', 'observed'),
+        rangeCited('X, p.1', 'observed'),
       ]),
     ).toBeUndefined()
   })
@@ -614,9 +613,9 @@ const TR_6S_SENTENCE =
   'This block draws on the TR-6S Parameter Guide eng02, pp.7-10 and the ' +
   "TR-6S Owner's Manual eng02, p.17; its values are starting points."
 
-/** The Muse's rendered block, which is what its sentence is about. */
-function museRendered(): readonly ResolvedParam[] {
-  return rendered(MUSE, 'moog-muse')
+/** The Muse's rendered block, as the claims its sentence is about. */
+function museRendered(): readonly CitationClaims[] {
+  return resolvedClaims(rendered(MUSE, 'moog-muse'))
 }
 
 /**
@@ -666,7 +665,7 @@ describe('the Muse rests on a manual and on one person’s unit, and says both',
     // p.101 survives the drop because #460's routed depth is a numeric with a cited range, which
     // is the half of the box this gate was never about.
     const withoutEnums = citedSources(
-      museRendered().map(({ optionsVerified: _dropped, ...rest }) => rest),
+      museRendered().map(({ options: _dropped, ...rest }) => rest),
     ).find((source) => source.kind === 'manual')
     expect(withoutEnums?.pages).toEqual([27, 52, 101])
   })
@@ -742,4 +741,59 @@ describe('nothing else came back with it (§8.1)', () => {
       expect(sentences).toHaveLength(carrying.size)
     })
   }
+})
+
+describe('the two ways into the machinery answer alike (§3.2/#478)', () => {
+  /**
+   * **The refactor's whole claim, held against the real library.** `citedSources` and
+   * `citedShare` used to read a `ResolvedParam`, so a surface holding authored params and no
+   * song — #478's kit session — had to run them through the resolver, carrying a mood it does
+   * not have, purely to render one sentence. `authoredClaims` projects the same three claims off
+   * the authored params directly, applying §3.1's recipe-level inheritance.
+   *
+   * If the two disagreed anywhere, the kit session's citation would be a second answer to a
+   * question the guide already answers. They are compared at rest — a centred mood moves no
+   * value and therefore no provenance — on every recipe in the library.
+   *
+   * Recipes with a `valueFrom` parameter are skipped rather than allocated: `resolveParams`
+   * refuses one without an allocation (§7 step 9), and what is being compared here is
+   * citations, which no allocation touches.
+   */
+  it('projects the same claims from authored params as from resolved ones', () => {
+    let compared = 0
+    for (const device of DEVICES) {
+      for (const recipe of device.recipes) {
+        if (recipe.params.some((param) => 'valueFrom' in param && param.valueFrom !== undefined)) {
+          continue
+        }
+        expect(
+          authoredClaims(recipe.params, recipe.verified),
+          `${device.id}: ${recipe.id}`,
+        ).toEqual(resolvedClaims(resolveParams(recipe, NEUTRAL_MOOD)))
+        compared += recipe.params.length
+      }
+    }
+    // A guard against the loop silently comparing nothing.
+    expect(compared).toBeGreaterThan(10000)
+  })
+
+  it('inherits the recipe citation, and lets a parameter override it either way (§3.1)', () => {
+    const manual = cite(`${MANUAL}, p.1`)
+    const own = cite(`${MANUAL}, p.2`)
+    const params: AuthoredParam[] = [
+      { kind: 'enum', name: 'A', value: 'x', options: { values: ['x', 'y'] } },
+      { kind: 'enum', name: 'B', value: 'x', options: { values: ['x', 'y'] }, verified: own },
+      { kind: 'enum', name: 'C', value: 'x', options: { values: ['x', 'y'] }, verified: false },
+    ]
+    expect(authoredClaims(params, manual)).toEqual([
+      // Silence inherits.
+      { point: manual, options: manual },
+      // A citation of its own wins.
+      { point: own, options: manual },
+      // And so does an explicit `false`: more specific always wins, in both directions.
+      { point: false, options: manual },
+    ])
+    // A recipe carrying no citation inherits nothing, which is `false` and not `undefined`.
+    expect(authoredClaims(params, undefined)[0]).toEqual({ point: false, options: false })
+  })
 })
