@@ -142,14 +142,37 @@ describe('what the kit session prints', () => {
     }
   })
 
-  it('makes MANUAL GATE sufficient on every Cascadia sound', () => {
+  it('makes MANUAL GATE sufficient on every Cascadia sound, and says so once', () => {
     // The reader this page is for has nothing plugged into the box. p.54's button is what plays
-    // these patches, so every slot's routing has to offer it — and `test/cascadia.test.ts` holds
-    // the same recipes to leaving both envelopes under that button, which is what makes the
-    // offer true rather than merely printed.
+    // these patches, and `test/cascadia.test.ts` holds the same recipes to leaving both envelopes
+    // under it, which is what makes the offer true rather than merely printed.
+    //
+    // #496: it is one fact about the box, so it is printed once, in the header, above the eight
+    // sounds it is true of. It used to be printed on every one of them — 194 characters, eight
+    // times, two thirds of this document's routing prose — and every test asserted it was
+    // *present*, which is exactly what a repetition passes.
     const routing = LINES.filter((line) => line.startsWith('Routing — '))
-    expect(routing.length).toBe(8)
-    for (const line of routing) expect(line).toContain('MANUAL GATE')
+    expect(routing.length).toBe(9)
+    expect(routing[0]).toContain('MANUAL GATE')
+    // The header sentence, and then eight lines that say only what makes each sound different.
+    for (const line of routing.slice(1)) expect(line).not.toContain('MANUAL GATE')
+    // Once as a routing line. The button is named a second time in a parameter note, where it is
+    // how to load an alternate noise source — a different fact, on the sound that needs it.
+    expect(LINES.filter((line) => line.includes('MANUAL GATE')).length).toBe(2)
+  })
+
+  it('gives each sound its authored half and nothing more', () => {
+    // #496 on the fixture: one header sentence, then one line per sound that is *exactly* what
+    // the device folder authored for that sound. Not a bound on how alike two of them may be —
+    // that would be an authoring policy nobody decided (`test/routing-preamble.test.ts` says
+    // why, and holds the same claim on all six migrated boxes).
+    const session = kitSession(byId('intellijel-cascadia'))
+    const slots = session?.slots ?? []
+    const lines = LINES.filter((line) => line.startsWith('Routing — ')).map((line) =>
+      line.slice('Routing — '.length),
+    )
+    expect(lines[0]).toBe(`${session?.routingPreamble ?? ''}.`)
+    expect(lines.slice(1)).toEqual(slots.map((slot) => slot.recipe.routing))
   })
 
   it('prints the routing, the cables and the settings of each recipe, in build order', () => {

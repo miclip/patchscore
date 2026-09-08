@@ -927,11 +927,25 @@ function glide(value: number): AuthoredParam[] {
 // ---------------------------------------------------------------------------
 
 /**
- * How this box is driven, said once per recipe. Two output bundles mean it drives other gear as
+ * How this box is driven, carried by every recipe — a guide prints it once per part, the kit page
+ * once for the page (§3.7/#496). Two output bundles mean it drives other gear as
  * readily as it plays itself, which is p.9's own description of it.
  */
 const PLAYED =
   'Played from its own 49-note keyboard, from the arpeggiator or the 256-step sequencer, or over MIDI IN'
+
+/**
+ * §3.7/#496. **The two halves of a routing line**: `PLAYED` is the box, `detail` is the sound.
+ *
+ * `routingJoin` is `'clause'` because every line here continues that sentence with a comma rather
+ * than starting a new one — *…or over MIDI IN, VOICE MODE 1 so all four oscillators sound one
+ * note*. `recipeRouting` puts the comma back, so a guide sees exactly the sentence that was here
+ * before. The kit page hoists the shared half into its own header and prints `detail` alone under
+ * each sound, instead of opening every slot with the same paragraph.
+ */
+function played(detail: string): Pick<Recipe, 'routingPreamble' | 'routingJoin' | 'routing'> {
+  return { routingPreamble: PLAYED, routingJoin: 'clause', routing: detail }
+}
 
 /**
  * `verified: false` on every recipe, explicitly rather than by omission. §3.1 makes the recipe
@@ -948,7 +962,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Kick with the filter envelope cabled onto Oscillator 1’s pitch',
-    routing: `${PLAYED}, VOICE MODE 1 so all four oscillators sound one note. One cable: FILTER ENV OUT to OSCILLATORS 1 PITCH IN — the envelope reaches the filters from the panel and everything else only through that jack (p.27)`,
+    ...played(`VOICE MODE 1 so all four oscillators sound one note. One cable: FILTER ENV OUT to OSCILLATORS 1 PITCH IN — the envelope reaches the filters from the panel and everything else only through that jack (p.27)`),
     params: [
       ...voiceMode('1'),
       ...osc(1, { octave: "16'", wave: 'TRIANGLE' }),
@@ -975,7 +989,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Sub from all four triangles stacked on one key',
-    routing: `${PLAYED}, VOICE MODE 1. No cable — the mixer, both filters and both amplifiers are normalled`,
+    ...played(`VOICE MODE 1. No cable — the mixer, both filters and both amplifiers are normalled`),
     params: [
       ...voiceMode('1'),
       ...osc(1, { octave: "16'", wave: 'TRIANGLE' }),
@@ -998,7 +1012,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Four saws spread across seven semitones into an overdriven mixer',
-    routing: `${PLAYED}, VOICE MODE 1 — this is the sound the mono mode exists for. No cable`,
+    ...played(`VOICE MODE 1 — this is the sound the mono mode exists for. No cable`),
     params: [
       ...voiceMode('1'),
       ...osc(1, { octave: "16'", wave: 'SAWTOOTH' }),
@@ -1021,7 +1035,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Acid line: one saw, resonance near self-oscillation, cutoff tracking the keyboard',
-    routing: `${PLAYED}, VOICE MODE 1. No cable — ENVELOPE AMT reaches the cutoff from the panel. **Accent:** there is none on this box. p.46 names three lanes — "Notes, Rests, Ties, and Ratchets" — and an accent is not among them. A ratchet repeats the step rather than emphasising it, so the accented steps this direction asks for are left unplayed here rather than approximated`,
+    ...played(`VOICE MODE 1. No cable — ENVELOPE AMT reaches the cutoff from the panel. **Accent:** there is none on this box. p.46 names three lanes — "Notes, Rests, Ties, and Ratchets" — and an accent is not among them. A ratchet repeats the step rather than emphasising it, so the accented steps this direction asks for are left unplayed here rather than approximated`),
     params: [
       ...voiceMode('1'),
       ...osc(1, { octave: "8'", wave: 'SAWTOOTH' }),
@@ -1051,7 +1065,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Snare: noise over two short mid tones, both filters open',
-    routing: `${PLAYED}, VOICE MODE 1. No cable — noise is one of the five normalled mixer channels`,
+    ...played(`VOICE MODE 1. No cable — noise is one of the five normalled mixer channels`),
     params: [
       ...voiceMode('1'),
       ...osc(1, { octave: "8'", wave: 'TRIANGLE' }),
@@ -1074,7 +1088,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Three oscillators hard-sync’d down the chain, FREQUENCY as timbre',
-    routing: `${PLAYED}, VOICE MODE 1. No cable. p.15's sync chain is 2 to 1, 3 to 2 and 4 to 3, and SYNC ENABLE has to be lit for any of them`,
+    ...played(`VOICE MODE 1. No cable. p.15's sync chain is 2 to 1, 3 to 2 and 4 to 3, and SYNC ENABLE has to be lit for any of them`),
     params: [
       ...voiceMode('1'),
       ...syncEnable(true),
@@ -1096,7 +1110,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Linear FM: Oscillator 1 into Oscillator 2’s LIN FM input',
-    routing: `${PLAYED}, VOICE MODE 1. One cable: OSCILLATORS 1 WAVE OUT to OSCILLATORS 2 LIN FM IN. Oscillator 1's mixer level is down because it is the modulator, not a voice`,
+    ...played(`VOICE MODE 1. One cable: OSCILLATORS 1 WAVE OUT to OSCILLATORS 2 LIN FM IN. Oscillator 1's mixer level is down because it is the modulator, not a voice`),
     params: [
       ...voiceMode('1'),
       ...osc(1, { octave: "8'", wave: 'TRIANGLE' }),
@@ -1127,7 +1141,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Tom: two triangles, envelope onto pitch, a little noise for the skin',
-    routing: `${PLAYED}, VOICE MODE 1. One cable: FILTER ENV OUT to OSCILLATORS 1 PITCH IN, shorter and shallower than the kick’s`,
+    ...played(`VOICE MODE 1. One cable: FILTER ENV OUT to OSCILLATORS 1 PITCH IN, shorter and shallower than the kick’s`),
     params: [
       ...voiceMode('1'),
       ...osc(1, { octave: "16'", wave: 'TRIANGLE' }),
@@ -1150,7 +1164,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Noise alone, through both filters in series',
-    routing: `${PLAYED}, VOICE MODE 1. No cable — SERIES puts the high pass in front of the low pass on the panel (p.20)`,
+    ...played(`VOICE MODE 1. No cable — SERIES puts the high pass in front of the low pass on the panel (p.20)`),
     params: [
       ...voiceMode('1'),
       ...osc(1, { octave: "8'", wave: 'SAWTOOTH' }),
@@ -1169,7 +1183,7 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     title: 'Sample and hold stepping filter 2 alone, into the stereo delay',
-    routing: `${PLAYED}, VOICE MODE 1. One cable: S / H OUT to CUTOFF 2 IN. p.38 is explicit that nothing routes the sample-and-hold internally, and CUTOFF 2 IN reaches only the second filter, so filter 1 stays still while filter 2 steps`,
+    ...played(`VOICE MODE 1. One cable: S / H OUT to CUTOFF 2 IN. p.38 is explicit that nothing routes the sample-and-hold internally, and CUTOFF 2 IN reaches only the second filter, so filter 1 stays still while filter 2 steps`),
     params: [
       ...voiceMode('1'),
       ...osc(1, { octave: "16'", wave: 'TRIANGLE' }),
@@ -1200,7 +1214,7 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     title: 'Four-note pad: one oscillator per key, all four detunes at zero',
-    routing: `${PLAYED}, **VOICE MODE 4** — each key plays one oscillator (p.51), so this is a real four-note chord rather than a stack. Every FREQUENCY sits at zero because a detune here would put a chord note out of tune. No cable`,
+    ...played(`**VOICE MODE 4** — each key plays one oscillator (p.51), so this is a real four-note chord rather than a stack. Every FREQUENCY sits at zero because a detune here would put a chord note out of tune. No cable`),
     params: [
       ...voiceMode('4'),
       ...osc(1, { octave: "8'", wave: 'TRIANGLE' }),
@@ -1224,7 +1238,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Four-note pad an octave down, saws, cutoff low and still',
-    routing: `${PLAYED}, **VOICE MODE 4**. No cable`,
+    ...played(`**VOICE MODE 4**. No cable`),
     params: [
       ...voiceMode('4'),
       ...osc(1, { octave: "16'", wave: 'SAWTOOTH' }),
@@ -1247,7 +1261,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Chord stab, four notes, everything short',
-    routing: `${PLAYED}, **VOICE MODE 4**. No cable. MULTI TRIG matters here — with it lit the envelopes retrigger on every new key (p.51)`,
+    ...played(`**VOICE MODE 4**. No cable. MULTI TRIG matters here — with it lit the envelopes retrigger on every new key (p.51)`),
     params: [
       ...voiceMode('4'),
       ...osc(1, { octave: "8'", wave: 'SQUARE' }),
@@ -1270,7 +1284,7 @@ const RECIPES: Recipe[] = [
     character: 'clean',
     voice: 'voice',
     title: 'Clean chord stab, triangles, no delay',
-    routing: `${PLAYED}, **VOICE MODE 4**. No cable`,
+    ...played(`**VOICE MODE 4**. No cable`),
     params: [
       ...voiceMode('4'),
       ...osc(1, { octave: "8'", wave: 'TRIANGLE' }),
@@ -1292,7 +1306,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Lead: narrow pulse over a saw, glide on, vibrato on the mod slider',
-    routing: `${PLAYED}, VOICE MODE 1. No cable — PITCH MOD ASSIGN at ALL reaches every oscillator from the panel`,
+    ...played(`VOICE MODE 1. No cable — PITCH MOD ASSIGN at ALL reaches every oscillator from the panel`),
     params: [
       ...voiceMode('1'),
       ...osc(1, { octave: "8'", wave: 'NARROW PULSE' }),
@@ -1314,7 +1328,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Arpeggio over two octaves, in the order the notes were held',
-    routing: `${PLAYED}, VOICE MODE 1 with MODE on ARP. Hold the notes and press PLAY; HOLD keeps the pattern running once your hand is off (p.49)`,
+    ...played(`VOICE MODE 1 with MODE on ARP. Hold the notes and press PLAY; HOLD keeps the pattern running once your hand is off (p.49)`),
     params: [
       ...voiceMode('1'),
       ...arp('ORD', '2'),
@@ -1337,7 +1351,7 @@ const RECIPES: Recipe[] = [
     character: 'clean',
     voice: 'voice',
     title: 'Arpeggio, one octave, forward and back, triangles only',
-    routing: `${PLAYED}, VOICE MODE 1 with MODE on ARP and DIRECTION on FW / BW`,
+    ...played(`VOICE MODE 1 with MODE on ARP and DIRECTION on FW / BW`),
     params: [
       ...voiceMode('1'),
       ...arp('FW / BW', '1'),
@@ -1360,7 +1374,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Riser: the modulation oscillator on every oscillator’s pitch, under your hand',
-    routing: `${PLAYED}, VOICE MODE 1. No cable — PITCH MOD ASSIGN at ALL is the panel route. Raise MOD as the section builds; p.36 is explicit that the AMT knobs do nothing until it is off its minimum`,
+    ...played(`VOICE MODE 1. No cable — PITCH MOD ASSIGN at ALL is the panel route. Raise MOD as the section builds; p.36 is explicit that the AMT knobs do nothing until it is off its minimum`),
     params: [
       ...voiceMode('1'),
       ...osc(1, { octave: "8'", wave: 'SAWTOOTH' }),
@@ -1383,7 +1397,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Impact: everything at once into a long ping-pong delay',
-    routing: `${PLAYED}, VOICE MODE 1. No cable. The delay is what makes it an impact rather than a hit`,
+    ...played(`VOICE MODE 1. No cable. The delay is what makes it an impact rather than a hit`),
     params: [
       ...voiceMode('1'),
       ...osc(1, { octave: "16'", wave: 'SAWTOOTH' }),
@@ -1406,7 +1420,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Sweep: both filters in series, SPACING closing the gap between them',
-    routing: `${PLAYED}, VOICE MODE 1. One cable: the second LFO's triangle into CUTOFF 1 IN, which moves the high pass alone — the panel has no internal route for this LFO at all (p.42)`,
+    ...played(`VOICE MODE 1. One cable: the second LFO's triangle into CUTOFF 1 IN, which moves the high pass alone — the panel has no internal route for this LFO at all (p.42)`),
     params: [
       ...voiceMode('1'),
       ...osc(1, { octave: "16'", wave: 'SAWTOOTH' }),

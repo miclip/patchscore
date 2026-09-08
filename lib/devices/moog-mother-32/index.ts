@@ -716,11 +716,24 @@ function glide(value: number): AuthoredParam {
 // ---------------------------------------------------------------------------
 
 /**
- * How this box is driven, said once per recipe. Unlike the Cascadia it has a sequencer of its
+ * How this box is driven, carried by every recipe — a guide prints it once per part, the kit page
+ * once for the page (§3.7/#496). Unlike the Cascadia it has a sequencer of its
  * own, so the sentence is about the choice rather than about the absence.
  */
 const PLAYED =
   'Played from its own 32-step sequencer, from MIDI IN, or from pitch and gate at VCO 1V/OCT and GATE'
+
+/**
+ * §3.7/#496. **The two halves of a routing line**: `PLAYED` is the box, `detail` is the sound.
+ *
+ * A guide sees no difference — `recipeRouting` composes them back into the one sentence that was
+ * here before, so no rendered byte moves. The kit page is what the split is for: it hoists the
+ * shared half into its own header and prints `detail` alone under each sound, instead of opening
+ * every slot with the same paragraph.
+ */
+function played(detail: string): Pick<Recipe, 'routingPreamble' | 'routing'> {
+  return { routingPreamble: PLAYED, routing: detail }
+}
 
 /**
  * `verified: false` on every recipe, explicitly rather than by omission. §3.1 makes the recipe
@@ -736,7 +749,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Kick from the normalled envelope: no cables, the pitch drop is two switches',
-    routing: `${PLAYED}. No patch cable: the EG is already normalled to the up position of VCO MOD SOURCE (p.49), so VCO MOD DEST at FREQUENCY is the whole pitch drop`,
+    ...played(`No patch cable: the EG is already normalled to the up position of VCO MOD SOURCE (p.49), so VCO MOD DEST at FREQUENCY is the whole pitch drop`),
     params: [
       ...voice({
         freq: 0,
@@ -763,7 +776,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Kick with the pulse folded back in beside the saw',
-    routing: `${PLAYED}. p.11's TIP: with VCO WAVE on SAW and the pulse in EXT. AUDIO, MIX blends the two waveforms instead of blending in noise`,
+    ...played(`p.11's TIP: with VCO WAVE on SAW and the pulse in EXT. AUDIO, MIX blends the two waveforms instead of blending in noise`),
     params: [
       ...voice({
         freq: 0,
@@ -799,7 +812,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Sub an octave down with the ladder shut over it',
-    routing: `${PLAYED}. No patch cable: the normalled signal path is already VCO into the mixer into the filter into the VCA, and this part is that path with the filter closed`,
+    ...played(`No patch cable: the normalled signal path is already VCO into the mixer into the filter into the VCA, and this part is that path with the filter closed`),
     params: [
       ...voice({
         freq: -10,
@@ -824,7 +837,7 @@ const RECIPES: Recipe[] = [
     character: 'clean',
     voice: 'voice',
     title: 'Sine sub from the filter self-oscillating, tracked by the keyboard',
-    routing: `${PLAYED}. p.14's TIP in full: LOW PASS with RESONANCE and MIX at maximum turns the ladder into a sine source. The TIP also asks for a dead patch cable in EXT. AUDIO — a cable with one end, which cannot be a patch entry, so it is stated here`,
+    ...played(`p.14's TIP in full: LOW PASS with RESONANCE and MIX at maximum turns the ladder into a sine source. The TIP also asks for a dead patch cable in EXT. AUDIO — a cable with one end, which cannot be a patch entry, so it is stated here`),
     params: [
       // No FREQUENCY, VCO WAVE or PULSE WIDTH: the oscillator is not the source of this part, and
       // a rendered oscillator setting would be a value with no subject.
@@ -852,7 +865,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Mid bass with the pulse width moving and the LFO tracking the notes',
-    routing: `${PLAYED}. p.13's TIP: the keyboard CV at LFO RATE makes the width modulation speed up as the line climbs`,
+    ...played(`p.13's TIP: the keyboard CV at LFO RATE makes the width modulation speed up as the line climbs`),
     params: [
       ...voice({
         freq: 0,
@@ -891,7 +904,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Resonant line with accented steps opening the filter',
-    routing: `${PLAYED}. ASSIGN is set to Accent, so only the steps marked with RESET / ACCENT push the cutoff`,
+    ...played(`ASSIGN is set to Accent, so only the steps marked with RESET / ACCENT push the cutoff`),
     params: [
       ...voice({
         freq: 0,
@@ -947,7 +960,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Hi-pass line with MIX turned into the resonance control',
-    routing: `${PLAYED}. p.14's TIP: the hi-pass ladder is non-resonant, so the filter's own output goes back into EXT. AUDIO and MIX becomes the resonance — which is why RESONANCE itself stays fully counterclockwise`,
+    ...played(`p.14's TIP: the hi-pass ladder is non-resonant, so the filter's own output goes back into EXT. AUDIO and MIX becomes the resonance — which is why RESONANCE itself stays fully counterclockwise`),
     params: [
       ...voice({
         freq: 0,
@@ -991,7 +1004,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Open lead with vibrato taken through linear FM',
-    routing: `${PLAYED}. The LFO reaches the pitch through VCO LIN FM rather than through VCO MOD, which leaves the VCO MOD path on the envelope`,
+    ...played(`The LFO reaches the pitch through VCO LIN FM rather than through VCO MOD, which leaves the VCO MOD path on the envelope`),
     params: [
       ...voice({
         freq: 0,
@@ -1040,7 +1053,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Short stab with the filter tracking the note it lands on',
-    routing: `${PLAYED}. One note: this box is monophonic (p.70), so a stab here is a single-note stab and a request for a triad reports the shortfall`,
+    ...played(`One note: this box is monophonic (p.70), so a stab here is a single-note stab and a request for a triad reports the shortfall`),
     params: [
       ...voice({
         freq: 0,
@@ -1072,7 +1085,7 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     title: 'Slow pad with the width and the cutoff drifting apart',
-    routing: `${PLAYED}. One note (p.70). The pad is declared so that a three-note request reports the shortfall rather than "nothing in your rig plays this"`,
+    ...played(`One note (p.70). The pad is declared so that a three-note request reports the shortfall rather than "nothing in your rig plays this"`),
     params: [
       ...voice({
         freq: 0,
@@ -1109,7 +1122,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'Noise snare with the oscillator roughened underneath it',
-    routing: `${PLAYED}. MIX sits toward the noise end with enough oscillator left to hear the FM. The role exists on this box because Moog printed a METAL SNARE patch for it (p.64)`,
+    ...played(`MIX sits toward the noise end with enough oscillator left to hear the FM. The role exists on this box because Moog printed a METAL SNARE patch for it (p.64)`),
     params: [
       ...voice({
         freq: 0,
@@ -1145,7 +1158,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Pitched tom with a shallow fall and a little noise on the front',
-    routing: `${PLAYED}. A shallower VCO MOD AMOUNT than the kick wants — the fall is a tom's, not a drop`,
+    ...played(`A shallower VCO MOD AMOUNT than the kick wants — the fall is a tom's, not a drop`),
     params: [
       ...voice({
         freq: 0,
@@ -1175,7 +1188,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Hi-passed noise chopped by a fast square',
-    routing: `${PLAYED}. RESONANCE stays at zero: p.14 warns that resonance in HI PASS "will reintroduce bottom end into a sound"`,
+    ...played(`RESONANCE stays at zero: p.14 warns that resonance in HI PASS "will reintroduce bottom end into a sound"`),
     params: [
       ...voice({
         freq: 0,
@@ -1204,7 +1217,7 @@ const RECIPES: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     title: 'Audio-rate square into linear FM, then hi-passed',
-    routing: `${PLAYED}. p.13 says the LFO "is also capable of audio-rate modulation" and p.49 offers LIN FM for exactly that; neither page instructs this cable, so it is ours`,
+    ...played(`p.13 says the LFO "is also capable of audio-rate modulation" and p.49 offers LIN FM for exactly that; neither page instructs this cable, so it is ours`),
     params: [
       ...voice({
         freq: 10,
@@ -1236,7 +1249,7 @@ const RECIPES: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     title: 'One-shot impact: noise across the front, pitch dropping behind it',
-    routing: `${PLAYED}. VCA MODE stays on EG so the hit ends by itself`,
+    ...played(`VCA MODE stays on EG so the hit ends by itself`),
     params: [
       ...voice({
         freq: 0,
@@ -1268,7 +1281,7 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     title: 'Drone with the VC mixer crossfading an LFO against the envelope on the cutoff',
-    routing: `${PLAYED}. VCA MODE ON, so this sounds without a gate (p.16). The VC MIX knob is the crossfade between the two modulators, and it is the control to move while listening`,
+    ...played(`VCA MODE ON, so this sounds without a gate (p.16). The VC MIX knob is the crossfade between the two modulators, and it is the control to move while listening`),
     params: [
       ...voice({
         freq: 0,
@@ -1302,7 +1315,7 @@ const RECIPES: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     title: 'Long resonant sweep drawn by the envelope rather than the panel',
-    routing: `${PLAYED}. VCA MODE ON and VCF MOD AMOUNT at zero: the sweep arrives entirely over the cable, so the panel modulation path stays free`,
+    ...played(`VCA MODE ON and VCF MOD AMOUNT at zero: the sweep arrives entirely over the cable, so the panel modulation path stays free`),
     params: [
       ...voice({
         freq: 0,
@@ -1330,7 +1343,7 @@ const RECIPES: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     title: 'Pitch and filter climbing together off one envelope, split by the mult',
-    routing: `${PLAYED}. The pitch climb is the normalled EG at VCO MOD (p.49), so the mult is free to take the same envelope to two filter destinations. p.51 restricts the mult to CV, which is what this is`,
+    ...played(`The pitch climb is the normalled EG at VCO MOD (p.49), so the mult is free to take the same envelope to two filter destinations. p.51 restricts the mult to CV, which is what this is`),
     params: [
       ...voice({
         freq: 0,

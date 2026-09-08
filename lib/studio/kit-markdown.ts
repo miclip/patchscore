@@ -1,7 +1,15 @@
 import type { AuthoredParam, Device, PatchEntry, Recipe } from '@/lib/core'
-import { SUBORDINATE, groupedParams, num, paramLabel } from '@/lib/core'
+import { SUBORDINATE, groupedParams, num, paramLabel, recipeRouting } from '@/lib/core'
 import type { KitSession, KitSlot } from './kit-session'
-import { KIT_DESTINATION, KIT_RECORD, kitCitation, kitGap, kitLead, kitTitle } from './kit-text'
+import {
+  KIT_DESTINATION,
+  KIT_RECORD,
+  kitCitation,
+  kitGap,
+  kitLead,
+  kitRouting,
+  kitTitle,
+} from './kit-text'
 
 /**
  * §3.7/#478. **A kit session as Markdown**, for a reader standing at one box with a recorder.
@@ -127,13 +135,16 @@ function patchLines(entries: readonly PatchEntry[]): string[] {
  * wired already and is working down a list of parts; a reader here is building one patch from
  * nothing, and the cables come before the knobs they change the meaning of.
  */
-function slotLines(slot: KitSlot, at: number, device: Device): string[] {
+function slotLines(slot: KitSlot, at: number, device: Device, hoisted: boolean): string[] {
   const { recipe } = slot
   const out = [`## ${num(at)}. \`${slot.name}\` — ${recipe.title}`, '']
   out.push(`\`${recipe.role}\` · \`${recipe.character}\``)
-  if (recipe.routing !== undefined) {
+  // §3.7/#496. The sound's own half where the header has already said the box's; the whole line,
+  // composed, where it has not. Never both, and never neither.
+  const routing = hoisted ? recipe.routing : recipeRouting(recipe)
+  if (routing !== undefined) {
     out.push('')
-    out.push(`Routing — ${recipe.routing}`)
+    out.push(`Routing — ${routing}`)
   }
   if (recipe.patch !== undefined && recipe.patch.length > 0) {
     out.push('')
@@ -202,6 +213,22 @@ export function renderKitSession(session: KitSession): string {
    */
   out.push(KIT_DESTINATION)
   /**
+   * §3.7/#496. **How the box is played, once, where every sound on the page is played that way.**
+   *
+   * The Cascadia's eight slots each opened with the same 194 characters — two thirds of this
+   * document's routing prose, and about five lines each at 390px, before the half that says what
+   * makes the sound different. It is one fact about the box, so it is printed the way the
+   * destination above it is: once, in the header, ahead of the sounds it is true of.
+   *
+   * Nothing is dropped when the slots share nothing: `kitRouting` answers `undefined`, this prints
+   * nothing, and every slot prints its whole routing line exactly as it did before (#496).
+   */
+  const routing = kitRouting(session.routingPreamble)
+  if (routing !== undefined) {
+    out.push('')
+    out.push(`Routing — ${routing}`)
+  }
+  /**
    * §3.2/invariant 4. **One citation sentence for the box, built from the settings this session
    * renders and no others**, and no mark or page beside any value — the ink rule exactly as §8
    * states it.
@@ -223,7 +250,7 @@ export function renderKitSession(session: KitSession): string {
   }
   slots.forEach((slot, i) => {
     out.push('')
-    out.push(...slotLines(slot, i + 1, device))
+    out.push(...slotLines(slot, i + 1, device, routing !== undefined))
   })
   const gaps = gapLines(session)
   if (gaps.length > 0) {

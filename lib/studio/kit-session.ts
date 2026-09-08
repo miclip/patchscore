@@ -70,6 +70,34 @@ export type KitSession = {
   slots: readonly KitSlot[]
   /** Core kit roles this box authors nothing for, in kit order — see `CORE_KIT_ROLES`. */
   absent: readonly Role[]
+  /**
+   * §3.7/#496. **The routing preamble every slot in this session shares**, or `undefined` where
+   * they do not all share one — see `sharedRoutingPreamble`.
+   *
+   * A renderer that has this says it once, in the header, and prints each slot's own half under
+   * that slot. A renderer with `undefined` here prints `recipeRouting` per slot, exactly as
+   * before: nothing is dropped, because a fact that is not shared has no header to go in.
+   */
+  routingPreamble?: string
+}
+
+/**
+ * §3.7/#496. **The routing preamble every one of these recipes carries, if they all carry the
+ * same one.**
+ *
+ * The predicate is *identical and authored on every one of them*, and both halves matter. Authored
+ * (§3), so the thing hoisted is a fact somebody marked as being about the box rather than a prefix
+ * that happens to match today. Every one, because a header sentence is a claim over the whole
+ * page: one slot out of eight without it and the header would be saying something untrue of the
+ * sound a reader is looking at.
+ *
+ * Six of the nine boxes with a kit answer this; three write each routing line whole and answer
+ * `undefined`, which is why the fix is a split rather than a renderer trick (#496).
+ */
+export function sharedRoutingPreamble(recipes: readonly Recipe[]): string | undefined {
+  const first = recipes[0]?.routingPreamble
+  if (first === undefined) return undefined
+  return recipes.every((recipe) => recipe.routingPreamble === first) ? first : undefined
 }
 
 /**
@@ -132,10 +160,12 @@ export function kitSession(device: Device): KitSession | undefined {
     return { name: `${slotLabel(recipe.role)} ${ordinal}`, role: recipe.role, recipe }
   })
 
+  const preamble = sharedRoutingPreamble(recipes)
   return {
     device,
     destination: { kind: 'reader-supplied' },
     slots,
     absent: CORE_KIT_ROLES.filter((role) => !seen.has(role)),
+    ...(preamble === undefined ? {} : { routingPreamble: preamble }),
   }
 }

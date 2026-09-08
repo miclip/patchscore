@@ -7,6 +7,7 @@ import {
   compatibleJackSignals,
   patternEntryNotice,
   realisationOf,
+  recipeRouting,
   sendTransports,
 } from './device'
 import type {
@@ -1916,6 +1917,9 @@ export function resolve(input: ResolveInput): ResolveResult {
     const request = requestById.get(a.requestId) as RoleRequest
     const bySection = patterns.get(a.requestId)
     const sourceAudio = resolveSourceAudio(a.recipe)
+    // §3.7/#496. Composed here, so the split a device folder authors for the kit page is invisible
+    // to §8: the guide receives the one string it always received.
+    const routing = recipeRouting(a.recipe)
     const share = devicePartShare(a.deviceId)
     // §4.1/#369. Asked once, because two fields below read it and a fact derived twice is a fact
     // two consumers can come to disagree about — the reason `hookAuthority` is resolved here at
@@ -1939,7 +1943,7 @@ export function resolve(input: ResolveInput): ResolveResult {
         outcome: a.outcome,
         realisation: realisationOf(a.recipe),
         ...(sourceAudio === undefined ? {} : { sourceAudio }),
-        ...(a.recipe.routing === undefined ? {} : { routing: a.recipe.routing }),
+        ...(routing === undefined ? {} : { routing }),
       },
       // §7 step 9/#433, #424. Both allocation sources reach the parameters here. The stack width
       // comes from `stackedPart` so that a `stack-width` setting and the prose above it are the
