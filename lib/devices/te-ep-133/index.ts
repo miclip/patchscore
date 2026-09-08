@@ -786,8 +786,8 @@ const recipes: Recipe[] = [
     voice: 'pad',
     title: 'A recorded sweep fitted to the bars it crosses',
     sourceAudio: sampled(
-      'A recording of a filter sweep, four bars or longer, that arrives where it is going right ' +
-      'at the end — `BAR` fits it to the gap, so where it ends is where the change is',
+      'A recording of a filter sweep that arrives where it is going right at the end — `BAR` ' +
+      'fits it to the gap, so where it ends is where the change is',
     ),
     /**
      * §4.2, and **the mechanism is the riser's rather than a modulator**, because this box has no
