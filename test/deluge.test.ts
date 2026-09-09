@@ -1041,6 +1041,45 @@ describe('Deluge manifest', () => {
     }
   })
 
+  it('states where the neutral is on every bipolar row, not only on the unipolar ones (#511)', () => {
+    // The complaint the issue opens with. On `deluge-kick-dark`, `ENV 2 SUSTAIN 25 (0…50)` says
+    // 25 is the note itself, and the next line hands the reader `ENV 2 → PITCH DEPTH 13 (-50…50)`
+    // whose neutral is somewhere else and said nothing. A bare number against a bare range is a
+    // number nobody can act on unless they are told what a nothing looks like.
+    //
+    // Found by the range rather than by the arrow in the name: a bipolar range is what creates the
+    // question, and a modulation the arrow does not appear in would be missed by matching names —
+    // the trap #510 and #511 both name. So a fifth bipolar row landing here without a neutral
+    // fails this, whatever it is called.
+    const bipolar = device.recipes.flatMap((r) =>
+      (r.params as AuthoredParam[]).flatMap((param) =>
+        param.kind === 'numeric' && param.range.min < 0 ? [{ recipe: r.id, param }] : [],
+      ),
+    )
+    expect(bipolar.map((b) => `${b.recipe} ${b.param.name}`)).toEqual([
+      'deluge-kick-hard ENV 2 → PITCH DEPTH',
+      'deluge-kick-dark ENV 2 → PITCH DEPTH',
+      'deluge-tom-dark ENV 2 → PITCH DEPTH',
+      'deluge-riser-bright ENV 2 → LPF FREQ DEPTH',
+    ])
+
+    for (const { recipe, param } of bipolar) {
+      const where = `${recipe} ${param.name}`
+      const note = param.note ?? ''
+      // Said first, because it is what the number beside it has to be read against.
+      expect(note.startsWith('0 is no modulation; '), where).toBe(true)
+      // The neutral is inside the range, and the recipe is not sitting on it.
+      expect(param.range.min, where).toBeLessThan(0)
+      expect(param.range.max, where).toBeGreaterThan(0)
+      expect(param.value, where).not.toBe(0)
+      // And the rest of the note still says which way the depth points, so stating the neutral
+      // added a fact rather than replacing one.
+      const rest = note.slice('0 is no modulation; '.length)
+      expect(rest.length, where).toBeGreaterThan(0)
+      expect(/positive|lift|opens|falls/.test(rest), `${where}: ${rest}`).toBe(true)
+    }
+  })
+
   it('carries song swing on every recipe, because it is one setting for the song', () => {
     for (const recipe of device.recipes) {
       const swing = (recipe.params as AuthoredParam[]).find((p) => p.name === 'SWING')

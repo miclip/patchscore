@@ -564,7 +564,8 @@ const RECIPES: Recipe[] = [
       }),
       num('ENV 2 → PITCH DEPTH', 22, PITCH_DEPTH, PITCH_DEPTH_CITE, {
         hint: 'env2-pitch',
-        note: 'destination is Pitch / Transpose: Overall; positive lifts the attack above the note',
+        note:
+          '0 is no modulation; destination is Pitch / Transpose: Overall, and positive lifts the attack above the note',
       }),
       // The edge, on the two controls the old sampled recipe already used. Below every `dirty`
       // recipe on this box, which is what keeps `hard` and `dirty` apart as characters rather
@@ -610,7 +611,8 @@ const RECIPES: Recipe[] = [
       }),
       num('ENV 2 → PITCH DEPTH', 13, PITCH_DEPTH, PITCH_DEPTH_CITE, {
         hint: 'env2-pitch',
-        note: 'destination is Pitch / Transpose: Overall; positive lifts the attack above the note',
+        note:
+          '0 is no modulation; destination is Pitch / Transpose: Overall, and positive lifts the attack above the note',
       }),
       num('EQ TREBLE AMOUNT', 18, Z50, cite(219), {
         mood: [{ axis: 'darkness', amount: -6 }],
@@ -1103,7 +1105,8 @@ const RECIPES: Recipe[] = [
       }),
       num('ENV 2 \u2192 PITCH DEPTH', 11, PITCH_DEPTH, PITCH_DEPTH_CITE, {
         hint: 'env2-pitch',
-        note: 'Half the kick\u2019s lift; a tom falls a tone or two, not an octave',
+        note:
+          '0 is no modulation; half the kick\u2019s lift, since a tom falls a tone or two, not an octave',
       }),
       num('EQ BASS AMOUNT', 31, Z50, cite(219), {
         note: '25 is neutral; above boosts',
@@ -1405,7 +1408,7 @@ const RECIPES: Recipe[] = [
       }),
       num('ENV 2 \u2192 LPF FREQ DEPTH', 38, MOD_DEPTH, MOD_DEPTH_CITE, {
         hint: 'env2-lpf',
-        note: 'Positive, so the filter opens as the envelope rises',
+        note: '0 is no modulation; positive opens the filter as the envelope rises',
       }),
       num('EQ TREBLE AMOUNT', 35, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -8 }] }),
       num('REVERB AMOUNT', 23, Z50, cite(225), { mood: [{ axis: 'space', amount: 16 }] }),
