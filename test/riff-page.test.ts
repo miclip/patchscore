@@ -82,7 +82,7 @@ function markdownFacts(md: string): string[] {
       line
         .replace(/^#+ /, '')
         .replace(/^\s*- /, '')
-        .replace(/↳ (note|hint): /g, '')
+        .replace(/↳ (note|hint|neutral): /g, '')
         .replace(/\*\*/g, '')
         .replace(/^● /, '')
         .replace(/`/g, '')

@@ -116,6 +116,14 @@ Layers with a strict contract between them. Roles are the join.
   `verified` is two independent claims: on the *point* it decides authority (`authored` vs
   `provisional`); on the *range* it decides legality (whether mood may move the value at all).
   A verified range does not verify the point inside it.
+- **A modulation is a fourth authored kind, not a numeric with an arrow in its name** (#511,
+  `DESIGN.md` §3.1). An assignment — pick a source, pick a destination, set a depth — and every
+  renderer reads `kind: 'modulation'` / `ResolvedParam.modulation` rather than the punctuation.
+  **An arrow means nothing on its own and the library proves it both ways**: the Circuit Tracks'
+  `ENV 2 → FREQUENCY` has one and is a knob on a path the box wires, and the Mother-32's routing
+  has none anywhere. The test an author applies is whether the reader *chooses* an end; a depth
+  knob on a normalled path is a control and stays one. `neutral` is required, because where a
+  bipolar depth does nothing used to be prose in whichever notes somebody remembered to write.
 - **Mood** applies offsets after recipe resolution. A device declines an axis simply by having no
   param that declares it — there is no capability check and must not be one.
 - **The objective** (`lib/core/objective.ts`) is a lexicographic `Score` vector, never a weighted

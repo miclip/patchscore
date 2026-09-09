@@ -10,13 +10,16 @@ import {
 } from './vocabulary'
 import {
   AuthoredParamSchema,
+  CITE_KINDS,
   CiteSchema,
   VerifiedSchema,
   type AuthoredParam,
   type Cite,
   type Verified,
   citedDocument,
-  effectiveVerified, CITE_KINDS} from './params'
+  effectiveVerified,
+  hasAmount,
+} from './params'
 
 /**
  * §2. One self-contained module per device. Devices know their own capabilities and their own
@@ -3737,7 +3740,8 @@ export const DeviceSchema = z
           // what stops them drifting: switch a recipe's machine and forget the mode, and the
           // device stops building instead of printing a note for the wrong kind of track.
           const param = recipe.params.find((p) => p.name === mode.selectedBy?.param)
-          const value = param === undefined || param.kind === 'numeric' ? undefined : param.value
+          // #511: a modulation's value is its depth, a number, so it selects no mode either.
+          const value = param === undefined || hasAmount(param) ? undefined : param.value
           if (value === undefined || !mode.selectedBy.values.includes(value)) {
             ctx.addIssue({
               code: 'custom',
@@ -3823,7 +3827,9 @@ export function rangeDocuments(device: Device): readonly string[] {
   const counts = new Map<string, number>()
   for (const recipe of device.recipes) {
     for (const param of recipe.params as AuthoredParam[]) {
-      if (param.kind !== 'numeric') continue
+      // #511: a modulation's depth sits in cited bounds exactly as a knob's position does, so
+      // the documents its ranges come off belong in this list on the same terms.
+      if (!hasAmount(param)) continue
       const verified = effectiveVerified(param.range.verified, recipe.verified)
       if (verified === undefined || verified === false || verified.kind !== 'manual') continue
       const document = citedDocument(verified.source)

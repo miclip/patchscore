@@ -3691,6 +3691,22 @@ button:active {
   content: 'note';
 }
 
+/*
+ * #511. Where a routing's depth does nothing, tagged the way a note is and for the same reason:
+ * a subordinate line needs to say what kind of line it is before a reader reaching past it can
+ * decide to skip it. Never hidden by the hints toggle — a bipolar number cannot be acted on
+ * without this, so it is part of the instruction rather than a jog.
+ */
+.subordinate.neutral::before {
+  display: inline-block;
+  margin-right: 6px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--edge-strong);
+  content: 'neutral';
+}
+
 /* ----------------------------------------------------------- §10 values */
 
 .value {
@@ -5717,6 +5733,84 @@ html {
   .cable-mark-end {
     stroke: #111;
     fill: #111;
+  }
+}
+
+/* --------------------------------------------- a routing's claims on a device page (#511) */
+
+/*
+ * §3.2/#511. The ends of a routing, under the depth they belong to.
+ *
+ * A sub-row rather than a row: the first two columns carry the *part* and the control instead of
+ * the recipe and its role, which the row above already named, so the indent and the muted ground
+ * are what say "this is more about the line above" rather than a fourth recipe. Without them the
+ * `Recipe` heading would read as a promise these two cells are not keeping.
+ *
+ * Below 640px the table stacks and each cell carries its own `data-label`, so the sub-rows label
+ * themselves and this rule does nothing there — which is #21's shape and not an exception to it.
+ */
+.routing-claim > td {
+  background: var(--panel-2);
+}
+
+.routing-claim > td:first-child {
+  padding-left: 18px;
+}
+
+/* ------------------------------------------------------- the modulation mark (#511) */
+
+/*
+ * §3.1/#511. `CableMark`'s sibling, one layer in. A cable and a setting were drawn alike until
+ * #501; a modulation and a setting still were, so `ENV 2 → PITCH DEPTH 13 (-50…50)` sat in the
+ * same column and the same shape as `EQ BASS AMOUNT 33`.
+ *
+ * **A wave running into a ring**, where the cable is a symmetrical lead between two plugs. The
+ * two must not read alike: a cable is *plug this into that* and a modulation is *this moves
+ * that*, and a reader who learned the first symbol has to be able to tell the second is a
+ * different claim. The geometry carries it and the colour does not, which is the rule the rack
+ * cable above already sets out: colour may never become the thing a reader has to see.
+ *
+ * Sized in `em` beside the cable's, and `vertical-align: baseline` for the same reason: the line
+ * wraps on a phone (#21) and the mark stays with the first line rather than being stretched.
+ */
+.modulation-mark {
+  width: 1.55em;
+  height: 0.66em;
+  margin-right: 0.45em;
+  vertical-align: baseline;
+  flex: none;
+}
+
+.modulation-mark-wave,
+.modulation-mark-arrow {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.modulation-mark-target {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.2;
+}
+
+/*
+ * The word beside the mark, and it is prose rather than a value (§10): it names what kind of line
+ * this is, and it is not something anybody dials. Muted for the same reason `.value-cc` is.
+ */
+.param-kind,
+.param-sep {
+  color: var(--ink-dim);
+  font-size: 11px;
+}
+
+@media print {
+  .modulation-mark-wave,
+  .modulation-mark-arrow,
+  .modulation-mark-target {
+    stroke: #111;
   }
 }
 

@@ -6,7 +6,13 @@ import type {
   Recipe,
   Verified,
 } from '../core/index'
-import { citedDocument, compareCodeUnits, effectiveVerified, rangeDocuments } from '../core/index'
+import {
+  citedDocument,
+  compareCodeUnits,
+  effectiveVerified,
+  hasAmount,
+  rangeDocuments,
+} from '../core/index'
 
 /**
  * Re-exported, not redefined. These moved into `core` when the guide needed them: `lib/core`
@@ -187,8 +193,51 @@ function auditRecipe(deviceId: string, recipe: Recipe, into: DeviceAudit): void 
       into.counts.provisionalPoints++
     }
 
-    // Ranges exist only on numerics; enum and text params have no legality gate to fail.
-    if (param.kind !== 'numeric') continue
+    /*
+     * §3.2/#511. **A routing's ends are counted as the claims they are.**
+     *
+     * A modulation replaced three authored parameters with one on two devices, and each of those
+     * three used to be counted here. Left alone, this loop would have taken 78 provisional points
+     * off the library's totals for no better reason than that they moved inside a typed shape —
+     * an improvement nobody earned, in the one report invariant 4 relies on to keep the totals
+     * honest. So an end is a point, its option set is a legality claim, and the counts stay
+     * comparable across the migration.
+     *
+     * The Mother-32's VCF destination is genuinely *new* rather than moved: the model had no way
+     * to say the block lands on the cutoff, so nothing was claiming it before. It is cited, so
+     * the manual count goes up there — and that is the shape adding real information, not a
+     * discount.
+     */
+    if (param.kind === 'modulation') {
+      const ends: { part: string; verified: Verified | undefined; options?: Verified }[] = [
+        { part: 'source', verified: param.source.verified, ...(param.source.kind === 'control' ? { options: param.source.options.verified } : {}) },
+        { part: 'destination', verified: param.destination.verified, ...(param.destination.kind === 'control' ? { options: param.destination.options.verified } : {}) },
+        ...(param.polarity === undefined
+          ? []
+          : [{ part: 'polarity', verified: param.polarity.verified, options: param.polarity.options.verified }]),
+      ]
+      for (const end of ends) {
+        into.counts.params++
+        const endPoint = citeKind(effectiveVerified(end.verified, recipe.verified))
+        if (endPoint === 'manual') into.counts.manualPoints++
+        else if (endPoint === 'observed') into.counts.observedPoints++
+        else {
+          into.findings.push({
+            deviceId,
+            recipeId: recipe.id,
+            paramName: `${param.name} \u00b7 ${end.part}`,
+            kind: 'provisional-point',
+          })
+          into.counts.provisionalPoints++
+        }
+      }
+    }
+
+    // Ranges exist on numerics and on a modulation's depth (#511); enum and text params have no
+    // legality gate of this shape to fail. A routing whose depth sits in bounds nobody checked is
+    // the same unverified range a knob's would be, and leaving it out would have taken 47 of them
+    // off the library's totals the moment the shape landed.
+    if (!hasAmount(param)) continue
     into.counts.numerics++
     // #29. Counted, not flagged: no finding is pushed and no zero is aimed at.
     if (param.unit === undefined) into.counts.unitlessNumerics++

@@ -4,6 +4,8 @@ import {
   DeviceSchema,
   ROLES,
   expand,
+  hasAmount,
+  modulationEndParts,
   isSustainedPart,
   moodState,
   noteInstruction,
@@ -325,7 +327,10 @@ describe('Deluge manifest', () => {
     // those two controls rather than by a smaller amount of them.
     const value = (id: string, name: string): number => {
       const param = paramNamed(id, name)
-      if (param.kind !== 'numeric') throw new Error(`${id} / ${name} is not numeric`)
+      // #511. A routing's depth is a point in a range in exactly the way a knob's position is,
+      // and this comparison is about the depth. `hasAmount` is the structural question rather
+      // than four `kind ===` tests spread over the file.
+      if (!hasAmount(param)) throw new Error(`${id} / ${name} carries no amount`)
       return param.value
     }
     // The drop is smaller and slower on `dark`; the body is longer.
@@ -366,7 +371,7 @@ describe('Deluge manifest', () => {
     // Citing either source alone would leave one of the three unsubstantiated.
     for (const id of SYNTH_KICKS) {
       const depth = paramNamed(id, 'ENV 2 → PITCH DEPTH')
-      if (depth.kind !== 'numeric') throw new Error(`${id}: pitch depth is not numeric`)
+      if (depth.kind !== 'modulation') throw new Error(`${id}: pitch depth is not a modulation`)
 
       const source = (depth.range.verified as { source: string }).source
       expect(source, id).toContain('p.120')
@@ -379,8 +384,15 @@ describe('Deluge manifest', () => {
       expect({ min: depth.range.min, max: depth.range.max }, id).toEqual({ min: -50, max: 50 })
       expect(depth.value, id).toBeGreaterThan(0)
       expect(depth.hint, id).toBe('env2-pitch')
-      // The destination is one row of a matrix with two pitch rows; the note has to say which.
-      expect(depth.note, id).toContain('Pitch / Transpose: Overall')
+      // The destination is one row of a matrix with two pitch rows, so which one has to be said
+      // — and #511 moved it from prose to the routing. It used to be spelled three times in four
+      // consecutive lines: in the parameter's name, in the hint and in the note. Once now, in the
+      // field, with the same citation it always rested on.
+      const destination = depth.destination
+      if (destination.kind !== 'stated') throw new Error(`${id}: destination is not stated`)
+      expect(destination.name, id).toBe('Pitch / Transpose: Overall')
+      expect((destination.verified as { source: string }).source, id).toBe(source)
+      expect(modulationEndParts(depth.source), id).toEqual({ value: 'ENV 2' })
     }
   })
 
@@ -598,7 +610,7 @@ describe('Deluge manifest', () => {
       for (const param of recipe.params as AuthoredParam[]) {
         const where = `${recipe.id} / ${param.name}`
         expect(param.verified, where).toBe(false)
-        if (param.kind === 'numeric') {
+        if (hasAmount(param)) {
           expect(param.range.verified, where).toMatchObject({ kind: 'manual' })
           expect(param.step, where).toBeUndefined()
         }
@@ -607,12 +619,42 @@ describe('Deluge manifest', () => {
           expect(param.options.values, where).toContain(param.value)
           expect(param.options.values.length, where).toBeGreaterThan(1)
         }
+        // #511. A routing's ends are claims of their own and this box cites both to the same
+        // two sources its depth rests on. Nothing on this manifest is a `control` end: the
+        // Deluge picks a source inside the destination's menu rather than off a switch, which
+        // is what the hint says and what `stated` means.
+        if (param.kind === 'modulation') {
+          for (const end of [param.source, param.destination]) {
+            expect(end.kind, where).toBe('stated')
+            expect(end.verified, where).toMatchObject({ kind: 'manual' })
+          }
+          expect(param.polarity, where).toBeUndefined()
+          expect(param.neutral, where).toBe(0)
+        }
       }
     }
 
     const counts = auditDevice(device).counts
-    expect(counts.manualPoints).toBe(0)
-    expect(counts.provisionalPoints).toBe(counts.params)
+    /*
+     * §3.2/#511. **Eight cited points, and every one of them is a routing's end.**
+     *
+     * The claim this test has always made is that no *knob position* on this box is cited: every
+     * value is taste inside bounds somebody read, which is §3.2's split. That is unchanged. What
+     * #511 added is a claim the model could not previously hold — that `ENV 2` reaches
+     * `Pitch / Transpose: Overall` — and the guidebook's modulation matrix is where it was read,
+     * so it is cited and counts as a cited point.
+     *
+     * Asserted as *which* points rather than as a number, so a cited knob position landing here
+     * still fails: the eight are the four routings' two ends each, and nothing else.
+     */
+    const endPoints = (device.recipes as Recipe[]).flatMap((recipe) =>
+      (recipe.params as AuthoredParam[]).flatMap((param) =>
+        param.kind === 'modulation' ? [param.source, param.destination] : [],
+      ),
+    )
+    expect(endPoints).toHaveLength(8)
+    expect(counts.manualPoints).toBe(endPoints.length)
+    expect(counts.provisionalPoints).toBe(counts.params - endPoints.length)
     expect(counts.unverifiedRanges).toBe(0)
     expect(counts.moodInert).toBe(0)
     expect(counts.manualRanges).toBe(counts.numerics)
@@ -1038,6 +1080,55 @@ describe('Deluge manifest', () => {
       expect(swing.note, recipe.id).toContain('50 is off')
       expect(swing.verified, recipe.id).toBe(false)
       expect(swing.range.verified, recipe.id).toMatchObject({ kind: 'manual' })
+    }
+  })
+
+  it('states where the neutral is on every bipolar row, not only on the unipolar ones (#511)', () => {
+    // The complaint the issue opens with. On `deluge-kick-dark`, `ENV 2 SUSTAIN 25 (0…50)` says
+    // 25 is the note itself, and the next line handed the reader `ENV 2 → PITCH DEPTH 13 (-50…50)`
+    // whose neutral is somewhere else and said nothing. A bare number against a bare range is a
+    // number nobody can act on unless they are told what a nothing looks like.
+    //
+    // **It was prose and is now a field.** The first repair put `0 is no modulation` at the front
+    // of four authored notes, which fixed four rows and left the fifth to whoever remembered.
+    // `AuthoredModulationParam.neutral` is required, so there is no fifth row to forget — and the
+    // renderers state it in their own words instead of each device spelling it again.
+    //
+    // Found by the range rather than by the arrow in the name: a bipolar range is what creates
+    // the question, and a routing spelled without an arrow — the Mother-32's whole modulation
+    // section — would be missed by matching names. That is the trap #510 and #511 both name.
+    const bipolar = device.recipes.flatMap((r) =>
+      (r.params as AuthoredParam[]).flatMap((param) =>
+        hasAmount(param) && param.range.min < 0 ? [{ recipe: r.id, param }] : [],
+      ),
+    )
+    expect(bipolar.map((b) => `${b.recipe} ${b.param.name}`)).toEqual([
+      'deluge-kick-hard ENV 2 → PITCH DEPTH',
+      'deluge-kick-dark ENV 2 → PITCH DEPTH',
+      'deluge-tom-dark ENV 2 → PITCH DEPTH',
+      'deluge-riser-bright ENV 2 → LPF FREQ DEPTH',
+    ])
+
+    for (const { recipe, param } of bipolar) {
+      const where = `${recipe} ${param.name}`
+      // Every bipolar row on this box is a routing, and a routing has to say where its nothing
+      // is. A bipolar *knob* landing here would fail — which is the honest state: the model has
+      // no neutral for one yet, and this test is where that would be noticed.
+      if (param.kind !== 'modulation') throw new Error(`${where}: a bipolar row with no neutral`)
+      expect(param.neutral, where).toBe(0)
+      // The neutral is inside the range, and the recipe is not sitting on it.
+      expect(param.range.min, where).toBeLessThan(param.neutral)
+      expect(param.range.max, where).toBeGreaterThan(param.neutral)
+      expect(param.value, where).not.toBe(param.neutral)
+      // And the note still says which way the depth points, so typing the neutral added a fact
+      // rather than replacing one.
+      const note = param.note ?? ''
+      expect(note.length, where).toBeGreaterThan(0)
+      expect(/[Pp]ositive|lift|opens|falls/.test(note), `${where}: ${note}`).toBe(true)
+      // The destination is said once, in the routing, and no longer a second time in prose.
+      const destination = param.destination
+      if (destination.kind !== 'stated') throw new Error(`${where}: destination is not stated`)
+      expect(note, where).not.toContain(destination.name)
     }
   })
 

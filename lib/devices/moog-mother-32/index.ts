@@ -643,33 +643,105 @@ function voice(opts: {
   ]
 }
 
-/** The VCO modulation block. `EG / VCO MOD` selects the normalled envelope unless VCO MOD is patched. */
+/**
+ * §3.1/#511. **The VCO modulation block, as the assignment it has always been.**
+ *
+ * Three parameters — source, destination, amount — and #511's point is that they were three lines
+ * a reader had to reassemble. This box is the library's clearest routing and it carries **no arrow
+ * anywhere in any name**, which is exactly why the shape is typed rather than read off the
+ * punctuation: match on arrows and this is invisible, while the Circuit Tracks' fixed-path knob
+ * is a false positive.
+ *
+ * Both ends are `control` because both are switches on the panel with printed positions, and each
+ * option set keeps the citation it already had. **The amount stays `travel()`'s claim**: 0-100
+ * percent of a knob with a tick ring and no printed scale, uncited on both claims and deaf to
+ * mood, exactly as it was — nothing here upgrades what anybody checked.
+ *
+ * `EG / VCO MOD` selects the normalled envelope unless VCO MOD is patched.
+ */
 function vcoMod(
   source: (typeof VCO_MOD_SOURCE)[number],
   dest: (typeof VCO_MOD_DEST)[number],
   amount: number,
 ): AuthoredParam[] {
   return [
-    pick('VCO MOD SOURCE', source, VCO_MOD_SOURCE, cite(12), {
+    {
+      kind: 'modulation',
+      name: 'VCO MOD AMOUNT',
+      source: {
+        kind: 'control',
+        control: 'VCO MOD SOURCE',
+        value: source,
+        options: { values: [...VCO_MOD_SOURCE], verified: cite(12) },
+        verified: false,
+      },
+      destination: {
+        kind: 'control',
+        control: 'VCO MOD DEST',
+        value: dest,
+        options: { values: [...VCO_MOD_DEST], verified: cite(12) },
+        verified: false,
+      },
+      amountControl: 'VCO MOD AMOUNT',
+      value: amount,
+      unit: '% travel',
+      range: { min: 0, max: 100, verified: false },
+      // Fully counterclockwise, the attenuator shut. Unipolar: this block has no polarity switch,
+      // so a VCO modulation can only be added — which is why the neutral is the bottom of the
+      // range here and the centre of it on a box whose depth carries the sign.
+      neutral: 0,
+      verified: false,
       ...(source === 'EG / VCO MOD'
         ? { note: 'The EG is normalled here — a cable in VCO MOD replaces it' }
         : {}),
-    }),
-    pick('VCO MOD DEST', dest, VCO_MOD_DEST, cite(12)),
-    travel('VCO MOD AMOUNT', amount),
+    },
   ]
 }
 
-/** The VCF modulation block. */
+/**
+ * §3.1/#511. **The VCF modulation block, which is the asymmetrical one.**
+ *
+ * The reader picks a source and a *sign*; the destination is the cutoff and the panel gives them
+ * no say in it. So the destination is `stated` — the box's own wiring, cited to the page that
+ * says so — and the middle switch is `polarity`, not a second end. A shape that assumed the three
+ * controls of a routing were always source, destination and amount would read this block's
+ * polarity switch as a destination and print `EG → +`.
+ *
+ * This is why `AuthoredModulationParam` carries a `polarity` of its own rather than leaning on a
+ * signed range: on this box the direction is a switch the reader throws, and the attenuator beside
+ * it only opens from zero.
+ */
 function vcfMod(
   source: (typeof VCF_MOD_SOURCE)[number],
   polarity: (typeof VCF_MOD_POLARITY)[number],
   amount: number,
 ): AuthoredParam[] {
   return [
-    pick('VCF MOD SOURCE', source, VCF_MOD_SOURCE, cite(15)),
-    pick('VCF MOD POLARITY', polarity, VCF_MOD_POLARITY, cite(15)),
-    travel('VCF MOD AMOUNT', amount),
+    {
+      kind: 'modulation',
+      name: 'VCF MOD AMOUNT',
+      source: {
+        kind: 'control',
+        control: 'VCF MOD SOURCE',
+        value: source,
+        options: { values: [...VCF_MOD_SOURCE], verified: cite(15) },
+        verified: false,
+      },
+      // p.15's block, and the cutoff is where it lands: there is no VCF MOD DEST on this panel.
+      destination: { kind: 'stated', name: 'the VCF cutoff', verified: cite(15) },
+      polarity: {
+        control: 'VCF MOD POLARITY',
+        value: polarity,
+        options: { values: [...VCF_MOD_POLARITY], verified: cite(15) },
+        verified: false,
+      },
+      amountControl: 'VCF MOD AMOUNT',
+      value: amount,
+      unit: '% travel',
+      range: { min: 0, max: 100, verified: false },
+      neutral: 0,
+      verified: false,
+    },
   ]
 }
 

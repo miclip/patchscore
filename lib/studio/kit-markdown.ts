@@ -1,5 +1,20 @@
-import type { AuthoredParam, Device, PatchEntry, Recipe } from '@/lib/core'
-import { SUBORDINATE, groupedParams, num, paramLabel, recipeRouting } from '@/lib/core'
+import type {
+  AuthoredParam,
+  Device,
+  ModulationControl,
+  ModulationEnd,
+  PatchEntry,
+  Recipe,
+} from '@/lib/core'
+import {
+  SUBORDINATE,
+  groupedParams,
+  hasAmount,
+  modulationEndParts,
+  num,
+  paramLabel,
+  recipeRouting,
+} from '@/lib/core'
 import type { KitSession, KitSlot } from './kit-session'
 import {
   KIT_DESTINATION,
@@ -78,9 +93,9 @@ function subordinate(out: string[], indent: string, kind: keyof typeof SUBORDINA
  * the set is on the device page, where a reader at a desk asks that question (#410).
  */
 function valueText(param: AuthoredParam): string {
-  const value = param.kind === 'numeric' ? num(param.value) : param.value
-  const unit = param.kind === 'numeric' && param.unit !== undefined ? ` ${param.unit}` : ''
-  if (param.kind !== 'numeric') return `\`${value}\``
+  const value = hasAmount(param) ? num(param.value) : param.value
+  const unit = hasAmount(param) && param.unit !== undefined ? ` ${param.unit}` : ''
+  if (!hasAmount(param)) return `\`${value}\``
   const suffix = param.unit === undefined ? '' : ` ${param.unit}`
   return `\`${value}\`${unit} (${num(param.range.min)}…${num(param.range.max)}${suffix})`
 }
@@ -90,6 +105,31 @@ function paramLines(param: AuthoredParam, device: Device): string[] {
   // ` · pattern-wide`, the separator §8 already uses to hang `· MIDI CC 51` off a value: a
   // qualifier about the control rather than a clause about the sentence.
   const scope = param.scope === undefined ? '' : ` · ${SCOPE_LABEL[param.scope]}`
+  // #511. A routing is drawn as an assignment here too. This page and the guide are two surfaces
+  // over one library, and a kick whose pitch envelope reads as a routing in the guide and as a
+  // knob on the kit page would be the same confusion #511 opened with, moved one page across.
+  if (param.kind === 'modulation') {
+    // #511. A control end names its control: the three parameters this shape replaced each said
+    // where to go, and a line that names only the selection tells a reader what to choose while
+    // withholding which switch to choose it on. A `stated` end has none and stays a bare name.
+    const endText = (end: ModulationEnd | ModulationControl): string => {
+      const parts = modulationEndParts('kind' in end ? end : { kind: 'control', ...end })
+      return parts.control === undefined
+        ? `\`${parts.value}\``
+        : `**${parts.control}** \`${parts.value}\``
+    }
+    const polarity = param.polarity === undefined ? '' : ` · ${endText(param.polarity)}`
+    const amount = param.amountControl ?? paramLabel(param)
+    const out = [
+      `- Modulation — ${endText(param.source)} → ` +
+        `${endText(param.destination)}${polarity} · **${amount}** ` +
+        `${valueText(param)}${scope}`,
+    ]
+    subordinate(out, '  ', 'neutral', `\`${num(param.neutral)}\` is no modulation`)
+    if (param.note !== undefined) subordinate(out, '  ', 'note', param.note)
+    if (param.hint !== undefined) subordinate(out, '  ', 'hint', hintText(device, param.hint))
+    return out
+  }
   const out = [`- **${paramLabel(param)}** ${valueText(param)}${scope}`]
   if (param.note !== undefined) subordinate(out, '  ', 'note', param.note)
   if (param.hint !== undefined) subordinate(out, '  ', 'hint', hintText(device, param.hint))

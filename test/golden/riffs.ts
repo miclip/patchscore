@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import type { Device } from '@/lib/core'
 import { resolveRiff } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
-import { blueMondayBass, showMeLoveOrganStab } from '@/lib/riffs'
+import { acidTracksLine, blueMondayBass, showMeLoveOrganStab } from '@/lib/riffs'
 import { renderRiff } from '@/lib/studio/riff-markdown'
 import type { Riff } from '@/lib/core'
 
@@ -40,6 +40,7 @@ export const RIFF_NAMES = [
   'bass-on-a-sampler',
   'organ-stab-mono',
   'organ-stab-stacked',
+  'acid-on-a-mother-32',
 ] as const
 export type RiffName = (typeof RIFF_NAMES)[number]
 
@@ -70,6 +71,22 @@ const FIXTURES: Record<RiffName, () => Fixture> = {
   'organ-stab-stacked': () => ({
     riff: showMeLoveOrganStab,
     devices: rig('polyend-tracker-mini'),
+  }),
+  /*
+   * §5A/#511. **The one riff fixture that renders a routing**, and it had to be added rather than
+   * found: none of the four above lands on a recipe carrying one, so this page's modulation branch
+   * was pinned by no committed bytes anywhere. A shape with no golden is a shape a renderer change
+   * can quietly lose, which is what these files exist to catch.
+   *
+   * The Mother-32 because it is the only box whose riff-role recipes carry one, and because it
+   * renders the shape whole: two switches on the VCO block, and on the VCF block a source switch,
+   * a sign switch and a destination the panel gives no say in. A reader is told which control to
+   * set at every one of them, which is what this fixture is really pinning — the three parameters
+   * the typed shape replaced each named their control, and collapsing them must not cost that.
+   */
+  'acid-on-a-mother-32': () => ({
+    riff: acidTracksLine,
+    devices: rig('moog-mother-32'),
   }),
 }
 

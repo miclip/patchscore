@@ -1506,16 +1506,119 @@ on `ResolvedParam`s, because a parameter's note is what the sentence was appende
 what the fix is about; and keyed on `midiCc` rather than on the shape of the sentence, for the same
 reason the notice is — a reworded instruction must not quietly stop being counted.
 
+### A modulation is an assignment, not a control (#511)
+
+**Reported from a guide.** `ENV 2 → PITCH DEPTH 13 (-50…50)` sat in the same column, in the same
+shape, as `EQ BASS AMOUNT 33` — and the reader had to work out from an arrow in a name which of
+the two they were meant to *turn* and which to *route*. That is #500 one layer in: a cable and a
+setting were drawn alike until #501 marked the cable, and this is the same reader on the same page
+asking the same question about a different pair.
+
+It came with a second complaint. On `deluge-kick-dark`, four consecutive lines are about one pitch
+envelope, and the neutral point moves between two of them:
+
+```
+ENV 2 SUSTAIN         25   (0…50)    "25 is the note itself, and below 25 goes flat"
+ENV 2 → PITCH DEPTH   13   (-50…50)  —
+```
+
+Both are bare numbers against bare ranges. Only one says where its nothing is, and a reader who has
+just learned that 25 means "no change" is handed 13 on the next line meaning something else.
+
+**A fourth authored kind, because the first three could not say it.**
+
+```ts
+type ModulationEnd =
+  | { kind: 'stated';  name: string; verified?: Verified }
+  | { kind: 'control'; control: string; value: string; options: EnumOptions; verified?: Verified }
+
+type AuthoredModulationParam = {
+  kind: 'modulation'
+  name: string
+  source: ModulationEnd
+  destination: ModulationEnd
+  polarity?: ModulationControl   // a sign switch, where the box has one instead of a signed depth
+  value: number                  // the depth: a point in cited bounds, exactly as a knob's is
+  range: NumericRange
+  neutral: number                // required. Where the route does nothing, inside `range`
+  amountControl?: string         // the depth control's own name, where the panel gives it one
+  …                              // unit, step, mood, midiCc, note, hint, module, scope as ever
+}
+
+type ResolvedParam = { …; modulation?: ResolvedModulation }   // presence is the discriminator
+```
+
+**The test an author applies is whether the reader chooses an end**, and the reason it is that and
+not the punctuation is that the punctuation is wrong in both directions on shipped devices:
+
+- The Circuit Tracks' `ENV 2 → FREQUENCY` carries an arrow and is a **knob**. Env 2 *is* the filter
+  envelope, p.3 lists the path to frequency as one CC parameter, and there is nothing to pick at
+  either end. So do the DFAM's `1→2 FM AMOUNT` and its three `EG AMOUNT` knobs: normalled paths
+  with an attenuator on them.
+- The Mother-32's modulation carries **no arrow anywhere** and is the realest routing in the
+  library, spelled across `VCO MOD SOURCE`, `VCO MOD DEST` and `VCO MOD AMOUNT`.
+
+The issue sized itself at four arrow-named parameters over 28 occurrences and said in as many words
+that the figure "is an undercount and should not be used for sizing". Reading the folders bore that
+out: 43 routings on three devices, of which 35 are on the box that uses no arrow at all.
+
+**Why the amount is inline rather than nested.** A depth is a point inside cited bounds in exactly
+the way a knob's position is — mood may move it, the audit counts its range, the resolver's numeric
+path resolves it. Nesting it would have made every one of those consumers ask a second question to
+find a number they already knew how to read. What is genuinely new is `neutral` and the two ends.
+
+**Why `neutral` is required.** It was prose in a `note`, on the rows whose author thought to write
+one. A field cannot be forgotten on the forty-fourth routing, the three boxes disagree about what
+it is — `0` where the depth is signed around zero, `0` where the attenuator only opens upward, `64`
+where the box centres a 0-127 control — and a renderer can state it in its own words instead of
+each device spelling it again.
+
+**Why `stated` is not a claim of hardwiring.** It says only that no separate control on this
+recipe's list sets that end. The Mother-32's VCF modulation lands on the cutoff because the panel
+gives no say in it; the Deluge's destination is the menu you are standing in and its source is a
+press of `(SELECT)` inside that menu. Both are `stated`, and the difference between them is in the
+citation and the hint, which are both carried.
+
+**Every end is its own claim.** *This box routes an envelope to the cutoff* and *this box offers
+these two sources* are separate from *this depth is 38*, checkable in different places and usually
+printed on different pages — so `resolvedClaims` and `authoredClaims` return one entry per
+claim-bearing thing rather than one per parameter, `audit` counts each, and a device page renders
+each as its own row under the name (§3.2). Counting a routing as one claim would have taken 78
+provisional points off the library's totals for no better reason than that they moved inside a
+typed shape.
+
+**In ink, six surfaces and one word.** §8's guide opens the line `Modulation — ` — the label form
+`Source — ` and `Routing — ` already use — with the two ends and the depth on it, and the neutral
+on a subordinate line of its own that the hints toggle never hides. The kit page (§3.7) and the
+riff page (§5A) draw the same shape in their own markup, both siblings each, because a reader who
+met a routing in a guide must not have to learn a second convention for it somewhere else.
+
+**A `control` end names its control, and that is the operating instruction.** The first cut
+rendered the selection alone — `EG / VCO MOD → FREQUENCY` — reasoning that the switch's name was
+on the device page where a reader asks which control a citation is about. That was wrong about who
+is reading: §8 is at the machine, three switches sit on that panel, and the line said what to
+choose while withholding where. So an end renders as `**VCO MOD SOURCE** \`EG / VCO MOD\``, and the
+polarity switch takes a segment of its own beside the depth rather than a parenthesis. A `stated`
+end has no control by definition, so it stays a bare name — which is how the Deluge says
+`Pitch / Transpose: Overall` exactly once. `modulationEndParts` is the shared decision about which
+half is which; the words and the markup around it stay each renderer's own (#33). The web guide draws
+`ModulationMark`, `CableMark`'s sibling: a wave running into a ring, where the cable is a
+symmetrical lead between two plugs, because *plug this into that* and *this moves that* must not
+read alike. The mark is `aria-hidden` where the cable's carries a label, and that divergence is
+deliberate: the cable's Markdown line has no word for a screen reader to be given instead, and this
+one does.
+
 ### `midiCc`, and why the resolver writes no sentence at all
 
 **A CC number is a number, and the model carries it as one** (#324, #349, #414). A device declares
 it, on a knob or on a switch:
 
 ```ts
-type AuthoredNumericParam = { …; midiCc?: number }        // 0-127, optional
-type AuthoredEnumParam    = { …; midiCc?: number }        // a switch is as addressable as a knob
-type AuthoredTextParam    = { …  }                        // no CC: an instruction is not a control
-type ResolvedParam        = { …; midiCc?: number }        // carried through, unchanged
+type AuthoredNumericParam    = { …; midiCc?: number }     // 0-127, optional
+type AuthoredEnumParam       = { …; midiCc?: number }     // a switch is as addressable as a knob
+type AuthoredModulationParam = { …; midiCc?: number }     // the depth is a control like any other
+type AuthoredTextParam       = { …  }                     // no CC: an instruction is not a control
+type ResolvedParam           = { …; midiCc?: number }     // carried through, unchanged
 ```
 
 and `resolveParam` carries it through untouched, beside a `note` that is authored prose and only

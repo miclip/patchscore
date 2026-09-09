@@ -33,11 +33,14 @@ import type {
   Template,
 } from './template'
 import type {
+  AuthoredModulationParam,
   AuthoredNumericParam,
   AuthoredParam,
   Cite,
+  ModulationEnd,
   ParamValueSource,
   Provenance,
+  ResolvedModulationEnd,
   ResolvedParam,
   Verified,
 } from './params'
@@ -883,7 +886,7 @@ function roundToStep(value: number, step: number, min: number, max: number): num
  * did nothing is not an answer.
  */
 function moodContribution(
-  param: AuthoredNumericParam,
+  param: AuthoredNumericParam | AuthoredModulationParam,
   state: MoodState,
 ): { offset: number; axes: MoodAxis[] } {
   let offset = 0
@@ -1004,7 +1007,7 @@ export function resolveParam(
 ): ResolvedParam {
   const point = inheritVerified(param.verified, recipeVerified)
 
-  if (param.kind !== 'numeric') {
+  if (param.kind !== 'numeric' && param.kind !== 'modulation') {
     return {
       name: param.name,
       value: param.value,
@@ -1035,6 +1038,41 @@ export function resolveParam(
 
   const rangeCite = inheritVerified(param.range.verified, recipeVerified)
 
+  /**
+   * §3.1/#511. **The two ends, with §3.1's inheritance already run.**
+   *
+   * Every end and every option set inherits from the recipe exactly as a range and a point do —
+   * one rule for the whole parameter, applied here rather than at each of the surfaces that draw
+   * a route. `resolvedClaims` reads what comes out, so the documents a routing rests on reach the
+   * guide's block sentence and the audit's counts on the same terms as a knob's.
+   */
+  const end = (from: ModulationEnd): ResolvedModulationEnd =>
+    from.kind === 'stated'
+      ? { kind: 'stated', name: from.name, verified: inheritVerified(from.verified, recipeVerified) }
+      : {
+          kind: 'control',
+          control: from.control,
+          value: from.value,
+          verified: inheritVerified(from.verified, recipeVerified),
+          optionsVerified: inheritVerified(from.options.verified, recipeVerified),
+          ...(from.midiCc === undefined ? {} : { midiCc: from.midiCc }),
+        }
+
+  const modulation =
+    param.kind === 'modulation'
+      ? {
+          modulation: {
+            source: end(param.source),
+            destination: end(param.destination),
+            ...(param.polarity === undefined
+              ? {}
+              : { polarity: end({ kind: 'control', ...param.polarity }) as Extract<ResolvedModulationEnd, { kind: 'control' }> }),
+            neutral: param.neutral,
+            ...(param.amountControl === undefined ? {} : { amountControl: param.amountControl }),
+          },
+        }
+      : {}
+
   // §7 step 9/#433. **A value the allocation decides, not the author.** Where `valueFrom` names
   // a source, that source *is* the value and the authored point is only what it reads at rest.
   //
@@ -1055,8 +1093,11 @@ export function resolveParam(
   // is absent unless a caller states it. A caller with no allocation at all has forgotten the
   // whole thing; a caller whose allocation carries the other member has forgotten this one, and
   // defaulting either would put a plausible number on the line with no error anywhere.
+  // #433/#511. Numeric-only, and the narrowing is the claim: an allocation fact is a voice
+  // count, and a modulation's depth is never one. `AuthoredModulationParam` declares no
+  // `valueFrom` at all, so this is the type saying it rather than a check.
   let sourced: number | undefined
-  if (param.valueFrom !== undefined) {
+  if (param.kind === 'numeric' && param.valueFrom !== undefined) {
     if (allocation === undefined) {
       throw new Error(
         `parameter '${param.name}' takes its value from '${param.valueFrom}' and was resolved with no allocation`,
@@ -1093,6 +1134,7 @@ export function resolveParam(
   const keySemitones =
     sourced === undefined &&
     keyFollow !== undefined &&
+    param.kind === 'numeric' &&
     param.fundamentalPitch === true &&
     rangeCite !== false
       ? keyFollow.semitones
@@ -1176,6 +1218,7 @@ export function resolveParam(
     // #29/§8: the bounds travel with the value, carrying the range's own claim already
     // resolved — the renderer must never have to re-run §3.1's inheritance to print them.
     range: { min: param.range.min, max: param.range.max, verified: rangeCite },
+    ...modulation,
     provenance,
     ...(param.hint === undefined ? {} : { hint: param.hint }),
     // §3.1/#324, narrowed at #349, settled at #414. **The number travels; no sentence is
