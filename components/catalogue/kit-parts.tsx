@@ -1,8 +1,22 @@
 import { CableMark } from '@/components/cable-mark'
 import { ModulationMark } from '@/components/modulation-mark'
 import { Fragment } from 'react'
-import type { AuthoredParam, Device, ParamScope, PatchEntry, Recipe } from '@/lib/core'
-import { groupedParams, hasAmount, modulationEndName, num, paramLabel, recipeRouting } from '@/lib/core'
+import type {
+  AuthoredParam,
+  Device,
+  ModulationEnd,
+  ParamScope,
+  PatchEntry,
+  Recipe,
+} from '@/lib/core'
+import {
+  groupedParams,
+  hasAmount,
+  modulationEndParts,
+  num,
+  paramLabel,
+  recipeRouting,
+} from '@/lib/core'
 import { hintText } from '@/components/guide/format'
 
 /**
@@ -74,6 +88,24 @@ function KitValue({ param }: { param: AuthoredParam }) {
  * setting for everything, and roughly one parameter in ten here declares one. Unmarked, a reader
  * working down a kit would set it again for every sound and wonder why the last one won.
  */
+/**
+ * #511. One end of a routing: the control to set, and what to set it to. The control's name is
+ * the operating instruction and is drawn in the same `.param-name` a setting's is; a `stated` end
+ * has no control on the parameter list and is a value alone. Its Markdown sibling writes the
+ * same two parts as `**CONTROL** \`value\``.
+ */
+function KitModulationEnd({ end }: { end: ModulationEnd }) {
+  const parts = modulationEndParts(end)
+  return (
+    <>
+      {parts.control === undefined ? null : (
+        <span className="param-name">{parts.control}</span>
+      )}
+      <span className="mono">{parts.value}</span>
+    </>
+  )
+}
+
 function KitParam({ param, device }: { param: AuthoredParam; device: Device }) {
   const hint = param.hint === undefined ? undefined : hintText(device, param.hint)
   return (
@@ -89,13 +121,18 @@ function KitParam({ param, device }: { param: AuthoredParam; device: Device }) {
           <>
             <ModulationMark />
             <span className="param-kind">Modulation — </span>
-            <span className="mono">{modulationEndName(param.source)}</span>
+            <KitModulationEnd end={param.source} />
             <span className="arrow" aria-hidden="true">
               →
             </span>
-            <span className="mono">{modulationEndName(param.destination)}</span>
+            <KitModulationEnd end={param.destination} />
             {param.polarity === undefined ? null : (
-              <span className="mono">{` (${param.polarity.value})`}</span>
+              <>
+                <span className="param-sep" aria-hidden="true">
+                  {' · '}
+                </span>
+                <KitModulationEnd end={{ kind: 'control', ...param.polarity }} />
+              </>
             )}
             <span className="param-sep" aria-hidden="true">
               {' · '}

@@ -23,6 +23,7 @@ import type {
   CitationClaims,
   CitedSource,
   ParamScope,
+  ResolvedModulationEnd,
   ResolvedParam,
   ResolvedRange,
 } from './params'
@@ -31,7 +32,7 @@ import {
   citedSources,
   groupedParams,
   hoistedParams,
-  modulationEndName,
+  modulationEndParts,
   paramLabel,
   renderedParams,
   resolvedClaims,
@@ -2434,9 +2435,30 @@ function paramLines(param: ResolvedParam, device: Device | undefined, options: H
   if (param.modulation !== undefined) {
     const m = param.modulation
     const amount = m.amountControl ?? paramLabel(param)
-    const polarity = m.polarity === undefined ? '' : ` (\`${m.polarity.value}\`)`
+    /*
+     * §8/#511. **A control end names its control**, because that is the instruction.
+     *
+     * The three parameters this shape replaced each said where to go — `VCO MOD SOURCE`,
+     * `VCO MOD DEST`, `VCO MOD AMOUNT` — and a line reading `EG / VCO MOD → FREQUENCY` tells a
+     * reader standing at the panel what to choose while withholding which of three switches to
+     * choose it on. A `stated` end has no control, so it stays a bare name and the Deluge's
+     * destination is still said once.
+     *
+     * `**bold** \`value\`` is the same shape every other setting on this page uses, so a routing
+     * reads as a row of controls with a mark and a word in front of it rather than as a second
+     * notation.
+     */
+    const endText = (end: ResolvedModulationEnd): string => {
+      const parts = modulationEndParts(end)
+      return parts.control === undefined
+        ? `\`${parts.value}\``
+        : `**${parts.control}** \`${parts.value}\``
+    }
+    // The sign switch is a control the reader throws, so it takes a segment of its own beside
+    // the depth rather than a parenthesis after the destination.
+    const polarity = m.polarity === undefined ? '' : ` · ${endText(m.polarity)}`
     out.push(
-      `- Modulation — \`${modulationEndName(m.source)}\` → \`${modulationEndName(m.destination)}\`` +
+      `- Modulation — ${endText(m.source)} → ${endText(m.destination)}` +
         `${polarity} · **${amount}** \`${valueText(param)}\`${unit}${range}${cc}`,
     )
     // #511. The neutral, typed and on its own row rather than left to a note somebody remembered

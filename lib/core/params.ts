@@ -1565,20 +1565,33 @@ export type ParamGroup<P = ResolvedParam> = {
  * own surfaces. Nothing about the behaviour moves; `ResolvedParam` satisfies the constraint.
  */
 /**
- * §3.1/#511. **What one end of a routing is called on the line.**
+ * §3.1/#511. **The two halves of one end of a routing: the control to set, and what to set it to.**
  *
- * Shared for the reason `paramLabel` and `groupedParams` are, and held to the same limit: it is a
- * *decision* — a stated end is its own name, a control end is the option the reader chose rather
- * than the switch they chose it on — and four renderers making that decision four times is four
- * chances for the guide, the kit page, the riff page and the printed sibling to name one end
- * differently. The words around it, the punctuation between the two ends and the mark beside them
- * stay each renderer's own (#33).
+ * Shared for the reason `paramLabel` and `groupedParams` are: it is a *decision*, and six
+ * renderers making it six times is six chances for the guide, the kit page, the riff page and
+ * their three printed siblings to name one end differently. The words around it, the punctuation
+ * between the two ends and the mark beside them stay each renderer's own (#33).
  *
- * The *control's* name is not lost: it is on the device page, one claim per row, which is where a
- * reader asks which switch a citation is about (#410).
+ * **`control` is the operating instruction and must be rendered.** The first cut of this returned
+ * the selection alone, on the reasoning that the switch's name was on the device page where a
+ * reader asks which control a citation is about (#410). That was wrong about who is reading. §8
+ * is read at the machine, and `EG / VCO MOD → FREQUENCY` tells somebody standing at a Mother-32
+ * what to choose while withholding *where* — three switches on that panel and no clue which. The
+ * three separate parameters this shape replaced each named their control, and collapsing them
+ * must not cost the reader the instruction.
+ *
+ * A `stated` end has no control by definition — nothing on the parameter list sets it — so it is
+ * a name and nothing else, which is why the Deluge still says its destination once.
  */
-export function modulationEndName(end: ResolvedModulationEnd | ModulationEnd): string {
-  return end.kind === 'stated' ? end.name : end.value
+export type ModulationEndParts = {
+  /** The control the reader sets. Absent on a `stated` end, where there is none. */
+  control?: string
+  /** What the end *is*: the option selected, or the stated name. */
+  value: string
+}
+
+export function modulationEndParts(end: ResolvedModulationEnd | ModulationEnd): ModulationEndParts {
+  return end.kind === 'stated' ? { value: end.name } : { control: end.control, value: end.value }
 }
 
 export function paramLabel<P extends { name: string; module?: string }>(param: P): string {

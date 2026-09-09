@@ -172,10 +172,10 @@ Routing — Played from its own 32-step sequencer, from MIDI IN, or from pitch a
   - ↳ hint: Past 3 o’clock the filter self-oscillates
 - **VCF MODE** `LOW PASS`
 - **VOLUME** `78` % travel (0…100 % travel)
-- Modulation — `EG / VCO MOD` → `FREQUENCY` · **VCO MOD AMOUNT** `34` % travel (0…100 % travel)
+- Modulation — **VCO MOD SOURCE** `EG / VCO MOD` → **VCO MOD DEST** `FREQUENCY` · **VCO MOD AMOUNT** `34` % travel (0…100 % travel)
   - ↳ neutral: `0` is no modulation
   - ↳ note: The EG is normalled here — a cable in VCO MOD replaces it
-- Modulation — `EG` → `the VCF cutoff` (`+`) · **VCF MOD AMOUNT** `40` % travel (0…100 % travel)
+- Modulation — **VCF MOD SOURCE** `EG` → `the VCF cutoff` · **VCF MOD POLARITY** `+` · **VCF MOD AMOUNT** `40` % travel (0…100 % travel)
   - ↳ neutral: `0` is no modulation
 - **ATTACK** `0` % travel (0…100 % travel)
 - **SUSTAIN** `OFF`

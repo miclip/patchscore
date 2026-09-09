@@ -10,13 +10,16 @@ import {
 } from './vocabulary'
 import {
   AuthoredParamSchema,
+  CITE_KINDS,
   CiteSchema,
   VerifiedSchema,
   type AuthoredParam,
   type Cite,
   type Verified,
   citedDocument,
-  effectiveVerified, hasAmount, CITE_KINDS} from './params'
+  effectiveVerified,
+  hasAmount,
+} from './params'
 
 /**
  * §2. One self-contained module per device. Devices know their own capabilities and their own

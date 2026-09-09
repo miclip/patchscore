@@ -1,5 +1,20 @@
-import type { Device, PatchEntry, ResolvedParam, Riff, RiffResolution, RiffVoicing } from '@/lib/core'
-import { SUBORDINATE, groupedParams, num, paramLabel, recipeRouting } from '@/lib/core'
+import type {
+  Device,
+  PatchEntry,
+  ResolvedModulationEnd,
+  ResolvedParam,
+  Riff,
+  RiffResolution,
+  RiffVoicing,
+} from '@/lib/core'
+import {
+  SUBORDINATE,
+  groupedParams,
+  modulationEndParts,
+  num,
+  paramLabel,
+  recipeRouting,
+} from '@/lib/core'
 import {
   RIFF_GRID_LEAD,
   degreeLabel,
@@ -147,6 +162,34 @@ function paramLines(param: ResolvedParam, device: Device): string[] {
   const range =
     param.range === undefined ? '' : ` (${num(param.range.min)}…${num(param.range.max)}${unit})`
   const cc = param.midiCc === undefined ? '' : ` · MIDI CC ${param.midiCc}`
+  /*
+   * §5A/#511. **A routing is drawn as an assignment here too**, in the same words §8 uses.
+   *
+   * This page and the guide are two surfaces over one library, and a reader arriving at a riff
+   * from a guide must not have to learn a second convention for the same fact — the rule this
+   * file's header already states about `Value`, `groupedParams` and `CableMark`. A modulation
+   * left to fall through to the line below would render an assignment as a knob on exactly one
+   * of the six surfaces, which is the failure #511 opened with.
+   */
+  if (param.modulation !== undefined) {
+    const m = param.modulation
+    const endText = (end: ResolvedModulationEnd): string => {
+      const parts = modulationEndParts(end)
+      return parts.control === undefined
+        ? `\`${parts.value}\``
+        : `**${parts.control}** \`${parts.value}\``
+    }
+    const polarity = m.polarity === undefined ? '' : ` · ${endText(m.polarity)}`
+    const amount = m.amountControl ?? paramLabel(param)
+    const out = [
+      `- Modulation — ${endText(m.source)} → ${endText(m.destination)}` +
+        `${polarity} · **${amount}** \`${valueText(param)}\`${unit}${range}${cc}`,
+    ]
+    subordinate(out, '  ', 'neutral', `\`${num(m.neutral)}\` is no modulation`)
+    if (param.note !== undefined) subordinate(out, '  ', 'note', param.note)
+    if (param.hint !== undefined) subordinate(out, '  ', 'hint', hintText(device, param.hint))
+    return out
+  }
   const out = [`- **${paramLabel(param)}** \`${valueText(param)}\`${unit}${range}${cc}`]
   if (param.note !== undefined) subordinate(out, '  ', 'note', param.note)
   if (param.hint !== undefined) subordinate(out, '  ', 'hint', hintText(device, param.hint))

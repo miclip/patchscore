@@ -5,7 +5,7 @@ import {
   ROLES,
   expand,
   hasAmount,
-  modulationEndName,
+  modulationEndParts,
   isSustainedPart,
   moodState,
   noteInstruction,
@@ -392,7 +392,7 @@ describe('Deluge manifest', () => {
       if (destination.kind !== 'stated') throw new Error(`${id}: destination is not stated`)
       expect(destination.name, id).toBe('Pitch / Transpose: Overall')
       expect((destination.verified as { source: string }).source, id).toBe(source)
-      expect(modulationEndName(depth.source), id).toBe('ENV 2')
+      expect(modulationEndParts(depth.source), id).toEqual({ value: 'ENV 2' })
     }
   })
 

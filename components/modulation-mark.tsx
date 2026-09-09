@@ -16,8 +16,8 @@
  *
  * **The geometry carries it, not the colour**, exactly as the cable's does. A wave meeting a ring
  * is the same object in monochrome print and to a reader who cannot separate the accent from the
- * text; `globals.css` says of the rack cable that *"Colour is not load-bearing here, and it must
- * not become so"*, and this inherits that rule rather than restating it.
+ * text. `globals.css` sets that rule out for the rack cable — colour may never become the thing a
+ * reader has to see — and this inherits it rather than restating it.
  *
  * **`aria-hidden`, where `CableMark` carries `role="img"` and a label — and the difference is not
  * an oversight.** Both marks obey the same rule: `innerText` must say exactly what the Markdown

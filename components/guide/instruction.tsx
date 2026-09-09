@@ -2,7 +2,7 @@ import { Fragment, useContext } from 'react'
 import type { PatternDriver, TrigPlacement } from '@/lib/core'
 import type { ReactNode } from 'react'
 import type { ResolvedParam } from '@/lib/core'
-import { modulationEndName, paramLabel } from '@/lib/core'
+import { modulationEndParts, paramLabel } from '@/lib/core'
 import { ModulationMark } from '@/components/modulation-mark'
 import { GuideNavContext } from './nav'
 import { count, num, rangeText, valueParts } from './format'
@@ -135,6 +135,29 @@ export function Value({ param }: { param: ResolvedParam }) {
  * line a shared sentence above already covered, and with no citation to repeat there is nothing
  * to hoist.
  */
+/**
+ * §8/#511. **One end of a routing: the control to set, and what to set it to.**
+ *
+ * The control's name is the operating instruction and is drawn in the same `.param-name` a
+ * setting's is, because that is what it is — a reader standing at the machine looks for
+ * `VCO MOD SOURCE` on the panel exactly as they look for `CUTOFF`. A `stated` end has no control
+ * on the parameter list, so it is a value alone.
+ *
+ * `modulationEndParts` is the shared decision (#33): which half is which. The markup is this
+ * renderer's own, and its Markdown sibling writes `**CONTROL** \`value\`` for the same two parts.
+ */
+function ModulationEnd({ end }: { end: NonNullable<ResolvedParam['modulation']>['source'] }) {
+  const parts = modulationEndParts(end)
+  return (
+    <>
+      {parts.control === undefined ? null : (
+        <span className="param-name">{parts.control}</span>
+      )}
+      <span className="mono">{parts.value}</span>
+    </>
+  )
+}
+
 export function ParamLine({ param, hint }: { param: ResolvedParam; hint?: string }) {
   const m = param.modulation
   return (
@@ -155,13 +178,18 @@ export function ParamLine({ param, hint }: { param: ResolvedParam; hint?: string
         <>
           <ModulationMark />
           <span className="param-kind">Modulation — </span>
-          <span className="mono">{modulationEndName(m.source)}</span>
+          <ModulationEnd end={m.source} />
           <span className="arrow" aria-hidden="true">
             →
           </span>
-          <span className="mono">{modulationEndName(m.destination)}</span>
+          <ModulationEnd end={m.destination} />
           {m.polarity === undefined ? null : (
-            <span className="mono">{` (${m.polarity.value})`}</span>
+            <>
+              <span className="param-sep" aria-hidden="true">
+                {' · '}
+              </span>
+              <ModulationEnd end={m.polarity} />
+            </>
           )}
           <span className="param-sep" aria-hidden="true">
             {' · '}

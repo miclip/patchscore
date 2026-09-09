@@ -1,9 +1,16 @@
-import type { AuthoredParam, Device, PatchEntry, Recipe } from '@/lib/core'
+import type {
+  AuthoredParam,
+  Device,
+  ModulationControl,
+  ModulationEnd,
+  PatchEntry,
+  Recipe,
+} from '@/lib/core'
 import {
   SUBORDINATE,
   groupedParams,
   hasAmount,
-  modulationEndName,
+  modulationEndParts,
   num,
   paramLabel,
   recipeRouting,
@@ -102,11 +109,20 @@ function paramLines(param: AuthoredParam, device: Device): string[] {
   // over one library, and a kick whose pitch envelope reads as a routing in the guide and as a
   // knob on the kit page would be the same confusion #511 opened with, moved one page across.
   if (param.kind === 'modulation') {
-    const polarity = param.polarity === undefined ? '' : ` (\`${param.polarity.value}\`)`
+    // #511. A control end names its control: the three parameters this shape replaced each said
+    // where to go, and a line that names only the selection tells a reader what to choose while
+    // withholding which switch to choose it on. A `stated` end has none and stays a bare name.
+    const endText = (end: ModulationEnd | ModulationControl): string => {
+      const parts = modulationEndParts('kind' in end ? end : { kind: 'control', ...end })
+      return parts.control === undefined
+        ? `\`${parts.value}\``
+        : `**${parts.control}** \`${parts.value}\``
+    }
+    const polarity = param.polarity === undefined ? '' : ` · ${endText(param.polarity)}`
     const amount = param.amountControl ?? paramLabel(param)
     const out = [
-      `- Modulation — \`${modulationEndName(param.source)}\` → ` +
-        `\`${modulationEndName(param.destination)}\`${polarity} · **${amount}** ` +
+      `- Modulation — ${endText(param.source)} → ` +
+        `${endText(param.destination)}${polarity} · **${amount}** ` +
         `${valueText(param)}${scope}`,
     ]
     subordinate(out, '  ', 'neutral', `\`${num(param.neutral)}\` is no modulation`)

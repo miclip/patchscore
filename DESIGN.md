@@ -1587,9 +1587,21 @@ each as its own row under the name (§3.2). Counting a routing as one claim woul
 provisional points off the library's totals for no better reason than that they moved inside a
 typed shape.
 
-**In ink, two surfaces and one word.** §8's guide opens the line `Modulation — ` — the label form
+**In ink, six surfaces and one word.** §8's guide opens the line `Modulation — ` — the label form
 `Source — ` and `Routing — ` already use — with the two ends and the depth on it, and the neutral
-on a subordinate line of its own that the hints toggle never hides. The web guide draws
+on a subordinate line of its own that the hints toggle never hides. The kit page (§3.7) and the
+riff page (§5A) draw the same shape in their own markup, both siblings each, because a reader who
+met a routing in a guide must not have to learn a second convention for it somewhere else.
+
+**A `control` end names its control, and that is the operating instruction.** The first cut
+rendered the selection alone — `EG / VCO MOD → FREQUENCY` — reasoning that the switch's name was
+on the device page where a reader asks which control a citation is about. That was wrong about who
+is reading: §8 is at the machine, three switches sit on that panel, and the line said what to
+choose while withholding where. So an end renders as `**VCO MOD SOURCE** \`EG / VCO MOD\``, and the
+polarity switch takes a segment of its own beside the depth rather than a parenthesis. A `stated`
+end has no control by definition, so it stays a bare name — which is how the Deluge says
+`Pitch / Transpose: Overall` exactly once. `modulationEndParts` is the shared decision about which
+half is which; the words and the markup around it stay each renderer's own (#33). The web guide draws
 `ModulationMark`, `CableMark`'s sibling: a wave running into a ring, where the cable is a
 symmetrical lead between two plugs, because *plug this into that* and *this moves that* must not
 read alike. The mark is `aria-hidden` where the cable's carries a label, and that divergence is

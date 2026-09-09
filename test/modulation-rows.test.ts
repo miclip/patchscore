@@ -5,9 +5,11 @@ import { describe, expect, it } from 'vitest'
 import {
   AuthoredParamSchema,
   NEUTRAL_MOOD,
+  modulationEndParts,
   renderGuide,
   resolve,
   resolveParams,
+  resolveRiff,
   type AuthoredModulationParam,
   type AuthoredParam,
   type Device,
@@ -17,7 +19,11 @@ import {
 import { DEVICES } from '../lib/devices/registry.generated'
 import { industrialTechno } from '../lib/templates/index'
 import { Guide } from '../components/guide/guide'
+import { RiffVoice } from '../components/riff/riff-voice'
+import { renderRiff } from '../lib/studio/riff-markdown'
+import { acidTracksLine } from '../lib/riffs/index'
 import { guidePath } from './golden/guides'
+import { riffPath } from './golden/riffs'
 
 /**
  * §3.1/#511. **A modulation is an assignment, and the model says so rather than the punctuation.**
@@ -28,8 +34,8 @@ import { guidePath } from './golden/guides'
  * #501 marked the cable — and it had a second half: the neutral point moves between adjacent rows
  * (`ENV 2 SUSTAIN`'s is 25, the depth's is 0) and was stated on only one of them.
  *
- * Both halves are answered by the shape rather than by prose, and the load-bearing claim of this
- * file is that **the shape is never inferred from a name**. Two shipped devices make that concrete
+ * Both halves are answered by the shape rather than by prose, and the claim everything here rests
+ * on is that **the shape is never inferred from a name**. Two shipped devices make that concrete
  * and both are asserted below: the Circuit Tracks' `ENV 2 → FREQUENCY` carries an arrow and is a
  * knob on a path the box wires, and the Mother-32's routing — the realest one in the library —
  * carries no arrow anywhere in any of its names.
@@ -281,9 +287,18 @@ describe('the web guide and the Markdown guide draw one routing (#33/#511)', () 
 
   it('prints a routing at all, so this file is testing something', () => {
     expect(routingLines().length).toBeGreaterThan(0)
-    // The shapes that only this box carries, both on the page.
-    expect(markdown).toContain('Modulation — `EG / VCO MOD` → `FREQUENCY`')
-    expect(markdown).toContain('Modulation — `EG` → `the VCF cutoff` (`+`)')
+    // The shapes that only this box carries, both on the page, and both naming every control the
+    // reader has to set. The three parameters the typed shape replaced each said where to go;
+    // a line reading `EG / VCO MOD → FREQUENCY` would tell somebody at the panel what to choose
+    // and withhold which of three switches to choose it on.
+    expect(markdown).toContain(
+      'Modulation — **VCO MOD SOURCE** `EG / VCO MOD` → **VCO MOD DEST** `FREQUENCY` · ' +
+        '**VCO MOD AMOUNT**',
+    )
+    expect(markdown).toContain(
+      'Modulation — **VCF MOD SOURCE** `EG` → `the VCF cutoff` · **VCF MOD POLARITY** `+` · ' +
+        '**VCF MOD AMOUNT**',
+    )
   })
 
   it('says the same words on both sides, routing for routing', () => {
@@ -323,6 +338,133 @@ describe('the web guide and the Markdown guide draw one routing (#33/#511)', () 
   it('is pinned by a golden that actually contains one', () => {
     const golden = readFileSync(guidePath('mother-32'), 'utf8')
     expect(golden).toContain('Modulation — ')
+    expect(golden).toContain('↳ neutral: `0` is no modulation')
+  })
+})
+
+/**
+ * §3.1/#511. **Every `control` end names its control, on every surface that draws one.**
+ *
+ * The first cut of this shape rendered the *selection* alone — `EG / VCO MOD → FREQUENCY` — on the
+ * reasoning that the switch's name was on the device page, where a reader asks which control a
+ * citation is about (#410). That was wrong about who is reading: §8 is read at the machine, and
+ * a reader standing at a Mother-32 with three switches in front of them was told what to choose
+ * and not where. The three parameters the typed shape replaced each named their control.
+ *
+ * Held to *both* boxes with `control` ends and to every rendering surface, because the failure
+ * mode is one surface falling back and no other test noticing.
+ */
+describe('a control end names the control the reader sets (#511)', () => {
+  const CONTROLS: ReadonlyArray<readonly [string, readonly string[]]> = [
+    ['moog-mother-32', ['VCO MOD SOURCE', 'VCO MOD DEST', 'VCF MOD SOURCE', 'VCF MOD POLARITY']],
+    ['novation-circuit-tracks', ['MOD MATRIX 1 SOURCE 1', 'MOD MATRIX 1 DESTINATION']],
+  ]
+
+  it('carries the control name on every control end the library authors', () => {
+    for (const [deviceId, expected] of CONTROLS) {
+      const named = new Set<string>()
+      for (const { param } of modulationsOf(byId(deviceId))) {
+        for (const end of [param.source, param.destination]) {
+          if (end.kind === 'control') named.add(end.control)
+        }
+        if (param.polarity !== undefined) named.add(param.polarity.control)
+      }
+      expect([...named].sort(), deviceId).toEqual([...expected].sort())
+    }
+  })
+
+  it('splits a control end into a control and a value, and a stated end into a value alone', () => {
+    for (const { deviceId, param } of ALL) {
+      for (const end of [param.source, param.destination]) {
+        const parts = modulationEndParts(end)
+        if (end.kind === 'control') {
+          expect(parts.control, `${deviceId} ${param.name}`).toBe(end.control)
+          expect(parts.value).toBe(end.value)
+        } else {
+          expect(parts.control, `${deviceId} ${param.name}`).toBeUndefined()
+          expect(parts.value).toBe(end.name)
+        }
+      }
+    }
+  })
+
+  /**
+   * The Deluge is the check in the other direction: its ends are `stated`, so its destination is
+   * named once and no control name is printed where the box has no control to print one for.
+   */
+  it('names a stated destination once and gives it no control', () => {
+    const deluge = renderGuide(
+      resolve({
+        devices: DEVICES.filter((d) => d.id === 'synthstrom-deluge'),
+        template: industrialTechno,
+        mood: NEUTRAL_MOOD,
+        seed: 18,
+      }),
+      { layout: 'phase' },
+    )
+    const line = deluge
+      .split('\n')
+      .find((l) => l.includes('Modulation — ') && l.includes('Pitch / Transpose: Overall'))
+    expect(line, 'the Deluge should render a pitch routing').toBeDefined()
+    expect(line as string).toContain('Modulation — `ENV 2` → `Pitch / Transpose: Overall`')
+    // Once, and nowhere else on the line.
+    expect((line as string).split('Pitch / Transpose: Overall')).toHaveLength(2)
+  })
+})
+
+/**
+ * #33/#511. **Every resolved surface draws a routing, and none of them falls back to a knob.**
+ *
+ * Three renderers read `ResolvedParam` — the guide's two siblings and the riff page's two — and a
+ * modulation reaching any of them without a `modulation` branch would render as an ordinary
+ * control on that one surface with nothing else failing. The riff page is where that actually
+ * happened: it had no branch at all until this was written, and no golden reached it.
+ */
+describe('the riff page draws a routing on both of its surfaces (#511)', () => {
+  const resolved = resolveRiff(
+    acidTracksLine,
+    DEVICES.filter((d) => d.id === 'moog-mother-32'),
+  )
+  if (resolved.outcome !== 'played') {
+    throw new Error('the Mother-32 should play the acid line, or this file tests nothing')
+  }
+  const markdown = renderRiff(resolved)
+  const markup = renderToStaticMarkup(
+    createElement(RiffVoice, { riff: resolved.riff, voice: resolved.voice }),
+  )
+  const pageText = markup
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&#x27;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+
+  it('renders the routing in Markdown, controls and all', () => {
+    expect(markdown).toContain(
+      'Modulation — **VCO MOD SOURCE** `EG / VCO MOD` → **VCO MOD DEST** `FREQUENCY`',
+    )
+    expect(markdown).toContain('**VCF MOD POLARITY** `+`')
+    expect(markdown).toContain('↳ neutral: `0` is no modulation')
+  })
+
+  it('says the same words on the page, and draws the mark', () => {
+    for (const line of markdown
+      .split('\n')
+      .filter((l) => l.trimStart().startsWith('- Modulation — '))
+      .map((l) => l.trim().replace(/^- /, '').replace(/`/g, '').replace(/\*\*/g, ''))) {
+      expect(pageText, line).toContain(line)
+    }
+    expect(markup).toContain('class="modulation-mark"')
+    expect(pageText).toContain('0 is no modulation')
+  })
+
+  /** The committed bytes, so a renderer change cannot lose the shape silently. */
+  it('is pinned by a riff golden that contains one', () => {
+    const golden = readFileSync(riffPath('acid-on-a-mother-32'), 'utf8')
+    expect(golden).toContain('Modulation — **VCO MOD SOURCE**')
+    expect(golden).toContain('**VCF MOD POLARITY** `+`')
     expect(golden).toContain('↳ neutral: `0` is no modulation')
   })
 })

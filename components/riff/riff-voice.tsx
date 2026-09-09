@@ -1,16 +1,18 @@
 import { Fragment } from 'react'
 import { CableMark } from '@/components/cable-mark'
+import { ModulationMark } from '@/components/modulation-mark'
 import { Value } from '@/components/guide/instruction'
 import { hintText } from '@/components/guide/format'
 import type {
   BoundArticulation,
   Device,
   PatchEntry,
+  ResolvedModulationEnd,
   ResolvedParam,
   Riff,
   RiffVoicing,
 } from '@/lib/core'
-import { groupedParams, num, paramLabel, recipeRouting } from '@/lib/core'
+import { groupedParams, modulationEndParts, num, paramLabel, recipeRouting } from '@/lib/core'
 import { riffCitation, riffStack, riffSubstitution, voiceHeading } from '@/lib/studio/riff-text'
 
 /**
@@ -59,15 +61,59 @@ function RiffPatch({ entries }: { entries: readonly PatchEntry[] }) {
  */
 function RiffParam({ param, device }: { param: ResolvedParam; device: Device }) {
   const hint = param.hint === undefined ? undefined : hintText(device, param.hint)
+  const m = param.modulation
   return (
     <li className="riff-param">
       <span className="riff-param-line">
-        <span className="param-name">{paramLabel(param)}</span>
+        {/*
+          §5A/#511. A routing reads as an assignment on this page too, in the same shape §8 draws
+          and beside the same mark — `ModulationMark` here for the reason `CableMark` is already
+          here, so a reader arriving from a guide meets one convention rather than two.
+        */}
+        {m === undefined ? null : (
+          <>
+            <ModulationMark />
+            <span className="param-kind">Modulation — </span>
+            <RiffModulationEnd end={m.source} />
+            <span className="arrow" aria-hidden="true">
+              {' → '}
+            </span>
+            <RiffModulationEnd end={m.destination} />
+            {m.polarity === undefined ? null : (
+              <>
+                <span className="param-sep" aria-hidden="true">
+                  {' · '}
+                </span>
+                <RiffModulationEnd end={m.polarity} />
+              </>
+            )}
+            <span className="param-sep" aria-hidden="true">
+              {' · '}
+            </span>
+          </>
+        )}
+        <span className="param-name">{m?.amountControl ?? paramLabel(param)}</span>
         <Value param={param} />
       </span>
+      {m === undefined ? null : (
+        <p className="subordinate neutral">{`${num(m.neutral)} is no modulation`}</p>
+      )}
       {param.note === undefined ? null : <p className="subordinate note">{param.note}</p>}
       {hint === undefined ? null : <p className="riff-hint">{hint}</p>}
     </li>
+  )
+}
+
+/** #511. One end of a routing: the control to set, and what to set it to. See `ParamLine`'s. */
+function RiffModulationEnd({ end }: { end: ResolvedModulationEnd }) {
+  const parts = modulationEndParts(end)
+  return (
+    <>
+      {parts.control === undefined ? null : (
+        <span className="param-name">{parts.control}</span>
+      )}
+      <span className="mono">{parts.value}</span>
+    </>
   )
 }
 

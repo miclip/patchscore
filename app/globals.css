@@ -5767,8 +5767,8 @@ html {
  * **A wave running into a ring**, where the cable is a symmetrical lead between two plugs. The
  * two must not read alike: a cable is *plug this into that* and a modulation is *this moves
  * that*, and a reader who learned the first symbol has to be able to tell the second is a
- * different claim. The geometry carries it and the colour does not, which is the rack cable's own
- * rule — "Colour is not load-bearing here, and it must not become so".
+ * different claim. The geometry carries it and the colour does not, which is the rule the rack
+ * cable above already sets out: colour may never become the thing a reader has to see.
  *
  * Sized in `em` beside the cable's, and `vertical-align: baseline` for the same reason: the line
  * wraps on a phone (#21) and the mark stays with the first line rather than being stretched.
