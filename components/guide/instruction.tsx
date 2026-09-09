@@ -2,7 +2,8 @@ import { Fragment, useContext } from 'react'
 import type { PatternDriver, TrigPlacement } from '@/lib/core'
 import type { ReactNode } from 'react'
 import type { ResolvedParam } from '@/lib/core'
-import { paramLabel } from '@/lib/core'
+import { modulationEndName, paramLabel } from '@/lib/core'
+import { ModulationMark } from '@/components/modulation-mark'
 import { GuideNavContext } from './nav'
 import { count, num, rangeText, valueParts } from './format'
 
@@ -29,9 +30,11 @@ export type InstructionProps = {
   /** Already resolved through the device's `hints` table by the caller. */
   hint?: string
   note?: string
+  /** #511. Where a routing's depth does nothing. Typed, so it is never a note somebody forgot. */
+  neutral?: string
 }
 
-export function Instruction({ children, hint, note }: InstructionProps) {
+export function Instruction({ children, hint, note, neutral }: InstructionProps) {
   return (
     <div className="instruction">
       {/*
@@ -46,6 +49,12 @@ export function Instruction({ children, hint, note }: InstructionProps) {
         {/* Always rendered. The column exists whether or not there is anything in it. */}
         <p className="hint">{hint}</p>
       </div>
+      {/*
+        §8.1/#511. The neutral, above the note and never suppressed. It is not a jog and not
+        prose: it is where the control does nothing, and a reader handed `13` against `-50…50`
+        cannot act on the line without it. Outside the grid for the reason the note is.
+      */}
+      {neutral === undefined ? null : <p className="subordinate neutral">{neutral}</p>}
       {note === undefined ? null : <p className="subordinate note">{note}</p>}
     </div>
   )
@@ -127,18 +136,49 @@ export function Value({ param }: { param: ResolvedParam }) {
  * to hoist.
  */
 export function ParamLine({ param, hint }: { param: ResolvedParam; hint?: string }) {
+  const m = param.modulation
   return (
     <Instruction
+      {...(m === undefined ? {} : { neutral: `${num(m.neutral)} is no modulation` })}
       {...(param.note === undefined ? {} : { note: param.note })}
       {...(hint === undefined ? {} : { hint })}
     >
+      {/*
+        §8/#511. **A routing is drawn as an assignment**, and the decision comes off
+        `param.modulation` rather than out of the name. An arrow in a name is punctuation: the
+        Circuit Tracks' `ENV 2 → FREQUENCY` has one and is a knob on a path the box wires, and the
+        Mother-32's real routing has none. `ModulationMark` is `CableMark`'s sibling — #501 marked
+        the cable and this marks the assignment — and `Modulation — ` is the same word its
+        Markdown sibling prints, so `innerText` and the printed page say one thing (#33).
+      */}
+      {m === undefined ? null : (
+        <>
+          <ModulationMark />
+          <span className="param-kind">Modulation — </span>
+          <span className="mono">{modulationEndName(m.source)}</span>
+          <span className="arrow" aria-hidden="true">
+            →
+          </span>
+          <span className="mono">{modulationEndName(m.destination)}</span>
+          {m.polarity === undefined ? null : (
+            <span className="mono">{` (${m.polarity.value})`}</span>
+          )}
+          <span className="param-sep" aria-hidden="true">
+            {' · '}
+          </span>
+        </>
+      )}
       {/*
         #385. The label, not the stored name: inside a box already headed `MIXER`, a row reading
         `MIXER · OSC 1` repeats it. `paramLabel` is shared with the Markdown renderer so one
         control cannot read two ways (#33), and `param.name` stays the identity — the React key
         above it, #107's hoist key, and every fixture that names a control.
+
+        #511: on a routing the depth's own control name takes this slot where the panel gives it
+        one, so the destination is said once instead of appearing in the route and again in a name
+        that spells it out.
       */}
-      <span className="param-name">{paramLabel(param)}</span>
+      <span className="param-name">{m?.amountControl ?? paramLabel(param)}</span>
       <Value param={param} />
     </Instruction>
   )

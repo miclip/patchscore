@@ -87,8 +87,11 @@ function markdownFacts(md: string): string[] {
       line
         .replace(/^#+ /, '')
         .replace(/^\s*- /, '')
-        .replace(/^↳ (note|hint): /, '')
-        .replace(/↳ (note|hint): /g, '')
+        // #511 adds `neutral`, and it is ink for the same reason the other two are: Markdown
+        // has only a word to tag a subordinate line with, the page draws the tag in CSS on a
+        // `::before`. The fact is what follows it, and that is what is compared.
+        .replace(/^↳ (note|hint|neutral): /, '')
+        .replace(/↳ (note|hint|neutral): /g, '')
         .replace(/\*\*/g, '')
         /*
          * #385's lamp. Markdown has only a glyph to draw one with; the page draws it in CSS on

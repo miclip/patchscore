@@ -345,7 +345,126 @@ export type AuthoredTextParam = {
   scope?: ParamScope
 }
 
-export type AuthoredParam = AuthoredNumericParam | AuthoredEnumParam | AuthoredTextParam
+/**
+ * §3.1/#511. **One end of a modulation** — where the signal comes from, or where it lands.
+ *
+ * Two kinds, and the split is about **what the reader does**, not about what the box is doing
+ * internally. `control` is a switch or a menu with a printed option set: the reader turns it, and
+ * the set is a legality claim cited independently of which option this recipe reaches for, exactly
+ * as `EnumOptions` is on an enum param (§3.2). `stated` is an end with no such control in this
+ * recipe's list — either because the box hardwires it (the Mother-32's VCF modulation always
+ * lands on the cutoff) or because the reader arrives at it by navigating rather than by setting
+ * something (the Deluge's destination is the menu you are standing in).
+ *
+ * **`stated` is not a claim of hardwiring**, and reading it as one would be wrong on the Deluge.
+ * It says only that there is nothing separate to set. The difference between the two boxes is in
+ * the citation and the hint, both of which are carried.
+ *
+ * Each end carries its own `verified`, because each is its own claim: *this box routes an envelope
+ * to the cutoff* and *this box offers these two sources* are two things a reader would open the
+ * manual for, and one page rarely prints both.
+ */
+export type ModulationControl = {
+  /** The control's own name on the panel: `VCO MOD SOURCE`. */
+  control: string
+  value: string
+  /** The legality gate, cited independently of the selection (§3.2). */
+  options: EnumOptions
+  /** The *selection*. Omitted → inherit the recipe's `verified`. */
+  verified?: Verified
+  midiCc?: number
+}
+
+export type ModulationEnd =
+  | { kind: 'stated'; name: string; verified?: Verified }
+  | ({ kind: 'control' } & ModulationControl)
+
+/**
+ * §3.1/#511. **An assignment: pick a source, pick a destination, set a depth.**
+ *
+ * The fourth authored kind, and the reason it exists is that the first three could not say this.
+ * A modulation was `AuthoredNumericParam` with an arrow in its name — `ENV 2 → PITCH DEPTH 13
+ * (-50…50)` — so it rendered in the same shape as `EQ BASS AMOUNT 33` and a reader had to work
+ * out from the punctuation which of the two they were meant to *turn* and which to *route*. #500
+ * and #501 fixed exactly that confusion between a cable and a control; this is the same confusion
+ * one layer in.
+ *
+ * **Typed rather than parsed, and that is the whole point.** A renderer that decided from the name
+ * would be inventing meaning out of an arrow, which is the failure this repo keeps hitting — and
+ * it would be wrong in both directions on real devices. The Circuit Tracks' `ENV 2 → FREQUENCY`
+ * carries an arrow and is a knob: env 2 *is* the filter envelope, the path is fixed, and there is
+ * nothing to pick. The Mother-32's routing carries no arrow anywhere and is the realest one in the
+ * library, spelled across `VCO MOD SOURCE`, `VCO MOD DEST` and `VCO MOD AMOUNT`. An arrow is
+ * punctuation; this field is the claim.
+ *
+ * **The test an author applies is whether the reader chooses an end.** A depth knob on a path the
+ * instrument wires — the DFAM's `VCO 1 EG AMOUNT`, its `1→2 FM AMOUNT`, the Circuit Tracks' three
+ * arrow-named envelope depths — is a control and stays one. Where either end is picked, from an
+ * option set or through a menu, it is an assignment and belongs here.
+ *
+ * **The amount is inline rather than nested**, so every consumer that already knows how to read a
+ * point, a range and a mood offset off a numeric keeps working on the depth unchanged: it is a
+ * number in a range with a citation on each, and the resolver's numeric path resolves it. What is
+ * new is `neutral` and the two ends.
+ *
+ * **`neutral` is required, and it is the half of #511 the model had nowhere to put.** A depth of
+ * `13` on `-50…50` is a number nobody can act on until they are told what a nothing looks like —
+ * and the row above it on the Deluge is `ENV 2 SUSTAIN 25`, whose nothing is `25`. It was prose in
+ * a note on the rows whose author happened to write one. A required field cannot be forgotten, and
+ * a renderer can state it in its own words rather than each device spelling it again.
+ */
+export type AuthoredModulationParam = {
+  kind: 'modulation'
+  /** The routing's identity: the name a fixture, a hoist key or a React key holds it by. */
+  name: string
+  source: ModulationEnd
+  destination: ModulationEnd
+  /**
+   * A sign switch, where the box has one instead of a signed depth. The Mother-32's VCF
+   * modulation is `+` / `−` on the panel with a unipolar attenuator beside it, so its direction
+   * is a control the reader sets and not the sign of a number.
+   */
+  polarity?: ModulationControl
+  /** The depth control's own name, where the panel gives it one distinct from `name`. */
+  amountControl?: string
+  value: number
+  range: NumericRange
+  /** #511. Where the route does nothing, in the amount's own units. Inside `range`. */
+  neutral: number
+  step?: number
+  unit?: string
+  midiCc?: number
+  mood?: MoodOffset[]
+  /** The *depth value*. Omitted → inherit the recipe's `verified`. */
+  verified?: Verified
+  hint?: string
+  note?: string
+  /** The panel block this routing sits on, as on `AuthoredNumericParam`. */
+  module?: string
+  scope?: ParamScope
+}
+
+export type AuthoredParam =
+  | AuthoredNumericParam
+  | AuthoredEnumParam
+  | AuthoredTextParam
+  | AuthoredModulationParam
+
+/**
+ * §3.1/#511. **Does this parameter carry a number in a range?** — the numeric and the modulation.
+ *
+ * A structural question with a structural answer, and the reason it is a predicate rather than
+ * four `kind ===` comparisons spread over the codebase: a modulation's depth is a point inside
+ * cited bounds in exactly the way a knob's position is, so every consumer that counts ranges,
+ * inherits a range citation or asks whether mood may move a value wants both kinds and wants them
+ * for the same reason. Splitting the two here would leave a modulation's depth uncounted by the
+ * audit and unmoved by mood, silently.
+ */
+export function hasAmount(
+  param: AuthoredParam,
+): param is AuthoredNumericParam | AuthoredModulationParam {
+  return param.kind === 'numeric' || param.kind === 'modulation'
+}
 
 const paramCommon = {
   name: z.string().min(1),
@@ -444,10 +563,73 @@ export const AuthoredTextParamSchema = z.strictObject({
   ...paramCommon,
 })
 
+const ModulationControlSchema = z
+  .strictObject({
+    control: z.string().min(1),
+    value: z.string().min(1),
+    options: EnumOptionsSchema,
+    verified: VerifiedSchema.optional(),
+    midiCc: MidiCcSchema.optional(),
+  })
+  .refine((c) => c.options.values.includes(c.value), {
+    message: 'value must be one of options.values',
+    path: ['value'],
+  })
+
+const ModulationEndSchema = z.union([
+  z.strictObject({
+    kind: z.literal('stated'),
+    name: z.string().min(1),
+    verified: VerifiedSchema.optional(),
+  }),
+  z
+    .strictObject({
+      kind: z.literal('control'),
+      control: z.string().min(1),
+      value: z.string().min(1),
+      options: EnumOptionsSchema,
+      verified: VerifiedSchema.optional(),
+      midiCc: MidiCcSchema.optional(),
+    })
+    .refine((c) => c.options.values.includes(c.value), {
+      message: 'value must be one of options.values',
+      path: ['value'],
+    }),
+])
+
+export const AuthoredModulationParamSchema = z
+  .strictObject({
+    kind: z.literal('modulation'),
+    source: ModulationEndSchema,
+    destination: ModulationEndSchema,
+    polarity: ModulationControlSchema.optional(),
+    amountControl: z.string().min(1).optional(),
+    value: z.number().finite(),
+    range: NumericRangeSchema,
+    neutral: z.number().finite(),
+    step: z.number().finite().positive().optional(),
+    unit: z.string().min(1).optional(),
+    midiCc: MidiCcSchema.optional(),
+    mood: z.array(MoodOffsetSchema).min(1).optional(),
+    ...paramCommon,
+  })
+  .refine((p) => p.value >= p.range.min && p.value <= p.range.max, {
+    message: 'value must sit inside its own declared range',
+    path: ['value'],
+  })
+  // #511. A neutral outside the control's own bounds is a position the box cannot reach, so the
+  // line would tell a reader that nothing happens somewhere they cannot put the knob. The same
+  // authoring typo `value` is held to, and caught at the build for the same reason.
+  .refine((p) => p.neutral >= p.range.min && p.neutral <= p.range.max, {
+    message: 'neutral must sit inside the amount\u2019s own declared range',
+    path: ['neutral'],
+  })
+
 export const AuthoredParamSchema = z.discriminatedUnion('kind', [
   AuthoredNumericParamSchema,
   AuthoredEnumParamSchema,
   AuthoredTextParamSchema,
+  AuthoredModulationParamSchema,
 ])
 
 // ---------------------------------------------------------------------------
@@ -562,6 +744,54 @@ export const ResolvedRangeSchema = z.strictObject({
  * ordered list and a discriminated union would buy exhaustiveness nobody needs at the cost of a
  * narrowing at every rendering site.
  */
+/**
+ * §3.1/#511. **One end of a resolved modulation**, with every citation already inherited.
+ *
+ * The authored shape with `verified` made total: a renderer must never have to re-run §3.1's
+ * inheritance to know what an end rests on, which is the rule `ResolvedRange` already follows.
+ *
+ * An end's option *values* are dropped for the reason a resolved enum's are: what a consumer
+ * needs downstream is the claim and the selection, not the list — nothing prints the eighteen
+ * destinations a Circuit Tracks mod matrix offers, and the guide's block sentence needs only the
+ * document they were read off.
+ */
+export type ResolvedModulationEnd =
+  | { kind: 'stated'; name: string; verified: Verified }
+  | {
+      kind: 'control'
+      control: string
+      value: string
+      /** The selection's own claim. */
+      verified: Verified
+      /** The option set's, which is the legality gate (§3.2). */
+      optionsVerified: Verified
+      midiCc?: number
+    }
+
+/**
+ * §3.1/#511. **What makes a line a routing rather than a control**, carried through resolution.
+ *
+ * **This field's presence is the discriminator, and no renderer parses a name.** `ResolvedParam`
+ * is deliberately one flat shape rather than a union — the note on that type says why, and it is
+ * still true — so the discriminant is a field that is there or is not, which narrows exactly as a
+ * union member would at the two places that draw a line and nowhere else.
+ *
+ * The depth stays on the `ResolvedParam` itself, in `value`, `range`, `unit` and `provenance`, so
+ * everything that already knows how to read a number off a resolved parameter keeps working. What
+ * lives in here is the part a number cannot say: the two ends, the sign switch where the box has
+ * one, and where nothing happens.
+ */
+export type ResolvedModulation = {
+  source: ResolvedModulationEnd
+  destination: ResolvedModulationEnd
+  /** A sign switch, where the box carries one instead of a signed depth. */
+  polarity?: Extract<ResolvedModulationEnd, { kind: 'control' }>
+  /** #511. Where the route does nothing, in the depth's own units. */
+  neutral: number
+  /** The depth control's own name, where the panel gives it one distinct from the routing's. */
+  amountControl?: string
+}
+
 export type ResolvedParam = {
   name: string
   value: number | string
@@ -581,6 +811,15 @@ export type ResolvedParam = {
    * the claim, not the list.
    */
   optionsVerified?: Verified
+  /**
+   * §3.1/#511. **Present exactly on an assignment**, and absent on every control.
+   *
+   * A renderer reads this field and draws a route; it never reads the name. An arrow in a name is
+   * punctuation and two shipped devices prove it means nothing on its own — the Circuit Tracks'
+   * `ENV 2 → FREQUENCY` is a fixed-path knob, and the Mother-32's real routing has no arrow
+   * anywhere in it.
+   */
+  modulation?: ResolvedModulation
   provenance: Provenance
   hint?: string
   /**
@@ -603,12 +842,46 @@ export type ResolvedParam = {
   scope?: ParamScope
 }
 
+const ResolvedModulationEndSchema = z.union([
+  z.strictObject({
+    kind: z.literal('stated'),
+    name: z.string().min(1),
+    verified: VerifiedSchema,
+  }),
+  z.strictObject({
+    kind: z.literal('control'),
+    control: z.string().min(1),
+    value: z.string().min(1),
+    verified: VerifiedSchema,
+    optionsVerified: VerifiedSchema,
+    midiCc: MidiCcSchema.optional(),
+  }),
+])
+
+const ResolvedModulationSchema = z.strictObject({
+  source: ResolvedModulationEndSchema,
+  destination: ResolvedModulationEndSchema,
+  polarity: z
+    .strictObject({
+      kind: z.literal('control'),
+      control: z.string().min(1),
+      value: z.string().min(1),
+      verified: VerifiedSchema,
+      optionsVerified: VerifiedSchema,
+      midiCc: MidiCcSchema.optional(),
+    })
+    .optional(),
+  neutral: z.number().finite(),
+  amountControl: z.string().min(1).optional(),
+})
+
 export const ResolvedParamSchema = z.strictObject({
   name: z.string().min(1),
   value: z.union([z.number().finite(), z.string()]),
   unit: z.string().min(1).optional(),
   range: ResolvedRangeSchema.optional(),
   optionsVerified: VerifiedSchema.optional(),
+  modulation: ResolvedModulationSchema.optional(),
   provenance: ProvenanceSchema,
   hint: z.string().min(1).optional(),
   midiCc: MidiCcSchema.optional(),
@@ -698,11 +971,37 @@ export type CitationClaims = {
  * carried through resolution unchanged.
  */
 export function resolvedClaims(params: readonly ResolvedParam[]): readonly CitationClaims[] {
-  return params.map((param) => ({
-    point: param.provenance.state === 'provisional' ? false : param.provenance.cite,
-    ...(param.range === undefined ? {} : { range: param.range.verified ?? false }),
-    ...(param.optionsVerified === undefined ? {} : { options: param.optionsVerified }),
-  }))
+  return params.flatMap((param) => [
+    {
+      point: param.provenance.state === 'provisional' ? false : param.provenance.cite,
+      ...(param.range === undefined ? {} : { range: param.range.verified ?? false }),
+      ...(param.optionsVerified === undefined ? {} : { options: param.optionsVerified }),
+    },
+    ...(param.modulation === undefined ? [] : modulationClaims(param.modulation)),
+  ])
+}
+
+/**
+ * §3.2/#511. **A routing's ends make their own claims**, and a line yields more than one.
+ *
+ * *This box routes an envelope to the cutoff* and *this box offers these two sources* are separate
+ * statements from *this depth is 38*, checkable in different places and usually printed on
+ * different pages. Counting a modulation as one claim would put the ends' documents outside the
+ * sentence a reader is told to open, which is the failure §3.2 already repaired for enums when
+ * `options` was folded into the param's own citation.
+ *
+ * So both entry points return one entry per **claim-bearing thing** rather than one per parameter.
+ * Nothing counted them one-to-one against `params` — the sentence and the audit both ask what
+ * share of the claims are cited — and the two projections stay in step because they are built from
+ * the same ends.
+ */
+function modulationClaims(modulation: ResolvedModulation): CitationClaims[] {
+  const ends = [modulation.source, modulation.destination, ...(modulation.polarity === undefined ? [] : [modulation.polarity])]
+  return ends.map((e) =>
+    e.kind === 'stated'
+      ? { point: e.verified }
+      : { point: e.verified, options: e.optionsVerified },
+  )
 }
 
 /**
@@ -722,11 +1021,26 @@ export function authoredClaims(
   recipeVerified?: Verified,
 ): readonly CitationClaims[] {
   const inherit = (own: Verified | undefined): Verified => effectiveVerified(own, recipeVerified) ?? false
-  return params.map((param) => ({
-    point: inherit(param.verified),
-    ...(param.kind === 'numeric' ? { range: inherit(param.range.verified) } : {}),
-    ...(param.kind === 'enum' ? { options: inherit(param.options.verified) } : {}),
-  }))
+  const endClaims = (end: ModulationEnd | ModulationControl): CitationClaims =>
+    'kind' in end && end.kind === 'stated'
+      ? { point: inherit(end.verified) }
+      : { point: inherit(end.verified), options: inherit((end as ModulationControl).options.verified) }
+  return params.flatMap((param): CitationClaims[] => [
+    {
+      point: inherit(param.verified),
+      ...(hasAmount(param) ? { range: inherit(param.range.verified) } : {}),
+      ...(param.kind === 'enum' ? { options: inherit(param.options.verified) } : {}),
+    },
+    // #511. The ends, on the same terms `resolvedClaims` gives them. Asserted equal to the
+    // resolved projection in `test/citation-sentence.test.ts`, so the two cannot drift.
+    ...(param.kind === 'modulation'
+      ? [
+          endClaims(param.source),
+          endClaims(param.destination),
+          ...(param.polarity === undefined ? [] : [endClaims(param.polarity)]),
+        ]
+      : []),
+  ])
 }
 
 export function dominantRangeCite(claims: readonly CitationClaims[]): Cite | undefined {
@@ -1055,7 +1369,47 @@ function sameRenderedParam(a: ResolvedParam, b: ResolvedParam): boolean {
     if (a.range.min !== b.range.min || a.range.max !== b.range.max) return false
     if (!sameCiteOrFalse(a.range.verified, b.range.verified)) return false
   }
+  // #511. Two routings are one setting only if they route the same thing to the same place. A
+  // depth of 38 from one source and a depth of 38 from another read alike on the line and are two
+  // assignments, and hoisting them under one heading would tell a reader to make one.
+  if (!sameModulation(a.modulation, b.modulation)) return false
   return sameProvenance(a.provenance, b.provenance)
+}
+
+function sameModulationEnd(a: ResolvedModulationEnd, b: ResolvedModulationEnd): boolean {
+  if (a.kind !== b.kind) return false
+  if (a.kind === 'stated' && b.kind === 'stated') {
+    return a.name === b.name && sameCiteOrFalse(a.verified, b.verified)
+  }
+  if (a.kind === 'control' && b.kind === 'control') {
+    return (
+      a.control === b.control &&
+      a.value === b.value &&
+      a.midiCc === b.midiCc &&
+      sameCiteOrFalse(a.verified, b.verified) &&
+      sameCiteOrFalse(a.optionsVerified, b.optionsVerified)
+    )
+  }
+  return false
+}
+
+function sameModulation(
+  a: ResolvedModulation | undefined,
+  b: ResolvedModulation | undefined,
+): boolean {
+  if (a === undefined || b === undefined) return a === b
+  if (a.neutral !== b.neutral || a.amountControl !== b.amountControl) return false
+  if ((a.polarity === undefined) !== (b.polarity === undefined)) return false
+  if (
+    a.polarity !== undefined &&
+    b.polarity !== undefined &&
+    !sameModulationEnd(a.polarity, b.polarity)
+  ) {
+    return false
+  }
+  return (
+    sameModulationEnd(a.source, b.source) && sameModulationEnd(a.destination, b.destination)
+  )
 }
 
 /** One scope's worth of hoisted parameters, in UTF-16 code unit order by name (§7.2). */
@@ -1210,6 +1564,23 @@ export type ParamGroup<P = ResolvedParam> = {
  * be the thing the shared helper exists to prevent: one control reading two ways on two of our
  * own surfaces. Nothing about the behaviour moves; `ResolvedParam` satisfies the constraint.
  */
+/**
+ * §3.1/#511. **What one end of a routing is called on the line.**
+ *
+ * Shared for the reason `paramLabel` and `groupedParams` are, and held to the same limit: it is a
+ * *decision* — a stated end is its own name, a control end is the option the reader chose rather
+ * than the switch they chose it on — and four renderers making that decision four times is four
+ * chances for the guide, the kit page, the riff page and the printed sibling to name one end
+ * differently. The words around it, the punctuation between the two ends and the mark beside them
+ * stay each renderer's own (#33).
+ *
+ * The *control's* name is not lost: it is on the device page, one claim per row, which is where a
+ * reader asks which switch a citation is about (#410).
+ */
+export function modulationEndName(end: ResolvedModulationEnd | ModulationEnd): string {
+  return end.kind === 'stated' ? end.name : end.value
+}
+
 export function paramLabel<P extends { name: string; module?: string }>(param: P): string {
   if (param.module === undefined) return param.name
   const prefix = `${param.module} \u00b7 `

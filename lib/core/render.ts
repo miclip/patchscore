@@ -31,6 +31,7 @@ import {
   citedSources,
   groupedParams,
   hoistedParams,
+  modulationEndName,
   paramLabel,
   renderedParams,
   resolvedClaims,
@@ -138,10 +139,17 @@ import {
  * Two kinds and not one, because they are suppressible independently. `Show hints` is a
  * documented toggle for jogs you have outgrown; an authored note is part of the instruction and
  * is not something a reader turns off to go faster.
+ *
+ * **Three now (#511).** A routing's neutral is neither: it is not a jog and it is not prose. It is
+ * a typed fact about the control — where the depth does nothing — and a reader cannot act on a
+ * bipolar number without it, so it is never suppressed and never optional. Its own tag rather
+ * than a third sentence inside `note`, because `note` is what the *instruction* could not say and
+ * this is the instruction.
  */
 export const SUBORDINATE = {
   hint: '↳ hint:',
   note: '↳ note:',
+  neutral: '↳ neutral:',
 } as const
 
 /**
@@ -2403,6 +2411,44 @@ function paramLines(param: ResolvedParam, device: Device | undefined, options: H
   // to repeat there is nothing to hoist.
   // #385: the module's own prefix is trimmed when its box already carries it. `paramLabel` is
   // shared with the web view so one control cannot read two ways; the stored name is untouched.
+  /*
+   * §8/#511. **A routing is drawn as an assignment, and a control as a control.**
+   *
+   * The complaint the issue opens with: `ENV 2 → PITCH DEPTH 13 (-50…50)` sat in the same column
+   * and the same shape as `EQ BASS AMOUNT 33`, so which of the two a reader was meant to *turn*
+   * and which to *route* was left to be worked out from an arrow. This is #500 one layer in —
+   * a cable and a setting were drawn alike until #501 marked the cable — and the answer is the
+   * same: give the line a label that says what kind of line it is.
+   *
+   * `Modulation — ` is §8's own label form, the sibling of `Source — ` and `Routing — ` that
+   * already open a line in this file. The two ends and the depth stay on one line, because §8's
+   * reader is standing at a machine and a row is the thing they are short of.
+   *
+   * **Read off `param.modulation`, never off the name.** An arrow is punctuation and two shipped
+   * devices prove it says nothing on its own: the Circuit Tracks' `ENV 2 → FREQUENCY` carries one
+   * and is a knob on a path the box wires, and the Mother-32's routing carries none anywhere.
+   *
+   * Its web sibling is `ModulationMark` in `components/modulation-mark.tsx`; the two are written
+   * separately (#33) and `test/modulation-rows.test.ts` pins them against each other.
+   */
+  if (param.modulation !== undefined) {
+    const m = param.modulation
+    const amount = m.amountControl ?? paramLabel(param)
+    const polarity = m.polarity === undefined ? '' : ` (\`${m.polarity.value}\`)`
+    out.push(
+      `- Modulation — \`${modulationEndName(m.source)}\` → \`${modulationEndName(m.destination)}\`` +
+        `${polarity} · **${amount}** \`${valueText(param)}\`${unit}${range}${cc}`,
+    )
+    // #511. The neutral, typed and on its own row rather than left to a note somebody remembered
+    // to write. `SUSTAIN 25` on the line above has its nothing at 25 and this one has it at 0;
+    // both are bare numbers against bare ranges, and only a field makes the second one certain.
+    subordinate(out, '  ', 'neutral', `\`${num(m.neutral)}\` is no modulation`)
+    if (param.note !== undefined) subordinate(out, '  ', 'note', param.note)
+    if (options.hints && param.hint !== undefined) {
+      subordinate(out, '  ', 'hint', hintText(device, param.hint))
+    }
+    return out
+  }
   out.push(`- **${paramLabel(param)}** \`${valueText(param)}\`${unit}${range}${cc}`)
   if (param.note !== undefined) subordinate(out, '  ', 'note', param.note)
   if (options.hints && param.hint !== undefined) {

@@ -136,10 +136,21 @@ describe('one occurrence per recipe (#410)', () => {
    */
   it('accounts for every authored parameter on every device', () => {
     for (const target of DEVICES) {
-      const shown = paramProvenance(target)
+      const occurrences = paramProvenance(target)
         .flatMap((group) => group.params)
         .flatMap((entry) => entry.occurrences)
-      expect(shown.length, target.id).toBe(auditDevice(target).counts.params)
+      /*
+       * §3.2/#511. **A routing's ends are counted and are shown**, which is the whole of the rule
+       * this test enforces rather than an exception to it.
+       *
+       * The audit counts a claim, and a modulation makes more of them than a knob: the depth, the
+       * source, the destination, and a polarity switch where the box has one. Each is somebody's
+       * separate reading off a separate page, and `RoutingRow` draws each as its own row under
+       * the name. Counting only the occurrence would let three cited claims on the Mother-32 be
+       * totalled by `audit` and hidden by this page — the accounting hole in the other direction.
+       */
+      const shown = occurrences.length + occurrences.reduce((n, o) => n + (o.routing?.length ?? 0), 0)
+      expect(shown, target.id).toBe(auditDevice(target).counts.params)
     }
   })
 })

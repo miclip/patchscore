@@ -12,7 +12,9 @@ import {
   renderGuide,
   resolve,
   resolveRecipe,
+  type AuthoredModulationParam,
   type AuthoredParam,
+  type ModulationEnd,
   type Recipe,
   type ResolvedAssignment,
   type Role,
@@ -629,17 +631,24 @@ describe('the roles the two pools declare, and the recipes that answer them (#34
       expect(synthRoles.has(recipe!.role), `${id} is on the synth pool`).toBe(true)
 
       const params = recipe!.params as AuthoredParam[]
-      const dest = params.find((x) => x.name === 'MOD MATRIX 1 DESTINATION')
-      const src = params.find((x) => x.name === 'MOD MATRIX 1 SOURCE 1')
+      const routing = params.find((x) => x.name === 'MOD MATRIX 1 DEPTH')
       // #332: an LFO with no destination is an instruction nobody can carry out. Both halves,
-      // because a destination with no source is the same hole from the other side.
-      expect(dest, `${id} sets an LFO with no destination`).toBeDefined()
-      expect(src, `${id} sets a destination with no source`).toBeDefined()
-      expect(dest?.kind === 'enum' ? dest.value : undefined).toBe('filter frequency')
-      expect(src?.kind === 'enum' ? src.value : undefined).toMatch(/^LFO 1/)
+      // because a destination with no source is the same hole from the other side — and #511
+      // makes the two halves one parameter, so the hole is now unrepresentable rather than
+      // merely tested for. The assertion stays: it is what says the box may not go back.
+      if (routing?.kind !== 'modulation') {
+        throw new Error(`${id} sets an LFO with no routing`)
+      }
+      const dest = routing.destination
+      const src = routing.source
+      if (dest.kind !== 'control' || src.kind !== 'control') {
+        throw new Error(`${id}: both ends are picked from p.9 on this box`)
+      }
+      expect(dest.value).toBe('filter frequency')
+      expect(src.value).toMatch(/^LFO 1/)
       // And the value is in the set the page prints, which is what makes it a reading.
-      if (dest?.kind === 'enum') expect(dest.options.values).toContain(dest.value)
-      if (src?.kind === 'enum') expect(src.options.values).toContain(src.value)
+      expect(dest.options.values).toContain(dest.value)
+      expect(src.options.values).toContain(src.value)
 
       // One pass, not a cycle: both are `ONE SHOT`, which is what separates a gesture from a
       // wobble on this engine (Programmer's Reference p.4).
@@ -978,8 +987,14 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
  * nothing happens, which is why this asserts distance from the centre instead.
  */
 describe('Circuit Tracks LFO routing (#465)', () => {
-  /** The three parameters a complete routing needs, in the order a reader sets them. */
-  const SLOT = ['MOD MATRIX 1 SOURCE 1', 'MOD MATRIX 1 DESTINATION', 'MOD MATRIX 1 DEPTH'] as const
+  /**
+   * #511. **One typed routing where there were three parameters**, and every claim below is the
+   * one it was: the source is still picked off p.9's list, the destination is still picked off
+   * p.9's list, the depth is still bounded by p.4, and the centre is still 64. What changed is
+   * that the three are one assignment the model can say in one place — so a recipe can no longer
+   * carry two thirds of a routing, which is the hole the tests below were arranged around.
+   */
+  const ROUTING = 'MOD MATRIX 1 DEPTH'
 
   /** p.4: `mod matrix 1 depth`, `0 – 127 (-64 – 63)`, default `64 (0)`. */
   const DEPTH_CENTRE = 64
@@ -989,9 +1004,16 @@ describe('Circuit Tracks LFO routing (#465)', () => {
     return device.recipes.filter((r) => params(r).some((p) => p.name.startsWith('LFO 1 ')))
   }
 
-  function slotValue(recipe: Recipe, name: (typeof SLOT)[number]): string | number | undefined {
-    const p = paramNamed(recipe, name)
-    return p?.kind === 'enum' ? p.value : p?.kind === 'numeric' ? p.value : undefined
+  function routingOf(recipe: Recipe): AuthoredModulationParam {
+    const p = paramNamed(recipe, ROUTING)
+    if (p?.kind !== 'modulation') throw new Error(`${recipe.id}: ${ROUTING} is not a modulation`)
+    return p
+  }
+
+  /** The option a control end is set to, and a hard failure on a stated one — both are readings. */
+  function endValue(end: ModulationEnd): string {
+    if (end.kind !== 'control') throw new Error('this box picks both ends from p.9 lists')
+    return end.value
   }
 
   it('has exactly four recipes carrying an LFO block, and knows which four', () => {
@@ -1012,14 +1034,11 @@ describe('Circuit Tracks LFO routing (#465)', () => {
    */
   it('completes the source, destination and depth on every LFO block it prints', () => {
     for (const recipe of lfoRecipes()) {
-      for (const name of SLOT) {
-        expect(paramNamed(recipe, name), `${recipe.id} is missing ${name}`).toBeDefined()
-      }
-      const source = paramNamed(recipe, 'MOD MATRIX 1 SOURCE 1')
-      const destination = paramNamed(recipe, 'MOD MATRIX 1 DESTINATION')
-      const depth = paramNamed(recipe, 'MOD MATRIX 1 DEPTH')
-      if (source?.kind !== 'enum' || destination?.kind !== 'enum' || depth?.kind !== 'numeric') {
-        throw new Error(`${recipe.id}: the routing slot is not the shape the manifest promises`)
+      const routing = routingOf(recipe)
+      const source = routing.source
+      const destination = routing.destination
+      if (source.kind !== 'control' || destination.kind !== 'control') {
+        throw new Error(`${recipe.id}: both ends are picked from p.9 on this box`)
       }
       // The source is an LFO rather than an envelope or the keyboard: this is the check about
       // *this* block, and `env filter` in the slot would leave the LFO unrouted all the same.
@@ -1033,15 +1052,17 @@ describe('Circuit Tracks LFO routing (#465)', () => {
         source: `${PROGRAMMER}9`,
       })
       // p.4's centre. Not zero — `DEPTH 0` is full negative here and perfectly audible.
-      expect(depth.value, `${recipe.id} sets the depth to p.4's no-modulation centre`).not.toBe(
+      expect(routing.value, `${recipe.id} sets the depth to p.4's no-modulation centre`).not.toBe(
         DEPTH_CENTRE,
       )
-      expect(depth.range, recipe.id).toEqual({
+      expect(routing.range, recipe.id).toEqual({
         min: 0,
         max: 127,
         verified: { kind: 'manual', source: `${PROGRAMMER}4` },
       })
-      expect(depth.note, recipe.id).toContain('64')
+      // #511. The centre, typed. It used to be a sentence each of these four recipes wrote out
+      // in its own note; a required field says it once and cannot be forgotten on the fifth.
+      expect(routing.neutral, recipe.id).toBe(DEPTH_CENTRE)
     }
   })
 
@@ -1049,9 +1070,10 @@ describe('Circuit Tracks LFO routing (#465)', () => {
     const ids = new Set(lfoRecipes().map((r) => r.id))
     for (const recipe of device.recipes) {
       if (ids.has(recipe.id)) continue
-      for (const name of SLOT) {
-        expect(paramNamed(recipe, name), `${recipe.id} routes an LFO it never sets`).toBeUndefined()
-      }
+      expect(
+        paramNamed(recipe, ROUTING),
+        `${recipe.id} routes an LFO it never sets`,
+      ).toBeUndefined()
     }
   })
 
@@ -1072,11 +1094,12 @@ describe('Circuit Tracks LFO routing (#465)', () => {
     it(`routes ${id} from ${source} to filter frequency at depth ${String(depth)}`, () => {
       const recipe = device.recipes.find((r) => r.id === id)
       expect(recipe, id).toBeDefined()
-      expect(slotValue(recipe!, 'MOD MATRIX 1 SOURCE 1')).toBe(source)
+      const routing = routingOf(recipe!)
+      expect(endValue(routing.source)).toBe(source)
       // Destination 12 on p.9, and the same one on all four: it is the only destination this box
       // prints that any of these four titles is about.
-      expect(slotValue(recipe!, 'MOD MATRIX 1 DESTINATION')).toBe('filter frequency')
-      expect(slotValue(recipe!, 'MOD MATRIX 1 DEPTH')).toBe(depth)
+      expect(endValue(routing.destination)).toBe('filter frequency')
+      expect(routing.value).toBe(depth)
 
       /*
        * p.4's `lfo 1 one shot` is what separates a gesture from a wobble on this engine, and it is

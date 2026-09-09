@@ -13,6 +13,7 @@ import { REPOSITORY_URL } from '@/lib/studio/feedback'
 import type {
   CapabilityFactDisclosure,
   CapabilityGap,
+  ModulationClaimRow,
   ParamOccurrence,
   ParamProvenanceGroup,
 } from '@/lib/studio/device-page'
@@ -162,6 +163,45 @@ function OccurrenceRow({ occurrence }: { occurrence: ParamOccurrence }) {
   )
 }
 
+/**
+ * §3.2/#511. One end of a routing, in the same five columns the depth above it uses.
+ *
+ * Indented under its depth rather than given a table of its own: it is the same parameter, and a
+ * reader who opened `VCO MOD` wants the three claims together. The part — source, destination,
+ * polarity — takes the Recipe column, because the recipe is already named on the row above and
+ * repeating it would say nothing while pushing the citations further right (#21).
+ */
+function RoutingRow({ end }: { end: ModulationClaimRow }) {
+  return (
+    <tr className="routing-claim">
+      <td data-label="Claim">
+        <span className="sub">{end.part}</span>
+      </td>
+      <td data-label="Control" className="mono">
+        {end.label}
+        {end.value === undefined ? null : <span className="sub"> · {end.value}</span>}
+      </td>
+      <td data-label="Value cited to">
+        {end.cite === undefined ? (
+          <span className="empty-cell">provisional</span>
+        ) : (
+          citeText(end.cite)
+        )}
+      </td>
+      <td data-label="Bounds or options cited to">
+        {end.options?.cite === undefined ? (
+          <span className="empty-cell">{end.options === undefined ? '—' : 'unverified'}</span>
+        ) : (
+          citeText(end.options.cite)
+        )}
+      </td>
+      <td data-label="Bounds or options" className="mono">
+        {end.options === undefined ? '' : end.options.values.join(' \u00b7 ')}
+      </td>
+    </tr>
+  )
+}
+
 /** The citation on the legality gate — a numeric's bounds, an enum's option set (§3.2). */
 function legalityCite(occurrence: ParamOccurrence): string | undefined {
   const cite = occurrence.range?.cite ?? occurrence.options?.cite
@@ -225,7 +265,19 @@ function ParamGroupBlock({ group }: { group: ParamProvenanceGroup }) {
                   </thead>
                   <tbody>
                     {entry.occurrences.map((occurrence) => (
-                      <OccurrenceRow key={occurrence.recipeId} occurrence={occurrence} />
+                      <Fragment key={occurrence.recipeId}>
+                        <OccurrenceRow occurrence={occurrence} />
+                        {/*
+                          §3.2/#511. **A routing's ends, each on its own row.** Invariant 4 asks
+                          this page for the citation in force on each claim separately, and a
+                          routing makes more of them than a knob: the depth's row above carries
+                          the point and the bounds, and where the signal comes from and where it
+                          lands are claims of their own, usually off different pages.
+                        */}
+                        {(occurrence.routing ?? []).map((end) => (
+                          <RoutingRow key={`${occurrence.recipeId}:${end.part}`} end={end} />
+                        ))}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>

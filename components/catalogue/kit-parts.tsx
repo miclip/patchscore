@@ -1,7 +1,8 @@
 import { CableMark } from '@/components/cable-mark'
+import { ModulationMark } from '@/components/modulation-mark'
 import { Fragment } from 'react'
 import type { AuthoredParam, Device, ParamScope, PatchEntry, Recipe } from '@/lib/core'
-import { groupedParams, num, paramLabel, recipeRouting } from '@/lib/core'
+import { groupedParams, hasAmount, modulationEndName, num, paramLabel, recipeRouting } from '@/lib/core'
 import { hintText } from '@/components/guide/format'
 
 /**
@@ -43,12 +44,12 @@ function KitValue({ param }: { param: AuthoredParam }) {
   return (
     <span className="value">
       <span className="value-now mono">
-        {param.kind === 'numeric' ? num(param.value) : param.value}
+        {hasAmount(param) ? num(param.value) : param.value}
       </span>
-      {param.kind === 'numeric' && param.unit !== undefined ? (
+      {hasAmount(param) && param.unit !== undefined ? (
         <span className="value-unit mono">{param.unit}</span>
       ) : null}
-      {param.kind === 'numeric' ? (
+      {hasAmount(param) ? (
         <span className="value-range mono">
           {`(${num(param.range.min)}…${num(param.range.max)}${
             param.unit === undefined ? '' : ` ${param.unit}`
@@ -78,12 +79,40 @@ function KitParam({ param, device }: { param: AuthoredParam; device: Device }) {
   return (
     <li className="kit-param">
       <span className="kit-param-line">
-        <span className="param-name">{paramLabel(param)}</span>
+        {/*
+          #511. A routing reads as an assignment on this page too. A reader deciding whether to
+          build a patch is asking the same question as the reader at the machine — which of these
+          do I turn, and which do I route — and answering it on one surface only would leave the
+          other one drawing a modulation as a knob.
+        */}
+        {param.kind === 'modulation' ? (
+          <>
+            <ModulationMark />
+            <span className="param-kind">Modulation — </span>
+            <span className="mono">{modulationEndName(param.source)}</span>
+            <span className="arrow" aria-hidden="true">
+              →
+            </span>
+            <span className="mono">{modulationEndName(param.destination)}</span>
+            {param.polarity === undefined ? null : (
+              <span className="mono">{` (${param.polarity.value})`}</span>
+            )}
+            <span className="param-sep" aria-hidden="true">
+              {' · '}
+            </span>
+          </>
+        ) : null}
+        <span className="param-name">
+          {param.kind === 'modulation' ? (param.amountControl ?? paramLabel(param)) : paramLabel(param)}
+        </span>
         <KitValue param={param} />
         {param.scope === undefined ? null : (
           <span className="kit-scope">{SCOPE_LABEL[param.scope]}</span>
         )}
       </span>
+      {param.kind === 'modulation' ? (
+        <p className="subordinate neutral">{`${num(param.neutral)} is no modulation`}</p>
+      ) : null}
       {param.note === undefined ? null : <p className="subordinate note">{param.note}</p>}
       {hint === undefined ? null : <p className="kit-hint">{hint}</p>}
     </li>

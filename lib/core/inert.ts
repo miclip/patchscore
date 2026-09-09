@@ -193,10 +193,27 @@ function judgeBlock(
   group: readonly AuthoredParam[],
   sep: string,
 ): InertFinding | undefined {
-  const routes = group.filter((p) => ROUTE_NAME.test(withinBlock(p.name, block, sep)))
-  const depths = group.filter(
-    (p) => p.kind === 'numeric' && DEPTH_NAME.test(withinBlock(p.name, block, sep)),
-  )
+  /**
+   * #511. **A typed routing counts as one of each, and is not read off its name.**
+   *
+   * The names below are how this check finds a routing spread over separate parameters, which is
+   * how most of the library still spells one. Where a manifest carries `kind: 'modulation'` the
+   * question is already answered by the shape: the ends are the routes and the depth is the
+   * depth, so a device that migrates keeps being judged exactly as it was before it did. Without
+   * this a migrated block would go quiet — its `DEST` and its `AMOUNT` gone as names, its
+   * disconnection no longer visible — which is a check that stops working with no test failing.
+   */
+  const modulations = group.filter((p) => p.kind === 'modulation')
+  const routes = [
+    ...group.filter((p) => p.kind !== 'modulation' && ROUTE_NAME.test(withinBlock(p.name, block, sep))),
+    ...modulations,
+  ]
+  const depths = [
+    ...group.filter(
+      (p) => p.kind === 'numeric' && DEPTH_NAME.test(withinBlock(p.name, block, sep)),
+    ),
+    ...modulations,
+  ]
   /**
    * The block's audio level, which lives on another block's name: `MIXER · MOD OSC` is a MIXER
    * fader and a MOD OSC level at the same time. Read off the *tail* of the name, which is the
@@ -210,8 +227,17 @@ function judgeBlock(
   )
 
   if (routes.length > 0 && depths.length > 0) {
-    const allOff = routes.every((p) => typeof p.value === 'string' && OFF_VALUES.has(p.value))
-    const noDepth = depths.every((p) => p.value === 0)
+    // A routing points nowhere when the switch that aims it reads OFF, and a typed one when
+    // either end does. A stated end is the box's own wiring and can never read OFF.
+    const allOff = routes.every((p) =>
+      p.kind === 'modulation'
+        ? [p.source, p.destination].some((e) => e.kind === 'control' && OFF_VALUES.has(e.value))
+        : typeof p.value === 'string' && OFF_VALUES.has(p.value),
+    )
+    // #511. A typed depth is inert at its own declared neutral, which is the number the box
+    // prints and not always zero — the Circuit Tracks' is 64. Reading `=== 0` off a modulation
+    // would call a live route dead on any box whose centre is not the bottom of the range.
+    const noDepth = depths.every((p) => (p.kind === 'modulation' ? p.value === p.neutral : p.value === 0))
     const noLevel = level === undefined || level.value === 0
     if (!allOff || !noDepth || !noLevel) return undefined
     const parts = [

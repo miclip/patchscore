@@ -3,6 +3,8 @@ import type {
   Character,
   Cite,
   Device,
+  ModulationControl,
+  ModulationEnd,
   Recipe,
   Role,
   Template,
@@ -520,6 +522,30 @@ export type ParamOccurrence = {
   range?: { min: number; max: number; cite?: Cite }
   /** Enums only: the option set and the citation in force for it. No cite → unverified. */
   options?: { values: readonly string[]; cite?: Cite }
+  /**
+   * §3.2/#511. **Modulations only: the ends, each as its own claim.**
+   *
+   * Invariant 4 says this page answers the per-value question and carries the citation in force
+   * *on each claim separately*, because a cited range does not verify the point inside it. A
+   * routing makes more claims than a knob — where the signal comes from, where it lands, which
+   * options the box offers at each end — and folding them into the depth's two would be the same
+   * collapse §3.2 already refused when an enum's option set was hidden behind its param's
+   * citation. `range` above is the depth's, unchanged; these are the rest.
+   */
+  routing?: readonly ModulationClaimRow[]
+}
+
+/** One end of a routing, as the device page renders a claim: a label, a value, two citations. */
+export type ModulationClaimRow = {
+  part: 'source' | 'destination' | 'polarity'
+  /** The control's name where the reader sets one, and the stated end's name where they do not. */
+  label: string
+  /** The selection, where the end is a control. A stated end *is* its label and has no value. */
+  value?: string
+  /** The citation in force on this end. Absent → provisional, exactly as a point's is. */
+  cite?: Cite
+  /** A control end's option set and the citation in force for it (§3.2). */
+  options?: { values: readonly string[]; cite?: Cite }
 }
 
 /**
@@ -587,6 +613,41 @@ function occurrenceOf(recipe: Recipe, param: AuthoredParam): ParamOccurrence {
     return {
       ...base,
       options: { values: param.options.values, ...(cite === undefined ? {} : { cite }) },
+    }
+  }
+  if (param.kind === 'modulation') {
+    const cite = cited(effectiveVerified(param.range.verified, recipe.verified))
+    const row = (part: ModulationClaimRow['part'], end: ModulationEnd | ModulationControl): ModulationClaimRow => {
+      const own = cited(effectiveVerified(end.verified, recipe.verified))
+      if ('kind' in end && end.kind === 'stated') {
+        return { part, label: end.name, ...(own === undefined ? {} : { cite: own }) }
+      }
+      const control = end as ModulationControl
+      const optionCite = cited(effectiveVerified(control.options.verified, recipe.verified))
+      return {
+        part,
+        label: control.control,
+        value: control.value,
+        ...(own === undefined ? {} : { cite: own }),
+        options: {
+          values: control.options.values,
+          ...(optionCite === undefined ? {} : { cite: optionCite }),
+        },
+      }
+    }
+    return {
+      ...base,
+      ...(param.unit === undefined ? {} : { unit: param.unit }),
+      range: {
+        min: param.range.min,
+        max: param.range.max,
+        ...(cite === undefined ? {} : { cite }),
+      },
+      routing: [
+        row('source', param.source),
+        row('destination', param.destination),
+        ...(param.polarity === undefined ? [] : [row('polarity', param.polarity)]),
+      ],
     }
   }
   return base

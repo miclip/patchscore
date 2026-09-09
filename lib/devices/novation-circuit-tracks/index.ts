@@ -1,5 +1,6 @@
 import type { Device, Recipe } from '../../core/device'
-import type { AuthoredEnumParam, AuthoredNumericParam, Cite } from '../../core/params'
+import type { AuthoredEnumParam,
+  AuthoredModulationParam, AuthoredNumericParam, Cite } from '../../core/params'
 import type { Role } from '../../core/vocabulary'
 import { CIRCUIT_TRACKS_PANEL } from './panel'
 
@@ -548,6 +549,59 @@ function pick(name: string, value: string, values: string[], cite: Cite): Author
  * shape of `CLAUDE.md`'s wrong-printed-scale warning. So the span is the printed one and the note
  * carries what the parenthesis was for.
  */
+/**
+ * §3.1/#511. **The Mod Matrix, as the assignment it is.**
+ *
+ * Three consecutive parameters — `SOURCE 1`, `DESTINATION`, `DEPTH` — were three lines that a
+ * reader had to reassemble into one act. Both ends are `control` here, because on this box they
+ * genuinely are: p.9's Mod Matrix Table prints ten sources and eighteen destinations and the
+ * reader picks from both lists, so each option set is a legality claim cited on its own (§3.2)
+ * and each selection is taste, exactly as `pick` already had it.
+ *
+ * **The three arrow-named `ENV 2 → FREQUENCY` depths are deliberately not this.** Env 2 *is* the
+ * filter envelope on this synth and the path to frequency is the box's, not the reader's: p.3
+ * lists it as one CC parameter with nothing to pick at either end. It is a knob, it stays
+ * `signed`, and it is the library's proof that an arrow in a name means nothing on its own —
+ * which is the trap #510 and #511 both name and the reason this shape is typed rather than
+ * matched.
+ */
+function modMatrix(
+  index: number,
+  source: string,
+  destination: string,
+  depth: number,
+  extra: Partial<AuthoredModulationParam> = {},
+): AuthoredModulationParam {
+  const at = `MOD MATRIX ${String(index)}`
+  return {
+    kind: 'modulation',
+    name: `${at} DEPTH`,
+    source: {
+      kind: 'control',
+      control: `${at} SOURCE 1`,
+      value: source,
+      options: { values: MOD_SOURCES, verified: prg(9) },
+      verified: false,
+    },
+    destination: {
+      kind: 'control',
+      control: `${at} DESTINATION`,
+      value: destination,
+      options: { values: MOD_DESTINATIONS, verified: prg(9) },
+      verified: false,
+    },
+    amountControl: 'DEPTH',
+    value: depth,
+    range: { ...ENV_FULL },
+    // p.4's centre. The four recipes each said this in a note of their own; a required field says
+    // it once and cannot be left off the fifth.
+    neutral: 64,
+    verified: false,
+    hint: 'patch-editor',
+    ...extra,
+  }
+}
+
 function signed(
   name: string,
   value: number,
@@ -1413,11 +1467,8 @@ const SYNTH_RECIPES: Recipe[] = [
       // everything — it should breathe either side of FILTER FREQUENCY 62 rather than only push up
       // into the parts above it. Depth 76 is +12 off p.4's centre, and it is the shallowest route
       // on the box on purpose: no ONE SHOT here, so this runs for the whole section.
-      pick('MOD MATRIX 1 SOURCE 1', 'LFO 1 +/-', MOD_SOURCES, prg(9)),
-      pick('MOD MATRIX 1 DESTINATION', 'filter frequency', MOD_DESTINATIONS, prg(9)),
-      signed('MOD MATRIX 1 DEPTH', 76, ENV_FULL, {
-        hint: 'patch-editor',
-        note: '64 is no modulation; +12 either side of the cutoff, which is a breath rather than a sweep',
+      modMatrix(1, 'LFO 1 +/-', 'filter frequency', 76, {
+        note: '+12 either side of the cutoff, which is a breath rather than a sweep',
       }),
       pick('CHORUS TYPE', 'Chorus', CHORUS_TYPES, prg(4)),
       num('CHORUS LEVEL', 72, ENV_FULL, { hint: 'synth-macro-8' }),
@@ -1537,11 +1588,8 @@ const SYNTH_RECIPES: Recipe[] = [
       // which is what keeps it "below the parts". Depth 84 is +20 off centre — deeper than the
       // pad, because a noise bed through a 24 dB low pass needs more travel to be heard moving,
       // and still under the sweep's 88.
-      pick('MOD MATRIX 1 SOURCE 1', 'LFO 1 +/-', MOD_SOURCES, prg(9)),
-      pick('MOD MATRIX 1 DESTINATION', 'filter frequency', MOD_DESTINATIONS, prg(9)),
-      signed('MOD MATRIX 1 DEPTH', 84, ENV_FULL, {
-        hint: 'patch-editor',
-        note: '64 is no modulation; +20 either side of the cutoff, running continuously — there is no ONE SHOT on this one',
+      modMatrix(1, 'LFO 1 +/-', 'filter frequency', 84, {
+        note: '+20 either side of the cutoff, running continuously — there is no ONE SHOT on this one',
       }),
       num('EQ BASS LEVEL', 74, ENV_FULL, { note: '64 is flat; above it lifts the bottom' }),
       reverbSend(88, { mood: [{ axis: 'space', amount: 38 }] }),
@@ -1603,11 +1651,8 @@ const SYNTH_RECIPES: Recipe[] = [
       pick('LFO 1 ONE SHOT', 'ON', ON_OFF, prg(4)),
       pick('LFO 1 FADE MODE', 'Fade In', LFO_FADE_MODES, prg(4)),
       num('LFO 1 RATE SYNC', 6, SYNC_INDEX, { note: 'An index into the sync-rate list, not a rate' }),
-      pick('MOD MATRIX 1 SOURCE 1', 'LFO 1 +', MOD_SOURCES, prg(9)),
-      pick('MOD MATRIX 1 DESTINATION', 'filter frequency', MOD_DESTINATIONS, prg(9)),
-      signed('MOD MATRIX 1 DEPTH', 104, ENV_FULL, {
-        hint: 'patch-editor',
-        note: '64 is no modulation; above it opens the filter, below it closes it',
+      modMatrix(1, 'LFO 1 +', 'filter frequency', 104, {
+        note: 'Above the centre opens the filter, below it closes it',
       }),
       num('FILTER DRIVE', 30, CC_FULL, { hint: 'patch-editor', mood: [{ axis: 'grit', amount: 38 }] }),
       pick('DRIVE TYPE', 'valve', FILTER_DRIVE_TYPES, prg(9)),
@@ -1673,11 +1718,8 @@ const SYNTH_RECIPES: Recipe[] = [
       pick('LFO 1 FADE MODE', 'Fade In', LFO_FADE_MODES, prg(4)),
       num('LFO 1 RATE SYNC', 2, SYNC_INDEX, { note: 'An index into the sync-rate list, not a rate' }),
       num('LFO 1 SLEW RATE', 52, ENV_FULL),
-      pick('MOD MATRIX 1 SOURCE 1', 'LFO 1 +/-', MOD_SOURCES, prg(9)),
-      pick('MOD MATRIX 1 DESTINATION', 'filter frequency', MOD_DESTINATIONS, prg(9)),
-      signed('MOD MATRIX 1 DEPTH', 88, ENV_FULL, {
-        hint: 'patch-editor',
-        note: '64 is no modulation; the bipolar source travels either side of where FILTER FREQUENCY sits',
+      modMatrix(1, 'LFO 1 +/-', 'filter frequency', 88, {
+        note: 'The bipolar source travels either side of where FILTER FREQUENCY sits',
       }),
       pick('CHORUS TYPE', 'Chorus', CHORUS_TYPES, prg(4)),
       num('CHORUS LEVEL', 56, ENV_FULL, { hint: 'synth-macro-8' }),

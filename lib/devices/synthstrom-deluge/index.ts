@@ -1,5 +1,10 @@
 import type { Device, Recipe } from '../../core/device'
-import type { AuthoredEnumParam, AuthoredNumericParam, Cite } from '../../core/params'
+import type {
+  AuthoredEnumParam,
+  AuthoredModulationParam,
+  AuthoredNumericParam,
+  Cite,
+} from '../../core/params'
 import type { Role } from '../../core/vocabulary'
 import { DELUGE_PANEL } from './panel'
 
@@ -188,6 +193,51 @@ const MOD_DEPTH_CITE: Cite = {
 }
 
 const PITCH_DEPTH_CITE = MOD_DEPTH_CITE
+
+/**
+ * §3.1/#511. **A modulation on this box: pick a destination's menu, pick a source, set a depth.**
+ *
+ * The four rows #511 was filed about. p.122's matrix ticks which sources reach which destinations,
+ * so the pairing is a *choice* the reader makes and not wiring the box imposes — which is what
+ * makes this an assignment where the Circuit Tracks' identically-arrow-named `ENV 2 → FREQUENCY`
+ * is a knob on a fixed path.
+ *
+ * **Both ends are `stated` rather than `control`.** Nothing on the Deluge's parameter list selects
+ * them: the destination is the menu you are standing in and the source is a press of `(SELECT)`
+ * inside it, which is what the hint says. `stated` means there is no separate control to set, not
+ * that the box hardwires it — the doc on `ModulationEnd` is explicit about the difference, and
+ * this device is the reason it is.
+ *
+ * The destination is named **once**, here, and no longer a third time in prose. It used to appear
+ * in the parameter's name, in the hint and in the note, three spellings of one place in four
+ * consecutive lines, which is the second half of what #511 reported.
+ */
+function modulation(
+  name: string,
+  source: string,
+  destination: string,
+  value: number,
+  bounds: { min: number; max: number },
+  where: Cite,
+  extra: Partial<AuthoredModulationParam> = {},
+): AuthoredModulationParam {
+  return {
+    kind: 'modulation',
+    name,
+    source: { kind: 'stated', name: source, verified: where },
+    destination: { kind: 'stated', name: destination, verified: where },
+    amountControl: 'DEPTH',
+    value,
+    range: { ...bounds, verified: where },
+    // Signed either side of zero, and zero is the route doing nothing — the guidebook says both
+    // in one breath at the end of the patching procedure: "Depth can be positive and negative
+    // values. Non-zero value means a modulation connection exists." The second sentence is the
+    // neutral, printed, and it is why this is a citation rather than an inference.
+    neutral: 0,
+    verified: false,
+    ...extra,
+  }
+}
 
 function num(
   name: string,
@@ -562,10 +612,9 @@ const RECIPES: Recipe[] = [
       env(2, 'SUSTAIN', 25, {
         note: 'p.125: on a pitch destination 25 is the note itself, and below 25 goes flat',
       }),
-      num('ENV 2 → PITCH DEPTH', 22, PITCH_DEPTH, PITCH_DEPTH_CITE, {
+      modulation('ENV 2 → PITCH DEPTH', 'ENV 2', 'Pitch / Transpose: Overall', 22, PITCH_DEPTH, PITCH_DEPTH_CITE, {
         hint: 'env2-pitch',
-        note:
-          '0 is no modulation; destination is Pitch / Transpose: Overall, and positive lifts the attack above the note',
+        note: 'Positive lifts the attack above the note',
       }),
       // The edge, on the two controls the old sampled recipe already used. Below every `dirty`
       // recipe on this box, which is what keeps `hard` and `dirty` apart as characters rather
@@ -609,10 +658,9 @@ const RECIPES: Recipe[] = [
       env(2, 'SUSTAIN', 25, {
         note: 'p.125: on a pitch destination 25 is the note itself, and below 25 goes flat',
       }),
-      num('ENV 2 → PITCH DEPTH', 13, PITCH_DEPTH, PITCH_DEPTH_CITE, {
+      modulation('ENV 2 → PITCH DEPTH', 'ENV 2', 'Pitch / Transpose: Overall', 13, PITCH_DEPTH, PITCH_DEPTH_CITE, {
         hint: 'env2-pitch',
-        note:
-          '0 is no modulation; destination is Pitch / Transpose: Overall, and positive lifts the attack above the note',
+        note: 'Positive lifts the attack above the note',
       }),
       num('EQ TREBLE AMOUNT', 18, Z50, cite(219), {
         mood: [{ axis: 'darkness', amount: -6 }],
@@ -1103,10 +1151,9 @@ const RECIPES: Recipe[] = [
       env(2, 'SUSTAIN', 25, {
         note: 'p.125: on a pitch destination 25 is the note itself, so the tom settles where it was played',
       }),
-      num('ENV 2 \u2192 PITCH DEPTH', 11, PITCH_DEPTH, PITCH_DEPTH_CITE, {
+      modulation('ENV 2 \u2192 PITCH DEPTH', 'ENV 2', 'Pitch / Transpose: Overall', 11, PITCH_DEPTH, PITCH_DEPTH_CITE, {
         hint: 'env2-pitch',
-        note:
-          '0 is no modulation; half the kick\u2019s lift, since a tom falls a tone or two, not an octave',
+        note: 'Half the kick\u2019s lift, since a tom falls a tone or two, not an octave',
       }),
       num('EQ BASS AMOUNT', 31, Z50, cite(219), {
         note: '25 is neutral; above boosts',
@@ -1406,9 +1453,9 @@ const RECIPES: Recipe[] = [
       env(2, 'SUSTAIN', 50, {
         note: 'p.125: 25 is the knob setting untouched, so above it the filter holds open',
       }),
-      num('ENV 2 \u2192 LPF FREQ DEPTH', 38, MOD_DEPTH, MOD_DEPTH_CITE, {
+      modulation('ENV 2 \u2192 LPF FREQ DEPTH', 'ENV 2', 'LPF: FREQUENCY', 38, MOD_DEPTH, MOD_DEPTH_CITE, {
         hint: 'env2-lpf',
-        note: '0 is no modulation; positive opens the filter as the envelope rises',
+        note: 'Positive opens the filter as the envelope rises',
       }),
       num('EQ TREBLE AMOUNT', 35, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -8 }] }),
       num('REVERB AMOUNT', 23, Z50, cite(225), { mood: [{ axis: 'space', amount: 16 }] }),
@@ -1704,8 +1751,8 @@ export const device: Device = {
     // find the stages at all, one for the patch that is not on any pad — p.120's procedure is
     // drill into the destination, press (SELECT) again, and the modulation sources appear.
     'env-menu': 'Press (SELECT), ENV 1, then ATTACK / DECAY',
-    'env2-pitch': 'In PITCH, press (SELECT) again, pick ENV 2',
-    'env2-lpf': 'In LPF FREQ, press (SELECT), pick ENV 2',
+    'env2-pitch': 'In PITCH, pick ENV 2',
+    'env2-lpf': 'In LPF FREQ, pick ENV 2',
     // p.87: "Press [AUDITION] + [SYNTH] to create a synth clip on the row selected".
     'kit-synth-row': '[AUDITION] + [SYNTH] makes a synth row',
     'arp-menu': 'Hold [SHIFT], press [ARP]',

@@ -228,10 +228,33 @@ const MUSE = DEVICES.filter((d) => d.id === 'moog-muse')
  */
 const RD_9 = DEVICES.filter((d) => d.id === 'behringer-rd-9')
 
+/**
+ * §3.1/#511. **The one fixture in which a reader is told to route something**, and the reason it
+ * had to be added rather than found.
+ *
+ * When the typed modulation landed, every golden here came back byte-identical: the routings in
+ * the library sit on recipes none of these rigs resolves onto, so `Modulation — ` and its neutral
+ * line were rendered by no committed bytes anywhere. A shape with no golden is a shape a renderer
+ * change can quietly lose, which is exactly what these files exist to catch.
+ *
+ * **The Mother-32, because it carries every part of the shape and no other box carries them all.**
+ * Its VCO block picks a source *and* a destination off two switches, both cited; its VCF block
+ * picks a source and a *polarity* and lands on a destination the panel gives no say in, so the
+ * `stated` end and the sign switch are both on the page. The Deluge's four are two `stated` ends
+ * and no polarity, and the Circuit Tracks' four are two `control` ends and no polarity — either
+ * alone would leave half the shape unpinned.
+ *
+ * Industrial Techno on one semi-modular monosynth is mostly gaps, exactly as `tr-1000` is, and
+ * that is not the point of the fixture: what is pinned is a routing rendered beside ordinary
+ * controls on the parts it does fill.
+ */
+const MOTHER_32 = DEVICES.filter((d) => d.id === 'moog-mother-32')
+
 export const GUIDE_NAMES = [
   'full-rig',
   'tr-1000',
   'rd-9',
+  'mother-32',
   'midi-clock',
   'muse',
   'deluge-drone-study',
@@ -249,13 +272,21 @@ export type GuideName = (typeof GUIDE_NAMES)[number]
  * which is the one thing a fixture test must not do. A fixture on a fourth template leaves this
  * list alone and the techno assertions keep meaning what they meant.
  */
-export const TECHNO_GUIDE_NAMES = ['full-rig', 'tr-1000', 'rd-9', 'midi-clock', 'muse'] as const
+export const TECHNO_GUIDE_NAMES = [
+  'full-rig',
+  'tr-1000',
+  'rd-9',
+  'mother-32',
+  'midi-clock',
+  'muse',
+] as const
 
 /** The rendered guide for one fixture name. Pure — the same bytes on every call. */
 const RIGS: Record<GuideName, Fixture> = {
   'full-rig': { devices: DEVICES, template: industrialTechno },
   'tr-1000': { devices: TR_1000, template: industrialTechno },
   'rd-9': { devices: RD_9, template: industrialTechno },
+  'mother-32': { devices: MOTHER_32, template: industrialTechno },
   'midi-clock': { devices: MIDI_CLOCK, template: industrialTechno },
   'muse': { devices: MUSE, template: industrialTechno },
   'deluge-drone-study': { devices: DELUGE, template: droneStudy },
