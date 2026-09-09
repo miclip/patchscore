@@ -41,6 +41,7 @@ import type { InertFinding } from './inert'
 import { inertBlocks, inertNotice } from './inert'
 import type { Pattern, PatternHit } from './template'
 import { STEPS_PER_BAR } from './template'
+import { stepGridRows } from './grid'
 import { reStrikesHeldNote, tightestReStrike } from './timing'
 import type { BoundArticulation, ResolvedPatchEntry, ResolvedSourceAudio } from './resolver'
 import {
@@ -372,6 +373,9 @@ function arrangementGrid(result: ResolveResult): Line[] {
   } else {
     out.push('')
     for (const row of plan.rows) {
+      // `█` is a *span* of bars, not phase 5's struck step (`x`, from `stepGridRows`). A run
+      // fusing into a bar is the point here and the opposite of it there — #512 was filed on
+      // reading this row for a grid of sixteenths.
       out.push(
         line(
           row.role,
@@ -1779,28 +1783,6 @@ function phaseHook(result: ResolveResult, deviceById: Map<DeviceId, Device>): Li
 // Phase 5 — Step programming
 // ---------------------------------------------------------------------------
 
-const ROW = 16
-
-/**
- * The pattern as a grid, in rows of sixteen steps grouped in fours, with the step number the
- * row starts at. A 64-step variant is four rows of the shape a box's screen shows, not one
- * line that wraps somewhere different on every reader's phone.
- */
-function gridRows(pattern: Pattern): Line[] {
-  const hit = new Set(pattern.hits.map((h) => h.step))
-  const width = String(pattern.length).length
-  const rows: Line[] = []
-  for (let start = 1; start <= pattern.length; start += ROW) {
-    const cells: string[] = []
-    for (let step = start; step < start + ROW && step <= pattern.length; step++) {
-      if ((step - start) % 4 === 0 && step !== start) cells.push(' ')
-      cells.push(hit.has(step) ? 'x' : '·')
-    }
-    rows.push(`${String(start).padStart(width, ' ')} ${cells.join('')}`)
-  }
-  return rows
-}
-
 /** Hits by slot, in the order the slots first appear in the authored pattern. */
 function slotLines(pattern: Pattern): Line[] {
   const bySlot = new Map<PatternHit['slot'], PatternHit[]>()
@@ -1928,7 +1910,7 @@ function stepBlock(
   const body: Line[] = [
     '',
     '```',
-    ...gridRows(pattern),
+    ...stepGridRows(pattern),
     '```',
     ...slotLines(pattern),
     ...reStrikeLines(pattern, bpm, reStrikesHeldNote(a)),

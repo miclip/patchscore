@@ -79,8 +79,9 @@ function Notes({ resolution }: { resolution: RiffResolution }) {
 }
 
 /**
- * §4.3's grid, in the same `x` / `·` rows the Markdown draws — the rows come from `gridRows`, so
- * a page whose grid disagreed with its export is not reachable.
+ * §4.3's grid, in the same rows the Markdown draws — the rows come from `gridRows`, which is
+ * `lib/core`'s one drawing of a step grid (#512), so a page whose grid disagreed with its export,
+ * or with the guide's, is not reachable.
  *
  * A `<pre>` because the alignment *is* the reading: the gutter and the groups of four are how a
  * reader finds step 23 without counting from one. It scrolls inside its own container at any

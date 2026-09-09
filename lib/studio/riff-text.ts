@@ -8,7 +8,7 @@ import type {
   RiffResolution,
   RiffVoicing,
 } from '@/lib/core'
-import { STEPS_PER_BAR, citationSentence, count, num, resolvedClaims } from '@/lib/core'
+import { citationSentence, count, num, resolvedClaims, stepGridRows } from '@/lib/core'
 
 /**
  * §5A/#495. **Everything a riff page says in words, and the shapes both renderings walk.**
@@ -151,29 +151,16 @@ export function heldLabel(row: NoteRow): string {
 // The grid
 // ---------------------------------------------------------------------------
 
-/** §4.3's grid: sixteen steps to a row, in groups of four. `render.ts`' own `ROW`. */
-const ROW = STEPS_PER_BAR
-
 /**
- * §4.3's grid: `x` for a struck step, `·` for a silent one, sixteen to a row in groups of four,
- * with the row's first step in a right-aligned gutter.
+ * §4.3's grid for this riff's pattern, drawn by `stepGridRows` in the marks every step grid in the
+ * product uses — the guide's included.
  *
- * Here rather than in either renderer because both draw it and the drawing *is* the fact — a page
- * whose grid disagreed with its export would be two different figures under one name.
+ * The drawing lives in `lib/core` rather than here because *three* surfaces draw it: the riff's
+ * Markdown, the riff's page and the guide. This file used to hold a second copy, identical to the
+ * guide's and connected to it by nothing (#512).
  */
 export function gridRows(riff: Riff): readonly string[] {
-  const hit = new Set(riff.pattern.hits.map((h) => h.step))
-  const width = String(riff.pattern.length).length
-  const rows: string[] = []
-  for (let start = 1; start <= riff.pattern.length; start += ROW) {
-    const cells: string[] = []
-    for (let step = start; step < start + ROW && step <= riff.pattern.length; step++) {
-      if ((step - start) % 4 === 0 && step !== start) cells.push(' ')
-      cells.push(hit.has(step) ? 'x' : '·')
-    }
-    rows.push(`${String(start).padStart(width, ' ')} ${cells.join('')}`)
-  }
-  return rows
+  return stepGridRows(riff.pattern)
 }
 
 /** One entry per `PatternSlot` present, in the order the variant first reaches each. */

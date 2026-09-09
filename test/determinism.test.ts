@@ -134,6 +134,11 @@ const IMPLEMENTATION = [
   // four of the five keys that make it are string comparisons of ids — the exact shape §7.2's
   // rule exists for. Read by renderers too, which is `guide.ts`'s reason.
   'in-rig-source.ts',
+  // §4.3/#512's grid marks and the one drawing of a step grid. Its whole output is a figure both
+  // renderers print, and it numbers the row a reader counts from — so it is exactly where a
+  // `toLocaleString` would be reached for the next time a step number wants a separator. Read by
+  // renderers, which is `guide.ts`'s reason as well.
+  'grid.ts',
 ]
 const BANNED = [
   'localeCompare',
