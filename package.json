@@ -27,7 +27,8 @@
     "verify": "npm run typecheck && npm run test",
     "gen:golden": "tsx test/golden/generate.ts --write",
     "gen:guides": "tsx test/golden/guides.ts --write",
-    "gen:kits": "tsx test/golden/kits.ts --write"
+    "gen:kits": "tsx test/golden/kits.ts --write",
+    "gen:riffs": "tsx test/golden/riffs.ts --write"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",

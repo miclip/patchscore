@@ -13,6 +13,7 @@ export type RequestId = string
 export type PatternId = string
 export type HookId = string
 export type InspirationId = string
+export type RiffId = string
 
 /** Section names are authored per template and are the key of `Occupancy`'s inner map (§4.2). */
 export type SectionName = string

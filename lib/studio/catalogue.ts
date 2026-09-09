@@ -1,8 +1,9 @@
-import type { Device, DeviceKind, Template } from '@/lib/core'
+import type { Device, DeviceKind, Riff, Template } from '@/lib/core'
 import { devicePagePath } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
+import { RIFFS } from '@/lib/riffs'
 import { TEMPLATES } from '@/lib/templates'
-import { ANY_KIND, NO_DEVICE_FILTER, deviceView, kindsPresent, templateView } from './picker'
+import { ANY_KIND, NO_DEVICE_FILTER, deviceView, kindsPresent, riffView, templateView } from './picker'
 import type { DeviceFilter, PickerView } from './picker'
 
 /**
@@ -29,7 +30,7 @@ export function kindLabel(kind: DeviceKind): string {
 
 export type CatalogueSource<T> = {
   /** Slugs the control ids and marks the rendered list. Also the route these pages live under. */
-  id: 'devices' | 'directions'
+  id: 'devices' | 'directions' | 'riffs'
   /** For the count line, which says a number and then a noun. */
   noun: { one: string; many: string }
   /** The visually hidden label on the search box. */
@@ -77,6 +78,21 @@ export const DIRECTION_CATALOGUE: CatalogueSource<Template> = {
   empty: 'No direction matches that.',
   search: (filter) => templateView(TEMPLATES, undefined, filter.query),
   keyOf: (template) => template.id,
+}
+
+/**
+ * §5A. The third catalogue, and the narrowest search of the three: a riff is found by the record
+ * it is named for or by the part it is, and it has no maker and no key list to match on.
+ */
+export const RIFF_CATALOGUE: CatalogueSource<Riff> = {
+  id: 'riffs',
+  noun: { one: 'riff', many: 'riffs' },
+  searchLabel: 'Search riffs by name, record or part',
+  placeholder: 'Search name, record, part',
+  kinds: [],
+  empty: 'No riff matches that.',
+  search: (filter) => riffView(RIFFS, filter.query),
+  keyOf: (riff) => riff.id,
 }
 
 /** The filter a catalogue opens on: everything shown, nothing typed. */
@@ -128,6 +144,14 @@ export function kitHref(device: Device): string {
 /** `/directions/ambient-dub`. The device pages link here, so it lives beside `deviceHref`. */
 export function templateHref(template: Template): string {
   return `/directions/${template.id}`
+}
+
+/**
+ * §5A. `/riffs/blue-monday-bass`. One place, so the index card, the sitemap and the page's own
+ * canonical cannot disagree — the reason `templateHref` and `kitHref` are each one place.
+ */
+export function riffHref(riff: Riff): string {
+  return `/riffs/${riff.id}`
 }
 
 /**

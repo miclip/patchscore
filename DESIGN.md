@@ -3087,6 +3087,300 @@ keep valid. Absolute is also the number the musician is thinking in.
 
 ---
 
+## 5A. Layer 4b — Riffs
+
+**The third thing this product renders, and the third kind of thing it holds.** A guide answers
+*what do I build with the rig I own?* A kit session (§3.7) answers *what sounds does this box
+make?* A riff answers a question neither of them does: **how do I play this figure, on my rig?**
+
+A riff is one part — its notes, the rhythm they are struck on, and the words for what makes it
+that part — resolved against whatever boxes the reader has. Settled at
+[#503](https://github.com/miclip/patchscore/issues/503).
+
+```ts
+{
+  id: 'blue-monday-bass',            // opens with the slug of `track` (§5A.5)
+  name: 'The Blue Monday bass',      // contains `track` verbatim (§5A.5)
+  track: 'Blue Monday',              // the record it is found by. The notes below are ours
+  technique: [ /* prose. What makes it this part, in the words somebody teaching it would use */ ],
+  bpm: { min: 118, max: 134, default: 128 },
+  key: 'F minor',
+  request: { /* one RoleRequest: continuous, priority 1, reArticulatesHook */ },
+  hook:    { /* Hook — the notes. Ours, always */ },
+  pattern: { /* Pattern — where they are struck. Band 0, no sections */ },
+}
+```
+
+Everything in it is an existing primitive. `RoleRequest`, `Hook`, `Pattern` and `BpmSpec` are §4's,
+the key string is the one §4.1 already parses, and the vocabulary is `Role`, `Character`,
+`MoodAxis` and `PatternSlot` as it is everywhere else — **invariant 3 is untouched, and no fifth
+shared vocabulary is added**. A riff names no device, for the reason a template does not: which box
+plays it is the rig's answer, not the author's.
+
+### 5A.1 Why it is neither a `Template` nor an `Inspiration`
+
+The question is worth answering in writing because both alternatives look cheaper than they are,
+and both were tried on paper before this shape was.
+
+**Not a `Template`, because a template is a *song*.** Sections with bars and an energy, a harmonic
+cycle, several requests competing for a rig under §7.1's objective, four density bands per part,
+and a mood it opens at. A riff has one part and nothing around it. Built as a template, every one
+of those fields would have to be authored as a fiction — one invented section name, a progression
+nobody plays, an `energy` number selecting among bands there is only one of, and a search with
+nothing to allocate. And each fiction would be *rendered*: §8's guide prints an arrangement, a
+clock topology and a seven-phase order, all true of a song and none of them true of a figure.
+`test/riff-golden.test.ts` asserts that none of them reach the page, which is the check that keeps
+this from collapsing back into a template with one request.
+
+**Not an `Inspiration`, because an inspiration is meaningless alone.** It says *for the kick at
+band 2, play this instead*, keyed on `(role, band)`, and replacement, refusal and composition
+(§5.2–§5.5) all exist because there is a direction underneath it to patch. A riff has nothing
+underneath it. The sharper difference is the hook: `InspirationPatch` carries no hooks and must
+not, because a hook's degrees resolve against a *key* and §5.1 forbids an inspiration from knowing
+anything a template owns. **A riff carries its own key** — exactly the fact an inspiration is not
+allowed to hold — so the two are not one shape wearing two names.
+
+The general rule the three obey: a template owns a *piece*, an inspiration owns a *modification*,
+and a riff owns a *figure*. Nothing composes with a riff and nothing patches one.
+
+### 5A.2 The hook and the grid do not contradict each other
+
+A riff carries both, which is the thing [#100](https://github.com/miclip/patchscore/issues/100)
+forbids: a resolved hook *is* the part's pattern, so a part carrying both is two authorities over
+one rhythm. §4.3 already settled the single case where that is not true —
+`RoleRequest.reArticulatesHook`, where the hook holds a note and the variant says where it is
+struck again — and **that is what a riff is**.
+
+So `RiffSchema` *requires* the flag rather than offering it. A figure whose hook competed with its
+own grid is not something anybody could play, and the schema can refuse it here where
+`TemplateSchema` can only check that both halves exist — a riff holds its request and its hook in
+one object. The same locality settles two more of §4.1's rules the template layer has to leave to
+a test: `pitch` and `followsKey` are both refused, because the hook already names every note.
+
+The rendered page says it once, in a sentence above the grid, rather than leaving a reader to work
+out why a page shows both notes and steps.
+
+### 5A.3 Resolution is one part, one rig, and no search
+
+§7.1's search exists to allocate *several* parts without two of them taking the same voice. A riff
+has one part, so there is nothing to allocate and nothing to back-track over: `resolveRiff` walks
+the rig's assignables, keeps the ones that claim the role and can carry the notes, and takes the
+best recipe among them. It reuses §7's own machinery throughout — `expand`, `canCarryNotes`,
+`canStackNotes`, `stackRecipes`, `resolveRecipe`, `resolveParams`, `resolvePatch`,
+`bindArticulation`, `resolveHook` — and adds no second opinion about any of them.
+
+**Including how candidates are ranked**, and this is the part that is easy to get subtly wrong. A
+riff ranking its candidates differently from the guide would hand a reader a worse voice for the
+same figure with nothing on the page saying so, so the order is `Score`'s:
+
+1. **`crowdOverflow`**, computed in `riff.ts` with `buildCtx`'s own rule,
+   `comfortableVoices ?? expand(device).length`. It is not part of `Cost` and could not be: in the
+   search it is a sum over every device of an assignment in progress. With one part and no other
+   occupancy that sum collapses to the box the candidate lands on, which is what makes it askable
+   here, and `Score` puts it **above** both chord keys.
+2. **`compareCost`**, `search.ts`' own, exported for this: sampled chord, then stacked, then
+   character distance, then role fit. These are the keys that are properties of the *candidate*
+   rather than of where the rest of an assignment landed, which is what makes them shareable.
+
+The keys left out cannot separate two candidates for one request. The miss counts and
+`optionalMisses` are zero for anything that fills it, and `idleDevices` is the rig minus the one
+box the winner lands on, whichever candidate wins.
+
+**The first cut used `compareCost` alone**, on the reasoning that `Cost` was by construction
+everything a one-part surface could ask. That was wrong in exactly one shape, and `Score`'s own
+notes say why: `stackedChords` is ranked below `crowdOverflow` *because* crowding is where a
+stack's voice cost is charged, so a ranking without crowding charges a stack nothing at all. On a
+rig holding a three-mono-track pool comfortable with one voice beside a box with a chord sample,
+`resolveRiff` took the stack and `assign` took the sample. `test/riff-session.test.ts` pins that
+case, checks the agreeing case beside it, and compares every library entry against a one-request
+`assign` on a four-box rig.
+
+**A chord is spread across a pool here too** (§12.4/#40). A pool of monophonic members with a
+`polyphonic-voice` recipe plays a three-note figure one note per voice, and that route has to be
+*materialised* rather than merely allowed: the first cut of this section accepted such a voice on
+`canStackNotes` and then asked `resolveRecipe` for the whole chord on it, which a mono track
+cannot answer — so a rig that plays the figure was told `no-recipe`, *your box could carry it, set
+it up by ear*, about a recipe that already existed. `RiffVoicing.assignables` is therefore a list
+and `stackWidth` is what `resolveParams` is handed. Where the search picks members with
+`chooseStackMembers` against live occupancy, this takes the lowest `n` in `comparePoolMembers`
+order: with one part there is no occupancy, so "already-busy last, then lowest ordinal" collapses
+to the second half. That is the one place this does less than the search, and it does less because
+there is less to do.
+
+**It never enters the tree §7.1 bounds, so `measure:search` is untouched by it and must stay so.**
+A riff that reached for `assign` would put a synthetic one-request template into the search purely
+to get one recipe back, and the cap that section is about would start moving for a surface that
+allocates nothing.
+
+**No seed, and nothing for one to do** (§7.2). A seed permutes only among *exactly equal* costs,
+and the ordering here is total: character distance, then role fit, then the assignable's key, then
+the recipe's id, all by code unit. Same riff, same rig, same bytes, on any platform (invariant 6).
+
+**No mood, so no character resolution and no offsets.** §6.2's character move and §6.1's arithmetic
+are both mood operations, and a riff page has no knobs; `NEUTRAL_MOOD` is the state where the
+offset is zero, which is what *the reader has not turned anything* means.
+
+### 5A.4 The gap is §7.3's, in the two shapes that are reachable
+
+A rig that cannot play the figure is told so, never shown a guess (invariant 5). `RiffGap` keeps
+§7.3's names and its distinction, because the reader acts differently on each: `no-capable-voice`
+is fixed by buying a box, `no-recipe` by setting the patch up by ear.
+
+It is deliberately **not** `search.ts`' `Gap`. That type carries a `requestId`, a `priority`, an
+`optional` flag and a `no-room` arm, and every one of them is about a part competing with other
+parts for a rig — the thing a riff has none of. `no-room` in particular is unreachable here by
+construction: with one request and no occupancy, nothing can take the voice first. Borrowing the
+type would have meant filling four fields with values that mean nothing and keeping a third arm
+that can never be produced.
+
+The notes are printed on both outcomes. A rig that cannot play the figure has not stopped the
+figure from having notes, and a reader deciding what to buy is better served seeing them.
+
+### 5A.5 Every riff names its record, and none of them carries its notes
+
+**Every entry names the recording it is found by, in the title and in the slug.** A technique is
+looked for by the record it is famous from — *the Blue Monday bass*, *the Thriller synth riff* —
+and that is the name a reader has in their head before they have a name for what the part is
+doing. `Riff.track` is the field that says which record, and `RiffSchema` checks both surfaces
+against it: the title has to contain it verbatim and the id has to open with its slug, so an entry
+named for one record and filed under another cannot parse.
+
+A field rather than a convention, because a convention is something two authors disagree about by
+Tuesday, and because it is *both* surfaces: a title that carries the reference and an address bar
+that does not is a page nobody can link to by name.
+
+**The notes under every one of them are this library's own.** What a riff teaches is a *way of
+playing a part*: where the accents sit, what the figure is answering, what to listen for when it
+is right. The figure carrying that here is ours.
+
+**The page says none of that, and the silence is the decision.** A subtitle reading *The technique
+from Blue Monday. The figure below is ours, not a transcription* stood under every title and is
+gone. Half of it repeated the title; the other half was a disclaimer, a sentence defending the page
+against a charge nobody had made, in the first place a reader's eye lands. Copy that hedges what a
+page is teaches a reader to doubt it, and a reader who came to play a bassline is not the audience
+for a legal position. The reference lives in the title and in the slug. Nothing else about the
+record is rendered anywhere.
+
+The same rule governs the rest of the rendered copy, and `test/riff-page.test.ts` holds it: no
+endorsement (*official*, *approved*, *as heard on*), no hedge (*roughly*, *something like*, *our
+best guess*), no defence (*not a transcription*, *copyright*), and no backlog (*not yet*, *nobody
+has*, *unauthored*). What is left is the technique and the settings.
+
+**Metadata offers something to do, never a table of contents.** *A written figure, a step grid, and
+settings for whichever box in your rig carries it* described the document to somebody who had not
+opened it and gave them no reason to. Both descriptions now open with a verb and name the reader's
+own gear: *Build the Blue Monday bass-mid sound on the boxes you own, then practise the technique
+against a figure written here.* The track names the **sound to build**; the figure is one **written
+here** to practise against, so nothing in either sentence suggests the record's own notes ship.
+
+**Prose is written straight.** No em dashes, no *not X but Y*, and every paragraph of technique
+says what to do rather than what the part is not: *Keep each note short so a gap opens between
+them* rather than *a pulse where each note runs into the next is a drone*. The three inherited
+labels — `Routing`, `Source` and `Trigger note` — keep §8's dash, because they are the guide's own
+form and a reader arriving from one must not meet a second punctuation for the same line.
+
+**An empty rig gets an offer, not a report.** `Pick the boxes you own.` The longer versions were
+each worse in their own way: *No boxes are picked yet* tells a reader what they have failed to do,
+and *tick the ones you own and this will say where the part goes* promises what the page will do
+next, which they find out by doing it. §7.3's gaps follow the same rule once there is a rig: *Add
+a box that plays `stab`* rather than *Nothing in this rig plays `stab`*.
+
+`test/riff.test.ts` cannot prove a figure is original and does not claim to. What it pins are the
+two things that would let a transcription slip in unnoticed — a figure long enough to be one, and
+prose presenting itself as one — so a future edit that turned an entry into a copy has to argue
+with a test rather than pass quietly.
+
+### 5A.6 The rig is borrowed, and never written back
+
+`/riffs/[id]` reads the reader's studio so that the first thing they see is their own boxes rather
+than an empty list. It reads it in the strictest sense of the word: `loadStudio` is the only
+storage call in the page's whole import graph, and there is no `saveStudio`, no `syncStudio` and
+no `createStudioSync` anywhere behind it. Ticking a box on a riff page changes that page and
+nothing else.
+
+That is a rule rather than a property of today's code, and `test/riff-storage.test.ts` holds it
+two ways — behaviourally, against a `setItem` that throws, and structurally, by scanning every
+file behind the route for the three writers. A riff page is somewhere a reader arrives from a
+search result to look at one figure; silently rewriting the rig they built in the studio because
+they ticked a box to see whether their sampler could play it would be the worst kind of surprise —
+invisible, and only discovered later.
+
+**Every way of not having a rig opens the same way: with none.** `loadStudio` has four outcomes
+and three of them — nothing stored, a document this build cannot read, no storage at all — mean
+the page has not been told what the reader owns. A page that guessed would show somebody else's
+boxes; a page that reported the failure would hand a reader a diagnostic about a document they
+have never seen. So all three open with an empty picker and §7.3's honest gap, which says the one
+thing they can act on. What is stored *is* reconciled rather than trusted: filtered through the
+shipped registry and returned in its order (§7.2), so two readers whose rigs hold the same boxes
+see the same page.
+
+**The picker is the only control, and it is the riff page's own.** No direction, no mood, no seed,
+no tempo, no key, no inspirations, no placements, no permalink: every one of those belongs to a
+song, and reaching for any would need a `Template`.
+
+**The picker is a control, so it is not on the printed sheet.** The print block hides
+`.panel:not(.guide-panel):not(.kit-panel):not(.riff-panel):not(.rack-section)`, which makes
+`riff-panel` an *exemption* rather than a label: it says a block is content on paper. The figure
+and the voice carry it; the picker must not, or a printout is forty-six dead tick boxes. The first
+version of this surface got that wrong in the one way a test can miss — the picker carried the
+class, and the test asserted the `:not()` existed, which proves the exemption exists and nothing
+about who claims it. `test/riff-page.test.ts` now reads the selector out of the stylesheet and
+evaluates it against the class lists the page actually renders.
+
+The studio's `DevicePicker` was reused at first and leaked four concepts this surface does not
+have. A fieldset headed **Inspiration filters** on a page with no inspirations; **Fills a gap**,
+which needs the unfilled roles of a resolve against a direction and is therefore permanently inert
+here, greyed with a tooltip about a direction being covered; **Several parts**, which asks whether
+a box carries several parts of one song; and the **patchbay**, with a clock source, an
+audio-or-clock run per box, and an `out` row leaving for a guide that does not exist. The last was
+not only ink: `.pick` reserves a 46px left gutter for #138's cable lane and paints its checkbox as
+a socket, so every row was indented for cables nothing would draw.
+
+`RiffPicker` shares what is neutral rather than copying it. `rigView` runs the same `queryTerms`,
+`matches`, `deviceFields` and registry order the studio's list does, minus the two predicates that
+need a song; `RigFilter` is the narrow shape, so the other two cannot be passed by accident.
+`kindsPresent`, `deviceLabel`, `deviceHref`, `expand` and `MAX_RIG_DEVICES` are shared outright,
+and the control row keeps the studio's own classes because a search box and a kind select are the
+same thing on both pages. What is kept from its behaviour is what is right on any picker: search
+and kind filtering, a link per device, real checkboxes with 44px targets, the ten-device cap,
+picked boxes grouped above the rest, and `retained` marking one a filter would hide.
+
+### 5A.7 Where it lives
+
+`lib/core/riff.ts` holds the type, the schema and `resolveRiff` — the shape `inspiration.ts`
+already has, which is a kind plus the operation that kind exists for. `lib/riffs/` holds the
+authored entries and a hand-written registry, beside `lib/templates/` and `lib/inspirations/` and
+static for the same reason both of those are: invariant 2's drop-in promise is about *devices*.
+
+Above them, three surfaces and one shared voice:
+
+```
+lib/studio/riff-text.ts       every sentence, and the rows both renderings walk
+lib/studio/riff-markdown.ts   the export            -> test/golden/*.riff.golden.md
+components/riff/*             the page              -> /riffs/[id]
+components/catalogue/riff-index.tsx                 -> /riffs
+```
+
+**The page renders from the model, never from parsed Markdown** (#495). The two are siblings in
+§8's sense, not stages: parsing one renderer's output to produce another's is how two surfaces come
+to disagree about something neither of them decided. What they share is `riff-text.ts`, and
+`test/riff-page.test.ts` asserts the facts of one against the other — including the grid, compared
+character for character, because there the alignment *is* the content.
+
+`/riffs` is a peer of `/devices` and `/directions` in `NAV_LINKS`, not a page under either: a
+device is a box, a direction is a song, and a riff is one figure. Each entry is prerendered at its
+own address with its own canonical, listed in the sitemap on this repository's standing test —
+there is a page at it whose canonical is itself.
+
+Both renderings read like a guide on purpose. §10's monospace values, #385's module boxes,
+`SUBORDINATE`'s tags, `paramLabel`'s trimmed names, `recipeRouting`, `CableMark`'s patch line and
+`citationSentence` are all §8's, imported wherever the export exists — a reader arriving from a
+guide must not have to learn a second convention for the same fact. **Invariant 4's ink rule holds
+unchanged**: one citation sentence for the block, and no provenance mark and no page beside any
+value.
+
+---
+
 ## 6. Mood controls
 
 Values on a 0–100 scale. They apply offsets and character preferences; they never introduce

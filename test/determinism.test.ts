@@ -76,6 +76,11 @@ const IMPLEMENTATION = [
   'pipeline.ts',
   'harmony.ts',
   'seed.ts',
+  // §5A's riffs. Content plus one single-part resolution — no search, and no seed either, so a
+  // code-unit tie-break is the *only* thing standing between two platforms and two different
+  // boxes for the same figure. `localeCompare` there would fail silently and in exactly the
+  // shape §7.2 exists to catch.
+  'riff.ts',
   // §8's renderer is where a locale-aware formatter is most tempting — thousands separators on
   // a step number, a "nicely" formatted range — so it is scanned like the rest of the engine.
   'render.ts',

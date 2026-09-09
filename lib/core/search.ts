@@ -631,7 +631,7 @@ export function quantiseDistance(distanceSq: number): number {
  * `StackPlan` so the suffix bound can take a lexicographic minimum over both without either
  * having to be materialised into the other.
  */
-type Cost = {
+export type Cost = {
   /**
    * §12.4. 1 when a request needing more than one note is being filled from a chord sample
    * rather than a real polyphonic voice. A one-note request is never charged: the recipe's
@@ -1233,8 +1233,23 @@ function compareGiveUp(scratch: FloorScratch, a: number, b: number): number {
  * `cheapestCandidate`'s comparison, as a comparator. One definition, so the ladder's sort order
  * and the stack-versus-single choice in `liveFloor` cannot drift apart from the minimisation
  * `buildSuffixFloor` still does.
+ *
+ * **Exported for §5A** (#503), which ranks the candidates for a *single* part and must rank them
+ * the way this does. `Cost` is the four keys that are properties of the candidate rather than of
+ * where the rest of the assignment landed, which is what makes it shareable.
+ *
+ * **It is not the whole of a one-part ordering, and reading it that way is a real bug.**
+ * `Score` puts `crowdOverflow` *above* both chord keys, and `Score.stackedChords`' own note says
+ * that is where a stack's voice cost is charged; it is absent from `Cost` because here it is a sum
+ * over every device of an assignment in progress. A caller with one part and no other occupancy
+ * has that sum collapse to one device and must price it itself before reaching this. `resolveRiff`
+ * shipped without doing so and preferred a three-voice stack on a box comfortable with one over
+ * the one-voice chord sample this function's caller would have taken.
+ *
+ * Nothing about the search moved: this gained the word `export` and no caller inside this file
+ * changed.
  */
-function compareCost(a: Cost, b: Cost): number {
+export function compareCost(a: Cost, b: Cost): number {
   if (a.sampledChord !== b.sampledChord) return a.sampledChord - b.sampledChord
   if (a.stacked !== b.stacked) return a.stacked - b.stacked
   if (a.distance !== b.distance) return a.distance - b.distance
@@ -2031,7 +2046,7 @@ function isOccupiedAnywhere(state: State, key: AssignableKey): boolean {
  * "lowest ordinal" would stop meaning what it says at count >= 10 — the Deluge has 24 tracks.
  * No `localeCompare` anywhere (invariant 6).
  */
-function comparePoolMembers(a: Assignable, b: Assignable): number {
+export function comparePoolMembers(a: Assignable, b: Assignable): number {
   const ordinalA = a.ordinal ?? 0
   const ordinalB = b.ordinal ?? 0
   if (ordinalA !== ordinalB) return ordinalA < ordinalB ? -1 : 1

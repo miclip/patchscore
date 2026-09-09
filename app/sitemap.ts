@@ -2,9 +2,10 @@ import type { MetadataRoute } from 'next'
 
 import { SITE_ORIGIN } from '@/lib/studio/site'
 import { DEVICES } from '@/lib/devices/registry.generated'
+import { RIFFS } from '@/lib/riffs'
 import { TEMPLATES } from '@/lib/templates'
 import { kitSession } from '@/lib/studio/kit-session'
-import { deviceHref, kitHref, templateHref } from '@/lib/studio/catalogue'
+import { deviceHref, kitHref, riffHref, templateHref } from '@/lib/studio/catalogue'
 
 /**
  * The root, both catalogue indexes, one entry per device, one per direction (#84), and #174's
@@ -63,6 +64,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     ...TEMPLATES.map((template) => ({
       url: `${SITE_ORIGIN}${templateHref(template)}`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
+    /*
+     * §5A/#503. The third catalogue, listed by the same test this file states above: there is a
+     * page at each of these whose canonical is itself. Derived from `lib/riffs`, so authoring an
+     * entry adds its page here without an edit.
+     */
+    {
+      url: `${SITE_ORIGIN}/riffs`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+    ...RIFFS.map((riff) => ({
+      url: `${SITE_ORIGIN}${riffHref(riff)}`,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
