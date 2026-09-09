@@ -4610,7 +4610,9 @@ Do not reorder.
    the state. A part nothing carries gets no such sentence: every one of them says *this box*, and
    there is no box.
 5. **Step programming** — the selected template pattern per part (§4.3), rendered per device with
-   that device's slot articulation bound to it (§7 step 8).
+   that device's slot articulation bound to it (§7 step 8). `x` marks a struck step here and on a
+   riff page, both from `stepGridRows`; the `█` of §4.2's arrangement row is a different figure,
+   marking the span in which a part is active across a section.
 
    **Except where a hook resolved for that part's role *and the part can play notes*, in which
    case the hook is the pattern** and this phase prints a pointer to phase 4 rather than a grid
