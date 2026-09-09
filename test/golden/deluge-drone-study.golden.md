@@ -141,7 +141,7 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 
 ### Deluge
 
-*This block draws on the Deluge Official Guidebook OS 4.1 (OLED), pp.18-225; its values are starting points.*
+*This block draws on the Deluge Official Guidebook OS 4.1 (OLED), pp.18-225 and the Deluge community firmware release_1_2_1; its values are starting points.*
 
 **Song-wide**
 
@@ -158,6 +158,14 @@ Routing — Needs the DX7 ENGINE community setting on; create with CUSTOM 1 + SY
 - **CLIP TYPE** `Synth`
   - ↳ hint: From clip view: [SHIFT] + [KIT] or [SYNTH]
 - **OSC 1 TYPE** `DX7`
+- **LPF FREQ** `20` (0…49)
+  - ↳ hint: Hold [SHIFT], press the FREQUENCY pad
+- **ENV 1 ATTACK** `30` (0…50)
+  - ↳ hint: Press (SELECT), ENV 1, then ATTACK / DECAY
+- **ENV 1 DECAY** `32` (0…50)
+- **ENV 1 SUSTAIN** `50` (0…50)
+  - ↳ note: 0 decays away to nothing; 50 does not decay at all
+- **ENV 1 RELEASE** `40` (0…50)
 - **REVERB AMOUNT** `30` (0…50)
 - **DELAY AMOUNT** `11` (0…50)
 - **EQ TREBLE AMOUNT** `22` (0…50)
