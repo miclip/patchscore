@@ -80,9 +80,15 @@ describe('#174 the page a crawler and a reader both get', () => {
     // `/parts` now sits between this page and preferences. The two are halves of one gap — this
     // one says what an 808 kick sounds like, that one says what a `riser` does — so they sit
     // together rather than either being pushed away from the catalogue.
+    //
+    // §5A/#503 put `/riffs` above them both, as the third *catalogue* half rather than a third
+    // reference: a riff is a thing this site holds, where these two explain the words it uses.
+    // What this test is about is unchanged — the two references stay adjacent, and stay below the
+    // catalogue — so the claim is written against `/riffs` now that it is what the catalogue ends
+    // with.
     const hrefs = NAV_LINKS.map((l) => l.href)
     expect(hrefs).toContain('/drum-machines')
-    expect(hrefs.indexOf('/drum-machines')).toBe(hrefs.indexOf('/directions') + 1)
+    expect(hrefs.indexOf('/drum-machines')).toBe(hrefs.indexOf('/riffs') + 1)
     expect(hrefs.indexOf('/drum-machines')).toBe(hrefs.indexOf('/parts') - 1)
     expect(hrefs.indexOf('/parts')).toBe(hrefs.indexOf('/preferences') - 1)
   })

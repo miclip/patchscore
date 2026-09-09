@@ -6,6 +6,7 @@ import { metadata } from '../app/layout'
 import { SITE_ORIGIN } from '../lib/studio/site'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { kitSession } from '../lib/studio/kit-session'
+import { RIFFS } from '../lib/riffs'
 import { TEMPLATES } from '../lib/templates/index'
 
 /**
@@ -37,7 +38,13 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
      */
     const kits = DEVICES.filter((d) => kitSession(d) !== undefined)
     expect(kits.length).toBe(24)
-    expect(entries).toHaveLength(4 + DEVICES.length + kits.length + TEMPLATES.length)
+    /*
+     * §5A/#503 adds `/riffs` and one entry per authored figure, on the same test as everything
+     * else here: there is a page at each whose canonical is itself. Derived from `lib/riffs`, so
+     * authoring an entry lists it without an edit — the hand-written count is now five, the four
+     * it was plus the riff index.
+     */
+    expect(entries).toHaveLength(5 + DEVICES.length + kits.length + TEMPLATES.length + RIFFS.length)
 
     // Derived rather than listed, and in source order: authoring a manifest or a template adds its
     // page here without an edit (invariant 2). The last entry is the exception and is meant to be:
@@ -49,6 +56,8 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
       ...kits.map((d) => `${SITE_ORIGIN}/devices/${d.id}/kit`),
       `${SITE_ORIGIN}/directions`,
       ...TEMPLATES.map((t) => `${SITE_ORIGIN}/directions/${t.id}`),
+      `${SITE_ORIGIN}/riffs`,
+      ...RIFFS.map((r) => `${SITE_ORIGIN}/riffs/${r.id}`),
       `${SITE_ORIGIN}/drum-machines`,
     ])
 

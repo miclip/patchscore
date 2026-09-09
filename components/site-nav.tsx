@@ -37,6 +37,10 @@ export const NAV_LINKS: readonly { href: string; label: string }[] = [
   { href: '/', label: 'Studio' },
   { href: '/devices', label: 'Devices' },
   { href: '/directions', label: 'Directions' },
+  // §5A/#503. A peer of the two catalogue halves rather than a page under either, because it is
+  // the third thing this site holds: a device is a box, a direction is a song, and a riff is one
+  // figure. Filed under Directions it would read as a genre, and under Devices as a preset.
+  { href: '/riffs', label: 'Riffs' },
   // #174. Beside the two catalogue halves because it is the third thing to read rather than a
   // setting: it explains the sounds a guide asks for by name, and a reader who needs it needs it
   // before they start, not while they are standing at the machine (§8).

@@ -11,8 +11,11 @@ import DirectionIndexPage from '../app/directions/page'
 import DevicePageRoute from '../app/devices/[id]/page'
 import DirectionPageRoute from '../app/directions/[id]/page'
 import DrumMachinesPage from '../app/drum-machines/page'
+import RiffIndexPage from '../app/riffs/page'
+import RiffRoute from '../app/riffs/[id]/page'
 import Page from '../app/page'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { RIFFS } from '../lib/riffs'
 import { TEMPLATES } from '../lib/templates/index'
 
 /**
@@ -45,7 +48,10 @@ async function shell(page: ReactElement): Promise<string> {
 async function routes(): Promise<{ name: string; markup: string }[]> {
   const device = DEVICES[0]
   const template = TEMPLATES[0]
-  if (device === undefined || template === undefined) throw new Error('empty registry')
+  const riff = RIFFS[0]
+  if (device === undefined || template === undefined || riff === undefined) {
+    throw new Error('empty registry')
+  }
 
   return [
     { name: '/', markup: await shell(await Page({ searchParams: Promise.resolve({}) })) },
@@ -55,6 +61,13 @@ async function routes(): Promise<{ name: string; markup: string }[]> {
     // no hand-written link set — is about *every* page, and a page kept out of this list is a
     // page none of them cover.
     { name: '/drum-machines', markup: await shell(createElement(DrumMachinesPage)) },
+    // §5A/#503. In the route set for the reason `/drum-machines` is: every claim below is about
+    // *every* page, and a page kept out of this list is a page none of them cover.
+    { name: '/riffs', markup: await shell(createElement(RiffIndexPage)) },
+    {
+      name: `/riffs/${riff.id}`,
+      markup: await shell(await RiffRoute({ params: Promise.resolve({ id: riff.id }) })),
+    },
     {
       name: `/devices/${device.id}`,
       markup: await shell(await DevicePageRoute({ params: Promise.resolve({ id: device.id }) })),
@@ -89,10 +102,16 @@ describe('#112 the navigation landmark', () => {
     // like; `/parts` says what a `riser` does. They are halves of one gap and a reader who needs
     // one often needs the other, so splitting them across the nav would be worse than the extra
     // entry costs.
+    //
+    // §5A/#503. `/riffs` is the third catalogue half rather than a third reference, so it sits
+    // with the other two and above both reference pages: a device is a box, a direction is a
+    // song, and a riff is one figure — three kinds of thing this site holds, where the two below
+    // them explain the words it uses.
     expect(NAV_LINKS.map((l) => l.href)).toEqual([
       '/',
       '/devices',
       '/directions',
+      '/riffs',
       '/drum-machines',
       '/parts',
       '/preferences',

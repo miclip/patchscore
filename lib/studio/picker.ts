@@ -3,6 +3,7 @@ import type {
   DeviceId,
   DeviceKind,
   ResolveResult,
+  Riff,
   Role,
   Template,
   TemplateId,
@@ -132,6 +133,21 @@ export function deviceFields(device: Device): readonly string[] {
 /** A direction's searchable text: the name, and the keys it authors. Nothing else — see above. */
 export function templateFields(template: Template): readonly string[] {
   return [template.name, ...template.keys]
+}
+
+/**
+ * §5A. A riff's searchable text: its name, the record it is named for, and the part it is.
+ *
+ * The `track` is here because it is how a reader looks for one — somebody types *thriller* long
+ * before they type *lead*. The role and character are here because they are the other half of the
+ * question and the only two words a riff shares with the rest of the site.
+ *
+ * **The technique prose is not searched**, deliberately. Four paragraphs of it per entry would
+ * match nearly any word somebody typed, and a search where everything matches is a search that
+ * tells you nothing — the same argument `deviceFields` makes for leaving a manual out.
+ */
+export function riffFields(riff: Riff): readonly string[] {
+  return [riff.name, riff.track, riff.request.role, riff.request.character]
 }
 
 // ---------------------------------------------------------------------------
@@ -286,6 +302,52 @@ export function kindsPresent(devices: readonly Device[]): readonly DeviceKind[] 
   return seen
 }
 
+/**
+ * §5A/#503. **What a rig picker filters on when there is no direction behind it**: the query and
+ * the kind, and nothing else.
+ *
+ * `DeviceFilter`'s other two members are both questions a *song* makes sense of. `fillsGap` needs
+ * the unfilled roles of a resolve against a direction, and `multiPart` is about a box carrying
+ * several parts of one — neither is a thing a reader looking at one figure can want or answer.
+ * A picker that offered them under the heading `Inspiration filters` on a page with no
+ * inspirations would be four controls where two are inert and one is named after a concept the
+ * page does not have.
+ *
+ * So the narrow shape is a type rather than a convention, and `rigView` below cannot be handed
+ * the other two by accident.
+ */
+export type RigFilter = { query: string; kind: KindFilter }
+
+export const NO_RIG_FILTER: RigFilter = { query: '', kind: ANY_KIND }
+
+/**
+ * §5A/#503. The same rows `deviceView` produces, from the same neutral parts — `queryTerms`,
+ * `matches`, `deviceFields`, `view`, and registry order — minus the two predicates that need a
+ * direction.
+ *
+ * `retained` still does its job, which is the half of this that is not about filtering at all: a
+ * box you own stays on the list and stays tickable when a filter would hide it, because losing
+ * sight of your own rig by typing is the failure the flag exists to prevent, and that is as true
+ * of a riff page as of the studio.
+ */
+export function rigView(
+  devices: readonly Device[],
+  selected: readonly DeviceId[],
+  filter: RigFilter,
+): PickerView<Device> {
+  const terms = queryTerms(filter.query)
+  const chosen = new Set(selected)
+  const filtering = terms.length > 0 || filter.kind !== ANY_KIND
+  return view(
+    devices,
+    (device) =>
+      (filter.kind === ANY_KIND || device.kind === filter.kind) &&
+      matches(deviceFields(device), terms),
+    (device) => chosen.has(device.id),
+    filtering,
+  )
+}
+
 export function deviceView(
   devices: readonly Device[],
   selected: readonly DeviceId[],
@@ -320,6 +382,20 @@ export function templateView(
     templates,
     (template) => matches(templateFields(template), terms),
     (template) => template.id === selected,
+    terms.length > 0,
+  )
+}
+
+/**
+ * §5A. The riff catalogue's rows. No selection to keep, because a riff index has no rig behind it
+ * — the same reason `RIFF_CATALOGUE` draws no kept group.
+ */
+export function riffView(riffs: readonly Riff[], query: string): PickerView<Riff> {
+  const terms = queryTerms(query)
+  return view(
+    riffs,
+    (riff) => matches(riffFields(riff), terms),
+    () => false,
     terms.length > 0,
   )
 }

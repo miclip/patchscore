@@ -1,0 +1,275 @@
+import { describe, expect, it } from 'vitest'
+import { RiffSchema, trackSlug, type Riff } from '@/lib/core'
+import { at, on, variant } from '@/lib/core'
+import { DEVICES } from '@/lib/devices/registry.generated'
+import { RIFFS, blueMondayBass, riffById, thrillerSynthRiff } from '@/lib/riffs'
+
+/**
+ * §5A. The schema, and the library the schema exists to hold honest.
+ *
+ * Two halves, deliberately in one file: every rule below is a rule *about authored content*, and
+ * a suite that checked the schema against fixtures and never against the four real entries would
+ * pass on a library where all four broke the same rule.
+ */
+
+/** A riff that parses. Tests clone this and break one thing at a time (`test/fixtures.ts`' shape). */
+function riff(over: Partial<Riff> = {}): Riff {
+  return {
+    id: 'fixture-riff',
+    name: 'The fixture riff',
+    track: 'fixture',
+    technique: ['Play it.'],
+    bpm: { min: 100, max: 140, default: 120 },
+    key: 'A minor',
+    request: {
+      id: 'fixture-riff',
+      role: 'bass-mid',
+      priority: 1,
+      character: 'hard',
+      sustain: 'continuous',
+      reArticulatesHook: true,
+    },
+    hook: {
+      id: 'fixture-riff-hook',
+      forRole: 'bass-mid',
+      bars: 1,
+      baseOctave: 2,
+      notes: [{ step: 1, degree: 1, octave: 0, len: 16 }],
+    },
+    pattern: variant('fixture-riff-grid', 'bass-mid', 0, 16, at('accent', 110, 1), on('offbeat', 3)),
+    ...over,
+  }
+}
+
+/** The first message on a failed parse, which is what an author actually reads. */
+function refusal(candidate: unknown): string {
+  const parsed = RiffSchema.safeParse(candidate)
+  expect(parsed.success, 'expected this riff to be refused').toBe(false)
+  return parsed.success ? '' : (parsed.error.issues[0]?.message ?? '')
+}
+
+describe('RiffSchema (§5A)', () => {
+  it('accepts the fixture', () => {
+    expect(RiffSchema.safeParse(riff()).success).toBe(true)
+  })
+
+  it('is strict: an unknown field is a typo, not an extension', () => {
+    expect(RiffSchema.safeParse({ ...riff(), sections: ['Drop'] }).success).toBe(false)
+  })
+
+  it('refuses a title that does not name the record (§5A.5)', () => {
+    expect(refusal(riff({ name: 'The nameless riff' }))).toContain('must name')
+  })
+
+  it('refuses an id that does not open with the record’s slug (§5A.5)', () => {
+    expect(refusal(riff({ id: 'some-other-riff' }))).toContain('must open with')
+  })
+
+  it('slugifies a multi-word title the way an address bar needs it', () => {
+    expect(trackSlug('Show Me Love')).toBe('show-me-love')
+    expect(trackSlug('Blue Monday')).toBe('blue-monday')
+    // Punctuation collapses rather than surviving, and no leading or trailing separator is left.
+    expect(trackSlug("Ain't  Nobody!")).toBe('ain-t-nobody')
+  })
+
+  it('refuses a key the engine cannot read, because the hook has no second one', () => {
+    expect(refusal(riff({ key: 'H minor' }))).toContain('not a key this engine reads')
+  })
+
+  it('refuses a transient request: a riff has no sections to occupy', () => {
+    const r = riff()
+    expect(refusal({ ...r, request: { ...r.request, sustain: 'transient', sections: ['Drop'] } })).toContain(
+      'no sections',
+    )
+  })
+
+  it('refuses a priority above 1, which would imply a part it does not have', () => {
+    const r = riff()
+    expect(refusal({ ...r, request: { ...r.request, priority: 2 } })).toContain('one part')
+  })
+
+  it('refuses `optional`/`inessential`: a riff is the part', () => {
+    const r = riff()
+    expect(
+      refusal({
+        ...r,
+        request: { ...r.request, optional: true, inessential: { reason: 'nice to have' } },
+      }),
+    ).toContain('cannot also be one the piece does without')
+  })
+
+  it('refuses `distinct`: there is no second request to differ from', () => {
+    const r = riff()
+    expect(refusal({ ...r, request: { ...r.request, distinct: true } })).toContain('nothing for it')
+  })
+
+  it('refuses a `pitch` beside the hook — two authorities over one note (§4.1/#100)', () => {
+    const r = riff()
+    expect(
+      refusal({ ...r, request: { ...r.request, pitch: { degree: 1, baseOctave: 2 } } }),
+    ).toContain('cannot name another')
+  })
+
+  it('refuses `followsKey`, which would transpose an in-key hook twice', () => {
+    const r = riff()
+    // On a role that may legally follow the key, so the refusal is this schema's and not
+    // `RoleRequestSchema`'s role check firing first.
+    const kick = {
+      ...r,
+      request: { ...r.request, role: 'kick' as const, followsKey: true as const },
+      hook: { ...r.hook, forRole: 'kick' as const },
+      pattern: { ...r.pattern, forRole: 'kick' as const },
+    }
+    expect(refusal(kick)).toContain('transpose it twice')
+  })
+
+  it('requires `reArticulatesHook`: the grid places strikes inside the hook (§4.3)', () => {
+    const r = riff()
+    const { reArticulatesHook: _dropped, ...bare } = r.request
+    expect(refusal({ ...r, request: bare })).toContain('re-articulates the hook')
+  })
+
+  it('refuses a role that is held rather than struck (invariant 5)', () => {
+    const r = riff()
+    const pad = {
+      ...r,
+      request: { ...r.request, role: 'pad' as const },
+      hook: { ...r.hook, forRole: 'pad' as const },
+      pattern: { ...r.pattern, forRole: 'pad' as const },
+    }
+    expect(refusal(pad)).toContain('no grid to riff on')
+  })
+
+  it('refuses a hook or a grid authored for another role', () => {
+    const r = riff()
+    expect(refusal({ ...r, hook: { ...r.hook, forRole: 'lead' } })).toContain('the hook is for')
+    expect(refusal({ ...r, pattern: { ...r.pattern, forRole: 'lead' } })).toContain('the grid is for')
+  })
+
+  it('refuses a band above 0: there is no density here to select with (§6.3)', () => {
+    const r = riff()
+    expect(refusal({ ...r, pattern: { ...r.pattern, band: 2 } })).toContain('its band is 0')
+  })
+
+  it('refuses a variant scoped to sections, and an empty grid or hook', () => {
+    const r = riff()
+    expect(refusal({ ...r, pattern: { ...r.pattern, sections: ['Drop'] } })).toContain('no sections')
+    expect(refusal({ ...r, pattern: { ...r.pattern, hits: [] } })).toContain('held note')
+    expect(refusal({ ...r, hook: { ...r.hook, notes: [] } })).toContain('drum pattern')
+  })
+
+  it('refuses a riff with no technique prose', () => {
+    expect(refusal(riff({ technique: [] }))).toContain('say what it is')
+  })
+})
+
+describe('the riff library (§5A)', () => {
+  it('has three to four entries', () => {
+    expect(RIFFS.length).toBeGreaterThanOrEqual(3)
+    expect(RIFFS.length).toBeLessThanOrEqual(4)
+  })
+
+  it('every entry parses', () => {
+    for (const entry of RIFFS) {
+      const parsed = RiffSchema.safeParse(entry)
+      expect(parsed.success, `${entry.id}: ${parsed.success ? '' : parsed.error.message}`).toBe(true)
+    }
+  })
+
+  it('ids are unique and the registry is in UTF-16 code unit order (§7.2)', () => {
+    const ids = RIFFS.map((r) => r.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toEqual([...ids].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)))
+  })
+
+  it('`riffById` answers, and answers `undefined` for a stale link', () => {
+    expect(riffById('blue-monday-bass')).toBe(blueMondayBass)
+    expect(riffById('no-such-riff')).toBeUndefined()
+  })
+
+  it('carries the two entries the product is named for, titled as it titles them', () => {
+    expect(blueMondayBass.id).toBe('blue-monday-bass')
+    expect(blueMondayBass.name).toBe('The Blue Monday bass')
+    expect(thrillerSynthRiff.id).toBe('thriller-synth-riff')
+    expect(thrillerSynthRiff.name).toBe('The Thriller synth riff')
+  })
+
+  /**
+   * §5A.5. **Every entry names the record it is found by, in both the things a reader sees** — the
+   * title on the page and the slug in the address bar.
+   *
+   * Asserted here as well as in the schema, and the two are not the same check. The schema refuses
+   * an entry whose `track` disagrees with its own id and title; this refuses a *library* where an
+   * entry declared a reference nobody would recognise as a record — an empty one, a bare role
+   * name, or a `track` that is really just the riff's own id typed twice.
+   */
+  it('every entry’s title and slug carry its track reference', () => {
+    for (const entry of RIFFS) {
+      expect(entry.track.trim(), entry.id).toBe(entry.track)
+      expect(entry.track.length, entry.id).toBeGreaterThan(2)
+      // The reference is a record, not the part. `Riff.request.role` is what the part is.
+      expect(entry.track.toLowerCase(), entry.id).not.toBe(entry.request.role)
+      // Both surfaces, which is the whole rule.
+      expect(entry.name, `${entry.id} title`).toContain(entry.track)
+      expect(entry.id.startsWith(trackSlug(entry.track)), `${entry.id} slug`).toBe(true)
+      // And the slug is a real prefix rather than the whole id: `blue-monday` alone would not say
+      // which part of the record the page is about.
+      expect(entry.id.length, `${entry.id} names no part`).toBeGreaterThan(
+        trackSlug(entry.track).length,
+      )
+    }
+  })
+
+  it('no two entries name the same record', () => {
+    const tracks = RIFFS.map((r) => r.track)
+    expect(new Set(tracks).size).toBe(tracks.length)
+  })
+
+  it('spans different roles — one per entry, none repeated', () => {
+    const roles = RIFFS.map((r) => r.request.role)
+    expect(new Set(roles).size).toBe(roles.length)
+  })
+
+  /**
+   * Invariant 3, enforced rather than reviewed. A riff that named a box would be the template
+   * layer's one forbidden move made by a new content type, and it is the sort of thing that
+   * arrives in prose rather than in a field — so the prose is what is scanned.
+   */
+  it('names no device, anywhere a reader can see', () => {
+    const names = DEVICES.flatMap((d) => [d.id, d.name])
+    for (const entry of RIFFS) {
+      const ink = [entry.name, ...entry.technique].join('\n')
+      for (const name of names) {
+        expect(ink.includes(name), `${entry.id} names ${name}`).toBe(false)
+      }
+    }
+  })
+
+  /**
+   * The rule the Blue Monday entry exists to demonstrate: **the reference is how a reader finds
+   * the technique, and the notes are ours.**
+   *
+   * A test cannot prove a figure is original, and this does not claim to. What it pins is the two
+   * things that would make a transcription *possible* to slip in unnoticed — a figure long enough
+   * to be one, and prose that presents itself as one — so a future edit that turned an entry into
+   * a copy has to argue with a test rather than pass quietly.
+   */
+  it('carries a figure of its own rather than a transcription', () => {
+    for (const entry of RIFFS) {
+      // A riff is a figure, not a part: four bars is already the longest §4.3 can express.
+      expect(entry.hook.bars, entry.id).toBeLessThanOrEqual(4)
+      const ink = entry.technique.join('\n').toLowerCase()
+      for (const word of ['transcri', 'note-for-note', 'exactly as played', 'as recorded']) {
+        expect(ink.includes(word), `${entry.id} claims to reproduce a recording`).toBe(false)
+      }
+    }
+  })
+
+  it('the technique is prose, not a jog: hints are under ~8 words, these are not', () => {
+    for (const entry of RIFFS) {
+      for (const paragraph of entry.technique) {
+        expect(paragraph.split(' ').length, `${entry.id}`).toBeGreaterThan(8)
+      }
+    }
+  })
+})
