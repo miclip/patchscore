@@ -328,7 +328,7 @@ function bundle(entry: string): string[] {
 }
 
 describe('the client boundary is two strings wide', () => {
-  const CLIENT = join(REPO_ROOT, 'components', 'catalogue', 'kit-actions.tsx')
+  const CLIENT = join(REPO_ROOT, 'components', 'export-actions.tsx')
 
   it('ships neither the kit model nor either renderer to the browser', () => {
     const shipped = bundle(CLIENT)

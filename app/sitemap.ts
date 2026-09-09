@@ -3,9 +3,10 @@ import type { MetadataRoute } from 'next'
 import { SITE_ORIGIN } from '@/lib/studio/site'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { RIFFS } from '@/lib/riffs'
+import { SAMPLE_TARGETS } from '@/lib/samples'
 import { TEMPLATES } from '@/lib/templates'
 import { kitSession } from '@/lib/studio/kit-session'
-import { deviceHref, kitHref, riffHref, templateHref } from '@/lib/studio/catalogue'
+import { deviceHref, kitHref, riffHref, sampleHref, templateHref } from '@/lib/studio/catalogue'
 
 /**
  * The root, both catalogue indexes, one entry per device, one per direction (#84), and #174's
@@ -79,6 +80,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     ...RIFFS.map((riff) => ({
       url: `${SITE_ORIGIN}${riffHref(riff)}`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
+    /*
+     * §3.8/#520. The fourth catalogue, by the same test this file states above: there is a page at
+     * each of these whose canonical is itself. Derived from `lib/samples`, so authoring a target
+     * adds its page here without an edit.
+     */
+    {
+      url: `${SITE_ORIGIN}/samples`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+    ...SAMPLE_TARGETS.map((target) => ({
+      url: `${SITE_ORIGIN}${sampleHref(target)}`,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),

@@ -2529,6 +2529,245 @@ the page is markup whose class names and element choices are ink that will move.
 substantive line the Markdown prints appears in the page's text, and that the slots, names,
 order, citation and gap match the model — so a restyle costs nothing and a lost cable fails.
 
+### 3.8 Samples: the sound you asked for, on the box you already own
+
+§3.6 starts from a device and asks what it makes. This starts from **a sound** and asks which of
+the reader's boxes makes it. That inversion is the whole of the step, and it is why this is not
+the kit page widened: the kit page is per-device by design (#478) because its rig *is* the one
+device in the URL, and a reader asking *how do I make a kick* is asking about theirs.
+
+The alternative was #519 — ship twenty-three WAVs — which costs a licence, somewhere to host
+them, a format that suits every box, and a standing risk that a reference file quietly becomes
+the authored answer. This costs none of that, and a sample somebody makes on their own synth is
+**theirs**, which is most of the point.
+
+#### A `SampleTarget` is a `Role`, a `Character` and prose
+
+The fourth authored kind (`lib/core/sample.ts`, catalogue in `lib/samples/`), and the smallest.
+It has no notes, no grid, no key and no tempo, because a one-shot has none of those — built as a
+`Riff` every one of them would be a fiction, and `RiffSchema` would refuse it twice over: it
+demands a pattern-bearing role, and this catalogue covers `pad`, which is held rather than struck,
+and all three transitional roles.
+
+Nothing new crosses the template/device boundary. **A "wobble" is `bass-mid`, `dirty`, and four
+paragraphs about a filter** — the vocabulary says what part of the spectrum the sound occupies and
+the prose says what to do to it. A `wobble` role would be a genre naming itself in the shared
+vocabulary, which is what invariant 3 exists to forbid. That is also why targets are **not** one
+per role: every role has at least one, and a role may have more where the technique is what
+separates them.
+
+**Chord progressions are out and are not coming.** They were on #520's list and they are not a
+sound; a progression is a musical structure, §12.7 has just recorded what configurable harmony
+costs, and a folder of one-shots is not where somebody goes looking for one.
+
+#### The prose says what to record, and the recipe says how to make it
+
+The page has two halves and they answer different questions. **Which box makes the sound, and how**,
+is `resolveSample`'s answer and then the resolved recipe's — cited values off a manual, for the box
+the reader actually owns. **What the take has to contain** is the target's, and no recipe can answer
+it, because it is not about the box: how long to record, what to keep of the tail, where to trim,
+what note or tempo to write down, which second take is worth the minute.
+
+So a target may not say *sweep the cutoff* or *detune the partials*. That is a second, uncited
+instruction standing beside the first, on a patch that may have neither control — and where the two
+disagree the reader has no way to tell which one to follow, though only one of them carries a page
+reference. The heading says **What to record** for that reason: the first cut said *How to make it*,
+which promised the half of the page that belongs to the recipe underneath.
+
+**Nor may it say what the signal is done to, or what level to record it at**, and that half of the
+rule was found by resolving one: `kick` against the whole catalogue lands on `mpc-kick-hard`, which
+sets a distortion drive and mix, three compressor controls and a gain, every one of them cited. The
+target's prose read *nothing added on the way out — no reverb, no compression, no limiting*. Two
+instructions on one page, disagreeing, and only one of them with a manual behind it. Every
+processing and level rule came out of the catalogue with it: dry, mono, *record it quieter than the
+snare*, *record it at the level it will sit at*.
+
+**And a second take is conditional, always.** Whether a box tunes, answers to how it is struck, or
+lets a length or a speed vary is the patch's business, so every target that asks for an alternate
+take says *where the box tunes*, *where the patch lets the length vary*, *where the amount is yours
+to set*. The noise target's held take went for the same reason: nothing establishes that every
+winning `noise` recipe sustains, so asking for one was a claim about boxes nobody had checked.
+
+`test/sample-golden.test.ts` holds all three as policies over every target rather than as checks on
+one string — a one-off would pass the day somebody wrote *keep it dry* on the pad instead. It also
+pins the `kick` winner's `Distortion` and `Compressor` modules, because without that the word list
+is a rule nobody can tell is doing work.
+
+A defining gesture may still be stated where it survives any panel. `wobble-bass` says to record
+*movement of whatever tone control the patch gives you*, which is what makes it a wobble rather than
+a bass note and which names no control at all; the pair with `bass-note` is one take that holds
+still and one that does not.
+
+The prose is **help, not commentary**: short lines, saying nothing about what a reader will notice,
+will regret, or cannot hear. Recording a voice on a phone is #521's, not this list's; what
+`vocal-chop` says here is that no synthesiser makes one, so bring a recording or make one.
+
+#### All twenty-three roles, and the grouping is the presentation problem
+
+Every role a recipe ever asks a reader to supply audio for is offered, which is all of `ROLES`. A
+curated list means somebody authors the omissions and then defends them, and the omissions are
+exactly the sounds nobody thought of — the class this section exists for. That a flat list of
+twenty-three reads as a technical list is a presentation problem, solved in how they group.
+
+`SAMPLE_GROUPS` is four headings. The first **is** `KIT_ROLES` (§3.6), so a reader who has just
+built a kit at `/devices/<id>/kit` does not meet the same twelve sounds in a different order; the
+remaining eleven are the low end a kit plays under, the tonal sounds played at a pitch, and the
+beds and transitions measured in bars. `ROLES` itself is filed by register (§1) because that is
+how a *direction* reaches for a part, and neither existing order is how somebody filling a folder
+reads a list — but a third whole-catalogue ordering would be a third thing to keep in step, so
+only the eleven that had no order get one.
+
+The kit twelve are **copied into `lib/samples/index.ts` rather than imported**, and a test pins
+the two lists equal. `KIT_ROLES` lives in `lib/studio/device-page.ts`, which reaches the whole
+device registry and every template; a folder of authored content importing a view module is a
+dependency running the wrong way, and the test is what keeps the copy from drifting.
+
+#### Resolution is one sound, one rig, and no search
+
+`resolveSample` has `resolveRiff`'s shape and for the same reason (§5A.3): §7.1's search exists to
+allocate *several* parts to a rig without two of them taking the same voice, and there is one
+sound here. **`measure:search` is untouched by both files and must stay untouched** — neither a
+riff nor a sample target enters the tree it bounds.
+
+**The ranking is shared, in `lib/core/voicing.ts`.** `VoiceCandidate` and `bestVoiceCandidate` are
+§7.1's key order for a one-part assignment — `crowdOverflow`, then `compareCost`, then the voice's
+key and the recipe's id by code unit — and they were `riff.ts`'s private copy until a second
+surface asked the identical question. A comparator whose key order is an argument settled in §7.1
+must not be settled twice; `resolveRiff`'s behaviour is unchanged, and its own fixtures are what
+say so.
+
+Three things are simpler than a riff, and each is a fact about a one-shot rather than a corner
+cut: **one note**, so both chord keys of `Cost` are zero and no stack can be built; **no hook and
+no grid**, so nothing resolves against a key and nothing binds articulation; and **no mood**, so
+`NEUTRAL_MOOD` applies and the character the target asked for is the character the recipe is
+scored against.
+
+#### `sourceAudio` decides candidacy, and it is asked before character
+
+§3/#101's field is the line between making a sound and finding one, and §3.6 already draws it for
+the kit panel. Here it decides which recipes may win: a sampler playing back a file somebody else
+made is not a box making a sound, and a surface that let one through would answer *load this* to a
+reader who asked *how do I make this*. The filter is applied to `scoreRecipes`' **result** rather
+than inside it — `stackRecipes`' own argument, that removing entries from a total order cannot
+reorder the ones that remain.
+
+**Whether a voice only ever loads audio is asked of every recipe it authors for the role, not of
+the ones near the wanted character.** A substitution can move a reader from `bright` to `clean`;
+it cannot turn a sampler into a synthesiser. Asked after the character filter, a Digitakt whose
+only `bass-mid` recipes are the opposite character reports `no-recipe` — *your box can do this,
+dial it by ear* — to somebody holding a box with no oscillator to dial.
+
+#### Four gaps, decided over the whole rig, and every sound stays on the page
+
+`SampleGap` is neither `search.ts`'s nor `riff.ts`'s: `Gap` carries a request id, a priority and an
+`optional` flag, all of them about a part competing with other parts, and `RiffGap` carries a note
+count whose `polyphony` arm cannot arise for one note. What is left is four states a reader acts on
+differently — `no-rig` (tick a box), `no-capable-voice` (buy one), `loads-audio` (bring a
+recording, or make one), `no-recipe` (somebody should author one; dial it by ear meanwhile).
+
+**The last two are decided over the rig, not one voice at a time**, and the first cut got that
+wrong. `loads-audio` is the claim that *nothing you own makes this*, so one voice that could —
+even one with nothing authored near the wanted character — makes it false. A rig holding a sampler
+and a synth whose only recipes for the role are the opposite character has a box the reader can
+dial by ear, and `no-recipe` names that box rather than the sampler beside it. `capable` on that
+arm is therefore the **synthesising** voices, not every voice claiming the role: sending somebody
+to a sampler to set a patch up by ear is sending them to a box with nothing to dial.
+
+**Every target is listed on every rig, including the ones the rig cannot make.** A sound dropped
+from the page is a gap made invisible, which is invariant 5 backwards: a reader whose rig has no
+ride learns nothing from a page that quietly has eleven kit sounds on it.
+
+**A gap ends the page and ends the document**, and that is a correction to the first cut. It
+printed *Recording it*, the destination and *Record it and name it `VOCAL CHOP`* under every
+answer, on the reasoning that a reader who has to bring a file still ends up with one and it wants
+the same name. That reads the order of events backwards: the name is useful once there is something
+to record, and under *Add a box that makes kick sounds* or *Pick the boxes you own* it is an
+instruction for a file that does not exist. `loads-audio` is the case that settles it — the gap's
+own sentence already says to bring a recording or make one, and **how** to make one is #521's, so
+continuing past it would be this surface answering a question it has just handed on. The destination
+and the record action render on `made` and nowhere else.
+
+**Download and Print go with them.** A gap document says *pick*, *add*, *bring* or *set it by ear*;
+it is an answer about the rig rather than a patch anybody builds from, and offering it as a file to
+keep would dress a shortfall up as a build recipe. The gapped golden still pins those bytes —
+`renderSample` produces the document either way, and what is withheld is the action rather than the
+rendering.
+
+`vox-chop` is the sharp case and the rule is general. One device in the library can synthesise a
+voice, so on almost every rig it answers `loads-audio` — and it stays in the list saying so. The
+phone in somebody's pocket records a vowel (#521), which is what its technique says; #519 is
+narrowed to the handful of downloads this cannot reach, and the two ship together.
+
+#### The destination is the reader's, and knowing the rig does not change that
+
+`RecordingDestination` moved out of `kit-session.ts` to `lib/studio/destination.ts` when this
+needed the identical single-member union, so §3.7's argument is stated once rather than copied.
+
+The point worth writing down is that **this is the surface §3.7 anticipated and the answer is
+still `reader-supplied`**. That type's note names an in-rig destination as a real possibility
+"once a surface exists that knows the rig" — and here it is. Knowing which boxes somebody owns is
+not knowing which of them records: whether a box can sample is a fact about that box,
+`capabilityEvidence` is where it would have to live, and no manifest states it. Deriving one from
+an audio input is invariant 5's failure in a new place. So the discriminant stays and the arm does
+not, on the evidence rather than on the shape of the page.
+
+#### The two surfaces
+
+**`/samples`** is the grouped index, and a server component with no client boundary at all. It is
+deliberately not the `Browse` shell the other three catalogues use: those are long lists a reader
+*searches*, and this is twenty-four sounds a reader *scans*. There is no picker on it, because
+which box makes a sound is a question with one answer per sound.
+
+**`/samples/<id>`** is one sound. Prerendered per target, canonical to itself, `dynamicParams`
+off — a device page's three rules, for its reasons. The technique is a property of the target and
+is in the prerendered HTML, where a crawler, a reader with no JavaScript and a sheet of paper all
+receive it; `SampleRig` is the one client boundary and it is drawn around the only part that
+depends on what somebody owns.
+
+**The rig is borrowed and never written back** (§5A.6/#448). `borrowed-rig.ts` holds the four
+functions and the rule, shared with the riff page because it is the same borrowing: read the
+studio document once on mount, answer *no boxes* for every failure, reconcile against the
+catalogue this build ships. A link session must not rewrite the studio of somebody who ticked a
+box to see whether their sampler could make a kick, and `test/sample-storage.test.ts` walks this
+route's own files to prove no path reaches a writer.
+
+**The Markdown is built in the browser, and that is the one place this differs from a kit page.**
+`/devices/<id>/kit` renders its document on the server and hands `ExportActions` two strings, so
+the engine stays out of the bundle entirely. That is not available here: the document says which of
+*the reader's* boxes makes the sound, and the rig is client state. The island already holds
+`resolveSample` and the registry for the picker, so the renderer is the only addition.
+
+`ExportActions` (was `KitActions`), `RigPicker` (was `RiffPicker`) and
+`components/recipe/resolved-body.tsx` are all one implementation used by two surfaces. The last is
+the one worth naming: a riff page and a sound page both draw a **resolved** recipe — cables,
+module boxes, parameter lines, routings, notes, jogs — and a second React reading of a parameter
+would let a reader moving between them find the same control described two ways. Ink stays each
+surface's own; the class prefix is a prop (#33). It is not `kit-parts.tsx`, which renders what a
+device folder *authored*: a point with its range or its option set and a scope word, none of which
+a resolved value carries.
+
+#### What this step is not
+
+No mood, no arrangement, no step pattern, no tempo, no key, no harmony, no grid, and no recording
+capability on any device. Every `Recipe` reached is the same object the device page and the guide
+already render, by reference.
+
+`sampleSession` differs from `kitSession` in one place: it never answers `undefined`. §3.6
+withholds a *claim* below `KIT_MINIMUM` — *this box can make you a drum kit* — and this surface
+makes no claim about the rig at all. A rig that makes none of the sounds is a session whose every
+entry is a gap, and that page is worth rendering, because it is the one that tells somebody with
+nothing ticked to tick something.
+
+**`test/golden/*.sample.golden.md` pins the bytes** (`npm run gen:samples` regenerates them), and
+`test/sample-golden.test.ts` re-renders each under `LANG=tr_TR.UTF-8` in a subprocess, the same
+hostile-locale check the guide, kit and riff goldens carry. Three fixtures, each a rendering branch
+the other two do not reach: the Neutron's `texture` is the whole of a made page with a substitution
+disclosed in it, the Mother-32's `wobble` is #511's modulation drawn as an assignment, and the
+Digitakt's `vocal-chop` is the gap, with §2.6's content sentence under it and nothing after it.
+There is **no HTML golden**, the same deliberate asymmetry §3.7 states: `test/sample-page.test.ts`
+pins that the page and the document say the same things and that all six states are drawn, so a
+restyle costs nothing and a lost cable fails.
+
 ---
 
 ## 4. Layer 3 — Templates

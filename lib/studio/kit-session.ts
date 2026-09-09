@@ -1,4 +1,5 @@
 import type { Device, Recipe, Role } from '@/lib/core'
+import { READER_SUPPLIED, type RecordingDestination } from './destination'
 import { KIT_ROLES, kitRecipes } from './device-page'
 
 /**
@@ -21,25 +22,13 @@ import { KIT_ROLES, kitRecipes } from './device-page'
  *    already render, by reference.
  */
 
-/**
- * §3.7. **Where the sounds go, and the only answer a one-device page can honestly give.**
- *
- * `reader-supplied` means *the reader's own recorder, sampler or DAW — whatever they have*. The
- * model names no destination device because it knows of none: this surface is reached with no
- * rig and no direction (§3.6), so the other boxes in the room are not facts it holds.
- *
- * **This does not reopen §3.6's refusal, it is the other side of it.** What §3.6 declined to
- * print was an *in-rig* destination — "record it into the Digitakt" — because that is a claim
- * about a second device the page has never been told about. Naming the reader's own recorder
- * makes no claim about any box at all; it says who owns the far end of the cable, which is the
- * one thing that is true on every rig.
- *
- * A single-member union on purpose. A second kind — an in-rig destination, once a surface exists
- * that knows the rig — is a real possibility, and `kind` is what lets that land without every
- * reader of this type having to guess whether the absence of a field meant "reader's own" or
- * "nobody has looked".
+/*
+ * §3.7. **Where the sounds go**: `RecordingDestination`, and the whole argument for it, moved to
+ * `destination.ts` at #520 when a rig-wide sample session needed the identical answer. Nothing
+ * about this surface changed — the model still names no destination device, because it knows of
+ * none: this page is reached with no rig and no direction (§3.6), so the other boxes in the room
+ * are not facts it holds.
  */
-export type KitDestination = { kind: 'reader-supplied' }
 
 /** §3.7. One sound in the session: what it is called, what plays it, and what builds it. */
 export type KitSlot = {
@@ -65,7 +54,7 @@ export type KitSlot = {
 /** §3.7. What one box offers somebody building a kit at it. */
 export type KitSession = {
   device: Device
-  destination: KitDestination
+  destination: RecordingDestination
   /** `kitRecipes` order, one slot each. */
   slots: readonly KitSlot[]
   /** Core kit roles this box authors nothing for, in kit order — see `CORE_KIT_ROLES`. */
@@ -163,7 +152,7 @@ export function kitSession(device: Device): KitSession | undefined {
   const preamble = sharedRoutingPreamble(recipes)
   return {
     device,
-    destination: { kind: 'reader-supplied' },
+    destination: READER_SUPPLIED,
     slots,
     absent: CORE_KIT_ROLES.filter((role) => !seen.has(role)),
     ...(preamble === undefined ? {} : { routingPreamble: preamble }),

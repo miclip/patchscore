@@ -7,6 +7,7 @@ import { SITE_ORIGIN } from '../lib/studio/site'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { kitSession } from '../lib/studio/kit-session'
 import { RIFFS } from '../lib/riffs'
+import { SAMPLE_TARGETS } from '../lib/samples'
 import { TEMPLATES } from '../lib/templates/index'
 
 /**
@@ -44,7 +45,14 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
      * authoring an entry lists it without an edit — the hand-written count is now five, the four
      * it was plus the riff index.
      */
-    expect(entries).toHaveLength(5 + DEVICES.length + kits.length + TEMPLATES.length + RIFFS.length)
+    /*
+     * §3.8/#520 adds `/samples` and one entry per authored target, on the same test again.
+     * Derived from `lib/samples`, so authoring a target lists it without an edit — the
+     * hand-written count is now six, the five it was plus the samples index.
+     */
+    expect(entries).toHaveLength(
+      6 + DEVICES.length + kits.length + TEMPLATES.length + RIFFS.length + SAMPLE_TARGETS.length,
+    )
 
     // Derived rather than listed, and in source order: authoring a manifest or a template adds its
     // page here without an edit (invariant 2). The last entry is the exception and is meant to be:
@@ -58,6 +66,8 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
       ...TEMPLATES.map((t) => `${SITE_ORIGIN}/directions/${t.id}`),
       `${SITE_ORIGIN}/riffs`,
       ...RIFFS.map((r) => `${SITE_ORIGIN}/riffs/${r.id}`),
+      `${SITE_ORIGIN}/samples`,
+      ...SAMPLE_TARGETS.map((t) => `${SITE_ORIGIN}/samples/${t.id}`),
       `${SITE_ORIGIN}/drum-machines`,
     ])
 

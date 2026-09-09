@@ -10,7 +10,12 @@ import { ANY_KIND, NO_RIG_FILTER, kindsPresent, rigView } from '@/lib/studio/pic
 import type { RigFilter } from '@/lib/studio/picker'
 
 /**
- * §5A/#503. **The boxes you own, for a page that holds one figure.**
+ * §5A/§3.8/#503/#520. **The boxes you own, for a page that resolves one thing against them.**
+ *
+ * Two surfaces use it — a riff page, which resolves one figure, and a sound page, which resolves
+ * one one-shot — and it names neither. Its whole interface is a selection and a toggle, and every
+ * decision below is about picking boxes rather than about what they are being picked for, which
+ * is what made it shareable rather than merely reusable (#520).
  *
  * A picker of its own rather than the studio's, because the studio's carries four things this
  * surface has no concept of and each of them showed up as a claim about a page that makes none:
@@ -40,12 +45,12 @@ import type { RigFilter } from '@/lib/studio/picker'
  * **Search and filter are local state and stay local.** Selection is too — see `RiffRig`, which
  * reads the reader's stored rig once and never writes one.
  */
-export type RiffPickerProps = {
+export type RigPickerProps = {
   selected: readonly DeviceId[]
   onToggle: (id: DeviceId, on: boolean) => void
 }
 
-export function RiffPicker({ selected, onToggle }: RiffPickerProps) {
+export function RigPicker({ selected, onToggle }: RigPickerProps) {
   const [filter, setFilter] = useState<RigFilter>(NO_RIG_FILTER)
   const ids = useId()
   const searchId = `${ids}-search`
@@ -73,7 +78,7 @@ export function RiffPicker({ selected, onToggle }: RiffPickerProps) {
      * forty-six dead controls. The class list is what decides it, so the class list is where the
      * decision is made rather than in a second rule further down the stylesheet.
      */
-    <section className="panel riff-picker">
+    <section className="panel rig-picker">
       <header>
         <h2>Your boxes</h2>
         <p className="note" role="status">
@@ -128,7 +133,7 @@ export function RiffPicker({ selected, onToggle }: RiffPickerProps) {
         never shrank, and the search read as broken at the moment somebody reached for it.
       */}
       {chosen.length > 0 ? (
-        <p className="note riff-picker-kept">
+        <p className="note rig-picker-kept">
           {chosen.length} selected. Untick to drop.
           {atCap ? ' That is a full rig; untick one to add another.' : ''}
         </p>
@@ -140,7 +145,7 @@ export function RiffPicker({ selected, onToggle }: RiffPickerProps) {
         Visually hidden rather than drawn, because the panel's own `h2` already says it on screen
         and a second heading inside the box would be one more line the list does not have.
       */}
-      <fieldset className="riff-picker-list">
+      <fieldset className="rig-picker-list">
         <legend className="sr-only">Devices in your rig</legend>
         {[...chosen, ...rest].map((row) => (
           <Pick key={row.item.id} row={row} onToggle={onToggle} idPrefix={ids} atCap={atCap} />
@@ -188,10 +193,10 @@ function Pick({
 
   return (
     <div
-      className={`riff-pick${!row.selected && atCap ? ' riff-pick-off' : ''}`}
+      className={`rig-pick${!row.selected && atCap ? ' rig-pick-off' : ''}`}
       data-retained={row.retained ? 'yes' : 'no'}
     >
-      <label className="riff-pick-choose">
+      <label className="rig-pick-choose">
         <input
           type="checkbox"
           checked={row.selected}
@@ -201,12 +206,12 @@ function Pick({
           aria-describedby={subId}
           onChange={(event) => onToggle(device.id, event.target.checked)}
         />
-        <span className="riff-pick-name">{label}</span>
+        <span className="rig-pick-name">{label}</span>
       </label>
-      <Link className="riff-pick-details" href={deviceHref(device)}>
+      <Link className="rig-pick-details" href={deviceHref(device)}>
         Details<span className="sr-only"> for {label}</span>
       </Link>
-      <span className="riff-pick-sub mono" id={subId}>
+      <span className="rig-pick-sub mono" id={subId}>
         {device.kind} · {assignables} assignable{assignables === 1 ? '' : 's'} ·{' '}
         {device.recipes.length} recipes
       </span>

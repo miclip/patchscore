@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Footer } from '@/components/footer'
-import { KitActions } from '@/components/catalogue/kit-actions'
+import { ExportActions } from '@/components/export-actions'
 import { KitBody } from '@/components/catalogue/kit-parts'
 import { num } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
@@ -37,7 +37,7 @@ import {
  *
  * **A server component but for the two export buttons.** Nothing here has state, so every value
  * is in the prerendered HTML where a crawler, a reader with no JavaScript and a sheet of paper
- * all receive it; `KitActions` is the one client boundary and it is drawn around the two controls
+ * all receive it; `ExportActions` is the one client boundary and it is drawn around the two controls
  * that need a browser.
  *
  * **It renders from the model, never from the Markdown.** `renderKitSession` is a sibling of this
@@ -153,9 +153,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         {/*
           The narrowest boundary this page can have: the Markdown and its name are rendered
           here, on the server, and two strings cross to the client. The session does not — see
-          `KitActions`, and `test/kit-page.test.ts`, which walks the import graph to hold it.
+          `ExportActions`, and `test/kit-page.test.ts`, which walks the import graph to hold it.
         */}
-        <KitActions markdown={kitMarkdown(session)} filename={kitFilename(session)} />
+        <ExportActions markdown={kitMarkdown(session)} filename={kitFilename(session)} />
         <p className="note kit-back">
           <Link href={deviceHref(session.device)}>Everything else about the {label}</Link>
         </p>

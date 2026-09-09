@@ -1231,7 +1231,7 @@ body {
  * Wrapping, because at 390px two labelled buttons do not sit on one line beside a 44px target.
  * The row growing to two lines is the rule working, not failing (§21).
  */
-.kit-actions {
+.export-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 14px;
@@ -1420,11 +1420,13 @@ body {
  * notes and the settings are the page, and a viewport is not a reason to drop one of them.
  */
 
-.riff-head {
+.riff-head,
+.sample-head {
   min-width: 0;
 }
 
-.riff-lead {
+.riff-lead,
+.sample-lead {
   margin: 4px 0 0;
   color: var(--ink-dim);
   min-width: 0;
@@ -1441,13 +1443,15 @@ body {
  * reading measure rather than the panel's full width. Four paragraphs at 100 characters is a
  * column nobody's eye returns from accurately.
  */
-.riff-technique p {
+.riff-technique p,
+.sample-technique p {
   margin: 0 0 12px;
   max-width: 66ch;
   min-width: 0;
 }
 
-.riff-technique p:last-child {
+.riff-technique p:last-child,
+.sample-technique p:last-child {
   margin-bottom: 0;
 }
 
@@ -1467,7 +1471,8 @@ body {
 .riff-notes,
 .riff-slots,
 .riff-articulation,
-.riff-params {
+.riff-params,
+.sample-params {
   display: grid;
   gap: 6px;
   margin: 0;
@@ -1488,7 +1493,8 @@ body {
 
 .riff-step,
 .riff-slot-name,
-.riff-trigger-label {
+.riff-trigger-label,
+.sample-trigger-label {
   color: var(--ink-dim);
 }
 
@@ -1497,7 +1503,8 @@ body {
   color: var(--accent);
 }
 
-.riff-note-fact {
+.riff-note-fact,
+.sample-note-fact {
   color: var(--ink-dim);
 }
 
@@ -1541,14 +1548,16 @@ body {
  * §7.3/invariant 5. The gap, in full ink rather than muted: it is the answer to the question the
  * reader came with, and a rig that cannot play the figure is not a lesser page.
  */
-.riff-gap {
+.riff-gap,
+.sample-gap {
   margin: 0;
   max-width: 66ch;
   color: var(--ink);
   min-width: 0;
 }
 
-.riff-where {
+.riff-where,
+.sample-where {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -1557,17 +1566,20 @@ body {
   min-width: 0;
 }
 
-.riff-box {
+.riff-box,
+.sample-box {
   color: var(--accent);
   font-weight: 600;
 }
 
-.riff-recipe {
+.riff-recipe,
+.sample-recipe {
   color: var(--ink-dim);
 }
 
 .riff-substituted,
-.riff-stack {
+.riff-stack,
+.sample-substituted {
   margin: 0 0 10px;
   max-width: 66ch;
   min-width: 0;
@@ -1575,7 +1587,8 @@ body {
 }
 
 /* One rule rather than two: a second `.riff-trigger` block would be a selector with two homes. */
-.riff-trigger {
+.riff-trigger,
+.sample-trigger {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -1586,7 +1599,8 @@ body {
   overflow-wrap: break-word;
 }
 
-.riff-sub {
+.riff-sub,
+.sample-sub {
   margin: 14px 0 8px;
   font-size: 0.85rem;
   letter-spacing: 0.06em;
@@ -1594,11 +1608,13 @@ body {
   color: var(--ink-dim);
 }
 
-.riff-param {
+.riff-param,
+.sample-param {
   min-width: 0;
 }
 
-.riff-param-line {
+.riff-param-line,
+.sample-param-line {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -1611,7 +1627,8 @@ body {
  * belongs to a reader at the machine with a page they have outgrown, and this reader is deciding
  * whether to build the patch at all.
  */
-.riff-hint {
+.riff-hint,
+.sample-hint {
   margin: 2px 0 0;
   max-width: 66ch;
   color: var(--ink-dim);
@@ -1623,13 +1640,56 @@ body {
  * §3.2/invariant 4. One sentence for the block, at the foot of it, and no mark or page beside any
  * value above. Muted and italic so it reads as provenance rather than as another instruction.
  */
-.riff-cites {
+.riff-cites,
+.sample-cites {
   margin: 14px 0 0;
   max-width: 66ch;
   color: var(--ink-dim);
   font-style: italic;
   min-width: 0;
   overflow-wrap: break-word;
+}
+
+/*
+ * §3.8/#520. The four blocks a sound page has that a riff page does not: the grouped index, the
+ * two lines about recording, and the content callout under an audio-loading gap. Everything else
+ * on the page shares a rule with its riff twin above, because it is the same block doing the same
+ * job — one sound resolved against a rig, drawn once.
+ */
+.sample-groups {
+  display: grid;
+  gap: 26px;
+  min-width: 0;
+}
+
+.sample-group > h2 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+
+.sample-destination,
+.sample-record {
+  margin: 8px 0 0;
+  max-width: 66ch;
+  min-width: 0;
+}
+
+.sample-record .mono {
+  margin-left: 4px;
+}
+
+.sample-content {
+  margin-top: 12px;
+}
+
+.sample-content p {
+  margin: 0 0 8px;
+  max-width: 66ch;
+  min-width: 0;
+}
+
+.sample-content p:last-child {
+  margin-bottom: 0;
 }
 
 .riff-unresolved {
@@ -1649,16 +1709,16 @@ body {
  * search box and the same kind select doing the same job.
  */
 /* `.riff-panel`'s one rule, which the picker still needs and no longer inherits. */
-.riff-picker {
+.rig-picker {
   min-width: 0;
 }
 
-.riff-picker-kept {
+.rig-picker-kept {
   margin: 0 0 8px;
   min-width: 0;
 }
 
-.riff-picker-list {
+.rig-picker-list {
   display: grid;
   gap: 6px;
   margin: 0;
@@ -1670,7 +1730,7 @@ body {
   overflow-y: auto;
 }
 
-.riff-pick {
+.rig-pick {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
@@ -1682,23 +1742,23 @@ body {
   min-width: 0;
 }
 
-.riff-pick:hover {
+.rig-pick:hover {
   border-color: var(--edge-strong);
 }
 
-.riff-pick:has(input:checked) {
+.rig-pick:has(input:checked) {
   border-color: var(--accent-dim);
 }
 
 /* Either target focused lights the row, so the keyboard shows which row it is standing on. */
-.riff-pick:has(input:focus-visible),
-.riff-pick:has(.riff-pick-details:focus-visible) {
+.rig-pick:has(input:focus-visible),
+.rig-pick:has(.rig-pick-details:focus-visible) {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
 /* A row that cannot be ticked because the rig is full still reads, and still unticks. */
-.riff-pick-off {
+.rig-pick-off {
   opacity: 0.55;
 }
 
@@ -1707,7 +1767,7 @@ body {
  * inside: hit target and visual size are decoupled (#21), and a control drawn to look right on a
  * dense list is far smaller than a target reached with a thumb.
  */
-.riff-pick-choose {
+.rig-pick-choose {
   grid-column: 1;
   grid-row: 1;
   display: flex;
@@ -1718,20 +1778,20 @@ body {
   cursor: pointer;
 }
 
-.riff-pick-choose input {
+.rig-pick-choose input {
   margin: 0;
   width: 18px;
   height: 18px;
   flex: none;
 }
 
-.riff-pick-name {
+.rig-pick-name {
   color: var(--silkscreen);
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.riff-pick-details {
+.rig-pick-details {
   grid-column: 2;
   grid-row: 1;
   display: flex;
@@ -1743,7 +1803,7 @@ body {
   font-size: 12px;
 }
 
-.riff-pick-details:hover {
+.rig-pick-details:hover {
   color: var(--accent);
 }
 
@@ -1751,7 +1811,7 @@ body {
  * The metadata line spans the row and indents to clear the checkbox, so it reads as belonging to
  * the name above it. 28px is the box (18px) plus the label's gap (10px).
  */
-.riff-pick-sub {
+.rig-pick-sub {
   grid-column: 1 / -1;
   grid-row: 2;
   padding-left: 28px;
@@ -1767,7 +1827,8 @@ body {
  * has to come before the answer that depends on it.
  */
 @media (min-width: 900px) {
-  .riff-rig {
+  .riff-rig,
+  .sample-rig {
     align-items: start;
   }
 }
@@ -4663,7 +4724,7 @@ html {
    */
   .panel:not(.guide-panel):not(.kit-panel):not(.riff-panel):not(.rack-section),
   .guide-actions,
-  .kit-actions,
+  .export-actions,
   .kit-back,
   .kit-open,
   /*
@@ -4732,7 +4793,8 @@ html {
    */
   .riff-grid-scroll,
   .riff-note,
-  .riff-param {
+  .riff-param,
+  .sample-param {
     break-inside: avoid;
   }
 

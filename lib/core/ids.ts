@@ -14,6 +14,8 @@ export type PatternId = string
 export type HookId = string
 export type InspirationId = string
 export type RiffId = string
+/** §3.8. A sample target's slug — `kick`, `wobble-bass`. */
+export type SampleTargetId = string
 
 /** Section names are authored per template and are the key of `Occupancy`'s inner map (§4.2). */
 export type SectionName = string
