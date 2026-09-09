@@ -2541,15 +2541,45 @@ export type LfoSpec = { count: number; syncable: boolean; destinations: string[]
 /**
  * `perStep` is an open list of this device's own per-step feature names, not a shared closed
  * vocabulary: it is only ever compared against this device's own articulation keys.
+ *
+ * §3/#514. **`perStepUnreachable` is the subset of those an `ArticulationEntry` may not carry**,
+ * and it is a claim about our model rather than about the box: everything it names is something
+ * the sequencer really does, which is why it stays in `perStep` and needs no evidence entry of
+ * its own — `features.perStep` already cites the lane.
+ *
+ * Three reasons put a lane here, and eight device folders had all three written out in prose
+ * before this field existed:
+ *
+ *  - **No shape to hold the value.** `set` is one name and one scalar, so a lane whose value is
+ *    *another parameter* cannot be said at all: the Octatrack's `parameter-lock`, the SP-404's
+ *    `knob-motion` (a curve, and one number for it says the knob was parked), the MPC's and the
+ *    Deluge's `automation`.
+ *  - **Stateful.** `condition` and `fill` depend on what the previous step evaluated to or what
+ *    mode the box is in; a `set` is static and has no evaluation order.
+ *  - **A value nobody can know** (invariant 5). `sample-lock`, `sound-lock`, `preset-lock`: the
+ *    value would be the name of a file or a slot in somebody else's box.
+ *
+ * The distinction was already being drawn — every one of those folders exported an
+ * `ARTICULABLE_PER_STEP` constant and pinned it with a test — but each drew it *beside* the
+ * manifest rather than in it, so nothing stopped a recipe from setting an excluded key and only
+ * a device's own test would have caught it. #514 found the second and third instances of the
+ * failure this invites, on a box that had no such constant at all: the Deluge's
+ * `{ automation: 1 }`, a lane named with no destination and no value, which #452 had already
+ * removed once.
+ *
+ * Every name here must appear in `perStep`. A name that does not excludes nothing, and reads as
+ * if it did.
  */
 export type DeviceFeatures = {
   perStep?: string[]
+  perStepUnreachable?: string[]
   sidechain?: SidechainSpec
   lfo?: LfoSpec
 }
 
 export const DeviceFeaturesSchema = z.strictObject({
   perStep: z.array(z.string().min(1)).optional(),
+  perStepUnreachable: z.array(z.string().min(1)).optional(),
   sidechain: z.strictObject({ internal: z.boolean(), fromExternalAudio: z.boolean() }).optional(),
   lfo: z
     .strictObject({
@@ -3654,7 +3684,21 @@ export const DeviceSchema = z
     }
 
     const perStep = new Set(device.features?.perStep ?? [])
+    const unreachable = new Set(device.features?.perStepUnreachable ?? [])
     const hintKeys = new Set(Object.keys(device.hints ?? {}))
+
+    // §3/#514. A lane `articulation` may not carry is still a lane the box has, so it is named
+    // twice on purpose. Naming it only here would be the manifest saying the sequencer does
+    // something and does not do it in the same breath.
+    device.features?.perStepUnreachable?.forEach((key, i) => {
+      if (!perStep.has(key)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `features.perStepUnreachable names '${key}', which is not in features.perStep — it excludes nothing and reads as if it did`,
+          path: ['features', 'perStepUnreachable', i],
+        })
+      }
+    })
 
     const modesByVoice = new Map<string, readonly TrackMode[]>(
       device.voices.flatMap((v) =>
@@ -3801,6 +3845,15 @@ export const DeviceSchema = z
               message: `articulation sets '${key}', which is not in features.perStep`,
               path: ['recipes', i, 'articulation', j, 'set', key],
             })
+          } else if (unreachable.has(key)) {
+            // §3/#514. The box does this; a `set` cannot say it. One name and one scalar is not
+            // a destination, an evaluation order or a filename, and a lane written down without
+            // one of those renders as the appearance of movement (#452).
+            ctx.addIssue({
+              code: 'custom',
+              message: `articulation sets '${key}', which features.perStepUnreachable declares an ArticulationEntry cannot carry`,
+              path: ['recipes', i, 'articulation', j, 'set', key],
+            })
           }
         }
         if (entry.hint !== undefined && !hintKeys.has(entry.hint)) {
@@ -3813,6 +3866,20 @@ export const DeviceSchema = z
       })
     })
   })
+
+/**
+ * §3/#514. **The per-step lanes an `ArticulationEntry` on this device may actually set** — what
+ * the box does, less what our model cannot say (`features.perStepUnreachable`).
+ *
+ * Derived rather than declared, for the reason a device folder learned by hand: the two lists
+ * were maintained side by side in eight folders, and a subset kept in a second literal is a
+ * subset that drifts. Declaration order is kept, because it is the order the manual introduces
+ * the lanes in and nothing else here gives position a meaning.
+ */
+export function articulablePerStep(device: Device): readonly string[] {
+  const unreachable = new Set(device.features?.perStepUnreachable ?? [])
+  return (device.features?.perStep ?? []).filter((key) => !unreachable.has(key))
+}
 
 /**
  * The documents a device's ranges actually cite, most-cited first, ties by code unit (§7.2).

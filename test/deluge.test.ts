@@ -1,8 +1,10 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   CHARACTERS,
   DeviceSchema,
   ROLES,
+  articulablePerStep,
   expand,
   hasAmount,
   modulationEndParts,
@@ -700,8 +702,8 @@ describe('Deluge manifest', () => {
    * the box has to decide what happens to it. The roles left out are left out for one reason each
    * and not by pattern — the percussive rows are fed by a file or by their own envelopes (#173,
    * #345), `vox-chop`, `noise` and `impact` sound whatever one-shot was loaded onto them, and
-   * `riser` shapes the filter with `ENV 2` and states no position for it to move from, which is
-   * this issue one layer up and is not in this change.
+   * `riser` shapes the filter with `ENV 2` rather than with `ENV 1`, so the four amp stages this
+   * list requires are not its shape. It states its filter position now (#514), pinned below.
    */
   const TONAL: Role[] = ['sub', 'bass-mid', 'pad', 'lead', 'stab', 'arp', 'acid', 'texture', 'sweep']
 
@@ -729,8 +731,39 @@ describe('Deluge manifest', () => {
     }
 
     // **No converse.** Nothing here says a recipe off this list may *not* set a filter
-    // frequency — the roles left out are out of this change's scope, not ruled against, and
-    // `riser` in particular modulates a position it does not state. This is a floor.
+    // frequency — the roles left out are out of this change's scope, not ruled against. This is
+    // a floor, and `riser` sits above it on the filter half without meeting the envelope half.
+  })
+
+  it('gives the riser a position for its envelope to move from (#514, #510)', () => {
+    // The depth said how far and nothing said from where: `ENV 2 → LPF FREQ DEPTH 38` on a recipe
+    // that never set `LPF FREQ`, so the sweep started wherever the last patch left the cutoff.
+    // This is #510 on the one part whose whole point is a filter moving.
+    const riser = device.recipes.find((r) => r.id === 'deluge-riser-bright')
+    if (riser === undefined) throw new Error('no deluge-riser-bright')
+
+    const cutoff = (riser.params as AuthoredParam[]).find((p) => p.name === 'LPF FREQ')
+    if (cutoff?.kind !== 'numeric') throw new Error('deluge-riser-bright: no numeric LPF FREQ')
+    // Low, with most of p.67's travel left to climb, and off the floor so the start is audible.
+    expect(cutoff.value).toBe(8)
+    expect(cutoff.value).toBeGreaterThan(cutoff.range.min)
+    expect(cutoff.value).toBeLessThan(cutoff.range.max / 2)
+    // Taste, and no mood offset — `darkness` is the treble shelf on this box (pinned below), and
+    // a filter arriving is not a reason to move the knob onto it.
+    expect(cutoff.verified).toBe(false)
+    expect(cutoff.mood).toBeUndefined()
+
+    // The claim generalised, which is the half worth keeping: a filter this box modulates is a
+    // filter this box positions. Written over the destination rather than over the recipe id, so
+    // a second modulated cutoff on another recipe is held to it without anyone adding a line.
+    for (const recipe of device.recipes) {
+      const modulated = (recipe.params as AuthoredParam[]).some(
+        (p) => p.kind === 'modulation' && modulationEndParts(p.destination).value.startsWith('LPF'),
+      )
+      if (!modulated) continue
+      const names = (recipe.params as AuthoredParam[]).map((p) => p.name)
+      expect(names, recipe.id).toContain('LPF FREQ')
+    }
   })
 
   it('builds its pad out of the box, with nothing to load (#507)', () => {
@@ -787,6 +820,51 @@ describe('Deluge manifest', () => {
     const hint = device.hints?.['lpf-freq']
     expect(hint).toBeDefined()
     expect(hint?.split(' ').length, hint).toBeLessThanOrEqual(8)
+  })
+
+  it('keeps the three pages behind the shortcut gesture beside the hint itself (#514)', () => {
+    // #513 shipped `lpf-freq` off p.83's column heading and the sibling hint above it, and #514
+    // filed it as the one claim in that PR with no page stating the gesture. The pages exist:
+    // p.83's table names the pad, and pp.92-93 state [SHIFT] + [PAD] twice, once beside the grid
+    // diagram and once as the numbered procedure.
+    //
+    // **Asserted over the source rather than over the manifest, because a hint has nowhere to
+    // carry a citation.** `hints` is `Record<string, string>` — six words and no provenance field
+    // — so the only place the chain can live is the comment beside it, and a comment nothing
+    // reads is a comment that goes when somebody tidies. This makes it go loudly.
+    const source = readFileSync(
+      new URL('../lib/devices/synthstrom-deluge/index.ts', import.meta.url),
+      'utf8',
+    )
+    const at = source.indexOf("    'lpf-freq': 'Hold [SHIFT], press the FREQUENCY pad',")
+    expect(at, 'the hint is authored on one line, unchanged').toBeGreaterThan(-1)
+
+    // The contiguous comment block above the hint, whatever its length: the reasoning has to sit
+    // *there*, not somewhere else in a 1,800-line file where a reader of the hint will not meet it.
+    const before = source.slice(0, at).split('\n')
+    const block: string[] = []
+    for (let i = before.length - 1; i >= 0; i--) {
+      const line = before[i]?.trim() ?? ''
+      // The sibling hint the same gesture serves sits between the block and this one, and the
+      // slice ends mid-line at the hint's own indentation.
+      if (line === '' || line.startsWith("'osc-type'")) {
+        if (block.length === 0) continue
+        break
+      }
+      if (!line.startsWith('//')) break
+      block.unshift(line)
+    }
+    const reasoning = block.join('\n')
+
+    for (const page of ['p.83', 'p.92', 'p.93']) {
+      expect(reasoning, `${page} is what makes the gesture a citation rather than a guess`).toContain(page)
+    }
+    // The words the two procedure pages actually print, so a citation cannot survive the sentence
+    // it is standing behind being rewritten into something the guidebook does not say.
+    expect(reasoning).toContain('[SHIFT] + [PAD]')
+    expect(reasoning).toContain('Shortcut Button Access')
+    // Nobody has pressed it, and the folder says so rather than quietly upgrading the claim.
+    expect(reasoning).toContain('observed')
   })
 
   it('leaves the darkness axis on the treble shelf, deliberately (#510)', () => {
@@ -1013,7 +1091,7 @@ describe('Deluge manifest', () => {
     expect(device.clock.transport).toEqual(['midi-din', 'usb', 'analog-clock'])
   })
 
-  it('addresses steps only by PatternSlot, and uses every per-step feature it declares', () => {
+  it('addresses steps only by PatternSlot, and uses every per-step feature it can', () => {
     const source = JSON.stringify(device)
     expect(source).not.toContain('"step"')
     expect(source).not.toContain('"hits"')
@@ -1023,7 +1101,52 @@ describe('Deluge manifest', () => {
       device.recipes.flatMap((r) => (r.articulation ?? []).flatMap((a) => Object.keys(a.set))),
     )
     expect([...used].filter((k) => !perStep.includes(k))).toEqual([])
-    expect(perStep.filter((k) => !used.has(k))).toEqual([])
+
+    // #514. The claim was "every declared lane is used", and `automation` met it by being set to
+    // a bare `1` — a lane named, with no destination and no value. It is declared unreachable
+    // now, so the claim is over what an `ArticulationEntry` can carry: three lanes, all used.
+    expect(articulablePerStep(device).filter((k) => !used.has(k))).toEqual([])
+  })
+
+  it('declares the automation lane unreachable rather than setting it to nothing (#514, #452)', () => {
+    // Automation View records a parameter's value per step, so saying one costs a destination
+    // and a value. `set` is one name and one scalar: `{ automation: 1 }` said neither, and said
+    // it on `deluge-pad-soft` and `deluge-sweep-soft` after #452 removed the first one from the
+    // riser. The boundary is in the manifest now, so `DeviceSchema` refuses the fourth.
+    expect(device.features?.perStep).toContain('automation')
+    expect(device.features?.perStepUnreachable).toEqual(['automation'])
+    expect(articulablePerStep(device)).toEqual(['velocity', 'probability', 'iteration'])
+
+    for (const recipe of device.recipes) {
+      for (const entry of recipe.articulation ?? []) {
+        expect(Object.keys(entry.set), recipe.id).not.toContain('automation')
+      }
+    }
+
+    // The jog went with them: a gesture nothing reaches is documentation (invariant 7), and this
+    // one jogged a lane the manifest now says an articulation may not carry at all.
+    expect(Object.keys(device.hints ?? {})).not.toContain('automation-view')
+  })
+
+  it('refuses a recipe that sets the unreachable lane, from the manifest rather than a test', () => {
+    // The point of #514: the check is in `DeviceSchema`, so it holds for a recipe nobody has
+    // written yet. Without `perStepUnreachable` this parses, because `automation` is a lane the
+    // box really has.
+    const withAutomation = {
+      ...device,
+      recipes: device.recipes.map((r) =>
+        r.id === 'deluge-pad-soft'
+          ? { ...r, articulation: [{ slot: 'first-hit', set: { automation: 1 } }] }
+          : r,
+      ),
+    }
+    expect(DeviceSchema.safeParse(withAutomation).success).toBe(false)
+
+    const permissive = {
+      ...withAutomation,
+      features: { ...device.features, perStepUnreachable: undefined },
+    }
+    expect(DeviceSchema.safeParse(permissive).success).toBe(true)
   })
 
   it('keeps articulation values inside what the guidebook prints', () => {

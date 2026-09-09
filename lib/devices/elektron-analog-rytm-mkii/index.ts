@@ -1,5 +1,5 @@
 import type { CapabilityEvidence, Device, JackSignalKind, Recipe } from '../../core/device'
-import { jackFact } from '../../core/device'
+import { articulablePerStep, jackFact } from '../../core/device'
 import type { AuthoredParam, Cite } from '../../core/params'
 import { ANALOG_RYTM_MKII_PANEL } from './panel'
 
@@ -443,15 +443,18 @@ const PER_STEP = [
   'parameter-slide',
 ] as const
 
-/** The subset `articulation` may use. Exported so the test can assert the boundary, not restate it. */
-export const ARTICULABLE_PER_STEP = [
-  'velocity',
-  'note-length',
-  'probability',
-  'micro-timing',
-  'retrig',
-  'retrig-rate',
-  'accent',
+/**
+ * The complement, and the one the manifest carries: the lanes above that an `ArticulationEntry`
+ * may not set (§3/#514). See the JSDoc over `PER_STEP` for why each one is outside §4.3.
+ */
+const PER_STEP_UNREACHABLE = [
+  'swing',
+  'parameter-lock',
+  'sound-lock',
+  'condition',
+  'fill',
+  'trig-mute',
+  'parameter-slide',
 ] as const
 
 // ---------------------------------------------------------------------------
@@ -1191,7 +1194,7 @@ export const device: Device = {
    */
   comfortableVoices: 8,
 
-  features: { perStep: [...PER_STEP] },
+  features: { perStep: [...PER_STEP], perStepUnreachable: [...PER_STEP_UNREACHABLE] },
 
   hints: {
     machine: 'Press [SRC] twice',
@@ -1204,3 +1207,10 @@ export const device: Device = {
 
   recipes,
 }
+
+/**
+ * The subset `articulation` may use — `PER_STEP` less what the manifest declares unreachable,
+ * derived by the core so the two lists cannot drift (§3/#514). Exported so a test can assert the
+ * boundary, not restate it.
+ */
+export const ARTICULABLE_PER_STEP = articulablePerStep(device)

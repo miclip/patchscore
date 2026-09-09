@@ -1,5 +1,5 @@
 import type { CapabilityEvidence, Device, JackSpec, JackSignalKind, Recipe } from '../../core/device'
-import { jackFact } from '../../core/device'
+import { articulablePerStep, jackFact } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset } from '../../core/params'
 import { MPC_LIVE_III_PANEL } from './panel'
 
@@ -428,8 +428,11 @@ const OFF_ON = ['Off', 'On'] as const
  */
 const PER_STEP = ['velocity', 'note-length', 'probability', 'automation'] as const
 
-/** The subset `articulation` may use. Exported so the test asserts the boundary, not restates it. */
-export const ARTICULABLE_PER_STEP = ['velocity', 'note-length', 'probability'] as const
+/**
+ * The complement, and the one the manifest carries: the lanes above that an `ArticulationEntry`
+ * may not set (§3/#514). See the JSDoc over `PER_STEP` for why each one is outside §4.3.
+ */
+const PER_STEP_UNREACHABLE = ['automation'] as const
 
 // ---------------------------------------------------------------------------
 // Param helpers (§3.1, §3.2)
@@ -1753,6 +1756,7 @@ export const device: Device = {
 
   features: {
     perStep: [...PER_STEP],
+    perStepUnreachable: [...PER_STEP_UNREACHABLE],
     /**
      * Two per pad, and both sync. p.228: *"Tap LFO to cycle between the LFO 1 and LFO 2
      * controls"*, with `Rate [Sync]`, `Fade In [Sync]` and `Delay [Sync]` each taking *"one of
@@ -1788,3 +1792,10 @@ export const device: Device = {
 
   recipes,
 }
+
+/**
+ * The subset `articulation` may use — `PER_STEP` less what the manifest declares unreachable,
+ * derived by the core so the two lists cannot drift (§3/#514). Exported so a test can assert the
+ * boundary, not restate it.
+ */
+export const ARTICULABLE_PER_STEP = articulablePerStep(device)
