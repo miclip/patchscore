@@ -956,7 +956,9 @@ const SAMPLE_RECIPES: Recipe[] = [
     voice: 'track-sample',
     title: 'Sub tone under everything, filter well down, full bit depth',
     sourceAudio: {
-      need: 'A clean sine or near-sine sub one-shot with no harmonics above the fundamental',
+      need:
+        'A clean sine or near-sine sub one-shot with no harmonics above the fundamental, ten ' +
+        'seconds or longer — the note is held for whole bars and the one-shot is what fills them',
       prep: {
         text: 'Tune the sample to C4 before loading; the Note parameter reckons from C4.',
         verified: cite(86),

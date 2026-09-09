@@ -381,7 +381,8 @@ const recipes: Recipe[] = [
     verified: false,
     sourceAudio: {
       need:
-        'A clean low sustained tone with a stable, known pitch — REPITCH transposes it, so the ' +
+        'A clean low sustained tone with a stable, known pitch, ten seconds or longer — the note ' +
+        'is held for whole bars and the file is what fills them. REPITCH transposes it, so the ' +
         'tuning has to be true before it moves',
     },
     params: [src('REPITCH'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('AHD'), hold(96)],
@@ -751,8 +752,8 @@ const recipes: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A short saw or square bass tone of one known pitch, with no filter movement recorded ' +
-        'into it; the filter is the part this recipe is for',
+        'A saw or square bass tone of one known pitch, three seconds or longer, with no filter ' +
+        'movement recorded into it; the filter is the part this recipe is for',
     },
     routing:
       '**Slide:** `PORT` is on TRIG PAGE 2 and locks per step like the rest of the track ' +

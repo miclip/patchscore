@@ -1609,7 +1609,8 @@ const SAMPLE_RECIPES: Recipe[] = [
       need:
         'A clean sustained low tone with a stable, known pitch — a sine or a filtered triangle. ' +
         'Load it at the octave you want to hear: the recipe does not transpose it, so a source ' +
-        'recorded high stays high',
+        'recorded high stays high. A second or two is enough with `Forward loop` below, as long ' +
+        'as the loop point is clean: it is the loop that fills the held bars rather than the file',
     },
     /**
      * **The most-wanted role on this box**: seven of the eleven directions request it, all of

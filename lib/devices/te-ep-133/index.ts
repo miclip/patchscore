@@ -563,7 +563,9 @@ const recipes: Recipe[] = [
     voice: 'pad',
     title: 'Factory sub, legato under the kick',
     sourceAudio: fromLibrary(
-      'A sine or near-sine bass note with no harmonics above the fundamental',
+      'A sine or near-sine bass note with no harmonics above the fundamental, ten seconds or ' +
+      'longer — the note is held for whole bars and the sound is what fills them, so audition ' +
+      'the band for one that holds rather than one that decays',
       'bass is sounds 400-499',
     ),
     params: [pick('PLAY MODE', 'legato', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
@@ -596,7 +598,8 @@ const recipes: Recipe[] = [
     voice: 'pad',
     title: 'Squelch line, legato so notes run into each other',
     sourceAudio: fromLibrary(
-      'A resonant sawtooth bass note, one sustained note rather than a phrase',
+      'A resonant sawtooth bass note, one sustained note rather than a phrase, three seconds ' +
+      'or longer — audition the band for one that still sounds that far in',
       'bass is sounds 400-499',
     ),
     params: [pick('PLAY MODE', 'legato', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
@@ -638,7 +641,11 @@ const recipes: Recipe[] = [
     character: 'soft',
     voice: 'pad',
     title: 'Field recording stretched across bars',
-    sourceAudio: sampled('A field recording or room tone — anything with movement and no beat'),
+    sourceAudio: sampled(
+      'A field recording or room tone — anything with movement and no beat. Two to four seconds ' +
+      'of recording is plenty: BAR stretches whatever is loaded to the bar count you set, so ' +
+      'that count is the length you hear',
+    ),
     params: [
       pick('PLAY MODE', 'key', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' }),
       pick('SAMPLE SOURCE', 'mic', SAMPLE_SOURCES, cite(SAMPLE_FN), { hint: 'sample' }),

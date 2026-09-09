@@ -871,8 +871,9 @@ const recipes: Recipe[] = [
     verified: false,
     sourceAudio: {
       need:
-        'A clean low sustained tone with a stable, known pitch — TUNE transposes it, so the tuning ' +
-        'has to be true before it moves',
+        'A clean low sustained tone with a stable, known pitch, ten seconds or longer — the note ' +
+        'is held for whole bars and the file is what fills them. TUNE transposes it, so the ' +
+        'tuning has to be true before it moves',
     },
     /**
      * `ONESHOT` rather than `REPITCH`, and the module JSDoc says why: p.85 gives Repitch no `TUNE`
@@ -1480,8 +1481,8 @@ const recipes: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A short saw or square bass tone of one known pitch, with no filter movement recorded ' +
-        'into it; the filter is the part this recipe is for',
+        'A saw or square bass tone of one known pitch, three seconds or longer, with no filter ' +
+        'movement recorded into it; the filter is the part this recipe is for',
     },
     routing:
       '**Slide:** there is none on this box. The TRIG page is `NOTE`, `VEL`, `LEN`, `PROB`, `LEV`, ' +

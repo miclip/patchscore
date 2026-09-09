@@ -624,7 +624,9 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need:
         'A clean low sustained tone with a stable, known pitch — PTCH transposes it, so the ' +
-        'tuning has to be true before it moves',
+        'tuning has to be true before it moves. A second or two is enough with LOOP MODE ON ' +
+        'below: it is the loop that fills the held bars rather than the file, so the loop point ' +
+        'matters more than the length',
       hint: 'quick-assign',
     },
     params: [
@@ -1423,8 +1425,9 @@ const recipes: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A short saw or square bass tone of one known pitch, with no filter movement recorded ' +
-        'into it \u2014 the filter is the part this recipe is for',
+        'A saw or square bass tone of one known pitch, with no filter movement recorded into ' +
+        'it \u2014 the filter is the part this recipe is for. A second or two is enough with ' +
+        'LOOP MODE ON below, as long as the loop point is clean',
       hint: 'quick-assign',
     },
     routing:
