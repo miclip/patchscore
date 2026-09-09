@@ -611,6 +611,14 @@ const genOct = (v: number) => num('SOUND GEN · OCT', v, { min: -4, max: 12 }, 6
 const genLevel = (v: number) => num('SOUND GEN · Level', v, { min: 0, max: 127 }, 68, { hint: 'sound-gen' })
 const genDuty = (v: number) =>
   num('SOUND GEN · Duty Cycle', v, { min: 0, max: 100 }, 68, { unit: '%', hint: 'sound-gen' })
+/**
+ * §3/#506. **How long the exported sample is**, and the one generator parameter a held part
+ * cannot leave unset: p.68's table gives `Pad Length` as `1-256 (period), 0.5-10 (seconds)`, so
+ * ten seconds is the *ceiling* rather than a floor. A `need` asking for longer would be asking
+ * for something this box will not export.
+ */
+const genPadLength = (v: number) =>
+  num('SOUND GEN · Pad Length', v, { min: 0.5, max: 10 }, 68, { unit: 's', hint: 'sound-gen' })
 
 /** p.68. The one documented way to obtain source audio on this box without recording anything. */
 const generated: NonNullable<Recipe['sourceAudio']>['prep'] = {
@@ -687,8 +695,8 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need:
         'A pure low sine with a stable, known pitch — nothing above the fundamental to filter. ' +
-        'Ten seconds or longer: the note is held for whole bars and the sample is what fills ' +
-        'them, so hold the recording that long when you make it',
+        'Exactly ten seconds, which is both what the held bars need and the longest the ' +
+        'generator will export — `SOUND GEN · Pad Length` below sets it',
       prep: generated,
       hint: 'sound-gen',
     },
@@ -697,6 +705,7 @@ const recipes: Recipe[] = [
       genFreq(-24),
       genOct(-2),
       genLevel(110),
+      genPadLength(10),
       gateMode('ON'),
       loop('OFF'),
       bus('DRY'),

@@ -22,6 +22,27 @@ import { TEMPLATES } from '../lib/templates/index'
  * gesture with a length, and half the recipes that need a sample never say how long* — arriving
  * on held notes rather than on risers.
  *
+ * ## The rule is about the fact, not the field, and `sourceAudio` is only a proxy for it
+ *
+ * A duration is owed because **the sound comes from a file** and the figure outlasts it. Carrying
+ * `sourceAudio` is the closest thing the model has to that fact and it is not the same claim:
+ * `ep40-acid-dirty` carries one and loads nothing, because a supertone is the EP–40's built-in
+ * synth engine. Demanding a duration there would make this test enforce a sentence that could
+ * only be untrue, so it is excluded by id below.
+ *
+ * By id, and deliberately not by a predicate. Nothing in that recipe's *parameters* distinguishes
+ * it — its whole param list is `PLAY MODE legato`, the same value the file-fed recipes beside it
+ * set — so there is no structural signal to key on, the way `deluge-pad-soft` now names its
+ * built-in source in `OSC 1 TYPE` (#507). The alternative was reading `need` or `hint` for a
+ * phrase, which is the name-matching this repo keeps getting bitten by: it would pass until
+ * somebody rewrote a sentence. An exclusion list is honest about being a list, and greppable.
+ *
+ * **The modelling question underneath is deferred, not answered here.** `sourceAudio` is
+ * documented as prose saying what audio to *load*; a recipe that loads nothing carrying one means
+ * either that recipe should not carry it or the field means two things. `ep40-lead-bright` and
+ * `ep40-sweep-bright` are in the same position and are only outside this sweep because no hook
+ * holds `lead` or `sweep` for a bar. That is library-wide and not this test's to settle.
+ *
  * **The threshold is one bar, and it is derived rather than listed.** Sixteen sixteenth steps is
  * the point at which a source has to be found rather than merely played, and deriving the roles
  * from the shipped hooks means a direction that later holds a `lead` for a bar pulls its recipes
@@ -65,6 +86,16 @@ function heldRoles(): Set<Role> {
   return held
 }
 
+/**
+ * Recipes carrying `sourceAudio` that load no file, so no duration is stateable about them.
+ *
+ * One entry, and it is a list rather than a rule because no recipe *parameter* identifies the
+ * EP–40's built-in supertone engine: `ep40-acid-dirty` sets `PLAY MODE legato` and nothing else,
+ * which is exactly what the file-fed recipes around it set. See the note above for why reading
+ * the prose instead was rejected.
+ */
+const NOT_A_FILE = new Set<string>(['ep40-acid-dirty'])
+
 type FileFed = { device: Device; recipeId: string; role: Role; need: string }
 
 /** Every recipe that plays a file on a role something holds. */
@@ -74,6 +105,7 @@ function fileFedOnHeldRoles(): FileFed[] {
   for (const device of DEVICES) {
     for (const recipe of device.recipes) {
       if (recipe.sourceAudio === undefined) continue
+      if (NOT_A_FILE.has(recipe.id)) continue
       if (!roles.has(recipe.role)) continue
       out.push({
         device,
@@ -87,6 +119,17 @@ function fileFedOnHeldRoles(): FileFed[] {
 }
 
 describe('a source fed to a held note says how long it has to be (#506)', () => {
+  /**
+   * What the targets in those recipes are worth, at the slowest tempo each direction allows —
+   * seconds are what a reader can act on and steps are not, so the conversion is where the round
+   * numbers come from and where they can be falsified.
+   *
+   *     sub      80 steps  weave, bpm.min 126        9.52 s   → ten seconds
+   *     acid     22 steps  acid-lineage, bpm.min 122  2.70 s  → three seconds
+   *
+   * Both are worst cases over every direction holding that role, so a slower direction added
+   * later moves the requirement and this arithmetic is how anybody would notice.
+   */
   it('derives the held roles from the shipped hooks rather than from a list', () => {
     const longest = longestHoldByRole()
     const held = [...heldRoles()].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
@@ -112,10 +155,12 @@ describe('a source fed to a held note says how long it has to be (#506)', () => 
     expect(DURATION.test('A short saw or square bass tone of one known pitch')).toBe(false)
   })
 
-  it('covers the recipes #506 measured', () => {
-    // 41 rather than the issue's 42: #507 moved `deluge-pad-soft` off a file onto a built-in
-    // oscillator, which is that recipe's fix and not this one's.
-    expect(fileFedOnHeldRoles()).toHaveLength(41)
+  it('covers the recipes #506 measured, less the two that are not files', () => {
+    // 40 rather than the issue's 42. #507 moved `deluge-pad-soft` off a file onto a built-in
+    // oscillator, which is that recipe's fix and not this one's; `ep40-acid-dirty` was never a
+    // file at all. Seventeen of the forty stated no duration before this change.
+    expect(fileFedOnHeldRoles()).toHaveLength(40)
+    expect(fileFedOnHeldRoles().some((r) => NOT_A_FILE.has(r.recipeId))).toBe(false)
   })
 
   it('states a duration in every one of them', () => {
