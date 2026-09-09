@@ -685,7 +685,10 @@ const recipes: Recipe[] = [
     title: 'Sine generated on the box, held under the bar',
     verified: false,
     sourceAudio: {
-      need: 'A pure low sine with a stable, known pitch — nothing above the fundamental to filter',
+      need:
+        'A pure low sine with a stable, known pitch — nothing above the fundamental to filter. ' +
+        'Ten seconds or longer: the note is held for whole bars and the sample is what fills ' +
+        'them, so hold the recording that long when you make it',
       prep: generated,
       hint: 'sound-gen',
     },
@@ -1368,8 +1371,8 @@ const recipes: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A short saw or square bass tone of one known pitch, with no filter movement recorded ' +
-        'into it — the filter is the part this recipe is for',
+        'A saw or square bass tone of one known pitch, three seconds or longer, with no filter ' +
+        'movement recorded into it — the filter is the part this recipe is for',
     },
     routing:
       '**The line:** `PITCH MODE` `CHROMATIC` in TR-REC and a `PITCH` value per step (p.98). ' +

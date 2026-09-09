@@ -10,8 +10,8 @@ import { TEMPLATES } from '../lib/templates/index'
  * (4 bars)* on a voice that cannot hold at all. #506 has two halves and they cost very different
  * amounts. The half that needs a model change — **whether a voice can sustain** — is out of scope
  * here and stays out: there is no capability field for it, a sample in `LOOP` sustains where the
- * same box in `ONCE` does not, and inventing a flag to make this test pass would be the wrong
- * shape settled in a hurry.
+ * same box in `ONCE` does not, and a flag added to make this test pass would be the wrong shape
+ * settled in a hurry.
  *
  * The half this file holds is computable from what already ships. `HookNote.len` is sustain in
  * sixteenth steps (§4.1/#142), every hook names the role it is for, and every recipe names its

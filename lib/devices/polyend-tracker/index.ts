@@ -538,7 +538,10 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Sine sub an octave down, filter closed over it',
     sourceAudio: {
-      need: 'A clean sine or triangle bass note, one sustained pitch, no transient',
+      need:
+        'A clean sine or triangle bass note, one sustained pitch, no transient. A second or two ' +
+        'is enough — LOOP START and LOOP END below cycle one wave inside the steady part, so it ' +
+        'is the loop that fills the held bars rather than the file',
       hint: 'load-sample',
     },
     params: [
@@ -1235,8 +1238,8 @@ const RECIPES: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A short saw or square bass tone of one known pitch, with no filter movement recorded ' +
-        'into it — the filter is the part this recipe is for',
+        'A saw or square bass tone of one known pitch, three seconds or longer, with no filter ' +
+        'movement recorded into it — the filter is the part this recipe is for',
       hint: 'load-sample',
     },
     params: [
