@@ -1,4 +1,5 @@
 import type { Device, Recipe } from '../../core/device'
+import { articulablePerStep } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, ParamScope } from '../../core/params'
 import { DIGITONE_II_PANEL } from './panel'
 
@@ -64,9 +65,9 @@ import { DIGITONE_II_PANEL } from './panel'
  *
  * ## 3. Micro timing has two printed scales, so no recipe articulates it
  *
- * `micro-timing` is declared in `features.perStep` and is deliberately absent from
- * `ARTICULABLE_PER_STEP`, which is the one place this manifest diverges from its sibling's
- * subset. The manual prints the displacement twice, in different units:
+ * `micro-timing` is declared in `features.perStep` and named in `features.perStepUnreachable`
+ * beside it (§3/#514), which is the one place this manifest diverges from its sibling's subset.
+ * The manual prints the displacement twice, in different units:
  *
  *     [TRIG] + [LEFT]/[RIGHT] pop-up      screen reads `+1/384`         p.48
  *     NOTE EDIT menu, TIME                "The full range is -23–23"    p.44
@@ -272,13 +273,15 @@ const PER_STEP = [
   'preset-lock',
 ] as const
 
-/** The subset `articulation` may use. Exported so the test can assert the boundary, not restate it. */
-export const ARTICULABLE_PER_STEP = [
-  'velocity',
-  'note-length',
-  'probability',
-  'retrig',
-  'retrig-rate',
+/**
+ * The complement, and the one the manifest carries: the lanes above that an `ArticulationEntry`
+ * may not set (§3/#514). See the JSDoc over `PER_STEP` for why each one is outside §4.3.
+ */
+const PER_STEP_UNREACHABLE = [
+  'micro-timing',
+  'condition',
+  'fill',
+  'preset-lock',
 ] as const
 
 // ---------------------------------------------------------------------------
@@ -1240,6 +1243,7 @@ export const device: Device = {
 
   features: {
     perStep: [...PER_STEP],
+    perStepUnreachable: [...PER_STEP_UNREACHABLE],
     /**
      * Three LFOs per audio track (p.63; two on MIDI tracks), synced by `MULT`, which multiplies
      * `SPD` *"either by multiplying the current tempo (BPM settings), or by multiplying a fixed
@@ -1276,3 +1280,10 @@ export const device: Device = {
 
   recipes,
 }
+
+/**
+ * The subset `articulation` may use — `PER_STEP` less what the manifest declares unreachable,
+ * derived by the core so the two lists cannot drift (§3/#514). Exported so a test can assert the
+ * boundary, not restate it.
+ */
+export const ARTICULABLE_PER_STEP = articulablePerStep(device)

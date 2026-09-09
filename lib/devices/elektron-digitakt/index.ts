@@ -1,4 +1,5 @@
 import type { Device, JackSignalKind, Recipe } from '../../core/device'
+import { articulablePerStep } from '../../core/device'
 import type { AuthoredParam, Cite } from '../../core/params'
 import { DIGITAKT_PANEL } from './panel'
 
@@ -453,15 +454,15 @@ const PER_STEP = [
   'sound-lock',
 ] as const
 
-/** The subset `articulation` may use. Exported so a test can assert the boundary, not restate it. */
-export const ARTICULABLE_PER_STEP = [
-  'velocity',
-  'note-length',
-  'probability',
-  'micro-timing',
-  'retrig',
-  'retrig-rate',
-  'retrig-velocity',
+/**
+ * The complement, and the one the manifest carries: the lanes above that an `ArticulationEntry`
+ * may not set (§3/#514). See the JSDoc over `PER_STEP` for why each one is outside §4.3.
+ */
+const PER_STEP_UNREACHABLE = [
+  'condition',
+  'fill',
+  'sample-lock',
+  'sound-lock',
 ] as const
 
 /**
@@ -2057,7 +2058,7 @@ export const device: Device = {
    */
   comfortableVoices: 7,
 
-  features: { perStep: [...PER_STEP] },
+  features: { perStep: [...PER_STEP], perStepUnreachable: [...PER_STEP_UNREACHABLE] },
 
   hints: {
     'trig-params': 'Hold a [TRIG] key, turn DATA ENTRY',
@@ -2075,3 +2076,10 @@ export const device: Device = {
  * `1/16` is the nominal rate, one trig per step.
  */
 export const RETRIG_RATE_OPTIONS = RETRIG_RATES
+
+/**
+ * The subset `articulation` may use — `PER_STEP` less what the manifest declares unreachable,
+ * derived by the core so the two lists cannot drift (§3/#514). Exported so a test can assert the
+ * boundary, not restate it.
+ */
+export const ARTICULABLE_PER_STEP = articulablePerStep(device)

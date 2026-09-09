@@ -8,6 +8,7 @@ import {
   TrackModeSchema,
   TriggerNoteSchema,
   VoiceSpecSchema,
+  articulablePerStep,
   clockSourceSetupFact,
   evidenceFor,
   expand,
@@ -996,6 +997,60 @@ describe('Device manifest (§2.3)', () => {
       recipes: [recipe({ articulation: [{ slot: 'accent', set: { substep: 2 } }] })],
     })
     expect(DeviceSchema.safeParse(good).success).toBe(true)
+  })
+
+  it('rejects an articulation on a lane the box has and a set cannot carry (§3/#514)', () => {
+    // The lane is real — it is in `perStep`, so the check above passes — and an `ArticulationEntry`
+    // still cannot say it: one name and one scalar is not a destination, an evaluation order or a
+    // filename. Eight device folders drew this boundary beside their manifest and nothing enforced
+    // it; the Deluge, which drew it nowhere, shipped `{ automation: 1 }` twice (#514, #452).
+    const features = { perStep: ['velocity', 'automation'], perStepUnreachable: ['automation'] }
+    const bad = device({
+      features,
+      recipes: [recipe({ articulation: [{ slot: 'accent', set: { automation: 1 } }] })],
+    })
+    expect(DeviceSchema.safeParse(bad).success).toBe(false)
+
+    // The same recipe against the same box, with the boundary undeclared: this is what every
+    // manifest allowed before #514.
+    const permissive = device({
+      features: { perStep: ['velocity', 'automation'] },
+      recipes: [recipe({ articulation: [{ slot: 'accent', set: { automation: 1 } }] })],
+    })
+    expect(DeviceSchema.safeParse(permissive).success).toBe(true)
+
+    // A lane it does not name is untouched.
+    const good = device({
+      features,
+      recipes: [recipe({ articulation: [{ slot: 'accent', set: { velocity: 110 } }] })],
+    })
+    expect(DeviceSchema.safeParse(good).success).toBe(true)
+  })
+
+  it('refuses an unreachable lane the device never declared it has (§3/#514)', () => {
+    // Naming it only in `perStepUnreachable` excludes nothing and reads as if it did — and it
+    // would be the manifest saying the sequencer does something and does not do it at once.
+    const bad = device({ features: { perStep: ['velocity'], perStepUnreachable: ['automation'] } })
+    expect(DeviceSchema.safeParse(bad).success).toBe(false)
+  })
+
+  it('derives the articulable lanes from the two lists, in declaration order (§3/#514)', () => {
+    const parsed = DeviceSchema.parse(
+      device({
+        features: {
+          perStep: ['velocity', 'automation', 'probability', 'condition'],
+          perStepUnreachable: ['automation', 'condition'],
+        },
+      }),
+    )
+    expect(articulablePerStep(parsed)).toEqual(['velocity', 'probability'])
+
+    // Omitting `perStepUnreachable` declares nothing unreachable, so nothing is excluded. A box
+    // with no per-step lanes at all articulates nothing.
+    const plain = DeviceSchema.parse(device({ features: { perStep: ['velocity', 'probability'] } }))
+    expect(articulablePerStep(plain)).toEqual(['velocity', 'probability'])
+    const noLanes = device({ features: {}, recipes: [recipe({ articulation: undefined })] })
+    expect(articulablePerStep(DeviceSchema.parse(noLanes))).toEqual([])
   })
 
   it('rejects an articulation hint the device never authored', () => {

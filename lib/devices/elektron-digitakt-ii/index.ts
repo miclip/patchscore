@@ -1,4 +1,5 @@
 import type { Device, Recipe } from '../../core/device'
+import { articulablePerStep } from '../../core/device'
 import type { AuthoredParam, Cite } from '../../core/params'
 import { DIGITAKT_II_PANEL } from './panel'
 
@@ -256,16 +257,11 @@ const PER_STEP = [
   'sample-lock',
 ] as const
 
-/** The subset `articulation` may use. Exported so the test can assert the boundary, not restate it. */
-export const ARTICULABLE_PER_STEP = [
-  'velocity',
-  'note-length',
-  'probability',
-  'micro-timing',
-  'retrig',
-  'retrig-rate',
-  'portamento',
-] as const
+/**
+ * The complement, and the one the manifest carries: the lanes above that an `ArticulationEntry`
+ * may not set (§3/#514). See the JSDoc over `PER_STEP` for why each one is outside §4.3.
+ */
+const PER_STEP_UNREACHABLE = ['condition', 'fill', 'sample-lock'] as const
 
 // ---------------------------------------------------------------------------
 // Param helpers
@@ -1167,7 +1163,7 @@ export const device: Device = {
    */
   comfortableVoices: 12,
 
-  features: { perStep: [...PER_STEP] },
+  features: { perStep: [...PER_STEP], perStepUnreachable: [...PER_STEP_UNREACHABLE] },
 
   hints: {
     'trig-params': 'Hold a [TRIG] key, turn DATA ENTRY',
@@ -1179,3 +1175,10 @@ export const device: Device = {
 
   recipes,
 }
+
+/**
+ * The subset `articulation` may use — `PER_STEP` less what the manifest declares unreachable,
+ * derived by the core so the two lists cannot drift (§3/#514). Exported so a test can assert the
+ * boundary, not restate it.
+ */
+export const ARTICULABLE_PER_STEP = articulablePerStep(device)

@@ -1,5 +1,5 @@
 import type { Device, Recipe } from '../../core/device'
-import { clockSourceSetupFact, jackFact } from '../../core/device'
+import { articulablePerStep, clockSourceSetupFact, jackFact } from '../../core/device'
 import type { AuthoredParam, Cite } from '../../core/params'
 import { SP_404MK2_PANEL } from './panel'
 
@@ -320,16 +320,11 @@ const PER_STEP = [
   'knob-motion',
 ] as const
 
-/** The subset `articulation` may use. Exported so a test can assert the boundary, not restate it. */
-export const ARTICULABLE_PER_STEP = [
-  'velocity',
-  'pitch',
-  'pitch-mode',
-  'start',
-  'substep',
-  'hold-step',
-  'mode',
-] as const
+/**
+ * The complement, and the one the manifest carries: the lanes above that an `ArticulationEntry`
+ * may not set (§3/#514). See the JSDoc over `PER_STEP` for why each one is outside §4.3.
+ */
+const PER_STEP_UNREACHABLE = ['knob-motion'] as const
 
 /**
  * §3.1's conditional-control rule, applied to the step grid: **three of the five values TR-REC
@@ -1678,7 +1673,7 @@ export const device: Device = {
    */
   comfortableVoices: 12,
 
-  features: { perStep: [...PER_STEP] },
+  features: { perStep: [...PER_STEP], perStepUnreachable: [...PER_STEP_UNREACHABLE] },
 
   hints: {
     gate: 'Press [GATE]',
@@ -1701,3 +1696,10 @@ export const device: Device = {
 
   recipes,
 }
+
+/**
+ * The subset `articulation` may use — `PER_STEP` less what the manifest declares unreachable,
+ * derived by the core so the two lists cannot drift (§3/#514). Exported so a test can assert the
+ * boundary, not restate it.
+ */
+export const ARTICULABLE_PER_STEP = articulablePerStep(device)

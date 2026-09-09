@@ -358,6 +358,10 @@ export const device: Device = {
 
   features: {
     perStep: ['velocity', 'probability', 'substep', 'cycle', 'start-timing'],
+    // §3/#514. The subset of the line above an `ArticulationEntry` may not set — a claim about
+    // our model, not about the box, which is why the lane stays declared above and needs no
+    // evidence of its own. Omitted here: everything this sequencer does, a `set` can say.
+    // perStepUnreachable: ['automation'],
     sidechain: { internal: true, fromExternalAudio: false },
     lfo: { count: 1, syncable: true, destinations: ['filter', 'pitch', 'amp'] },
   },
@@ -1273,6 +1277,25 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
 - Every key in an `articulation.set` must appear in this device's `features.perStep`. Zod checks
   it inside the codegen (§9), so an articulation the box physically cannot do fails the build
   rather than a request.
+- **And must not appear in `features.perStepUnreachable`** (#514), which is the other half of the
+  same boundary: lanes the box really has and a `set` cannot express. `set` is one name and one
+  scalar, so three kinds of lane cannot travel in it — one whose value is *another parameter*
+  (the Octatrack's `parameter-lock`, the SP-404's `knob-motion`, the MPC's and the Deluge's
+  `automation`), one that is stateful (`condition`, `fill`, whose value depends on what the
+  previous step evaluated to), and one whose value is a name nobody can know (`sample-lock`,
+  `sound-lock`, invariant 5).
+
+  Eight device folders were already drawing that line, each in an `ARTICULABLE_PER_STEP` constant
+  beside its manifest with a test to pin it, and the line existed nowhere the schema could read.
+  So a ninth box drew it nowhere at all: the Deluge shipped `{ automation: 1 }` on two recipes —
+  a lane named, with no destination and no value, which #452 had already removed once from a
+  third. The exclusions moved into the manifest, `articulablePerStep(device)` derives what is
+  left, and the constant those folders export is now that call rather than a second list to keep
+  in step.
+
+  A name in `perStepUnreachable` and not in `perStep` fails too. It excludes nothing while
+  reading as if it did, and it would have the manifest saying the box does something and does not
+  do it in one breath.
 
 ### 3.1 Params are a discriminated union, and authored params are not rendered params
 

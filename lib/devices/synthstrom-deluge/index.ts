@@ -429,8 +429,10 @@ const LPF_MODES = ['12dB/Octave', '24dB/Octave', 'DRIVE']
  * **The citation names two pages, because the axis label and the menu name are different words.**
  * p.67 draws `LPF CUTOFF`; p.83's parameter table gives the control as `LPF` › `FREQUENCY` —
  * *"Cutoff frequency for subtractive synths (including sample and wavetable)"* — with
- * `FREQUENCY` as its shortcut pad. That is the name the reader is standing in front of, and the
- * one `env2-lpf` already points them at, so it is the name authored here. Naming only p.67 would
+ * `FREQUENCY` as its shortcut pad — and pp.92-93 say what to do with a shortcut pad, which is
+ * where `lpf-freq`'s six words come from (#514, see the hints table). That is the name the reader
+ * is standing in front of, and the one `env2-lpf` already points them at, so it is the name
+ * authored here. Naming only p.67 would
  * leave the numbers attached to a label the menu does not use; naming only p.83 would leave the
  * numbers uncited. `MOD_DEPTH_CITE` spans two sources for the same reason.
  *
@@ -926,6 +928,13 @@ const RECIPES: Recipe[] = [
      * oscillator still has no sound until a file is chosen, so any future one here still owes a
      * `sourceAudio` block — `test/deluge.test.ts` keeps that claim over both file-backed
      * oscillator types, not over this recipe.
+     *
+     * **#514: the `{ automation: 1 }` articulation is gone**, and it is the same entry #452
+     * removed from the riser — a lane named with no destination and no value, which reads as
+     * movement and moves nothing. It survived the oscillator swap above because #513 replaced
+     * the sound and left the articulation alone. `features.perStepUnreachable` now says why an
+     * automation lane cannot be written as an `ArticulationEntry` at all, so this is the last
+     * time it has to be found by reading.
      */
     params: [
       clipType('Synth'),
@@ -941,7 +950,6 @@ const RECIPES: Recipe[] = [
       num('EQ TREBLE AMOUNT', 27, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -7 }] }),
       swing(),
     ],
-    articulation: [{ slot: 'first-hit', set: { automation: 1 }, hint: 'automation-view' }],
     verified: false,
   },
   {
@@ -1425,6 +1433,13 @@ const RECIPES: Recipe[] = [
      * its knob setting, so the filter stays where the climb left it instead of falling back
      * under the change.
      *
+     * **#514: the depth said how far and nothing said from where.** `ENV 2 → LPF FREQ DEPTH`
+     * moves a filter position this recipe never set, so the reader was told to sweep a cutoff
+     * from wherever the last patch left it — #510's finding, on the one part whose whole point is
+     * a filter moving. `LPF FREQ 8` is the position, on the same `0-49` axis and the same p.67 +
+     * p.83 citation as the other fourteen. No mood offset: `darkness` is the treble shelf on this
+     * box, deliberately, and a filter arriving does not move the knob onto it.
+     *
      * **What is not claimed: how long the climb is in seconds.** No source in `manuals/` prints a
      * time for any Deluge envelope stage — the community menu file bounds the stage `0-50` and
      * names no unit — so `42` is a starting point to dial against the bar count, and `routing`
@@ -1445,6 +1460,8 @@ const RECIPES: Recipe[] = [
     params: [
       clipType('Synth'),
       pick('OSC 1 TYPE', 'Saw', OSC_TYPES, cite(81)),
+      // Where the climb starts: most of p.67's travel left for the rise, and not shut enough to arrive silent.
+      lpf(8),
       env(2, 'ATTACK', 42, {
         hint: 'env2-lpf',
         note: 'The climb. 50 is the longest attack the menu offers, in no stated unit',
@@ -1492,6 +1509,15 @@ const RECIPES: Recipe[] = [
     character: 'soft',
     voice: 'track',
     title: 'Slow phaser sweep across the transition',
+    /**
+     * #514. **This carried the identical `{ automation: 1 }` entry, and #514 named only the
+     * pad.** Which is the argument for putting the boundary in `DeviceSchema` rather than
+     * removing what somebody found: #452 removed the riser's, #514 found the pad's, and this
+     * one was nobody's finding either time. It fails the build now.
+     *
+     * The phaser is what moves in this part — `MOD FX RATE 7`, slow across a transition — so
+     * removing the lane takes nothing away from it.
+     */
     params: [
       clipType('Synth'),
       pick('OSC 1 TYPE', 'Triangle', OSC_TYPES, cite(81)),
@@ -1506,7 +1532,6 @@ const RECIPES: Recipe[] = [
       num('REVERB AMOUNT', 26, Z50, cite(225), { mood: [{ axis: 'space', amount: 18 }] }),
       swing(),
     ],
-    articulation: [{ slot: 'last-hit', set: { automation: 1 }, hint: 'automation-view' }],
     verified: false,
   },
 ]
@@ -1726,6 +1751,14 @@ export const device: Device = {
    */
   features: {
     perStep: ['velocity', 'probability', 'iteration', 'automation'],
+    /**
+     * §3/#514. Automation View records *a parameter's value* per step, so saying one costs two
+     * names and a value: which parameter, and what it should read there. An `ArticulationEntry`
+     * has one name and one scalar, so `{ automation: 1 }` says a lane is involved and stops —
+     * which is exactly what three recipes here said, and what #452 removed from the first of
+     * them. The lane stays in `perStep` above, because the box really does it.
+     */
+    perStepUnreachable: ['automation'],
     sidechain: { internal: true, fromExternalAudio: false },
     // Destinations are the mod matrix's own per-voice rows, p.122: "Pitch / Transpose: Overall",
     // "LPF / HPF Frequency / Resonance", "Oscillator Volume", "Pan", "Wavetable Position". A
@@ -1743,9 +1776,26 @@ export const device: Device = {
     // p.87: "Press [SHIFT] + [SYNTH] to create a synth clip"; p.112: "Press [SHIFT] + [KIT] to
     // create a kit clip". Both from clip view, which is where a reader already is.
     'clip-type': 'From clip view: [SHIFT] + [KIT] or [SYNTH]',
+    // #514. **Both of these are one gesture and three pages, and until now they were one page
+    // and an inference.** `lpf-freq` was written off p.83's column heading and the sibling hint
+    // below it, which made it the only claim in #513 with no page stating the gesture — a hint is
+    // an instruction somebody follows standing at the box, so it is the one place inference is
+    // worth least. The chain, all of it in this guidebook:
+    //
+    //  - **p.83** is the parameter table. Its `Shortcut Button Access` column gives `FREQUENCY`
+    //    against `LPF` › `FREQUENCY`, so the pad the reader wants is the one labelled FREQUENCY.
+    //  - **p.92** states what to do with a shortcut pad, beside the grid diagram: *"Press [SHIFT]
+    //    + [PAD] or Press [AUDITION] + [PAD] where PAD is the specific function and parameter."*
+    //  - **p.93** repeats it as the numbered procedure, step 3: *"Press the [SHIFT] + [PAD] where
+    //    PAD is the specific function and parameter."*
+    //
+    // So [SHIFT] + a pad is the documented gesture for every parameter on the grid, `osc-type`
+    // included, and p.83 is what names the pad. Read off the rendered pages rather than a text
+    // dump, because the column that carries the pad name is a table (`CLAUDE.md`).
+    //
+    // Both stay `manual` and neither becomes `observed`: nobody here has pressed it. The pages
+    // are the whole claim, and for a jog under eight words they are enough.
     'osc-type': 'Hold [SHIFT], press the OSC type pad',
-    // #510. p.83's table gives `FREQUENCY` as the shortcut-pad access for `LPF` › `FREQUENCY`,
-    // the same column the oscillator type is reached from.
     'lpf-freq': 'Hold [SHIFT], press the FREQUENCY pad',
     // #173. Two envelope jogs, written for a reader who has not opened this menu before: one to
     // find the stages at all, one for the patch that is not on any pad — p.120's procedure is
@@ -1759,7 +1809,6 @@ export const device: Device = {
     'note-velocity': 'Hold the note pad, turn (SELECT)',
     'note-probability': 'Hold pad, turn (SELECT) anticlockwise',
     'note-iteration': 'Hold pad, turn (SELECT) past 100%',
-    'automation-view': 'In a clip, press [CLIP] to automate',
     'dx7-new': 'CUSTOM 1 + [SYNTH] makes a DX7 synth',
     'max-voices': 'VOICE menu, then MAX VOICES',
     'swing-amount': 'Hold [SHIFT], turn (TEMPO)',
