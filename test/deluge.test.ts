@@ -532,11 +532,15 @@ describe('Deluge manifest', () => {
       // it lands on. This is the claim that stops a `sourceAudio` recipe quietly losing its
       // file-backed oscillator, or vice versa.
       //
-      // **`Wavetable` loads a file too, and this rule said only `Sample` did.** That is how
-      // `deluge-pad-soft` shipped telling a reader to set OSC 1 to Wavetable and nothing else: the
-      // oscillator has no sound until a file is chosen (p.87, and p.95's CREATING A WAVETABLE
-      // SYNTHESIZER walks the SD-card browser), and every `Sample` recipe here already carried a
-      // `sourceAudio`. One oscillator type had the rule applied and the other did not.
+      // **`Wavetable` loads a file too, and this rule once said only `Sample` did (#101).** A
+      // wavetable oscillator has no sound until a file is chosen — p.87's shortcut selects the
+      // file, and p.95's CREATING A WAVETABLE SYNTHESIZER walks the SD-card browser — so both
+      // types owe the reader a `sourceAudio` block.
+      //
+      // **No `Wavetable` recipe exists today**, because #507 replaced the one that did with a
+      // subtractive pad. The rule stays stated over both types anyway: it is a fact about the
+      // engine, and the next author to reach for a wavetable should meet it rather than
+      // rediscover it.
       const loadsFile = recipe.sourceAudio !== undefined
       const fileBacked = osc?.kind === 'enum' && (osc.value === 'Sample' || osc.value === 'Wavetable')
       expect(fileBacked, recipe.id).toBe(loadsFile)
@@ -615,9 +619,9 @@ describe('Deluge manifest', () => {
   })
 
   it('keeps every numeric inside a range a source actually prints', () => {
-    // Three shapes, and only three: the 0-50 display scale, the arpeggiator's 1-8 octave range
-    // (p.84), and swing's 1-99 (p.39). Anything else would be a bound nobody printed, which is
-    // the failure this pins.
+    // Five shapes, and only five: the 0-50 display scale, the arpeggiator's 1-8 octave range
+    // (p.84), swing's 1-99 (p.39), a patch cable's signed -50 to +50, and the filter's 0-49
+    // (#510). Anything else would be a bound nobody printed, which is the failure this pins.
     //
     // PAN is deliberately absent. p.86 prints "32L - 0 - 32R" — a left/right label scale, not a
     // signed number line — so encoding left as -32 would be a transcription of the range rather
@@ -631,6 +635,11 @@ describe('Deluge manifest', () => {
       // pad sets -50 and the top pad sets +50, so this is the range as printed rather than a
       // transcription of a left/right label scale.
       { min: -50, max: 50 },
+      // #510. The filter frequency, and the one shape that stops short of the display scale.
+      // p.67's automation diagram ticks the `LPF CUTOFF` axis `0` at the floor and `49` at the
+      // top, with `Off` printed clear of the axis above it — a state, not a number. 50 would be a
+      // transcription of that state rather than a bound anybody printed.
+      { min: 0, max: 49 },
     ]
     for (const { recipe, param } of params()) {
       if (param.kind !== 'numeric') continue
@@ -639,6 +648,122 @@ describe('Deluge manifest', () => {
       expect(SHAPES, `${where}: ${shape.min}-${shape.max}`).toContainEqual(shape)
       expect(param.value, where).toBeGreaterThanOrEqual(param.range.min)
       expect(param.value, where).toBeLessThanOrEqual(param.range.max)
+    }
+  })
+
+  /**
+   * #510. **The roles a reader holds a note on**, and the closed list is the point of the test.
+   *
+   * Every one of these is a sustaining part built out of the engine: the reader plays a pitch and
+   * the box has to decide what happens to it. The roles left out are left out for one reason each
+   * and not by pattern — the percussive rows are fed by a file or by their own envelopes (#173,
+   * #345), `vox-chop`, `noise` and `impact` sound whatever one-shot was loaded onto them, and
+   * `riser` shapes the filter with `ENV 2` and states no position for it to move from, which is
+   * this issue one layer up and is not in this change.
+   */
+  const TONAL: Role[] = ['sub', 'bass-mid', 'pad', 'lead', 'stab', 'arp', 'acid', 'texture', 'sweep']
+
+  it('gives every sustaining part a filter position and an amp envelope (#510)', () => {
+    // The floor, and it is a floor rather than a shape: an oscillator, an effect and an EQ is a
+    // raw waveform with the filter wherever the last patch left it and the amplitude unshaped,
+    // which is a beep however carefully the effect is dialled. p.122's matrix hard-connects ENV 1
+    // to Overall Volume, so the four stages are the amp envelope with nothing to patch.
+    const STAGES = ['ATTACK', 'DECAY', 'SUSTAIN', 'RELEASE']
+    const tonal = device.recipes.filter((r) => TONAL.includes(r.role))
+
+    // Every listed role is served, and the count is not pinned: a second character on any of
+    // them is an ordinary addition, and it inherits the floor rather than tripping this.
+    for (const role of TONAL) {
+      expect(
+        tonal.some((r) => r.role === role),
+        role,
+      ).toBe(true)
+    }
+
+    for (const recipe of tonal) {
+      const names = (recipe.params as AuthoredParam[]).map((p) => p.name)
+      expect(names, recipe.id).toContain('LPF FREQ')
+      for (const stage of STAGES) expect(names, recipe.id).toContain(`ENV 1 ${stage}`)
+    }
+
+    // **No converse.** Nothing here says a recipe off this list may *not* set a filter
+    // frequency — the roles left out are out of this change's scope, not ruled against, and
+    // `riser` in particular modulates a position it does not state. This is a floor.
+  })
+
+  it('builds its pad out of the box, with nothing to load (#507)', () => {
+    // Five directions ask this box for a pad, and every one of them used to arrive at a
+    // wavetable: a file the supplied SD card does not carry, in a format with three silent
+    // failure modes (p.110). The box has fourteen voices that need no file, and #510's filter
+    // position and `ENV 1` are what make one of them a pad.
+    const pad = device.recipes.find((r) => r.id === 'deluge-pad-soft')
+    if (pad === undefined) throw new Error('no deluge-pad-soft')
+
+    expect(pad.role).toBe('pad')
+    expect(pad.character).toBe('soft')
+    // The whole of the claim: nothing to find, and nothing that would need finding.
+    expect(pad.sourceAudio).toBeUndefined()
+    const osc = (pad.params as AuthoredParam[]).find((p) => p.name === 'OSC 1 TYPE')
+    if (osc?.kind !== 'enum') throw new Error('deluge-pad-soft: OSC 1 TYPE is not an enum')
+    expect(['Sample', 'Wavetable']).not.toContain(osc.value)
+    expect(osc.value).toBe('Analog Saw')
+    expect(osc.hint).toBeUndefined()
+
+    // And it sustains under the reader's hand rather than for as long as a file runs.
+    const names = (pad.params as AuthoredParam[]).map((p) => p.name)
+    expect(names).toContain('LPF FREQ')
+    for (const stage of ['ATTACK', 'DECAY', 'SUSTAIN', 'RELEASE']) {
+      expect(names, stage).toContain(`ENV 1 ${stage}`)
+    }
+
+    // The hint the wavetable needed goes with it: a gesture nothing reaches is documentation.
+    expect(Object.keys(device.hints ?? {})).not.toContain('load-wavetable')
+  })
+
+  it('cites the filter frequency to both pages, and leaves the point taste (#510)', () => {
+    // p.67 carries the numbers and p.83 carries the control they belong to — the axis is drawn
+    // `LPF CUTOFF` and the menu calls it `LPF` > `FREQUENCY`, so a citation to either alone would
+    // be half of the claim. The same two-source shape as the patch cable's depth.
+    const cutoffs = params().filter(({ param }) => param.name === 'LPF FREQ')
+    expect(cutoffs.length).toBeGreaterThan(0)
+
+    for (const { recipe, param } of cutoffs) {
+      if (param.kind !== 'numeric') throw new Error(`${recipe}: LPF FREQ is not numeric`)
+      expect(param.range, recipe).toEqual({
+        min: 0,
+        max: 49,
+        verified: { kind: 'manual', source: `${GUIDEBOOK}67 and p.83` },
+      })
+      // Taste, like every other point on this box. p.67 prints the scale; no page says where a
+      // pad wants to sit on it, and nothing here reads meaning into either end of the axis —
+      // the page draws the numbers and does not say what they do. The range check in
+      // `keeps every numeric inside a range a source actually prints` is the bound.
+      expect(param.verified, recipe).toBe(false)
+      expect(param.hint, recipe).toBe('lpf-freq')
+    }
+
+    const hint = device.hints?.['lpf-freq']
+    expect(hint).toBeDefined()
+    expect(hint?.split(' ').length, hint).toBeLessThanOrEqual(8)
+  })
+
+  it('leaves the darkness axis on the treble shelf, deliberately (#510)', () => {
+    // The filter arriving does not move the mood knob onto it. `darkness` trims an EQ shelf on
+    // this box, on sixteen recipes, and whether it should sweep the filter instead is a decision
+    // about what the knob does rather than a consequence of the filter existing. Pinned so that
+    // moving it later is a change somebody makes on purpose.
+    const darkness = params().filter(
+      ({ param }) =>
+        param.kind === 'numeric' && (param.mood ?? []).some((m) => m.axis === 'darkness'),
+    )
+    expect(darkness.map(({ param }) => param.name).filter((n) => n === 'EQ TREBLE AMOUNT').length)
+      .toBe(16)
+    for (const { recipe, param } of darkness) {
+      expect(['EQ TREBLE AMOUNT', 'EQ BASS AMOUNT'], recipe).toContain(param.name)
+    }
+    for (const { recipe, param } of params()) {
+      if (param.name !== 'LPF FREQ' || param.kind !== 'numeric') continue
+      expect(param.mood, recipe).toBeUndefined()
     }
   })
 
@@ -967,32 +1092,6 @@ describe('a long note reads as held rather than as steps to enter', () => {
 })
 
 /**
- * §3/#101. The three conditions a Deluge wavetable has to meet, all of which fail *quietly* —
- * guidebook p.110. A reader whose file breaks one gets a pad that will not drift, or an oscillator
- * type that will not stay set, and no error either way.
- */
-describe('the wavetable pad says what its file must be', () => {
-  const pad = DEVICES.find((d) => d.id === 'synthstrom-deluge')!.recipes.find(
-    (r) => r.id === 'deluge-pad-soft',
-  )!
-
-  it('requires mono, and says a stereo file becomes a sample instead', () => {
-    expect(pad.sourceAudio?.need).toContain('MONO')
-    expect(pad.sourceAudio?.need).toContain('loads as a sample')
-  })
-
-  it('requires more than 20 ms, because a shorter file has no wave navigation', () => {
-    expect(pad.sourceAudio?.need).toContain('20 ms')
-    expect(pad.sourceAudio?.need).toContain('single-cycle')
-  })
-
-  it('no longer promises a sweep it cannot deliver on every file', () => {
-    // It promised "WAVE sweeps across the cycles" without saying it needed a multi-cycle table.
-    expect(pad.sourceAudio?.need).toContain('multi-cycle')
-  })
-})
-
-/**
  * §2.1/#334. **This box authors no trigger note, and it is the box #334 was filed about** —
  * *"the deluge isn't showing which note to place for steps"*.
  *
@@ -1270,11 +1369,11 @@ describe('the three roles served by synthesis rather than by a sample (§345)', 
     }
 
     /*
-     * The invariant behind it, across the whole file — and it runs one way rather than both, which
-     * the head note used to get wrong. **Every `Sample` oscillator carries source audio.** The
-     * converse fails on exactly one recipe: `deluge-pad-soft` is a `Wavetable`, which #101
-     * established also has no sound until a file is chosen. Pinned by name, so a second exception
-     * is a failure rather than a shrug.
+     * The invariant behind it, across the whole file. **Every `Sample` oscillator carries source
+     * audio**, and — since #507 — nothing carries the block without being one. The exception used
+     * to be `deluge-pad-soft`, a `Wavetable`, which #101 established also has no sound until a
+     * file is chosen; the general rule over both file-backed types lives in `follows the sound
+     * source when it picks a clip type`, so replacing that recipe did not take it away.
      */
     for (const recipe of device.recipes) {
       if (valueOf(recipe, 'OSC 1 TYPE') !== 'Sample') continue
@@ -1283,8 +1382,7 @@ describe('the three roles served by synthesis rather than by a sample (§345)', 
     const declaringWithoutSample = device.recipes
       .filter((r) => r.sourceAudio !== undefined && valueOf(r, 'OSC 1 TYPE') !== 'Sample')
       .map((r) => r.id)
-    expect(declaringWithoutSample).toEqual(['deluge-pad-soft'])
-    expect(valueOf(byId('deluge-pad-soft'), 'OSC 1 TYPE')).toBe('Wavetable')
+    expect(declaringWithoutSample).toEqual([])
   })
 
   it('reaches for aliasing, because the two usual routes to an inharmonic spectrum are absent', () => {

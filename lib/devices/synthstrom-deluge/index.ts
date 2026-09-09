@@ -67,9 +67,11 @@ import { DELUGE_PANEL } from './panel'
  * **What is deliberately not authored**, so that a guide stays realisable when several of these
  * recipes land in one song (invariant 5):
  *
- *   - **Filter `CUTOFF` and `RESONANCE`.** The guidebook documents the filter thoroughly (p.98)
- *     and never prints a range for either. The Deluge's 0-50 display scale is documented for many
- *     parameters but not for these, and assuming it here would be an inference, not a citation.
+ *   - **Filter `RESONANCE`.** p.83 lists it beside `FREQUENCY` and no page in the book prints a
+ *     scale for it, so the filter gets a position and no emphasis. **`LPF FREQ` used to sit on
+ *     this line beside it and no longer does (#510)** — the claim was that the guidebook
+ *     "documents the filter thoroughly (p.98) and never prints a range for either", which is true
+ *     of p.98 and was read as true of the book. p.67 prints one. See `LPF_FREQ`.
  *   - **`LFO RATE`, and LFO shape on its own.** Shapes and sync divisions are enumerated (p.84)
  *     and the rate is not — and a shape with no rate, no sync interval and no patched destination
  *     is not an instruction, it is a decoration. Nothing here sets an LFO.
@@ -265,6 +267,18 @@ function env(
   return num(`ENV ${which} ${stage}`, value, Z50, community(file), extra)
 }
 
+/**
+ * §3.2/#510. **The one control that decides what a subtractive patch sounds like.**
+ *
+ * The point is taste and stays `verified: false`; the range is p.67's and p.83's. **No note.**
+ * The obvious one to write would say what the two ends of the axis do, and p.67 draws the
+ * numbers without saying — the value and its cited range are the whole of what the sources
+ * support here.
+ */
+function lpf(value: number, extra: Partial<AuthoredNumericParam> = {}): AuthoredNumericParam {
+  return num('LPF FREQ', value, LPF_FREQ, LPF_FREQ_CITE, { hint: 'lpf-freq', ...extra })
+}
+
 /** §3.2: the option set is legality and is cited; the selection is authority and is taste. */
 function pick(
   name: string,
@@ -342,6 +356,50 @@ const OSC_TYPES = [
 /** p.83: "Switches LPF type between 12dB per Octave, 24dB per octave and DRIVe filter". */
 const LPF_MODES = ['12dB/Octave', '24dB/Octave', 'DRIVE']
 
+/**
+ * §3.2/#510. **Where the filter sits, and the page that prints the numbers.**
+ *
+ * No recipe on this box set a filter frequency, and the head note above carried the reason: the
+ * guidebook documents the filter at length on p.98 and prints no scale there. That is a fact
+ * about p.98 and it was read as a fact about the book. **p.67 prints one.** §3.12's automation
+ * example draws two parameter axes down the right of the pad grid, and both are ticked: `PAN`
+ * at `32L - 0 - 32R`, and `LPF CUTOFF` at **`0` on the axis floor and `49` on its top tick**,
+ * with `Off` printed above that tick, clear of the axis.
+ *
+ * So the range is `0-49`, the numeric span as drawn. `Off` is a state rather than a number and a
+ * `NumericRange` has nowhere to put it; stretching the maximum to 50 to stand for it would be the
+ * `PAN` mistake in the other direction — a bound nobody printed, made plausible by
+ * transcription.
+ *
+ * **What the page does not say is what the numbers do**, and nothing here fills that in. It draws
+ * an axis and marks its two ends; it does not print which end is open, and neither the values
+ * below nor any note beside them claims to know. The scale is cited, the position on it is taste,
+ * and there is no third claim.
+ *
+ * **The citation names two pages, because the axis label and the menu name are different words.**
+ * p.67 draws `LPF CUTOFF`; p.83's parameter table gives the control as `LPF` › `FREQUENCY` —
+ * *"Cutoff frequency for subtractive synths (including sample and wavetable)"* — with
+ * `FREQUENCY` as its shortcut pad. That is the name the reader is standing in front of, and the
+ * one `env2-lpf` already points them at, so it is the name authored here. Naming only p.67 would
+ * leave the numbers attached to a label the menu does not use; naming only p.83 would leave the
+ * numbers uncited. `MOD_DEPTH_CITE` spans two sources for the same reason.
+ *
+ * **No mood offset (#510).** `darkness` on this box moves `EQ TREBLE AMOUNT` on sixteen recipes,
+ * and every one of those stays where it is. Moving the axis onto the filter is a second decision
+ * about what the knob should *do*, taken on its own and not as a side effect of the filter
+ * arriving.
+ */
+const LPF_FREQ = { min: 0, max: 49 }
+
+/**
+ * Both halves in one citation — p.67 carries the numbers, p.83 carries what they are the
+ * numbers for. See `LPF_FREQ`.
+ */
+const LPF_FREQ_CITE: Cite = {
+  kind: 'manual',
+  source: 'Deluge Official Guidebook OS 4.1 (OLED), p.67 and p.83',
+}
+
 /** p.216: "'OFF', 'FLANGER', 'CHORUS' or 'PHASER'". */
 const MOD_FX_TYPES = ['OFF', 'FLANGER', 'CHORUS', 'PHASER']
 
@@ -382,13 +440,17 @@ const FILTER_ROUTES = ['HPF TO LPF', 'LPF TO HPF', 'PARALLEL']
  * **The line is about the sound source, not about the clip type, and the two do not coincide.**
  * `deluge-kick-hard` is a kit row that sounds the engine, and #345's `tom`, `metallic` and `ride`
  * are three more — a kit row is a *row*, and what it holds is a separate question. The invariant
- * that does hold is between the oscillator and the source audio: **every recipe whose `OSC 1
- * TYPE` is `Sample` carries a `sourceAudio` block**, and one recipe carries the block without
- * being a sample — `deluge-pad-soft`, whose `Wavetable` oscillator has no sound until a file is
- * chosen (#101). `test/deluge.test.ts` asserts both halves, the exception by name.
+ * that does hold is between the oscillator and the source audio: **a recipe loads a file if and
+ * only if its `OSC 1 TYPE` is one of the two that read one** — `Sample`, or `Wavetable`, which
+ * #101 established also has no sound until a file is chosen. Every such recipe carries a
+ * `sourceAudio` block and no other recipe does.
  *
- * (This paragraph used to say all nine `sourceAudio` recipes set `OSC 1 TYPE` to Sample. There are
- * twelve, one of them is the wavetable above, and #345 is what went and counted.)
+ * (This paragraph has been wrong twice and both corrections are worth keeping. It said all nine
+ * `sourceAudio` recipes were samples; there were twelve and one was a wavetable, and #345 went
+ * and counted. Then it named that wavetable — `deluge-pad-soft` — as a standing exception, and
+ * #507 replaced it with a subtractive pad. Eleven `Sample` recipes carry the block today and
+ * nothing else does; the rule is still stated over both oscillator types, because it is a fact
+ * about the engine rather than about which recipes happen to exist.)
  *
  * Neither Audio, MIDI nor CV is selected anywhere, and that is the same fact twice: an audio clip
  * has no oscillator at all, so `OSC 1 TYPE`, `REPEAT MODE` and the rest of what these recipes set
@@ -610,6 +672,15 @@ const RECIPES: Recipe[] = [
     params: [
       clipType('Synth'),
       pick('OSC 1 TYPE', 'Sine', OSC_TYPES, cite(81)),
+      // Well down: a sub is the one part with nothing above the fundamental to keep.
+      lpf(16),
+      env(1, 'ATTACK', 1, {
+        hint: 'env-menu',
+        note: 'the menus recommend at least 1; 0 is likely to click',
+      }),
+      env(1, 'DECAY', 26),
+      env(1, 'SUSTAIN', 44, { note: '0 decays away to nothing; 50 does not decay at all' }),
+      env(1, 'RELEASE', 12),
       num('EQ TREBLE AMOUNT', 17, Z50, cite(219), {
         mood: [{ axis: 'darkness', amount: -6 }],
         note: '25 is neutral; below cuts',
@@ -630,6 +701,15 @@ const RECIPES: Recipe[] = [
       clipType('Synth'),
       pick('OSC 1 TYPE', 'Analog Saw', OSC_TYPES, cite(81)),
       pick('LPF MODE', 'DRIVE', LPF_MODES, cite(83)),
+      // Low enough that the drive filter is doing the work rather than the EQ below it.
+      lpf(22),
+      env(1, 'ATTACK', 1, {
+        hint: 'env-menu',
+        note: 'the menus recommend at least 1; 0 is likely to click',
+      }),
+      env(1, 'DECAY', 20),
+      env(1, 'SUSTAIN', 30),
+      env(1, 'RELEASE', 8),
       num('DECIMATION', 14, Z50, cite(217), { mood: [{ axis: 'grit', amount: 14 }] }),
       num('BITCRUSH', 9, Z50, cite(217), { mood: [{ axis: 'grit', amount: 12 }] }),
       num('EQ BASS AMOUNT', 29, Z50, cite(219)),
@@ -767,47 +847,44 @@ const RECIPES: Recipe[] = [
     role: 'pad',
     character: 'soft',
     voice: 'track',
-    title: 'Wavetable pad, slow chorus, wide reverb send',
+    title: 'Analog saw pad, slow chorus, wide reverb send',
     /**
-     * §3/#101. **A wavetable oscillator has no sound until a file is chosen**, and this recipe
-     * said `OSC 1 TYPE Wavetable` and stopped — the reader set the type and got nothing, with no
-     * line telling them why. p.87: the shortcut is "to select audio or wavetable file as
-     * oscillator 1". p.95's CREATING A WAVETABLE SYNTHESIZER is the procedure: *"Navigate the SD
-     * card files to select the wavetable to load. Press (SELECT) to load the desired wavetable
-     * file."*
+     * §3/#507. **The pad is built out of the box, because the box has fourteen voices that need
+     * no file and this was the one sustaining part that demanded one.**
      *
-     * Every `Sample` recipe on this box already carries a `sourceAudio`; this was the only
-     * `Wavetable` one and it was the only recipe missing it. The rule was known and applied to
-     * one oscillator type and not the other.
+     * It was a `Wavetable`, and #101 had already made the best of that: the `sourceAudio` block
+     * stated all three of p.110's silent failures — mono or it loads as a sample, longer than
+     * 20 ms or there is no wave navigation, multi-cycle or there is nothing for `WAVE` to sweep
+     * — and it was the longest such block in the folder. Every clause was a way to fail before a
+     * note sounded, and the factory card carries no wavetable folder for the reader to fail
+     * *from*: p.12's file structure names `SAMPLES/ARTISTS` and `SAMPLES/DRUMS` and nothing else.
      *
-     * **Three conditions the note now states, all p.110, and all of them fail quietly.** A
-     * wavetable must be `WAV or AIFF and MONO`; a stereo file *"is not compatible with the
-     * wavetable engine"* and loads as a sample instead, with no error. And Deluge *"will
-     * interpret any audio file less than 20ms and when loaded in the synth as a single-cycle
-     * waveform"*, for which *"the wavetable navigation parameter is not available"* — so a short
-     * file leaves `WAVE` doing nothing at all.
+     * Five directions ask this box for a pad. All five reached that.
      *
-     * The last of those contradicted this recipe's own guidance, which promised that WAVE sweeps
-     * across the cycles. True of a multi-cycle table and false of a single cycle, and the note
-     * did not say which it needed.
+     * **`Analog Saw`, and the rest of the recipe is unchanged.** p.81 lists it among the stock
+     * waveform options; the filter position and the four `ENV 1` stages #510 authored are what
+     * make it a pad rather than a drone, and the chorus and the reverb send were already here.
+     * `deluge-texture-soft` had established the move — that one reaches for `DX7` when it wants a
+     * sustaining timbre with movement, and neither recipe now asks the reader to go and find a
+     * file.
+     *
+     * **Replaced rather than joined.** A wavetable pad is a real sound, and keeping it as a
+     * second `pad` recipe would have left a recipe that reproduces #507 for whichever direction
+     * the resolver handed it to. The timbre is the cost, and it is paid on purpose.
+     *
+     * **The rule #101 established outlives the recipe that prompted it.** A `Wavetable`
+     * oscillator still has no sound until a file is chosen, so any future one here still owes a
+     * `sourceAudio` block — `test/deluge.test.ts` keeps that claim over both file-backed
+     * oscillator types, not over this recipe.
      */
-    sourceAudio: {
-      need:
-        'A multi-cycle wavetable that drifts rather than steps — soft, vowel- or string-like, ' +
-        'with each cycle close to its neighbour. WAVE sweeps across the cycles, so a table whose ' +
-        'frames jump reads as stepping under a slow pad. ' +
-        'It must be WAV or AIFF and MONO (p.110): a stereo file is not compatible with the ' +
-        'wavetable engine and silently loads as a sample instead, which is the thing to suspect ' +
-        'if the type will not stay set. ' +
-        'It must also be longer than 20 ms — Deluge reads anything shorter as a single-cycle ' +
-        'waveform, and wave navigation is not available for single cycles (p.110), so WAVE will ' +
-        'do nothing and the pad will not drift. ' +
-        'Bring your own: the factory card is samples in SAMPLES/ARTISTS and SAMPLES/DRUMS and ' +
-        'the guidebook names no wavetable folder. Load it and the type below sets itself',
-    },
     params: [
       clipType('Synth'),
-      pick('OSC 1 TYPE', 'Wavetable', OSC_TYPES, cite(81), { hint: 'load-wavetable' }),
+      pick('OSC 1 TYPE', 'Analog Saw', OSC_TYPES, cite(81)),
+      lpf(24),
+      env(1, 'ATTACK', 20, { hint: 'env-menu' }),
+      env(1, 'DECAY', 28, { note: 'the pad arrives rather than starting' }),
+      env(1, 'SUSTAIN', 46, { note: '0 decays away to nothing; 50 does not decay at all' }),
+      env(1, 'RELEASE', 34),
       pick('MOD FX TYPE', 'CHORUS', MOD_FX_TYPES, cite(216)),
       num('MOD FX RATE', 9, Z50, cite(229)),
       num('REVERB AMOUNT', 27, Z50, cite(225), { mood: [{ axis: 'space', amount: 18 }] }),
@@ -827,6 +904,15 @@ const RECIPES: Recipe[] = [
       clipType('Synth'),
       pick('OSC 1 TYPE', 'Analog Saw', OSC_TYPES, cite(81)),
       pick('LPF MODE', '12dB/Octave', LPF_MODES, cite(83)),
+      // Open, and short of the top: a lead sits above the pad rather than outside it.
+      lpf(36),
+      env(1, 'ATTACK', 3, {
+        hint: 'env-menu',
+        note: 'the menus recommend at least 1; 0 is likely to click',
+      }),
+      env(1, 'DECAY', 22),
+      env(1, 'SUSTAIN', 38, { note: '0 decays away to nothing; 50 does not decay at all' }),
+      env(1, 'RELEASE', 14),
       num('EQ TREBLE AMOUNT', 33, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -9 }] }),
       // Rate without amount is a delay nobody can hear; both are authored or neither is.
       num('DELAY AMOUNT', 14, Z50, cite(222), { mood: [{ axis: 'space', amount: 10 }] }),
@@ -845,6 +931,16 @@ const RECIPES: Recipe[] = [
     params: [
       clipType('Synth'),
       pick('OSC 1 TYPE', 'Analog Square', OSC_TYPES, cite(81)),
+      // #510. The value this whole issue is about. An analog square with the filter wherever a
+      // new clip left it is a beep; this is where the body of the stab is.
+      lpf(28),
+      env(1, 'ATTACK', 1, {
+        hint: 'env-menu',
+        note: 'the menus recommend at least 1; 0 is likely to click',
+      }),
+      env(1, 'DECAY', 13),
+      env(1, 'SUSTAIN', 0, { note: '0, so the stab is over as soon as the decay is' }),
+      env(1, 'RELEASE', 6),
       pick('MOD FX TYPE', 'PHASER', MOD_FX_TYPES, cite(216)),
       num('MOD FX RATE', 16, Z50, cite(229)),
       num('MOD FX FEEDBACK', 18, Z50, cite(229), { note: 'Flanger and phaser types only' }),
@@ -863,6 +959,14 @@ const RECIPES: Recipe[] = [
     params: [
       clipType('Synth'),
       pick('OSC 1 TYPE', 'Square', OSC_TYPES, cite(81)),
+      lpf(32),
+      env(1, 'ATTACK', 1, {
+        hint: 'env-menu',
+        note: 'the menus recommend at least 1; 0 is likely to click',
+      }),
+      env(1, 'DECAY', 11),
+      env(1, 'SUSTAIN', 14, { note: 'low, so each note clears before the next one lands' }),
+      env(1, 'RELEASE', 7),
       pick('ARP PRESET', 'Up', ARP_PRESETS, community('community_features.md')),
       num('ARP GATE', 22, Z50, cite(102), {
         hint: 'arp-menu',
@@ -894,6 +998,15 @@ const RECIPES: Recipe[] = [
       pick('OSC 1 TYPE', 'Analog Saw', OSC_TYPES, cite(81)),
       pick('LPF MODE', 'DRIVE', LPF_MODES, cite(83)),
       pick('FILTER ROUTE', 'HPF TO LPF', FILTER_ROUTES, community('community_features.md')),
+      // Low, into the drive ladder. This is the squelch, and it is most of the part.
+      lpf(17),
+      env(1, 'ATTACK', 1, {
+        hint: 'env-menu',
+        note: 'the menus recommend at least 1; 0 is likely to click',
+      }),
+      env(1, 'DECAY', 12),
+      env(1, 'SUSTAIN', 5, { note: 'near zero, so every note plucks' }),
+      env(1, 'RELEASE', 6),
       num('DECIMATION', 17, Z50, cite(217), { mood: [{ axis: 'grit', amount: 16 }] }),
       num('BITCRUSH', 7, Z50, cite(217), { mood: [{ axis: 'grit', amount: 10 }] }),
       swing(),
@@ -913,6 +1026,12 @@ const RECIPES: Recipe[] = [
       // parameters — operator levels, coarse tuning, algorithm, feedback — carry no documented
       // range in any source, so none of them is authored here.
       pick('OSC 1 TYPE', 'DX7', [...OSC_TYPES, 'DX7'], DX7_OPTIONS_CITE),
+      // A bed sits under everything else, so the top comes off it here rather than at the EQ.
+      lpf(20),
+      env(1, 'ATTACK', 30, { hint: 'env-menu' }),
+      env(1, 'DECAY', 32),
+      env(1, 'SUSTAIN', 50, { note: '0 decays away to nothing; 50 does not decay at all' }),
+      env(1, 'RELEASE', 40),
       num('REVERB AMOUNT', 30, Z50, cite(225), { mood: [{ axis: 'space', amount: 20 }] }),
       num('DELAY AMOUNT', 11, Z50, cite(222), { mood: [{ axis: 'space', amount: 8 }] }),
       num('EQ TREBLE AMOUNT', 22, Z50, cite(219), { mood: [{ axis: 'darkness', amount: -8 }] }),
@@ -933,10 +1052,13 @@ const RECIPES: Recipe[] = [
    *
    * **The engine this box actually offers for percussion is narrower than a synth-drum manifest
    * usually gets, and the three recipes are shaped by the narrowness rather than around it.**
-   * There is no filter cutoff, no resonance, no LFO rate and no wavetable position — all four are
-   * on the not-authored list above, each because no source prints a range. There is no second
-   * oscillator, no ring modulator and no FM operator pair in this manifest at all. So the two
-   * classic routes to an inharmonic metal sound are both shut.
+   * There is no resonance, no LFO rate and no wavetable position — all three are on the
+   * not-authored list above, each because no source prints a range. (The filter frequency was a
+   * fourth when these three were written; #510 found p.67's scale for it, and the sustaining
+   * roles are where it landed. Nothing about these recipes changed: an inharmonic metal spectrum
+   * is not something a low-pass position gets you.) There is no second oscillator, no ring
+   * modulator and no FM operator pair in this manifest at all. So the two classic routes to an
+   * inharmonic metal sound are both shut.
    *
    * What is open is **aliasing**, and p.217 states it as a mechanism rather than leaving it to be
    * inferred: Decimation *"reduces the audio's sample rate crudely without filtering... High
@@ -1323,6 +1445,11 @@ const RECIPES: Recipe[] = [
     params: [
       clipType('Synth'),
       pick('OSC 1 TYPE', 'Triangle', OSC_TYPES, cite(81)),
+      lpf(26),
+      env(1, 'ATTACK', 24, { hint: 'env-menu' }),
+      env(1, 'DECAY', 30),
+      env(1, 'SUSTAIN', 50, { note: '0 decays away to nothing; 50 does not decay at all' }),
+      env(1, 'RELEASE', 36),
       pick('MOD FX TYPE', 'PHASER', MOD_FX_TYPES, cite(216)),
       num('MOD FX RATE', 7, Z50, cite(229)),
       num('MOD FX FEEDBACK', 22, Z50, cite(229), { note: 'Flanger and phaser types only' }),
@@ -1567,10 +1694,9 @@ export const device: Device = {
     // create a kit clip". Both from clip view, which is where a reader already is.
     'clip-type': 'From clip view: [SHIFT] + [KIT] or [SYNTH]',
     'osc-type': 'Hold [SHIFT], press the OSC type pad',
-    // #101. Loading the file *is* the gesture, and it sets the type on the way: p.95 step 3 is
-    // "[SHIFT] + [BROWSE] for SAMPLE 1 ... Sample 1 will apply to Oscillator 1", then (SELECT)
-    // accepts the whole note range and opens the browser, and (SELECT) again loads.
-    'load-wavetable': '[SHIFT] + [BROWSE], then (SELECT) twice',
+    // #510. p.83's table gives `FREQUENCY` as the shortcut-pad access for `LPF` › `FREQUENCY`,
+    // the same column the oscillator type is reached from.
+    'lpf-freq': 'Hold [SHIFT], press the FREQUENCY pad',
     // #173. Two envelope jogs, written for a reader who has not opened this menu before: one to
     // find the stages at all, one for the patch that is not on any pad — p.120's procedure is
     // drill into the destination, press (SELECT) again, and the modulation sources appear.
