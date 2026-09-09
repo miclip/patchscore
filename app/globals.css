@@ -5719,3 +5719,56 @@ html {
     fill: #111;
   }
 }
+
+/* ------------------------------------------------------- mood reset (#504) */
+
+/*
+ * §6/#504. Hands the five knobs back to the direction. `.panel > header` is already a
+ * `space-between` flex row, so this sits opposite the heading and needs no placement of its own.
+ *
+ * **Disabled is a state with something to say**, not a greyed-out shape. It means the knobs are
+ * already the direction's, which is information — so it keeps its border and dims only its ink,
+ * and its `title` says which of the two it is. A control that looks the same live and dead is the
+ * failure §6.3 names and #461's lamp exists to surface.
+ *
+ * 44px of touch target on a control whose ink is 0.8rem (#21). The padding does the work rather
+ * than a min-height, so the header row does not grow taller than its own baseline needs.
+ */
+.mood-reset {
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--panel-1);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  min-height: 44px;
+  cursor: pointer;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.mood-reset:hover:not(:disabled) {
+  border-color: var(--edge-strong);
+}
+
+.mood-reset:disabled {
+  color: var(--ink-dim);
+  cursor: default;
+}
+
+/* The header is a wrapping flex row; at 390px the button drops to its own line rather than
+   squeezing the heading. Nothing here shrinks type to fit (#21). */
+@media (max-width: 430px) {
+  .mood-reset {
+    width: 100%;
+  }
+}
+
+@media print {
+  .mood-reset {
+    display: none;
+  }
+}

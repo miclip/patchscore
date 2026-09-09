@@ -35,6 +35,8 @@ import {
   withInspiration,
   withSeed,
   withTemplate,
+  moodIsReaderOwned,
+  withoutMood,
 } from '@/lib/studio/session'
 import type { Bootstrap, StudioNotice, SyncReport, SyncScheduler } from '@/lib/studio/session'
 import { DevicePicker } from './device-picker'
@@ -338,6 +340,11 @@ export function Studio({ initialInputs }: StudioProps) {
     setInputs((current) => withAxis(current, axis, value, effectiveMood(current)))
   }
 
+  /** §6/#504. Drop the reader's mood; `effectiveMood` puts the direction's own back on screen. */
+  function resetMood() {
+    setInputs((current) => withoutMood(current))
+  }
+
   function setSeed(seed: number) {
     setInputs((current) => withSeed(current, seed))
   }
@@ -472,6 +479,8 @@ export function Studio({ initialInputs }: StudioProps) {
         <MoodPanel
           mood={mood}
           onChange={setAxis}
+          onReset={application?.outcome === 'applied' ? resetMood : undefined}
+          canReset={moodIsReaderOwned(inputs)}
           /*
            * #317. Which knobs are still showing the direction's own opening values, and whose
            * name to put on them. Derived by comparison rather than stored — see
