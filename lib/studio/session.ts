@@ -892,6 +892,41 @@ export function moodFromDirection(inputs: GuideInputsV1): Partial<MoodState> {
   return credited
 }
 
+/**
+ * §6/#504. **Hand the knobs back to the direction.**
+ *
+ * Dropping `mood` rather than writing the direction's values into it, because `effectiveMood`
+ * already falls back to exactly those — so the reset target is a state the inputs can be *in*,
+ * not a set of numbers to copy. Two things fall out of that and both are the point.
+ *
+ * The permalink shortens instead of growing: a reader who resets is back to the link they would
+ * have had before touching anything, rather than one carrying five numbers that happen to match
+ * the direction.
+ *
+ * And #317's credit comes back on its own. `moodFromDirection` compares what is showing against
+ * what the direction states, so writing the same numbers into `inputs.mood` would credit the
+ * direction for values the reader now owns — true today, and wrong the moment §5 grows a mood
+ * patch and the two answers move apart.
+ *
+ * **Not neutral.** `hip-hop` opens at `swing: 65`, and centring it would leave a reader holding
+ * something that is not the direction they picked with nothing saying so. There is nothing to
+ * reset *to* except where they started.
+ */
+export function withoutMood(inputs: GuideInputsV1): GuideInputsV1 {
+  const { mood: _dropped, ...rest } = inputs
+  return rest
+}
+
+/**
+ * Whether there is anything to hand back — the knobs are the reader's, not the direction's.
+ *
+ * §6.3/#461. A reset that is always live is a control that does nothing on most of the visits it
+ * is offered on, which is the failure this product keeps shipping and then filing.
+ */
+export function moodIsReaderOwned(inputs: GuideInputsV1): boolean {
+  return inputs.mood !== undefined
+}
+
 export function effectiveMood(inputs: GuideInputsV1): MoodState {
   if (inputs.mood !== undefined) return inputs.mood
   const application = composeTemplate(inputs)

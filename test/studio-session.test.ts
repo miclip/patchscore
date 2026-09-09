@@ -12,7 +12,10 @@ import {
   SYNC_DEBOUNCE_MS,
   syncStudio,
   effectiveMood,
+  moodFromDirection,
+  moodIsReaderOwned,
   withAxis,
+  withoutMood,
   withBpm,
   withDevice,
   withInspiration,
@@ -1818,5 +1821,55 @@ describe('withPlacement', () => {
     const set = withPlacement(rich, 'r-kick', 'synthstrom-deluge')
     const { placements: _placed, ...rest } = set
     expect(rest).toEqual(rich)
+  })
+})
+
+/**
+ * §6/#504. Handing the knobs back to the direction.
+ *
+ * The reset target is a *state the inputs can be in* rather than five numbers, which is what
+ * makes these assertions worth having: dropping `mood` and writing the direction's values into
+ * it look identical on `hip-hop` today and diverge the moment §5 grows a mood patch.
+ */
+describe('mood reset (§6/#504)', () => {
+  const hipHop: GuideInputsV1 = { ...DEFAULT_INPUTS, templateId: 'hip-hop' }
+
+  it('reports nothing to reset until the reader owns the mood', () => {
+    expect(moodIsReaderOwned(hipHop)).toBe(false)
+    const twisted = withAxis(hipHop, 'darkness', 20, effectiveMood(hipHop))
+    expect(moodIsReaderOwned(twisted)).toBe(true)
+    expect(moodIsReaderOwned(withoutMood(twisted))).toBe(false)
+  })
+
+  it('restores the direction it opened at, not the centre', () => {
+    // hip-hop opens at swing 65. Centring it would leave a reader holding a different direction.
+    expect(effectiveMood(hipHop).swing).toBe(65)
+    const twisted = withAxis(hipHop, 'swing', 10, effectiveMood(hipHop))
+    expect(effectiveMood(twisted).swing).toBe(10)
+    expect(effectiveMood(withoutMood(twisted)).swing).toBe(65)
+  })
+
+  it('drops the key rather than writing the direction values in', () => {
+    const twisted = withAxis(hipHop, 'grit', 80, effectiveMood(hipHop))
+    expect('mood' in twisted).toBe(true)
+    const reset = withoutMood(twisted)
+    expect('mood' in reset).toBe(false)
+    // The permalink shortens back to what it was, rather than carrying five equal numbers.
+    expect(encodeGuideInputs(reset, CATALOGUE)).toBe(encodeGuideInputs(hipHop, CATALOGUE))
+  })
+
+  it('hands #317 its credit back', () => {
+    // A twisted axis is the reader's and is not credited; after the reset it is the direction's.
+    const twisted = withAxis(hipHop, 'swing', 10, effectiveMood(hipHop))
+    expect(moodFromDirection(twisted).swing).toBeUndefined()
+    expect(moodFromDirection(withoutMood(twisted)).swing).toBe(65)
+  })
+
+  it('leaves everything that is not mood alone', () => {
+    const busy = withSeed(withAxis(hipHop, 'space', 12, effectiveMood(hipHop)), 4242)
+    const reset = withoutMood(busy)
+    expect(reset.seed).toBe(4242)
+    expect(reset.templateId).toBe('hip-hop')
+    expect(reset.devices).toEqual(busy.devices)
   })
 })
