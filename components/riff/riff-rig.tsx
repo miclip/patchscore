@@ -8,7 +8,7 @@ import { browserEnv } from '@/lib/studio/browser-env'
 import { rigFromIds, rigIdsFromStudio } from '@/lib/studio/riff-page'
 import { riffGap } from '@/lib/studio/riff-text'
 import { CATALOGUE } from '@/lib/studio/session'
-import { RiffPicker } from './riff-picker'
+import { RigPicker } from '@/components/rig/rig-picker'
 import { RiffVoice } from './riff-voice'
 
 /**
@@ -55,10 +55,10 @@ import { RiffVoice } from './riff-voice'
  * Every one of those belongs to a *song*, and a riff is one figure; reaching for any of them
  * would need a `Template`, which is the whole of why a riff is not one (§5A.1).
  *
- * The picker is the only control, and it is `RiffPicker` rather than the studio's: that one
+ * The picker is the only control, and it is `RigPicker` rather than the studio's: that one
  * carries inspiration filters, a gap filter that needs a direction to answer, a multi-part filter
  * about a song's parts, and a patchbay with a clock source and an `out` run leaving for a guide.
- * See `riff-picker.tsx`. The only thing it changes is this page.
+ * See `rig-picker.tsx`. The only thing it changes is this page.
  */
 export function RiffRig({ riffId }: { riffId: string }) {
   const riff = riffById(riffId)
@@ -92,7 +92,7 @@ export function RiffRig({ riffId }: { riffId: string }) {
 
   return (
     <div className="columns riff-rig">
-      <RiffPicker selected={selected} onToggle={onToggle} />
+      <RigPicker selected={selected} onToggle={onToggle} />
 
       <section className="panel riff-panel riff-where-panel">
         <header>

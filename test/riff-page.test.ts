@@ -8,7 +8,7 @@ import RootLayout from '../app/layout'
 import sitemap from '../app/sitemap'
 import RiffIndexPage from '../app/riffs/page'
 import RiffRoute, { dynamicParams, generateMetadata, generateStaticParams } from '../app/riffs/[id]/page'
-import { RiffPicker } from '../components/riff/riff-picker'
+import { RigPicker } from '../components/rig/rig-picker'
 import { NAV_LINKS } from '../components/site-nav'
 import { MAX_RIG_DEVICES, resolveRiff } from '../lib/core'
 import { DEVICES } from '../lib/devices/registry.generated'
@@ -26,8 +26,15 @@ import { SITE_ORIGIN } from '../lib/studio/site'
 
 const CSS = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
 
+/**
+ * The declaration block for one selector, whether it stands alone or is one of a comma-separated
+ * group. #520 put several riff selectors into groups with their `sample-` twins — the same block
+ * doing the same job on two surfaces — so matching only `\n.riff-x {` stopped finding them.
+ */
 function rule(selector: string): string {
-  const start = CSS.indexOf(`\n${selector} {`)
+  const alone = CSS.indexOf(`\n${selector} {`)
+  const grouped = CSS.indexOf(`\n${selector},`)
+  const start = alone > -1 ? alone : grouped
   expect(start, `${selector} is missing entirely`).toBeGreaterThan(-1)
   return CSS.slice(start, CSS.indexOf('}', start))
 }
@@ -326,7 +333,7 @@ describe('what a riff page does not have', () => {
  */
 describe('the device picker on a riff page', () => {
   const PICKER = renderToStaticMarkup(
-    createElement(RiffPicker, { selected: [], onToggle: () => undefined }),
+    createElement(RigPicker, { selected: [], onToggle: () => undefined }),
   )
 
   it('has no inspiration filters, and no filter that needs a direction to answer', () => {
@@ -362,9 +369,9 @@ describe('the device picker on a riff page', () => {
     expect(PICKER).not.toContain('class="pick"')
     expect(PICKER).not.toContain('class="pick pick-off"')
     expect(PICKER).not.toContain('class="picker-list"')
-    expect(PICKER).toContain('class="riff-picker-list"')
+    expect(PICKER).toContain('class="rig-picker-list"')
     const lane = CSS.slice(CSS.indexOf('#138 — the picker'))
-    expect(lane, 'the cable lane must not reach the riff row').not.toContain('.riff-pick')
+    expect(lane, 'the cable lane must not reach the riff row').not.toContain('.rig-pick')
   })
 
   it('names its group, so forty-six checkboxes are not announced as an unnamed fieldset', () => {
@@ -396,14 +403,14 @@ describe('the device picker on a riff page', () => {
   it('refuses the eleventh tick and says so only once the rig is full (#301)', () => {
     const full = DEVICES.slice(0, MAX_RIG_DEVICES).map((d) => d.id)
     const atCap = renderToStaticMarkup(
-      createElement(RiffPicker, { selected: full, onToggle: () => undefined }),
+      createElement(RigPicker, { selected: full, onToggle: () => undefined }),
     )
     expect(atCap).toContain('That is a full rig; untick one to add another.')
     expect((atCap.match(/disabled=""/g) ?? []).length).toBe(DEVICES.length - MAX_RIG_DEVICES)
     // Nothing says there is a ceiling until it is reached.
     const nine = DEVICES.slice(0, MAX_RIG_DEVICES - 1).map((d) => d.id)
     const under = renderToStaticMarkup(
-      createElement(RiffPicker, { selected: nine, onToggle: () => undefined }),
+      createElement(RigPicker, { selected: nine, onToggle: () => undefined }),
     )
     expect(under).not.toContain('full rig')
     expect(under).not.toContain('disabled=""')
@@ -413,7 +420,7 @@ describe('the device picker on a riff page', () => {
     const second = DEVICES[1]?.id
     if (second === undefined) throw new Error('empty registry')
     const markup = renderToStaticMarkup(
-      createElement(RiffPicker, { selected: [second], onToggle: () => undefined }),
+      createElement(RigPicker, { selected: [second], onToggle: () => undefined }),
     )
     // The picked row is first, whatever its place in the registry.
     const rows = [...markup.matchAll(/href="\/devices\/([^"]+)"/g)].map((m) => m[1])
@@ -483,12 +490,12 @@ describe('the riff page at 1280px and 390px', () => {
     const panels = [...BLUE.matchAll(/class="([^"]*\bpanel\b[^"]*)"/g)].map((m) => m[1] as string)
     expect(panels.length).toBeGreaterThan(2)
 
-    const picker = panels.find((classes) => classes.includes('riff-picker'))
+    const picker = panels.find((classes) => classes.includes('rig-picker'))
     expect(picker, 'the picker is not on the page').toBeDefined()
     expect(hidden(picker as string), `the picker prints: class="${picker ?? ''}"`).toBe(true)
 
     // And the blocks that are the sheet stay on it.
-    for (const classes of panels.filter((c) => !c.includes('riff-picker'))) {
+    for (const classes of panels.filter((c) => !c.includes('rig-picker'))) {
       expect(hidden(classes), `a block of the figure is dropped: class="${classes}"`).toBe(false)
     }
 
@@ -521,12 +528,18 @@ describe('the voice block', () => {
       new URL('../components/riff/riff-voice.tsx', import.meta.url),
       'utf8',
     )
-    expect(source).toContain("import { CableMark } from '@/components/cable-mark'")
-    expect(source).toContain('<CableMark />')
     expect(source).toContain('recipeRouting(voice.recipe)')
     // A patch line is a cable, an arrow and two monospace jack names — the shape `phase-sound.tsx`
-    // and `kit-parts.tsx` both use.
+    // and `kit-parts.tsx` both use. Since #520 it is drawn by `PatchList`, which this page hands
+    // its own class list: the shared thing is the shape, and the ink stays this page's (#33).
+    expect(source).toContain("import { PatchList } from '@/components/recipe/patch-list'")
     expect(source).toContain('className="patch riff-patch"')
+    const shared = readFileSync(
+      new URL('../components/recipe/patch-list.tsx', import.meta.url),
+      'utf8',
+    )
+    expect(shared).toContain("import { CableMark } from '@/components/cable-mark'")
+    expect(shared).toContain('<CableMark />')
   })
 
   it('carries the settings, in the guide’s own module boxes', async () => {

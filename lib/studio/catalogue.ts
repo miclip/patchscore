@@ -1,4 +1,4 @@
-import type { Device, DeviceKind, Riff, Template } from '@/lib/core'
+import type { Device, DeviceKind, Riff, SampleTarget, Template } from '@/lib/core'
 import { devicePagePath } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { RIFFS } from '@/lib/riffs'
@@ -152,6 +152,15 @@ export function templateHref(template: Template): string {
  */
 export function riffHref(riff: Riff): string {
   return `/riffs/${riff.id}`
+}
+
+/**
+ * §3.8/#520. `/samples/wobble-bass`. One place, so the index card, the sitemap and the page's own
+ * canonical cannot disagree — the reason `riffHref`, `templateHref` and `kitHref` are each one
+ * place.
+ */
+export function sampleHref(target: SampleTarget): string {
+  return `/samples/${target.id}`
 }
 
 /**

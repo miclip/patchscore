@@ -84,11 +84,11 @@ describe('#174 the page a crawler and a reader both get', () => {
     // §5A/#503 put `/riffs` above them both, as the third *catalogue* half rather than a third
     // reference: a riff is a thing this site holds, where these two explain the words it uses.
     // What this test is about is unchanged — the two references stay adjacent, and stay below the
-    // catalogue — so the claim is written against `/riffs` now that it is what the catalogue ends
-    // with.
+    // catalogue — so the claim is written against whatever the catalogue ends with, which is
+    // `/samples` since §3.8/#520.
     const hrefs = NAV_LINKS.map((l) => l.href)
     expect(hrefs).toContain('/drum-machines')
-    expect(hrefs.indexOf('/drum-machines')).toBe(hrefs.indexOf('/riffs') + 1)
+    expect(hrefs.indexOf('/drum-machines')).toBe(hrefs.indexOf('/samples') + 1)
     expect(hrefs.indexOf('/drum-machines')).toBe(hrefs.indexOf('/parts') - 1)
     expect(hrefs.indexOf('/parts')).toBe(hrefs.indexOf('/preferences') - 1)
   })

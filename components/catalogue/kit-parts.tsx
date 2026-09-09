@@ -1,14 +1,7 @@
-import { CableMark } from '@/components/cable-mark'
 import { ModulationMark } from '@/components/modulation-mark'
+import { PatchList } from '@/components/recipe/patch-list'
 import { Fragment } from 'react'
-import type {
-  AuthoredParam,
-  Device,
-  ModulationEnd,
-  ParamScope,
-  PatchEntry,
-  Recipe,
-} from '@/lib/core'
+import type { AuthoredParam, Device, ModulationEnd, ParamScope, Recipe } from '@/lib/core'
 import {
   groupedParams,
   hasAmount,
@@ -35,6 +28,16 @@ import { hintText } from '@/components/guide/format'
  * and #385's module boxes are how a parameter reads everywhere in this product, and a reader
  * arriving from a guide must not have to learn a second convention. `groupedParams` and
  * `paramLabel` are imported for that reason; everything else here is written for these two pages.
+ *
+ * **The cable list is `PatchList`** (#520). A `PatchEntry` is a `PatchEntry` on every surface and
+ * the four surfaces that draw one drew it identically, so the list moved to
+ * `components/recipe/patch-list.tsx` and the class list stayed a prop. It is its own module rather
+ * than a member of `resolved-body.tsx` because this page is a **server component** and that file
+ * reaches `createContext` through `Value`; the sibling's header carries the whole of it.
+ *
+ * Nothing else in `resolved-body.tsx` is reachable from here anyway: it renders `ResolvedParam`,
+ * and a kit panel renders what the device folder authored — the point with its range or its option
+ * set beside it, and a scope word, none of which a resolved value carries.
  */
 
 /** The words the guide uses for the two scopes, restated (#33). */
@@ -194,25 +197,6 @@ function KitParams({ recipe, device }: { recipe: Recipe; device: Device }) {
   )
 }
 
-/** The cables inside the box, in the guide's own arrow shape and monospace jack names (§10). */
-function KitPatch({ entries }: { entries: readonly PatchEntry[] }) {
-  return (
-    <ul className="patch kit-patch">
-      {entries.map((entry) => (
-        <li key={`${entry.from}->${entry.to}`}>
-          <CableMark />
-          <span className="mono">{entry.from}</span>
-          <span className="arrow" aria-hidden="true">
-            {' → '}
-          </span>
-          <span className="mono">{entry.to}</span>
-          {entry.note === undefined ? null : <p className="subordinate note">{entry.note}</p>}
-        </li>
-      ))}
-    </ul>
-  )
-}
-
 /**
  * §3.6/§3.7. One sound's contents: how it is driven, what to plug in, what to set.
  *
@@ -249,7 +233,7 @@ export function KitBody({
     <>
       {routing === undefined ? null : <p className="quiet">Routing — {routing}</p>}
       {recipe.patch === undefined || recipe.patch.length === 0 ? null : (
-        <KitPatch entries={recipe.patch} />
+        <PatchList entries={recipe.patch} className="patch kit-patch" />
       )}
       {recipe.params.length === 0 ? null : <KitParams recipe={recipe} device={device} />}
     </>

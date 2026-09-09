@@ -107,11 +107,16 @@ describe('#112 the navigation landmark', () => {
     // with the other two and above both reference pages: a device is a box, a direction is a
     // song, and a riff is one figure — three kinds of thing this site holds, where the two below
     // them explain the words it uses.
+    //
+    // §3.8/#520. `/samples` is the fourth, beside `/riffs` for the same reason and in the same
+    // place: one authored thing resolved against the rig you own. The two reference pages stay
+    // adjacent and stay last but for preferences.
     expect(NAV_LINKS.map((l) => l.href)).toEqual([
       '/',
       '/devices',
       '/directions',
       '/riffs',
+      '/samples',
       '/drum-machines',
       '/parts',
       '/preferences',

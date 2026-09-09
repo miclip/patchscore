@@ -1,152 +1,25 @@
 import { Fragment } from 'react'
-import { CableMark } from '@/components/cable-mark'
-import { ModulationMark } from '@/components/modulation-mark'
-import { Value } from '@/components/guide/instruction'
+import { PatchList } from '@/components/recipe/patch-list'
+import { ResolvedSettings } from '@/components/recipe/resolved-body'
 import { hintText } from '@/components/guide/format'
-import type {
-  BoundArticulation,
-  Device,
-  PatchEntry,
-  ResolvedModulationEnd,
-  ResolvedParam,
-  Riff,
-  RiffVoicing,
-} from '@/lib/core'
-import { groupedParams, modulationEndParts, num, paramLabel, recipeRouting } from '@/lib/core'
+import type { BoundArticulation, Device, Riff, RiffVoicing } from '@/lib/core'
+import { num, recipeRouting } from '@/lib/core'
 import { riffCitation, riffStack, riffSubstitution, voiceHeading } from '@/lib/studio/riff-text'
 
 /**
  * §5A. **The one voice a rig has for the figure, and everything needed to build it there.**
  *
- * Its own markup, sharing the guide's settled decisions rather than restating them: §10's value
- * treatment is `Value`, #385's module boxes are `groupedParams`, `paramLabel` trims a module's own
- * prefix, `recipeRouting` composes the routing sentence, and a cable is `CableMark` with the
- * arrow shape every patch line in this product uses. A reader arriving from a guide must not have
- * to learn a second convention for the same fact.
+ * **What is inside a resolved recipe is drawn by `components/recipe/resolved-body.tsx`** (#520) —
+ * the cables, the module boxes, the parameter lines, the routings, the notes and the jogs. A
+ * sound page draws exactly the same things off exactly the same type, and one reading of a
+ * parameter is the whole reason that file exists. The class names below are still this page's:
+ * ink is each surface's own (#33), and the prefix is a prop.
  *
- * **The guide's `Instruction` is deliberately not used**, for the reason `kit-parts.tsx` gives:
- * it reserves a hint column that §8.1's toggle controls, and there is no toggle here, so a hint
- * rendered into that column would be invisible. Notes and hints are both printed and both
- * visible — this reader is deciding whether to build the patch at all, and a jog is worth more
- * to them than the line it costs.
+ * What is left here is what a *riff* has and a sound does not: a stack, a trigger note beside a
+ * written figure, and the articulation bound to its grid.
  *
  * **Every sentence is `riff-text.ts`'**, shared with the Markdown export (#495).
  */
-
-/** §3.3. The cables inside the box, in the arrow shape every patch line in this product uses. */
-function RiffPatch({ entries }: { entries: readonly PatchEntry[] }) {
-  return (
-    <ul className="patch riff-patch">
-      {entries.map((entry) => (
-        <li key={`${entry.from}->${entry.to}`}>
-          <CableMark />
-          <span className="mono">{entry.from}</span>
-          <span className="arrow" aria-hidden="true">
-            {' → '}
-          </span>
-          <span className="mono">{entry.to}</span>
-          {entry.note === undefined ? null : <p className="subordinate note">{entry.note}</p>}
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-/**
- * One parameter: the name, the value, and whatever the author wrote under it.
- *
- * §3.2/invariant 4: **no provenance mark and no page beside the value.** The evidence is on every
- * `ResolvedParam` and none of it is rendered here — one sentence for the block, below, is the
- * whole of this page's ink about where the numbers came from.
- */
-function RiffParam({ param, device }: { param: ResolvedParam; device: Device }) {
-  const hint = param.hint === undefined ? undefined : hintText(device, param.hint)
-  const m = param.modulation
-  return (
-    <li className="riff-param">
-      <span className="riff-param-line">
-        {/*
-          §5A/#511. A routing reads as an assignment on this page too, in the same shape §8 draws
-          and beside the same mark — `ModulationMark` here for the reason `CableMark` is already
-          here, so a reader arriving from a guide meets one convention rather than two.
-        */}
-        {m === undefined ? null : (
-          <>
-            <ModulationMark />
-            <span className="param-kind">Modulation — </span>
-            <RiffModulationEnd end={m.source} />
-            <span className="arrow" aria-hidden="true">
-              {' → '}
-            </span>
-            <RiffModulationEnd end={m.destination} />
-            {m.polarity === undefined ? null : (
-              <>
-                <span className="param-sep" aria-hidden="true">
-                  {' · '}
-                </span>
-                <RiffModulationEnd end={m.polarity} />
-              </>
-            )}
-            <span className="param-sep" aria-hidden="true">
-              {' · '}
-            </span>
-          </>
-        )}
-        <span className="param-name">{m?.amountControl ?? paramLabel(param)}</span>
-        <Value param={param} />
-      </span>
-      {m === undefined ? null : (
-        <p className="subordinate neutral">{`${num(m.neutral)} is no modulation`}</p>
-      )}
-      {param.note === undefined ? null : <p className="subordinate note">{param.note}</p>}
-      {hint === undefined ? null : <p className="riff-hint">{hint}</p>}
-    </li>
-  )
-}
-
-/** #511. One end of a routing: the control to set, and what to set it to. See `ParamLine`'s. */
-function RiffModulationEnd({ end }: { end: ResolvedModulationEnd }) {
-  const parts = modulationEndParts(end)
-  return (
-    <>
-      {parts.control === undefined ? null : (
-        <span className="param-name">{parts.control}</span>
-      )}
-      <span className="mono">{parts.value}</span>
-    </>
-  )
-}
-
-/**
- * #385's module box. `groupedParams` decides the cut, shared rather than restated, so this page
- * and the guide box the same controls together. A group naming no module renders as bare lines,
- * so a box that names no panel blocks produces a plain list and no empty frames.
- */
-function RiffParams({ voice }: { voice: RiffVoicing }) {
-  return (
-    <>
-      {groupedParams(voice.params).map((group, i) => {
-        const lines = (
-          <ul className="riff-params">
-            {group.params.map((param) => (
-              <RiffParam key={param.name} param={param} device={voice.device} />
-            ))}
-          </ul>
-        )
-        if (group.module === undefined) return <Fragment key={`${String(i)}-`}>{lines}</Fragment>
-        return (
-          <div className="module-box" key={`${String(i)}-${group.module}`}>
-            <p className="module-label">
-              <span className="module-led" aria-hidden="true" />
-              <span>{group.module}</span>
-            </p>
-            {lines}
-          </div>
-        )
-      })}
-    </>
-  )
-}
 
 /**
  * §4.3/§7 step 8. What the box says about the slots this grid actually contains.
@@ -230,7 +103,9 @@ export function RiffVoice({ riff, voice }: { riff: Riff; voice: RiffVoicing }) {
         </p>
       )}
       {routing === undefined ? null : <p className="quiet">Routing — {routing}</p>}
-      {patch === undefined || patch.length === 0 ? null : <RiffPatch entries={patch} />}
+      {patch === undefined || patch.length === 0 ? null : (
+        <PatchList entries={patch} className="patch riff-patch" />
+      )}
       {/*
         A recipe with no settings renders no heading and no sentence saying so: an empty block is a
         reader looking for something that is not there, and a line about it would be a line about
@@ -239,7 +114,7 @@ export function RiffVoice({ riff, voice }: { riff: Riff; voice: RiffVoicing }) {
       {voice.params.length === 0 ? null : (
         <>
           <h3 className="riff-sub">Settings</h3>
-          <RiffParams voice={voice} />
+          <ResolvedSettings params={voice.params} device={voice.device} prefix="riff" />
         </>
       )}
       <RiffArticulation entries={voice.articulation} device={voice.device} />

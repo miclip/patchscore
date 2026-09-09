@@ -155,7 +155,7 @@ describe('and never writes it', () => {
       'app/riffs/[id]/page.tsx',
       'app/riffs/page.tsx',
       'components/riff/riff-rig.tsx',
-      'components/riff/riff-picker.tsx',
+      'components/rig/rig-picker.tsx',
       'components/riff/riff-voice.tsx',
       'components/riff/riff-figure.tsx',
       'components/catalogue/riff-index.tsx',
@@ -200,7 +200,7 @@ describe('and never writes it', () => {
     }
     // The picker is the one control, and it is given neither a rig history nor a way to restore
     // one — both of those are the studio's, and `onRestoreRig` is the door to writing one back.
-    expect(code).toContain('<RiffPicker selected={selected} onToggle={onToggle} />')
+    expect(code).toContain('<RigPicker selected={selected} onToggle={onToggle} />')
     // The studio's picker is not reached at all: it is where `onRestoreRig` lives, and that is
     // the door to writing a rig back.
     expect(code).not.toContain('DevicePicker')

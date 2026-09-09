@@ -81,6 +81,14 @@ const IMPLEMENTATION = [
   // boxes for the same figure. `localeCompare` there would fail silently and in exactly the
   // shape §7.2 exists to catch.
   'riff.ts',
+  // §7.1's ranking for a one-part assignment, shared by `riff.ts` and `sample.ts` (#520). It is
+  // two code-unit tie-breaks and nothing else, so it is the single densest place in the engine
+  // for a `localeCompare` to land — and now the one file where one would move both surfaces.
+  'voicing.ts',
+  // §3.8's sample targets. Content plus one single-sound resolution, and `riff.ts`'s reason
+  // exactly: no search, no seed, and a code-unit tie-break as the only thing standing between two
+  // platforms and two different boxes for the same sound. `sampleSlug` folds case here too.
+  'sample.ts',
   // §8's renderer is where a locale-aware formatter is most tempting — thousands separators on
   // a step number, a "nicely" formatted range — so it is scanned like the rest of the engine.
   'render.ts',

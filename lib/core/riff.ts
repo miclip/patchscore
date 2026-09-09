@@ -1,16 +1,14 @@
 import { z } from 'zod'
 import type { Assignable, Device, Recipe, TriggerNote } from './device'
 import { realisationOf } from './device'
-import { compareCost, comparePoolMembers, quantiseDistance, type Cost } from './search'
+import { comparePoolMembers, quantiseDistance } from './search'
 import { parseKey, resolveHook, type HookResolution } from './harmony'
 import type { RiffId } from './ids'
 import type { ResolvedParam } from './params'
 import {
-  assignableKey,
   bindArticulation,
   canCarryNotes,
   canStackNotes,
-  compareCodeUnits,
   devicePoolCapacity,
   expand,
   resolveParams,
@@ -34,6 +32,7 @@ import {
   type Pattern,
   type RoleRequest,
 } from './template'
+import { bestVoiceCandidate, crowdOf, type VoiceCandidate } from './voicing'
 import { NEUTRAL_MOOD, bearsPattern, type Character } from './vocabulary'
 
 /**
@@ -444,17 +443,9 @@ export type RiffResolution = {
  *
  * **The ranking is §7.1's own**, because a riff that ranked its candidates differently would hand
  * a reader a worse voice for the same figure with nothing on the page saying so. It is `Score`'s
- * order rather than `Cost`'s alone:
- *
- *  1. `crowdOverflow`, computed here. It is absent from `Cost` because in the search it is a sum
- *     over every device of an assignment in progress; with one part and no other occupancy that
- *     sum is one device, so it becomes a fact about the candidate. It has to come first, since
- *     `Score` puts it above both chord keys.
- *  2. `compareCost`, imported: sampled chord, then stacked, then character distance, then role fit.
- *
- * The keys of `Score` left out cannot separate two candidates for one request. The miss counts and
- * `optionalMisses` are zero for anything that fills it, and `idleDevices` is the rig minus the one
- * box the winner lands on, whichever candidate that is.
+ * order rather than `Cost`'s alone, and it lives in `voicing.ts` — `VoiceCandidate` and
+ * `bestVoiceCandidate` — because `resolveSample` now asks the identical question of a rig (#520)
+ * and a comparator whose key order is an argument settled in §7.1 must not be settled twice.
  *
  * **The first cut used `compareCost` alone and was wrong** on the one shape where the two keys
  * disagree: it took a three-voice stack on a box comfortable with one voice, where the search
@@ -474,36 +465,6 @@ export type RiffResolution = {
  * where §6.1's offset is zero, which is what "the reader has not turned anything" means. The
  * character the riff asked for is therefore the character the recipe is scored against.
  */
-type RiffCandidate = Cost & {
-  device: Device
-  /** One for an ordinary candidate, `polyphony` for a stack. Never empty. */
-  assignables: readonly Assignable[]
-  recipe: Recipe
-  character: Character
-  /**
-   * §7.1's `crowdOverflow`, for this candidate alone. **Not part of `Cost`, and it could not be**:
-   * in the search a crowd figure is a sum over every device of an assignment in progress, so it
-   * is a property of where everything else landed rather than of one candidate. With one part and
-   * no other occupancy the sum collapses to this one device, which is what makes it askable here.
-   */
-  crowd: number
-}
-
-/**
- * §7.1/§2.3. **What this candidate costs a box that is comfortable with fewer voices.**
- *
- * `comfortableVoices ?? expand(device).length` is `buildCtx`'s own rule, restated rather than
- * imported because the search holds it in a `Ctx` map built for a whole rig and a template.
- *
- * A stacked triad counts three, which #40 named as the thing not to soften: three tracks really
- * are spent, and a part that costs as much as three parts is a true statement about a monophonic
- * box. That is where a stack's real price is charged, and charging it is the whole reason this
- * key has to rank above the two chord keys.
- */
-function crowdOf(device: Device, taken: number): number {
-  return Math.max(0, taken - (device.comfortableVoices ?? expand(device).length))
-}
-
 export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolution {
   const { request } = riff
   const role = request.role
@@ -513,7 +474,7 @@ export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolut
 
   const roleVoices: Assignable[] = []
   const capable: Assignable[] = []
-  const candidates: RiffCandidate[] = []
+  const candidates: VoiceCandidate[] = []
   /**
    * §12.4/#40. Pool members grouped by the pool they belong to, in `comparePoolMembers` order,
    * exactly as `buildCtx` groups them for stack planning. Insertion order is device order then
@@ -614,27 +575,7 @@ export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolut
     }
   }
 
-  const winner = [...candidates].sort(
-    (a, b) =>
-      /*
-       * §7.1's own key order, in full for a one-part assignment.
-       *
-       * `crowdOverflow` first, because `Score` puts it above both chord keys and `stackedChords`'
-       * own note says that is where a stack's real cost is charged. Then `compareCost`, which is
-       * `search.ts`' — sampled chord, then stacked, then character distance, then role fit.
-       *
-       * The keys of `Score` that are not here cannot separate two candidates for one request: the
-       * miss counts and `optionalMisses` are zero for anything that fills it, and `idleDevices` is
-       * the rig minus the one box the winner lands on, whichever candidate wins.
-       */
-      a.crowd - b.crowd ||
-      compareCost(a, b) ||
-      compareCodeUnits(
-        assignableKey(a.assignables[0] as Assignable),
-        assignableKey(b.assignables[0] as Assignable),
-      ) ||
-      compareCodeUnits(a.recipe.id, b.recipe.id),
-  )[0]
+  const winner = bestVoiceCandidate(candidates)
 
   if (winner === undefined) {
     return {
