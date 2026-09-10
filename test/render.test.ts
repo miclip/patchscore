@@ -4,6 +4,7 @@ import {
   clockSourceSetupFact,
   evidenceFor,
   NEUTRAL_MOOD,
+  RecipeSchema,
   SUBORDINATE,
   moodState,
   rangeDocuments,
@@ -1743,6 +1744,121 @@ describe('source audio (§3/#101)', () => {
         expect(source.need.trim().split(/\s+/).length, recipe.id).toBeGreaterThan(3)
       }
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// §3/#516 — selecting a sound the box already makes
+// ---------------------------------------------------------------------------
+
+/**
+ * The other half of what `sourceAudio` used to say. Same rig as above so the two lines can be
+ * compared in one place, and the recipe can carry either field or both.
+ */
+function setupRig(fields: Record<string, unknown>): ResolveResult {
+  const synth = box('synth', {
+    kind: 'sampler',
+    voices: [{ kind: 'fixed', id: 'trk', label: 'Track 1', roles: ['texture'], polyphony: 1 }],
+    hints: { 'load-it': 'Hold BROWSE, turn the dial', 'reach-it': 'Hold SOUND, press dot' },
+    features: { perStep: ['velocity'] },
+    recipes: [
+      makeRecipe('s-texture-soft', 'texture', 'soft', 'trk', {
+        title: 'Granular bed',
+        ...(fields as Record<string, never>),
+        articulation: undefined,
+      }),
+    ],
+  })
+  return resolve({
+    devices: [synth],
+    template: withRoles([request({ id: 'r-tex', role: 'texture', character: 'soft' })]),
+    mood: moodState(),
+    seed: 1,
+  })
+}
+
+const CHOICE = 'One of the ten supertone sounds — the engine’s own bass tones'
+const REACH = 'Hold [SOUND] and press [.], then choose one of the ten supertone sounds on pads 0-9.'
+const MANUAL: Cite = { kind: 'manual', source: 'Guide 8.1.1' }
+const SETUP = { sound: CHOICE, prep: { text: REACH, verified: MANUAL } }
+
+describe('built-in sound selection (§3/#516)', () => {
+  it('says which sound, above the routing and above every parameter', () => {
+    const doc = renderGuide(setupRig({ soundSetup: SETUP }))
+    const sound = doc.slice(doc.indexOf('## 6.'))
+    const at = sound.indexOf(`Sound — ${CHOICE}`)
+    expect(at).toBeGreaterThan(-1)
+    // Same rule the Source line follows: a value set on a track whose sound has not been chosen
+    // is a setting with no subject.
+    expect(at).toBeLessThan(sound.indexOf('- **TUNE**'))
+  })
+
+  /**
+   * `Sound —`, not `Source —`, and the difference between the two words is the whole of #516:
+   * a source is something the reader goes and finds, a sound is already in the box. A renderer
+   * that printed one prefix for both would put the field back where it started.
+   */
+  it('uses its own prefix, so the two actions do not read as one', () => {
+    const doc = renderGuide(setupRig({ soundSetup: SETUP }))
+    expect(doc).not.toContain('Source —')
+    expect(doc).toContain('Sound —')
+  })
+
+  /**
+   * §3's split, in ink: the choice on its own line and the gesture as a bullet beneath it, which
+   * is `sourceLines`' shape exactly. Two claims and two things to do — which of the box's sounds,
+   * and how to get at it.
+   */
+  it('prints the choice and the procedure as two lines, and neither page', () => {
+    const lines = renderGuide(setupRig({ soundSetup: SETUP })).split('\n')
+    const at = lines.findIndex((l) => l.startsWith('Sound — '))
+    expect(lines[at]).toBe(`Sound — ${CHOICE}`)
+    expect(lines[at + 1]).toBe('')
+    expect(lines[at + 2]).toBe(`- ${REACH}`)
+    // Invariant 4: §8 renders no per-value citation and no provenance mark on either line.
+    expect(lines[at]).not.toContain('·')
+    expect(lines.join('\n')).not.toContain('Guide 8.1.1')
+  })
+
+  it('says nobody checked a gesture somebody worked out by ear', () => {
+    // §3.2's rule, unchanged from `sourceAudio.prep`: a provisional claim gets no citation and no
+    // mark, and the guide is where that asymmetry was ink and stopped being it.
+    const doc = renderGuide(
+      setupRig({ soundSetup: { sound: CHOICE, prep: { text: REACH, verified: false } } }),
+    )
+    const line = doc.split('\n').find((l) => l.includes(REACH)) as string
+    expect(line).toBe(`- ${REACH}`)
+  })
+
+  it('puts the hint where a reader can suppress it (§8.1)', () => {
+    const fields = { soundSetup: { ...SETUP, hint: 'reach-it' } }
+    const on = renderGuide(setupRig(fields), { hints: true })
+    const off = renderGuide(setupRig(fields), { hints: false })
+    expect(on).toContain(`${SUBORDINATE.hint} Hold SOUND, press dot`)
+    expect(off).not.toContain('Hold SOUND, press dot')
+  })
+
+  it('says nothing at all for a recipe that declares none', () => {
+    const doc = renderGuide(setupRig({ sourceAudio: { need: NEED } }))
+    expect(doc).not.toContain('Sound —')
+    expect(doc).toContain('Source —')
+  })
+
+  /**
+   * The two prefixes never meet on one part, and that is the model's guarantee rather than the
+   * renderer's restraint: `RecipeSchema` refuses a recipe carrying both, because they make
+   * opposite claims about the voice. Asserted here because this is the file that would otherwise
+   * be free to invent an order for a pair that cannot exist.
+   */
+  it('never has both prefixes to order, because the schema refuses the pair', () => {
+    expect(
+      RecipeSchema.safeParse(
+        makeRecipe('s-texture-soft', 'texture', 'soft', 'trk', {
+          sourceAudio: { need: NEED },
+          soundSetup: SETUP,
+        } as never),
+      ).success,
+    ).toBe(false)
   })
 })
 

@@ -14,11 +14,13 @@ import {
   resolveParams,
   resolvePatch,
   resolveRecipe,
+  resolveSoundSetup,
   resolveSourceAudio,
   stackRecipes,
   triggerNoteFor,
   type BoundArticulation,
   type ResolvedPatchEntry,
+  type ResolvedSoundSetup,
   type ResolvedSourceAudio,
 } from './resolver'
 import {
@@ -408,6 +410,13 @@ export type RiffVoicing = {
   params: readonly ResolvedParam[]
   patch: readonly ResolvedPatchEntry[]
   sourceAudio: ResolvedSourceAudio | undefined
+  /**
+   * §3/#516. How to reach the sound, where the box makes it itself. Beside `sourceAudio` because
+   * the two are different instructions, and a riff can land on either — `acid-tracks-line` on an
+   * EP–40 alone is the supertone, and before the split that page said *"one of the ten supertone
+   * sounds"* through a field meaning *go and find a file*.
+   */
+  soundSetup: ResolvedSoundSetup | undefined
   articulation: readonly BoundArticulation[]
   /** §2.1. The note that plays this voice as it is, on a box addressed by note. */
   triggerNote: TriggerNote | undefined
@@ -609,6 +618,7 @@ export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolut
       }),
       patch: resolvePatch(winner.recipe),
       sourceAudio: resolveSourceAudio(winner.recipe),
+      soundSetup: resolveSoundSetup(winner.recipe),
       articulation: bindArticulation(winner.recipe, riff.pattern),
       // §2.2/#86. Read off the first voice, which every member of a pool shares — a stack is one
       // pool on one device, so there is one answer rather than one per voice.

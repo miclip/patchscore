@@ -1,3 +1,4 @@
+import { hintText } from '@/components/guide/format'
 import { Articulation } from '@/components/pattern/articulation'
 import { PatchList } from '@/components/recipe/patch-list'
 import { ResolvedSettings } from '@/components/recipe/resolved-body'
@@ -61,6 +62,23 @@ export function RiffVoice({ riff, voice }: { riff: Riff; voice: RiffVoicing }) {
       ))}
       {voice.sourceAudio === undefined ? null : (
         <p className="quiet">Source — {voice.sourceAudio.need}</p>
+      )}
+      {/*
+        §3/#516. Which of the box's own sounds, and the gesture that reaches it — the sibling of
+        the block in `lib/studio/riff-markdown.ts`, hand-written to match it.
+
+        The jog is a visible paragraph rather than the guide's reserved column, for the reason
+        `resolved-body.tsx` gives about every jog on this page: §8.1's toggle is what fills that
+        column and this page has no toggle, so a hint put there would be invisible.
+      */}
+      {voice.soundSetup === undefined ? null : (
+        <>
+          <p className="quiet">Sound — {voice.soundSetup.sound}</p>
+          <p className="quiet">{voice.soundSetup.prep.text}</p>
+          {voice.soundSetup.hint === undefined ? null : (
+            <p className="riff-hint">{hintText(voice.device, voice.soundSetup.hint)}</p>
+          )}
+        </>
       )}
       {/*
         §2.1/#32. The note that plays the sound as it is, on a voice addressed by note. It matters

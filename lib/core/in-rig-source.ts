@@ -6,7 +6,10 @@ import type { Role } from './vocabulary'
  * §8/#487. **The rig already contains the sound the guide is telling the reader to go and find.**
  *
  * A recipe that declares `sourceAudio` is sending its reader off to source audio the voice does
- * not generate (§3/#101). That instruction is right on its own terms and can be wrong about the
+ * not generate (§3/#101) — and since #516 that is all it says, so a recipe reaching for a sound
+ * the box makes itself (`soundSetup`) is neither a destination here nor disqualified from being a
+ * maker. Before the split it was wrongly both: the EP–40's supertone parts read as readers sent
+ * shopping, and the same box could not offer them to anyone else. That instruction is right on its own terms and can be wrong about the
  * room it is read in: in 47% of the two-box rigs in the library, the *other* box authors a recipe
  * for the very same role that needs nothing loaded — most often the kick, which is the one
  * somebody feels. The reader is told to go and find a kick while a box on the same desk has an

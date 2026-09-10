@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { Device, Role } from '../lib/core'
+import type { Device, Recipe, Role } from '../lib/core'
+import { RecipeSchema } from '../lib/core'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 
@@ -22,26 +23,26 @@ import { TEMPLATES } from '../lib/templates/index'
  * gesture with a length, and half the recipes that need a sample never say how long* — arriving
  * on held notes rather than on risers.
  *
- * ## The rule is about the fact, not the field, and `sourceAudio` is only a proxy for it
+ * ## The rule is about the fact, and since #516 the field says it
  *
- * A duration is owed because **the sound comes from a file** and the figure outlasts it. Carrying
- * `sourceAudio` is the closest thing the model has to that fact and it is not the same claim:
- * `ep40-acid-dirty` carries one and loads nothing, because a supertone is the EP–40's built-in
- * synth engine. Demanding a duration there would make this test enforce a sentence that could
- * only be untrue, so it is excluded by id below.
+ * A duration is owed because **the sound comes from a file** and the figure outlasts it. This
+ * test used to carry an exclusion list of one, because `sourceAudio` was a *proxy* for that fact
+ * rather than the fact: `ep40-acid-dirty` declared one and loaded nothing, since a supertone is
+ * the EP–40's built-in synth engine, and demanding a duration there would have enforced a
+ * sentence that could only be untrue. Nothing in the recipe's *parameters* distinguished it —
+ * its whole param list is `PLAY MODE legato`, exactly what the file-fed recipes beside it set —
+ * so there was no structural signal to key on and the list was the honest answer.
  *
- * By id, and deliberately not by a predicate. Nothing in that recipe's *parameters* distinguishes
- * it — its whole param list is `PLAY MODE legato`, the same value the file-fed recipes beside it
- * set — so there is no structural signal to key on, the way `deluge-pad-soft` now names its
- * built-in source in `OSC 1 TYPE` (#507). The alternative was reading `need` or `hint` for a
- * phrase, which is the name-matching this repo keeps getting bitten by: it would pass until
- * somebody rewrote a sentence. An exclusion list is honest about being a list, and greppable.
+ * **#516 built the signal.** `sourceAudio` now means a file asset the voice does not generate and
+ * nothing else; selecting a sound the box already makes is `soundSetup`, a separate field. The
+ * three EP–40 supertone recipes moved, `ep40-acid-dirty` among them, so the predicate below is
+ * structural again and the list is gone. `ep40-lead-bright` and `ep40-sweep-bright` were in the
+ * same position and outside this sweep only because no shipped hook holds `lead` or `sweep` for a
+ * bar; if one ever does, they arrive already correct rather than as the false positives that
+ * stalled this rule the first time.
  *
- * **The modelling question underneath is deferred, not answered here.** `sourceAudio` is
- * documented as prose saying what audio to *load*; a recipe that loads nothing carrying one means
- * either that recipe should not carry it or the field means two things. `ep40-lead-bright` and
- * `ep40-sweep-bright` are in the same position and are only outside this sweep because no hook
- * holds `lead` or `sweep` for a bar. That is library-wide and not this test's to settle.
+ * The count below is unchanged at 40, which is the point: the recipes that came off were never in
+ * the sweep. What changed is that nobody has to remember to keep a list.
  *
  * **The threshold is one bar, and it is derived rather than listed.** Sixteen sixteenth steps is
  * the point at which a source has to be found rather than merely played, and deriving the roles
@@ -86,16 +87,6 @@ function heldRoles(): Set<Role> {
   return held
 }
 
-/**
- * Recipes carrying `sourceAudio` that load no file, so no duration is stateable about them.
- *
- * One entry, and it is a list rather than a rule because no recipe *parameter* identifies the
- * EP–40's built-in supertone engine: `ep40-acid-dirty` sets `PLAY MODE legato` and nothing else,
- * which is exactly what the file-fed recipes around it set. See the note above for why reading
- * the prose instead was rejected.
- */
-const NOT_A_FILE = new Set<string>(['ep40-acid-dirty'])
-
 type FileFed = { device: Device; recipeId: string; role: Role; need: string }
 
 /** Every recipe that plays a file on a role something holds. */
@@ -105,7 +96,6 @@ function fileFedOnHeldRoles(): FileFed[] {
   for (const device of DEVICES) {
     for (const recipe of device.recipes) {
       if (recipe.sourceAudio === undefined) continue
-      if (NOT_A_FILE.has(recipe.id)) continue
       if (!roles.has(recipe.role)) continue
       out.push({
         device,
@@ -158,9 +148,39 @@ describe('a source fed to a held note says how long it has to be (#506)', () => 
   it('covers the recipes #506 measured, less the two that are not files', () => {
     // 40 rather than the issue's 42. #507 moved `deluge-pad-soft` off a file onto a built-in
     // oscillator, which is that recipe's fix and not this one's; `ep40-acid-dirty` was never a
-    // file at all. Seventeen of the forty stated no duration before this change.
+    // file at all. Seventeen of the forty stated no duration before #517.
     expect(fileFedOnHeldRoles()).toHaveLength(40)
-    expect(fileFedOnHeldRoles().some((r) => NOT_A_FILE.has(r.recipeId))).toBe(false)
+  })
+
+  /**
+   * §3/#516. **The exclusion list this file used to carry, as a property of the model instead.**
+   *
+   * The predicate above is `sourceAudio` alone with no list beside it, and that is only sound
+   * while the field means one thing. It does, and not because nothing in today's library breaks
+   * it: `RecipeSchema` **refuses** a recipe declaring both `sourceAudio` and `soundSetup`, since
+   * the two make opposite claims about the voice. Every manifest goes through that schema at
+   * import, so a recipe reaching for a built-in sound through the file field cannot be written.
+   *
+   * A library-wide sweep would have been the weaker claim — true of what is authored today and
+   * silent about tomorrow, which is exactly the shape of the exclusion list this replaced. So the
+   * schema is what is asserted, and the three that moved are named to pin what came off.
+   */
+  it('cannot have a recipe reaching for a built-in sound through the file field', () => {
+    const supertones = DEVICES.flatMap((d) =>
+      d.recipes.filter((r) => r.soundSetup !== undefined).map((r) => r.id),
+    ).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+    expect(supertones).toEqual(['ep40-acid-dirty', 'ep40-lead-bright', 'ep40-sweep-bright'])
+
+    // The guarantee itself, on the schema every manifest is parsed by.
+    const ep40 = DEVICES.find((d) => d.id === 'te-ep-40') as Device
+    const supertone = ep40.recipes.find((r) => r.id === 'ep40-acid-dirty') as Recipe
+    expect(RecipeSchema.safeParse(supertone).success).toBe(true)
+    const both = RecipeSchema.safeParse({
+      ...supertone,
+      sourceAudio: { need: 'A short, dark kick sample with no tail' },
+    })
+    expect(both.success).toBe(false)
+    expect(JSON.stringify(both.success ? [] : both.error.issues)).toContain('never both')
   })
 
   it('states a duration in every one of them', () => {

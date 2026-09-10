@@ -13,6 +13,8 @@ import {
   PanelFeatureSchema,
   PanelLayoutSchema,
   PatchEntrySchema,
+  SoundSetupSchema,
+  SourceAudioSchema,
   PatternSchema,
   PhysicalSpecSchema,
   ProvenanceSchema,
@@ -35,6 +37,8 @@ import {
   type PanelFeature,
   type PanelLayout,
   type PatchEntry,
+  type SoundSetup,
+  type SourceAudio,
   type Pattern,
   type PhysicalSpec,
   type Provenance,
@@ -86,6 +90,15 @@ describe('schemas and types stay in step', () => {
     // binding would have compiled just as happily with the field missing from one side.
     expectTypeOf<PatchEntry>().toExtend<z.infer<typeof PatchEntrySchema>>()
     expectTypeOf<z.infer<typeof PatchEntrySchema>>().toExtend<PatchEntry>()
+
+    // §3/#101 and §3/#516. The two setup shapes a recipe can carry — what to load, and how to
+    // reach a sound the box already has. Bound here for the reason every pair above is: they are
+    // read by authors as types and enforced at the boundary as schemas.
+    expectTypeOf<SourceAudio>().toExtend<z.infer<typeof SourceAudioSchema>>()
+    expectTypeOf<z.infer<typeof SourceAudioSchema>>().toExtend<SourceAudio>()
+
+    expectTypeOf<SoundSetup>().toExtend<z.infer<typeof SoundSetupSchema>>()
+    expectTypeOf<z.infer<typeof SoundSetupSchema>>().toExtend<SoundSetup>()
 
     expectTypeOf<ArticulationEntry>().toExtend<z.infer<typeof ArticulationEntrySchema>>()
     expectTypeOf<z.infer<typeof ArticulationEntrySchema>>().toExtend<ArticulationEntry>()

@@ -198,12 +198,36 @@ on the author: run it before and after, and put both in the commit (§4 below).
 
 ### Content — `Device.content`, not `sourceAudio` (§2.6, #111)
 
-Two different fields, and they are easy to confuse:
+Three different fields, and the first two are easy to confuse:
 
-- **`Device.content?: DeviceContent`** (`lib/core/device.ts:466`) is the three-state claim below.
-- **`Recipe.sourceAudio?: { need; prep?; hint? }`** (`lib/core/device.ts:1173`) is per-recipe prose
-  saying what audio to load. `need` is prose and stays prose — a closed vocabulary of source kinds
-  would be a fifth shared vocabulary (invariant 3).
+- **`Device.content?: DeviceContent`** is the three-state claim below.
+- **`Recipe.sourceAudio?: { need; prep?; hint? }`** is per-recipe prose saying what **file** to
+  load. `need` is prose and stays prose — a closed vocabulary of source kinds would be a fifth
+  shared vocabulary (invariant 3).
+- **`Recipe.soundSetup?: { sound; prep: { text; verified }; hint? }`** (§3/#516) is which sound the
+  box **generates itself** and how to get at it — the EP-40's supertone engine is the one case in
+  the library. Same two-claim split: `sound` is uncited taste, `prep` is the manual's gesture and
+  is required, with `verified` required inside it.
+
+**A recipe declares `sourceAudio` or `soundSetup`, never both** — `RecipeSchema` refuses the pair,
+because a voice generates the sound or it does not.
+
+**Do not collapse `sound` into `prep`.** One gesture usually opens a whole bank, so a procedure
+ending *choose one of the ten* leaves the reader holding all ten, and every recipe on that bank
+reads alike. If the manual named the entries the device would be `enumerable` and the recipe would
+reference one; `sound` exists precisely where it does not.
+
+**Reach for `soundSetup` only where a parameter cannot do the job.** A generator selector with a
+printed options list is an enum with a citation (`GEN 9X Bass Drum`, `OSC 1 TYPE Analog Saw`), and
+that is the right answer wherever the manual prints the list. `soundSetup` is for the box that
+names a gesture and no entries.
+
+Getting the choice wrong is not cosmetic. `sourceAudio` on a built-in sound tells a reader to go
+and find a file that does not exist, prints the factory-content notice above a part with nothing to
+load, makes the box read as one that makes no sound at all (`resolveSample`'s `loads-audio` gap,
+the kit panel, the reference-sample argument), and breaks every rule written over the field —
+#517 shipped an exclusion list because of exactly this. If you find yourself writing a disclaimer
+into `need` saying nothing is loaded, you want `soundSetup`.
 
 `DeviceContent` is whether the box ships usable audio at all. Three declarable kinds, and the fourth
 state is the *absence* of the field:

@@ -687,8 +687,21 @@ describe('reference samples: the arithmetic underneath', () => {
  * argument has moved and the prose has to move with it.
  *
  * **A device makes nothing from scratch when every recipe it authors declares `sourceAudio`** —
- * §3/#101's line, the same one `resolveSample` uses to decide its `loads-audio` gap. The reading is
- * corroborated below against #519's own library-wide figure of 287.
+ * §3/#101's line, the same one `resolveSample` uses to decide its `loads-audio` gap.
+ *
+ * **The EP–40 came off that list at #516, and it is the mechanism above working rather than a
+ * count going stale.** `sourceAudio` used to mean both *load a file* and *select a sound the box
+ * already has*, and three of that box's recipes meant the second: the supertone engine is a
+ * ten-preset synth, so the reader presses a pad and gets a voice. Under the split those three
+ * declare `soundSetup` instead, the predicate stops matching, and the box is no longer one that
+ * makes nothing — because it never was. Seven became six, 179 recipes became 155, and #519's
+ * library-wide 287 became 284.
+ *
+ * The argument for shipping the fourteen files is untouched by it. It still makes no *drum* sound
+ * on its own — all three from-scratch recipes are tonal (`acid`, `lead`, `sweep`) — so a reader
+ * holding one still has nowhere to get a kick, which is what these files are for. What changed is
+ * that the box no longer qualifies under a predicate about *every* recipe, and stretching the
+ * predicate to keep it would be picking the number over the reading.
  */
 describe('reference samples: who this is for', () => {
   /** Every device whose entire recipe library sends the reader to a file. */
@@ -697,7 +710,7 @@ describe('reference samples: who this is for', () => {
       device.recipes.length > 0 && device.recipes.every((recipe) => recipe.sourceAudio !== undefined),
   )
 
-  it('names the seven devices that can make no sound from scratch', () => {
+  it('names the six devices that can make no sound from scratch', () => {
     expect(sampleOnly.map((device) => device.id)).toEqual([
       'elektron-digitakt',
       'elektron-digitakt-ii',
@@ -705,31 +718,55 @@ describe('reference samples: who this is for', () => {
       'polyend-tracker',
       'roland-sp-404mk2',
       'te-ep-133',
-      'te-ep-40',
     ])
   })
 
-  it('counts 179 recipes across them, and 114 covered by the fourteen', () => {
+  /**
+   * §3/#516. **The EP–40 is here from the other side**, because a box leaving this list on a
+   * modelling change is the one way the list can go quietly wrong.
+   *
+   * It makes three sounds from scratch and no drum among them, so it drops out of a predicate
+   * about every recipe while a reader holding one still has nowhere to get a kick. Pinned so that
+   * the day somebody authors a fourth supertone recipe — or moves one back — this file says so.
+   */
+  it('drops the EP–40 on its three supertone recipes, and no more than three', () => {
+    const ep40 = DEVICES.find((device) => device.id === 'te-ep-40')
+    expect(ep40).toBeDefined()
+    const scratch = (ep40?.recipes ?? []).filter((recipe) => recipe.sourceAudio === undefined)
+    expect(scratch.map((recipe) => recipe.role)).toEqual(['acid', 'lead', 'sweep'])
+    for (const recipe of scratch) expect(recipe.soundSetup, recipe.id).toBeDefined()
+  })
+
+  it('counts 155 recipes across them, and 100 covered by the fourteen', () => {
     const offered = new Set<Role>(REFERENCE_SAMPLES.map((s) => s.role))
     const recipes = sampleOnly.flatMap((device) => device.recipes)
-    expect(recipes).toHaveLength(179)
-    expect(recipes.filter((recipe) => offered.has(recipe.role))).toHaveLength(114)
+    expect(recipes).toHaveLength(155)
+    expect(recipes.filter((recipe) => offered.has(recipe.role))).toHaveLength(100)
   })
 
   /**
    * #519's body counts 287 recipes library-wide that tell a reader to supply audio. Reproducing it
    * is what says the reading of `sourceAudio` above is the issue's own, rather than a second
    * definition that happens to give a tidy number.
+   *
+   * 284 since #516, and the three that came off are exactly the EP–40 supertones — which were
+   * counted as asking for a file and never asked for one. The difference is checked rather than
+   * asserted, so this stays the issue's own reading rather than a new number beside it.
    */
   it('reproduces the library-wide figure the issue was sized against', () => {
     const asking = DEVICES.flatMap((device) => device.recipes).filter(
       (recipe) => recipe.sourceAudio !== undefined,
     )
-    expect(asking).toHaveLength(287)
+    const selecting = DEVICES.flatMap((device) => device.recipes).filter(
+      (recipe) => recipe.soundSetup !== undefined,
+    )
+    expect(asking).toHaveLength(284)
+    expect(selecting).toHaveLength(3)
+    expect(asking.length + selecting.length).toBe(287)
   })
 
   it('leaves the roles it declines to the surface that can answer them', () => {
-    // The 65 recipes on those boxes that these files do not cover are vox-chop and the eight tonal
+    // The 55 recipes on those boxes that these files do not cover are vox-chop and the eight tonal
     // roles. Nothing else is left over, so the out-list in `reference.ts` is exhaustive rather than
     // a sample of what was skipped.
     const offered = new Set<Role>(REFERENCE_SAMPLES.map((s) => s.role))

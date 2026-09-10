@@ -1,3 +1,5 @@
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import type { Device } from '@/lib/core'
 import type { Cite, ContentNotice } from '@/lib/core'
@@ -12,6 +14,8 @@ import { ROLES } from '@/lib/core/vocabulary'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { SAMPLE_GROUPS, SAMPLE_TARGETS, sampleTargetById, targetsInGroup } from '@/lib/samples'
 import { sampleContent } from '@/lib/studio/sample-text'
+import { renderSample } from '@/lib/studio/sample-markdown'
+import { SampleVoice } from '@/components/sample/sample-voice'
 import { KIT_ROLES } from '@/lib/studio/device-page'
 import { box, makeRecipe } from './rigs'
 
@@ -123,6 +127,48 @@ describe('resolveSample against a real rig (§3.8)', () => {
         expect(resolution.voice.recipe.sourceAudio, `${device.id}/${entry.id}`).toBeUndefined()
       }
     }
+  })
+
+  /**
+   * §3/#516. **The answer this page could not give before the split**, and the line that makes it
+   * usable.
+   *
+   * `sourceAudio` used to mean *load a file* and *select a sound the box already has* at once, so
+   * the EP–40's three supertone recipes read as loading audio and the box answered `loads-audio`
+   * — *nothing here makes this* — to somebody asking how to make an acid line on a machine with a
+   * ten-preset synth engine in it. They carry `soundSetup` now, so they reach the candidates, and
+   * the page has to say how to get at the engine: `PLAY MODE legato` on its own is a mode applied
+   * to a sound nobody chose.
+   */
+  it('offers the supertone where the box makes one, and says how to reach it (#516)', () => {
+    const ep40 = DEVICES.filter((d) => d.id === 'te-ep-40')
+    const made = SAMPLE_TARGETS.map((entry) => resolveSample(entry, ep40))
+      .filter((r) => r.outcome === 'made')
+      .map((r) => (r as { voice: { recipe: { id: string } } }).voice.recipe.id)
+    expect(made).toEqual(['ep40-lead-bright', 'ep40-acid-dirty'])
+
+    const acid = resolveSample(target('acid-line'), ep40)
+    expect(acid.outcome).toBe('made')
+    const recipe = acid.outcome === 'made' ? acid.voice.recipe : undefined
+    expect(recipe?.soundSetup?.sound).toContain('bass tones')
+    expect(recipe?.soundSetup?.prep.text).toContain('supertone')
+    // Both renderers print both halves, ahead of routing, the way §8 does — they share no ink by
+    // design, so each is asserted.
+    const md = renderSample(acid)
+    expect(md).toContain(`Sound — ${recipe?.soundSetup?.sound as string}`)
+    expect(md).toContain(`- ${recipe?.soundSetup?.prep.text as string}`)
+    expect(md.indexOf('Sound — ')).toBeLessThan(md.indexOf('Routing — '))
+    // The citation is in the model and on neither surface (invariant 4).
+    expect(md).not.toContain('8.1.1')
+    const page = renderToStaticMarkup(
+      createElement(SampleVoice, {
+        target: target('acid-line'),
+        voice: acid.outcome === 'made' ? acid.voice : (undefined as never),
+      }),
+    )
+    expect(page).toContain('Sound — ')
+    expect(page).toContain(recipe?.soundSetup?.prep.text as string)
+    expect(page).not.toContain('8.1.1')
   })
 
   it('carries the rig it was resolved against, so a gap can name boxes', () => {

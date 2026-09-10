@@ -43,7 +43,12 @@ import type { Pattern, PatternHit } from './template'
 import { STEPS_PER_BAR } from './template'
 import { slotGroups, stepGridRows } from './grid'
 import { reStrikesHeldNote, tightestReStrike } from './timing'
-import type { BoundArticulation, ResolvedPatchEntry, ResolvedSourceAudio } from './resolver'
+import type {
+  BoundArticulation,
+  ResolvedPatchEntry,
+  ResolvedSoundSetup,
+  ResolvedSourceAudio,
+} from './resolver'
 import {
   shortfallsOfKind,
   type Gap,
@@ -2569,6 +2574,39 @@ function sourceLines(
 }
 
 /**
+ * §3/#516. **Which sound, and how to get at it, on a box that makes its own** — `sourceLines`'
+ * shape in the other half of §3's split, and deliberately the same shape: two claims, two lines,
+ * the choice above and the procedure beneath it as a bullet.
+ *
+ * Where `sourceLines` sits and for the same reason: ahead of routing and ahead of every
+ * parameter, because a play mode set on a track whose sound has not been chosen is a setting with
+ * no subject.
+ *
+ * `Sound —` rather than `Source —`, and the difference between the two words is the whole of
+ * #516: a source is something you go and find, a sound is already in the box. A part never
+ * carries both — `RecipeSchema` refuses the pair, because the two make opposite claims about the
+ * voice — so the two prefixes never meet on one part and neither reads as a qualification of the
+ * other.
+ *
+ * **No provenance mark**, like every other line in §8 (invariant 4). The citation is real and
+ * `ResolvedSoundSetup` carries it; §8 is read at the machine with both hands busy, and no §8
+ * line anywhere carries a per-value mark.
+ */
+function soundSetupLines(
+  setup: ResolvedSoundSetup,
+  device: Device | undefined,
+  options: HintSetting,
+): Line[] {
+  const out: Line[] = [`Sound — ${setup.sound}`]
+  out.push('')
+  out.push(`- ${setup.prep.text}`)
+  if (options.hints && setup.hint !== undefined) {
+    subordinate(out, '  ', 'hint', hintText(device, setup.hint))
+  }
+  return out
+}
+
+/**
  * §2.6/#111. **What this box plays, said once above its parts**, in this renderer's own words —
  * the same arrangement #107's scope heading below sits in. `contentNotice` decides *which* of
  * the three states the box is in; the sentences are written here and again in
@@ -2943,6 +2981,10 @@ function soundForPart(
     }
     if (a.recipe.sourceAudio !== undefined) {
       out.push(...sourceLines(a.recipe.sourceAudio, device, options))
+      out.push('')
+    }
+    if (a.recipe.soundSetup !== undefined) {
+      out.push(...soundSetupLines(a.recipe.soundSetup, device, options))
       out.push('')
     }
     if (a.recipe.routing !== undefined) {

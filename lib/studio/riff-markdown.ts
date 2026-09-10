@@ -279,6 +279,25 @@ function voiceLines(riff: Riff, voice: RiffVoicing): string[] {
     out.push('')
     out.push(`Source — ${voice.sourceAudio.need}`)
   }
+  /*
+   * §3/#516. The other half of §3's split, in §8's own shape: which of the box's sounds, then the
+   * gesture that reaches it as a bullet beneath. Before the split these recipes said *go and find
+   * this* — a `Source` line — above a part that loads nothing.
+   *
+   * The procedure prints here where `sourceAudio.prep` does not, and the asymmetry is real: this
+   * page has always shown a source's `need` alone. It is the choice that is worth less without
+   * its gesture — *one of the ten supertone sounds* is not something a reader can act on without
+   * knowing that [SOUND] and [.] are what open the ten.
+   */
+  if (voice.soundSetup !== undefined) {
+    out.push('')
+    out.push(`Sound — ${voice.soundSetup.sound}`)
+    out.push('')
+    out.push(`- ${voice.soundSetup.prep.text}`)
+    if (voice.soundSetup.hint !== undefined) {
+      subordinate(out, '  ', 'hint', hintText(voice.device, voice.soundSetup.hint))
+    }
+  }
   /**
    * §2.1/#32/#334. **Which note plays the sound as it is**, on a voice that is addressed by note.
    *

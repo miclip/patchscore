@@ -26,6 +26,8 @@ import {
   resolveParams,
   resolvePatch,
   resolveRecipe,
+  resolveSoundSetup,
+  resolveSourceAudio,
   scoreRecipes,
   sectionsFor,
   selectPattern,
@@ -720,6 +722,109 @@ describe('resolvePatch (§3.3, invariant 4)', () => {
     expect(
       resolvePatch(recipe({ verified: false, patch: [{ from: 'A', to: 'B', verified: MANUAL }] })),
     ).toEqual([{ from: 'A', to: 'B', provenance: { state: 'authored', cite: MANUAL } }])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// §3/#516 — selecting a sound the box already makes
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#516. **Two claims, and only one of them resolves a provenance** — `resolveSourceAudio`'s
+ * shape exactly, because §3 gives this field the same split. *Which of the ten supertones* is the
+ * author's ear against a list no page prints, so there is nothing for a mark to be about; *how to
+ * open the ten* is guide 8.1.1's, and it carries one.
+ */
+describe('resolveSoundSetup (§3/#516, invariant 4)', () => {
+  const REACH = 'Hold SOUND, press dot, then a pad'
+
+  it('carries the choice unmarked and the procedure with its own provenance', () => {
+    expect(
+      resolveSoundSetup(
+        recipe({ soundSetup: { sound: 'One of the ten supertones', prep: { text: REACH, verified: MANUAL } } }),
+      ),
+    ).toEqual({
+      sound: 'One of the ten supertones',
+      prep: { text: REACH, provenance: { state: 'authored', cite: MANUAL } },
+    })
+
+    // Required rather than inherited: a recipe-level citation does not reach the procedure in
+    // either direction, which is what stops a cited recipe badging a gesture nobody read.
+    expect(
+      resolveSoundSetup(
+        recipe({ verified: MANUAL, soundSetup: { sound: 'A siren', prep: { text: REACH, verified: false } } }),
+      )?.prep,
+    ).toEqual({ text: REACH, provenance: { state: 'provisional' } })
+    expect(
+      resolveSoundSetup(
+        recipe({ verified: false, soundSetup: { sound: 'A siren', prep: { text: REACH, verified: OBSERVED } } }),
+      )?.prep,
+    ).toEqual({ text: REACH, provenance: { state: 'authored', cite: OBSERVED } })
+  })
+
+  /**
+   * §3.2. The choice is prose and stays prose. `ResolvedSoundSetup.sound` is a bare `string` with
+   * no provenance slot at all, so this is a claim the type makes rather than one a renderer can
+   * forget — the same shape `ResolvedSourceAudio.need` has.
+   */
+  it('gives the choice no provenance to carry', () => {
+    const resolved = resolveSoundSetup(
+      recipe({ soundSetup: { sound: 'A dub siren', prep: { text: REACH, verified: MANUAL } } }),
+    )
+    expect(resolved?.sound).toBe('A dub siren')
+    expect(Object.keys(resolved ?? {})).toEqual(['sound', 'prep'])
+    expectTypeOf<NonNullable<typeof resolved>['sound']>().toEqualTypeOf<string>()
+  })
+
+  it('carries the hint through, and omits the key entirely where there is none', () => {
+    expect(
+      resolveSoundSetup(
+        recipe({
+          soundSetup: { sound: 'A siren', prep: { text: REACH, verified: MANUAL }, hint: 'reach-it' },
+        }),
+      ),
+    ).toEqual({
+      sound: 'A siren',
+      prep: { text: REACH, provenance: { state: 'authored', cite: MANUAL } },
+      hint: 'reach-it',
+    })
+    // Omitted, not `undefined`: `toEqual` above would pass either way, and the guide fixtures are
+    // a byte contract over what a renderer sees (invariant 6).
+    const bare = resolveSoundSetup(
+      recipe({ soundSetup: { sound: 'A siren', prep: { text: REACH, verified: MANUAL } } }),
+    )
+    expect(Object.keys(bare ?? {})).toEqual(['sound', 'prep'])
+  })
+
+  it('answers undefined for the recipe that declares none, which is nearly all of them', () => {
+    expect(resolveSoundSetup(recipe())).toBeUndefined()
+    // And it is not the file field wearing another name: a recipe with a source and no setup
+    // resolves one and not the other. The schema refuses the pair, so these are the only two
+    // shapes a legal recipe can be in.
+    const loader = recipe({ sourceAudio: { need: 'A sustained tonal source, two seconds or more' } })
+    expect(resolveSoundSetup(loader)).toBeUndefined()
+    expect(resolveSourceAudio(loader)?.need).toContain('sustained')
+  })
+
+  /**
+   * The three shipped ones, resolved off the registry rather than off a fixture — a field the
+   * whole library declares three times is a field a fixture can be wrong about alone. **Both
+   * halves are asserted**, because the first draft of this type had only one and #516's own text
+   * is what says the other is load-bearing: the guide names none of the ten supertones, so the
+   * three recipes want three different sounds and only `sound` says which.
+   */
+  it('resolves both halves of the supertone recipes the library actually ships', () => {
+    const setups = DEVICES.flatMap((d) => d.recipes)
+      .map((r) => resolveSoundSetup(r))
+      .filter((s) => s !== undefined)
+    expect(setups).toHaveLength(3)
+    for (const setup of setups) {
+      expect(setup?.prep.provenance.state).toBe('authored')
+      expect(setup?.prep.text.length).toBeGreaterThan(20)
+    }
+    // Three different choices off one shared gesture, which is the whole reason for the split.
+    expect(new Set(setups.map((s) => s?.prep.text)).size).toBe(1)
+    expect(new Set(setups.map((s) => s?.sound)).size).toBe(3)
   })
 })
 

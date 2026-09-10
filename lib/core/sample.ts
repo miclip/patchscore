@@ -271,6 +271,15 @@ export type SampleResolution = {
  * here it decides candidacy rather than membership, which is what makes `loads-audio` a gap worth
  * its own arm.
  *
+ * **#516 is what makes that reading honest, and it changed an answer here.** The field used to
+ * mean *load a file* and *select a sound the box already has* at once, so the EP–40's three
+ * supertone recipes — a ten-preset synth engine reached by holding [SOUND] — counted as loading
+ * audio, and the box reported `loads-audio` for `acid`, `lead` and `sweep`: *nothing in your rig
+ * makes this*, said of a rig containing a synth that does. Those recipes carry `soundSetup` now
+ * (§3), they reach the arms below as ordinary candidates, and a reader is offered the supertone
+ * instead of being told their box cannot. `soundSetup` is deliberately **not** consulted here:
+ * needing a gesture to reach a sound is not the same as not making it.
+ *
  * It is asked **twice, of two different things**:
  *
  *  1. *Does this voice only ever load audio?* — of every recipe it authors for the role, before

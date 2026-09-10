@@ -1279,6 +1279,18 @@ export function contentNotice(
   device: Device,
   recipes: readonly LoadsAudio[],
 ): ContentNotice | undefined {
+  /*
+   * §2.6/#516. **`sourceAudio` and nothing else.** The notice exists to tell a reader what the
+   * box already ships *for the parts it is sending them to find audio for*, so a recipe that
+   * selects a sound the box generates — `soundSetup` (§3) — must not trigger it: the EP–40's
+   * factory sample library has nothing to do with reaching its supertone engine, and a notice
+   * about 300 samples above a part that loads none is an answer to a question nobody asked.
+   *
+   * This gate is why `LoadsAudio` names one field. Widening it would have been the easy reading
+   * of #516's *"arguably more useful there, not less"*, and it is the wrong one — the sentence
+   * that would print (*"Ships … — look in …, so the Source line below says what the part needs"*)
+   * describes a `Source` line the part does not have.
+   */
   if (!recipes.some((recipe) => recipe.sourceAudio !== undefined)) return undefined
   const evidence = evidenceFor(device, CONTENT_FACT)
   const content = device.content
@@ -1839,6 +1851,85 @@ export const SourceAudioSchema = z.strictObject({
 })
 
 /**
+ * §3/#516. **How to reach the sound this recipe plays, where the box generates it itself.**
+ *
+ * `sourceAudio` was carrying two different reader actions and rules written over it could not
+ * tell them apart. *Load a file you supply* and *select a sound the box already has* differ in
+ * every way a rule cares about: only a file has a length, only a file can be missing, and only a
+ * file makes the box's shipped content relevant. Three EP–40 recipes reached for the built-in
+ * supertone engine through `sourceAudio` and one of them had a **disclaimer written into the
+ * `need`** — *"Nothing is loaded and nothing is stretched here"* — which is what a field carrying
+ * a second meaning looks like from inside (#516).
+ *
+ * So `sourceAudio` now means one thing only: **a sample or file asset the recipe's voice does not
+ * generate, which the reader has to load or select from their own library or the box's.** This
+ * field is the other action.
+ *
+ * **A parameter was the obvious alternative and it does not fit.** A generator selector is an
+ * enum with an options list and a cited page — `GEN 9X Bass Drum` on the TR-1000, `OSC 1 TYPE
+ * Analog Saw` on the Deluge after #507 — and where a device has one, that is still the right
+ * place. The supertone has none to build: the guide gives the count and a category (*"ten
+ * supertone sounds including synthesizers and dub sirens"*) and names not one of the ten, so an
+ * enum here would need an options list nobody printed. `Device.content` cannot hold it either —
+ * it describes the box's *factory sample pool*, which on this box is a second and separate
+ * library of 300+ sounds, and one field has no room for both (§2.6).
+ *
+ * **Two claims, kept apart, exactly as `SourceAudio` keeps them:**
+ *
+ *     sound   which of the box's sounds   taste — never cited, because no page states it
+ *     prep    how to get at it            the manual's own procedure, or nobody's
+ *
+ * The first draft of this type collapsed them into one instruction, on the reasoning that there
+ * is nothing to *choose* when the sound is already in the box. That is wrong, and #516 says why
+ * before anybody had to find out: *"the guide gives the count and a category — 'including
+ * synthesizers and dub sirens' — while naming none of the ten."* A procedure that ends *choose
+ * one of the ten supertone sounds on pads 0-9* leaves the reader holding the whole ten, and the
+ * three EP–40 recipes want three different ones — a bass tone, a lead tone, a dub siren. That
+ * sentence is the author's ear against a list no page prints, which is the definition of the
+ * uncited half, and dropping it would have made every supertone part read alike.
+ *
+ * So `verified` lives on `prep` and nowhere else, and is **required** there: a procedure has a
+ * page or nobody checked it, exactly as `SourceAudio.prep` and a `JackSpec` do. `prep` itself is
+ * required, unlike `SourceAudio`'s, because this field exists to record a gesture — a built-in
+ * sound with no way in is a recipe, not a setup.
+ *
+ * **Never beside `sourceAudio` — `RecipeSchema` refuses the pair.** The two say opposite things
+ * about one voice: this one says the box generates the sound, that one says it does not and the
+ * reader must supply a file. A recipe asserting both is a recipe that has not decided, and the
+ * rules written over `sourceAudio` — #506's source-length sweep above all — read it as a fact
+ * about the voice rather than as one of two possible hats. The exclusion is what lets that sweep
+ * carry no exclusion list.
+ *
+ * **It does not trigger the factory-content notice, and that is deliberate.** `contentNotice`
+ * (§2.6/#111) exists to tell a reader what the box ships *for the parts being sent to find
+ * audio*. A recipe selecting a built-in sound is not being sent anywhere, so a notice about the
+ * sample library would be answering a question nobody asked. The gate stays `sourceAudio`.
+ */
+export type SoundSetup = {
+  /**
+   * Which of the box's own sounds, in the words a reader picks one by. Never cited: where a
+   * document names the entries a recipe should reference them instead (`enumerable`, §2.6), so
+   * a `sound` line exists precisely where no page narrows the choice — which is the same reason
+   * no *point* value on a sample recipe is ever cited.
+   */
+  sound: string
+  /**
+   * How to get at it. Required, and `verified` inside it is required too and never inherited: a
+   * procedure is the manual's or it is nobody's, the shape `SourceAudio.prep` and `JackSpec`
+   * carry. There is no third state to inherit toward.
+   */
+  prep: { text: string; verified: Verified }
+  /** A key into the device's `hints` table, checked at device level like an articulation's. */
+  hint?: string
+}
+
+export const SoundSetupSchema = z.strictObject({
+  sound: z.string().min(1),
+  prep: z.strictObject({ text: z.string().min(1), verified: VerifiedSchema }),
+  hint: z.string().min(1).optional(),
+})
+
+/**
  * §12.4. How a recipe turns the notes a request asks for into sound.
  *
  * The request says *how many notes* the part needs; the recipe says *how this box makes them*,
@@ -2009,11 +2100,22 @@ export type Recipe = {
   /** §12.4. How the notes are made. Omitted means `polyphonic-voice`. */
   realisation?: Realisation
   /**
-   * §3/#101. What audio this recipe plays, when the voice does not make its own. Before `params`
-   * because that is the order it happens: a cutoff on a track with nothing loaded is a setting
-   * with no subject.
+   * §3/#101. **A sample or file asset this recipe's voice does not generate**, which the reader
+   * has to go and load. Before `params` because that is the order it happens: a cutoff on a track
+   * with nothing loaded is a setting with no subject.
+   *
+   * #516 narrowed this to files alone. Selecting a sound the box already generates is
+   * `soundSetup` below, and the two are different reader actions with different failure modes.
    */
   sourceAudio?: SourceAudio
+  /**
+   * §3/#516. **Which of the box's own sounds this recipe plays, and how to get at it** — see
+   * `SoundSetup`.
+   *
+   * Beside `sourceAudio` rather than inside it, and never with it: the two make opposite claims
+   * about the voice, and the schema refuses the pair below.
+   */
+  soundSetup?: SoundSetup
   /**
    * §12.4/#85. The most simultaneous notes this patch can sound, when that is fewer than the
    * voice offers — a UNISON or mono-legato mode, a pair-per-key stack. Omitted means the patch
@@ -2079,6 +2181,7 @@ export const RecipeSchema = z
     title: z.string().min(1),
     realisation: RealisationSchema.optional(),
     sourceAudio: SourceAudioSchema.optional(),
+    soundSetup: SoundSetupSchema.optional(),
     patchPolyphony: z.int().min(1).optional(),
     consumes: z.array(ResourceUseSchema).min(1).optional(),
     params: z.array(AuthoredParamSchema),
@@ -2088,6 +2191,24 @@ export const RecipeSchema = z
     routingPreamble: z.string().min(1).optional(),
     routingJoin: z.literal('clause').optional(),
     verified: VerifiedSchema.optional(),
+  })
+  /*
+   * §3/#516. **A voice either generates the sound or it does not.** `sourceAudio` says the reader
+   * has to supply a file; `soundSetup` says the box already holds the sound and names the gesture
+   * that reaches it. Both on one recipe is a recipe that has not decided which of its two voices
+   * it is describing.
+   *
+   * This is a schema rule rather than an authoring convention because the rules written over
+   * `sourceAudio` read it as a fact about the voice. #506's source-length sweep demands a duration
+   * of every recipe fed from a file on a role some hook holds for a bar; the EP–40's supertone
+   * recipes matched it while loading nothing, and #517 shipped an exclusion list of one to get
+   * past that. The list is gone, and this refusal is what replaced it — the sweep asks one
+   * question of one field and the schema guarantees the answer means what it says.
+   */
+  .refine((r) => !(r.sourceAudio !== undefined && r.soundSetup !== undefined), {
+    message:
+      'a recipe plays a file (`sourceAudio`) or a sound the box makes (`soundSetup`), never both — the two make opposite claims about the voice (§3/#516)',
+    path: ['soundSetup'],
   })
   // §3.7/#496. A preamble is one half of a routing line, so the other half has to exist. Without
   // this a folder could put its whole routing in the shared field, where the kit page would hoist
@@ -3833,6 +3954,17 @@ export const DeviceSchema = z
           code: 'custom',
           message: `sourceAudio references hint '${recipe.sourceAudio.hint}', which this device does not author`,
           path: ['recipes', i, 'sourceAudio', 'hint'],
+        })
+      }
+
+      // §3/#516. The same check for the other setup instruction. Written out rather than folded
+      // into a loop over the two, because the `path` a failure reports is the field's own name
+      // and that is the half of the message an author acts on.
+      if (recipe.soundSetup?.hint !== undefined && !hintKeys.has(recipe.soundSetup.hint)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `soundSetup references hint '${recipe.soundSetup.hint}', which this device does not author`,
+          path: ['recipes', i, 'soundSetup', 'hint'],
         })
       }
 
